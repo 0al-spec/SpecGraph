@@ -20,7 +20,7 @@ SpecGraph is built on four foundational layers:
 - **Graph** as operational memory
 - **Code** as the derived and executable layer
 
-## What Intent Means in SpecGraph
+## Intent in SpecGraph
 
 In SpecGraph, intent is not a vague description.  
 It is a precise, governed representation of what a product must be, how it must behave, and how its implementation can be validated.
