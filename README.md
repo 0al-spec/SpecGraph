@@ -1,5 +1,5 @@
 # SpecGraph
-Intent Driven Software for the Future
+Intent-Driven Software for the Future
 
 SpecGraph is:
 - machine-verifiable
@@ -8,3 +8,9 @@ SpecGraph is:
 - execution-connected
 
 model of the product.
+
+## Layers
+- intent as source of truth
+- specs as governed artifacts
+- graph as operational memory
+- code as derived/executed layer
