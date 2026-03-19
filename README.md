@@ -6,4 +6,5 @@ SpecGraph is:
 - human-readable
 - semantically structured
 - execution-connected
+
 model of the product.
