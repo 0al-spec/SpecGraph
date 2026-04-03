@@ -1,0 +1,20 @@
+id: SG-SPEC-0001
+title: Supervisor Spec Loop
+kind: spec
+status: outlined
+maturity: 0.2
+depends_on: []
+relates_to: []
+inputs:
+  - AGENTS.md
+outputs:
+  - specs/nodes/SG-SPEC-0001.yaml
+allowed_paths:
+  - specs/nodes/SG-SPEC-0001.yaml
+acceptance:
+  - "Describes spec-gap selection rule"
+  - "Constrains refinement to spec artifacts"
+  - "Defines validation and status progression"
+prompt: |
+  Raise this spec from outlined to specified.
+  Keep the node implementation-agnostic and stable in terminology.
