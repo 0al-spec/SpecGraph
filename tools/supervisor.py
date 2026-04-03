@@ -239,7 +239,7 @@ def main() -> int:
 
     validation_errors: list[str] = []
     validation_errors.extend(validate_outputs(node))
-    validation_errors.extend(validate_allowed_paths(node, changed))
+    validation_errors.extend(validate_allowed_paths(node, after))
     validation_errors.extend(validate_status(node))
 
     success = result.returncode == 0 and not validation_errors
@@ -254,6 +254,7 @@ def main() -> int:
 
     node.data["last_exit_code"] = result.returncode
     node.data["last_changed_files"] = changed
+    node.data["last_worktree_files"] = sorted(after)
     node.data["last_run_at"] = dt.datetime.now(dt.timezone.utc).isoformat()
     node.save()
 
@@ -266,6 +267,7 @@ def main() -> int:
             "selected_status": node.status,
             "exit_code": result.returncode,
             "changed_files": changed,
+            "worktree_files": sorted(after),
             "validation_errors": validation_errors,
             "stdout": result.stdout,
             "stderr": result.stderr,
