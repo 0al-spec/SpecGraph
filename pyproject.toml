@@ -12,10 +12,18 @@ authors = [{ name = "SpecGraph" }]
 dependencies = ["pyyaml>=6"]
 
 [project.optional-dependencies]
-dev = ["pytest>=8"]
+dev = ["pytest>=8", "ruff>=0.11"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+src = ["src", "tools", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
