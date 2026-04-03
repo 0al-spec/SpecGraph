@@ -270,12 +270,22 @@ def main() -> int:
     after = git_changed_files()
     tracked_paths = sorted(set(before) | set(after))
     after_digests = snapshot_file_digests(tracked_paths)
-    changed = sorted(path for path in tracked_paths if before_digests.get(path) != after_digests.get(path))
+    before_set = set(before)
+    after_set = set(after)
+    changed = sorted(
+        path
+        for path in tracked_paths
+        if path in (after_set - before_set)
+        or before_digests.get(path) != after_digests.get(path)
+    )
 
     validation_errors: list[str] = []
     validation_errors.extend(validate_outputs(node))
     validation_errors.extend(validate_allowed_paths(node, changed))
-    node.reload()
+    try:
+        node.reload()
+    except Exception as exc:
+        validation_errors.append(f"Failed to reload node file {node.path.as_posix()}: {exc}")
     validation_errors.extend(validate_status(node))
 
     success = result.returncode == 0 and not validation_errors
