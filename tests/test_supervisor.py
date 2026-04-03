@@ -18,6 +18,7 @@ def supervisor_module() -> object:
     sys.modules[spec.name] = module
     spec.loader.exec_module(module)
     if module.yaml is None:
+
         class JsonYamlShim:
             @staticmethod
             def safe_load(stream: object) -> object:
@@ -26,7 +27,12 @@ def supervisor_module() -> object:
                 return json.loads(str(stream))
 
             @staticmethod
-            def safe_dump(data: object, file_obj: object, sort_keys: bool = False, allow_unicode: bool = True) -> None:
+            def safe_dump(
+                data: object,
+                file_obj: object,
+                sort_keys: bool = False,
+                allow_unicode: bool = True,
+            ) -> None:
                 _ = (sort_keys, allow_unicode)
                 if hasattr(file_obj, "write"):
                     file_obj.write(json.dumps(data))
@@ -38,7 +44,11 @@ def supervisor_module() -> object:
 
 
 @pytest.fixture()
-def repo_fixture(tmp_path: Path, supervisor_module: object, monkeypatch: pytest.MonkeyPatch) -> Path:
+def repo_fixture(
+    tmp_path: Path,
+    supervisor_module: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> Path:
     root = tmp_path
     specs_dir = root / "specs" / "nodes"
     runs_dir = root / "runs"
@@ -77,10 +87,27 @@ def repo_fixture(tmp_path: Path, supervisor_module: object, monkeypatch: pytest.
 def test_pick_next_spec_gap_orders_by_maturity_then_id(supervisor_module: object) -> None:
     spec_node = supervisor_module.SpecNode
     nodes = [
-        spec_node(path=Path("/tmp/2.yaml"), data={"id": "B", "status": "outlined", "maturity": 0.3, "depends_on": []}),
-        spec_node(path=Path("/tmp/1.yaml"), data={"id": "A", "status": "outlined", "maturity": 0.3, "depends_on": []}),
-        spec_node(path=Path("/tmp/3.yaml"), data={"id": "C", "status": "specified", "maturity": 0.1, "depends_on": []}),
-        spec_node(path=Path("/tmp/4.yaml"), data={"id": "D", "status": "idea", "maturity": 0.0, "depends_on": []}),
+        spec_node(
+            path=Path("/tmp/2.yaml"),
+            data={"id": "B", "status": "outlined", "maturity": 0.3, "depends_on": []},
+        ),
+        spec_node(
+            path=Path("/tmp/1.yaml"),
+            data={"id": "A", "status": "outlined", "maturity": 0.3, "depends_on": []},
+        ),
+        spec_node(
+            path=Path("/tmp/3.yaml"),
+            data={
+                "id": "C",
+                "status": "specified",
+                "maturity": 0.1,
+                "depends_on": [],
+            },
+        ),
+        spec_node(
+            path=Path("/tmp/4.yaml"),
+            data={"id": "D", "status": "idea", "maturity": 0.0, "depends_on": []},
+        ),
     ]
 
     selected = supervisor_module.pick_next_spec_gap(nodes)
@@ -93,11 +120,15 @@ def test_main_golden_path_updates_node_and_writes_run_log(
     repo_fixture: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setattr(supervisor_module, "git_changed_files", lambda: ["specs/nodes/SG-SPEC-0001.yaml"])
+    monkeypatch.setattr(
+        supervisor_module, "git_changed_files", lambda: ["specs/nodes/SG-SPEC-0001.yaml"]
+    )
     monkeypatch.setattr(
         supervisor_module,
         "run_codex",
-        lambda _node: subprocess.CompletedProcess(args=["codex"], returncode=0, stdout="ok", stderr=""),
+        lambda _node: subprocess.CompletedProcess(
+            args=["codex"], returncode=0, stdout="ok", stderr=""
+        ),
     )
 
     exit_code = supervisor_module.main()
@@ -216,7 +247,9 @@ def test_main_reloads_node_after_codex_run_before_saving_metadata(
     repo_fixture: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setattr(supervisor_module, "git_changed_files", lambda: ["specs/nodes/SG-SPEC-0001.yaml"])
+    monkeypatch.setattr(
+        supervisor_module, "git_changed_files", lambda: ["specs/nodes/SG-SPEC-0001.yaml"]
+    )
 
     def fake_run_codex(_node: object) -> subprocess.CompletedProcess[str]:
         node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
@@ -240,7 +273,9 @@ def test_main_records_reload_failure_as_validation_error(
     repo_fixture: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setattr(supervisor_module, "git_changed_files", lambda: ["specs/nodes/SG-SPEC-0001.yaml"])
+    monkeypatch.setattr(
+        supervisor_module, "git_changed_files", lambda: ["specs/nodes/SG-SPEC-0001.yaml"]
+    )
 
     def fake_run_codex(_node: object) -> subprocess.CompletedProcess[str]:
         node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
