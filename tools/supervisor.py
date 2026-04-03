@@ -275,8 +275,7 @@ def main() -> int:
     changed = sorted(
         path
         for path in tracked_paths
-        if path in (after_set - before_set)
-        or before_digests.get(path) != after_digests.get(path)
+        if path in (after_set - before_set) or before_digests.get(path) != after_digests.get(path)
     )
 
     validation_errors: list[str] = []

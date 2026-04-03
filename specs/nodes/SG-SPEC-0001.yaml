@@ -1,12 +1,14 @@
 id: SG-SPEC-0001
 title: Supervisor Spec Loop
 kind: spec
-status: outlined
-maturity: 0.2
+status: specified
+maturity: 0.6
 depends_on: []
 relates_to: []
 inputs:
   - AGENTS.md
+  - pyproject.toml
+  - .github/workflows/*.yml
 outputs:
   - specs/nodes/SG-SPEC-0001.yaml
 allowed_paths:
@@ -15,6 +17,56 @@ acceptance:
   - "Describes spec-gap selection rule"
   - "Constrains refinement to spec artifacts"
   - "Defines validation and status progression"
+  - "Selects a Python linter and formatter with rationale (Ruff for linting + formatting)"
+  - "Defines local developer commands for lint and format checks"
+  - "Defines pull-request CI trigger and required quality jobs"
+  - "Defines non-blocking rollout guidance for legacy violations"
 prompt: |
   Raise this spec from outlined to specified.
   Keep the node implementation-agnostic and stable in terminology.
+
+specification:
+  objective: >
+    Standardize Python code quality checks by adopting one widely used linter and
+    formatter and enforcing them on pull requests via CI.
+  scope:
+    in:
+      - "Tooling selection criteria and recommended defaults"
+      - "Developer workflow commands"
+      - "CI quality gate behavior on pull requests"
+    out:
+      - "Refactoring application/runtime behavior"
+      - "Changing public package API"
+  terminology:
+    linter: "Static analysis that reports style, correctness, and maintainability issues."
+    formatter: "Deterministic code layout tool that rewrites files to canonical style."
+    quality_gate: "CI checks that must pass before a pull request is merged."
+  decisions:
+    - id: D1
+      statement: "Use Ruff as the default Python linter."
+      rationale: "Popular in Python ecosystem, fast execution, broad rule coverage."
+    - id: D2
+      statement: "Use Ruff formatter as the default Python formatter."
+      rationale: "Single-tool setup minimizes configuration drift and CI complexity."
+    - id: D3
+      statement: "Run lint and format checks on every pull request."
+      rationale: "Ensures quality_gate consistency before merge."
+  workflow:
+    local:
+      - "Lint: ruff check ."
+      - "Format check: ruff format --check ."
+      - "Auto-fix (optional): ruff check --fix . && ruff format ."
+    ci:
+      trigger:
+        - "pull_request"
+      jobs:
+        - "python-quality"
+      required_steps:
+        - "Install project + dev tooling"
+        - "Run Ruff lint"
+        - "Run Ruff format check"
+  rollout:
+    strategy: "If repository has existing violations, allow incremental adoption via scoped ignores with expiry notes."
+    constraints:
+      - "Do not disable entire lint categories without explicit rationale."
+      - "Prefer targeted suppressions over global ignores."

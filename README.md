@@ -1,5 +1,8 @@
 # SpecGraph
 
+[![Coverage](https://img.shields.io/badge/coverage-pytest--cov-2ea44f)](https://pytest-cov.readthedocs.io/)
+[![Ruff](https://img.shields.io/badge/lint-ruff-46aef7?logo=ruff&logoColor=white)](https://docs.astral.sh/ruff/)
+
 **SpecGraph is the executable product ontology for Intent-Driven Development.**
 
 It turns product intent into a structured, governed, and execution-ready graph that is:
