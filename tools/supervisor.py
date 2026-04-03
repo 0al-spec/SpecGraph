@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import datetime as dt
+import hashlib
 import json
 import subprocess
 import sys
@@ -76,6 +77,11 @@ class SpecNode:
         with self.path.open("w", encoding="utf-8") as file:
             yaml_module.safe_dump(self.data, file, sort_keys=False, allow_unicode=True)
 
+    def reload(self) -> None:
+        yaml_module = get_yaml_module()
+        with self.path.open("r", encoding="utf-8") as file:
+            self.data = yaml_module.safe_load(file) or {}
+
 
 def load_specs() -> list[SpecNode]:
     yaml_module = get_yaml_module()
@@ -129,6 +135,18 @@ def git_changed_files() -> list[str]:
         if len(line) >= 4:
             changed.append(line[3:].strip())
     return changed
+
+
+def snapshot_file_digests(paths: list[str]) -> dict[str, str | None]:
+    digests: dict[str, str | None] = {}
+    for rel_path in paths:
+        file_path = ROOT / rel_path
+        if not file_path.exists() or not file_path.is_file():
+            digests[rel_path] = None
+            continue
+        digest = hashlib.sha256(file_path.read_bytes()).hexdigest()
+        digests[rel_path] = digest
+    return digests
 
 
 def build_prompt(node: SpecNode) -> str:
@@ -246,13 +264,18 @@ def main() -> int:
     print(f"Selected spec node: {node.id} — {node.title}")
 
     before = git_changed_files()
+    tracked_paths = sorted(set(before))
+    before_digests = snapshot_file_digests(tracked_paths)
     result = run_codex(node)
     after = git_changed_files()
-    changed = sorted(set(after) - set(before))
+    tracked_paths = sorted(set(before) | set(after))
+    after_digests = snapshot_file_digests(tracked_paths)
+    changed = sorted(path for path in tracked_paths if before_digests.get(path) != after_digests.get(path))
 
     validation_errors: list[str] = []
     validation_errors.extend(validate_outputs(node))
     validation_errors.extend(validate_allowed_paths(node, changed))
+    node.reload()
     validation_errors.extend(validate_status(node))
 
     success = result.returncode == 0 and not validation_errors

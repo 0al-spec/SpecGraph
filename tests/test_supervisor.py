@@ -127,10 +127,15 @@ def test_main_fails_when_changed_file_outside_allowed_paths(
         return changed_snapshots.pop(0)
 
     monkeypatch.setattr(supervisor_module, "git_changed_files", fake_git_changed_files)
+
+    def fake_run_codex(_node: object) -> subprocess.CompletedProcess[str]:
+        (repo_fixture / "README.md").write_text("created by codex\n", encoding="utf-8")
+        return subprocess.CompletedProcess(args=["codex"], returncode=0, stdout="ok", stderr="")
+
     monkeypatch.setattr(
         supervisor_module,
         "run_codex",
-        lambda _node: subprocess.CompletedProcess(args=["codex"], returncode=0, stdout="ok", stderr=""),
+        fake_run_codex,
     )
 
     exit_code = supervisor_module.main()
@@ -140,3 +145,61 @@ def test_main_fails_when_changed_file_outside_allowed_paths(
     updated = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
     assert "last_errors" in updated
     assert any("outside allowed_paths" in err for err in updated["last_errors"])
+
+
+def test_main_detects_out_of_scope_change_when_file_already_dirty(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    readme_path = repo_fixture / "README.md"
+    readme_path.write_text("dirty before run\n", encoding="utf-8")
+    changed_snapshots = [["README.md"], ["README.md"]]
+
+    def fake_git_changed_files() -> list[str]:
+        return changed_snapshots.pop(0)
+
+    monkeypatch.setattr(supervisor_module, "git_changed_files", fake_git_changed_files)
+
+    def fake_run_codex(_node: object) -> subprocess.CompletedProcess[str]:
+        readme_path.write_text("dirty after run\n", encoding="utf-8")
+        return subprocess.CompletedProcess(args=["codex"], returncode=0, stdout="ok", stderr="")
+
+    monkeypatch.setattr(
+        supervisor_module,
+        "run_codex",
+        fake_run_codex,
+    )
+
+    exit_code = supervisor_module.main()
+    assert exit_code == 1
+
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    updated = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    assert "last_errors" in updated
+    assert any("outside allowed_paths" in err for err in updated["last_errors"])
+    assert updated["last_changed_files"] == ["README.md"]
+
+
+def test_main_reloads_node_after_codex_run_before_saving_metadata(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(supervisor_module, "git_changed_files", lambda: ["specs/nodes/SG-SPEC-0001.yaml"])
+
+    def fake_run_codex(_node: object) -> subprocess.CompletedProcess[str]:
+        node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+        data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+        data["prompt"] = "Updated by Codex"
+        node_path.write_text(json.dumps(data), encoding="utf-8")
+        return subprocess.CompletedProcess(args=["codex"], returncode=0, stdout="ok", stderr="")
+
+    monkeypatch.setattr(supervisor_module, "run_codex", fake_run_codex)
+
+    exit_code = supervisor_module.main()
+    assert exit_code == 0
+
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    updated = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    assert updated["prompt"] == "Updated by Codex"
