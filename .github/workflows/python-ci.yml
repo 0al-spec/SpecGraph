@@ -31,10 +31,12 @@ jobs:
         run: ruff format --check tools
 
       - name: Ruff lint (project-wide, non-blocking)
+        if: always()
         continue-on-error: true
         run: ruff check .
 
       - name: Ruff format check (project-wide, non-blocking)
+        if: always()
         continue-on-error: true
         run: ruff format --check .
 
