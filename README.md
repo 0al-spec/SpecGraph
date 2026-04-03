@@ -33,3 +33,11 @@ Intent is defined by:
 - traceability
 - bounded execution cost
 - human legibility
+## Python Scaffold
+
+This repository now includes a default Python project scaffold with:
+
+- a package in `src/specgraph`
+- a simple CLI entry point (`python -m specgraph`)
+- a smoke test in `tests/test_smoke.py`
+- packaging metadata in `pyproject.toml`
