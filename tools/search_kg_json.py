@@ -145,7 +145,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Search nested JSON files for idea/requirement snippets."
     )
-    parser.add_argument("query", help="Free text query, for example: 'success criteria limitations'")
+    parser.add_argument(
+        "query",
+        help="Free text query, for example: 'success criteria limitations'",
+    )
     parser.add_argument(
         "--json-dir",
         default="data",
