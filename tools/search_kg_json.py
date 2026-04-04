@@ -102,6 +102,8 @@ def find_matches(json_dir: Path, query: str, limit: int = 20) -> list[Match]:
     terms = [part.lower() for part in query.strip().split() if part]
     if not terms:
         raise ValueError("Query must contain at least one non-space character.")
+    if limit < 0:
+        raise ValueError("Limit must be a non-negative integer.")
 
     matches: list[Match] = []
     for file in sorted(json_dir.glob("*.json")):
@@ -109,7 +111,7 @@ def find_matches(json_dir: Path, query: str, limit: int = 20) -> list[Match]:
             continue
         try:
             payload = json.loads(file.read_text(encoding="utf-8"))
-        except json.JSONDecodeError:
+        except (json.JSONDecodeError, UnicodeDecodeError):
             continue
 
         for json_path, text in iter_text_nodes(payload):
@@ -180,6 +182,8 @@ def main() -> int:
 
     if not args.json_dir.exists() or not args.json_dir.is_dir():
         raise SystemExit(f"JSON folder not found: {args.json_dir}")
+    if args.limit < 0:
+        raise SystemExit("--limit must be a non-negative integer.")
 
     cache_file = args.cache_file or (args.json_dir / ".search_kg_cache.json")
     matches, cache_hit = find_matches_with_cache(
