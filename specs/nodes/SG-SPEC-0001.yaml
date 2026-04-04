@@ -1,5 +1,5 @@
 id: SG-SPEC-0001
-title: Supervisor Spec Loop
+title: Conversation Knowledge Graph MVP Access
 kind: spec
 status: specified
 maturity: 0.6
@@ -7,66 +7,98 @@ depends_on: []
 relates_to: []
 inputs:
   - AGENTS.md
-  - pyproject.toml
-  - .github/workflows/*.yml
+  - data/conversations/*.json
+  - docs/domain-terms.md
 outputs:
   - specs/nodes/SG-SPEC-0001.yaml
 allowed_paths:
   - specs/nodes/SG-SPEC-0001.yaml
 acceptance:
-  - "Describes spec-gap selection rule"
-  - "Constrains refinement to spec artifacts"
-  - "Defines validation and status progression"
-  - "Selects a Python linter and formatter with rationale (Ruff for linting + formatting)"
-  - "Defines local developer commands for lint and format checks"
-  - "Defines pull-request CI trigger and required quality jobs"
-  - "Defines non-blocking rollout guidance for legacy violations"
+  - "Defines MVP objective as raw knowledge-graph access over conversation JSON corpus"
+  - "Defines minimum ingestion contract for 30-40 tree-structured JSON files"
+  - "Defines canonical extraction schema for idea, requirement, intent, limitation, goal, and success criteria"
+  - "Defines retrieval contract that works without GraphRAG-specific dependencies"
+  - "Defines traceability from extracted nodes back to source conversation segments"
+  - "Defines phased upgrade path from MVP retrieval to GraphRAG-enhanced retrieval"
+  - "Defines measurable acceptance metrics for extraction and retrieval quality"
 prompt: |
-  Raise this spec from outlined to specified.
-  Keep the node implementation-agnostic and stable in terminology.
+  Define the simplest implementation-agnostic MVP for accessing and extracting
+  structured product knowledge from a large corpus of conversation JSON files.
+  Keep terminology stable and include a future-compatible GraphRAG migration path.
 
 specification:
   objective: >
-    Standardize Python code quality checks by adopting one widely used linter and
-    formatter and enforcing them on pull requests via CI.
+    Provide a minimal, reliable access layer that ingests conversation JSON trees
+    and exposes traceable structured knowledge (idea, requirement, intent,
+    limitation, goal, success criterion) for downstream product planning.
   scope:
     in:
-      - "Tooling selection criteria and recommended defaults"
-      - "Developer workflow commands"
-      - "CI quality gate behavior on pull requests"
+      - "Conversation JSON normalization and indexing"
+      - "Schema-based extraction of product-relevant knowledge"
+      - "Search and retrieval API/contract for agent consumption"
+      - "Source traceability and confidence metadata"
+      - "Migration envelope for future GraphRAG adoption"
     out:
-      - "Refactoring application/runtime behavior"
-      - "Changing public package API"
+      - "Model training or fine-tuning workflows"
+      - "Advanced graph embeddings as MVP requirement"
+      - "Autonomous implementation/planning execution"
   terminology:
-    linter: "Static analysis that reports style, correctness, and maintainability issues."
-    formatter: "Deterministic code layout tool that rewrites files to canonical style."
-    quality_gate: "CI checks that must pass before a pull request is merged."
+    conversation_document: "One source JSON file containing tree-structured discussion content."
+    segment: "Atomic retrievable unit (message, node, or paragraph) with stable source coordinates."
+    knowledge_item: "Extracted structured item representing idea, requirement, intent, limitation, goal, or success criterion."
+    source_trace: "Pointer linking a knowledge_item to exact originating segment(s)."
+    retrieval_contract: "Stable query/response interface used by agents to access corpus and extracted knowledge."
+    graph_envelope: "Optional relation model that remains compatible with future GraphRAG expansion."
   decisions:
     - id: D1
-      statement: "Use Ruff as the default Python linter."
-      rationale: "Popular in Python ecosystem, fast execution, broad rule coverage."
+      statement: "MVP retrieval must prioritize deterministic lexical/hybrid search over embedding-only retrieval."
+      rationale: "Fastest path to dependable access with minimal infrastructure and debugging complexity."
     - id: D2
-      statement: "Use Ruff formatter as the default Python formatter."
-      rationale: "Single-tool setup minimizes configuration drift and CI complexity."
+      statement: "Extraction output must conform to one canonical schema for all knowledge item types."
+      rationale: "Uniform structure reduces downstream prompt complexity and enables auditability."
     - id: D3
-      statement: "Run lint and format checks on every pull request."
-      rationale: "Ensures quality_gate consistency before merge."
-  workflow:
-    local:
-      - "Lint: ruff check ."
-      - "Format check: ruff format --check ."
-      - "Auto-fix (optional): ruff check --fix . && ruff format ."
-    ci:
-      trigger:
-        - "pull_request"
-      jobs:
-        - "python-quality"
-      required_steps:
-        - "Install project + dev tooling"
-        - "Run Ruff lint"
-        - "Run Ruff format check"
+      statement: "Every knowledge item must include source_trace and confidence metadata."
+      rationale: "Supports human verification and safe agent use in planning decisions."
+    - id: D4
+      statement: "MVP stores graph-like relations as explicit typed links without requiring full graph database adoption."
+      rationale: "Enables immediate use while keeping a low-friction path to GraphRAG later."
+  data_contract:
+    ingestion_minimum:
+      - "Accept 30-40 JSON conversation_document inputs without manual per-file mapping."
+      - "Preserve original document identifiers and tree hierarchy references."
+      - "Normalize timestamps/author labels when present; preserve unknowns as null/unknown."
+    extraction_schema:
+      fields:
+        - "item_id (stable within corpus snapshot)"
+        - "item_type (idea|requirement|intent|limitation|goal|success_criterion)"
+        - "summary (concise normalized statement)"
+        - "details (optional expanded context)"
+        - "source_trace (document_id + segment_path/range)"
+        - "confidence (low|medium|high or numeric equivalent)"
+        - "relations (optional typed links: supports, conflicts_with, depends_on, refines)"
+  retrieval_contract:
+    queries:
+      - "keyword/topic search over segments and knowledge_items"
+      - "filter by item_type"
+      - "filter by confidence threshold"
+      - "retrieve related items through typed relations"
+    responses:
+      guarantees:
+        - "Top-k results include source_trace for each result."
+        - "Result payload is stable across identical corpus snapshot."
+        - "No hidden rewriting of original text; normalization is additive."
+  validation:
+    quality_metrics:
+      - "Extraction coverage: >=80% of conversation_document files yield at least one knowledge_item."
+      - "Traceability completeness: 100% of returned knowledge_items include valid source_trace."
+      - "Precision@10 (human spot-check): >=0.7 for idea/requirement retrieval queries."
+      - "Schema validity: 100% of stored knowledge_items satisfy extraction_schema."
+    review_protocol:
+      - "Run sample query set focused on idea, requirement, intent, limitation, goal, success criterion."
+      - "Manually verify source_trace correctness on random 10% sample."
   rollout:
-    strategy: "If repository has existing violations, allow incremental adoption via scoped ignores with expiry notes."
+    strategy: "Ship MVP with deterministic retrieval first, then add GraphRAG enhancements behind compatibility-preserving extension points."
     constraints:
-      - "Do not disable entire lint categories without explicit rationale."
-      - "Prefer targeted suppressions over global ignores."
+      - "Do not change retrieval_contract field names during MVP phase."
+      - "Do not remove source_trace requirements in any phase."
+      - "GraphRAG additions must be optional and non-breaking for existing deterministic queries."
