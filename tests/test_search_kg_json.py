@@ -121,6 +121,37 @@ def test_find_matches_can_filter_by_kind(tmp_path: Path) -> None:
     assert all(match.kind == "acceptance" for match in matches)
 
 
+def test_find_matches_keeps_non_bullet_requirement_lines(tmp_path: Path) -> None:
+    text = "\n".join(
+        [
+            "Do not implement runtime code",
+            "Do not edit unrelated files",
+            "Must preserve stable spec IDs",
+            "Should keep terminology consistent",
+            "Avoid broad refactors in this task",
+            "Do not trust stale worktree paths",
+            "Need to validate acceptance evidence",
+            "Do not skip dependency checks",
+            "Should report blockers clearly",
+            "Do not hide failed validations",
+            "Need to keep outputs deterministic",
+            "Should keep changes focused",
+        ]
+    )
+    assert len(text) > 240
+
+    (tmp_path / "notes.json").write_text(json.dumps({"notes": text}), encoding="utf-8")
+
+    matches = search_kg_json.find_matches(
+        json_dir=tmp_path,
+        query="runtime code deterministic",
+        limit=10,
+    )
+
+    assert matches
+    assert any("runtime code" in match.text.lower() for match in matches)
+
+
 def test_find_matches_with_cache_request_response_pair(tmp_path: Path) -> None:
     (tmp_path / "ideas.json").write_text(
         json.dumps({"notes": "Success criteria: response cache must be fast"}), encoding="utf-8"

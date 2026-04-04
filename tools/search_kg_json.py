@@ -37,6 +37,7 @@ class RequirementCandidate:
 _BULLET_PREFIX_RE = re.compile(r"^\s*(?:[-*•–—]|\d+[.)])\s+")
 _QUERY_SPLIT_RE = re.compile(r"\s+")
 _SENTENCE_SPLIT_RE = re.compile(r"(?<=[.!?])\s+")
+_HEADING_WORD_CLEAN_RE = re.compile(r"^[\W_]+|[\W_]+$")
 
 
 _KIND_KEYWORDS: dict[str, tuple[str, ...]] = {
@@ -125,6 +126,25 @@ _PATH_KIND_HINTS = {
 }
 
 
+_HEADING_DISQUALIFY_MARKERS = (
+    "must",
+    "should",
+    "do not",
+    "don't",
+    "cannot",
+    "can't",
+    "avoid",
+    "required",
+    "need to",
+    "needs to",
+    "нужно",
+    "долж",
+    "нельзя",
+    "не должен",
+    "не нужно",
+)
+
+
 def iter_text_nodes(node: Any, path: str = "$"):
     """Yield (json_path, text) for every string value in a nested JSON object."""
     if isinstance(node, str):
@@ -178,6 +198,14 @@ def infer_kind_from_text(text: str, path: str, heading: str | None = None) -> st
     return "unknown"
 
 
+def looks_like_heading_word(word: str) -> bool:
+    cleaned = _HEADING_WORD_CLEAN_RE.sub("", word)
+    if not cleaned:
+        return False
+    first = cleaned[0]
+    return first.isupper() or first.isdigit()
+
+
 def is_heading_line(text: str, was_bullet: bool) -> bool:
     if was_bullet:
         return False
@@ -190,8 +218,16 @@ def is_heading_line(text: str, was_bullet: bool) -> bool:
     if any(punct in stripped for punct in ".!?"):
         return False
 
+    lowered = stripped.lower()
+    if any(marker in lowered for marker in _HEADING_DISQUALIFY_MARKERS):
+        return False
+
     words = stripped.split()
-    return 1 <= len(words) <= 6 and len(stripped) <= 60
+    if not (1 <= len(words) <= 6 and len(stripped) <= 60):
+        return False
+
+    heading_like_words = sum(1 for word in words if looks_like_heading_word(word))
+    return heading_like_words >= max(1, len(words) - 1)
 
 
 def line_requirement_signal(text: str, kind: str, was_bullet: bool) -> int:
@@ -258,9 +294,7 @@ def extract_requirements_from_text(text: str, path: str) -> list[RequirementCand
         if signal < 3:
             continue
 
-        sentence_candidates.append(
-            RequirementCandidate(path=path, text=sentence_text, kind=kind)
-        )
+        sentence_candidates.append(RequirementCandidate(path=path, text=sentence_text, kind=kind))
 
     if sentence_candidates:
         return sentence_candidates
