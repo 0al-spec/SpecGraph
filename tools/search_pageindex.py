@@ -22,6 +22,7 @@ Example:
     python3 tools/search_pageindex.py "success criteria for SpecGraph"
     python3 tools/search_pageindex.py "agent operating system constraints" --top-k 5 --context
 """
+
 from __future__ import annotations
 
 import argparse
@@ -32,8 +33,7 @@ import urllib.request
 from pathlib import Path
 
 _DEFAULT_CATALOG = (
-    Path.home()
-    / "Development/GitHub/PageIndexInstance/results/chatgpt_dialogs/catalog.json"
+    Path.home() / "Development/GitHub/PageIndexInstance/results/chatgpt_dialogs/catalog.json"
 )
 _DEFAULT_API_URL = "http://localhost:8765"
 
