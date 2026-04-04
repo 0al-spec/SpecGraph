@@ -2,14 +2,13 @@
 from __future__ import annotations
 
 import datetime as dt
-import fnmatch
 import hashlib
 import json
 import subprocess
 import sys
 from collections.abc import Callable
 from dataclasses import dataclass
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from types import ModuleType
 from typing import Any
 
@@ -24,7 +23,7 @@ RUNS_DIR = ROOT / "runs"
 AGENTS_FILE = ROOT / "AGENTS.md"
 
 READY_DEP_STATUSES = {"reviewed", "frozen"}
-WORKABLE_STATUSES = {"outlined", "specified"}
+WORKABLE_STATUSES = {"outlined", "specified", "linked"}
 VALID_STATUSES = {"idea", "stub", "outlined", "specified", "linked", "reviewed", "frozen"}
 
 STATUS_PROGRESSION: dict[str, str] = {
@@ -255,7 +254,8 @@ def validate_allowed_paths(node: SpecNode, changed_files: list[str]) -> list[str
 
     errors: list[str] = []
     for changed in changed_files:
-        if not any(fnmatch.fnmatch(changed, pattern) for pattern in node.allowed_paths):
+        changed_path = PurePosixPath(changed)
+        if not any(changed_path.match(pattern) for pattern in node.allowed_paths):
             errors.append(f"Changed file outside allowed_paths: {changed}")
     return errors
 
