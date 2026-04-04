@@ -20,6 +20,7 @@ Coverage goals
 * The worktree directory persists after ``main()`` returns (accumulation
   by design — cleanup is tracked as task #1 in tasks.md).
 """
+
 from __future__ import annotations
 
 import json
@@ -114,6 +115,7 @@ def _patch_supervisor(
 # create_isolated_worktree — real git worktree add
 # ---------------------------------------------------------------------------
 
+
 class TestCreateIsolatedWorktree:
     """Verify that create_isolated_worktree() actually calls git worktree add."""
 
@@ -201,9 +203,7 @@ class TestCreateIsolatedWorktree:
 
         worktree_path, branch = supervisor_module.create_isolated_worktree(_SPEC_ID)
         try:
-            assert branch.startswith("codex/sg-spec-0001/"), (
-                f"unexpected branch name: {branch}"
-            )
+            assert branch.startswith("codex/sg-spec-0001/"), f"unexpected branch name: {branch}"
         finally:
             _remove_worktree(git_repo, worktree_path, branch)
 
@@ -271,19 +271,16 @@ class TestCreateIsolatedWorktree:
 # git_changed_files — real git status
 # ---------------------------------------------------------------------------
 
+
 class TestGitChangedFiles:
     """Verify git_changed_files() reads real git-status output."""
 
-    def test_empty_on_clean_repository(
-        self, git_repo: Path, supervisor_module: object
-    ) -> None:
+    def test_empty_on_clean_repository(self, git_repo: Path, supervisor_module: object) -> None:
         """Clean repo → empty list."""
         result = supervisor_module.git_changed_files(cwd=git_repo)
         assert result == []
 
-    def test_detects_untracked_file(
-        self, git_repo: Path, supervisor_module: object
-    ) -> None:
+    def test_detects_untracked_file(self, git_repo: Path, supervisor_module: object) -> None:
         """New untracked file appears in output."""
         (git_repo / "untracked.txt").write_text("hello", encoding="utf-8")
         result = supervisor_module.git_changed_files(cwd=git_repo)
@@ -291,9 +288,7 @@ class TestGitChangedFiles:
             f"expected 'untracked.txt' in changed files: {result}"
         )
 
-    def test_detects_modified_tracked_file(
-        self, git_repo: Path, supervisor_module: object
-    ) -> None:
+    def test_detects_modified_tracked_file(self, git_repo: Path, supervisor_module: object) -> None:
         """Modification to a committed file is reported."""
         readme = git_repo / "README.md"
         readme.write_text("# modified\n", encoding="utf-8")
@@ -302,9 +297,7 @@ class TestGitChangedFiles:
             f"expected 'README.md' in changed files: {result}"
         )
 
-    def test_detects_staged_file(
-        self, git_repo: Path, supervisor_module: object
-    ) -> None:
+    def test_detects_staged_file(self, git_repo: Path, supervisor_module: object) -> None:
         """Staged (indexed) file appears in output."""
         new_file = git_repo / "staged.txt"
         new_file.write_text("staged", encoding="utf-8")
@@ -314,9 +307,7 @@ class TestGitChangedFiles:
             f"expected 'staged.txt' in changed files: {result}"
         )
 
-    def test_clean_after_commit(
-        self, git_repo: Path, supervisor_module: object
-    ) -> None:
+    def test_clean_after_commit(self, git_repo: Path, supervisor_module: object) -> None:
         """After committing all changes the list is empty again."""
         (git_repo / "to_commit.txt").write_text("data", encoding="utf-8")
         _git(["git", "add", "to_commit.txt"], cwd=git_repo)
@@ -328,6 +319,7 @@ class TestGitChangedFiles:
 # ---------------------------------------------------------------------------
 # main() end-to-end with real worktree
 # ---------------------------------------------------------------------------
+
 
 class TestMainWithRealWorktree:
     """main() must create a real git worktree even when the executor is faked."""
@@ -456,9 +448,7 @@ class TestMainWithRealWorktree:
         specs = supervisor_module.load_specs()
         node = next(s for s in specs if s.id == _SPEC_ID)
         wt_path = Path(node.data.get("last_worktree_path", ""))
-        assert wt_path.is_dir(), (
-            f"last_worktree_path {wt_path} must be an existing directory"
-        )
+        assert wt_path.is_dir(), f"last_worktree_path {wt_path} must be an existing directory"
 
         # Cleanup
         branch = node.data.get("last_branch", "")
@@ -468,6 +458,7 @@ class TestMainWithRealWorktree:
 # ---------------------------------------------------------------------------
 # Worktree cleanup (manual git worktree remove)
 # ---------------------------------------------------------------------------
+
 
 class TestWorktreeCleanup:
     """Verify that worktrees created by the supervisor can be cleanly removed."""
@@ -495,9 +486,7 @@ class TestWorktreeCleanup:
         assert str(worktree_path.resolve()) not in [str(Path(p).resolve()) for p in listed], (
             "removed worktree must not appear in git worktree list"
         )
-        assert branch not in _local_branches(git_repo), (
-            f"branch {branch!r} must be deleted"
-        )
+        assert branch not in _local_branches(git_repo), f"branch {branch!r} must be deleted"
 
     def test_removing_one_worktree_leaves_others_intact(
         self,
