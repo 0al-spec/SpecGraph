@@ -95,7 +95,9 @@ def _commit_spec(repo: Path) -> Path:
     return spec_file
 
 
-def _patch_supervisor(monkeypatch: pytest.MonkeyPatch, module: object, repo: Path) -> dict[str, Path]:
+def _patch_supervisor(
+    monkeypatch: pytest.MonkeyPatch, module: object, repo: Path
+) -> dict[str, Path]:
     """Redirect all module-level path constants to *repo*."""
     specs_dir = repo / "specs" / "nodes"
     runs_dir = repo / "runs"
