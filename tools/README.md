@@ -45,3 +45,17 @@ python tools/search_kg_json.py "acceptance evidence" --json-dir /path/to/jsons -
 
 The tool also stores a request-response cache at `<json-dir>/.search_kg_cache.json` by default for fast repeated queries.
 Use `--cache-file` to override location or `--no-cache` to disable it.
+
+## PageIndex Conversation Search
+
+Use `tools/search_pageindex.py` to search indexed ChatGPT conversations through the local PageIndex API.
+It is the companion search tool for the PageIndex manual in `tools/docs/PAGEINDEX_SEARCH_MANUAL.md`.
+
+Example:
+
+```bash
+python3 tools/search_pageindex.py "agent orchestration" --top-k 10 --context
+```
+
+The script expects the PageIndex API to be running on `http://localhost:8765` and uses the
+`~/Development/GitHub/PageIndexInstance/results/chatgpt_dialogs/catalog.json` catalog by default.
