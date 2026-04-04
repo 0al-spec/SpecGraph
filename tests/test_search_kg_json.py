@@ -43,6 +43,7 @@ def test_find_matches_scores_and_limits(tmp_path: Path) -> None:
     assert len(matches) == 1
     assert matches[0].file.name in {"a.json", "b.json"}
     assert matches[0].score >= 1
+    assert matches[0].kind in {"goal", "acceptance", "constraint"}
 
 
 def test_find_matches_skips_non_utf8_json_file(tmp_path: Path) -> None:
@@ -68,22 +69,105 @@ def test_find_matches_rejects_negative_limit(tmp_path: Path) -> None:
         raise AssertionError("Expected ValueError for negative limit")
 
 
+def test_extract_requirements_from_text_detects_structured_sections() -> None:
+    text = """
+    Primary Goal
+    - Keep stable terminology
+
+    Constraints
+    - Do not implement runtime code
+
+    Success Criteria
+    - Acceptance evidence aligns 1:1
+    """
+
+    extracted = search_kg_json.extract_requirements_from_text(
+        text=text,
+        path="$.messages[0].content",
+    )
+
+    assert len(extracted) >= 3
+    kinds = {item.kind for item in extracted}
+    assert "goal" in kinds
+    assert "constraint" in kinds
+    assert "acceptance" in kinds
+
+
+def test_find_matches_can_filter_by_kind(tmp_path: Path) -> None:
+    (tmp_path / "a.json").write_text(
+        json.dumps(
+            {
+                "msg": "\n".join(
+                    [
+                        "Success Criteria",
+                        "- Acceptance evidence aligns",
+                        "Risks",
+                        "- Data inconsistency risk",
+                    ]
+                )
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    matches = search_kg_json.find_matches(
+        json_dir=tmp_path,
+        query="acceptance risk",
+        limit=10,
+        kind="acceptance",
+    )
+
+    assert matches
+    assert all(match.kind == "acceptance" for match in matches)
+
+
+def test_find_matches_keeps_non_bullet_requirement_lines(tmp_path: Path) -> None:
+    text = "\n".join(
+        [
+            "Do not implement runtime code",
+            "Do not edit unrelated files",
+            "Must preserve stable spec IDs",
+            "Should keep terminology consistent",
+            "Avoid broad refactors in this task",
+            "Do not trust stale worktree paths",
+            "Need to validate acceptance evidence",
+            "Do not skip dependency checks",
+            "Should report blockers clearly",
+            "Do not hide failed validations",
+            "Need to keep outputs deterministic",
+            "Should keep changes focused",
+        ]
+    )
+    assert len(text) > 240
+
+    (tmp_path / "notes.json").write_text(json.dumps({"notes": text}), encoding="utf-8")
+
+    matches = search_kg_json.find_matches(
+        json_dir=tmp_path,
+        query="runtime code deterministic",
+        limit=10,
+    )
+
+    assert matches
+    assert any("runtime code" in match.text.lower() for match in matches)
+
+
 def test_find_matches_with_cache_request_response_pair(tmp_path: Path) -> None:
     (tmp_path / "ideas.json").write_text(
-        json.dumps({"notes": "Agent memory needs fast response cache"}), encoding="utf-8"
+        json.dumps({"notes": "Success criteria: response cache must be fast"}), encoding="utf-8"
     )
     cache_file = tmp_path / ".search_kg_cache.json"
 
     first_matches, first_cache_hit = search_kg_json.find_matches_with_cache(
         json_dir=tmp_path,
-        query="memory response",
+        query="response cache",
         limit=5,
         cache_file=cache_file,
         use_cache=True,
     )
     second_matches, second_cache_hit = search_kg_json.find_matches_with_cache(
         json_dir=tmp_path,
-        query="memory response",
+        query="response cache",
         limit=5,
         cache_file=cache_file,
         use_cache=True,
@@ -93,3 +177,4 @@ def test_find_matches_with_cache_request_response_pair(tmp_path: Path) -> None:
     assert second_cache_hit is True
     assert cache_file.exists()
     assert [m.text for m in second_matches] == [m.text for m in first_matches]
+    assert [m.kind for m in second_matches] == [m.kind for m in first_matches]

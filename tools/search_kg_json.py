@@ -4,7 +4,7 @@
 MVP goals:
 - Work on raw folders with many JSON files.
 - Traverse arbitrary tree-shaped JSON payloads.
-- Rank matching text snippets for simple keyword queries.
+- Extract structured requirement statements from free-form dialogue/spec text.
 - Cache request-response pairs for faster repeated lookups.
 """
 
@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
@@ -23,6 +24,125 @@ class Match:
     path: str
     text: str
     score: int
+    kind: str = "unknown"
+
+
+@dataclass(frozen=True)
+class RequirementCandidate:
+    path: str
+    text: str
+    kind: str
+
+
+_BULLET_PREFIX_RE = re.compile(r"^\s*(?:[-*•–—]|\d+[.)])\s+")
+_QUERY_SPLIT_RE = re.compile(r"\s+")
+_SENTENCE_SPLIT_RE = re.compile(r"(?<=[.!?])\s+")
+_HEADING_WORD_CLEAN_RE = re.compile(r"^[\W_]+|[\W_]+$")
+
+
+_KIND_KEYWORDS: dict[str, tuple[str, ...]] = {
+    "acceptance": (
+        "acceptance",
+        "acceptance criteria",
+        "success criteria",
+        "definition of done",
+        "критер",
+    ),
+    "constraint": (
+        "must",
+        "must not",
+        "should",
+        "should not",
+        "do not",
+        "cannot",
+        "can't",
+        "avoid",
+        "required",
+        "обяз",
+        "долж",
+        "нельзя",
+        "не нужно",
+        "не должен",
+    ),
+    "goal": (
+        "goal",
+        "purpose",
+        "objective",
+        "target",
+        "цель",
+        "задач",
+    ),
+    "risk": (
+        "risk",
+        "pitfall",
+        "danger",
+        "tradeoff",
+        "failure mode",
+        "риск",
+        "угроз",
+        "ошибк",
+    ),
+    "scope": (
+        "in scope",
+        "out of scope",
+        "scope",
+        "в рамках",
+        "вне scope",
+        "не входит",
+    ),
+    "assumption": (
+        "assumption",
+        "assume",
+        "предполож",
+        "допустим",
+    ),
+}
+
+
+_KIND_ALIASES = {
+    "constraints": "constraint",
+    "limitations": "constraint",
+    "criteria": "acceptance",
+    "success": "acceptance",
+    "goals": "goal",
+    "risks": "risk",
+}
+
+
+_PATH_KIND_HINTS = {
+    "acceptance": "acceptance",
+    "criteria": "acceptance",
+    "success": "acceptance",
+    "constraint": "constraint",
+    "limitation": "constraint",
+    "requirement": "constraint",
+    "goal": "goal",
+    "objective": "goal",
+    "purpose": "goal",
+    "risk": "risk",
+    "pitfall": "risk",
+    "scope": "scope",
+    "assumption": "assumption",
+}
+
+
+_HEADING_DISQUALIFY_MARKERS = (
+    "must",
+    "should",
+    "do not",
+    "don't",
+    "cannot",
+    "can't",
+    "avoid",
+    "required",
+    "need to",
+    "needs to",
+    "нужно",
+    "долж",
+    "нельзя",
+    "не должен",
+    "не нужно",
+)
 
 
 def iter_text_nodes(node: Any, path: str = "$"):
@@ -41,9 +161,166 @@ def iter_text_nodes(node: Any, path: str = "$"):
             yield from iter_text_nodes(value, f"{path}[{index}]")
 
 
-def score_text(text: str, terms: list[str]) -> int:
+def normalize_whitespace(text: str) -> str:
+    return " ".join(text.split())
+
+
+def parse_query_terms(query: str) -> list[str]:
+    return [part.lower() for part in _QUERY_SPLIT_RE.split(query.strip()) if part]
+
+
+def normalize_kind(raw: str | None) -> str | None:
+    if raw is None:
+        return None
+    lowered = raw.strip().lower()
+    if not lowered:
+        return None
+    return _KIND_ALIASES.get(lowered, lowered)
+
+
+def infer_kind_from_text(text: str, path: str, heading: str | None = None) -> str:
+    source = text.lower()
+    path_lower = path.lower()
+    heading_lower = (heading or "").lower()
+
+    for marker, kind in _PATH_KIND_HINTS.items():
+        if marker in path_lower:
+            return kind
+
+    for kind, markers in _KIND_KEYWORDS.items():
+        for marker in markers:
+            if marker in heading_lower:
+                return kind
+        for marker in markers:
+            if marker in source:
+                return kind
+
+    return "unknown"
+
+
+def looks_like_heading_word(word: str) -> bool:
+    cleaned = _HEADING_WORD_CLEAN_RE.sub("", word)
+    if not cleaned:
+        return False
+    first = cleaned[0]
+    return first.isupper() or first.isdigit()
+
+
+def is_heading_line(text: str, was_bullet: bool) -> bool:
+    if was_bullet:
+        return False
+
+    stripped = text.strip()
+    if not stripped:
+        return False
+    if stripped.endswith(":"):
+        return True
+    if any(punct in stripped for punct in ".!?"):
+        return False
+
+    lowered = stripped.lower()
+    if any(marker in lowered for marker in _HEADING_DISQUALIFY_MARKERS):
+        return False
+
+    words = stripped.split()
+    if not (1 <= len(words) <= 6 and len(stripped) <= 60):
+        return False
+
+    heading_like_words = sum(1 for word in words if looks_like_heading_word(word))
+    return heading_like_words >= max(1, len(words) - 1)
+
+
+def line_requirement_signal(text: str, kind: str, was_bullet: bool) -> int:
     lowered = text.lower()
-    return sum(lowered.count(term) for term in terms)
+    signal = 0
+    if was_bullet:
+        signal += 1
+    if kind != "unknown":
+        signal += 2
+    if any(token in lowered for token in ("must", "should", "долж", "нужно", "нельзя", "не ")):
+        signal += 2
+    if 6 <= len(text) <= 240:
+        signal += 1
+    return signal
+
+
+def extract_requirements_from_text(text: str, path: str) -> list[RequirementCandidate]:
+    candidates: list[RequirementCandidate] = []
+    current_heading: str | None = None
+
+    for raw_line in text.splitlines():
+        stripped = raw_line.strip()
+        if not stripped:
+            continue
+
+        bullet_match = _BULLET_PREFIX_RE.match(stripped)
+        was_bullet = bullet_match is not None
+        content = _BULLET_PREFIX_RE.sub("", stripped).strip()
+        if not content:
+            continue
+
+        if is_heading_line(content, was_bullet=was_bullet):
+            current_heading = content
+            continue
+
+        normalized = normalize_whitespace(content)
+        if not normalized:
+            continue
+
+        kind = infer_kind_from_text(normalized, path=path, heading=current_heading)
+        signal = line_requirement_signal(normalized, kind=kind, was_bullet=was_bullet)
+        if signal < 3:
+            continue
+
+        candidates.append(RequirementCandidate(path=path, text=normalized, kind=kind))
+
+    if candidates:
+        return candidates
+
+    normalized_text = normalize_whitespace(text)
+    if not normalized_text:
+        return []
+
+    sentence_candidates: list[RequirementCandidate] = []
+    for sentence in _SENTENCE_SPLIT_RE.split(normalized_text):
+        sentence_text = sentence.strip()
+        if not sentence_text:
+            continue
+        if len(sentence_text) > 240:
+            continue
+
+        kind = infer_kind_from_text(sentence_text, path=path)
+        signal = line_requirement_signal(sentence_text, kind=kind, was_bullet=False)
+        if signal < 3:
+            continue
+
+        sentence_candidates.append(RequirementCandidate(path=path, text=sentence_text, kind=kind))
+
+    if sentence_candidates:
+        return sentence_candidates
+
+    kind = infer_kind_from_text(normalized_text, path=path)
+    if kind == "unknown" or len(normalized_text) > 240:
+        return []
+
+    return [RequirementCandidate(path=path, text=normalized_text, kind=kind)]
+
+
+def iter_requirement_candidates(node: Any, path: str = "$"):
+    for json_path, text in iter_text_nodes(node, path=path):
+        yield from extract_requirements_from_text(text, path=json_path)
+
+
+def score_requirement(text: str, terms: list[str], kind: str) -> int:
+    if not terms:
+        return 1
+    lowered = text.lower()
+    kind_lower = kind.lower()
+    total = 0
+    for term in terms:
+        total += lowered.count(term)
+        total += kind_lower.count(term)
+    return total
 
 
 def dataset_fingerprint(json_dir: Path) -> str:
@@ -57,8 +334,9 @@ def dataset_fingerprint(json_dir: Path) -> str:
     return "|".join(parts)
 
 
-def make_cache_key(query: str, limit: int, fingerprint: str) -> str:
-    return f"q={query.strip().lower()}|limit={limit}|fp={fingerprint}"
+def make_cache_key(query: str, limit: int, fingerprint: str, kind: str | None) -> str:
+    kind_token = kind or "any"
+    return f"q={query.strip().lower()}|kind={kind_token}|limit={limit}|fp={fingerprint}"
 
 
 def load_cache(cache_file: Path) -> dict[str, Any]:
@@ -93,17 +371,29 @@ def deserialize_matches(items: list[dict[str, Any]]) -> list[Match]:
                 path=item["path"],
                 text=item["text"],
                 score=item["score"],
+                kind=item.get("kind", "unknown"),
             )
         )
     return matches
 
 
-def find_matches(json_dir: Path, query: str, limit: int = 20) -> list[Match]:
-    terms = [part.lower() for part in query.strip().split() if part]
-    if not terms:
-        raise ValueError("Query must contain at least one non-space character.")
+def find_matches(
+    json_dir: Path,
+    query: str,
+    limit: int = 20,
+    kind: str | None = None,
+) -> list[Match]:
+    terms = parse_query_terms(query)
+    normalized_kind = normalize_kind(kind)
+    if not terms and normalized_kind is None:
+        raise ValueError("Query must contain at least one non-space character or --kind.")
     if limit < 0:
         raise ValueError("Limit must be a non-negative integer.")
+
+    valid_kinds = set(_KIND_KEYWORDS) | {"unknown"}
+    if normalized_kind is not None and normalized_kind not in valid_kinds:
+        kinds = ", ".join(sorted(valid_kinds))
+        raise ValueError(f"Unknown kind '{normalized_kind}'. Expected one of: {kinds}")
 
     matches: list[Match] = []
     for file in sorted(json_dir.glob("*.json")):
@@ -114,30 +404,45 @@ def find_matches(json_dir: Path, query: str, limit: int = 20) -> list[Match]:
         except (json.JSONDecodeError, UnicodeDecodeError):
             continue
 
-        for json_path, text in iter_text_nodes(payload):
-            score = score_text(text, terms)
+        for candidate in iter_requirement_candidates(payload):
+            if normalized_kind is not None and candidate.kind != normalized_kind:
+                continue
+            score = score_requirement(candidate.text, terms=terms, kind=candidate.kind)
             if score > 0:
-                matches.append(Match(file=file, path=json_path, text=text.strip(), score=score))
+                matches.append(
+                    Match(
+                        file=file,
+                        path=candidate.path,
+                        text=candidate.text,
+                        score=score,
+                        kind=candidate.kind,
+                    )
+                )
 
     matches.sort(key=lambda item: (item.score, len(item.text)), reverse=True)
     return matches[:limit]
 
 
 def find_matches_with_cache(
-    json_dir: Path, query: str, limit: int, cache_file: Path, use_cache: bool
+    json_dir: Path,
+    query: str,
+    limit: int,
+    cache_file: Path,
+    use_cache: bool,
+    kind: str | None = None,
 ) -> tuple[list[Match], bool]:
     if not use_cache:
-        return find_matches(json_dir=json_dir, query=query, limit=limit), False
+        return find_matches(json_dir=json_dir, query=query, limit=limit, kind=kind), False
 
     cache = load_cache(cache_file)
     fingerprint = dataset_fingerprint(json_dir)
-    key = make_cache_key(query=query, limit=limit, fingerprint=fingerprint)
+    key = make_cache_key(query=query, limit=limit, fingerprint=fingerprint, kind=kind)
 
     entries = cache["entries"]
     if key in entries:
         return deserialize_matches(entries[key]), True
 
-    matches = find_matches(json_dir=json_dir, query=query, limit=limit)
+    matches = find_matches(json_dir=json_dir, query=query, limit=limit, kind=kind)
     entries[key] = serialize_matches(matches)
     save_cache(cache_file=cache_file, cache=cache)
     return matches, False
@@ -174,6 +479,14 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Disable cache reads/writes for this request",
     )
+    parser.add_argument(
+        "--kind",
+        default=None,
+        help=(
+            "Optional requirement kind filter. "
+            "Examples: goal, constraint, acceptance, risk, scope, assumption."
+        ),
+    )
     return parser
 
 
@@ -192,6 +505,7 @@ def main() -> int:
         limit=args.limit,
         cache_file=cache_file,
         use_cache=not args.no_cache,
+        kind=args.kind,
     )
 
     if cache_hit:
@@ -208,7 +522,7 @@ def main() -> int:
         if len(preview) > 180:
             preview = preview[:177] + "..."
         print(
-            f"{idx:02d}. score={match.score:<3} file={match.file.name} "
+            f"{idx:02d}. score={match.score:<3} kind={match.kind:<10} file={match.file.name} "
             f"path={match.path}\n    {preview}"
         )
 

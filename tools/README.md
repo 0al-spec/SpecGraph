@@ -21,7 +21,8 @@ The supervisor loop is:
 
 ## JSON Knowledge Search MVP
 
-Use `tools/search_kg_json.py` to search nested conversation archives stored as JSON files.
+Use `tools/search_kg_json.py` to extract and search structured requirement statements from nested
+conversation archives stored as JSON files.
 
 Example:
 
@@ -29,11 +30,18 @@ Example:
 python tools/search_kg_json.py "success criteria limitations" --json-dir /path/to/jsons --limit 15
 ```
 
-The script traverses each JSON tree, indexes all string leaves, and prints ranked matches with:
+The script traverses each JSON tree, extracts requirement-like lines, classifies them (`goal`,
+`constraint`, `acceptance`, `risk`, `scope`, `assumption`), and prints ranked matches with:
 - filename
 - JSON path
+- requirement kind
 - matched text preview
 
+Filter by kind when needed:
+
+```bash
+python tools/search_kg_json.py "acceptance evidence" --json-dir /path/to/jsons --kind acceptance
+```
 
 The tool also stores a request-response cache at `<json-dir>/.search_kg_cache.json` by default for fast repeated queries.
 Use `--cache-file` to override location or `--no-cache` to disable it.
