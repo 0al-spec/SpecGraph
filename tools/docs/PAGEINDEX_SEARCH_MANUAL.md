@@ -79,7 +79,7 @@ python3 tools/search_pageindex.py "SpecGraph bootstrap" --top-k 10 --context
 
 ```bash
 # Verify PageIndex exists
-ls ~/Development/GitHub/PageIndexInstance/results/chatgpt_dialogs_optimized/catalog.json
+ls ~/Development/GitHub/PageIndexInstance/results/chatgpt_dialogs/catalog.json
 # Should return the file path
 
 # Verify Python
@@ -123,7 +123,7 @@ python3 tools/search_pageindex.py QUERY [OPTIONS]
 
 | Option | Default | Description |
 |--------|---------|-------------|
-| `--catalog PATH` | `~/Development/GitHub/PageIndexInstance/results/chatgpt_dialogs_optimized/catalog.json` | Path to PageIndex catalog |
+| `--catalog PATH` | `~/Development/GitHub/PageIndexInstance/results/chatgpt_dialogs/catalog.json` | Path to PageIndex catalog |
 | `--api-url URL` | `http://localhost:8765` | PageIndex API base URL |
 | `--model MODEL` | `gpt-4o-2024-11-20` | LLM model for retrieval |
 | `--top-k N` | `7` | Number of results to return (1-20) |
@@ -355,18 +355,18 @@ Start it with:
 
 **Symptom:**
 ```
-Catalog not found: ~/Development/GitHub/PageIndexInstance/results/chatgpt_dialogs_optimized/catalog.json
+Catalog not found: ~/Development/GitHub/PageIndexInstance/results/chatgpt_dialogs/catalog.json
 ```
 
 **Solution:**
 1. Verify the catalog exists:
    ```bash
-   ls ~/Development/GitHub/PageIndexInstance/results/chatgpt_dialogs_optimized/catalog.json
+   ls ~/Development/GitHub/PageIndexInstance/results/chatgpt_dialogs/catalog.json
    ```
 2. If missing, re-index conversations:
    ```bash
    cd ~/Development/GitHub/ChatGPTDialogs
-   python3 index_json_with_pageindex.py --model openai/gpt-oss-20b
+   python3 index_chatgpt_dialogs.py
    ```
 
 ### Error: "HTTP 500 from PageIndex API"
@@ -393,7 +393,7 @@ Query returns empty results even though relevant conversations exist.
 2. Increase `--top-k`: `--top-k 20` (default is 7)
 3. Check the catalog has 40 documents:
    ```bash
-   jq '.records | length' ~/Development/GitHub/PageIndexInstance/results/chatgpt_dialogs_optimized/catalog.json
+   jq '.records | length' ~/Development/GitHub/PageIndexInstance/results/chatgpt_dialogs/catalog.json
    # Should be 40
    ```
 
@@ -453,9 +453,9 @@ for node in results:
 ### Chaining with Other Tools
 
 ```bash
-# Search for requirements, then pass to another tool
+# Search results can be piped into other tools or `jq`
 python3 tools/search_pageindex.py "success criteria" --json | \
-  python3 tools/extract_requirements.py --input-json
+  jq -r '.[].title'
 
 # Count conversations about a topic
 python3 tools/search_pageindex.py "agent OS" --top-k 20 --json | \
@@ -491,8 +491,8 @@ export OPENAI_BASE_URL=http://...     # For local LM Studio
 | File | Purpose |
 |------|---------|
 | `tools/search_pageindex.py` | Search tool script |
-| `~/Development/GitHub/PageIndexInstance/results/chatgpt_dialogs_optimized/catalog.json` | Indexed catalog |
-| `~/Development/GitHub/PageIndexInstance/results/chatgpt_dialogs_optimized/markdown_src/` | Source Markdown files |
+| `~/Development/GitHub/PageIndexInstance/results/chatgpt_dialogs/catalog.json` | Indexed catalog |
+| `~/Development/GitHub/PageIndexInstance/results/chatgpt_dialogs/markdown_src/` | Source Markdown files |
 
 ---
 
@@ -502,7 +502,7 @@ export OPENAI_BASE_URL=http://...     # For local LM Studio
 A: No, dates are not indexed. Use the conversation title in your search query.
 
 **Q: Can I update the index with new conversations?**
-A: Yes, re-run the indexer in ChatGPTDialogs: `python3 index_json_with_pageindex.py`
+A: Yes, re-run the ChatGPTDialogs indexing workflow and rebuild the PageIndex catalog.
 
 **Q: What happens if the API is slow?**
 A: The search timeout is 120 seconds. If queries timeout, restart the API or check system resources.
@@ -531,4 +531,3 @@ For issues:
 **Last Updated:** April 4, 2026
 **Status:** Production Ready
 **Version:** 1.0
-
