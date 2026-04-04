@@ -2,10 +2,12 @@
 from __future__ import annotations
 
 import datetime as dt
+import fnmatch
 import hashlib
 import json
 import subprocess
 import sys
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 from types import ModuleType
@@ -24,6 +26,15 @@ AGENTS_FILE = ROOT / "AGENTS.md"
 READY_DEP_STATUSES = {"reviewed", "frozen"}
 WORKABLE_STATUSES = {"outlined", "specified"}
 VALID_STATUSES = {"idea", "stub", "outlined", "specified", "linked", "reviewed", "frozen"}
+
+STATUS_PROGRESSION: dict[str, str] = {
+    "idea": "stub",
+    "stub": "outlined",
+    "outlined": "specified",
+    "specified": "linked",
+    "linked": "reviewed",
+    "reviewed": "frozen",
+}
 
 
 def get_yaml_module() -> ModuleType:
@@ -122,6 +133,37 @@ def pick_next_spec_gap(specs: list[SpecNode]) -> SpecNode | None:
     return candidates[0]
 
 
+def detect_cycles(specs: list[SpecNode]) -> list[list[str]]:
+    """Detect dependency cycles via DFS. Returns list of cycles found."""
+    index = index_specs(specs)
+    visited: set[str] = set()
+    in_stack: set[str] = set()
+    stack: list[str] = []
+    cycles: list[list[str]] = []
+
+    def dfs(node_id: str) -> None:
+        if node_id in in_stack:
+            cycle_start = stack.index(node_id)
+            cycles.append(stack[cycle_start:] + [node_id])
+            return
+        if node_id in visited:
+            return
+        visited.add(node_id)
+        in_stack.add(node_id)
+        stack.append(node_id)
+        node = index.get(node_id)
+        if node:
+            for dep_id in node.depends_on:
+                dfs(dep_id)
+        stack.pop()
+        in_stack.remove(node_id)
+
+    for spec in specs:
+        if spec.id and spec.id not in visited:
+            dfs(spec.id)
+    return cycles
+
+
 def git_changed_files() -> list[str]:
     result = subprocess.run(
         ["git", "status", "--porcelain"],
@@ -211,10 +253,9 @@ def validate_allowed_paths(node: SpecNode, changed_files: list[str]) -> list[str
     if not node.allowed_paths:
         return []
 
-    allowed = set(node.allowed_paths)
     errors: list[str] = []
     for changed in changed_files:
-        if changed not in allowed:
+        if not any(fnmatch.fnmatch(changed, pattern) for pattern in node.allowed_paths):
             errors.append(f"Changed file outside allowed_paths: {changed}")
     return errors
 
@@ -246,7 +287,14 @@ def run_codex(node: SpecNode) -> subprocess.CompletedProcess[str]:
     )
 
 
-def main() -> int:
+def main(
+    *,
+    executor: Callable[[SpecNode], subprocess.CompletedProcess[str]] | None = None,
+    dry_run: bool = False,
+) -> int:
+    if executor is None:
+        executor = run_codex
+
     try:
         specs = load_specs()
     except RuntimeError as exc:
@@ -256,6 +304,13 @@ def main() -> int:
         print("No spec nodes found in specs/nodes")
         return 0
 
+    cycles = detect_cycles(specs)
+    if cycles:
+        print("Dependency cycles detected:", file=sys.stderr)
+        for cycle in cycles:
+            print(f"  {' -> '.join(cycle)}", file=sys.stderr)
+        return 1
+
     node = pick_next_spec_gap(specs)
     if node is None:
         print("No eligible spec gaps found.")
@@ -263,10 +318,17 @@ def main() -> int:
 
     print(f"Selected spec node: {node.id} — {node.title}")
 
+    if dry_run:
+        print("\n=== dry-run mode ===")
+        print(f"Would execute prompt for: {node.id}")
+        print(f"Status: {node.status} | Maturity: {node.maturity:.2f}")
+        print(f"\n{build_prompt(node)}")
+        return 0
+
     before = git_changed_files()
     tracked_paths = sorted(set(before))
     before_digests = snapshot_file_digests(tracked_paths)
-    result = run_codex(node)
+    result = executor(node)
     after = git_changed_files()
     tracked_paths = sorted(set(before) | set(after))
     after_digests = snapshot_file_digests(tracked_paths)
@@ -289,10 +351,9 @@ def main() -> int:
 
     success = result.returncode == 0 and not validation_errors
     if success:
-        if node.status == "outlined":
-            node.data["status"] = "specified"
-        elif node.status == "specified":
-            node.data["status"] = "reviewed"
+        next_status = STATUS_PROGRESSION.get(node.status)
+        if next_status:
+            node.data["status"] = next_status
         node.data["maturity"] = min(1.0, round(node.maturity + 0.2, 2))
     else:
         node.data["last_errors"] = validation_errors
@@ -336,4 +397,9 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    import argparse
+
+    parser = argparse.ArgumentParser(description="SpecGraph supervisor")
+    parser.add_argument("--dry-run", action="store_true", help="Show selection and prompt only")
+    args = parser.parse_args()
+    raise SystemExit(main(dry_run=args.dry_run))
