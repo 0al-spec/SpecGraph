@@ -45,6 +45,29 @@ def test_find_matches_scores_and_limits(tmp_path: Path) -> None:
     assert matches[0].score >= 1
 
 
+def test_find_matches_skips_non_utf8_json_file(tmp_path: Path) -> None:
+    (tmp_path / "good.json").write_text(
+        json.dumps({"msg": "success criteria and constraints"}), encoding="utf-8"
+    )
+    (tmp_path / "bad-encoding.json").write_bytes(b'{"msg":"\xff"}')
+
+    matches = search_kg_json.find_matches(json_dir=tmp_path, query="success criteria", limit=5)
+
+    assert len(matches) == 1
+    assert matches[0].file.name == "good.json"
+
+
+def test_find_matches_rejects_negative_limit(tmp_path: Path) -> None:
+    (tmp_path / "a.json").write_text(json.dumps({"msg": "anything"}), encoding="utf-8")
+
+    try:
+        search_kg_json.find_matches(json_dir=tmp_path, query="anything", limit=-1)
+    except ValueError as exc:
+        assert "non-negative" in str(exc)
+    else:
+        raise AssertionError("Expected ValueError for negative limit")
+
+
 def test_find_matches_with_cache_request_response_pair(tmp_path: Path) -> None:
     (tmp_path / "ideas.json").write_text(
         json.dumps({"notes": "Agent memory needs fast response cache"}), encoding="utf-8"
