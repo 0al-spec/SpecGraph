@@ -17,3 +17,19 @@ python tools/supervisor.py
 The supervisor loop is:
 
 `pick spec gap -> refine spec -> validate -> update state`
+
+
+## JSON Knowledge Search MVP
+
+Use `tools/search_kg_json.py` to search nested conversation archives stored as JSON files.
+
+Example:
+
+```bash
+python tools/search_kg_json.py "success criteria limitations" --json-dir /path/to/jsons --limit 15
+```
+
+The script traverses each JSON tree, indexes all string leaves, and prints ranked matches with:
+- filename
+- JSON path
+- matched text preview
