@@ -268,6 +268,178 @@ def test_main_reloads_node_after_codex_run_before_saving_metadata(
     assert updated["prompt"] == "Updated by Codex"
 
 
+def test_glob_allowed_paths_matches_wildcard(supervisor_module: object) -> None:
+    """fnmatch glob patterns should match files."""
+    node = supervisor_module.SpecNode(
+        path=Path("/tmp/x.yaml"),
+        data={"allowed_paths": ["specs/nodes/*.yaml"]},
+    )
+    errors = supervisor_module.validate_allowed_paths(
+        node, ["specs/nodes/SG-SPEC-0001.yaml", "specs/nodes/SG-SPEC-0002.yaml"]
+    )
+    assert errors == []
+
+
+def test_glob_allowed_paths_rejects_outside(supervisor_module: object) -> None:
+    """Files not matching any glob should be rejected."""
+    node = supervisor_module.SpecNode(
+        path=Path("/tmp/x.yaml"),
+        data={"allowed_paths": ["specs/nodes/*.yaml"]},
+    )
+    errors = supervisor_module.validate_allowed_paths(node, ["README.md"])
+    assert len(errors) == 1
+    assert "README.md" in errors[0]
+
+
+def test_detect_cycles_finds_simple_cycle(supervisor_module: object) -> None:
+    spec_node = supervisor_module.SpecNode
+    nodes = [
+        spec_node(path=Path("/tmp/a.yaml"), data={"id": "A", "depends_on": ["B"]}),
+        spec_node(path=Path("/tmp/b.yaml"), data={"id": "B", "depends_on": ["A"]}),
+    ]
+    cycles = supervisor_module.detect_cycles(nodes)
+    assert len(cycles) >= 1
+    flat = [item for cycle in cycles for item in cycle]
+    assert "A" in flat and "B" in flat
+
+
+def test_detect_cycles_returns_empty_for_dag(supervisor_module: object) -> None:
+    spec_node = supervisor_module.SpecNode
+    nodes = [
+        spec_node(path=Path("/tmp/a.yaml"), data={"id": "A", "depends_on": []}),
+        spec_node(path=Path("/tmp/b.yaml"), data={"id": "B", "depends_on": ["A"]}),
+    ]
+    cycles = supervisor_module.detect_cycles(nodes)
+    assert cycles == []
+
+
+def test_detect_cycles_three_node_cycle(supervisor_module: object) -> None:
+    spec_node = supervisor_module.SpecNode
+    nodes = [
+        spec_node(path=Path("/tmp/a.yaml"), data={"id": "A", "depends_on": ["C"]}),
+        spec_node(path=Path("/tmp/b.yaml"), data={"id": "B", "depends_on": ["A"]}),
+        spec_node(path=Path("/tmp/c.yaml"), data={"id": "C", "depends_on": ["B"]}),
+    ]
+    cycles = supervisor_module.detect_cycles(nodes)
+    assert len(cycles) >= 1
+
+
+def test_main_with_injectable_executor(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Injectable executor should be used instead of run_codex."""
+    monkeypatch.setattr(
+        supervisor_module, "git_changed_files", lambda: ["specs/nodes/SG-SPEC-0001.yaml"]
+    )
+
+    calls: list[str] = []
+
+    def custom_executor(node: object) -> subprocess.CompletedProcess[str]:
+        calls.append(node.id)
+        return subprocess.CompletedProcess(args=["custom"], returncode=0, stdout="ok", stderr="")
+
+    exit_code = supervisor_module.main(executor=custom_executor)
+    assert exit_code == 0
+    assert calls == ["SG-SPEC-0001"]
+
+
+def test_main_dry_run_does_not_execute(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Dry-run mode should not call the executor."""
+    called = []
+
+    def should_not_be_called(node: object) -> subprocess.CompletedProcess[str]:
+        called.append(True)
+        return subprocess.CompletedProcess(args=[], returncode=0, stdout="", stderr="")
+
+    exit_code = supervisor_module.main(executor=should_not_be_called, dry_run=True)
+    assert exit_code == 0
+    assert called == []
+
+
+def test_full_status_progression_specified_to_linked(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A specified node should progress to linked on success."""
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    data["status"] = "specified"
+    node_path.write_text(json.dumps(data), encoding="utf-8")
+
+    monkeypatch.setattr(
+        supervisor_module, "git_changed_files", lambda: ["specs/nodes/SG-SPEC-0001.yaml"]
+    )
+
+    def fake_executor(_node: object) -> subprocess.CompletedProcess[str]:
+        return subprocess.CompletedProcess(args=[], returncode=0, stdout="ok", stderr="")
+
+    exit_code = supervisor_module.main(executor=fake_executor)
+    assert exit_code == 0
+
+    updated = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    assert updated["status"] == "linked"
+
+
+def test_status_progression_map_covers_lifecycle(supervisor_module: object) -> None:
+    """STATUS_PROGRESSION should cover all transitions except frozen."""
+    progression = supervisor_module.STATUS_PROGRESSION
+    assert progression["idea"] == "stub"
+    assert progression["stub"] == "outlined"
+    assert progression["outlined"] == "specified"
+    assert progression["specified"] == "linked"
+    assert progression["linked"] == "reviewed"
+    assert progression["reviewed"] == "frozen"
+    assert "frozen" not in progression
+
+
+def test_main_aborts_on_cycle(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """main() should return 1 when dependency cycles exist."""
+    specs_dir = repo_fixture / "specs" / "nodes"
+
+    node_a = specs_dir / "SG-SPEC-A.yaml"
+    node_b = specs_dir / "SG-SPEC-B.yaml"
+    node_a.write_text(
+        json.dumps(
+            {
+                "id": "SG-SPEC-A",
+                "title": "A",
+                "status": "outlined",
+                "maturity": 0.0,
+                "depends_on": ["SG-SPEC-B"],
+                "acceptance": ["x"],
+            }
+        ),
+        encoding="utf-8",
+    )
+    node_b.write_text(
+        json.dumps(
+            {
+                "id": "SG-SPEC-B",
+                "title": "B",
+                "status": "outlined",
+                "maturity": 0.0,
+                "depends_on": ["SG-SPEC-A"],
+                "acceptance": ["x"],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    exit_code = supervisor_module.main()
+    assert exit_code == 1
+
+
 def test_main_records_reload_failure_as_validation_error(
     supervisor_module: object,
     repo_fixture: Path,
