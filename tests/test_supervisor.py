@@ -220,6 +220,49 @@ def test_main_auto_approve_applies_status_and_copies_changes(
     assert updated["prompt"] == "Auto-approved prompt"
 
 
+def test_main_auto_approve_syncs_when_allowed_paths_empty(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    node_data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    node_data["allowed_paths"] = []
+    node_path.write_text(json.dumps(node_data), encoding="utf-8")
+
+    worktree = make_fake_worktree(repo_fixture)
+    monkeypatch.setattr(
+        supervisor_module,
+        "create_isolated_worktree",
+        lambda _node_id: (worktree, "codex/sg-spec-0001/test"),
+    )
+    changed_snapshots = [[], ["specs/nodes/SG-SPEC-0001.yaml"]]
+    monkeypatch.setattr(
+        supervisor_module, "git_changed_files", lambda _cwd=None: changed_snapshots.pop(0)
+    )
+
+    def fake_executor(_node: object, worktree_path: Path) -> subprocess.CompletedProcess[str]:
+        worktree_node = worktree_path / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+        data = supervisor_module.get_yaml_module().safe_load(
+            worktree_node.read_text(encoding="utf-8")
+        )
+        data["acceptance_evidence"] = ["evidence"]
+        data["prompt"] = "Synced with unrestricted allowed_paths"
+        worktree_node.write_text(json.dumps(data), encoding="utf-8")
+        return subprocess.CompletedProcess(
+            args=["codex"],
+            returncode=0,
+            stdout="RUN_OUTCOME: done\nBLOCKER: none\n",
+            stderr="",
+        )
+
+    exit_code = supervisor_module.main(executor=fake_executor, auto_approve=True)
+    assert exit_code == 0
+
+    updated = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    assert updated["prompt"] == "Synced with unrestricted allowed_paths"
+
+
 def test_main_outcome_blocked_sets_gate(
     supervisor_module: object,
     repo_fixture: Path,
@@ -327,6 +370,41 @@ def test_resolve_gate_approve_applies_worktree_changes(
     assert updated["gate_state"] == "none"
     assert updated["prompt"] == "Approved from worktree"
     assert updated["last_gate_decision"] == "approve"
+
+
+def test_resolve_gate_approve_syncs_when_allowed_paths_empty(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    node_data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    node_data["allowed_paths"] = []
+    node_data["gate_state"] = "review_pending"
+    node_data["proposed_status"] = "specified"
+    node_data["proposed_maturity"] = 0.4
+    node_path.write_text(json.dumps(node_data), encoding="utf-8")
+
+    worktree = make_fake_worktree(repo_fixture)
+    worktree_node = worktree / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    worktree_data = supervisor_module.get_yaml_module().safe_load(
+        worktree_node.read_text(encoding="utf-8")
+    )
+    worktree_data["prompt"] = "Gate approved unrestricted sync"
+    worktree_node.write_text(json.dumps(worktree_data), encoding="utf-8")
+
+    node_data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    node_data["last_worktree_path"] = worktree.as_posix()
+    node_data["last_changed_files"] = ["specs/nodes/SG-SPEC-0001.yaml"]
+    node_path.write_text(json.dumps(node_data), encoding="utf-8")
+
+    exit_code = supervisor_module.main(
+        resolve_gate="SG-SPEC-0001",
+        decision="approve",
+    )
+    assert exit_code == 0
+
+    updated = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    assert updated["prompt"] == "Gate approved unrestricted sync"
 
 
 def test_resolve_gate_retry_sets_retry_pending(

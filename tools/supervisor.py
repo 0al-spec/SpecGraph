@@ -292,6 +292,20 @@ def validate_allowed_paths(node: SpecNode, changed_files: list[str]) -> list[str
     return errors
 
 
+def select_sync_paths(allowed_paths: list[str], changed_files: list[str]) -> list[str]:
+    """Return changed paths eligible for sync back to root.
+
+    Empty allowed_paths means unrestricted sync.
+    """
+    if not allowed_paths:
+        return list(changed_files)
+    return [
+        path
+        for path in changed_files
+        if any(PurePosixPath(path).match(pattern) for pattern in allowed_paths)
+    ]
+
+
 def validate_status_format(node_data: dict[str, Any]) -> list[str]:
     status = str(node_data.get("status", "stub")).strip()
     if status not in VALID_STATUSES:
@@ -462,22 +476,18 @@ def resolve_gate_decision(
 
         proposed_status = node.data.get("proposed_status")
         proposed_maturity = node.data.get("proposed_maturity")
-        worktree_path = Path(str(node.data.get("last_worktree_path", ""))).expanduser()
-        changed_files = list(node.data.get("last_changed_files", []))
-        if worktree_path.as_posix() and worktree_path.exists():
-            allowed_changes = [
-                path
-                for path in changed_files
-                if any(PurePosixPath(path).match(pattern) for pattern in node.allowed_paths)
-            ]
-            sync_files_from_worktree(worktree_path, allowed_changes)
-            # Keep approved content from the worktree while attaching gate metadata in root.
-            node.reload()
-
         transition_errors = validate_transition(node.status, proposed_status)
         if transition_errors:
             print("\n".join(transition_errors), file=sys.stderr)
             return 1
+
+        worktree_path = Path(str(node.data.get("last_worktree_path", ""))).expanduser()
+        changed_files = list(node.data.get("last_changed_files", []))
+        if worktree_path.as_posix() and worktree_path.exists():
+            allowed_changes = select_sync_paths(node.allowed_paths, changed_files)
+            sync_files_from_worktree(worktree_path, allowed_changes)
+            # Keep approved content from the worktree while attaching gate metadata in root.
+            node.reload()
 
         if proposed_status:
             node.data["status"] = proposed_status
@@ -639,11 +649,7 @@ def main(
         node.data["proposed_status"] = proposed_status
         node.data["proposed_maturity"] = proposed_maturity
         if auto_approve:
-            allowed_changes = [
-                path
-                for path in changed
-                if any(PurePosixPath(path).match(pattern) for pattern in node.allowed_paths)
-            ]
+            allowed_changes = select_sync_paths(node.allowed_paths, changed)
             sync_files_from_worktree(worktree_path, allowed_changes)
             # Preserve approved content produced in the isolated worktree.
             node.reload()
