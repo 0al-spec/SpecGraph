@@ -33,3 +33,7 @@ The script traverses each JSON tree, indexes all string leaves, and prints ranke
 - filename
 - JSON path
 - matched text preview
+
+
+The tool also stores a request-response cache at `<json-dir>/.search_kg_cache.json` by default for fast repeated queries.
+Use `--cache-file` to override location or `--no-cache` to disable it.

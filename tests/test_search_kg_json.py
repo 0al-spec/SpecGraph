@@ -43,3 +43,30 @@ def test_find_matches_scores_and_limits(tmp_path: Path) -> None:
     assert len(matches) == 1
     assert matches[0].file.name in {"a.json", "b.json"}
     assert matches[0].score >= 1
+
+
+def test_find_matches_with_cache_request_response_pair(tmp_path: Path) -> None:
+    (tmp_path / "ideas.json").write_text(
+        json.dumps({"notes": "Agent memory needs fast response cache"}), encoding="utf-8"
+    )
+    cache_file = tmp_path / ".search_kg_cache.json"
+
+    first_matches, first_cache_hit = search_kg_json.find_matches_with_cache(
+        json_dir=tmp_path,
+        query="memory response",
+        limit=5,
+        cache_file=cache_file,
+        use_cache=True,
+    )
+    second_matches, second_cache_hit = search_kg_json.find_matches_with_cache(
+        json_dir=tmp_path,
+        query="memory response",
+        limit=5,
+        cache_file=cache_file,
+        use_cache=True,
+    )
+
+    assert first_cache_hit is False
+    assert second_cache_hit is True
+    assert cache_file.exists()
+    assert [m.text for m in second_matches] == [m.text for m in first_matches]
