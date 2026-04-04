@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -80,71 +81,348 @@ def repo_fixture(
     monkeypatch.setattr(supervisor_module, "ROOT", root)
     monkeypatch.setattr(supervisor_module, "SPECS_DIR", specs_dir)
     monkeypatch.setattr(supervisor_module, "RUNS_DIR", runs_dir)
+    monkeypatch.setattr(supervisor_module, "WORKTREES_DIR", root / ".worktrees")
     monkeypatch.setattr(supervisor_module, "AGENTS_FILE", root / "AGENTS.md")
     return root
 
 
-def test_pick_next_spec_gap_orders_by_maturity_then_id(supervisor_module: object) -> None:
+def make_fake_worktree(root: Path) -> Path:
+    worktree = root / ".fake-worktree"
+    if worktree.exists():
+        shutil.rmtree(worktree)
+    (worktree / "specs").mkdir(parents=True, exist_ok=True)
+    shutil.copytree(root / "specs" / "nodes", worktree / "specs" / "nodes")
+    return worktree
+
+
+def test_pick_next_spec_gap_prefers_leaf_and_filters_status(supervisor_module: object) -> None:
     spec_node = supervisor_module.SpecNode
     nodes = [
         spec_node(
-            path=Path("/tmp/2.yaml"),
-            data={"id": "B", "status": "outlined", "maturity": 0.3, "depends_on": []},
+            path=Path("/tmp/root.yaml"),
+            data={"id": "ROOT", "status": "outlined", "maturity": 0.1, "depends_on": []},
         ),
         spec_node(
-            path=Path("/tmp/1.yaml"),
-            data={"id": "A", "status": "outlined", "maturity": 0.3, "depends_on": []},
+            path=Path("/tmp/leaf.yaml"),
+            data={"id": "LEAF", "status": "specified", "maturity": 0.6, "depends_on": []},
         ),
         spec_node(
-            path=Path("/tmp/3.yaml"),
-            data={
-                "id": "C",
-                "status": "specified",
-                "maturity": 0.1,
-                "depends_on": [],
-            },
+            path=Path("/tmp/dependent.yaml"),
+            data={"id": "DEP", "status": "outlined", "maturity": 0.2, "depends_on": ["ROOT"]},
         ),
         spec_node(
-            path=Path("/tmp/4.yaml"),
-            data={"id": "D", "status": "idea", "maturity": 0.0, "depends_on": []},
+            path=Path("/tmp/linked.yaml"),
+            data={"id": "LINKED", "status": "linked", "maturity": 0.0, "depends_on": []},
         ),
     ]
 
     selected = supervisor_module.pick_next_spec_gap(nodes)
     assert selected is not None
-    assert selected.id == "C"
+    assert selected.id == "LEAF"
 
 
-def test_main_golden_path_updates_node_and_writes_run_log(
+def test_main_creates_review_gate_and_provenance_metadata(
     supervisor_module: object,
     repo_fixture: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setattr(
-        supervisor_module, "git_changed_files", lambda: ["specs/nodes/SG-SPEC-0001.yaml"]
-    )
+    worktree = make_fake_worktree(repo_fixture)
     monkeypatch.setattr(
         supervisor_module,
-        "run_codex",
-        lambda _node: subprocess.CompletedProcess(
-            args=["codex"], returncode=0, stdout="ok", stderr=""
-        ),
+        "create_isolated_worktree",
+        lambda _node_id: (worktree, "codex/sg-spec-0001/test"),
     )
 
-    exit_code = supervisor_module.main()
+    changed_snapshots = [[], ["specs/nodes/SG-SPEC-0001.yaml"]]
+    monkeypatch.setattr(
+        supervisor_module,
+        "git_changed_files",
+        lambda _cwd=None: changed_snapshots.pop(0),
+    )
+
+    def fake_executor(_node: object, worktree_path: Path) -> subprocess.CompletedProcess[str]:
+        node_path = worktree_path / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+        data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+        data["acceptance_evidence"] = ["criterion satisfied by refined section"]
+        data["prompt"] = "Updated by Codex"
+        node_path.write_text(json.dumps(data), encoding="utf-8")
+        return subprocess.CompletedProcess(
+            args=["codex"],
+            returncode=0,
+            stdout="RUN_OUTCOME: done\nBLOCKER: none\n",
+            stderr="",
+        )
+
+    exit_code = supervisor_module.main(executor=fake_executor)
     assert exit_code == 0
 
     node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
     updated = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
-    assert updated["status"] == "specified"
-    assert updated["maturity"] == 0.4
-    assert updated["last_exit_code"] == 0
+    assert updated["status"] == "outlined"
+    assert updated["gate_state"] == "review_pending"
+    assert updated["proposed_status"] == "specified"
+    assert updated["last_outcome"] == "done"
+    assert updated["last_branch"] == "codex/sg-spec-0001/test"
 
     run_logs = sorted((repo_fixture / "runs").glob("*.json"))
     assert len(run_logs) == 1
     payload = json.loads(run_logs[0].read_text(encoding="utf-8"))
     assert payload["spec_id"] == "SG-SPEC-0001"
-    assert payload["validation_errors"] == []
+    assert payload["outcome"] == "done"
+    assert payload["worktree_path"] == worktree.as_posix()
+    assert payload["selected_by_rule"]["sort_order"] == [
+        "leaf_first",
+        "lower_maturity",
+        "stable_id",
+    ]
+    assert (repo_fixture / "runs" / "latest-summary.md").exists()
+
+
+def test_main_auto_approve_applies_status_and_copies_changes(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    worktree = make_fake_worktree(repo_fixture)
+    monkeypatch.setattr(
+        supervisor_module,
+        "create_isolated_worktree",
+        lambda _node_id: (worktree, "codex/sg-spec-0001/test"),
+    )
+
+    changed_snapshots = [[], ["specs/nodes/SG-SPEC-0001.yaml"]]
+    monkeypatch.setattr(
+        supervisor_module, "git_changed_files", lambda _cwd=None: changed_snapshots.pop(0)
+    )
+
+    def fake_executor(_node: object, worktree_path: Path) -> subprocess.CompletedProcess[str]:
+        node_path = worktree_path / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+        data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+        data["acceptance_evidence"] = ["evidence"]
+        data["prompt"] = "Auto-approved prompt"
+        node_path.write_text(json.dumps(data), encoding="utf-8")
+        return subprocess.CompletedProcess(
+            args=["codex"],
+            returncode=0,
+            stdout="RUN_OUTCOME: done\nBLOCKER: none\n",
+            stderr="",
+        )
+
+    exit_code = supervisor_module.main(executor=fake_executor, auto_approve=True)
+    assert exit_code == 0
+
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    updated = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    assert updated["status"] == "specified"
+    assert updated["gate_state"] == "none"
+    assert updated["proposed_status"] is None
+    assert updated["maturity"] == 0.4
+    assert updated["prompt"] == "Auto-approved prompt"
+
+
+def test_main_auto_approve_syncs_when_allowed_paths_empty(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    node_data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    node_data["allowed_paths"] = []
+    node_path.write_text(json.dumps(node_data), encoding="utf-8")
+
+    worktree = make_fake_worktree(repo_fixture)
+    monkeypatch.setattr(
+        supervisor_module,
+        "create_isolated_worktree",
+        lambda _node_id: (worktree, "codex/sg-spec-0001/test"),
+    )
+    changed_snapshots = [[], ["specs/nodes/SG-SPEC-0001.yaml"]]
+    monkeypatch.setattr(
+        supervisor_module, "git_changed_files", lambda _cwd=None: changed_snapshots.pop(0)
+    )
+
+    def fake_executor(_node: object, worktree_path: Path) -> subprocess.CompletedProcess[str]:
+        worktree_node = worktree_path / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+        data = supervisor_module.get_yaml_module().safe_load(
+            worktree_node.read_text(encoding="utf-8")
+        )
+        data["acceptance_evidence"] = ["evidence"]
+        data["prompt"] = "Synced with unrestricted allowed_paths"
+        worktree_node.write_text(json.dumps(data), encoding="utf-8")
+        return subprocess.CompletedProcess(
+            args=["codex"],
+            returncode=0,
+            stdout="RUN_OUTCOME: done\nBLOCKER: none\n",
+            stderr="",
+        )
+
+    exit_code = supervisor_module.main(executor=fake_executor, auto_approve=True)
+    assert exit_code == 0
+
+    updated = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    assert updated["prompt"] == "Synced with unrestricted allowed_paths"
+
+
+def test_main_outcome_blocked_sets_gate(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    worktree = make_fake_worktree(repo_fixture)
+    monkeypatch.setattr(
+        supervisor_module,
+        "create_isolated_worktree",
+        lambda _node_id: (worktree, "codex/sg-spec-0001/test"),
+    )
+
+    changed_snapshots = [[], ["specs/nodes/SG-SPEC-0001.yaml"]]
+    monkeypatch.setattr(
+        supervisor_module, "git_changed_files", lambda _cwd=None: changed_snapshots.pop(0)
+    )
+
+    def fake_executor(_node: object, worktree_path: Path) -> subprocess.CompletedProcess[str]:
+        node_path = worktree_path / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+        data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+        data["acceptance_evidence"] = ["evidence"]
+        node_path.write_text(json.dumps(data), encoding="utf-8")
+        return subprocess.CompletedProcess(
+            args=["codex"],
+            returncode=1,
+            stdout="RUN_OUTCOME: blocked\nBLOCKER: missing upstream spec\n",
+            stderr="",
+        )
+
+    exit_code = supervisor_module.main(executor=fake_executor)
+    assert exit_code == 1
+
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    updated = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    assert updated["gate_state"] == "blocked"
+    assert updated["required_human_action"] == "resolve blocker"
+    assert updated["last_blocker"] == "missing upstream spec"
+
+
+def test_acceptance_evidence_is_required(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    worktree = make_fake_worktree(repo_fixture)
+    monkeypatch.setattr(
+        supervisor_module,
+        "create_isolated_worktree",
+        lambda _node_id: (worktree, "codex/sg-spec-0001/test"),
+    )
+
+    changed_snapshots = [[], ["specs/nodes/SG-SPEC-0001.yaml"]]
+    monkeypatch.setattr(
+        supervisor_module, "git_changed_files", lambda _cwd=None: changed_snapshots.pop(0)
+    )
+
+    def fake_executor(_node: object, _worktree_path: Path) -> subprocess.CompletedProcess[str]:
+        return subprocess.CompletedProcess(
+            args=["codex"],
+            returncode=0,
+            stdout="RUN_OUTCOME: done\nBLOCKER: none\n",
+            stderr="",
+        )
+
+    exit_code = supervisor_module.main(executor=fake_executor)
+    assert exit_code == 1
+
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    updated = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    assert any("acceptance_evidence" in err for err in updated["last_errors"])
+
+
+def test_resolve_gate_approve_applies_worktree_changes(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    worktree = make_fake_worktree(repo_fixture)
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    worktree_node_path = worktree / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+
+    worktree_data = supervisor_module.get_yaml_module().safe_load(
+        worktree_node_path.read_text(encoding="utf-8")
+    )
+    worktree_data["prompt"] = "Approved from worktree"
+    worktree_node_path.write_text(json.dumps(worktree_data), encoding="utf-8")
+
+    data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    data["gate_state"] = "review_pending"
+    data["proposed_status"] = "specified"
+    data["proposed_maturity"] = 0.4
+    data["last_worktree_path"] = worktree.as_posix()
+    data["last_changed_files"] = ["specs/nodes/SG-SPEC-0001.yaml"]
+    node_path.write_text(json.dumps(data), encoding="utf-8")
+
+    exit_code = supervisor_module.main(
+        resolve_gate="SG-SPEC-0001",
+        decision="approve",
+        note="looks good",
+    )
+    assert exit_code == 0
+
+    updated = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    assert updated["status"] == "specified"
+    assert updated["maturity"] == 0.4
+    assert updated["gate_state"] == "none"
+    assert updated["prompt"] == "Approved from worktree"
+    assert updated["last_gate_decision"] == "approve"
+
+
+def test_resolve_gate_approve_syncs_when_allowed_paths_empty(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    node_data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    node_data["allowed_paths"] = []
+    node_data["gate_state"] = "review_pending"
+    node_data["proposed_status"] = "specified"
+    node_data["proposed_maturity"] = 0.4
+    node_path.write_text(json.dumps(node_data), encoding="utf-8")
+
+    worktree = make_fake_worktree(repo_fixture)
+    worktree_node = worktree / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    worktree_data = supervisor_module.get_yaml_module().safe_load(
+        worktree_node.read_text(encoding="utf-8")
+    )
+    worktree_data["prompt"] = "Gate approved unrestricted sync"
+    worktree_node.write_text(json.dumps(worktree_data), encoding="utf-8")
+
+    node_data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    node_data["last_worktree_path"] = worktree.as_posix()
+    node_data["last_changed_files"] = ["specs/nodes/SG-SPEC-0001.yaml"]
+    node_path.write_text(json.dumps(node_data), encoding="utf-8")
+
+    exit_code = supervisor_module.main(
+        resolve_gate="SG-SPEC-0001",
+        decision="approve",
+    )
+    assert exit_code == 0
+
+    updated = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    assert updated["prompt"] == "Gate approved unrestricted sync"
+
+
+def test_resolve_gate_retry_sets_retry_pending(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    data["gate_state"] = "review_pending"
+    data["proposed_status"] = "specified"
+    node_path.write_text(json.dumps(data), encoding="utf-8")
+
+    exit_code = supervisor_module.main(resolve_gate="SG-SPEC-0001", decision="retry")
+    assert exit_code == 0
+
+    updated = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    assert updated["gate_state"] == "retry_pending"
+    assert updated["proposed_status"] is None
 
 
 def test_main_fails_when_changed_file_outside_allowed_paths(
@@ -152,259 +430,73 @@ def test_main_fails_when_changed_file_outside_allowed_paths(
     repo_fixture: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    changed_snapshots = [[], ["README.md"]]
-
-    def fake_git_changed_files() -> list[str]:
-        return changed_snapshots.pop(0)
-
-    monkeypatch.setattr(supervisor_module, "git_changed_files", fake_git_changed_files)
-
-    def fake_run_codex(_node: object) -> subprocess.CompletedProcess[str]:
-        (repo_fixture / "README.md").write_text("created by codex\n", encoding="utf-8")
-        return subprocess.CompletedProcess(args=["codex"], returncode=0, stdout="ok", stderr="")
-
+    worktree = make_fake_worktree(repo_fixture)
     monkeypatch.setattr(
         supervisor_module,
-        "run_codex",
-        fake_run_codex,
+        "create_isolated_worktree",
+        lambda _node_id: (worktree, "codex/sg-spec-0001/test"),
     )
 
-    exit_code = supervisor_module.main()
-    assert exit_code == 1
-
-    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
-    updated = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
-    assert "last_errors" in updated
-    assert any("outside allowed_paths" in err for err in updated["last_errors"])
-
-
-def test_main_detects_out_of_scope_change_when_file_already_dirty(
-    supervisor_module: object,
-    repo_fixture: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    readme_path = repo_fixture / "README.md"
-    readme_path.write_text("dirty before run\n", encoding="utf-8")
-    changed_snapshots = [["README.md"], ["README.md"]]
-
-    def fake_git_changed_files() -> list[str]:
-        return changed_snapshots.pop(0)
-
-    monkeypatch.setattr(supervisor_module, "git_changed_files", fake_git_changed_files)
-
-    def fake_run_codex(_node: object) -> subprocess.CompletedProcess[str]:
-        readme_path.write_text("dirty after run\n", encoding="utf-8")
-        return subprocess.CompletedProcess(args=["codex"], returncode=0, stdout="ok", stderr="")
-
-    monkeypatch.setattr(
-        supervisor_module,
-        "run_codex",
-        fake_run_codex,
-    )
-
-    exit_code = supervisor_module.main()
-    assert exit_code == 1
-
-    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
-    updated = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
-    assert "last_errors" in updated
-    assert any("outside allowed_paths" in err for err in updated["last_errors"])
-    assert updated["last_changed_files"] == ["README.md"]
-
-
-def test_main_detects_out_of_scope_deleted_file_when_initially_clean(
-    supervisor_module: object,
-    repo_fixture: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    readme_path = repo_fixture / "README.md"
-    readme_path.write_text("tracked content\n", encoding="utf-8")
     changed_snapshots = [[], ["README.md"]]
-
-    def fake_git_changed_files() -> list[str]:
-        return changed_snapshots.pop(0)
-
-    monkeypatch.setattr(supervisor_module, "git_changed_files", fake_git_changed_files)
-
-    def fake_run_codex(_node: object) -> subprocess.CompletedProcess[str]:
-        readme_path.unlink()
-        return subprocess.CompletedProcess(args=["codex"], returncode=0, stdout="ok", stderr="")
-
-    monkeypatch.setattr(supervisor_module, "run_codex", fake_run_codex)
-
-    exit_code = supervisor_module.main()
-    assert exit_code == 1
-
-    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
-    updated = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
-    assert "last_errors" in updated
-    assert any("outside allowed_paths" in err for err in updated["last_errors"])
-    assert updated["last_changed_files"] == ["README.md"]
-
-
-def test_main_reloads_node_after_codex_run_before_saving_metadata(
-    supervisor_module: object,
-    repo_fixture: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
     monkeypatch.setattr(
-        supervisor_module, "git_changed_files", lambda: ["specs/nodes/SG-SPEC-0001.yaml"]
+        supervisor_module, "git_changed_files", lambda _cwd=None: changed_snapshots.pop(0)
     )
 
-    def fake_run_codex(_node: object) -> subprocess.CompletedProcess[str]:
-        node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
-        data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
-        data["prompt"] = "Updated by Codex"
-        node_path.write_text(json.dumps(data), encoding="utf-8")
-        return subprocess.CompletedProcess(args=["codex"], returncode=0, stdout="ok", stderr="")
-
-    monkeypatch.setattr(supervisor_module, "run_codex", fake_run_codex)
-
-    exit_code = supervisor_module.main()
-    assert exit_code == 0
-
-    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
-    updated = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
-    assert updated["prompt"] == "Updated by Codex"
-
-
-def test_glob_allowed_paths_matches_wildcard(supervisor_module: object) -> None:
-    """fnmatch glob patterns should match files."""
-    node = supervisor_module.SpecNode(
-        path=Path("/tmp/x.yaml"),
-        data={"allowed_paths": ["specs/nodes/*.yaml"]},
-    )
-    errors = supervisor_module.validate_allowed_paths(
-        node, ["specs/nodes/SG-SPEC-0001.yaml", "specs/nodes/SG-SPEC-0002.yaml"]
-    )
-    assert errors == []
-
-
-def test_glob_allowed_paths_rejects_outside(supervisor_module: object) -> None:
-    """Files not matching any glob should be rejected."""
-    node = supervisor_module.SpecNode(
-        path=Path("/tmp/x.yaml"),
-        data={"allowed_paths": ["specs/nodes/*.yaml"]},
-    )
-    errors = supervisor_module.validate_allowed_paths(node, ["README.md"])
-    assert len(errors) == 1
-    assert "README.md" in errors[0]
-
-
-def test_detect_cycles_finds_simple_cycle(supervisor_module: object) -> None:
-    spec_node = supervisor_module.SpecNode
-    nodes = [
-        spec_node(path=Path("/tmp/a.yaml"), data={"id": "A", "depends_on": ["B"]}),
-        spec_node(path=Path("/tmp/b.yaml"), data={"id": "B", "depends_on": ["A"]}),
-    ]
-    cycles = supervisor_module.detect_cycles(nodes)
-    assert len(cycles) >= 1
-    flat = [item for cycle in cycles for item in cycle]
-    assert "A" in flat and "B" in flat
-
-
-def test_detect_cycles_returns_empty_for_dag(supervisor_module: object) -> None:
-    spec_node = supervisor_module.SpecNode
-    nodes = [
-        spec_node(path=Path("/tmp/a.yaml"), data={"id": "A", "depends_on": []}),
-        spec_node(path=Path("/tmp/b.yaml"), data={"id": "B", "depends_on": ["A"]}),
-    ]
-    cycles = supervisor_module.detect_cycles(nodes)
-    assert cycles == []
-
-
-def test_detect_cycles_three_node_cycle(supervisor_module: object) -> None:
-    spec_node = supervisor_module.SpecNode
-    nodes = [
-        spec_node(path=Path("/tmp/a.yaml"), data={"id": "A", "depends_on": ["C"]}),
-        spec_node(path=Path("/tmp/b.yaml"), data={"id": "B", "depends_on": ["A"]}),
-        spec_node(path=Path("/tmp/c.yaml"), data={"id": "C", "depends_on": ["B"]}),
-    ]
-    cycles = supervisor_module.detect_cycles(nodes)
-    assert len(cycles) >= 1
-
-
-def test_main_with_injectable_executor(
-    supervisor_module: object,
-    repo_fixture: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Injectable executor should be used instead of run_codex."""
-    monkeypatch.setattr(
-        supervisor_module, "git_changed_files", lambda: ["specs/nodes/SG-SPEC-0001.yaml"]
-    )
-
-    calls: list[str] = []
-
-    def custom_executor(node: object) -> subprocess.CompletedProcess[str]:
-        calls.append(node.id)
-        return subprocess.CompletedProcess(args=["custom"], returncode=0, stdout="ok", stderr="")
-
-    exit_code = supervisor_module.main(executor=custom_executor)
-    assert exit_code == 0
-    assert calls == ["SG-SPEC-0001"]
-
-
-def test_main_dry_run_does_not_execute(
-    supervisor_module: object,
-    repo_fixture: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Dry-run mode should not call the executor."""
-    called = []
-
-    def should_not_be_called(node: object) -> subprocess.CompletedProcess[str]:
-        called.append(True)
-        return subprocess.CompletedProcess(args=[], returncode=0, stdout="", stderr="")
-
-    exit_code = supervisor_module.main(executor=should_not_be_called, dry_run=True)
-    assert exit_code == 0
-    assert called == []
-
-
-def test_full_status_progression_specified_to_linked(
-    supervisor_module: object,
-    repo_fixture: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """A specified node should progress to linked on success."""
-    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
-    data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
-    data["status"] = "specified"
-    node_path.write_text(json.dumps(data), encoding="utf-8")
-
-    monkeypatch.setattr(
-        supervisor_module, "git_changed_files", lambda: ["specs/nodes/SG-SPEC-0001.yaml"]
-    )
-
-    def fake_executor(_node: object) -> subprocess.CompletedProcess[str]:
-        return subprocess.CompletedProcess(args=[], returncode=0, stdout="ok", stderr="")
+    def fake_executor(_node: object, _worktree_path: Path) -> subprocess.CompletedProcess[str]:
+        return subprocess.CompletedProcess(
+            args=["codex"],
+            returncode=0,
+            stdout="RUN_OUTCOME: done\nBLOCKER: none\n",
+            stderr="",
+        )
 
     exit_code = supervisor_module.main(executor=fake_executor)
-    assert exit_code == 0
+    assert exit_code == 1
 
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
     updated = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
-    assert updated["status"] == "linked"
+    assert any("outside allowed_paths" in err for err in updated["last_errors"])
 
 
-def test_status_progression_map_covers_lifecycle(supervisor_module: object) -> None:
-    """STATUS_PROGRESSION should cover all transitions except frozen."""
-    progression = supervisor_module.STATUS_PROGRESSION
-    assert progression["idea"] == "stub"
-    assert progression["stub"] == "outlined"
-    assert progression["outlined"] == "specified"
-    assert progression["specified"] == "linked"
-    assert progression["linked"] == "reviewed"
-    assert progression["reviewed"] == "frozen"
-    assert "frozen" not in progression
+def test_main_records_yaml_validation_error(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    worktree = make_fake_worktree(repo_fixture)
+    monkeypatch.setattr(
+        supervisor_module,
+        "create_isolated_worktree",
+        lambda _node_id: (worktree, "codex/sg-spec-0001/test"),
+    )
+
+    changed_snapshots = [[], ["specs/nodes/SG-SPEC-0001.yaml"]]
+    monkeypatch.setattr(
+        supervisor_module, "git_changed_files", lambda _cwd=None: changed_snapshots.pop(0)
+    )
+
+    def fake_executor(_node: object, worktree_path: Path) -> subprocess.CompletedProcess[str]:
+        node_path = worktree_path / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+        node_path.write_text("id: [broken yaml\n", encoding="utf-8")
+        return subprocess.CompletedProcess(
+            args=["codex"],
+            returncode=0,
+            stdout="RUN_OUTCOME: done\nBLOCKER: none\n",
+            stderr="",
+        )
+
+    exit_code = supervisor_module.main(executor=fake_executor)
+    assert exit_code == 1
+
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    updated = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    assert any("Invalid YAML" in err or "Failed to reload" in err for err in updated["last_errors"])
 
 
 def test_main_aborts_on_cycle(
     supervisor_module: object,
     repo_fixture: Path,
-    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """main() should return 1 when dependency cycles exist."""
     specs_dir = repo_fixture / "specs" / "nodes"
 
     node_a = specs_dir / "SG-SPEC-A.yaml"
@@ -440,26 +532,12 @@ def test_main_aborts_on_cycle(
     assert exit_code == 1
 
 
-def test_main_records_reload_failure_as_validation_error(
-    supervisor_module: object,
-    repo_fixture: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.setattr(
-        supervisor_module, "git_changed_files", lambda: ["specs/nodes/SG-SPEC-0001.yaml"]
-    )
-
-    def fake_run_codex(_node: object) -> subprocess.CompletedProcess[str]:
-        node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
-        node_path.write_text("id: [broken yaml\n", encoding="utf-8")
-        return subprocess.CompletedProcess(args=["codex"], returncode=0, stdout="ok", stderr="")
-
-    monkeypatch.setattr(supervisor_module, "run_codex", fake_run_codex)
-
-    exit_code = supervisor_module.main()
-    assert exit_code == 1
-
-    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
-    updated = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
-    assert "last_errors" in updated
-    assert any("Failed to reload node file" in err for err in updated["last_errors"])
+def test_status_progression_map_covers_lifecycle(supervisor_module: object) -> None:
+    progression = supervisor_module.STATUS_PROGRESSION
+    assert progression["idea"] == "stub"
+    assert progression["stub"] == "outlined"
+    assert progression["outlined"] == "specified"
+    assert progression["specified"] == "linked"
+    assert progression["linked"] == "reviewed"
+    assert progression["reviewed"] == "frozen"
+    assert "frozen" not in progression
