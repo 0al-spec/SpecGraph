@@ -29,7 +29,14 @@ AGENTS_FILE = ROOT / "AGENTS.md"
 READY_DEP_STATUSES = {"reviewed", "frozen"}
 WORKABLE_STATUSES = {"outlined", "specified"}
 VALID_STATUSES = {"idea", "stub", "outlined", "specified", "linked", "reviewed", "frozen"}
-BLOCKING_GATE_STATES = {"review_pending", "blocked", "split_required", "redirected", "escalated"}
+BLOCKING_GATE_STATES = {
+    "review_pending",
+    "retry_pending",
+    "blocked",
+    "split_required",
+    "redirected",
+    "escalated",
+}
 ALLOWED_OUTCOMES = {"done", "retry", "split_required", "blocked", "escalate"}
 
 STATUS_PROGRESSION: dict[str, str] = {
