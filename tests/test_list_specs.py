@@ -123,3 +123,80 @@ def test_review_pending_view_table(
     assert "C" in output
     assert "review_pending" in output
     assert "resolve gate" in output
+
+
+def test_linked_spec_with_unready_child_is_not_classified_blocked(
+    list_specs_module: object,
+    specs_fixture: Path,
+) -> None:
+    specs_dir = specs_fixture / "specs" / "nodes"
+    (specs_dir / "P.yaml").write_text(
+        json.dumps(
+            {
+                "id": "P",
+                "title": "Linked parent",
+                "status": "linked",
+                "maturity": 0.7,
+                "depends_on": ["Q"],
+                "acceptance": ["x"],
+                "gate_state": "none",
+                "required_human_action": "-",
+            }
+        ),
+        encoding="utf-8",
+    )
+    (specs_dir / "Q.yaml").write_text(
+        json.dumps(
+            {
+                "id": "Q",
+                "title": "Specified child",
+                "status": "specified",
+                "maturity": 0.4,
+                "depends_on": [],
+                "acceptance": ["x"],
+                "gate_state": "none",
+                "required_human_action": "-",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    specs = list_specs_module.supervisor.load_specs()
+    index = list_specs_module.supervisor.index_specs(specs)
+    parent = index["P"]
+
+    queue, blocked_by, required_action = list_specs_module.classify_spec(parent, index)
+    assert queue == "other"
+    assert blocked_by == "-"
+    assert required_action == "-"
+
+
+def test_linked_spec_with_missing_dependency_is_classified_blocked(
+    list_specs_module: object,
+    specs_fixture: Path,
+) -> None:
+    specs_dir = specs_fixture / "specs" / "nodes"
+    (specs_dir / "P.yaml").write_text(
+        json.dumps(
+            {
+                "id": "P",
+                "title": "Linked parent",
+                "status": "linked",
+                "maturity": 0.7,
+                "depends_on": ["Q"],
+                "acceptance": ["x"],
+                "gate_state": "none",
+                "required_human_action": "-",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    specs = list_specs_module.supervisor.load_specs()
+    index = list_specs_module.supervisor.index_specs(specs)
+    parent = index["P"]
+
+    queue, blocked_by, required_action = list_specs_module.classify_spec(parent, index)
+    assert queue == "blocked"
+    assert blocked_by == "Q (missing)"
+    assert required_action == "-"

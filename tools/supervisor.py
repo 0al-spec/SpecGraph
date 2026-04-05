@@ -9,6 +9,7 @@ import re
 import shutil
 import subprocess
 import sys
+import threading
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
@@ -29,15 +30,17 @@ AGENTS_FILE = ROOT / "AGENTS.md"
 READY_DEP_STATUSES = {"reviewed", "frozen"}
 WORKABLE_STATUSES = {"outlined", "specified"}
 VALID_STATUSES = {"idea", "stub", "outlined", "specified", "linked", "reviewed", "frozen"}
+ATOMICITY_MAX_ACCEPTANCE = 5
+ATOMICITY_MAX_BLOCKING_CHILDREN = 3
 BLOCKING_GATE_STATES = {
     "review_pending",
-    "retry_pending",
     "blocked",
     "split_required",
     "redirected",
     "escalated",
 }
 ALLOWED_OUTCOMES = {"done", "retry", "split_required", "blocked", "escalate"}
+SPEC_ID_PATTERN = re.compile(r"^SG-SPEC-(\d+)$")
 
 STATUS_PROGRESSION: dict[str, str] = {
     "idea": "stub",
@@ -111,12 +114,16 @@ class SpecNode:
 
 
 def load_specs() -> list[SpecNode]:
+    return load_specs_from_dir(SPECS_DIR)
+
+
+def load_specs_from_dir(specs_dir: Path) -> list[SpecNode]:
     yaml_module = get_yaml_module()
-    if not SPECS_DIR.exists():
+    if not specs_dir.exists():
         return []
 
     nodes: list[SpecNode] = []
-    for path in sorted(SPECS_DIR.glob("*.yaml")):
+    for path in sorted(specs_dir.glob("*.yaml")):
         with path.open("r", encoding="utf-8") as file:
             data = yaml_module.safe_load(file) or {}
         nodes.append(SpecNode(path=path, data=data))
@@ -136,12 +143,87 @@ def reverse_dependents_count(specs: list[SpecNode]) -> dict[str, int]:
     return counts
 
 
-def dependencies_ready(node: SpecNode, index: dict[str, SpecNode]) -> bool:
+def semantic_dependencies_resolved(node: SpecNode, index: dict[str, SpecNode]) -> bool:
+    for dep_id in node.depends_on:
+        if index.get(dep_id) is None:
+            return False
+    return True
+
+
+def work_dependencies_ready(node: SpecNode, index: dict[str, SpecNode]) -> bool:
     for dep_id in node.depends_on:
         dep = index.get(dep_id)
         if dep is None or dep.status not in READY_DEP_STATUSES:
             return False
     return True
+
+
+def dependencies_ready(node: SpecNode, index: dict[str, SpecNode]) -> bool:
+    return work_dependencies_ready(node, index)
+
+
+def transitive_dependency_count(
+    node: SpecNode,
+    index: dict[str, SpecNode],
+) -> int:
+    seen: set[str] = set()
+    stack = list(node.depends_on)
+
+    while stack:
+        dep_id = stack.pop()
+        if dep_id in seen:
+            continue
+        seen.add(dep_id)
+        dep = index.get(dep_id)
+        if dep is not None:
+            stack.extend(dep.depends_on)
+
+    return len(seen)
+
+
+def is_ancestor_reconcile_candidate(node: SpecNode, index: dict[str, SpecNode]) -> bool:
+    return (
+        node.status == "specified"
+        and bool(node.depends_on)
+        and semantic_dependencies_resolved(node, index)
+    )
+
+
+def selection_mode_for_node(
+    node: SpecNode,
+    specs: list[SpecNode] | None = None,
+) -> str:
+    local_specs = specs or load_specs()
+    index = index_specs(local_specs)
+    if is_ancestor_reconcile_candidate(node, index) and not is_gate_blocking(node):
+        return "ancestor_reconcile"
+    return "default_refine"
+
+
+def is_seed_like_spec(node_data: dict[str, Any]) -> bool:
+    texts: list[str] = [
+        str(node_data.get("title", "")),
+        str(node_data.get("prompt", "")),
+    ]
+    specification = node_data.get("specification")
+    if isinstance(specification, dict):
+        texts.append(str(specification.get("objective", "")))
+        scope = specification.get("scope")
+        if isinstance(scope, dict):
+            in_scope = scope.get("in")
+            if isinstance(in_scope, list):
+                texts.extend(str(item) for item in in_scope)
+
+    combined = " ".join(texts).lower()
+    return any(
+        term in combined
+        for term in (
+            "seed ontology",
+            "seed spec",
+            "root spec",
+            "overview spec",
+        )
+    )
 
 
 def is_gate_blocking(node: SpecNode) -> bool:
@@ -151,11 +233,22 @@ def is_gate_blocking(node: SpecNode) -> bool:
 def pick_next_spec_gap(specs: list[SpecNode]) -> SpecNode | None:
     index = index_specs(specs)
     dependents = reverse_dependents_count(specs)
+    ancestor_candidates = [
+        spec
+        for spec in specs
+        if is_ancestor_reconcile_candidate(spec, index) and not is_gate_blocking(spec)
+    ]
+    if ancestor_candidates:
+        ancestor_candidates.sort(
+            key=lambda spec: (transitive_dependency_count(spec, index), spec.maturity, spec.id)
+        )
+        return ancestor_candidates[0]
+
     candidates = [
         spec
         for spec in specs
         if spec.status in WORKABLE_STATUSES
-        and dependencies_ready(spec, index)
+        and work_dependencies_ready(spec, index)
         and not is_gate_blocking(spec)
     ]
     if not candidates:
@@ -226,6 +319,45 @@ def snapshot_file_digests(paths: list[str], base_dir: Path) -> dict[str, str | N
     return digests
 
 
+def next_sequential_spec_id(specs: list[SpecNode]) -> str:
+    max_number = 0
+    for spec in specs:
+        match = SPEC_ID_PATTERN.match(spec.id)
+        if match:
+            max_number = max(max_number, int(match.group(1)))
+    return f"SG-SPEC-{max_number + 1:04d}"
+
+
+def can_create_new_spec_files(node: SpecNode) -> bool:
+    if not node.allowed_paths:
+        return True
+    sample_path = PurePosixPath("specs/nodes/SG-SPEC-9999.yaml")
+    return any(sample_path.match(pattern) for pattern in node.allowed_paths)
+
+
+def bootstrap_child_hint(node: SpecNode, specs: list[SpecNode]) -> dict[str, str] | None:
+    if not can_create_new_spec_files(node):
+        return None
+
+    seed_text_parts = [node.prompt]
+    acceptance = node.data.get("acceptance", [])
+    if isinstance(acceptance, list):
+        seed_text_parts.extend(str(item) for item in acceptance)
+    seed_text = " ".join(seed_text_parts).lower()
+    if not any(
+        term in seed_text
+        for term in ("seed", "child spec", "child specs", "descendant", "refine unresolved")
+    ):
+        return None
+
+    child_id = next_sequential_spec_id(specs)
+    child_path = f"specs/nodes/{child_id}.yaml"
+    return {
+        "id": child_id,
+        "path": child_path,
+    }
+
+
 def build_prompt(node: SpecNode) -> str:
     agents_hint = ""
     if AGENTS_FILE.exists():
@@ -233,6 +365,54 @@ def build_prompt(node: SpecNode) -> str:
 
     allowed_paths = "\n".join(f"- {path}" for path in node.allowed_paths) or "- (not specified)"
     outputs = "\n".join(f"- {path}" for path in node.outputs) or "- (not specified)"
+    bootstrap_hint = bootstrap_child_hint(node, load_specs())
+    selection_mode = selection_mode_for_node(node)
+    refinement_section = """
+
+Refinement policy:
+- Treat the current spec as one bounded piece of a larger puzzle graph.
+- Aim for one bounded concern per spec node, not one large document.
+- Prefer the smallest honest change that can advance this node by one status step.
+- Do not try to make the current spec complete in one run.
+- Resolve at most one concrete unresolved area per run.
+- If multiple independent refinement paths are possible, choose one and leave the others unchanged.
+- Prefer creating or refining one child spec over expanding the parent when the topic is separable.
+- If decomposition is clearly needed, you may create multiple sibling child specs in one run.
+- If the node remains non-atomic after your edits, end with RUN_OUTCOME: split_required.
+""".rstrip()
+    mode_section = ""
+    if selection_mode == "ancestor_reconcile":
+        mode_section = """
+
+Refinement mode: ancestor_reconcile
+- This spec appears semantically unlocked by descendant specs that already exist.
+- Focus on reconciling this ancestor with the current graph state.
+- Prefer updating links, acceptance_evidence, blockers,
+  and status-readiness over expanding scope.
+- Do not open new independent refinement branches unless
+  the current node is still structurally blocked.
+- Keep the change narrow enough that further unlocked ancestors can be handled in later runs.
+""".rstrip()
+    bootstrap_section = ""
+    if bootstrap_hint is not None:
+        bootstrap_section = f"""
+
+Bootstrap guidance:
+- You may create one or more new child specs in this run
+  if decomposition is the right way to refine the current seed spec.
+- Suggested first child spec ID: {bootstrap_hint["id"]}
+- Suggested child spec path: {bootstrap_hint["path"]}
+- If you create additional siblings, continue with the next sequential spec IDs.
+- Prefer creating the child specs in this run rather than only describing them in prose.
+- Each child spec should own one concrete unresolved refinement area from the current node.
+- Give each child its own acceptance criteria, prompt, outputs, and allowed_paths.
+- Update the current node so each blocking child is part of
+  its refinement path. Prefer `depends_on` entries for children
+  that must be completed before the parent can advance.
+- Do not mark the current node `linked` unless concrete
+  descendant specs now exist and the dependency/refinement
+  chain is explicit.
+""".rstrip()
 
     return f"""
 You are refining a specification node in SpecGraph.
@@ -250,6 +430,9 @@ Allowed paths:
 
 Expected outputs:
 {outputs}
+{refinement_section}
+{mode_section}
+{bootstrap_section}
 
 Rules:
 - Refine specification only.
@@ -344,6 +527,32 @@ def validate_acceptance_evidence(node_data: dict[str, Any]) -> list[str]:
     return errors
 
 
+def validate_atomicity(node: SpecNode) -> list[str]:
+    if str(node.data.get("kind", "")).strip() != "spec":
+        return []
+    if is_seed_like_spec(node.data):
+        return []
+
+    errors: list[str] = []
+    acceptance = node.data.get("acceptance")
+    if isinstance(acceptance, list) and len(acceptance) > ATOMICITY_MAX_ACCEPTANCE:
+        errors.append(
+            "Atomicity gate exceeded: "
+            f"{len(acceptance)} acceptance criteria > {ATOMICITY_MAX_ACCEPTANCE}. "
+            "Split independent concerns into child specs."
+        )
+
+    depends_on = node.data.get("depends_on")
+    if isinstance(depends_on, list) and len(depends_on) > ATOMICITY_MAX_BLOCKING_CHILDREN:
+        errors.append(
+            "Atomicity gate exceeded: "
+            f"{len(depends_on)} blocking children > {ATOMICITY_MAX_BLOCKING_CHILDREN}. "
+            "Prefer smaller sibling specs or an intermediate overview node."
+        )
+
+    return errors
+
+
 def validate_transition(from_status: str, to_status: str | None) -> list[str]:
     if from_status not in VALID_STATUSES:
         return [f"Unknown source status: {from_status}"]
@@ -357,6 +566,201 @@ def validate_transition(from_status: str, to_status: str | None) -> list[str]:
     if to_status != expected:
         return [f"Invalid transition: expected {from_status}->{expected}, got {to_status}"]
     return []
+
+
+def is_spec_node_path(rel_path: str) -> bool:
+    path = PurePosixPath(rel_path)
+    return path.match("specs/nodes/*.yaml") or path.match("specs/nodes/*.yml")
+
+
+def changed_spec_nodes(
+    *,
+    changed_files: list[str],
+    worktree_specs: list[SpecNode],
+    worktree_path: Path,
+) -> list[SpecNode]:
+    changed_paths = {
+        (worktree_path / rel_path).resolve()
+        for rel_path in changed_files
+        if is_spec_node_path(rel_path)
+    }
+    return [spec for spec in worktree_specs if spec.path.resolve() in changed_paths]
+
+
+def specs_requiring_validation(
+    *,
+    source_node_id: str,
+    changed_files: list[str],
+    worktree_specs: list[SpecNode],
+    worktree_path: Path,
+) -> list[SpecNode]:
+    selected: dict[str, SpecNode] = {
+        spec.id: spec
+        for spec in changed_spec_nodes(
+            changed_files=changed_files,
+            worktree_specs=worktree_specs,
+            worktree_path=worktree_path,
+        )
+        if spec.id
+    }
+    for spec in worktree_specs:
+        if spec.id == source_node_id:
+            selected[spec.id] = spec
+            break
+    return list(selected.values())
+
+
+def validate_changed_spec_nodes(
+    *,
+    source_node_id: str,
+    changed_files: list[str],
+    worktree_specs: list[SpecNode],
+    worktree_path: Path,
+) -> list[str]:
+    errors: list[str] = []
+    for spec in specs_requiring_validation(
+        source_node_id=source_node_id,
+        changed_files=changed_files,
+        worktree_specs=worktree_specs,
+        worktree_path=worktree_path,
+    ):
+        status_errors = validate_status_format(spec.data)
+        acceptance_errors: list[str] = []
+        requires_acceptance_evidence = spec.id == source_node_id or spec.status not in {
+            "idea",
+            "stub",
+            "outlined",
+        }
+        if requires_acceptance_evidence:
+            acceptance_errors = validate_acceptance_evidence(spec.data)
+        output_errors = validate_outputs(spec, base_dir=worktree_path)
+        rel_path = spec.path.relative_to(worktree_path).as_posix()
+        errors.extend(f"{rel_path}: {error}" for error in status_errors)
+        errors.extend(f"{rel_path}: {error}" for error in acceptance_errors)
+        errors.extend(output_errors)
+    return errors
+
+
+def validate_changed_spec_atomicity(
+    *,
+    source_node_id: str,
+    changed_files: list[str],
+    worktree_specs: list[SpecNode],
+    worktree_path: Path,
+) -> list[str]:
+    errors: list[str] = []
+    for spec in specs_requiring_validation(
+        source_node_id=source_node_id,
+        changed_files=changed_files,
+        worktree_specs=worktree_specs,
+        worktree_path=worktree_path,
+    ):
+        rel_path = spec.path.relative_to(worktree_path).as_posix()
+        errors.extend(f"{rel_path}: {error}" for error in validate_atomicity(spec))
+    return errors
+
+
+def validate_linkage_semantics(
+    *,
+    source_node: SpecNode,
+    reconciled_node: SpecNode,
+    index: dict[str, SpecNode],
+) -> list[str]:
+    errors: list[str] = []
+    proposed_status = STATUS_PROGRESSION.get(source_node.status)
+    if proposed_status != "linked":
+        return errors
+    if not semantic_dependencies_resolved(reconciled_node, index):
+        missing = [dep_id for dep_id in reconciled_node.depends_on if dep_id not in index]
+        errors.append(
+            "Cannot advance to linked: missing declared dependency nodes "
+            + ", ".join(sorted(missing))
+        )
+        return errors
+
+    for dep_id in reconciled_node.depends_on:
+        dep = index.get(dep_id)
+        if dep is None:
+            continue
+        refines = dep.data.get("refines", [])
+        if not isinstance(refines, list) or source_node.id not in {str(item) for item in refines}:
+            errors.append(
+                f"Cannot advance to linked: dependency {dep_id} must declare "
+                f"refines: [{source_node.id}] to make the refinement chain explicit"
+            )
+    return errors
+
+
+def reconcile_graph(
+    *,
+    source_node: SpecNode,
+    worktree_path: Path,
+    changed_files: list[str],
+) -> tuple[dict[str, Any], list[str]]:
+    errors: list[str] = []
+    try:
+        worktree_specs = load_specs_from_dir(worktree_path / "specs" / "nodes")
+    except Exception as exc:
+        return (
+            {
+                "worktree_spec_count": 0,
+                "changed_spec_ids": [],
+                "semantic_dependencies_resolved": False,
+                "work_dependencies_ready": False,
+                "cycles": [],
+            },
+            [f"Failed to load worktree specs: {exc}"],
+        )
+
+    index = index_specs(worktree_specs)
+    reconciled_node = index.get(source_node.id)
+    if reconciled_node is None:
+        return (
+            {
+                "worktree_spec_count": len(worktree_specs),
+                "changed_spec_ids": [],
+                "semantic_dependencies_resolved": False,
+                "work_dependencies_ready": False,
+                "cycles": [],
+            },
+            [f"Reconciled node missing from worktree graph: {source_node.id}"],
+        )
+
+    changed_nodes = changed_spec_nodes(
+        changed_files=changed_files,
+        worktree_specs=worktree_specs,
+        worktree_path=worktree_path,
+    )
+    errors.extend(
+        validate_changed_spec_nodes(
+            source_node_id=source_node.id,
+            changed_files=changed_files,
+            worktree_specs=worktree_specs,
+            worktree_path=worktree_path,
+        )
+    )
+
+    cycles = detect_cycles(worktree_specs)
+    if cycles:
+        for cycle in cycles:
+            errors.append("Dependency cycle detected in worktree graph: " + " -> ".join(cycle))
+
+    errors.extend(
+        validate_linkage_semantics(
+            source_node=source_node,
+            reconciled_node=reconciled_node,
+            index=index,
+        )
+    )
+
+    result = {
+        "worktree_spec_count": len(worktree_specs),
+        "changed_spec_ids": [spec.id for spec in changed_nodes if spec.id],
+        "semantic_dependencies_resolved": semantic_dependencies_resolved(reconciled_node, index),
+        "work_dependencies_ready": work_dependencies_ready(reconciled_node, index),
+        "cycles": cycles,
+    }
+    return result, errors
 
 
 def parse_outcome(stdout: str, returncode: int) -> tuple[str, str]:
@@ -435,6 +839,13 @@ def create_isolated_worktree(node_id: str) -> tuple[Path, str]:
     return worktree_path, branch
 
 
+def sync_current_node_into_worktree(node: SpecNode, worktree_path: Path) -> Path:
+    worktree_node_path = worktree_path / node.path.relative_to(ROOT)
+    worktree_node_path.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(node.path, worktree_node_path)
+    return worktree_node_path
+
+
 def sync_files_from_worktree(worktree_path: Path, rel_paths: list[str]) -> None:
     for rel_path in rel_paths:
         src = worktree_path / rel_path
@@ -448,12 +859,55 @@ def sync_files_from_worktree(worktree_path: Path, rel_paths: list[str]) -> None:
 
 
 def run_codex(node: SpecNode, worktree_path: Path) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(
-        ["codex", "exec", build_prompt(node)],
+    cmd = [
+        "codex",
+        "exec",
+        "-c",
+        'model_reasoning_effort="medium"',
+        build_prompt(node),
+    ]
+    print(f"Launching codex exec for {node.id} in {worktree_path}")
+    process = subprocess.Popen(
+        cmd,
         cwd=worktree_path,
-        capture_output=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
         text=True,
-        check=False,
+        bufsize=1,
+    )
+
+    stdout_chunks: list[str] = []
+    stderr_chunks: list[str] = []
+
+    def _forward(stream: Any, sink: list[str], prefix: str, target: Any) -> None:
+        try:
+            for line in iter(stream.readline, ""):
+                sink.append(line)
+                print(f"{prefix}{line}", end="", file=target)
+        finally:
+            stream.close()
+
+    stdout_thread = threading.Thread(
+        target=_forward,
+        args=(process.stdout, stdout_chunks, "[codex stdout] ", sys.stdout),
+        daemon=True,
+    )
+    stderr_thread = threading.Thread(
+        target=_forward,
+        args=(process.stderr, stderr_chunks, "[codex stderr] ", sys.stderr),
+        daemon=True,
+    )
+    stdout_thread.start()
+    stderr_thread.start()
+    returncode = process.wait()
+    stdout_thread.join()
+    stderr_thread.join()
+
+    return subprocess.CompletedProcess(
+        args=cmd,
+        returncode=returncode,
+        stdout="".join(stdout_chunks),
+        stderr="".join(stderr_chunks),
     )
 
 
@@ -537,10 +991,18 @@ def _process_one_spec(
 ) -> tuple[int, str]:
     """Process a single spec node. Returns (exit_code, outcome)."""
     dependents = reverse_dependents_count(specs)
+    selection_mode = selection_mode_for_node(node, specs)
     selected_by_rule = {
         "status_filter": sorted(WORKABLE_STATUSES),
         "dependency_required_statuses": sorted(READY_DEP_STATUSES),
-        "sort_order": ["leaf_first", "lower_maturity", "stable_id"],
+        "selection_mode": selection_mode,
+        "sort_order": [
+            "ancestor_reconcile_first",
+            "nearest_unlocked_ancestor",
+            "leaf_first",
+            "lower_maturity",
+            "stable_id",
+        ],
         "dependents_count": dependents.get(node.id, 0),
     }
 
@@ -551,11 +1013,17 @@ def _process_one_spec(
     except RuntimeError as exc:
         print(f"Failed to create worktree: {exc}", file=sys.stderr)
         return 1, "escalate"
+    print(f"Created worktree: {worktree_path}")
+    print(f"Branch: {branch}")
+    synced_node_path = sync_current_node_into_worktree(node, worktree_path)
+    print(f"Seeded worktree node from current tree: {synced_node_path}")
 
     before = git_changed_files(worktree_path)
     tracked_paths = sorted(set(before))
     before_digests = snapshot_file_digests(tracked_paths, base_dir=worktree_path)
+    print(f"Starting executor for {node.id}...")
     result = executor(node, worktree_path)
+    print(f"Executor finished for {node.id} with exit_code={result.returncode}")
     after = git_changed_files(worktree_path)
     tracked_paths = sorted(set(before) | set(after))
     after_digests = snapshot_file_digests(tracked_paths, base_dir=worktree_path)
@@ -564,28 +1032,32 @@ def _process_one_spec(
     changed = sorted(
         path
         for path in tracked_paths
-        if path in (after_set - before_set) or before_digests.get(path) != after_digests.get(path)
+        if before_digests.get(path) != after_digests.get(path)
+        or (path in (after_set - before_set) and not is_spec_node_path(path))
     )
+    print(f"Detected changed files: {changed or ['(none)']}")
 
     run_timestamp = dt.datetime.now(dt.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     run_id = f"{run_timestamp}-{node.id}"
 
-    worktree_node_path = worktree_path / node.path.relative_to(ROOT)
-    worktree_node_data: dict[str, Any] = {}
-    reload_errors: list[str] = []
-    try:
-        worktree_node_data = (
-            get_yaml_module().safe_load(worktree_node_path.read_text(encoding="utf-8")) or {}
-        )
-    except Exception as exc:
-        reload_errors.append(f"Failed to reload node file {worktree_node_path.as_posix()}: {exc}")
-
     output_errors = validate_outputs(node, base_dir=worktree_path)
     allowed_path_errors = validate_allowed_paths(node, changed)
-    status_format_errors = validate_status_format(worktree_node_data) if worktree_node_data else []
-    acceptance_errors = (
-        validate_acceptance_evidence(worktree_node_data) if worktree_node_data else []
+    reconciliation, reconciliation_errors = reconcile_graph(
+        source_node=node,
+        worktree_path=worktree_path,
+        changed_files=changed,
     )
+    try:
+        worktree_specs = load_specs_from_dir(worktree_path / "specs" / "nodes")
+    except Exception as exc:
+        atomicity_errors = [f"Failed to load worktree specs for atomicity validation: {exc}"]
+    else:
+        atomicity_errors = validate_changed_spec_atomicity(
+            source_node_id=node.id,
+            changed_files=changed,
+            worktree_specs=worktree_specs,
+            worktree_path=worktree_path,
+        )
 
     proposed_status = STATUS_PROGRESSION.get(node.status)
     transition_errors = validate_transition(node.status, proposed_status)
@@ -593,17 +1065,34 @@ def _process_one_spec(
     validation_errors: list[str] = []
     validation_errors.extend(output_errors)
     validation_errors.extend(allowed_path_errors)
-    validation_errors.extend(reload_errors)
-    validation_errors.extend(status_format_errors)
-    validation_errors.extend(acceptance_errors)
+    validation_errors.extend(reconciliation_errors)
+    validation_errors.extend(atomicity_errors)
     validation_errors.extend(transition_errors)
 
     outcome, blocker = parse_outcome(result.stdout, result.returncode)
+    if atomicity_errors and outcome == "done":
+        outcome = "split_required"
+        if not blocker:
+            blocker = "spec exceeds atomicity quality gate"
     success = result.returncode == 0 and not validation_errors and outcome == "done"
 
     required_human_action = "resolve gate: approve|retry|split|block|redirect|escalate"
     node.data["proposed_status"] = None
     node.data["proposed_maturity"] = None
+
+    split_sync_allowed = (
+        outcome == "split_required"
+        and any(spec_id != node.id for spec_id in reconciliation.get("changed_spec_ids", []))
+        and result.returncode == 0
+        and not output_errors
+        and not allowed_path_errors
+        and not reconciliation_errors
+        and not transition_errors
+    )
+    if split_sync_allowed:
+        allowed_changes = select_sync_paths(node.allowed_paths, changed)
+        sync_files_from_worktree(worktree_path, allowed_changes)
+        node.reload()
 
     if success:
         proposed_maturity = min(1.0, round(node.maturity + 0.2, 2))
@@ -643,9 +1132,8 @@ def _process_one_spec(
     validator_results = {
         "outputs": not output_errors,
         "allowed_paths": not allowed_path_errors,
-        "yaml_reload": not reload_errors,
-        "status_format": not status_format_errors,
-        "acceptance_evidence": not acceptance_errors,
+        "reconciliation": not reconciliation_errors,
+        "atomicity": not atomicity_errors,
         "transition": not transition_errors,
     }
 
@@ -659,6 +1147,7 @@ def _process_one_spec(
     node.data["last_worktree_path"] = worktree_path.as_posix()
     node.data["last_branch"] = branch
     node.data["last_validator_results"] = validator_results
+    node.data["last_reconciliation"] = reconciliation
     if validation_errors:
         node.data["last_errors"] = validation_errors
     node.save()
@@ -683,6 +1172,7 @@ def _process_one_spec(
         "changed_files": changed,
         "validation_errors": validation_errors,
         "validator_results": validator_results,
+        "reconciliation": reconciliation,
         "stdout": result.stdout,
         "stderr": result.stderr,
     }
@@ -814,10 +1304,18 @@ def main(
         return 0
 
     dependents = reverse_dependents_count(specs)
+    selection_mode = selection_mode_for_node(node, specs)
     selected_by_rule = {
         "status_filter": sorted(WORKABLE_STATUSES),
         "dependency_required_statuses": sorted(READY_DEP_STATUSES),
-        "sort_order": ["leaf_first", "lower_maturity", "stable_id"],
+        "selection_mode": selection_mode,
+        "sort_order": [
+            "ancestor_reconcile_first",
+            "nearest_unlocked_ancestor",
+            "leaf_first",
+            "lower_maturity",
+            "stable_id",
+        ],
         "dependents_count": dependents.get(node.id, 0),
     }
 
