@@ -188,7 +188,7 @@ def test_observe_graph_health_reports_reflective_signals(
         source_node=source,
         worktree_specs=[source],
         reconciliation={"semantic_dependencies_resolved": False},
-        atomicity_errors=["Atomicity gate exceeded"],
+        atomicity_errors=[],
         outcome="split_required",
     )
 
@@ -199,6 +199,40 @@ def test_observe_graph_health_reports_reflective_signals(
     assert "stalled_maturity_candidate" in graph_health["signals"]
     assert "weak_structural_linkage_candidate" in graph_health["signals"]
     assert "split_or_narrow_spec" in graph_health["recommended_actions"]
+
+
+def test_observe_graph_health_does_not_mark_source_oversized_for_child_atomicity(
+    supervisor_module: object,
+) -> None:
+    spec_node = supervisor_module.SpecNode
+    source = spec_node(
+        path=Path("/tmp/source.yaml"),
+        data={
+            "id": "SG-SPEC-9999",
+            "title": "Working Node",
+            "kind": "spec",
+            "status": "specified",
+            "maturity": 0.4,
+            "depends_on": [],
+            "acceptance": ["criterion-1"],
+            "prompt": "Refine one bounded slice of this node.",
+        },
+    )
+
+    graph_health = supervisor_module.observe_graph_health(
+        source_node=source,
+        worktree_specs=[source],
+        reconciliation={"semantic_dependencies_resolved": True},
+        atomicity_errors=[
+            "specs/nodes/SG-SPEC-1000.yaml: Atomicity gate exceeded: child is oversized"
+        ],
+        outcome="done",
+    )
+
+    assert "oversized_spec" not in graph_health["signals"]
+    assert not any(
+        observation["kind"] == "oversized_spec" for observation in graph_health["observations"]
+    )
 
 
 def test_update_refactor_queue_writes_classified_work_items(

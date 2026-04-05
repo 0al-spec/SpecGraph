@@ -779,12 +779,12 @@ def observe_graph_health(
     reconciled_node = index.get(source_node.id)
     if reconciled_node is not None:
         local_atomicity = validate_atomicity(reconciled_node)
-        if local_atomicity or atomicity_errors:
+        if local_atomicity:
             observations.append(
                 {
                     "kind": "oversized_spec",
                     "spec_id": source_node.id,
-                    "details": local_atomicity or atomicity_errors,
+                    "details": local_atomicity,
                 }
             )
             signals.append("oversized_spec")
