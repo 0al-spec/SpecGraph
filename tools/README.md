@@ -26,6 +26,8 @@ Supervisor modes:
 - `--target-spec SPEC_ID --split-proposal`: run the explicit proposal-first split pass for one
   oversized non-seed spec and emit a structured artifact under `runs/proposals/` without editing
   canonical spec files.
+- `--target-spec SPEC_ID --apply-split-proposal`: deterministically materialize one reviewed split
+  proposal into canonical parent/child spec files and mark the proposal artifact as applied.
 
 Canonical YAML helpers for spec nodes:
 

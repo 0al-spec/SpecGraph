@@ -20,6 +20,8 @@ Execution modes:
 - explicit split proposal mode: analyze one oversized non-seed spec and emit a
   structured proposal artifact under `runs/proposals/` without mutating
   canonical spec files
+- explicit split proposal application: deterministically materialize one
+  reviewed split proposal into canonical parent/child spec files
 
 Derived artifacts:
 - run logs: `runs/<RUN_ID>.json`
@@ -66,6 +68,7 @@ ATOMICITY_MAX_BLOCKING_CHILDREN = 3
 RECURRING_REFACTOR_PROPOSAL_THRESHOLD = 2
 SPLIT_REFACTOR_SIGNAL = "oversized_spec"
 SPLIT_REFACTOR_KIND = "split_oversized_spec"
+APPLICABLE_PROPOSAL_STATUSES = {"proposed", "review_pending", "pending_review", "approved"}
 BLOCKING_GATE_STATES = {
     "review_pending",
     "blocked",
@@ -751,6 +754,35 @@ def validate_acceptance_evidence(node_data: dict[str, Any]) -> list[str]:
     return errors
 
 
+def validate_relation_semantics(node_data: dict[str, Any]) -> list[str]:
+    """Reject redundant weak relations when a stronger edge already exists."""
+    errors: list[str] = []
+    relation_lists: dict[str, set[str]] = {}
+
+    for field in ("depends_on", "relates_to", "refines"):
+        value = node_data.get(field, [])
+        if value is None:
+            relation_lists[field] = set()
+            continue
+        if not isinstance(value, list):
+            errors.append(f"{field} must be a list when present")
+            relation_lists[field] = set()
+            continue
+        relation_lists[field] = {str(item).strip() for item in value if str(item).strip()}
+
+    for target in sorted(relation_lists["relates_to"] & relation_lists["refines"]):
+        errors.append(
+            f"relates_to MUST NOT include {target} when refines already targets the same spec"
+        )
+
+    for target in sorted(relation_lists["relates_to"] & relation_lists["depends_on"]):
+        errors.append(
+            f"relates_to MUST NOT include {target} when depends_on already targets the same spec"
+        )
+
+    return errors
+
+
 def validate_atomicity(node: SpecNode) -> list[str]:
     if str(node.data.get("kind", "")).strip() != "spec":
         return []
@@ -883,6 +915,7 @@ def validate_changed_spec_nodes(
         worktree_path=worktree_path,
     ):
         status_errors = validate_status_format(spec.data)
+        relation_errors = validate_relation_semantics(spec.data)
         acceptance_errors: list[str] = []
         requires_acceptance_evidence = spec.id == source_node_id or spec.status not in {
             "idea",
@@ -894,6 +927,7 @@ def validate_changed_spec_nodes(
         output_errors = validate_outputs(spec, base_dir=worktree_path)
         rel_path = spec.path.relative_to(worktree_path).as_posix()
         errors.extend(f"{rel_path}: {error}" for error in status_errors)
+        errors.extend(f"{rel_path}: {error}" for error in relation_errors)
         errors.extend(f"{rel_path}: {error}" for error in acceptance_errors)
         errors.extend(output_errors)
     return errors
@@ -1193,6 +1227,19 @@ def proposal_artifact_relpath(*, proposal_type: str, spec_id: str, signal: str) 
     )
 
 
+def proposal_item_path(item: dict[str, Any]) -> Path:
+    path_value = str(item.get("proposal_artifact_path", "")).strip()
+    if not path_value:
+        path_value = proposal_artifact_relpath(
+            proposal_type=str(item.get("proposal_type", "")).strip() or "refactor_proposal",
+            spec_id=str(item.get("target_spec_id", "")).strip()
+            or str(item.get("spec_id", "")).strip(),
+            signal=str(item.get("source_signal", "")).strip()
+            or str(item.get("signal", "")).strip(),
+        )
+    return ROOT / path_value
+
+
 def run_log_paths() -> list[Path]:
     return sorted(RUNS_DIR.glob("*-SG-SPEC-*.json"))
 
@@ -1216,6 +1263,11 @@ def default_action_for_signal(signal: str) -> str:
 def proposal_is_active(item: dict[str, Any]) -> bool:
     status = str(item.get("status", "proposed")).strip()
     return status in {"proposed", "review_pending", "pending_review"}
+
+
+def proposal_is_applicable(item: dict[str, Any]) -> bool:
+    status = str(item.get("status", "proposed")).strip()
+    return status in APPLICABLE_PROPOSAL_STATUSES
 
 
 def has_active_proposal_for_signal(
@@ -1491,7 +1543,7 @@ def validate_split_proposal_artifact(
     *,
     artifact: dict[str, Any],
     node: SpecNode,
-    run_id: str,
+    run_id: str | None,
 ) -> list[str]:
     errors: list[str] = []
     expected_id = f"refactor_proposal::{node.id}::{SPLIT_REFACTOR_SIGNAL}"
@@ -1518,7 +1570,7 @@ def validate_split_proposal_artifact(
     source_run_ids = artifact.get("source_run_ids")
     if not isinstance(source_run_ids, list) or not source_run_ids:
         errors.append("source_run_ids must be a non-empty list")
-    else:
+    elif run_id is not None:
         normalized_source_run_ids = [
             str(item).strip() for item in source_run_ids if str(item).strip()
         ]
@@ -1707,6 +1759,201 @@ def validate_split_proposal_artifact(
             )
 
     return errors
+
+
+def find_split_proposal_queue_item(spec_id: str) -> dict[str, Any] | None:
+    for item in load_proposal_queue():
+        if str(item.get("spec_id", "")).strip() != spec_id:
+            continue
+        if str(item.get("proposal_type", "")).strip() != "refactor_proposal":
+            continue
+        if str(item.get("refactor_kind", "")).strip() != SPLIT_REFACTOR_KIND:
+            continue
+        if str(item.get("signal", "")).strip() != SPLIT_REFACTOR_SIGNAL:
+            continue
+        if not proposal_is_applicable(item):
+            continue
+        return item
+    return None
+
+
+def proposal_evidence_for_index(
+    evidence_items: list[Any],
+    *,
+    acceptance_index: int,
+    proposal_id: str,
+) -> Any:
+    if 0 < acceptance_index <= len(evidence_items):
+        existing = evidence_items[acceptance_index - 1]
+        if str(existing).strip():
+            return existing
+    return f"Retained from applied split proposal {proposal_id} for acceptance [{acceptance_index}]"
+
+
+def validate_split_proposal_application_target(
+    *,
+    node: SpecNode,
+    proposal_item: dict[str, Any],
+    proposal_artifact: dict[str, Any],
+    current_index: dict[str, SpecNode],
+) -> list[str]:
+    errors = validate_split_refactor_target(node)
+    if str(proposal_item.get("proposal_type", "")).strip() != "refactor_proposal":
+        errors.append("split proposal application requires proposal_type refactor_proposal")
+    if str(proposal_item.get("refactor_kind", "")).strip() != SPLIT_REFACTOR_KIND:
+        errors.append(f"split proposal application requires refactor_kind {SPLIT_REFACTOR_KIND}")
+    if str(proposal_item.get("signal", "")).strip() != SPLIT_REFACTOR_SIGNAL:
+        errors.append(f"split proposal application requires signal {SPLIT_REFACTOR_SIGNAL}")
+    errors.extend(
+        validate_split_proposal_artifact(
+            artifact=proposal_artifact,
+            node=node,
+            run_id=None,
+        )
+    )
+    if not errors:
+        for child in proposal_artifact.get("suggested_children", []):
+            if not isinstance(child, dict):
+                continue
+            child_id = str(child.get("suggested_id", "")).strip()
+            child_path = str(child.get("suggested_path", "")).strip()
+            if child_id in current_index:
+                errors.append(
+                    f"split proposal application cannot overwrite existing spec id: {child_id}"
+                )
+            if child_path and (ROOT / child_path).exists():
+                errors.append(
+                    "split proposal application cannot overwrite existing child spec path: "
+                    f"{child_path}"
+                )
+    return errors
+
+
+def apply_split_proposal_to_worktree(
+    *,
+    node: SpecNode,
+    proposal_artifact: dict[str, Any],
+    worktree_path: Path,
+) -> list[str]:
+    evidence_items = list(node.data.get("acceptance_evidence", []))
+    parent_relpath = node.path.relative_to(ROOT).as_posix()
+    specs_dir = worktree_path / "specs" / "nodes"
+    worktree_specs = load_specs_from_dir(specs_dir)
+    index = index_specs(worktree_specs)
+
+    child_specs: list[dict[str, Any]] = []
+    child_ids: list[str] = []
+    child_paths: list[str] = []
+    for child in proposal_artifact["suggested_children"]:
+        child_id = str(child["suggested_id"]).strip()
+        child_path = str(child["suggested_path"]).strip()
+        if child_id in index:
+            raise ValueError(
+                f"Cannot apply split proposal: child spec id already exists: {child_id}"
+            )
+        absolute_child_path = worktree_path / child_path
+        if absolute_child_path.exists():
+            raise ValueError(
+                f"Cannot apply split proposal: child spec path already exists: {child_path}"
+            )
+        child_ids.append(child_id)
+        child_paths.append(child_path)
+        child_specs.append(child)
+
+    parent_retained = proposal_artifact["parent_after_split"]["retained_acceptance"]
+    retained_texts = [str(item["acceptance_text"]).strip() for item in parent_retained]
+    retained_evidence = [
+        proposal_evidence_for_index(
+            evidence_items,
+            acceptance_index=int(item["acceptance_index"]),
+            proposal_id=str(proposal_artifact["id"]),
+        )
+        for item in parent_retained
+    ]
+
+    current_depends_on = [str(dep).strip() for dep in node.depends_on if str(dep).strip()]
+    proposed_depends_on = [
+        str(item["suggested_id"]).strip()
+        for item in proposal_artifact["parent_after_split"]["intended_depends_on"]
+    ]
+    node.data["prompt"] = str(
+        proposal_artifact["parent_after_split"]["narrowed_role_summary"]
+    ).strip()
+    node.data["depends_on"] = merge_unique_strings(current_depends_on, proposed_depends_on)
+    node.data["acceptance"] = retained_texts
+    node.data["acceptance_evidence"] = retained_evidence
+    worktree_parent_path = worktree_path / parent_relpath
+    worktree_parent_path.write_text(
+        get_yaml_module().safe_dump(node.data, sort_keys=False, allow_unicode=True),
+        encoding="utf-8",
+    )
+
+    for child, child_id, child_path in zip(child_specs, child_ids, child_paths, strict=True):
+        assigned_acceptance = child["assigned_acceptance"]
+        child_acceptance = [str(item["acceptance_text"]).strip() for item in assigned_acceptance]
+        child_evidence = [
+            proposal_evidence_for_index(
+                evidence_items,
+                acceptance_index=int(item["acceptance_index"]),
+                proposal_id=str(proposal_artifact["id"]),
+            )
+            for item in assigned_acceptance
+        ]
+        child_data = {
+            "id": child_id,
+            "title": str(child["suggested_title"]).strip(),
+            "kind": "spec",
+            "status": "outlined",
+            "maturity": 0.2,
+            "depends_on": [],
+            "relates_to": [],
+            "refines": [node.id],
+            "inputs": [parent_relpath],
+            "outputs": [child_path],
+            "allowed_paths": [child_path],
+            "acceptance": child_acceptance,
+            "acceptance_evidence": child_evidence,
+            "prompt": str(child["suggested_prompt"]).strip(),
+        }
+        absolute_child_path = worktree_path / child_path
+        absolute_child_path.parent.mkdir(parents=True, exist_ok=True)
+        absolute_child_path.write_text(
+            get_yaml_module().safe_dump(child_data, sort_keys=False, allow_unicode=True),
+            encoding="utf-8",
+        )
+
+    return [parent_relpath, *child_paths]
+
+
+def mark_split_proposal_applied(
+    *,
+    proposal_item: dict[str, Any],
+    proposal_artifact_path: Path,
+    proposal_artifact: dict[str, Any],
+    run_id: str,
+) -> tuple[Path, Path]:
+    proposal_artifact["status"] = "applied"
+    proposal_artifact["applied_run_id"] = run_id
+    proposal_artifact["applied_at"] = utc_now_iso()
+    proposal_artifact_path.parent.mkdir(parents=True, exist_ok=True)
+    proposal_artifact_path.write_text(
+        json.dumps(proposal_artifact, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+
+    queue_path = proposal_queue_path()
+    updated_items: list[dict[str, Any]] = []
+    for item in load_proposal_queue():
+        if str(item.get("id", "")).strip() == str(proposal_item.get("id", "")).strip():
+            updated_item = dict(item)
+            updated_item["status"] = "applied"
+            updated_item["applied_run_id"] = run_id
+            updated_item["applied_at"] = proposal_artifact["applied_at"]
+            updated_items.append(updated_item)
+            continue
+        updated_items.append(item)
+    queue_path.write_text(json.dumps(updated_items, ensure_ascii=False, indent=2), encoding="utf-8")
+    return proposal_artifact_path, queue_path
 
 
 def upsert_split_proposal_queue(
@@ -1995,6 +2242,200 @@ def resolve_gate_decision(
 
     print(f"Resolved gate for {spec_id}: {decision}")
     return 0
+
+
+def _apply_split_proposal(
+    *,
+    node: SpecNode,
+    specs: list[SpecNode],
+) -> int:
+    """Apply one reviewed split proposal into canonical spec files.
+
+    This path is deterministic by design. It does not ask an agent to invent a
+    new split; it materializes the already structured proposal artifact.
+    """
+    proposal_item = find_split_proposal_queue_item(node.id)
+    if proposal_item is None:
+        print(
+            f"No applicable {SPLIT_REFACTOR_KIND} proposal found for {node.id}",
+            file=sys.stderr,
+        )
+        return 1
+
+    proposal_artifact_path = proposal_item_path(proposal_item)
+    proposal_artifact = load_json_object(proposal_artifact_path)
+    if proposal_artifact is None:
+        print(
+            f"Missing or invalid proposal artifact: {proposal_artifact_path.as_posix()}",
+            file=sys.stderr,
+        )
+        return 1
+
+    eligibility_errors = validate_split_proposal_application_target(
+        node=node,
+        proposal_item=proposal_item,
+        proposal_artifact=proposal_artifact,
+        current_index=index_specs(specs),
+    )
+    if eligibility_errors:
+        for error in eligibility_errors:
+            print(error, file=sys.stderr)
+        return 1
+
+    run_timestamp = dt.datetime.now(dt.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    run_id = f"{run_timestamp}-{node.id}"
+    selected_by_rule = {
+        "selection_mode": "apply_split_proposal",
+        "operator_target": node.id,
+        "sort_order": ["explicit_operator_target"],
+        "proposal_item": {
+            "id": str(proposal_item.get("id", "")),
+            "proposal_type": str(proposal_item.get("proposal_type", "")),
+            "signal": str(proposal_item.get("signal", "")),
+            "refactor_kind": str(proposal_item.get("refactor_kind", "")),
+            "status": str(proposal_item.get("status", "")),
+            "proposal_artifact_path": proposal_artifact_path.as_posix(),
+        },
+    }
+
+    try:
+        worktree_path, branch = create_isolated_worktree(node.id)
+    except RuntimeError as exc:
+        print(f"Failed to create worktree: {exc}", file=sys.stderr)
+        return 1
+    print(f"Created worktree: {worktree_path}")
+    print(f"Branch: {branch}")
+    synced_node_path = sync_current_node_into_worktree(node, worktree_path)
+    print(f"Seeded worktree node from current tree: {synced_node_path}")
+
+    before_status = node.status
+    validation_errors: list[str] = []
+    try:
+        changed = apply_split_proposal_to_worktree(
+            node=node,
+            proposal_artifact=proposal_artifact,
+            worktree_path=worktree_path,
+        )
+        worktree_specs = load_specs_from_dir(worktree_path / "specs" / "nodes")
+    except Exception as exc:
+        changed = []
+        worktree_specs = []
+        validation_errors.append(str(exc))
+    else:
+        output_errors = validate_changed_spec_nodes(
+            source_node_id=node.id,
+            changed_files=changed,
+            worktree_specs=worktree_specs,
+            worktree_path=worktree_path,
+        )
+        atomicity_errors = validate_changed_spec_atomicity(
+            source_node_id=node.id,
+            changed_files=changed,
+            worktree_specs=worktree_specs,
+            worktree_path=worktree_path,
+        )
+        reconciliation, reconciliation_errors = reconcile_graph(
+            source_node=node,
+            worktree_path=worktree_path,
+            changed_files=changed,
+        )
+        validation_errors.extend(output_errors)
+        validation_errors.extend(atomicity_errors)
+        validation_errors.extend(reconciliation_errors)
+        if not validation_errors:
+            sync_files_from_worktree(worktree_path, changed)
+            node.reload()
+            mark_split_proposal_applied(
+                proposal_item=proposal_item,
+                proposal_artifact_path=proposal_artifact_path,
+                proposal_artifact=proposal_artifact,
+                run_id=run_id,
+            )
+            current_specs = load_specs()
+            current_index = index_specs(current_specs)
+            reconciled_node = current_index.get(node.id) or node
+            graph_health = observe_graph_health(
+                source_node=node,
+                worktree_specs=current_specs,
+                reconciliation={
+                    "semantic_dependencies_resolved": semantic_dependencies_resolved(
+                        reconciled_node, current_index
+                    ),
+                    "work_dependencies_ready": work_dependencies_ready(
+                        reconciled_node, current_index
+                    ),
+                },
+                atomicity_errors=validate_atomicity(reconciled_node),
+                outcome="done",
+            )
+            proposal_queue_artifact = proposal_queue_path()
+            proposal_items = load_proposal_queue()
+            refactor_queue_artifact = update_refactor_queue(
+                graph_health=graph_health,
+                run_id=run_id,
+                proposal_items=proposal_items,
+            )
+        else:
+            graph_health = {
+                "source_spec_id": node.id,
+                "observations": [],
+                "signals": [],
+                "recommended_actions": [],
+            }
+            proposal_queue_artifact = proposal_queue_path()
+            refactor_queue_artifact = refactor_queue_path()
+
+    if validation_errors:
+        graph_health = {
+            "source_spec_id": node.id,
+            "observations": [],
+            "signals": [],
+            "recommended_actions": [],
+        }
+        proposal_queue_artifact = proposal_queue_path()
+        refactor_queue_artifact = refactor_queue_path()
+
+    success = not validation_errors
+    payload = {
+        "run_id": run_id,
+        "timestamp_utc": utc_now_iso(),
+        "spec_id": node.id,
+        "title": node.title,
+        "selected_by_rule": selected_by_rule,
+        "before_status": before_status,
+        "proposed_status": None,
+        "final_status": node.status,
+        "outcome": "done" if success else "blocked",
+        "blocker": "none" if success else "split proposal application failed",
+        "gate_state": "none",
+        "required_human_action": "-" if success else "repair proposal before retry",
+        "exit_code": 0 if success else 1,
+        "auto_approved": False,
+        "worktree_path": worktree_path.as_posix(),
+        "branch": branch,
+        "changed_files": changed,
+        "validation_errors": validation_errors,
+        "validator_results": {
+            "proposal_artifact": not validation_errors,
+            "canonical_writeback": success,
+        },
+        "reconciliation": {},
+        "graph_health": graph_health,
+        "refactor_queue_artifact": refactor_queue_artifact.as_posix(),
+        "proposal_queue_artifact": proposal_queue_artifact.as_posix(),
+        "proposal_artifact_path": proposal_artifact_path.as_posix(),
+        "stdout": "",
+        "stderr": "",
+    }
+    log_path = write_run_log(run_id, payload)
+    write_latest_summary(payload)
+    print(f"Run log: {log_path.as_posix()}")
+    print("Finished status:", "ok" if success else "failed")
+    if validation_errors:
+        print("\n=== validation errors ===", file=sys.stderr)
+        for error in validation_errors:
+            print(f"- {error}", file=sys.stderr)
+    return 0 if success else 1
 
 
 def _process_split_refactor_proposal(
@@ -2501,12 +2942,14 @@ def main(
     note: str = "",
     target_spec: str | None = None,
     split_proposal: bool = False,
+    apply_split_proposal: bool = False,
 ) -> int:
     """Entry point for CLI and tests.
 
     `main()` dispatches between four high-level modes:
     - gate resolution
     - explicit split proposal mode
+    - explicit split proposal application
     - autonomous loop mode
     - default single-pass mode
     """
@@ -2534,17 +2977,32 @@ def main(
         print("--decision is only valid with --resolve-gate", file=sys.stderr)
         return 1
 
-    if target_spec and not split_proposal:
-        print("--target-spec currently requires --split-proposal", file=sys.stderr)
+    if target_spec and not (split_proposal or apply_split_proposal):
+        print(
+            "--target-spec currently requires --split-proposal or --apply-split-proposal",
+            file=sys.stderr,
+        )
         return 1
-    if split_proposal and not target_spec:
-        print("--split-proposal requires --target-spec", file=sys.stderr)
+    if split_proposal and apply_split_proposal:
+        print("--split-proposal cannot be combined with --apply-split-proposal", file=sys.stderr)
         return 1
-    if split_proposal and loop:
-        print("--split-proposal cannot be combined with --loop", file=sys.stderr)
+    if (split_proposal or apply_split_proposal) and not target_spec:
+        print(
+            "--split-proposal and --apply-split-proposal both require --target-spec",
+            file=sys.stderr,
+        )
         return 1
-    if split_proposal and auto_approve:
-        print("--split-proposal cannot be combined with --auto-approve", file=sys.stderr)
+    if (split_proposal or apply_split_proposal) and loop:
+        print(
+            "--split-proposal and --apply-split-proposal cannot be combined with --loop",
+            file=sys.stderr,
+        )
+        return 1
+    if (split_proposal or apply_split_proposal) and auto_approve:
+        print(
+            "--split-proposal and --apply-split-proposal cannot be combined with --auto-approve",
+            file=sys.stderr,
+        )
         return 1
 
     if loop and not auto_approve:
@@ -2608,6 +3066,16 @@ def main(
             executor=executor,
         )
         return exit_code
+
+    if apply_split_proposal:
+        index = index_specs(specs)
+        node = index.get(str(target_spec).strip())
+        if node is None:
+            print(f"Spec not found: {target_spec}", file=sys.stderr)
+            return 1
+
+        print(f"Selected spec node: {node.id} — {node.title}")
+        return _apply_split_proposal(node=node, specs=specs)
 
     if loop:
         print(f"Starting autonomous loop mode (max_iterations={max_iterations})")
@@ -2745,6 +3213,11 @@ if __name__ == "__main__":
         action="store_true",
         help="Run explicit split_oversized_spec proposal mode for --target-spec",
     )
+    parser.add_argument(
+        "--apply-split-proposal",
+        action="store_true",
+        help="Apply an approved split_oversized_spec proposal for --target-spec",
+    )
     args = parser.parse_args()
     raise SystemExit(
         main(
@@ -2757,5 +3230,6 @@ if __name__ == "__main__":
             note=args.note,
             target_spec=args.target_spec,
             split_proposal=args.split_proposal,
+            apply_split_proposal=args.apply_split_proposal,
         )
     )

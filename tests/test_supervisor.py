@@ -1120,6 +1120,221 @@ def test_main_split_proposal_refreshes_existing_artifact_without_duplicate_queue
     assert "RUN-OLD" in refreshed_artifact["source_run_ids"]
 
 
+def test_main_apply_split_proposal_materializes_parent_and_children(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    node_data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    node_data["title"] = "Calculator Overview"
+    node_data["prompt"] = "Large parent scope."
+    node_data["acceptance"] = [f"criterion-{i}" for i in range(1, 7)]
+    node_path.write_text(json.dumps(node_data), encoding="utf-8")
+
+    proposal_artifact_path = (
+        repo_fixture
+        / "runs"
+        / "proposals"
+        / ("refactor_proposal--sg-spec-0001--oversized_spec.json")
+    )
+    proposal_artifact_path.parent.mkdir(parents=True, exist_ok=True)
+    proposal_artifact_path.write_text(
+        json.dumps(make_valid_split_proposal(node_data, "RUN-1")),
+        encoding="utf-8",
+    )
+    (repo_fixture / "runs" / "proposal_queue.json").write_text(
+        json.dumps(
+            [
+                {
+                    "id": "refactor_proposal::SG-SPEC-0001::oversized_spec",
+                    "proposal_type": "refactor_proposal",
+                    "spec_id": "SG-SPEC-0001",
+                    "signal": "oversized_spec",
+                    "refactor_kind": "split_oversized_spec",
+                    "status": "review_pending",
+                    "execution_policy": "emit_proposal",
+                    "proposal_artifact_path": (
+                        "runs/proposals/refactor_proposal--sg-spec-0001--oversized_spec.json"
+                    ),
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    worktree = make_fake_worktree(repo_fixture)
+    monkeypatch.setattr(
+        supervisor_module,
+        "create_isolated_worktree",
+        lambda _node_id: (worktree, "codex/sg-spec-0001/apply-split"),
+    )
+
+    exit_code = supervisor_module.main(
+        target_spec="SG-SPEC-0001",
+        apply_split_proposal=True,
+    )
+    assert exit_code == 0
+
+    updated_parent = supervisor_module.get_yaml_module().safe_load(
+        node_path.read_text(encoding="utf-8")
+    )
+    assert updated_parent["title"] == "Calculator Overview"
+    assert updated_parent["prompt"] == (
+        "Keep the parent as calculator overview and integration shell."
+    )
+    assert updated_parent["acceptance"] == ["criterion-1"]
+    assert updated_parent["depends_on"] == ["SG-SPEC-0002", "SG-SPEC-0003"]
+    assert len(updated_parent["acceptance_evidence"]) == 1
+
+    child_two = supervisor_module.get_yaml_module().safe_load(
+        (repo_fixture / "specs" / "nodes" / "SG-SPEC-0002.yaml").read_text(encoding="utf-8")
+    )
+    child_three = supervisor_module.get_yaml_module().safe_load(
+        (repo_fixture / "specs" / "nodes" / "SG-SPEC-0003.yaml").read_text(encoding="utf-8")
+    )
+    assert child_two["relates_to"] == []
+    assert child_three["relates_to"] == []
+    assert child_two["refines"] == ["SG-SPEC-0001"]
+    assert child_three["refines"] == ["SG-SPEC-0001"]
+    assert child_two["acceptance"] == ["criterion-2", "criterion-3"]
+    assert child_three["acceptance"] == ["criterion-4", "criterion-5", "criterion-6"]
+
+    updated_artifact = json.loads(proposal_artifact_path.read_text(encoding="utf-8"))
+    assert updated_artifact["status"] == "applied"
+    updated_queue = json.loads(
+        (repo_fixture / "runs" / "proposal_queue.json").read_text(encoding="utf-8")
+    )
+    assert updated_queue[0]["status"] == "applied"
+
+    refactor_queue = json.loads(
+        (repo_fixture / "runs" / "refactor_queue.json").read_text(encoding="utf-8")
+    )
+    assert refactor_queue == []
+
+
+def test_main_apply_split_proposal_rejects_when_no_proposal_exists(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    node_data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    node_data["acceptance"] = [f"criterion-{i}" for i in range(1, 7)]
+    node_path.write_text(json.dumps(node_data), encoding="utf-8")
+
+    exit_code = supervisor_module.main(
+        target_spec="SG-SPEC-0001",
+        apply_split_proposal=True,
+    )
+    assert exit_code == 1
+
+
+def test_main_apply_split_proposal_rejects_existing_child_collision(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    node_data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    node_data["title"] = "Calculator Overview"
+    node_data["acceptance"] = [f"criterion-{i}" for i in range(1, 7)]
+    node_path.write_text(json.dumps(node_data), encoding="utf-8")
+
+    collision_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0002.yaml"
+    collision_path.write_text(
+        json.dumps(
+            {
+                "id": "SG-SPEC-0002",
+                "title": "Existing Child",
+                "kind": "spec",
+                "status": "outlined",
+                "maturity": 0.2,
+                "depends_on": [],
+                "outputs": ["specs/nodes/SG-SPEC-0002.yaml"],
+                "allowed_paths": ["specs/nodes/SG-SPEC-0002.yaml"],
+                "acceptance": ["existing"],
+                "prompt": "Existing child.",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    proposal_artifact_path = (
+        repo_fixture
+        / "runs"
+        / "proposals"
+        / ("refactor_proposal--sg-spec-0001--oversized_spec.json")
+    )
+    proposal_artifact_path.parent.mkdir(parents=True, exist_ok=True)
+    proposal_artifact_path.write_text(
+        json.dumps(make_valid_split_proposal(node_data, "RUN-1")),
+        encoding="utf-8",
+    )
+    (repo_fixture / "runs" / "proposal_queue.json").write_text(
+        json.dumps(
+            [
+                {
+                    "id": "refactor_proposal::SG-SPEC-0001::oversized_spec",
+                    "proposal_type": "refactor_proposal",
+                    "spec_id": "SG-SPEC-0001",
+                    "signal": "oversized_spec",
+                    "refactor_kind": "split_oversized_spec",
+                    "status": "review_pending",
+                    "execution_policy": "emit_proposal",
+                    "proposal_artifact_path": (
+                        "runs/proposals/refactor_proposal--sg-spec-0001--oversized_spec.json"
+                    ),
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    worktree = make_fake_worktree(repo_fixture)
+    monkeypatch.setattr(
+        supervisor_module,
+        "create_isolated_worktree",
+        lambda _node_id: (worktree, "codex/sg-spec-0001/apply-split"),
+    )
+
+    exit_code = supervisor_module.main(
+        target_spec="SG-SPEC-0001",
+        apply_split_proposal=True,
+    )
+    assert exit_code == 1
+
+    updated_queue = json.loads(
+        (repo_fixture / "runs" / "proposal_queue.json").read_text(encoding="utf-8")
+    )
+    assert updated_queue[0]["status"] == "review_pending"
+
+
+def test_validate_changed_spec_nodes_rejects_relates_to_overlap_with_refines(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    node_data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    node_data["relates_to"] = ["SG-SPEC-9999"]
+    node_data["refines"] = ["SG-SPEC-9999"]
+    node_data["acceptance_evidence"] = ["evidence"]
+    node_path.write_text(json.dumps(node_data), encoding="utf-8")
+
+    worktree_specs = supervisor_module.load_specs_from_dir(repo_fixture / "specs" / "nodes")
+    errors = supervisor_module.validate_changed_spec_nodes(
+        source_node_id="SG-SPEC-0001",
+        changed_files=["specs/nodes/SG-SPEC-0001.yaml"],
+        worktree_specs=worktree_specs,
+        worktree_path=repo_fixture,
+    )
+
+    assert any(
+        "relates_to MUST NOT include SG-SPEC-9999 when refines already targets the same spec"
+        in error
+        for error in errors
+    )
+
+
 def test_main_seeds_worktree_with_current_uncommitted_node(
     supervisor_module: object,
     repo_fixture: Path,
@@ -1342,7 +1557,7 @@ def test_main_auto_approve_reconciles_seed_to_linked_when_child_exists(
                     "status": "specified",
                     "maturity": 0.55,
                     "depends_on": [],
-                    "relates_to": ["SG-SPEC-0001"],
+                    "relates_to": [],
                     "refines": ["SG-SPEC-0001"],
                     "inputs": ["specs/nodes/SG-SPEC-0001.yaml"],
                     "outputs": ["specs/nodes/SG-SPEC-0002.yaml"],
@@ -1656,7 +1871,7 @@ def test_main_split_required_syncs_decomposition_outputs(
                         "status": "outlined",
                         "maturity": 0.2,
                         "depends_on": [],
-                        "relates_to": ["SG-SPEC-0001"],
+                        "relates_to": [],
                         "refines": ["SG-SPEC-0001"],
                         "inputs": ["specs/nodes/SG-SPEC-0001.yaml"],
                         "outputs": [f"specs/nodes/{child_id}.yaml"],
