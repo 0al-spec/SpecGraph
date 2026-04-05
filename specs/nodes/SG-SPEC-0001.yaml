@@ -1,72 +1,518 @@
+# ════════════════════════════════════════════════════════════════════════
+# SG-SPEC-0001 — SpecGraph Root Ontology
+# The foundational specification from which every other node derives.
+# This spec is self-referential: SpecGraph specifies itself.
+# ════════════════════════════════════════════════════════════════════════
+
 id: SG-SPEC-0001
-title: Supervisor Spec Loop
+title: SpecGraph - The Executable Product Ontology
 kind: spec
 status: specified
 maturity: 0.6
 depends_on: []
 relates_to: []
+
 inputs:
+  - README.md
   - AGENTS.md
-  - pyproject.toml
-  - .github/workflows/*.yml
 outputs:
   - specs/nodes/SG-SPEC-0001.yaml
+
 allowed_paths:
   - specs/nodes/SG-SPEC-0001.yaml
+
 acceptance:
-  - "Describes spec-gap selection rule"
-  - "Constrains refinement to spec artifacts"
-  - "Defines validation and status progression"
-  - "Selects a Python linter and formatter with rationale (Ruff for linting + formatting)"
-  - "Defines local developer commands for lint and format checks"
-  - "Defines pull-request CI trigger and required quality jobs"
-  - "Defines non-blocking rollout guidance for legacy violations"
+  - "Defines the four canonical layers (Intent, Specification, Graph, Code) with clear boundaries"
+  - "Defines the seed node kinds with required and optional fields and the child-spec refinement path"
+  - "Defines the edge kinds currently in scope with source/target constraints and semantics"
+  - "Defines the node lifecycle and valid status transitions"
+  - "Establishes the separation between canonical (user-owned) and derived (rebuildable) data"
+  - "States the governing invariants that every node and edge must satisfy"
+  - "Is implementation-agnostic: no file format, storage engine, or language choices"
+  - "States that SG-SPEC-0001 is a seed spec that child specs refine before the graph is frozen"
+
+acceptance_evidence:
+  - criterion: "Defines the four canonical layers (Intent, Specification, Graph, Code) with clear boundaries"
+    evidence: >
+      specification.layers enumerates all four layers — Intent, Specification,
+      Graph, Code — each with a purpose statement and primary_node_kinds list.
+      Boundaries are explicit: Intent captures goals; Specification refines them
+      into governed artifacts; Graph holds the canonical substrate; Code holds
+      derived executables.
+
+  - criterion: "Defines the seed node kinds with required and optional fields and the child-spec refinement path"
+    evidence: >
+      specification.node_kinds lists the seed kinds (intent, spec,
+      requirement, decision, constraint, invariant, code_surface, test,
+      release) each with description, required_fields, and optional_fields.
+      The spec kind also exposes refines so descendant specs can point back to
+      ancestor specs and elaborate them incrementally.  The authority_class
+      cross-cutting field is defined in specification.authority_classes and
+      applies to every node.
+
+  - criterion: "Defines the edge kinds currently in scope with source/target constraints and semantics"
+    evidence: >
+      specification.edge_kinds lists 9 kinds (depends_on, refines, implements,
+      tested_by, conflicts_with, supersedes, derived_from, owns, relates_to)
+      each with semantics, source_kinds, target_kinds, and classification as
+      static or dynamic.
+
+  - criterion: "Defines the node lifecycle and valid status transitions"
+    evidence: >
+      specification.lifecycle defines 7 statuses (idea → stub → outlined →
+      specified → linked → reviewed → frozen) with valid_transitions and a
+      strictly-forward progression rule.
+
+  - criterion: "Establishes the separation between canonical (user-owned) and derived (rebuildable) data"
+    evidence: >
+      specification.canonical_vs_derived explicitly lists what belongs to each
+      category.  INV-005 formalizes the invariant.  specification.authority_classes
+      distinguishes authored, imported, inferred, and distilled provenance.
+
+  - criterion: "States the governing invariants that every node and edge must satisfy"
+    evidence: >
+      specification.invariants lists 9 invariants (INV-001 through INV-009)
+      covering provenance, traceability, acyclicity, immutability, canonical
+      ownership, valid status, conflict resolution, authority tagging, and
+      stable identity.
+
+  - criterion: "Is implementation-agnostic: no file format, storage engine, or language choices"
+    evidence: >
+      scope.out explicitly excludes storage format choices, tooling/CI
+      implementation, runtime retrieval strategies, and model specialization.
+      Decision D2 formalizes this as a governing principle.
+
+  - criterion: "States that SG-SPEC-0001 is a seed spec that child specs refine before the graph is frozen"
+    evidence: >
+      prompt frames SG-SPEC-0001 as a seed ontology and directs unresolved
+      areas into child specs; scope.in adds recursive refinement via child
+      specs; D7 formalizes the seed-spec rule; and spec.node_kinds.spec now
+      includes refines so descendants can attach to the ancestor spec they
+      elaborate.
+
 prompt: |
-  Raise this spec from outlined to specified.
-  Keep the node implementation-agnostic and stable in terminology.
+  This spec is a seed ontology, not a finished graph. Use child specs to
+  refine unresolved areas and link the dependency edges once the descendants
+  exist, then move SG-SPEC-0001 to linked.
 
 specification:
   objective: >
-    Standardize Python code quality checks by adopting one widely used linter and
-    formatter and enforcing them on pull requests via CI.
+    Define the foundational seed ontology of SpecGraph: the entity kinds,
+    relation kinds, lifecycle rules, layered architecture, and governing
+    invariants that make a product-intent graph machine-verifiable,
+    human-readable, semantically structured, and execution-connected.
+
+  core_attributes:
+    - name: Integrity
+      description: >
+        Every artifact in the graph is structurally valid, schema-conformant,
+        and internally consistent.
+    - name: Provenance
+      description: >
+        Every node and edge carries full lineage: who created it, from what
+        source, under what authority, and through which revisions.
+    - name: Traceability
+      description: >
+        Every artifact is reachable from at least one intent via a chain of
+        typed edges.  The graph supports both forward (intent → code) and
+        reverse (evidence → intent) traversal.
+    - name: Bounded economics
+      description: >
+        The cost of verifying, updating, and maintaining graph consistency
+        is predictable and controllable.
+    - name: Human legibility
+      description: >
+        Every node is readable and understandable by a human without requiring
+        tooling.  The ontology uses natural-language descriptions alongside
+        formal structure.
+
   scope:
     in:
-      - "Tooling selection criteria and recommended defaults"
-      - "Developer workflow commands"
-      - "CI quality gate behavior on pull requests"
+      - "Canonical layer architecture (Intent → Specification → Graph → Code)"
+      - "Recursive refinement via child specs; the root spec is a seed, not a finished fixed point"
+      - "Node kind taxonomy and per-kind field contracts"
+      - "Edge kind taxonomy with source/target type constraints and static/dynamic classification"
+      - "Node lifecycle: statuses, valid transitions, maturity semantics"
+      - "Separation of canonical vs derived data"
+      - "Authority classes for provenance (authored, imported, inferred, distilled)"
+      - "Cross-cutting invariants (provenance, versioning, traceability, contradiction resistance)"
     out:
-      - "Refactoring application/runtime behavior"
-      - "Changing public package API"
+      - "Storage format choices (YAML vs JSON vs DB schema)"
+      - "Tooling, CLI, or CI implementation"
+      - "Runtime retrieval, indexing, or embedding strategies"
+      - "Fine-tuning, model specialization, or adapter design"
+      - "Observability metrics (SIB, PFI, CSI, etc.) — covered by dedicated specs"
+      - "Runtime observability entities (ObservabilityContract, Campaign, Attestation) — future specs"
+      - "Adoption-layer entities (DiscoverySurface, AdoptionCriterion, etc.) — future specs"
+
   terminology:
-    linter: "Static analysis that reports style, correctness, and maintainability issues."
-    formatter: "Deterministic code layout tool that rewrites files to canonical style."
-    quality_gate: "CI checks that must pass before a pull request is merged."
+    intent: >
+      A precise, governed representation of what a product must be, how it must
+      behave, and how its implementation can be validated.  Intent is the source
+      of truth from which all other artifacts derive.
+    specification: >
+      A governed artifact that refines intent into a structured, versioned,
+      machine-verifiable declaration with acceptance criteria.
+    graph: >
+      The canonical knowledge structure (nodes + edges) that serves as
+      operational memory for the project.  The graph is the single source
+      of truth — not documentation, not model weights.
+    code: >
+      The derived and executable layer.  Code implements specifications;
+      it is never authoritative on its own.
+    node: >
+      A first-class entity in the graph with a stable identity, versioned
+      state, provenance, and lifecycle.
+    edge: >
+      A directed, typed, optionally versioned relation between two nodes.
+      Edges are classified as static (canonical, authored) or dynamic
+      (runtime-derived, inferred).
+    intent_atom: >
+      The smallest verifiable unit of intent: a single requirement,
+      invariant, or behavioral assertion that can be independently checked.
+    maturity: >
+      A continuous signal (0.0–1.0) reflecting how fully a node's content
+      has been elaborated and validated.  Not a gate — a diagnostic.
+    provenance: >
+      The full lineage of a node: who created it, from what source, under
+      what authority, and through which revisions.
+    supersession: >
+      The act of replacing one node or edge version with a newer one while
+      preserving the history chain.  The old node is archived, not deleted.
+    authority_class: >
+      A tag on every node indicating its origin: authored (human-written),
+      imported (from external system), inferred (machine-derived), or
+      distilled (compressed from other nodes).  In serialized node envelopes
+      this is represented as `authority`.
+    seed_spec: >
+      A root specification that intentionally captures only the stable core
+      of the ontology and is expected to be refined by child specs.
+
+  layers:
+    - name: Intent
+      purpose: >
+        Captures the human-originated goals, constraints, and success criteria
+        that drive the product.  Intent is defined by completeness, correctness,
+        contradiction resistance, traceability, bounded execution cost, and
+        human legibility.
+      primary_node_kinds:
+        - intent
+
+    - name: Specification
+      purpose: >
+        Refines intent into governed, versioned artifacts with acceptance
+        criteria, decisions, constraints, and invariants.  This is the
+        authoring layer where product knowledge is structured.
+      primary_node_kinds:
+        - spec
+        - requirement
+        - decision
+        - constraint
+        - invariant
+
+    - name: Graph
+      purpose: >
+        The canonical storage and query substrate.  Holds all nodes and edges
+        with versioning, provenance, and supersession.  Enables traversal,
+        conflict detection, dependency slicing, and impact analysis.
+        This layer is not a node kind itself but the structural medium
+        in which all other layers exist.
+      primary_node_kinds:
+        - note: "All node kinds live in the graph.  This layer defines the substrate, not a specific kind."
+
+    - name: Code
+      purpose: >
+        The derived, executable layer.  Contains implementation artifacts
+        (code surfaces, tests, build artifacts, releases) that are traced
+        back to specifications and ultimately to intent.
+      primary_node_kinds:
+        - code_surface
+        - test
+        - release
+
+  node_kinds:
+    - kind: intent
+      description: "Human-originated goal or product objective."
+      required_fields: [id, title, status, kind, authority_class]
+      optional_fields: [maturity, owner, source_refs, created_at, updated_at]
+
+    - kind: spec
+      description: >
+        Structured artifact refining one or more intents into verifiable
+        declarations with acceptance criteria.
+      required_fields: [id, title, status, kind, authority_class, acceptance]
+      optional_fields:
+        - maturity
+        - depends_on
+        - relates_to
+        - intent_refs
+        - refines
+        - constraint_refs
+        - decisions
+        - scope
+        - prompt
+        - outputs
+        - allowed_paths
+        - acceptance_evidence
+
+    - kind: requirement
+      description: "A single verifiable demand derived from a spec or intent."
+      required_fields: [id, title, status, kind, authority_class, source_ref]
+      optional_fields: [priority, verification_mode, success_signals, failure_signals]
+
+    - kind: decision
+      description: "An architectural or product decision with rationale (ADR)."
+      required_fields: [id, title, status, kind, authority_class, statement, rationale]
+      optional_fields: [alternatives_considered, superseded_by]
+
+    - kind: constraint
+      description: "A system-level limitation that bounds the solution space."
+      required_fields: [id, title, status, kind, authority_class, statement]
+      optional_fields: [source_ref, enforcement]
+
+    - kind: invariant
+      description: "A stable property that must hold across all changes."
+      required_fields: [id, title, status, kind, authority_class, statement]
+      optional_fields: [scope, verification_mode]
+
+    - kind: code_surface
+      description: >
+        A stable implementation anchor: symbol, module, endpoint, screen,
+        or workflow step.  Identified by a stable key, not a file path.
+        path_hint is informational only and not the stable identifier.
+      required_fields: [id, title, status, kind, authority_class, surface_type]
+      optional_fields: [task_refs, criterion_refs, runtime_surface_refs, path_hint]
+
+    - kind: test
+      description: "A verification artifact covering one or more requirements or acceptance criteria."
+      required_fields: [id, title, status, kind, authority_class, covers]
+      optional_fields: [test_type, path_hint]
+
+    - kind: release
+      description: "A versioned deployment artifact linking code surfaces to runtime."
+      required_fields: [id, title, status, kind, authority_class, version_tag]
+      optional_fields: [code_surface_refs, rollout_scope]
+
+  authority_classes:
+    - class: authored
+      description: "Created directly by a human.  Highest trust."
+    - class: imported
+      description: "Ingested from an external system (issue tracker, CI, etc.)."
+    - class: inferred
+      description: "Derived by machine reasoning (e.g., edge inference, conflict detection)."
+    - class: distilled
+      description: "Compressed or summarized from other nodes (e.g., glossary entries, role packs)."
+
+  edge_kinds:
+    - kind: depends_on
+      semantics: "Source node cannot be completed or validated without target node."
+      source_kinds: [spec, requirement, code_surface]
+      target_kinds: [spec, requirement, code_surface]
+      classification: static
+
+    - kind: refines
+      semantics: "Source node elaborates or decomposes target node into finer granularity."
+      source_kinds: [spec, requirement]
+      target_kinds: [intent, spec]
+      classification: static
+
+    - kind: implements
+      semantics: "Source code artifact realizes the target specification or requirement."
+      source_kinds: [code_surface]
+      target_kinds: [spec, requirement]
+      classification: static
+
+    - kind: tested_by
+      semantics: "Target test verifies the source node."
+      source_kinds: [requirement, spec, invariant]
+      target_kinds: [test]
+      classification: static
+
+    - kind: conflicts_with
+      semantics: >
+        Source and target nodes contain contradictory assertions.
+        Must be resolved before either node reaches reviewed status.
+      source_kinds: [requirement, decision, constraint]
+      target_kinds: [requirement, decision, constraint]
+      classification: static
+
+    - kind: supersedes
+      semantics: >
+        Source node replaces target node.  Target status becomes frozen
+        or archived.  The history chain is preserved.
+      source_kinds: [spec, decision, requirement]
+      target_kinds: [spec, decision, requirement]
+      classification: static
+
+    - kind: derived_from
+      semantics: "Source node was produced from target node (e.g., requirement from PRD)."
+      source_kinds: [requirement, spec, decision]
+      target_kinds: [intent, spec]
+      classification: static
+
+    - kind: owns
+      semantics: "Source entity is responsible for target node."
+      source_kinds: [intent]
+      target_kinds: [spec, requirement, code_surface]
+      classification: static
+
+    - kind: relates_to
+      semantics: "Generic semantic relation for cross-references that don't fit a stricter kind."
+      source_kinds: [all]
+      target_kinds: [all]
+      classification: static
+
+  canonical_vs_derived:
+    canonical:
+      description: >
+        User-owned, version-controlled artifacts that constitute the single
+        source of truth.  Must be portable, diffable, and auditable.
+      includes:
+        - "Nodes (all kinds, with full metadata)"
+        - "Explicit edges (authored relations between nodes)"
+        - "Revision records (append-only change log per entity)"
+        - "Provenance and authority_class tags"
+        - "Lifecycle status and maturity values"
+    derived:
+      description: >
+        Service-side projections and indexes that are rebuildable from
+        canonical data.  Loss of derived data is recoverable.
+      includes:
+        - "Vector embeddings"
+        - "Search indexes (keyword, semantic)"
+        - "Graph centrality and layout metrics"
+        - "Inferred edges (machine-derived relations)"
+        - "Distilled summaries (glossaries, role packs, decision digests)"
+        - "Viewer bundles and UI state"
+
+  lifecycle:
+    statuses:
+      - name: idea
+        description: "Raw captured thought.  No structure required."
+      - name: stub
+        description: "Placeholder with identity and minimal metadata."
+      - name: outlined
+        description: "High-level scope and acceptance criteria drafted."
+      - name: specified
+        description: "Full specification with decisions, terminology, and constraints."
+      - name: linked
+        description: "All edges (depends_on, refines, implements, tested_by) are resolved."
+      - name: reviewed
+        description: "Human or automated review has approved the node."
+      - name: frozen
+        description: "Immutable snapshot.  Changes require a new superseding node."
+
+    valid_transitions:
+      - from: idea
+        to: [stub]
+      - from: stub
+        to: [outlined]
+      - from: outlined
+        to: [specified]
+      - from: specified
+        to: [linked]
+      - from: linked
+        to: [reviewed]
+      - from: reviewed
+        to: [frozen]
+
+    notes: >
+      Transitions are strictly forward.  Regression (e.g., reviewed → specified)
+      is not allowed; instead, create a new superseding node.  The supervisor
+      enforces this progression.
+
+  invariants:
+    - id: INV-001
+      statement: >
+        Every node must carry provenance: who created it, from what source,
+        and through which authority_class.
+
+    - id: INV-002
+      statement: >
+        Every requirement and acceptance criterion must be traceable to at
+        least one intent via refines or derived_from edges.
+
+    - id: INV-003
+      statement: >
+        The graph must be acyclic in the depends_on relation.
+
+    - id: INV-004
+      statement: >
+        A frozen node is immutable.  Any change produces a new node that
+        supersedes the original.
+
+    - id: INV-005
+      statement: >
+        Canonical data (nodes, explicit edges, revisions) is user-owned and
+        portable.  Derived data (embeddings, indexes, layouts, inferred edges)
+        is rebuildable from canonical data alone.
+
+    - id: INV-006
+      statement: >
+        No node may exist without a valid status from the lifecycle.
+
+    - id: INV-007
+      statement: >
+        conflicts_with edges must be resolved before either node reaches
+        the reviewed status.
+
+    - id: INV-008
+      statement: >
+        Every node must carry an authority_class tag (authored, imported,
+        inferred, or distilled).
+
+    - id: INV-009
+      statement: >
+        Node identity (id) is stable and immutable once assigned.
+        Renaming produces a new node that supersedes the original.
+
   decisions:
     - id: D1
-      statement: "Use Ruff as the default Python linter."
-      rationale: "Popular in Python ecosystem, fast execution, broad rule coverage."
+      statement: "SpecGraph is the single source of truth for project knowledge."
+      rationale: >
+        Model weights, caches, and indexes are derived artifacts.  The graph
+        holds truth; indexes hold access; summaries hold compression; weights
+        hold priors; context holds the current task.
+
     - id: D2
-      statement: "Use Ruff formatter as the default Python formatter."
-      rationale: "Single-tool setup minimizes configuration drift and CI complexity."
+      statement: "The ontology is implementation-agnostic."
+      rationale: >
+        Node kinds, edge kinds, and lifecycle rules must not prescribe storage
+        format, programming language, or deployment topology.  This allows the
+        same ontology to be realized in YAML files, a database, or a hybrid.
+
     - id: D3
-      statement: "Run lint and format checks on every pull request."
-      rationale: "Ensures quality_gate consistency before merge."
-  workflow:
-    local:
-      - "Lint: ruff check ."
-      - "Format check: ruff format --check ."
-      - "Auto-fix (optional): ruff check --fix . && ruff format ."
-    ci:
-      trigger:
-        - "pull_request"
-      jobs:
-        - "python-quality"
-      required_steps:
-        - "Install project + dev tooling"
-        - "Run Ruff lint"
-        - "Run Ruff format check"
-  rollout:
-    strategy: "If repository has existing violations, allow incremental adoption via scoped ignores with expiry notes."
-    constraints:
-      - "Do not disable entire lint categories without explicit rationale."
-      - "Prefer targeted suppressions over global ignores."
+      statement: "Intent is the root of all traceability chains."
+      rationale: >
+        Without traceable intent, specifications become ungrounded assertions.
+        Every artifact in the graph must be reachable from at least one intent
+        node via refines/derived_from edges.
+
+    - id: D4
+      statement: "The graph bootstraps itself (dogfooding)."
+      rationale: >
+        SG-SPEC-0001 is a spec node inside its own graph.  SpecGraph uses its
+        own ontology to govern its own development, validating the model from
+        day one.
+
+    - id: D5
+      statement: "Edges are classified as static (canonical) or dynamic (derived)."
+      rationale: >
+        Static edges are authored explicitly and version-controlled.  Dynamic
+        edges are inferred at query time or by automated analysis.  This
+        distinction preserves the canonical/derived separation at the
+        relationship level.
+
+    - id: D6
+      statement: "Stable identity over fragile paths."
+      rationale: >
+        Nodes are identified by stable keys (e.g., feature:ui.button.hover),
+        not by file paths or line numbers which change frequently.  path_hint
+        fields are informational, never authoritative.
+
+    - id: D7
+      statement: "The root ontology is a seed specification that child specs refine."
+      rationale: >
+        The first spec should establish only the stable core of the model.
+        Child specs are how unresolved fields, node kinds, and relations get
+        elaborated without forcing premature completeness in SG-SPEC-0001.
