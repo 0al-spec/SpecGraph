@@ -289,6 +289,16 @@ def build_prompt(node: SpecNode) -> str:
     allowed_paths = "\n".join(f"- {path}" for path in node.allowed_paths) or "- (not specified)"
     outputs = "\n".join(f"- {path}" for path in node.outputs) or "- (not specified)"
     bootstrap_hint = bootstrap_child_hint(node, load_specs())
+    refinement_section = """
+
+Refinement policy:
+- Treat the current spec as one bounded piece of a larger puzzle graph.
+- Prefer the smallest honest change that can advance this node by one status step.
+- Do not try to make the current spec complete in one run.
+- Resolve at most one concrete unresolved area per run.
+- If multiple independent refinement paths are possible, choose one and leave the others unchanged.
+- Prefer creating or refining one child spec over expanding the parent when the topic is separable.
+""".rstrip()
     bootstrap_section = ""
     if bootstrap_hint is not None:
         bootstrap_section = f"""
@@ -328,6 +338,7 @@ Allowed paths:
 
 Expected outputs:
 {outputs}
+{refinement_section}
 {bootstrap_section}
 
 Rules:

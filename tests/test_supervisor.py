@@ -154,9 +154,42 @@ def test_build_prompt_includes_bootstrap_child_guidance_for_seed_spec(
     node = supervisor_module.load_specs()[0]
     prompt = supervisor_module.build_prompt(node)
 
+    assert "Refinement policy:" in prompt
+    assert "Treat the current spec as one bounded piece of a larger puzzle graph." in prompt
+    assert (
+        "Prefer the smallest honest change that can advance this node by one status step." in prompt
+    )
+    assert "Do not try to make the current spec complete in one run." in prompt
     assert "Bootstrap guidance:" in prompt
     assert "Suggested child spec ID: SG-SPEC-0002" in prompt
     assert "Suggested child spec path: specs/nodes/SG-SPEC-0002.yaml" in prompt
+
+
+def test_build_prompt_includes_incremental_refinement_policy_for_non_seed_spec(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    data["prompt"] = "Refine one bounded slice of this node."
+    node_path.write_text(json.dumps(data), encoding="utf-8")
+
+    node = supervisor_module.load_specs()[0]
+    prompt = supervisor_module.build_prompt(node)
+
+    assert "Refinement policy:" in prompt
+    assert "Resolve at most one concrete unresolved area per run." in prompt
+    expected_path_choice = (
+        "If multiple independent refinement paths are possible, "
+        "choose one and leave the others unchanged."
+    )
+    expected_child_preference = (
+        "Prefer creating or refining one child spec over expanding "
+        "the parent when the topic is separable."
+    )
+    assert expected_path_choice in prompt
+    assert expected_child_preference in prompt
+    assert "Bootstrap guidance:" not in prompt
 
 
 def test_main_creates_review_gate_and_provenance_metadata(
