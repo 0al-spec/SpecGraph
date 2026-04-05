@@ -763,6 +763,99 @@ def reconcile_graph(
     return result, errors
 
 
+def observe_graph_health(
+    *,
+    source_node: SpecNode,
+    worktree_specs: list[SpecNode],
+    reconciliation: dict[str, Any],
+    atomicity_errors: list[str],
+    outcome: str,
+) -> dict[str, Any]:
+    index = index_specs(worktree_specs)
+    observations: list[dict[str, Any]] = []
+    signals: list[str] = []
+    recommended_actions: list[str] = []
+
+    reconciled_node = index.get(source_node.id)
+    if reconciled_node is not None:
+        local_atomicity = validate_atomicity(reconciled_node)
+        if local_atomicity or atomicity_errors:
+            observations.append(
+                {
+                    "kind": "oversized_spec",
+                    "spec_id": source_node.id,
+                    "details": local_atomicity or atomicity_errors,
+                }
+            )
+            signals.append("oversized_spec")
+            recommended_actions.append("split_or_narrow_spec")
+
+        missing_dependencies = [
+            dep_id for dep_id in reconciled_node.depends_on if dep_id not in index
+        ]
+        if missing_dependencies:
+            observations.append(
+                {
+                    "kind": "missing_dependency_target",
+                    "spec_id": source_node.id,
+                    "details": missing_dependencies,
+                }
+            )
+            signals.append("missing_dependency_target")
+            recommended_actions.append("repair_canonical_dependencies")
+
+        if source_node.data.get("last_outcome") == "split_required" and outcome == "split_required":
+            observations.append(
+                {
+                    "kind": "repeated_split_required_candidate",
+                    "spec_id": source_node.id,
+                    "details": (
+                        "Consecutive split_required outcomes suggest persistent non-atomic scope."
+                    ),
+                }
+            )
+            signals.append("repeated_split_required_candidate")
+            recommended_actions.append("schedule_decomposition_pass")
+
+        if (
+            outcome in {"retry", "blocked", "split_required"}
+            and reconciled_node.maturity <= source_node.maturity
+        ):
+            observations.append(
+                {
+                    "kind": "stalled_maturity_candidate",
+                    "spec_id": source_node.id,
+                    "details": {
+                        "before": source_node.maturity,
+                        "after": reconciled_node.maturity,
+                        "outcome": outcome,
+                    },
+                }
+            )
+            signals.append("stalled_maturity_candidate")
+            recommended_actions.append("review_refinement_strategy")
+
+        if reconciled_node.status in {"specified", "linked"} and not reconciliation.get(
+            "semantic_dependencies_resolved", True
+        ):
+            observations.append(
+                {
+                    "kind": "weak_structural_linkage_candidate",
+                    "spec_id": source_node.id,
+                    "details": "Declared dependency chain is not semantically resolved.",
+                }
+            )
+            signals.append("weak_structural_linkage_candidate")
+            recommended_actions.append("repair_refinement_chain")
+
+    return {
+        "source_spec_id": source_node.id,
+        "observations": observations,
+        "signals": sorted(set(signals)),
+        "recommended_actions": sorted(set(recommended_actions)),
+    }
+
+
 def parse_outcome(stdout: str, returncode: int) -> tuple[str, str]:
     default_outcome = "done" if returncode == 0 else "escalate"
 
@@ -1040,6 +1133,14 @@ def _process_one_spec(
     run_timestamp = dt.datetime.now(dt.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     run_id = f"{run_timestamp}-{node.id}"
 
+    try:
+        worktree_specs = load_specs_from_dir(worktree_path / "specs" / "nodes")
+    except Exception as exc:
+        worktree_specs = []
+        worktree_load_errors = [f"Failed to load worktree specs for validation: {exc}"]
+    else:
+        worktree_load_errors = []
+
     output_errors = validate_outputs(node, base_dir=worktree_path)
     allowed_path_errors = validate_allowed_paths(node, changed)
     reconciliation, reconciliation_errors = reconcile_graph(
@@ -1047,10 +1148,8 @@ def _process_one_spec(
         worktree_path=worktree_path,
         changed_files=changed,
     )
-    try:
-        worktree_specs = load_specs_from_dir(worktree_path / "specs" / "nodes")
-    except Exception as exc:
-        atomicity_errors = [f"Failed to load worktree specs for atomicity validation: {exc}"]
+    if worktree_load_errors:
+        atomicity_errors = list(worktree_load_errors)
     else:
         atomicity_errors = validate_changed_spec_atomicity(
             source_node_id=node.id,
@@ -1074,6 +1173,14 @@ def _process_one_spec(
         outcome = "split_required"
         if not blocker:
             blocker = "spec exceeds atomicity quality gate"
+
+    graph_health = observe_graph_health(
+        source_node=node,
+        worktree_specs=worktree_specs,
+        reconciliation=reconciliation,
+        atomicity_errors=atomicity_errors,
+        outcome=outcome,
+    )
     success = result.returncode == 0 and not validation_errors and outcome == "done"
 
     required_human_action = "resolve gate: approve|retry|split|block|redirect|escalate"
@@ -1173,6 +1280,7 @@ def _process_one_spec(
         "validation_errors": validation_errors,
         "validator_results": validator_results,
         "reconciliation": reconciliation,
+        "graph_health": graph_health,
         "stdout": result.stdout,
         "stderr": result.stderr,
     }

@@ -165,6 +165,42 @@ def test_pick_next_spec_gap_prioritizes_nearest_unlocked_ancestor(
     assert selected.id == "B"
 
 
+def test_observe_graph_health_reports_reflective_signals(
+    supervisor_module: object,
+) -> None:
+    spec_node = supervisor_module.SpecNode
+    source = spec_node(
+        path=Path("/tmp/source.yaml"),
+        data={
+            "id": "SG-SPEC-9999",
+            "title": "Working Node",
+            "kind": "spec",
+            "status": "specified",
+            "maturity": 0.4,
+            "depends_on": ["MISSING"],
+            "acceptance": [f"criterion-{i}" for i in range(6)],
+            "prompt": "Refine one bounded slice of this node.",
+            "last_outcome": "split_required",
+        },
+    )
+
+    graph_health = supervisor_module.observe_graph_health(
+        source_node=source,
+        worktree_specs=[source],
+        reconciliation={"semantic_dependencies_resolved": False},
+        atomicity_errors=["Atomicity gate exceeded"],
+        outcome="split_required",
+    )
+
+    assert graph_health["source_spec_id"] == "SG-SPEC-9999"
+    assert "oversized_spec" in graph_health["signals"]
+    assert "missing_dependency_target" in graph_health["signals"]
+    assert "repeated_split_required_candidate" in graph_health["signals"]
+    assert "stalled_maturity_candidate" in graph_health["signals"]
+    assert "weak_structural_linkage_candidate" in graph_health["signals"]
+    assert "split_or_narrow_spec" in graph_health["recommended_actions"]
+
+
 def test_build_prompt_includes_bootstrap_child_guidance_for_seed_spec(
     supervisor_module: object,
     repo_fixture: Path,
@@ -313,6 +349,7 @@ def test_main_creates_review_gate_and_provenance_metadata(
     assert payload["spec_id"] == "SG-SPEC-0001"
     assert payload["outcome"] == "done"
     assert payload["worktree_path"] == worktree.as_posix()
+    assert payload["graph_health"]["source_spec_id"] == "SG-SPEC-0001"
     assert payload["selected_by_rule"]["selection_mode"] == "default_refine"
     assert payload["selected_by_rule"]["sort_order"] == [
         "ancestor_reconcile_first",
