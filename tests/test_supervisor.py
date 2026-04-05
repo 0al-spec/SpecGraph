@@ -339,6 +339,76 @@ def test_update_refactor_queue_writes_classified_work_items(
     assert repeated_split["recommended_action"] == "review_decomposition_policy"
 
 
+def test_update_proposal_queue_emits_governance_proposal_immediately(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    graph_health = {
+        "source_spec_id": "SG-SPEC-9999",
+        "observations": [
+            {
+                "kind": "repeated_split_required_candidate",
+                "details": (
+                    "Consecutive split_required outcomes suggest persistent non-atomic scope."
+                ),
+            }
+        ],
+        "signals": ["repeated_split_required_candidate"],
+        "recommended_actions": ["review_decomposition_policy"],
+    }
+
+    path = supervisor_module.update_proposal_queue(graph_health=graph_health, run_id="RUN-2")
+    assert path == repo_fixture / "runs" / "proposal_queue.json"
+
+    items = json.loads(path.read_text(encoding="utf-8"))
+    assert len(items) == 1
+    proposal = items[0]
+    assert proposal["proposal_type"] == "governance_proposal"
+    assert proposal["signal"] == "repeated_split_required_candidate"
+    assert proposal["trigger"] == "governance_class_signal"
+    assert proposal["occurrence_count"] == 1
+    assert proposal["threshold"] == 1
+    assert proposal["supporting_run_ids"] == ["RUN-2"]
+
+
+def test_update_proposal_queue_requires_recurrence_for_refactor_proposal(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    historical_run = {
+        "run_id": "RUN-1",
+        "graph_health": {
+            "source_spec_id": "SG-SPEC-9999",
+            "signals": ["oversized_spec"],
+        },
+    }
+    (repo_fixture / "runs" / "20260405T000000Z-SG-SPEC-9999.json").write_text(
+        json.dumps(historical_run),
+        encoding="utf-8",
+    )
+
+    graph_health = {
+        "source_spec_id": "SG-SPEC-9999",
+        "observations": [
+            {"kind": "oversized_spec", "details": ["too many acceptance criteria"]},
+        ],
+        "signals": ["oversized_spec"],
+        "recommended_actions": ["split_or_narrow_spec"],
+    }
+
+    path = supervisor_module.update_proposal_queue(graph_health=graph_health, run_id="RUN-2")
+    items = json.loads(path.read_text(encoding="utf-8"))
+
+    assert len(items) == 1
+    proposal = items[0]
+    assert proposal["proposal_type"] == "refactor_proposal"
+    assert proposal["signal"] == "oversized_spec"
+    assert proposal["trigger"] == "recurring_signal"
+    assert proposal["occurrence_count"] == 2
+    assert proposal["threshold"] == 2
+    assert proposal["supporting_run_ids"] == ["RUN-1", "RUN-2"]
+
+
 def test_build_prompt_includes_bootstrap_child_guidance_for_seed_spec(
     supervisor_module: object,
     repo_fixture: Path,
@@ -513,6 +583,7 @@ def test_main_creates_review_gate_and_provenance_metadata(
     assert payload["worktree_path"] == worktree.as_posix()
     assert payload["graph_health"]["source_spec_id"] == "SG-SPEC-0001"
     assert payload["refactor_queue_artifact"].endswith("runs/refactor_queue.json")
+    assert payload["proposal_queue_artifact"].endswith("runs/proposal_queue.json")
     assert payload["selected_by_rule"]["selection_mode"] == "default_refine"
     assert payload["selected_by_rule"]["sort_order"] == [
         "refactor_queue_first",

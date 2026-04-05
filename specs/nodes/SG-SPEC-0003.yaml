@@ -25,10 +25,11 @@ acceptance:
 - Defines the first graph-health signals for oversized specs, missing canonical dependencies, repeated
   split_required, and stalled or weak refinement progression as diagnostic inputs rather than normative
   scores
-- Defines that graph-health observations and signals are first persisted in run artifacts and a derived
-  refactor queue, not written back into canonical spec nodes
+- Defines that graph-health observations, signals, and proposal artifacts are first persisted in run artifacts
+  plus derived queues, not written back into canonical spec nodes
 - Defines that the first derived refactor queue classifies work items as graph_refactor or governance_proposal
-  without mutating canonical spec nodes by itself
+  and that recurring or governance-class signals may emit explicit derived proposals without mutating
+  canonical spec nodes by themselves
 - Remains implementation-agnostic about exact formulas, thresholds, queue algorithms, and future metric
   systems such as SIB or Specification Verifiability
 acceptance_evidence:
@@ -54,20 +55,22 @@ acceptance_evidence:
     The same section defines them as diagnostic and rebuildable, not canonical truth.
 
     '
-- criterion: Defines that graph-health observations and signals are first persisted in run artifacts and
-    a derived refactor queue, not written back into canonical spec nodes
-  evidence: 'specification.derived_artifact_policy.first_persistence lists run payloads, summaries, and
-    refactor_queue artifacts as the first persistence targets, while specification.derived_artifact_policy.canonical_writeback
-    forbids direct writeback of observations and signals into canonical spec nodes without an explicit
-    proposal and approval step.
+- criterion: Defines that graph-health observations, signals, and proposal artifacts are first persisted
+    in run artifacts plus derived queues, not written back into canonical spec nodes
+  evidence: 'specification.derived_artifact_policy.first_persistence lists run payloads, summaries, refactor_queue
+    artifacts, and proposal_queue artifacts as the first persistence targets, while specification.derived_artifact_policy.canonical_writeback
+    forbids direct writeback of observations, signals, or proposals into canonical spec nodes without
+    an explicit proposal and approval step.
 
     '
 - criterion: Defines that the first derived refactor queue classifies work items as graph_refactor or
-    governance_proposal without mutating canonical spec nodes by itself
-  evidence: 'specification.terminology defines refactor_work_item and specification.derived_artifact_policy.refactor_queue
-    defines the first queue artifact as a derived projection from graph_health signals. specification.reflective_loop
-    then states that the queue decides between local_graph_refactor and governance_proposal without changing
-    canonical spec nodes by itself.
+    governance_proposal and that recurring or governance-class signals may emit explicit derived proposals
+    without mutating canonical spec nodes by themselves
+  evidence: 'specification.terminology defines refactor_work_item, refactor_proposal, and governance_proposal.
+    specification.derived_artifact_policy.refactor_queue defines the first queue artifact as a derived
+    projection from graph_health signals, and specification.derived_artifact_policy.proposal_queue defines
+    explicit proposal artifacts emitted for recurring or governance-class signals. specification.reflective_loop
+    keeps those artifacts derived until acted on under current governance rules.
 
     '
 - criterion: Remains implementation-agnostic about exact formulas, thresholds, queue algorithms, and future
@@ -94,8 +97,8 @@ specification:
     - Boundary between canonical specs, supervisor execution, and human approval
     - Reflective loop stages from observation to proposal
     - First graph-health signals related to spec size, dependency integrity, and refinement progression
-    - Derived persistence of observations and signals in run artifacts
-    - First derived refactor queue artifact and work-item classification
+    - Derived persistence of observations, signals, and proposals in run artifacts
+    - First derived refactor queue artifact, work-item classification, and proposal queue artifact
     out:
     - Concrete metric formulas or scoring weights
     - Final queue prioritization algorithms
@@ -117,6 +120,10 @@ specification:
       '
     governance_proposal: 'A structured proposal to change canonical ontology, policy, or supervisor behavior
       after repeated or important graph-health signals have been observed.
+
+      '
+    refactor_proposal: 'A structured proposal to perform a bounded local graph refactor after recurring
+      graph-health signals indicate that ad hoc local edits are no longer sufficient.
 
       '
     local_graph_refactor: 'A bounded structural improvement to existing spec nodes or edges that stays
@@ -145,11 +152,13 @@ specification:
     - Observe graph and run state
     - Derive graph_health_observation records
     - Aggregate observations into graph_health_signal candidates
-    - Decide whether the result is a local_graph_refactor or a governance_proposal
-    - Apply local refactor if allowed, otherwise wait for human approval
+    - Decide whether the result is a local_graph_refactor, a refactor_proposal, or a governance_proposal
+    - Apply local refactor if allowed, otherwise emit an explicit proposal and wait for human approval
     rules:
     - Observation and signal generation are derived runtime activities, not authored canonical facts.
     - Signals may motivate proposals, but they MUST NOT mutate canonical spec nodes by themselves.
+    - Recurring local graph pathologies MAY emit explicit derived refactor_proposal artifacts before any
+      canonical writeback occurs.
   graph_health_signal_policy:
     initial_signals:
     - oversized_spec
@@ -166,11 +175,17 @@ specification:
     - Run payloads
     - Run summaries
     - Refactor queue artifacts
+    - Proposal queue artifacts
     refactor_queue:
     - The first refactor queue is a derived artifact built from graph_health signals and their current
       classification.
     - A refactor queue item may classify work as graph_refactor or governance_proposal, but that classification
       remains derived until acted on under the current governance rules.
+    proposal_queue:
+    - The first proposal queue is a derived artifact built from recurring graph-health signals and governance-class
+      signals that should no longer remain implicit.
+    - A proposal queue item may classify work as refactor_proposal or governance_proposal, and it records
+      recurrence and source-run lineage without becoming canonical graph data by itself.
     canonical_writeback:
     - Graph-health observations and signals MUST NOT be written back into canonical spec nodes unless
       they have first been transformed into an explicit proposal and approved under the current governance

@@ -32,6 +32,7 @@ WORKABLE_STATUSES = {"outlined", "specified"}
 VALID_STATUSES = {"idea", "stub", "outlined", "specified", "linked", "reviewed", "frozen"}
 ATOMICITY_MAX_ACCEPTANCE = 5
 ATOMICITY_MAX_BLOCKING_CHILDREN = 3
+RECURRING_REFACTOR_PROPOSAL_THRESHOLD = 2
 BLOCKING_GATE_STATES = {
     "review_pending",
     "blocked",
@@ -984,6 +985,14 @@ def refactor_queue_path() -> Path:
     return RUNS_DIR / "refactor_queue.json"
 
 
+def proposal_queue_path() -> Path:
+    return RUNS_DIR / "proposal_queue.json"
+
+
+def run_log_paths() -> list[Path]:
+    return sorted(RUNS_DIR.glob("*-SG-SPEC-*.json"))
+
+
 def classify_refactor_work_item(signal: str) -> str:
     if signal in {"repeated_split_required_candidate", "stalled_maturity_candidate"}:
         return "governance_proposal"
@@ -998,6 +1007,43 @@ def default_action_for_signal(signal: str) -> str:
         "stalled_maturity_candidate": "review_refinement_strategy",
         "weak_structural_linkage_candidate": "repair_refinement_chain",
     }.get(signal, "review_graph_health_signal")
+
+
+def classify_proposal_type(work_item_type: str) -> str:
+    if work_item_type == "governance_proposal":
+        return "governance_proposal"
+    return "refactor_proposal"
+
+
+def proposal_threshold_for_work_item_type(work_item_type: str) -> int:
+    if work_item_type == "governance_proposal":
+        return 1
+    return RECURRING_REFACTOR_PROPOSAL_THRESHOLD
+
+
+def signal_supporting_run_ids(spec_id: str, signal: str) -> list[str]:
+    run_ids: list[str] = []
+    for path in run_log_paths():
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if not isinstance(payload, dict):
+            continue
+        graph_health = payload.get("graph_health")
+        if not isinstance(graph_health, dict):
+            continue
+        if str(graph_health.get("source_spec_id", "")).strip() != spec_id:
+            continue
+        signals = graph_health.get("signals")
+        if not isinstance(signals, list):
+            continue
+        if signal not in {str(item) for item in signals}:
+            continue
+        run_id = str(payload.get("run_id", "")).strip()
+        if run_id:
+            run_ids.append(run_id)
+    return run_ids
 
 
 def build_refactor_queue_items(
@@ -1050,6 +1096,78 @@ def update_refactor_queue(
         if isinstance(item, dict) and str(item.get("spec_id", "")).strip() != source_spec_id
     ]
     updated = preserved + build_refactor_queue_items(graph_health=graph_health, run_id=run_id)
+    path.write_text(json.dumps(updated, ensure_ascii=False, indent=2), encoding="utf-8")
+    return path
+
+
+def build_proposal_queue_items(
+    *,
+    graph_health: dict[str, Any],
+    run_id: str,
+) -> list[dict[str, Any]]:
+    observation_by_kind = {
+        str(observation.get("kind", "")): observation
+        for observation in graph_health.get("observations", [])
+        if isinstance(observation, dict)
+    }
+    source_spec_id = str(graph_health.get("source_spec_id", "")).strip()
+    items: list[dict[str, Any]] = []
+
+    for signal in graph_health.get("signals", []):
+        signal_name = str(signal).strip()
+        work_item_type = classify_refactor_work_item(signal_name)
+        supporting_run_ids = signal_supporting_run_ids(source_spec_id, signal_name)
+        if run_id not in supporting_run_ids:
+            supporting_run_ids.append(run_id)
+        threshold = proposal_threshold_for_work_item_type(work_item_type)
+        if len(supporting_run_ids) < threshold:
+            continue
+
+        proposal_type = classify_proposal_type(work_item_type)
+        items.append(
+            {
+                "id": f"{proposal_type}::{source_spec_id}::{signal_name}",
+                "proposal_type": proposal_type,
+                "spec_id": source_spec_id,
+                "signal": signal_name,
+                "recommended_action": default_action_for_signal(signal_name),
+                "status": "proposed",
+                "trigger": (
+                    "governance_class_signal"
+                    if work_item_type == "governance_proposal"
+                    else "recurring_signal"
+                ),
+                "occurrence_count": len(supporting_run_ids),
+                "threshold": threshold,
+                "supporting_run_ids": supporting_run_ids,
+                "source_work_item_type": work_item_type,
+                "details": observation_by_kind.get(signal_name, {}).get("details"),
+            }
+        )
+    return items
+
+
+def update_proposal_queue(
+    *,
+    graph_health: dict[str, Any],
+    run_id: str,
+) -> Path:
+    RUNS_DIR.mkdir(parents=True, exist_ok=True)
+    path = proposal_queue_path()
+    if path.exists():
+        existing = json.loads(path.read_text(encoding="utf-8"))
+        if not isinstance(existing, list):
+            existing = []
+    else:
+        existing = []
+
+    source_spec_id = str(graph_health.get("source_spec_id", "")).strip()
+    preserved = [
+        item
+        for item in existing
+        if isinstance(item, dict) and str(item.get("spec_id", "")).strip() != source_spec_id
+    ]
+    updated = preserved + build_proposal_queue_items(graph_health=graph_health, run_id=run_id)
     path.write_text(json.dumps(updated, ensure_ascii=False, indent=2), encoding="utf-8")
     return path
 
@@ -1369,6 +1487,7 @@ def _process_one_spec(
         outcome=outcome,
     )
     refactor_queue_artifact = update_refactor_queue(graph_health=graph_health, run_id=run_id)
+    proposal_queue_artifact = update_proposal_queue(graph_health=graph_health, run_id=run_id)
     success = result.returncode == 0 and not validation_errors and outcome == "done"
 
     required_human_action = "resolve gate: approve|retry|split|block|redirect|escalate"
@@ -1472,6 +1591,7 @@ def _process_one_spec(
         "reconciliation": reconciliation,
         "graph_health": graph_health,
         "refactor_queue_artifact": refactor_queue_artifact.as_posix(),
+        "proposal_queue_artifact": proposal_queue_artifact.as_posix(),
         "stdout": result.stdout,
         "stderr": result.stderr,
     }
