@@ -18,6 +18,17 @@ The supervisor loop is:
 
 `pick spec gap -> refine spec -> validate -> update state`
 
+Canonical YAML helpers for spec nodes:
+
+```bash
+python tools/spec_yaml_format.py
+python tools/spec_yaml_lint.py
+```
+
+Both commands default to `specs/nodes/*.yaml`. The formatter rewrites files into the
+repository's canonical YAML style; the linter enforces syntax, rejects duplicate keys,
+and fails when a file has drifted from canonical formatting.
+
 
 ## JSON Knowledge Search MVP
 
