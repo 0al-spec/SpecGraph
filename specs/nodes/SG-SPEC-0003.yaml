@@ -32,6 +32,10 @@ acceptance:
   canonical spec nodes by themselves
 - Defines when supervisor may perform a direct_graph_update versus when it must emit or defer to an explicit
   proposal artifact
+- Defines a proposal-first split_oversized_spec refactoring pass for oversized non-seed specs that runs
+  only from explicit operator targeting and does not mutate canonical spec files by itself
+- Defines a dedicated structured split proposal artifact under derived runs/proposals storage and keeps
+  proposal_queue as an index rather than the full refactor payload
 - Remains implementation-agnostic about exact formulas, thresholds, queue algorithms, and future metric
   systems such as SIB or Specification Verifiability
 acceptance_evidence:
@@ -82,6 +86,22 @@ acceptance_evidence:
     policy, and allowed paths. specification.reflective_loop and specification.derived_artifact_policy.proposal_queue
     then require proposal emission or proposal precedence for recurring pathologies and governance-class
     signals.
+
+    '
+- criterion: Defines a proposal-first split_oversized_spec refactoring pass for oversized non-seed specs
+    that runs only from explicit operator targeting and does not mutate canonical spec files by itself
+  evidence: 'specification.terminology defines split_refactor_pass and operator_target. specification.split_refactor_policy.v1
+    limits the first pass to split_oversized_spec on non-seed spec nodes with oversized_spec pathology.
+    specification.split_refactor_policy.execution requires explicit operator targeting, proposal-first
+    output, no canonical spec writeback, no status or maturity promotion, and no automatic child creation.
+
+    '
+- criterion: Defines a dedicated structured split proposal artifact under derived runs/proposals storage
+    and keeps proposal_queue as an index rather than the full refactor payload
+  evidence: 'specification.terminology defines structured_split_proposal_artifact. specification.split_refactor_policy.artifact_contract
+    defines the required fields for the structured split proposal artifact, while specification.derived_artifact_policy.proposal_queue
+    keeps proposal_queue as an index that points to explicit proposal artifacts instead of embedding full
+    split content.
 
     '
 - criterion: Remains implementation-agnostic about exact formulas, thresholds, queue algorithms, and future
@@ -146,6 +166,19 @@ specification:
       within current governance rules and does not redefine ontology or policy.
 
       '
+    split_refactor_pass: 'A bounded, explicitly targeted refactoring mode that analyzes one oversized
+      spec and prepares a structured split proposal without mutating canonical spec files by itself.
+
+      '
+    operator_target: 'An explicit operator-selected execution target that overrides heuristic work-item
+      selection for a single bounded supervisor run.
+
+      '
+    structured_split_proposal_artifact: 'A derived artifact stored outside canonical spec nodes that captures
+      the full proposal payload for split_oversized_spec, including parent-after-split intent, suggested
+      child specs, acceptance mapping, and lineage updates.
+
+      '
     constitutional_change: 'A change to ontology, policy, thresholds, or supervisor authority that alters
       the governing rules of SpecGraph and therefore requires human approval.
 
@@ -162,6 +195,8 @@ specification:
       the change stays within current ontology/policy/allowed paths, and no active proposal already owns
       the same pathology.
     - The supervisor may not silently redefine ontology, approval boundaries, or its own authority.
+    - Explicit operator_target runs may override heuristic selector choice for one bounded execution,
+      but they remain bound by current canonical policy and approval limits.
     human_approval:
     - Human approval is required for constitutional_change, including ontology changes, policy changes,
       threshold changes that alter governance meaning, and supervisor behavior changes that expand autonomous
@@ -209,9 +244,66 @@ specification:
       signals that should no longer remain implicit.
     - A proposal queue item may classify work as refactor_proposal or governance_proposal, and it records
       recurrence and source-run lineage without becoming canonical graph data by itself.
+    - proposal_queue acts as an index and summary surface for proposal artifacts; it MUST NOT be the only
+      persistence location for full split-refactor payloads.
     - Active proposal_queue items take precedence over further direct_graph_update attempts for the same
       spec and signal.
     canonical_writeback:
     - Graph-health observations and signals MUST NOT be written back into canonical spec nodes unless
       they have first been transformed into an explicit proposal and approved under the current governance
       rules.
+  split_refactor_policy:
+    v1:
+      scope:
+      - split_oversized_spec only
+      - non-seed spec nodes only
+      - proposal-first only
+      - no canonical spec mutation during the pass
+      - no merge, reparent, or generalized relinking
+      eligibility:
+      - The target node must be an oversized non-seed spec node under current graph-health policy.
+      - The run must be selected by explicit operator_target rather than heuristic queue pickup.
+    parent_after_split:
+    - The parent keeps the same stable ID and remains an overview or integration node after the proposed
+      split.
+    - The parent keeps only cross-cutting or integration acceptance that should not be duplicated into
+      multiple children.
+    - The parent narrows its role summary and prompt toward overview or integration responsibility rather
+      than keeping all detailed concerns.
+    - The parent depends_on the suggested child specs only when those children are blocking for parent
+      advancement.
+    child_contract:
+    - Each suggested child represents exactly one bounded concern.
+    - Each moved parent acceptance criterion maps to exactly one child slot.
+    - Suggested child IDs and paths are advisory snapshot outputs and do not reserve canonical IDs by
+      themselves.
+    - 'Each suggested child records child-to-parent lineage as refines: [parent_id] in the proposal payload.'
+    execution:
+    - The split pass emits a structured proposal artifact plus proposal_queue index metadata and does
+      not write canonical spec files by itself.
+    - The split pass does not promote status or maturity and does not auto-create child spec files.
+    - If an active proposal already exists for the same spec and signal, the structured proposal artifact
+      is refreshed rather than duplicated.
+    artifact_contract:
+      required_fields:
+      - id
+      - proposal_type
+      - refactor_kind
+      - target_spec_id
+      - source_signal
+      - source_run_ids
+      - execution_policy
+      - parent_after_split
+      - suggested_children
+      - acceptance_mapping
+      - lineage_updates
+      - status
+      rules:
+      - parent_after_split MUST retain acceptance that stays on the parent and describe the narrowed overview
+        role.
+      - suggested_children MUST include advisory child IDs, advisory paths, bounded concern summaries,
+        suggested titles, suggested prompts, and assigned acceptance criteria.
+      - acceptance_mapping MUST cover every current parent acceptance criterion exactly once, either as
+        parent_retained or as one child slot assignment.
+      - lineage_updates MUST record both parent-to-child blocking edges to add and child-to-parent refines
+        edges to add for the proposed split.

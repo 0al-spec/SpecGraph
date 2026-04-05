@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
-"""List spec nodes with queue-oriented views."""
+"""List spec nodes through queue-oriented operational views.
+
+This tool is intentionally a read-model over `supervisor.py`, not a second
+source of truth. It answers practical questions such as:
+- which specs are ready for another bounded run
+- which specs are blocked by missing or non-ready dependencies
+- which specs are waiting at a human review gate
+"""
 
 from __future__ import annotations
 
@@ -19,6 +26,14 @@ _spec.loader.exec_module(supervisor)
 
 
 def classify_spec(spec: object, index: dict[str, object]) -> tuple[str, str, str]:
+    """Classify one spec into a queue bucket for operational reporting.
+
+    The buckets are deliberately simple:
+    - `review_pending`: waiting for a human gate decision
+    - `blocked`: structurally blocked or currently in a blocking gate state
+    - `ready`: workable under current dependency rules
+    - `other`: valid but not presently actionable in the work queue
+    """
     blocked_by = []
     gate_state = str(spec.data.get("gate_state", "none") or "none")
     required_action = str(spec.data.get("required_human_action", "-") or "-")
@@ -55,6 +70,7 @@ def classify_spec(spec: object, index: dict[str, object]) -> tuple[str, str, str
 
 
 def build_rows(specs: list[object], view: str) -> list[dict[str, str]]:
+    """Project loaded spec nodes into table/json rows for the requested view."""
     index = supervisor.index_specs(specs)
     rows: list[dict[str, str]] = []
 
@@ -82,6 +98,7 @@ def build_rows(specs: list[object], view: str) -> list[dict[str, str]]:
 
 
 def print_markdown_table(rows: list[dict[str, str]]) -> None:
+    """Render queue rows as a stable Markdown table for terminal use."""
     if not rows:
         print("No specs matched the selected view.")
         return
@@ -128,6 +145,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
+    """CLI entry point for queue-oriented spec listing."""
     args = build_parser().parse_args(argv)
 
     try:

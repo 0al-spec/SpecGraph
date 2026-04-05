@@ -1,5 +1,7 @@
 # AGENTS.md
 
+See [CONSTITUTION.md](/Users/egor/Development/GitHub/0AL/SpecGraph/CONSTITUTION.md) for the runtime governance model used to grow SpecGraph during bootstrap.
+
 ## Repository rules
 - Work on one spec node at a time.
 - Refine specifications, not runtime code.

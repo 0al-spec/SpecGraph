@@ -95,6 +95,102 @@ def make_fake_worktree(root: Path) -> Path:
     return worktree
 
 
+def make_valid_split_proposal(node_data: dict[str, object], run_id: str) -> dict[str, object]:
+    spec_id = str(node_data["id"])
+    acceptance = [str(item) for item in node_data.get("acceptance", [])]
+    retained = [{"acceptance_index": 1, "acceptance_text": acceptance[0]}]
+    child_one_items = [
+        {"acceptance_index": idx, "acceptance_text": text}
+        for idx, text in enumerate(acceptance[1:3], start=2)
+    ]
+    child_two_items = [
+        {"acceptance_index": idx, "acceptance_text": text}
+        for idx, text in enumerate(acceptance[3:], start=4)
+    ]
+    acceptance_mapping = [
+        {
+            "acceptance_index": 1,
+            "acceptance_text": acceptance[0],
+            "target": "parent_retained",
+        }
+    ]
+    acceptance_mapping.extend(
+        {
+            "acceptance_index": item["acceptance_index"],
+            "acceptance_text": item["acceptance_text"],
+            "target": "child_1",
+        }
+        for item in child_one_items
+    )
+    acceptance_mapping.extend(
+        {
+            "acceptance_index": item["acceptance_index"],
+            "acceptance_text": item["acceptance_text"],
+            "target": "child_2",
+        }
+        for item in child_two_items
+    )
+    return {
+        "id": f"refactor_proposal::{spec_id}::oversized_spec",
+        "proposal_type": "refactor_proposal",
+        "refactor_kind": "split_oversized_spec",
+        "target_spec_id": spec_id,
+        "source_signal": "oversized_spec",
+        "source_run_ids": [run_id],
+        "execution_policy": "emit_proposal",
+        "parent_after_split": {
+            "narrowed_role_summary": (
+                "Keep the parent as calculator overview and integration shell."
+            ),
+            "retained_acceptance": retained,
+            "intended_depends_on": [
+                {"slot_key": "child_1", "suggested_id": "SG-SPEC-0002"},
+                {"slot_key": "child_2", "suggested_id": "SG-SPEC-0003"},
+            ],
+        },
+        "suggested_children": [
+            {
+                "slot_key": "child_1",
+                "suggested_id": "SG-SPEC-0002",
+                "suggested_path": "specs/nodes/SG-SPEC-0002.yaml",
+                "bounded_concern_summary": "Arithmetic functions",
+                "suggested_title": "Calculator - Arithmetic Functions",
+                "suggested_prompt": "Refine arithmetic functions as one bounded concern.",
+                "assigned_acceptance": child_one_items,
+            },
+            {
+                "slot_key": "child_2",
+                "suggested_id": "SG-SPEC-0003",
+                "suggested_path": "specs/nodes/SG-SPEC-0003.yaml",
+                "bounded_concern_summary": "Input constraints",
+                "suggested_title": "Calculator - Input Constraints",
+                "suggested_prompt": "Refine input constraints as one bounded concern.",
+                "assigned_acceptance": child_two_items,
+            },
+        ],
+        "acceptance_mapping": acceptance_mapping,
+        "lineage_updates": {
+            "parent_depends_on_add": [
+                {"slot_key": "child_1", "suggested_id": "SG-SPEC-0002"},
+                {"slot_key": "child_2", "suggested_id": "SG-SPEC-0003"},
+            ],
+            "child_refines_add": [
+                {
+                    "slot_key": "child_1",
+                    "suggested_id": "SG-SPEC-0002",
+                    "refines": [spec_id],
+                },
+                {
+                    "slot_key": "child_2",
+                    "suggested_id": "SG-SPEC-0003",
+                    "refines": [spec_id],
+                },
+            ],
+        },
+        "status": "proposed",
+    }
+
+
 def test_pick_next_spec_gap_prefers_leaf_and_filters_status(supervisor_module: object) -> None:
     spec_node = supervisor_module.SpecNode
     nodes = [
@@ -651,6 +747,30 @@ def test_build_prompt_includes_graph_refactor_guidance(
     assert "too many acceptance criteria" in prompt
 
 
+def test_build_prompt_includes_split_refactor_proposal_guidance(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    data["title"] = "Calculator Overview"
+    data["prompt"] = "Keep this parent as overview and split detailed concerns."
+    data["acceptance"] = [f"criterion-{i}" for i in range(1, 7)]
+    node_path.write_text(json.dumps(data), encoding="utf-8")
+
+    node = supervisor_module.load_specs()[0]
+    work_item = supervisor_module.build_split_refactor_work_item(node)
+    work_item["planned_run_id"] = "RUN-1"
+    prompt = supervisor_module.build_prompt(node, work_item)
+
+    assert "Refinement mode: split_refactor_proposal" in prompt
+    assert "This run was explicitly targeted by the operator for split_oversized_spec." in prompt
+    assert "Proposal artifact path: runs/proposals/" in prompt
+    assert "source_run_ids must include the current run ID above." in prompt
+    assert "Current parent acceptance criteria:" in prompt
+    assert "- [1] criterion-1" in prompt
+
+
 def test_main_creates_review_gate_and_provenance_metadata(
     supervisor_module: object,
     repo_fixture: Path,
@@ -786,6 +906,218 @@ def test_main_selects_graph_refactor_work_item_before_default_gap(
     assert updated["status"] == "outlined"
     assert updated["gate_state"] == "review_pending"
     assert updated["proposed_status"] is None
+
+
+def test_main_split_proposal_emits_structured_artifact_and_queue_entry(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    node_data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    node_data["title"] = "Calculator Overview"
+    node_data["prompt"] = "Keep the parent as overview and split detailed concerns."
+    node_data["acceptance"] = [f"criterion-{i}" for i in range(1, 7)]
+    node_path.write_text(json.dumps(node_data), encoding="utf-8")
+    before_text = node_path.read_text(encoding="utf-8")
+
+    worktree = make_fake_worktree(repo_fixture)
+    monkeypatch.setattr(
+        supervisor_module,
+        "create_isolated_worktree",
+        lambda _node_id: (worktree, "codex/sg-spec-0001/split-proposal"),
+    )
+
+    work_item = supervisor_module.build_split_refactor_work_item(supervisor_module.load_specs()[0])
+    changed_snapshots = [[], [work_item["proposal_artifact_relpath"]]]
+    monkeypatch.setattr(
+        supervisor_module, "git_changed_files", lambda _cwd=None: changed_snapshots.pop(0)
+    )
+
+    def fake_executor(
+        node: object,
+        worktree_path: Path,
+        refactor_work_item: dict[str, object],
+    ) -> subprocess.CompletedProcess[str]:
+        proposal_path = worktree_path / str(refactor_work_item["proposal_artifact_relpath"])
+        proposal_path.parent.mkdir(parents=True, exist_ok=True)
+        proposal_path.write_text(
+            json.dumps(
+                make_valid_split_proposal(
+                    node.data,
+                    str(refactor_work_item["planned_run_id"]),
+                )
+            ),
+            encoding="utf-8",
+        )
+        return subprocess.CompletedProcess(
+            args=["codex"],
+            returncode=0,
+            stdout="RUN_OUTCOME: done\nBLOCKER: none\n",
+            stderr="",
+        )
+
+    exit_code = supervisor_module.main(
+        executor=fake_executor,
+        target_spec="SG-SPEC-0001",
+        split_proposal=True,
+    )
+    assert exit_code == 0
+
+    assert node_path.read_text(encoding="utf-8") == before_text
+
+    proposal_artifact = repo_fixture / work_item["proposal_artifact_relpath"]
+    assert proposal_artifact.exists()
+    artifact = json.loads(proposal_artifact.read_text(encoding="utf-8"))
+    assert artifact["refactor_kind"] == "split_oversized_spec"
+    assert artifact["target_spec_id"] == "SG-SPEC-0001"
+    assert artifact["parent_after_split"]["narrowed_role_summary"]
+    assert artifact["suggested_children"][0]["suggested_path"] == "specs/nodes/SG-SPEC-0002.yaml"
+    assert [entry["acceptance_index"] for entry in artifact["acceptance_mapping"]] == [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+    ]
+    assert artifact["acceptance_mapping"][0]["target"] == "parent_retained"
+    assert artifact["lineage_updates"]["child_refines_add"][0]["refines"] == ["SG-SPEC-0001"]
+
+    queue_items = json.loads(
+        (repo_fixture / "runs" / "proposal_queue.json").read_text(encoding="utf-8")
+    )
+    assert len(queue_items) == 1
+    queue_item = queue_items[0]
+    assert queue_item["proposal_type"] == "refactor_proposal"
+    assert queue_item["refactor_kind"] == "split_oversized_spec"
+    assert queue_item["proposal_artifact_path"] == work_item["proposal_artifact_relpath"]
+    assert queue_item["execution_policy"] == "emit_proposal"
+
+    run_logs = sorted((repo_fixture / "runs").glob("*-SG-SPEC-*.json"))
+    assert len(run_logs) == 1
+    payload = json.loads(run_logs[0].read_text(encoding="utf-8"))
+    assert payload["selected_by_rule"]["selection_mode"] == "split_refactor_proposal"
+    assert payload["proposal_artifact_path"].endswith(work_item["proposal_artifact_relpath"])
+    assert payload["proposed_status"] is None
+    assert payload["final_status"] == "outlined"
+
+
+def test_main_split_proposal_rejects_non_oversized_target(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    exit_code = supervisor_module.main(target_spec="SG-SPEC-0001", split_proposal=True)
+    assert exit_code == 1
+    assert not (repo_fixture / "runs" / "proposal_queue.json").exists()
+
+
+def test_main_split_proposal_rejects_seed_like_target(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    node_data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    node_data["title"] = "Root Spec"
+    node_data["prompt"] = "This seed spec is a root overview spec with child specs."
+    node_data["acceptance"] = [f"criterion-{i}" for i in range(1, 7)]
+    node_path.write_text(json.dumps(node_data), encoding="utf-8")
+
+    exit_code = supervisor_module.main(target_spec="SG-SPEC-0001", split_proposal=True)
+    assert exit_code == 1
+    assert not (repo_fixture / "runs" / "proposal_queue.json").exists()
+
+
+def test_main_split_proposal_refreshes_existing_artifact_without_duplicate_queue_items(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    node_data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    node_data["title"] = "Calculator Overview"
+    node_data["prompt"] = "Keep the parent as overview and split detailed concerns."
+    node_data["acceptance"] = [f"criterion-{i}" for i in range(1, 7)]
+    node_path.write_text(json.dumps(node_data), encoding="utf-8")
+
+    node = supervisor_module.load_specs()[0]
+    work_item = supervisor_module.build_split_refactor_work_item(node)
+    existing_queue = [
+        {
+            "id": "refactor_proposal::SG-SPEC-0001::oversized_spec",
+            "proposal_type": "refactor_proposal",
+            "spec_id": "SG-SPEC-0001",
+            "signal": "oversized_spec",
+            "status": "review_pending",
+            "execution_policy": "emit_proposal",
+            "proposal_artifact_path": work_item["proposal_artifact_relpath"],
+            "supporting_run_ids": ["RUN-OLD"],
+        }
+    ]
+    (repo_fixture / "runs" / "proposal_queue.json").write_text(
+        json.dumps(existing_queue),
+        encoding="utf-8",
+    )
+    existing_artifact = repo_fixture / work_item["proposal_artifact_relpath"]
+    existing_artifact.parent.mkdir(parents=True, exist_ok=True)
+    existing_artifact.write_text(
+        json.dumps({"id": "old", "status": "review_pending", "note": "stale"}),
+        encoding="utf-8",
+    )
+
+    worktree = make_fake_worktree(repo_fixture)
+    monkeypatch.setattr(
+        supervisor_module,
+        "create_isolated_worktree",
+        lambda _node_id: (worktree, "codex/sg-spec-0001/split-proposal"),
+    )
+    changed_snapshots = [[], [work_item["proposal_artifact_relpath"]]]
+    monkeypatch.setattr(
+        supervisor_module, "git_changed_files", lambda _cwd=None: changed_snapshots.pop(0)
+    )
+
+    def fake_executor(
+        current_node: object,
+        worktree_path: Path,
+        refactor_work_item: dict[str, object],
+    ) -> subprocess.CompletedProcess[str]:
+        proposal_path = worktree_path / str(refactor_work_item["proposal_artifact_relpath"])
+        proposal_path.parent.mkdir(parents=True, exist_ok=True)
+        artifact = make_valid_split_proposal(
+            current_node.data,
+            str(refactor_work_item["planned_run_id"]),
+        )
+        artifact["parent_after_split"]["narrowed_role_summary"] = "Refreshed overview summary."
+        proposal_path.write_text(json.dumps(artifact), encoding="utf-8")
+        return subprocess.CompletedProcess(
+            args=["codex"],
+            returncode=0,
+            stdout="RUN_OUTCOME: done\nBLOCKER: none\n",
+            stderr="",
+        )
+
+    exit_code = supervisor_module.main(
+        executor=fake_executor,
+        target_spec="SG-SPEC-0001",
+        split_proposal=True,
+    )
+    assert exit_code == 0
+
+    queue_items = json.loads(
+        (repo_fixture / "runs" / "proposal_queue.json").read_text(encoding="utf-8")
+    )
+    assert len(queue_items) == 1
+    queue_item = queue_items[0]
+    assert queue_item["id"] == "refactor_proposal::SG-SPEC-0001::oversized_spec"
+    assert queue_item["status"] == "review_pending"
+    assert queue_item["proposal_artifact_path"] == work_item["proposal_artifact_relpath"]
+    assert "RUN-OLD" in queue_item["supporting_run_ids"]
+
+    refreshed_artifact = json.loads(existing_artifact.read_text(encoding="utf-8"))
+    assert refreshed_artifact["parent_after_split"]["narrowed_role_summary"] == (
+        "Refreshed overview summary."
+    )
+    assert "RUN-OLD" in refreshed_artifact["source_run_ids"]
 
 
 def test_main_seeds_worktree_with_current_uncommitted_node(
