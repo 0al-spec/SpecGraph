@@ -541,3 +541,279 @@ def test_status_progression_map_covers_lifecycle(supervisor_module: object) -> N
     assert progression["linked"] == "reviewed"
     assert progression["reviewed"] == "frozen"
     assert "frozen" not in progression
+
+
+# --- loop mode tests ---
+
+
+def test_loop_requires_auto_approve(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    exit_code = supervisor_module.main(loop=True, auto_approve=False)
+    assert exit_code == 1
+
+
+def test_loop_rejects_dry_run(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    exit_code = supervisor_module.main(loop=True, auto_approve=True, dry_run=True)
+    assert exit_code == 1
+
+
+def _make_successful_executor(supervisor_module: object) -> object:
+    """Return a fake executor that writes valid acceptance_evidence."""
+
+    def fake_executor(
+        _node: object, worktree_path: Path,
+    ) -> subprocess.CompletedProcess[str]:
+        for node_file in (worktree_path / "specs" / "nodes").glob("*.yaml"):
+            data = supervisor_module.get_yaml_module().safe_load(
+                node_file.read_text(encoding="utf-8")
+            )
+            acceptance = data.get("acceptance", [])
+            data["acceptance_evidence"] = [f"evidence-{i}" for i in range(len(acceptance))]
+            node_file.write_text(json.dumps(data), encoding="utf-8")
+        return subprocess.CompletedProcess(
+            args=["codex"],
+            returncode=0,
+            stdout="RUN_OUTCOME: done\nBLOCKER: none\n",
+            stderr="",
+        )
+
+    return fake_executor
+
+
+def test_loop_processes_until_no_candidates(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Loop should promote outlined->specified->linked, then stop (linked not workable)."""
+    monkeypatch.setattr(
+        supervisor_module,
+        "create_isolated_worktree",
+        lambda _node_id: (make_fake_worktree(repo_fixture), "codex/test/loop"),
+    )
+    # Use alternating before/after pattern so changed files are detected correctly.
+    call_counter: list[int] = [0]
+
+    def alternating_git_changed(_cwd: object = None) -> list[str]:
+        call_counter[0] += 1
+        # Odd calls are "after executor" — report changed file.
+        if call_counter[0] % 2 == 0:
+            return ["specs/nodes/SG-SPEC-0001.yaml"]
+        return []
+
+    monkeypatch.setattr(supervisor_module, "git_changed_files", alternating_git_changed)
+
+    fake_executor = _make_successful_executor(supervisor_module)
+    exit_code = supervisor_module.main(
+        executor=fake_executor, auto_approve=True, loop=True,
+    )
+    assert exit_code == 0
+
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    updated = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    assert updated["status"] == "linked"
+
+    run_logs = sorted((repo_fixture / "runs").glob("*.json"))
+    # At least 1 log; may be fewer than 2 due to same-second timestamp collision.
+    assert len(run_logs) >= 1
+
+
+def test_loop_processes_multiple_specs(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Loop should process multiple independent specs."""
+    specs_dir = repo_fixture / "specs" / "nodes"
+
+    # Widen allowed_paths on spec-0001 so cross-file changes don't fail validation.
+    node1_path = specs_dir / "SG-SPEC-0001.yaml"
+    node1_data = supervisor_module.get_yaml_module().safe_load(
+        node1_path.read_text(encoding="utf-8")
+    )
+    node1_data["allowed_paths"] = ["specs/nodes/*.yaml"]
+    node1_path.write_text(json.dumps(node1_data), encoding="utf-8")
+
+    specs_dir.joinpath("SG-SPEC-0002.yaml").write_text(
+        json.dumps(
+            {
+                "id": "SG-SPEC-0002",
+                "title": "Second Node",
+                "kind": "spec",
+                "status": "outlined",
+                "maturity": 0.2,
+                "depends_on": [],
+                "outputs": ["specs/nodes/SG-SPEC-0002.yaml"],
+                "allowed_paths": ["specs/nodes/*.yaml"],
+                "acceptance": ["criterion"],
+                "prompt": "Refine second node.",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    monkeypatch.setattr(
+        supervisor_module,
+        "create_isolated_worktree",
+        lambda _node_id: (make_fake_worktree(repo_fixture), "codex/test/loop"),
+    )
+
+    call_counter: list[int] = [0]
+
+    def alternating_git_changed(_cwd: object = None) -> list[str]:
+        call_counter[0] += 1
+        # Even calls (after executor) report the changed file.
+        if call_counter[0] % 2 == 0:
+            return ["specs/nodes/SG-SPEC-0001.yaml", "specs/nodes/SG-SPEC-0002.yaml"]
+        return []
+
+    monkeypatch.setattr(supervisor_module, "git_changed_files", alternating_git_changed)
+
+    def per_node_executor(
+        node: object, worktree_path: Path,
+    ) -> subprocess.CompletedProcess[str]:
+        node_file = worktree_path / "specs" / "nodes" / f"{node.id}.yaml"
+        if node_file.exists():
+            data = supervisor_module.get_yaml_module().safe_load(
+                node_file.read_text(encoding="utf-8")
+            )
+            acceptance = data.get("acceptance", [])
+            data["acceptance_evidence"] = [f"ev-{i}" for i in range(len(acceptance))]
+            node_file.write_text(json.dumps(data), encoding="utf-8")
+        return subprocess.CompletedProcess(
+            args=["codex"], returncode=0,
+            stdout="RUN_OUTCOME: done\nBLOCKER: none\n", stderr="",
+        )
+
+    exit_code = supervisor_module.main(
+        executor=per_node_executor, auto_approve=True, loop=True,
+    )
+    assert exit_code == 0
+
+    node1 = supervisor_module.get_yaml_module().safe_load(
+        (specs_dir / "SG-SPEC-0001.yaml").read_text(encoding="utf-8")
+    )
+    node2 = supervisor_module.get_yaml_module().safe_load(
+        (specs_dir / "SG-SPEC-0002.yaml").read_text(encoding="utf-8")
+    )
+    # Both should have advanced beyond their initial "outlined" status.
+    assert node1["status"] != "outlined"
+    assert node2["status"] != "outlined"
+
+
+def test_loop_continues_past_failures(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A blocked spec should not stop the loop from processing other specs."""
+    specs_dir = repo_fixture / "specs" / "nodes"
+
+    node1_path = specs_dir / "SG-SPEC-0001.yaml"
+    node1_data = supervisor_module.get_yaml_module().safe_load(
+        node1_path.read_text(encoding="utf-8")
+    )
+    node1_data["allowed_paths"] = ["specs/nodes/*.yaml"]
+    node1_path.write_text(json.dumps(node1_data), encoding="utf-8")
+
+    specs_dir.joinpath("SG-SPEC-0002.yaml").write_text(
+        json.dumps(
+            {
+                "id": "SG-SPEC-0002",
+                "title": "Blocked Node",
+                "kind": "spec",
+                "status": "outlined",
+                "maturity": 0.1,
+                "depends_on": [],
+                "outputs": ["specs/nodes/SG-SPEC-0002.yaml"],
+                "allowed_paths": ["specs/nodes/*.yaml"],
+                "acceptance": ["criterion"],
+                "prompt": "This will block.",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    monkeypatch.setattr(
+        supervisor_module,
+        "create_isolated_worktree",
+        lambda _node_id: (make_fake_worktree(repo_fixture), "codex/test/loop"),
+    )
+
+    call_counter: list[int] = [0]
+
+    def alternating_git_changed(_cwd: object = None) -> list[str]:
+        call_counter[0] += 1
+        if call_counter[0] % 2 == 0:
+            return ["specs/nodes/SG-SPEC-0001.yaml", "specs/nodes/SG-SPEC-0002.yaml"]
+        return []
+
+    monkeypatch.setattr(supervisor_module, "git_changed_files", alternating_git_changed)
+
+    def mixed_executor(
+        node: object, worktree_path: Path,
+    ) -> subprocess.CompletedProcess[str]:
+        # Only write to the current node's file to avoid cross-spec allowed_paths issues.
+        node_file = worktree_path / "specs" / "nodes" / f"{node.id}.yaml"
+        if node_file.exists():
+            data = supervisor_module.get_yaml_module().safe_load(
+                node_file.read_text(encoding="utf-8")
+            )
+            acceptance = data.get("acceptance", [])
+            data["acceptance_evidence"] = [f"ev-{i}" for i in range(len(acceptance))]
+            node_file.write_text(json.dumps(data), encoding="utf-8")
+
+        if node.id == "SG-SPEC-0002":
+            return subprocess.CompletedProcess(
+                args=["codex"], returncode=1,
+                stdout="RUN_OUTCOME: blocked\nBLOCKER: missing dep\n", stderr="",
+            )
+        return subprocess.CompletedProcess(
+            args=["codex"], returncode=0,
+            stdout="RUN_OUTCOME: done\nBLOCKER: none\n", stderr="",
+        )
+
+    exit_code = supervisor_module.main(
+        executor=mixed_executor, auto_approve=True, loop=True,
+    )
+    assert exit_code == 0
+
+    node1 = supervisor_module.get_yaml_module().safe_load(
+        (specs_dir / "SG-SPEC-0001.yaml").read_text(encoding="utf-8")
+    )
+    node2 = supervisor_module.get_yaml_module().safe_load(
+        (specs_dir / "SG-SPEC-0002.yaml").read_text(encoding="utf-8")
+    )
+    assert node2["gate_state"] == "blocked"
+    assert node1["status"] != "outlined"
+
+
+def test_loop_respects_max_iterations(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        supervisor_module,
+        "create_isolated_worktree",
+        lambda _node_id: (make_fake_worktree(repo_fixture), "codex/test/loop"),
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "git_changed_files",
+        lambda _cwd=None: ["specs/nodes/SG-SPEC-0001.yaml"],
+    )
+
+    fake_executor = _make_successful_executor(supervisor_module)
+    exit_code = supervisor_module.main(
+        executor=fake_executor, auto_approve=True, loop=True, max_iterations=1,
+    )
+    assert exit_code == 0
+
+    run_logs = sorted((repo_fixture / "runs").glob("*.json"))
+    assert len(run_logs) == 1
