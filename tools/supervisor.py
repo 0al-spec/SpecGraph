@@ -29,7 +29,14 @@ AGENTS_FILE = ROOT / "AGENTS.md"
 READY_DEP_STATUSES = {"reviewed", "frozen"}
 WORKABLE_STATUSES = {"outlined", "specified"}
 VALID_STATUSES = {"idea", "stub", "outlined", "specified", "linked", "reviewed", "frozen"}
-BLOCKING_GATE_STATES = {"review_pending", "blocked", "split_required", "redirected", "escalated"}
+BLOCKING_GATE_STATES = {
+    "review_pending",
+    "retry_pending",
+    "blocked",
+    "split_required",
+    "redirected",
+    "escalated",
+}
 ALLOWED_OUTCOMES = {"done", "retry", "split_required", "blocked", "escalate"}
 
 STATUS_PROGRESSION: dict[str, str] = {
@@ -521,51 +528,14 @@ def resolve_gate_decision(
     return 0
 
 
-def main(
+def _process_one_spec(
     *,
-    executor: Callable[[SpecNode, Path], subprocess.CompletedProcess[str]] | None = None,
-    dry_run: bool = False,
-    auto_approve: bool = False,
-    resolve_gate: str | None = None,
-    decision: str | None = None,
-    note: str = "",
-) -> int:
-    if executor is None:
-        executor = run_codex
-
-    try:
-        specs = load_specs()
-    except RuntimeError as exc:
-        print(str(exc), file=sys.stderr)
-        return 1
-    if not specs:
-        print("No spec nodes found in specs/nodes")
-        return 0
-
-    if resolve_gate:
-        if not decision:
-            print("--decision is required with --resolve-gate", file=sys.stderr)
-            return 1
-        return resolve_gate_decision(
-            specs=specs, spec_id=resolve_gate, decision=decision, note=note
-        )
-
-    if decision:
-        print("--decision is only valid with --resolve-gate", file=sys.stderr)
-        return 1
-
-    cycles = detect_cycles(specs)
-    if cycles:
-        print("Dependency cycles detected:", file=sys.stderr)
-        for cycle in cycles:
-            print(f"  {' -> '.join(cycle)}", file=sys.stderr)
-        return 1
-
-    node = pick_next_spec_gap(specs)
-    if node is None:
-        print("No eligible spec gaps found.")
-        return 0
-
+    node: SpecNode,
+    specs: list[SpecNode],
+    executor: Callable[[SpecNode, Path], subprocess.CompletedProcess[str]],
+    auto_approve: bool,
+) -> tuple[int, str]:
+    """Process a single spec node. Returns (exit_code, outcome)."""
     dependents = reverse_dependents_count(specs)
     selected_by_rule = {
         "status_filter": sorted(WORKABLE_STATUSES),
@@ -574,22 +544,13 @@ def main(
         "dependents_count": dependents.get(node.id, 0),
     }
 
-    print(f"Selected spec node: {node.id} — {node.title}")
     before_status = node.status
-
-    if dry_run:
-        print("\n=== dry-run mode ===")
-        print(f"Would execute prompt for: {node.id}")
-        print(f"Status: {node.status} | Maturity: {node.maturity:.2f} | Gate: {node.gate_state}")
-        print(f"Selection context: {json.dumps(selected_by_rule, ensure_ascii=False)}")
-        print(f"\n{build_prompt(node)}")
-        return 0
 
     try:
         worktree_path, branch = create_isolated_worktree(node.id)
     except RuntimeError as exc:
         print(f"Failed to create worktree: {exc}", file=sys.stderr)
-        return 1
+        return 1, "escalate"
 
     before = git_changed_files(worktree_path)
     tracked_paths = sorted(set(before))
@@ -743,7 +704,137 @@ def main(
         for error in validation_errors:
             print(f"- {error}", file=sys.stderr)
 
-    return 0 if success else 1
+    exit_code = 0 if success else 1
+    return exit_code, outcome
+
+
+def main(
+    *,
+    executor: Callable[[SpecNode, Path], subprocess.CompletedProcess[str]] | None = None,
+    dry_run: bool = False,
+    auto_approve: bool = False,
+    loop: bool = False,
+    max_iterations: int = 50,
+    resolve_gate: str | None = None,
+    decision: str | None = None,
+    note: str = "",
+) -> int:
+    if executor is None:
+        executor = run_codex
+
+    try:
+        specs = load_specs()
+    except RuntimeError as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
+    if not specs:
+        print("No spec nodes found in specs/nodes")
+        return 0
+
+    if resolve_gate:
+        if not decision:
+            print("--decision is required with --resolve-gate", file=sys.stderr)
+            return 1
+        return resolve_gate_decision(
+            specs=specs, spec_id=resolve_gate, decision=decision, note=note
+        )
+
+    if decision:
+        print("--decision is only valid with --resolve-gate", file=sys.stderr)
+        return 1
+
+    if loop and not auto_approve:
+        print("--loop requires --auto-approve", file=sys.stderr)
+        return 1
+
+    if loop and dry_run:
+        print("--loop cannot be combined with --dry-run", file=sys.stderr)
+        return 1
+
+    cycles = detect_cycles(specs)
+    if cycles:
+        print("Dependency cycles detected:", file=sys.stderr)
+        for cycle in cycles:
+            print(f"  {' -> '.join(cycle)}", file=sys.stderr)
+        return 1
+
+    if loop:
+        print(f"Starting autonomous loop mode (max_iterations={max_iterations})")
+        succeeded = 0
+        failed = 0
+        for iteration in range(1, max_iterations + 1):
+            try:
+                specs = load_specs()
+            except RuntimeError as exc:
+                print(str(exc), file=sys.stderr)
+                return 1
+
+            cycles = detect_cycles(specs)
+            if cycles:
+                print("Dependency cycles detected:", file=sys.stderr)
+                for cycle in cycles:
+                    print(f"  {' -> '.join(cycle)}", file=sys.stderr)
+                return 1
+
+            node = pick_next_spec_gap(specs)
+            if node is None:
+                print("No more eligible spec gaps. Loop complete.")
+                break
+
+            print(f"\n{'=' * 60}")
+            print(
+                f"[{iteration}/{max_iterations}] Processing: {node.id} — {node.title}"
+                f" (status={node.status}, maturity={node.maturity:.2f})"
+            )
+            print(f"{'=' * 60}")
+
+            exit_code, outcome = _process_one_spec(
+                node=node, specs=specs, executor=executor, auto_approve=auto_approve
+            )
+
+            if exit_code == 0:
+                succeeded += 1
+                print(f"[{iteration}] {node.id} promoted successfully.")
+            else:
+                failed += 1
+                print(
+                    f"[{iteration}] {node.id} finished with outcome={outcome},"
+                    f" gate_state={node.gate_state}. Continuing."
+                )
+        else:
+            print(f"Safety limit reached ({max_iterations} iterations). Stopping loop.")
+
+        print(f"\nLoop summary: {succeeded} succeeded, {failed} failed")
+        return 0
+
+    # --- single-pass mode (original behaviour) ---
+    node = pick_next_spec_gap(specs)
+    if node is None:
+        print("No eligible spec gaps found.")
+        return 0
+
+    dependents = reverse_dependents_count(specs)
+    selected_by_rule = {
+        "status_filter": sorted(WORKABLE_STATUSES),
+        "dependency_required_statuses": sorted(READY_DEP_STATUSES),
+        "sort_order": ["leaf_first", "lower_maturity", "stable_id"],
+        "dependents_count": dependents.get(node.id, 0),
+    }
+
+    print(f"Selected spec node: {node.id} — {node.title}")
+
+    if dry_run:
+        print("\n=== dry-run mode ===")
+        print(f"Would execute prompt for: {node.id}")
+        print(f"Status: {node.status} | Maturity: {node.maturity:.2f} | Gate: {node.gate_state}")
+        print(f"Selection context: {json.dumps(selected_by_rule, ensure_ascii=False)}")
+        print(f"\n{build_prompt(node)}")
+        return 0
+
+    exit_code, _outcome = _process_one_spec(
+        node=node, specs=specs, executor=executor, auto_approve=auto_approve
+    )
+    return exit_code
 
 
 if __name__ == "__main__":
@@ -761,11 +852,24 @@ if __name__ == "__main__":
         help="Decision used with --resolve-gate",
     )
     parser.add_argument("--note", default="", help="Optional note for gate resolution")
+    parser.add_argument(
+        "--loop",
+        action="store_true",
+        help="Keep processing specs until no eligible gaps remain (requires --auto-approve)",
+    )
+    parser.add_argument(
+        "--max-iterations",
+        type=int,
+        default=50,
+        help="Safety limit for loop mode (default: 50)",
+    )
     args = parser.parse_args()
     raise SystemExit(
         main(
             dry_run=args.dry_run,
             auto_approve=args.auto_approve,
+            loop=args.loop,
+            max_iterations=args.max_iterations,
             resolve_gate=args.resolve_gate,
             decision=args.decision,
             note=args.note,
