@@ -203,6 +203,7 @@ def test_pick_next_work_item_prefers_graph_refactor_queue_item(
     assert work_item is not None
     assert work_item["work_item_type"] == "graph_refactor"
     assert work_item["signal"] == "oversized_spec"
+    assert work_item["execution_policy"] == "direct_graph_update"
 
 
 def test_pick_next_work_item_ignores_governance_proposals_for_auto_execution(
@@ -221,6 +222,50 @@ def test_pick_next_work_item_ignores_governance_proposals_for_auto_execution(
                     "recommended_action": "review_decomposition_policy",
                     "status": "proposed",
                     "source_run_id": "RUN-1",
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    node, work_item = supervisor_module.pick_next_work_item(supervisor_module.load_specs())
+
+    assert node is not None
+    assert node.id == "SG-SPEC-0001"
+    assert work_item is None
+
+
+def test_pick_next_work_item_defers_graph_refactor_when_active_proposal_exists(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    (repo_fixture / "runs" / "refactor_queue.json").write_text(
+        json.dumps(
+            [
+                {
+                    "id": "graph_refactor::SG-SPEC-0001::oversized_spec",
+                    "work_item_type": "graph_refactor",
+                    "spec_id": "SG-SPEC-0001",
+                    "signal": "oversized_spec",
+                    "recommended_action": "split_or_narrow_spec",
+                    "status": "proposed",
+                    "source_run_id": "RUN-1",
+                    "execution_policy": "direct_graph_update",
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+    (repo_fixture / "runs" / "proposal_queue.json").write_text(
+        json.dumps(
+            [
+                {
+                    "id": "refactor_proposal::SG-SPEC-0001::oversized_spec",
+                    "proposal_type": "refactor_proposal",
+                    "spec_id": "SG-SPEC-0001",
+                    "signal": "oversized_spec",
+                    "status": "proposed",
+                    "execution_policy": "emit_proposal",
                 }
             ]
         ),
@@ -335,8 +380,45 @@ def test_update_refactor_queue_writes_classified_work_items(
 
     assert oversized["work_item_type"] == "graph_refactor"
     assert oversized["recommended_action"] == "split_or_narrow_spec"
+    assert oversized["execution_policy"] == "direct_graph_update"
     assert repeated_split["work_item_type"] == "governance_proposal"
     assert repeated_split["recommended_action"] == "review_decomposition_policy"
+    assert repeated_split["execution_policy"] == "emit_proposal"
+
+
+def test_update_refactor_queue_defers_direct_execution_when_active_proposal_exists(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    graph_health = {
+        "source_spec_id": "SG-SPEC-9999",
+        "observations": [
+            {"kind": "oversized_spec", "details": ["too many acceptance criteria"]},
+        ],
+        "signals": ["oversized_spec"],
+        "recommended_actions": ["split_or_narrow_spec"],
+    }
+    proposal_items = [
+        {
+            "id": "refactor_proposal::SG-SPEC-9999::oversized_spec",
+            "proposal_type": "refactor_proposal",
+            "spec_id": "SG-SPEC-9999",
+            "signal": "oversized_spec",
+            "status": "proposed",
+            "execution_policy": "emit_proposal",
+        }
+    ]
+
+    path = supervisor_module.update_refactor_queue(
+        graph_health=graph_health,
+        run_id="RUN-1",
+        proposal_items=proposal_items,
+    )
+    items = json.loads(path.read_text(encoding="utf-8"))
+
+    assert len(items) == 1
+    item = items[0]
+    assert item["execution_policy"] == "defer_to_active_proposal"
 
 
 def test_update_proposal_queue_emits_governance_proposal_immediately(
@@ -357,10 +439,9 @@ def test_update_proposal_queue_emits_governance_proposal_immediately(
         "recommended_actions": ["review_decomposition_policy"],
     }
 
-    path = supervisor_module.update_proposal_queue(graph_health=graph_health, run_id="RUN-2")
+    path, items = supervisor_module.update_proposal_queue(graph_health=graph_health, run_id="RUN-2")
     assert path == repo_fixture / "runs" / "proposal_queue.json"
 
-    items = json.loads(path.read_text(encoding="utf-8"))
     assert len(items) == 1
     proposal = items[0]
     assert proposal["proposal_type"] == "governance_proposal"
@@ -369,6 +450,7 @@ def test_update_proposal_queue_emits_governance_proposal_immediately(
     assert proposal["occurrence_count"] == 1
     assert proposal["threshold"] == 1
     assert proposal["supporting_run_ids"] == ["RUN-2"]
+    assert proposal["execution_policy"] == "emit_proposal"
 
 
 def test_update_proposal_queue_requires_recurrence_for_refactor_proposal(
@@ -396,8 +478,7 @@ def test_update_proposal_queue_requires_recurrence_for_refactor_proposal(
         "recommended_actions": ["split_or_narrow_spec"],
     }
 
-    path = supervisor_module.update_proposal_queue(graph_health=graph_health, run_id="RUN-2")
-    items = json.loads(path.read_text(encoding="utf-8"))
+    path, items = supervisor_module.update_proposal_queue(graph_health=graph_health, run_id="RUN-2")
 
     assert len(items) == 1
     proposal = items[0]
@@ -407,6 +488,7 @@ def test_update_proposal_queue_requires_recurrence_for_refactor_proposal(
     assert proposal["occurrence_count"] == 2
     assert proposal["threshold"] == 2
     assert proposal["supporting_run_ids"] == ["RUN-1", "RUN-2"]
+    assert proposal["execution_policy"] == "emit_proposal"
 
 
 def test_build_prompt_includes_bootstrap_child_guidance_for_seed_spec(

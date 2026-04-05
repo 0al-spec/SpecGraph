@@ -275,6 +275,19 @@ def load_refactor_queue() -> list[dict[str, Any]]:
     return [item for item in data if isinstance(item, dict)]
 
 
+def load_proposal_queue() -> list[dict[str, Any]]:
+    path = proposal_queue_path()
+    if not path.exists():
+        return []
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return []
+    if not isinstance(data, list):
+        return []
+    return [item for item in data if isinstance(item, dict)]
+
+
 def refactor_signal_priority(signal: str) -> int:
     return {
         "missing_dependency_target": 0,
@@ -286,8 +299,10 @@ def refactor_signal_priority(signal: str) -> int:
 def pick_next_refactor_work_item(
     specs: list[SpecNode],
     queue_items: list[dict[str, Any]] | None = None,
+    proposal_items: list[dict[str, Any]] | None = None,
 ) -> tuple[SpecNode, dict[str, Any]] | None:
     items = queue_items if queue_items is not None else load_refactor_queue()
+    active_proposals = proposal_items if proposal_items is not None else load_proposal_queue()
     index = index_specs(specs)
 
     candidates: list[tuple[SpecNode, dict[str, Any]]] = []
@@ -297,10 +312,15 @@ def pick_next_refactor_work_item(
         status = str(item.get("status", "proposed")).strip()
         if status not in {"proposed", "retry_pending"}:
             continue
+        execution_policy = refactor_execution_policy(item, active_proposals)
+        if execution_policy != "direct_graph_update":
+            continue
         spec_id = str(item.get("spec_id", "")).strip()
         node = index.get(spec_id)
         if node is None or is_gate_blocking(node):
             continue
+        item = dict(item)
+        item["execution_policy"] = execution_policy
         candidates.append((node, item))
 
     if not candidates:
@@ -319,7 +339,8 @@ def pick_next_refactor_work_item(
 
 
 def pick_next_work_item(specs: list[SpecNode]) -> tuple[SpecNode | None, dict[str, Any] | None]:
-    refactor_candidate = pick_next_refactor_work_item(specs)
+    proposal_items = load_proposal_queue()
+    refactor_candidate = pick_next_refactor_work_item(specs, proposal_items=proposal_items)
     if refactor_candidate is not None:
         return refactor_candidate
     node = pick_next_spec_gap(specs)
@@ -1009,6 +1030,49 @@ def default_action_for_signal(signal: str) -> str:
     }.get(signal, "review_graph_health_signal")
 
 
+def proposal_is_active(item: dict[str, Any]) -> bool:
+    status = str(item.get("status", "proposed")).strip()
+    return status in {"proposed", "review_pending", "pending_review"}
+
+
+def has_active_proposal_for_signal(
+    *,
+    spec_id: str,
+    signal: str,
+    proposal_items: list[dict[str, Any]],
+) -> bool:
+    for item in proposal_items:
+        if str(item.get("spec_id", "")).strip() != spec_id:
+            continue
+        if str(item.get("signal", "")).strip() != signal:
+            continue
+        if proposal_is_active(item):
+            return True
+    return False
+
+
+def refactor_execution_policy(
+    item: dict[str, Any],
+    proposal_items: list[dict[str, Any]] | None = None,
+) -> str:
+    work_item_type = str(item.get("work_item_type", "")).strip()
+    if work_item_type == "governance_proposal":
+        return "emit_proposal"
+    if work_item_type != "graph_refactor":
+        return "review_graph_health_signal"
+
+    proposal_items = proposal_items or []
+    spec_id = str(item.get("spec_id", "")).strip()
+    signal = str(item.get("signal", "")).strip()
+    if has_active_proposal_for_signal(
+        spec_id=spec_id,
+        signal=signal,
+        proposal_items=proposal_items,
+    ):
+        return "defer_to_active_proposal"
+    return "direct_graph_update"
+
+
 def classify_proposal_type(work_item_type: str) -> str:
     if work_item_type == "governance_proposal":
         return "governance_proposal"
@@ -1050,6 +1114,7 @@ def build_refactor_queue_items(
     *,
     graph_health: dict[str, Any],
     run_id: str,
+    proposal_items: list[dict[str, Any]] | None = None,
 ) -> list[dict[str, Any]]:
     observation_by_kind = {
         str(observation.get("kind", "")): observation
@@ -1060,16 +1125,20 @@ def build_refactor_queue_items(
     items: list[dict[str, Any]] = []
     for signal in graph_health.get("signals", []):
         item_type = classify_refactor_work_item(signal)
+        base_item = {
+            "id": f"{item_type}::{source_spec_id}::{signal}",
+            "work_item_type": item_type,
+            "spec_id": source_spec_id,
+            "signal": signal,
+            "recommended_action": default_action_for_signal(signal),
+            "status": "proposed",
+            "source_run_id": run_id,
+            "details": observation_by_kind.get(signal, {}).get("details"),
+        }
         items.append(
             {
-                "id": f"{item_type}::{source_spec_id}::{signal}",
-                "work_item_type": item_type,
-                "spec_id": source_spec_id,
-                "signal": signal,
-                "recommended_action": default_action_for_signal(signal),
-                "status": "proposed",
-                "source_run_id": run_id,
-                "details": observation_by_kind.get(signal, {}).get("details"),
+                **base_item,
+                "execution_policy": refactor_execution_policy(base_item, proposal_items),
             }
         )
     return items
@@ -1079,6 +1148,7 @@ def update_refactor_queue(
     *,
     graph_health: dict[str, Any],
     run_id: str,
+    proposal_items: list[dict[str, Any]] | None = None,
 ) -> Path:
     RUNS_DIR.mkdir(parents=True, exist_ok=True)
     path = refactor_queue_path()
@@ -1095,7 +1165,11 @@ def update_refactor_queue(
         for item in existing
         if isinstance(item, dict) and str(item.get("spec_id", "")).strip() != source_spec_id
     ]
-    updated = preserved + build_refactor_queue_items(graph_health=graph_health, run_id=run_id)
+    updated = preserved + build_refactor_queue_items(
+        graph_health=graph_health,
+        run_id=run_id,
+        proposal_items=proposal_items,
+    )
     path.write_text(json.dumps(updated, ensure_ascii=False, indent=2), encoding="utf-8")
     return path
 
@@ -1141,6 +1215,7 @@ def build_proposal_queue_items(
                 "threshold": threshold,
                 "supporting_run_ids": supporting_run_ids,
                 "source_work_item_type": work_item_type,
+                "execution_policy": "emit_proposal",
                 "details": observation_by_kind.get(signal_name, {}).get("details"),
             }
         )
@@ -1151,7 +1226,7 @@ def update_proposal_queue(
     *,
     graph_health: dict[str, Any],
     run_id: str,
-) -> Path:
+) -> tuple[Path, list[dict[str, Any]]]:
     RUNS_DIR.mkdir(parents=True, exist_ok=True)
     path = proposal_queue_path()
     if path.exists():
@@ -1169,7 +1244,7 @@ def update_proposal_queue(
     ]
     updated = preserved + build_proposal_queue_items(graph_health=graph_health, run_id=run_id)
     path.write_text(json.dumps(updated, ensure_ascii=False, indent=2), encoding="utf-8")
-    return path
+    return path, updated
 
 
 def write_latest_summary(payload: dict[str, Any]) -> None:
@@ -1486,8 +1561,15 @@ def _process_one_spec(
         atomicity_errors=atomicity_errors,
         outcome=outcome,
     )
-    refactor_queue_artifact = update_refactor_queue(graph_health=graph_health, run_id=run_id)
-    proposal_queue_artifact = update_proposal_queue(graph_health=graph_health, run_id=run_id)
+    proposal_queue_artifact, proposal_items = update_proposal_queue(
+        graph_health=graph_health,
+        run_id=run_id,
+    )
+    refactor_queue_artifact = update_refactor_queue(
+        graph_health=graph_health,
+        run_id=run_id,
+        proposal_items=proposal_items,
+    )
     success = result.returncode == 0 and not validation_errors and outcome == "done"
 
     required_human_action = "resolve gate: approve|retry|split|block|redirect|escalate"

@@ -30,6 +30,8 @@ acceptance:
 - Defines that the first derived refactor queue classifies work items as graph_refactor or governance_proposal
   and that recurring or governance-class signals may emit explicit derived proposals without mutating
   canonical spec nodes by themselves
+- Defines when supervisor may perform a direct_graph_update versus when it must emit or defer to an explicit
+  proposal artifact
 - Remains implementation-agnostic about exact formulas, thresholds, queue algorithms, and future metric
   systems such as SIB or Specification Verifiability
 acceptance_evidence:
@@ -71,6 +73,15 @@ acceptance_evidence:
     projection from graph_health signals, and specification.derived_artifact_policy.proposal_queue defines
     explicit proposal artifacts emitted for recurring or governance-class signals. specification.reflective_loop
     keeps those artifacts derived until acted on under current governance rules.
+
+    '
+- criterion: Defines when supervisor may perform a direct_graph_update versus when it must emit or defer
+    to an explicit proposal artifact
+  evidence: 'specification.terminology defines direct_graph_update. specification.boundary_policy.supervisor_execution
+    limits direct graph updates to bounded local_graph_refactor work that stays within current ontology,
+    policy, and allowed paths. specification.reflective_loop and specification.derived_artifact_policy.proposal_queue
+    then require proposal emission or proposal precedence for recurring pathologies and governance-class
+    signals.
 
     '
 - criterion: Remains implementation-agnostic about exact formulas, thresholds, queue algorithms, and future
@@ -126,6 +137,11 @@ specification:
       graph-health signals indicate that ad hoc local edits are no longer sufficient.
 
       '
+    direct_graph_update: 'A supervisor-executed structural change to canonical spec files that is allowed
+      only for bounded local graph refactors under current governance rules and without changing ontology,
+      policy, thresholds, or supervisor authority.
+
+      '
     local_graph_refactor: 'A bounded structural improvement to existing spec nodes or edges that stays
       within current governance rules and does not redefine ontology or policy.
 
@@ -142,6 +158,9 @@ specification:
     supervisor_execution:
     - The supervisor may execute bounded spec refinement, ancestor reconciliation, local graph refactors,
       and derived graph-health observation as long as those actions stay within current canonical policy.
+    - The supervisor may perform direct_graph_update only when the selected work is a bounded local_graph_refactor,
+      the change stays within current ontology/policy/allowed paths, and no active proposal already owns
+      the same pathology.
     - The supervisor may not silently redefine ontology, approval boundaries, or its own authority.
     human_approval:
     - Human approval is required for constitutional_change, including ontology changes, policy changes,
@@ -159,6 +178,8 @@ specification:
     - Signals may motivate proposals, but they MUST NOT mutate canonical spec nodes by themselves.
     - Recurring local graph pathologies MAY emit explicit derived refactor_proposal artifacts before any
       canonical writeback occurs.
+    - Once an active proposal exists for a specific pathology, proposal handling takes precedence over
+      further ad hoc direct_graph_update attempts for that same pathology.
   graph_health_signal_policy:
     initial_signals:
     - oversized_spec
@@ -181,11 +202,15 @@ specification:
       classification.
     - A refactor queue item may classify work as graph_refactor or governance_proposal, but that classification
       remains derived until acted on under the current governance rules.
+    - Refactor queue items SHOULD expose whether their current execution_policy is direct_graph_update
+      or emit_proposal under the current boundary rules.
     proposal_queue:
     - The first proposal queue is a derived artifact built from recurring graph-health signals and governance-class
       signals that should no longer remain implicit.
     - A proposal queue item may classify work as refactor_proposal or governance_proposal, and it records
       recurrence and source-run lineage without becoming canonical graph data by itself.
+    - Active proposal_queue items take precedence over further direct_graph_update attempts for the same
+      spec and signal.
     canonical_writeback:
     - Graph-health observations and signals MUST NOT be written back into canonical spec nodes unless
       they have first been transformed into an explicit proposal and approved under the current governance
