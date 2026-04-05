@@ -11,7 +11,7 @@ Usage:
 Options:
     --catalog PATH    Path to catalog.json
                       (default:
-                       ~/Development/GitHub/PageIndexInstance/results/chatgpt_dialogs/catalog.json)
+                       ~/Development/GitHub/PageIndexInstance/results/chatgpt_dialogs_optimized/catalog.json)
     --api-url URL     PageIndex local API base URL (default: http://localhost:8765)
     --model MODEL     LLM model for retrieval (default: gpt-4o-2024-11-20)
     --top-k N         Number of results to return (default: 7)
