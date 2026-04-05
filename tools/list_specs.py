@@ -19,31 +19,29 @@ _spec.loader.exec_module(supervisor)
 
 
 def classify_spec(spec: object, index: dict[str, object]) -> tuple[str, str, str]:
-    deps = []
     blocked_by = []
-    for dep_id in spec.depends_on:
-        deps.append(dep_id)
-        dep = index.get(dep_id)
-        if dep is None:
-            blocked_by.append(f"{dep_id} (missing)")
-        elif dep.status not in supervisor.READY_DEP_STATUSES:
-            blocked_by.append(f"{dep_id} ({dep.status})")
-
     gate_state = str(spec.data.get("gate_state", "none") or "none")
     required_action = str(spec.data.get("required_human_action", "-") or "-")
 
     if gate_state == "review_pending":
-        return "review_pending", ", ".join(blocked_by) if blocked_by else "-", required_action
-
-    if blocked_by:
-        return "blocked", ", ".join(blocked_by), required_action
+        return "review_pending", "-", required_action
 
     if gate_state in {"blocked", "split_required", "redirected", "escalated"}:
         return "blocked", gate_state, required_action
 
+    if spec.status in supervisor.WORKABLE_STATUSES:
+        for dep_id in spec.depends_on:
+            dep = index.get(dep_id)
+            if dep is None:
+                blocked_by.append(f"{dep_id} (missing)")
+            elif dep.status not in supervisor.READY_DEP_STATUSES:
+                blocked_by.append(f"{dep_id} ({dep.status})")
+        if blocked_by:
+            return "blocked", ", ".join(blocked_by), required_action
+
     if (
         spec.status in supervisor.WORKABLE_STATUSES
-        and supervisor.dependencies_ready(spec, index)
+        and supervisor.work_dependencies_ready(spec, index)
         and gate_state not in supervisor.BLOCKING_GATE_STATES
     ):
         return "ready", "-", required_action

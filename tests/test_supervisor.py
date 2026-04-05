@@ -121,6 +121,44 @@ def test_pick_next_spec_gap_prefers_leaf_and_filters_status(supervisor_module: o
     assert selected.id == "LEAF"
 
 
+def test_pick_next_spec_gap_allows_retry_pending(supervisor_module: object) -> None:
+    spec_node = supervisor_module.SpecNode
+    nodes = [
+        spec_node(
+            path=Path("/tmp/retry.yaml"),
+            data={
+                "id": "RETRY",
+                "status": "specified",
+                "maturity": 0.4,
+                "depends_on": [],
+                "gate_state": "retry_pending",
+            },
+        ),
+    ]
+
+    selected = supervisor_module.pick_next_spec_gap(nodes)
+    assert selected is not None
+    assert selected.id == "RETRY"
+
+
+def test_build_prompt_includes_bootstrap_child_guidance_for_seed_spec(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    data["allowed_paths"] = ["specs/nodes/*.yaml"]
+    data["prompt"] = "This spec is a seed ontology. Use child specs to refine unresolved areas."
+    node_path.write_text(json.dumps(data), encoding="utf-8")
+
+    node = supervisor_module.load_specs()[0]
+    prompt = supervisor_module.build_prompt(node)
+
+    assert "Bootstrap guidance:" in prompt
+    assert "Suggested child spec ID: SG-SPEC-0002" in prompt
+    assert "Suggested child spec path: specs/nodes/SG-SPEC-0002.yaml" in prompt
+
+
 def test_main_creates_review_gate_and_provenance_metadata(
     supervisor_module: object,
     repo_fixture: Path,
@@ -178,6 +216,58 @@ def test_main_creates_review_gate_and_provenance_metadata(
     assert (repo_fixture / "runs" / "latest-summary.md").exists()
 
 
+def test_main_seeds_worktree_with_current_uncommitted_node(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    current_data = supervisor_module.get_yaml_module().safe_load(
+        node_path.read_text(encoding="utf-8")
+    )
+    current_data["prompt"] = "Current working tree prompt"
+    current_data["allowed_paths"] = ["specs/nodes/*.yaml"]
+    node_path.write_text(json.dumps(current_data), encoding="utf-8")
+
+    stale_worktree = repo_fixture / ".stale-worktree"
+    stale_specs_dir = stale_worktree / "specs" / "nodes"
+    stale_specs_dir.mkdir(parents=True, exist_ok=True)
+    stale_data = dict(current_data)
+    stale_data["prompt"] = "Stale prompt from HEAD"
+    stale_data["allowed_paths"] = ["specs/nodes/SG-SPEC-0001.yaml"]
+    (stale_specs_dir / "SG-SPEC-0001.yaml").write_text(json.dumps(stale_data), encoding="utf-8")
+
+    monkeypatch.setattr(
+        supervisor_module,
+        "create_isolated_worktree",
+        lambda _node_id: (stale_worktree, "codex/sg-spec-0001/test"),
+    )
+
+    changed_snapshots = [[], ["specs/nodes/SG-SPEC-0001.yaml"]]
+    monkeypatch.setattr(
+        supervisor_module, "git_changed_files", lambda _cwd=None: changed_snapshots.pop(0)
+    )
+
+    def fake_executor(_node: object, worktree_path: Path) -> subprocess.CompletedProcess[str]:
+        worktree_node = worktree_path / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+        data = supervisor_module.get_yaml_module().safe_load(
+            worktree_node.read_text(encoding="utf-8")
+        )
+        assert data["prompt"] == "Current working tree prompt"
+        assert data["allowed_paths"] == ["specs/nodes/*.yaml"]
+        data["acceptance_evidence"] = ["evidence"]
+        worktree_node.write_text(json.dumps(data), encoding="utf-8")
+        return subprocess.CompletedProcess(
+            args=["codex"],
+            returncode=0,
+            stdout="RUN_OUTCOME: done\nBLOCKER: none\n",
+            stderr="",
+        )
+
+    exit_code = supervisor_module.main(executor=fake_executor)
+    assert exit_code == 0
+
+
 def test_main_auto_approve_applies_status_and_copies_changes(
     supervisor_module: object,
     repo_fixture: Path,
@@ -218,6 +308,195 @@ def test_main_auto_approve_applies_status_and_copies_changes(
     assert updated["proposed_status"] is None
     assert updated["maturity"] == 0.4
     assert updated["prompt"] == "Auto-approved prompt"
+
+
+def test_main_auto_approve_syncs_new_child_spec_from_parent_run(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    node_data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    node_data["allowed_paths"] = ["specs/nodes/*.yaml"]
+    node_data["prompt"] = (
+        "This spec is a seed ontology. Use child specs to refine unresolved areas."
+    )
+    node_path.write_text(json.dumps(node_data), encoding="utf-8")
+
+    worktree = make_fake_worktree(repo_fixture)
+    monkeypatch.setattr(
+        supervisor_module,
+        "create_isolated_worktree",
+        lambda _node_id: (worktree, "codex/sg-spec-0001/test"),
+    )
+
+    changed_snapshots = [[], ["specs/nodes/SG-SPEC-0001.yaml", "specs/nodes/SG-SPEC-0002.yaml"]]
+    monkeypatch.setattr(
+        supervisor_module, "git_changed_files", lambda _cwd=None: changed_snapshots.pop(0)
+    )
+
+    def fake_executor(_node: object, worktree_path: Path) -> subprocess.CompletedProcess[str]:
+        root_node = worktree_path / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+        root_data = supervisor_module.get_yaml_module().safe_load(
+            root_node.read_text(encoding="utf-8")
+        )
+        root_data["acceptance_evidence"] = ["evidence"]
+        root_data["depends_on"] = ["SG-SPEC-0002"]
+        root_node.write_text(json.dumps(root_data), encoding="utf-8")
+
+        child_node = worktree_path / "specs" / "nodes" / "SG-SPEC-0002.yaml"
+        child_node.write_text(
+            json.dumps(
+                {
+                    "id": "SG-SPEC-0002",
+                    "title": "Canonical Substrate and Versioning",
+                    "kind": "spec",
+                    "status": "outlined",
+                    "maturity": 0.2,
+                    "depends_on": [],
+                    "relates_to": ["SG-SPEC-0001"],
+                    "inputs": ["specs/nodes/SG-SPEC-0001.yaml"],
+                    "outputs": ["specs/nodes/SG-SPEC-0002.yaml"],
+                    "allowed_paths": ["specs/nodes/SG-SPEC-0002.yaml"],
+                    "acceptance": [
+                        "Defines canonical substrate choices and revision/export invariants"
+                    ],
+                    "prompt": "Refine the canonical substrate and versioning slice.",
+                }
+            ),
+            encoding="utf-8",
+        )
+        return subprocess.CompletedProcess(
+            args=["codex"],
+            returncode=0,
+            stdout="RUN_OUTCOME: done\nBLOCKER: none\n",
+            stderr="",
+        )
+
+    exit_code = supervisor_module.main(executor=fake_executor, auto_approve=True)
+    assert exit_code == 0
+
+    updated_root = supervisor_module.get_yaml_module().safe_load(
+        node_path.read_text(encoding="utf-8")
+    )
+    assert updated_root["status"] == "specified"
+    assert updated_root["depends_on"] == ["SG-SPEC-0002"]
+
+    child_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0002.yaml"
+    assert child_path.exists()
+    child_data = supervisor_module.get_yaml_module().safe_load(
+        child_path.read_text(encoding="utf-8")
+    )
+    assert child_data["id"] == "SG-SPEC-0002"
+    assert child_data["title"] == "Canonical Substrate and Versioning"
+
+
+def test_main_auto_approve_reconciles_seed_to_linked_when_child_exists(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    node_data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    node_data["status"] = "specified"
+    node_data["maturity"] = 0.6
+    node_data["allowed_paths"] = ["specs/nodes/*.yaml"]
+    node_data["prompt"] = (
+        "This spec is a seed ontology. Use child specs to refine unresolved areas."
+    )
+    node_data["acceptance_evidence"] = ["evidence"] * len(node_data["acceptance"])
+    node_path.write_text(json.dumps(node_data), encoding="utf-8")
+
+    worktree = make_fake_worktree(repo_fixture)
+    monkeypatch.setattr(
+        supervisor_module,
+        "create_isolated_worktree",
+        lambda _node_id: (worktree, "codex/sg-spec-0001/test"),
+    )
+
+    changed_snapshots = [[], ["specs/nodes/SG-SPEC-0001.yaml", "specs/nodes/SG-SPEC-0002.yaml"]]
+    monkeypatch.setattr(
+        supervisor_module, "git_changed_files", lambda _cwd=None: changed_snapshots.pop(0)
+    )
+
+    def fake_executor(_node: object, worktree_path: Path) -> subprocess.CompletedProcess[str]:
+        root_node = worktree_path / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+        root_data = supervisor_module.get_yaml_module().safe_load(
+            root_node.read_text(encoding="utf-8")
+        )
+        root_data["depends_on"] = ["SG-SPEC-0002"]
+        root_data["acceptance_evidence"][-1] = "SG-SPEC-0002 now refines the seed linkage policy."
+        root_node.write_text(json.dumps(root_data), encoding="utf-8")
+
+        child_node = worktree_path / "specs" / "nodes" / "SG-SPEC-0002.yaml"
+        child_node.write_text(
+            json.dumps(
+                {
+                    "id": "SG-SPEC-0002",
+                    "title": "Spec Refinement and Linkage Policy",
+                    "kind": "spec",
+                    "status": "specified",
+                    "maturity": 0.55,
+                    "depends_on": [],
+                    "relates_to": ["SG-SPEC-0001"],
+                    "refines": ["SG-SPEC-0001"],
+                    "inputs": ["specs/nodes/SG-SPEC-0001.yaml"],
+                    "outputs": ["specs/nodes/SG-SPEC-0002.yaml"],
+                    "allowed_paths": ["specs/nodes/*.yaml"],
+                    "acceptance": [
+                        ("Defines how a child spec refines a seed spec and unblocks linked status")
+                    ],
+                    "acceptance_evidence": [
+                        {
+                            "criterion": (
+                                "Defines how a child spec refines a seed spec "
+                                "and unblocks linked status"
+                            ),
+                            "evidence": (
+                                "specification.linkage_rules describes "
+                                "the parent-child edge contract"
+                            ),
+                        }
+                    ],
+                    "prompt": "Refine the seed-to-child linkage rules.",
+                    "specification": {
+                        "linkage_rules": {
+                            "specified_to_linked": [
+                                (
+                                    "A seed spec may reach linked once each "
+                                    "declared child exists and explicitly "
+                                    "refines the parent."
+                                )
+                            ]
+                        }
+                    },
+                }
+            ),
+            encoding="utf-8",
+        )
+        return subprocess.CompletedProcess(
+            args=["codex"],
+            returncode=0,
+            stdout="RUN_OUTCOME: done\nBLOCKER: none\n",
+            stderr="",
+        )
+
+    exit_code = supervisor_module.main(executor=fake_executor, auto_approve=True)
+    assert exit_code == 0
+
+    updated_root = supervisor_module.get_yaml_module().safe_load(
+        node_path.read_text(encoding="utf-8")
+    )
+    assert updated_root["status"] == "linked"
+    assert updated_root["depends_on"] == ["SG-SPEC-0002"]
+    assert updated_root["last_reconciliation"]["semantic_dependencies_resolved"] is True
+    assert updated_root["last_reconciliation"]["work_dependencies_ready"] is False
+
+    child_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0002.yaml"
+    child_data = supervisor_module.get_yaml_module().safe_load(
+        child_path.read_text(encoding="utf-8")
+    )
+    assert child_data["refines"] == ["SG-SPEC-0001"]
 
 
 def test_main_auto_approve_syncs_when_allowed_paths_empty(

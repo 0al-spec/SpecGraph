@@ -1,0 +1,225 @@
+id: SG-SPEC-0002
+title: SpecGraph - Spec Refinement and Linkage Policy
+kind: spec
+status: specified
+maturity: 0.57
+depends_on: []
+relates_to:
+- SG-SPEC-0001
+refines:
+- SG-SPEC-0001
+inputs:
+- specs/nodes/SG-SPEC-0001.yaml
+- AGENTS.md
+outputs:
+- specs/nodes/SG-SPEC-0002.yaml
+allowed_paths:
+- specs/nodes/*.yaml
+acceptance:
+- Defines when spec nodes use refines, depends_on, and relates_to between parent and child specs, and distinguishes declared blocking from derived effective blocking
+- Defines how a seed spec delegates one concrete unresolved area to a child spec without renaming parent terminology
+- Defines the conditions for moving a spec from specified to linked once descendant specs exist
+- Defines how acceptance criteria and acceptance_evidence stay aligned across a refinement chain
+- Remains implementation-agnostic and limited to specification governance
+acceptance_evidence:
+- criterion: Defines when spec nodes use refines, depends_on, and relates_to between
+    parent and child specs, and distinguishes declared blocking from derived effective
+    blocking
+  evidence: 'specification.terminology defines declared_blocking_edge and effective_blocking.
+    specification.relation_policy defines refines, depends_on, and relates_to with
+    source, target, required_when, and notes. specification.blocking_semantics then
+    separates authored blocking declarations in the canonical graph from transitive
+    or queue-oriented blocking views derived by tooling.
+
+    '
+- criterion: Defines how a seed spec delegates one concrete unresolved area to a child
+    spec without renaming parent terminology
+  evidence: 'specification.delegation_policy defines delegated_gap semantics plus
+    seed_spec_expectations, parent_expectations, and child_expectations. It constrains
+    each child to one concrete unresolved area and requires inherited terminology
+    stability.
+
+    '
+- criterion: Defines the conditions for moving a spec from specified to linked once
+    descendant specs exist
+  evidence: 'specification.linkage_rules.specified_to_linked defines that every declared
+    depends_on child must exist as a concrete descendant spec node and be connected
+    into the refinement chain through refines. It also clarifies that linked confirms
+    edge resolution rather than implementation completion.
+
+    '
+- criterion: Defines how acceptance criteria and acceptance_evidence stay aligned across
+    a refinement chain
+  evidence: 'specification.evidence_policy.rules keeps acceptance and acceptance_evidence
+    1:1 within each spec, allows parent evidence to cite child specs when refinement
+    becomes concrete, and keeps child evidence rooted in specification content rather
+    than runtime artifacts.
+
+    '
+- criterion: Remains implementation-agnostic and limited to specification governance
+  evidence: 'specification.scope.out excludes storage schemas, validator implementation,
+    supervisor workflow, and runtime generation semantics. The child spec governs
+    only specification relationships and status rules.
+
+    '
+prompt: 'Refine SG-SPEC-0001 by defining the governance for spec-to-spec refinement
+
+  edges and the rule for advancing a seed spec to linked once concrete descendants
+
+  exist.
+
+  '
+specification:
+  objective: 'Define how seed specs delegate unresolved areas to child specs, how
+    parent/child spec edges are expressed, and what evidence is required for a spec
+    to reach linked without prescribing tooling or storage.
+
+    '
+  scope:
+    in:
+    - Spec-to-spec use of refines, depends_on, and relates_to
+    - Distinction between authored blocking declarations and derived effective blocking views
+    - Delegation of one concrete unresolved area from a seed spec to a child spec
+    - Linked-status completion rules for spec nodes
+    - Acceptance and acceptance_evidence expectations across refinement chains
+    out:
+    - Non-spec node refinement rules
+    - Storage schemas, file layouts, or database design
+    - Validator implementation or supervisor workflow
+    - Runtime code generation or test execution semantics
+  terminology:
+    refinement_chain: 'An explicit parent/child path in which a child spec lists
+      refines: [parent] and the parent lists depends_on: [child] when the child blocks
+      the parent''s advancement.
+
+      '
+    delegated_gap: 'A concrete unresolved area intentionally left open in a seed spec
+      and assigned to exactly one child spec for elaboration in a given refinement
+      step.
+
+      '
+    linked_spec: 'A spec whose required dependency and refinement edges are present
+      and whose declared refinement responsibilities are connected to concrete descendant
+      specs.
+
+      '
+    declared_blocking_edge: 'An authored canonical dependency expressed with depends_on.
+      It records that the source spec may not advance until the target refinement
+      dependency is satisfied.
+
+      '
+    effective_blocking: 'A derived view computed from canonical graph state. It may
+      include transitive blockers, queue readiness, or other operational projections,
+      but it does not create new canonical edge facts.
+
+      '
+  relation_policy:
+  - relation: refines
+    source: child spec
+    target: ancestor spec
+    required_when: The child narrows or elaborates a specific unresolved area owned
+      by the ancestor.
+    notes:
+    - A child spec MUST list every ancestor spec it directly elaborates.
+    - refines expresses semantic inheritance of terminology and problem framing, not
+      execution order.
+  - relation: depends_on
+    source: parent spec
+    target: child spec
+    required_when: Completion of the child is required before the parent can advance
+      beyond its current unresolved area.
+    notes:
+    - depends_on is the canonical authored declaration of a blocking refinement edge.
+    - A parent MAY depend_on multiple children, but each child SHOULD own a distinct
+      unresolved area.
+    - Tooling MAY derive additional effective blocking views from depends_on closure,
+      but those derived views MUST NOT replace the authored dependency edge in canonical
+      data.
+  - relation: relates_to
+    source: any spec
+    target: any spec
+    required_when: The specs are relevant to each other but neither semantic refinement
+      nor advancement blocking applies.
+    notes:
+    - relates_to MUST NOT replace refines or depends_on when those stronger relations
+      are true.
+  blocking_semantics:
+    canonical_graph:
+    - The graph stores only authored blocking intent via depends_on.
+    - Canonical blocking facts are local declarations, not transitive expansions.
+    - A missing depends_on means the parent is not canonically blocked by that child,
+      even if the two specs are otherwise connected through refines or relates_to.
+    derived_views:
+    - Tooling may compute effective_blocking from declared_blocking_edge closure plus
+      current node states.
+    - Derived effective_blocking may be used for queue ordering, viewer overlays,
+      diagnostics, and "what still blocks this spec?" queries.
+    - Derived effective_blocking is rebuildable operational metadata and MUST NOT
+      be written back as a substitute for canonical depends_on facts.
+  delegation_policy:
+    seed_spec_expectations:
+    - A seed spec may remain intentionally incomplete in narrowly bounded areas.
+    - Each child created from a seed spec SHOULD name one concrete unresolved area
+      and keep its scope narrower than the parent.
+    - Child specs MUST preserve stable IDs and inherited terminology from the parent
+      unless the child explicitly defines a compatible narrowing.
+    parent_expectations:
+    - The parent spec records blocking child specs in depends_on.
+    - The parent remains authoritative for the stable core and delegates only the
+      unresolved slice.
+    - Parent acceptance_evidence for seed refinement SHOULD cite concrete descendant
+      specs once they exist.
+    child_expectations:
+    - The child spec lists refines pointing at the parent it elaborates.
+    - The child defines its own acceptance, acceptance_evidence, outputs, and allowed_paths.
+    - The child MUST NOT widen scope into unrelated ontology areas.
+  linkage_rules:
+    specified_to_linked:
+    - A spec may move from specified to linked once every refinement dependency it
+      explicitly declares in depends_on exists as a concrete descendant spec node.
+    - For each blocking child, the descendant must explicitly refines the parent or
+      another declared ancestor in the same refinement chain.
+    - linked confirms edge resolution, not downstream implementation completion or
+      review approval.
+    non_blocking_children:
+    - A parent does not need to declare depends_on for non-blocking related specs.
+    - Open future work that is not yet delegated does not block linked unless the
+      parent explicitly marks it as a dependency.
+  evidence_policy:
+    rules:
+    - acceptance and acceptance_evidence remain 1:1 within each spec node.
+    - Parent evidence may point to child spec IDs and paths when demonstrating that
+      seed refinement has become concrete.
+    - Child evidence should cite sections inside the child spec rather than external
+      runtime artifacts.
+  examples:
+  - name: Seed-to-child linkage
+    description: 'SG-SPEC-0001 remains the seed ontology, SG-SPEC-0002 refines its
+      spec-to-spec linkage policy, SG-SPEC-0002 lists refines: [SG-SPEC-0001], and
+      SG-SPEC-0001 lists depends_on: [SG-SPEC-0002]. This makes the refinement chain
+      explicit and allows SG-SPEC-0001 to reach linked.
+
+      '
+proposed_status: null
+proposed_maturity: null
+gate_state: null
+required_human_action: none
+last_outcome: done
+last_blocker: none
+last_run_id: 20260405T082952Z-SG-SPEC-0002
+last_exit_code: 0
+last_changed_files:
+- specs/nodes/SG-SPEC-0002.yaml
+last_run_at: '2026-04-05T08:32:03Z'
+last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0001-20260405T082952Z
+last_branch: codex/sg-spec-0001/20260405T082952Z
+last_validator_results:
+  outputs: true
+  allowed_paths: true
+  yaml_reload: true
+  status_format: true
+  acceptance_evidence: true
+  transition: true
+last_gate_decision: done
+last_gate_note: created bootstrap child for seed refinement linkage
+last_gate_at: '2026-04-05T08:32:03Z'
