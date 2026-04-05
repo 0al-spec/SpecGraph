@@ -29,12 +29,17 @@ def classify_spec(spec: object, index: dict[str, object]) -> tuple[str, str, str
     if gate_state in {"blocked", "split_required", "redirected", "escalated"}:
         return "blocked", gate_state, required_action
 
+    for dep_id in spec.depends_on:
+        dep = index.get(dep_id)
+        if dep is None:
+            blocked_by.append(f"{dep_id} (missing)")
+    if blocked_by:
+        return "blocked", ", ".join(blocked_by), required_action
+
     if spec.status in supervisor.WORKABLE_STATUSES:
         for dep_id in spec.depends_on:
             dep = index.get(dep_id)
-            if dep is None:
-                blocked_by.append(f"{dep_id} (missing)")
-            elif dep.status not in supervisor.READY_DEP_STATUSES:
+            if dep is not None and dep.status not in supervisor.READY_DEP_STATUSES:
                 blocked_by.append(f"{dep_id} ({dep.status})")
         if blocked_by:
             return "blocked", ", ".join(blocked_by), required_action

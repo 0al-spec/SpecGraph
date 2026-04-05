@@ -587,6 +587,29 @@ def changed_spec_nodes(
     return [spec for spec in worktree_specs if spec.path.resolve() in changed_paths]
 
 
+def specs_requiring_validation(
+    *,
+    source_node_id: str,
+    changed_files: list[str],
+    worktree_specs: list[SpecNode],
+    worktree_path: Path,
+) -> list[SpecNode]:
+    selected: dict[str, SpecNode] = {
+        spec.id: spec
+        for spec in changed_spec_nodes(
+            changed_files=changed_files,
+            worktree_specs=worktree_specs,
+            worktree_path=worktree_path,
+        )
+        if spec.id
+    }
+    for spec in worktree_specs:
+        if spec.id == source_node_id:
+            selected[spec.id] = spec
+            break
+    return list(selected.values())
+
+
 def validate_changed_spec_nodes(
     *,
     source_node_id: str,
@@ -595,7 +618,8 @@ def validate_changed_spec_nodes(
     worktree_path: Path,
 ) -> list[str]:
     errors: list[str] = []
-    for spec in changed_spec_nodes(
+    for spec in specs_requiring_validation(
+        source_node_id=source_node_id,
         changed_files=changed_files,
         worktree_specs=worktree_specs,
         worktree_path=worktree_path,
@@ -619,12 +643,14 @@ def validate_changed_spec_nodes(
 
 def validate_changed_spec_atomicity(
     *,
+    source_node_id: str,
     changed_files: list[str],
     worktree_specs: list[SpecNode],
     worktree_path: Path,
 ) -> list[str]:
     errors: list[str] = []
-    for spec in changed_spec_nodes(
+    for spec in specs_requiring_validation(
+        source_node_id=source_node_id,
         changed_files=changed_files,
         worktree_specs=worktree_specs,
         worktree_path=worktree_path,
@@ -1027,6 +1053,7 @@ def _process_one_spec(
         atomicity_errors = [f"Failed to load worktree specs for atomicity validation: {exc}"]
     else:
         atomicity_errors = validate_changed_spec_atomicity(
+            source_node_id=node.id,
             changed_files=changed,
             worktree_specs=worktree_specs,
             worktree_path=worktree_path,
