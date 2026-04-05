@@ -566,7 +566,8 @@ def _make_successful_executor(supervisor_module: object) -> object:
     """Return a fake executor that writes valid acceptance_evidence."""
 
     def fake_executor(
-        _node: object, worktree_path: Path,
+        _node: object,
+        worktree_path: Path,
     ) -> subprocess.CompletedProcess[str]:
         for node_file in (worktree_path / "specs" / "nodes").glob("*.yaml"):
             data = supervisor_module.get_yaml_module().safe_load(
@@ -610,7 +611,9 @@ def test_loop_processes_until_no_candidates(
 
     fake_executor = _make_successful_executor(supervisor_module)
     exit_code = supervisor_module.main(
-        executor=fake_executor, auto_approve=True, loop=True,
+        executor=fake_executor,
+        auto_approve=True,
+        loop=True,
     )
     assert exit_code == 0
 
@@ -675,7 +678,8 @@ def test_loop_processes_multiple_specs(
     monkeypatch.setattr(supervisor_module, "git_changed_files", alternating_git_changed)
 
     def per_node_executor(
-        node: object, worktree_path: Path,
+        node: object,
+        worktree_path: Path,
     ) -> subprocess.CompletedProcess[str]:
         node_file = worktree_path / "specs" / "nodes" / f"{node.id}.yaml"
         if node_file.exists():
@@ -686,12 +690,16 @@ def test_loop_processes_multiple_specs(
             data["acceptance_evidence"] = [f"ev-{i}" for i in range(len(acceptance))]
             node_file.write_text(json.dumps(data), encoding="utf-8")
         return subprocess.CompletedProcess(
-            args=["codex"], returncode=0,
-            stdout="RUN_OUTCOME: done\nBLOCKER: none\n", stderr="",
+            args=["codex"],
+            returncode=0,
+            stdout="RUN_OUTCOME: done\nBLOCKER: none\n",
+            stderr="",
         )
 
     exit_code = supervisor_module.main(
-        executor=per_node_executor, auto_approve=True, loop=True,
+        executor=per_node_executor,
+        auto_approve=True,
+        loop=True,
     )
     assert exit_code == 0
 
@@ -756,7 +764,8 @@ def test_loop_continues_past_failures(
     monkeypatch.setattr(supervisor_module, "git_changed_files", alternating_git_changed)
 
     def mixed_executor(
-        node: object, worktree_path: Path,
+        node: object,
+        worktree_path: Path,
     ) -> subprocess.CompletedProcess[str]:
         # Only write to the current node's file to avoid cross-spec allowed_paths issues.
         node_file = worktree_path / "specs" / "nodes" / f"{node.id}.yaml"
@@ -770,16 +779,22 @@ def test_loop_continues_past_failures(
 
         if node.id == "SG-SPEC-0002":
             return subprocess.CompletedProcess(
-                args=["codex"], returncode=1,
-                stdout="RUN_OUTCOME: blocked\nBLOCKER: missing dep\n", stderr="",
+                args=["codex"],
+                returncode=1,
+                stdout="RUN_OUTCOME: blocked\nBLOCKER: missing dep\n",
+                stderr="",
             )
         return subprocess.CompletedProcess(
-            args=["codex"], returncode=0,
-            stdout="RUN_OUTCOME: done\nBLOCKER: none\n", stderr="",
+            args=["codex"],
+            returncode=0,
+            stdout="RUN_OUTCOME: done\nBLOCKER: none\n",
+            stderr="",
         )
 
     exit_code = supervisor_module.main(
-        executor=mixed_executor, auto_approve=True, loop=True,
+        executor=mixed_executor,
+        auto_approve=True,
+        loop=True,
     )
     assert exit_code == 0
 
@@ -811,7 +826,10 @@ def test_loop_respects_max_iterations(
 
     fake_executor = _make_successful_executor(supervisor_module)
     exit_code = supervisor_module.main(
-        executor=fake_executor, auto_approve=True, loop=True, max_iterations=1,
+        executor=fake_executor,
+        auto_approve=True,
+        loop=True,
+        max_iterations=1,
     )
     assert exit_code == 0
 
