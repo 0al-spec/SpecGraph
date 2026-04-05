@@ -83,7 +83,7 @@ def _search(api_url: str, query: str, catalog_path: Path, model: str, top_k: int
         "include_reasoning": True,
     }
     result = _post(f"{api_url}/search", payload)
-    return result.get("results") or result.get("nodes") or []
+    return result.get("selected_nodes") or result.get("results") or result.get("nodes") or []
 
 
 def _fetch_context(api_url: str, nodes: list[dict]) -> list[dict]:
