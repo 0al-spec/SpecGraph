@@ -10,14 +10,14 @@
 
 ## Reflective Evolution Loop
 
-8. Specify the reflective loop boundary explicitly: what is governed by SpecGraph specs, what is executed by `supervisor`, and what always requires human approval.
-9. Add `observe_graph_health(...)` to `supervisor` so each run emits derived observations about graph quality, not only pass/fail validation.
-10. Define the first derived graph-health signals for oversized specs, repeated `split_required`, deep ancestor reconcile waves, stalled maturity, and weak structural linkage.
-11. Persist observations and signals in run artifacts first, without writing them back into canonical spec nodes.
-12. Add a derived `refactor_queue` artifact that can schedule graph refactors separately from ordinary spec refinement runs.
-13. Introduce a distinct work-item model in `supervisor`: `spec_refine`, `graph_refactor`, and `governance_proposal`.
-14. Define how local graph refactors can be auto-executed while governance/runtime changes still require a review gate.
-15. Add proposal generation for recurring graph pathologies so repeated signals produce explicit refactor or policy proposals instead of ad hoc changes.
+8. [done] Specify the reflective loop boundary explicitly: what is governed by SpecGraph specs, what is executed by `supervisor`, and what always requires human approval.
+9. [done] Add `observe_graph_health(...)` to `supervisor` so each run emits derived observations about graph quality, not only pass/fail validation.
+10. [done] Define the first derived graph-health signals for oversized specs, repeated `split_required`, deep ancestor reconcile waves, stalled maturity, and weak structural linkage.
+11. [done] Persist observations and signals in run artifacts first, without writing them back into canonical spec nodes.
+12. [done] Add a derived `refactor_queue` artifact that can schedule graph refactors separately from ordinary spec refinement runs.
+13. [done] Introduce a distinct work-item model in `supervisor`: `spec_refine`, `graph_refactor`, and `governance_proposal`.
+14. [done] Define how local graph refactors can be auto-executed while governance/runtime changes still require a review gate.
+15. [inprogress] Add proposal generation for recurring graph pathologies so repeated signals produce explicit refactor or policy proposals instead of ad hoc changes.
 16. Define the rules for graph refactoring passes that split oversized specs into multiple atomic child specs while preserving stable parent terminology and lineage.
 17. Add support for retrospective spec refactoring after a graph has already grown suboptimally, not only at creation time.
 18. Specify how `supervisor` may update graph structure directly versus when it must emit a proposal for a human-reviewed spec change.
