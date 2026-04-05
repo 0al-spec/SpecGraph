@@ -890,6 +890,80 @@ def write_run_log(run_id: str, payload: dict[str, Any]) -> Path:
     return path
 
 
+def refactor_queue_path() -> Path:
+    return RUNS_DIR / "refactor_queue.json"
+
+
+def classify_refactor_work_item(signal: str) -> str:
+    if signal in {"repeated_split_required_candidate", "stalled_maturity_candidate"}:
+        return "governance_proposal"
+    return "graph_refactor"
+
+
+def default_action_for_signal(signal: str) -> str:
+    return {
+        "oversized_spec": "split_or_narrow_spec",
+        "missing_dependency_target": "repair_canonical_dependencies",
+        "repeated_split_required_candidate": "review_decomposition_policy",
+        "stalled_maturity_candidate": "review_refinement_strategy",
+        "weak_structural_linkage_candidate": "repair_refinement_chain",
+    }.get(signal, "review_graph_health_signal")
+
+
+def build_refactor_queue_items(
+    *,
+    graph_health: dict[str, Any],
+    run_id: str,
+) -> list[dict[str, Any]]:
+    observation_by_kind = {
+        str(observation.get("kind", "")): observation
+        for observation in graph_health.get("observations", [])
+        if isinstance(observation, dict)
+    }
+    source_spec_id = str(graph_health.get("source_spec_id", "")).strip()
+    items: list[dict[str, Any]] = []
+    for signal in graph_health.get("signals", []):
+        item_type = classify_refactor_work_item(signal)
+        items.append(
+            {
+                "id": f"{item_type}::{source_spec_id}::{signal}",
+                "work_item_type": item_type,
+                "spec_id": source_spec_id,
+                "signal": signal,
+                "recommended_action": default_action_for_signal(signal),
+                "status": "proposed",
+                "source_run_id": run_id,
+                "details": observation_by_kind.get(signal, {}).get("details"),
+            }
+        )
+    return items
+
+
+def update_refactor_queue(
+    *,
+    graph_health: dict[str, Any],
+    run_id: str,
+) -> Path:
+    RUNS_DIR.mkdir(parents=True, exist_ok=True)
+    path = refactor_queue_path()
+    if path.exists():
+        existing = json.loads(path.read_text(encoding="utf-8"))
+        if not isinstance(existing, list):
+            existing = []
+    else:
+        existing = []
+
+    source_spec_id = str(graph_health.get("source_spec_id", "")).strip()
+    preserved = [
+        item
+        for item in existing
+        if isinstance(item, dict) and str(item.get("spec_id", "")).strip() != source_spec_id
+    ]
+    updated = preserved + build_refactor_queue_items(graph_health=graph_health, run_id=run_id)
+    path.write_text(json.dumps(updated, ensure_ascii=False, indent=2), encoding="utf-8")
+    return path
+
+
 def write_latest_summary(payload: dict[str, Any]) -> None:
     summary = (
         f"# Latest Supervisor Run\n\n"
@@ -1181,6 +1255,7 @@ def _process_one_spec(
         atomicity_errors=atomicity_errors,
         outcome=outcome,
     )
+    refactor_queue_artifact = update_refactor_queue(graph_health=graph_health, run_id=run_id)
     success = result.returncode == 0 and not validation_errors and outcome == "done"
 
     required_human_action = "resolve gate: approve|retry|split|block|redirect|escalate"
@@ -1281,6 +1356,7 @@ def _process_one_spec(
         "validator_results": validator_results,
         "reconciliation": reconciliation,
         "graph_health": graph_health,
+        "refactor_queue_artifact": refactor_queue_artifact.as_posix(),
         "stdout": result.stdout,
         "stderr": result.stderr,
     }

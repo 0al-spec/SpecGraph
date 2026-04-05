@@ -201,6 +201,41 @@ def test_observe_graph_health_reports_reflective_signals(
     assert "split_or_narrow_spec" in graph_health["recommended_actions"]
 
 
+def test_update_refactor_queue_writes_classified_work_items(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    graph_health = {
+        "source_spec_id": "SG-SPEC-9999",
+        "observations": [
+            {"kind": "oversized_spec", "details": ["too many acceptance criteria"]},
+            {
+                "kind": "repeated_split_required_candidate",
+                "details": (
+                    "Consecutive split_required outcomes suggest persistent non-atomic scope."
+                ),
+            },
+        ],
+        "signals": ["oversized_spec", "repeated_split_required_candidate"],
+        "recommended_actions": ["split_or_narrow_spec", "review_decomposition_policy"],
+    }
+
+    path = supervisor_module.update_refactor_queue(graph_health=graph_health, run_id="RUN-1")
+    assert path == repo_fixture / "runs" / "refactor_queue.json"
+
+    items = json.loads(path.read_text(encoding="utf-8"))
+    assert len(items) == 2
+    oversized = next(item for item in items if item["signal"] == "oversized_spec")
+    repeated_split = next(
+        item for item in items if item["signal"] == "repeated_split_required_candidate"
+    )
+
+    assert oversized["work_item_type"] == "graph_refactor"
+    assert oversized["recommended_action"] == "split_or_narrow_spec"
+    assert repeated_split["work_item_type"] == "governance_proposal"
+    assert repeated_split["recommended_action"] == "review_decomposition_policy"
+
+
 def test_build_prompt_includes_bootstrap_child_guidance_for_seed_spec(
     supervisor_module: object,
     repo_fixture: Path,
@@ -343,13 +378,14 @@ def test_main_creates_review_gate_and_provenance_metadata(
     assert updated["last_outcome"] == "done"
     assert updated["last_branch"] == "codex/sg-spec-0001/test"
 
-    run_logs = sorted((repo_fixture / "runs").glob("*.json"))
+    run_logs = sorted((repo_fixture / "runs").glob("*-SG-SPEC-*.json"))
     assert len(run_logs) == 1
     payload = json.loads(run_logs[0].read_text(encoding="utf-8"))
     assert payload["spec_id"] == "SG-SPEC-0001"
     assert payload["outcome"] == "done"
     assert payload["worktree_path"] == worktree.as_posix()
     assert payload["graph_health"]["source_spec_id"] == "SG-SPEC-0001"
+    assert payload["refactor_queue_artifact"].endswith("runs/refactor_queue.json")
     assert payload["selected_by_rule"]["selection_mode"] == "default_refine"
     assert payload["selected_by_rule"]["sort_order"] == [
         "ancestor_reconcile_first",
@@ -1223,7 +1259,7 @@ def test_loop_processes_until_no_candidates(
     updated = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
     assert updated["status"] == "linked"
 
-    run_logs = sorted((repo_fixture / "runs").glob("*.json"))
+    run_logs = sorted((repo_fixture / "runs").glob("*-SG-SPEC-*.json"))
     # At least 1 log; may be fewer than 2 due to same-second timestamp collision.
     assert len(run_logs) >= 1
 
@@ -1516,5 +1552,5 @@ def test_loop_respects_max_iterations(
     )
     assert exit_code == 0
 
-    run_logs = sorted((repo_fixture / "runs").glob("*.json"))
+    run_logs = sorted((repo_fixture / "runs").glob("*-SG-SPEC-*.json"))
     assert len(run_logs) == 1

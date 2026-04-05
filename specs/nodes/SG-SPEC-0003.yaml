@@ -25,8 +25,10 @@ acceptance:
 - Defines the first graph-health signals for oversized specs, missing canonical dependencies, repeated
   split_required, and stalled or weak refinement progression as diagnostic inputs rather than normative
   scores
-- Defines that graph-health observations and signals are first persisted in run artifacts and other derived
-  outputs, not written back into canonical spec nodes
+- Defines that graph-health observations and signals are first persisted in run artifacts and a derived
+  refactor queue, not written back into canonical spec nodes
+- Defines that the first derived refactor queue classifies work items as graph_refactor or governance_proposal
+  without mutating canonical spec nodes by itself
 - Remains implementation-agnostic about exact formulas, thresholds, queue algorithms, and future metric
   systems such as SIB or Specification Verifiability
 acceptance_evidence:
@@ -53,11 +55,19 @@ acceptance_evidence:
 
     '
 - criterion: Defines that graph-health observations and signals are first persisted in run artifacts and
-    other derived outputs, not written back into canonical spec nodes
+    a derived refactor queue, not written back into canonical spec nodes
   evidence: 'specification.derived_artifact_policy.first_persistence lists run payloads, summaries, and
-    future refactor queues as the first persistence targets, while specification.derived_artifact_policy.canonical_writeback
+    refactor_queue artifacts as the first persistence targets, while specification.derived_artifact_policy.canonical_writeback
     forbids direct writeback of observations and signals into canonical spec nodes without an explicit
     proposal and approval step.
+
+    '
+- criterion: Defines that the first derived refactor queue classifies work items as graph_refactor or
+    governance_proposal without mutating canonical spec nodes by itself
+  evidence: 'specification.terminology defines refactor_work_item and specification.derived_artifact_policy.refactor_queue
+    defines the first queue artifact as a derived projection from graph_health signals. specification.reflective_loop
+    then states that the queue decides between local_graph_refactor and governance_proposal without changing
+    canonical spec nodes by itself.
 
     '
 - criterion: Remains implementation-agnostic about exact formulas, thresholds, queue algorithms, and future
@@ -85,6 +95,7 @@ specification:
     - Reflective loop stages from observation to proposal
     - First graph-health signals related to spec size, dependency integrity, and refinement progression
     - Derived persistence of observations and signals in run artifacts
+    - First derived refactor queue artifact and work-item classification
     out:
     - Concrete metric formulas or scoring weights
     - Final queue prioritization algorithms
@@ -98,6 +109,10 @@ specification:
       '
     graph_health_signal: 'A higher-level diagnostic conclusion derived from one or more observations,
       used to prioritize attention or proposals without becoming canonical graph truth by itself.
+
+      '
+    refactor_work_item: 'A derived queue entry produced from graph_health signals that recommends either
+      a local graph refactor or a governance proposal without becoming canonical graph data by itself.
 
       '
     governance_proposal: 'A structured proposal to change canonical ontology, policy, or supervisor behavior
@@ -150,7 +165,12 @@ specification:
     first_persistence:
     - Run payloads
     - Run summaries
-    - Future refactor queue artifacts
+    - Refactor queue artifacts
+    refactor_queue:
+    - The first refactor queue is a derived artifact built from graph_health signals and their current
+      classification.
+    - A refactor queue item may classify work as graph_refactor or governance_proposal, but that classification
+      remains derived until acted on under the current governance rules.
     canonical_writeback:
     - Graph-health observations and signals MUST NOT be written back into canonical spec nodes unless
       they have first been transformed into an explicit proposal and approved under the current governance
