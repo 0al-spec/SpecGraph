@@ -160,6 +160,44 @@ def dependencies_ready(node: SpecNode, index: dict[str, SpecNode]) -> bool:
     return work_dependencies_ready(node, index)
 
 
+def transitive_dependency_count(
+    node: SpecNode,
+    index: dict[str, SpecNode],
+) -> int:
+    seen: set[str] = set()
+    stack = list(node.depends_on)
+
+    while stack:
+        dep_id = stack.pop()
+        if dep_id in seen:
+            continue
+        seen.add(dep_id)
+        dep = index.get(dep_id)
+        if dep is not None:
+            stack.extend(dep.depends_on)
+
+    return len(seen)
+
+
+def is_ancestor_reconcile_candidate(node: SpecNode, index: dict[str, SpecNode]) -> bool:
+    return (
+        node.status == "specified"
+        and bool(node.depends_on)
+        and semantic_dependencies_resolved(node, index)
+    )
+
+
+def selection_mode_for_node(
+    node: SpecNode,
+    specs: list[SpecNode] | None = None,
+) -> str:
+    local_specs = specs or load_specs()
+    index = index_specs(local_specs)
+    if is_ancestor_reconcile_candidate(node, index) and not is_gate_blocking(node):
+        return "ancestor_reconcile"
+    return "default_refine"
+
+
 def is_gate_blocking(node: SpecNode) -> bool:
     return node.gate_state in BLOCKING_GATE_STATES
 
@@ -167,6 +205,17 @@ def is_gate_blocking(node: SpecNode) -> bool:
 def pick_next_spec_gap(specs: list[SpecNode]) -> SpecNode | None:
     index = index_specs(specs)
     dependents = reverse_dependents_count(specs)
+    ancestor_candidates = [
+        spec
+        for spec in specs
+        if is_ancestor_reconcile_candidate(spec, index) and not is_gate_blocking(spec)
+    ]
+    if ancestor_candidates:
+        ancestor_candidates.sort(
+            key=lambda spec: (transitive_dependency_count(spec, index), spec.maturity, spec.id)
+        )
+        return ancestor_candidates[0]
+
     candidates = [
         spec
         for spec in specs
@@ -289,6 +338,7 @@ def build_prompt(node: SpecNode) -> str:
     allowed_paths = "\n".join(f"- {path}" for path in node.allowed_paths) or "- (not specified)"
     outputs = "\n".join(f"- {path}" for path in node.outputs) or "- (not specified)"
     bootstrap_hint = bootstrap_child_hint(node, load_specs())
+    selection_mode = selection_mode_for_node(node)
     refinement_section = """
 
 Refinement policy:
@@ -298,6 +348,19 @@ Refinement policy:
 - Resolve at most one concrete unresolved area per run.
 - If multiple independent refinement paths are possible, choose one and leave the others unchanged.
 - Prefer creating or refining one child spec over expanding the parent when the topic is separable.
+""".rstrip()
+    mode_section = ""
+    if selection_mode == "ancestor_reconcile":
+        mode_section = """
+
+Refinement mode: ancestor_reconcile
+- This spec appears semantically unlocked by descendant specs that already exist.
+- Focus on reconciling this ancestor with the current graph state.
+- Prefer updating links, acceptance_evidence, blockers,
+  and status-readiness over expanding scope.
+- Do not open new independent refinement branches unless
+  the current node is still structurally blocked.
+- Keep the change narrow enough that further unlocked ancestors can be handled in later runs.
 """.rstrip()
     bootstrap_section = ""
     if bootstrap_hint is not None:
@@ -339,6 +402,7 @@ Allowed paths:
 Expected outputs:
 {outputs}
 {refinement_section}
+{mode_section}
 {bootstrap_section}
 
 Rules:
@@ -829,10 +893,18 @@ def _process_one_spec(
 ) -> tuple[int, str]:
     """Process a single spec node. Returns (exit_code, outcome)."""
     dependents = reverse_dependents_count(specs)
+    selection_mode = selection_mode_for_node(node, specs)
     selected_by_rule = {
         "status_filter": sorted(WORKABLE_STATUSES),
         "dependency_required_statuses": sorted(READY_DEP_STATUSES),
-        "sort_order": ["leaf_first", "lower_maturity", "stable_id"],
+        "selection_mode": selection_mode,
+        "sort_order": [
+            "ancestor_reconcile_first",
+            "nearest_unlocked_ancestor",
+            "leaf_first",
+            "lower_maturity",
+            "stable_id",
+        ],
         "dependents_count": dependents.get(node.id, 0),
     }
 
@@ -1103,10 +1175,18 @@ def main(
         return 0
 
     dependents = reverse_dependents_count(specs)
+    selection_mode = selection_mode_for_node(node, specs)
     selected_by_rule = {
         "status_filter": sorted(WORKABLE_STATUSES),
         "dependency_required_statuses": sorted(READY_DEP_STATUSES),
-        "sort_order": ["leaf_first", "lower_maturity", "stable_id"],
+        "selection_mode": selection_mode,
+        "sort_order": [
+            "ancestor_reconcile_first",
+            "nearest_unlocked_ancestor",
+            "leaf_first",
+            "lower_maturity",
+            "stable_id",
+        ],
         "dependents_count": dependents.get(node.id, 0),
     }
 

@@ -141,6 +141,30 @@ def test_pick_next_spec_gap_allows_retry_pending(supervisor_module: object) -> N
     assert selected.id == "RETRY"
 
 
+def test_pick_next_spec_gap_prioritizes_nearest_unlocked_ancestor(
+    supervisor_module: object,
+) -> None:
+    spec_node = supervisor_module.SpecNode
+    nodes = [
+        spec_node(
+            path=Path("/tmp/a.yaml"),
+            data={"id": "A", "status": "specified", "maturity": 0.7, "depends_on": ["B"]},
+        ),
+        spec_node(
+            path=Path("/tmp/b.yaml"),
+            data={"id": "B", "status": "specified", "maturity": 0.5, "depends_on": ["C"]},
+        ),
+        spec_node(
+            path=Path("/tmp/c.yaml"),
+            data={"id": "C", "status": "outlined", "maturity": 0.2, "depends_on": []},
+        ),
+    ]
+
+    selected = supervisor_module.pick_next_spec_gap(nodes)
+    assert selected is not None
+    assert selected.id == "B"
+
+
 def test_build_prompt_includes_bootstrap_child_guidance_for_seed_spec(
     supervisor_module: object,
     repo_fixture: Path,
@@ -192,6 +216,48 @@ def test_build_prompt_includes_incremental_refinement_policy_for_non_seed_spec(
     assert "Bootstrap guidance:" not in prompt
 
 
+def test_build_prompt_includes_ancestor_reconciliation_guidance(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    specs_dir = repo_fixture / "specs" / "nodes"
+    child_path = specs_dir / "SG-SPEC-0002.yaml"
+    child_path.write_text(
+        json.dumps(
+            {
+                "id": "SG-SPEC-0002",
+                "title": "Child",
+                "kind": "spec",
+                "status": "outlined",
+                "maturity": 0.2,
+                "depends_on": [],
+                "outputs": ["specs/nodes/SG-SPEC-0002.yaml"],
+                "allowed_paths": ["specs/nodes/SG-SPEC-0002.yaml"],
+                "acceptance": ["criterion"],
+                "prompt": "Refine child.",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    node_path = specs_dir / "SG-SPEC-0001.yaml"
+    data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    data["status"] = "specified"
+    data["depends_on"] = ["SG-SPEC-0002"]
+    data["prompt"] = "Reconcile this ancestor with its unlocked child."
+    node_path.write_text(json.dumps(data), encoding="utf-8")
+
+    node = supervisor_module.load_specs()[0]
+    prompt = supervisor_module.build_prompt(node)
+
+    assert "Refinement mode: ancestor_reconcile" in prompt
+    assert (
+        "This spec appears semantically unlocked by descendant specs that already exist." in prompt
+    )
+    assert "Prefer updating links, acceptance_evidence, blockers," in prompt
+    assert "and status-readiness over expanding scope." in prompt
+
+
 def test_main_creates_review_gate_and_provenance_metadata(
     supervisor_module: object,
     repo_fixture: Path,
@@ -241,7 +307,10 @@ def test_main_creates_review_gate_and_provenance_metadata(
     assert payload["spec_id"] == "SG-SPEC-0001"
     assert payload["outcome"] == "done"
     assert payload["worktree_path"] == worktree.as_posix()
+    assert payload["selected_by_rule"]["selection_mode"] == "default_refine"
     assert payload["selected_by_rule"]["sort_order"] == [
+        "ancestor_reconcile_first",
+        "nearest_unlocked_ancestor",
         "leaf_first",
         "lower_maturity",
         "stable_id",
@@ -936,6 +1005,87 @@ def test_loop_processes_until_no_candidates(
     run_logs = sorted((repo_fixture / "runs").glob("*.json"))
     # At least 1 log; may be fewer than 2 due to same-second timestamp collision.
     assert len(run_logs) >= 1
+
+
+def test_loop_propagates_semantic_unlock_upstream(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    specs_dir = repo_fixture / "specs" / "nodes"
+
+    root_path = specs_dir / "SG-SPEC-0001.yaml"
+    root_data = supervisor_module.get_yaml_module().safe_load(root_path.read_text(encoding="utf-8"))
+    root_data["status"] = "specified"
+    root_data["maturity"] = 0.6
+    root_data["depends_on"] = ["SG-SPEC-0002"]
+    root_data["acceptance_evidence"] = ["evidence"]
+    root_data["allowed_paths"] = ["specs/nodes/*.yaml"]
+    root_path.write_text(json.dumps(root_data), encoding="utf-8")
+
+    specs_dir.joinpath("SG-SPEC-0002.yaml").write_text(
+        json.dumps(
+            {
+                "id": "SG-SPEC-0002",
+                "title": "Intermediate Node",
+                "kind": "spec",
+                "status": "specified",
+                "maturity": 0.5,
+                "depends_on": ["SG-SPEC-0003"],
+                "refines": ["SG-SPEC-0001"],
+                "outputs": ["specs/nodes/SG-SPEC-0002.yaml"],
+                "allowed_paths": ["specs/nodes/*.yaml"],
+                "acceptance": ["criterion"],
+                "acceptance_evidence": ["evidence"],
+                "prompt": "Reconcile one bounded ancestor step.",
+            }
+        ),
+        encoding="utf-8",
+    )
+    specs_dir.joinpath("SG-SPEC-0003.yaml").write_text(
+        json.dumps(
+            {
+                "id": "SG-SPEC-0003",
+                "title": "Leaf Node",
+                "kind": "spec",
+                "status": "outlined",
+                "maturity": 0.2,
+                "depends_on": [],
+                "refines": ["SG-SPEC-0002"],
+                "outputs": ["specs/nodes/SG-SPEC-0003.yaml"],
+                "allowed_paths": ["specs/nodes/*.yaml"],
+                "acceptance": ["criterion"],
+                "prompt": "Leaf already exists and semantically unlocks its ancestors.",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    monkeypatch.setattr(
+        supervisor_module,
+        "create_isolated_worktree",
+        lambda _node_id: (make_fake_worktree(repo_fixture), "codex/test/loop"),
+    )
+
+    monkeypatch.setattr(supervisor_module, "git_changed_files", lambda _cwd=None: [])
+
+    exit_code = supervisor_module.main(
+        executor=_make_successful_executor(supervisor_module),
+        auto_approve=True,
+        loop=True,
+        max_iterations=5,
+    )
+    assert exit_code == 0
+
+    root_updated = supervisor_module.get_yaml_module().safe_load(
+        root_path.read_text(encoding="utf-8")
+    )
+    middle_updated = supervisor_module.get_yaml_module().safe_load(
+        (specs_dir / "SG-SPEC-0002.yaml").read_text(encoding="utf-8")
+    )
+
+    assert middle_updated["status"] == "linked"
+    assert root_updated["status"] == "linked"
 
 
 def test_loop_processes_multiple_specs(

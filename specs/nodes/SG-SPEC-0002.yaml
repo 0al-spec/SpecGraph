@@ -20,7 +20,8 @@ acceptance:
   distinguishes declared blocking from derived effective blocking
 - Defines how a seed spec delegates one concrete unresolved area to a child spec without renaming parent
   terminology
-- Defines the conditions for moving a spec from specified to linked once descendant specs exist
+- Defines the conditions for moving a spec from specified to linked once descendant specs exist, including
+  semantic unlock and narrow ancestor reconciliation
 - Defines how acceptance criteria and acceptance_evidence stay aligned across a refinement chain
 - Remains implementation-agnostic and limited to specification governance
 acceptance_evidence:
@@ -39,10 +40,13 @@ acceptance_evidence:
     and requires inherited terminology stability.
 
     '
-- criterion: Defines the conditions for moving a spec from specified to linked once descendant specs exist
-  evidence: 'specification.linkage_rules.specified_to_linked defines that every declared depends_on child
-    must exist as a concrete descendant spec node and be connected into the refinement chain through refines.
-    It also clarifies that linked confirms edge resolution rather than implementation completion.
+- criterion: Defines the conditions for moving a spec from specified to linked once descendant specs exist,
+    including semantic unlock and narrow ancestor reconciliation
+  evidence: 'specification.terminology defines semantic_unlock and ancestor_reconciliation. specification.linkage_rules.specified_to_linked
+    defines that every declared depends_on child must exist as a concrete descendant spec node and be
+    connected into the refinement chain through refines. specification.reconciliation_policy then states
+    that descendant unlock creates eligibility for a narrow ancestor reconciliation pass, limited to links,
+    blockers, evidence, and status-readiness rather than broad scope expansion.
 
     '
 - criterion: Defines how acceptance criteria and acceptance_evidence stay aligned across a refinement
@@ -77,6 +81,7 @@ specification:
     - Distinction between authored blocking declarations and derived effective blocking views
     - Delegation of one concrete unresolved area from a seed spec to a child spec
     - Linked-status completion rules for spec nodes
+    - Ancestor reconciliation after descendant semantic unlock
     - Acceptance and acceptance_evidence expectations across refinement chains
     out:
     - Non-spec node refinement rules
@@ -103,6 +108,16 @@ specification:
     effective_blocking: 'A derived view computed from canonical graph state. It may include transitive
       blockers, queue readiness, or other operational projections, but it does not create new canonical
       edge facts.
+
+      '
+    semantic_unlock: 'A state in which a spec''s declared blocking descendants now exist in the graph
+      with an explicit refinement chain, making the ancestor eligible for status advancement work even
+      if downstream implementation or review work is incomplete.
+
+      '
+    ancestor_reconciliation: 'A narrow follow-up pass on an ancestor spec after semantic_unlock. It aligns
+      links, blockers, acceptance_evidence, and status-readiness with the newly available descendant structure
+      without reopening unrelated scope.
 
       '
   relation_policy:
@@ -164,10 +179,26 @@ specification:
     - For each blocking child, the descendant must explicitly refines the parent or another declared ancestor
       in the same refinement chain.
     - linked confirms edge resolution, not downstream implementation completion or review approval.
+    - Descendant completion may therefore semantically unlock multiple ancestors in the same refinement
+      chain.
     non_blocking_children:
     - A parent does not need to declare depends_on for non-blocking related specs.
     - Open future work that is not yet delegated does not block linked unless the parent explicitly marks
       it as a dependency.
+  reconciliation_policy:
+    descendant_unlock:
+    - When a descendant makes the blocking refinement chain explicit, each affected ancestor becomes eligible
+      for ancestor_reconciliation.
+    - Eligibility created by semantic_unlock is a derived operational fact; it does not mutate the canonical
+      graph by itself.
+    ancestor_reconciliation:
+    - Ancestor reconciliation MUST happen one spec node at a time.
+    - 'The reconciliation pass SHOULD stay narrow: update links, blockers, acceptance_evidence, prompt
+      wording, and status-readiness that depend on the unlocked descendant.'
+    - Ancestor reconciliation MUST NOT expand unrelated unresolved areas or silently absorb work better
+      represented as a new child spec.
+    - Tooling MAY prioritize the nearest semantically unlocked ancestor first and propagate the wave upward
+      across the chain in later runs.
   evidence_policy:
     rules:
     - acceptance and acceptance_evidence remain 1:1 within each spec node.
