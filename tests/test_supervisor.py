@@ -165,6 +165,75 @@ def test_pick_next_spec_gap_prioritizes_nearest_unlocked_ancestor(
     assert selected.id == "B"
 
 
+def test_pick_next_work_item_prefers_graph_refactor_queue_item(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    queue_path = repo_fixture / "runs" / "refactor_queue.json"
+    queue_path.write_text(
+        json.dumps(
+            [
+                {
+                    "id": "graph_refactor::SG-SPEC-0001::oversized_spec",
+                    "work_item_type": "graph_refactor",
+                    "spec_id": "SG-SPEC-0001",
+                    "signal": "oversized_spec",
+                    "recommended_action": "split_or_narrow_spec",
+                    "status": "proposed",
+                    "source_run_id": "RUN-1",
+                },
+                {
+                    "id": "governance_proposal::SG-SPEC-0001::repeated_split_required_candidate",
+                    "work_item_type": "governance_proposal",
+                    "spec_id": "SG-SPEC-0001",
+                    "signal": "repeated_split_required_candidate",
+                    "recommended_action": "review_decomposition_policy",
+                    "status": "proposed",
+                    "source_run_id": "RUN-1",
+                },
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    node, work_item = supervisor_module.pick_next_work_item(supervisor_module.load_specs())
+
+    assert node is not None
+    assert node.id == "SG-SPEC-0001"
+    assert work_item is not None
+    assert work_item["work_item_type"] == "graph_refactor"
+    assert work_item["signal"] == "oversized_spec"
+
+
+def test_pick_next_work_item_ignores_governance_proposals_for_auto_execution(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    queue_path = repo_fixture / "runs" / "refactor_queue.json"
+    queue_path.write_text(
+        json.dumps(
+            [
+                {
+                    "id": "governance_proposal::SG-SPEC-0001::repeated_split_required_candidate",
+                    "work_item_type": "governance_proposal",
+                    "spec_id": "SG-SPEC-0001",
+                    "signal": "repeated_split_required_candidate",
+                    "recommended_action": "review_decomposition_policy",
+                    "status": "proposed",
+                    "source_run_id": "RUN-1",
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    node, work_item = supervisor_module.pick_next_work_item(supervisor_module.load_specs())
+
+    assert node is not None
+    assert node.id == "SG-SPEC-0001"
+    assert work_item is None
+
+
 def test_observe_graph_health_reports_reflective_signals(
     supervisor_module: object,
 ) -> None:
@@ -369,6 +438,30 @@ def test_build_prompt_includes_ancestor_reconciliation_guidance(
     assert "and status-readiness over expanding scope." in prompt
 
 
+def test_build_prompt_includes_graph_refactor_guidance(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    node = supervisor_module.load_specs()[0]
+    prompt = supervisor_module.build_prompt(
+        node,
+        {
+            "id": "graph_refactor::SG-SPEC-0001::oversized_spec",
+            "work_item_type": "graph_refactor",
+            "signal": "oversized_spec",
+            "recommended_action": "split_or_narrow_spec",
+            "source_run_id": "RUN-1",
+            "details": ["too many acceptance criteria"],
+        },
+    )
+
+    assert "Refinement mode: graph_refactor" in prompt
+    assert "This run was selected from the derived refactor queue." in prompt
+    assert "Signal: oversized_spec" in prompt
+    assert "Recommended action: split_or_narrow_spec" in prompt
+    assert "too many acceptance criteria" in prompt
+
+
 def test_main_creates_review_gate_and_provenance_metadata(
     supervisor_module: object,
     repo_fixture: Path,
@@ -422,6 +515,7 @@ def test_main_creates_review_gate_and_provenance_metadata(
     assert payload["refactor_queue_artifact"].endswith("runs/refactor_queue.json")
     assert payload["selected_by_rule"]["selection_mode"] == "default_refine"
     assert payload["selected_by_rule"]["sort_order"] == [
+        "refactor_queue_first",
         "ancestor_reconcile_first",
         "nearest_unlocked_ancestor",
         "leaf_first",
@@ -429,6 +523,79 @@ def test_main_creates_review_gate_and_provenance_metadata(
         "stable_id",
     ]
     assert (repo_fixture / "runs" / "latest-summary.md").exists()
+
+
+def test_main_selects_graph_refactor_work_item_before_default_gap(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    queue_path = repo_fixture / "runs" / "refactor_queue.json"
+    queue_path.write_text(
+        json.dumps(
+            [
+                {
+                    "id": "graph_refactor::SG-SPEC-0001::missing_dependency_target",
+                    "work_item_type": "graph_refactor",
+                    "spec_id": "SG-SPEC-0001",
+                    "signal": "missing_dependency_target",
+                    "recommended_action": "repair_canonical_dependencies",
+                    "status": "proposed",
+                    "source_run_id": "RUN-1",
+                    "details": ["SG-SPEC-9999"],
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    worktree = make_fake_worktree(repo_fixture)
+    monkeypatch.setattr(
+        supervisor_module,
+        "create_isolated_worktree",
+        lambda _node_id: (worktree, "codex/sg-spec-0001/test"),
+    )
+
+    changed_snapshots = [[], ["specs/nodes/SG-SPEC-0001.yaml"]]
+    monkeypatch.setattr(
+        supervisor_module,
+        "git_changed_files",
+        lambda _cwd=None: changed_snapshots.pop(0),
+    )
+
+    def fake_executor(_node: object, worktree_path: Path) -> subprocess.CompletedProcess[str]:
+        node_path = worktree_path / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+        data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+        data["acceptance_evidence"] = ["criterion satisfied by refined section"]
+        node_path.write_text(json.dumps(data), encoding="utf-8")
+        return subprocess.CompletedProcess(
+            args=["codex"],
+            returncode=0,
+            stdout="RUN_OUTCOME: done\nBLOCKER: none\n",
+            stderr="",
+        )
+
+    exit_code = supervisor_module.main(executor=fake_executor)
+    assert exit_code == 0
+
+    run_logs = sorted((repo_fixture / "runs").glob("*-SG-SPEC-*.json"))
+    payload = json.loads(run_logs[0].read_text(encoding="utf-8"))
+    assert payload["selected_by_rule"]["selection_mode"] == "graph_refactor"
+    assert (
+        payload["selected_by_rule"]["refactor_work_item"]["signal"] == "missing_dependency_target"
+    )
+    assert (
+        payload["selected_by_rule"]["refactor_work_item"]["recommended_action"]
+        == "repair_canonical_dependencies"
+    )
+    assert payload["proposed_status"] is None
+
+    updated = supervisor_module.get_yaml_module().safe_load(
+        (repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml").read_text(encoding="utf-8")
+    )
+    assert updated["status"] == "outlined"
+    assert updated["gate_state"] == "review_pending"
+    assert updated["proposed_status"] is None
 
 
 def test_main_seeds_worktree_with_current_uncommitted_node(

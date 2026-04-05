@@ -192,7 +192,10 @@ def is_ancestor_reconcile_candidate(node: SpecNode, index: dict[str, SpecNode]) 
 def selection_mode_for_node(
     node: SpecNode,
     specs: list[SpecNode] | None = None,
+    refactor_work_item: dict[str, Any] | None = None,
 ) -> str:
+    if refactor_work_item is not None:
+        return "graph_refactor"
     local_specs = specs or load_specs()
     index = index_specs(local_specs)
     if is_ancestor_reconcile_candidate(node, index) and not is_gate_blocking(node):
@@ -256,6 +259,70 @@ def pick_next_spec_gap(specs: list[SpecNode]) -> SpecNode | None:
 
     candidates.sort(key=lambda spec: (dependents.get(spec.id, 0), spec.maturity, spec.id))
     return candidates[0]
+
+
+def load_refactor_queue() -> list[dict[str, Any]]:
+    path = refactor_queue_path()
+    if not path.exists():
+        return []
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return []
+    if not isinstance(data, list):
+        return []
+    return [item for item in data if isinstance(item, dict)]
+
+
+def refactor_signal_priority(signal: str) -> int:
+    return {
+        "missing_dependency_target": 0,
+        "weak_structural_linkage_candidate": 1,
+        "oversized_spec": 2,
+    }.get(signal, 9)
+
+
+def pick_next_refactor_work_item(
+    specs: list[SpecNode],
+    queue_items: list[dict[str, Any]] | None = None,
+) -> tuple[SpecNode, dict[str, Any]] | None:
+    items = queue_items if queue_items is not None else load_refactor_queue()
+    index = index_specs(specs)
+
+    candidates: list[tuple[SpecNode, dict[str, Any]]] = []
+    for item in items:
+        if str(item.get("work_item_type", "")).strip() != "graph_refactor":
+            continue
+        status = str(item.get("status", "proposed")).strip()
+        if status not in {"proposed", "retry_pending"}:
+            continue
+        spec_id = str(item.get("spec_id", "")).strip()
+        node = index.get(spec_id)
+        if node is None or is_gate_blocking(node):
+            continue
+        candidates.append((node, item))
+
+    if not candidates:
+        return None
+
+    candidates.sort(
+        key=lambda candidate: (
+            refactor_signal_priority(str(candidate[1].get("signal", ""))),
+            transitive_dependency_count(candidate[0], index),
+            candidate[0].maturity,
+            candidate[0].id,
+            str(candidate[1].get("id", "")),
+        )
+    )
+    return candidates[0]
+
+
+def pick_next_work_item(specs: list[SpecNode]) -> tuple[SpecNode | None, dict[str, Any] | None]:
+    refactor_candidate = pick_next_refactor_work_item(specs)
+    if refactor_candidate is not None:
+        return refactor_candidate
+    node = pick_next_spec_gap(specs)
+    return node, None
 
 
 def detect_cycles(specs: list[SpecNode]) -> list[list[str]]:
@@ -358,7 +425,7 @@ def bootstrap_child_hint(node: SpecNode, specs: list[SpecNode]) -> dict[str, str
     }
 
 
-def build_prompt(node: SpecNode) -> str:
+def build_prompt(node: SpecNode, refactor_work_item: dict[str, Any] | None = None) -> str:
     agents_hint = ""
     if AGENTS_FILE.exists():
         agents_hint = "Read and follow AGENTS.md before editing anything.\n\n"
@@ -366,7 +433,7 @@ def build_prompt(node: SpecNode) -> str:
     allowed_paths = "\n".join(f"- {path}" for path in node.allowed_paths) or "- (not specified)"
     outputs = "\n".join(f"- {path}" for path in node.outputs) or "- (not specified)"
     bootstrap_hint = bootstrap_child_hint(node, load_specs())
-    selection_mode = selection_mode_for_node(node)
+    selection_mode = selection_mode_for_node(node, refactor_work_item=refactor_work_item)
     refinement_section = """
 
 Refinement policy:
@@ -392,6 +459,29 @@ Refinement mode: ancestor_reconcile
 - Do not open new independent refinement branches unless
   the current node is still structurally blocked.
 - Keep the change narrow enough that further unlocked ancestors can be handled in later runs.
+""".rstrip()
+    elif selection_mode == "graph_refactor":
+        signal = str(refactor_work_item.get("signal", "")).strip() if refactor_work_item else ""
+        recommended_action = (
+            str(refactor_work_item.get("recommended_action", "")).strip()
+            if refactor_work_item
+            else ""
+        )
+        details = refactor_work_item.get("details") if refactor_work_item else None
+        details_text = json.dumps(details, ensure_ascii=False) if details is not None else "none"
+        mode_section = f"""
+
+Refinement mode: graph_refactor
+- This run was selected from the derived refactor queue.
+- Focus on the queued local graph refactor for this spec rather than broadening product scope.
+- Signal: {signal or "(unspecified)"}
+- Recommended action: {recommended_action or "(unspecified)"}
+- Details: {details_text}
+- Stay within current governance rules; do not modify ontology,
+  approval boundaries, or supervisor authority.
+- Prefer repairing structure, narrowing scope, or fixing canonical
+  links over adding new unrelated content.
+- If the issue cannot be resolved locally without governance change, end with RUN_OUTCOME: escalate.
 """.rstrip()
     bootstrap_section = ""
     if bootstrap_hint is not None:
@@ -1025,13 +1115,17 @@ def sync_files_from_worktree(worktree_path: Path, rel_paths: list[str]) -> None:
             dst.unlink()
 
 
-def run_codex(node: SpecNode, worktree_path: Path) -> subprocess.CompletedProcess[str]:
+def run_codex(
+    node: SpecNode,
+    worktree_path: Path,
+    refactor_work_item: dict[str, Any] | None = None,
+) -> subprocess.CompletedProcess[str]:
     cmd = [
         "codex",
         "exec",
         "-c",
         'model_reasoning_effort="medium"',
-        build_prompt(node),
+        build_prompt(node, refactor_work_item),
     ]
     print(f"Launching codex exec for {node.id} in {worktree_path}")
     process = subprocess.Popen(
@@ -1155,15 +1249,21 @@ def _process_one_spec(
     specs: list[SpecNode],
     executor: Callable[[SpecNode, Path], subprocess.CompletedProcess[str]],
     auto_approve: bool,
+    refactor_work_item: dict[str, Any] | None = None,
 ) -> tuple[int, str]:
     """Process a single spec node. Returns (exit_code, outcome)."""
+    is_graph_refactor_run = (
+        refactor_work_item is not None
+        and str(refactor_work_item.get("work_item_type", "")).strip() == "graph_refactor"
+    )
     dependents = reverse_dependents_count(specs)
-    selection_mode = selection_mode_for_node(node, specs)
+    selection_mode = selection_mode_for_node(node, specs, refactor_work_item=refactor_work_item)
     selected_by_rule = {
         "status_filter": sorted(WORKABLE_STATUSES),
         "dependency_required_statuses": sorted(READY_DEP_STATUSES),
         "selection_mode": selection_mode,
         "sort_order": [
+            "refactor_queue_first",
             "ancestor_reconcile_first",
             "nearest_unlocked_ancestor",
             "leaf_first",
@@ -1172,6 +1272,14 @@ def _process_one_spec(
         ],
         "dependents_count": dependents.get(node.id, 0),
     }
+    if refactor_work_item is not None:
+        selected_by_rule["refactor_work_item"] = {
+            "id": str(refactor_work_item.get("id", "")),
+            "work_item_type": str(refactor_work_item.get("work_item_type", "")),
+            "signal": str(refactor_work_item.get("signal", "")),
+            "recommended_action": str(refactor_work_item.get("recommended_action", "")),
+            "source_run_id": str(refactor_work_item.get("source_run_id", "")),
+        }
 
     before_status = node.status
 
@@ -1189,7 +1297,10 @@ def _process_one_spec(
     tracked_paths = sorted(set(before))
     before_digests = snapshot_file_digests(tracked_paths, base_dir=worktree_path)
     print(f"Starting executor for {node.id}...")
-    result = executor(node, worktree_path)
+    if executor is run_codex:
+        result = executor(node, worktree_path, refactor_work_item)
+    else:
+        result = executor(node, worktree_path)
     print(f"Executor finished for {node.id} with exit_code={result.returncode}")
     after = git_changed_files(worktree_path)
     tracked_paths = sorted(set(before) | set(after))
@@ -1232,8 +1343,10 @@ def _process_one_spec(
             worktree_path=worktree_path,
         )
 
-    proposed_status = STATUS_PROGRESSION.get(node.status)
-    transition_errors = validate_transition(node.status, proposed_status)
+    proposed_status = None if is_graph_refactor_run else STATUS_PROGRESSION.get(node.status)
+    transition_errors = (
+        [] if is_graph_refactor_run else validate_transition(node.status, proposed_status)
+    )
 
     validation_errors: list[str] = []
     validation_errors.extend(output_errors)
@@ -1277,7 +1390,9 @@ def _process_one_spec(
         node.reload()
 
     if success:
-        proposed_maturity = min(1.0, round(node.maturity + 0.2, 2))
+        proposed_maturity = (
+            None if is_graph_refactor_run else min(1.0, round(node.maturity + 0.2, 2))
+        )
         node.data["proposed_status"] = proposed_status
         node.data["proposed_maturity"] = proposed_maturity
         if auto_approve:
@@ -1450,7 +1565,7 @@ def main(
                     print(f"  {' -> '.join(cycle)}", file=sys.stderr)
                 return 1
 
-            node = pick_next_spec_gap(specs)
+            node, refactor_work_item = pick_next_work_item(specs)
             if node is None:
                 print("No more eligible spec gaps. Loop complete.")
                 break
@@ -1463,7 +1578,11 @@ def main(
             print(f"{'=' * 60}")
 
             exit_code, outcome = _process_one_spec(
-                node=node, specs=specs, executor=executor, auto_approve=auto_approve
+                node=node,
+                specs=specs,
+                executor=executor,
+                auto_approve=auto_approve,
+                refactor_work_item=refactor_work_item,
             )
 
             if exit_code == 0:
@@ -1482,18 +1601,19 @@ def main(
         return 0
 
     # --- single-pass mode (original behaviour) ---
-    node = pick_next_spec_gap(specs)
+    node, refactor_work_item = pick_next_work_item(specs)
     if node is None:
         print("No eligible spec gaps found.")
         return 0
 
     dependents = reverse_dependents_count(specs)
-    selection_mode = selection_mode_for_node(node, specs)
+    selection_mode = selection_mode_for_node(node, specs, refactor_work_item=refactor_work_item)
     selected_by_rule = {
         "status_filter": sorted(WORKABLE_STATUSES),
         "dependency_required_statuses": sorted(READY_DEP_STATUSES),
         "selection_mode": selection_mode,
         "sort_order": [
+            "refactor_queue_first",
             "ancestor_reconcile_first",
             "nearest_unlocked_ancestor",
             "leaf_first",
@@ -1502,6 +1622,14 @@ def main(
         ],
         "dependents_count": dependents.get(node.id, 0),
     }
+    if refactor_work_item is not None:
+        selected_by_rule["refactor_work_item"] = {
+            "id": str(refactor_work_item.get("id", "")),
+            "work_item_type": str(refactor_work_item.get("work_item_type", "")),
+            "signal": str(refactor_work_item.get("signal", "")),
+            "recommended_action": str(refactor_work_item.get("recommended_action", "")),
+            "source_run_id": str(refactor_work_item.get("source_run_id", "")),
+        }
 
     print(f"Selected spec node: {node.id} — {node.title}")
 
@@ -1510,11 +1638,15 @@ def main(
         print(f"Would execute prompt for: {node.id}")
         print(f"Status: {node.status} | Maturity: {node.maturity:.2f} | Gate: {node.gate_state}")
         print(f"Selection context: {json.dumps(selected_by_rule, ensure_ascii=False)}")
-        print(f"\n{build_prompt(node)}")
+        print(f"\n{build_prompt(node, refactor_work_item)}")
         return 0
 
     exit_code, _outcome = _process_one_spec(
-        node=node, specs=specs, executor=executor, auto_approve=auto_approve
+        node=node,
+        specs=specs,
+        executor=executor,
+        auto_approve=auto_approve,
+        refactor_work_item=refactor_work_item,
     )
     return exit_code
 
