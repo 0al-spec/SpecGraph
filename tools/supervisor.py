@@ -30,6 +30,8 @@ AGENTS_FILE = ROOT / "AGENTS.md"
 READY_DEP_STATUSES = {"reviewed", "frozen"}
 WORKABLE_STATUSES = {"outlined", "specified"}
 VALID_STATUSES = {"idea", "stub", "outlined", "specified", "linked", "reviewed", "frozen"}
+ATOMICITY_MAX_ACCEPTANCE = 5
+ATOMICITY_MAX_BLOCKING_CHILDREN = 3
 BLOCKING_GATE_STATES = {
     "review_pending",
     "blocked",
@@ -198,6 +200,32 @@ def selection_mode_for_node(
     return "default_refine"
 
 
+def is_seed_like_spec(node_data: dict[str, Any]) -> bool:
+    texts: list[str] = [
+        str(node_data.get("title", "")),
+        str(node_data.get("prompt", "")),
+    ]
+    specification = node_data.get("specification")
+    if isinstance(specification, dict):
+        texts.append(str(specification.get("objective", "")))
+        scope = specification.get("scope")
+        if isinstance(scope, dict):
+            in_scope = scope.get("in")
+            if isinstance(in_scope, list):
+                texts.extend(str(item) for item in in_scope)
+
+    combined = " ".join(texts).lower()
+    return any(
+        term in combined
+        for term in (
+            "seed ontology",
+            "seed spec",
+            "root spec",
+            "overview spec",
+        )
+    )
+
+
 def is_gate_blocking(node: SpecNode) -> bool:
     return node.gate_state in BLOCKING_GATE_STATES
 
@@ -343,11 +371,14 @@ def build_prompt(node: SpecNode) -> str:
 
 Refinement policy:
 - Treat the current spec as one bounded piece of a larger puzzle graph.
+- Aim for one bounded concern per spec node, not one large document.
 - Prefer the smallest honest change that can advance this node by one status step.
 - Do not try to make the current spec complete in one run.
 - Resolve at most one concrete unresolved area per run.
 - If multiple independent refinement paths are possible, choose one and leave the others unchanged.
 - Prefer creating or refining one child spec over expanding the parent when the topic is separable.
+- If decomposition is clearly needed, you may create multiple sibling child specs in one run.
+- If the node remains non-atomic after your edits, end with RUN_OUTCOME: split_required.
 """.rstrip()
     mode_section = ""
     if selection_mode == "ancestor_reconcile":
@@ -367,19 +398,17 @@ Refinement mode: ancestor_reconcile
         bootstrap_section = f"""
 
 Bootstrap guidance:
-- You may create exactly one new child spec in this run
-  if that is the right way to refine the current seed spec.
-- Suggested child spec ID: {bootstrap_hint["id"]}
+- You may create one or more new child specs in this run
+  if decomposition is the right way to refine the current seed spec.
+- Suggested first child spec ID: {bootstrap_hint["id"]}
 - Suggested child spec path: {bootstrap_hint["path"]}
-- Prefer creating the suggested child spec in this run
-  rather than only describing it in prose.
-- If you create the child spec, choose one concrete
-  unresolved refinement area from the current node.
-- Give the child its own acceptance criteria, prompt, outputs, and allowed_paths.
-- Update the current node so the new child is part of
-  its refinement path. Prefer `depends_on: [{bootstrap_hint["id"]}]`
-  on the current node when the child must be completed
-  before the parent can advance.
+- If you create additional siblings, continue with the next sequential spec IDs.
+- Prefer creating the child specs in this run rather than only describing them in prose.
+- Each child spec should own one concrete unresolved refinement area from the current node.
+- Give each child its own acceptance criteria, prompt, outputs, and allowed_paths.
+- Update the current node so each blocking child is part of
+  its refinement path. Prefer `depends_on` entries for children
+  that must be completed before the parent can advance.
 - Do not mark the current node `linked` unless concrete
   descendant specs now exist and the dependency/refinement
   chain is explicit.
@@ -498,6 +527,32 @@ def validate_acceptance_evidence(node_data: dict[str, Any]) -> list[str]:
     return errors
 
 
+def validate_atomicity(node: SpecNode) -> list[str]:
+    if str(node.data.get("kind", "")).strip() != "spec":
+        return []
+    if is_seed_like_spec(node.data):
+        return []
+
+    errors: list[str] = []
+    acceptance = node.data.get("acceptance")
+    if isinstance(acceptance, list) and len(acceptance) > ATOMICITY_MAX_ACCEPTANCE:
+        errors.append(
+            "Atomicity gate exceeded: "
+            f"{len(acceptance)} acceptance criteria > {ATOMICITY_MAX_ACCEPTANCE}. "
+            "Split independent concerns into child specs."
+        )
+
+    depends_on = node.data.get("depends_on")
+    if isinstance(depends_on, list) and len(depends_on) > ATOMICITY_MAX_BLOCKING_CHILDREN:
+        errors.append(
+            "Atomicity gate exceeded: "
+            f"{len(depends_on)} blocking children > {ATOMICITY_MAX_BLOCKING_CHILDREN}. "
+            "Prefer smaller sibling specs or an intermediate overview node."
+        )
+
+    return errors
+
+
 def validate_transition(from_status: str, to_status: str | None) -> list[str]:
     if from_status not in VALID_STATUSES:
         return [f"Unknown source status: {from_status}"]
@@ -559,6 +614,23 @@ def validate_changed_spec_nodes(
         errors.extend(f"{rel_path}: {error}" for error in status_errors)
         errors.extend(f"{rel_path}: {error}" for error in acceptance_errors)
         errors.extend(output_errors)
+    return errors
+
+
+def validate_changed_spec_atomicity(
+    *,
+    changed_files: list[str],
+    worktree_specs: list[SpecNode],
+    worktree_path: Path,
+) -> list[str]:
+    errors: list[str] = []
+    for spec in changed_spec_nodes(
+        changed_files=changed_files,
+        worktree_specs=worktree_specs,
+        worktree_path=worktree_path,
+    ):
+        rel_path = spec.path.relative_to(worktree_path).as_posix()
+        errors.extend(f"{rel_path}: {error}" for error in validate_atomicity(spec))
     return errors
 
 
@@ -949,6 +1021,16 @@ def _process_one_spec(
         worktree_path=worktree_path,
         changed_files=changed,
     )
+    try:
+        worktree_specs = load_specs_from_dir(worktree_path / "specs" / "nodes")
+    except Exception as exc:
+        atomicity_errors = [f"Failed to load worktree specs for atomicity validation: {exc}"]
+    else:
+        atomicity_errors = validate_changed_spec_atomicity(
+            changed_files=changed,
+            worktree_specs=worktree_specs,
+            worktree_path=worktree_path,
+        )
 
     proposed_status = STATUS_PROGRESSION.get(node.status)
     transition_errors = validate_transition(node.status, proposed_status)
@@ -957,14 +1039,33 @@ def _process_one_spec(
     validation_errors.extend(output_errors)
     validation_errors.extend(allowed_path_errors)
     validation_errors.extend(reconciliation_errors)
+    validation_errors.extend(atomicity_errors)
     validation_errors.extend(transition_errors)
 
     outcome, blocker = parse_outcome(result.stdout, result.returncode)
+    if atomicity_errors and outcome == "done":
+        outcome = "split_required"
+        if not blocker:
+            blocker = "spec exceeds atomicity quality gate"
     success = result.returncode == 0 and not validation_errors and outcome == "done"
 
     required_human_action = "resolve gate: approve|retry|split|block|redirect|escalate"
     node.data["proposed_status"] = None
     node.data["proposed_maturity"] = None
+
+    split_sync_allowed = (
+        outcome == "split_required"
+        and any(spec_id != node.id for spec_id in reconciliation.get("changed_spec_ids", []))
+        and result.returncode == 0
+        and not output_errors
+        and not allowed_path_errors
+        and not reconciliation_errors
+        and not transition_errors
+    )
+    if split_sync_allowed:
+        allowed_changes = select_sync_paths(node.allowed_paths, changed)
+        sync_files_from_worktree(worktree_path, allowed_changes)
+        node.reload()
 
     if success:
         proposed_maturity = min(1.0, round(node.maturity + 0.2, 2))
@@ -1005,6 +1106,7 @@ def _process_one_spec(
         "outputs": not output_errors,
         "allowed_paths": not allowed_path_errors,
         "reconciliation": not reconciliation_errors,
+        "atomicity": not atomicity_errors,
         "transition": not transition_errors,
     }
 

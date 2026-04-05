@@ -18,10 +18,12 @@ allowed_paths:
 acceptance:
 - Defines when spec nodes use refines, depends_on, and relates_to between parent and child specs, and
   distinguishes declared blocking from derived effective blocking
-- Defines how a seed spec delegates one concrete unresolved area to a child spec without renaming parent
-  terminology
+- Defines how a seed or working spec delegates one or more concrete unresolved areas to child specs while
+  preserving atomic spec boundaries and parent terminology
 - Defines the conditions for moving a spec from specified to linked once descendant specs exist, including
   semantic unlock and narrow ancestor reconciliation
+- Defines when a non-atomic spec should decompose into sibling child specs and surface split_required
+  rather than growing in place
 - Defines how acceptance criteria and acceptance_evidence stay aligned across a refinement chain
 - Remains implementation-agnostic and limited to specification governance
 acceptance_evidence:
@@ -33,11 +35,12 @@ acceptance_evidence:
     blocking views derived by tooling.
 
     '
-- criterion: Defines how a seed spec delegates one concrete unresolved area to a child spec without renaming
-    parent terminology
+- criterion: Defines how a seed or working spec delegates one or more concrete unresolved areas to child
+    specs while preserving atomic spec boundaries and parent terminology
   evidence: 'specification.delegation_policy defines delegated_gap semantics plus seed_spec_expectations,
-    parent_expectations, and child_expectations. It constrains each child to one concrete unresolved area
-    and requires inherited terminology stability.
+    parent_expectations, and child_expectations. specification.atomicity_policy then constrains each resulting
+    child to one bounded concern, allows multiple sibling children in a single decomposition run, and
+    requires inherited terminology stability.
 
     '
 - criterion: Defines the conditions for moving a spec from specified to linked once descendant specs exist,
@@ -47,6 +50,14 @@ acceptance_evidence:
     connected into the refinement chain through refines. specification.reconciliation_policy then states
     that descendant unlock creates eligibility for a narrow ancestor reconciliation pass, limited to links,
     blockers, evidence, and status-readiness rather than broad scope expansion.
+
+    '
+- criterion: Defines when a non-atomic spec should decompose into sibling child specs and surface split_required
+    rather than growing in place
+  evidence: 'specification.terminology defines atomic_spec_node and decomposition_pass. specification.atomicity_policy
+    defines envelope exceptions for seed specs, narrow working-node expectations, and the rule that a
+    spec which remains broader than one bounded concern after refinement should decompose into sibling
+    child specs or return split_required rather than continue accreting mixed scope.
 
     '
 - criterion: Defines how acceptance criteria and acceptance_evidence stay aligned across a refinement
@@ -79,7 +90,8 @@ specification:
     in:
     - Spec-to-spec use of refines, depends_on, and relates_to
     - Distinction between authored blocking declarations and derived effective blocking views
-    - Delegation of one concrete unresolved area from a seed spec to a child spec
+    - Delegation of one or more concrete unresolved areas from a parent spec to child specs
+    - Atomic spec-node boundaries and decomposition policy
     - Linked-status completion rules for spec nodes
     - Ancestor reconciliation after descendant semantic unlock
     - Acceptance and acceptance_evidence expectations across refinement chains
@@ -95,6 +107,15 @@ specification:
       '
     delegated_gap: 'A concrete unresolved area intentionally left open in a seed spec and assigned to
       exactly one child spec for elaboration in a given refinement step.
+
+      '
+    atomic_spec_node: 'A working spec node that captures one bounded concern or refinement question, so
+      that its acceptance criteria, blockers, and lifecycle advance together without hiding unrelated
+      work inside the same envelope.
+
+      '
+    decomposition_pass: 'A refinement run that narrows an oversized spec by emitting one or more sibling
+      child specs and reducing the parent back to a stable coordinating envelope.
 
       '
     linked_spec: 'A spec whose required dependency and refinement edges are present and whose declared
@@ -172,6 +193,23 @@ specification:
     - The child spec lists refines pointing at the parent it elaborates.
     - The child defines its own acceptance, acceptance_evidence, outputs, and allowed_paths.
     - The child MUST NOT widen scope into unrelated ontology areas.
+  atomicity_policy:
+    working_node_expectations:
+    - Non-seed working specs SHOULD remain atomic_spec_nodes that answer one bounded refinement question.
+    - A spec MAY act as a broad coordinating envelope only when it is explicitly seed-like or overview-like
+      and delegates mixed concerns to child specs instead of absorbing them.
+    decomposition_rules:
+    - When a refinement step reveals multiple independent concerns, the agent MAY emit multiple sibling
+      child specs in one decomposition_pass.
+    - Each sibling created in one decomposition_pass SHOULD own a distinct bounded concern and SHOULD
+      be independently reviewable on the graph.
+    - The parent SHOULD shrink back to stable shared intent, terminology, and linkage once the sibling
+      child specs exist.
+    split_required:
+    - If the current spec still mixes multiple bounded concerns after refinement, tooling SHOULD surface
+      split_required rather than treating the larger node as complete.
+    - split_required may preserve newly created child specs and narrowed parent edits even when the parent
+      still needs another pass.
   linkage_rules:
     specified_to_linked:
     - A spec may move from specified to linked once every refinement dependency it explicitly declares

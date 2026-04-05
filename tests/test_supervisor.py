@@ -185,8 +185,9 @@ def test_build_prompt_includes_bootstrap_child_guidance_for_seed_spec(
     )
     assert "Do not try to make the current spec complete in one run." in prompt
     assert "Bootstrap guidance:" in prompt
-    assert "Suggested child spec ID: SG-SPEC-0002" in prompt
+    assert "Suggested first child spec ID: SG-SPEC-0002" in prompt
     assert "Suggested child spec path: specs/nodes/SG-SPEC-0002.yaml" in prompt
+    assert "You may create one or more new child specs in this run" in prompt
 
 
 def test_build_prompt_includes_incremental_refinement_policy_for_non_seed_spec(
@@ -203,6 +204,7 @@ def test_build_prompt_includes_incremental_refinement_policy_for_non_seed_spec(
 
     assert "Refinement policy:" in prompt
     assert "Resolve at most one concrete unresolved area per run." in prompt
+    assert "Aim for one bounded concern per spec node, not one large document." in prompt
     expected_path_choice = (
         "If multiple independent refinement paths are possible, "
         "choose one and leave the others unchanged."
@@ -211,8 +213,12 @@ def test_build_prompt_includes_incremental_refinement_policy_for_non_seed_spec(
         "Prefer creating or refining one child spec over expanding "
         "the parent when the topic is separable."
     )
+    expected_split_rule = (
+        "If the node remains non-atomic after your edits, end with RUN_OUTCOME: split_required."
+    )
     assert expected_path_choice in prompt
     assert expected_child_preference in prompt
+    assert expected_split_rule in prompt
     assert "Bootstrap guidance:" not in prompt
 
 
@@ -714,6 +720,150 @@ def test_acceptance_evidence_is_required(
     node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
     updated = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
     assert any("acceptance_evidence" in err for err in updated["last_errors"])
+
+
+def test_main_atomicity_gate_forces_split_required(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    node_data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    node_data["title"] = "Working Node"
+    node_data["prompt"] = "Refine one bounded slice of this node."
+    node_data["allowed_paths"] = ["specs/nodes/SG-SPEC-0001.yaml"]
+    node_path.write_text(json.dumps(node_data), encoding="utf-8")
+
+    worktree = make_fake_worktree(repo_fixture)
+    monkeypatch.setattr(
+        supervisor_module,
+        "create_isolated_worktree",
+        lambda _node_id: (worktree, "codex/sg-spec-0001/test"),
+    )
+
+    changed_snapshots = [[], ["specs/nodes/SG-SPEC-0001.yaml"]]
+    monkeypatch.setattr(
+        supervisor_module, "git_changed_files", lambda _cwd=None: changed_snapshots.pop(0)
+    )
+
+    def fake_executor(_node: object, worktree_path: Path) -> subprocess.CompletedProcess[str]:
+        worktree_node = worktree_path / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+        data = supervisor_module.get_yaml_module().safe_load(
+            worktree_node.read_text(encoding="utf-8")
+        )
+        data["acceptance"] = [f"criterion-{i}" for i in range(6)]
+        data["acceptance_evidence"] = [f"evidence-{i}" for i in range(6)]
+        worktree_node.write_text(json.dumps(data), encoding="utf-8")
+        return subprocess.CompletedProcess(
+            args=["codex"],
+            returncode=0,
+            stdout="RUN_OUTCOME: done\nBLOCKER: none\n",
+            stderr="",
+        )
+
+    exit_code = supervisor_module.main(executor=fake_executor)
+    assert exit_code == 1
+
+    updated = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    assert updated["gate_state"] == "split_required"
+    assert updated["required_human_action"] == "split spec scope before rerun"
+    assert updated["last_blocker"] == "spec exceeds atomicity quality gate"
+    assert updated["last_validator_results"]["atomicity"] is False
+    assert any("Atomicity gate exceeded" in err for err in updated["last_errors"])
+
+
+def test_main_split_required_syncs_decomposition_outputs(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    node_data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    node_data["title"] = "Working Node"
+    node_data["prompt"] = "Split this node into several atomic children."
+    node_data["allowed_paths"] = ["specs/nodes/*.yaml"]
+    node_data["acceptance_evidence"] = ["seed evidence"]
+    node_path.write_text(json.dumps(node_data), encoding="utf-8")
+
+    worktree = make_fake_worktree(repo_fixture)
+    monkeypatch.setattr(
+        supervisor_module,
+        "create_isolated_worktree",
+        lambda _node_id: (worktree, "codex/sg-spec-0001/test"),
+    )
+
+    changed_snapshots = [
+        [],
+        [
+            "specs/nodes/SG-SPEC-0001.yaml",
+            "specs/nodes/SG-SPEC-0002.yaml",
+            "specs/nodes/SG-SPEC-0003.yaml",
+        ],
+    ]
+    monkeypatch.setattr(
+        supervisor_module, "git_changed_files", lambda _cwd=None: changed_snapshots.pop(0)
+    )
+
+    def fake_executor(_node: object, worktree_path: Path) -> subprocess.CompletedProcess[str]:
+        root_node = worktree_path / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+        root_data = supervisor_module.get_yaml_module().safe_load(
+            root_node.read_text(encoding="utf-8")
+        )
+        root_data["depends_on"] = ["SG-SPEC-0002", "SG-SPEC-0003"]
+        root_data["acceptance_evidence"] = ["Split into atomic children."]
+        root_node.write_text(json.dumps(root_data), encoding="utf-8")
+
+        for child_id, title in (
+            ("SG-SPEC-0002", "Arithmetic Functions"),
+            ("SG-SPEC-0003", "Input Constraints"),
+        ):
+            (worktree_path / "specs" / "nodes" / f"{child_id}.yaml").write_text(
+                json.dumps(
+                    {
+                        "id": child_id,
+                        "title": title,
+                        "kind": "spec",
+                        "status": "outlined",
+                        "maturity": 0.2,
+                        "depends_on": [],
+                        "relates_to": ["SG-SPEC-0001"],
+                        "refines": ["SG-SPEC-0001"],
+                        "inputs": ["specs/nodes/SG-SPEC-0001.yaml"],
+                        "outputs": [f"specs/nodes/{child_id}.yaml"],
+                        "allowed_paths": [f"specs/nodes/{child_id}.yaml"],
+                        "acceptance": [f"{title} is specified"],
+                        "prompt": f"Refine {title}.",
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+        return subprocess.CompletedProcess(
+            args=["codex"],
+            returncode=0,
+            stdout=(
+                "RUN_OUTCOME: split_required\nBLOCKER: parent still needs another narrowing pass\n"
+            ),
+            stderr="",
+        )
+
+    exit_code = supervisor_module.main(executor=fake_executor)
+    assert exit_code == 1
+
+    updated_root = supervisor_module.get_yaml_module().safe_load(
+        node_path.read_text(encoding="utf-8")
+    )
+    assert updated_root["gate_state"] == "split_required"
+    assert updated_root["depends_on"] == ["SG-SPEC-0002", "SG-SPEC-0003"]
+
+    child_two = supervisor_module.get_yaml_module().safe_load(
+        (repo_fixture / "specs" / "nodes" / "SG-SPEC-0002.yaml").read_text(encoding="utf-8")
+    )
+    child_three = supervisor_module.get_yaml_module().safe_load(
+        (repo_fixture / "specs" / "nodes" / "SG-SPEC-0003.yaml").read_text(encoding="utf-8")
+    )
+    assert child_two["refines"] == ["SG-SPEC-0001"]
+    assert child_three["refines"] == ["SG-SPEC-0001"]
 
 
 def test_resolve_gate_approve_applies_worktree_changes(
