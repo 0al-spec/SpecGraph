@@ -32,10 +32,20 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
-_DEFAULT_CATALOG = (
-    Path.home() / "Development/GitHub/PageIndexInstance/results/chatgpt_dialogs/catalog.json"
-)
+_DEFAULT_CATALOG_PATHS = [
+    Path.home()
+    / "Development/GitHub/PageIndexInstance/results/chatgpt_dialogs_optimized/catalog.json",
+    Path.home() / "Development/GitHub/PageIndexInstance/results/chatgpt_dialogs/catalog.json",
+]
 _DEFAULT_API_URL = "http://localhost:8765"
+
+
+def _find_default_catalog() -> Path | None:
+    """Find the first available catalog."""
+    for path in _DEFAULT_CATALOG_PATHS:
+        if path.exists():
+            return path
+    return _DEFAULT_CATALOG_PATHS[0]
 
 
 def _post(url: str, payload: dict) -> dict:
@@ -123,7 +133,7 @@ def _format_results(nodes: list[dict], *, with_context: bool) -> str:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("query", help="Search query")
-    parser.add_argument("--catalog", default=str(_DEFAULT_CATALOG))
+    parser.add_argument("--catalog", default=str(_find_default_catalog()))
     parser.add_argument("--api-url", default=_DEFAULT_API_URL)
     parser.add_argument("--model", default="gpt-4o-2024-11-20")
     parser.add_argument("--top-k", type=int, default=7)
