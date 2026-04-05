@@ -491,6 +491,43 @@ def test_update_proposal_queue_requires_recurrence_for_refactor_proposal(
     assert proposal["execution_policy"] == "emit_proposal"
 
 
+def test_update_proposal_queue_counts_current_occurrence_when_run_id_collides(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    historical_run = {
+        "run_id": "RUN-1",
+        "graph_health": {
+            "source_spec_id": "SG-SPEC-9999",
+            "signals": ["oversized_spec"],
+        },
+    }
+    (repo_fixture / "runs" / "20260405T000000Z-SG-SPEC-9999.json").write_text(
+        json.dumps(historical_run),
+        encoding="utf-8",
+    )
+
+    graph_health = {
+        "source_spec_id": "SG-SPEC-9999",
+        "observations": [
+            {"kind": "oversized_spec", "details": ["too many acceptance criteria"]},
+        ],
+        "signals": ["oversized_spec"],
+        "recommended_actions": ["split_or_narrow_spec"],
+    }
+
+    _path, items = supervisor_module.update_proposal_queue(
+        graph_health=graph_health,
+        run_id="RUN-1",
+    )
+
+    assert len(items) == 1
+    proposal = items[0]
+    assert proposal["proposal_type"] == "refactor_proposal"
+    assert proposal["occurrence_count"] == 2
+    assert proposal["supporting_run_ids"] == ["RUN-1"]
+
+
 def test_build_prompt_includes_bootstrap_child_guidance_for_seed_spec(
     supervisor_module: object,
     repo_fixture: Path,

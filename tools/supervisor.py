@@ -1191,10 +1191,11 @@ def build_proposal_queue_items(
         signal_name = str(signal).strip()
         work_item_type = classify_refactor_work_item(signal_name)
         supporting_run_ids = signal_supporting_run_ids(source_spec_id, signal_name)
+        occurrence_count = len(supporting_run_ids) + 1
         if run_id not in supporting_run_ids:
             supporting_run_ids.append(run_id)
         threshold = proposal_threshold_for_work_item_type(work_item_type)
-        if len(supporting_run_ids) < threshold:
+        if occurrence_count < threshold:
             continue
 
         proposal_type = classify_proposal_type(work_item_type)
@@ -1211,7 +1212,7 @@ def build_proposal_queue_items(
                     if work_item_type == "governance_proposal"
                     else "recurring_signal"
                 ),
-                "occurrence_count": len(supporting_run_ids),
+                "occurrence_count": occurrence_count,
                 "threshold": threshold,
                 "supporting_run_ids": supporting_run_ids,
                 "source_work_item_type": work_item_type,
