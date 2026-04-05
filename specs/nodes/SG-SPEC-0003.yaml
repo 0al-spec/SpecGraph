@@ -1,0 +1,177 @@
+id: SG-SPEC-0003
+title: SpecGraph - Reflective Governance Boundary and Graph Health Signals
+kind: spec
+status: specified
+maturity: 0.36
+depends_on: []
+relates_to:
+- SG-SPEC-0002
+refines:
+- SG-SPEC-0001
+inputs:
+- specs/nodes/SG-SPEC-0001.yaml
+- specs/nodes/SG-SPEC-0002.yaml
+- tasks.md
+- AGENTS.md
+outputs:
+- specs/nodes/SG-SPEC-0003.yaml
+allowed_paths:
+- specs/nodes/SG-SPEC-0003.yaml
+acceptance:
+- Defines the boundary between canonical SpecGraph governance, supervisor execution, and changes that
+  always require human approval
+- Defines observation, signal, and proposal as a derived reflective loop that does not mutate canonical
+  specs by itself
+- Defines the first graph-health signals for oversized specs, missing canonical dependencies, repeated
+  split_required, and stalled or weak refinement progression as diagnostic inputs rather than normative
+  scores
+- Defines that graph-health observations and signals are first persisted in run artifacts and a derived
+  refactor queue, not written back into canonical spec nodes
+- Defines that the first derived refactor queue classifies work items as graph_refactor or governance_proposal
+  without mutating canonical spec nodes by itself
+- Remains implementation-agnostic about exact formulas, thresholds, queue algorithms, and future metric
+  systems such as SIB or Specification Verifiability
+acceptance_evidence:
+- criterion: Defines the boundary between canonical SpecGraph governance, supervisor execution, and changes
+    that always require human approval
+  evidence: 'specification.boundary_policy separates canonical_governance, supervisor_execution, and human_approval.
+    It states that specs govern ontology and policy, the supervisor executes bounded refinement and emits
+    derived observations, and constitutional changes require explicit human approval.
+
+    '
+- criterion: Defines observation, signal, and proposal as a derived reflective loop that does not mutate
+    canonical specs by itself
+  evidence: 'specification.reflective_loop defines the sequence observe -> derive signal -> form proposal
+    -> execute local refactor or await approval. specification.derived_artifact_policy explicitly forbids
+    observations and signals from mutating canonical spec nodes by themselves.
+
+    '
+- criterion: Defines the first graph-health signals for oversized specs, missing canonical dependencies,
+    repeated split_required, and stalled or weak refinement progression as diagnostic inputs rather than
+    normative scores
+  evidence: 'specification.graph_health_signal_policy.initial_signals names oversized_spec, missing_dependency_target,
+    repeated_split_required_candidate, stalled_maturity_candidate, and weak_structural_linkage_candidate.
+    The same section defines them as diagnostic and rebuildable, not canonical truth.
+
+    '
+- criterion: Defines that graph-health observations and signals are first persisted in run artifacts and
+    a derived refactor queue, not written back into canonical spec nodes
+  evidence: 'specification.derived_artifact_policy.first_persistence lists run payloads, summaries, and
+    refactor_queue artifacts as the first persistence targets, while specification.derived_artifact_policy.canonical_writeback
+    forbids direct writeback of observations and signals into canonical spec nodes without an explicit
+    proposal and approval step.
+
+    '
+- criterion: Defines that the first derived refactor queue classifies work items as graph_refactor or
+    governance_proposal without mutating canonical spec nodes by itself
+  evidence: 'specification.terminology defines refactor_work_item and specification.derived_artifact_policy.refactor_queue
+    defines the first queue artifact as a derived projection from graph_health signals. specification.reflective_loop
+    then states that the queue decides between local_graph_refactor and governance_proposal without changing
+    canonical spec nodes by itself.
+
+    '
+- criterion: Remains implementation-agnostic about exact formulas, thresholds, queue algorithms, and future
+    metric systems such as SIB or Specification Verifiability
+  evidence: 'specification.scope.out excludes concrete metric formulas, threshold tuning, queue scheduling
+    algorithms, and future metric catalogs including SIB and Specification Verifiability. The spec governs
+    the boundary and the role of signals, not their final quantitative implementation.
+
+    '
+prompt: 'Define the reflective governance boundary for SpecGraph so graph quality signals can improve
+  the
+
+  graph and its tooling without letting the supervisor silently rewrite the ontology or its own rules.
+
+  '
+specification:
+  objective: 'Define how SpecGraph observes its own graph quality, how those observations become derived
+    signals and proposals, and where the boundary lies between canonical governance, supervisor execution,
+    and human approval.
+
+    '
+  scope:
+    in:
+    - Boundary between canonical specs, supervisor execution, and human approval
+    - Reflective loop stages from observation to proposal
+    - First graph-health signals related to spec size, dependency integrity, and refinement progression
+    - Derived persistence of observations and signals in run artifacts
+    - First derived refactor queue artifact and work-item classification
+    out:
+    - Concrete metric formulas or scoring weights
+    - Final queue prioritization algorithms
+    - Viewer UX or visual overlays
+    - Automatic self-modification of ontology without approval
+    - Detailed SIB, Verifiability, or Observability metric definitions
+  terminology:
+    graph_health_observation: 'A derived operational fact about the current state of the graph or a refinement
+      run, produced by tooling and rebuildable from canonical data plus run context.
+
+      '
+    graph_health_signal: 'A higher-level diagnostic conclusion derived from one or more observations,
+      used to prioritize attention or proposals without becoming canonical graph truth by itself.
+
+      '
+    refactor_work_item: 'A derived queue entry produced from graph_health signals that recommends either
+      a local graph refactor or a governance proposal without becoming canonical graph data by itself.
+
+      '
+    governance_proposal: 'A structured proposal to change canonical ontology, policy, or supervisor behavior
+      after repeated or important graph-health signals have been observed.
+
+      '
+    local_graph_refactor: 'A bounded structural improvement to existing spec nodes or edges that stays
+      within current governance rules and does not redefine ontology or policy.
+
+      '
+    constitutional_change: 'A change to ontology, policy, thresholds, or supervisor authority that alters
+      the governing rules of SpecGraph and therefore requires human approval.
+
+      '
+  boundary_policy:
+    canonical_governance:
+    - Canonical specs define what counts as valid graph structure, allowed edge semantics, lifecycle transitions,
+      quality policy, and approval boundaries.
+    - Canonical specs may describe future signals and proposals without forcing their exact runtime implementation.
+    supervisor_execution:
+    - The supervisor may execute bounded spec refinement, ancestor reconciliation, local graph refactors,
+      and derived graph-health observation as long as those actions stay within current canonical policy.
+    - The supervisor may not silently redefine ontology, approval boundaries, or its own authority.
+    human_approval:
+    - Human approval is required for constitutional_change, including ontology changes, policy changes,
+      threshold changes that alter governance meaning, and supervisor behavior changes that expand autonomous
+      authority.
+  reflective_loop:
+    stages:
+    - Observe graph and run state
+    - Derive graph_health_observation records
+    - Aggregate observations into graph_health_signal candidates
+    - Decide whether the result is a local_graph_refactor or a governance_proposal
+    - Apply local refactor if allowed, otherwise wait for human approval
+    rules:
+    - Observation and signal generation are derived runtime activities, not authored canonical facts.
+    - Signals may motivate proposals, but they MUST NOT mutate canonical spec nodes by themselves.
+  graph_health_signal_policy:
+    initial_signals:
+    - oversized_spec
+    - missing_dependency_target
+    - repeated_split_required_candidate
+    - stalled_maturity_candidate
+    - weak_structural_linkage_candidate
+    semantics:
+    - Initial signals are diagnostic hints intended to drive refinement quality and graph refactoring.
+    - Signal presence does not by itself prove a canonical error; it indicates a region that may need
+      review, decomposition, relinking, or policy consideration.
+  derived_artifact_policy:
+    first_persistence:
+    - Run payloads
+    - Run summaries
+    - Refactor queue artifacts
+    refactor_queue:
+    - The first refactor queue is a derived artifact built from graph_health signals and their current
+      classification.
+    - A refactor queue item may classify work as graph_refactor or governance_proposal, but that classification
+      remains derived until acted on under the current governance rules.
+    canonical_writeback:
+    - Graph-health observations and signals MUST NOT be written back into canonical spec nodes unless
+      they have first been transformed into an explicit proposal and approved under the current governance
+      rules.
