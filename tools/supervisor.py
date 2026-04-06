@@ -1162,6 +1162,114 @@ def observe_graph_health(
     }
 
 
+def empty_graph_health(source_spec_id: str) -> dict[str, Any]:
+    return {
+        "source_spec_id": source_spec_id,
+        "observations": [],
+        "signals": [],
+        "recommended_actions": [],
+    }
+
+
+def classify_executor_environment(stderr: str) -> dict[str, Any]:
+    """Classify runtime/environment issues from nested executor stderr.
+
+    These signals are operational diagnostics about the child executor runtime,
+    not graph-health findings about the current spec.
+    """
+    lines = [line.strip() for line in stderr.splitlines() if line.strip()]
+    lowered = [line.lower() for line in lines]
+    issues: list[dict[str, Any]] = []
+
+    def add_issue(kind: str, summary: str, predicate: Callable[[str], bool]) -> None:
+        evidence = [line for line, low in zip(lines, lowered, strict=False) if predicate(low)]
+        if evidence:
+            issues.append(
+                {
+                    "kind": kind,
+                    "summary": summary,
+                    "evidence": evidence[:3],
+                }
+            )
+
+    add_issue(
+        "transport_failure",
+        "Nested executor could not reach or maintain a stable backend connection.",
+        lambda low: any(
+            fragment in low
+            for fragment in (
+                "failed to connect to websocket",
+                "stream disconnected before completion",
+                "error sending request for url",
+                "failed to lookup address information",
+                "falling back from websockets to https transport",
+                "unexpected status 401 unauthorized",
+                "http error:",
+            )
+        ),
+    )
+    add_issue(
+        "mcp_startup_failure",
+        "Nested executor failed to start one or more MCP servers.",
+        lambda low: ("mcp startup:" in low and "failed:" in low)
+        or (low.startswith("mcp:") and " failed:" in low)
+        or "mcp client for" in low,
+    )
+    add_issue(
+        "state_runtime_failure",
+        "Nested executor runtime state or migration setup failed.",
+        lambda low: any(
+            fragment in low
+            for fragment in (
+                "failed to open state db",
+                "failed to initialize state runtime",
+                "migration ",
+                "state db discrepancy",
+            )
+        ),
+    )
+    add_issue(
+        "sandbox_permission_failure",
+        "Nested executor hit local permission or sandbox restrictions.",
+        lambda low: "operation not permitted" in low or "permission denied" in low,
+    )
+
+    return {
+        "issues": issues,
+        "issue_kinds": [str(issue["kind"]) for issue in issues],
+        "primary_failure": False,
+    }
+
+
+def is_primary_executor_environment_failure(
+    *,
+    executor_environment: dict[str, Any],
+    returncode: int,
+    changed_files: list[str],
+    outcome: str,
+) -> bool:
+    return (
+        bool(executor_environment.get("issues"))
+        and returncode != 0
+        and not changed_files
+        and outcome != "done"
+    )
+
+
+def executor_environment_validation_errors(executor_environment: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    for issue in executor_environment.get("issues", []):
+        if not isinstance(issue, dict):
+            continue
+        summary = str(issue.get("summary", "")).strip() or "Executor environment failure"
+        evidence = issue.get("evidence", [])
+        if isinstance(evidence, list) and evidence:
+            errors.append(f"{summary} Evidence: {evidence[0]}")
+        else:
+            errors.append(summary)
+    return errors
+
+
 def parse_outcome(stdout: str, returncode: int) -> tuple[str, str]:
     default_outcome = "done" if returncode == 0 else "escalate"
 
@@ -2020,6 +2128,15 @@ def upsert_split_proposal_queue(
 
 
 def write_latest_summary(payload: dict[str, Any]) -> None:
+    executor_environment = payload.get("executor_environment", {})
+    issues = (
+        executor_environment.get("issues", []) if isinstance(executor_environment, dict) else []
+    )
+    primary_failure = (
+        bool(executor_environment.get("primary_failure"))
+        if isinstance(executor_environment, dict)
+        else False
+    )
     summary = (
         f"# Latest Supervisor Run\n\n"
         f"- run_id: {payload['run_id']}\n"
@@ -2031,6 +2148,8 @@ def write_latest_summary(payload: dict[str, Any]) -> None:
         f"- proposed_status: {payload.get('proposed_status') or '-'}\n"
         f"- final_status: {payload['final_status']}\n"
         f"- validation_errors: {len(payload['validation_errors'])}\n"
+        f"- executor_environment_issues: {len(issues)}\n"
+        f"- executor_environment_primary_failure: {'yes' if primary_failure else 'no'}\n"
         f"- required_human_action: {payload.get('required_human_action', '-')}\n"
     )
     (RUNS_DIR / "latest-summary.md").write_text(summary, encoding="utf-8")
@@ -2612,34 +2731,48 @@ def _process_split_refactor_proposal(
     )
     print(f"Detected changed files: {changed or ['(none)']}")
     outcome, blocker = parse_outcome(result.stdout, result.returncode)
+    executor_environment = classify_executor_environment(result.stderr)
+    primary_executor_failure = is_primary_executor_environment_failure(
+        executor_environment=executor_environment,
+        returncode=result.returncode,
+        changed_files=changed,
+        outcome=outcome,
+    )
+    executor_environment["primary_failure"] = primary_executor_failure
+    if primary_executor_failure and outcome == "escalate":
+        outcome = "blocked"
+        if not blocker:
+            blocker = "executor environment failure"
 
-    try:
-        worktree_specs = load_specs_from_dir(worktree_path / "specs" / "nodes")
-    except Exception as exc:
+    if primary_executor_failure:
         worktree_specs = []
-        graph_health = {
-            "source_spec_id": node.id,
-            "observations": [],
-            "signals": [],
-            "recommended_actions": [],
-        }
-        validation_errors = [f"Failed to load worktree specs for split proposal validation: {exc}"]
+        graph_health = empty_graph_health(node.id)
+        validation_errors = executor_environment_validation_errors(executor_environment)
     else:
-        index = index_specs(worktree_specs)
-        reconciled_node = index.get(node.id) or node
-        graph_health = observe_graph_health(
-            source_node=node,
-            worktree_specs=worktree_specs,
-            reconciliation={
-                "semantic_dependencies_resolved": semantic_dependencies_resolved(
-                    reconciled_node, index
-                ),
-                "work_dependencies_ready": work_dependencies_ready(reconciled_node, index),
-            },
-            atomicity_errors=validate_atomicity(reconciled_node),
-            outcome=outcome,
-        )
-        validation_errors: list[str] = []
+        try:
+            worktree_specs = load_specs_from_dir(worktree_path / "specs" / "nodes")
+        except Exception as exc:
+            worktree_specs = []
+            graph_health = empty_graph_health(node.id)
+            validation_errors = [
+                f"Failed to load worktree specs for split proposal validation: {exc}"
+            ]
+        else:
+            index = index_specs(worktree_specs)
+            reconciled_node = index.get(node.id) or node
+            graph_health = observe_graph_health(
+                source_node=node,
+                worktree_specs=worktree_specs,
+                reconciliation={
+                    "semantic_dependencies_resolved": semantic_dependencies_resolved(
+                        reconciled_node, index
+                    ),
+                    "work_dependencies_ready": work_dependencies_ready(reconciled_node, index),
+                },
+                atomicity_errors=validate_atomicity(reconciled_node),
+                outcome=outcome,
+            )
+            validation_errors: list[str] = []
 
     artifact_relpath = str(refactor_work_item["proposal_artifact_relpath"])
     artifact_worktree_path = worktree_path / artifact_relpath
@@ -2739,12 +2872,14 @@ def _process_split_refactor_proposal(
             "proposal_artifact": success,
             "canonical_writeback": not changed_spec_files,
             "artifact_scope": not extra_changed_files,
+            "executor_environment": not primary_executor_failure,
         },
         "reconciliation": {
             "semantic_dependencies_resolved": graph_health["source_spec_id"] == node.id,
             "work_dependencies_ready": False,
         },
         "graph_health": graph_health,
+        "executor_environment": executor_environment,
         "refactor_queue_artifact": refactor_queue_artifact.as_posix(),
         "proposal_queue_artifact": proposal_queue_artifact.as_posix(),
         "proposal_artifact_path": proposal_artifact_root_path.as_posix(),
@@ -2851,66 +2986,100 @@ def _process_one_spec(
 
     run_timestamp = dt.datetime.now(dt.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     run_id = f"{run_timestamp}-{node.id}"
-
-    try:
-        worktree_specs = load_specs_from_dir(worktree_path / "specs" / "nodes")
-    except Exception as exc:
-        worktree_specs = []
-        worktree_load_errors = [f"Failed to load worktree specs for validation: {exc}"]
-    else:
-        worktree_load_errors = []
-
-    output_errors = validate_outputs(node, base_dir=worktree_path)
-    allowed_path_errors = validate_allowed_paths(node, changed)
-    reconciliation, reconciliation_errors = reconcile_graph(
-        source_node=node,
-        worktree_path=worktree_path,
-        changed_files=changed,
-    )
-    if worktree_load_errors:
-        atomicity_errors = list(worktree_load_errors)
-    else:
-        atomicity_errors = validate_changed_spec_atomicity(
-            source_node_id=node.id,
-            changed_files=changed,
-            worktree_specs=worktree_specs,
-            worktree_path=worktree_path,
-        )
-
-    proposed_status = None if is_graph_refactor_run else STATUS_PROGRESSION.get(node.status)
-    transition_errors = (
-        [] if is_graph_refactor_run else validate_transition(node.status, proposed_status)
-    )
-
-    validation_errors: list[str] = []
-    validation_errors.extend(output_errors)
-    validation_errors.extend(allowed_path_errors)
-    validation_errors.extend(reconciliation_errors)
-    validation_errors.extend(atomicity_errors)
-    validation_errors.extend(transition_errors)
-
     outcome, blocker = parse_outcome(result.stdout, result.returncode)
-    if atomicity_errors and outcome == "done":
-        outcome = "split_required"
-        if not blocker:
-            blocker = "spec exceeds atomicity quality gate"
-
-    graph_health = observe_graph_health(
-        source_node=node,
-        worktree_specs=worktree_specs,
-        reconciliation=reconciliation,
-        atomicity_errors=atomicity_errors,
+    executor_environment = classify_executor_environment(result.stderr)
+    primary_executor_failure = is_primary_executor_environment_failure(
+        executor_environment=executor_environment,
+        returncode=result.returncode,
+        changed_files=changed,
         outcome=outcome,
     )
-    proposal_queue_artifact, proposal_items = update_proposal_queue(
-        graph_health=graph_health,
-        run_id=run_id,
-    )
-    refactor_queue_artifact = update_refactor_queue(
-        graph_health=graph_health,
-        run_id=run_id,
-        proposal_items=proposal_items,
-    )
+    executor_environment["primary_failure"] = primary_executor_failure
+    if primary_executor_failure and outcome == "escalate":
+        outcome = "blocked"
+        if not blocker:
+            blocker = "executor environment failure"
+
+    if primary_executor_failure:
+        worktree_specs = []
+        worktree_load_errors = []
+        output_errors = []
+        allowed_path_errors = []
+        reconciliation = {
+            "worktree_spec_count": 0,
+            "changed_spec_ids": [],
+            "semantic_dependencies_resolved": False,
+            "work_dependencies_ready": False,
+            "cycles": [],
+        }
+        reconciliation_errors = []
+        atomicity_errors = []
+        proposed_status = None if is_graph_refactor_run else STATUS_PROGRESSION.get(node.status)
+        transition_errors = []
+        validation_errors = executor_environment_validation_errors(executor_environment)
+        graph_health = empty_graph_health(node.id)
+        proposal_queue_artifact = proposal_queue_path()
+        proposal_items: list[dict[str, Any]] = load_proposal_queue()
+        refactor_queue_artifact = refactor_queue_path()
+    else:
+        try:
+            worktree_specs = load_specs_from_dir(worktree_path / "specs" / "nodes")
+        except Exception as exc:
+            worktree_specs = []
+            worktree_load_errors = [f"Failed to load worktree specs for validation: {exc}"]
+        else:
+            worktree_load_errors = []
+
+        output_errors = validate_outputs(node, base_dir=worktree_path)
+        allowed_path_errors = validate_allowed_paths(node, changed)
+        reconciliation, reconciliation_errors = reconcile_graph(
+            source_node=node,
+            worktree_path=worktree_path,
+            changed_files=changed,
+        )
+        if worktree_load_errors:
+            atomicity_errors = list(worktree_load_errors)
+        else:
+            atomicity_errors = validate_changed_spec_atomicity(
+                source_node_id=node.id,
+                changed_files=changed,
+                worktree_specs=worktree_specs,
+                worktree_path=worktree_path,
+            )
+
+        proposed_status = None if is_graph_refactor_run else STATUS_PROGRESSION.get(node.status)
+        transition_errors = (
+            [] if is_graph_refactor_run else validate_transition(node.status, proposed_status)
+        )
+
+        validation_errors = []
+        validation_errors.extend(output_errors)
+        validation_errors.extend(allowed_path_errors)
+        validation_errors.extend(reconciliation_errors)
+        validation_errors.extend(atomicity_errors)
+        validation_errors.extend(transition_errors)
+
+        if atomicity_errors and outcome == "done":
+            outcome = "split_required"
+            if not blocker:
+                blocker = "spec exceeds atomicity quality gate"
+
+        graph_health = observe_graph_health(
+            source_node=node,
+            worktree_specs=worktree_specs,
+            reconciliation=reconciliation,
+            atomicity_errors=atomicity_errors,
+            outcome=outcome,
+        )
+        proposal_queue_artifact, proposal_items = update_proposal_queue(
+            graph_health=graph_health,
+            run_id=run_id,
+        )
+        refactor_queue_artifact = update_refactor_queue(
+            graph_health=graph_health,
+            run_id=run_id,
+            proposal_items=proposal_items,
+        )
     success = result.returncode == 0 and not validation_errors and outcome == "done"
 
     required_human_action = "resolve gate: approve|retry|split|block|redirect|escalate"
@@ -2952,7 +3121,10 @@ def _process_one_spec(
         else:
             node.data["gate_state"] = "review_pending"
     else:
-        if outcome == "blocked":
+        if primary_executor_failure:
+            node.data["gate_state"] = "blocked"
+            required_human_action = "repair executor environment and rerun supervisor"
+        elif outcome == "blocked":
             node.data["gate_state"] = "blocked"
             required_human_action = "resolve blocker"
         elif outcome == "split_required":
@@ -2974,6 +3146,7 @@ def _process_one_spec(
         "reconciliation": not reconciliation_errors,
         "atomicity": not atomicity_errors,
         "transition": not transition_errors,
+        "executor_environment": not primary_executor_failure,
     }
 
     node.data["required_human_action"] = required_human_action
@@ -3013,6 +3186,7 @@ def _process_one_spec(
         "validator_results": validator_results,
         "reconciliation": reconciliation,
         "graph_health": graph_health,
+        "executor_environment": executor_environment,
         "refactor_queue_artifact": refactor_queue_artifact.as_posix(),
         "proposal_queue_artifact": proposal_queue_artifact.as_posix(),
         "stdout": result.stdout,
