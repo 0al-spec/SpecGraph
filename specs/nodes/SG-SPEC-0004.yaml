@@ -1,8 +1,8 @@
 id: SG-SPEC-0004
 title: SpecGraph - Split Proposal Application Path
 kind: spec
-status: outlined
-maturity: 0.18
+status: specified
+maturity: 0.56
 depends_on: []
 relates_to:
 - SG-SPEC-0002
@@ -28,6 +28,47 @@ acceptance:
 - Defines validation requirements before writeback, including active proposal presence, artifact validity,
   non-seed target eligibility, and refusal to overwrite existing child spec files
 - Remains implementation-agnostic about future generalized proposal application beyond split_oversized_spec
+acceptance_evidence:
+- criterion: Defines an explicit operator-controlled path to apply an approved split_oversized_spec proposal
+    into canonical parent and child spec files
+  evidence: 'tools/supervisor.py exposes the explicit operator path through `main(..., apply_split_proposal=True)`
+    with `--target-spec`, and dispatches the execution to `_apply_split_proposal(...)` rather than the
+    ordinary heuristic selector. tests/test_supervisor.py::test_main_apply_split_proposal_materializes_parent_and_children
+    exercises the explicit path end to end.
+
+    '
+- criterion: Defines deterministic materialization rules for parent narrowing, child creation, acceptance
+    redistribution, and lineage updates from a structured split proposal artifact
+  evidence: 'tools/supervisor.py::apply_split_proposal_to_worktree deterministically rewrites the parent
+    prompt, acceptance, acceptance_evidence, and depends_on from `parent_after_split`, then creates child
+    spec files from `suggested_children` with explicit `refines: [parent]`. The same path reuses proposal
+    acceptance mapping rather than generating new acceptance text during application. tests/test_supervisor.py::test_main_apply_split_proposal_materializes_parent_and_children
+    verifies the resulting parent and child spec shapes.
+
+    '
+- criterion: Defines how proposal artifact and proposal_queue status change after successful application
+    versus rejected application
+  evidence: 'tools/supervisor.py::mark_split_proposal_applied updates both the structured proposal artifact
+    and the matching `runs/proposal_queue.json` item to `applied` after successful writeback. tests/test_supervisor.py::test_main_apply_split_proposal_materializes_parent_and_children
+    asserts the applied state, while tests/test_supervisor.py::test_main_apply_split_proposal_rejects_existing_child_collision
+    confirms failed application leaves the queue item pending.
+
+    '
+- criterion: Defines validation requirements before writeback, including active proposal presence, artifact
+    validity, non-seed target eligibility, and refusal to overwrite existing child spec files
+  evidence: 'tools/supervisor.py::find_split_proposal_queue_item and ::validate_split_proposal_application_target
+    require an active split proposal, re-check non-seed oversized eligibility, validate the artifact contract,
+    and reject child ID/path collisions before canonical writeback. tests/test_supervisor.py::test_main_apply_split_proposal_rejects_when_no_proposal_exists
+    and ::test_main_apply_split_proposal_rejects_existing_child_collision cover these failure paths.
+
+    '
+- criterion: Remains implementation-agnostic about future generalized proposal application beyond split_oversized_spec
+  evidence: 'specification.scope.out excludes automatic application, merge/reparent/generalized relinking,
+    multi-proposal batch application, and governance changes to proposal semantics. The implemented supervisor
+    path is correspondingly limited to one explicit `split_oversized_spec` application mode and does not
+    claim broader proposal-application semantics.
+
+    '
 prompt: Define the first deterministic apply path for reviewed split proposals so SpecGraph can move from
   proposal-first graph refactoring into explicit canonical writeback without reintroducing free-form supervisor
   behavior.

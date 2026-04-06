@@ -19,9 +19,9 @@
 14. [done] Define how local graph refactors can be auto-executed while governance/runtime changes still require a review gate.
 15. [done] Add proposal generation for recurring graph pathologies so repeated signals produce explicit refactor or policy proposals instead of ad hoc changes.
 16. [done] Define the rules for graph refactoring passes that split oversized specs into multiple atomic child specs while preserving stable parent terminology and lineage.
-17. Add support for retrospective spec refactoring after a graph has already grown suboptimally, not only at creation time.
+17. [inprogress] Add support for retrospective spec refactoring after a graph has already grown suboptimally, not only at creation time.
 18. [done] Specify how `supervisor` may update graph structure directly versus when it must emit a proposal for a human-reviewed spec change.
-19. [inprogress] Add an explicit application path for approved split proposals so reviewed `split_oversized_spec` artifacts can be deterministically materialized into canonical parent/child spec files.
+19. [done] Add an explicit application path for approved split proposals so reviewed `split_oversized_spec` artifacts can be deterministically materialized into canonical parent/child spec files.
 20. Introduce metric-driven signals later, using SIB, Specification Verifiability, Process Observability, Structural Observability, and related measures as derived inputs rather than canonical facts.
 21. Define how metric thresholds become proposals first, and only later become normative policy in SpecGraph after human approval.
 22. Add viewer-facing overlays or reports for graph health so oversized or weakly linked regions are visible without reading raw run logs.
