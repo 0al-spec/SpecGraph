@@ -216,6 +216,35 @@ def test_run_codex_uses_isolated_codex_home(
     assert "--ephemeral" in captured["cmd"]
 
 
+def test_write_latest_summary_includes_executor_environment_fields(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    payload = {
+        "run_id": "RUN-1",
+        "spec_id": "SG-SPEC-0001",
+        "title": "Golden Path Node",
+        "outcome": "blocked",
+        "gate_state": "blocked",
+        "before_status": "outlined",
+        "proposed_status": None,
+        "final_status": "outlined",
+        "validation_errors": ["transport failure"],
+        "executor_environment": {
+            "issues": [{"kind": "transport_failure"}],
+            "primary_failure": True,
+        },
+        "required_human_action": "repair executor environment and rerun supervisor",
+    }
+
+    supervisor_module.write_latest_summary(payload)
+
+    summary = (repo_fixture / "runs" / "latest-summary.md").read_text(encoding="utf-8")
+    assert "- executor_environment_issues: 1" in summary
+    assert "- executor_environment_primary_failure: yes" in summary
+    assert "- required_human_action: repair executor environment and rerun supervisor" in summary
+
+
 def make_valid_split_proposal(node_data: dict[str, object], run_id: str) -> dict[str, object]:
     spec_id = str(node_data["id"])
     acceptance = [str(item) for item in node_data.get("acceptance", [])]
