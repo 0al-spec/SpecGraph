@@ -70,6 +70,7 @@ ATOMICITY_MAX_BLOCKING_CHILDREN = 3
 RECURRING_REFACTOR_PROPOSAL_THRESHOLD = 2
 SPLIT_REFACTOR_SIGNAL = "oversized_spec"
 SPLIT_REFACTOR_KIND = "split_oversized_spec"
+RETROSPECTIVE_REFACTOR_SIGNAL = "retrospective_refactor_candidate"
 APPLICABLE_PROPOSAL_STATUSES = {"proposed", "review_pending", "pending_review", "approved"}
 BLOCKING_GATE_STATES = {
     "review_pending",
@@ -177,6 +178,26 @@ def load_specs_from_dir(specs_dir: Path) -> list[SpecNode]:
 
 def index_specs(specs: list[SpecNode]) -> dict[str, SpecNode]:
     return {spec.id: spec for spec in specs if spec.id}
+
+
+def refining_child_specs(node: SpecNode, specs: list[SpecNode]) -> list[SpecNode]:
+    children: list[SpecNode] = []
+    for spec in specs:
+        refines = spec.data.get("refines")
+        if not isinstance(refines, list):
+            continue
+        if node.id in {str(item).strip() for item in refines}:
+            children.append(spec)
+    return children
+
+
+def accepted_child_spec_ids(node: SpecNode, specs: list[SpecNode]) -> list[str]:
+    accepted: list[str] = []
+    for child in refining_child_specs(node, specs):
+        evidence = child.data.get("acceptance_evidence")
+        if isinstance(evidence, list) and evidence and child.id:
+            accepted.append(child.id)
+    return accepted
 
 
 def merge_unique_strings(*groups: list[str]) -> list[str]:
@@ -349,6 +370,7 @@ def refactor_signal_priority(signal: str) -> int:
         "missing_dependency_target": 0,
         "weak_structural_linkage_candidate": 1,
         "oversized_spec": 2,
+        RETROSPECTIVE_REFACTOR_SIGNAL: 2,
     }.get(signal, 9)
 
 
@@ -574,6 +596,25 @@ Refinement mode: ancestor_reconcile
         planned_run_id = (
             str(refactor_work_item.get("planned_run_id", "")).strip() if refactor_work_item else ""
         )
+        live_child_ids = refactor_work_item.get("live_child_ids", []) if refactor_work_item else []
+        accepted_child_ids = (
+            refactor_work_item.get("accepted_child_ids", []) if refactor_work_item else []
+        )
+        live_children_text = ", ".join(
+            str(item).strip() for item in live_child_ids if str(item).strip()
+        )
+        accepted_children_text = ", ".join(
+            str(item).strip() for item in accepted_child_ids if str(item).strip()
+        )
+        retrospective_section = ""
+        if refactor_work_item and refactor_work_item.get("retrospective_target"):
+            retrospective_section = f"""
+- This target already sits inside a live graph region with existing child specs.
+- Preserve stable IDs and lineage for surviving child specs whenever possible.
+- Accepted child work must remain traceable and must not be silently invalidated.
+- Live child spec IDs: {live_children_text or "(none)"}
+- Accepted child spec IDs: {accepted_children_text or "(none)"}
+""".rstrip()
         mode_section = f"""
 
 Refinement mode: split_refactor_proposal
@@ -587,6 +628,7 @@ Refinement mode: split_refactor_proposal
 - Every current parent acceptance criterion must be mapped exactly once
   to parent_retained or one child slot.
 - Cross-cutting acceptance stays on the parent and must not be duplicated across children.
+{retrospective_section}
 - Suggested child IDs and paths are advisory snapshot outputs only;
   they do not reserve canonical IDs.
 - If the split cannot be proposed cleanly without governance change, end with RUN_OUTCOME: escalate.
@@ -829,7 +871,13 @@ def validate_split_refactor_target(node: SpecNode) -> list[str]:
     return errors
 
 
-def build_split_refactor_work_item(node: SpecNode) -> dict[str, Any]:
+def build_split_refactor_work_item(
+    node: SpecNode,
+    specs: list[SpecNode] | None = None,
+) -> dict[str, Any]:
+    local_specs = specs or load_specs()
+    live_child_ids = [child.id for child in refining_child_specs(node, local_specs) if child.id]
+    accepted_child_ids = accepted_child_spec_ids(node, local_specs)
     proposal_type = "refactor_proposal"
     proposal_id = f"{proposal_type}::{node.id}::{SPLIT_REFACTOR_SIGNAL}"
     artifact_relpath = proposal_artifact_relpath(
@@ -848,6 +896,9 @@ def build_split_refactor_work_item(node: SpecNode) -> dict[str, Any]:
         "execution_policy": "emit_proposal",
         "target_spec_id": node.id,
         "proposal_artifact_relpath": artifact_relpath,
+        "retrospective_target": bool(live_child_ids),
+        "live_child_ids": live_child_ids,
+        "accepted_child_ids": accepted_child_ids,
     }
 
 
@@ -1086,6 +1137,12 @@ def observe_graph_health(
     if reconciled_node is not None:
         local_atomicity = validate_atomicity(reconciled_node)
         if local_atomicity:
+            live_child_ids = [
+                child.id
+                for child in refining_child_specs(reconciled_node, worktree_specs)
+                if child.id
+            ]
+            accepted_child_ids = accepted_child_spec_ids(reconciled_node, worktree_specs)
             observations.append(
                 {
                     "kind": "oversized_spec",
@@ -1093,8 +1150,23 @@ def observe_graph_health(
                     "details": local_atomicity,
                 }
             )
-            signals.append("oversized_spec")
-            recommended_actions.append("split_or_narrow_spec")
+            if live_child_ids:
+                observations.append(
+                    {
+                        "kind": RETROSPECTIVE_REFACTOR_SIGNAL,
+                        "spec_id": source_node.id,
+                        "details": {
+                            "atomicity": local_atomicity,
+                            "live_child_ids": live_child_ids,
+                            "accepted_child_ids": accepted_child_ids,
+                        },
+                    }
+                )
+                signals.append(RETROSPECTIVE_REFACTOR_SIGNAL)
+                recommended_actions.append("propose_retrospective_refactor")
+            else:
+                signals.append("oversized_spec")
+                recommended_actions.append("split_or_narrow_spec")
 
         missing_dependencies = [
             dep_id for dep_id in reconciled_node.depends_on if dep_id not in index
@@ -1370,6 +1442,7 @@ def classify_refactor_work_item(signal: str) -> str:
 def default_action_for_signal(signal: str) -> str:
     return {
         "oversized_spec": "split_or_narrow_spec",
+        RETROSPECTIVE_REFACTOR_SIGNAL: "propose_retrospective_refactor",
         "missing_dependency_target": "repair_canonical_dependencies",
         "repeated_split_required_candidate": "review_decomposition_policy",
         "stalled_maturity_candidate": "review_refinement_strategy",
@@ -1422,6 +1495,8 @@ def refactor_execution_policy(
         proposal_items=proposal_items,
     ):
         return "defer_to_active_proposal"
+    if signal == RETROSPECTIVE_REFACTOR_SIGNAL:
+        return "emit_proposal"
     return "direct_graph_update"
 
 
@@ -1431,7 +1506,9 @@ def classify_proposal_type(work_item_type: str) -> str:
     return "refactor_proposal"
 
 
-def proposal_threshold_for_work_item_type(work_item_type: str) -> int:
+def proposal_threshold_for_signal(*, signal: str, work_item_type: str) -> int:
+    if signal == RETROSPECTIVE_REFACTOR_SIGNAL:
+        return 1
     if work_item_type == "governance_proposal":
         return 1
     return RECURRING_REFACTOR_PROPOSAL_THRESHOLD
@@ -1551,11 +1628,17 @@ def build_proposal_queue_items(
         occurrence_count = len(supporting_run_ids) + 1
         if run_id not in supporting_run_ids:
             supporting_run_ids.append(run_id)
-        threshold = proposal_threshold_for_work_item_type(work_item_type)
+        threshold = proposal_threshold_for_signal(signal=signal_name, work_item_type=work_item_type)
         if occurrence_count < threshold:
             continue
 
         proposal_type = classify_proposal_type(work_item_type)
+        if work_item_type == "governance_proposal":
+            trigger = "governance_class_signal"
+        elif signal_name == RETROSPECTIVE_REFACTOR_SIGNAL:
+            trigger = "retrospective_signal"
+        else:
+            trigger = "recurring_signal"
         items.append(
             {
                 "id": f"{proposal_type}::{source_spec_id}::{signal_name}",
@@ -1564,11 +1647,7 @@ def build_proposal_queue_items(
                 "signal": signal_name,
                 "recommended_action": default_action_for_signal(signal_name),
                 "status": "proposed",
-                "trigger": (
-                    "governance_class_signal"
-                    if work_item_type == "governance_proposal"
-                    else "recurring_signal"
-                ),
+                "trigger": trigger,
                 "occurrence_count": occurrence_count,
                 "threshold": threshold,
                 "supporting_run_ids": supporting_run_ids,

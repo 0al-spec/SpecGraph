@@ -525,6 +525,36 @@ def test_pick_next_work_item_defers_graph_refactor_when_active_proposal_exists(
     assert work_item is None
 
 
+def test_pick_next_work_item_does_not_auto_execute_retrospective_refactor_candidate(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    queue_path = repo_fixture / "runs" / "refactor_queue.json"
+    queue_path.write_text(
+        json.dumps(
+            [
+                {
+                    "id": "graph_refactor::SG-SPEC-0001::retrospective_refactor_candidate",
+                    "work_item_type": "graph_refactor",
+                    "spec_id": "SG-SPEC-0001",
+                    "signal": "retrospective_refactor_candidate",
+                    "recommended_action": "propose_retrospective_refactor",
+                    "status": "proposed",
+                    "source_run_id": "RUN-1",
+                    "execution_policy": "emit_proposal",
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    node, work_item = supervisor_module.pick_next_work_item(supervisor_module.load_specs())
+
+    assert node is not None
+    assert node.id == "SG-SPEC-0001"
+    assert work_item is None
+
+
 def test_observe_graph_health_reports_reflective_signals(
     supervisor_module: object,
 ) -> None:
@@ -595,6 +625,60 @@ def test_observe_graph_health_does_not_mark_source_oversized_for_child_atomicity
     )
 
 
+def test_observe_graph_health_emits_retrospective_signal_for_live_oversized_parent(
+    supervisor_module: object,
+) -> None:
+    spec_node = supervisor_module.SpecNode
+    source = spec_node(
+        path=Path("/tmp/source.yaml"),
+        data={
+            "id": "SG-SPEC-9999",
+            "title": "Live Parent",
+            "kind": "spec",
+            "status": "specified",
+            "maturity": 0.4,
+            "depends_on": [],
+            "acceptance": [f"criterion-{i}" for i in range(6)],
+            "prompt": "Refine one bounded slice of this node.",
+        },
+    )
+    child = spec_node(
+        path=Path("/tmp/child.yaml"),
+        data={
+            "id": "SG-SPEC-1000",
+            "title": "Existing Child",
+            "kind": "spec",
+            "status": "specified",
+            "maturity": 0.5,
+            "depends_on": [],
+            "relates_to": [],
+            "refines": ["SG-SPEC-9999"],
+            "acceptance": ["child-kept"],
+            "acceptance_evidence": ["accepted"],
+            "prompt": "Existing accepted child.",
+        },
+    )
+
+    graph_health = supervisor_module.observe_graph_health(
+        source_node=source,
+        worktree_specs=[source, child],
+        reconciliation={"semantic_dependencies_resolved": True},
+        atomicity_errors=[],
+        outcome="done",
+    )
+
+    assert supervisor_module.RETROSPECTIVE_REFACTOR_SIGNAL in graph_health["signals"]
+    assert "oversized_spec" not in graph_health["signals"]
+    assert "propose_retrospective_refactor" in graph_health["recommended_actions"]
+    retrospective = next(
+        observation
+        for observation in graph_health["observations"]
+        if observation["kind"] == supervisor_module.RETROSPECTIVE_REFACTOR_SIGNAL
+    )
+    assert retrospective["details"]["live_child_ids"] == ["SG-SPEC-1000"]
+    assert retrospective["details"]["accepted_child_ids"] == ["SG-SPEC-1000"]
+
+
 def test_update_refactor_queue_writes_classified_work_items(
     supervisor_module: object,
     repo_fixture: Path,
@@ -630,6 +714,37 @@ def test_update_refactor_queue_writes_classified_work_items(
     assert repeated_split["work_item_type"] == "governance_proposal"
     assert repeated_split["recommended_action"] == "review_decomposition_policy"
     assert repeated_split["execution_policy"] == "emit_proposal"
+
+
+def test_update_refactor_queue_marks_retrospective_candidate_proposal_first(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    graph_health = {
+        "source_spec_id": "SG-SPEC-9999",
+        "observations": [
+            {
+                "kind": supervisor_module.RETROSPECTIVE_REFACTOR_SIGNAL,
+                "details": {
+                    "atomicity": ["too many acceptance criteria"],
+                    "live_child_ids": ["SG-SPEC-1000"],
+                    "accepted_child_ids": ["SG-SPEC-1000"],
+                },
+            }
+        ],
+        "signals": [supervisor_module.RETROSPECTIVE_REFACTOR_SIGNAL],
+        "recommended_actions": ["propose_retrospective_refactor"],
+    }
+
+    path = supervisor_module.update_refactor_queue(graph_health=graph_health, run_id="RUN-1")
+    items = json.loads(path.read_text(encoding="utf-8"))
+
+    assert len(items) == 1
+    item = items[0]
+    assert item["work_item_type"] == "graph_refactor"
+    assert item["signal"] == supervisor_module.RETROSPECTIVE_REFACTOR_SIGNAL
+    assert item["recommended_action"] == "propose_retrospective_refactor"
+    assert item["execution_policy"] == "emit_proposal"
 
 
 def test_update_refactor_queue_defers_direct_execution_when_active_proposal_exists(
@@ -734,6 +849,42 @@ def test_update_proposal_queue_requires_recurrence_for_refactor_proposal(
     assert proposal["occurrence_count"] == 2
     assert proposal["threshold"] == 2
     assert proposal["supporting_run_ids"] == ["RUN-1", "RUN-2"]
+    assert proposal["execution_policy"] == "emit_proposal"
+
+
+def test_update_proposal_queue_emits_retrospective_refactor_proposal_immediately(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    graph_health = {
+        "source_spec_id": "SG-SPEC-9999",
+        "observations": [
+            {
+                "kind": supervisor_module.RETROSPECTIVE_REFACTOR_SIGNAL,
+                "details": {
+                    "atomicity": ["too many acceptance criteria"],
+                    "live_child_ids": ["SG-SPEC-1000"],
+                    "accepted_child_ids": ["SG-SPEC-1000"],
+                },
+            }
+        ],
+        "signals": [supervisor_module.RETROSPECTIVE_REFACTOR_SIGNAL],
+        "recommended_actions": ["propose_retrospective_refactor"],
+    }
+
+    _path, items = supervisor_module.update_proposal_queue(
+        graph_health=graph_health,
+        run_id="RUN-1",
+    )
+
+    assert len(items) == 1
+    proposal = items[0]
+    assert proposal["proposal_type"] == "refactor_proposal"
+    assert proposal["signal"] == supervisor_module.RETROSPECTIVE_REFACTOR_SIGNAL
+    assert proposal["trigger"] == "retrospective_signal"
+    assert proposal["occurrence_count"] == 1
+    assert proposal["threshold"] == 1
+    assert proposal["supporting_run_ids"] == ["RUN-1"]
     assert proposal["execution_policy"] == "emit_proposal"
 
 
@@ -919,6 +1070,57 @@ def test_build_prompt_includes_split_refactor_proposal_guidance(
     assert "source_run_ids must include the current run ID above." in prompt
     assert "Current parent acceptance criteria:" in prompt
     assert "- [1] criterion-1" in prompt
+
+
+def test_build_prompt_includes_retrospective_split_preservation_guidance(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    parent_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    parent = supervisor_module.get_yaml_module().safe_load(parent_path.read_text(encoding="utf-8"))
+    parent["title"] = "Calculator Overview"
+    parent["prompt"] = "Keep this parent as overview and split detailed concerns."
+    parent["acceptance"] = [f"criterion-{i}" for i in range(1, 7)]
+    parent_path.write_text(json.dumps(parent), encoding="utf-8")
+
+    child_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0002.yaml"
+    child_path.write_text(
+        json.dumps(
+            {
+                "id": "SG-SPEC-0002",
+                "title": "Existing Child",
+                "kind": "spec",
+                "status": "specified",
+                "maturity": 0.4,
+                "depends_on": [],
+                "relates_to": [],
+                "refines": ["SG-SPEC-0001"],
+                "inputs": [],
+                "outputs": ["specs/nodes/SG-SPEC-0002.yaml"],
+                "allowed_paths": ["specs/nodes/SG-SPEC-0002.yaml"],
+                "acceptance": ["child-kept"],
+                "acceptance_evidence": ["accepted child work"],
+                "prompt": "Preserve accepted child work.",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    specs = supervisor_module.load_specs()
+    node = next(spec for spec in specs if spec.id == "SG-SPEC-0001")
+    work_item = supervisor_module.build_split_refactor_work_item(node, specs)
+    work_item["planned_run_id"] = "RUN-1"
+    prompt = supervisor_module.build_prompt(node, work_item)
+
+    assert work_item["retrospective_target"] is True
+    assert work_item["live_child_ids"] == ["SG-SPEC-0002"]
+    assert work_item["accepted_child_ids"] == ["SG-SPEC-0002"]
+    assert (
+        "This target already sits inside a live graph region with existing child specs." in prompt
+    )
+    assert "Accepted child work must remain traceable" in prompt
+    assert "Live child spec IDs: SG-SPEC-0002" in prompt
+    assert "Accepted child spec IDs: SG-SPEC-0002" in prompt
 
 
 def test_main_creates_review_gate_and_provenance_metadata(
