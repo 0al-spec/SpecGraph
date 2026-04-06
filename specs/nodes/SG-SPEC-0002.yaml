@@ -4,8 +4,7 @@ kind: spec
 status: specified
 maturity: 0.57
 depends_on: []
-relates_to:
-- SG-SPEC-0001
+relates_to: []
 refines:
 - SG-SPEC-0001
 inputs:

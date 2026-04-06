@@ -17,11 +17,20 @@
 12. [done] Add a derived `refactor_queue` artifact that can schedule graph refactors separately from ordinary spec refinement runs.
 13. [done] Introduce a distinct work-item model in `supervisor`: `spec_refine`, `graph_refactor`, and `governance_proposal`.
 14. [done] Define how local graph refactors can be auto-executed while governance/runtime changes still require a review gate.
-15. [inprogress] Add proposal generation for recurring graph pathologies so repeated signals produce explicit refactor or policy proposals instead of ad hoc changes.
-16. Define the rules for graph refactoring passes that split oversized specs into multiple atomic child specs while preserving stable parent terminology and lineage.
-17. Add support for retrospective spec refactoring after a graph has already grown suboptimally, not only at creation time.
-18. Specify how `supervisor` may update graph structure directly versus when it must emit a proposal for a human-reviewed spec change.
-19. Introduce metric-driven signals later, using SIB, Specification Verifiability, Process Observability, Structural Observability, and related measures as derived inputs rather than canonical facts.
-20. Define how metric thresholds become proposals first, and only later become normative policy in SpecGraph after human approval.
-21. Add viewer-facing overlays or reports for graph health so oversized or weakly linked regions are visible without reading raw run logs.
-22. Add longitudinal graph-health reporting so repeated structural problems can be seen as trends rather than isolated failures.
+15. [done] Add proposal generation for recurring graph pathologies so repeated signals produce explicit refactor or policy proposals instead of ad hoc changes.
+16. [done] Define the rules for graph refactoring passes that split oversized specs into multiple atomic child specs while preserving stable parent terminology and lineage.
+17. [inprogress] Add support for retrospective spec refactoring after a graph has already grown suboptimally, not only at creation time.
+18. [done] Specify how `supervisor` may update graph structure directly versus when it must emit a proposal for a human-reviewed spec change.
+19. [done] Add an explicit application path for approved split proposals so reviewed `split_oversized_spec` artifacts can be deterministically materialized into canonical parent/child spec files.
+20. Introduce metric-driven signals later, using SIB, Specification Verifiability, Process Observability, Structural Observability, and related measures as derived inputs rather than canonical facts.
+21. Define how metric thresholds become proposals first, and only later become normative policy in SpecGraph after human approval.
+22. Add viewer-facing overlays or reports for graph health so oversized or weakly linked regions are visible without reading raw run logs.
+23. Add longitudinal graph-health reporting so repeated structural problems can be seen as trends rather than isolated failures.
+
+## Supervisor Runtime Hardening
+
+24. [done] Add an explicit child executor runtime profile for `codex exec` so nested runs do not implicitly inherit global user config for `approval_policy`, `sandbox_mode`, MCP startup, or optional runtime features.
+25. [done] Make nested `codex exec` startup deterministic by disabling or minimizing non-essential runtime features for spec refinement runs (for example shell snapshots and unrelated MCP servers).
+26. [done] Isolate or reset child executor state so nested runs do not depend on the operator's long-lived `~/.codex` state DB and migration history.
+27. [inprogress] Classify executor-environment failures separately from spec-quality failures so transport, MCP, sandbox, or state-runtime problems do not masquerade as graph-health issues.
+28. Add a documented bootstrap-runtime troubleshooting path for `supervisor` runs, including expected child executor config, fallback worktree mode, and interpretation of nested executor failures.

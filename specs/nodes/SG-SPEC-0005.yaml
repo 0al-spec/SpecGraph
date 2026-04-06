@@ -1,0 +1,127 @@
+id: SG-SPEC-0005
+title: SpecGraph - Retrospective Spec Refactoring Passes
+kind: spec
+status: specified
+maturity: 0.52
+depends_on: []
+relates_to:
+- SG-SPEC-0002
+- SG-SPEC-0004
+refines:
+- SG-SPEC-0003
+inputs:
+- specs/nodes/SG-SPEC-0002.yaml
+- specs/nodes/SG-SPEC-0003.yaml
+- specs/nodes/SG-SPEC-0004.yaml
+- tasks.md
+- tools/supervisor.py
+outputs:
+- specs/nodes/SG-SPEC-0005.yaml
+allowed_paths:
+- specs/nodes/SG-SPEC-0005.yaml
+acceptance:
+- Defines retrospective graph refactoring as a bounded pass over already-existing suboptimal spec regions,
+  not only during creation-time refinement
+- Defines how an existing oversized or weakly structured parent spec can be selected for retrospective
+  split or narrowing without invalidating stable IDs, lineage, or already accepted child work
+- Defines the boundary between local retrospective refactor, upstream ancestor reconciliation, and governance-class
+  restructuring of the graph
+- Defines which derived artifacts, proposals, and review gates must exist before retrospective refactors
+  can be applied to live graph regions
+- Remains implementation-agnostic about metric formulas, batch scheduling strategy, and viewer UX for
+  refactor waves
+acceptance_evidence:
+- criterion: Defines retrospective graph refactoring as a bounded pass over already-existing suboptimal
+    spec regions, not only during creation-time refinement
+  evidence: 'specification.terminology defines retrospective_refactor_pass and live_graph_region, while
+    specification.retrospective_policy.target_selection states that retrospective work starts from one
+    explicit target inside an already-existing live graph region rather than only from new-node creation.
+
+    '
+- criterion: Defines how an existing oversized or weakly structured parent spec can be selected for retrospective
+    split or narrowing without invalidating stable IDs, lineage, or already accepted child work
+  evidence: 'specification.retrospective_policy.target_selection allows candidate selection from graph-health
+    signals, approved proposals, or explicit operator intent. specification.retrospective_policy.safety
+    preserves stable IDs for surviving specs, requires lineage preservation, and protects accepted_child_work
+    from silent invalidation.
+
+    '
+- criterion: Defines the boundary between local retrospective refactor, upstream ancestor reconciliation,
+    and governance-class restructuring of the graph
+  evidence: 'specification.retrospective_policy.boundaries distinguishes bounded parent-centric retrospective
+    refactor from narrow ancestor reconciliation and from governance-class restructuring. The same section
+    requires escalation into proposal/governance flow when the needed restructuring exceeds one bounded
+    local pass.
+
+    '
+- criterion: Defines which derived artifacts, proposals, and review gates must exist before retrospective
+    refactors can be applied to live graph regions
+  evidence: 'specification.retrospective_policy.required_artifacts requires graph-health signals, explicit
+    reviewable proposal artifacts, and approval-compatible staging before retrospective writeback. It
+    also states that applying retrospective refactor to live graph regions requires an artifact describing
+    intended structure, lineage preservation, and downstream reconciliation scope.
+
+    '
+- criterion: Remains implementation-agnostic about metric formulas, batch scheduling strategy, and viewer
+    UX for refactor waves
+  evidence: 'specification.scope.out explicitly excludes metric formulas, scoring weights, batch refactor
+    orchestration, viewer UX, and fully automatic governance rewrites. The spec governs retrospective
+    refactor policy boundaries, not the final runtime or visualization implementation.
+
+    '
+prompt: Define how SpecGraph should retrospectively refactor already-grown parts of the graph when existing
+  specs are too broad or structurally poor, without letting supervisor improvise broad rewrites across
+  live canonical subgraphs.
+specification:
+  objective: Define the first bounded policy for retrospective graph refactoring over existing live spec
+    regions after the graph has already grown suboptimally.
+  scope:
+    in:
+    - Retrospective split or narrowing of already-existing oversized or weakly structured specs
+    - Selection and staging of one bounded retrospective refactor target inside a live graph
+    - Coordination between retrospective local refactor, ancestor reconciliation, and proposal precedence
+    - Review and safety requirements before applying retrospective structural changes
+    out:
+    - Metric formulas or scoring weights
+    - Batch refactor orchestration across many targets at once
+    - Viewer UX for visualizing retrospective refactor waves
+    - Fully automatic governance or ontology rewrites
+  terminology:
+    retrospective_refactor_pass: A bounded graph-refactoring pass aimed at improving an already-existing
+      live graph region whose structure has become suboptimal after earlier growth.
+    live_graph_region: A connected set of current canonical spec nodes that already participate in active
+      refinement chains, proposals, or accepted graph structure.
+    refactor_wave: An ordered sequence of bounded retrospective refactor passes and reconciliations over
+      related live graph regions.
+    accepted_child_work: Previously created or approved child specs whose stable IDs, lineage, and accepted
+      refinement outcomes must not be silently invalidated by a later retrospective pass.
+  retrospective_policy:
+    target_selection:
+    - Retrospective refactoring begins from one explicit target inside a live graph region rather than
+      an unrestricted batch rewrite.
+    - Candidate targets may arise from graph-health signals, approved proposals, or explicit operator
+      intent, but the selected pass remains bounded to one primary parent spec at a time.
+    safety:
+    - A retrospective pass must preserve stable IDs for surviving parent and child specs unless a separate
+      governance-class change explicitly authorizes supersession or replacement.
+    - The pass must preserve or explicitly restate lineage so accepted_child_work remains traceable after
+      restructuring.
+    - Local retrospective refactor must not silently absorb governance-class ontology or policy changes.
+    boundaries:
+    - A local retrospective refactor remains parent-centric and bounded even when it triggers follow-up
+      reconciliation in nearby ancestors.
+    - Upstream ancestor reconciliation after retrospective change is limited to links, blockers, evidence,
+      and status-readiness; it is not itself a license for a second broad restructuring pass.
+    - If the desired restructuring would merge branches, replace stable IDs, or redefine ontology/policy,
+      the work is governance-class and must move into proposal/review flow rather than local direct application.
+    coordination:
+    - Local retrospective refactor may trigger narrow ancestor reconciliation when upstream nodes become
+      semantically unlocked or structurally stale after the change.
+    - If the required restructuring exceeds one bounded parent-centric pass, the work must decompose into
+      multiple explicit retrospective steps or escalate into proposal/governance flow.
+    required_artifacts:
+    - Derived graph-health signals and explicit proposals remain the first-class trigger artifacts before
+      live retrospective writeback.
+    - Applying retrospective refactor to a live graph region requires an explicit reviewable artifact
+      that describes intended parent/child structure, lineage preservation, and downstream reconciliation
+      scope.
