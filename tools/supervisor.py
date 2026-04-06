@@ -86,6 +86,25 @@ CHILD_EXECUTOR_REASONING_EFFORT = "medium"
 CHILD_EXECUTOR_APPROVAL_POLICY = "never"
 CHILD_EXECUTOR_SANDBOX = "workspace-write"
 CHILD_EXECUTOR_DISABLED_FEATURES = ("shell_snapshot", "multi_agent")
+SYNC_STRIPPED_SPEC_KEYS = {
+    "RUN_OUTCOME",
+    "BLOCKER",
+    "gate_state",
+    "proposed_status",
+    "proposed_maturity",
+    "required_human_action",
+    "last_outcome",
+    "last_blocker",
+    "last_run_id",
+    "last_exit_code",
+    "last_changed_files",
+    "last_run_at",
+    "last_worktree_path",
+    "last_branch",
+    "last_validator_results",
+    "last_reconciliation",
+    "last_errors",
+}
 DEFAULT_CODEX_HOME = Path(os.environ.get("CODEX_HOME", "~/.codex")).expanduser()
 
 STATUS_PROGRESSION: dict[str, str] = {
@@ -102,6 +121,14 @@ def get_yaml_module() -> ModuleType:
     if yaml is None:
         raise RuntimeError("Missing dependency: pyyaml. Install with: pip install pyyaml")
     return yaml
+
+
+def dump_yaml_text(data: dict[str, Any]) -> str:
+    yaml_module = get_yaml_module()
+    rendered = yaml_module.safe_dump(data, sort_keys=False, allow_unicode=True)
+    if not rendered.endswith("\n"):
+        rendered += "\n"
+    return rendered
 
 
 @dataclass
@@ -718,6 +745,7 @@ Rules:
 - Do not edit files outside allowed paths.
 - Keep acceptance_evidence aligned 1:1 with acceptance criteria.
 - If blocked, stop and explain blocker clearly.
+- Print RUN_OUTCOME and BLOCKER to stdout only; never write them into edited files.
 - End with exactly two machine-readable lines:
   RUN_OUTCOME: done|retry|split_required|blocked|escalate
   BLOCKER: <text or none>
@@ -2303,13 +2331,36 @@ def sync_current_node_into_worktree(node: SpecNode, worktree_path: Path) -> Path
     return worktree_node_path
 
 
+def sanitize_spec_sync_text(text: str) -> str:
+    """Remove runtime-only contamination before syncing a spec back to root.
+
+    Child agents edit draft spec files inside an isolated worktree, but runtime
+    markers such as RUN_OUTCOME/BLOCKER must never become canonical spec data.
+    The gatekeeper therefore strips reserved runtime keys and re-renders the file
+    canonically before the root copy is updated.
+    """
+    yaml_module = get_yaml_module()
+    data = yaml_module.safe_load(text) or {}
+    if not isinstance(data, dict):
+        raise ValueError("top-level YAML document must be a mapping")
+
+    cleaned = dict(data)
+    for key in SYNC_STRIPPED_SPEC_KEYS:
+        cleaned.pop(key, None)
+    return dump_yaml_text(cleaned)
+
+
 def sync_files_from_worktree(worktree_path: Path, rel_paths: list[str]) -> None:
     for rel_path in rel_paths:
         src = worktree_path / rel_path
         dst = ROOT / rel_path
         if src.exists() and src.is_file():
             dst.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(src, dst)
+            if is_spec_node_path(rel_path):
+                sanitized_text = sanitize_spec_sync_text(src.read_text(encoding="utf-8"))
+                dst.write_text(sanitized_text, encoding="utf-8")
+            else:
+                shutil.copy2(src, dst)
             continue
         if dst.exists() and dst.is_file():
             dst.unlink()
@@ -3181,16 +3232,15 @@ def _process_one_spec(
         node.reload()
 
     if success:
+        allowed_changes = select_sync_paths(node.allowed_paths, changed)
+        sync_files_from_worktree(worktree_path, allowed_changes)
+        node.reload()
         proposed_maturity = (
             None if is_graph_refactor_run else min(1.0, round(node.maturity + 0.2, 2))
         )
         node.data["proposed_status"] = proposed_status
         node.data["proposed_maturity"] = proposed_maturity
         if auto_approve:
-            allowed_changes = select_sync_paths(node.allowed_paths, changed)
-            sync_files_from_worktree(worktree_path, allowed_changes)
-            # Preserve approved content produced in the isolated worktree.
-            node.reload()
             if proposed_status:
                 node.data["status"] = proposed_status
             node.data["maturity"] = proposed_maturity

@@ -245,6 +245,30 @@ def test_write_latest_summary_includes_executor_environment_fields(
     assert "- required_human_action: repair executor environment and rerun supervisor" in summary
 
 
+def test_sanitize_spec_sync_text_removes_runtime_only_keys(supervisor_module: object) -> None:
+    source = """id: SG-SPEC-9999
+title: Draft
+kind: spec
+status: outlined
+maturity: 0.1
+prompt: Keep this change.
+RUN_OUTCOME: done
+BLOCKER: none
+gate_state: blocked
+last_run_id: old-run
+"""
+
+    sanitized = supervisor_module.sanitize_spec_sync_text(source)
+    data = supervisor_module.get_yaml_module().safe_load(sanitized)
+
+    assert data["id"] == "SG-SPEC-9999"
+    assert data["prompt"] == "Keep this change."
+    assert "RUN_OUTCOME" not in data
+    assert "BLOCKER" not in data
+    assert "gate_state" not in data
+    assert "last_run_id" not in data
+
+
 def make_valid_split_proposal(node_data: dict[str, object], run_id: str) -> dict[str, object]:
     spec_id = str(node_data["id"])
     acceptance = [str(item) for item in node_data.get("acceptance", [])]
@@ -1147,7 +1171,10 @@ def test_main_creates_review_gate_and_provenance_metadata(
         data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
         data["acceptance_evidence"] = ["criterion satisfied by refined section"]
         data["prompt"] = "Updated by Codex"
-        node_path.write_text(json.dumps(data), encoding="utf-8")
+        node_path.write_text(
+            supervisor_module.dump_yaml_text(data) + "RUN_OUTCOME: done\nBLOCKER: none\n",
+            encoding="utf-8",
+        )
         return subprocess.CompletedProcess(
             args=["codex"],
             returncode=0,
@@ -1163,6 +1190,12 @@ def test_main_creates_review_gate_and_provenance_metadata(
     assert updated["status"] == "outlined"
     assert updated["gate_state"] == "review_pending"
     assert updated["proposed_status"] == "specified"
+    assert updated["prompt"] == "Updated by Codex"
+    assert updated["acceptance_evidence"] == ["criterion satisfied by refined section"]
+    assert "RUN_OUTCOME" not in updated
+    assert "BLOCKER" not in updated
+    assert "RUN_OUTCOME:" not in node_path.read_text(encoding="utf-8")
+    assert "BLOCKER:" not in node_path.read_text(encoding="utf-8")
     assert updated["last_outcome"] == "done"
     assert updated["last_branch"] == "codex/sg-spec-0001/test"
 
