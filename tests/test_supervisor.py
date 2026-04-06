@@ -1018,6 +1018,50 @@ def test_main_blocks_executor_environment_failures_without_graph_health_side_eff
     assert not (repo_fixture / "runs" / "refactor_queue.json").exists()
 
 
+def test_main_does_not_treat_websocket_fallback_warning_as_primary_transport_failure(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    worktree = make_fake_worktree(repo_fixture)
+    monkeypatch.setattr(
+        supervisor_module,
+        "create_isolated_worktree",
+        lambda _node_id: (worktree, "codex/sg-spec-0001/test"),
+    )
+
+    changed_snapshots = [[], []]
+    monkeypatch.setattr(
+        supervisor_module,
+        "git_changed_files",
+        lambda _cwd=None: changed_snapshots.pop(0),
+    )
+
+    def fake_executor(_node: object, _worktree_path: Path) -> subprocess.CompletedProcess[str]:
+        return subprocess.CompletedProcess(
+            args=["codex"],
+            returncode=1,
+            stdout="RUN_OUTCOME: blocked\nBLOCKER: missing upstream spec\n",
+            stderr="warning: falling back from websockets to https transport\n",
+        )
+
+    exit_code = supervisor_module.main(executor=fake_executor)
+    assert exit_code == 1
+
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    updated = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    assert updated["gate_state"] == "blocked"
+    assert updated["required_human_action"] == "resolve blocker"
+
+    run_logs = sorted((repo_fixture / "runs").glob("*-SG-SPEC-*.json"))
+    assert len(run_logs) == 1
+    payload = json.loads(run_logs[0].read_text(encoding="utf-8"))
+    assert payload["executor_environment"]["issues"] == []
+    assert payload["executor_environment"]["primary_failure"] is False
+    assert payload["graph_health"]["source_spec_id"] == "SG-SPEC-0001"
+    assert payload["validator_results"]["executor_environment"] is True
+
+
 def test_main_selects_graph_refactor_work_item_before_default_gap(
     supervisor_module: object,
     repo_fixture: Path,

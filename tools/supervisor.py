@@ -1202,7 +1202,6 @@ def classify_executor_environment(stderr: str) -> dict[str, Any]:
                 "stream disconnected before completion",
                 "error sending request for url",
                 "failed to lookup address information",
-                "falling back from websockets to https transport",
                 "unexpected status 401 unauthorized",
                 "http error:",
             )
