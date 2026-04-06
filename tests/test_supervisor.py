@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import io
 import json
 import shutil
 import subprocess
@@ -93,6 +94,126 @@ def make_fake_worktree(root: Path) -> Path:
     (worktree / "specs").mkdir(parents=True, exist_ok=True)
     shutil.copytree(root / "specs" / "nodes", worktree / "specs" / "nodes")
     return worktree
+
+
+def test_create_isolated_worktree_falls_back_to_sandbox_copy_on_ref_lock_error(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fake_run(*_args: object, **_kwargs: object) -> subprocess.CompletedProcess[str]:
+        return subprocess.CompletedProcess(
+            args=["git", "worktree", "add"],
+            returncode=128,
+            stdout="",
+            stderr=(
+                "fatal: cannot lock ref 'refs/heads/codex/test': "
+                "Unable to create "
+                "'/tmp/repo/.git/refs/heads/codex/test.lock': "
+                "Operation not permitted"
+            ),
+        )
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+
+    worktree_path, branch = supervisor_module.create_isolated_worktree("SG-SPEC-0001")
+
+    assert branch.startswith("sandbox/sg-spec-0001/")
+    assert worktree_path.is_dir()
+    assert (worktree_path / "AGENTS.md").exists()
+    assert (worktree_path / "specs" / "nodes" / "SG-SPEC-0001.yaml").exists()
+
+
+def test_build_codex_exec_command_uses_explicit_child_runtime_profile(
+    supervisor_module: object,
+) -> None:
+    cmd = supervisor_module.build_codex_exec_command(prompt="Refine one bounded spec.")
+
+    assert cmd[:2] == ["codex", "exec"]
+    assert "--model" in cmd
+    assert supervisor_module.CHILD_EXECUTOR_MODEL in cmd
+    assert "--sandbox" in cmd
+    assert supervisor_module.CHILD_EXECUTOR_SANDBOX in cmd
+    assert "--ephemeral" in cmd
+    assert "--disable" in cmd
+    assert "shell_snapshot" in cmd
+    assert "multi_agent" in cmd
+    assert f'approval_policy="{supervisor_module.CHILD_EXECUTOR_APPROVAL_POLICY}"' in cmd
+    assert f'model_reasoning_effort="{supervisor_module.CHILD_EXECUTOR_REASONING_EFFORT}"' in cmd
+    assert cmd[-1] == "Refine one bounded spec."
+
+
+def test_create_child_codex_home_writes_minimal_config_and_copies_auth(
+    supervisor_module: object,
+    tmp_path: Path,
+) -> None:
+    source_home = tmp_path / "source-codex-home"
+    source_home.mkdir()
+    (source_home / "auth.json").write_text('{"token":"secret"}', encoding="utf-8")
+
+    child_home = supervisor_module.create_child_codex_home(source_codex_home=source_home)
+    try:
+        config_text = (child_home / "config.toml").read_text(encoding="utf-8")
+        assert 'model = "gpt-5.4"' in config_text
+        assert 'approval_policy = "never"' in config_text
+        assert 'sandbox_mode = "workspace-write"' in config_text
+        assert "shell_snapshot = false" in config_text
+        assert "multi_agent = false" in config_text
+        assert (child_home / "auth.json").read_text(encoding="utf-8") == '{"token":"secret"}'
+    finally:
+        shutil.rmtree(child_home, ignore_errors=True)
+
+
+def test_run_codex_uses_isolated_codex_home(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class FakeProcess:
+        def __init__(self) -> None:
+            self.stdout = io.StringIO("")
+            self.stderr = io.StringIO("")
+
+        def wait(self) -> int:
+            return 0
+
+    captured: dict[str, object] = {}
+
+    def fake_create_child_codex_home(*, source_codex_home: Path = Path()) -> Path:
+        _ = source_codex_home
+        child_home = repo_fixture / ".fake-codex-home"
+        child_home.mkdir(exist_ok=True)
+        return child_home
+
+    def fake_popen(
+        cmd: list[str],
+        *,
+        cwd: Path,
+        env: dict[str, str],
+        stdout: object,
+        stderr: object,
+        text: bool,
+        bufsize: int,
+    ) -> FakeProcess:
+        captured["cmd"] = cmd
+        captured["cwd"] = cwd
+        captured["env"] = env
+        captured["stdout"] = stdout
+        captured["stderr"] = stderr
+        captured["text"] = text
+        captured["bufsize"] = bufsize
+        return FakeProcess()
+
+    monkeypatch.setattr(supervisor_module, "create_child_codex_home", fake_create_child_codex_home)
+    monkeypatch.setattr(subprocess, "Popen", fake_popen)
+
+    node = supervisor_module.load_specs()[0]
+    result = supervisor_module.run_codex(node, repo_fixture)
+
+    assert result.returncode == 0
+    assert captured["cwd"] == repo_fixture
+    assert captured["env"]["CODEX_HOME"] == str(repo_fixture / ".fake-codex-home")
+    assert "--ephemeral" in captured["cmd"]
 
 
 def make_valid_split_proposal(node_data: dict[str, object], run_id: str) -> dict[str, object]:

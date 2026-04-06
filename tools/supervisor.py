@@ -38,10 +38,12 @@ import datetime as dt
 import hashlib
 import inspect
 import json
+import os
 import re
 import shutil
 import subprocess
 import sys
+import tempfile
 import threading
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -78,6 +80,12 @@ BLOCKING_GATE_STATES = {
 }
 ALLOWED_OUTCOMES = {"done", "retry", "split_required", "blocked", "escalate"}
 SPEC_ID_PATTERN = re.compile(r"^SG-SPEC-(\d+)$")
+CHILD_EXECUTOR_MODEL = "gpt-5.4"
+CHILD_EXECUTOR_REASONING_EFFORT = "medium"
+CHILD_EXECUTOR_APPROVAL_POLICY = "never"
+CHILD_EXECUTOR_SANDBOX = "workspace-write"
+CHILD_EXECUTOR_DISABLED_FEATURES = ("shell_snapshot", "multi_agent")
+DEFAULT_CODEX_HOME = Path(os.environ.get("CODEX_HOME", "~/.codex")).expanduser()
 
 STATUS_PROGRESSION: dict[str, str] = {
     "idea": "stub",
@@ -2033,6 +2041,40 @@ def sanitize_for_git(value: str) -> str:
     return slug or "spec"
 
 
+def should_fallback_to_copied_worktree(stderr: str) -> bool:
+    """Return True when branch/worktree creation is blocked by local ref locking.
+
+    This fallback is intentionally narrow: it is used only for permission-style
+    failures while creating refs/worktree metadata in the current environment.
+    Ordinary git errors (for example, not being in a repository) should still
+    surface as hard failures.
+    """
+    message = stderr.lower()
+    return "cannot lock ref" in message or (
+        "operation not permitted" in message
+        and (".git/refs/heads" in message or "refs/heads/" in message)
+    )
+
+
+def create_sandbox_worktree_copy(*, safe_id: str, timestamp: str) -> tuple[Path, str]:
+    """Create an isolated fallback workspace by copying the current repo tree.
+
+    The copy lives under `.worktrees/` but avoids recursive copying of that same
+    directory. It preserves the current working tree content so the executor can
+    still run in isolation even when git cannot create a new branch/worktree.
+    """
+    worktree_path = WORKTREES_DIR / f"{safe_id}-{timestamp}"
+    sandbox_branch = f"sandbox/{safe_id}/{timestamp}"
+    if worktree_path.exists():
+        shutil.rmtree(worktree_path)
+    shutil.copytree(
+        ROOT,
+        worktree_path,
+        ignore=shutil.ignore_patterns(".worktrees"),
+    )
+    return worktree_path, sandbox_branch
+
+
 def create_isolated_worktree(node_id: str) -> tuple[Path, str]:
     timestamp = dt.datetime.now(dt.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     safe_id = sanitize_for_git(node_id)
@@ -2048,6 +2090,8 @@ def create_isolated_worktree(node_id: str) -> tuple[Path, str]:
         check=False,
     )
     if result.returncode != 0:
+        if should_fallback_to_copied_worktree(result.stderr):
+            return create_sandbox_worktree_copy(safe_id=safe_id, timestamp=timestamp)
         raise RuntimeError(result.stderr.strip() or "failed to create worktree")
 
     return worktree_path, branch
@@ -2115,28 +2159,91 @@ def invoke_executor(
     return executor(node, worktree_path)
 
 
+def build_codex_exec_command(
+    *,
+    prompt: str,
+) -> list[str]:
+    """Build a deterministic nested `codex exec` command for spec refinement.
+
+    The supervisor must not silently inherit the operator's global Codex config
+    for approval, sandboxing, or optional runtime features. Nested runs should
+    stay in a narrow, repeatable bootstrap profile tailored for spec work.
+    """
+    cmd = [
+        "codex",
+        "exec",
+        "--model",
+        CHILD_EXECUTOR_MODEL,
+        "--sandbox",
+        CHILD_EXECUTOR_SANDBOX,
+        "--ephemeral",
+        "-c",
+        f'approval_policy="{CHILD_EXECUTOR_APPROVAL_POLICY}"',
+        "-c",
+        f'model_reasoning_effort="{CHILD_EXECUTOR_REASONING_EFFORT}"',
+    ]
+    for feature in CHILD_EXECUTOR_DISABLED_FEATURES:
+        cmd.extend(["--disable", feature])
+    cmd.append(prompt)
+    return cmd
+
+
+def render_child_codex_config() -> str:
+    """Render the minimal isolated Codex config used by nested supervisor runs."""
+    disabled = "\n".join(f"{feature} = false" for feature in CHILD_EXECUTOR_DISABLED_FEATURES)
+    return (
+        f'model = "{CHILD_EXECUTOR_MODEL}"\n'
+        f'model_reasoning_effort = "{CHILD_EXECUTOR_REASONING_EFFORT}"\n'
+        f'approval_policy = "{CHILD_EXECUTOR_APPROVAL_POLICY}"\n'
+        f'sandbox_mode = "{CHILD_EXECUTOR_SANDBOX}"\n'
+        "\n"
+        "[features]\n"
+        f"{disabled}\n"
+    )
+
+
+def create_child_codex_home(*, source_codex_home: Path = DEFAULT_CODEX_HOME) -> Path:
+    """Create an isolated CODEX_HOME for nested executor runs.
+
+    The child runtime gets a minimal config and only the auth material needed to
+    talk to the backend. This avoids inheriting the operator's full state DB,
+    MCP server set, and long-lived runtime noise.
+    """
+    child_home = Path(tempfile.mkdtemp(prefix="codex-child-home-"))
+    child_home.mkdir(parents=True, exist_ok=True)
+    (child_home / "config.toml").write_text(render_child_codex_config(), encoding="utf-8")
+
+    auth_path = source_codex_home / "auth.json"
+    if auth_path.exists():
+        shutil.copy2(auth_path, child_home / "auth.json")
+
+    return child_home
+
+
 def run_codex(
     node: SpecNode,
     worktree_path: Path,
     refactor_work_item: dict[str, Any] | None = None,
 ) -> subprocess.CompletedProcess[str]:
     """Run the Codex executor in the isolated worktree and stream logs live."""
-    cmd = [
-        "codex",
-        "exec",
-        "-c",
-        'model_reasoning_effort="medium"',
-        build_prompt(node, refactor_work_item),
-    ]
+    cmd = build_codex_exec_command(prompt=build_prompt(node, refactor_work_item))
     print(f"Launching codex exec for {node.id} in {worktree_path}")
-    process = subprocess.Popen(
-        cmd,
-        cwd=worktree_path,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-        bufsize=1,
-    )
+    child_codex_home = create_child_codex_home()
+    env = os.environ.copy()
+    env["CODEX_HOME"] = str(child_codex_home)
+    try:
+        process = subprocess.Popen(
+            cmd,
+            cwd=worktree_path,
+            env=env,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            bufsize=1,
+        )
+    except Exception:
+        shutil.rmtree(child_codex_home, ignore_errors=True)
+        raise
 
     stdout_chunks: list[str] = []
     stderr_chunks: list[str] = []
@@ -2161,9 +2268,12 @@ def run_codex(
     )
     stdout_thread.start()
     stderr_thread.start()
-    returncode = process.wait()
-    stdout_thread.join()
-    stderr_thread.join()
+    try:
+        returncode = process.wait()
+        stdout_thread.join()
+        stderr_thread.join()
+    finally:
+        shutil.rmtree(child_codex_home, ignore_errors=True)
 
     return subprocess.CompletedProcess(
         args=cmd,
