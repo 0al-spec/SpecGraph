@@ -29,6 +29,94 @@ Supervisor modes:
 - `--target-spec SPEC_ID --apply-split-proposal`: deterministically materialize one reviewed split
   proposal into canonical parent/child spec files and mark the proposal artifact as applied.
 
+## Supervisor Bootstrap Runtime Troubleshooting
+
+When a `supervisor` run behaves unexpectedly, debug it in this order:
+
+1. Check `runs/latest-summary.md`.
+   It is the fastest operator-facing snapshot and shows:
+   - `outcome`
+   - `gate_state`
+   - `validation_errors`
+   - `executor_environment_issues`
+   - `executor_environment_primary_failure`
+   - `required_human_action`
+2. If the summary suggests an environment problem, open the full run log in `runs/<RUN_ID>.json`.
+   The run payload preserves:
+   - raw `stdout`
+   - raw `stderr`
+   - structured `executor_environment`
+   - derived `graph_health`
+3. Only treat the run as a spec-quality problem when
+   `executor_environment_primary_failure: no`.
+   If it is `yes`, fix the runtime first and rerun `supervisor`.
+
+### Expected Child Executor Profile
+
+Nested `codex exec` runs are intentionally constrained and deterministic. The expected child profile is:
+
+- model: `gpt-5.4`
+- reasoning effort: `medium`
+- approval policy: `never`
+- sandbox mode: `workspace-write`
+- disabled features:
+  - `shell_snapshot`
+  - `multi_agent`
+- isolated `CODEX_HOME` with copied `auth.json` and minimal generated `config.toml`
+- no inherited MCP startup beyond what the isolated child home explicitly enables
+
+If a nested run reports a different profile, treat that as runtime drift.
+
+### Worktree Fallback Mode
+
+`supervisor` first tries to create an isolated `git worktree`. If local ref creation is blocked by
+permission-style errors (for example `cannot lock ref` or `Operation not permitted` under
+`.git/refs/heads/...`), it falls back to a copied sandbox worktree under `.worktrees/`.
+
+Interpretation:
+
+- `git worktree` mode is preferred and should be used when the local environment allows it.
+- copied worktree mode is an operational fallback, not a canonical storage mode.
+- stale `.worktrees/` directories are safe to delete when no run is actively using them.
+
+### Failure Interpretation
+
+Current nested executor environment issues are classified into these kinds:
+
+- `transport_failure`
+  - terminal backend connectivity failures such as disconnected streams, request send failures, or DNS lookup failures
+- `mcp_startup_failure`
+  - one or more MCP servers failed to start in the child runtime
+- `state_runtime_failure`
+  - child state DB or migration initialization failed
+- `sandbox_permission_failure`
+  - local permission or sandbox restrictions prevented the child runtime from operating normally
+
+Important distinction:
+
+- websocket fallback warnings by themselves are not treated as `transport_failure`
+- a spec run may still end in `blocked` or another non-`done` outcome for legitimate spec reasons even when stderr contains non-terminal warnings
+
+### Operator Actions
+
+Use this decision path:
+
+- `executor_environment_primary_failure: yes`
+  - repair the runtime and rerun
+  - do not treat `graph_health` or queue side effects from that run as authoritative
+- `executor_environment_primary_failure: no` and `gate_state: blocked`
+  - treat it as a real spec/workflow blocker and follow `required_human_action`
+- `executor_environment_primary_failure: no` and `gate_state: split_required`
+  - treat it as an atomicity/spec-structure issue, not a runtime issue
+
+### Quick Commands
+
+```bash
+python tools/supervisor.py --dry-run
+python tools/supervisor.py
+cat runs/latest-summary.md
+```
+
 Canonical YAML helpers for spec nodes:
 
 ```bash
