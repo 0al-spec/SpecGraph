@@ -1210,9 +1210,11 @@ def classify_executor_environment(stderr: str) -> dict[str, Any]:
     add_issue(
         "mcp_startup_failure",
         "Nested executor failed to start one or more MCP servers.",
-        lambda low: ("mcp startup:" in low and "failed:" in low)
-        or (low.startswith("mcp:") and " failed:" in low)
-        or "mcp client for" in low,
+        lambda low: (
+            ("mcp startup:" in low and "failed:" in low)
+            or (low.startswith("mcp:") and " failed:" in low)
+            or "mcp client for" in low
+        ),
     )
     add_issue(
         "state_runtime_failure",
