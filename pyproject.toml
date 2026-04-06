@@ -9,10 +9,10 @@ description = "Default Python project scaffold for SpecGraph"
 readme = "README.md"
 requires-python = ">=3.10"
 authors = [{ name = "SpecGraph" }]
-dependencies = ["pyyaml>=6"]
+dependencies = ["pyyaml==6.0.3"]
 
 [project.optional-dependencies]
-dev = ["pytest>=8", "ruff>=0.15.9"]
+dev = ["pytest==9.0.2", "ruff==0.15.9"]
 
 [tool.setuptools.packages.find]
 where = ["src"]

@@ -49,6 +49,12 @@ and fails when a file has drifted from canonical formatting.
 The same project-wide gate is also installed in `.pre-commit-config.yaml` as the
 `python-quality` hook.
 
+Quality tool versions are intentionally pinned to match GitHub Actions:
+
+- `ruff==0.15.9`
+- `pytest==9.0.2`
+- `pyyaml==6.0.3`
+
 
 ## JSON Knowledge Search MVP
 
