@@ -1,21 +1,29 @@
 repos:
   - repo: local
     hooks:
+      - id: python-quality
+        name: python-quality
+        entry: python tools/python_quality.py
+        language: python
+        additional_dependencies: [ruff==0.15.9]
+        pass_filenames: false
+        files: ^(src|tools|tests)/.*\.py$
+        require_serial: true
       - id: spec-yaml-format
         name: spec-yaml-format
         entry: python tools/spec_yaml_format.py
         language: python
-        additional_dependencies: [pyyaml>=6]
+        additional_dependencies: [pyyaml==6.0.3]
         files: ^specs/nodes/.*\.ya?ml$
         require_serial: true
       - id: spec-yaml-lint
         name: spec-yaml-lint
         entry: python tools/spec_yaml_lint.py
         language: python
-        additional_dependencies: [pyyaml>=6]
+        additional_dependencies: [pyyaml==6.0.3]
         files: ^specs/nodes/.*\.ya?ml$
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.11.6
+    rev: v0.15.9
     hooks:
       - id: ruff
         args: [--fix]

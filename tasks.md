@@ -32,5 +32,5 @@
 24. [done] Add an explicit child executor runtime profile for `codex exec` so nested runs do not implicitly inherit global user config for `approval_policy`, `sandbox_mode`, MCP startup, or optional runtime features.
 25. [done] Make nested `codex exec` startup deterministic by disabling or minimizing non-essential runtime features for spec refinement runs (for example shell snapshots and unrelated MCP servers).
 26. [done] Isolate or reset child executor state so nested runs do not depend on the operator's long-lived `~/.codex` state DB and migration history.
-27. [inprogress] Classify executor-environment failures separately from spec-quality failures so transport, MCP, sandbox, or state-runtime problems do not masquerade as graph-health issues.
-28. Add a documented bootstrap-runtime troubleshooting path for `supervisor` runs, including expected child executor config, fallback worktree mode, and interpretation of nested executor failures.
+27. [done] Classify executor-environment failures separately from spec-quality failures so transport, MCP, sandbox, or state-runtime problems do not masquerade as graph-health issues.
+28. [inprogress] Add a documented bootstrap-runtime troubleshooting path for `supervisor` runs, including expected child executor config, fallback worktree mode, and interpretation of nested executor failures.

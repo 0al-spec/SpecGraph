@@ -956,6 +956,112 @@ def test_main_creates_review_gate_and_provenance_metadata(
     assert (repo_fixture / "runs" / "latest-summary.md").exists()
 
 
+def test_main_blocks_executor_environment_failures_without_graph_health_side_effects(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    node_data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    node_data["acceptance"] = [f"criterion-{i}" for i in range(1, 7)]
+    node_path.write_text(json.dumps(node_data), encoding="utf-8")
+
+    worktree = make_fake_worktree(repo_fixture)
+    monkeypatch.setattr(
+        supervisor_module,
+        "create_isolated_worktree",
+        lambda _node_id: (worktree, "codex/sg-spec-0001/test"),
+    )
+
+    changed_snapshots = [[], []]
+    monkeypatch.setattr(
+        supervisor_module,
+        "git_changed_files",
+        lambda _cwd=None: changed_snapshots.pop(0),
+    )
+
+    def fake_executor(_node: object, _worktree_path: Path) -> subprocess.CompletedProcess[str]:
+        return subprocess.CompletedProcess(
+            args=["codex"],
+            returncode=1,
+            stdout="RUN_OUTCOME: escalate\nBLOCKER: none\n",
+            stderr=(
+                "mcp: playwright failed: MCP client for `playwright` timed out after 10 seconds.\n"
+                "ERROR: stream disconnected before completion: "
+                "error sending request for url "
+                "(https://chatgpt.com/backend-api/codex/responses)\n"
+            ),
+        )
+
+    exit_code = supervisor_module.main(executor=fake_executor)
+    assert exit_code == 1
+
+    updated = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    assert updated["gate_state"] == "blocked"
+    assert updated["required_human_action"] == "repair executor environment and rerun supervisor"
+
+    run_logs = sorted((repo_fixture / "runs").glob("*-SG-SPEC-*.json"))
+    assert len(run_logs) == 1
+    payload = json.loads(run_logs[0].read_text(encoding="utf-8"))
+    assert payload["executor_environment"]["primary_failure"] is True
+    assert set(payload["executor_environment"]["issue_kinds"]) == {
+        "mcp_startup_failure",
+        "transport_failure",
+    }
+    assert payload["graph_health"]["signals"] == []
+    assert payload["validator_results"]["executor_environment"] is False
+    assert any(
+        "transport_failure" in error or "stream disconnected before completion" in error
+        for error in payload["validation_errors"]
+    )
+    assert not (repo_fixture / "runs" / "proposal_queue.json").exists()
+    assert not (repo_fixture / "runs" / "refactor_queue.json").exists()
+
+
+def test_main_does_not_treat_websocket_fallback_warning_as_primary_transport_failure(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    worktree = make_fake_worktree(repo_fixture)
+    monkeypatch.setattr(
+        supervisor_module,
+        "create_isolated_worktree",
+        lambda _node_id: (worktree, "codex/sg-spec-0001/test"),
+    )
+
+    changed_snapshots = [[], []]
+    monkeypatch.setattr(
+        supervisor_module,
+        "git_changed_files",
+        lambda _cwd=None: changed_snapshots.pop(0),
+    )
+
+    def fake_executor(_node: object, _worktree_path: Path) -> subprocess.CompletedProcess[str]:
+        return subprocess.CompletedProcess(
+            args=["codex"],
+            returncode=1,
+            stdout="RUN_OUTCOME: blocked\nBLOCKER: missing upstream spec\n",
+            stderr="warning: falling back from websockets to https transport\n",
+        )
+
+    exit_code = supervisor_module.main(executor=fake_executor)
+    assert exit_code == 1
+
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    updated = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    assert updated["gate_state"] == "blocked"
+    assert updated["required_human_action"] == "resolve blocker"
+
+    run_logs = sorted((repo_fixture / "runs").glob("*-SG-SPEC-*.json"))
+    assert len(run_logs) == 1
+    payload = json.loads(run_logs[0].read_text(encoding="utf-8"))
+    assert payload["executor_environment"]["issues"] == []
+    assert payload["executor_environment"]["primary_failure"] is False
+    assert payload["graph_health"]["source_spec_id"] == "SG-SPEC-0001"
+    assert payload["validator_results"]["executor_environment"] is True
+
+
 def test_main_selects_graph_refactor_work_item_before_default_gap(
     supervisor_module: object,
     repo_fixture: Path,
@@ -1122,6 +1228,70 @@ def test_main_split_proposal_emits_structured_artifact_and_queue_entry(
     assert payload["proposal_artifact_path"].endswith(work_item["proposal_artifact_relpath"])
     assert payload["proposed_status"] is None
     assert payload["final_status"] == "outlined"
+
+
+def test_main_split_proposal_blocks_executor_environment_failures_without_queue_updates(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    node_data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    node_data["title"] = "Calculator Overview"
+    node_data["prompt"] = "Keep the parent as overview and split detailed concerns."
+    node_data["acceptance"] = [f"criterion-{i}" for i in range(1, 7)]
+    node_path.write_text(json.dumps(node_data), encoding="utf-8")
+
+    node = supervisor_module.load_specs()[0]
+    work_item = supervisor_module.build_split_refactor_work_item(node)
+
+    worktree = make_fake_worktree(repo_fixture)
+    monkeypatch.setattr(
+        supervisor_module,
+        "create_isolated_worktree",
+        lambda _node_id: (worktree, "codex/sg-spec-0001/split-proposal"),
+    )
+    changed_snapshots = [[], []]
+    monkeypatch.setattr(
+        supervisor_module, "git_changed_files", lambda _cwd=None: changed_snapshots.pop(0)
+    )
+
+    def fake_executor(
+        _node: object,
+        _worktree_path: Path,
+        _refactor_work_item: dict[str, object],
+    ) -> subprocess.CompletedProcess[str]:
+        return subprocess.CompletedProcess(
+            args=["codex"],
+            returncode=1,
+            stdout="RUN_OUTCOME: escalate\nBLOCKER: none\n",
+            stderr=(
+                "ERROR codex_state::runtime: failed to open state db at /tmp/state.sqlite: "
+                "migration 21 was previously applied but is missing in the resolved migrations\n"
+            ),
+        )
+
+    exit_code = supervisor_module.main(
+        executor=fake_executor,
+        target_spec="SG-SPEC-0001",
+        split_proposal=True,
+    )
+    assert exit_code == 1
+    assert not (repo_fixture / "runs" / "proposal_queue.json").exists()
+
+    run_logs = sorted((repo_fixture / "runs").glob("*-SG-SPEC-*.json"))
+    assert len(run_logs) == 1
+    payload = json.loads(run_logs[0].read_text(encoding="utf-8"))
+    assert payload["selected_by_rule"]["selection_mode"] == "split_refactor_proposal"
+    assert payload["proposal_artifact_path"].endswith(work_item["proposal_artifact_relpath"])
+    assert payload["executor_environment"]["primary_failure"] is True
+    assert payload["executor_environment"]["issue_kinds"] == ["state_runtime_failure"]
+    assert payload["graph_health"]["signals"] == []
+    assert payload["validator_results"]["executor_environment"] is False
+    assert all(
+        "Missing or invalid structured split proposal artifact" not in error
+        for error in payload["validation_errors"]
+    )
 
 
 def test_main_split_proposal_rejects_non_oversized_target(

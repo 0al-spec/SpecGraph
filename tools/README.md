@@ -34,11 +34,26 @@ Canonical YAML helpers for spec nodes:
 ```bash
 python tools/spec_yaml_format.py
 python tools/spec_yaml_lint.py
+python tools/python_quality.py
 ```
 
 Both commands default to `specs/nodes/*.yaml`. The formatter rewrites files into the
 repository's canonical YAML style; the linter enforces syntax, rejects duplicate keys,
 and fails when a file has drifted from canonical formatting.
+
+`python_quality.py` mirrors the blocking `python-quality` CI job by running:
+
+- `ruff check .`
+- `ruff format --check .`
+
+The same project-wide gate is also installed in `.pre-commit-config.yaml` as the
+`python-quality` hook.
+
+Quality tool versions are intentionally pinned to match GitHub Actions:
+
+- `ruff==0.15.9`
+- `pytest==9.0.2`
+- `pyyaml==6.0.3`
 
 
 ## JSON Knowledge Search MVP
