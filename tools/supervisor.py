@@ -14,6 +14,9 @@ The supervisor is a bootstrap orchestration tool for evolving spec nodes under
 Execution modes:
 - default single-pass refinement: pick the next eligible node or queued
   graph_refactor and run one bounded pass
+- explicit operator-targeted refinement: run one bounded pass for the exact
+  `--target-spec` node, bypassing heuristic selection without bypassing
+  validation or gate policy
 - loop mode: repeat the same bounded pass selection until no eligible work
   remains
 - gate resolution: apply a human decision to a previously queued review gate
@@ -146,7 +149,13 @@ def get_yaml_module() -> ModuleType:
 
 def dump_yaml_text(data: dict[str, Any]) -> str:
     yaml_module = get_yaml_module()
-    rendered = yaml_module.safe_dump(data, sort_keys=False, allow_unicode=True)
+    rendered = yaml_module.safe_dump(
+        data,
+        sort_keys=False,
+        allow_unicode=True,
+        default_flow_style=False,
+        width=100,
+    )
     if not rendered.endswith("\n"):
         rendered += "\n"
     return rendered
@@ -338,11 +347,14 @@ def selection_mode_for_node(
     node: SpecNode,
     specs: list[SpecNode] | None = None,
     refactor_work_item: dict[str, Any] | None = None,
+    operator_target: bool = False,
 ) -> str:
     if refactor_work_item is not None:
         if str(refactor_work_item.get("refactor_kind", "")).strip() == SPLIT_REFACTOR_KIND:
             return "split_refactor_proposal"
         return "graph_refactor"
+    if operator_target:
+        return "explicit_target_refine"
     local_specs = specs or load_specs()
     index = index_specs(local_specs)
     if is_ancestor_reconcile_candidate(node, index) and not is_gate_blocking(node):
@@ -603,11 +615,17 @@ def bootstrap_child_hint(node: SpecNode, specs: list[SpecNode]) -> dict[str, str
     }
 
 
-def build_prompt(node: SpecNode, refactor_work_item: dict[str, Any] | None = None) -> str:
+def build_prompt(
+    node: SpecNode,
+    refactor_work_item: dict[str, Any] | None = None,
+    *,
+    operator_target: bool = False,
+) -> str:
     """Build the operator/agent prompt for one bounded run.
 
     The prompt always includes the generic refinement policy and may add one
     specialized mode section:
+    - `explicit_target_refine`
     - `ancestor_reconcile`
     - `graph_refactor`
     - `split_refactor_proposal`
@@ -622,7 +640,11 @@ def build_prompt(node: SpecNode, refactor_work_item: dict[str, Any] | None = Non
     allowed_paths = "\n".join(f"- {path}" for path in node.allowed_paths) or "- (not specified)"
     outputs = "\n".join(f"- {path}" for path in node.outputs) or "- (not specified)"
     bootstrap_hint = bootstrap_child_hint(node, load_specs())
-    selection_mode = selection_mode_for_node(node, refactor_work_item=refactor_work_item)
+    selection_mode = selection_mode_for_node(
+        node,
+        refactor_work_item=refactor_work_item,
+        operator_target=operator_target,
+    )
     acceptance_listing = (
         "\n".join(
             f"- [{idx}] {criterion}"
@@ -644,7 +666,19 @@ Refinement policy:
 - If the node remains non-atomic after your edits, end with RUN_OUTCOME: split_required.
 """.rstrip()
     mode_section = ""
-    if selection_mode == "ancestor_reconcile":
+    if selection_mode == "explicit_target_refine":
+        mode_section = """
+
+Refinement mode: explicit_target_refine
+- This run was explicitly targeted by the operator.
+- Bypass heuristic selector priority and focus only on this one spec node.
+- Respect the existing scope, ontology, and gate contracts; explicit targeting
+  does not authorize unrelated graph changes.
+- If the node is already in review_pending or another gate state, treat this as
+  an intentional rerun to improve or narrow the node rather than as a request
+  to bypass review.
+""".rstrip()
+    elif selection_mode == "ancestor_reconcile":
         mode_section = """
 
 Refinement mode: ancestor_reconcile
@@ -2736,6 +2770,8 @@ def invoke_executor(
     node: SpecNode,
     worktree_path: Path,
     refactor_work_item: dict[str, Any] | None = None,
+    *,
+    operator_target: bool = False,
 ) -> subprocess.CompletedProcess[str]:
     """Call the executor with optional work-item context when supported.
 
@@ -2743,6 +2779,13 @@ def invoke_executor(
     positional argument carrying refactor/proposal context. Simpler executors
     keep the legacy `(node, worktree_path)` signature.
     """
+    if executor is run_codex:
+        return executor(
+            node,
+            worktree_path,
+            refactor_work_item,
+            operator_target=operator_target,
+        )
     if refactor_work_item is not None and (
         executor is run_codex or executor_supports_work_item(executor)
     ):
@@ -2815,9 +2858,17 @@ def run_codex(
     node: SpecNode,
     worktree_path: Path,
     refactor_work_item: dict[str, Any] | None = None,
+    *,
+    operator_target: bool = False,
 ) -> subprocess.CompletedProcess[str]:
     """Run the Codex executor in the isolated worktree and stream logs live."""
-    cmd = build_codex_exec_command(prompt=build_prompt(node, refactor_work_item))
+    cmd = build_codex_exec_command(
+        prompt=build_prompt(
+            node,
+            refactor_work_item,
+            operator_target=operator_target,
+        )
+    )
     print(f"Launching codex exec for {node.id} in {worktree_path}")
     child_codex_home = create_child_codex_home()
     env = os.environ.copy()
@@ -3385,11 +3436,13 @@ def _process_one_spec(
     executor: Callable[[SpecNode, Path], subprocess.CompletedProcess[str]],
     auto_approve: bool,
     refactor_work_item: dict[str, Any] | None = None,
+    operator_target: bool = False,
 ) -> tuple[int, str]:
     """Process one ordinary supervisor run.
 
     This is the main path for:
     - default refinement
+    - explicit operator-targeted refinement
     - ancestor reconciliation
     - queue-selected graph_refactor direct updates
 
@@ -3401,7 +3454,12 @@ def _process_one_spec(
         and str(refactor_work_item.get("work_item_type", "")).strip() == "graph_refactor"
     )
     dependents = reverse_dependents_count(specs)
-    selection_mode = selection_mode_for_node(node, specs, refactor_work_item=refactor_work_item)
+    selection_mode = selection_mode_for_node(
+        node,
+        specs,
+        refactor_work_item=refactor_work_item,
+        operator_target=operator_target,
+    )
     selected_by_rule = {
         "status_filter": sorted(WORKABLE_STATUSES),
         "dependency_required_statuses": sorted(READY_DEP_STATUSES),
@@ -3416,6 +3474,9 @@ def _process_one_spec(
         ],
         "dependents_count": dependents.get(node.id, 0),
     }
+    if operator_target:
+        selected_by_rule["operator_target"] = node.id
+        selected_by_rule["sort_order"] = ["explicit_operator_target"]
     if refactor_work_item is not None:
         selected_by_rule["refactor_work_item"] = {
             "id": str(refactor_work_item.get("id", "")),
@@ -3442,7 +3503,13 @@ def _process_one_spec(
     tracked_paths = sorted(set(before))
     before_digests = snapshot_file_digests(tracked_paths, base_dir=worktree_path)
     print(f"Starting executor for {node.id}...")
-    result = invoke_executor(executor, node, worktree_path, refactor_work_item)
+    result = invoke_executor(
+        executor,
+        node,
+        worktree_path,
+        refactor_work_item,
+        operator_target=operator_target,
+    )
     print(f"Executor finished for {node.id} with exit_code={result.returncode}")
     after = git_changed_files(worktree_path)
     tracked_paths = sorted(set(before) | set(after))
@@ -3793,12 +3860,6 @@ def main(
         print("--decision is only valid with --resolve-gate", file=sys.stderr)
         return 1
 
-    if target_spec and not (split_proposal or apply_split_proposal):
-        print(
-            "--target-spec currently requires --split-proposal or --apply-split-proposal",
-            file=sys.stderr,
-        )
-        return 1
     if split_proposal and apply_split_proposal:
         print("--split-proposal cannot be combined with --apply-split-proposal", file=sys.stderr)
         return 1
@@ -3819,6 +3880,9 @@ def main(
             "--split-proposal and --apply-split-proposal cannot be combined with --auto-approve",
             file=sys.stderr,
         )
+        return 1
+    if target_spec and loop:
+        print("--target-spec cannot be combined with --loop", file=sys.stderr)
         return 1
 
     if loop and not auto_approve:
@@ -3892,6 +3956,44 @@ def main(
 
         print(f"Selected spec node: {node.id} — {node.title}")
         return _apply_split_proposal(node=node, specs=specs)
+
+    if target_spec:
+        index = index_specs(specs)
+        node = index.get(str(target_spec).strip())
+        if node is None:
+            print(f"Spec not found: {target_spec}", file=sys.stderr)
+            return 1
+        if str(node.data.get("kind", "")).strip() != "spec":
+            print(f"Explicit target is not a spec node: {target_spec}", file=sys.stderr)
+            return 1
+
+        selected_by_rule = {
+            "selection_mode": "explicit_target_refine",
+            "operator_target": node.id,
+            "sort_order": ["explicit_operator_target"],
+            "status_filter": sorted(WORKABLE_STATUSES),
+            "dependency_required_statuses": sorted(READY_DEP_STATUSES),
+        }
+        print(f"Selected spec node: {node.id} — {node.title}")
+
+        if dry_run:
+            print("\n=== dry-run mode ===")
+            print(f"Would execute prompt for: {node.id}")
+            print(
+                f"Status: {node.status} | Maturity: {node.maturity:.2f} | Gate: {node.gate_state}"
+            )
+            print(f"Selection context: {json.dumps(selected_by_rule, ensure_ascii=False)}")
+            print(f"\n{build_prompt(node, operator_target=True)}")
+            return 0
+
+        exit_code, _outcome = _process_one_spec(
+            node=node,
+            specs=specs,
+            executor=executor,
+            auto_approve=auto_approve,
+            operator_target=True,
+        )
+        return exit_code
 
     if loop:
         print(f"Starting autonomous loop mode (max_iterations={max_iterations})")
@@ -4023,7 +4125,14 @@ if __name__ == "__main__":
         default=50,
         help="Safety limit for loop mode (default: 50)",
     )
-    parser.add_argument("--target-spec", metavar="SPEC_ID", help="Explicit operator target")
+    parser.add_argument(
+        "--target-spec",
+        metavar="SPEC_ID",
+        help=(
+            "Explicit operator target. Alone, runs one ordinary refinement pass for that spec; "
+            "with --split-proposal or --apply-split-proposal, runs the corresponding split mode."
+        ),
+    )
     parser.add_argument(
         "--split-proposal",
         action="store_true",

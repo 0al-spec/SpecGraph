@@ -1,0 +1,257 @@
+id: SG-SPEC-0006
+title: SpecGraph - Tracked Proposal Lane for Graph Evolution
+kind: spec
+status: specified
+maturity: 0.4
+depends_on: []
+relates_to:
+- SG-SPEC-0004
+- SG-SPEC-0005
+refines:
+- SG-SPEC-0003
+inputs:
+- specs/nodes/SG-SPEC-0003.yaml
+- specs/nodes/SG-SPEC-0004.yaml
+- specs/nodes/SG-SPEC-0005.yaml
+- tasks.md
+- tools/supervisor.py
+outputs:
+- specs/nodes/SG-SPEC-0006.yaml
+allowed_paths:
+- specs/nodes/SG-SPEC-0006.yaml
+acceptance:
+- Defines a tracked proposal lane as a repository-backed layer between canonical spec nodes and ephemeral
+  runtime artifacts so supervisor can grow reviewable proposal subgraphs without mutating canonical truth
+- Defines the first semantics for proposal-lane nodes, including provisional identity, relationship to
+  canonical nodes, and approval or authority state distinct from canonical lifecycle status
+- Defines what supervisor may autonomously create or update inside the proposal lane versus what still
+  requires explicit review or canonical application
+- Defines how proposal-lane nodes and edges should remain visible to graph tooling and viewer overlays
+  without being mistaken for canonical accepted graph structure
+- Remains implementation-agnostic about exact file layout, rendering style, ID minting algorithm, and
+  eventual convergence with metrics or versioning subsystems
+acceptance_evidence:
+- criterion: Defines a tracked proposal lane as a repository-backed layer between canonical spec nodes
+    and ephemeral runtime artifacts so supervisor can grow reviewable proposal subgraphs without mutating
+    canonical truth
+  evidence: 'specification.objective defines the proposal lane as repository-tracked draft graph structure
+    between canonical nodes and runtime artifacts. specification.boundary_policy.layer_separation states
+    that proposal-lane nodes are reviewable tracked structure while canonical spec nodes remain the accepted
+    graph of record and runtime artifacts remain separate execution persistence.
+
+    '
+- criterion: Defines the first semantics for proposal-lane nodes, including provisional identity, relationship
+    to canonical nodes, and approval or authority state distinct from canonical lifecycle status
+  evidence: 'specification.terminology defines proposal_handle, proposal_target_region, proposal_lineage_link,
+    and proposal_authority_state. specification.proposal_lane_policy.identity_and_lineage requires each
+    proposal node to carry a provisional handle, a bounded target region, and explicit lineage to the
+    canonical target region or originating runtime artifact. specification.proposal_lane_policy.authority_states
+    separates proposal authority states from canonical lifecycle status.
+
+    '
+- criterion: Defines what supervisor may autonomously create or update inside the proposal lane versus
+    what still requires explicit review or canonical application
+  evidence: 'specification.boundary_policy.supervisor_authority allows bounded autonomous creation and
+    refresh inside the proposal lane but forbids silent canonical rewrites. specification.proposal_lane_policy.conflict_precedence
+    defines how active proposal ownership and overlap remain reviewable. specification.proposal_lane_policy.mutation_rules
+    further limits autonomous updates to proposal-lane content, prefers refreshing the active owner of
+    a target region over duplicating drafts, and requires explicit review before any canonical application
+    path mutates accepted graph structure.
+
+    '
+- criterion: Defines how proposal-lane nodes and edges should remain visible to graph tooling and viewer
+    overlays without being mistaken for canonical accepted graph structure
+  evidence: 'specification.boundary_policy.proposal_visibility requires proposal structure to remain available
+    as a visible overlay or secondary layer. specification.proposal_lane_policy.viewer_contract requires
+    proposal nodes and edges to expose enough lane and state metadata for tooling to render them alongside
+    canonical structure without treating them as accepted graph truth.
+
+    '
+- criterion: Remains implementation-agnostic about exact file layout, rendering style, ID minting algorithm,
+    and eventual convergence with metrics or versioning subsystems
+  evidence: 'specification.scope.out explicitly excludes exact repository layout, final ID minting algorithm,
+    viewer rendering details, metric formulas, versioning design, and full archival policy. The node therefore
+    defines governance semantics for the proposal lane without fixing the eventual implementation shape.
+
+    '
+prompt: Define a tracked proposal layer for SpecGraph so supervisor can autonomously grow reviewable draft
+  graph structure in the repository, while canonical spec nodes remain stable and viewer tooling can inspect
+  both layers together.
+specification:
+  objective: Define the first repository-tracked proposal lane that sits between canonical SpecGraph nodes
+    and ephemeral runtime artifacts.
+  scope:
+    in:
+    - Proposal-lane semantics for tracked, reviewable draft graph structure
+    - Boundary between canonical spec nodes, tracked proposal nodes, and ephemeral run artifacts
+    - Supervisor authority inside the proposal lane
+    - Viewer and graph-tooling visibility for proposal-layer nodes and edges
+    out:
+    - Exact repository directory layout for proposal nodes
+    - Final ID minting algorithm or naming convention implementation
+    - Viewer rendering details or UI controls
+    - Metric formulas, versioning design, or full archival policy
+  terminology:
+    proposal_lane: A repository-tracked graph layer that holds draft or proposed nodes and edges which
+      are reviewable and visible to tooling, but are not yet canonical accepted graph structure.
+    proposal_node: A tracked node in the proposal lane representing a candidate new spec, refactor, or
+      structural change that has not yet been applied into canonical spec nodes.
+    proposal_target_region: The bounded canonical node, canonical graph region, or draft target area that
+      a proposal-lane node claims as the scope of its intended change.
+    proposal_handle: A provisional repository-tracked identifier for a proposal-lane node that is stable
+      for review and tooling within the proposal lane but does not claim canonical spec ID status.
+    proposal_lineage_link: An explicit relationship from a proposal-lane node to the canonical node, canonical
+      graph region, or originating runtime artifact that motivated the proposal.
+    canonical_graph: The current accepted graph stored in canonical spec nodes.
+    runtime_artifact: An ephemeral or derived artifact under runs/ or similar runtime storage that supports
+      execution, diagnostics, and queues but is not itself a tracked graph node.
+    proposal_authority_state: The review or trust state of a proposal-lane node, distinct from canonical
+      lifecycle status such as outlined, specified, or linked.
+  boundary_policy:
+    layer_separation:
+    - Canonical spec nodes remain the accepted graph of record.
+    - Proposal-lane nodes are tracked in the repository so they can be reviewed, diffed, and visualized,
+      but they do not become canonical truth by merely existing.
+    - Runtime artifacts remain the first persistence for execution detail, logs, and transient queue state.
+    - Proposal-lane nodes may summarize or stabilize selected runtime outputs, but they do not replace
+      run logs or summaries.
+    supervisor_authority:
+    - Supervisor may autonomously create or refresh proposal-lane nodes when current canonical policy
+      permits proposal emission for a bounded target.
+    - Supervisor may not silently rewrite canonical spec nodes merely because a proposal-lane node exists.
+    - Moving structure from the proposal lane into the canonical graph still requires explicit review
+      and application under the current governance rules.
+    proposal_visibility:
+    - Proposal-lane nodes and their lineage to canonical nodes should remain available to graph tooling
+      as a visible overlay or secondary layer.
+    - Tooling and viewers must be able to distinguish canonical nodes from proposal-lane nodes so draft
+      structure is not mistaken for accepted graph truth.
+  proposal_lane_policy:
+    node_semantics:
+    - Proposal-lane nodes represent candidate structure, not accepted structure.
+    - Proposal-lane nodes must preserve stable references to the canonical nodes, graph regions, signals,
+      or proposals from which they were derived.
+    - Proposal-lane state SHOULD distinguish proposal review state from canonical lifecycle status so
+      draft review does not overload canonical maturity semantics.
+    identity_and_lineage:
+    - Each proposal-lane node must carry a proposal_handle that is unique within the proposal lane and
+      remains stable across ordinary review updates to that same proposal node.
+    - A proposal_handle is provisional only; it must not be interpreted by tooling or supervisor as a
+      canonical spec ID reservation or as evidence that canonical materialization is approved.
+    - Each proposal-lane node must declare one bounded proposal_target_region that states which canonical
+      concern or draft target area the proposal is trying to change.
+    - Each proposal-lane node must expose at least one proposal_lineage_link to the canonical node, canonical
+      target region, or runtime artifact that explains why the draft structure exists.
+    - When a proposal describes a candidate node not yet present in the canonical graph, the lineage still
+      points back to the motivating canonical parent, target region, or originating proposal artifact
+      rather than inventing canonical ancestry.
+    conflict_precedence:
+    - At most one active proposal-lane subgraph should own the same proposal_target_region for the same
+      proposal class or pathology at a time.
+    - When supervisor encounters new evidence for a proposal_target_region already owned by an active
+      compatible proposal, it should refresh or extend that existing proposal-lane subgraph rather than
+      mint a duplicate competing draft.
+    - When supervisor encounters an overlapping but materially incompatible active proposal for the same
+      proposal_target_region, it must preserve the overlap as visible review state and defer to explicit
+      review, supersession, or redirection rather than silently merging the drafts.
+    - If one proposal supersedes another inside the proposal lane, the newer proposal must retain visible
+      lineage to the superseded proposal_handle so tooling can reconstruct ownership history.
+    authority_states:
+    - Proposal authority is tracked independently from canonical status so a proposal may be draft, under_review,
+      approved_for_application, rejected, or superseded without reusing canonical lifecycle labels.
+    - Entering an approved_for_application or equivalent proposal authority state means the proposal is
+      eligible for an explicit canonical application path; it does not by itself mutate the canonical
+      graph.
+    - Rejection, supersession, or staleness of a proposal-lane node must remain visible in the proposal
+      lane so tooling can preserve review history and avoid mistaking abandoned drafts for active candidates.
+    lifecycle_boundary:
+    - A proposal-lane node may be created before a canonical node exists for the same concern.
+    - Approval or acceptance of a proposal-lane node does not automatically supersede or mutate canonical
+      nodes until an explicit application path runs.
+    graph_growth:
+    - Proposal-lane nodes may form bounded subgraphs, including proposed children, proposed lineage edges,
+      and proposed restructuring relationships around one target region.
+    - This lane exists so supervisor can do more autonomous graph work safely without bypassing review.
+    mutation_rules:
+    - Supervisor may autonomously create a new proposal-lane node or extend an existing bounded proposal
+      subgraph when the work stays within current ontology and policy and the affected concern has not
+      already moved into a conflicting active proposal owned elsewhere.
+    - Supervisor may autonomously update proposal authority metadata, lineage metadata, and bounded draft
+      structure inside the proposal lane when those updates clarify review state without claiming canonical
+      acceptance.
+    - Supervisor should prefer refreshing the active proposal already owning a proposal_target_region
+      over creating a second active draft for the same proposal class or pathology.
+    - Supervisor must not silently consolidate materially incompatible overlapping proposals; it must
+      leave the conflict reviewable through explicit overlap, superseded, or redirected state until a
+      reviewed resolution path exists.
+    - Supervisor must not treat proposal-lane approval metadata as self-executing authority for canonical
+      writeback; canonical mutation still requires a separate explicit application path governed by current
+      review rules.
+    viewer_contract:
+    - Proposal-lane nodes and edges should be queryable by graph tooling together with canonical nodes
+      while remaining machine-distinguishable by lane and proposal_authority_state.
+    - Viewer overlays should be able to show lineage from proposal-lane structure back to canonical targets
+      and to suppress or de-emphasize rejected or superseded proposal states without deleting them from
+      the tracked review record.
+    - Graph analyses that operate over both layers must treat proposal-lane structure as non-canonical
+      unless an explicit canonical application event has materialized the proposal into canonical spec
+      nodes.
+proposed_status: linked
+proposed_maturity: 0.6
+gate_state: review_pending
+required_human_action: review refinement impact before approval
+last_outcome: done
+last_blocker: ''
+last_run_id: 20260407T174439Z-SG-SPEC-0006
+last_exit_code: 0
+last_changed_files:
+- specs/nodes/SG-SPEC-0006.yaml
+last_run_at: '2026-04-07T17:44:39.498586+00:00'
+last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0006-20260407T174317Z
+last_branch: codex/sg-spec-0006/20260407T174317Z
+last_validator_results:
+  outputs: true
+  allowed_paths: true
+  reconciliation: true
+  atomicity: true
+  transition: true
+  executor_environment: true
+  refinement_acceptance: true
+last_refinement_acceptance:
+  decision: review_required
+  change_class: constitutional_change
+  checks:
+    content_changed: true
+    hard_validation: true
+    single_spec_scope: true
+    constitutional_diff: true
+    graph_refactor_diff: false
+    atomicity_clear: true
+  diff_paths:
+  - acceptance_evidence[1].evidence
+  - acceptance_evidence[2].evidence
+  - specification.proposal_lane_policy.conflict_precedence
+  - specification.proposal_lane_policy.conflict_precedence[0]
+  - specification.proposal_lane_policy.conflict_precedence[1]
+  - specification.proposal_lane_policy.conflict_precedence[2]
+  - specification.proposal_lane_policy.conflict_precedence[3]
+  - specification.proposal_lane_policy.identity_and_lineage[2]
+  - specification.proposal_lane_policy.identity_and_lineage[3]
+  - specification.proposal_lane_policy.identity_and_lineage[4]
+  - specification.proposal_lane_policy.mutation_rules[2]
+  - specification.proposal_lane_policy.mutation_rules[3]
+  - specification.proposal_lane_policy.mutation_rules[4]
+  - specification.terminology.proposal_target_region
+  changed_spec_files:
+  - specs/nodes/SG-SPEC-0006.yaml
+  review_reasons:
+  - run changed governance-sensitive specification sections
+  errors: []
+  warnings: []
+last_reconciliation:
+  worktree_spec_count: 6
+  changed_spec_ids:
+  - SG-SPEC-0006
+  semantic_dependencies_resolved: true
+  work_dependencies_ready: true
+  cycles: []
