@@ -14,6 +14,9 @@ The supervisor is a bootstrap orchestration tool for evolving spec nodes under
 Execution modes:
 - default single-pass refinement: pick the next eligible node or queued
   graph_refactor and run one bounded pass
+- explicit operator-targeted refinement: run one bounded pass for the exact
+  `--target-spec` node, bypassing heuristic selection without bypassing
+  validation or gate policy
 - loop mode: repeat the same bounded pass selection until no eligible work
   remains
 - gate resolution: apply a human decision to a previously queued review gate
@@ -70,6 +73,7 @@ ATOMICITY_MAX_BLOCKING_CHILDREN = 3
 RECURRING_REFACTOR_PROPOSAL_THRESHOLD = 2
 SPLIT_REFACTOR_SIGNAL = "oversized_spec"
 SPLIT_REFACTOR_KIND = "split_oversized_spec"
+RETROSPECTIVE_REFACTOR_SIGNAL = "retrospective_refactor_candidate"
 APPLICABLE_PROPOSAL_STATUSES = {"proposed", "review_pending", "pending_review", "approved"}
 BLOCKING_GATE_STATES = {
     "review_pending",
@@ -85,6 +89,46 @@ CHILD_EXECUTOR_REASONING_EFFORT = "medium"
 CHILD_EXECUTOR_APPROVAL_POLICY = "never"
 CHILD_EXECUTOR_SANDBOX = "workspace-write"
 CHILD_EXECUTOR_DISABLED_FEATURES = ("shell_snapshot", "multi_agent")
+REFINEMENT_ACCEPT_DECISION_APPROVE = "approve"
+REFINEMENT_ACCEPT_DECISION_REJECT = "reject"
+REFINEMENT_ACCEPT_DECISION_REVIEW_REQUIRED = "review_required"
+REFINEMENT_CLASS_LOCAL = "local_refinement"
+REFINEMENT_CLASS_GRAPH_REFACTOR = "graph_refactor"
+REFINEMENT_CLASS_CONSTITUTIONAL = "constitutional_change"
+GRAPH_REFACTOR_DIFF_PREFIXES = (
+    "depends_on",
+    "refines",
+    "relates_to",
+    "inputs",
+    "outputs",
+    "allowed_paths",
+)
+CONSTITUTIONAL_DIFF_PREFIXES = (
+    "specification.boundary_policy",
+    "specification.terminology",
+    "specification.proposal_lane_policy",
+)
+IMMUTABLE_DIFF_PREFIXES = ("id", "kind")
+SYNC_STRIPPED_SPEC_KEYS = {
+    "RUN_OUTCOME",
+    "BLOCKER",
+    "gate_state",
+    "proposed_status",
+    "proposed_maturity",
+    "required_human_action",
+    "last_outcome",
+    "last_blocker",
+    "last_run_id",
+    "last_exit_code",
+    "last_changed_files",
+    "last_run_at",
+    "last_worktree_path",
+    "last_branch",
+    "last_validator_results",
+    "last_refinement_acceptance",
+    "last_reconciliation",
+    "last_errors",
+}
 DEFAULT_CODEX_HOME = Path(os.environ.get("CODEX_HOME", "~/.codex")).expanduser()
 
 STATUS_PROGRESSION: dict[str, str] = {
@@ -101,6 +145,41 @@ def get_yaml_module() -> ModuleType:
     if yaml is None:
         raise RuntimeError("Missing dependency: pyyaml. Install with: pip install pyyaml")
     return yaml
+
+
+def dump_yaml_text(data: dict[str, Any]) -> str:
+    yaml_module = get_yaml_module()
+    rendered = yaml_module.safe_dump(
+        data,
+        sort_keys=False,
+        allow_unicode=True,
+        default_flow_style=False,
+        width=100,
+    )
+    if not rendered.endswith("\n"):
+        rendered += "\n"
+    return rendered
+
+
+def strip_runtime_spec_data(value: Any) -> Any:
+    """Return spec data with runtime-only metadata removed recursively."""
+    if isinstance(value, dict):
+        return {
+            key: strip_runtime_spec_data(item)
+            for key, item in value.items()
+            if key not in SYNC_STRIPPED_SPEC_KEYS
+        }
+    if isinstance(value, list):
+        return [strip_runtime_spec_data(item) for item in value]
+    return value
+
+
+def canonical_spec_snapshot(data: dict[str, Any]) -> dict[str, Any]:
+    """Normalize spec data for deterministic before/after refinement checks."""
+    normalized = strip_runtime_spec_data(data)
+    if not isinstance(normalized, dict):
+        raise ValueError("top-level YAML document must be a mapping")
+    return normalized
 
 
 @dataclass
@@ -179,6 +258,26 @@ def index_specs(specs: list[SpecNode]) -> dict[str, SpecNode]:
     return {spec.id: spec for spec in specs if spec.id}
 
 
+def refining_child_specs(node: SpecNode, specs: list[SpecNode]) -> list[SpecNode]:
+    children: list[SpecNode] = []
+    for spec in specs:
+        refines = spec.data.get("refines")
+        if not isinstance(refines, list):
+            continue
+        if node.id in {str(item).strip() for item in refines}:
+            children.append(spec)
+    return children
+
+
+def accepted_child_spec_ids(node: SpecNode, specs: list[SpecNode]) -> list[str]:
+    accepted: list[str] = []
+    for child in refining_child_specs(node, specs):
+        evidence = child.data.get("acceptance_evidence")
+        if isinstance(evidence, list) and evidence and child.id:
+            accepted.append(child.id)
+    return accepted
+
+
 def merge_unique_strings(*groups: list[str]) -> list[str]:
     merged: list[str] = []
     for group in groups:
@@ -248,11 +347,14 @@ def selection_mode_for_node(
     node: SpecNode,
     specs: list[SpecNode] | None = None,
     refactor_work_item: dict[str, Any] | None = None,
+    operator_target: bool = False,
 ) -> str:
     if refactor_work_item is not None:
         if str(refactor_work_item.get("refactor_kind", "")).strip() == SPLIT_REFACTOR_KIND:
             return "split_refactor_proposal"
         return "graph_refactor"
+    if operator_target:
+        return "explicit_target_refine"
     local_specs = specs or load_specs()
     index = index_specs(local_specs)
     if is_ancestor_reconcile_candidate(node, index) and not is_gate_blocking(node):
@@ -349,6 +451,7 @@ def refactor_signal_priority(signal: str) -> int:
         "missing_dependency_target": 0,
         "weak_structural_linkage_candidate": 1,
         "oversized_spec": 2,
+        RETROSPECTIVE_REFACTOR_SIGNAL: 2,
     }.get(signal, 9)
 
 
@@ -512,11 +615,17 @@ def bootstrap_child_hint(node: SpecNode, specs: list[SpecNode]) -> dict[str, str
     }
 
 
-def build_prompt(node: SpecNode, refactor_work_item: dict[str, Any] | None = None) -> str:
+def build_prompt(
+    node: SpecNode,
+    refactor_work_item: dict[str, Any] | None = None,
+    *,
+    operator_target: bool = False,
+) -> str:
     """Build the operator/agent prompt for one bounded run.
 
     The prompt always includes the generic refinement policy and may add one
     specialized mode section:
+    - `explicit_target_refine`
     - `ancestor_reconcile`
     - `graph_refactor`
     - `split_refactor_proposal`
@@ -531,7 +640,11 @@ def build_prompt(node: SpecNode, refactor_work_item: dict[str, Any] | None = Non
     allowed_paths = "\n".join(f"- {path}" for path in node.allowed_paths) or "- (not specified)"
     outputs = "\n".join(f"- {path}" for path in node.outputs) or "- (not specified)"
     bootstrap_hint = bootstrap_child_hint(node, load_specs())
-    selection_mode = selection_mode_for_node(node, refactor_work_item=refactor_work_item)
+    selection_mode = selection_mode_for_node(
+        node,
+        refactor_work_item=refactor_work_item,
+        operator_target=operator_target,
+    )
     acceptance_listing = (
         "\n".join(
             f"- [{idx}] {criterion}"
@@ -553,7 +666,19 @@ Refinement policy:
 - If the node remains non-atomic after your edits, end with RUN_OUTCOME: split_required.
 """.rstrip()
     mode_section = ""
-    if selection_mode == "ancestor_reconcile":
+    if selection_mode == "explicit_target_refine":
+        mode_section = """
+
+Refinement mode: explicit_target_refine
+- This run was explicitly targeted by the operator.
+- Bypass heuristic selector priority and focus only on this one spec node.
+- Respect the existing scope, ontology, and gate contracts; explicit targeting
+  does not authorize unrelated graph changes.
+- If the node is already in review_pending or another gate state, treat this as
+  an intentional rerun to improve or narrow the node rather than as a request
+  to bypass review.
+""".rstrip()
+    elif selection_mode == "ancestor_reconcile":
         mode_section = """
 
 Refinement mode: ancestor_reconcile
@@ -574,6 +699,25 @@ Refinement mode: ancestor_reconcile
         planned_run_id = (
             str(refactor_work_item.get("planned_run_id", "")).strip() if refactor_work_item else ""
         )
+        live_child_ids = refactor_work_item.get("live_child_ids", []) if refactor_work_item else []
+        accepted_child_ids = (
+            refactor_work_item.get("accepted_child_ids", []) if refactor_work_item else []
+        )
+        live_children_text = ", ".join(
+            str(item).strip() for item in live_child_ids if str(item).strip()
+        )
+        accepted_children_text = ", ".join(
+            str(item).strip() for item in accepted_child_ids if str(item).strip()
+        )
+        retrospective_section = ""
+        if refactor_work_item and refactor_work_item.get("retrospective_target"):
+            retrospective_section = f"""
+- This target already sits inside a live graph region with existing child specs.
+- Preserve stable IDs and lineage for surviving child specs whenever possible.
+- Accepted child work must remain traceable and must not be silently invalidated.
+- Live child spec IDs: {live_children_text or "(none)"}
+- Accepted child spec IDs: {accepted_children_text or "(none)"}
+""".rstrip()
         mode_section = f"""
 
 Refinement mode: split_refactor_proposal
@@ -587,6 +731,7 @@ Refinement mode: split_refactor_proposal
 - Every current parent acceptance criterion must be mapped exactly once
   to parent_retained or one child slot.
 - Cross-cutting acceptance stays on the parent and must not be duplicated across children.
+{retrospective_section}
 - Suggested child IDs and paths are advisory snapshot outputs only;
   they do not reserve canonical IDs.
 - If the split cannot be proposed cleanly without governance change, end with RUN_OUTCOME: escalate.
@@ -594,6 +739,13 @@ Refinement mode: split_refactor_proposal
   id, proposal_type, refactor_kind, target_spec_id, source_signal, source_run_ids,
   execution_policy, parent_after_split, suggested_children, acceptance_mapping,
   lineage_updates, status.
+- Use these exact literal values:
+  - id = refactor_proposal::{node.id}::{SPLIT_REFACTOR_SIGNAL}
+  - proposal_type = refactor_proposal
+  - refactor_kind = {SPLIT_REFACTOR_KIND}
+  - target_spec_id = {node.id}
+  - source_signal = {SPLIT_REFACTOR_SIGNAL}
+  - execution_policy = emit_proposal
 - source_run_ids must include the current run ID above.
 - parent_after_split must include narrowed_role_summary,
   retained_acceptance, and intended_depends_on.
@@ -601,6 +753,91 @@ Refinement mode: split_refactor_proposal
   bounded_concern_summary, suggested_title, suggested_prompt, and assigned_acceptance.
 - acceptance_mapping entries should use acceptance_index, acceptance_text, and target.
 - lineage_updates must include parent_depends_on_add and child_refines_add.
+- Do not use plain strings for acceptance or lineage references.
+- Use objects with these exact shapes:
+  - parent_after_split.retained_acceptance[] =
+    {{ "acceptance_index": <int>, "acceptance_text": "<exact source text>" }}
+  - parent_after_split.intended_depends_on[] =
+    {{ "slot_key": "<child slot>", "suggested_id": "<child id>" }}
+  - suggested_children[].assigned_acceptance[] =
+    {{ "acceptance_index": <int>, "acceptance_text": "<exact source text>" }}
+  - lineage_updates.parent_depends_on_add[] =
+    {{ "slot_key": "<child slot>", "suggested_id": "<child id>" }}
+  - lineage_updates.child_refines_add[] =
+    {{
+      "slot_key": "<child slot>",
+      "suggested_id": "<child id>",
+      "refines": ["{node.id}"]
+    }}
+- Example JSON skeleton:
+  {{
+    "id": "refactor_proposal::{node.id}::{SPLIT_REFACTOR_SIGNAL}",
+    "proposal_type": "refactor_proposal",
+    "refactor_kind": "{SPLIT_REFACTOR_KIND}",
+    "target_spec_id": "{node.id}",
+    "source_signal": "{SPLIT_REFACTOR_SIGNAL}",
+    "source_run_ids": ["{planned_run_id or "CURRENT-RUN-ID"}"],
+    "execution_policy": "emit_proposal",
+    "parent_after_split": {{
+      "narrowed_role_summary": "...",
+        "retained_acceptance": [
+          {{
+            "acceptance_index": 1,
+            "acceptance_text": "<exact source text>"
+          }}
+        ],
+      "intended_depends_on": [
+        {{
+          "slot_key": "child_slot",
+          "suggested_id": "SG-SPEC-XXXX"
+        }}
+      ]
+    }},
+    "suggested_children": [
+      {{
+        "slot_key": "child_slot",
+        "suggested_id": "SG-SPEC-XXXX",
+        "suggested_path": "specs/nodes/SG-SPEC-XXXX.yaml",
+        "bounded_concern_summary": "...",
+        "suggested_title": "...",
+        "suggested_prompt": "...",
+        "assigned_acceptance": [
+          {{
+            "acceptance_index": 2,
+            "acceptance_text": "..."
+          }}
+        ]
+      }}
+    ],
+    "acceptance_mapping": [
+      {{
+        "acceptance_index": 1,
+        "acceptance_text": "...",
+        "target": "parent_retained"
+      }},
+      {{
+        "acceptance_index": 2,
+        "acceptance_text": "...",
+        "target": "child_slot"
+      }}
+    ],
+    "lineage_updates": {{
+      "parent_depends_on_add": [
+        {{
+          "slot_key": "child_slot",
+          "suggested_id": "SG-SPEC-XXXX"
+        }}
+      ],
+      "child_refines_add": [
+        {{
+          "slot_key": "child_slot",
+          "suggested_id": "SG-SPEC-XXXX",
+          "refines": ["{node.id}"]
+        }}
+      ]
+    }},
+    "status": "proposed"
+  }}
 
 Current parent acceptance criteria:
 {acceptance_listing}
@@ -676,6 +913,7 @@ Rules:
 - Do not edit files outside allowed paths.
 - Keep acceptance_evidence aligned 1:1 with acceptance criteria.
 - If blocked, stop and explain blocker clearly.
+- Print RUN_OUTCOME and BLOCKER to stdout only; never write them into edited files.
 - End with exactly two machine-readable lines:
   RUN_OUTCOME: done|retry|split_required|blocked|escalate
   BLOCKER: <text or none>
@@ -829,7 +1067,13 @@ def validate_split_refactor_target(node: SpecNode) -> list[str]:
     return errors
 
 
-def build_split_refactor_work_item(node: SpecNode) -> dict[str, Any]:
+def build_split_refactor_work_item(
+    node: SpecNode,
+    specs: list[SpecNode] | None = None,
+) -> dict[str, Any]:
+    local_specs = specs or load_specs()
+    live_child_ids = [child.id for child in refining_child_specs(node, local_specs) if child.id]
+    accepted_child_ids = accepted_child_spec_ids(node, local_specs)
     proposal_type = "refactor_proposal"
     proposal_id = f"{proposal_type}::{node.id}::{SPLIT_REFACTOR_SIGNAL}"
     artifact_relpath = proposal_artifact_relpath(
@@ -848,6 +1092,9 @@ def build_split_refactor_work_item(node: SpecNode) -> dict[str, Any]:
         "execution_policy": "emit_proposal",
         "target_spec_id": node.id,
         "proposal_artifact_relpath": artifact_relpath,
+        "retrospective_target": bool(live_child_ids),
+        "live_child_ids": live_child_ids,
+        "accepted_child_ids": accepted_child_ids,
     }
 
 
@@ -864,6 +1111,196 @@ def validate_transition(from_status: str, to_status: str | None) -> list[str]:
     if to_status != expected:
         return [f"Invalid transition: expected {from_status}->{expected}, got {to_status}"]
     return []
+
+
+def collect_value_paths(value: Any, prefix: str) -> list[str]:
+    """Return stable paths for every leaf below a newly added or removed value."""
+    if isinstance(value, dict):
+        paths: list[str] = [prefix]
+        for key, item in value.items():
+            child_prefix = f"{prefix}.{key}" if prefix else str(key)
+            paths.extend(collect_value_paths(item, child_prefix))
+        return paths
+    if isinstance(value, list):
+        paths: list[str] = [prefix]
+        for idx, item in enumerate(value):
+            child_prefix = f"{prefix}[{idx}]"
+            paths.extend(collect_value_paths(item, child_prefix))
+        return paths
+    return [prefix or "<root>"]
+
+
+def collect_changed_paths(before: Any, after: Any, prefix: str = "") -> list[str]:
+    """Return stable dot-paths describing semantic changes between two values."""
+    if type(before) is not type(after):
+        merged = collect_value_paths(before, prefix or "<root>") + collect_value_paths(
+            after, prefix or "<root>"
+        )
+        return sorted(set(merged))
+
+    if isinstance(before, dict):
+        paths: list[str] = []
+        keys = sorted(set(before) | set(after))
+        for key in keys:
+            child_prefix = f"{prefix}.{key}" if prefix else str(key)
+            if key not in before or key not in after:
+                missing_value = before.get(key) if key in before else after.get(key)
+                paths.extend(collect_value_paths(missing_value, child_prefix))
+                continue
+            paths.extend(collect_changed_paths(before[key], after[key], child_prefix))
+        return paths
+
+    if isinstance(before, list):
+        paths: list[str] = []
+        max_len = max(len(before), len(after))
+        for idx in range(max_len):
+            child_prefix = f"{prefix}[{idx}]"
+            if idx >= len(before) or idx >= len(after):
+                missing_value = before[idx] if idx < len(before) else after[idx]
+                paths.extend(collect_value_paths(missing_value, child_prefix))
+                continue
+            paths.extend(collect_changed_paths(before[idx], after[idx], child_prefix))
+        return paths
+
+    if before != after:
+        return [prefix or "<root>"]
+    return []
+
+
+def path_matches_prefix(path: str, prefixes: tuple[str, ...]) -> bool:
+    """Return True when a diff path matches one of the semantic prefixes."""
+    normalized = path.replace("[", ".[").split(".[", maxsplit=1)[0]
+    return any(
+        path == prefix or path.startswith(f"{prefix}.") or normalized == prefix
+        for prefix in prefixes
+    )
+
+
+def classify_refinement_change(
+    *,
+    node_data: dict[str, Any],
+    diff_paths: list[str],
+    changed_spec_files: list[str],
+    source_spec_relpath: str,
+    is_graph_refactor_run: bool,
+    atomicity_errors: list[str],
+) -> tuple[str, list[str]]:
+    """Classify the semantic scope of an accepted canonical spec change."""
+    review_reasons: list[str] = []
+    foreign_spec_changes = [path for path in changed_spec_files if path != source_spec_relpath]
+    if foreign_spec_changes:
+        review_reasons.append("run changed additional spec files beyond the selected source node")
+
+    if any(path_matches_prefix(path, IMMUTABLE_DIFF_PREFIXES) for path in diff_paths):
+        review_reasons.append("run attempted to modify immutable spec identity fields")
+        return REFINEMENT_CLASS_CONSTITUTIONAL, review_reasons
+
+    if any(path_matches_prefix(path, CONSTITUTIONAL_DIFF_PREFIXES) for path in diff_paths):
+        review_reasons.append("run changed governance-sensitive specification sections")
+        return REFINEMENT_CLASS_CONSTITUTIONAL, review_reasons
+
+    if is_seed_like_spec(node_data):
+        if atomicity_errors:
+            review_reasons.append("atomicity gate still requires follow-up decomposition work")
+            return REFINEMENT_CLASS_GRAPH_REFACTOR, review_reasons
+        return REFINEMENT_CLASS_LOCAL, review_reasons
+
+    if is_graph_refactor_run:
+        review_reasons.append("run executed in explicit graph_refactor mode")
+
+    if any(path_matches_prefix(path, GRAPH_REFACTOR_DIFF_PREFIXES) for path in diff_paths):
+        review_reasons.append("run changed graph structure or spec contract paths")
+
+    if atomicity_errors:
+        review_reasons.append("atomicity gate still requires follow-up decomposition work")
+
+    if review_reasons:
+        return REFINEMENT_CLASS_GRAPH_REFACTOR, review_reasons
+    return REFINEMENT_CLASS_LOCAL, review_reasons
+
+
+def validate_refinement_acceptance(
+    *,
+    node: SpecNode,
+    before_data: dict[str, Any],
+    after_data: dict[str, Any],
+    changed_files: list[str],
+    is_graph_refactor_run: bool,
+    output_errors: list[str],
+    allowed_path_errors: list[str],
+    reconciliation_errors: list[str],
+    transition_errors: list[str],
+    atomicity_errors: list[str],
+) -> dict[str, Any]:
+    """Deterministically classify whether a refinement may be accepted as valid.
+
+    This validator is intentionally narrower than "good writing" judgment. It
+    answers only whether the run produced a canonical spec change that is valid
+    under the current structural contract, and whether that change can be
+    treated as a bounded local refinement or still requires explicit review.
+    """
+    before_snapshot = canonical_spec_snapshot(before_data)
+    after_snapshot = canonical_spec_snapshot(after_data)
+    diff_paths = collect_changed_paths(before_snapshot, after_snapshot)
+
+    try:
+        source_spec_relpath = node.path.relative_to(ROOT).as_posix()
+    except ValueError:
+        source_spec_relpath = node.path.as_posix()
+    changed_spec_files = sorted(path for path in changed_files if is_spec_node_path(path))
+    hard_errors = (
+        list(output_errors)
+        + list(allowed_path_errors)
+        + list(reconciliation_errors)
+        + list(transition_errors)
+    )
+    change_class, review_reasons = classify_refinement_change(
+        node_data=after_snapshot,
+        diff_paths=diff_paths,
+        changed_spec_files=changed_spec_files,
+        source_spec_relpath=source_spec_relpath,
+        is_graph_refactor_run=is_graph_refactor_run,
+        atomicity_errors=atomicity_errors,
+    )
+
+    errors: list[str] = []
+    warnings: list[str] = []
+    decision = REFINEMENT_ACCEPT_DECISION_APPROVE
+
+    if hard_errors:
+        decision = REFINEMENT_ACCEPT_DECISION_REJECT
+        errors.extend(hard_errors)
+    elif not diff_paths:
+        decision = REFINEMENT_ACCEPT_DECISION_REJECT
+        errors.append("No canonical spec change detected after the refinement run")
+    elif any(path_matches_prefix(path, IMMUTABLE_DIFF_PREFIXES) for path in diff_paths):
+        decision = REFINEMENT_ACCEPT_DECISION_REJECT
+        errors.append("Refinement run attempted to change immutable spec identity fields")
+    elif change_class != REFINEMENT_CLASS_LOCAL:
+        decision = REFINEMENT_ACCEPT_DECISION_REVIEW_REQUIRED
+
+    if atomicity_errors:
+        warnings.extend(atomicity_errors)
+
+    return {
+        "decision": decision,
+        "change_class": change_class,
+        "checks": {
+            "content_changed": bool(diff_paths),
+            "hard_validation": not hard_errors,
+            "single_spec_scope": all(path == source_spec_relpath for path in changed_spec_files)
+            if changed_spec_files
+            else True,
+            "constitutional_diff": change_class == REFINEMENT_CLASS_CONSTITUTIONAL,
+            "graph_refactor_diff": change_class == REFINEMENT_CLASS_GRAPH_REFACTOR,
+            "atomicity_clear": not atomicity_errors,
+        },
+        "diff_paths": diff_paths,
+        "changed_spec_files": changed_spec_files,
+        "review_reasons": review_reasons,
+        "errors": errors,
+        "warnings": warnings,
+    }
 
 
 def is_spec_node_path(rel_path: str) -> bool:
@@ -1086,6 +1523,12 @@ def observe_graph_health(
     if reconciled_node is not None:
         local_atomicity = validate_atomicity(reconciled_node)
         if local_atomicity:
+            live_child_ids = [
+                child.id
+                for child in refining_child_specs(reconciled_node, worktree_specs)
+                if child.id
+            ]
+            accepted_child_ids = accepted_child_spec_ids(reconciled_node, worktree_specs)
             observations.append(
                 {
                     "kind": "oversized_spec",
@@ -1093,8 +1536,23 @@ def observe_graph_health(
                     "details": local_atomicity,
                 }
             )
-            signals.append("oversized_spec")
-            recommended_actions.append("split_or_narrow_spec")
+            if live_child_ids:
+                observations.append(
+                    {
+                        "kind": RETROSPECTIVE_REFACTOR_SIGNAL,
+                        "spec_id": source_node.id,
+                        "details": {
+                            "atomicity": local_atomicity,
+                            "live_child_ids": live_child_ids,
+                            "accepted_child_ids": accepted_child_ids,
+                        },
+                    }
+                )
+                signals.append(RETROSPECTIVE_REFACTOR_SIGNAL)
+                recommended_actions.append("propose_retrospective_refactor")
+            else:
+                signals.append("oversized_spec")
+                recommended_actions.append("split_or_narrow_spec")
 
         missing_dependencies = [
             dep_id for dep_id in reconciled_node.depends_on if dep_id not in index
@@ -1344,6 +1802,26 @@ def proposal_artifact_relpath(*, proposal_type: str, spec_id: str, signal: str) 
     )
 
 
+def split_proposal_allowed_changed_paths(artifact_relpath: str) -> set[str]:
+    """Allow the proposal artifact file plus any untracked parent dirs.
+
+    `git status --porcelain` may surface a newly created artifact as
+    `runs/proposals/` instead of the concrete JSON file. Split proposal mode
+    should treat those parent directories as part of the single allowed write.
+    """
+
+    normalized = artifact_relpath.strip().rstrip("/")
+    allowed = {normalized}
+    current = PurePosixPath(normalized)
+    for parent in current.parents:
+        parent_text = parent.as_posix().rstrip("/")
+        if not parent_text or parent_text == ".":
+            continue
+        allowed.add(parent_text)
+        allowed.add(f"{parent_text}/")
+    return allowed
+
+
 def proposal_item_path(item: dict[str, Any]) -> Path:
     path_value = str(item.get("proposal_artifact_path", "")).strip()
     if not path_value:
@@ -1370,6 +1848,7 @@ def classify_refactor_work_item(signal: str) -> str:
 def default_action_for_signal(signal: str) -> str:
     return {
         "oversized_spec": "split_or_narrow_spec",
+        RETROSPECTIVE_REFACTOR_SIGNAL: "propose_retrospective_refactor",
         "missing_dependency_target": "repair_canonical_dependencies",
         "repeated_split_required_candidate": "review_decomposition_policy",
         "stalled_maturity_candidate": "review_refinement_strategy",
@@ -1422,6 +1901,8 @@ def refactor_execution_policy(
         proposal_items=proposal_items,
     ):
         return "defer_to_active_proposal"
+    if signal == RETROSPECTIVE_REFACTOR_SIGNAL:
+        return "emit_proposal"
     return "direct_graph_update"
 
 
@@ -1431,7 +1912,9 @@ def classify_proposal_type(work_item_type: str) -> str:
     return "refactor_proposal"
 
 
-def proposal_threshold_for_work_item_type(work_item_type: str) -> int:
+def proposal_threshold_for_signal(*, signal: str, work_item_type: str) -> int:
+    if signal == RETROSPECTIVE_REFACTOR_SIGNAL:
+        return 1
     if work_item_type == "governance_proposal":
         return 1
     return RECURRING_REFACTOR_PROPOSAL_THRESHOLD
@@ -1551,11 +2034,17 @@ def build_proposal_queue_items(
         occurrence_count = len(supporting_run_ids) + 1
         if run_id not in supporting_run_ids:
             supporting_run_ids.append(run_id)
-        threshold = proposal_threshold_for_work_item_type(work_item_type)
+        threshold = proposal_threshold_for_signal(signal=signal_name, work_item_type=work_item_type)
         if occurrence_count < threshold:
             continue
 
         proposal_type = classify_proposal_type(work_item_type)
+        if work_item_type == "governance_proposal":
+            trigger = "governance_class_signal"
+        elif signal_name == RETROSPECTIVE_REFACTOR_SIGNAL:
+            trigger = "retrospective_signal"
+        else:
+            trigger = "recurring_signal"
         items.append(
             {
                 "id": f"{proposal_type}::{source_spec_id}::{signal_name}",
@@ -1564,11 +2053,7 @@ def build_proposal_queue_items(
                 "signal": signal_name,
                 "recommended_action": default_action_for_signal(signal_name),
                 "status": "proposed",
-                "trigger": (
-                    "governance_class_signal"
-                    if work_item_type == "governance_proposal"
-                    else "recurring_signal"
-                ),
+                "trigger": trigger,
                 "occurrence_count": occurrence_count,
                 "threshold": threshold,
                 "supporting_run_ids": supporting_run_ids,
@@ -2224,13 +2709,33 @@ def sync_current_node_into_worktree(node: SpecNode, worktree_path: Path) -> Path
     return worktree_node_path
 
 
+def sanitize_spec_sync_text(text: str) -> str:
+    """Remove runtime-only contamination before syncing a spec back to root.
+
+    Child agents edit draft spec files inside an isolated worktree, but runtime
+    markers such as RUN_OUTCOME/BLOCKER must never become canonical spec data.
+    The gatekeeper therefore strips reserved runtime keys and re-renders the file
+    canonically before the root copy is updated.
+    """
+    yaml_module = get_yaml_module()
+    data = yaml_module.safe_load(text) or {}
+    if not isinstance(data, dict):
+        raise ValueError("top-level YAML document must be a mapping")
+    cleaned = canonical_spec_snapshot(data)
+    return dump_yaml_text(cleaned)
+
+
 def sync_files_from_worktree(worktree_path: Path, rel_paths: list[str]) -> None:
     for rel_path in rel_paths:
         src = worktree_path / rel_path
         dst = ROOT / rel_path
         if src.exists() and src.is_file():
             dst.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(src, dst)
+            if is_spec_node_path(rel_path):
+                sanitized_text = sanitize_spec_sync_text(src.read_text(encoding="utf-8"))
+                dst.write_text(sanitized_text, encoding="utf-8")
+            else:
+                shutil.copy2(src, dst)
             continue
         if dst.exists() and dst.is_file():
             dst.unlink()
@@ -2265,6 +2770,8 @@ def invoke_executor(
     node: SpecNode,
     worktree_path: Path,
     refactor_work_item: dict[str, Any] | None = None,
+    *,
+    operator_target: bool = False,
 ) -> subprocess.CompletedProcess[str]:
     """Call the executor with optional work-item context when supported.
 
@@ -2272,6 +2779,13 @@ def invoke_executor(
     positional argument carrying refactor/proposal context. Simpler executors
     keep the legacy `(node, worktree_path)` signature.
     """
+    if executor is run_codex:
+        return executor(
+            node,
+            worktree_path,
+            refactor_work_item,
+            operator_target=operator_target,
+        )
     if refactor_work_item is not None and (
         executor is run_codex or executor_supports_work_item(executor)
     ):
@@ -2344,9 +2858,17 @@ def run_codex(
     node: SpecNode,
     worktree_path: Path,
     refactor_work_item: dict[str, Any] | None = None,
+    *,
+    operator_target: bool = False,
 ) -> subprocess.CompletedProcess[str]:
     """Run the Codex executor in the isolated worktree and stream logs live."""
-    cmd = build_codex_exec_command(prompt=build_prompt(node, refactor_work_item))
+    cmd = build_codex_exec_command(
+        prompt=build_prompt(
+            node,
+            refactor_work_item,
+            operator_target=operator_target,
+        )
+    )
     print(f"Launching codex exec for {node.id} in {worktree_path}")
     child_codex_home = create_child_codex_home()
     env = os.environ.copy()
@@ -2778,7 +3300,7 @@ def _process_split_refactor_proposal(
     artifact_relpath = str(refactor_work_item["proposal_artifact_relpath"])
     artifact_worktree_path = worktree_path / artifact_relpath
     proposal_artifact_root_path = ROOT / artifact_relpath
-    allowed_changed_paths = {artifact_relpath}
+    allowed_changed_paths = split_proposal_allowed_changed_paths(artifact_relpath)
     changed_spec_files = [path for path in changed if is_spec_node_path(path)]
     extra_changed_files = [path for path in changed if path not in allowed_changed_paths]
     if changed_spec_files:
@@ -2914,11 +3436,13 @@ def _process_one_spec(
     executor: Callable[[SpecNode, Path], subprocess.CompletedProcess[str]],
     auto_approve: bool,
     refactor_work_item: dict[str, Any] | None = None,
+    operator_target: bool = False,
 ) -> tuple[int, str]:
     """Process one ordinary supervisor run.
 
     This is the main path for:
     - default refinement
+    - explicit operator-targeted refinement
     - ancestor reconciliation
     - queue-selected graph_refactor direct updates
 
@@ -2930,7 +3454,12 @@ def _process_one_spec(
         and str(refactor_work_item.get("work_item_type", "")).strip() == "graph_refactor"
     )
     dependents = reverse_dependents_count(specs)
-    selection_mode = selection_mode_for_node(node, specs, refactor_work_item=refactor_work_item)
+    selection_mode = selection_mode_for_node(
+        node,
+        specs,
+        refactor_work_item=refactor_work_item,
+        operator_target=operator_target,
+    )
     selected_by_rule = {
         "status_filter": sorted(WORKABLE_STATUSES),
         "dependency_required_statuses": sorted(READY_DEP_STATUSES),
@@ -2945,6 +3474,9 @@ def _process_one_spec(
         ],
         "dependents_count": dependents.get(node.id, 0),
     }
+    if operator_target:
+        selected_by_rule["operator_target"] = node.id
+        selected_by_rule["sort_order"] = ["explicit_operator_target"]
     if refactor_work_item is not None:
         selected_by_rule["refactor_work_item"] = {
             "id": str(refactor_work_item.get("id", "")),
@@ -2955,6 +3487,7 @@ def _process_one_spec(
         }
 
     before_status = node.status
+    before_canonical = canonical_spec_snapshot(node.data)
 
     try:
         worktree_path, branch = create_isolated_worktree(node.id)
@@ -2970,7 +3503,13 @@ def _process_one_spec(
     tracked_paths = sorted(set(before))
     before_digests = snapshot_file_digests(tracked_paths, base_dir=worktree_path)
     print(f"Starting executor for {node.id}...")
-    result = invoke_executor(executor, node, worktree_path, refactor_work_item)
+    result = invoke_executor(
+        executor,
+        node,
+        worktree_path,
+        refactor_work_item,
+        operator_target=operator_target,
+    )
     print(f"Executor finished for {node.id} with exit_code={result.returncode}")
     after = git_changed_files(worktree_path)
     tracked_paths = sorted(set(before) | set(after))
@@ -3001,6 +3540,24 @@ def _process_one_spec(
         if not blocker:
             blocker = "executor environment failure"
 
+    refinement_acceptance = {
+        "decision": REFINEMENT_ACCEPT_DECISION_REJECT,
+        "change_class": REFINEMENT_CLASS_LOCAL,
+        "checks": {
+            "content_changed": False,
+            "hard_validation": False,
+            "single_spec_scope": True,
+            "constitutional_diff": False,
+            "graph_refactor_diff": False,
+            "atomicity_clear": True,
+        },
+        "diff_paths": [],
+        "changed_spec_files": [],
+        "review_reasons": [],
+        "errors": ["refinement acceptance was not evaluated"],
+        "warnings": [],
+    }
+
     if primary_executor_failure:
         worktree_specs = []
         worktree_load_errors = []
@@ -3022,6 +3579,7 @@ def _process_one_spec(
         proposal_queue_artifact = proposal_queue_path()
         proposal_items: list[dict[str, Any]] = load_proposal_queue()
         refactor_queue_artifact = refactor_queue_path()
+        candidate_after_data = before_canonical
     else:
         try:
             worktree_specs = load_specs_from_dir(worktree_path / "specs" / "nodes")
@@ -3081,7 +3639,32 @@ def _process_one_spec(
             run_id=run_id,
             proposal_items=proposal_items,
         )
-    success = result.returncode == 0 and not validation_errors and outcome == "done"
+        candidate_after_node = next((spec for spec in worktree_specs if spec.id == node.id), None)
+        candidate_after_data = (
+            candidate_after_node.data if candidate_after_node is not None else before_canonical
+        )
+    if not primary_executor_failure:
+        refinement_acceptance = validate_refinement_acceptance(
+            node=node,
+            before_data=before_canonical,
+            after_data=candidate_after_data,
+            changed_files=changed,
+            is_graph_refactor_run=is_graph_refactor_run,
+            output_errors=output_errors,
+            allowed_path_errors=allowed_path_errors,
+            reconciliation_errors=reconciliation_errors,
+            transition_errors=transition_errors,
+            atomicity_errors=atomicity_errors,
+        )
+
+    structural_success = result.returncode == 0 and not validation_errors and outcome == "done"
+    accepted_refinement = refinement_acceptance["decision"] != REFINEMENT_ACCEPT_DECISION_REJECT
+    success = structural_success
+    if structural_success and not accepted_refinement:
+        success = False
+        outcome = "retry"
+        blocker = blocker or "refinement acceptance rejected"
+        validation_errors = validation_errors + list(refinement_acceptance["errors"])
 
     required_human_action = "resolve gate: approve|retry|split|block|redirect|escalate"
     node.data["proposed_status"] = None
@@ -3095,6 +3678,7 @@ def _process_one_spec(
         and not allowed_path_errors
         and not reconciliation_errors
         and not transition_errors
+        and accepted_refinement
     )
     if split_sync_allowed:
         allowed_changes = select_sync_paths(node.allowed_paths, changed)
@@ -3102,16 +3686,16 @@ def _process_one_spec(
         node.reload()
 
     if success:
+        allowed_changes = select_sync_paths(node.allowed_paths, changed)
+        sync_files_from_worktree(worktree_path, allowed_changes)
+        node.reload()
         proposed_maturity = (
             None if is_graph_refactor_run else min(1.0, round(node.maturity + 0.2, 2))
         )
         node.data["proposed_status"] = proposed_status
         node.data["proposed_maturity"] = proposed_maturity
-        if auto_approve:
-            allowed_changes = select_sync_paths(node.allowed_paths, changed)
-            sync_files_from_worktree(worktree_path, allowed_changes)
-            # Preserve approved content produced in the isolated worktree.
-            node.reload()
+        acceptance_decision = refinement_acceptance["decision"]
+        if auto_approve and acceptance_decision == REFINEMENT_ACCEPT_DECISION_APPROVE:
             if proposed_status:
                 node.data["status"] = proposed_status
             node.data["maturity"] = proposed_maturity
@@ -3121,6 +3705,10 @@ def _process_one_spec(
             required_human_action = "-"
         else:
             node.data["gate_state"] = "review_pending"
+            if acceptance_decision == REFINEMENT_ACCEPT_DECISION_APPROVE:
+                required_human_action = "approve or retry refinement"
+            else:
+                required_human_action = "review refinement impact before approval"
     else:
         if primary_executor_failure:
             node.data["gate_state"] = "blocked"
@@ -3133,7 +3721,10 @@ def _process_one_spec(
             required_human_action = "split spec scope before rerun"
         elif outcome == "retry":
             node.data["gate_state"] = "retry_pending"
-            required_human_action = "rerun supervisor"
+            if refinement_acceptance["decision"] == REFINEMENT_ACCEPT_DECISION_REJECT:
+                required_human_action = "repair invalid or empty refinement and rerun supervisor"
+            else:
+                required_human_action = "rerun supervisor"
         elif outcome == "escalate":
             node.data["gate_state"] = "escalated"
             required_human_action = "manual escalation"
@@ -3148,6 +3739,7 @@ def _process_one_spec(
         "atomicity": not atomicity_errors,
         "transition": not transition_errors,
         "executor_environment": not primary_executor_failure,
+        "refinement_acceptance": accepted_refinement,
     }
 
     node.data["required_human_action"] = required_human_action
@@ -3160,6 +3752,7 @@ def _process_one_spec(
     node.data["last_worktree_path"] = worktree_path.as_posix()
     node.data["last_branch"] = branch
     node.data["last_validator_results"] = validator_results
+    node.data["last_refinement_acceptance"] = refinement_acceptance
     node.data["last_reconciliation"] = reconciliation
     if validation_errors:
         node.data["last_errors"] = validation_errors
@@ -3179,7 +3772,11 @@ def _process_one_spec(
         "gate_state": node.data.get("gate_state"),
         "required_human_action": required_human_action,
         "exit_code": result.returncode,
-        "auto_approved": bool(success and auto_approve),
+        "auto_approved": bool(
+            success
+            and auto_approve
+            and refinement_acceptance["decision"] == REFINEMENT_ACCEPT_DECISION_APPROVE
+        ),
         "worktree_path": worktree_path.as_posix(),
         "branch": branch,
         "changed_files": changed,
@@ -3188,6 +3785,7 @@ def _process_one_spec(
         "reconciliation": reconciliation,
         "graph_health": graph_health,
         "executor_environment": executor_environment,
+        "refinement_acceptance": refinement_acceptance,
         "refactor_queue_artifact": refactor_queue_artifact.as_posix(),
         "proposal_queue_artifact": proposal_queue_artifact.as_posix(),
         "stdout": result.stdout,
@@ -3262,12 +3860,6 @@ def main(
         print("--decision is only valid with --resolve-gate", file=sys.stderr)
         return 1
 
-    if target_spec and not (split_proposal or apply_split_proposal):
-        print(
-            "--target-spec currently requires --split-proposal or --apply-split-proposal",
-            file=sys.stderr,
-        )
-        return 1
     if split_proposal and apply_split_proposal:
         print("--split-proposal cannot be combined with --apply-split-proposal", file=sys.stderr)
         return 1
@@ -3288,6 +3880,9 @@ def main(
             "--split-proposal and --apply-split-proposal cannot be combined with --auto-approve",
             file=sys.stderr,
         )
+        return 1
+    if target_spec and loop:
+        print("--target-spec cannot be combined with --loop", file=sys.stderr)
         return 1
 
     if loop and not auto_approve:
@@ -3361,6 +3956,44 @@ def main(
 
         print(f"Selected spec node: {node.id} — {node.title}")
         return _apply_split_proposal(node=node, specs=specs)
+
+    if target_spec:
+        index = index_specs(specs)
+        node = index.get(str(target_spec).strip())
+        if node is None:
+            print(f"Spec not found: {target_spec}", file=sys.stderr)
+            return 1
+        if str(node.data.get("kind", "")).strip() != "spec":
+            print(f"Explicit target is not a spec node: {target_spec}", file=sys.stderr)
+            return 1
+
+        selected_by_rule = {
+            "selection_mode": "explicit_target_refine",
+            "operator_target": node.id,
+            "sort_order": ["explicit_operator_target"],
+            "status_filter": sorted(WORKABLE_STATUSES),
+            "dependency_required_statuses": sorted(READY_DEP_STATUSES),
+        }
+        print(f"Selected spec node: {node.id} — {node.title}")
+
+        if dry_run:
+            print("\n=== dry-run mode ===")
+            print(f"Would execute prompt for: {node.id}")
+            print(
+                f"Status: {node.status} | Maturity: {node.maturity:.2f} | Gate: {node.gate_state}"
+            )
+            print(f"Selection context: {json.dumps(selected_by_rule, ensure_ascii=False)}")
+            print(f"\n{build_prompt(node, operator_target=True)}")
+            return 0
+
+        exit_code, _outcome = _process_one_spec(
+            node=node,
+            specs=specs,
+            executor=executor,
+            auto_approve=auto_approve,
+            operator_target=True,
+        )
+        return exit_code
 
     if loop:
         print(f"Starting autonomous loop mode (max_iterations={max_iterations})")
@@ -3492,7 +4125,14 @@ if __name__ == "__main__":
         default=50,
         help="Safety limit for loop mode (default: 50)",
     )
-    parser.add_argument("--target-spec", metavar="SPEC_ID", help="Explicit operator target")
+    parser.add_argument(
+        "--target-spec",
+        metavar="SPEC_ID",
+        help=(
+            "Explicit operator target. Alone, runs one ordinary refinement pass for that spec; "
+            "with --split-proposal or --apply-split-proposal, runs the corresponding split mode."
+        ),
+    )
     parser.add_argument(
         "--split-proposal",
         action="store_true",
