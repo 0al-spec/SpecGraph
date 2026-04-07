@@ -43,10 +43,13 @@ acceptance_evidence:
 - criterion: Defines the first semantics for proposal-lane nodes, including provisional identity, relationship
     to canonical nodes, and approval or authority state distinct from canonical lifecycle status
   evidence: 'specification.terminology defines proposal_handle, proposal_target_region, proposal_lineage_link,
-    and proposal_authority_state. specification.proposal_lane_policy.identity_and_lineage requires each
-    proposal node to carry a provisional handle, a bounded target region, and explicit lineage to the
-    canonical target region or originating runtime artifact. specification.proposal_lane_policy.authority_states
-    separates proposal authority states from canonical lifecycle status.
+    and proposal_authority_state as a canonical enum. specification.terminology.proposal_target_region.required_components
+    and specification.terminology.proposal_lineage_link.required_components make target and lineage metadata
+    minimally machine-readable with explicit required components and cardinality. specification.proposal_lane_policy.identity_and_lineage
+    requires each proposal node to carry a provisional handle, exactly one bounded target region, and
+    at least one explicit lineage link. specification.proposal_lane_policy.authority_states separates
+    proposal authority states from canonical lifecycle status and defines explicit state transitions and
+    authority-change constraints.
 
     '
 - criterion: Defines what supervisor may autonomously create or update inside the proposal lane versus
@@ -96,17 +99,52 @@ specification:
       are reviewable and visible to tooling, but are not yet canonical accepted graph structure.
     proposal_node: A tracked node in the proposal lane representing a candidate new spec, refactor, or
       structural change that has not yet been applied into canonical spec nodes.
-    proposal_target_region: The bounded canonical node, canonical graph region, or draft target area that
-      a proposal-lane node claims as the scope of its intended change.
+    proposal_target_region:
+      meaning: The bounded canonical node, canonical graph region, or draft target area that a proposal-lane
+        node claims as the scope of its intended change.
+      required_components:
+      - component: target_kind
+        cardinality: exactly 1
+        allowed_values:
+        - canonical_node
+        - canonical_region
+        - draft_target_area
+      - component: target_reference
+        cardinality: exactly 1
+        meaning: Stable reference to the specific node, region, or draft area named by target_kind.
+      - component: change_scope
+        cardinality: exactly 1
+        meaning: Machine-readable statement of the bounded concern claimed within the referenced target.
+      cardinality: Exactly one proposal_target_region must be declared per proposal-lane node.
     proposal_handle: A provisional repository-tracked identifier for a proposal-lane node that is stable
       for review and tooling within the proposal lane but does not claim canonical spec ID status.
-    proposal_lineage_link: An explicit relationship from a proposal-lane node to the canonical node, canonical
-      graph region, or originating runtime artifact that motivated the proposal.
+    proposal_lineage_link:
+      meaning: An explicit relationship from a proposal-lane node to the canonical node, canonical graph
+        region, runtime artifact, or earlier proposal that motivated or redirected the proposal.
+      required_components:
+      - component: lineage_role
+        cardinality: exactly 1
+        allowed_values:
+        - motivated_by
+        - derived_from
+        - supersedes
+      - component: source_kind
+        cardinality: exactly 1
+        allowed_values:
+        - canonical_node
+        - canonical_region
+        - runtime_artifact
+        - proposal_handle
+      - component: source_reference
+        cardinality: exactly 1
+        meaning: Stable reference to the specific source named by source_kind.
+      cardinality: At least one proposal_lineage_link must be declared per proposal-lane node.
     canonical_graph: The current accepted graph stored in canonical spec nodes.
     runtime_artifact: An ephemeral or derived artifact under runs/ or similar runtime storage that supports
       execution, diagnostics, and queues but is not itself a tracked graph node.
-    proposal_authority_state: The review or trust state of a proposal-lane node, distinct from canonical
-      lifecycle status such as outlined, specified, or linked.
+    proposal_authority_state: A canonical enum for proposal-lane review authority, distinct from canonical
+      lifecycle status, with allowed values draft, under_review, approved_for_application, rejected, and
+      superseded.
   boundary_policy:
     layer_separation:
     - Canonical spec nodes remain the accepted graph of record.
@@ -138,10 +176,15 @@ specification:
       remains stable across ordinary review updates to that same proposal node.
     - A proposal_handle is provisional only; it must not be interpreted by tooling or supervisor as a
       canonical spec ID reservation or as evidence that canonical materialization is approved.
-    - Each proposal-lane node must declare one bounded proposal_target_region that states which canonical
-      concern or draft target area the proposal is trying to change.
-    - Each proposal-lane node must expose at least one proposal_lineage_link to the canonical node, canonical
-      target region, or runtime artifact that explains why the draft structure exists.
+    - Each proposal-lane node must declare exactly one proposal_target_region containing exactly one target_kind,
+      exactly one target_reference, and exactly one change_scope.
+    - proposal_target_region.target_reference must resolve according to proposal_target_region.target_kind,
+      and proposal_target_region.change_scope must bound the intended change within that referenced target.
+    - Each proposal-lane node must expose at least one proposal_lineage_link, and each such link must
+      contain exactly one lineage_role, exactly one source_kind, and exactly one source_reference.
+    - proposal_lineage_link.source_reference must resolve according to proposal_lineage_link.source_kind,
+      and multiple lineage links are allowed only when each link contributes a distinct motivating, derivation,
+      or supersession relationship.
     - When a proposal describes a candidate node not yet present in the canonical graph, the lineage still
       points back to the motivating canonical parent, target region, or originating proposal artifact
       rather than inventing canonical ancestry.
@@ -157,13 +200,33 @@ specification:
     - If one proposal supersedes another inside the proposal lane, the newer proposal must retain visible
       lineage to the superseded proposal_handle so tooling can reconstruct ownership history.
     authority_states:
-    - Proposal authority is tracked independently from canonical status so a proposal may be draft, under_review,
-      approved_for_application, rejected, or superseded without reusing canonical lifecycle labels.
-    - Entering an approved_for_application or equivalent proposal authority state means the proposal is
-      eligible for an explicit canonical application path; it does not by itself mutate the canonical
-      graph.
-    - Rejection, supersession, or staleness of a proposal-lane node must remain visible in the proposal
-      lane so tooling can preserve review history and avoid mistaking abandoned drafts for active candidates.
+    - proposal_authority_state must use exactly one canonical enum value from draft, under_review, approved_for_application,
+      rejected, and superseded.
+    - draft is the initial state for newly created proposal-lane nodes that have tracked candidate structure
+      but have not yet entered explicit review.
+    - under_review means the proposal is an active review subject and remains non-canonical while review
+      is pending.
+    - approved_for_application means review has authorized the proposal to enter a separate explicit canonical
+      application path; this state never mutates the canonical graph by itself.
+    - rejected means the proposal is no longer an eligible candidate for canonical application in its
+      current form but must remain visible as review history.
+    - superseded means a newer proposal has taken over the same bounded concern and the older proposal
+      remains visible through lineage as non-active review history.
+    - Allowed forward transitions are draft to under_review or rejected; under_review to approved_for_application,
+      rejected, or superseded; and approved_for_application to superseded.
+    - Direct transitions from draft to approved_for_application or from any terminal state to a non-terminal
+      state are not allowed.
+    - rejected and superseded are terminal authority states for the proposal-lane node they label.
+    - A proposal-lane node already in approved_for_application may receive clarifying non-substantive
+      draft updates without changing state, but any substantive authority-relevant change must move that
+      node back to under_review or be recorded as a newer superseding proposal.
+    - Supervisor may autonomously move a proposal only from draft to under_review when the change reflects
+      bounded preparation for review, or from under_review to superseded when a distinct reviewed owner
+      has explicitly taken over the same proposal_target_region.
+    - Moving a proposal into approved_for_application or rejected requires explicit review authority and
+      must not be inferred solely from supervisor activity or proposal existence.
+    - Rejection or supersession of a proposal-lane node must remain visible in the proposal lane so tooling
+      can preserve review history and avoid mistaking inactive drafts for active candidates.
     lifecycle_boundary:
     - A proposal-lane node may be created before a canonical node exists for the same concern.
     - Approval or acceptance of a proposal-lane node does not automatically supersede or mutate canonical
@@ -202,13 +265,13 @@ gate_state: review_pending
 required_human_action: review refinement impact before approval
 last_outcome: done
 last_blocker: ''
-last_run_id: 20260407T174439Z-SG-SPEC-0006
+last_run_id: 20260407T205602Z-SG-SPEC-0006
 last_exit_code: 0
 last_changed_files:
 - specs/nodes/SG-SPEC-0006.yaml
-last_run_at: '2026-04-07T17:44:39.498586+00:00'
-last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0006-20260407T174317Z
-last_branch: codex/sg-spec-0006/20260407T174317Z
+last_run_at: '2026-04-07T20:56:03.145561+00:00'
+last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0006-20260407T205447Z
+last_branch: codex/sg-spec-0006/20260407T205447Z
 last_validator_results:
   outputs: true
   allowed_paths: true
@@ -229,19 +292,53 @@ last_refinement_acceptance:
     atomicity_clear: true
   diff_paths:
   - acceptance_evidence[1].evidence
-  - acceptance_evidence[2].evidence
-  - specification.proposal_lane_policy.conflict_precedence
-  - specification.proposal_lane_policy.conflict_precedence[0]
-  - specification.proposal_lane_policy.conflict_precedence[1]
-  - specification.proposal_lane_policy.conflict_precedence[2]
-  - specification.proposal_lane_policy.conflict_precedence[3]
   - specification.proposal_lane_policy.identity_and_lineage[2]
   - specification.proposal_lane_policy.identity_and_lineage[3]
   - specification.proposal_lane_policy.identity_and_lineage[4]
-  - specification.proposal_lane_policy.mutation_rules[2]
-  - specification.proposal_lane_policy.mutation_rules[3]
-  - specification.proposal_lane_policy.mutation_rules[4]
+  - specification.proposal_lane_policy.identity_and_lineage[5]
+  - specification.proposal_lane_policy.identity_and_lineage[6]
+  - specification.terminology.proposal_lineage_link
+  - specification.terminology.proposal_lineage_link.cardinality
+  - specification.terminology.proposal_lineage_link.meaning
+  - specification.terminology.proposal_lineage_link.required_components
+  - specification.terminology.proposal_lineage_link.required_components[0]
+  - specification.terminology.proposal_lineage_link.required_components[0].allowed_values
+  - specification.terminology.proposal_lineage_link.required_components[0].allowed_values[0]
+  - specification.terminology.proposal_lineage_link.required_components[0].allowed_values[1]
+  - specification.terminology.proposal_lineage_link.required_components[0].allowed_values[2]
+  - specification.terminology.proposal_lineage_link.required_components[0].cardinality
+  - specification.terminology.proposal_lineage_link.required_components[0].component
+  - specification.terminology.proposal_lineage_link.required_components[1]
+  - specification.terminology.proposal_lineage_link.required_components[1].allowed_values
+  - specification.terminology.proposal_lineage_link.required_components[1].allowed_values[0]
+  - specification.terminology.proposal_lineage_link.required_components[1].allowed_values[1]
+  - specification.terminology.proposal_lineage_link.required_components[1].allowed_values[2]
+  - specification.terminology.proposal_lineage_link.required_components[1].allowed_values[3]
+  - specification.terminology.proposal_lineage_link.required_components[1].cardinality
+  - specification.terminology.proposal_lineage_link.required_components[1].component
+  - specification.terminology.proposal_lineage_link.required_components[2]
+  - specification.terminology.proposal_lineage_link.required_components[2].cardinality
+  - specification.terminology.proposal_lineage_link.required_components[2].component
+  - specification.terminology.proposal_lineage_link.required_components[2].meaning
   - specification.terminology.proposal_target_region
+  - specification.terminology.proposal_target_region.cardinality
+  - specification.terminology.proposal_target_region.meaning
+  - specification.terminology.proposal_target_region.required_components
+  - specification.terminology.proposal_target_region.required_components[0]
+  - specification.terminology.proposal_target_region.required_components[0].allowed_values
+  - specification.terminology.proposal_target_region.required_components[0].allowed_values[0]
+  - specification.terminology.proposal_target_region.required_components[0].allowed_values[1]
+  - specification.terminology.proposal_target_region.required_components[0].allowed_values[2]
+  - specification.terminology.proposal_target_region.required_components[0].cardinality
+  - specification.terminology.proposal_target_region.required_components[0].component
+  - specification.terminology.proposal_target_region.required_components[1]
+  - specification.terminology.proposal_target_region.required_components[1].cardinality
+  - specification.terminology.proposal_target_region.required_components[1].component
+  - specification.terminology.proposal_target_region.required_components[1].meaning
+  - specification.terminology.proposal_target_region.required_components[2]
+  - specification.terminology.proposal_target_region.required_components[2].cardinality
+  - specification.terminology.proposal_target_region.required_components[2].component
+  - specification.terminology.proposal_target_region.required_components[2].meaning
   changed_spec_files:
   - specs/nodes/SG-SPEC-0006.yaml
   review_reasons:
@@ -249,7 +346,7 @@ last_refinement_acceptance:
   errors: []
   warnings: []
 last_reconciliation:
-  worktree_spec_count: 6
+  worktree_spec_count: 7
   changed_spec_ids:
   - SG-SPEC-0006
   semantic_dependencies_resolved: true
