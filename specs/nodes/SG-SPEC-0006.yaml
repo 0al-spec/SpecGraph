@@ -35,8 +35,10 @@ acceptance_evidence:
     and ephemeral runtime artifacts so supervisor can grow reviewable proposal subgraphs without mutating
     canonical truth
   evidence: 'specification.objective defines the proposal lane as repository-tracked draft graph structure
-    between canonical nodes and runtime artifacts. specification.boundary_policy.layer_separation states
-    that proposal-lane nodes are reviewable tracked structure while canonical spec nodes remain the accepted
+    between canonical nodes and runtime artifacts. specification.terminology.proposal_repository_presence
+    defines the weakest machine-readable repository contract for proposal-node presence, path classification,
+    and review-visible persistence boundaries. specification.boundary_policy.layer_separation states that
+    proposal-lane nodes are reviewable tracked structure while canonical spec nodes remain the accepted
     graph of record and runtime artifacts remain separate execution persistence.
 
     '
@@ -170,6 +172,29 @@ specification:
         cardinality: exactly 1
         meaning: Stable reference to the specific source named by source_kind.
       cardinality: At least one proposal_lineage_link must be declared per proposal-lane node.
+    proposal_repository_presence:
+      meaning: The weakest machine-readable repository contract proving that a proposal-lane node exists
+        as tracked review state rather than only as an ephemeral runtime artifact.
+      required_components:
+      - component: tracked_presence
+        cardinality: exactly 1
+        allowed_values:
+        - repository_tracked
+        meaning: Declares that the proposal node is persisted in repository-tracked state.
+      - component: path_class
+        cardinality: exactly 1
+        allowed_values:
+        - proposal_node_path
+        meaning: Classifies the tracked location as belonging to the proposal-node lane without fixing
+          any exact directory layout or naming algorithm.
+      - component: persistence_boundary
+        cardinality: exactly 1
+        allowed_values:
+        - review_visible_repository_separate_from_runtime
+        meaning: Declares that proposal-node state must remain review-visible in repository-tracked form
+          and must not rely on ephemeral runtime storage as its only persisted representation.
+      cardinality: Exactly one proposal_repository_presence contract must be declared per proposal-lane
+        node.
     canonical_graph: The current accepted graph stored in canonical spec nodes.
     runtime_artifact: An ephemeral or derived artifact under runs/ or similar runtime storage that supports
       execution, diagnostics, and queues but is not itself a tracked graph node.
@@ -184,6 +209,9 @@ specification:
     - Runtime artifacts remain the first persistence for execution detail, logs, and transient queue state.
     - Proposal-lane nodes may summarize or stabilize selected runtime outputs, but they do not replace
       run logs or summaries.
+    - A proposal-lane node is present for review only when repository-tracked state exposes exactly one
+      proposal_repository_presence contract whose tracked_presence is repository_tracked, whose path_class
+      is proposal_node_path, and whose persistence_boundary is review_visible_repository_separate_from_runtime.
     supervisor_authority:
     - Supervisor may autonomously create or refresh proposal-lane nodes when current canonical policy
       permits proposal emission for a bounded target.
@@ -198,6 +226,9 @@ specification:
   proposal_lane_policy:
     node_semantics:
     - Proposal-lane nodes represent candidate structure, not accepted structure.
+    - Each proposal-lane node must expose exactly one proposal_repository_presence contract so tooling
+      can determine that the node is repository-tracked proposal structure rather than only a runtime
+      artifact.
     - Proposal-lane nodes must preserve stable references to the canonical nodes, graph regions, signals,
       or proposals from which they were derived.
     - Proposal-lane state SHOULD distinguish proposal review state from canonical lifecycle status so
@@ -217,6 +248,11 @@ specification:
       retired, superseded, or otherwise explicitly repaired.
     - proposal_handle continuity must be recoverable from repository-tracked proposal content alone; runtime
       artifacts may help explain history but must not be the only source of handle persistence.
+    - proposal_repository_presence.path_class classifies the tracked location only as proposal-node lane
+      content; it must not be interpreted as fixing an exact directory structure, filename scheme, or
+      naming algorithm.
+    - proposal_repository_presence.persistence_boundary must keep proposal-node review state visibly recoverable
+      from repository-tracked content even when related runtime artifacts are deleted, rotated, or unavailable.
     - Each proposal-lane node must declare exactly one proposal_target_region containing exactly one target_kind,
       exactly one target_reference, and exactly one change_scope.
     - proposal_target_region.target_reference must resolve according to proposal_target_region.target_kind,
@@ -306,13 +342,13 @@ gate_state: review_pending
 required_human_action: review refinement impact before approval
 last_outcome: done
 last_blocker: ''
-last_run_id: 20260407T211247Z-SG-SPEC-0006
+last_run_id: 20260407T211630Z-SG-SPEC-0006
 last_exit_code: 0
 last_changed_files:
 - specs/nodes/SG-SPEC-0006.yaml
-last_run_at: '2026-04-07T21:12:47.654500+00:00'
-last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0006-20260407T211148Z
-last_branch: codex/sg-spec-0006/20260407T211148Z
+last_run_at: '2026-04-07T21:16:30.896687+00:00'
+last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0006-20260407T211512Z
+last_branch: codex/sg-spec-0006/20260407T211512Z
 last_validator_results:
   outputs: true
   allowed_paths: true
@@ -332,37 +368,40 @@ last_refinement_acceptance:
     graph_refactor_diff: false
     atomicity_clear: true
   diff_paths:
-  - acceptance_evidence[1].evidence
-  - specification.proposal_lane_policy.identity_and_lineage[2]
-  - specification.proposal_lane_policy.identity_and_lineage[3]
-  - specification.proposal_lane_policy.identity_and_lineage[4]
-  - specification.proposal_lane_policy.identity_and_lineage[5]
+  - acceptance_evidence[0].evidence
+  - specification.boundary_policy.layer_separation[4]
   - specification.proposal_lane_policy.identity_and_lineage[6]
   - specification.proposal_lane_policy.identity_and_lineage[7]
   - specification.proposal_lane_policy.identity_and_lineage[8]
   - specification.proposal_lane_policy.identity_and_lineage[9]
   - specification.proposal_lane_policy.identity_and_lineage[10]
-  - specification.terminology.proposal_handle
-  - specification.terminology.proposal_handle.cardinality
-  - specification.terminology.proposal_handle.collision_handling
-  - specification.terminology.proposal_handle.collision_handling[0]
-  - specification.terminology.proposal_handle.collision_handling[1]
-  - specification.terminology.proposal_handle.meaning
-  - specification.terminology.proposal_handle.repository_persistence_invariants
-  - specification.terminology.proposal_handle.repository_persistence_invariants[0]
-  - specification.terminology.proposal_handle.repository_persistence_invariants[1]
-  - specification.terminology.proposal_handle.required_components
-  - specification.terminology.proposal_handle.required_components[0]
-  - specification.terminology.proposal_handle.required_components[0].cardinality
-  - specification.terminology.proposal_handle.required_components[0].component
-  - specification.terminology.proposal_handle.required_components[0].meaning
-  - specification.terminology.proposal_handle.required_components[1]
-  - specification.terminology.proposal_handle.required_components[1].cardinality
-  - specification.terminology.proposal_handle.required_components[1].component
-  - specification.terminology.proposal_handle.required_components[1].meaning
-  - specification.terminology.proposal_handle.stability_rules
-  - specification.terminology.proposal_handle.stability_rules[0]
-  - specification.terminology.proposal_handle.stability_rules[1]
+  - specification.proposal_lane_policy.identity_and_lineage[11]
+  - specification.proposal_lane_policy.identity_and_lineage[12]
+  - specification.proposal_lane_policy.node_semantics[1]
+  - specification.proposal_lane_policy.node_semantics[2]
+  - specification.proposal_lane_policy.node_semantics[3]
+  - specification.terminology.proposal_repository_presence
+  - specification.terminology.proposal_repository_presence.meaning
+  - specification.terminology.proposal_repository_presence.required_components
+  - specification.terminology.proposal_repository_presence.required_components[0]
+  - specification.terminology.proposal_repository_presence.required_components[0].component
+  - specification.terminology.proposal_repository_presence.required_components[0].cardinality
+  - specification.terminology.proposal_repository_presence.required_components[0].allowed_values
+  - specification.terminology.proposal_repository_presence.required_components[0].allowed_values[0]
+  - specification.terminology.proposal_repository_presence.required_components[0].meaning
+  - specification.terminology.proposal_repository_presence.required_components[1]
+  - specification.terminology.proposal_repository_presence.required_components[1].component
+  - specification.terminology.proposal_repository_presence.required_components[1].cardinality
+  - specification.terminology.proposal_repository_presence.required_components[1].allowed_values
+  - specification.terminology.proposal_repository_presence.required_components[1].allowed_values[0]
+  - specification.terminology.proposal_repository_presence.required_components[1].meaning
+  - specification.terminology.proposal_repository_presence.required_components[2]
+  - specification.terminology.proposal_repository_presence.required_components[2].component
+  - specification.terminology.proposal_repository_presence.required_components[2].cardinality
+  - specification.terminology.proposal_repository_presence.required_components[2].allowed_values
+  - specification.terminology.proposal_repository_presence.required_components[2].allowed_values[0]
+  - specification.terminology.proposal_repository_presence.required_components[2].meaning
+  - specification.terminology.proposal_repository_presence.cardinality
   changed_spec_files:
   - specs/nodes/SG-SPEC-0006.yaml
   review_reasons:
