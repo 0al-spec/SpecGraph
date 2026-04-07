@@ -41,9 +41,10 @@ acceptance_evidence:
     and review-visible persistence boundaries. specification.boundary_policy.layer_separation states that
     proposal-lane nodes are reviewable tracked structure while canonical spec nodes remain the accepted
     graph of record and runtime artifacts remain separate execution persistence, and now requires the
-    repository-tracked proposal node to co-expose proposal_repository_presence, proposal_handle, proposal_authority_state,
-    proposal_target_region, and proposal_lineage_link before tooling may count it as tracked queryable
-    proposal state.
+    repository-tracked proposal node to expose exactly one valid proposal_repository_presence contract
+    before tooling treats it as present in the proposal overlay, while separately requiring co-exposed
+    proposal_handle, proposal_authority_state, proposal_target_region, and proposal_lineage_link before
+    tooling may count that present node as tracked queryable proposal state.
 
     '
 - criterion: Defines the first semantics for proposal-lane nodes, including provisional identity, relationship
@@ -80,9 +81,13 @@ acceptance_evidence:
   evidence: 'specification.boundary_policy.proposal_visibility requires proposal structure to remain available
     as a visible overlay or secondary layer. specification.proposal_lane_policy.viewer_contract requires
     proposal nodes and edges to expose enough lane and state metadata for tooling to render them alongside
-    canonical structure without treating them as accepted graph truth, including a minimum repository-tracked
-    query contract based on co-present proposal_repository_presence, proposal_handle, proposal_authority_state,
-    proposal_target_region, and proposal_lineage_link semantics with no gap filled from runtime artifacts.
+    canonical structure without treating them as accepted graph truth, including a deterministic distinction
+    between overlay absence when exactly one valid proposal_repository_presence contract is not present
+    and visible invalid review state when that presence contract exists but the co-required proposal_handle,
+    proposal_authority_state, proposal_target_region, or proposal_lineage_link semantics remain missing
+    or ambiguous, with no gap filled from runtime artifacts. specification.proposal_lane_policy.viewer_contract
+    further preserves the minimum repository-tracked query contract based on co-present proposal_repository_presence,
+    proposal_handle, proposal_authority_state, proposal_target_region, and proposal_lineage_link semantics.
     specification.terminology.proposal_artifact_link defines the minimal machine-readable contract for
     proposal-lane references to explicit apply-path inputs and supporting runtime artifacts, including
     apply_path_compatibility for apply_path_input links. specification.terminology.canonical_application_event
@@ -274,6 +279,9 @@ specification:
     - A proposal-lane node is present for review only when repository-tracked state exposes exactly one
       proposal_repository_presence contract whose tracked_presence is repository_tracked, whose path_class
       is proposal_node_path, and whose persistence_boundary is review_visible_repository_separate_from_runtime.
+      Repository-tracked content that does not expose exactly one such contract is absent from the proposal
+      overlay rather than a review-visible proposal node, even if related runtime artifacts or partial
+      proposal metadata exist elsewhere.
     - A proposal-lane node counts as tracked queryable proposal state only when that same repository-tracked
       node also exposes exactly one active proposal_handle, exactly one proposal_authority_state, exactly
       one proposal_target_region, and at least one proposal_lineage_link; if any of those semantics are
@@ -476,6 +484,12 @@ specification:
       proposal_target_region, and at least one proposal_lineage_link on the same repository-tracked node;
       tooling must use that co-present set to address, classify, target, and place the node in overlays
       without filling missing semantics from proposal_artifact_link entries or runtime artifacts.
+    - Viewer and analysis tooling must classify proposal-overlay state in two stages. If exactly one valid
+      proposal_repository_presence contract is not present on repository-tracked content, that content
+      is absent from the proposal overlay. If exactly one valid proposal_repository_presence contract
+      is present but the co-required proposal_handle, proposal_authority_state, proposal_target_region,
+      or proposal_lineage_link semantics are missing or ambiguous, the node remains visible in the overlay
+      as invalid review state rather than being treated as absent.
     - Viewer and analysis tooling must distinguish three separate conditions without inference collapse.
       apply_path_compatibility on proposal_artifact_link means compatible input exists, proposal_authority_state
       approved_for_application means review has authorized a separate path, and canonical_application_event
@@ -492,13 +506,13 @@ gate_state: review_pending
 required_human_action: review refinement impact before approval
 last_outcome: done
 last_blocker: ''
-last_run_id: 20260407T222228Z-SG-SPEC-0006
+last_run_id: 20260407T222538Z-SG-SPEC-0006
 last_exit_code: 0
 last_changed_files:
 - specs/nodes/SG-SPEC-0006.yaml
-last_run_at: '2026-04-07T22:22:28.705796+00:00'
-last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0006-20260407T222113Z
-last_branch: codex/sg-spec-0006/20260407T222113Z
+last_run_at: '2026-04-07T22:25:38.925322+00:00'
+last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0006-20260407T222432Z
+last_branch: codex/sg-spec-0006/20260407T222432Z
 last_validator_results:
   outputs: true
   allowed_paths: true
@@ -521,18 +535,11 @@ last_refinement_acceptance:
   diff_paths:
   - acceptance_evidence[0].evidence
   - acceptance_evidence[3].evidence
-  - specification.boundary_policy.layer_separation[5]
-  - specification.boundary_policy.layer_separation[6]
-  - specification.boundary_policy.layer_separation[7]
-  - specification.boundary_policy.layer_separation[8]
-  - specification.proposal_lane_policy.node_semantics[2]
-  - specification.proposal_lane_policy.node_semantics[3]
-  - specification.proposal_lane_policy.node_semantics[4]
-  - specification.proposal_lane_policy.node_semantics[5]
-  - specification.proposal_lane_policy.viewer_contract[1]
+  - specification.boundary_policy.layer_separation[4]
   - specification.proposal_lane_policy.viewer_contract[2]
   - specification.proposal_lane_policy.viewer_contract[3]
   - specification.proposal_lane_policy.viewer_contract[4]
+  - specification.proposal_lane_policy.viewer_contract[5]
   mutation_classes:
   - policy_text
   mutation_budget:
