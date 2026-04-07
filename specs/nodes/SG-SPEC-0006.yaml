@@ -43,7 +43,11 @@ acceptance_evidence:
 - criterion: Defines the first semantics for proposal-lane nodes, including provisional identity, relationship
     to canonical nodes, and approval or authority state distinct from canonical lifecycle status
   evidence: 'specification.terminology defines proposal_handle, proposal_target_region, proposal_lineage_link,
-    and proposal_authority_state as a canonical enum. specification.terminology.proposal_target_region.required_components
+    and proposal_authority_state as a canonical enum. specification.terminology.proposal_handle.required_components,
+    specification.terminology.proposal_handle.stability_rules, specification.terminology.proposal_handle.collision_handling,
+    and specification.terminology.proposal_handle.repository_persistence_invariants define the minimal
+    machine-readable structure, ordinary-update stability, duplicate handling, and weakest tracked persistence
+    contract for provisional proposal identity. specification.terminology.proposal_target_region.required_components
     and specification.terminology.proposal_lineage_link.required_components make target and lineage metadata
     minimally machine-readable with explicit required components and cardinality. specification.proposal_lane_policy.identity_and_lineage
     requires each proposal node to carry a provisional handle, exactly one bounded target region, and
@@ -116,8 +120,35 @@ specification:
         cardinality: exactly 1
         meaning: Machine-readable statement of the bounded concern claimed within the referenced target.
       cardinality: Exactly one proposal_target_region must be declared per proposal-lane node.
-    proposal_handle: A provisional repository-tracked identifier for a proposal-lane node that is stable
-      for review and tooling within the proposal lane but does not claim canonical spec ID status.
+    proposal_handle:
+      meaning: A provisional repository-tracked identifier for a proposal-lane node that is stable for
+        review and tooling within the proposal lane but does not claim canonical spec ID status.
+      required_components:
+      - component: handle_value
+        cardinality: exactly 1
+        meaning: The repository-tracked proposal identifier string used to address the proposal-lane node.
+      - component: handle_status
+        cardinality: exactly 1
+        meaning: Whether the handle instance is active or retired for that proposal-lane node.
+      cardinality: Exactly one active proposal_handle must be declared per proposal-lane node.
+      stability_rules:
+      - The active proposal_handle must remain unchanged across ordinary review edits, metadata refreshes,
+        and bounded draft-structure updates to the same proposal-lane node.
+      - A proposal_handle may change only when the original handle is retired because of repository-tracked
+        collision resolution or because a newer superseding proposal is intentionally created as a distinct
+        proposal-lane node.
+      collision_handling:
+      - If repository-tracked state reveals two active proposal-lane nodes claiming the same handle_value,
+        the collision must be treated as invalid review state until exactly one node retains that active
+        handle_value.
+      - Collision resolution must preserve repository-tracked history by retiring or superseding at least
+        one conflicting handle instance rather than silently reassigning both nodes without trace.
+      repository_persistence_invariants:
+      - The active handle_value and any retired predecessor handles for a proposal-lane node must remain
+        recoverable from repository-tracked proposal state without consulting ephemeral runtime artifacts.
+      - Loss of a handle's repository-tracked history must not be treated as a no-op rename; the proposal
+        must instead be considered identity-ambiguous until review or explicit repair restores a visible
+        tracked mapping.
     proposal_lineage_link:
       meaning: An explicit relationship from a proposal-lane node to the canonical node, canonical graph
         region, runtime artifact, or earlier proposal that motivated or redirected the proposal.
@@ -176,6 +207,16 @@ specification:
       remains stable across ordinary review updates to that same proposal node.
     - A proposal_handle is provisional only; it must not be interpreted by tooling or supervisor as a
       canonical spec ID reservation or as evidence that canonical materialization is approved.
+    - proposal_handle must expose exactly one handle_value and exactly one handle_status, and exactly
+      one active proposal_handle must exist per proposal-lane node at any given time.
+    - handle_status may distinguish active from retired handle instances for the same proposal-lane node,
+      but retired handles remain review history and must not be reused as active identities for a different
+      live proposal-lane node while their tracked history remains present.
+    - If a proposal_handle collision is detected in repository-tracked proposal state, supervisor and
+      tooling must preserve the conflict as visible invalid review state until one handle instance is
+      retired, superseded, or otherwise explicitly repaired.
+    - proposal_handle continuity must be recoverable from repository-tracked proposal content alone; runtime
+      artifacts may help explain history but must not be the only source of handle persistence.
     - Each proposal-lane node must declare exactly one proposal_target_region containing exactly one target_kind,
       exactly one target_reference, and exactly one change_scope.
     - proposal_target_region.target_reference must resolve according to proposal_target_region.target_kind,
@@ -265,13 +306,13 @@ gate_state: review_pending
 required_human_action: review refinement impact before approval
 last_outcome: done
 last_blocker: ''
-last_run_id: 20260407T205602Z-SG-SPEC-0006
+last_run_id: 20260407T211247Z-SG-SPEC-0006
 last_exit_code: 0
 last_changed_files:
 - specs/nodes/SG-SPEC-0006.yaml
-last_run_at: '2026-04-07T20:56:03.145561+00:00'
-last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0006-20260407T205447Z
-last_branch: codex/sg-spec-0006/20260407T205447Z
+last_run_at: '2026-04-07T21:12:47.654500+00:00'
+last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0006-20260407T211148Z
+last_branch: codex/sg-spec-0006/20260407T211148Z
 last_validator_results:
   outputs: true
   allowed_paths: true
@@ -297,48 +338,31 @@ last_refinement_acceptance:
   - specification.proposal_lane_policy.identity_and_lineage[4]
   - specification.proposal_lane_policy.identity_and_lineage[5]
   - specification.proposal_lane_policy.identity_and_lineage[6]
-  - specification.terminology.proposal_lineage_link
-  - specification.terminology.proposal_lineage_link.cardinality
-  - specification.terminology.proposal_lineage_link.meaning
-  - specification.terminology.proposal_lineage_link.required_components
-  - specification.terminology.proposal_lineage_link.required_components[0]
-  - specification.terminology.proposal_lineage_link.required_components[0].allowed_values
-  - specification.terminology.proposal_lineage_link.required_components[0].allowed_values[0]
-  - specification.terminology.proposal_lineage_link.required_components[0].allowed_values[1]
-  - specification.terminology.proposal_lineage_link.required_components[0].allowed_values[2]
-  - specification.terminology.proposal_lineage_link.required_components[0].cardinality
-  - specification.terminology.proposal_lineage_link.required_components[0].component
-  - specification.terminology.proposal_lineage_link.required_components[1]
-  - specification.terminology.proposal_lineage_link.required_components[1].allowed_values
-  - specification.terminology.proposal_lineage_link.required_components[1].allowed_values[0]
-  - specification.terminology.proposal_lineage_link.required_components[1].allowed_values[1]
-  - specification.terminology.proposal_lineage_link.required_components[1].allowed_values[2]
-  - specification.terminology.proposal_lineage_link.required_components[1].allowed_values[3]
-  - specification.terminology.proposal_lineage_link.required_components[1].cardinality
-  - specification.terminology.proposal_lineage_link.required_components[1].component
-  - specification.terminology.proposal_lineage_link.required_components[2]
-  - specification.terminology.proposal_lineage_link.required_components[2].cardinality
-  - specification.terminology.proposal_lineage_link.required_components[2].component
-  - specification.terminology.proposal_lineage_link.required_components[2].meaning
-  - specification.terminology.proposal_target_region
-  - specification.terminology.proposal_target_region.cardinality
-  - specification.terminology.proposal_target_region.meaning
-  - specification.terminology.proposal_target_region.required_components
-  - specification.terminology.proposal_target_region.required_components[0]
-  - specification.terminology.proposal_target_region.required_components[0].allowed_values
-  - specification.terminology.proposal_target_region.required_components[0].allowed_values[0]
-  - specification.terminology.proposal_target_region.required_components[0].allowed_values[1]
-  - specification.terminology.proposal_target_region.required_components[0].allowed_values[2]
-  - specification.terminology.proposal_target_region.required_components[0].cardinality
-  - specification.terminology.proposal_target_region.required_components[0].component
-  - specification.terminology.proposal_target_region.required_components[1]
-  - specification.terminology.proposal_target_region.required_components[1].cardinality
-  - specification.terminology.proposal_target_region.required_components[1].component
-  - specification.terminology.proposal_target_region.required_components[1].meaning
-  - specification.terminology.proposal_target_region.required_components[2]
-  - specification.terminology.proposal_target_region.required_components[2].cardinality
-  - specification.terminology.proposal_target_region.required_components[2].component
-  - specification.terminology.proposal_target_region.required_components[2].meaning
+  - specification.proposal_lane_policy.identity_and_lineage[7]
+  - specification.proposal_lane_policy.identity_and_lineage[8]
+  - specification.proposal_lane_policy.identity_and_lineage[9]
+  - specification.proposal_lane_policy.identity_and_lineage[10]
+  - specification.terminology.proposal_handle
+  - specification.terminology.proposal_handle.cardinality
+  - specification.terminology.proposal_handle.collision_handling
+  - specification.terminology.proposal_handle.collision_handling[0]
+  - specification.terminology.proposal_handle.collision_handling[1]
+  - specification.terminology.proposal_handle.meaning
+  - specification.terminology.proposal_handle.repository_persistence_invariants
+  - specification.terminology.proposal_handle.repository_persistence_invariants[0]
+  - specification.terminology.proposal_handle.repository_persistence_invariants[1]
+  - specification.terminology.proposal_handle.required_components
+  - specification.terminology.proposal_handle.required_components[0]
+  - specification.terminology.proposal_handle.required_components[0].cardinality
+  - specification.terminology.proposal_handle.required_components[0].component
+  - specification.terminology.proposal_handle.required_components[0].meaning
+  - specification.terminology.proposal_handle.required_components[1]
+  - specification.terminology.proposal_handle.required_components[1].cardinality
+  - specification.terminology.proposal_handle.required_components[1].component
+  - specification.terminology.proposal_handle.required_components[1].meaning
+  - specification.terminology.proposal_handle.stability_rules
+  - specification.terminology.proposal_handle.stability_rules[0]
+  - specification.terminology.proposal_handle.stability_rules[1]
   changed_spec_files:
   - specs/nodes/SG-SPEC-0006.yaml
   review_reasons:
