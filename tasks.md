@@ -34,3 +34,10 @@
 26. [done] Isolate or reset child executor state so nested runs do not depend on the operator's long-lived `~/.codex` state DB and migration history.
 27. [done] Classify executor-environment failures separately from spec-quality failures so transport, MCP, sandbox, or state-runtime problems do not masquerade as graph-health issues.
 28. [done] Add a documented bootstrap-runtime troubleshooting path for `supervisor` runs, including expected child executor config, fallback worktree mode, and interpretation of nested executor failures.
+
+## Proposal Lane
+
+29. [inprogress] Add a tracked proposal lane between canonical spec nodes and ephemeral runtime artifacts so `supervisor` can grow proposal subgraphs without mutating canonical truth.
+30. Define proposal-lane node semantics, including stable provisional IDs, authority or approval state, and lineage between proposal nodes and canonical nodes.
+31. Let `supervisor` autonomously create and refresh tracked proposal nodes while keeping canonical writeback behind explicit review/apply flow.
+32. Extend graph and viewer projections so proposal-lane nodes can be shown as an overlay or secondary layer on top of the canonical graph.
