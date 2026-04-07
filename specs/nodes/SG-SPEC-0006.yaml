@@ -26,8 +26,9 @@ acceptance:
   canonical nodes, and approval or authority state distinct from canonical lifecycle status
 - Defines what supervisor may autonomously create or update inside the proposal lane versus what still
   requires explicit review or canonical application
-- Defines how proposal-lane nodes and edges should remain visible to graph tooling and viewer overlays
-  without being mistaken for canonical accepted graph structure
+- Defines how proposal-lane nodes and edges, including non-authorizing proposal_artifact_link bridge metadata,
+  should remain visible to graph tooling and viewer overlays without being mistaken for canonical accepted
+  graph structure
 - Remains implementation-agnostic about exact file layout, rendering style, ID minting algorithm, and
   eventual convergence with metrics or versioning subsystems
 acceptance_evidence:
@@ -68,19 +69,27 @@ acceptance_evidence:
     path mutates accepted graph structure.
 
     '
-- criterion: Defines how proposal-lane nodes and edges should remain visible to graph tooling and viewer
-    overlays without being mistaken for canonical accepted graph structure
+- criterion: Defines how proposal-lane nodes and edges, including non-authorizing proposal_artifact_link
+    bridge metadata, should remain visible to graph tooling and viewer overlays without being mistaken
+    for canonical accepted graph structure
   evidence: 'specification.boundary_policy.proposal_visibility requires proposal structure to remain available
     as a visible overlay or secondary layer. specification.proposal_lane_policy.viewer_contract requires
     proposal nodes and edges to expose enough lane and state metadata for tooling to render them alongside
-    canonical structure without treating them as accepted graph truth.
+    canonical structure without treating them as accepted graph truth. specification.terminology.proposal_artifact_link
+    defines the minimal machine-readable contract for proposal-lane references to explicit apply-path
+    inputs and supporting runtime artifacts. specification.proposal_lane_policy.application_artifact_bridge
+    limits those references to non-authorizing bridge metadata that remains distinct from target, lineage,
+    and canonical application semantics, and defines precedence so tracked proposal state remains authoritative
+    for proposal review semantics. specification.boundary_policy.layer_separation states that these links
+    do not collapse proposal state into runtime persistence or canonical truth.
 
     '
 - criterion: Remains implementation-agnostic about exact file layout, rendering style, ID minting algorithm,
     and eventual convergence with metrics or versioning subsystems
   evidence: 'specification.scope.out explicitly excludes exact repository layout, final ID minting algorithm,
-    viewer rendering details, metric formulas, versioning design, and full archival policy. The node therefore
-    defines governance semantics for the proposal lane without fixing the eventual implementation shape.
+    viewer rendering details, metric formulas, versioning design, exact apply-path storage layout, and
+    full archival policy. The node therefore defines governance semantics for the proposal lane without
+    fixing the eventual implementation shape.
 
     '
 prompt: Define a tracked proposal layer for SpecGraph so supervisor can autonomously grow reviewable draft
@@ -95,10 +104,14 @@ specification:
     - Boundary between canonical spec nodes, tracked proposal nodes, and ephemeral run artifacts
     - Supervisor authority inside the proposal lane
     - Viewer and graph-tooling visibility for proposal-layer nodes and edges
+    - Weakest machine-readable bridge from proposal-lane nodes to apply-path inputs and supporting runtime
+      artifacts
     out:
     - Exact repository directory layout for proposal nodes
     - Final ID minting algorithm or naming convention implementation
     - Viewer rendering details or UI controls
+    - Exact directory layout, file naming, storage backend, or full history/versioning design for apply-path
+      inputs or runtime artifacts
     - Metric formulas, versioning design, or full archival policy
   terminology:
     proposal_lane: A repository-tracked graph layer that holds draft or proposed nodes and edges which
@@ -172,6 +185,25 @@ specification:
         cardinality: exactly 1
         meaning: Stable reference to the specific source named by source_kind.
       cardinality: At least one proposal_lineage_link must be declared per proposal-lane node.
+    proposal_artifact_link:
+      meaning: A weakest machine-readable bridge from a proposal-lane node to an explicit apply-path input
+        or supporting runtime artifact that may be inspected during review or consumed by a separate canonical
+        application path.
+      required_components:
+      - component: artifact_role
+        cardinality: exactly 1
+        allowed_values:
+        - apply_path_input
+        - supporting_runtime_artifact
+      - component: reference_kind
+        cardinality: exactly 1
+        allowed_values:
+        - repository_input
+        - runtime_artifact
+      - component: reference_value
+        cardinality: exactly 1
+        meaning: Stable reference to the specific input or artifact named by reference_kind.
+      cardinality: Zero or more proposal_artifact_link entries may be declared per proposal-lane node.
     proposal_repository_presence:
       meaning: The weakest machine-readable repository contract proving that a proposal-lane node exists
         as tracked review state rather than only as an ephemeral runtime artifact.
@@ -212,6 +244,12 @@ specification:
     - A proposal-lane node is present for review only when repository-tracked state exposes exactly one
       proposal_repository_presence contract whose tracked_presence is repository_tracked, whose path_class
       is proposal_node_path, and whose persistence_boundary is review_visible_repository_separate_from_runtime.
+    - For proposal review semantics, the authoritative state is the repository-tracked proposal-lane node,
+      including proposal_authority_state, proposal_target_region, proposal_lineage_link, and proposal_repository_presence,
+      rather than any linked apply-path input or runtime artifact.
+    - proposal_artifact_link entries may reference apply-path inputs or runtime artifacts, but those references
+      do not convert runtime persistence into repository-tracked proposal presence and do not make linked
+      inputs canonical by association.
     supervisor_authority:
     - Supervisor may autonomously create or refresh proposal-lane nodes when current canonical policy
       permits proposal emission for a bounded target.
@@ -231,6 +269,9 @@ specification:
       artifact.
     - Proposal-lane nodes must preserve stable references to the canonical nodes, graph regions, signals,
       or proposals from which they were derived.
+    - Proposal-lane nodes may expose zero or more proposal_artifact_link entries to identify explicit
+      apply-path inputs or supporting runtime artifacts without changing proposal-lane authority or target
+      semantics.
     - Proposal-lane state SHOULD distinguish proposal review state from canonical lifecycle status so
       draft review does not overload canonical maturity semantics.
     identity_and_lineage:
@@ -308,6 +349,33 @@ specification:
     - A proposal-lane node may be created before a canonical node exists for the same concern.
     - Approval or acceptance of a proposal-lane node does not automatically supersede or mutate canonical
       nodes until an explicit application path runs.
+    application_artifact_bridge:
+    - proposal_artifact_link is bridge metadata only; it must not replace proposal_target_region, proposal_lineage_link,
+      or proposal_repository_presence.
+    - When a proposal_artifact_link is present, proposal-lane tracked state remains authoritative for
+      proposal review semantics; linked artifacts may support inspection or later application, but they
+      must not override proposal_authority_state, proposal_target_region, lineage, or repository presence
+      by implication.
+    - artifact_role apply_path_input identifies a concrete non-canonical input that a separate explicit
+      canonical application path may consume, but the link itself does not authorize or execute that application
+      path.
+    - A linked apply_path_input is compatible with proposal review only as consumable input for that separate
+      explicit application path; it must not be interpreted as evidence that application has started,
+      completed, or become authoritative for the proposal-lane node.
+    - artifact_role supporting_runtime_artifact identifies a runtime artifact that informs review, diagnosis,
+      or preparation, but the proposal-lane node must remain reviewable even if the linked runtime artifact
+      is rotated, deleted, or otherwise unavailable.
+    - Supporting runtime artifacts are advisory to review and may explain or justify tracked proposal
+      content, but if a linked runtime artifact conflicts with repository-tracked proposal state, the
+      tracked proposal state remains authoritative until an allowed proposal-lane update or explicit application
+      path changes that state.
+    - reference_kind repository_input classifies the linked material as repository-tracked input without
+      fixing exact directory layout, filename scheme, or storage backend.
+    - reference_kind runtime_artifact classifies the linked material as runtime-produced or runtime-scoped
+      support state without requiring that runtime storage become part of canonical or proposal-lane identity.
+    - proposal_artifact_link.reference_value must resolve according to proposal_artifact_link.reference_kind,
+      and multiple proposal_artifact_link entries are allowed only when each entry contributes a distinct
+      apply-path input or supporting runtime reference.
     graph_growth:
     - Proposal-lane nodes may form bounded subgraphs, including proposed children, proposed lineage edges,
       and proposed restructuring relationships around one target region.
@@ -342,13 +410,13 @@ gate_state: review_pending
 required_human_action: review refinement impact before approval
 last_outcome: done
 last_blocker: ''
-last_run_id: 20260407T211630Z-SG-SPEC-0006
+last_run_id: 20260407T214913Z-SG-SPEC-0006
 last_exit_code: 0
 last_changed_files:
 - specs/nodes/SG-SPEC-0006.yaml
-last_run_at: '2026-04-07T21:16:30.896687+00:00'
-last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0006-20260407T211512Z
-last_branch: codex/sg-spec-0006/20260407T211512Z
+last_run_at: '2026-04-07T21:49:14.010256+00:00'
+last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0006-20260407T214813Z
+last_branch: codex/sg-spec-0006/20260407T214813Z
 last_validator_results:
   outputs: true
   allowed_paths: true
@@ -368,40 +436,17 @@ last_refinement_acceptance:
     graph_refactor_diff: false
     atomicity_clear: true
   diff_paths:
-  - acceptance_evidence[0].evidence
-  - specification.boundary_policy.layer_separation[4]
-  - specification.proposal_lane_policy.identity_and_lineage[6]
-  - specification.proposal_lane_policy.identity_and_lineage[7]
-  - specification.proposal_lane_policy.identity_and_lineage[8]
-  - specification.proposal_lane_policy.identity_and_lineage[9]
-  - specification.proposal_lane_policy.identity_and_lineage[10]
-  - specification.proposal_lane_policy.identity_and_lineage[11]
-  - specification.proposal_lane_policy.identity_and_lineage[12]
-  - specification.proposal_lane_policy.node_semantics[1]
-  - specification.proposal_lane_policy.node_semantics[2]
-  - specification.proposal_lane_policy.node_semantics[3]
-  - specification.terminology.proposal_repository_presence
-  - specification.terminology.proposal_repository_presence.meaning
-  - specification.terminology.proposal_repository_presence.required_components
-  - specification.terminology.proposal_repository_presence.required_components[0]
-  - specification.terminology.proposal_repository_presence.required_components[0].component
-  - specification.terminology.proposal_repository_presence.required_components[0].cardinality
-  - specification.terminology.proposal_repository_presence.required_components[0].allowed_values
-  - specification.terminology.proposal_repository_presence.required_components[0].allowed_values[0]
-  - specification.terminology.proposal_repository_presence.required_components[0].meaning
-  - specification.terminology.proposal_repository_presence.required_components[1]
-  - specification.terminology.proposal_repository_presence.required_components[1].component
-  - specification.terminology.proposal_repository_presence.required_components[1].cardinality
-  - specification.terminology.proposal_repository_presence.required_components[1].allowed_values
-  - specification.terminology.proposal_repository_presence.required_components[1].allowed_values[0]
-  - specification.terminology.proposal_repository_presence.required_components[1].meaning
-  - specification.terminology.proposal_repository_presence.required_components[2]
-  - specification.terminology.proposal_repository_presence.required_components[2].component
-  - specification.terminology.proposal_repository_presence.required_components[2].cardinality
-  - specification.terminology.proposal_repository_presence.required_components[2].allowed_values
-  - specification.terminology.proposal_repository_presence.required_components[2].allowed_values[0]
-  - specification.terminology.proposal_repository_presence.required_components[2].meaning
-  - specification.terminology.proposal_repository_presence.cardinality
+  - acceptance_evidence[3].evidence
+  - specification.boundary_policy.layer_separation[5]
+  - specification.boundary_policy.layer_separation[6]
+  - specification.proposal_lane_policy.application_artifact_bridge[1]
+  - specification.proposal_lane_policy.application_artifact_bridge[2]
+  - specification.proposal_lane_policy.application_artifact_bridge[3]
+  - specification.proposal_lane_policy.application_artifact_bridge[4]
+  - specification.proposal_lane_policy.application_artifact_bridge[5]
+  - specification.proposal_lane_policy.application_artifact_bridge[6]
+  - specification.proposal_lane_policy.application_artifact_bridge[7]
+  - specification.proposal_lane_policy.application_artifact_bridge[8]
   changed_spec_files:
   - specs/nodes/SG-SPEC-0006.yaml
   review_reasons:
