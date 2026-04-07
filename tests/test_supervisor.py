@@ -364,6 +364,56 @@ def test_validate_refinement_acceptance_rejects_noop_run(
     assert "No canonical spec change detected" in result["errors"][0]
 
 
+def test_parse_mutation_budget_rejects_unknown_class(
+    supervisor_module: object,
+) -> None:
+    with pytest.raises(ValueError, match="Unknown mutation class"):
+        supervisor_module.parse_mutation_budget("policy_text,unknown_class")
+
+
+def test_validate_refinement_acceptance_tracks_schema_required_addition_and_budget(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    node = supervisor_module.load_specs()[0]
+    before = json.loads(json.dumps(node.data))
+    after = json.loads(json.dumps(node.data))
+    after["specification"] = {
+        "terminology": {
+            "proposal_artifact_link": {
+                "required_components": [
+                    {
+                        "component": "reference_value",
+                        "cardinality": "exactly 1",
+                    }
+                ]
+            }
+        }
+    }
+
+    result = supervisor_module.validate_refinement_acceptance(
+        node=node,
+        before_data=before,
+        after_data=after,
+        changed_files=["specs/nodes/SG-SPEC-0001.yaml"],
+        is_graph_refactor_run=False,
+        output_errors=[],
+        allowed_path_errors=[],
+        reconciliation_errors=[],
+        transition_errors=[],
+        atomicity_errors=[],
+        mutation_budget=(supervisor_module.MUTATION_CLASS_POLICY_TEXT,),
+    )
+
+    assert supervisor_module.MUTATION_CLASS_POLICY_TEXT in result["mutation_classes"]
+    assert supervisor_module.MUTATION_CLASS_SCHEMA_REQUIRED_ADDITION in result["mutation_classes"]
+    assert result["checks"]["within_mutation_budget"] is False
+    assert result["budget_exceeded_classes"] == [
+        supervisor_module.MUTATION_CLASS_SCHEMA_REQUIRED_ADDITION
+    ]
+    assert any("mutation budget" in reason for reason in result["review_reasons"])
+
+
 def make_valid_split_proposal(node_data: dict[str, object], run_id: str) -> dict[str, object]:
     spec_id = str(node_data["id"])
     acceptance = [str(item) for item in node_data.get("acceptance", [])]
@@ -1101,6 +1151,27 @@ def test_build_prompt_includes_incremental_refinement_policy_for_non_seed_spec(
     assert "Bootstrap guidance:" not in prompt
 
 
+def test_build_prompt_includes_mutation_budget_for_explicit_target(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    node = supervisor_module.load_specs()[0]
+    prompt = supervisor_module.build_prompt(
+        node,
+        operator_target=True,
+        operator_note="Only tighten one bridge concern.",
+        mutation_budget=(
+            supervisor_module.MUTATION_CLASS_POLICY_TEXT,
+            supervisor_module.MUTATION_CLASS_SCHEMA_REQUIRED_ADDITION,
+        ),
+    )
+
+    assert "Mutation budget:" in prompt
+    assert f"- {supervisor_module.MUTATION_CLASS_POLICY_TEXT}" in prompt
+    assert f"- {supervisor_module.MUTATION_CLASS_SCHEMA_REQUIRED_ADDITION}" in prompt
+    assert "do not smuggle it in silently" in prompt
+
+
 def test_build_prompt_includes_ancestor_reconciliation_guidance(
     supervisor_module: object,
     repo_fixture: Path,
@@ -1348,6 +1419,28 @@ def test_main_dry_run_supports_explicit_targeted_refinement_for_review_pending_n
     assert "Operator intent:" in captured.out
     assert "Tighten only the proposal-lane ownership semantics." in captured.out
     assert captured.err == ""
+
+
+def test_main_explicit_targeted_refinement_dry_run_prints_mutation_budget(
+    supervisor_module: object,
+    repo_fixture: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    exit_code = supervisor_module.main(
+        target_spec="SG-SPEC-0001",
+        dry_run=True,
+        operator_note="Tighten only one bounded schema concern.",
+        mutation_budget=(
+            supervisor_module.MUTATION_CLASS_POLICY_TEXT,
+            supervisor_module.MUTATION_CLASS_SCHEMA_REQUIRED_ADDITION,
+        ),
+    )
+
+    assert exit_code == 0
+    captured = capsys.readouterr()
+    assert '"mutation_budget": ["policy_text", "schema_required_addition"]' in captured.out
+    assert "Mutation budget:" in captured.out
+    assert "- schema_required_addition" in captured.out
 
 
 def test_main_explicit_targeted_refinement_reruns_review_pending_spec(
