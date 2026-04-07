@@ -3701,13 +3701,13 @@ def _process_one_spec(
 
     split_sync_allowed = (
         outcome == "split_required"
-        and any(spec_id != node.id for spec_id in reconciliation.get("changed_spec_ids", []))
         and result.returncode == 0
         and not output_errors
         and not allowed_path_errors
         and not reconciliation_errors
         and not transition_errors
         and accepted_refinement
+        and bool(changed)
     )
     if split_sync_allowed:
         allowed_changes = select_sync_paths(node.allowed_paths, changed)
