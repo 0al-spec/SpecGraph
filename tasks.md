@@ -41,3 +41,10 @@
 30. Define proposal-lane node semantics, including stable provisional IDs, authority or approval state, and lineage between proposal nodes and canonical nodes.
 31. Let `supervisor` autonomously create and refresh tracked proposal nodes while keeping canonical writeback behind explicit review/apply flow.
 32. Extend graph and viewer projections so proposal-lane nodes can be shown as an overlay or secondary layer on top of the canonical graph.
+
+## Intent Layer
+
+33. [inprogress] Define an intent-facing layer and mediated discovery path between raw user goals and canonical SpecGraph specs.
+34. Distinguish `UserIntent` and `OperatorRequest` from canonical `spec` and proposal-lane nodes.
+35. Add a bounded operator-request bridge so GUI selections and chat instructions can steer one supervisor run without mutating canonical specs directly.
+36. Define how mediator outputs become canonical specs or proposals through reviewable supervisor-driven refinement instead of raw chat-to-spec mutation.
