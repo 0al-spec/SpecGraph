@@ -40,7 +40,10 @@ acceptance_evidence:
     defines the weakest machine-readable repository contract for proposal-node presence, path classification,
     and review-visible persistence boundaries. specification.boundary_policy.layer_separation states that
     proposal-lane nodes are reviewable tracked structure while canonical spec nodes remain the accepted
-    graph of record and runtime artifacts remain separate execution persistence.
+    graph of record and runtime artifacts remain separate execution persistence, and now requires the
+    repository-tracked proposal node to co-expose proposal_repository_presence, proposal_handle, proposal_authority_state,
+    proposal_target_region, and proposal_lineage_link before tooling may count it as tracked queryable
+    proposal state.
 
     '
 - criterion: Defines the first semantics for proposal-lane nodes, including provisional identity, relationship
@@ -77,11 +80,14 @@ acceptance_evidence:
   evidence: 'specification.boundary_policy.proposal_visibility requires proposal structure to remain available
     as a visible overlay or secondary layer. specification.proposal_lane_policy.viewer_contract requires
     proposal nodes and edges to expose enough lane and state metadata for tooling to render them alongside
-    canonical structure without treating them as accepted graph truth. specification.terminology.proposal_artifact_link
-    defines the minimal machine-readable contract for proposal-lane references to explicit apply-path
-    inputs and supporting runtime artifacts, including apply_path_compatibility for apply_path_input links.
-    specification.terminology.canonical_application_event defines the weakest explicit marker for an actual
-    canonical application event as distinct from proposal review approval and bridge metadata. specification.proposal_lane_policy.application_artifact_bridge
+    canonical structure without treating them as accepted graph truth, including a minimum repository-tracked
+    query contract based on co-present proposal_repository_presence, proposal_handle, proposal_authority_state,
+    proposal_target_region, and proposal_lineage_link semantics with no gap filled from runtime artifacts.
+    specification.terminology.proposal_artifact_link defines the minimal machine-readable contract for
+    proposal-lane references to explicit apply-path inputs and supporting runtime artifacts, including
+    apply_path_compatibility for apply_path_input links. specification.terminology.canonical_application_event
+    defines the weakest explicit marker for an actual canonical application event as distinct from proposal
+    review approval and bridge metadata. specification.proposal_lane_policy.application_artifact_bridge
     limits proposal_artifact_link references to non-authorizing bridge metadata that remains distinct
     from target, lineage, approved_for_application review state, and canonical_application_event semantics,
     and defines precedence so tracked proposal state remains authoritative for proposal review semantics.
@@ -268,6 +274,11 @@ specification:
     - A proposal-lane node is present for review only when repository-tracked state exposes exactly one
       proposal_repository_presence contract whose tracked_presence is repository_tracked, whose path_class
       is proposal_node_path, and whose persistence_boundary is review_visible_repository_separate_from_runtime.
+    - A proposal-lane node counts as tracked queryable proposal state only when that same repository-tracked
+      node also exposes exactly one active proposal_handle, exactly one proposal_authority_state, exactly
+      one proposal_target_region, and at least one proposal_lineage_link; if any of those semantics are
+      missing or ambiguous, tooling must preserve the node as invalid review-visible state rather than
+      treating runtime artifacts or inferred defaults as a substitute.
     - For proposal review semantics, the authoritative state is the repository-tracked proposal-lane node,
       including proposal_authority_state, proposal_target_region, proposal_lineage_link, and proposal_repository_presence,
       rather than any linked apply-path input or runtime artifact.
@@ -295,6 +306,10 @@ specification:
     - Each proposal-lane node must expose exactly one proposal_repository_presence contract so tooling
       can determine that the node is repository-tracked proposal structure rather than only a runtime
       artifact.
+    - Tooling may count a proposal-lane node as queryable tracked proposal structure only when repository-tracked
+      content co-exposes the required proposal_repository_presence, proposal_handle, proposal_authority_state,
+      proposal_target_region, and proposal_lineage_link semantics on that node without relying on runtime-only
+      state or inferred placeholder values.
     - Proposal-lane nodes must preserve stable references to the canonical nodes, graph regions, signals,
       or proposals from which they were derived.
     - Proposal-lane nodes may expose zero or more proposal_artifact_link entries to identify explicit
@@ -456,6 +471,11 @@ specification:
     viewer_contract:
     - Proposal-lane nodes and edges should be queryable by graph tooling together with canonical nodes
       while remaining machine-distinguishable by lane and proposal_authority_state.
+    - The minimum repository-tracked query contract for a proposal node is exactly one proposal_repository_presence
+      contract, exactly one active proposal_handle, exactly one proposal_authority_state, exactly one
+      proposal_target_region, and at least one proposal_lineage_link on the same repository-tracked node;
+      tooling must use that co-present set to address, classify, target, and place the node in overlays
+      without filling missing semantics from proposal_artifact_link entries or runtime artifacts.
     - Viewer and analysis tooling must distinguish three separate conditions without inference collapse.
       apply_path_compatibility on proposal_artifact_link means compatible input exists, proposal_authority_state
       approved_for_application means review has authorized a separate path, and canonical_application_event
@@ -472,13 +492,13 @@ gate_state: review_pending
 required_human_action: review refinement impact before approval
 last_outcome: done
 last_blocker: ''
-last_run_id: 20260407T221958Z-SG-SPEC-0006
+last_run_id: 20260407T222228Z-SG-SPEC-0006
 last_exit_code: 0
 last_changed_files:
 - specs/nodes/SG-SPEC-0006.yaml
-last_run_at: '2026-04-07T22:19:58.651676+00:00'
-last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0006-20260407T221751Z
-last_branch: codex/sg-spec-0006/20260407T221751Z
+last_run_at: '2026-04-07T22:22:28.705796+00:00'
+last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0006-20260407T222113Z
+last_branch: codex/sg-spec-0006/20260407T222113Z
 last_validator_results:
   outputs: true
   allowed_paths: true
@@ -499,37 +519,24 @@ last_refinement_acceptance:
     atomicity_clear: true
     within_mutation_budget: true
   diff_paths:
+  - acceptance_evidence[0].evidence
   - acceptance_evidence[3].evidence
+  - specification.boundary_policy.layer_separation[5]
+  - specification.boundary_policy.layer_separation[6]
   - specification.boundary_policy.layer_separation[7]
-  - specification.proposal_lane_policy.application_artifact_bridge[4]
-  - specification.proposal_lane_policy.application_artifact_bridge[5]
-  - specification.proposal_lane_policy.application_artifact_bridge[6]
-  - specification.proposal_lane_policy.application_artifact_bridge[7]
-  - specification.proposal_lane_policy.application_artifact_bridge[8]
-  - specification.proposal_lane_policy.application_artifact_bridge[9]
-  - specification.proposal_lane_policy.application_artifact_bridge[10]
-  - specification.proposal_lane_policy.application_artifact_bridge[11]
-  - specification.proposal_lane_policy.application_artifact_bridge[12]
-  - specification.proposal_lane_policy.application_artifact_bridge[13]
+  - specification.boundary_policy.layer_separation[8]
+  - specification.proposal_lane_policy.node_semantics[2]
+  - specification.proposal_lane_policy.node_semantics[3]
+  - specification.proposal_lane_policy.node_semantics[4]
+  - specification.proposal_lane_policy.node_semantics[5]
   - specification.proposal_lane_policy.viewer_contract[1]
   - specification.proposal_lane_policy.viewer_contract[2]
   - specification.proposal_lane_policy.viewer_contract[3]
-  - specification.terminology.canonical_application_event
-  - specification.terminology.canonical_application_event.meaning
-  - specification.terminology.canonical_application_event.required_components
-  - specification.terminology.canonical_application_event.required_components[0]
-  - specification.terminology.canonical_application_event.required_components[0].component
-  - specification.terminology.canonical_application_event.required_components[0].cardinality
-  - specification.terminology.canonical_application_event.required_components[0].allowed_values
-  - specification.terminology.canonical_application_event.required_components[0].allowed_values[0]
-  - specification.terminology.canonical_application_event.required_components[0].meaning
-  - specification.terminology.canonical_application_event.cardinality
+  - specification.proposal_lane_policy.viewer_contract[4]
   mutation_classes:
   - policy_text
-  - schema_required_addition
   mutation_budget:
   - policy_text
-  - schema_required_addition
   budget_exceeded_classes: []
   changed_spec_files:
   - specs/nodes/SG-SPEC-0006.yaml
