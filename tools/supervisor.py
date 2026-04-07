@@ -663,6 +663,13 @@ Refinement mode: split_refactor_proposal
   id, proposal_type, refactor_kind, target_spec_id, source_signal, source_run_ids,
   execution_policy, parent_after_split, suggested_children, acceptance_mapping,
   lineage_updates, status.
+- Use these exact literal values:
+  - id = refactor_proposal::{node.id}::{SPLIT_REFACTOR_SIGNAL}
+  - proposal_type = refactor_proposal
+  - refactor_kind = {SPLIT_REFACTOR_KIND}
+  - target_spec_id = {node.id}
+  - source_signal = {SPLIT_REFACTOR_SIGNAL}
+  - execution_policy = emit_proposal
 - source_run_ids must include the current run ID above.
 - parent_after_split must include narrowed_role_summary,
   retained_acceptance, and intended_depends_on.
@@ -670,6 +677,91 @@ Refinement mode: split_refactor_proposal
   bounded_concern_summary, suggested_title, suggested_prompt, and assigned_acceptance.
 - acceptance_mapping entries should use acceptance_index, acceptance_text, and target.
 - lineage_updates must include parent_depends_on_add and child_refines_add.
+- Do not use plain strings for acceptance or lineage references.
+- Use objects with these exact shapes:
+  - parent_after_split.retained_acceptance[] =
+    {{ "acceptance_index": <int>, "acceptance_text": "<exact source text>" }}
+  - parent_after_split.intended_depends_on[] =
+    {{ "slot_key": "<child slot>", "suggested_id": "<child id>" }}
+  - suggested_children[].assigned_acceptance[] =
+    {{ "acceptance_index": <int>, "acceptance_text": "<exact source text>" }}
+  - lineage_updates.parent_depends_on_add[] =
+    {{ "slot_key": "<child slot>", "suggested_id": "<child id>" }}
+  - lineage_updates.child_refines_add[] =
+    {{
+      "slot_key": "<child slot>",
+      "suggested_id": "<child id>",
+      "refines": ["{node.id}"]
+    }}
+- Example JSON skeleton:
+  {{
+    "id": "refactor_proposal::{node.id}::{SPLIT_REFACTOR_SIGNAL}",
+    "proposal_type": "refactor_proposal",
+    "refactor_kind": "{SPLIT_REFACTOR_KIND}",
+    "target_spec_id": "{node.id}",
+    "source_signal": "{SPLIT_REFACTOR_SIGNAL}",
+    "source_run_ids": ["{planned_run_id or "CURRENT-RUN-ID"}"],
+    "execution_policy": "emit_proposal",
+    "parent_after_split": {{
+      "narrowed_role_summary": "...",
+        "retained_acceptance": [
+          {{
+            "acceptance_index": 1,
+            "acceptance_text": "<exact source text>"
+          }}
+        ],
+      "intended_depends_on": [
+        {{
+          "slot_key": "child_slot",
+          "suggested_id": "SG-SPEC-XXXX"
+        }}
+      ]
+    }},
+    "suggested_children": [
+      {{
+        "slot_key": "child_slot",
+        "suggested_id": "SG-SPEC-XXXX",
+        "suggested_path": "specs/nodes/SG-SPEC-XXXX.yaml",
+        "bounded_concern_summary": "...",
+        "suggested_title": "...",
+        "suggested_prompt": "...",
+        "assigned_acceptance": [
+          {{
+            "acceptance_index": 2,
+            "acceptance_text": "..."
+          }}
+        ]
+      }}
+    ],
+    "acceptance_mapping": [
+      {{
+        "acceptance_index": 1,
+        "acceptance_text": "...",
+        "target": "parent_retained"
+      }},
+      {{
+        "acceptance_index": 2,
+        "acceptance_text": "...",
+        "target": "child_slot"
+      }}
+    ],
+    "lineage_updates": {{
+      "parent_depends_on_add": [
+        {{
+          "slot_key": "child_slot",
+          "suggested_id": "SG-SPEC-XXXX"
+        }}
+      ],
+      "child_refines_add": [
+        {{
+          "slot_key": "child_slot",
+          "suggested_id": "SG-SPEC-XXXX",
+          "refines": ["{node.id}"]
+        }}
+      ]
+    }},
+    "status": "proposed"
+  }}
 
 Current parent acceptance criteria:
 {acceptance_listing}
@@ -1442,6 +1534,26 @@ def proposal_artifact_relpath(*, proposal_type: str, spec_id: str, signal: str) 
         .relative_to(ROOT)
         .as_posix()
     )
+
+
+def split_proposal_allowed_changed_paths(artifact_relpath: str) -> set[str]:
+    """Allow the proposal artifact file plus any untracked parent dirs.
+
+    `git status --porcelain` may surface a newly created artifact as
+    `runs/proposals/` instead of the concrete JSON file. Split proposal mode
+    should treat those parent directories as part of the single allowed write.
+    """
+
+    normalized = artifact_relpath.strip().rstrip("/")
+    allowed = {normalized}
+    current = PurePosixPath(normalized)
+    for parent in current.parents:
+        parent_text = parent.as_posix().rstrip("/")
+        if not parent_text or parent_text == ".":
+            continue
+        allowed.add(parent_text)
+        allowed.add(f"{parent_text}/")
+    return allowed
 
 
 def proposal_item_path(item: dict[str, Any]) -> Path:
@@ -2908,7 +3020,7 @@ def _process_split_refactor_proposal(
     artifact_relpath = str(refactor_work_item["proposal_artifact_relpath"])
     artifact_worktree_path = worktree_path / artifact_relpath
     proposal_artifact_root_path = ROOT / artifact_relpath
-    allowed_changed_paths = {artifact_relpath}
+    allowed_changed_paths = split_proposal_allowed_changed_paths(artifact_relpath)
     changed_spec_files = [path for path in changed if is_spec_node_path(path)]
     extra_changed_files = [path for path in changed if path not in allowed_changed_paths]
     if changed_spec_files:

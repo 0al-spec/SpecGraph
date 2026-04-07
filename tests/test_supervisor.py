@@ -1091,6 +1091,11 @@ def test_build_prompt_includes_split_refactor_proposal_guidance(
     assert "Refinement mode: split_refactor_proposal" in prompt
     assert "This run was explicitly targeted by the operator for split_oversized_spec." in prompt
     assert "Proposal artifact path: runs/proposals/" in prompt
+    assert "id = refactor_proposal::SG-SPEC-0001::oversized_spec" in prompt
+    assert "execution_policy = emit_proposal" in prompt
+    assert "parent_after_split.retained_acceptance[] =" in prompt
+    assert '"acceptance_index": <int>' in prompt
+    assert '"refines": ["SG-SPEC-0001"]' in prompt
     assert "source_run_ids must include the current run ID above." in prompt
     assert "Current parent acceptance criteria:" in prompt
     assert "- [1] criterion-1" in prompt
@@ -1492,6 +1497,69 @@ def test_main_split_proposal_emits_structured_artifact_and_queue_entry(
     assert payload["proposal_artifact_path"].endswith(work_item["proposal_artifact_relpath"])
     assert payload["proposed_status"] is None
     assert payload["final_status"] == "outlined"
+
+
+def test_main_split_proposal_accepts_untracked_parent_directory_change(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    node_data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    node_data["title"] = "Calculator Overview"
+    node_data["prompt"] = "Keep the parent as overview and split detailed concerns."
+    node_data["acceptance"] = [f"criterion-{i}" for i in range(1, 7)]
+    node_path.write_text(json.dumps(node_data), encoding="utf-8")
+
+    worktree = make_fake_worktree(repo_fixture)
+    monkeypatch.setattr(
+        supervisor_module,
+        "create_isolated_worktree",
+        lambda _node_id: (worktree, "codex/sg-spec-0001/split-proposal"),
+    )
+
+    work_item = supervisor_module.build_split_refactor_work_item(supervisor_module.load_specs()[0])
+    changed_snapshots = [[], ["runs/proposals/"]]
+    monkeypatch.setattr(
+        supervisor_module, "git_changed_files", lambda _cwd=None: changed_snapshots.pop(0)
+    )
+
+    def fake_executor(
+        node: object,
+        worktree_path: Path,
+        refactor_work_item: dict[str, object],
+    ) -> subprocess.CompletedProcess[str]:
+        proposal_path = worktree_path / str(refactor_work_item["proposal_artifact_relpath"])
+        proposal_path.parent.mkdir(parents=True, exist_ok=True)
+        proposal_path.write_text(
+            json.dumps(
+                make_valid_split_proposal(
+                    node.data,
+                    str(refactor_work_item["planned_run_id"]),
+                )
+            ),
+            encoding="utf-8",
+        )
+        return subprocess.CompletedProcess(
+            args=["codex"],
+            returncode=0,
+            stdout="RUN_OUTCOME: done\nBLOCKER: none\n",
+            stderr="",
+        )
+
+    exit_code = supervisor_module.main(
+        executor=fake_executor,
+        target_spec="SG-SPEC-0001",
+        split_proposal=True,
+    )
+    assert exit_code == 0
+
+    proposal_artifact = repo_fixture / work_item["proposal_artifact_relpath"]
+    assert proposal_artifact.exists()
+    queue_items = json.loads(
+        (repo_fixture / "runs" / "proposal_queue.json").read_text(encoding="utf-8")
+    )
+    assert len(queue_items) == 1
 
 
 def test_main_split_proposal_blocks_executor_environment_failures_without_queue_updates(
