@@ -77,11 +77,12 @@ acceptance_evidence:
     proposal nodes and edges to expose enough lane and state metadata for tooling to render them alongside
     canonical structure without treating them as accepted graph truth. specification.terminology.proposal_artifact_link
     defines the minimal machine-readable contract for proposal-lane references to explicit apply-path
-    inputs and supporting runtime artifacts. specification.proposal_lane_policy.application_artifact_bridge
-    limits those references to non-authorizing bridge metadata that remains distinct from target, lineage,
-    and canonical application semantics, and defines precedence so tracked proposal state remains authoritative
-    for proposal review semantics. specification.boundary_policy.layer_separation states that these links
-    do not collapse proposal state into runtime persistence or canonical truth.
+    inputs and supporting runtime artifacts, including apply_path_compatibility for apply_path_input links.
+    specification.proposal_lane_policy.application_artifact_bridge limits those references to non-authorizing
+    bridge metadata that remains distinct from target, lineage, and canonical application semantics, and
+    defines precedence so tracked proposal state remains authoritative for proposal review semantics.
+    specification.boundary_policy.layer_separation states that these links do not collapse proposal state
+    into runtime persistence or canonical truth.
 
     '
 - criterion: Remains implementation-agnostic about exact file layout, rendering style, ID minting algorithm,
@@ -203,6 +204,13 @@ specification:
       - component: reference_value
         cardinality: exactly 1
         meaning: Stable reference to the specific input or artifact named by reference_kind.
+      - component: apply_path_compatibility
+        cardinality: exactly 1 when artifact_role is apply_path_input; otherwise omitted
+        allowed_values:
+        - separate_explicit_canonical_application_path
+        meaning: Declares that the linked apply_path_input is intended only as compatible input for a
+          separate explicit canonical application path and remains non-authoritative until a distinct
+          application event occurs.
       cardinality: Zero or more proposal_artifact_link entries may be declared per proposal-lane node.
     proposal_repository_presence:
       meaning: The weakest machine-readable repository contract proving that a proposal-lane node exists
@@ -359,9 +367,15 @@ specification:
     - artifact_role apply_path_input identifies a concrete non-canonical input that a separate explicit
       canonical application path may consume, but the link itself does not authorize or execute that application
       path.
+    - When artifact_role is apply_path_input, apply_path_compatibility must be present and must equal
+      separate_explicit_canonical_application_path so tooling can distinguish compatibility with a separate
+      explicit canonical application path from proposal-lane review authority.
     - A linked apply_path_input is compatible with proposal review only as consumable input for that separate
       explicit application path; it must not be interpreted as evidence that application has started,
       completed, or become authoritative for the proposal-lane node.
+    - apply_path_compatibility expresses intended compatibility only; it must not be interpreted as an
+      application event, as proof that a canonical application path exists in repository-tracked state,
+      or as authority to prefer the linked input over repository-tracked proposal metadata.
     - artifact_role supporting_runtime_artifact identifies a runtime artifact that informs review, diagnosis,
       or preparation, but the proposal-lane node must remain reviewable even if the linked runtime artifact
       is rotated, deleted, or otherwise unavailable.
@@ -410,13 +424,13 @@ gate_state: review_pending
 required_human_action: review refinement impact before approval
 last_outcome: done
 last_blocker: ''
-last_run_id: 20260407T214913Z-SG-SPEC-0006
+last_run_id: 20260407T215303Z-SG-SPEC-0006
 last_exit_code: 0
 last_changed_files:
 - specs/nodes/SG-SPEC-0006.yaml
-last_run_at: '2026-04-07T21:49:14.010256+00:00'
-last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0006-20260407T214813Z
-last_branch: codex/sg-spec-0006/20260407T214813Z
+last_run_at: '2026-04-07T21:53:03.284903+00:00'
+last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0006-20260407T215201Z
+last_branch: codex/sg-spec-0006/20260407T215201Z
 last_validator_results:
   outputs: true
   allowed_paths: true
@@ -437,16 +451,20 @@ last_refinement_acceptance:
     atomicity_clear: true
   diff_paths:
   - acceptance_evidence[3].evidence
-  - specification.boundary_policy.layer_separation[5]
-  - specification.boundary_policy.layer_separation[6]
-  - specification.proposal_lane_policy.application_artifact_bridge[1]
-  - specification.proposal_lane_policy.application_artifact_bridge[2]
   - specification.proposal_lane_policy.application_artifact_bridge[3]
   - specification.proposal_lane_policy.application_artifact_bridge[4]
   - specification.proposal_lane_policy.application_artifact_bridge[5]
   - specification.proposal_lane_policy.application_artifact_bridge[6]
   - specification.proposal_lane_policy.application_artifact_bridge[7]
   - specification.proposal_lane_policy.application_artifact_bridge[8]
+  - specification.proposal_lane_policy.application_artifact_bridge[9]
+  - specification.proposal_lane_policy.application_artifact_bridge[10]
+  - specification.terminology.proposal_artifact_link.required_components[3]
+  - specification.terminology.proposal_artifact_link.required_components[3].component
+  - specification.terminology.proposal_artifact_link.required_components[3].cardinality
+  - specification.terminology.proposal_artifact_link.required_components[3].allowed_values
+  - specification.terminology.proposal_artifact_link.required_components[3].allowed_values[0]
+  - specification.terminology.proposal_artifact_link.required_components[3].meaning
   changed_spec_files:
   - specs/nodes/SG-SPEC-0006.yaml
   review_reasons:
