@@ -48,3 +48,9 @@
 34. Distinguish `UserIntent` and `OperatorRequest` from canonical `spec` and proposal-lane nodes.
 35. Add a bounded operator-request bridge so GUI selections and chat instructions can steer one supervisor run without mutating canonical specs directly.
 36. Define how mediator outputs become canonical specs or proposals through reviewable supervisor-driven refinement instead of raw chat-to-spec mutation.
+
+## Canonical Spec Writeback
+
+37. Make all `supervisor` writes to canonical spec files use one canonical YAML writer, including runtime-state updates after worktree sync.
+38. Add a deterministic post-write normalization/check path so canonical spec files are re-rendered or rejected if a `supervisor` run leaves them non-canonically formatted.
+39. Add regression coverage proving that a live-like `supervisor` refinement run leaves edited spec files canonically formatted without requiring a manual `spec_yaml_format.py` pass.
