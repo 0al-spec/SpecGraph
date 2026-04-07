@@ -53,14 +53,16 @@ acceptance_evidence:
     and proposal_authority_state as a canonical enum. specification.terminology.proposal_handle.required_components,
     specification.terminology.proposal_handle.stability_rules, specification.terminology.proposal_handle.collision_handling,
     and specification.terminology.proposal_handle.repository_persistence_invariants define the minimal
-    machine-readable structure, ordinary-update stability, duplicate handling, and weakest tracked persistence
-    contract for provisional proposal identity. specification.terminology.proposal_target_region.required_components
+    machine-readable structure, ordinary-update stability, duplicate handling, weakest tracked persistence
+    contract, and deterministic addressability boundary for provisional proposal identity. specification.terminology.proposal_target_region.required_components
     and specification.terminology.proposal_lineage_link.required_components make target and lineage metadata
     minimally machine-readable with explicit required components and cardinality. specification.proposal_lane_policy.identity_and_lineage
     requires each proposal node to carry a provisional handle, exactly one bounded target region, and
-    at least one explicit lineage link. specification.proposal_lane_policy.authority_states separates
-    proposal authority states from canonical lifecycle status and defines explicit state transitions and
-    authority-change constraints.
+    at least one explicit lineage link, and now limits stable address use of proposal_handle to repository-tracked
+    nodes whose co-required proposal semantics are complete and collision-free while keeping invalid states
+    visible for repair. specification.proposal_lane_policy.authority_states separates proposal authority
+    states from canonical lifecycle status and defines explicit state transitions and authority-change
+    constraints.
 
     '
 - criterion: Defines what supervisor may autonomously create or update inside the proposal lane versus
@@ -87,12 +89,13 @@ acceptance_evidence:
     proposal_authority_state, proposal_target_region, or proposal_lineage_link semantics remain missing
     or ambiguous, with no gap filled from runtime artifacts. specification.proposal_lane_policy.viewer_contract
     further preserves the minimum repository-tracked query contract based on co-present proposal_repository_presence,
-    proposal_handle, proposal_authority_state, proposal_target_region, and proposal_lineage_link semantics.
-    specification.terminology.proposal_artifact_link defines the minimal machine-readable contract for
-    proposal-lane references to explicit apply-path inputs and supporting runtime artifacts, including
-    apply_path_compatibility for apply_path_input links. specification.terminology.canonical_application_event
-    defines the weakest explicit marker for an actual canonical application event as distinct from proposal
-    review approval and bridge metadata. specification.proposal_lane_policy.application_artifact_bridge
+    proposal_handle, proposal_authority_state, proposal_target_region, and proposal_lineage_link semantics,
+    and now requires tooling to withhold stable handle-based targeting or selection whenever that query
+    contract is incomplete or the active handle remains colliding or otherwise ambiguous. specification.terminology.proposal_artifact_link
+    defines the minimal machine-readable contract for proposal-lane references to explicit apply-path
+    inputs and supporting runtime artifacts, including apply_path_compatibility for apply_path_input links.
+    specification.terminology.canonical_application_event defines the weakest explicit marker for an actual
+    canonical application event as distinct from proposal review approval and bridge metadata. specification.proposal_lane_policy.application_artifact_bridge
     limits proposal_artifact_link references to non-authorizing bridge metadata that remains distinct
     from target, lineage, approved_for_application review state, and canonical_application_event semantics,
     and defines precedence so tracked proposal state remains authoritative for proposal review semantics.
@@ -340,6 +343,13 @@ specification:
       retired, superseded, or otherwise explicitly repaired.
     - proposal_handle continuity must be recoverable from repository-tracked proposal content alone; runtime
       artifacts may help explain history but must not be the only source of handle persistence.
+    - Tooling may treat proposal_handle.handle_value as a stable address for targeting or selection only
+      when exactly one repository-tracked proposal-lane node exposes that value as its active proposal_handle
+      and that same node satisfies the minimum repository-tracked query contract required by viewer_contract.
+    - When proposal_repository_presence exists but the co-required proposal_handle, proposal_authority_state,
+      proposal_target_region, or proposal_lineage_link semantics are missing, ambiguous, or colliding,
+      the visible proposal node remains reviewable by repository presence and local invalid state but
+      proposal_handle must not be treated as a deterministic stable address until repaired.
     - proposal_repository_presence.path_class classifies the tracked location only as proposal-node lane
       content; it must not be interpreted as fixing an exact directory structure, filename scheme, or
       naming algorithm.
@@ -484,6 +494,10 @@ specification:
       proposal_target_region, and at least one proposal_lineage_link on the same repository-tracked node;
       tooling must use that co-present set to address, classify, target, and place the node in overlays
       without filling missing semantics from proposal_artifact_link entries or runtime artifacts.
+    - A proposal_handle may serve as the stable address used by viewer or analysis tooling for proposal-targeted
+      selection only when that minimum repository-tracked query contract is satisfied on exactly one repository-tracked
+      proposal node for the active handle_value; otherwise the proposal remains visible for review but
+      handle-based targeting must be withheld as non-deterministic.
     - Viewer and analysis tooling must classify proposal-overlay state in two stages. If exactly one valid
       proposal_repository_presence contract is not present on repository-tracked content, that content
       is absent from the proposal overlay. If exactly one valid proposal_repository_presence contract
@@ -506,13 +520,13 @@ gate_state: review_pending
 required_human_action: review refinement impact before approval
 last_outcome: done
 last_blocker: ''
-last_run_id: 20260407T222538Z-SG-SPEC-0006
+last_run_id: 20260407T222756Z-SG-SPEC-0006
 last_exit_code: 0
 last_changed_files:
 - specs/nodes/SG-SPEC-0006.yaml
-last_run_at: '2026-04-07T22:25:38.925322+00:00'
-last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0006-20260407T222432Z
-last_branch: codex/sg-spec-0006/20260407T222432Z
+last_run_at: '2026-04-07T22:27:56.390327+00:00'
+last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0006-20260407T222633Z
+last_branch: codex/sg-spec-0006/20260407T222633Z
 last_validator_results:
   outputs: true
   allowed_paths: true
@@ -533,13 +547,22 @@ last_refinement_acceptance:
     atomicity_clear: true
     within_mutation_budget: true
   diff_paths:
-  - acceptance_evidence[0].evidence
+  - acceptance_evidence[1].evidence
   - acceptance_evidence[3].evidence
-  - specification.boundary_policy.layer_separation[4]
+  - specification.proposal_lane_policy.identity_and_lineage[6]
+  - specification.proposal_lane_policy.identity_and_lineage[7]
+  - specification.proposal_lane_policy.identity_and_lineage[8]
+  - specification.proposal_lane_policy.identity_and_lineage[9]
+  - specification.proposal_lane_policy.identity_and_lineage[10]
+  - specification.proposal_lane_policy.identity_and_lineage[11]
+  - specification.proposal_lane_policy.identity_and_lineage[12]
+  - specification.proposal_lane_policy.identity_and_lineage[13]
+  - specification.proposal_lane_policy.identity_and_lineage[14]
   - specification.proposal_lane_policy.viewer_contract[2]
   - specification.proposal_lane_policy.viewer_contract[3]
   - specification.proposal_lane_policy.viewer_contract[4]
   - specification.proposal_lane_policy.viewer_contract[5]
+  - specification.proposal_lane_policy.viewer_contract[6]
   mutation_classes:
   - policy_text
   mutation_budget:
