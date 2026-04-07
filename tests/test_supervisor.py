@@ -269,6 +269,93 @@ last_run_id: old-run
     assert "last_run_id" not in data
 
 
+def test_validate_refinement_acceptance_approves_local_refinement(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    node = supervisor_module.load_specs()[0]
+    node.data["acceptance_evidence"] = ["initial evidence"]
+    before = json.loads(json.dumps(node.data))
+    after = json.loads(json.dumps(node.data))
+    after["prompt"] = "Refined one bounded slice."
+    after["acceptance_evidence"] = ["updated evidence"]
+
+    result = supervisor_module.validate_refinement_acceptance(
+        node=node,
+        before_data=before,
+        after_data=after,
+        changed_files=["specs/nodes/SG-SPEC-0001.yaml"],
+        is_graph_refactor_run=False,
+        output_errors=[],
+        allowed_path_errors=[],
+        reconciliation_errors=[],
+        transition_errors=[],
+        atomicity_errors=[],
+    )
+
+    assert result["decision"] == supervisor_module.REFINEMENT_ACCEPT_DECISION_APPROVE
+    assert result["change_class"] == supervisor_module.REFINEMENT_CLASS_LOCAL
+    assert result["checks"]["content_changed"] is True
+    assert result["errors"] == []
+
+
+def test_validate_refinement_acceptance_requires_review_for_constitutional_diff(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    node = supervisor_module.load_specs()[0]
+    node.data["acceptance_evidence"] = ["initial evidence"]
+    before = json.loads(json.dumps(node.data))
+    after = json.loads(json.dumps(node.data))
+    after["specification"] = {
+        "boundary_policy": {
+            "layer_separation": ["Canonical nodes remain the accepted graph of record."]
+        }
+    }
+
+    result = supervisor_module.validate_refinement_acceptance(
+        node=node,
+        before_data=before,
+        after_data=after,
+        changed_files=["specs/nodes/SG-SPEC-0001.yaml"],
+        is_graph_refactor_run=False,
+        output_errors=[],
+        allowed_path_errors=[],
+        reconciliation_errors=[],
+        transition_errors=[],
+        atomicity_errors=[],
+    )
+
+    assert result["decision"] == supervisor_module.REFINEMENT_ACCEPT_DECISION_REVIEW_REQUIRED
+    assert result["change_class"] == supervisor_module.REFINEMENT_CLASS_CONSTITUTIONAL
+    assert result["checks"]["constitutional_diff"] is True
+
+
+def test_validate_refinement_acceptance_rejects_noop_run(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    node = supervisor_module.load_specs()[0]
+    node.data["acceptance_evidence"] = ["initial evidence"]
+    before = json.loads(json.dumps(node.data))
+
+    result = supervisor_module.validate_refinement_acceptance(
+        node=node,
+        before_data=before,
+        after_data=before,
+        changed_files=[],
+        is_graph_refactor_run=False,
+        output_errors=[],
+        allowed_path_errors=[],
+        reconciliation_errors=[],
+        transition_errors=[],
+        atomicity_errors=[],
+    )
+
+    assert result["decision"] == supervisor_module.REFINEMENT_ACCEPT_DECISION_REJECT
+    assert "No canonical spec change detected" in result["errors"][0]
+
+
 def make_valid_split_proposal(node_data: dict[str, object], run_id: str) -> dict[str, object]:
     spec_id = str(node_data["id"])
     acceptance = [str(item) for item in node_data.get("acceptance", [])]
@@ -2052,6 +2139,106 @@ def test_main_auto_approve_applies_status_and_copies_changes(
     assert updated["prompt"] == "Auto-approved prompt"
 
 
+def test_main_auto_approve_does_not_bypass_review_required_refinement(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    node_data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    node_data["acceptance_evidence"] = ["initial evidence"]
+    node_path.write_text(json.dumps(node_data), encoding="utf-8")
+
+    worktree = make_fake_worktree(repo_fixture)
+    monkeypatch.setattr(
+        supervisor_module,
+        "create_isolated_worktree",
+        lambda _node_id: (worktree, "codex/sg-spec-0001/test"),
+    )
+
+    changed_snapshots = [[], ["specs/nodes/SG-SPEC-0001.yaml"]]
+    monkeypatch.setattr(
+        supervisor_module, "git_changed_files", lambda _cwd=None: changed_snapshots.pop(0)
+    )
+
+    def fake_executor(_node: object, worktree_path: Path) -> subprocess.CompletedProcess[str]:
+        worktree_node = worktree_path / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+        data = supervisor_module.get_yaml_module().safe_load(
+            worktree_node.read_text(encoding="utf-8")
+        )
+        data["acceptance_evidence"] = ["updated evidence"]
+        data["specification"] = {
+            "boundary_policy": {
+                "layer_separation": ["Canonical nodes remain the accepted graph of record."]
+            }
+        }
+        worktree_node.write_text(json.dumps(data), encoding="utf-8")
+        return subprocess.CompletedProcess(
+            args=["codex"],
+            returncode=0,
+            stdout="RUN_OUTCOME: done\nBLOCKER: none\n",
+            stderr="",
+        )
+
+    exit_code = supervisor_module.main(executor=fake_executor, auto_approve=True)
+    assert exit_code == 0
+
+    updated = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    assert updated["status"] == "outlined"
+    assert updated["gate_state"] == "review_pending"
+    assert updated["proposed_status"] == "specified"
+    assert updated["last_refinement_acceptance"]["decision"] == "review_required"
+    assert updated["last_refinement_acceptance"]["change_class"] == "constitutional_change"
+
+    run_logs = sorted((repo_fixture / "runs").glob("*-SG-SPEC-*.json"))
+    payload = json.loads(run_logs[0].read_text(encoding="utf-8"))
+    assert payload["auto_approved"] is False
+    assert payload["refinement_acceptance"]["decision"] == "review_required"
+
+
+def test_main_rejects_noop_successful_refinement_run(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    node_data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    node_data["acceptance_evidence"] = ["initial evidence"]
+    node_path.write_text(json.dumps(node_data), encoding="utf-8")
+
+    worktree = make_fake_worktree(repo_fixture)
+    monkeypatch.setattr(
+        supervisor_module,
+        "create_isolated_worktree",
+        lambda _node_id: (worktree, "codex/sg-spec-0001/test"),
+    )
+
+    changed_snapshots = [[], []]
+    monkeypatch.setattr(
+        supervisor_module, "git_changed_files", lambda _cwd=None: changed_snapshots.pop(0)
+    )
+
+    def fake_executor(_node: object, _worktree_path: Path) -> subprocess.CompletedProcess[str]:
+        return subprocess.CompletedProcess(
+            args=["codex"],
+            returncode=0,
+            stdout="RUN_OUTCOME: done\nBLOCKER: none\n",
+            stderr="",
+        )
+
+    exit_code = supervisor_module.main(executor=fake_executor)
+    assert exit_code == 1
+
+    updated = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    assert updated["gate_state"] == "retry_pending"
+    assert updated["required_human_action"] == (
+        "repair invalid or empty refinement and rerun supervisor"
+    )
+    assert updated["last_refinement_acceptance"]["decision"] == "reject"
+    assert updated["last_validator_results"]["refinement_acceptance"] is False
+    assert any("No canonical spec change detected" in err for err in updated["last_errors"])
+
+
 def test_main_auto_approve_syncs_new_child_spec_from_parent_run(
     supervisor_module: object,
     repo_fixture: Path,
@@ -2437,6 +2624,9 @@ def test_main_atomicity_gate_forces_split_required(
     assert updated["required_human_action"] == "split spec scope before rerun"
     assert updated["last_blocker"] == "spec exceeds atomicity quality gate"
     assert updated["last_validator_results"]["atomicity"] is False
+    assert updated["last_validator_results"]["refinement_acceptance"] is True
+    assert updated["last_refinement_acceptance"]["decision"] == "review_required"
+    assert updated["last_refinement_acceptance"]["change_class"] == "graph_refactor"
     assert any("Atomicity gate exceeded" in err for err in updated["last_errors"])
 
 
@@ -2762,19 +2952,18 @@ def test_loop_rejects_dry_run(
 
 
 def _make_successful_executor(supervisor_module: object) -> object:
-    """Return a fake executor that writes valid acceptance_evidence."""
+    """Return a fake executor that makes a bounded canonical refinement each run."""
 
     def fake_executor(
-        _node: object,
+        node: object,
         worktree_path: Path,
     ) -> subprocess.CompletedProcess[str]:
-        for node_file in (worktree_path / "specs" / "nodes").glob("*.yaml"):
-            data = supervisor_module.get_yaml_module().safe_load(
-                node_file.read_text(encoding="utf-8")
-            )
-            acceptance = data.get("acceptance", [])
-            data["acceptance_evidence"] = [f"evidence-{i}" for i in range(len(acceptance))]
-            node_file.write_text(json.dumps(data), encoding="utf-8")
+        node_file = worktree_path / "specs" / "nodes" / f"{node.id}.yaml"
+        data = supervisor_module.get_yaml_module().safe_load(node_file.read_text(encoding="utf-8"))
+        acceptance = data.get("acceptance", [])
+        data["acceptance_evidence"] = [f"evidence-{i}" for i in range(len(acceptance))]
+        data["prompt"] = f"Refined at status {data.get('status', 'unknown')}."
+        node_file.write_text(json.dumps(data), encoding="utf-8")
         return subprocess.CompletedProcess(
             args=["codex"],
             returncode=0,
@@ -2947,12 +3136,13 @@ def test_loop_processes_multiple_specs(
     )
 
     call_counter: list[int] = [0]
+    last_node_id: dict[str, str] = {"value": "SG-SPEC-0001"}
 
     def alternating_git_changed(_cwd: object = None) -> list[str]:
         call_counter[0] += 1
         # Even calls (after executor) report the changed file.
         if call_counter[0] % 2 == 0:
-            return ["specs/nodes/SG-SPEC-0001.yaml", "specs/nodes/SG-SPEC-0002.yaml"]
+            return [f"specs/nodes/{last_node_id['value']}.yaml"]
         return []
 
     monkeypatch.setattr(supervisor_module, "git_changed_files", alternating_git_changed)
@@ -2961,6 +3151,7 @@ def test_loop_processes_multiple_specs(
         node: object,
         worktree_path: Path,
     ) -> subprocess.CompletedProcess[str]:
+        last_node_id["value"] = node.id
         node_file = worktree_path / "specs" / "nodes" / f"{node.id}.yaml"
         if node_file.exists():
             data = supervisor_module.get_yaml_module().safe_load(
@@ -2968,6 +3159,7 @@ def test_loop_processes_multiple_specs(
             )
             acceptance = data.get("acceptance", [])
             data["acceptance_evidence"] = [f"ev-{i}" for i in range(len(acceptance))]
+            data["prompt"] = f"Refined {node.id} at status {data.get('status', 'unknown')}."
             node_file.write_text(json.dumps(data), encoding="utf-8")
         return subprocess.CompletedProcess(
             args=["codex"],
@@ -3034,11 +3226,12 @@ def test_loop_continues_past_failures(
     )
 
     call_counter: list[int] = [0]
+    last_node_id: dict[str, str] = {"value": "SG-SPEC-0001"}
 
     def alternating_git_changed(_cwd: object = None) -> list[str]:
         call_counter[0] += 1
         if call_counter[0] % 2 == 0:
-            return ["specs/nodes/SG-SPEC-0001.yaml", "specs/nodes/SG-SPEC-0002.yaml"]
+            return [f"specs/nodes/{last_node_id['value']}.yaml"]
         return []
 
     monkeypatch.setattr(supervisor_module, "git_changed_files", alternating_git_changed)
@@ -3047,6 +3240,7 @@ def test_loop_continues_past_failures(
         node: object,
         worktree_path: Path,
     ) -> subprocess.CompletedProcess[str]:
+        last_node_id["value"] = node.id
         # Only write to the current node's file to avoid cross-spec allowed_paths issues.
         node_file = worktree_path / "specs" / "nodes" / f"{node.id}.yaml"
         if node_file.exists():
@@ -3055,6 +3249,7 @@ def test_loop_continues_past_failures(
             )
             acceptance = data.get("acceptance", [])
             data["acceptance_evidence"] = [f"ev-{i}" for i in range(len(acceptance))]
+            data["prompt"] = f"Refined {node.id} at status {data.get('status', 'unknown')}."
             node_file.write_text(json.dumps(data), encoding="utf-8")
 
         if node.id == "SG-SPEC-0002":

@@ -325,14 +325,15 @@ class TestMainWithRealWorktree:
     """main() must create a real git worktree even when the executor is faked."""
 
     def _fake_executor(self, node: object, worktree_path: Path) -> object:
-        """Returns a successful subprocess result with a done outcome."""
+        """Write one bounded spec edit and return a successful done outcome."""
+        node_path = worktree_path / "specs" / "nodes" / f"{node.id}.yaml"
+        data = json.loads(node_path.read_text(encoding="utf-8"))
+        data["prompt"] = f"Refined in real worktree at status {data.get('status', 'unknown')}."
+        data["acceptance_evidence"] = []
+        node_path.write_text(json.dumps(data), encoding="utf-8")
         return subprocess.CompletedProcess(
             args=[], returncode=0, stdout="RUN_OUTCOME: done", stderr=""
         )
-
-    def _no_changes(self, cwd: object = None) -> list[str]:
-        """Drop-in for git_changed_files that always returns no changes."""
-        return []
 
     def test_main_creates_real_git_worktree(
         self,
@@ -345,10 +346,6 @@ class TestMainWithRealWorktree:
         paths["runs_dir"].mkdir(parents=True, exist_ok=True)
         paths["agents_file"].write_text("# AGENTS\n", encoding="utf-8")
         _commit_spec(git_repo)
-
-        # git_changed_files is called with worktree_path (not ROOT).
-        # Return empty lists so: changed=[], no allowed-path or output violations.
-        monkeypatch.setattr(supervisor_module, "git_changed_files", self._no_changes)
 
         worktrees_before = set(_worktree_paths(git_repo))
         ret = supervisor_module.main(executor=self._fake_executor, auto_approve=False)
@@ -385,7 +382,6 @@ class TestMainWithRealWorktree:
         paths["runs_dir"].mkdir(parents=True, exist_ok=True)
         paths["agents_file"].write_text("# AGENTS\n", encoding="utf-8")
         _commit_spec(git_repo)
-        monkeypatch.setattr(supervisor_module, "git_changed_files", self._no_changes)
 
         supervisor_module.main(executor=self._fake_executor, auto_approve=False)
 
@@ -415,7 +411,6 @@ class TestMainWithRealWorktree:
         paths["runs_dir"].mkdir(parents=True, exist_ok=True)
         paths["agents_file"].write_text("# AGENTS\n", encoding="utf-8")
         _commit_spec(git_repo)
-        monkeypatch.setattr(supervisor_module, "git_changed_files", self._no_changes)
 
         supervisor_module.main(executor=self._fake_executor, auto_approve=False)
 
@@ -441,7 +436,6 @@ class TestMainWithRealWorktree:
         paths["runs_dir"].mkdir(parents=True, exist_ok=True)
         paths["agents_file"].write_text("# AGENTS\n", encoding="utf-8")
         _commit_spec(git_repo)
-        monkeypatch.setattr(supervisor_module, "git_changed_files", self._no_changes)
 
         supervisor_module.main(executor=self._fake_executor, auto_approve=False)
 

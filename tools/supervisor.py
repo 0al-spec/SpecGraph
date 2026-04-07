@@ -86,6 +86,26 @@ CHILD_EXECUTOR_REASONING_EFFORT = "medium"
 CHILD_EXECUTOR_APPROVAL_POLICY = "never"
 CHILD_EXECUTOR_SANDBOX = "workspace-write"
 CHILD_EXECUTOR_DISABLED_FEATURES = ("shell_snapshot", "multi_agent")
+REFINEMENT_ACCEPT_DECISION_APPROVE = "approve"
+REFINEMENT_ACCEPT_DECISION_REJECT = "reject"
+REFINEMENT_ACCEPT_DECISION_REVIEW_REQUIRED = "review_required"
+REFINEMENT_CLASS_LOCAL = "local_refinement"
+REFINEMENT_CLASS_GRAPH_REFACTOR = "graph_refactor"
+REFINEMENT_CLASS_CONSTITUTIONAL = "constitutional_change"
+GRAPH_REFACTOR_DIFF_PREFIXES = (
+    "depends_on",
+    "refines",
+    "relates_to",
+    "inputs",
+    "outputs",
+    "allowed_paths",
+)
+CONSTITUTIONAL_DIFF_PREFIXES = (
+    "specification.boundary_policy",
+    "specification.terminology",
+    "specification.proposal_lane_policy",
+)
+IMMUTABLE_DIFF_PREFIXES = ("id", "kind")
 SYNC_STRIPPED_SPEC_KEYS = {
     "RUN_OUTCOME",
     "BLOCKER",
@@ -102,6 +122,7 @@ SYNC_STRIPPED_SPEC_KEYS = {
     "last_worktree_path",
     "last_branch",
     "last_validator_results",
+    "last_refinement_acceptance",
     "last_reconciliation",
     "last_errors",
 }
@@ -129,6 +150,27 @@ def dump_yaml_text(data: dict[str, Any]) -> str:
     if not rendered.endswith("\n"):
         rendered += "\n"
     return rendered
+
+
+def strip_runtime_spec_data(value: Any) -> Any:
+    """Return spec data with runtime-only metadata removed recursively."""
+    if isinstance(value, dict):
+        return {
+            key: strip_runtime_spec_data(item)
+            for key, item in value.items()
+            if key not in SYNC_STRIPPED_SPEC_KEYS
+        }
+    if isinstance(value, list):
+        return [strip_runtime_spec_data(item) for item in value]
+    return value
+
+
+def canonical_spec_snapshot(data: dict[str, Any]) -> dict[str, Any]:
+    """Normalize spec data for deterministic before/after refinement checks."""
+    normalized = strip_runtime_spec_data(data)
+    if not isinstance(normalized, dict):
+        raise ValueError("top-level YAML document must be a mapping")
+    return normalized
 
 
 @dataclass
@@ -1035,6 +1077,196 @@ def validate_transition(from_status: str, to_status: str | None) -> list[str]:
     if to_status != expected:
         return [f"Invalid transition: expected {from_status}->{expected}, got {to_status}"]
     return []
+
+
+def collect_value_paths(value: Any, prefix: str) -> list[str]:
+    """Return stable paths for every leaf below a newly added or removed value."""
+    if isinstance(value, dict):
+        paths: list[str] = [prefix]
+        for key, item in value.items():
+            child_prefix = f"{prefix}.{key}" if prefix else str(key)
+            paths.extend(collect_value_paths(item, child_prefix))
+        return paths
+    if isinstance(value, list):
+        paths: list[str] = [prefix]
+        for idx, item in enumerate(value):
+            child_prefix = f"{prefix}[{idx}]"
+            paths.extend(collect_value_paths(item, child_prefix))
+        return paths
+    return [prefix or "<root>"]
+
+
+def collect_changed_paths(before: Any, after: Any, prefix: str = "") -> list[str]:
+    """Return stable dot-paths describing semantic changes between two values."""
+    if type(before) is not type(after):
+        merged = collect_value_paths(before, prefix or "<root>") + collect_value_paths(
+            after, prefix or "<root>"
+        )
+        return sorted(set(merged))
+
+    if isinstance(before, dict):
+        paths: list[str] = []
+        keys = sorted(set(before) | set(after))
+        for key in keys:
+            child_prefix = f"{prefix}.{key}" if prefix else str(key)
+            if key not in before or key not in after:
+                missing_value = before.get(key) if key in before else after.get(key)
+                paths.extend(collect_value_paths(missing_value, child_prefix))
+                continue
+            paths.extend(collect_changed_paths(before[key], after[key], child_prefix))
+        return paths
+
+    if isinstance(before, list):
+        paths: list[str] = []
+        max_len = max(len(before), len(after))
+        for idx in range(max_len):
+            child_prefix = f"{prefix}[{idx}]"
+            if idx >= len(before) or idx >= len(after):
+                missing_value = before[idx] if idx < len(before) else after[idx]
+                paths.extend(collect_value_paths(missing_value, child_prefix))
+                continue
+            paths.extend(collect_changed_paths(before[idx], after[idx], child_prefix))
+        return paths
+
+    if before != after:
+        return [prefix or "<root>"]
+    return []
+
+
+def path_matches_prefix(path: str, prefixes: tuple[str, ...]) -> bool:
+    """Return True when a diff path matches one of the semantic prefixes."""
+    normalized = path.replace("[", ".[").split(".[", maxsplit=1)[0]
+    return any(
+        path == prefix or path.startswith(f"{prefix}.") or normalized == prefix
+        for prefix in prefixes
+    )
+
+
+def classify_refinement_change(
+    *,
+    node_data: dict[str, Any],
+    diff_paths: list[str],
+    changed_spec_files: list[str],
+    source_spec_relpath: str,
+    is_graph_refactor_run: bool,
+    atomicity_errors: list[str],
+) -> tuple[str, list[str]]:
+    """Classify the semantic scope of an accepted canonical spec change."""
+    review_reasons: list[str] = []
+    foreign_spec_changes = [path for path in changed_spec_files if path != source_spec_relpath]
+    if foreign_spec_changes:
+        review_reasons.append("run changed additional spec files beyond the selected source node")
+
+    if any(path_matches_prefix(path, IMMUTABLE_DIFF_PREFIXES) for path in diff_paths):
+        review_reasons.append("run attempted to modify immutable spec identity fields")
+        return REFINEMENT_CLASS_CONSTITUTIONAL, review_reasons
+
+    if any(path_matches_prefix(path, CONSTITUTIONAL_DIFF_PREFIXES) for path in diff_paths):
+        review_reasons.append("run changed governance-sensitive specification sections")
+        return REFINEMENT_CLASS_CONSTITUTIONAL, review_reasons
+
+    if is_seed_like_spec(node_data):
+        if atomicity_errors:
+            review_reasons.append("atomicity gate still requires follow-up decomposition work")
+            return REFINEMENT_CLASS_GRAPH_REFACTOR, review_reasons
+        return REFINEMENT_CLASS_LOCAL, review_reasons
+
+    if is_graph_refactor_run:
+        review_reasons.append("run executed in explicit graph_refactor mode")
+
+    if any(path_matches_prefix(path, GRAPH_REFACTOR_DIFF_PREFIXES) for path in diff_paths):
+        review_reasons.append("run changed graph structure or spec contract paths")
+
+    if atomicity_errors:
+        review_reasons.append("atomicity gate still requires follow-up decomposition work")
+
+    if review_reasons:
+        return REFINEMENT_CLASS_GRAPH_REFACTOR, review_reasons
+    return REFINEMENT_CLASS_LOCAL, review_reasons
+
+
+def validate_refinement_acceptance(
+    *,
+    node: SpecNode,
+    before_data: dict[str, Any],
+    after_data: dict[str, Any],
+    changed_files: list[str],
+    is_graph_refactor_run: bool,
+    output_errors: list[str],
+    allowed_path_errors: list[str],
+    reconciliation_errors: list[str],
+    transition_errors: list[str],
+    atomicity_errors: list[str],
+) -> dict[str, Any]:
+    """Deterministically classify whether a refinement may be accepted as valid.
+
+    This validator is intentionally narrower than "good writing" judgment. It
+    answers only whether the run produced a canonical spec change that is valid
+    under the current structural contract, and whether that change can be
+    treated as a bounded local refinement or still requires explicit review.
+    """
+    before_snapshot = canonical_spec_snapshot(before_data)
+    after_snapshot = canonical_spec_snapshot(after_data)
+    diff_paths = collect_changed_paths(before_snapshot, after_snapshot)
+
+    try:
+        source_spec_relpath = node.path.relative_to(ROOT).as_posix()
+    except ValueError:
+        source_spec_relpath = node.path.as_posix()
+    changed_spec_files = sorted(path for path in changed_files if is_spec_node_path(path))
+    hard_errors = (
+        list(output_errors)
+        + list(allowed_path_errors)
+        + list(reconciliation_errors)
+        + list(transition_errors)
+    )
+    change_class, review_reasons = classify_refinement_change(
+        node_data=after_snapshot,
+        diff_paths=diff_paths,
+        changed_spec_files=changed_spec_files,
+        source_spec_relpath=source_spec_relpath,
+        is_graph_refactor_run=is_graph_refactor_run,
+        atomicity_errors=atomicity_errors,
+    )
+
+    errors: list[str] = []
+    warnings: list[str] = []
+    decision = REFINEMENT_ACCEPT_DECISION_APPROVE
+
+    if hard_errors:
+        decision = REFINEMENT_ACCEPT_DECISION_REJECT
+        errors.extend(hard_errors)
+    elif not diff_paths:
+        decision = REFINEMENT_ACCEPT_DECISION_REJECT
+        errors.append("No canonical spec change detected after the refinement run")
+    elif any(path_matches_prefix(path, IMMUTABLE_DIFF_PREFIXES) for path in diff_paths):
+        decision = REFINEMENT_ACCEPT_DECISION_REJECT
+        errors.append("Refinement run attempted to change immutable spec identity fields")
+    elif change_class != REFINEMENT_CLASS_LOCAL:
+        decision = REFINEMENT_ACCEPT_DECISION_REVIEW_REQUIRED
+
+    if atomicity_errors:
+        warnings.extend(atomicity_errors)
+
+    return {
+        "decision": decision,
+        "change_class": change_class,
+        "checks": {
+            "content_changed": bool(diff_paths),
+            "hard_validation": not hard_errors,
+            "single_spec_scope": all(path == source_spec_relpath for path in changed_spec_files)
+            if changed_spec_files
+            else True,
+            "constitutional_diff": change_class == REFINEMENT_CLASS_CONSTITUTIONAL,
+            "graph_refactor_diff": change_class == REFINEMENT_CLASS_GRAPH_REFACTOR,
+            "atomicity_clear": not atomicity_errors,
+        },
+        "diff_paths": diff_paths,
+        "changed_spec_files": changed_spec_files,
+        "review_reasons": review_reasons,
+        "errors": errors,
+        "warnings": warnings,
+    }
 
 
 def is_spec_node_path(rel_path: str) -> bool:
@@ -2455,10 +2687,7 @@ def sanitize_spec_sync_text(text: str) -> str:
     data = yaml_module.safe_load(text) or {}
     if not isinstance(data, dict):
         raise ValueError("top-level YAML document must be a mapping")
-
-    cleaned = dict(data)
-    for key in SYNC_STRIPPED_SPEC_KEYS:
-        cleaned.pop(key, None)
+    cleaned = canonical_spec_snapshot(data)
     return dump_yaml_text(cleaned)
 
 
@@ -3197,6 +3426,7 @@ def _process_one_spec(
         }
 
     before_status = node.status
+    before_canonical = canonical_spec_snapshot(node.data)
 
     try:
         worktree_path, branch = create_isolated_worktree(node.id)
@@ -3243,6 +3473,24 @@ def _process_one_spec(
         if not blocker:
             blocker = "executor environment failure"
 
+    refinement_acceptance = {
+        "decision": REFINEMENT_ACCEPT_DECISION_REJECT,
+        "change_class": REFINEMENT_CLASS_LOCAL,
+        "checks": {
+            "content_changed": False,
+            "hard_validation": False,
+            "single_spec_scope": True,
+            "constitutional_diff": False,
+            "graph_refactor_diff": False,
+            "atomicity_clear": True,
+        },
+        "diff_paths": [],
+        "changed_spec_files": [],
+        "review_reasons": [],
+        "errors": ["refinement acceptance was not evaluated"],
+        "warnings": [],
+    }
+
     if primary_executor_failure:
         worktree_specs = []
         worktree_load_errors = []
@@ -3264,6 +3512,7 @@ def _process_one_spec(
         proposal_queue_artifact = proposal_queue_path()
         proposal_items: list[dict[str, Any]] = load_proposal_queue()
         refactor_queue_artifact = refactor_queue_path()
+        candidate_after_data = before_canonical
     else:
         try:
             worktree_specs = load_specs_from_dir(worktree_path / "specs" / "nodes")
@@ -3323,7 +3572,32 @@ def _process_one_spec(
             run_id=run_id,
             proposal_items=proposal_items,
         )
-    success = result.returncode == 0 and not validation_errors and outcome == "done"
+        candidate_after_node = next((spec for spec in worktree_specs if spec.id == node.id), None)
+        candidate_after_data = (
+            candidate_after_node.data if candidate_after_node is not None else before_canonical
+        )
+    if not primary_executor_failure:
+        refinement_acceptance = validate_refinement_acceptance(
+            node=node,
+            before_data=before_canonical,
+            after_data=candidate_after_data,
+            changed_files=changed,
+            is_graph_refactor_run=is_graph_refactor_run,
+            output_errors=output_errors,
+            allowed_path_errors=allowed_path_errors,
+            reconciliation_errors=reconciliation_errors,
+            transition_errors=transition_errors,
+            atomicity_errors=atomicity_errors,
+        )
+
+    structural_success = result.returncode == 0 and not validation_errors and outcome == "done"
+    accepted_refinement = refinement_acceptance["decision"] != REFINEMENT_ACCEPT_DECISION_REJECT
+    success = structural_success
+    if structural_success and not accepted_refinement:
+        success = False
+        outcome = "retry"
+        blocker = blocker or "refinement acceptance rejected"
+        validation_errors = validation_errors + list(refinement_acceptance["errors"])
 
     required_human_action = "resolve gate: approve|retry|split|block|redirect|escalate"
     node.data["proposed_status"] = None
@@ -3337,6 +3611,7 @@ def _process_one_spec(
         and not allowed_path_errors
         and not reconciliation_errors
         and not transition_errors
+        and accepted_refinement
     )
     if split_sync_allowed:
         allowed_changes = select_sync_paths(node.allowed_paths, changed)
@@ -3352,7 +3627,8 @@ def _process_one_spec(
         )
         node.data["proposed_status"] = proposed_status
         node.data["proposed_maturity"] = proposed_maturity
-        if auto_approve:
+        acceptance_decision = refinement_acceptance["decision"]
+        if auto_approve and acceptance_decision == REFINEMENT_ACCEPT_DECISION_APPROVE:
             if proposed_status:
                 node.data["status"] = proposed_status
             node.data["maturity"] = proposed_maturity
@@ -3362,6 +3638,10 @@ def _process_one_spec(
             required_human_action = "-"
         else:
             node.data["gate_state"] = "review_pending"
+            if acceptance_decision == REFINEMENT_ACCEPT_DECISION_APPROVE:
+                required_human_action = "approve or retry refinement"
+            else:
+                required_human_action = "review refinement impact before approval"
     else:
         if primary_executor_failure:
             node.data["gate_state"] = "blocked"
@@ -3374,7 +3654,10 @@ def _process_one_spec(
             required_human_action = "split spec scope before rerun"
         elif outcome == "retry":
             node.data["gate_state"] = "retry_pending"
-            required_human_action = "rerun supervisor"
+            if refinement_acceptance["decision"] == REFINEMENT_ACCEPT_DECISION_REJECT:
+                required_human_action = "repair invalid or empty refinement and rerun supervisor"
+            else:
+                required_human_action = "rerun supervisor"
         elif outcome == "escalate":
             node.data["gate_state"] = "escalated"
             required_human_action = "manual escalation"
@@ -3389,6 +3672,7 @@ def _process_one_spec(
         "atomicity": not atomicity_errors,
         "transition": not transition_errors,
         "executor_environment": not primary_executor_failure,
+        "refinement_acceptance": accepted_refinement,
     }
 
     node.data["required_human_action"] = required_human_action
@@ -3401,6 +3685,7 @@ def _process_one_spec(
     node.data["last_worktree_path"] = worktree_path.as_posix()
     node.data["last_branch"] = branch
     node.data["last_validator_results"] = validator_results
+    node.data["last_refinement_acceptance"] = refinement_acceptance
     node.data["last_reconciliation"] = reconciliation
     if validation_errors:
         node.data["last_errors"] = validation_errors
@@ -3420,7 +3705,11 @@ def _process_one_spec(
         "gate_state": node.data.get("gate_state"),
         "required_human_action": required_human_action,
         "exit_code": result.returncode,
-        "auto_approved": bool(success and auto_approve),
+        "auto_approved": bool(
+            success
+            and auto_approve
+            and refinement_acceptance["decision"] == REFINEMENT_ACCEPT_DECISION_APPROVE
+        ),
         "worktree_path": worktree_path.as_posix(),
         "branch": branch,
         "changed_files": changed,
@@ -3429,6 +3718,7 @@ def _process_one_spec(
         "reconciliation": reconciliation,
         "graph_health": graph_health,
         "executor_environment": executor_environment,
+        "refinement_acceptance": refinement_acceptance,
         "refactor_queue_artifact": refactor_queue_artifact.as_posix(),
         "proposal_queue_artifact": proposal_queue_artifact.as_posix(),
         "stdout": result.stdout,
