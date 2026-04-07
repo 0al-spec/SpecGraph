@@ -63,7 +63,9 @@ acceptance_evidence:
     what still requires explicit review or canonical application
   evidence: 'specification.boundary_policy.supervisor_authority allows bounded autonomous creation and
     refresh inside the proposal lane but forbids silent canonical rewrites. specification.proposal_lane_policy.conflict_precedence
-    defines how active proposal ownership and overlap remain reviewable. specification.proposal_lane_policy.mutation_rules
+    now defines active ownership of a proposal_target_region for review purposes, the weakest deterministic
+    distinction between compatible and materially incompatible overlaps, and the requirement to keep incompatible
+    overlaps review-visible rather than silently merged. specification.proposal_lane_policy.mutation_rules
     further limits autonomous updates to proposal-lane content, prefers refreshing the active owner of
     a target region over duplicating drafts, and requires explicit review before any canonical application
     path mutates accepted graph structure.
@@ -315,6 +317,23 @@ specification:
       points back to the motivating canonical parent, target region, or originating proposal artifact
       rather than inventing canonical ancestry.
     conflict_precedence:
+    - For review purposes, a proposal-lane subgraph is active only while it contains at least one proposal-lane
+      node for the bounded concern whose proposal_authority_state is draft, under_review, or approved_for_application.
+    - For review purposes, an active proposal-lane subgraph owns a proposal_target_region when one of
+      its active nodes declares that exact proposal_target_region and no other active proposal-lane subgraph
+      declares the same target_kind, the same target_reference, and the same change_scope without being
+      connected into the same active subgraph through visible proposal lineage or draft-structure extension.
+    - Ownership of a proposal_target_region grants review precedence only; supervisor and tooling should
+      treat that owning active subgraph as the default location for compatible refreshes, clarifications,
+      and bounded draft growth, but ownership does not authorize canonical mutation, suppress visibility
+      of competing drafts, or override tracked bridge precedence.
+    - Two active proposals are compatible only when they declare the same target_kind, the same target_reference,
+      and the same change_scope, and repository-tracked proposal state already places them inside the
+      same active proposal-lane subgraph through shared proposal lineage or explicit draft-structure extension.
+    - Two active proposals are materially incompatible when both remain active and they either declare
+      the same target_kind and target_reference but different change_scope values, or they declare the
+      same full proposal_target_region while remaining in different active proposal-lane subgraphs with
+      no visible lineage-based ownership unification.
     - At most one active proposal-lane subgraph should own the same proposal_target_region for the same
       proposal class or pathology at a time.
     - When supervisor encounters new evidence for a proposal_target_region already owned by an active
@@ -424,13 +443,13 @@ gate_state: review_pending
 required_human_action: review refinement impact before approval
 last_outcome: done
 last_blocker: ''
-last_run_id: 20260407T215303Z-SG-SPEC-0006
+last_run_id: 20260407T221512Z-SG-SPEC-0006
 last_exit_code: 0
 last_changed_files:
 - specs/nodes/SG-SPEC-0006.yaml
-last_run_at: '2026-04-07T21:53:03.284903+00:00'
-last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0006-20260407T215201Z
-last_branch: codex/sg-spec-0006/20260407T215201Z
+last_run_at: '2026-04-07T22:15:12.502813+00:00'
+last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0006-20260407T221357Z
+last_branch: codex/sg-spec-0006/20260407T221357Z
 last_validator_results:
   outputs: true
   allowed_paths: true
@@ -449,22 +468,24 @@ last_refinement_acceptance:
     constitutional_diff: true
     graph_refactor_diff: false
     atomicity_clear: true
+    within_mutation_budget: true
   diff_paths:
-  - acceptance_evidence[3].evidence
-  - specification.proposal_lane_policy.application_artifact_bridge[3]
-  - specification.proposal_lane_policy.application_artifact_bridge[4]
-  - specification.proposal_lane_policy.application_artifact_bridge[5]
-  - specification.proposal_lane_policy.application_artifact_bridge[6]
-  - specification.proposal_lane_policy.application_artifact_bridge[7]
-  - specification.proposal_lane_policy.application_artifact_bridge[8]
-  - specification.proposal_lane_policy.application_artifact_bridge[9]
-  - specification.proposal_lane_policy.application_artifact_bridge[10]
-  - specification.terminology.proposal_artifact_link.required_components[3]
-  - specification.terminology.proposal_artifact_link.required_components[3].component
-  - specification.terminology.proposal_artifact_link.required_components[3].cardinality
-  - specification.terminology.proposal_artifact_link.required_components[3].allowed_values
-  - specification.terminology.proposal_artifact_link.required_components[3].allowed_values[0]
-  - specification.terminology.proposal_artifact_link.required_components[3].meaning
+  - acceptance_evidence[2].evidence
+  - specification.proposal_lane_policy.conflict_precedence[0]
+  - specification.proposal_lane_policy.conflict_precedence[1]
+  - specification.proposal_lane_policy.conflict_precedence[2]
+  - specification.proposal_lane_policy.conflict_precedence[3]
+  - specification.proposal_lane_policy.conflict_precedence[4]
+  - specification.proposal_lane_policy.conflict_precedence[5]
+  - specification.proposal_lane_policy.conflict_precedence[6]
+  - specification.proposal_lane_policy.conflict_precedence[7]
+  - specification.proposal_lane_policy.conflict_precedence[8]
+  mutation_classes:
+  - policy_text
+  mutation_budget:
+  - policy_text
+  - schema_required_addition
+  budget_exceeded_classes: []
   changed_spec_files:
   - specs/nodes/SG-SPEC-0006.yaml
   review_reasons:
