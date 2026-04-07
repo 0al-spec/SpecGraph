@@ -1,0 +1,171 @@
+id: SG-SPEC-0007
+title: SpecGraph - Intent Mediation and Discovery Boundary
+kind: spec
+status: specified
+maturity: 0.42
+depends_on: []
+relates_to:
+- SG-SPEC-0006
+refines:
+- SG-SPEC-0001
+inputs:
+- specs/nodes/SG-SPEC-0001.yaml
+- AGENTS.md
+outputs:
+- specs/nodes/SG-SPEC-0007.yaml
+allowed_paths:
+- specs/nodes/SG-SPEC-0007.yaml
+acceptance:
+- Defines the pre-canonical mediation boundary between raw user goals and canonical intent or spec nodes
+  without introducing a fifth canonical layer
+- Defines the minimal mediated-discovery artifacts and transitions that can normalize raw goal signals
+  into canonical intent-facing graph inputs
+- Defines provenance and traceability expectations across the mediation boundary so promoted canonical
+  nodes preserve the originating user goal context
+- Keeps vocabulary harmonization, discovery-surface design, and proposal-lane governance related but explicitly
+  out of scope for full resolution in this node
+- Remains implementation-agnostic about storage, UI, agent workflow, and model-specific mediation strategies
+acceptance_evidence:
+- criterion: Defines the pre-canonical mediation boundary between raw user goals and canonical intent
+    or spec nodes without introducing a fifth canonical layer
+  evidence: 'specification.terminology defines raw_goal_signal, mediated_intent_frame, and canonicalization_boundary.
+    specification.boundary_policy.layer_position states that mediated discovery is a pre-canonical intake
+    concern adjacent to the Intent layer rather than a new canonical layer, and specification.boundary_policy.authority_boundary
+    states that canonical authority begins only when a governed intent or spec node is materialized.
+
+    '
+- criterion: Defines the minimal mediated-discovery artifacts and transitions that can normalize raw goal
+    signals into canonical intent-facing graph inputs
+  evidence: 'specification.discovery_flow defines the bounded path raw_goal_signal -> mediated_intent_frame
+    -> canonical intent or spec node, including decision rules for when a signal should become an intent
+    node versus a governed spec node.
+
+    '
+- criterion: Defines provenance and traceability expectations across the mediation boundary so promoted
+    canonical nodes preserve the originating user goal context
+  evidence: 'specification.traceability_policy requires mediated artifacts to retain source wording, source
+    actor, and promotion rationale, and requires promoted canonical nodes to preserve source_refs or equivalent
+    lineage back to the originating raw_goal_signal and mediation record.
+
+    '
+- criterion: Keeps vocabulary harmonization, discovery-surface design, and proposal-lane governance related
+    but explicitly out of scope for full resolution in this node
+  evidence: 'specification.scope.out excludes full vocabulary ontology, discovery-surface taxonomy, proposal-lane
+    lifecycle, and review workflow. specification.adjacency_notes then names vocabulary work and proposal-lane
+    coordination as adjacent concerns that may consume mediated discovery outputs without being resolved
+    here.
+
+    '
+- criterion: Remains implementation-agnostic about storage, UI, agent workflow, and model-specific mediation
+    strategies
+  evidence: 'specification.scope.out explicitly excludes repository layout, exact interfaces, supervisor
+    execution policy, and model-specific prompting or ranking techniques. The node governs only the canonical
+    boundary semantics for mediated discovery.
+
+    '
+prompt: 'Refine SG-SPEC-0001 by defining the intent-facing mediation boundary between raw user goals and
+
+  canonical intent or spec nodes, while keeping vocabulary and proposal-lane concerns related but out
+
+  of scope here.
+
+  '
+specification:
+  objective: 'Define the bounded pre-canonical discovery and mediation semantics that translate raw user
+    goals into governed canonical intent-facing artifacts without expanding the canonical layer model
+    or prescribing tooling.
+
+    '
+  scope:
+    in:
+    - Boundary between raw user goals and canonical intent or spec nodes
+    - Minimal mediated-discovery artifacts needed before canonicalization
+    - Promotion rules from mediated discovery into canonical nodes
+    - Provenance and traceability across the mediation boundary
+    out:
+    - Full vocabulary ontology or terminology harmonization policy
+    - Discovery surface taxonomy, adoption flows, or UX design
+    - Proposal-lane governance, review state, or canonical application workflow
+    - Storage schema, file layout, or queue implementation
+    - Model-specific prompting, ranking, or embedding techniques
+  terminology:
+    raw_goal_signal: 'An external, not-yet-canonical expression of user intent such as a request, complaint,
+      desired outcome, or constraint phrased in the user''s own language.
+
+      '
+    mediated_discovery: 'The bounded interpretation step that preserves the user''s raw goal context while
+      organizing it into a form suitable for canonicalization.
+
+      '
+    mediated_intent_frame: 'A structured but pre-canonical representation of one or more raw_goal_signal
+      items, capturing candidate goals, constraints, success signals, and unresolved ambiguity without
+      yet asserting canonical graph truth.
+
+      '
+    canonicalization_boundary: 'The point at which mediated discovery output is intentionally materialized
+      as a governed canonical node such as intent or spec, after which normal lifecycle and edge rules
+      apply.
+
+      '
+    promotion_rationale: 'The explicit explanation for why a mediated_intent_frame becomes a particular
+      canonical node shape, including whether the promoted node should be intent-first or specification-first.
+
+      '
+  boundary_policy:
+    layer_position:
+    - Mediated discovery is adjacent to the canonical Intent layer, not a fifth canonical layer.
+    - SG-SPEC-0001 remains correct that the canonical architecture is Intent -> Specification -> Graph
+      -> Code.
+    - Raw user goals may exist outside the canonical graph until a governed canonicalization step occurs.
+    authority_boundary:
+    - raw_goal_signal and mediated_intent_frame do not become canonical truth merely by being observed
+      or summarized.
+    - Canonical authority begins only when an intent node, spec node, or another governed canonical artifact
+      is explicitly created or updated.
+    - The mediation boundary exists to reduce premature structuring, not to replace canonical intent ownership.
+  discovery_flow:
+    intake_rules:
+    - A raw_goal_signal may contain mixed goals, constraints, preferences, and ambiguous phrasing.
+    - mediated_discovery should preserve the original wording or a faithful reference to it rather than
+      collapsing immediately into canonical terminology.
+    - A mediated_intent_frame may separate one incoming signal into multiple candidate concerns when that
+      improves later canonicalization clarity.
+    promotion_rules:
+    - Promote to an intent node when the canonical artifact should primarily express a user-owned goal,
+      need, constraint, or success condition.
+    - Promote to a spec node when the material has already been normalized into a governed, acceptance-bearing
+      declaration rather than remaining a raw or lightly mediated goal statement.
+    - When a mediated_intent_frame mixes multiple bounded concerns, canonicalization should prefer multiple
+      narrower canonical nodes over one overloaded artifact.
+    - Mediation may stop before canonicalization when ambiguity, conflict, or missing user context is
+      still too high for a trustworthy canonical node.
+  traceability_policy:
+    mediation_record:
+    - Each mediated_intent_frame should retain the source wording, source actor or channel when known,
+      and any notable ambiguity that affected interpretation.
+    - The promotion_rationale should explain why the chosen canonical node kind is appropriate.
+    promotion_traceability:
+    - Every canonical node created from mediated discovery must preserve lineage back to the originating
+      raw_goal_signal or mediated_intent_frame through source_refs, derived_from, refines, or equivalent
+      canonical provenance fields.
+    - Canonicalization must not erase the distinction between direct user wording and mediated interpretation.
+    - If one mediated_intent_frame yields multiple canonical nodes, each resulting node should preserve
+      enough shared lineage for reverse traversal back to the originating user goal context.
+  adjacency_notes:
+  - Vocabulary harmonization is adjacent because mediated discovery may surface synonymous or conflicting
+    phrasing, but this node does not define the long-term controlled vocabulary policy.
+  - Discovery surfaces and adoption-facing entities are adjacent because they may generate raw_goal_signal
+    inputs, but this node does not define their taxonomy or UX contract.
+  - Proposal-lane governance is adjacent because pre-canonical mediation outputs may later be represented
+    in proposal structures, but this node does not define proposal authority, lifecycle, or application
+    semantics.
+  examples:
+  - name: Raw goal to intent
+    description: A user says they want faster onboarding with fewer confusing steps. Mediated discovery
+      captures the raw wording, extracts candidate success conditions, and promotes the concern into one
+      or more intent nodes rather than directly minting a fully governed implementation spec.
+  - name: Structured request to spec
+    description: A user provides a bounded acceptance-bearing request with explicit success conditions
+      and constraints. Mediated discovery preserves the source context, records promotion_rationale, and
+      may promote directly into a spec node because the material already satisfies governed specification
+      shape.

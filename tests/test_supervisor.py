@@ -1332,14 +1332,21 @@ def test_main_dry_run_supports_explicit_targeted_refinement_for_review_pending_n
     node_data["gate_state"] = "review_pending"
     node_path.write_text(json.dumps(node_data), encoding="utf-8")
 
-    exit_code = supervisor_module.main(target_spec="SG-SPEC-0001", dry_run=True)
+    exit_code = supervisor_module.main(
+        target_spec="SG-SPEC-0001",
+        dry_run=True,
+        operator_note="Tighten only the proposal-lane ownership semantics.",
+    )
 
     assert exit_code == 0
     captured = capsys.readouterr()
     assert "Selected spec node: SG-SPEC-0001" in captured.out
     assert '"selection_mode": "explicit_target_refine"' in captured.out
     assert '"operator_target": "SG-SPEC-0001"' in captured.out
+    assert '"operator_note": "Tighten only the proposal-lane ownership semantics."' in captured.out
     assert "Refinement mode: explicit_target_refine" in captured.out
+    assert "Operator intent:" in captured.out
+    assert "Tighten only the proposal-lane ownership semantics." in captured.out
     assert captured.err == ""
 
 
@@ -1391,6 +1398,7 @@ def test_main_explicit_targeted_refinement_reruns_review_pending_spec(
     exit_code = supervisor_module.main(
         executor=fake_executor,
         target_spec="SG-SPEC-0001",
+        operator_note="Refine only one bounded concern for targeted rerun.",
     )
 
     assert exit_code == 0
@@ -1405,6 +1413,10 @@ def test_main_explicit_targeted_refinement_reruns_review_pending_spec(
     payload = json.loads(run_logs[0].read_text(encoding="utf-8"))
     assert payload["selected_by_rule"]["selection_mode"] == "explicit_target_refine"
     assert payload["selected_by_rule"]["operator_target"] == "SG-SPEC-0001"
+    assert (
+        payload["selected_by_rule"]["operator_note"]
+        == "Refine only one bounded concern for targeted rerun."
+    )
     assert payload["outcome"] == "done"
 
 

@@ -620,6 +620,7 @@ def build_prompt(
     refactor_work_item: dict[str, Any] | None = None,
     *,
     operator_target: bool = False,
+    operator_note: str = "",
 ) -> str:
     """Build the operator/agent prompt for one bounded run.
 
@@ -666,6 +667,16 @@ Refinement policy:
 - If the node remains non-atomic after your edits, end with RUN_OUTCOME: split_required.
 """.rstrip()
     mode_section = ""
+    operator_section = ""
+    if operator_note.strip():
+        operator_section = f"""
+
+Operator intent:
+- The operator supplied this one-run note to steer the refinement.
+- Treat it as ephemeral run context, not as canonical policy or spec content by itself.
+- Use it to choose one bounded concern within the current node's allowed scope.
+{operator_note.strip()}
+""".rstrip()
     if selection_mode == "explicit_target_refine":
         mode_section = """
 
@@ -896,6 +907,7 @@ Current maturity: {node.maturity:.2f}
 
 Goal:
 {node.prompt}
+{operator_section}
 
 Allowed paths:
 {allowed_paths}
@@ -2772,6 +2784,7 @@ def invoke_executor(
     refactor_work_item: dict[str, Any] | None = None,
     *,
     operator_target: bool = False,
+    operator_note: str = "",
 ) -> subprocess.CompletedProcess[str]:
     """Call the executor with optional work-item context when supported.
 
@@ -2785,6 +2798,7 @@ def invoke_executor(
             worktree_path,
             refactor_work_item,
             operator_target=operator_target,
+            operator_note=operator_note,
         )
     if refactor_work_item is not None and (
         executor is run_codex or executor_supports_work_item(executor)
@@ -2860,6 +2874,7 @@ def run_codex(
     refactor_work_item: dict[str, Any] | None = None,
     *,
     operator_target: bool = False,
+    operator_note: str = "",
 ) -> subprocess.CompletedProcess[str]:
     """Run the Codex executor in the isolated worktree and stream logs live."""
     cmd = build_codex_exec_command(
@@ -2867,6 +2882,7 @@ def run_codex(
             node,
             refactor_work_item,
             operator_target=operator_target,
+            operator_note=operator_note,
         )
     )
     print(f"Launching codex exec for {node.id} in {worktree_path}")
@@ -3194,6 +3210,7 @@ def _process_split_refactor_proposal(
     *,
     node: SpecNode,
     executor: Callable[[SpecNode, Path], subprocess.CompletedProcess[str]],
+    operator_note: str = "",
 ) -> tuple[int, str]:
     """Run the explicit proposal-first split pass for one oversized non-seed spec.
 
@@ -3223,6 +3240,8 @@ def _process_split_refactor_proposal(
             ),
         },
     }
+    if operator_note.strip():
+        selected_by_rule["operator_note"] = operator_note.strip()
     before_status = node.status
 
     try:
@@ -3239,7 +3258,13 @@ def _process_split_refactor_proposal(
     tracked_paths = sorted(set(before))
     before_digests = snapshot_file_digests(tracked_paths, base_dir=worktree_path)
     print(f"Starting executor for {node.id}...")
-    result = invoke_executor(executor, node, worktree_path, refactor_work_item)
+    result = invoke_executor(
+        executor,
+        node,
+        worktree_path,
+        refactor_work_item,
+        operator_note=operator_note,
+    )
     print(f"Executor finished for {node.id} with exit_code={result.returncode}")
     after = git_changed_files(worktree_path)
     tracked_paths = sorted(set(before) | set(after))
@@ -3437,6 +3462,7 @@ def _process_one_spec(
     auto_approve: bool,
     refactor_work_item: dict[str, Any] | None = None,
     operator_target: bool = False,
+    operator_note: str = "",
 ) -> tuple[int, str]:
     """Process one ordinary supervisor run.
 
@@ -3477,6 +3503,8 @@ def _process_one_spec(
     if operator_target:
         selected_by_rule["operator_target"] = node.id
         selected_by_rule["sort_order"] = ["explicit_operator_target"]
+    if operator_note.strip():
+        selected_by_rule["operator_note"] = operator_note.strip()
     if refactor_work_item is not None:
         selected_by_rule["refactor_work_item"] = {
             "id": str(refactor_work_item.get("id", "")),
@@ -3509,6 +3537,7 @@ def _process_one_spec(
         worktree_path,
         refactor_work_item,
         operator_target=operator_target,
+        operator_note=operator_note,
     )
     print(f"Executor finished for {node.id} with exit_code={result.returncode}")
     after = git_changed_files(worktree_path)
@@ -3826,6 +3855,7 @@ def main(
     target_spec: str | None = None,
     split_proposal: bool = False,
     apply_split_proposal: bool = False,
+    operator_note: str = "",
 ) -> int:
     """Entry point for CLI and tests.
 
@@ -3884,6 +3914,9 @@ def main(
     if target_spec and loop:
         print("--target-spec cannot be combined with --loop", file=sys.stderr)
         return 1
+    if operator_note and loop:
+        print("--operator-note cannot be combined with --loop", file=sys.stderr)
+        return 1
 
     if loop and not auto_approve:
         print("--loop requires --auto-approve", file=sys.stderr)
@@ -3928,6 +3961,8 @@ def main(
                 ),
             },
         }
+        if operator_note.strip():
+            selected_by_rule["operator_note"] = operator_note.strip()
 
         print(f"Selected spec node: {node.id} — {node.title}")
 
@@ -3938,12 +3973,13 @@ def main(
                 f"Status: {node.status} | Maturity: {node.maturity:.2f} | Gate: {node.gate_state}"
             )
             print(f"Selection context: {json.dumps(selected_by_rule, ensure_ascii=False)}")
-            print(f"\n{build_prompt(node, refactor_work_item)}")
+            print(f"\n{build_prompt(node, refactor_work_item, operator_note=operator_note)}")
             return 0
 
         exit_code, _outcome = _process_split_refactor_proposal(
             node=node,
             executor=executor,
+            operator_note=operator_note,
         )
         return exit_code
 
@@ -3974,6 +4010,8 @@ def main(
             "status_filter": sorted(WORKABLE_STATUSES),
             "dependency_required_statuses": sorted(READY_DEP_STATUSES),
         }
+        if operator_note.strip():
+            selected_by_rule["operator_note"] = operator_note.strip()
         print(f"Selected spec node: {node.id} — {node.title}")
 
         if dry_run:
@@ -3983,7 +4021,7 @@ def main(
                 f"Status: {node.status} | Maturity: {node.maturity:.2f} | Gate: {node.gate_state}"
             )
             print(f"Selection context: {json.dumps(selected_by_rule, ensure_ascii=False)}")
-            print(f"\n{build_prompt(node, operator_target=True)}")
+            print(f"\n{build_prompt(node, operator_target=True, operator_note=operator_note)}")
             return 0
 
         exit_code, _outcome = _process_one_spec(
@@ -3992,6 +4030,7 @@ def main(
             executor=executor,
             auto_approve=auto_approve,
             operator_target=True,
+            operator_note=operator_note,
         )
         return exit_code
 
@@ -4134,6 +4173,13 @@ if __name__ == "__main__":
         ),
     )
     parser.add_argument(
+        "--operator-note",
+        help=(
+            "Ephemeral one-run operator guidance added to the agent prompt and run log "
+            "without editing canonical specs."
+        ),
+    )
+    parser.add_argument(
         "--split-proposal",
         action="store_true",
         help="Run explicit split_oversized_spec proposal mode for --target-spec",
@@ -4156,5 +4202,6 @@ if __name__ == "__main__":
             target_spec=args.target_spec,
             split_proposal=args.split_proposal,
             apply_split_proposal=args.apply_split_proposal,
+            operator_note=args.operator_note or "",
         )
     )
