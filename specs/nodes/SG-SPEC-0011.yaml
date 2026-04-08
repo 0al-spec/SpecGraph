@@ -22,7 +22,8 @@ acceptance:
 - Defines the first canonical relation types in that slice, including `specializes`, `governed_by_state_family`,
   `resolved_by_alias`, and `constrained_by_invariant`
 - Defines the admissible subject and object scopes plus minimal semantic contracts for those relation
-  types so later executable domain vocabularies can reuse them consistently
+  types, including bounded cardinality and uniqueness semantics, so later executable domain vocabularies
+  can reuse them consistently
 - Defines traceability and evolution constraints for this relation slice, including stable relation identity,
   alias-subordination, and invariant-attachment preservation
 - Remains implementation-agnostic and explicitly out of scope for evaluator metrics, project-memory policy,
@@ -45,11 +46,13 @@ acceptance_evidence:
 
     '
 - criterion: Defines the admissible subject and object scopes plus minimal semantic contracts for those
-    relation types so later executable domain vocabularies can reuse them consistently
+    relation types, including bounded cardinality and uniqueness semantics, so later executable domain
+    vocabularies can reuse them consistently
   evidence: 'specification.admissibility_rules constrains which primitive kinds may appear as subjects
-    and objects for each relation type, and specification.semantic_contracts states the minimum reusable
-    semantic commitments for specialization, state-family attachment, alias resolution, and invariant
-    attachment.
+    and objects for each relation type, specification.cardinality_and_uniqueness defines when one relation
+    instance is required, when multiple instances may coexist, and what makes an instance canonically
+    unique, and specification.semantic_contracts states the minimum reusable semantic commitments for
+    specialization, state-family attachment, alias resolution, and invariant attachment.
 
     '
 - criterion: Defines traceability and evolution constraints for this relation slice, including stable
@@ -179,25 +182,64 @@ specification:
     target an Invariant whose scope matches the governed primitive.'
   - This slice does not yet define general-purpose domain Concept-to-Concept relation catalogs beyond
     `specializes`.
+  cardinality_and_uniqueness:
+    specializes:
+    - A `specializes` relation instance is canonically identified by the ordered pair of subject Concept
+      and object Concept.
+    - At most one canonical `specializes` instance may exist for the same ordered subject-object Concept
+      pair.
+    - A Concept may participate in multiple `specializes` instances when each instance points to a distinct
+      broader or narrower Concept.
+    governed_by_state_family:
+    - A `governed_by_state_family` relation instance is canonically identified by the ordered pair of
+      subject Concept and object StateFamily.
+    - At most one canonical `governed_by_state_family` instance may exist for the same Concept-StateFamily
+      pair.
+    - A Concept may be governed by multiple StateFamily instances only when each attached StateFamily
+      governs a distinct admissible state dimension that does not duplicate another attached StateFamily's
+      role.
+    resolved_by_alias:
+    - A `resolved_by_alias` relation instance is canonically identified by the declared context together
+      with the ordered pair of subject Alias and object canonical primitive.
+    - Within one declared context, an Alias must have exactly one canonical `resolved_by_alias` target.
+    - The same Alias surface form may participate in multiple `resolved_by_alias` instances only across
+      distinct declared contexts; such coexistence does not create multiple canonical targets inside any
+      one context.
+    constrained_by_invariant:
+    - A `constrained_by_invariant` relation instance is canonically identified by the ordered pair of
+      governed primitive and governing Invariant.
+    - At most one canonical `constrained_by_invariant` instance may exist for the same primitive-Invariant
+      pair.
+    - A primitive may participate in multiple `constrained_by_invariant` instances when each attached
+      Invariant contributes a distinct governing constraint and does not merely duplicate another canonical
+      attachment.
   semantic_contracts:
     specializes:
     - The meaning of `specializes` must be reusable across domains wherever semantic narrowing rather
       than state change or loose association is intended.
     - A Concept linked by `specializes` should remain traceably compatible with the broader Concept it
       narrows.
+    - Canonical uniqueness for `specializes` is pair-based; duplicate relation instances must not be used
+      to imply stronger specialization semantics than the single canonical link already states.
     governed_by_state_family:
     - '`governed_by_state_family` must identify the authoritative StateFamily used to describe the subject
       Concept''s admissible condition space.'
     - This relation must not collapse StateFamily semantics into free-floating tags without a governing
       Concept.
+    - When multiple StateFamily attachments coexist for one Concept, each attachment must remain semantically
+      distinct rather than restating the same governing state dimension.
     resolved_by_alias:
     - '`resolved_by_alias` must preserve one-way subordination from Alias to canonical primitive identity.'
     - The existence of multiple Aliases must not create ambiguity about which primitive remains canonical.
+    - Uniqueness is context-bounded; one Alias may not resolve to multiple canonical targets within the
+      same declared context, even if the surface form is reused elsewhere.
     constrained_by_invariant:
     - '`constrained_by_invariant` must preserve inspectable linkage between a primitive and the rule that
       governs its semantic validity.'
     - An attached Invariant may constrain naming, admissibility, or consistency, but not replace the primitive
       it governs.
+    - Multiple invariant attachments are allowed only when each one adds a distinct governing constraint
+      rather than duplicating an existing canonical attachment.
   evolution_constraints:
   - Each relation type in this slice must preserve stable identity across refinement; semantic drift should
     prefer explicit refinement or supersession over silent relabeling.
@@ -213,3 +255,79 @@ specification:
   - This child does not define broader relation taxonomies for executable domain vocabularies; later bounded
     children may extend the relation vocabulary one slice at a time.
   - This child does not define evaluator execution, project-memory handling, or viewer interaction semantics.
+proposed_status: linked
+proposed_maturity: 0.44
+gate_state: review_pending
+required_human_action: approve or retry refinement
+last_outcome: done
+last_blocker: ''
+last_run_id: 20260408T154103Z-SG-SPEC-0011
+last_exit_code: 0
+last_changed_files:
+- specs/nodes/SG-SPEC-0011.yaml
+last_run_at: '2026-04-08T15:41:03.576580+00:00'
+last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0011-20260408T153905Z
+last_branch: codex/sg-spec-0011/20260408T153905Z
+last_validator_results:
+  outputs: true
+  allowed_paths: true
+  reconciliation: true
+  atomicity: true
+  transition: true
+  executor_environment: true
+  refinement_acceptance: true
+last_refinement_acceptance:
+  decision: approve
+  change_class: local_refinement
+  checks:
+    content_changed: true
+    hard_validation: true
+    single_spec_scope: true
+    constitutional_diff: false
+    graph_refactor_diff: false
+    atomicity_clear: true
+    within_mutation_budget: true
+  diff_paths:
+  - acceptance[2]
+  - acceptance_evidence[2].criterion
+  - acceptance_evidence[2].evidence
+  - specification.cardinality_and_uniqueness
+  - specification.cardinality_and_uniqueness.specializes
+  - specification.cardinality_and_uniqueness.specializes[0]
+  - specification.cardinality_and_uniqueness.specializes[1]
+  - specification.cardinality_and_uniqueness.specializes[2]
+  - specification.cardinality_and_uniqueness.governed_by_state_family
+  - specification.cardinality_and_uniqueness.governed_by_state_family[0]
+  - specification.cardinality_and_uniqueness.governed_by_state_family[1]
+  - specification.cardinality_and_uniqueness.governed_by_state_family[2]
+  - specification.cardinality_and_uniqueness.resolved_by_alias
+  - specification.cardinality_and_uniqueness.resolved_by_alias[0]
+  - specification.cardinality_and_uniqueness.resolved_by_alias[1]
+  - specification.cardinality_and_uniqueness.resolved_by_alias[2]
+  - specification.cardinality_and_uniqueness.constrained_by_invariant
+  - specification.cardinality_and_uniqueness.constrained_by_invariant[0]
+  - specification.cardinality_and_uniqueness.constrained_by_invariant[1]
+  - specification.cardinality_and_uniqueness.constrained_by_invariant[2]
+  - specification.semantic_contracts.constrained_by_invariant[2]
+  - specification.semantic_contracts.governed_by_state_family[2]
+  - specification.semantic_contracts.resolved_by_alias[2]
+  - specification.semantic_contracts.specializes[2]
+  mutation_classes:
+  - policy_text
+  mutation_budget:
+  - policy_text
+  budget_exceeded_classes: []
+  changed_spec_files:
+  - specs/nodes/SG-SPEC-0011.yaml
+  review_reasons: []
+  errors: []
+  warnings: []
+last_reconciliation:
+  worktree_spec_count: 11
+  changed_spec_ids:
+  - SG-SPEC-0011
+  semantic_dependencies_resolved: true
+  work_dependencies_ready: true
+  cycles: []
+last_requested_child_materialization: false
+last_materialized_child_paths: []
