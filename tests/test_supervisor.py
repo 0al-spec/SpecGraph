@@ -372,6 +372,13 @@ def test_parse_mutation_budget_rejects_unknown_class(
         supervisor_module.parse_mutation_budget("policy_text,unknown_class")
 
 
+def test_parse_run_authority_rejects_unknown_grant(
+    supervisor_module: object,
+) -> None:
+    with pytest.raises(ValueError, match="Unknown run authority grant"):
+        supervisor_module.parse_run_authority("materialize_one_child,unknown_grant")
+
+
 def test_validate_refinement_acceptance_tracks_schema_required_addition_and_budget(
     supervisor_module: object,
     repo_fixture: Path,
@@ -1171,7 +1178,7 @@ def test_build_prompt_includes_child_materialization_guidance_for_targeted_non_r
                 "refines": ["SG-SPEC-0001"],
                 "inputs": ["specs/nodes/SG-SPEC-0001.yaml"],
                 "outputs": ["specs/nodes/SG-SPEC-0002.yaml"],
-                "allowed_paths": ["specs/nodes/*.yaml"],
+                "allowed_paths": ["specs/nodes/SG-SPEC-0002.yaml"],
                 "acceptance": ["Delegate one bounded child vocabulary slice."],
                 "acceptance_evidence": ["Existing evidence."],
                 "prompt": "Materialize one bounded child from this parent delegation boundary.",
@@ -1185,9 +1192,12 @@ def test_build_prompt_includes_child_materialization_guidance_for_targeted_non_r
         node,
         operator_target=True,
         operator_note="Create one new child spec for the delegated bootstrap relation vocabulary.",
+        run_authority=(supervisor_module.RUN_AUTHORITY_MATERIALIZE_ONE_CHILD,),
     )
 
     assert "Refinement mode: explicit_target_refine" in prompt
+    assert "Run authority grant:" in prompt
+    assert f"- {supervisor_module.RUN_AUTHORITY_MATERIALIZE_ONE_CHILD}" in prompt
     assert "Child materialization guidance:" in prompt
     assert "Suggested child spec ID: SG-SPEC-0003" in prompt
     assert "Suggested child spec path: specs/nodes/SG-SPEC-0003.yaml" in prompt
@@ -2996,7 +3006,7 @@ def test_main_targeted_non_root_run_materializes_one_child_spec(
         "refines": ["SG-SPEC-0001"],
         "inputs": ["specs/nodes/SG-SPEC-0001.yaml"],
         "outputs": ["specs/nodes/SG-SPEC-0002.yaml"],
-        "allowed_paths": ["specs/nodes/*.yaml"],
+        "allowed_paths": ["specs/nodes/SG-SPEC-0002.yaml"],
         "acceptance": ["Delegate one bounded child vocabulary slice."],
         "acceptance_evidence": ["Parent evidence."],
         "prompt": "Materialize one bounded child from this parent delegation boundary.",
@@ -3041,8 +3051,14 @@ def test_main_targeted_non_root_run_materializes_one_child_spec(
                     "relates_to": [],
                     "refines": ["SG-SPEC-0002"],
                     "inputs": ["specs/nodes/SG-SPEC-0002.yaml"],
-                    "outputs": ["specs/nodes/SG-SPEC-0003.yaml"],
-                    "allowed_paths": ["specs/nodes/SG-SPEC-0003.yaml"],
+                    "outputs": [
+                        "specs/nodes/SG-SPEC-0002.yaml",
+                        "specs/nodes/SG-SPEC-0003.yaml",
+                    ],
+                    "allowed_paths": [
+                        "specs/nodes/SG-SPEC-0002.yaml",
+                        "specs/nodes/SG-SPEC-0003.yaml",
+                    ],
                     "acceptance": ["Define the first bootstrap relation vocabulary slice."],
                     "prompt": "Specify one bounded bootstrap relation vocabulary child.",
                 }
@@ -3060,6 +3076,7 @@ def test_main_targeted_non_root_run_materializes_one_child_spec(
         executor=fake_executor,
         target_spec="SG-SPEC-0002",
         operator_note="Create one new child spec for the delegated bootstrap relation vocabulary.",
+        run_authority=(supervisor_module.RUN_AUTHORITY_MATERIALIZE_ONE_CHILD,),
     )
 
     assert exit_code == 0
@@ -3072,8 +3089,12 @@ def test_main_targeted_non_root_run_materializes_one_child_spec(
     )
 
     assert updated_parent["depends_on"] == ["SG-SPEC-0003"]
+    assert updated_parent["outputs"] == ["specs/nodes/SG-SPEC-0002.yaml"]
+    assert updated_parent["allowed_paths"] == ["specs/nodes/SG-SPEC-0002.yaml"]
     assert child["refines"] == ["SG-SPEC-0002"]
     assert child["title"] == "Bootstrap Relation Vocabulary"
+    assert child["outputs"] == ["specs/nodes/SG-SPEC-0003.yaml"]
+    assert child["allowed_paths"] == ["specs/nodes/SG-SPEC-0003.yaml"]
 
 
 def test_main_targeted_child_materialization_run_blocks_when_no_child_is_produced(
@@ -3096,7 +3117,7 @@ def test_main_targeted_child_materialization_run_blocks_when_no_child_is_produce
                 "refines": ["SG-SPEC-0001"],
                 "inputs": ["specs/nodes/SG-SPEC-0001.yaml"],
                 "outputs": ["specs/nodes/SG-SPEC-0002.yaml"],
-                "allowed_paths": ["specs/nodes/*.yaml"],
+                "allowed_paths": ["specs/nodes/SG-SPEC-0002.yaml"],
                 "acceptance": ["Delegate one bounded child vocabulary slice."],
                 "acceptance_evidence": ["Parent evidence."],
                 "prompt": "Materialize one bounded child from this parent delegation boundary.",
@@ -3129,6 +3150,7 @@ def test_main_targeted_child_materialization_run_blocks_when_no_child_is_produce
         executor=fake_executor,
         target_spec="SG-SPEC-0002",
         operator_note="Create one new child spec for the delegated bootstrap relation vocabulary.",
+        run_authority=(supervisor_module.RUN_AUTHORITY_MATERIALIZE_ONE_CHILD,),
     )
 
     assert exit_code == 1
@@ -3149,6 +3171,51 @@ def test_main_targeted_child_materialization_run_blocks_when_no_child_is_produce
         in error
         for error in payload["validation_errors"]
     )
+
+
+def test_main_targeted_child_materialization_blocks_without_run_authority(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    specs_dir = repo_fixture / "specs" / "nodes"
+    parent_path = specs_dir / "SG-SPEC-0002.yaml"
+    parent_path.write_text(
+        supervisor_module.dump_yaml_text(
+            {
+                "id": "SG-SPEC-0002",
+                "title": "Vocabulary Parent",
+                "kind": "spec",
+                "status": "specified",
+                "maturity": 0.4,
+                "depends_on": [],
+                "relates_to": [],
+                "refines": ["SG-SPEC-0001"],
+                "inputs": ["specs/nodes/SG-SPEC-0001.yaml"],
+                "outputs": ["specs/nodes/SG-SPEC-0002.yaml"],
+                "allowed_paths": ["specs/nodes/SG-SPEC-0002.yaml"],
+                "acceptance": ["Delegate one bounded child vocabulary slice."],
+                "acceptance_evidence": ["Parent evidence."],
+                "prompt": "Materialize one bounded child from this parent delegation boundary.",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    def fake_executor(_node: object, _worktree_path: Path) -> subprocess.CompletedProcess[str]:
+        raise AssertionError("executor should not run when child materialization lacks authority")
+
+    exit_code = supervisor_module.main(
+        executor=fake_executor,
+        target_spec="SG-SPEC-0002",
+        operator_note="Create one new child spec for the delegated bootstrap relation vocabulary.",
+    )
+
+    assert exit_code == 1
+    updated_parent = supervisor_module.get_yaml_module().safe_load(
+        parent_path.read_text(encoding="utf-8")
+    )
+    assert "gate_state" not in updated_parent
+    assert "last_run_id" not in updated_parent
 
 
 def test_main_split_required_preserves_source_spec_refinement(

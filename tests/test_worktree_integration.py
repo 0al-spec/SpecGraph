@@ -473,7 +473,7 @@ class TestMainWithRealWorktree:
                     "refines": ["SG-SPEC-0001"],
                     "inputs": ["specs/nodes/SG-SPEC-0001.yaml"],
                     "outputs": ["specs/nodes/SG-SPEC-0002.yaml"],
-                    "allowed_paths": ["specs/nodes/*.yaml"],
+                    "allowed_paths": ["specs/nodes/SG-SPEC-0002.yaml"],
                     "acceptance": ["Delegate one bounded child vocabulary slice."],
                     "acceptance_evidence": ["Parent evidence."],
                     "prompt": "Materialize one bounded child from this parent delegation boundary.",
@@ -504,8 +504,14 @@ class TestMainWithRealWorktree:
                         "relates_to": [],
                         "refines": ["SG-SPEC-0002"],
                         "inputs": ["specs/nodes/SG-SPEC-0002.yaml"],
-                        "outputs": ["specs/nodes/SG-SPEC-0003.yaml"],
-                        "allowed_paths": ["specs/nodes/SG-SPEC-0003.yaml"],
+                        "outputs": [
+                            "specs/nodes/SG-SPEC-0002.yaml",
+                            "specs/nodes/SG-SPEC-0003.yaml",
+                        ],
+                        "allowed_paths": [
+                            "specs/nodes/SG-SPEC-0002.yaml",
+                            "specs/nodes/SG-SPEC-0003.yaml",
+                        ],
                         "acceptance": ["Define the first bootstrap relation vocabulary slice."],
                         "prompt": "Specify one bounded bootstrap relation vocabulary child.",
                     }
@@ -527,6 +533,7 @@ class TestMainWithRealWorktree:
                 operator_note=(
                     "Create one new child spec for the delegated bootstrap relation vocabulary."
                 ),
+                run_authority=(supervisor_module.RUN_AUTHORITY_MATERIALIZE_ONE_CHILD,),
             )
             assert ret == 0
 
@@ -536,7 +543,11 @@ class TestMainWithRealWorktree:
                 (git_repo / "specs" / "nodes" / "SG-SPEC-0003.yaml").read_text(encoding="utf-8")
             )
             assert parent["depends_on"] == ["SG-SPEC-0003"]
+            assert parent["outputs"] == ["specs/nodes/SG-SPEC-0002.yaml"]
+            assert parent["allowed_paths"] == ["specs/nodes/SG-SPEC-0002.yaml"]
             assert child["refines"] == ["SG-SPEC-0002"]
+            assert child["outputs"] == ["specs/nodes/SG-SPEC-0003.yaml"]
+            assert child["allowed_paths"] == ["specs/nodes/SG-SPEC-0003.yaml"]
 
             specs = supervisor_module.load_specs()
             node = next(spec for spec in specs if spec.id == "SG-SPEC-0002")

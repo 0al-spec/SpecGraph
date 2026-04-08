@@ -100,10 +100,14 @@ REFINEMENT_CLASS_CONSTITUTIONAL = "constitutional_change"
 MUTATION_CLASS_POLICY_TEXT = "policy_text"
 MUTATION_CLASS_SCHEMA_REQUIRED_ADDITION = "schema_required_addition"
 MUTATION_CLASS_SCHEMA_OPTIONAL_ADDITION = "schema_optional_addition"
+RUN_AUTHORITY_MATERIALIZE_ONE_CHILD = "materialize_one_child"
 KNOWN_MUTATION_CLASSES = {
     MUTATION_CLASS_POLICY_TEXT,
     MUTATION_CLASS_SCHEMA_REQUIRED_ADDITION,
     MUTATION_CLASS_SCHEMA_OPTIONAL_ADDITION,
+}
+KNOWN_RUN_AUTHORITIES = {
+    RUN_AUTHORITY_MATERIALIZE_ONE_CHILD,
 }
 GRAPH_REFACTOR_DIFF_PREFIXES = (
     "depends_on",
@@ -602,6 +606,34 @@ def can_create_new_spec_files(node: SpecNode) -> bool:
     return any(sample_path.match(pattern) for pattern in node.allowed_paths)
 
 
+def node_supports_child_delegation(node: SpecNode) -> bool:
+    """Return True when the node semantically reads like a delegating parent."""
+    parts: list[str] = [node.title, node.prompt]
+    acceptance = node.data.get("acceptance", [])
+    if isinstance(acceptance, list):
+        parts.extend(str(item) for item in acceptance)
+    specification = node.data.get("specification")
+    if isinstance(specification, dict):
+        parts.append(json.dumps(specification, ensure_ascii=False, sort_keys=True))
+    seed_text = " ".join(parts).lower()
+    delegation_markers = (
+        "child",
+        "child spec",
+        "child refinement",
+        "delegate",
+        "delegation",
+        "descendant",
+        "split",
+        "decompose",
+        "bounded child",
+    )
+    return any(marker in seed_text for marker in delegation_markers)
+
+
+def run_authority_grants_child_materialization(run_authority: tuple[str, ...]) -> bool:
+    return RUN_AUTHORITY_MATERIALIZE_ONE_CHILD in run_authority
+
+
 def bootstrap_child_hint(node: SpecNode, specs: list[SpecNode]) -> dict[str, str] | None:
     if not can_create_new_spec_files(node):
         return None
@@ -654,11 +686,14 @@ def targeted_child_materialization_hint(
     *,
     operator_target: bool = False,
     operator_note: str = "",
+    run_authority: tuple[str, ...] = (),
 ) -> dict[str, str] | None:
     """Suggest one new child spec for explicit targeted child-creation runs."""
     if not operator_target or not operator_requests_child_materialization(operator_note):
         return None
-    if not can_create_new_spec_files(node):
+    if not run_authority_grants_child_materialization(run_authority):
+        return None
+    if not node_supports_child_delegation(node):
         return None
 
     child_id = next_sequential_spec_id(specs)
@@ -674,12 +709,116 @@ def targeted_child_materialization_requested(
     node: SpecNode,
     operator_target: bool = False,
     operator_note: str = "",
+    run_authority: tuple[str, ...] = (),
 ) -> bool:
     return (
         operator_target
-        and can_create_new_spec_files(node)
         and operator_requests_child_materialization(operator_note)
+        and run_authority_grants_child_materialization(run_authority)
+        and node_supports_child_delegation(node)
     )
+
+
+def effective_allowed_paths_for_run(
+    node: SpecNode,
+    *,
+    child_materialization_hint: dict[str, str] | None = None,
+) -> list[str]:
+    if not node.allowed_paths:
+        return []
+    allowed_paths = list(node.allowed_paths)
+    if child_materialization_hint is None:
+        return allowed_paths
+    child_path = str(child_materialization_hint.get("path", "")).strip()
+    if child_path and child_path not in allowed_paths:
+        allowed_paths.append(child_path)
+    return allowed_paths
+
+
+def effective_outputs_for_run(
+    node: SpecNode,
+    *,
+    child_materialization_hint: dict[str, str] | None = None,
+) -> list[str]:
+    outputs = list(node.outputs)
+    if child_materialization_hint is None:
+        return outputs
+    child_path = str(child_materialization_hint.get("path", "")).strip()
+    if child_path and child_path not in outputs:
+        outputs.append(child_path)
+    return outputs
+
+
+def child_materialization_preflight_errors(
+    *,
+    node: SpecNode,
+    operator_target: bool = False,
+    operator_note: str = "",
+    run_authority: tuple[str, ...] = (),
+) -> list[str]:
+    if not operator_target or not operator_requests_child_materialization(operator_note):
+        return []
+
+    errors: list[str] = []
+    if not run_authority_grants_child_materialization(run_authority):
+        errors.append(
+            "Child materialization was requested, but the run authority does not grant "
+            "'materialize_one_child'."
+        )
+    if not node_supports_child_delegation(node):
+        errors.append(
+            "Child materialization was requested, but the selected node does not expose "
+            "semantic delegation constraints compatible with creating a bounded child."
+        )
+    return errors
+
+
+def sanitize_source_after_child_materialization(
+    *,
+    before_data: dict[str, Any],
+    after_data: dict[str, Any],
+    requested: bool,
+) -> dict[str, Any]:
+    """Keep run-level child authority ephemeral on the parent source spec."""
+    if not requested:
+        return after_data
+    sanitized = copy.deepcopy(after_data)
+    sanitized["outputs"] = copy.deepcopy(before_data.get("outputs", []))
+    sanitized["allowed_paths"] = copy.deepcopy(before_data.get("allowed_paths", []))
+    return sanitized
+
+
+def restore_ephemeral_child_authority_fields(
+    *,
+    node: SpecNode,
+    before_data: dict[str, Any],
+    requested: bool,
+) -> None:
+    if not requested:
+        return
+    if "outputs" in before_data:
+        node.data["outputs"] = copy.deepcopy(before_data["outputs"])
+    else:
+        node.data.pop("outputs", None)
+    if "allowed_paths" in before_data:
+        node.data["allowed_paths"] = copy.deepcopy(before_data["allowed_paths"])
+    else:
+        node.data.pop("allowed_paths", None)
+
+
+def normalize_materialized_child_specs(child_relpaths: list[str]) -> None:
+    yaml_module = get_yaml_module()
+    for child_relpath in child_relpaths:
+        child_path = ROOT / child_relpath
+        if not child_path.exists():
+            continue
+        child_data = yaml_module.safe_load(child_path.read_text(encoding="utf-8")) or {}
+        if not isinstance(child_data, dict):
+            continue
+        normalized = canonical_spec_snapshot(child_data)
+        normalized["outputs"] = [child_relpath]
+        normalized["allowed_paths"] = [child_relpath]
+        child_path.write_text(dump_yaml_text(normalized), encoding="utf-8")
 
 
 def build_prompt(
@@ -689,6 +828,7 @@ def build_prompt(
     operator_target: bool = False,
     operator_note: str = "",
     mutation_budget: tuple[str, ...] = (),
+    run_authority: tuple[str, ...] = (),
 ) -> str:
     """Build the operator/agent prompt for one bounded run.
 
@@ -706,8 +846,6 @@ def build_prompt(
     if AGENTS_FILE.exists():
         agents_hint = "Read and follow AGENTS.md before editing anything.\n\n"
 
-    allowed_paths = "\n".join(f"- {path}" for path in node.allowed_paths) or "- (not specified)"
-    outputs = "\n".join(f"- {path}" for path in node.outputs) or "- (not specified)"
     all_specs = load_specs()
     bootstrap_hint = bootstrap_child_hint(node, all_specs)
     child_materialization_hint = targeted_child_materialization_hint(
@@ -715,7 +853,20 @@ def build_prompt(
         all_specs,
         operator_target=operator_target,
         operator_note=operator_note,
+        run_authority=run_authority,
     )
+    effective_allowed_paths = effective_allowed_paths_for_run(
+        node,
+        child_materialization_hint=child_materialization_hint,
+    )
+    effective_outputs = effective_outputs_for_run(
+        node,
+        child_materialization_hint=child_materialization_hint,
+    )
+    allowed_paths = (
+        "\n".join(f"- {path}" for path in effective_allowed_paths) or "- (not specified)"
+    )
+    outputs = "\n".join(f"- {path}" for path in effective_outputs) or "- (not specified)"
     selection_mode = selection_mode_for_node(
         node,
         refactor_work_item=refactor_work_item,
@@ -763,6 +914,14 @@ Mutation budget:
 {mutation_budget_lines}
 - If the smallest honest refinement needs a class outside
   this budget, do not smuggle it in silently.
+""".rstrip()
+    run_authority_section = ""
+    if run_authority:
+        run_authority_lines = "\n".join(f"- {item}" for item in run_authority)
+        run_authority_section = f"""
+
+Run authority grant:
+{run_authority_lines}
 """.rstrip()
     if selection_mode == "explicit_target_refine":
         mode_section = """
@@ -1012,6 +1171,7 @@ Goal:
 {node.prompt}
 {operator_section}
 {mutation_budget_section}
+{run_authority_section}
 
 Allowed paths:
 {allowed_paths}
@@ -1060,16 +1220,23 @@ def validate_outputs(node: SpecNode, base_dir: Path) -> list[str]:
     return errors
 
 
-def validate_allowed_paths(node: SpecNode, changed_files: list[str]) -> list[str]:
-    if not node.allowed_paths:
+def validate_changed_files_against_allowed_paths(
+    allowed_paths: list[str],
+    changed_files: list[str],
+) -> list[str]:
+    if not allowed_paths:
         return []
 
     errors: list[str] = []
     for changed in changed_files:
         changed_path = PurePosixPath(changed)
-        if not any(changed_path.match(pattern) for pattern in node.allowed_paths):
+        if not any(changed_path.match(pattern) for pattern in allowed_paths):
             errors.append(f"Changed file outside allowed_paths: {changed}")
     return errors
+
+
+def validate_allowed_paths(node: SpecNode, changed_files: list[str]) -> list[str]:
+    return validate_changed_files_against_allowed_paths(node.allowed_paths, changed_files)
 
 
 def select_sync_paths(allowed_paths: list[str], changed_files: list[str]) -> list[str]:
@@ -1349,6 +1516,23 @@ def parse_mutation_budget(budget_text: str) -> tuple[str, ...]:
             + ", ".join(unknown)
             + ". Known classes: "
             + ", ".join(sorted(KNOWN_MUTATION_CLASSES))
+        )
+    return tuple(dict.fromkeys(normalized))
+
+
+def parse_run_authority(authority_text: str) -> tuple[str, ...]:
+    """Parse a comma-separated run-authority grant list."""
+    if not authority_text.strip():
+        return ()
+    items = [item.strip() for item in authority_text.split(",")]
+    normalized = tuple(item for item in items if item)
+    unknown = sorted(set(normalized) - KNOWN_RUN_AUTHORITIES)
+    if unknown:
+        raise ValueError(
+            "Unknown run authority grant(s): "
+            + ", ".join(unknown)
+            + ". Known run authority grants: "
+            + ", ".join(sorted(KNOWN_RUN_AUTHORITIES))
         )
     return tuple(dict.fromkeys(normalized))
 
@@ -3015,6 +3199,7 @@ def invoke_executor(
     operator_target: bool = False,
     operator_note: str = "",
     mutation_budget: tuple[str, ...] = (),
+    run_authority: tuple[str, ...] = (),
 ) -> subprocess.CompletedProcess[str]:
     """Call the executor with optional work-item context when supported.
 
@@ -3030,6 +3215,7 @@ def invoke_executor(
             operator_target=operator_target,
             operator_note=operator_note,
             mutation_budget=mutation_budget,
+            run_authority=run_authority,
         )
     if refactor_work_item is not None and (
         executor is run_codex or executor_supports_work_item(executor)
@@ -3107,6 +3293,7 @@ def run_codex(
     operator_target: bool = False,
     operator_note: str = "",
     mutation_budget: tuple[str, ...] = (),
+    run_authority: tuple[str, ...] = (),
 ) -> subprocess.CompletedProcess[str]:
     """Run the Codex executor in the isolated worktree and stream logs live."""
     cmd = build_codex_exec_command(
@@ -3116,6 +3303,7 @@ def run_codex(
             operator_target=operator_target,
             operator_note=operator_note,
             mutation_budget=mutation_budget,
+            run_authority=run_authority,
         )
     )
     print(f"Launching codex exec for {node.id} in {worktree_path}")
@@ -3210,6 +3398,7 @@ def resolve_gate_decision(
 
         proposed_status = node.data.get("proposed_status")
         proposed_maturity = node.data.get("proposed_maturity")
+        before_node_data = copy.deepcopy(node.data)
         transition_errors = validate_transition(node.status, proposed_status)
         if transition_errors:
             print("\n".join(transition_errors), file=sys.stderr)
@@ -3217,11 +3406,18 @@ def resolve_gate_decision(
 
         worktree_path = Path(str(node.data.get("last_worktree_path", ""))).expanduser()
         changed_files = list(node.data.get("last_changed_files", []))
+        materialized_child_paths = list(node.data.get("last_materialized_child_paths", []))
         if worktree_path.as_posix() and worktree_path.exists():
             allowed_changes = select_sync_paths(node.allowed_paths, changed_files)
             sync_files_from_worktree(worktree_path, allowed_changes)
+            normalize_materialized_child_specs(materialized_child_paths)
             # Keep approved content from the worktree while attaching gate metadata in root.
             node.reload()
+            restore_ephemeral_child_authority_fields(
+                node=node,
+                before_data=before_node_data,
+                requested=bool(before_node_data.get("last_requested_child_materialization", False)),
+            )
 
         if proposed_status:
             node.data["status"] = proposed_status
@@ -3707,6 +3903,7 @@ def _process_one_spec(
     operator_target: bool = False,
     operator_note: str = "",
     mutation_budget: tuple[str, ...] = (),
+    run_authority: tuple[str, ...] = (),
 ) -> tuple[int, str]:
     """Process one ordinary supervisor run.
 
@@ -3751,6 +3948,8 @@ def _process_one_spec(
         selected_by_rule["operator_note"] = operator_note.strip()
     if mutation_budget:
         selected_by_rule["mutation_budget"] = list(mutation_budget)
+    if run_authority:
+        selected_by_rule["run_authority"] = list(run_authority)
     if refactor_work_item is not None:
         selected_by_rule["refactor_work_item"] = {
             "id": str(refactor_work_item.get("id", "")),
@@ -3764,10 +3963,32 @@ def _process_one_spec(
     before_node_data = copy.deepcopy(node.data)
     before_canonical = canonical_spec_snapshot(node.data)
     source_spec_relpath = node.path.relative_to(ROOT).as_posix()
+    child_materialization_preflight = child_materialization_preflight_errors(
+        node=node,
+        operator_target=operator_target,
+        operator_note=operator_note,
+        run_authority=run_authority,
+    )
+    if child_materialization_preflight:
+        for error in child_materialization_preflight:
+            print(error, file=sys.stderr)
+        return 1, "blocked"
+    child_materialization_hint = targeted_child_materialization_hint(
+        node,
+        specs,
+        operator_target=operator_target,
+        operator_note=operator_note,
+        run_authority=run_authority,
+    )
+    effective_allowed_paths = effective_allowed_paths_for_run(
+        node,
+        child_materialization_hint=child_materialization_hint,
+    )
     child_materialization_requested = targeted_child_materialization_requested(
         node=node,
         operator_target=operator_target,
         operator_note=operator_note,
+        run_authority=run_authority,
     )
 
     try:
@@ -3792,6 +4013,7 @@ def _process_one_spec(
         operator_target=operator_target,
         operator_note=operator_note,
         mutation_budget=mutation_budget,
+        run_authority=run_authority,
     )
     print(f"Executor finished for {node.id} with exit_code={result.returncode}")
     after = git_changed_files(worktree_path)
@@ -3806,6 +4028,11 @@ def _process_one_spec(
         or (path in (after_set - before_set) and not is_spec_node_path(path))
     )
     print(f"Detected changed files: {changed or ['(none)']}")
+    materialized_child_paths = (
+        [path for path in changed if is_spec_node_path(path) and path != source_spec_relpath]
+        if child_materialization_requested
+        else []
+    )
 
     run_timestamp = dt.datetime.now(dt.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     run_id = f"{run_timestamp}-{node.id}"
@@ -3877,7 +4104,9 @@ def _process_one_spec(
             worktree_load_errors = []
 
         output_errors = validate_outputs(node, base_dir=worktree_path)
-        allowed_path_errors = validate_allowed_paths(node, changed)
+        allowed_path_errors = validate_changed_files_against_allowed_paths(
+            effective_allowed_paths, changed
+        )
         child_materialization_errors = validate_requested_child_materialization(
             requested=child_materialization_requested,
             source_spec_relpath=source_spec_relpath,
@@ -3938,8 +4167,12 @@ def _process_one_spec(
             proposal_items=proposal_items,
         )
         candidate_after_node = next((spec for spec in worktree_specs if spec.id == node.id), None)
-        candidate_after_data = (
-            candidate_after_node.data if candidate_after_node is not None else before_canonical
+        candidate_after_data = sanitize_source_after_child_materialization(
+            before_data=before_canonical,
+            after_data=(
+                candidate_after_node.data if candidate_after_node is not None else before_canonical
+            ),
+            requested=child_materialization_requested,
         )
     if not primary_executor_failure:
         refinement_acceptance = validate_refinement_acceptance(
@@ -3980,14 +4213,26 @@ def _process_one_spec(
         and bool(changed)
     )
     if split_sync_allowed:
-        allowed_changes = select_sync_paths(node.allowed_paths, changed)
+        allowed_changes = select_sync_paths(effective_allowed_paths, changed)
         sync_files_from_worktree(worktree_path, allowed_changes)
+        normalize_materialized_child_specs(materialized_child_paths)
         node.reload()
+        restore_ephemeral_child_authority_fields(
+            node=node,
+            before_data=before_node_data,
+            requested=child_materialization_requested,
+        )
 
     if success:
-        allowed_changes = select_sync_paths(node.allowed_paths, changed)
+        allowed_changes = select_sync_paths(effective_allowed_paths, changed)
         sync_files_from_worktree(worktree_path, allowed_changes)
+        normalize_materialized_child_specs(materialized_child_paths)
         node.reload()
+        restore_ephemeral_child_authority_fields(
+            node=node,
+            before_data=before_node_data,
+            requested=child_materialization_requested,
+        )
         proposed_maturity = (
             None if is_graph_refactor_run else min(1.0, round(node.maturity + 0.2, 2))
         )
@@ -4059,6 +4304,8 @@ def _process_one_spec(
     node.data["last_validator_results"] = validator_results
     node.data["last_refinement_acceptance"] = refinement_acceptance
     node.data["last_reconciliation"] = reconciliation
+    node.data["last_requested_child_materialization"] = child_materialization_requested
+    node.data["last_materialized_child_paths"] = materialized_child_paths
     if validation_errors:
         node.data["last_errors"] = validation_errors
     node.save()
@@ -4138,6 +4385,7 @@ def main(
     apply_split_proposal: bool = False,
     operator_note: str = "",
     mutation_budget: tuple[str, ...] = (),
+    run_authority: tuple[str, ...] = (),
 ) -> int:
     """Entry point for CLI and tests.
 
@@ -4202,6 +4450,9 @@ def main(
     if mutation_budget and loop:
         print("--mutation-budget cannot be combined with --loop", file=sys.stderr)
         return 1
+    if run_authority and loop:
+        print("--run-authority cannot be combined with --loop", file=sys.stderr)
+        return 1
 
     if loop and not auto_approve:
         print("--loop requires --auto-approve", file=sys.stderr)
@@ -4250,6 +4501,8 @@ def main(
             selected_by_rule["operator_note"] = operator_note.strip()
         if mutation_budget:
             selected_by_rule["mutation_budget"] = list(mutation_budget)
+        if run_authority:
+            selected_by_rule["run_authority"] = list(run_authority)
 
         print(f"Selected spec node: {node.id} — {node.title}")
 
@@ -4307,7 +4560,19 @@ def main(
             selected_by_rule["operator_note"] = operator_note.strip()
         if mutation_budget:
             selected_by_rule["mutation_budget"] = list(mutation_budget)
+        if run_authority:
+            selected_by_rule["run_authority"] = list(run_authority)
         print(f"Selected spec node: {node.id} — {node.title}")
+        preflight_errors = child_materialization_preflight_errors(
+            node=node,
+            operator_target=True,
+            operator_note=operator_note,
+            run_authority=run_authority,
+        )
+        if preflight_errors:
+            for error in preflight_errors:
+                print(error, file=sys.stderr)
+            return 1
 
         if dry_run:
             print("\n=== dry-run mode ===")
@@ -4321,6 +4586,7 @@ def main(
                 operator_target=True,
                 operator_note=operator_note,
                 mutation_budget=mutation_budget,
+                run_authority=run_authority,
             )
             print(f"\n{prompt}")
             return 0
@@ -4333,6 +4599,7 @@ def main(
             operator_target=True,
             operator_note=operator_note,
             mutation_budget=mutation_budget,
+            run_authority=run_authority,
         )
         return exit_code
 
@@ -4489,6 +4756,13 @@ if __name__ == "__main__":
         ),
     )
     parser.add_argument(
+        "--run-authority",
+        help=(
+            "Optional comma-separated run authority grants for an explicit targeted run, "
+            "for example: materialize_one_child"
+        ),
+    )
+    parser.add_argument(
         "--split-proposal",
         action="store_true",
         help="Run explicit split_oversized_spec proposal mode for --target-spec",
@@ -4501,6 +4775,11 @@ if __name__ == "__main__":
     args = parser.parse_args()
     try:
         mutation_budget = parse_mutation_budget(args.mutation_budget or "")
+    except ValueError as exc:
+        print(str(exc), file=sys.stderr)
+        raise SystemExit(1) from exc
+    try:
+        run_authority = parse_run_authority(args.run_authority or "")
     except ValueError as exc:
         print(str(exc), file=sys.stderr)
         raise SystemExit(1) from exc
@@ -4518,5 +4797,6 @@ if __name__ == "__main__":
             apply_split_proposal=args.apply_split_proposal,
             operator_note=args.operator_note or "",
             mutation_budget=mutation_budget,
+            run_authority=run_authority,
         )
     )
