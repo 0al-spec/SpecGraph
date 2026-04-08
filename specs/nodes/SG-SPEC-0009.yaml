@@ -1,0 +1,202 @@
+id: SG-SPEC-0009
+title: SpecGraph - OperatorRequest Contract for Single-Run Steering
+kind: spec
+status: specified
+maturity: 0.37
+depends_on: []
+relates_to:
+- SG-SPEC-0003
+- SG-SPEC-0007
+- SG-SPEC-0008
+refines:
+- SG-SPEC-0001
+inputs:
+- specs/nodes/SG-SPEC-0001.yaml
+- specs/nodes/SG-SPEC-0003.yaml
+- specs/nodes/SG-SPEC-0007.yaml
+- specs/nodes/SG-SPEC-0008.yaml
+- AGENTS.md
+outputs:
+- specs/nodes/SG-SPEC-0009.yaml
+allowed_paths:
+- specs/nodes/SG-SPEC-0009.yaml
+acceptance:
+- Defines OperatorRequest as the normalized, bounded contract that steers one supervisor run from external
+  actor intent such as GUI selection, direct operator input, or mediator output without becoming canonical
+  graph truth
+- Defines the request normalization and target selection contract, including how a single run receives
+  explicit target identity, execution mode, and bounded selection intent
+- Defines scope and authority declarations for a requested run, including mutation posture and explicit
+  adjacency to SG-SPEC-0008 for memory-related steering without resolving memory policy here
+- Defines one-run steering semantics in which explicit operator intent overrides heuristics for the selected
+  run but does not expand supervisor authority or silently broaden scope
+acceptance_evidence:
+- criterion: Defines OperatorRequest as the normalized, bounded contract that steers one supervisor run
+    from external actor intent such as GUI selection, direct operator input, or mediator output without
+    becoming canonical graph truth
+  evidence: 'specification.terminology defines external_actor_intent, operator_request, and one_run_steering.
+    specification.request_boundary states that OperatorRequest is a pre-execution run contract rather
+    than a canonical spec node or durable graph fact, while specification.input_sources lists GUI selection,
+    direct operator input, and mediator output as admissible upstream sources for normalization.
+
+    '
+- criterion: Defines the request normalization and target selection contract, including how a single run
+    receives explicit target identity, execution mode, and bounded selection intent
+  evidence: 'specification.normalization_contract requires incoming steering signals to be normalized
+    into one bounded request shape with source preservation, normalized target intent, and run-mode declarations.
+    specification.target_selection_contract then requires explicit target_selector content, including
+    whether the run addresses a specific spec node, a derived work item, or another bounded target already
+    allowed by current governance.
+
+    '
+- criterion: Defines scope and authority declarations for a requested run, including mutation posture
+    and explicit adjacency to SG-SPEC-0008 for memory-related steering without resolving memory policy
+    here
+  evidence: 'specification.scope_authority_contract defines scope_declaration and authority_declaration,
+    including requested mutation posture, allowed-path posture, and the rule that memory-related steering
+    may only be expressed as an explicit declaration adjacent to SG-SPEC-0008 rather than resolved policy
+    inside this node. specification.scope.out excludes full project-memory policy and retrieval behavior.
+
+    '
+- criterion: Defines one-run steering semantics in which explicit operator intent overrides heuristics
+    for the selected run but does not expand supervisor authority or silently broaden scope
+  evidence: 'specification.run_semantics states that an operator_request applies to one supervisor run,
+    takes precedence over heuristic selection for that run, expires after execution, and cannot enlarge
+    ontology, approval, or mutation authority beyond existing constitutional limits. specification.examples[1]
+    shows that broader workflow implications must be deferred rather than silently absorbed.
+
+    '
+prompt: Create a bounded child spec for the OperatorRequest contract that steers one supervisor run from
+  external actor intent such as GUI selection or mediator output. Keep it focused on request normalization,
+  target selection, scope and authority declaration, and one-run steering semantics. Do not define full
+  GUI protocol, full mediator workflow, or project-memory policy details beyond explicit adjacency to
+  SG-SPEC-0008.
+specification:
+  objective: 'Define the minimal contract by which external actor intent is normalized into a bounded
+    OperatorRequest that steers exactly one supervisor run while preserving explicit target selection,
+    declared scope, and constitutional authority limits.
+
+    '
+  scope:
+    in:
+    - Normalized request contract for one supervisor run
+    - Admissible upstream steering sources such as GUI selection, direct operator input, and mediator
+      output
+    - Target selection fields and bounded execution-mode declarations
+    - Scope and authority declarations for requested mutation posture and steering limits
+    - One-run override semantics relative to heuristic work selection
+    out:
+    - GUI transport, widget protocol, or operator-interface design
+    - Full mediator workflow, negotiation loop, or canonicalization logic
+    - Queue persistence, scheduler policy, or multi-run orchestration
+    - Project-memory retrieval mechanics or policy details beyond explicit adjacency to SG-SPEC-0008
+    - Storage schema, serialization format, or runtime implementation details
+  terminology:
+    external_actor_intent: 'A run-steering signal originating outside the supervisor, such as direct operator
+      input, GUI selection, or mediator output, expressing what bounded work should be attempted next.
+
+      '
+    operator_request: 'The normalized pre-execution contract that converts external_actor_intent into
+      a single supervisor-run request with explicit target, mode, scope, and authority declarations.
+
+      '
+    target_selector: 'The portion of an operator_request that names or constrains the bounded work target
+      for the run, such as a specific spec node, a specific derived work item, or another already-governed
+      execution target.
+
+      '
+    scope_declaration: 'The explicit statement of what the requested run may touch, including intended
+      mutation posture, allowed-path expectations, and any declared narrowing constraints.
+
+      '
+    authority_declaration: 'The explicit statement of what the request is asking the supervisor to do
+      under current governance, including the fact that the request does not itself create new ontology,
+      policy, or approval authority.
+
+      '
+    one_run_steering: 'The property that an operator_request shapes only the immediate supervisor execution
+      it selects and does not remain as standing authority for later runs unless restated.
+
+      '
+  input_sources:
+    admissible_sources:
+    - Direct operator input may originate as free text, structured command data, or another explicit run
+      instruction supplied by a human.
+    - GUI selection may originate as external_actor_intent when it identifies a bounded target or execution
+      mode for a supervisor run.
+    - Mediator output may originate as external_actor_intent when it has already reduced upstream context
+      into an explicit bounded steering signal.
+    source_boundary:
+    - Admissible sources may differ in presentation, but they must normalize into the same operator_request
+      contract before execution begins.
+    - This node governs the normalized contract, not the complete upstream interaction protocol that produced
+      the request.
+  normalization_contract:
+    required_properties:
+    - Normalization must preserve enough source context to distinguish direct operator wording, GUI-originated
+      selection, and mediator-produced steering.
+    - Normalization must reduce ambiguous upstream signals into one bounded request shape or stop and
+      defer when bounded selection is not yet trustworthy.
+    - Normalization must express the requested execution mode and target intent explicitly rather than
+      relying on hidden defaults that alter scope.
+    failure_rules:
+    - If normalization cannot identify a bounded target_selector or clear scope_declaration, the request
+      should not be treated as executable steering.
+    - A partially understood request may yield observation or follow-up need, but it must not silently
+      broaden into opportunistic graph mutation.
+  target_selection_contract:
+    target_requirements:
+    - Each operator_request must declare a target_selector for one bounded run target.
+    - target_selector may reference a specific spec node, a specific derived work item, or another execution
+      target already allowed by current governance.
+    - Target selection should prefer explicit identity over inferred intent when both are available.
+    mode_requirements:
+    - The request should declare whether the intended run is refinement, observation, proposal emission,
+      or another already-governed execution mode.
+    - Mode declaration narrows the run and must not be used to smuggle broader workflow authority than
+      the selected target already permits.
+  scope_authority_contract:
+    scope_declaration:
+    - Each operator_request must declare whether the requested run is read-only, locally mutating, or
+      otherwise bounded by an already-governed mutation posture.
+    - The request should expose any explicit path or artifact narrowing that materially constrains the
+      run.
+    - Memory-related steering, such as explicit consultation or suppression, may be declared as adjacent
+      request context but remains governed by separate policy adjacent to SG-SPEC-0008 rather than by
+      this node itself.
+    authority_declaration:
+    - An operator_request may prioritize or narrow allowed work, but it does not create new ontology,
+      policy, approval, or filesystem authority.
+    - The supervisor remains bound by current canonical governance even when operator intent is explicit.
+    - If the request asks for work outside existing authority, the correct response is refusal, deferral,
+      or proposal rather than silent compliance.
+  request_boundary:
+  - operator_request is a pre-execution steering artifact, not a canonical spec-layer truth claim by itself.
+  - OperatorRequest may be logged or preserved as derived run context, but its existence alone does not
+    mutate canonical graph structure.
+  - The contract exists to clarify one run's intent, not to replace canonical intent, specification, or
+    proposal artifacts.
+  run_semantics:
+  - Explicit operator_request content overrides heuristic target selection for the current run only.
+  - one_run_steering expires after the bounded execution completes unless a later run restates the request.
+  - The presence of an operator_request does not authorize silent expansion into adjacent concerns discovered
+    during execution.
+  - If the requested action conflicts with current governance, approval boundaries, or allowed paths,
+    current governance wins.
+  adjacency_notes:
+  - SG-SPEC-0003 defines broader supervisor governance and operator-target precedence; this node narrows
+    only the request contract handed into one run.
+  - SG-SPEC-0007 remains the mediation-boundary spec for intent-facing discovery; this node does not define
+    how raw user goals become canonical artifacts.
+  - SG-SPEC-0008 remains the adjacent child for explicit project-memory consultation policy; this node
+    only allows memory-related steering to be declared as request context.
+  examples:
+  - name: GUI-selected explicit target
+    description: An operator clicks a specific spec node in a GUI and chooses refine mode. The upstream
+      signal normalizes into an operator_request with that node as target_selector, a refining execution
+      mode, and a scope_declaration limited to the allowed spec path set for the run.
+  - name: Mediator output exceeds authority
+    description: A mediator proposes a run that would both refine one spec and rewrite broader governance
+      policy. Normalization may preserve that source intent, but the resulting operator_request cannot
+      expand supervisor authority; the policy portion must be deferred or proposed instead of executed
+      directly.

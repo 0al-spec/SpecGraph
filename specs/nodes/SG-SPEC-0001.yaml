@@ -6,6 +6,7 @@ maturity: 0.68
 depends_on:
 - SG-SPEC-0002
 - SG-SPEC-0007
+- SG-SPEC-0009
 relates_to: []
 inputs:
 - README.md
@@ -71,9 +72,10 @@ acceptance_evidence:
 - criterion: States that SG-SPEC-0001 is a seed spec that child specs refine before the graph is frozen
   evidence: 'prompt frames SG-SPEC-0001 as a seed ontology and directs unresolved areas into child specs;
     scope.in adds recursive refinement via child specs; D7 formalizes the seed-spec rule; spec.node_kinds.spec
-    includes refines; and the concrete descendants `specs/nodes/SG-SPEC-0002.yaml` and `specs/nodes/SG-SPEC-0007.yaml`
-    now declare `refines: [SG-SPEC-0001]` while SG-SPEC-0001 declares `depends_on: [SG-SPEC-0002, SG-SPEC-0007]`,
-    making the refinement chain explicit enough for linked status.
+    includes refines; and the concrete descendants `specs/nodes/SG-SPEC-0002.yaml`, `specs/nodes/SG-SPEC-0007.yaml`,
+    and `specs/nodes/SG-SPEC-0009.yaml` now declare `refines: [SG-SPEC-0001]` while SG-SPEC-0001 declares
+    `depends_on: [SG-SPEC-0002, SG-SPEC-0007, SG-SPEC-0009]`, making the refinement chain explicit enough
+    for linked status.
 
     '
 prompt: 'This spec is a seed ontology, not a finished graph. Use child specs to
@@ -133,6 +135,8 @@ specification:
     - Observability metrics (SIB, PFI, CSI, etc.) — covered by dedicated specs
     - Runtime observability entities (ObservabilityContract, Campaign, Attestation) — future specs
     - Intent-facing mediation and discovery semantics before canonicalization — covered by SG-SPEC-0007
+    - Single-run OperatorRequest normalization and steering semantics from external actor intent — covered
+      by SG-SPEC-0009
     - Adoption-layer entities (DiscoverySurface, AdoptionCriterion, etc.) — future specs
   terminology:
     intent: 'A precise, governed representation of what a product must be, how it must behave, and how
@@ -606,22 +610,23 @@ specification:
 
       '
 last_gate_decision: done
-last_gate_note: created SG-SPEC-0007 for intent mediation and linked it into the seed refinement chain
-last_gate_at: '2026-04-07T20:38:47Z'
+last_gate_note: created SG-SPEC-0009 for the OperatorRequest contract and linked it into the seed refinement
+  chain
+last_gate_at: '2026-04-08T08:47:58Z'
 proposed_status: reviewed
 proposed_maturity: 0.88
 gate_state: review_pending
 required_human_action: approve or retry refinement
 last_outcome: done
 last_blocker: ''
-last_run_id: 20260407T203908Z-SG-SPEC-0001
+last_run_id: 20260408T085311Z-SG-SPEC-0001
 last_exit_code: 0
 last_changed_files:
 - specs/nodes/SG-SPEC-0001.yaml
-- specs/nodes/SG-SPEC-0007.yaml
-last_run_at: '2026-04-07T20:39:09.121681+00:00'
-last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0001-20260407T203637Z
-last_branch: codex/sg-spec-0001/20260407T203637Z
+- specs/nodes/SG-SPEC-0009.yaml
+last_run_at: '2026-04-08T08:53:11.450826+00:00'
+last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0001-20260408T084758Z
+last_branch: codex/sg-spec-0001/20260408T084758Z
 last_validator_results:
   outputs: true
   allowed_paths: true
@@ -640,25 +645,30 @@ last_refinement_acceptance:
     constitutional_diff: false
     graph_refactor_diff: false
     atomicity_clear: true
+    within_mutation_budget: true
   diff_paths:
   - acceptance_evidence[7].evidence
-  - depends_on[1]
+  - depends_on[2]
   - last_gate_at
   - last_gate_note
-  - specification.scope.out[6]
   - specification.scope.out[7]
+  - specification.scope.out[8]
+  mutation_classes:
+  - policy_text
+  mutation_budget: []
+  budget_exceeded_classes: []
   changed_spec_files:
   - specs/nodes/SG-SPEC-0001.yaml
-  - specs/nodes/SG-SPEC-0007.yaml
+  - specs/nodes/SG-SPEC-0009.yaml
   review_reasons:
   - run changed additional spec files beyond the selected source node
   errors: []
   warnings: []
 last_reconciliation:
-  worktree_spec_count: 7
+  worktree_spec_count: 9
   changed_spec_ids:
   - SG-SPEC-0001
-  - SG-SPEC-0007
+  - SG-SPEC-0009
   semantic_dependencies_resolved: true
   work_dependencies_ready: false
   cycles: []
