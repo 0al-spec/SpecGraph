@@ -24,11 +24,12 @@ acceptance:
 - Defines context_pack as the authoritative, run-scoped ambient context for one supervisor run, derived
   from canonical graph vocabulary, adjacent spec lineage, and declared project-memory sources without
   becoming canonical graph truth
-- Defines ambient vocabulary resolution for canonical terms, aliases, and relation types so executor guidance
-  stays grounded in canonical vocabulary rather than free-form wording
+- Defines ambient vocabulary resolution for canonical terms, aliases, relation types, and unresolved operator-request
+  terms so executor guidance stays grounded in canonical vocabulary while unresolved wording remains visibly
+  non-canonical
 - Defines duplicate-avoidance and source-attribution expectations so the context pack preserves why existing
-  canonical artifacts may already cover the requested concern and which source class supplied each context
-  element
+  canonical artifacts may already cover the requested concern, which source or operator wording supplied
+  each context element, and which surfaced canonical candidates do not themselves resolve unresolved wording
 - Defines authority ordering and SG-SPEC-0008 adjacency such that canonical graph vocabulary remains authoritative,
   adjacent lineage narrows local interpretation, and declared project memory can inform but not override
   canonical semantics
@@ -44,23 +45,26 @@ acceptance_evidence:
     states that the pack does not itself create canonical vocabulary or graph truth.
 
     '
-- criterion: Defines ambient vocabulary resolution for canonical terms, aliases, and relation types so
-    executor guidance stays grounded in canonical vocabulary rather than free-form wording
-  evidence: 'specification.vocabulary_resolution_contract.canonical_term_guidance requires the pack to
-    expose canonical terms, subordinate aliases, and relevant canonical relation types from governed vocabulary,
-    while specification.vocabulary_resolution_contract.relation_guidance and specification.run_usage_semantics[1]
-    require the executor to use that pack as authoritative ambient guidance rather than inventing ad hoc
-    wording.
+- criterion: Defines ambient vocabulary resolution for canonical terms, aliases, relation types, and unresolved
+    operator-request terms so executor guidance stays grounded in canonical vocabulary while unresolved
+    wording remains visibly non-canonical
+  evidence: 'specification.terminology defines ambient_vocabulary_resolution and unresolved_operator_term.
+    specification.vocabulary_resolution_contract.canonical_term_guidance and relation_guidance require
+    the pack to expose governed canonical terms, subordinate aliases, and relevant canonical relation
+    types, while specification.vocabulary_resolution_contract.unresolved_term_guidance requires unresolved
+    operator wording to remain explicit and forbids silent synonym, alias, or relation invention.
 
     '
 - criterion: Defines duplicate-avoidance and source-attribution expectations so the context pack preserves
-    why existing canonical artifacts may already cover the requested concern and which source class supplied
-    each context element
-  evidence: 'specification.terminology defines duplicate_avoidance_signal and source_attributed_context.
-    specification.vocabulary_resolution_contract.duplicate_avoidance_guidance requires existing canonical
-    terms, relations, or adjacent specs that likely already cover the concern to be surfaced as duplicate-avoidance
-    signals, while specification.traceability_policy.source_attribution requires each context element
-    to retain its source class and remain distinguishable from current operator wording.
+    why existing canonical artifacts may already cover the requested concern, which source or operator
+    wording supplied each context element, and which surfaced canonical candidates do not themselves resolve
+    unresolved wording
+  evidence: 'specification.terminology defines duplicate_avoidance_signal, unresolved_operator_term, and
+    source_attributed_context. specification.vocabulary_resolution_contract.duplicate_avoidance_guidance
+    requires surfaced canonical terms, relations, or adjacent specs to remain candidate guidance only
+    when unresolved wording persists, while specification.traceability_policy.source_attribution and preservation_rules
+    require operator wording, canonical vocabulary, and remembered project context to remain distinguishable
+    and attributable.
 
     '
 - criterion: Defines authority ordering and SG-SPEC-0008 adjacency such that canonical graph vocabulary
@@ -97,7 +101,8 @@ specification:
     - Run-scoped context_pack for one supervisor run selected by an operator_request
     - Authoritative source classes for that pack include canonical graph vocabulary, adjacent spec lineage,
       and declared project-memory sources
-    - Ambient vocabulary resolution for canonical terms, aliases, and relevant relation types
+    - Ambient vocabulary resolution for canonical terms, aliases, relevant relation types, and unresolved
+      operator-request terms
     - Duplicate-avoidance signals and source attribution for context elements included in the pack
     - One-run usage semantics for how the executor should rely on the pack
     out:
@@ -130,7 +135,14 @@ specification:
       '
     ambient_vocabulary_resolution: 'The run-scoped grounding of operator wording and local task language
       to canonical_graph_vocabulary so the executor uses governed terms, aliases, and relation meanings
-      instead of relying on ad hoc phrasing.
+      instead of relying on ad hoc phrasing, while leaving unresolved operator wording explicit when no
+      governed resolution exists.
+
+      '
+    unresolved_operator_term: 'An operator_request term retained in context_pack when no canonical term,
+      subordinate alias, or canonical relation type resolves it for the current run. It remains visibly
+      non-canonical and attributable to current operator wording rather than acquiring canonical authority
+      through inclusion in the pack.
 
       '
     duplicate_avoidance_signal: 'A context-pack element indicating that an existing canonical term, relation,
@@ -157,6 +169,8 @@ specification:
       those canonical terms apply in the current run.
     - declared_project_memory_source may add source-attributed clarifying context when it materially helps
       interpret the selected run but must remain distinct from canonical graph vocabulary.
+    - If operator wording remains unresolved after consulting authoritative source classes, the pack may
+      retain that wording only as unresolved_operator_term rather than as derived canonical vocabulary.
     - If multiple source classes contribute overlapping context, the pack must preserve their distinction
       rather than flattening them into an unattributed rewrite.
     failure_rules:
@@ -171,6 +185,14 @@ specification:
     - Aliases may appear in the pack only as subordinate surface forms mapped to canonical identities.
     - When a canonical term and an alias are both present, executor guidance must prefer the canonical
       term for authored output.
+    unresolved_term_guidance:
+    - When an operator_request term does not resolve to a canonical term, subordinate alias, or relevant
+      canonical relation type, the pack must surface that wording explicitly as unresolved_operator_term.
+    - unresolved_operator_term must remain distinct from canonical_graph_vocabulary, adjacent_spec_lineage,
+      and declared_project_memory_source context; it records the gap but does not acquire canonical identity
+      through inclusion in the pack.
+    - The run must not silently invent a synonym, alias mapping, or relation meaning merely to make unresolved
+      operator wording appear governed.
     relation_guidance:
     - The pack should expose the canonical relation types already relevant to the selected target or nearby
       governed vocabulary.
@@ -181,6 +203,9 @@ specification:
     duplicate_avoidance_guidance:
     - The pack should surface duplicate_avoidance_signal items when existing canonical terms, relation
       types, or adjacent specs appear to already cover the requested concern.
+    - When unresolved_operator_term is present, duplicate_avoidance_signal may surface nearby canonical
+      terms, relation types, or adjacent specs only as candidate guidance and must not imply that the
+      unresolved wording is already canonically resolved or fully governed.
     - duplicate_avoidance_signal is guidance to prefer reference, reuse, or refinement over redundant
       materialization.
     - A duplicate_avoidance_signal does not forbid new canonical material when the current run still identifies
@@ -188,9 +213,11 @@ specification:
   traceability_policy:
     source_attribution:
     - Each context_pack element should retain whether it came from canonical_graph_vocabulary, adjacent_spec_lineage,
-      or declared_project_memory_source.
+      declared_project_memory_source, or current operator wording.
     - The pack must distinguish current operator wording from inherited canonical vocabulary and remembered
       project context.
+    - unresolved_operator_term should preserve the operator wording needed to show exactly what failed
+      to resolve in the current run.
     - source_attributed_context should preserve enough attribution that downstream review can inspect
       why a context element was included.
     preservation_rules:
@@ -198,6 +225,8 @@ specification:
       class rather than being rewritten as if it were current-turn wording.
     - When the same surface phrasing appears across multiple source classes, the pack should preserve
       the source distinction instead of collapsing them into one unattributed token.
+    - Surface similarity between unresolved_operator_term and a surfaced canonical candidate must not
+      be rewritten into a resolved alias claim without governed canonical support.
     - External browsing, if separately used during the run, must remain source-distinct from declared_project_memory_source
       and must not be represented as project-memory recall.
   authority_boundary:
@@ -220,8 +249,9 @@ specification:
     unless restated.
   - The executor should use context_pack as authoritative ambient guidance for vocabulary resolution and
     duplicate avoidance within the selected run.
-  - If the pack preserves unresolved ambiguity, the run should keep that ambiguity visible, seek clarification,
-    or stop rather than inventing canonical terms or relation meanings.
+  - If operator wording remains unresolved after canonical term, alias, and relation-type resolution,
+    the run should keep that wording visible, seek clarification, or stop rather than inventing canonical
+    terms, synonyms, or relation meanings.
   - context_pack does not itself create new canonical vocabulary, relation types, spec truth, or project-memory
     policy.
   adjacency_notes:
@@ -245,3 +275,8 @@ specification:
     description: A declared project note clarifies how a term was previously used in the project. The
       pack preserves that note as declared_project_memory_source context while canonical vocabulary and
       adjacent lineage remain authoritative if the note conflicts with current governed terminology.
+  - name: Unresolved operator term stays explicit
+    description: An operator_request uses a term that matches no canonical term, subordinate alias, or
+      canonical relation type. The context_pack preserves that wording as unresolved_operator_term attributed
+      to current operator wording and may surface nearby canonical terms or adjacent specs only as duplicate_avoidance_signal
+      candidates, without claiming the unresolved wording is already governed.
