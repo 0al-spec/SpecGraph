@@ -137,6 +137,13 @@ Runtime anomalies that should not be read as spec-quality failures:
   - inspect execution profile selection, reasoning-depth timeout floors, and run authority before
     concluding that the target spec is inherently blocked
 
+Productive nonterminal results:
+
+- `completion_status: progressed`
+  - use this when the executor produced a valid canonical refinement, but the node still requires the next
+    structural step such as `split_required`
+  - this is not a runtime failure and should not be grouped with timeout, transport, or invalid-diff cases
+
 ### Operator Actions
 
 Use this decision path:
@@ -148,6 +155,9 @@ Use this decision path:
   - treat it as a real spec/workflow blocker and follow `required_human_action`
 - `executor_environment_primary_failure: no` and `gate_state: split_required`
   - treat it as an atomicity/spec-structure issue, not a runtime issue
+- `completion_status: progressed`
+  - treat the run as a productive refinement with required follow-up, not as a failed execution
+  - use the resulting canonical diff as the new starting point for the next bounded run
 - interrupted run with no accepted canonical content change
   - read `runs/latest-summary.md` and the corresponding run log first
   - if the anomaly is timeout-driven stale tail, partial worktree diff, or profile mismatch, repair the

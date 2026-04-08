@@ -3260,6 +3260,11 @@ def test_main_atomicity_gate_forces_split_required(
     assert updated["last_refinement_acceptance"]["decision"] == "review_required"
     assert updated["last_refinement_acceptance"]["change_class"] == "graph_refactor"
     assert any("Atomicity gate exceeded" in err for err in updated["last_errors"])
+    latest_summary = (repo_fixture / "runs" / "latest-summary.md").read_text(encoding="utf-8")
+    assert "- completion_status: progressed" in latest_summary
+    run_logs = sorted((repo_fixture / "runs").glob("*-SG-SPEC-*.json"))
+    payload = json.loads(run_logs[-1].read_text(encoding="utf-8"))
+    assert payload["completion_status"] == "progressed"
 
 
 def test_main_split_required_syncs_decomposition_outputs(
@@ -3676,6 +3681,55 @@ def test_main_split_required_preserves_source_spec_refinement(
         "Updated evidence 5",
         "Updated evidence 6",
     ]
+
+
+def test_loop_counts_split_required_progress_separately(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    node_data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    node_data["title"] = "Working Node"
+    node_data["prompt"] = "Refine one bounded slice of this node."
+    node_data["allowed_paths"] = ["specs/nodes/SG-SPEC-0001.yaml"]
+    node_path.write_text(json.dumps(node_data), encoding="utf-8")
+
+    worktree = make_fake_worktree(repo_fixture)
+    monkeypatch.setattr(
+        supervisor_module,
+        "create_isolated_worktree",
+        lambda _node_id: (worktree, "codex/sg-spec-0001/test"),
+    )
+
+    changed_snapshots = [[], ["specs/nodes/SG-SPEC-0001.yaml"]]
+    monkeypatch.setattr(
+        supervisor_module, "git_changed_files", lambda _cwd=None: changed_snapshots.pop(0)
+    )
+
+    def fake_executor(_node: object, worktree_path: Path) -> subprocess.CompletedProcess[str]:
+        worktree_node = worktree_path / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+        data = supervisor_module.get_yaml_module().safe_load(
+            worktree_node.read_text(encoding="utf-8")
+        )
+        data["acceptance"] = [f"criterion-{i}" for i in range(6)]
+        data["acceptance_evidence"] = [f"evidence-{i}" for i in range(6)]
+        worktree_node.write_text(json.dumps(data), encoding="utf-8")
+        return subprocess.CompletedProcess(
+            args=["codex"],
+            returncode=0,
+            stdout="RUN_OUTCOME: done\nBLOCKER: none\n",
+            stderr="",
+        )
+
+    exit_code = supervisor_module.main(
+        executor=fake_executor, loop=True, max_iterations=1, auto_approve=True
+    )
+    assert exit_code == 0
+    out = capsys.readouterr().out
+    assert "progressed with outcome=split_required, gate_state=split_required" in out
+    assert "Loop summary: 0 succeeded, 1 progressed, 0 failed" in out
 
 
 def test_resolve_gate_approve_applies_worktree_changes(

@@ -68,3 +68,4 @@
 45. [done] Align `supervisor` execution-profile timeout budgets with reasoning effort and expected run depth so `xhigh` targeted refinements do not spuriously time out under the default profile.
 46. [done] Add regression coverage for timeout-failed targeted refinements that edit only the selected source spec: canonical source content must remain unchanged while the run log still records the executor failure and partial diff context.
 47. [done] Extend bootstrap-runtime troubleshooting docs so timeout-driven stale tails, partial worktree diffs, and profile-selection mismatches are documented as runtime anomalies rather than spec-quality failures.
+48. [done] Distinguish productive `split_required` refinements from real runtime/spec failures in `supervisor` completion status, latest-summary output, and loop accounting.
