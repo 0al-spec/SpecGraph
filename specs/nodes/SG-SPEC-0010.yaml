@@ -1,0 +1,222 @@
+id: SG-SPEC-0010
+title: SpecGraph - Ubiquitous Vocabulary Meta-Ontology Primitives
+kind: spec
+status: specified
+maturity: 0.33
+depends_on: []
+relates_to:
+- SG-SPEC-0007
+refines:
+- SG-SPEC-0001
+inputs:
+- specs/nodes/SG-SPEC-0001.yaml
+- AGENTS.md
+outputs:
+- specs/nodes/SG-SPEC-0010.yaml
+allowed_paths:
+- specs/nodes/SG-SPEC-0010.yaml
+acceptance:
+- Defines the bounded role of a ubiquitous vocabulary layer as a meta-ontology for executable domain vocabularies
+  without defining full domain vocabularies
+- 'Defines the first required primitives for that layer: Concept, RelationType, StateFamily, Alias, and
+  Invariant'
+- Defines the minimal semantic contracts and admissible relationships among those primitives needed to
+  support later executable domain vocabularies
+- Defines stability and traceability constraints for vocabulary evolution, including identity preservation,
+  alias handling, and invariant attachment
+- Remains implementation-agnostic and explicitly out of scope for evaluator metrics, project-memory policy,
+  viewer UX, and runtime storage or execution details
+acceptance_evidence:
+- criterion: Defines the bounded role of a ubiquitous vocabulary layer as a meta-ontology for executable
+    domain vocabularies without defining full domain vocabularies
+  evidence: 'specification.scope.in limits this node to the ubiquitous vocabulary layer as a meta-ontology
+    for later executable domain vocabularies, while specification.scope.out excludes complete domain-specific
+    vocabularies and taxonomy population. specification.layer_role then positions the layer as canonical
+    shared semantics between seed ontology and future domain vocabularies rather than as a finished product
+    vocabulary.
+
+    '
+- criterion: 'Defines the first required primitives for that layer: Concept, RelationType, StateFamily,
+    Alias, and Invariant'
+  evidence: 'specification.terminology defines ubiquitous_vocabulary_layer plus the five primitives Concept,
+    RelationType, StateFamily, Alias, and Invariant. specification.primitive_catalog then gives each primitive
+    a role, minimum required properties, and semantic notes.
+
+    '
+- criterion: Defines the minimal semantic contracts and admissible relationships among those primitives
+    needed to support later executable domain vocabularies
+  evidence: 'specification.semantic_contracts assigns minimal contracts to each primitive, and specification.relationship_rules
+    defines how RelationType may connect Concepts, how StateFamily groups admissible states for a Concept,
+    how Alias resolves alternate surface forms without changing identity, and how Invariant constrains
+    Concepts, RelationTypes, and StateFamilies.
+
+    '
+- criterion: Defines stability and traceability constraints for vocabulary evolution, including identity
+    preservation, alias handling, and invariant attachment
+  evidence: 'specification.evolution_constraints requires stable primitive identity, prohibits Alias from
+    replacing canonical identity, and requires invariants to remain attached to the primitive scope they
+    constrain. specification.governance_notes also distinguishes vocabulary-level primitive evolution
+    from later domain-vocabulary expansion.
+
+    '
+- criterion: Remains implementation-agnostic and explicitly out of scope for evaluator metrics, project-memory
+    policy, viewer UX, and runtime storage or execution details
+  evidence: 'specification.scope.out excludes evaluator metrics, project-memory policy, viewer UX, storage
+    schema, serialization, and runtime execution semantics. specification.governance_notes states that
+    this node governs canonical vocabulary primitives only, not tooling or interface behavior.
+
+    '
+prompt: Create one bounded child spec for the ubiquitous vocabulary layer. Define only the first meta-ontology
+  primitives needed to support executable domain vocabularies in SpecGraph, such as Concept, RelationType,
+  StateFamily, Alias, and Invariant. Keep it implementation-agnostic, do not define full domain vocabularies
+  yet, and do not drift into evaluator metrics, project-memory policy, or viewer UX.
+specification:
+  objective: 'Define the minimal meta-ontology primitives that later domain vocabularies can reuse to
+    express executable product semantics in SpecGraph without yet freezing any domain-specific vocabulary.
+
+    '
+  scope:
+    in:
+    - Ubiquitous vocabulary layer as a bounded canonical meta-ontology
+    - First vocabulary primitives needed before domain-specific vocabularies can be elaborated
+    - Minimal semantic contracts for Concept, RelationType, StateFamily, Alias, and Invariant
+    - Primitive-to-primitive relationship rules needed for later executable domain vocabularies
+    - Stability and traceability constraints for primitive evolution
+    out:
+    - Complete domain vocabularies, domain taxonomies, or product-specific term catalogs
+    - Evaluator metrics, scoring formulas, or observability policy
+    - Project-memory consultation policy, retrieval behavior, or memory provenance rules
+    - Viewer UX, editing workflow, or discovery-surface interaction design
+    - Storage schema, serialization format, query engine, or runtime execution mechanics
+  terminology:
+    ubiquitous_vocabulary_layer: 'The canonical meta-ontology layer that defines the shared primitive
+      kinds used to build later executable domain vocabularies across SpecGraph without itself enumerating
+      every domain term.
+
+      '
+    Concept: 'A stable semantic unit representing a domain-recognizable thing, role, capability, outcome,
+      or bounded idea that later specs may reference and relate without relying on ambiguous surface wording.
+
+      '
+    RelationType: 'A stable typed relation primitive that defines the semantic meaning of an admissible
+      edge between Concepts, including what kind of linkage it expresses and what source/target roles
+      it permits.
+
+      '
+    StateFamily: 'A bounded vocabulary primitive that groups the admissible states or phases by which
+      a Concept may be described or evaluated over time without collapsing those states into separate
+      Concepts by default.
+
+      '
+    Alias: 'A non-canonical surface form, synonym, abbreviation, or alternate phrasing that resolves to
+      one canonical primitive identity without becoming a separate Concept, RelationType, or StateFamily
+      by default.
+
+      '
+    Invariant: 'A vocabulary-layer semantic constraint that must hold for the primitive scope it governs,
+      such as a Concept, RelationType, StateFamily, or an allowed combination of them. This primitive
+      constrains later executable vocabularies and does not replace the broader invariant node kind defined
+      in SG-SPEC-0001.
+
+      '
+  layer_role:
+  - The ubiquitous_vocabulary_layer exists to supply stable shared semantic primitives before domain-specific
+    vocabulary growth begins.
+  - The layer is canonical ontology, not derived runtime behavior and not a finished domain lexicon.
+  - Later specs may elaborate domain vocabularies using these primitives, but this node defines only the
+    first reusable substrate.
+  primitive_catalog:
+  - primitive: Concept
+    role: Canonical semantic anchor for later domain vocabulary terms.
+    minimum_required_properties:
+    - stable identity
+    - canonical label
+    - bounded semantic definition
+    semantic_notes:
+    - A Concept should capture one coherent semantic unit rather than a bundle of unrelated meanings.
+    - A Concept may participate in RelationTypes, StateFamilies, Aliases, and Invariants.
+  - primitive: RelationType
+    role: Canonical meaning of an allowed relation between Concepts.
+    minimum_required_properties:
+    - stable identity
+    - canonical label
+    - source and target role expectations
+    - relation semantics
+    semantic_notes:
+    - RelationType defines semantic admissibility, not storage encoding or traversal implementation.
+    - Different RelationTypes should not collapse materially distinct meanings into one label.
+  - primitive: StateFamily
+    role: Canonical grouping for the admissible states used to describe a Concept over time or condition.
+    minimum_required_properties:
+    - stable identity
+    - canonical label
+    - governed state set or bounded state envelope
+    - scoped Concept attachment
+    semantic_notes:
+    - StateFamily exists so executable vocabularies can distinguish identity from changing condition.
+    - A state within a StateFamily should not implicitly redefine the Concept it qualifies.
+  - primitive: Alias
+    role: Controlled alternate phrasing that improves vocabulary interoperability without changing canonical
+      identity.
+    minimum_required_properties:
+    - surface form
+    - target primitive identity
+    - disambiguation note when needed
+    semantic_notes:
+    - Alias is subordinate to the canonical primitive it resolves to.
+    - Alias may attach to Concept, RelationType, or StateFamily when alternate phrasing is materially
+      useful.
+  - primitive: Invariant
+    role: Canonical semantic rule constraining what remains valid across the primitives in scope.
+    minimum_required_properties:
+    - stable identity
+    - governing statement
+    - constrained primitive scope
+    semantic_notes:
+    - Invariant may apply to one primitive or an allowed combination of primitives.
+    - Invariant governs semantic validity, not metric scoring or evaluator implementation.
+  semantic_contracts:
+    Concept:
+    - Each Concept must preserve one canonical identity even when multiple Aliases exist.
+    - A Concept should be specific enough to support executable reference later, but this node does not
+      require domain-level decomposition yet.
+    RelationType:
+    - Each RelationType must state what semantic linkage it represents between source and target Concepts.
+    - RelationType should be reusable across domains when the semantic meaning is unchanged.
+    StateFamily:
+    - Each StateFamily must remain scoped to the Concept or Concept class whose condition vocabulary it
+      governs.
+    - StateFamily must represent admissible states without turning every state label into a new canonical
+      Concept unless a later child spec explicitly requires that split.
+    Alias:
+    - Alias must resolve to exactly one canonical primitive within its declared context.
+    - Alias cannot create independent semantic authority apart from the canonical primitive it names.
+    Invariant:
+    - Invariant must identify the primitive scope it constrains and the condition that must remain true.
+    - Invariant may constrain naming, relation admissibility, state admissibility, or other semantic consistency
+      rules needed by later executable vocabularies.
+  relationship_rules:
+  - RelationType may connect Concept to Concept only when the relation meaning is explicitly declared
+    and reusable.
+  - StateFamily must attach to a governing Concept or bounded Concept class rather than floating without
+    semantic owner.
+  - Alias may resolve alternate surface forms for Concept, RelationType, or StateFamily but must not replace
+    the canonical primitive identity.
+  - Invariant may constrain a Concept, a RelationType, a StateFamily, or an admissible combination among
+    them.
+  - This node does not yet define a full catalog of admissible domain relations, states, or aliases.
+  evolution_constraints:
+  - Primitive identity must remain stable across refinement; semantic change should prefer refinement
+    or supersession over silent relabeling that erases lineage.
+  - Alias growth may improve interoperability, but adding an Alias must not create ambiguity about the
+    canonical primitive it resolves to.
+  - StateFamily changes must preserve the distinction between changing state and stable Concept identity.
+  - Invariant changes must preserve traceability to the primitive scope they govern so later vocabulary
+    consumers can inspect what semantic rule applies where.
+  governance_notes:
+  - This node defines only the first reusable vocabulary primitives and leaves domain vocabulary population
+    to later child specs.
+  - This node is adjacent to mediation and terminology harmonization work, but it does not define discovery
+    UX, intake workflow, or non-canonical phrasing policy beyond Alias as a canonical primitive.
+  - This node is adjacent to graph invariants from SG-SPEC-0001, but its Invariant primitive is scoped
+    specifically to vocabulary semantics used by later executable domain vocabularies.
