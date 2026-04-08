@@ -120,6 +120,23 @@ Important distinction:
 - websocket fallback warnings by themselves are not treated as `transport_failure`
 - a spec run may still end in `blocked` or another non-`done` outcome for legitimate spec reasons even when stderr contains non-terminal warnings
 
+Runtime anomalies that should not be read as spec-quality failures:
+
+- timeout-driven stale tails
+  - if an interrupted refinement leaves `gate_state`, `last_run_id`, or similar runtime fields without an
+    accepted canonical content change, treat that as runtime residue rather than evidence that the spec
+    itself regressed
+  - the authoritative incident record is the run log under `runs/`, not the interrupted tail
+- partial worktree diffs from interrupted runs
+  - edits visible only inside the copied worktree or interrupted sandbox are diagnostic artifacts until a
+    canonical writeback is accepted
+  - do not classify a spec as low quality merely because a timed-out run produced a partial draft diff
+- profile-selection mismatch
+  - if observed timeout behavior or logged profile metadata disagree with the intended execution profile,
+    treat that as runtime misconfiguration or drift
+  - inspect execution profile selection, reasoning-depth timeout floors, and run authority before
+    concluding that the target spec is inherently blocked
+
 ### Operator Actions
 
 Use this decision path:
@@ -131,6 +148,10 @@ Use this decision path:
   - treat it as a real spec/workflow blocker and follow `required_human_action`
 - `executor_environment_primary_failure: no` and `gate_state: split_required`
   - treat it as an atomicity/spec-structure issue, not a runtime issue
+- interrupted run with no accepted canonical content change
+  - read `runs/latest-summary.md` and the corresponding run log first
+  - if the anomaly is timeout-driven stale tail, partial worktree diff, or profile mismatch, repair the
+    runtime path and rerun instead of classifying the target spec as poor quality
 
 ### Quick Commands
 
