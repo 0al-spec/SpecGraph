@@ -59,7 +59,7 @@ execution profiles instead of one implicit child runtime:
 - `standard`
   - model: `gpt-5.4`
   - reasoning effort: `xhigh`
-  - timeout: `180s`
+  - timeout: `300s` effective timeout floor for `xhigh`
 - `materialize`
   - model: `gpt-5.4`
   - reasoning effort: `xhigh`
@@ -69,6 +69,13 @@ execution profiles instead of one implicit child runtime:
   - model: `gpt-5.4`
   - reasoning effort: `medium`
   - timeout: `120s`
+
+Timeout rule:
+
+- `supervisor` uses the larger of the profile's base timeout and the minimum timeout floor implied by
+  the profile's reasoning effort
+- this keeps `xhigh` targeted refinements from inheriting the same timeout budget as lighter reasoning
+  modes
 
 Shared child-runtime constraints:
 

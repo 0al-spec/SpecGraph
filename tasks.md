@@ -65,6 +65,6 @@
 ## Interrupted Refinement Runtime Hygiene
 
 44. [done] Add cleanup rules for interrupted ordinary source-spec refinement runs so a timeout or executor failure does not leave blocked or escalated runtime-state in the canonical source spec when no accepted canonical content change was materialized.
-45. Align `supervisor` execution-profile timeout budgets with reasoning effort and expected run depth so `xhigh` targeted refinements do not spuriously time out under the default profile.
+45. [done] Align `supervisor` execution-profile timeout budgets with reasoning effort and expected run depth so `xhigh` targeted refinements do not spuriously time out under the default profile.
 46. [done] Add regression coverage for timeout-failed targeted refinements that edit only the selected source spec: canonical source content must remain unchanged while the run log still records the executor failure and partial diff context.
 47. Extend bootstrap-runtime troubleshooting docs so timeout-driven stale tails, partial worktree diffs, and profile-selection mismatches are documented as runtime anomalies rather than spec-quality failures.

@@ -184,9 +184,22 @@ def test_effective_child_executor_timeout_seconds_uses_longer_budget_for_child_m
         (supervisor_module.RUN_AUTHORITY_MATERIALIZE_ONE_CHILD,)
     )
 
-    assert default_timeout == supervisor_module.CHILD_EXECUTOR_TIMEOUT_SECONDS
+    assert default_timeout == supervisor_module.XHIGH_REASONING_TIMEOUT_FLOOR_SECONDS
     assert child_timeout == supervisor_module.CHILD_MATERIALIZATION_TIMEOUT_SECONDS
     assert child_timeout > default_timeout
+
+
+def test_reasoning_effort_timeout_floor_seconds_raises_standard_xhigh_budget(
+    supervisor_module: object,
+) -> None:
+    assert (
+        supervisor_module.reasoning_effort_timeout_floor_seconds("xhigh")
+        == supervisor_module.XHIGH_REASONING_TIMEOUT_FLOOR_SECONDS
+    )
+    assert (
+        supervisor_module.reasoning_effort_timeout_floor_seconds("medium")
+        == supervisor_module.FAST_EXECUTION_PROFILE_TIMEOUT_SECONDS
+    )
 
 
 def test_resolve_execution_profile_auto_selects_materialize_for_child_materialization(
@@ -318,7 +331,9 @@ def test_run_codex_uses_isolated_codex_home(
     assert "--ephemeral" in captured["cmd"]
     assert captured["bypass_inner_sandbox"] is False
     assert captured["profile"].name == supervisor_module.DEFAULT_EXECUTION_PROFILE_NAME
-    assert captured["process"].wait_timeout == supervisor_module.CHILD_EXECUTOR_TIMEOUT_SECONDS
+    assert (
+        captured["process"].wait_timeout == supervisor_module.XHIGH_REASONING_TIMEOUT_FLOOR_SECONDS
+    )
 
 
 def test_run_codex_bypasses_inner_sandbox_for_sandbox_branch(
@@ -385,7 +400,9 @@ def test_run_codex_bypasses_inner_sandbox_for_sandbox_branch(
     assert captured["profile"].name == supervisor_module.DEFAULT_EXECUTION_PROFILE_NAME
     assert "--dangerously-bypass-approvals-and-sandbox" in captured["cmd"]
     assert "--sandbox" not in captured["cmd"]
-    assert captured["process"].wait_timeout == supervisor_module.CHILD_EXECUTOR_TIMEOUT_SECONDS
+    assert (
+        captured["process"].wait_timeout == supervisor_module.XHIGH_REASONING_TIMEOUT_FLOOR_SECONDS
+    )
 
 
 def test_run_codex_uses_longer_timeout_for_child_materialization_authority(

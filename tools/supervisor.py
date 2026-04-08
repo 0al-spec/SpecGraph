@@ -93,6 +93,8 @@ CHILD_EXECUTOR_DISABLED_FEATURES = ("shell_snapshot", "multi_agent")
 CHILD_EXECUTOR_TIMEOUT_SECONDS = 180
 CHILD_MATERIALIZATION_TIMEOUT_SECONDS = 420
 FAST_EXECUTION_PROFILE_TIMEOUT_SECONDS = 120
+HIGH_REASONING_TIMEOUT_FLOOR_SECONDS = 180
+XHIGH_REASONING_TIMEOUT_FLOOR_SECONDS = 300
 DEFAULT_EXECUTION_PROFILE_NAME = "standard"
 AUTO_CHILD_MATERIALIZATION_PROFILE_NAME = "materialize"
 REFINEMENT_ACCEPT_DECISION_APPROVE = "approve"
@@ -148,6 +150,13 @@ EXECUTION_PROFILES: dict[str, ExecutionProfile] = {
         timeout_seconds=CHILD_MATERIALIZATION_TIMEOUT_SECONDS,
         disabled_features=CHILD_EXECUTOR_DISABLED_FEATURES,
     ),
+}
+
+REASONING_TIMEOUT_FLOORS: dict[str, int] = {
+    "low": FAST_EXECUTION_PROFILE_TIMEOUT_SECONDS,
+    "medium": FAST_EXECUTION_PROFILE_TIMEOUT_SECONDS,
+    "high": HIGH_REASONING_TIMEOUT_FLOOR_SECONDS,
+    "xhigh": XHIGH_REASONING_TIMEOUT_FLOOR_SECONDS,
 }
 GRAPH_REFACTOR_DIFF_PREFIXES = (
     "depends_on",
@@ -703,14 +712,22 @@ def resolve_execution_profile(
     ]
 
 
+def reasoning_effort_timeout_floor_seconds(reasoning_effort: str) -> int:
+    return REASONING_TIMEOUT_FLOORS.get(reasoning_effort, CHILD_EXECUTOR_TIMEOUT_SECONDS)
+
+
 def effective_child_executor_timeout_seconds(
     run_authority: tuple[str, ...],
     requested_profile: str | None = None,
 ) -> int:
-    return resolve_execution_profile(
+    profile = resolve_execution_profile(
         requested_profile=requested_profile,
         run_authority=run_authority,
-    ).timeout_seconds
+    )
+    return max(
+        profile.timeout_seconds,
+        reasoning_effort_timeout_floor_seconds(profile.reasoning_effort),
+    )
 
 
 def bootstrap_child_hint(node: SpecNode, specs: list[SpecNode]) -> dict[str, str] | None:
@@ -3414,7 +3431,10 @@ def run_codex(
         requested_profile=execution_profile,
         run_authority=run_authority,
     )
-    timeout_seconds = profile.timeout_seconds
+    timeout_seconds = effective_child_executor_timeout_seconds(
+        run_authority,
+        requested_profile=execution_profile,
+    )
     cmd = build_codex_exec_command(
         prompt=build_prompt(
             node,
@@ -3432,7 +3452,7 @@ def run_codex(
         "("
         f"profile={profile.name}, "
         f"reasoning={profile.reasoning_effort}, "
-        f"timeout={profile.timeout_seconds}s"
+        f"timeout={timeout_seconds}s"
         ")"
     )
     child_codex_home = create_child_codex_home(
