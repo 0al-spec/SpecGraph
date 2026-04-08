@@ -91,6 +91,7 @@ CHILD_EXECUTOR_APPROVAL_POLICY = "never"
 CHILD_EXECUTOR_SANDBOX = "workspace-write"
 CHILD_EXECUTOR_DISABLED_FEATURES = ("shell_snapshot", "multi_agent")
 CHILD_EXECUTOR_TIMEOUT_SECONDS = 180
+CHILD_MATERIALIZATION_TIMEOUT_SECONDS = 420
 REFINEMENT_ACCEPT_DECISION_APPROVE = "approve"
 REFINEMENT_ACCEPT_DECISION_REJECT = "reject"
 REFINEMENT_ACCEPT_DECISION_REVIEW_REQUIRED = "review_required"
@@ -632,6 +633,12 @@ def node_supports_child_delegation(node: SpecNode) -> bool:
 
 def run_authority_grants_child_materialization(run_authority: tuple[str, ...]) -> bool:
     return RUN_AUTHORITY_MATERIALIZE_ONE_CHILD in run_authority
+
+
+def effective_child_executor_timeout_seconds(run_authority: tuple[str, ...]) -> int:
+    if run_authority_grants_child_materialization(run_authority):
+        return CHILD_MATERIALIZATION_TIMEOUT_SECONDS
+    return CHILD_EXECUTOR_TIMEOUT_SECONDS
 
 
 def bootstrap_child_hint(node: SpecNode, specs: list[SpecNode]) -> dict[str, str] | None:
@@ -3315,6 +3322,7 @@ def run_codex(
 ) -> subprocess.CompletedProcess[str]:
     """Run the Codex executor in the isolated worktree and stream logs live."""
     bypass_inner_sandbox = child_executor_should_bypass_inner_sandbox(branch=worktree_branch)
+    timeout_seconds = effective_child_executor_timeout_seconds(run_authority)
     cmd = build_codex_exec_command(
         prompt=build_prompt(
             node,
@@ -3370,13 +3378,12 @@ def run_codex(
     stdout_thread.start()
     stderr_thread.start()
     try:
-        returncode = process.wait(timeout=CHILD_EXECUTOR_TIMEOUT_SECONDS)
+        returncode = process.wait(timeout=timeout_seconds)
     except subprocess.TimeoutExpired:
         process.kill()
         returncode = 124
         timeout_message = (
-            f"supervisor timeout: nested executor timed out after "
-            f"{CHILD_EXECUTOR_TIMEOUT_SECONDS} seconds\n"
+            f"supervisor timeout: nested executor timed out after {timeout_seconds} seconds\n"
         )
         stderr_chunks.append(timeout_message)
         print(f"[codex stderr] {timeout_message}", end="", file=sys.stderr)
