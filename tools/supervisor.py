@@ -4448,7 +4448,7 @@ def _process_one_spec(
     cleanup_interrupted_source_refinement = (
         not child_materialization_requested
         and not success
-        and result.returncode != 0
+        and bool(executor_environment.get("issues"))
         and bool(changed)
         and all(path == source_spec_relpath for path in changed if is_spec_node_path(path))
     )
