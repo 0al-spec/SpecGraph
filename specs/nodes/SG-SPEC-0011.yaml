@@ -1,0 +1,215 @@
+id: SG-SPEC-0011
+title: SpecGraph - Bootstrap Relation Vocabulary Slice for Primitive Binding
+kind: spec
+status: specified
+maturity: 0.24
+depends_on: []
+relates_to:
+- SG-SPEC-0007
+refines:
+- SG-SPEC-0010
+inputs:
+- specs/nodes/SG-SPEC-0010.yaml
+- AGENTS.md
+outputs:
+- specs/nodes/SG-SPEC-0011.yaml
+allowed_paths:
+- specs/nodes/SG-SPEC-0011.yaml
+acceptance:
+- Defines the bounded role of the first bootstrap relation vocabulary slice as a canonical RelationType
+  catalog for primitive binding within the ubiquitous vocabulary layer without defining a full domain
+  relation taxonomy
+- Defines the first canonical relation types in that slice, including `specializes`, `governed_by_state_family`,
+  `resolved_by_alias`, and `constrained_by_invariant`
+- Defines the admissible subject and object scopes plus minimal semantic contracts for those relation
+  types so later executable domain vocabularies can reuse them consistently
+- Defines traceability and evolution constraints for this relation slice, including stable relation identity,
+  alias-subordination, and invariant-attachment preservation
+- Remains implementation-agnostic and explicitly out of scope for evaluator metrics, project-memory policy,
+  viewer UX, storage layout, and broader domain-specific relation catalogs
+acceptance_evidence:
+- criterion: Defines the bounded role of the first bootstrap relation vocabulary slice as a canonical
+    RelationType catalog for primitive binding within the ubiquitous vocabulary layer without defining
+    a full domain relation taxonomy
+  evidence: 'specification.scope.in limits this child to the first bootstrap relation slice needed to
+    bind the SG-SPEC-0010 primitives, while specification.scope.out excludes full domain relation taxonomies,
+    workflow policy, and runtime mechanics. specification.slice_role then states that this node materializes
+    only the first canonical RelationType catalog beneath the parent primitive contract.
+
+    '
+- criterion: Defines the first canonical relation types in that slice, including `specializes`, `governed_by_state_family`,
+    `resolved_by_alias`, and `constrained_by_invariant`
+  evidence: 'specification.terminology defines bootstrap_relation_slice and the four canonical relation
+    types. specification.relation_catalog then gives each relation type its role, subject scope, object
+    scope, and semantic notes.
+
+    '
+- criterion: Defines the admissible subject and object scopes plus minimal semantic contracts for those
+    relation types so later executable domain vocabularies can reuse them consistently
+  evidence: 'specification.admissibility_rules constrains which primitive kinds may appear as subjects
+    and objects for each relation type, and specification.semantic_contracts states the minimum reusable
+    semantic commitments for specialization, state-family attachment, alias resolution, and invariant
+    attachment.
+
+    '
+- criterion: Defines traceability and evolution constraints for this relation slice, including stable
+    relation identity, alias-subordination, and invariant-attachment preservation
+  evidence: 'specification.evolution_constraints requires stable relation identities across refinement,
+    prohibits `resolved_by_alias` from elevating aliases into canonical authorities, and preserves the
+    linkage between constrained primitives and their governing invariants when this slice evolves.
+
+    '
+- criterion: Remains implementation-agnostic and explicitly out of scope for evaluator metrics, project-memory
+    policy, viewer UX, storage layout, and broader domain-specific relation catalogs
+  evidence: 'specification.scope.out excludes evaluator metrics, project-memory policy, viewer UX, storage
+    and execution mechanics, and broader domain-specific relation catalogs. specification.slice_role further
+    states that the node governs canonical relation semantics only, not tooling or interface behavior.
+
+    '
+prompt: Create the first bounded bootstrap relation vocabulary slice under SG-SPEC-0010. Define only the
+  minimal canonical relation semantics needed to bind Concept, StateFamily, Alias, and Invariant within
+  the ubiquitous vocabulary layer, including `specializes`, `governed_by_state_family`, `resolved_by_alias`,
+  and `constrained_by_invariant`. Keep it implementation-agnostic, do not define full domain relation
+  taxonomies or executable domain vocabularies yet, and do not drift into evaluator metrics, project-memory
+  policy, or viewer UX.
+specification:
+  objective: 'Define the first bounded catalog of canonical RelationType semantics that later executable
+    domain vocabularies can reuse to bind core vocabulary primitives without yet freezing a full domain-level
+    relation taxonomy.
+
+    '
+  scope:
+    in:
+    - First bootstrap relation vocabulary slice beneath the SG-SPEC-0010 primitive contract
+    - Canonical relation semantics needed to bind Concept, StateFamily, Alias, and Invariant
+    - Minimal admissibility rules for relation subjects and objects across those primitives
+    - Traceability and evolution constraints for the initial relation slice
+    out:
+    - Full domain-specific relation taxonomies or complete executable domain vocabularies
+    - Additional bootstrap relation slices beyond the first primitive-binding set
+    - Evaluator metrics, scoring formulas, or observability policy
+    - Project-memory consultation policy, retrieval behavior, or provenance rules
+    - Viewer UX, editing workflow, or discovery-surface interaction design
+    - Storage schema, serialization format, query execution, or runtime traversal mechanics
+  terminology:
+    bootstrap_relation_slice: 'The first bounded catalog of canonical RelationType instances used to bind
+      the ubiquitous vocabulary primitives into a reusable semantic substrate before broader domain relation
+      vocabularies exist.
+
+      '
+    specializes: 'A canonical RelationType stating that a narrower Concept preserves the semantic core
+      of a broader Concept while adding bounded distinguishing detail.
+
+      '
+    governed_by_state_family: 'A canonical RelationType attaching a StateFamily to the Concept whose admissible
+      condition vocabulary it governs.
+
+      '
+    resolved_by_alias: 'A canonical RelationType linking an Alias surface form to the one canonical primitive
+      identity that the Alias resolves to in context.
+
+      '
+    constrained_by_invariant: 'A canonical RelationType attaching an Invariant to the primitive whose
+      semantic validity that Invariant governs.
+
+      '
+  slice_role:
+  - This child materializes the first concrete RelationType catalog implied by SG-SPEC-0010 without widening
+    into a general domain relation taxonomy.
+  - The slice exists to bind primitive identity, specialization, state qualification, and invariant attachment
+    in a reusable way before richer domain vocabularies are introduced.
+  - Each relation defined here is canonical ontology, not storage encoding, traversal policy, or runtime
+    evaluator logic.
+  - Later child specs may introduce additional relation slices when new bounded semantic needs become
+    concrete.
+  relation_catalog:
+  - relation: specializes
+    role: Declares Concept-to-Concept semantic narrowing without replacing the broader Concept identity.
+    subject_scope:
+    - Concept
+    object_scope:
+    - Concept
+    semantic_notes:
+    - '`specializes` is for subtype-like semantic refinement, not for temporary state, instance membership,
+      or mere association.'
+    - The subject Concept must remain semantically compatible with the object Concept rather than contradicting
+      or bypassing it.
+  - relation: governed_by_state_family
+    role: Attaches the canonical StateFamily that defines how a Concept's condition or phase may vary.
+    subject_scope:
+    - Concept
+    object_scope:
+    - StateFamily
+    semantic_notes:
+    - '`governed_by_state_family` preserves the distinction between stable Concept identity and changing
+      admissible state.'
+    - A StateFamily attached through this relation must already be bounded to the subject Concept or a
+      compatible Concept class.
+  - relation: resolved_by_alias
+    role: Binds an Alias surface form to the canonical primitive identity it names.
+    subject_scope:
+    - Alias
+    object_scope:
+    - Concept
+    - RelationType
+    - StateFamily
+    semantic_notes:
+    - '`resolved_by_alias` provides alternate phrasing without granting separate canonical authority to
+      the Alias.'
+    - The relation is identity-resolving, not a semantic-equivalence shortcut between two canonical primitives.
+  - relation: constrained_by_invariant
+    role: Attaches a governing Invariant to the primitive whose semantic validity must remain constrained.
+    subject_scope:
+    - Concept
+    - RelationType
+    - StateFamily
+    object_scope:
+    - Invariant
+    semantic_notes:
+    - '`constrained_by_invariant` makes semantic restrictions inspectable at the vocabulary layer.'
+    - The attached Invariant governs validity conditions, not evaluator scoring or implementation behavior.
+  admissibility_rules:
+  - '`specializes` may relate only Concept to Concept and should be used only when the narrower Concept
+    preserves the broader Concept''s semantic core.'
+  - '`governed_by_state_family` may relate only Concept to StateFamily and must not be used to smuggle
+    separate canonical Concepts into state labels.'
+  - '`resolved_by_alias` may originate only from Alias and must resolve to exactly one canonical target
+    primitive in the declared context.'
+  - '`constrained_by_invariant` may originate only from Concept, RelationType, or StateFamily and must
+    target an Invariant whose scope matches the governed primitive.'
+  - This slice does not yet define general-purpose domain Concept-to-Concept relation catalogs beyond
+    `specializes`.
+  semantic_contracts:
+    specializes:
+    - The meaning of `specializes` must be reusable across domains wherever semantic narrowing rather
+      than state change or loose association is intended.
+    - A Concept linked by `specializes` should remain traceably compatible with the broader Concept it
+      narrows.
+    governed_by_state_family:
+    - '`governed_by_state_family` must identify the authoritative StateFamily used to describe the subject
+      Concept''s admissible condition space.'
+    - This relation must not collapse StateFamily semantics into free-floating tags without a governing
+      Concept.
+    resolved_by_alias:
+    - '`resolved_by_alias` must preserve one-way subordination from Alias to canonical primitive identity.'
+    - The existence of multiple Aliases must not create ambiguity about which primitive remains canonical.
+    constrained_by_invariant:
+    - '`constrained_by_invariant` must preserve inspectable linkage between a primitive and the rule that
+      governs its semantic validity.'
+    - An attached Invariant may constrain naming, admissibility, or consistency, but not replace the primitive
+      it governs.
+  evolution_constraints:
+  - Each relation type in this slice must preserve stable identity across refinement; semantic drift should
+    prefer explicit refinement or supersession over silent relabeling.
+  - Expanding this slice with additional relation types must not retroactively blur the semantics of the
+    four canonical relations defined here.
+  - Changes to `resolved_by_alias` usage must preserve alias subordination to one canonical primitive
+    rather than creating competing canonical identities.
+  - Changes to `constrained_by_invariant` usage must preserve traceable attachment between the governed
+    primitive and the governing Invariant.
+  adjacency_notes:
+  - SG-SPEC-0010 remains the parent primitive contract and still governs Concept, RelationType, StateFamily,
+    Alias, and Invariant as vocabulary-layer primitives.
+  - This child does not define broader relation taxonomies for executable domain vocabularies; later bounded
+    children may extend the relation vocabulary one slice at a time.
+  - This child does not define evaluator execution, project-memory handling, or viewer interaction semantics.

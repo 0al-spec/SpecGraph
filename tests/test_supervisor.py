@@ -143,6 +143,33 @@ def test_build_codex_exec_command_uses_explicit_child_runtime_profile(
     assert cmd[-1] == "Refine one bounded spec."
 
 
+def test_build_codex_exec_command_bypasses_inner_sandbox_for_sandbox_branch(
+    supervisor_module: object,
+) -> None:
+    cmd = supervisor_module.build_codex_exec_command(
+        prompt="Refine one bounded spec.",
+        bypass_inner_sandbox=True,
+    )
+
+    assert cmd[:2] == ["codex", "exec"]
+    assert "--dangerously-bypass-approvals-and-sandbox" in cmd
+    assert "--sandbox" not in cmd
+    assert cmd[-1] == "Refine one bounded spec."
+
+
+def test_effective_child_executor_timeout_seconds_uses_longer_budget_for_child_materialization(
+    supervisor_module: object,
+) -> None:
+    default_timeout = supervisor_module.effective_child_executor_timeout_seconds(())
+    child_timeout = supervisor_module.effective_child_executor_timeout_seconds(
+        (supervisor_module.RUN_AUTHORITY_MATERIALIZE_ONE_CHILD,)
+    )
+
+    assert default_timeout == supervisor_module.CHILD_EXECUTOR_TIMEOUT_SECONDS
+    assert child_timeout == supervisor_module.CHILD_MATERIALIZATION_TIMEOUT_SECONDS
+    assert child_timeout > default_timeout
+
+
 def test_create_child_codex_home_writes_minimal_config_and_copies_auth(
     supervisor_module: object,
     tmp_path: Path,
@@ -164,6 +191,27 @@ def test_create_child_codex_home_writes_minimal_config_and_copies_auth(
         shutil.rmtree(child_home, ignore_errors=True)
 
 
+def test_create_child_codex_home_omits_inner_sandbox_in_bypass_mode(
+    supervisor_module: object,
+    tmp_path: Path,
+) -> None:
+    source_home = tmp_path / "source-codex-home"
+    source_home.mkdir()
+    (source_home / "auth.json").write_text('{"token":"secret"}', encoding="utf-8")
+
+    child_home = supervisor_module.create_child_codex_home(
+        source_codex_home=source_home,
+        bypass_inner_sandbox=True,
+    )
+    try:
+        config_text = (child_home / "config.toml").read_text(encoding="utf-8")
+        assert 'approval_policy = "never"' in config_text
+        assert 'sandbox_mode = "workspace-write"' not in config_text
+        assert (child_home / "auth.json").read_text(encoding="utf-8") == '{"token":"secret"}'
+    finally:
+        shutil.rmtree(child_home, ignore_errors=True)
+
+
 def test_run_codex_uses_isolated_codex_home(
     supervisor_module: object,
     repo_fixture: Path,
@@ -173,15 +221,21 @@ def test_run_codex_uses_isolated_codex_home(
         def __init__(self) -> None:
             self.stdout = io.StringIO("")
             self.stderr = io.StringIO("")
+            self.wait_timeout: float | None = None
 
         def wait(self, timeout: float | None = None) -> int:
-            _ = timeout
+            self.wait_timeout = timeout
             return 0
 
     captured: dict[str, object] = {}
 
-    def fake_create_child_codex_home(*, source_codex_home: Path = Path()) -> Path:
+    def fake_create_child_codex_home(
+        *,
+        source_codex_home: Path = Path(),
+        bypass_inner_sandbox: bool = False,
+    ) -> Path:
         _ = source_codex_home
+        captured["bypass_inner_sandbox"] = bypass_inner_sandbox
         child_home = repo_fixture / ".fake-codex-home"
         child_home.mkdir(exist_ok=True)
         return child_home
@@ -203,7 +257,9 @@ def test_run_codex_uses_isolated_codex_home(
         captured["stderr"] = stderr
         captured["text"] = text
         captured["bufsize"] = bufsize
-        return FakeProcess()
+        process = FakeProcess()
+        captured["process"] = process
+        return process
 
     monkeypatch.setattr(supervisor_module, "create_child_codex_home", fake_create_child_codex_home)
     monkeypatch.setattr(subprocess, "Popen", fake_popen)
@@ -215,6 +271,131 @@ def test_run_codex_uses_isolated_codex_home(
     assert captured["cwd"] == repo_fixture
     assert captured["env"]["CODEX_HOME"] == str(repo_fixture / ".fake-codex-home")
     assert "--ephemeral" in captured["cmd"]
+    assert captured["bypass_inner_sandbox"] is False
+    assert captured["process"].wait_timeout == supervisor_module.CHILD_EXECUTOR_TIMEOUT_SECONDS
+
+
+def test_run_codex_bypasses_inner_sandbox_for_sandbox_branch(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class FakeProcess:
+        def __init__(self) -> None:
+            self.stdout = io.StringIO("")
+            self.stderr = io.StringIO("")
+            self.wait_timeout: float | None = None
+
+        def wait(self, timeout: float | None = None) -> int:
+            self.wait_timeout = timeout
+            return 0
+
+    captured: dict[str, object] = {}
+
+    def fake_create_child_codex_home(
+        *,
+        source_codex_home: Path = Path(),
+        bypass_inner_sandbox: bool = False,
+    ) -> Path:
+        _ = source_codex_home
+        captured["bypass_inner_sandbox"] = bypass_inner_sandbox
+        child_home = repo_fixture / ".fake-codex-home"
+        child_home.mkdir(exist_ok=True)
+        return child_home
+
+    def fake_popen(
+        cmd: list[str],
+        *,
+        cwd: Path,
+        env: dict[str, str],
+        stdout: object,
+        stderr: object,
+        text: bool,
+        bufsize: int,
+    ) -> FakeProcess:
+        captured["cmd"] = cmd
+        captured["cwd"] = cwd
+        captured["env"] = env
+        process = FakeProcess()
+        captured["process"] = process
+        return process
+
+    monkeypatch.setattr(supervisor_module, "create_child_codex_home", fake_create_child_codex_home)
+    monkeypatch.setattr(subprocess, "Popen", fake_popen)
+
+    node = supervisor_module.load_specs()[0]
+    result = supervisor_module.run_codex(
+        node,
+        repo_fixture,
+        worktree_branch="sandbox/sg-spec-0010/20260408T122118Z",
+    )
+
+    assert result.returncode == 0
+    assert captured["cwd"] == repo_fixture
+    assert captured["env"]["CODEX_HOME"] == str(repo_fixture / ".fake-codex-home")
+    assert captured["bypass_inner_sandbox"] is True
+    assert "--dangerously-bypass-approvals-and-sandbox" in captured["cmd"]
+    assert "--sandbox" not in captured["cmd"]
+    assert captured["process"].wait_timeout == supervisor_module.CHILD_EXECUTOR_TIMEOUT_SECONDS
+
+
+def test_run_codex_uses_longer_timeout_for_child_materialization_authority(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class FakeProcess:
+        def __init__(self) -> None:
+            self.stdout = io.StringIO("")
+            self.stderr = io.StringIO("")
+            self.wait_timeout: float | None = None
+
+        def wait(self, timeout: float | None = None) -> int:
+            self.wait_timeout = timeout
+            return 0
+
+    captured: dict[str, object] = {}
+
+    def fake_create_child_codex_home(
+        *,
+        source_codex_home: Path = Path(),
+        bypass_inner_sandbox: bool = False,
+    ) -> Path:
+        _ = source_codex_home
+        _ = bypass_inner_sandbox
+        child_home = repo_fixture / ".fake-codex-home"
+        child_home.mkdir(exist_ok=True)
+        return child_home
+
+    def fake_popen(
+        cmd: list[str],
+        *,
+        cwd: Path,
+        env: dict[str, str],
+        stdout: object,
+        stderr: object,
+        text: bool,
+        bufsize: int,
+    ) -> FakeProcess:
+        _ = (cmd, cwd, env, stdout, stderr, text, bufsize)
+        process = FakeProcess()
+        captured["process"] = process
+        return process
+
+    monkeypatch.setattr(supervisor_module, "create_child_codex_home", fake_create_child_codex_home)
+    monkeypatch.setattr(subprocess, "Popen", fake_popen)
+
+    node = supervisor_module.load_specs()[0]
+    result = supervisor_module.run_codex(
+        node,
+        repo_fixture,
+        run_authority=(supervisor_module.RUN_AUTHORITY_MATERIALIZE_ONE_CHILD,),
+    )
+
+    assert result.returncode == 0
+    assert (
+        captured["process"].wait_timeout == supervisor_module.CHILD_MATERIALIZATION_TIMEOUT_SECONDS
+    )
 
 
 def test_write_latest_summary_includes_executor_environment_fields(
