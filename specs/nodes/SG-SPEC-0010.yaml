@@ -33,7 +33,8 @@ acceptance_evidence:
     for later executable domain vocabularies, while specification.scope.out excludes complete domain-specific
     vocabularies and taxonomy population. specification.layer_role then positions the layer as canonical
     shared semantics between seed ontology and future domain vocabularies rather than as a finished product
-    vocabulary.
+    vocabulary, and specification.governance_notes reserves bootstrap relation-vocabulary elaboration
+    for later child-level refinement rather than this parent primitive node.
 
     '
 - criterion: 'Defines the first required primitives for that layer: Concept, RelationType, StateFamily,
@@ -48,7 +49,8 @@ acceptance_evidence:
   evidence: 'specification.semantic_contracts assigns minimal contracts to each primitive, and specification.relationship_rules
     defines how RelationType may connect Concepts, how StateFamily groups admissible states for a Concept,
     how Alias resolves alternate surface forms without changing identity, and how Invariant constrains
-    Concepts, RelationTypes, and StateFamilies.
+    Concepts, RelationTypes, and StateFamilies. Those same relationship_rules bound this node to reusable
+    relation semantics and explicitly leave bootstrap relation-vocabulary catalogs for later child refinement.
 
     '
 - criterion: Defines stability and traceability constraints for vocabulary evolution, including identity
@@ -84,6 +86,7 @@ specification:
     - Stability and traceability constraints for primitive evolution
     out:
     - Complete domain vocabularies, domain taxonomies, or product-specific term catalogs
+    - Bootstrap relation-vocabulary catalogs beyond the minimal reusable RelationType primitive semantics
     - Evaluator metrics, scoring formulas, or observability policy
     - Project-memory consultation policy, retrieval behavior, or memory provenance rules
     - Viewer UX, editing workflow, or discovery-surface interaction design
@@ -125,6 +128,8 @@ specification:
   - The layer is canonical ontology, not derived runtime behavior and not a finished domain lexicon.
   - Later specs may elaborate domain vocabularies using these primitives, but this node defines only the
     first reusable substrate.
+  - Bootstrap relation-vocabulary elaboration is delegated beyond this parent node; here RelationType
+    is defined only as a reusable primitive contract.
   primitive_catalog:
   - primitive: Concept
     role: Canonical semantic anchor for later domain vocabulary terms.
@@ -204,7 +209,8 @@ specification:
     the canonical primitive identity.
   - Invariant may constrain a Concept, a RelationType, a StateFamily, or an admissible combination among
     them.
-  - This node does not yet define a full catalog of admissible domain relations, states, or aliases.
+  - This node does not yet define a full catalog of admissible domain relations, states, or aliases, including
+    any bootstrap relation-vocabulary catalog.
   evolution_constraints:
   - Primitive identity must remain stable across refinement; semantic change should prefer refinement
     or supersession over silent relabeling that erases lineage.
@@ -216,7 +222,71 @@ specification:
   governance_notes:
   - This node defines only the first reusable vocabulary primitives and leaves domain vocabulary population
     to later child specs.
+  - This node also leaves any bootstrap relation-vocabulary catalog or domain-specific relation taxonomy
+    to later child refinement, while establishing the parent primitive contract that such work must reuse.
   - This node is adjacent to mediation and terminology harmonization work, but it does not define discovery
     UX, intake workflow, or non-canonical phrasing policy beyond Alias as a canonical primitive.
   - This node is adjacent to graph invariants from SG-SPEC-0001, but its Invariant primitive is scoped
     specifically to vocabulary semantics used by later executable domain vocabularies.
+proposed_status: linked
+proposed_maturity: 0.53
+gate_state: review_pending
+required_human_action: approve or retry refinement
+last_outcome: done
+last_blocker: ''
+last_run_id: 20260408T101431Z-SG-SPEC-0010
+last_exit_code: 0
+last_changed_files:
+- specs/nodes/SG-SPEC-0010.yaml
+last_run_at: '2026-04-08T10:14:31.467005+00:00'
+last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0010-20260408T101343Z
+last_branch: codex/sg-spec-0010/20260408T101343Z
+last_validator_results:
+  outputs: true
+  allowed_paths: true
+  reconciliation: true
+  atomicity: true
+  transition: true
+  executor_environment: true
+  refinement_acceptance: true
+last_refinement_acceptance:
+  decision: approve
+  change_class: local_refinement
+  checks:
+    content_changed: true
+    hard_validation: true
+    single_spec_scope: true
+    constitutional_diff: false
+    graph_refactor_diff: false
+    atomicity_clear: true
+    within_mutation_budget: true
+  diff_paths:
+  - acceptance_evidence[0].evidence
+  - acceptance_evidence[2].evidence
+  - specification.governance_notes[1]
+  - specification.governance_notes[2]
+  - specification.governance_notes[3]
+  - specification.layer_role[3]
+  - specification.relationship_rules[4]
+  - specification.scope.out[1]
+  - specification.scope.out[2]
+  - specification.scope.out[3]
+  - specification.scope.out[4]
+  - specification.scope.out[5]
+  mutation_classes:
+  - policy_text
+  mutation_budget:
+  - policy_text
+  budget_exceeded_classes: []
+  changed_spec_files:
+  - specs/nodes/SG-SPEC-0010.yaml
+  review_reasons: []
+  errors: []
+  warnings: []
+last_reconciliation:
+  worktree_spec_count: 10
+  changed_spec_ids:
+  - SG-SPEC-0010
+  semantic_dependencies_resolved: true
+  work_dependencies_ready: true
+  cycles: []
