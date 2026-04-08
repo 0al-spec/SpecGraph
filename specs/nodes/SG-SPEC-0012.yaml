@@ -1,0 +1,247 @@
+id: SG-SPEC-0012
+title: SpecGraph - OperatorRequest Context Pack and Ambient Vocabulary Resolution
+kind: spec
+status: specified
+maturity: 0.31
+depends_on: []
+relates_to:
+- SG-SPEC-0008
+- SG-SPEC-0010
+- SG-SPEC-0011
+refines:
+- SG-SPEC-0009
+inputs:
+- specs/nodes/SG-SPEC-0008.yaml
+- specs/nodes/SG-SPEC-0009.yaml
+- specs/nodes/SG-SPEC-0010.yaml
+- specs/nodes/SG-SPEC-0011.yaml
+- AGENTS.md
+outputs:
+- specs/nodes/SG-SPEC-0012.yaml
+allowed_paths:
+- specs/nodes/SG-SPEC-0012.yaml
+acceptance:
+- Defines context_pack as the authoritative, run-scoped ambient context for one supervisor run, derived
+  from canonical graph vocabulary, adjacent spec lineage, and declared project-memory sources without
+  becoming canonical graph truth
+- Defines ambient vocabulary resolution for canonical terms, aliases, and relation types so executor guidance
+  stays grounded in canonical vocabulary rather than free-form wording
+- Defines duplicate-avoidance and source-attribution expectations so the context pack preserves why existing
+  canonical artifacts may already cover the requested concern and which source class supplied each context
+  element
+- Defines authority ordering and SG-SPEC-0008 adjacency such that canonical graph vocabulary remains authoritative,
+  adjacent lineage narrows local interpretation, and declared project memory can inform but not override
+  canonical semantics
+- Remains implementation-agnostic and bounded to one-run steering semantics without defining retrieval
+  algorithms, embeddings, storage layout, or full evaluator metrics
+acceptance_evidence:
+- criterion: Defines context_pack as the authoritative, run-scoped ambient context for one supervisor
+    run, derived from canonical graph vocabulary, adjacent spec lineage, and declared project-memory sources
+    without becoming canonical graph truth
+  evidence: 'specification.terminology defines context_pack, canonical_graph_vocabulary, adjacent_spec_lineage,
+    and declared_project_memory_source. specification.derivation_contract.authoritative_source_classes
+    then requires one run-scoped pack to be assembled from those source classes, while specification.run_usage_semantics[3]
+    states that the pack does not itself create canonical vocabulary or graph truth.
+
+    '
+- criterion: Defines ambient vocabulary resolution for canonical terms, aliases, and relation types so
+    executor guidance stays grounded in canonical vocabulary rather than free-form wording
+  evidence: 'specification.vocabulary_resolution_contract.canonical_term_guidance requires the pack to
+    expose canonical terms, subordinate aliases, and relevant canonical relation types from governed vocabulary,
+    while specification.vocabulary_resolution_contract.relation_guidance and specification.run_usage_semantics[1]
+    require the executor to use that pack as authoritative ambient guidance rather than inventing ad hoc
+    wording.
+
+    '
+- criterion: Defines duplicate-avoidance and source-attribution expectations so the context pack preserves
+    why existing canonical artifacts may already cover the requested concern and which source class supplied
+    each context element
+  evidence: 'specification.terminology defines duplicate_avoidance_signal and source_attributed_context.
+    specification.vocabulary_resolution_contract.duplicate_avoidance_guidance requires existing canonical
+    terms, relations, or adjacent specs that likely already cover the concern to be surfaced as duplicate-avoidance
+    signals, while specification.traceability_policy.source_attribution requires each context element
+    to retain its source class and remain distinguishable from current operator wording.
+
+    '
+- criterion: Defines authority ordering and SG-SPEC-0008 adjacency such that canonical graph vocabulary
+    remains authoritative, adjacent lineage narrows local interpretation, and declared project memory
+    can inform but not override canonical semantics
+  evidence: 'specification.authority_boundary.authority_order defines the precedence order canonical_graph_vocabulary
+    -> adjacent_spec_lineage -> declared_project_memory_source. specification.authority_boundary.memory_adjacency_rules
+    keeps explicit project-memory consultation policy adjacent to SG-SPEC-0008 and restricts this child
+    to handling already-declared memory sources inside the pack.
+
+    '
+- criterion: Remains implementation-agnostic and bounded to one-run steering semantics without defining
+    retrieval algorithms, embeddings, storage layout, or full evaluator metrics
+  evidence: 'specification.scope.out explicitly excludes retrieval algorithms, embeddings, storage layout,
+    evaluator metrics, and runtime implementation details. specification.run_usage_semantics limits the
+    pack to one operator-request-scoped supervisor run and requires ambiguity to remain explicit rather
+    than being hidden behind free-form retrieval.
+
+    '
+prompt: Create one bounded child spec under SG-SPEC-0009 for Context Pack and Ambient Vocabulary Resolution.
+  Define how one supervisor run derives an authoritative context pack from canonical graph vocabulary,
+  adjacent spec lineage, and declared project memory sources so the executor is guided by canonical terms,
+  aliases, relation types, duplicate-avoidance signals, and source-attributed context rather than free-form
+  retrieval. Keep it implementation-agnostic and do not define retrieval algorithms, embeddings, storage
+  layout, or full evaluator metrics.
+specification:
+  objective: 'Define the bounded run-scoped context pack used by one OperatorRequest-governed supervisor
+    run so canonical vocabulary, adjacent lineage, and declared project-memory context can guide execution
+    without turning ambient context assembly into a free-form retrieval policy.
+
+    '
+  scope:
+    in:
+    - Run-scoped context_pack for one supervisor run selected by an operator_request
+    - Authoritative source classes for that pack include canonical graph vocabulary, adjacent spec lineage,
+      and declared project-memory sources
+    - Ambient vocabulary resolution for canonical terms, aliases, and relevant relation types
+    - Duplicate-avoidance signals and source attribution for context elements included in the pack
+    - One-run usage semantics for how the executor should rely on the pack
+    out:
+    - Retrieval algorithms, ranking logic, embedding policy, or query planning
+    - Storage schema, serialization format, cache layout, or repository structure
+    - Full project-memory consultation policy or acquisition workflow beyond explicit adjacency to SG-SPEC-0008
+    - GUI protocol, mediator workflow, or operator-facing controls for assembling the pack
+    - Evaluator metrics, scoring formulas, thresholds, or automated grading procedures
+    - Runtime implementation details for loaders, resolvers, or retrieval backends
+  terminology:
+    context_pack: 'The authoritative ambient context assembled for one supervisor run from canonical graph
+      vocabulary, adjacent spec lineage, and declared project-memory sources so the executor can interpret
+      the run using governed terms and nearby canonical context.
+
+      '
+    canonical_graph_vocabulary: 'The already-governed canonical terms, aliases, and relation types available
+      in the graph vocabulary, including vocabulary-layer primitives and relation semantics relevant to
+      the selected run target.
+
+      '
+    adjacent_spec_lineage: 'The bounded neighborhood of canonical specs directly adjacent to the selected
+      run target through relationships such as refines, depends_on, relates_to, or explicit parent-child
+      lineage that materially constrains interpretation of the current run.
+
+      '
+    declared_project_memory_source: 'A project-memory source explicitly declared for consultation in the
+      current run context, such as a prior note or attributed conversation recall, whose use remains governed
+      as declared mediated context rather than as implicit authority.
+
+      '
+    ambient_vocabulary_resolution: 'The run-scoped grounding of operator wording and local task language
+      to canonical_graph_vocabulary so the executor uses governed terms, aliases, and relation meanings
+      instead of relying on ad hoc phrasing.
+
+      '
+    duplicate_avoidance_signal: 'A context-pack element indicating that an existing canonical term, relation,
+      or adjacent spec likely already covers part of the requested concern, steering the run toward reference
+      or refinement rather than redundant materialization.
+
+      '
+    source_attributed_context: 'Any context_pack element that retains the source class and attributable
+      origin from which it was derived so downstream review can inspect why that element was present.
+
+      '
+  derivation_contract:
+    authoritative_source_classes:
+    - One context_pack must be derived for the selected supervisor run from canonical_graph_vocabulary
+      and adjacent_spec_lineage.
+    - declared_project_memory_source is an optional source class and may contribute only when explicitly
+      declared for the current run context.
+    - The pack should include only the bounded vocabulary and context needed for the selected target,
+      mode, and scope rather than becoming a general project dump.
+    derivation_rules:
+    - canonical_graph_vocabulary should supply the authoritative canonical terms, aliases, and relation
+      types relevant to the selected target.
+    - adjacent_spec_lineage should supply the local parent-child and dependency context that narrows how
+      those canonical terms apply in the current run.
+    - declared_project_memory_source may add source-attributed clarifying context when it materially helps
+      interpret the selected run but must remain distinct from canonical graph vocabulary.
+    - If multiple source classes contribute overlapping context, the pack must preserve their distinction
+      rather than flattening them into an unattributed rewrite.
+    failure_rules:
+    - If a bounded context_pack cannot be derived because the selected target or relevant source classes
+      remain too ambiguous, the run should narrow, defer, or stop rather than substituting free-form retrieval.
+    - Missing canonical resolution for a term should remain explicit as an unresolved gap unless a governed
+      canonical source actually supplies that resolution.
+  vocabulary_resolution_contract:
+    canonical_term_guidance:
+    - The pack should expose the canonical terms already governing the selected target or its adjacent
+      lineage.
+    - Aliases may appear in the pack only as subordinate surface forms mapped to canonical identities.
+    - When a canonical term and an alias are both present, executor guidance must prefer the canonical
+      term for authored output.
+    relation_guidance:
+    - The pack should expose the canonical relation types already relevant to the selected target or nearby
+      governed vocabulary.
+    - Relation meanings must remain those of canonical graph vocabulary rather than being rephrased into
+      new ad hoc semantics for the run.
+    - If no relevant canonical relation type is available, the gap should remain visible rather than being
+      hidden by invented relation wording.
+    duplicate_avoidance_guidance:
+    - The pack should surface duplicate_avoidance_signal items when existing canonical terms, relation
+      types, or adjacent specs appear to already cover the requested concern.
+    - duplicate_avoidance_signal is guidance to prefer reference, reuse, or refinement over redundant
+      materialization.
+    - A duplicate_avoidance_signal does not forbid new canonical material when the current run still identifies
+      a distinct bounded concern not yet governed elsewhere.
+  traceability_policy:
+    source_attribution:
+    - Each context_pack element should retain whether it came from canonical_graph_vocabulary, adjacent_spec_lineage,
+      or declared_project_memory_source.
+    - The pack must distinguish current operator wording from inherited canonical vocabulary and remembered
+      project context.
+    - source_attributed_context should preserve enough attribution that downstream review can inspect
+      why a context element was included.
+    preservation_rules:
+    - Declared project-memory context included in the pack must remain attributable to its declared source
+      class rather than being rewritten as if it were current-turn wording.
+    - When the same surface phrasing appears across multiple source classes, the pack should preserve
+      the source distinction instead of collapsing them into one unattributed token.
+    - External browsing, if separately used during the run, must remain source-distinct from declared_project_memory_source
+      and must not be represented as project-memory recall.
+  authority_boundary:
+    authority_order:
+    - canonical_graph_vocabulary is authoritative for canonical term identity, alias subordination, and
+      relation semantics during the run.
+    - adjacent_spec_lineage narrows how those canonical semantics apply to the selected target and scope.
+    - declared_project_memory_source may clarify interpretation only as source-attributed support and
+      must not override canonical graph vocabulary.
+    - If source classes conflict, authority follows the order canonical_graph_vocabulary -> adjacent_spec_lineage
+      -> declared_project_memory_source.
+    memory_adjacency_rules:
+    - Explicit project-memory consultation policy remains adjacent to SG-SPEC-0008 rather than being redefined
+      here.
+    - This child governs only how already-declared project-memory sources participate inside context_pack.
+    - The existence of a declared_project_memory_source does not create new vocabulary authority, new
+      filesystem authority, or new permission to browse externally.
+  run_usage_semantics:
+  - One context_pack applies to one operator_request-scoped supervisor run and expires after that run
+    unless restated.
+  - The executor should use context_pack as authoritative ambient guidance for vocabulary resolution and
+    duplicate avoidance within the selected run.
+  - If the pack preserves unresolved ambiguity, the run should keep that ambiguity visible, seek clarification,
+    or stop rather than inventing canonical terms or relation meanings.
+  - context_pack does not itself create new canonical vocabulary, relation types, spec truth, or project-memory
+    policy.
+  adjacency_notes:
+  - SG-SPEC-0009 remains the parent contract for request normalization, target selection, scope declaration,
+    and one-run steering semantics.
+  - SG-SPEC-0008 remains the adjacent policy for explicit project-memory consultation and attributable
+    recall; this child only governs how declared memory sources appear inside the run-scoped pack.
+  - SG-SPEC-0010 and SG-SPEC-0011 remain the adjacent vocabulary-layer sources for canonical primitives,
+    aliases, and relation semantics that the pack may surface for one run.
+  examples:
+  - name: Alias resolves to canonical term
+    description: An operator_request uses an alternate phrase for the selected concern. The derived context_pack
+      includes the canonical term, the subordinate alias mapping, and the relevant canonical relation
+      types so authored output stays grounded in governed vocabulary rather than the raw alias alone.
+  - name: Adjacent child blocks duplicate policy text
+    description: Adjacent lineage already contains SG-SPEC-0008 for explicit project-memory consultation.
+      The pack includes a duplicate_avoidance_signal pointing to that child so the executor references
+      the existing memory-policy boundary instead of drafting a redundant sibling policy inside the current
+      run.
+  - name: Declared memory remains source-attributed
+    description: A declared project note clarifies how a term was previously used in the project. The
+      pack preserves that note as declared_project_memory_source context while canonical vocabulary and
+      adjacent lineage remain authoritative if the note conflicts with current governed terminology.
