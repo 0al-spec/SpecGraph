@@ -1,0 +1,34 @@
+id: SG-SPEC-0008
+title: SpecGraph - Explicit Project Memory Consultation in Intent Mediation
+kind: spec
+status: outlined
+maturity: 0.2
+depends_on: []
+relates_to: []
+refines:
+- SG-SPEC-0007
+inputs:
+- specs/nodes/SG-SPEC-0007.yaml
+outputs:
+- specs/nodes/SG-SPEC-0008.yaml
+allowed_paths:
+- specs/nodes/SG-SPEC-0008.yaml
+acceptance:
+- Defines project memory consultation, including PageIndex-backed conversation recall, as explicit mediated
+  context that must be declared and preserved rather than treated as an implicit side channel
+acceptance_evidence:
+- criterion: Defines project memory consultation, including PageIndex-backed conversation recall, as explicit
+    mediated context that must be declared and preserved rather than treated as an implicit side channel
+  evidence: 'specification.terminology defines mediated_context_input. specification.discovery_flow.context_consultation_rules
+    makes memory consultation an explicit mediated input, including PageIndex-backed conversation recall
+    when used. specification.traceability_policy.context_traceability requires consulted mediated context
+    to be declared and preserved distinctly from direct user wording, and specification.quality_policy
+    requires mediated discovery quality assessment to consider whether context use improved clarity without
+    silently replacing raw goal evidence.
+
+    '
+prompt: Refine SG-SPEC-0007 by extracting the bounded concern of explicit project-memory consultation
+  during intent mediation. Define consulted project memory, including PageIndex-backed conversation recall,
+  as declared mediated context with preservation and traceability expectations. Keep the child scoped
+  to the policy boundary for explicit consultation and future operator-request memory policy adjacency;
+  do not define GUI protocol, storage layout, exact retrieval mechanics, or model workflow.

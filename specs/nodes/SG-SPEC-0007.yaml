@@ -3,7 +3,8 @@ title: SpecGraph - Intent Mediation and Discovery Boundary
 kind: spec
 status: specified
 maturity: 0.42
-depends_on: []
+depends_on:
+- SG-SPEC-0008
 relates_to:
 - SG-SPEC-0006
 refines:
@@ -63,13 +64,10 @@ acceptance_evidence:
     boundary semantics for mediated discovery.
 
     '
-prompt: 'Refine SG-SPEC-0001 by defining the intent-facing mediation boundary between raw user goals and
-
-  canonical intent or spec nodes, while keeping vocabulary and proposal-lane concerns related but out
-
-  of scope here.
-
-  '
+prompt: Retain SG-SPEC-0007 as the overview boundary spec for pre-canonical intent mediation between raw
+  user goals and canonical intent or spec nodes, including minimal mediation artifacts, promotion traceability,
+  adjacent out-of-scope boundaries, and implementation-agnostic constraints, while deferring explicit
+  project-memory consultation policy to a dedicated child concern.
 specification:
   objective: 'Define the bounded pre-canonical discovery and mediation semantics that translate raw user
     goals into governed canonical intent-facing artifacts without expanding the canonical layer model
@@ -87,6 +85,7 @@ specification:
     - Discovery surface taxonomy, adoption flows, or UX design
     - Proposal-lane governance, review state, or canonical application workflow
     - Storage schema, file layout, or queue implementation
+    - Exact PageIndex integration mechanics, memory storage layout, or retrieval protocol
     - Model-specific prompting, ranking, or embedding techniques
   terminology:
     raw_goal_signal: 'An external, not-yet-canonical expression of user intent such as a request, complaint,
@@ -100,6 +99,11 @@ specification:
     mediated_intent_frame: 'A structured but pre-canonical representation of one or more raw_goal_signal
       items, capturing candidate goals, constraints, success signals, and unresolved ambiguity without
       yet asserting canonical graph truth.
+
+      '
+    mediated_context_input: 'A non-canonical context source consulted during mediated_discovery, such
+      as project memory, prior conversation recall, or PageIndex-backed retrieval, which may inform interpretation
+      only when its use is explicit and traceable within the mediation record.
 
       '
     canonicalization_boundary: 'The point at which mediated discovery output is intentionally materialized
@@ -130,6 +134,13 @@ specification:
       collapsing immediately into canonical terminology.
     - A mediated_intent_frame may separate one incoming signal into multiple candidate concerns when that
       improves later canonicalization clarity.
+    context_consultation_rules:
+    - Project memory consultation is part of mediated_discovery only when represented as explicit mediated_context_input
+      rather than as an undeclared side channel.
+    - PageIndex-backed conversation recall may inform mediation as one mediated_context_input when prior
+      exchanges are relevant to interpreting the current raw_goal_signal.
+    - Consulted mediated_context_input should remain assistive evidence for interpretation and must not
+      be treated as a substitute for the current raw_goal_signal or as standalone canonical authority.
     promotion_rules:
     - Promote to an intent node when the canonical artifact should primarily express a user-owned goal,
       need, constraint, or success condition.
@@ -144,6 +155,12 @@ specification:
     - Each mediated_intent_frame should retain the source wording, source actor or channel when known,
       and any notable ambiguity that affected interpretation.
     - The promotion_rationale should explain why the chosen canonical node kind is appropriate.
+    context_traceability:
+    - If mediated_context_input is consulted, the mediation record should declare that consultation, identify
+      the context source class when known, and preserve enough reference detail to distinguish recalled
+      context from direct user wording.
+    - PageIndex-backed conversation recall, when used, should be preserved as consulted mediated context
+      rather than flattened into an unattributed summary of the user's current request.
     promotion_traceability:
     - Every canonical node created from mediated discovery must preserve lineage back to the originating
       raw_goal_signal or mediated_intent_frame through source_refs, derived_from, refines, or equivalent
@@ -151,6 +168,11 @@ specification:
     - Canonicalization must not erase the distinction between direct user wording and mediated interpretation.
     - If one mediated_intent_frame yields multiple canonical nodes, each resulting node should preserve
       enough shared lineage for reverse traversal back to the originating user goal context.
+  quality_policy:
+  - Mediated discovery quality should assess whether consulted mediated_context_input reduced ambiguity,
+    preserved the operator's apparent intent, and avoided silent replacement of raw_goal_signal evidence.
+  - Declared context use is preferable to undeclared context use even when the consulted memory is correct,
+    because mediation quality depends on inspectable provenance across the boundary.
   adjacency_notes:
   - Vocabulary harmonization is adjacent because mediated discovery may surface synonymous or conflicting
     phrasing, but this node does not define the long-term controlled vocabulary policy.
@@ -159,6 +181,9 @@ specification:
   - Proposal-lane governance is adjacent because pre-canonical mediation outputs may later be represented
     in proposal structures, but this node does not define proposal authority, lifecycle, or application
     semantics.
+  - A fuller operator-request child spec may later define memory consultation workflows or retrieval contracts,
+    but this node only establishes the boundary rule that consulted project memory is explicit mediated
+    context.
   examples:
   - name: Raw goal to intent
     description: A user says they want faster onboarding with fewer confusing steps. Mediated discovery
@@ -169,3 +194,80 @@ specification:
       and constraints. Mediated discovery preserves the source context, records promotion_rationale, and
       may promote directly into a spec node because the material already satisfies governed specification
       shape.
+  - name: Memory-backed clarification
+    description: A current user request omits a previously stated constraint, and mediated discovery consults
+      PageIndex-backed conversation recall as mediated_context_input. The mediation record declares that
+      consulted memory, preserves it as context distinct from the raw request, and assesses whether the
+      recall clarified intent without silently overwriting the user's present wording.
+proposed_status: null
+proposed_maturity: null
+gate_state: retry_pending
+required_human_action: rerun supervisor
+last_outcome: done
+last_blocker: ''
+last_run_id: 20260408T083343Z-SG-SPEC-0007
+last_exit_code: 0
+last_changed_files:
+- specs/nodes/SG-SPEC-0007.yaml
+last_run_at: '2026-04-08T08:33:44.035842+00:00'
+last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0007-20260408T083218Z
+last_branch: codex/sg-spec-0007/20260408T083218Z
+last_validator_results:
+  outputs: true
+  allowed_paths: true
+  reconciliation: false
+  atomicity: true
+  transition: true
+  executor_environment: true
+  refinement_acceptance: false
+last_refinement_acceptance:
+  decision: reject
+  change_class: constitutional_change
+  checks:
+    content_changed: true
+    hard_validation: false
+    single_spec_scope: true
+    constitutional_diff: true
+    graph_refactor_diff: false
+    atomicity_clear: true
+    within_mutation_budget: true
+  diff_paths:
+  - specification.adjacency_notes[3]
+  - specification.discovery_flow.context_consultation_rules
+  - specification.discovery_flow.context_consultation_rules[0]
+  - specification.discovery_flow.context_consultation_rules[1]
+  - specification.discovery_flow.context_consultation_rules[2]
+  - specification.examples[2]
+  - specification.examples[2].name
+  - specification.examples[2].description
+  - specification.quality_policy
+  - specification.quality_policy[0]
+  - specification.quality_policy[1]
+  - specification.scope.out[4]
+  - specification.scope.out[5]
+  - specification.scope.out[6]
+  - specification.terminology.mediated_context_input
+  - specification.traceability_policy.context_traceability
+  - specification.traceability_policy.context_traceability[0]
+  - specification.traceability_policy.context_traceability[1]
+  mutation_classes:
+  - policy_text
+  mutation_budget:
+  - policy_text
+  budget_exceeded_classes: []
+  changed_spec_files:
+  - specs/nodes/SG-SPEC-0007.yaml
+  review_reasons:
+  - run changed governance-sensitive specification sections
+  errors:
+  - 'Cannot advance to linked: missing declared dependency nodes SG-SPEC-0008'
+  warnings: []
+last_reconciliation:
+  worktree_spec_count: 7
+  changed_spec_ids:
+  - SG-SPEC-0007
+  semantic_dependencies_resolved: false
+  work_dependencies_ready: false
+  cycles: []
+last_errors:
+- 'Cannot advance to linked: missing declared dependency nodes SG-SPEC-0008'
