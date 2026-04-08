@@ -3,7 +3,8 @@ title: SpecGraph - OperatorRequest Contract for Single-Run Steering
 kind: spec
 status: specified
 maturity: 0.37
-depends_on: []
+depends_on:
+- SG-SPEC-0012
 relates_to:
 - SG-SPEC-0003
 - SG-SPEC-0007
@@ -56,7 +57,9 @@ acceptance_evidence:
     and authority_stack, including requested mutation posture, supervisor narrowing or blocking authority,
     node-local semantic constraints, and the rule that memory-related steering may only be expressed as
     an explicit declaration adjacent to SG-SPEC-0008 rather than resolved policy inside this node. specification.scope.out
-    excludes full project-memory policy and retrieval behavior.
+    excludes full project-memory policy, authoritative context-pack derivation, and retrieval behavior,
+    while specification.adjacency_notes[3] delegates run-scoped context_pack and ambient vocabulary resolution
+    to SG-SPEC-0012.
 
     '
 - criterion: Defines one-run steering semantics in which explicit operator intent overrides heuristics
@@ -92,6 +95,8 @@ specification:
     - Full mediator workflow, negotiation loop, or canonicalization logic
     - Queue persistence, scheduler policy, or multi-run orchestration
     - Project-memory retrieval mechanics or policy details beyond explicit adjacency to SG-SPEC-0008
+    - Authoritative context-pack derivation, ambient vocabulary resolution, or duplicate-avoidance guidance
+      beyond declared request context
     - Storage schema, serialization format, or runtime implementation details
   terminology:
     external_actor_intent: 'A run-steering signal originating outside the supervisor, such as direct operator
@@ -219,6 +224,9 @@ specification:
     how raw user goals become canonical artifacts.
   - SG-SPEC-0008 remains the adjacent child for explicit project-memory consultation policy; this node
     only allows memory-related steering to be declared as request context.
+  - SG-SPEC-0012 isolates the run-scoped context_pack concern so canonical vocabulary, adjacent lineage,
+    duplicate-avoidance signals, and declared project-memory context can guide one run without widening
+    this parent into retrieval or vocabulary-resolution policy.
   examples:
   - name: GUI-selected explicit target
     description: An operator clicks a specific spec node in a GUI and chooses refine mode. The upstream
@@ -235,13 +243,14 @@ gate_state: review_pending
 required_human_action: review refinement impact before approval
 last_outcome: done
 last_blocker: ''
-last_run_id: 20260408T115831Z-SG-SPEC-0009
+last_run_id: 20260408T195431Z-SG-SPEC-0009
 last_exit_code: 0
 last_changed_files:
 - specs/nodes/SG-SPEC-0009.yaml
-last_run_at: '2026-04-08T11:58:31.782316+00:00'
-last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0009-20260408T115733Z
-last_branch: codex/sg-spec-0009/20260408T115733Z
+- specs/nodes/SG-SPEC-0012.yaml
+last_run_at: '2026-04-08T19:54:32.150994+00:00'
+last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0009-20260408T194747Z
+last_branch: codex/sg-spec-0009/20260408T194747Z
 last_validator_results:
   outputs: true
   allowed_paths: true
@@ -252,47 +261,41 @@ last_validator_results:
   refinement_acceptance: true
 last_refinement_acceptance:
   decision: review_required
-  change_class: constitutional_change
+  change_class: graph_refactor
   checks:
     content_changed: true
     hard_validation: true
-    single_spec_scope: true
-    constitutional_diff: true
-    graph_refactor_diff: false
+    single_spec_scope: false
+    constitutional_diff: false
+    graph_refactor_diff: true
     atomicity_clear: true
     within_mutation_budget: true
   diff_paths:
   - acceptance_evidence[2].evidence
-  - acceptance_evidence[3].evidence
-  - specification.run_semantics[3]
-  - specification.run_semantics[4]
-  - specification.run_semantics[5]
-  - specification.scope_authority_contract.authority_declaration[1]
-  - specification.scope_authority_contract.authority_declaration[2]
-  - specification.scope_authority_contract.authority_declaration[3]
-  - specification.scope_authority_contract.authority_declaration[4]
-  - specification.scope_authority_contract.authority_declaration[5]
-  - specification.scope_authority_contract.authority_stack
-  - specification.scope_authority_contract.authority_stack[0]
-  - specification.scope_authority_contract.authority_stack[1]
-  - specification.scope_authority_contract.authority_stack[2]
-  - specification.terminology.authority_stack
-  - specification.terminology.child_materialization
+  - depends_on[0]
+  - specification.adjacency_notes[3]
+  - specification.scope.out[4]
+  - specification.scope.out[5]
   mutation_classes:
   - policy_text
-  mutation_budget:
-  - policy_text
+  mutation_budget: []
   budget_exceeded_classes: []
   changed_spec_files:
   - specs/nodes/SG-SPEC-0009.yaml
+  - specs/nodes/SG-SPEC-0012.yaml
   review_reasons:
-  - run changed governance-sensitive specification sections
+  - run changed additional spec files beyond the selected source node
+  - run changed graph structure or spec contract paths
   errors: []
   warnings: []
 last_reconciliation:
-  worktree_spec_count: 10
+  worktree_spec_count: 12
   changed_spec_ids:
   - SG-SPEC-0009
+  - SG-SPEC-0012
   semantic_dependencies_resolved: true
-  work_dependencies_ready: true
+  work_dependencies_ready: false
   cycles: []
+last_requested_child_materialization: true
+last_materialized_child_paths:
+- specs/nodes/SG-SPEC-0012.yaml
