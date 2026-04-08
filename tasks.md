@@ -54,3 +54,10 @@
 37. Make all `supervisor` writes to canonical spec files use one canonical YAML writer, including runtime-state updates after worktree sync.
 38. Add a deterministic post-write normalization/check path so canonical spec files are re-rendered or rejected if a `supervisor` run leaves them non-canonically formatted.
 39. Add regression coverage proving that a live-like `supervisor` refinement run leaves edited spec files canonically formatted without requiring a manual `spec_yaml_format.py` pass.
+
+## Child Spec Materialization Path
+
+40. [done] Fix the `supervisor` path for creating one new child spec during explicit targeted refinement so a bounded child can be materialized from an existing parent delegation boundary instead of stalling with no canonical diff.
+41. [done] Add deterministic stall/timeout handling for nested child-creation runs so a run that produces no child file and no canonical content diff fails fast as a runtime blocker rather than hanging or leaving only runtime-state noise.
+42. [done] Add integration coverage for one-run child spec creation from a non-root parent with `allowed_paths: specs/nodes/*.yaml`, including creation of the child file, minimal parent update, and explicit refinement/dependency linkage.
+43. [done] Define cleanup rules for interrupted child-creation runs so parent specs do not retain escalated runtime-state when no canonical child spec or accepted content change was actually materialized.
