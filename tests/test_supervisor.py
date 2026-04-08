@@ -184,9 +184,22 @@ def test_effective_child_executor_timeout_seconds_uses_longer_budget_for_child_m
         (supervisor_module.RUN_AUTHORITY_MATERIALIZE_ONE_CHILD,)
     )
 
-    assert default_timeout == supervisor_module.CHILD_EXECUTOR_TIMEOUT_SECONDS
+    assert default_timeout == supervisor_module.XHIGH_REASONING_TIMEOUT_FLOOR_SECONDS
     assert child_timeout == supervisor_module.CHILD_MATERIALIZATION_TIMEOUT_SECONDS
     assert child_timeout > default_timeout
+
+
+def test_reasoning_effort_timeout_floor_seconds_raises_standard_xhigh_budget(
+    supervisor_module: object,
+) -> None:
+    assert (
+        supervisor_module.reasoning_effort_timeout_floor_seconds("xhigh")
+        == supervisor_module.XHIGH_REASONING_TIMEOUT_FLOOR_SECONDS
+    )
+    assert (
+        supervisor_module.reasoning_effort_timeout_floor_seconds("medium")
+        == supervisor_module.FAST_EXECUTION_PROFILE_TIMEOUT_SECONDS
+    )
 
 
 def test_resolve_execution_profile_auto_selects_materialize_for_child_materialization(
@@ -318,7 +331,9 @@ def test_run_codex_uses_isolated_codex_home(
     assert "--ephemeral" in captured["cmd"]
     assert captured["bypass_inner_sandbox"] is False
     assert captured["profile"].name == supervisor_module.DEFAULT_EXECUTION_PROFILE_NAME
-    assert captured["process"].wait_timeout == supervisor_module.CHILD_EXECUTOR_TIMEOUT_SECONDS
+    assert (
+        captured["process"].wait_timeout == supervisor_module.XHIGH_REASONING_TIMEOUT_FLOOR_SECONDS
+    )
 
 
 def test_run_codex_bypasses_inner_sandbox_for_sandbox_branch(
@@ -385,7 +400,9 @@ def test_run_codex_bypasses_inner_sandbox_for_sandbox_branch(
     assert captured["profile"].name == supervisor_module.DEFAULT_EXECUTION_PROFILE_NAME
     assert "--dangerously-bypass-approvals-and-sandbox" in captured["cmd"]
     assert "--sandbox" not in captured["cmd"]
-    assert captured["process"].wait_timeout == supervisor_module.CHILD_EXECUTOR_TIMEOUT_SECONDS
+    assert (
+        captured["process"].wait_timeout == supervisor_module.XHIGH_REASONING_TIMEOUT_FLOOR_SECONDS
+    )
 
 
 def test_run_codex_uses_longer_timeout_for_child_materialization_authority(
@@ -1923,6 +1940,60 @@ def test_main_blocks_executor_environment_failures_without_graph_health_side_eff
     )
     assert not (repo_fixture / "runs" / "proposal_queue.json").exists()
     assert not (repo_fixture / "runs" / "refactor_queue.json").exists()
+
+
+def test_main_interrupted_source_refinement_cleans_runtime_tail_when_only_source_changed(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    before_data = supervisor_module.get_yaml_module().safe_load(
+        node_path.read_text(encoding="utf-8")
+    )
+
+    worktree = make_fake_worktree(repo_fixture)
+    monkeypatch.setattr(
+        supervisor_module,
+        "create_isolated_worktree",
+        lambda _node_id: (worktree, "codex/sg-spec-0001/test"),
+    )
+
+    changed_snapshots = [[], ["specs/nodes/SG-SPEC-0001.yaml"]]
+    monkeypatch.setattr(
+        supervisor_module,
+        "git_changed_files",
+        lambda _cwd=None: changed_snapshots.pop(0),
+    )
+
+    def fake_executor(_node: object, _worktree_path: Path) -> subprocess.CompletedProcess[str]:
+        worktree_node = _worktree_path / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+        worktree_node.write_text(
+            worktree_node.read_text(encoding="utf-8") + "\n# interrupted partial edit\n",
+            encoding="utf-8",
+        )
+        return subprocess.CompletedProcess(
+            args=["codex"],
+            returncode=124,
+            stdout="RUN_OUTCOME: escalate\nBLOCKER: none\n",
+            stderr="supervisor timeout: nested executor timed out after 180 seconds\n",
+        )
+
+    exit_code = supervisor_module.main(executor=fake_executor)
+    assert exit_code == 1
+
+    updated = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    assert updated == before_data
+    assert "gate_state" not in updated
+    assert "last_run_id" not in updated
+    assert "required_human_action" not in updated
+
+    run_logs = sorted((repo_fixture / "runs").glob("*-SG-SPEC-*.json"))
+    assert len(run_logs) == 1
+    payload = json.loads(run_logs[0].read_text(encoding="utf-8"))
+    assert payload["gate_state"] in {"blocked", "escalated"}
+    assert payload["changed_files"] == ["specs/nodes/SG-SPEC-0001.yaml"]
+    assert payload["exit_code"] == 124
 
 
 def test_classify_executor_environment_detects_supervisor_timeout(
