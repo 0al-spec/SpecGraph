@@ -3,7 +3,8 @@ title: SpecGraph - Ubiquitous Vocabulary Meta-Ontology Primitives
 kind: spec
 status: specified
 maturity: 0.33
-depends_on: []
+depends_on:
+- SG-SPEC-0011
 relates_to:
 - SG-SPEC-0007
 refines:
@@ -51,6 +52,8 @@ acceptance_evidence:
     how Alias resolves alternate surface forms without changing identity, and how Invariant constrains
     Concepts, RelationTypes, and StateFamilies. Those same relationship_rules bound this node to reusable
     relation semantics and explicitly leave bootstrap relation-vocabulary catalogs for later child refinement.
+    specs/nodes/SG-SPEC-0011.yaml now materializes that delegated first relation-vocabulary slice as a
+    child refinement of this parent primitive contract.
 
     '
 - criterion: Defines stability and traceability constraints for vocabulary evolution, including identity
@@ -222,8 +225,8 @@ specification:
   governance_notes:
   - This node defines only the first reusable vocabulary primitives and leaves domain vocabulary population
     to later child specs.
-  - This node also leaves any bootstrap relation-vocabulary catalog or domain-specific relation taxonomy
-    to later child refinement, while establishing the parent primitive contract that such work must reuse.
+  - This node delegates the first bootstrap relation-vocabulary slice to SG-SPEC-0011, while leaving broader
+    domain-specific relation taxonomies and later relation slices to future child refinement.
   - This node is adjacent to mediation and terminology harmonization work, but it does not define discovery
     UX, intake workflow, or non-canonical phrasing policy beyond Alias as a canonical primitive.
   - This node is adjacent to graph invariants from SG-SPEC-0001, but its Invariant primitive is scoped
@@ -231,16 +234,17 @@ specification:
 proposed_status: linked
 proposed_maturity: 0.53
 gate_state: review_pending
-required_human_action: approve or retry refinement
+required_human_action: review refinement impact before approval
 last_outcome: done
 last_blocker: ''
-last_run_id: 20260408T101431Z-SG-SPEC-0010
+last_run_id: 20260408T141202Z-SG-SPEC-0010
 last_exit_code: 0
 last_changed_files:
 - specs/nodes/SG-SPEC-0010.yaml
-last_run_at: '2026-04-08T10:14:31.467005+00:00'
-last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0010-20260408T101343Z
-last_branch: codex/sg-spec-0010/20260408T101343Z
+- specs/nodes/SG-SPEC-0011.yaml
+last_run_at: '2026-04-08T14:12:03.325843+00:00'
+last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0010-20260408T140548Z
+last_branch: sandbox/sg-spec-0010/20260408T140548Z
 last_validator_results:
   outputs: true
   allowed_paths: true
@@ -250,43 +254,40 @@ last_validator_results:
   executor_environment: true
   refinement_acceptance: true
 last_refinement_acceptance:
-  decision: approve
-  change_class: local_refinement
+  decision: review_required
+  change_class: graph_refactor
   checks:
     content_changed: true
     hard_validation: true
-    single_spec_scope: true
+    single_spec_scope: false
     constitutional_diff: false
-    graph_refactor_diff: false
+    graph_refactor_diff: true
     atomicity_clear: true
     within_mutation_budget: true
   diff_paths:
-  - acceptance_evidence[0].evidence
   - acceptance_evidence[2].evidence
+  - depends_on[0]
   - specification.governance_notes[1]
-  - specification.governance_notes[2]
-  - specification.governance_notes[3]
-  - specification.layer_role[3]
-  - specification.relationship_rules[4]
-  - specification.scope.out[1]
-  - specification.scope.out[2]
-  - specification.scope.out[3]
-  - specification.scope.out[4]
-  - specification.scope.out[5]
   mutation_classes:
   - policy_text
-  mutation_budget:
-  - policy_text
+  mutation_budget: []
   budget_exceeded_classes: []
   changed_spec_files:
   - specs/nodes/SG-SPEC-0010.yaml
-  review_reasons: []
+  - specs/nodes/SG-SPEC-0011.yaml
+  review_reasons:
+  - run changed additional spec files beyond the selected source node
+  - run changed graph structure or spec contract paths
   errors: []
   warnings: []
 last_reconciliation:
-  worktree_spec_count: 10
+  worktree_spec_count: 11
   changed_spec_ids:
   - SG-SPEC-0010
+  - SG-SPEC-0011
   semantic_dependencies_resolved: true
-  work_dependencies_ready: true
+  work_dependencies_ready: false
   cycles: []
+last_requested_child_materialization: true
+last_materialized_child_paths:
+- specs/nodes/SG-SPEC-0011.yaml
