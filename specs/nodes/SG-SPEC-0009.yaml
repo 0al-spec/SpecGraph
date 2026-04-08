@@ -52,18 +52,20 @@ acceptance_evidence:
 - criterion: Defines scope and authority declarations for a requested run, including mutation posture
     and explicit adjacency to SG-SPEC-0008 for memory-related steering without resolving memory policy
     here
-  evidence: 'specification.scope_authority_contract defines scope_declaration and authority_declaration,
-    including requested mutation posture, allowed-path posture, and the rule that memory-related steering
-    may only be expressed as an explicit declaration adjacent to SG-SPEC-0008 rather than resolved policy
-    inside this node. specification.scope.out excludes full project-memory policy and retrieval behavior.
+  evidence: 'specification.scope_authority_contract defines scope_declaration, authority_declaration,
+    and authority_stack, including requested mutation posture, supervisor narrowing or blocking authority,
+    node-local semantic constraints, and the rule that memory-related steering may only be expressed as
+    an explicit declaration adjacent to SG-SPEC-0008 rather than resolved policy inside this node. specification.scope.out
+    excludes full project-memory policy and retrieval behavior.
 
     '
 - criterion: Defines one-run steering semantics in which explicit operator intent overrides heuristics
     for the selected run but does not expand supervisor authority or silently broaden scope
   evidence: 'specification.run_semantics states that an operator_request applies to one supervisor run,
-    takes precedence over heuristic selection for that run, expires after execution, and cannot enlarge
-    ontology, approval, or mutation authority beyond existing constitutional limits. specification.examples[1]
-    shows that broader workflow implications must be deferred rather than silently absorbed.
+    takes precedence over heuristic selection for that run, expires after execution, limits direct child
+    materialization to at most one bounded child for that run, and cannot enlarge ontology, approval,
+    or mutation authority beyond existing constitutional limits. specification.examples[1] shows that
+    broader workflow implications must be deferred rather than silently absorbed.
 
     '
 prompt: Create a bounded child spec for the OperatorRequest contract that steers one supervisor run from
@@ -114,8 +116,18 @@ specification:
       policy, or approval authority.
 
       '
+    authority_stack: 'The ordered interpretation rule for a run in which operator authority grants requested
+      scope, supervisor authority may narrow or block that request under current governance, and node-local
+      contracts keep only semantic delegation constraints rather than becoming the highest authority.
+
+      '
     one_run_steering: 'The property that an operator_request shapes only the immediate supervisor execution
       it selects and does not remain as standing authority for later runs unless restated.
+
+      '
+    child_materialization: 'A single canonical child-spec creation or bounded child-spec refinement outcome
+      authorized for the selected run when the target and current governance already allow that one child
+      action.
 
       '
   input_sources:
@@ -167,9 +179,22 @@ specification:
     authority_declaration:
     - An operator_request may prioritize or narrow allowed work, but it does not create new ontology,
       policy, approval, or filesystem authority.
+    - Operator authority grants requested run scope as input intent, but that grant remains subject to
+      supervisor enforcement of current governance, approval boundaries, and execution safety.
     - The supervisor remains bound by current canonical governance even when operator intent is explicit.
+    - Supervisor authority may narrow, refuse, or stop the requested run when the request exceeds current
+      governance or cannot be executed as a bounded action.
+    - Node-local contracts such as allowed_paths constrain the semantics of delegation for the selected
+      target, but they do not outrank the supervisor's duty to apply broader constitutional limits.
     - If the request asks for work outside existing authority, the correct response is refusal, deferral,
       or proposal rather than silent compliance.
+    authority_stack:
+    - Operator authority supplies the requested target, mode, and scope for one run.
+    - Supervisor authority evaluates that request against canonical governance and may narrow or block
+      execution.
+    - Node-local contracts remain binding local constraints on what the selected target may delegate,
+      but they do not become the highest authority merely because they are explicit in the request or
+      node.
   request_boundary:
   - operator_request is a pre-execution steering artifact, not a canonical spec-layer truth claim by itself.
   - OperatorRequest may be logged or preserved as derived run context, but its existence alone does not
@@ -181,6 +206,10 @@ specification:
   - one_run_steering expires after the bounded execution completes unless a later run restates the request.
   - The presence of an operator_request does not authorize silent expansion into adjacent concerns discovered
     during execution.
+  - A single run may authorize at most one child_materialization when that child action is the bounded
+    target outcome implied by the selected node and mode.
+  - Authorizing one child_materialization does not implicitly authorize sibling creation, follow-on decomposition
+    waves, or additional child selection beyond the one bounded result of that run.
   - If the requested action conflicts with current governance, approval boundaries, or allowed paths,
     current governance wins.
   adjacency_notes:
@@ -200,3 +229,70 @@ specification:
       policy. Normalization may preserve that source intent, but the resulting operator_request cannot
       expand supervisor authority; the policy portion must be deferred or proposed instead of executed
       directly.
+proposed_status: linked
+proposed_maturity: 0.57
+gate_state: review_pending
+required_human_action: review refinement impact before approval
+last_outcome: done
+last_blocker: ''
+last_run_id: 20260408T115831Z-SG-SPEC-0009
+last_exit_code: 0
+last_changed_files:
+- specs/nodes/SG-SPEC-0009.yaml
+last_run_at: '2026-04-08T11:58:31.782316+00:00'
+last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0009-20260408T115733Z
+last_branch: codex/sg-spec-0009/20260408T115733Z
+last_validator_results:
+  outputs: true
+  allowed_paths: true
+  reconciliation: true
+  atomicity: true
+  transition: true
+  executor_environment: true
+  refinement_acceptance: true
+last_refinement_acceptance:
+  decision: review_required
+  change_class: constitutional_change
+  checks:
+    content_changed: true
+    hard_validation: true
+    single_spec_scope: true
+    constitutional_diff: true
+    graph_refactor_diff: false
+    atomicity_clear: true
+    within_mutation_budget: true
+  diff_paths:
+  - acceptance_evidence[2].evidence
+  - acceptance_evidence[3].evidence
+  - specification.run_semantics[3]
+  - specification.run_semantics[4]
+  - specification.run_semantics[5]
+  - specification.scope_authority_contract.authority_declaration[1]
+  - specification.scope_authority_contract.authority_declaration[2]
+  - specification.scope_authority_contract.authority_declaration[3]
+  - specification.scope_authority_contract.authority_declaration[4]
+  - specification.scope_authority_contract.authority_declaration[5]
+  - specification.scope_authority_contract.authority_stack
+  - specification.scope_authority_contract.authority_stack[0]
+  - specification.scope_authority_contract.authority_stack[1]
+  - specification.scope_authority_contract.authority_stack[2]
+  - specification.terminology.authority_stack
+  - specification.terminology.child_materialization
+  mutation_classes:
+  - policy_text
+  mutation_budget:
+  - policy_text
+  budget_exceeded_classes: []
+  changed_spec_files:
+  - specs/nodes/SG-SPEC-0009.yaml
+  review_reasons:
+  - run changed governance-sensitive specification sections
+  errors: []
+  warnings: []
+last_reconciliation:
+  worktree_spec_count: 10
+  changed_spec_ids:
+  - SG-SPEC-0009
+  semantic_dependencies_resolved: true
+  work_dependencies_ready: true
+  cycles: []

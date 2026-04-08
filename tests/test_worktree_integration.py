@@ -448,6 +448,120 @@ class TestMainWithRealWorktree:
         branch = node.data.get("last_branch", "")
         _remove_worktree(git_repo, wt_path, branch)
 
+    def test_main_materializes_child_spec_from_non_root_parent_in_real_worktree(
+        self,
+        git_repo: Path,
+        supervisor_module: object,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        paths = _patch_supervisor(monkeypatch, supervisor_module, git_repo)
+        paths["runs_dir"].mkdir(parents=True, exist_ok=True)
+        paths["agents_file"].write_text("# AGENTS\n", encoding="utf-8")
+        _commit_spec(git_repo)
+
+        parent_file = git_repo / "specs" / "nodes" / "SG-SPEC-0002.yaml"
+        parent_file.write_text(
+            json.dumps(
+                {
+                    "id": "SG-SPEC-0002",
+                    "title": "Vocabulary Parent",
+                    "kind": "spec",
+                    "status": "specified",
+                    "maturity": 0.4,
+                    "depends_on": [],
+                    "relates_to": [],
+                    "refines": ["SG-SPEC-0001"],
+                    "inputs": ["specs/nodes/SG-SPEC-0001.yaml"],
+                    "outputs": ["specs/nodes/SG-SPEC-0002.yaml"],
+                    "allowed_paths": ["specs/nodes/SG-SPEC-0002.yaml"],
+                    "acceptance": ["Delegate one bounded child vocabulary slice."],
+                    "acceptance_evidence": ["Parent evidence."],
+                    "prompt": "Materialize one bounded child from this parent delegation boundary.",
+                }
+            ),
+            encoding="utf-8",
+        )
+        _git(["git", "add", "."], cwd=git_repo)
+        _git(["git", "commit", "-m", "add non-root parent"], cwd=git_repo)
+
+        def fake_executor(node: object, worktree_path: Path) -> object:
+            parent_path = worktree_path / "specs" / "nodes" / "SG-SPEC-0002.yaml"
+            parent = json.loads(parent_path.read_text(encoding="utf-8"))
+            parent["depends_on"] = ["SG-SPEC-0003"]
+            parent["acceptance_evidence"] = ["Parent now delegates a concrete child slice."]
+            parent_path.write_text(json.dumps(parent), encoding="utf-8")
+
+            child_path = worktree_path / "specs" / "nodes" / "SG-SPEC-0003.yaml"
+            child_path.write_text(
+                json.dumps(
+                    {
+                        "id": "SG-SPEC-0003",
+                        "title": "Bootstrap Relation Vocabulary",
+                        "kind": "spec",
+                        "status": "outlined",
+                        "maturity": 0.2,
+                        "depends_on": [],
+                        "relates_to": [],
+                        "refines": ["SG-SPEC-0002"],
+                        "inputs": ["specs/nodes/SG-SPEC-0002.yaml"],
+                        "outputs": [
+                            "specs/nodes/SG-SPEC-0002.yaml",
+                            "specs/nodes/SG-SPEC-0003.yaml",
+                        ],
+                        "allowed_paths": [
+                            "specs/nodes/SG-SPEC-0002.yaml",
+                            "specs/nodes/SG-SPEC-0003.yaml",
+                        ],
+                        "acceptance": ["Define the first bootstrap relation vocabulary slice."],
+                        "prompt": "Specify one bounded bootstrap relation vocabulary child.",
+                    }
+                ),
+                encoding="utf-8",
+            )
+            return subprocess.CompletedProcess(
+                args=[],
+                returncode=0,
+                stdout="RUN_OUTCOME: done\nBLOCKER: none\n",
+                stderr="",
+            )
+
+        try:
+            ret = supervisor_module.main(
+                executor=fake_executor,
+                auto_approve=False,
+                target_spec="SG-SPEC-0002",
+                operator_note=(
+                    "Create one new child spec for the delegated bootstrap relation vocabulary."
+                ),
+                run_authority=(supervisor_module.RUN_AUTHORITY_MATERIALIZE_ONE_CHILD,),
+            )
+            assert ret == 0
+
+            yaml_module = supervisor_module.get_yaml_module()
+            parent = yaml_module.safe_load(parent_file.read_text(encoding="utf-8"))
+            child = yaml_module.safe_load(
+                (git_repo / "specs" / "nodes" / "SG-SPEC-0003.yaml").read_text(encoding="utf-8")
+            )
+            assert parent["depends_on"] == ["SG-SPEC-0003"]
+            assert parent["outputs"] == ["specs/nodes/SG-SPEC-0002.yaml"]
+            assert parent["allowed_paths"] == ["specs/nodes/SG-SPEC-0002.yaml"]
+            assert child["refines"] == ["SG-SPEC-0002"]
+            assert child["outputs"] == ["specs/nodes/SG-SPEC-0003.yaml"]
+            assert child["allowed_paths"] == ["specs/nodes/SG-SPEC-0003.yaml"]
+
+            specs = supervisor_module.load_specs()
+            node = next(spec for spec in specs if spec.id == "SG-SPEC-0002")
+            wt_path = Path(node.data.get("last_worktree_path", ""))
+            branch = node.data.get("last_branch", "")
+        finally:
+            specs = supervisor_module.load_specs()
+            node = next((spec for spec in specs if spec.id == "SG-SPEC-0002"), None)
+            if node is not None:
+                wt_path = Path(node.data.get("last_worktree_path", ""))
+                branch = node.data.get("last_branch", "")
+                if wt_path.as_posix():
+                    _remove_worktree(git_repo, wt_path, branch)
+
 
 # ---------------------------------------------------------------------------
 # Worktree cleanup (manual git worktree remove)
