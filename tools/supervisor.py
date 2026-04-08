@@ -37,6 +37,7 @@ Derived artifacts:
 from __future__ import annotations
 
 import argparse
+import copy
 import datetime as dt
 import hashlib
 import inspect
@@ -89,6 +90,7 @@ CHILD_EXECUTOR_REASONING_EFFORT = "medium"
 CHILD_EXECUTOR_APPROVAL_POLICY = "never"
 CHILD_EXECUTOR_SANDBOX = "workspace-write"
 CHILD_EXECUTOR_DISABLED_FEATURES = ("shell_snapshot", "multi_agent")
+CHILD_EXECUTOR_TIMEOUT_SECONDS = 180
 REFINEMENT_ACCEPT_DECISION_APPROVE = "approve"
 REFINEMENT_ACCEPT_DECISION_REJECT = "reject"
 REFINEMENT_ACCEPT_DECISION_REVIEW_REQUIRED = "review_required"
@@ -623,6 +625,63 @@ def bootstrap_child_hint(node: SpecNode, specs: list[SpecNode]) -> dict[str, str
     }
 
 
+def operator_requests_child_materialization(operator_note: str) -> bool:
+    """Return True when the operator note explicitly asks for one new child spec.
+
+    This keeps child-spec creation as an explicit, operator-directed action for
+    non-seed parents rather than an implicit side effect of ordinary refinement.
+    """
+    if not operator_note.strip():
+        return False
+    note = operator_note.lower()
+    creation_markers = (
+        "child spec",
+        "child node",
+        "new spec",
+        "new child",
+        "materialize",
+        "create",
+        "delegate",
+        "delegation",
+        "bounded child",
+    )
+    return any(marker in note for marker in creation_markers)
+
+
+def targeted_child_materialization_hint(
+    node: SpecNode,
+    specs: list[SpecNode],
+    *,
+    operator_target: bool = False,
+    operator_note: str = "",
+) -> dict[str, str] | None:
+    """Suggest one new child spec for explicit targeted child-creation runs."""
+    if not operator_target or not operator_requests_child_materialization(operator_note):
+        return None
+    if not can_create_new_spec_files(node):
+        return None
+
+    child_id = next_sequential_spec_id(specs)
+    child_path = f"specs/nodes/{child_id}.yaml"
+    return {
+        "id": child_id,
+        "path": child_path,
+    }
+
+
+def targeted_child_materialization_requested(
+    *,
+    node: SpecNode,
+    operator_target: bool = False,
+    operator_note: str = "",
+) -> bool:
+    return (
+        operator_target
+        and can_create_new_spec_files(node)
+        and operator_requests_child_materialization(operator_note)
+    )
+
+
 def build_prompt(
     node: SpecNode,
     refactor_work_item: dict[str, Any] | None = None,
@@ -649,7 +708,14 @@ def build_prompt(
 
     allowed_paths = "\n".join(f"- {path}" for path in node.allowed_paths) or "- (not specified)"
     outputs = "\n".join(f"- {path}" for path in node.outputs) or "- (not specified)"
-    bootstrap_hint = bootstrap_child_hint(node, load_specs())
+    all_specs = load_specs()
+    bootstrap_hint = bootstrap_child_hint(node, all_specs)
+    child_materialization_hint = targeted_child_materialization_hint(
+        node,
+        all_specs,
+        operator_target=operator_target,
+        operator_note=operator_note,
+    )
     selection_mode = selection_mode_for_node(
         node,
         refactor_work_item=refactor_work_item,
@@ -917,6 +983,22 @@ Bootstrap guidance:
   descendant specs now exist and the dependency/refinement
   chain is explicit.
 """.rstrip()
+    child_materialization_section = ""
+    if child_materialization_hint is not None:
+        child_materialization_section = f"""
+
+Child materialization guidance:
+- This operator-targeted run may materialize exactly one new child spec
+  if the current node already implies a delegated bounded concern.
+- Suggested child spec ID: {child_materialization_hint["id"]}
+- Suggested child spec path: {child_materialization_hint["path"]}
+- Keep the parent update minimal and reviewable.
+- Make the child explicit in the parent refinement/dependency chain only if
+  the delegated concern is concrete enough to become a standalone spec now.
+- Prefer one child over multiple siblings in this mode.
+- Give the child its own acceptance criteria, prompt, outputs, and allowed_paths.
+- Do not silently widen this into a broad graph refactor.
+""".rstrip()
 
     return f"""
 You are refining a specification node in SpecGraph.
@@ -939,6 +1021,7 @@ Expected outputs:
 {refinement_section}
 {mode_section}
 {bootstrap_section}
+{child_materialization_section}
 
 Rules:
 - Refine specification only.
@@ -1787,6 +1870,11 @@ def classify_executor_environment(stderr: str) -> dict[str, Any]:
             )
 
     add_issue(
+        "executor_timeout_failure",
+        "Nested executor timed out before producing a bounded result.",
+        lambda low: "supervisor timeout:" in low or "nested executor timed out after" in low,
+    )
+    add_issue(
         "transport_failure",
         "Nested executor could not reach or maintain a stable backend connection.",
         lambda low: any(
@@ -1863,6 +1951,23 @@ def executor_environment_validation_errors(executor_environment: dict[str, Any])
         else:
             errors.append(summary)
     return errors
+
+
+def validate_requested_child_materialization(
+    *,
+    requested: bool,
+    source_spec_relpath: str,
+    changed_files: list[str],
+) -> list[str]:
+    """Require one additional spec node file when child materialization was requested."""
+    if not requested:
+        return []
+    child_spec_changes = [
+        path for path in changed_files if is_spec_node_path(path) and path != source_spec_relpath
+    ]
+    if child_spec_changes:
+        return []
+    return ["Explicit child materialization was requested but no new child spec file was produced"]
 
 
 def parse_outcome(stdout: str, returncode: int) -> tuple[str, str]:
@@ -3055,7 +3160,17 @@ def run_codex(
     stdout_thread.start()
     stderr_thread.start()
     try:
-        returncode = process.wait()
+        returncode = process.wait(timeout=CHILD_EXECUTOR_TIMEOUT_SECONDS)
+    except subprocess.TimeoutExpired:
+        process.kill()
+        returncode = 124
+        timeout_message = (
+            f"supervisor timeout: nested executor timed out after "
+            f"{CHILD_EXECUTOR_TIMEOUT_SECONDS} seconds\n"
+        )
+        stderr_chunks.append(timeout_message)
+        print(f"[codex stderr] {timeout_message}", end="", file=sys.stderr)
+        process.wait()
         stdout_thread.join()
         stderr_thread.join()
     finally:
@@ -3646,7 +3761,14 @@ def _process_one_spec(
         }
 
     before_status = node.status
+    before_node_data = copy.deepcopy(node.data)
     before_canonical = canonical_spec_snapshot(node.data)
+    source_spec_relpath = node.path.relative_to(ROOT).as_posix()
+    child_materialization_requested = targeted_child_materialization_requested(
+        node=node,
+        operator_target=operator_target,
+        operator_note=operator_note,
+    )
 
     try:
         worktree_path, branch = create_isolated_worktree(node.id)
@@ -3756,6 +3878,11 @@ def _process_one_spec(
 
         output_errors = validate_outputs(node, base_dir=worktree_path)
         allowed_path_errors = validate_allowed_paths(node, changed)
+        child_materialization_errors = validate_requested_child_materialization(
+            requested=child_materialization_requested,
+            source_spec_relpath=source_spec_relpath,
+            changed_files=changed,
+        )
         reconciliation, reconciliation_errors = reconcile_graph(
             source_node=node,
             worktree_path=worktree_path,
@@ -3779,9 +3906,15 @@ def _process_one_spec(
         validation_errors = []
         validation_errors.extend(output_errors)
         validation_errors.extend(allowed_path_errors)
+        validation_errors.extend(child_materialization_errors)
         validation_errors.extend(reconciliation_errors)
         validation_errors.extend(atomicity_errors)
         validation_errors.extend(transition_errors)
+
+        if child_materialization_errors and outcome == "done":
+            outcome = "blocked"
+            if not blocker:
+                blocker = "child materialization requested but no child spec was produced"
 
         if atomicity_errors and outcome == "done":
             outcome = "split_required"
@@ -3898,6 +4031,12 @@ def _process_one_spec(
             node.data["gate_state"] = "retry_pending"
             required_human_action = "rerun supervisor"
 
+    cleanup_failed_child_materialization = (
+        child_materialization_requested
+        and not success
+        and not any(path != source_spec_relpath for path in changed if is_spec_node_path(path))
+    )
+
     validator_results = {
         "outputs": not output_errors,
         "allowed_paths": not allowed_path_errors,
@@ -3959,6 +4098,11 @@ def _process_one_spec(
     }
     log_path = write_run_log(run_id, payload)
     write_latest_summary(payload)
+
+    if cleanup_failed_child_materialization:
+        node.data = before_node_data
+        node.save()
+        node.reload()
 
     print(f"Run log: {log_path.as_posix()}")
     print("Finished status:", "ok" if success else "failed")

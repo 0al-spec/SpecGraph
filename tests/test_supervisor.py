@@ -174,7 +174,8 @@ def test_run_codex_uses_isolated_codex_home(
             self.stdout = io.StringIO("")
             self.stderr = io.StringIO("")
 
-        def wait(self) -> int:
+        def wait(self, timeout: float | None = None) -> int:
+            _ = timeout
             return 0
 
     captured: dict[str, object] = {}
@@ -1151,6 +1152,48 @@ def test_build_prompt_includes_incremental_refinement_policy_for_non_seed_spec(
     assert "Bootstrap guidance:" not in prompt
 
 
+def test_build_prompt_includes_child_materialization_guidance_for_targeted_non_root_parent(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    specs_dir = repo_fixture / "specs" / "nodes"
+    node_path = specs_dir / "SG-SPEC-0002.yaml"
+    node_path.write_text(
+        json.dumps(
+            {
+                "id": "SG-SPEC-0002",
+                "title": "Vocabulary Parent",
+                "kind": "spec",
+                "status": "specified",
+                "maturity": 0.4,
+                "depends_on": [],
+                "relates_to": [],
+                "refines": ["SG-SPEC-0001"],
+                "inputs": ["specs/nodes/SG-SPEC-0001.yaml"],
+                "outputs": ["specs/nodes/SG-SPEC-0002.yaml"],
+                "allowed_paths": ["specs/nodes/*.yaml"],
+                "acceptance": ["Delegate one bounded child vocabulary slice."],
+                "acceptance_evidence": ["Existing evidence."],
+                "prompt": "Materialize one bounded child from this parent delegation boundary.",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    node = next(spec for spec in supervisor_module.load_specs() if spec.id == "SG-SPEC-0002")
+    prompt = supervisor_module.build_prompt(
+        node,
+        operator_target=True,
+        operator_note="Create one new child spec for the delegated bootstrap relation vocabulary.",
+    )
+
+    assert "Refinement mode: explicit_target_refine" in prompt
+    assert "Child materialization guidance:" in prompt
+    assert "Suggested child spec ID: SG-SPEC-0003" in prompt
+    assert "Suggested child spec path: specs/nodes/SG-SPEC-0003.yaml" in prompt
+    assert "Prefer one child over multiple siblings in this mode." in prompt
+
+
 def test_build_prompt_includes_mutation_budget_for_explicit_target(
     supervisor_module: object,
     repo_fixture: Path,
@@ -1573,6 +1616,16 @@ def test_main_blocks_executor_environment_failures_without_graph_health_side_eff
     )
     assert not (repo_fixture / "runs" / "proposal_queue.json").exists()
     assert not (repo_fixture / "runs" / "refactor_queue.json").exists()
+
+
+def test_classify_executor_environment_detects_supervisor_timeout(
+    supervisor_module: object,
+) -> None:
+    environment = supervisor_module.classify_executor_environment(
+        "supervisor timeout: nested executor timed out after 180 seconds\n"
+    )
+
+    assert environment["issue_kinds"] == ["executor_timeout_failure"]
 
 
 def test_main_does_not_treat_websocket_fallback_warning_as_primary_transport_failure(
@@ -2923,6 +2976,179 @@ def test_main_split_required_syncs_decomposition_outputs(
     )
     assert child_two["refines"] == ["SG-SPEC-0001"]
     assert child_three["refines"] == ["SG-SPEC-0001"]
+
+
+def test_main_targeted_non_root_run_materializes_one_child_spec(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    specs_dir = repo_fixture / "specs" / "nodes"
+    parent_path = specs_dir / "SG-SPEC-0002.yaml"
+    parent_data = {
+        "id": "SG-SPEC-0002",
+        "title": "Vocabulary Parent",
+        "kind": "spec",
+        "status": "specified",
+        "maturity": 0.4,
+        "depends_on": [],
+        "relates_to": [],
+        "refines": ["SG-SPEC-0001"],
+        "inputs": ["specs/nodes/SG-SPEC-0001.yaml"],
+        "outputs": ["specs/nodes/SG-SPEC-0002.yaml"],
+        "allowed_paths": ["specs/nodes/*.yaml"],
+        "acceptance": ["Delegate one bounded child vocabulary slice."],
+        "acceptance_evidence": ["Parent evidence."],
+        "prompt": "Materialize one bounded child from this parent delegation boundary.",
+    }
+    parent_path.write_text(supervisor_module.dump_yaml_text(parent_data), encoding="utf-8")
+
+    worktree = make_fake_worktree(repo_fixture)
+    monkeypatch.setattr(
+        supervisor_module,
+        "create_isolated_worktree",
+        lambda _node_id: (worktree, "codex/sg-spec-0002/test"),
+    )
+
+    changed_snapshots = [
+        [],
+        ["specs/nodes/SG-SPEC-0002.yaml", "specs/nodes/SG-SPEC-0003.yaml"],
+    ]
+    monkeypatch.setattr(
+        supervisor_module, "git_changed_files", lambda _cwd=None: changed_snapshots.pop(0)
+    )
+
+    def fake_executor(node: object, worktree_path: Path) -> subprocess.CompletedProcess[str]:
+        assert node.id == "SG-SPEC-0002"
+        parent_file = worktree_path / "specs" / "nodes" / "SG-SPEC-0002.yaml"
+        parent = supervisor_module.get_yaml_module().safe_load(
+            parent_file.read_text(encoding="utf-8")
+        )
+        parent["depends_on"] = ["SG-SPEC-0003"]
+        parent["acceptance_evidence"] = ["Parent now delegates a concrete child slice."]
+        parent_file.write_text(supervisor_module.dump_yaml_text(parent), encoding="utf-8")
+
+        child_file = worktree_path / "specs" / "nodes" / "SG-SPEC-0003.yaml"
+        child_file.write_text(
+            supervisor_module.dump_yaml_text(
+                {
+                    "id": "SG-SPEC-0003",
+                    "title": "Bootstrap Relation Vocabulary",
+                    "kind": "spec",
+                    "status": "outlined",
+                    "maturity": 0.2,
+                    "depends_on": [],
+                    "relates_to": [],
+                    "refines": ["SG-SPEC-0002"],
+                    "inputs": ["specs/nodes/SG-SPEC-0002.yaml"],
+                    "outputs": ["specs/nodes/SG-SPEC-0003.yaml"],
+                    "allowed_paths": ["specs/nodes/SG-SPEC-0003.yaml"],
+                    "acceptance": ["Define the first bootstrap relation vocabulary slice."],
+                    "prompt": "Specify one bounded bootstrap relation vocabulary child.",
+                }
+            ),
+            encoding="utf-8",
+        )
+        return subprocess.CompletedProcess(
+            args=["codex"],
+            returncode=0,
+            stdout="RUN_OUTCOME: done\nBLOCKER: none\n",
+            stderr="",
+        )
+
+    exit_code = supervisor_module.main(
+        executor=fake_executor,
+        target_spec="SG-SPEC-0002",
+        operator_note="Create one new child spec for the delegated bootstrap relation vocabulary.",
+    )
+
+    assert exit_code == 0
+
+    updated_parent = supervisor_module.get_yaml_module().safe_load(
+        parent_path.read_text(encoding="utf-8")
+    )
+    child = supervisor_module.get_yaml_module().safe_load(
+        (specs_dir / "SG-SPEC-0003.yaml").read_text(encoding="utf-8")
+    )
+
+    assert updated_parent["depends_on"] == ["SG-SPEC-0003"]
+    assert child["refines"] == ["SG-SPEC-0002"]
+    assert child["title"] == "Bootstrap Relation Vocabulary"
+
+
+def test_main_targeted_child_materialization_run_blocks_when_no_child_is_produced(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    specs_dir = repo_fixture / "specs" / "nodes"
+    parent_path = specs_dir / "SG-SPEC-0002.yaml"
+    parent_path.write_text(
+        supervisor_module.dump_yaml_text(
+            {
+                "id": "SG-SPEC-0002",
+                "title": "Vocabulary Parent",
+                "kind": "spec",
+                "status": "specified",
+                "maturity": 0.4,
+                "depends_on": [],
+                "relates_to": [],
+                "refines": ["SG-SPEC-0001"],
+                "inputs": ["specs/nodes/SG-SPEC-0001.yaml"],
+                "outputs": ["specs/nodes/SG-SPEC-0002.yaml"],
+                "allowed_paths": ["specs/nodes/*.yaml"],
+                "acceptance": ["Delegate one bounded child vocabulary slice."],
+                "acceptance_evidence": ["Parent evidence."],
+                "prompt": "Materialize one bounded child from this parent delegation boundary.",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    worktree = make_fake_worktree(repo_fixture)
+    monkeypatch.setattr(
+        supervisor_module,
+        "create_isolated_worktree",
+        lambda _node_id: (worktree, "codex/sg-spec-0002/test"),
+    )
+
+    changed_snapshots = [[], []]
+    monkeypatch.setattr(
+        supervisor_module, "git_changed_files", lambda _cwd=None: changed_snapshots.pop(0)
+    )
+
+    def fake_executor(_node: object, _worktree_path: Path) -> subprocess.CompletedProcess[str]:
+        return subprocess.CompletedProcess(
+            args=["codex"],
+            returncode=0,
+            stdout="RUN_OUTCOME: done\nBLOCKER: none\n",
+            stderr="",
+        )
+
+    exit_code = supervisor_module.main(
+        executor=fake_executor,
+        target_spec="SG-SPEC-0002",
+        operator_note="Create one new child spec for the delegated bootstrap relation vocabulary.",
+    )
+
+    assert exit_code == 1
+
+    updated_parent = supervisor_module.get_yaml_module().safe_load(
+        parent_path.read_text(encoding="utf-8")
+    )
+    assert "gate_state" not in updated_parent
+    assert "last_blocker" not in updated_parent
+    assert "last_run_id" not in updated_parent
+    run_logs = sorted((repo_fixture / "runs").glob("*-SG-SPEC-*.json"))
+    assert len(run_logs) == 1
+    payload = json.loads(run_logs[0].read_text(encoding="utf-8"))
+    assert payload["gate_state"] == "blocked"
+    assert payload["blocker"] == "child materialization requested but no child spec was produced"
+    assert any(
+        "Explicit child materialization was requested but no new child spec file was produced"
+        in error
+        for error in payload["validation_errors"]
+    )
 
 
 def test_main_split_required_preserves_source_spec_refinement(
