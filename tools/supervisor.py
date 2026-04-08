@@ -4425,6 +4425,13 @@ def _process_one_spec(
         and not success
         and not any(path != source_spec_relpath for path in changed if is_spec_node_path(path))
     )
+    cleanup_interrupted_source_refinement = (
+        not child_materialization_requested
+        and not success
+        and result.returncode != 0
+        and bool(changed)
+        and all(path == source_spec_relpath for path in changed if is_spec_node_path(path))
+    )
 
     validator_results = {
         "outputs": not output_errors,
@@ -4490,7 +4497,7 @@ def _process_one_spec(
     log_path = write_run_log(run_id, payload)
     write_latest_summary(payload)
 
-    if cleanup_failed_child_materialization:
+    if cleanup_failed_child_materialization or cleanup_interrupted_source_refinement:
         node.data = before_node_data
         node.save()
         node.reload()

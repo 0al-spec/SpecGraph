@@ -61,3 +61,10 @@
 41. [done] Add deterministic stall/timeout handling for nested child-creation runs so a run that produces no child file and no canonical content diff fails fast as a runtime blocker rather than hanging or leaving only runtime-state noise.
 42. [done] Add integration coverage for one-run child spec creation from a non-root parent with `allowed_paths: specs/nodes/*.yaml`, including creation of the child file, minimal parent update, and explicit refinement/dependency linkage.
 43. [done] Define cleanup rules for interrupted child-creation runs so parent specs do not retain escalated runtime-state when no canonical child spec or accepted content change was actually materialized.
+
+## Interrupted Refinement Runtime Hygiene
+
+44. [done] Add cleanup rules for interrupted ordinary source-spec refinement runs so a timeout or executor failure does not leave blocked or escalated runtime-state in the canonical source spec when no accepted canonical content change was materialized.
+45. Align `supervisor` execution-profile timeout budgets with reasoning effort and expected run depth so `xhigh` targeted refinements do not spuriously time out under the default profile.
+46. [done] Add regression coverage for timeout-failed targeted refinements that edit only the selected source spec: canonical source content must remain unchanged while the run log still records the executor failure and partial diff context.
+47. Extend bootstrap-runtime troubleshooting docs so timeout-driven stale tails, partial worktree diffs, and profile-selection mismatches are documented as runtime anomalies rather than spec-quality failures.
