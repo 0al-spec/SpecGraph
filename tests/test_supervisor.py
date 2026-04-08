@@ -364,6 +364,56 @@ def test_validate_refinement_acceptance_rejects_noop_run(
     assert "No canonical spec change detected" in result["errors"][0]
 
 
+def test_parse_mutation_budget_rejects_unknown_class(
+    supervisor_module: object,
+) -> None:
+    with pytest.raises(ValueError, match="Unknown mutation class"):
+        supervisor_module.parse_mutation_budget("policy_text,unknown_class")
+
+
+def test_validate_refinement_acceptance_tracks_schema_required_addition_and_budget(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    node = supervisor_module.load_specs()[0]
+    before = json.loads(json.dumps(node.data))
+    after = json.loads(json.dumps(node.data))
+    after["specification"] = {
+        "terminology": {
+            "proposal_artifact_link": {
+                "required_components": [
+                    {
+                        "component": "reference_value",
+                        "cardinality": "exactly 1",
+                    }
+                ]
+            }
+        }
+    }
+
+    result = supervisor_module.validate_refinement_acceptance(
+        node=node,
+        before_data=before,
+        after_data=after,
+        changed_files=["specs/nodes/SG-SPEC-0001.yaml"],
+        is_graph_refactor_run=False,
+        output_errors=[],
+        allowed_path_errors=[],
+        reconciliation_errors=[],
+        transition_errors=[],
+        atomicity_errors=[],
+        mutation_budget=(supervisor_module.MUTATION_CLASS_POLICY_TEXT,),
+    )
+
+    assert supervisor_module.MUTATION_CLASS_POLICY_TEXT in result["mutation_classes"]
+    assert supervisor_module.MUTATION_CLASS_SCHEMA_REQUIRED_ADDITION in result["mutation_classes"]
+    assert result["checks"]["within_mutation_budget"] is False
+    assert result["budget_exceeded_classes"] == [
+        supervisor_module.MUTATION_CLASS_SCHEMA_REQUIRED_ADDITION
+    ]
+    assert any("mutation budget" in reason for reason in result["review_reasons"])
+
+
 def make_valid_split_proposal(node_data: dict[str, object], run_id: str) -> dict[str, object]:
     spec_id = str(node_data["id"])
     acceptance = [str(item) for item in node_data.get("acceptance", [])]
@@ -1101,6 +1151,27 @@ def test_build_prompt_includes_incremental_refinement_policy_for_non_seed_spec(
     assert "Bootstrap guidance:" not in prompt
 
 
+def test_build_prompt_includes_mutation_budget_for_explicit_target(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    node = supervisor_module.load_specs()[0]
+    prompt = supervisor_module.build_prompt(
+        node,
+        operator_target=True,
+        operator_note="Only tighten one bridge concern.",
+        mutation_budget=(
+            supervisor_module.MUTATION_CLASS_POLICY_TEXT,
+            supervisor_module.MUTATION_CLASS_SCHEMA_REQUIRED_ADDITION,
+        ),
+    )
+
+    assert "Mutation budget:" in prompt
+    assert f"- {supervisor_module.MUTATION_CLASS_POLICY_TEXT}" in prompt
+    assert f"- {supervisor_module.MUTATION_CLASS_SCHEMA_REQUIRED_ADDITION}" in prompt
+    assert "do not smuggle it in silently" in prompt
+
+
 def test_build_prompt_includes_ancestor_reconciliation_guidance(
     supervisor_module: object,
     repo_fixture: Path,
@@ -1348,6 +1419,28 @@ def test_main_dry_run_supports_explicit_targeted_refinement_for_review_pending_n
     assert "Operator intent:" in captured.out
     assert "Tighten only the proposal-lane ownership semantics." in captured.out
     assert captured.err == ""
+
+
+def test_main_explicit_targeted_refinement_dry_run_prints_mutation_budget(
+    supervisor_module: object,
+    repo_fixture: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    exit_code = supervisor_module.main(
+        target_spec="SG-SPEC-0001",
+        dry_run=True,
+        operator_note="Tighten only one bounded schema concern.",
+        mutation_budget=(
+            supervisor_module.MUTATION_CLASS_POLICY_TEXT,
+            supervisor_module.MUTATION_CLASS_SCHEMA_REQUIRED_ADDITION,
+        ),
+    )
+
+    assert exit_code == 0
+    captured = capsys.readouterr()
+    assert '"mutation_budget": ["policy_text", "schema_required_addition"]' in captured.out
+    assert "Mutation budget:" in captured.out
+    assert "- schema_required_addition" in captured.out
 
 
 def test_main_explicit_targeted_refinement_reruns_review_pending_spec(
@@ -2830,6 +2923,98 @@ def test_main_split_required_syncs_decomposition_outputs(
     )
     assert child_two["refines"] == ["SG-SPEC-0001"]
     assert child_three["refines"] == ["SG-SPEC-0001"]
+
+
+def test_main_split_required_preserves_source_spec_refinement(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    spec_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0002.yaml"
+    spec_data = {
+        "id": "SG-SPEC-0002",
+        "title": "Proposal Handle Slice",
+        "kind": "spec",
+        "status": "specified",
+        "maturity": 0.4,
+        "depends_on": [],
+        "relates_to": [],
+        "refines": ["SG-SPEC-0001"],
+        "inputs": ["specs/nodes/SG-SPEC-0001.yaml"],
+        "outputs": ["specs/nodes/SG-SPEC-0002.yaml"],
+        "allowed_paths": ["specs/nodes/SG-SPEC-0002.yaml"],
+        "acceptance": [
+            "Criterion 1",
+            "Criterion 2",
+            "Criterion 3",
+            "Criterion 4",
+            "Criterion 5",
+            "Criterion 6",
+        ],
+        "acceptance_evidence": [
+            "Evidence 1",
+            "Evidence 2",
+            "Evidence 3",
+            "Evidence 4",
+            "Evidence 5",
+            "Evidence 6",
+        ],
+        "prompt": "Initial prompt.",
+    }
+    spec_path.write_text(supervisor_module.dump_yaml_text(spec_data), encoding="utf-8")
+
+    worktree = make_fake_worktree(repo_fixture)
+    monkeypatch.setattr(
+        supervisor_module,
+        "create_isolated_worktree",
+        lambda _node_id: (worktree, "codex/sg-spec-0002/test"),
+    )
+
+    changed_snapshots = [[], ["specs/nodes/SG-SPEC-0002.yaml"]]
+    monkeypatch.setattr(
+        supervisor_module, "git_changed_files", lambda _cwd=None: changed_snapshots.pop(0)
+    )
+
+    def fake_executor(_node: object, worktree_path: Path) -> subprocess.CompletedProcess[str]:
+        worktree_node = worktree_path / "specs" / "nodes" / "SG-SPEC-0002.yaml"
+        data = supervisor_module.get_yaml_module().safe_load(
+            worktree_node.read_text(encoding="utf-8")
+        )
+        data["prompt"] = "Refined prompt while node remains oversized."
+        data["acceptance_evidence"] = [
+            "Updated evidence 1",
+            "Updated evidence 2",
+            "Updated evidence 3",
+            "Updated evidence 4",
+            "Updated evidence 5",
+            "Updated evidence 6",
+        ]
+        worktree_node.write_text(supervisor_module.dump_yaml_text(data), encoding="utf-8")
+        return subprocess.CompletedProcess(
+            args=["codex"],
+            returncode=0,
+            stdout="RUN_OUTCOME: split_required\nBLOCKER: node still exceeds atomicity gate\n",
+            stderr="",
+        )
+
+    exit_code = supervisor_module.main(
+        executor=fake_executor,
+        target_spec="SG-SPEC-0002",
+        operator_note="Preserve this refinement even if the node still needs splitting.",
+    )
+
+    assert exit_code == 1
+    updated = supervisor_module.get_yaml_module().safe_load(spec_path.read_text(encoding="utf-8"))
+    assert updated["gate_state"] == "split_required"
+    assert updated["prompt"] == "Refined prompt while node remains oversized."
+    assert updated["acceptance_evidence"] == [
+        "Updated evidence 1",
+        "Updated evidence 2",
+        "Updated evidence 3",
+        "Updated evidence 4",
+        "Updated evidence 5",
+        "Updated evidence 6",
+    ]
 
 
 def test_resolve_gate_approve_applies_worktree_changes(

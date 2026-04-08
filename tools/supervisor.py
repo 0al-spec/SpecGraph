@@ -95,6 +95,14 @@ REFINEMENT_ACCEPT_DECISION_REVIEW_REQUIRED = "review_required"
 REFINEMENT_CLASS_LOCAL = "local_refinement"
 REFINEMENT_CLASS_GRAPH_REFACTOR = "graph_refactor"
 REFINEMENT_CLASS_CONSTITUTIONAL = "constitutional_change"
+MUTATION_CLASS_POLICY_TEXT = "policy_text"
+MUTATION_CLASS_SCHEMA_REQUIRED_ADDITION = "schema_required_addition"
+MUTATION_CLASS_SCHEMA_OPTIONAL_ADDITION = "schema_optional_addition"
+KNOWN_MUTATION_CLASSES = {
+    MUTATION_CLASS_POLICY_TEXT,
+    MUTATION_CLASS_SCHEMA_REQUIRED_ADDITION,
+    MUTATION_CLASS_SCHEMA_OPTIONAL_ADDITION,
+}
 GRAPH_REFACTOR_DIFF_PREFIXES = (
     "depends_on",
     "refines",
@@ -621,6 +629,7 @@ def build_prompt(
     *,
     operator_target: bool = False,
     operator_note: str = "",
+    mutation_budget: tuple[str, ...] = (),
 ) -> str:
     """Build the operator/agent prompt for one bounded run.
 
@@ -676,6 +685,18 @@ Operator intent:
 - Treat it as ephemeral run context, not as canonical policy or spec content by itself.
 - Use it to choose one bounded concern within the current node's allowed scope.
 {operator_note.strip()}
+""".rstrip()
+    mutation_budget_section = ""
+    if mutation_budget:
+        mutation_budget_lines = "\n".join(f"- {item}" for item in mutation_budget)
+        mutation_budget_section = f"""
+
+Mutation budget:
+- This run is expected to stay within these mutation classes
+  unless review or escalation is warranted.
+{mutation_budget_lines}
+- If the smallest honest refinement needs a class outside
+  this budget, do not smuggle it in silently.
 """.rstrip()
     if selection_mode == "explicit_target_refine":
         mode_section = """
@@ -908,6 +929,7 @@ Current maturity: {node.maturity:.2f}
 Goal:
 {node.prompt}
 {operator_section}
+{mutation_budget_section}
 
 Allowed paths:
 {allowed_paths}
@@ -1231,6 +1253,90 @@ def classify_refinement_change(
     return REFINEMENT_CLASS_LOCAL, review_reasons
 
 
+def parse_mutation_budget(budget_text: str) -> tuple[str, ...]:
+    """Parse a comma-separated mutation budget into canonical class names."""
+    if not budget_text.strip():
+        return ()
+    items = [item.strip() for item in budget_text.split(",")]
+    normalized = tuple(item for item in items if item)
+    unknown = sorted(set(normalized) - KNOWN_MUTATION_CLASSES)
+    if unknown:
+        raise ValueError(
+            "Unknown mutation class(es): "
+            + ", ".join(unknown)
+            + ". Known classes: "
+            + ", ".join(sorted(KNOWN_MUTATION_CLASSES))
+        )
+    return tuple(dict.fromkeys(normalized))
+
+
+def component_requiredness(cardinality: str) -> str:
+    normalized = cardinality.strip().lower()
+    optional_markers = ("optional", "zero or one", "0 or 1", "zero-to-one")
+    if any(marker in normalized for marker in optional_markers):
+        return MUTATION_CLASS_SCHEMA_OPTIONAL_ADDITION
+    required_markers = (
+        "exactly 1",
+        "exactly one",
+        "at least 1",
+        "at least one",
+        "one or more",
+        "1 or more",
+    )
+    if any(marker in normalized for marker in required_markers):
+        return MUTATION_CLASS_SCHEMA_REQUIRED_ADDITION
+    return MUTATION_CLASS_SCHEMA_REQUIRED_ADDITION
+
+
+def collect_mutation_classes(
+    *,
+    before_snapshot: dict[str, Any],
+    after_snapshot: dict[str, Any],
+    diff_paths: list[str],
+) -> list[str]:
+    """Classify high-impact mutation classes for deterministic review gating."""
+    classes: set[str] = set()
+
+    if diff_paths:
+        classes.add(MUTATION_CLASS_POLICY_TEXT)
+
+    before_terms = (
+        before_snapshot.get("specification", {}).get("terminology", {})
+        if isinstance(before_snapshot.get("specification"), dict)
+        else {}
+    )
+    after_terms = (
+        after_snapshot.get("specification", {}).get("terminology", {})
+        if isinstance(after_snapshot.get("specification"), dict)
+        else {}
+    )
+
+    if isinstance(before_terms, dict) and isinstance(after_terms, dict):
+        for term_name, after_term in after_terms.items():
+            if not isinstance(after_term, dict):
+                continue
+            before_term = before_terms.get(term_name)
+            if not isinstance(before_term, dict):
+                before_term = {}
+            before_components = {
+                str(component.get("component", "")).strip(): component
+                for component in before_term.get("required_components", [])
+                if isinstance(component, dict) and str(component.get("component", "")).strip()
+            }
+            after_components = {
+                str(component.get("component", "")).strip(): component
+                for component in after_term.get("required_components", [])
+                if isinstance(component, dict) and str(component.get("component", "")).strip()
+            }
+            for component_name, component_data in after_components.items():
+                if component_name in before_components:
+                    continue
+                cardinality = str(component_data.get("cardinality", ""))
+                classes.add(component_requiredness(cardinality))
+
+    return sorted(classes)
+
+
 def validate_refinement_acceptance(
     *,
     node: SpecNode,
@@ -1243,6 +1349,7 @@ def validate_refinement_acceptance(
     reconciliation_errors: list[str],
     transition_errors: list[str],
     atomicity_errors: list[str],
+    mutation_budget: tuple[str, ...] = (),
 ) -> dict[str, Any]:
     """Deterministically classify whether a refinement may be accepted as valid.
 
@@ -1254,6 +1361,14 @@ def validate_refinement_acceptance(
     before_snapshot = canonical_spec_snapshot(before_data)
     after_snapshot = canonical_spec_snapshot(after_data)
     diff_paths = collect_changed_paths(before_snapshot, after_snapshot)
+    mutation_classes = collect_mutation_classes(
+        before_snapshot=before_snapshot,
+        after_snapshot=after_snapshot,
+        diff_paths=diff_paths,
+    )
+    budget_exceeded_classes = sorted(set(mutation_classes) - set(mutation_budget))
+    if not mutation_budget:
+        budget_exceeded_classes = []
 
     try:
         source_spec_relpath = node.path.relative_to(ROOT).as_posix()
@@ -1288,6 +1403,11 @@ def validate_refinement_acceptance(
     elif any(path_matches_prefix(path, IMMUTABLE_DIFF_PREFIXES) for path in diff_paths):
         decision = REFINEMENT_ACCEPT_DECISION_REJECT
         errors.append("Refinement run attempted to change immutable spec identity fields")
+    elif budget_exceeded_classes:
+        decision = REFINEMENT_ACCEPT_DECISION_REVIEW_REQUIRED
+        review_reasons.append(
+            "run exceeded requested mutation budget: " + ", ".join(budget_exceeded_classes)
+        )
     elif change_class != REFINEMENT_CLASS_LOCAL:
         decision = REFINEMENT_ACCEPT_DECISION_REVIEW_REQUIRED
 
@@ -1306,8 +1426,12 @@ def validate_refinement_acceptance(
             "constitutional_diff": change_class == REFINEMENT_CLASS_CONSTITUTIONAL,
             "graph_refactor_diff": change_class == REFINEMENT_CLASS_GRAPH_REFACTOR,
             "atomicity_clear": not atomicity_errors,
+            "within_mutation_budget": not budget_exceeded_classes,
         },
         "diff_paths": diff_paths,
+        "mutation_classes": mutation_classes,
+        "mutation_budget": list(mutation_budget),
+        "budget_exceeded_classes": budget_exceeded_classes,
         "changed_spec_files": changed_spec_files,
         "review_reasons": review_reasons,
         "errors": errors,
@@ -2785,6 +2909,7 @@ def invoke_executor(
     *,
     operator_target: bool = False,
     operator_note: str = "",
+    mutation_budget: tuple[str, ...] = (),
 ) -> subprocess.CompletedProcess[str]:
     """Call the executor with optional work-item context when supported.
 
@@ -2799,6 +2924,7 @@ def invoke_executor(
             refactor_work_item,
             operator_target=operator_target,
             operator_note=operator_note,
+            mutation_budget=mutation_budget,
         )
     if refactor_work_item is not None and (
         executor is run_codex or executor_supports_work_item(executor)
@@ -2875,6 +3001,7 @@ def run_codex(
     *,
     operator_target: bool = False,
     operator_note: str = "",
+    mutation_budget: tuple[str, ...] = (),
 ) -> subprocess.CompletedProcess[str]:
     """Run the Codex executor in the isolated worktree and stream logs live."""
     cmd = build_codex_exec_command(
@@ -2883,6 +3010,7 @@ def run_codex(
             refactor_work_item,
             operator_target=operator_target,
             operator_note=operator_note,
+            mutation_budget=mutation_budget,
         )
     )
     print(f"Launching codex exec for {node.id} in {worktree_path}")
@@ -3463,6 +3591,7 @@ def _process_one_spec(
     refactor_work_item: dict[str, Any] | None = None,
     operator_target: bool = False,
     operator_note: str = "",
+    mutation_budget: tuple[str, ...] = (),
 ) -> tuple[int, str]:
     """Process one ordinary supervisor run.
 
@@ -3505,6 +3634,8 @@ def _process_one_spec(
         selected_by_rule["sort_order"] = ["explicit_operator_target"]
     if operator_note.strip():
         selected_by_rule["operator_note"] = operator_note.strip()
+    if mutation_budget:
+        selected_by_rule["mutation_budget"] = list(mutation_budget)
     if refactor_work_item is not None:
         selected_by_rule["refactor_work_item"] = {
             "id": str(refactor_work_item.get("id", "")),
@@ -3538,6 +3669,7 @@ def _process_one_spec(
         refactor_work_item,
         operator_target=operator_target,
         operator_note=operator_note,
+        mutation_budget=mutation_budget,
     )
     print(f"Executor finished for {node.id} with exit_code={result.returncode}")
     after = git_changed_files(worktree_path)
@@ -3579,8 +3711,12 @@ def _process_one_spec(
             "constitutional_diff": False,
             "graph_refactor_diff": False,
             "atomicity_clear": True,
+            "within_mutation_budget": True,
         },
         "diff_paths": [],
+        "mutation_classes": [],
+        "mutation_budget": list(mutation_budget),
+        "budget_exceeded_classes": [],
         "changed_spec_files": [],
         "review_reasons": [],
         "errors": ["refinement acceptance was not evaluated"],
@@ -3684,6 +3820,7 @@ def _process_one_spec(
             reconciliation_errors=reconciliation_errors,
             transition_errors=transition_errors,
             atomicity_errors=atomicity_errors,
+            mutation_budget=mutation_budget,
         )
 
     structural_success = result.returncode == 0 and not validation_errors and outcome == "done"
@@ -3701,13 +3838,13 @@ def _process_one_spec(
 
     split_sync_allowed = (
         outcome == "split_required"
-        and any(spec_id != node.id for spec_id in reconciliation.get("changed_spec_ids", []))
         and result.returncode == 0
         and not output_errors
         and not allowed_path_errors
         and not reconciliation_errors
         and not transition_errors
         and accepted_refinement
+        and bool(changed)
     )
     if split_sync_allowed:
         allowed_changes = select_sync_paths(node.allowed_paths, changed)
@@ -3856,6 +3993,7 @@ def main(
     split_proposal: bool = False,
     apply_split_proposal: bool = False,
     operator_note: str = "",
+    mutation_budget: tuple[str, ...] = (),
 ) -> int:
     """Entry point for CLI and tests.
 
@@ -3917,6 +4055,9 @@ def main(
     if operator_note and loop:
         print("--operator-note cannot be combined with --loop", file=sys.stderr)
         return 1
+    if mutation_budget and loop:
+        print("--mutation-budget cannot be combined with --loop", file=sys.stderr)
+        return 1
 
     if loop and not auto_approve:
         print("--loop requires --auto-approve", file=sys.stderr)
@@ -3963,6 +4104,8 @@ def main(
         }
         if operator_note.strip():
             selected_by_rule["operator_note"] = operator_note.strip()
+        if mutation_budget:
+            selected_by_rule["mutation_budget"] = list(mutation_budget)
 
         print(f"Selected spec node: {node.id} — {node.title}")
 
@@ -3973,7 +4116,13 @@ def main(
                 f"Status: {node.status} | Maturity: {node.maturity:.2f} | Gate: {node.gate_state}"
             )
             print(f"Selection context: {json.dumps(selected_by_rule, ensure_ascii=False)}")
-            print(f"\n{build_prompt(node, refactor_work_item, operator_note=operator_note)}")
+            prompt = build_prompt(
+                node,
+                refactor_work_item,
+                operator_note=operator_note,
+                mutation_budget=mutation_budget,
+            )
+            print(f"\n{prompt}")
             return 0
 
         exit_code, _outcome = _process_split_refactor_proposal(
@@ -4012,6 +4161,8 @@ def main(
         }
         if operator_note.strip():
             selected_by_rule["operator_note"] = operator_note.strip()
+        if mutation_budget:
+            selected_by_rule["mutation_budget"] = list(mutation_budget)
         print(f"Selected spec node: {node.id} — {node.title}")
 
         if dry_run:
@@ -4021,7 +4172,13 @@ def main(
                 f"Status: {node.status} | Maturity: {node.maturity:.2f} | Gate: {node.gate_state}"
             )
             print(f"Selection context: {json.dumps(selected_by_rule, ensure_ascii=False)}")
-            print(f"\n{build_prompt(node, operator_target=True, operator_note=operator_note)}")
+            prompt = build_prompt(
+                node,
+                operator_target=True,
+                operator_note=operator_note,
+                mutation_budget=mutation_budget,
+            )
+            print(f"\n{prompt}")
             return 0
 
         exit_code, _outcome = _process_one_spec(
@@ -4031,6 +4188,7 @@ def main(
             auto_approve=auto_approve,
             operator_target=True,
             operator_note=operator_note,
+            mutation_budget=mutation_budget,
         )
         return exit_code
 
@@ -4180,6 +4338,13 @@ if __name__ == "__main__":
         ),
     )
     parser.add_argument(
+        "--mutation-budget",
+        help=(
+            "Optional comma-separated mutation classes allowed for an explicit targeted run, "
+            "for example: policy_text,schema_required_addition"
+        ),
+    )
+    parser.add_argument(
         "--split-proposal",
         action="store_true",
         help="Run explicit split_oversized_spec proposal mode for --target-spec",
@@ -4190,6 +4355,11 @@ if __name__ == "__main__":
         help="Apply an approved split_oversized_spec proposal for --target-spec",
     )
     args = parser.parse_args()
+    try:
+        mutation_budget = parse_mutation_budget(args.mutation_budget or "")
+    except ValueError as exc:
+        print(str(exc), file=sys.stderr)
+        raise SystemExit(1) from exc
     raise SystemExit(
         main(
             dry_run=args.dry_run,
@@ -4203,5 +4373,6 @@ if __name__ == "__main__":
             split_proposal=args.split_proposal,
             apply_split_proposal=args.apply_split_proposal,
             operator_note=args.operator_note or "",
+            mutation_budget=mutation_budget,
         )
     )
