@@ -3200,6 +3200,7 @@ def invoke_executor(
     operator_note: str = "",
     mutation_budget: tuple[str, ...] = (),
     run_authority: tuple[str, ...] = (),
+    worktree_branch: str = "",
 ) -> subprocess.CompletedProcess[str]:
     """Call the executor with optional work-item context when supported.
 
@@ -3216,6 +3217,7 @@ def invoke_executor(
             operator_note=operator_note,
             mutation_budget=mutation_budget,
             run_authority=run_authority,
+            worktree_branch=worktree_branch,
         )
     if refactor_work_item is not None and (
         executor is run_codex or executor_supports_work_item(executor)
@@ -3224,9 +3226,14 @@ def invoke_executor(
     return executor(node, worktree_path)
 
 
+def child_executor_should_bypass_inner_sandbox(*, branch: str) -> bool:
+    return branch.startswith("sandbox/")
+
+
 def build_codex_exec_command(
     *,
     prompt: str,
+    bypass_inner_sandbox: bool = False,
 ) -> list[str]:
     """Build a deterministic nested `codex exec` command for spec refinement.
 
@@ -3239,35 +3246,42 @@ def build_codex_exec_command(
         "exec",
         "--model",
         CHILD_EXECUTOR_MODEL,
-        "--sandbox",
-        CHILD_EXECUTOR_SANDBOX,
         "--ephemeral",
         "-c",
         f'approval_policy="{CHILD_EXECUTOR_APPROVAL_POLICY}"',
         "-c",
         f'model_reasoning_effort="{CHILD_EXECUTOR_REASONING_EFFORT}"',
     ]
+    if bypass_inner_sandbox:
+        cmd.append("--dangerously-bypass-approvals-and-sandbox")
+    else:
+        cmd.extend(["--sandbox", CHILD_EXECUTOR_SANDBOX])
     for feature in CHILD_EXECUTOR_DISABLED_FEATURES:
         cmd.extend(["--disable", feature])
     cmd.append(prompt)
     return cmd
 
 
-def render_child_codex_config() -> str:
+def render_child_codex_config(*, bypass_inner_sandbox: bool = False) -> str:
     """Render the minimal isolated Codex config used by nested supervisor runs."""
     disabled = "\n".join(f"{feature} = false" for feature in CHILD_EXECUTOR_DISABLED_FEATURES)
+    sandbox_line = "" if bypass_inner_sandbox else f'sandbox_mode = "{CHILD_EXECUTOR_SANDBOX}"\n'
     return (
         f'model = "{CHILD_EXECUTOR_MODEL}"\n'
         f'model_reasoning_effort = "{CHILD_EXECUTOR_REASONING_EFFORT}"\n'
         f'approval_policy = "{CHILD_EXECUTOR_APPROVAL_POLICY}"\n'
-        f'sandbox_mode = "{CHILD_EXECUTOR_SANDBOX}"\n'
+        f"{sandbox_line}"
         "\n"
         "[features]\n"
         f"{disabled}\n"
     )
 
 
-def create_child_codex_home(*, source_codex_home: Path = DEFAULT_CODEX_HOME) -> Path:
+def create_child_codex_home(
+    *,
+    source_codex_home: Path = DEFAULT_CODEX_HOME,
+    bypass_inner_sandbox: bool = False,
+) -> Path:
     """Create an isolated CODEX_HOME for nested executor runs.
 
     The child runtime gets a minimal config and only the auth material needed to
@@ -3276,7 +3290,10 @@ def create_child_codex_home(*, source_codex_home: Path = DEFAULT_CODEX_HOME) -> 
     """
     child_home = Path(tempfile.mkdtemp(prefix="codex-child-home-"))
     child_home.mkdir(parents=True, exist_ok=True)
-    (child_home / "config.toml").write_text(render_child_codex_config(), encoding="utf-8")
+    (child_home / "config.toml").write_text(
+        render_child_codex_config(bypass_inner_sandbox=bypass_inner_sandbox),
+        encoding="utf-8",
+    )
 
     auth_path = source_codex_home / "auth.json"
     if auth_path.exists():
@@ -3294,8 +3311,10 @@ def run_codex(
     operator_note: str = "",
     mutation_budget: tuple[str, ...] = (),
     run_authority: tuple[str, ...] = (),
+    worktree_branch: str = "",
 ) -> subprocess.CompletedProcess[str]:
     """Run the Codex executor in the isolated worktree and stream logs live."""
+    bypass_inner_sandbox = child_executor_should_bypass_inner_sandbox(branch=worktree_branch)
     cmd = build_codex_exec_command(
         prompt=build_prompt(
             node,
@@ -3304,10 +3323,13 @@ def run_codex(
             operator_note=operator_note,
             mutation_budget=mutation_budget,
             run_authority=run_authority,
-        )
+        ),
+        bypass_inner_sandbox=bypass_inner_sandbox,
     )
     print(f"Launching codex exec for {node.id} in {worktree_path}")
-    child_codex_home = create_child_codex_home()
+    child_codex_home = create_child_codex_home(
+        bypass_inner_sandbox=bypass_inner_sandbox,
+    )
     env = os.environ.copy()
     env["CODEX_HOME"] = str(child_codex_home)
     try:
@@ -3703,6 +3725,7 @@ def _process_split_refactor_proposal(
         worktree_path,
         refactor_work_item,
         operator_note=operator_note,
+        worktree_branch=branch,
     )
     print(f"Executor finished for {node.id} with exit_code={result.returncode}")
     after = git_changed_files(worktree_path)
@@ -4014,6 +4037,7 @@ def _process_one_spec(
         operator_note=operator_note,
         mutation_budget=mutation_budget,
         run_authority=run_authority,
+        worktree_branch=branch,
     )
     print(f"Executor finished for {node.id} with exit_code={result.returncode}")
     after = git_changed_files(worktree_path)
