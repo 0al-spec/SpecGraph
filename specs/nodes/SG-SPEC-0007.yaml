@@ -3,7 +3,8 @@ title: SpecGraph - Intent Mediation and Discovery Boundary
 kind: spec
 status: specified
 maturity: 0.42
-depends_on: []
+depends_on:
+- SG-SPEC-0008
 relates_to:
 - SG-SPEC-0006
 refines:
@@ -43,9 +44,10 @@ acceptance_evidence:
     '
 - criterion: Defines provenance and traceability expectations across the mediation boundary so promoted
     canonical nodes preserve the originating user goal context
-  evidence: 'specification.traceability_policy requires mediated artifacts to retain source wording, source
-    actor, and promotion rationale, and requires promoted canonical nodes to preserve source_refs or equivalent
-    lineage back to the originating raw_goal_signal and mediation record.
+  evidence: 'specification.traceability_policy.mediation_record requires mediated artifacts to retain
+    source wording, source actor or channel when known, and promotion_rationale, while specification.traceability_policy.promotion_traceability
+    requires promoted canonical nodes to preserve source_refs or equivalent lineage back to the originating
+    raw_goal_signal or mediated_intent_frame.
 
     '
 - criterion: Keeps vocabulary harmonization, discovery-surface design, and proposal-lane governance related
@@ -63,13 +65,10 @@ acceptance_evidence:
     boundary semantics for mediated discovery.
 
     '
-prompt: 'Refine SG-SPEC-0001 by defining the intent-facing mediation boundary between raw user goals and
-
-  canonical intent or spec nodes, while keeping vocabulary and proposal-lane concerns related but out
-
-  of scope here.
-
-  '
+prompt: Retain SG-SPEC-0007 as the overview boundary spec for pre-canonical intent mediation between raw
+  user goals and canonical intent or spec nodes, including minimal mediation artifacts, promotion traceability,
+  adjacent out-of-scope boundaries, and implementation-agnostic constraints, while deferring explicit
+  project-memory consultation policy to a dedicated child concern.
 specification:
   objective: 'Define the bounded pre-canonical discovery and mediation semantics that translate raw user
     goals into governed canonical intent-facing artifacts without expanding the canonical layer model
@@ -87,6 +86,7 @@ specification:
     - Discovery surface taxonomy, adoption flows, or UX design
     - Proposal-lane governance, review state, or canonical application workflow
     - Storage schema, file layout, or queue implementation
+    - Project-memory consultation policy, retrieval protocol, or memory quality rules
     - Model-specific prompting, ranking, or embedding techniques
   terminology:
     raw_goal_signal: 'An external, not-yet-canonical expression of user intent such as a request, complaint,
@@ -159,6 +159,9 @@ specification:
   - Proposal-lane governance is adjacent because pre-canonical mediation outputs may later be represented
     in proposal structures, but this node does not define proposal authority, lifecycle, or application
     semantics.
+  - Explicit project-memory consultation, PageIndex-backed recall, and memory-specific traceability or
+    quality rules are delegated to a dedicated child concern; this node only notes that such consultation,
+    when defined elsewhere, remains adjacent to rather than constitutive of canonicalization.
   examples:
   - name: Raw goal to intent
     description: A user says they want faster onboarding with fewer confusing steps. Mediated discovery
@@ -169,3 +172,74 @@ specification:
       and constraints. Mediated discovery preserves the source context, records promotion_rationale, and
       may promote directly into a spec node because the material already satisfies governed specification
       shape.
+  - name: Ambiguity blocks promotion
+    description: A user request mixes multiple desired outcomes and leaves key constraints unresolved.
+      Mediated discovery preserves the raw wording, separates candidate concerns, and stops before canonicalization
+      until ambiguity is low enough to support a trustworthy intent or spec node.
+proposed_status: linked
+proposed_maturity: 0.62
+gate_state: review_pending
+required_human_action: review refinement impact before approval
+last_outcome: done
+last_blocker: ''
+last_run_id: 20260408T083909Z-SG-SPEC-0007
+last_exit_code: 0
+last_changed_files:
+- specs/nodes/SG-SPEC-0007.yaml
+last_run_at: '2026-04-08T08:39:10.057966+00:00'
+last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0007-20260408T083750Z
+last_branch: codex/sg-spec-0007/20260408T083750Z
+last_validator_results:
+  outputs: true
+  allowed_paths: true
+  reconciliation: true
+  atomicity: true
+  transition: true
+  executor_environment: true
+  refinement_acceptance: true
+last_refinement_acceptance:
+  decision: review_required
+  change_class: constitutional_change
+  checks:
+    content_changed: true
+    hard_validation: true
+    single_spec_scope: true
+    constitutional_diff: true
+    graph_refactor_diff: false
+    atomicity_clear: true
+    within_mutation_budget: true
+  diff_paths:
+  - acceptance_evidence[2].evidence
+  - specification.adjacency_notes[3]
+  - specification.discovery_flow.context_consultation_rules
+  - specification.discovery_flow.context_consultation_rules[0]
+  - specification.discovery_flow.context_consultation_rules[1]
+  - specification.discovery_flow.context_consultation_rules[2]
+  - specification.examples[2].description
+  - specification.examples[2].name
+  - specification.quality_policy
+  - specification.quality_policy[0]
+  - specification.quality_policy[1]
+  - specification.scope.out[4]
+  - specification.terminology.mediated_context_input
+  - specification.traceability_policy.context_traceability
+  - specification.traceability_policy.context_traceability[0]
+  - specification.traceability_policy.context_traceability[1]
+  mutation_classes:
+  - policy_text
+  mutation_budget:
+  - policy_text
+  budget_exceeded_classes: []
+  changed_spec_files:
+  - specs/nodes/SG-SPEC-0007.yaml
+  review_reasons:
+  - run changed governance-sensitive specification sections
+  errors: []
+  warnings: []
+last_reconciliation:
+  worktree_spec_count: 8
+  changed_spec_ids:
+  - SG-SPEC-0007
+  semantic_dependencies_resolved: true
+  work_dependencies_ready: false
+  cycles: []

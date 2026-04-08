@@ -1,0 +1,278 @@
+id: SG-SPEC-0008
+title: SpecGraph - Explicit Project Memory Consultation in Intent Mediation
+kind: spec
+status: specified
+maturity: 0.35
+depends_on: []
+relates_to: []
+refines:
+- SG-SPEC-0007
+inputs:
+- specs/nodes/SG-SPEC-0007.yaml
+outputs:
+- specs/nodes/SG-SPEC-0008.yaml
+allowed_paths:
+- specs/nodes/SG-SPEC-0008.yaml
+acceptance:
+- Defines project memory consultation, including PageIndex-backed conversation recall, as explicit mediated
+  context that must be declared and preserved rather than treated as an implicit side channel
+- Defines the minimal traceability contract for consulted project memory by preserving the consulted source
+  class, distinguishing recalled context from direct user wording, and keeping PageIndex-backed conversation
+  recall attributable when used
+- Defines mediated consultation quality only at the policy boundary by requiring evaluation of declared
+  use, preserved source class, and whether recalled context materially clarified ambiguity without prescribing
+  retrieval mechanics or scoring formulas
+- Keeps GUI protocol, storage layout, exact retrieval mechanics, and model workflow explicitly out of
+  scope while naming future operator-request memory policy as adjacent follow-on work
+acceptance_evidence:
+- criterion: Defines project memory consultation, including PageIndex-backed conversation recall, as explicit
+    mediated context that must be declared and preserved rather than treated as an implicit side channel
+  evidence: 'specification.terminology defines consulted_project_memory, pageindex_backed_conversation_recall,
+    and declared_memory_consultation. specification.consultation_policy.declaration_rules requires project
+    memory use during mediated discovery to appear only as declared mediated context rather than as an
+    undeclared side channel, including when the consulted memory comes from PageIndex-backed conversation
+    recall.
+
+    '
+- criterion: Defines the minimal traceability contract for consulted project memory by preserving the
+    consulted source class, distinguishing recalled context from direct user wording, and keeping PageIndex-backed
+    conversation recall attributable when used
+  evidence: 'specification.traceability_policy.consultation_traceability requires each declared_memory_consultation
+    to preserve the consulted source class, keep recalled context distinct from direct user wording, and
+    retain enough attribution to identify PageIndex-backed conversation recall as consulted project memory
+    rather than flattened current-request text.
+
+    '
+- criterion: Defines mediated consultation quality only at the policy boundary by requiring evaluation
+    of declared use, preserved source class, and whether recalled context materially clarified ambiguity
+    without prescribing retrieval mechanics or scoring formulas
+  evidence: 'specification.quality_policy requires consultation quality assessment to consider declared
+    use, preserved source class, and whether consulted project memory materially clarified ambiguity in
+    the current mediation record, while specification.scope.out excludes exact retrieval mechanics and
+    scoring formulas.
+
+    '
+- criterion: Keeps GUI protocol, storage layout, exact retrieval mechanics, and model workflow explicitly
+    out of scope while naming future operator-request memory policy as adjacent follow-on work
+  evidence: 'specification.scope.out excludes GUI protocol, storage layout, exact retrieval mechanics,
+    and model workflow. specification.adjacency_notes names future operator-request memory policy as an
+    adjacent concern without resolving that policy here.
+
+    '
+prompt: Refine SG-SPEC-0007 by extracting the bounded concern of explicit project-memory consultation
+  during intent mediation. Define consulted project memory, including PageIndex-backed conversation recall,
+  as declared mediated context with preservation and traceability expectations. Keep the child scoped
+  to the policy boundary for explicit consultation and future operator-request memory policy adjacency;
+  do not define GUI protocol, storage layout, exact retrieval mechanics, or model workflow.
+specification:
+  objective: 'Define the bounded policy for when mediated discovery explicitly consults project memory,
+    including PageIndex-backed conversation recall, so that the consultation is declared, preserved, and
+    assessable without treating recalled context as implicit authority.
+
+    '
+  scope:
+    in:
+    - Explicit declaration of project-memory consultation during mediated discovery
+    - Consulted project memory as mediated context distinct from direct user wording
+    - Minimal traceability expectations for source class and attributable recall
+    - Policy-level quality expectations for whether recalled context materially clarified ambiguity
+    out:
+    - GUI protocol or operator-facing controls for invoking memory consultation
+    - Storage layout, repository schema, or archival structure for project memory
+    - Exact retrieval mechanics, ranking logic, or PageIndex query behavior
+    - Scoring formulas, thresholds, or automated grading algorithms for consultation quality
+    - Model workflow, prompt choreography, or supervisor execution procedure
+  terminology:
+    consulted_project_memory: 'Project-specific remembered context consulted during mediated discovery,
+      such as prior project notes, previously mediated constraints, or recalled conversation context,
+      which may inform interpretation only when its use is explicitly declared.
+
+      '
+    pageindex_backed_conversation_recall: 'A consulted_project_memory instance derived from PageIndex-backed
+      recall of prior conversation material that is relevant to interpreting the current raw goal signal.
+
+      '
+    declared_memory_consultation: 'The explicit mediation-record statement that consulted_project_memory
+      was used, including preservation of the consulted source class and enough attribution to distinguish
+      recalled context from direct current-turn wording.
+
+      '
+    consulted_source_class: 'The preserved category of consulted_project_memory, such as prior conversation
+      recall, project note, or other project-memory source, recorded so that downstream review can inspect
+      what kind of memory informed mediation without requiring retrieval mechanics.
+
+      '
+    material_ambiguity_clarification: 'The condition in which consulted_project_memory resolved or narrowed
+      an ambiguity that remained in the current raw goal signal or mediation context, rather than merely
+      restating background context or replacing current user evidence.
+
+      '
+  consultation_policy:
+    declaration_rules:
+    - Project memory consultation during mediated discovery is permitted only as declared_memory_consultation.
+    - Consulted project memory must be treated as explicit mediated context, not as an implicit side channel
+      or silent prior assumption.
+    - PageIndex-backed conversation recall is one form of consulted_project_memory and must be declared
+      when it informs interpretation of the current raw goal signal.
+    authority_boundary:
+    - Consulted project memory may clarify interpretation but does not override the current raw goal signal
+      by default.
+    - Recalled project context remains assistive evidence for mediation and does not become canonical
+      authority merely because it was remembered or retrieved.
+    - Declared consultation does not require that memory be used in every mediation step; it only governs
+      cases where consultation materially participates in interpretation.
+  traceability_policy:
+    consultation_traceability:
+    - Each declared_memory_consultation must preserve the consulted_source_class used during mediation.
+    - The mediation record must distinguish recalled project context from direct user wording so review
+      can inspect what was remembered versus what was explicitly said in the current request.
+    - When PageIndex-backed conversation recall is consulted, the resulting context must remain attributable
+      as recalled conversation material rather than flattened into an unattributed rewrite of the present
+      request.
+    preservation_expectations:
+    - Preserved consultation detail should be sufficient for downstream inspection of declared use, consulted
+      source class, and the role the recalled context played in clarifying ambiguity.
+    - This node does not require a particular storage representation, retrieval reference format, or repository
+      layout for preserving that detail.
+  quality_policy:
+  - Consultation quality depends first on whether project-memory use was explicitly declared when used
+    during mediated discovery.
+  - Consultation quality depends on preservation of consulted_source_class so the mediation record exposes
+    what kind of project memory informed interpretation.
+  - Consultation quality depends on whether the recalled context materially clarified ambiguity in the
+    current mediation task rather than silently replacing or overshadowing direct user evidence.
+  - This node defines policy expectations for evaluation but does not define scoring formulas, thresholds,
+    or automated ranking procedures.
+  adjacency_notes:
+  - A future operator-request memory policy may define when an operator explicitly asks for memory consultation
+    or memory suppression, but that request-handling policy is not resolved here.
+  - SG-SPEC-0007 remains the broader mediation-boundary parent; this child only isolates the explicit
+    consultation policy for project memory within that boundary.
+  examples:
+  - name: Declared recall for omitted constraint
+    description: A current request omits a previously discussed project constraint, and mediated discovery
+      consults PageIndex-backed conversation recall. The mediation record declares that consultation,
+      preserves the source class as conversation recall, and treats the recalled constraint as context
+      that clarifies ambiguity rather than as silent replacement for the current wording.
+  - name: Undeclared memory is non-compliant
+    description: A mediator uses remembered project context to reinterpret a request but does not declare
+      that memory use or preserve its source class. The consultation fails this node's policy even if
+      the remembered detail later proves correct.
+proposed_status: specified
+proposed_maturity: 0.55
+gate_state: review_pending
+required_human_action: review refinement impact before approval
+last_outcome: done
+last_blocker: ''
+last_run_id: 20260408T083647Z-SG-SPEC-0008
+last_exit_code: 0
+last_changed_files:
+- specs/nodes/SG-SPEC-0008.yaml
+last_run_at: '2026-04-08T08:36:48.078355+00:00'
+last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0008-20260408T083511Z
+last_branch: codex/sg-spec-0008/20260408T083511Z
+last_validator_results:
+  outputs: true
+  allowed_paths: true
+  reconciliation: true
+  atomicity: true
+  transition: true
+  executor_environment: true
+  refinement_acceptance: true
+last_refinement_acceptance:
+  decision: review_required
+  change_class: constitutional_change
+  checks:
+    content_changed: true
+    hard_validation: true
+    single_spec_scope: true
+    constitutional_diff: true
+    graph_refactor_diff: false
+    atomicity_clear: true
+    within_mutation_budget: true
+  diff_paths:
+  - acceptance[1]
+  - acceptance[2]
+  - acceptance[3]
+  - acceptance_evidence[0].evidence
+  - acceptance_evidence[1]
+  - acceptance_evidence[1].criterion
+  - acceptance_evidence[1].evidence
+  - acceptance_evidence[2]
+  - acceptance_evidence[2].criterion
+  - acceptance_evidence[2].evidence
+  - acceptance_evidence[3]
+  - acceptance_evidence[3].criterion
+  - acceptance_evidence[3].evidence
+  - maturity
+  - specification
+  - specification.objective
+  - specification.scope
+  - specification.scope.in
+  - specification.scope.in[0]
+  - specification.scope.in[1]
+  - specification.scope.in[2]
+  - specification.scope.in[3]
+  - specification.scope.out
+  - specification.scope.out[0]
+  - specification.scope.out[1]
+  - specification.scope.out[2]
+  - specification.scope.out[3]
+  - specification.scope.out[4]
+  - specification.terminology
+  - specification.terminology.consulted_project_memory
+  - specification.terminology.pageindex_backed_conversation_recall
+  - specification.terminology.declared_memory_consultation
+  - specification.terminology.consulted_source_class
+  - specification.terminology.material_ambiguity_clarification
+  - specification.consultation_policy
+  - specification.consultation_policy.declaration_rules
+  - specification.consultation_policy.declaration_rules[0]
+  - specification.consultation_policy.declaration_rules[1]
+  - specification.consultation_policy.declaration_rules[2]
+  - specification.consultation_policy.authority_boundary
+  - specification.consultation_policy.authority_boundary[0]
+  - specification.consultation_policy.authority_boundary[1]
+  - specification.consultation_policy.authority_boundary[2]
+  - specification.traceability_policy
+  - specification.traceability_policy.consultation_traceability
+  - specification.traceability_policy.consultation_traceability[0]
+  - specification.traceability_policy.consultation_traceability[1]
+  - specification.traceability_policy.consultation_traceability[2]
+  - specification.traceability_policy.preservation_expectations
+  - specification.traceability_policy.preservation_expectations[0]
+  - specification.traceability_policy.preservation_expectations[1]
+  - specification.quality_policy
+  - specification.quality_policy[0]
+  - specification.quality_policy[1]
+  - specification.quality_policy[2]
+  - specification.quality_policy[3]
+  - specification.adjacency_notes
+  - specification.adjacency_notes[0]
+  - specification.adjacency_notes[1]
+  - specification.examples
+  - specification.examples[0]
+  - specification.examples[0].name
+  - specification.examples[0].description
+  - specification.examples[1]
+  - specification.examples[1].name
+  - specification.examples[1].description
+  - status
+  mutation_classes:
+  - policy_text
+  mutation_budget:
+  - policy_text
+  budget_exceeded_classes: []
+  changed_spec_files:
+  - specs/nodes/SG-SPEC-0008.yaml
+  review_reasons:
+  - run changed governance-sensitive specification sections
+  errors: []
+  warnings: []
+last_reconciliation:
+  worktree_spec_count: 8
+  changed_spec_ids:
+  - SG-SPEC-0008
+  semantic_dependencies_resolved: true
+  work_dependencies_ready: true
+  cycles: []
