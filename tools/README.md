@@ -56,7 +56,7 @@ When a `supervisor` run behaves unexpectedly, debug it in this order:
 Nested `codex exec` runs are intentionally constrained and deterministic. The expected child profile is:
 
 - model: `gpt-5.4`
-- reasoning effort: `medium`
+- reasoning effort: `xhigh`
 - approval policy: `never`
 - sandbox mode: `workspace-write`
 - disabled features:
