@@ -92,6 +92,9 @@ CHILD_EXECUTOR_SANDBOX = "workspace-write"
 CHILD_EXECUTOR_DISABLED_FEATURES = ("shell_snapshot", "multi_agent")
 CHILD_EXECUTOR_TIMEOUT_SECONDS = 180
 CHILD_MATERIALIZATION_TIMEOUT_SECONDS = 420
+FAST_EXECUTION_PROFILE_TIMEOUT_SECONDS = 120
+DEFAULT_EXECUTION_PROFILE_NAME = "standard"
+AUTO_CHILD_MATERIALIZATION_PROFILE_NAME = "materialize"
 REFINEMENT_ACCEPT_DECISION_APPROVE = "approve"
 REFINEMENT_ACCEPT_DECISION_REJECT = "reject"
 REFINEMENT_ACCEPT_DECISION_REVIEW_REQUIRED = "review_required"
@@ -109,6 +112,42 @@ KNOWN_MUTATION_CLASSES = {
 }
 KNOWN_RUN_AUTHORITIES = {
     RUN_AUTHORITY_MATERIALIZE_ONE_CHILD,
+}
+
+
+@dataclass(frozen=True)
+class ExecutionProfile:
+    name: str
+    model: str
+    reasoning_effort: str
+    timeout_seconds: int
+    disabled_features: tuple[str, ...]
+    approval_policy: str = CHILD_EXECUTOR_APPROVAL_POLICY
+    sandbox: str = CHILD_EXECUTOR_SANDBOX
+
+
+EXECUTION_PROFILES: dict[str, ExecutionProfile] = {
+    "fast": ExecutionProfile(
+        name="fast",
+        model=CHILD_EXECUTOR_MODEL,
+        reasoning_effort="medium",
+        timeout_seconds=FAST_EXECUTION_PROFILE_TIMEOUT_SECONDS,
+        disabled_features=CHILD_EXECUTOR_DISABLED_FEATURES,
+    ),
+    "standard": ExecutionProfile(
+        name="standard",
+        model=CHILD_EXECUTOR_MODEL,
+        reasoning_effort=CHILD_EXECUTOR_REASONING_EFFORT,
+        timeout_seconds=CHILD_EXECUTOR_TIMEOUT_SECONDS,
+        disabled_features=CHILD_EXECUTOR_DISABLED_FEATURES,
+    ),
+    "materialize": ExecutionProfile(
+        name="materialize",
+        model=CHILD_EXECUTOR_MODEL,
+        reasoning_effort=CHILD_EXECUTOR_REASONING_EFFORT,
+        timeout_seconds=CHILD_MATERIALIZATION_TIMEOUT_SECONDS,
+        disabled_features=CHILD_EXECUTOR_DISABLED_FEATURES,
+    ),
 }
 GRAPH_REFACTOR_DIFF_PREFIXES = (
     "depends_on",
@@ -635,10 +674,43 @@ def run_authority_grants_child_materialization(run_authority: tuple[str, ...]) -
     return RUN_AUTHORITY_MATERIALIZE_ONE_CHILD in run_authority
 
 
-def effective_child_executor_timeout_seconds(run_authority: tuple[str, ...]) -> int:
+def resolve_execution_profile_name(
+    *,
+    requested_profile: str | None,
+    run_authority: tuple[str, ...],
+) -> str:
+    candidate = str(requested_profile or "").strip()
+    if candidate:
+        if candidate not in EXECUTION_PROFILES:
+            allowed = ", ".join(sorted(EXECUTION_PROFILES))
+            raise ValueError(f"Unknown execution profile '{candidate}'. Known profiles: {allowed}")
+        return candidate
     if run_authority_grants_child_materialization(run_authority):
-        return CHILD_MATERIALIZATION_TIMEOUT_SECONDS
-    return CHILD_EXECUTOR_TIMEOUT_SECONDS
+        return AUTO_CHILD_MATERIALIZATION_PROFILE_NAME
+    return DEFAULT_EXECUTION_PROFILE_NAME
+
+
+def resolve_execution_profile(
+    *,
+    requested_profile: str | None,
+    run_authority: tuple[str, ...],
+) -> ExecutionProfile:
+    return EXECUTION_PROFILES[
+        resolve_execution_profile_name(
+            requested_profile=requested_profile,
+            run_authority=run_authority,
+        )
+    ]
+
+
+def effective_child_executor_timeout_seconds(
+    run_authority: tuple[str, ...],
+    requested_profile: str | None = None,
+) -> int:
+    return resolve_execution_profile(
+        requested_profile=requested_profile,
+        run_authority=run_authority,
+    ).timeout_seconds
 
 
 def bootstrap_child_hint(node: SpecNode, specs: list[SpecNode]) -> dict[str, str] | None:
@@ -3207,6 +3279,7 @@ def invoke_executor(
     operator_note: str = "",
     mutation_budget: tuple[str, ...] = (),
     run_authority: tuple[str, ...] = (),
+    execution_profile: str | None = None,
     worktree_branch: str = "",
 ) -> subprocess.CompletedProcess[str]:
     """Call the executor with optional work-item context when supported.
@@ -3224,6 +3297,7 @@ def invoke_executor(
             operator_note=operator_note,
             mutation_budget=mutation_budget,
             run_authority=run_authority,
+            execution_profile=execution_profile,
             worktree_branch=worktree_branch,
         )
     if refactor_work_item is not None and (
@@ -3240,6 +3314,7 @@ def child_executor_should_bypass_inner_sandbox(*, branch: str) -> bool:
 def build_codex_exec_command(
     *,
     prompt: str,
+    profile: ExecutionProfile | None = None,
     bypass_inner_sandbox: bool = False,
 ) -> list[str]:
     """Build a deterministic nested `codex exec` command for spec refinement.
@@ -3248,35 +3323,43 @@ def build_codex_exec_command(
     for approval, sandboxing, or optional runtime features. Nested runs should
     stay in a narrow, repeatable bootstrap profile tailored for spec work.
     """
+    if profile is None:
+        profile = EXECUTION_PROFILES[DEFAULT_EXECUTION_PROFILE_NAME]
     cmd = [
         "codex",
         "exec",
         "--model",
-        CHILD_EXECUTOR_MODEL,
+        profile.model,
         "--ephemeral",
         "-c",
-        f'approval_policy="{CHILD_EXECUTOR_APPROVAL_POLICY}"',
+        f'approval_policy="{profile.approval_policy}"',
         "-c",
-        f'model_reasoning_effort="{CHILD_EXECUTOR_REASONING_EFFORT}"',
+        f'model_reasoning_effort="{profile.reasoning_effort}"',
     ]
     if bypass_inner_sandbox:
         cmd.append("--dangerously-bypass-approvals-and-sandbox")
     else:
-        cmd.extend(["--sandbox", CHILD_EXECUTOR_SANDBOX])
-    for feature in CHILD_EXECUTOR_DISABLED_FEATURES:
+        cmd.extend(["--sandbox", profile.sandbox])
+    for feature in profile.disabled_features:
         cmd.extend(["--disable", feature])
     cmd.append(prompt)
     return cmd
 
 
-def render_child_codex_config(*, bypass_inner_sandbox: bool = False) -> str:
+def render_child_codex_config(
+    *,
+    profile: ExecutionProfile | None = None,
+    bypass_inner_sandbox: bool = False,
+) -> str:
     """Render the minimal isolated Codex config used by nested supervisor runs."""
-    disabled = "\n".join(f"{feature} = false" for feature in CHILD_EXECUTOR_DISABLED_FEATURES)
-    sandbox_line = "" if bypass_inner_sandbox else f'sandbox_mode = "{CHILD_EXECUTOR_SANDBOX}"\n'
+    if profile is None:
+        profile = EXECUTION_PROFILES[DEFAULT_EXECUTION_PROFILE_NAME]
+    disabled = "\n".join(f"{feature} = false" for feature in profile.disabled_features)
+    sandbox_line = "" if bypass_inner_sandbox else f'sandbox_mode = "{profile.sandbox}"\n'
     return (
-        f'model = "{CHILD_EXECUTOR_MODEL}"\n'
-        f'model_reasoning_effort = "{CHILD_EXECUTOR_REASONING_EFFORT}"\n'
-        f'approval_policy = "{CHILD_EXECUTOR_APPROVAL_POLICY}"\n'
+        f'model = "{profile.model}"\n'
+        f'model_reasoning_effort = "{profile.reasoning_effort}"\n'
+        f'approval_policy = "{profile.approval_policy}"\n'
         f"{sandbox_line}"
         "\n"
         "[features]\n"
@@ -3287,6 +3370,7 @@ def render_child_codex_config(*, bypass_inner_sandbox: bool = False) -> str:
 def create_child_codex_home(
     *,
     source_codex_home: Path = DEFAULT_CODEX_HOME,
+    profile: ExecutionProfile | None = None,
     bypass_inner_sandbox: bool = False,
 ) -> Path:
     """Create an isolated CODEX_HOME for nested executor runs.
@@ -3298,7 +3382,10 @@ def create_child_codex_home(
     child_home = Path(tempfile.mkdtemp(prefix="codex-child-home-"))
     child_home.mkdir(parents=True, exist_ok=True)
     (child_home / "config.toml").write_text(
-        render_child_codex_config(bypass_inner_sandbox=bypass_inner_sandbox),
+        render_child_codex_config(
+            profile=profile,
+            bypass_inner_sandbox=bypass_inner_sandbox,
+        ),
         encoding="utf-8",
     )
 
@@ -3318,11 +3405,16 @@ def run_codex(
     operator_note: str = "",
     mutation_budget: tuple[str, ...] = (),
     run_authority: tuple[str, ...] = (),
+    execution_profile: str | None = None,
     worktree_branch: str = "",
 ) -> subprocess.CompletedProcess[str]:
     """Run the Codex executor in the isolated worktree and stream logs live."""
     bypass_inner_sandbox = child_executor_should_bypass_inner_sandbox(branch=worktree_branch)
-    timeout_seconds = effective_child_executor_timeout_seconds(run_authority)
+    profile = resolve_execution_profile(
+        requested_profile=execution_profile,
+        run_authority=run_authority,
+    )
+    timeout_seconds = profile.timeout_seconds
     cmd = build_codex_exec_command(
         prompt=build_prompt(
             node,
@@ -3332,10 +3424,19 @@ def run_codex(
             mutation_budget=mutation_budget,
             run_authority=run_authority,
         ),
+        profile=profile,
         bypass_inner_sandbox=bypass_inner_sandbox,
     )
-    print(f"Launching codex exec for {node.id} in {worktree_path}")
+    print(
+        f"Launching codex exec for {node.id} in {worktree_path} "
+        "("
+        f"profile={profile.name}, "
+        f"reasoning={profile.reasoning_effort}, "
+        f"timeout={profile.timeout_seconds}s"
+        ")"
+    )
     child_codex_home = create_child_codex_home(
+        profile=profile,
         bypass_inner_sandbox=bypass_inner_sandbox,
     )
     env = os.environ.copy()
@@ -3679,6 +3780,7 @@ def _process_split_refactor_proposal(
     node: SpecNode,
     executor: Callable[[SpecNode, Path], subprocess.CompletedProcess[str]],
     operator_note: str = "",
+    execution_profile: str | None = None,
 ) -> tuple[int, str]:
     """Run the explicit proposal-first split pass for one oversized non-seed spec.
 
@@ -3710,6 +3812,10 @@ def _process_split_refactor_proposal(
     }
     if operator_note.strip():
         selected_by_rule["operator_note"] = operator_note.strip()
+    selected_by_rule["execution_profile"] = resolve_execution_profile_name(
+        requested_profile=execution_profile,
+        run_authority=(),
+    )
     before_status = node.status
 
     try:
@@ -3732,6 +3838,7 @@ def _process_split_refactor_proposal(
         worktree_path,
         refactor_work_item,
         operator_note=operator_note,
+        execution_profile=execution_profile,
         worktree_branch=branch,
     )
     print(f"Executor finished for {node.id} with exit_code={result.returncode}")
@@ -3934,6 +4041,7 @@ def _process_one_spec(
     operator_note: str = "",
     mutation_budget: tuple[str, ...] = (),
     run_authority: tuple[str, ...] = (),
+    execution_profile: str | None = None,
 ) -> tuple[int, str]:
     """Process one ordinary supervisor run.
 
@@ -3980,6 +4088,10 @@ def _process_one_spec(
         selected_by_rule["mutation_budget"] = list(mutation_budget)
     if run_authority:
         selected_by_rule["run_authority"] = list(run_authority)
+    selected_by_rule["execution_profile"] = resolve_execution_profile_name(
+        requested_profile=execution_profile,
+        run_authority=run_authority,
+    )
     if refactor_work_item is not None:
         selected_by_rule["refactor_work_item"] = {
             "id": str(refactor_work_item.get("id", "")),
@@ -4044,6 +4156,7 @@ def _process_one_spec(
         operator_note=operator_note,
         mutation_budget=mutation_budget,
         run_authority=run_authority,
+        execution_profile=execution_profile,
         worktree_branch=branch,
     )
     print(f"Executor finished for {node.id} with exit_code={result.returncode}")
@@ -4417,6 +4530,7 @@ def main(
     operator_note: str = "",
     mutation_budget: tuple[str, ...] = (),
     run_authority: tuple[str, ...] = (),
+    execution_profile: str | None = None,
 ) -> int:
     """Entry point for CLI and tests.
 
@@ -4429,6 +4543,16 @@ def main(
     """
     if executor is None:
         executor = run_codex
+
+    try:
+        if execution_profile is not None:
+            resolve_execution_profile_name(
+                requested_profile=execution_profile,
+                run_authority=(),
+            )
+    except ValueError as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
 
     try:
         specs = load_specs()
@@ -4534,6 +4658,10 @@ def main(
             selected_by_rule["mutation_budget"] = list(mutation_budget)
         if run_authority:
             selected_by_rule["run_authority"] = list(run_authority)
+        selected_by_rule["execution_profile"] = resolve_execution_profile_name(
+            requested_profile=execution_profile,
+            run_authority=(),
+        )
 
         print(f"Selected spec node: {node.id} — {node.title}")
 
@@ -4557,6 +4685,7 @@ def main(
             node=node,
             executor=executor,
             operator_note=operator_note,
+            execution_profile=execution_profile,
         )
         return exit_code
 
@@ -4593,6 +4722,10 @@ def main(
             selected_by_rule["mutation_budget"] = list(mutation_budget)
         if run_authority:
             selected_by_rule["run_authority"] = list(run_authority)
+        selected_by_rule["execution_profile"] = resolve_execution_profile_name(
+            requested_profile=execution_profile,
+            run_authority=run_authority,
+        )
         print(f"Selected spec node: {node.id} — {node.title}")
         preflight_errors = child_materialization_preflight_errors(
             node=node,
@@ -4631,6 +4764,7 @@ def main(
             operator_note=operator_note,
             mutation_budget=mutation_budget,
             run_authority=run_authority,
+            execution_profile=execution_profile,
         )
         return exit_code
 
@@ -4670,6 +4804,7 @@ def main(
                 executor=executor,
                 auto_approve=auto_approve,
                 refactor_work_item=refactor_work_item,
+                execution_profile=execution_profile,
             )
 
             if exit_code == 0:
@@ -4717,6 +4852,10 @@ def main(
             "recommended_action": str(refactor_work_item.get("recommended_action", "")),
             "source_run_id": str(refactor_work_item.get("source_run_id", "")),
         }
+    selected_by_rule["execution_profile"] = resolve_execution_profile_name(
+        requested_profile=execution_profile,
+        run_authority=(),
+    )
 
     print(f"Selected spec node: {node.id} — {node.title}")
 
@@ -4734,6 +4873,7 @@ def main(
         executor=executor,
         auto_approve=auto_approve,
         refactor_work_item=refactor_work_item,
+        execution_profile=execution_profile,
     )
     return exit_code
 
@@ -4794,6 +4934,14 @@ if __name__ == "__main__":
         ),
     )
     parser.add_argument(
+        "--execution-profile",
+        choices=sorted(EXECUTION_PROFILES),
+        help=(
+            "Optional named execution profile for nested child runs, "
+            "for example: fast, standard, or materialize"
+        ),
+    )
+    parser.add_argument(
         "--split-proposal",
         action="store_true",
         help="Run explicit split_oversized_spec proposal mode for --target-spec",
@@ -4829,5 +4977,6 @@ if __name__ == "__main__":
             operator_note=args.operator_note or "",
             mutation_budget=mutation_budget,
             run_authority=run_authority,
+            execution_profile=args.execution_profile,
         )
     )

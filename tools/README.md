@@ -51,12 +51,27 @@ When a `supervisor` run behaves unexpectedly, debug it in this order:
    `executor_environment_primary_failure: no`.
    If it is `yes`, fix the runtime first and rerun `supervisor`.
 
-### Expected Child Executor Profile
+### Expected Child Executor Profiles
 
-Nested `codex exec` runs are intentionally constrained and deterministic. The expected child profile is:
+Nested `codex exec` runs are intentionally constrained and deterministic. `supervisor` now uses named
+execution profiles instead of one implicit child runtime:
 
-- model: `gpt-5.4`
-- reasoning effort: `xhigh`
+- `standard`
+  - model: `gpt-5.4`
+  - reasoning effort: `xhigh`
+  - timeout: `180s`
+- `materialize`
+  - model: `gpt-5.4`
+  - reasoning effort: `xhigh`
+  - timeout: `420s`
+  - auto-selected when run authority includes sanctioned child materialization
+- `fast`
+  - model: `gpt-5.4`
+  - reasoning effort: `medium`
+  - timeout: `120s`
+
+Shared child-runtime constraints:
+
 - approval policy: `never`
 - sandbox mode: `workspace-write`
 - disabled features:
@@ -65,7 +80,8 @@ Nested `codex exec` runs are intentionally constrained and deterministic. The ex
 - isolated `CODEX_HOME` with copied `auth.json` and minimal generated `config.toml`
 - no inherited MCP startup beyond what the isolated child home explicitly enables
 
-If a nested run reports a different profile, treat that as runtime drift.
+If a nested run reports a different profile or timeout than the selected execution profile, treat that as
+runtime drift.
 
 ### Worktree Fallback Mode
 
