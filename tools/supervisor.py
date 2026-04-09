@@ -1297,6 +1297,9 @@ Expected outputs:
 Rules:
 - Refine specification only.
 - Do not implement runtime code.
+- Use repository files and declared project memory as the primary context for this run.
+- Do not browse the web or external sources unless the operator explicitly
+  requested external research.
 - Preserve stable IDs and terminology.
 - Do not edit files outside allowed paths.
 - Keep acceptance_evidence aligned 1:1 with acceptance criteria.
@@ -4476,7 +4479,6 @@ def _process_one_spec(
         not child_materialization_requested
         and not success
         and bool(executor_environment.get("issues"))
-        and bool(changed)
         and all(path == source_spec_relpath for path in changed if is_spec_node_path(path))
     )
 
