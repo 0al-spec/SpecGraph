@@ -99,6 +99,7 @@ FAST_EXECUTION_PROFILE_TIMEOUT_SECONDS = 120
 HIGH_REASONING_TIMEOUT_FLOOR_SECONDS = 180
 XHIGH_REASONING_TIMEOUT_FLOOR_SECONDS = 300
 DEFAULT_EXECUTION_PROFILE_NAME = "standard"
+AUTO_HEURISTIC_PROFILE_NAME = "fast"
 AUTO_CHILD_MATERIALIZATION_PROFILE_NAME = "materialize"
 REFINEMENT_ACCEPT_DECISION_APPROVE = "approve"
 REFINEMENT_ACCEPT_DECISION_REJECT = "reject"
@@ -690,6 +691,7 @@ def resolve_execution_profile_name(
     *,
     requested_profile: str | None,
     run_authority: tuple[str, ...],
+    operator_target: bool = False,
 ) -> str:
     candidate = str(requested_profile or "").strip()
     if candidate:
@@ -699,6 +701,8 @@ def resolve_execution_profile_name(
         return candidate
     if run_authority_grants_child_materialization(run_authority):
         return AUTO_CHILD_MATERIALIZATION_PROFILE_NAME
+    if not operator_target:
+        return AUTO_HEURISTIC_PROFILE_NAME
     return DEFAULT_EXECUTION_PROFILE_NAME
 
 
@@ -706,11 +710,13 @@ def resolve_execution_profile(
     *,
     requested_profile: str | None,
     run_authority: tuple[str, ...],
+    operator_target: bool = False,
 ) -> ExecutionProfile:
     return EXECUTION_PROFILES[
         resolve_execution_profile_name(
             requested_profile=requested_profile,
             run_authority=run_authority,
+            operator_target=operator_target,
         )
     ]
 
@@ -734,10 +740,12 @@ def classify_completion_status(
 def effective_child_executor_timeout_seconds(
     run_authority: tuple[str, ...],
     requested_profile: str | None = None,
+    operator_target: bool = False,
 ) -> int:
     profile = resolve_execution_profile(
         requested_profile=requested_profile,
         run_authority=run_authority,
+        operator_target=operator_target,
     )
     return max(
         profile.timeout_seconds,
@@ -3454,10 +3462,12 @@ def run_codex(
     profile = resolve_execution_profile(
         requested_profile=execution_profile,
         run_authority=run_authority,
+        operator_target=operator_target,
     )
     timeout_seconds = effective_child_executor_timeout_seconds(
         run_authority,
         requested_profile=execution_profile,
+        operator_target=operator_target,
     )
     cmd = build_codex_exec_command(
         prompt=build_prompt(
@@ -3860,6 +3870,7 @@ def _process_split_refactor_proposal(
     selected_by_rule["execution_profile"] = resolve_execution_profile_name(
         requested_profile=execution_profile,
         run_authority=(),
+        operator_target=True,
     )
     before_status = node.status
 
@@ -4137,6 +4148,7 @@ def _process_one_spec(
     selected_by_rule["execution_profile"] = resolve_execution_profile_name(
         requested_profile=execution_profile,
         run_authority=run_authority,
+        operator_target=operator_target,
     )
     if refactor_work_item is not None:
         selected_by_rule["refactor_work_item"] = {
@@ -4722,6 +4734,7 @@ def main(
         selected_by_rule["execution_profile"] = resolve_execution_profile_name(
             requested_profile=execution_profile,
             run_authority=(),
+            operator_target=True,
         )
 
         print(f"Selected spec node: {node.id} — {node.title}")
@@ -4786,6 +4799,7 @@ def main(
         selected_by_rule["execution_profile"] = resolve_execution_profile_name(
             requested_profile=execution_profile,
             run_authority=run_authority,
+            operator_target=True,
         )
         print(f"Selected spec node: {node.id} — {node.title}")
         preflight_errors = child_materialization_preflight_errors(
@@ -4923,6 +4937,7 @@ def main(
     selected_by_rule["execution_profile"] = resolve_execution_profile_name(
         requested_profile=execution_profile,
         run_authority=(),
+        operator_target=False,
     )
 
     print(f"Selected spec node: {node.id} — {node.title}")

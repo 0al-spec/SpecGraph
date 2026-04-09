@@ -149,6 +149,7 @@ def test_build_codex_exec_command_uses_named_execution_profile(
     profile = supervisor_module.resolve_execution_profile(
         requested_profile="fast",
         run_authority=(),
+        operator_target=False,
     )
     cmd = supervisor_module.build_codex_exec_command(
         prompt="Refine one bounded spec.",
@@ -179,12 +180,16 @@ def test_build_codex_exec_command_bypasses_inner_sandbox_for_sandbox_branch(
 def test_effective_child_executor_timeout_seconds_uses_longer_budget_for_child_materialization(
     supervisor_module: object,
 ) -> None:
-    default_timeout = supervisor_module.effective_child_executor_timeout_seconds(())
+    default_timeout = supervisor_module.effective_child_executor_timeout_seconds(
+        (),
+        operator_target=False,
+    )
     child_timeout = supervisor_module.effective_child_executor_timeout_seconds(
-        (supervisor_module.RUN_AUTHORITY_MATERIALIZE_ONE_CHILD,)
+        (supervisor_module.RUN_AUTHORITY_MATERIALIZE_ONE_CHILD,),
+        operator_target=True,
     )
 
-    assert default_timeout == supervisor_module.XHIGH_REASONING_TIMEOUT_FLOOR_SECONDS
+    assert default_timeout == supervisor_module.FAST_EXECUTION_PROFILE_TIMEOUT_SECONDS
     assert child_timeout == supervisor_module.CHILD_MATERIALIZATION_TIMEOUT_SECONDS
     assert child_timeout > default_timeout
 
@@ -208,6 +213,7 @@ def test_resolve_execution_profile_auto_selects_materialize_for_child_materializ
     profile = supervisor_module.resolve_execution_profile(
         requested_profile=None,
         run_authority=(supervisor_module.RUN_AUTHORITY_MATERIALIZE_ONE_CHILD,),
+        operator_target=True,
     )
 
     assert profile.name == supervisor_module.AUTO_CHILD_MATERIALIZATION_PROFILE_NAME
@@ -220,10 +226,37 @@ def test_resolve_execution_profile_prefers_explicit_profile_over_auto_selection(
     profile = supervisor_module.resolve_execution_profile(
         requested_profile="fast",
         run_authority=(supervisor_module.RUN_AUTHORITY_MATERIALIZE_ONE_CHILD,),
+        operator_target=True,
     )
 
     assert profile.name == "fast"
     assert profile.timeout_seconds == supervisor_module.FAST_EXECUTION_PROFILE_TIMEOUT_SECONDS
+
+
+def test_resolve_execution_profile_auto_selects_fast_for_heuristic_run(
+    supervisor_module: object,
+) -> None:
+    profile = supervisor_module.resolve_execution_profile(
+        requested_profile=None,
+        run_authority=(),
+        operator_target=False,
+    )
+
+    assert profile.name == supervisor_module.AUTO_HEURISTIC_PROFILE_NAME
+    assert profile.timeout_seconds == supervisor_module.FAST_EXECUTION_PROFILE_TIMEOUT_SECONDS
+
+
+def test_resolve_execution_profile_keeps_standard_for_explicit_target(
+    supervisor_module: object,
+) -> None:
+    profile = supervisor_module.resolve_execution_profile(
+        requested_profile=None,
+        run_authority=(),
+        operator_target=True,
+    )
+
+    assert profile.name == supervisor_module.DEFAULT_EXECUTION_PROFILE_NAME
+    assert profile.reasoning_effort == supervisor_module.CHILD_EXECUTOR_REASONING_EFFORT
 
 
 def test_create_child_codex_home_writes_minimal_config_and_copies_auth(
@@ -330,9 +363,9 @@ def test_run_codex_uses_isolated_codex_home(
     assert captured["env"]["CODEX_HOME"] == str(repo_fixture / ".fake-codex-home")
     assert "--ephemeral" in captured["cmd"]
     assert captured["bypass_inner_sandbox"] is False
-    assert captured["profile"].name == supervisor_module.DEFAULT_EXECUTION_PROFILE_NAME
+    assert captured["profile"].name == supervisor_module.AUTO_HEURISTIC_PROFILE_NAME
     assert (
-        captured["process"].wait_timeout == supervisor_module.XHIGH_REASONING_TIMEOUT_FLOOR_SECONDS
+        captured["process"].wait_timeout == supervisor_module.FAST_EXECUTION_PROFILE_TIMEOUT_SECONDS
     )
 
 
@@ -397,11 +430,11 @@ def test_run_codex_bypasses_inner_sandbox_for_sandbox_branch(
     assert captured["cwd"] == repo_fixture
     assert captured["env"]["CODEX_HOME"] == str(repo_fixture / ".fake-codex-home")
     assert captured["bypass_inner_sandbox"] is True
-    assert captured["profile"].name == supervisor_module.DEFAULT_EXECUTION_PROFILE_NAME
+    assert captured["profile"].name == supervisor_module.AUTO_HEURISTIC_PROFILE_NAME
     assert "--dangerously-bypass-approvals-and-sandbox" in captured["cmd"]
     assert "--sandbox" not in captured["cmd"]
     assert (
-        captured["process"].wait_timeout == supervisor_module.XHIGH_REASONING_TIMEOUT_FLOOR_SECONDS
+        captured["process"].wait_timeout == supervisor_module.FAST_EXECUTION_PROFILE_TIMEOUT_SECONDS
     )
 
 
