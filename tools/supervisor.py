@@ -722,21 +722,11 @@ def reasoning_effort_timeout_floor_seconds(reasoning_effort: str) -> int:
 def classify_completion_status(
     *,
     success: bool,
-    outcome: str,
-    returncode: int,
-    changed_files: list[str],
-    accepted_refinement: bool,
-    primary_executor_failure: bool,
+    productive_split_required: bool,
 ) -> str:
     if success:
         return COMPLETION_STATUS_OK
-    if (
-        not primary_executor_failure
-        and outcome == "split_required"
-        and returncode == 0
-        and bool(changed_files)
-        and accepted_refinement
-    ):
+    if productive_split_required:
         return COMPLETION_STATUS_PROGRESSED
     return COMPLETION_STATUS_FAILED
 
@@ -4399,16 +4389,20 @@ def _process_one_spec(
     node.data["proposed_status"] = None
     node.data["proposed_maturity"] = None
 
-    split_sync_allowed = (
+    productive_split_required = (
         outcome == "split_required"
         and result.returncode == 0
+        and not primary_executor_failure
         and not output_errors
         and not allowed_path_errors
+        and not child_materialization_errors
         and not reconciliation_errors
         and not transition_errors
+        and not worktree_load_errors
         and accepted_refinement
         and bool(changed)
     )
+    split_sync_allowed = productive_split_required
     if split_sync_allowed:
         allowed_changes = select_sync_paths(effective_allowed_paths, changed)
         sync_files_from_worktree(worktree_path, allowed_changes)
@@ -4497,11 +4491,7 @@ def _process_one_spec(
     }
     completion_status = classify_completion_status(
         success=success,
-        outcome=outcome,
-        returncode=result.returncode,
-        changed_files=changed,
-        accepted_refinement=accepted_refinement,
-        primary_executor_failure=primary_executor_failure,
+        productive_split_required=productive_split_required,
     )
 
     node.data["required_human_action"] = required_human_action

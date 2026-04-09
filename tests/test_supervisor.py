@@ -3544,6 +3544,87 @@ def test_main_targeted_child_materialization_run_blocks_when_no_child_is_produce
         in error
         for error in payload["validation_errors"]
     )
+    assert payload["completion_status"] == "failed"
+
+
+def test_main_targeted_child_materialization_split_required_does_not_count_as_progress(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    specs_dir = repo_fixture / "specs" / "nodes"
+    parent_path = specs_dir / "SG-SPEC-0002.yaml"
+    parent_path.write_text(
+        supervisor_module.dump_yaml_text(
+            {
+                "id": "SG-SPEC-0002",
+                "title": "Vocabulary Parent",
+                "kind": "spec",
+                "status": "specified",
+                "maturity": 0.4,
+                "depends_on": [],
+                "relates_to": [],
+                "refines": ["SG-SPEC-0001"],
+                "inputs": ["specs/nodes/SG-SPEC-0001.yaml"],
+                "outputs": ["specs/nodes/SG-SPEC-0002.yaml"],
+                "allowed_paths": ["specs/nodes/SG-SPEC-0002.yaml"],
+                "acceptance": ["Delegate one bounded child vocabulary slice."],
+                "acceptance_evidence": ["Parent evidence."],
+                "prompt": "Materialize one bounded child from this parent delegation boundary.",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    worktree = make_fake_worktree(repo_fixture)
+    monkeypatch.setattr(
+        supervisor_module,
+        "create_isolated_worktree",
+        lambda _node_id: (worktree, "codex/sg-spec-0002/test"),
+    )
+
+    changed_snapshots = [[], ["specs/nodes/SG-SPEC-0002.yaml"]]
+    monkeypatch.setattr(
+        supervisor_module, "git_changed_files", lambda _cwd=None: changed_snapshots.pop(0)
+    )
+
+    def fake_executor(_node: object, worktree_path: Path) -> subprocess.CompletedProcess[str]:
+        worktree_parent = worktree_path / "specs" / "nodes" / "SG-SPEC-0002.yaml"
+        data = supervisor_module.get_yaml_module().safe_load(
+            worktree_parent.read_text(encoding="utf-8")
+        )
+        data["acceptance"] = [f"criterion-{i}" for i in range(6)]
+        data["acceptance_evidence"] = [f"evidence-{i}" for i in range(6)]
+        worktree_parent.write_text(json.dumps(data), encoding="utf-8")
+        return subprocess.CompletedProcess(
+            args=["codex"],
+            returncode=0,
+            stdout=(
+                "RUN_OUTCOME: split_required\nBLOCKER: parent still needs another narrowing pass\n"
+            ),
+            stderr="",
+        )
+
+    exit_code = supervisor_module.main(
+        executor=fake_executor,
+        target_spec="SG-SPEC-0002",
+        operator_note="Create one new child spec for the delegated bootstrap relation vocabulary.",
+        run_authority=(supervisor_module.RUN_AUTHORITY_MATERIALIZE_ONE_CHILD,),
+    )
+
+    assert exit_code == 1
+
+    latest_summary = (repo_fixture / "runs" / "latest-summary.md").read_text(encoding="utf-8")
+    assert "- completion_status: failed" in latest_summary
+    run_logs = sorted((repo_fixture / "runs").glob("*-SG-SPEC-*.json"))
+    payload = json.loads(run_logs[-1].read_text(encoding="utf-8"))
+    assert payload["completion_status"] == "failed"
+    assert payload["gate_state"] == "split_required"
+    assert any(
+        "Explicit child materialization was requested but no new child spec file was produced"
+        in error
+        for error in payload["validation_errors"]
+    )
 
 
 def test_main_targeted_child_materialization_blocks_without_run_authority(
