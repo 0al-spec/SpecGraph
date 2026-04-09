@@ -2,16 +2,17 @@ id: SG-SPEC-0004
 title: SpecGraph - Split Proposal Application Path
 kind: spec
 status: specified
-maturity: 0.56
+maturity: 0.6
 depends_on: []
 relates_to:
 - SG-SPEC-0002
-- SG-SPEC-0003
+- SG-SPEC-0006
 refines:
 - SG-SPEC-0003
 inputs:
 - specs/nodes/SG-SPEC-0002.yaml
 - specs/nodes/SG-SPEC-0003.yaml
+- specs/nodes/SG-SPEC-0006.yaml
 - tasks.md
 - tools/supervisor.py
 outputs:
@@ -23,10 +24,11 @@ acceptance:
   canonical parent and child spec files
 - Defines deterministic materialization rules for parent narrowing, child creation, acceptance redistribution,
   and lineage updates from a structured split proposal artifact
-- Defines how proposal artifact and proposal_queue status change after successful application versus rejected
-  application
-- Defines validation requirements before writeback, including active proposal presence, artifact validity,
-  non-seed target eligibility, and refusal to overwrite existing child spec files
+- Defines how proposal artifact and proposal_queue application state change after successful application
+  versus deterministic application_refusal, without conflating apply refusal with proposal review rejection
+- Defines validation requirements before writeback, including exactly one approved_for_application proposal
+  input, artifact validity, non-seed target eligibility, and refusal to overwrite existing child spec
+  files
 - Remains implementation-agnostic about future generalized proposal application beyond split_oversized_spec
 acceptance_evidence:
 - criterion: Defines an explicit operator-controlled path to apply an approved split_oversized_spec proposal
@@ -46,56 +48,72 @@ acceptance_evidence:
     verifies the resulting parent and child spec shapes.
 
     '
-- criterion: Defines how proposal artifact and proposal_queue status change after successful application
-    versus rejected application
-  evidence: 'tools/supervisor.py::mark_split_proposal_applied updates both the structured proposal artifact
-    and the matching `runs/proposal_queue.json` item to `applied` after successful writeback. tests/test_supervisor.py::test_main_apply_split_proposal_materializes_parent_and_children
-    asserts the applied state, while tests/test_supervisor.py::test_main_apply_split_proposal_rejects_existing_child_collision
-    confirms failed application leaves the queue item pending.
+- criterion: Defines how proposal artifact and proposal_queue application state change after successful
+    application versus deterministic application_refusal, without conflating apply refusal with proposal
+    review rejection
+  evidence: 'specification.terminology.application_refusal and specification.application_policy.queue_and_artifact_status
+    distinguish successful canonical application from pre-write application refusal. The same sections
+    require refusal to leave canonical files unchanged, keep proposal review semantics separate from apply-path
+    outcomes, and record applied state only after successful materialization.
 
     '
-- criterion: Defines validation requirements before writeback, including active proposal presence, artifact
-    validity, non-seed target eligibility, and refusal to overwrite existing child spec files
-  evidence: 'tools/supervisor.py::find_split_proposal_queue_item and ::validate_split_proposal_application_target
-    require an active split proposal, re-check non-seed oversized eligibility, validate the artifact contract,
-    and reject child ID/path collisions before canonical writeback. tests/test_supervisor.py::test_main_apply_split_proposal_rejects_when_no_proposal_exists
-    and ::test_main_apply_split_proposal_rejects_existing_child_collision cover these failure paths.
+- criterion: Defines validation requirements before writeback, including exactly one approved_for_application
+    proposal input, artifact validity, non-seed target eligibility, and refusal to overwrite existing
+    child spec files
+  evidence: 'specification.application_policy.approval_gate requires exactly one active split proposal
+    input whose tracked proposal authority is approved_for_application before writeback may begin. specification.application_policy.validation
+    then re-checks target eligibility, artifact validity, and child-file collisions, and routes any pre-write
+    failure into application_refusal rather than implicit review rejection.
 
     '
 - criterion: Remains implementation-agnostic about future generalized proposal application beyond split_oversized_spec
-  evidence: 'specification.scope.out excludes automatic application, merge/reparent/generalized relinking,
-    multi-proposal batch application, and governance changes to proposal semantics. The implemented supervisor
-    path is correspondingly limited to one explicit `split_oversized_spec` application mode and does not
-    claim broader proposal-application semantics.
+  evidence: 'specification.scope.out excludes automatic application, proposal-lane review workflow, merge/reparent/generalized
+    relinking, multi-proposal batch application, and governance changes to proposal semantics. The node
+    therefore stays limited to one explicit split-proposal application path without claiming broader proposal-review
+    or generalized application semantics.
 
     '
 prompt: Define the first deterministic apply path for reviewed split proposals so SpecGraph can move from
   proposal-first graph refactoring into explicit canonical writeback without reintroducing free-form supervisor
   behavior.
 specification:
-  objective: Define how an approved split_oversized_spec proposal is applied into canonical spec files
-    through an explicit operator-controlled supervisor path.
+  objective: Define how a review-approved split_oversized_spec proposal is applied into canonical spec
+    files through an explicit operator-controlled supervisor path.
   scope:
     in:
     - Explicit operator-controlled application of one split_oversized_spec proposal
+    - Consumption of one review-approved split proposal input
     - Deterministic writeback rules for parent and child spec files
     - Proposal artifact and proposal_queue status updates after application
     - Validation rules that must pass before canonical writeback
     out:
     - Automatic application without explicit operator intent
+    - Proposal-lane review workflow or approval-state transitions
     - Merge, reparent, or generalized relinking proposals
     - Multi-proposal batch application
     - Governance changes to proposal semantics
   terminology:
-    proposal_application_pass: A deterministic supervisor path that materializes a reviewed proposal artifact
-      into canonical spec files without invoking free-form decomposition reasoning.
+    proposal_application_pass: A deterministic supervisor path that materializes a review-approved proposal
+      artifact into canonical spec files without invoking free-form decomposition reasoning.
     applied_split_proposal: A split_oversized_spec proposal artifact whose parent/child structure has
       been written into canonical spec files and whose queue metadata has been marked as applied.
+    application_refusal: A deterministic outcome in which the explicit apply path declines canonical writeback
+      because the approved proposal input no longer validates against current canonical state or write-safety
+      rules. It leaves canonical spec files unchanged and does not by itself alter proposal review authority.
   application_policy:
     trigger:
     - The pass is started only by explicit operator intent against one target spec.
     - The pass requires an active split_oversized_spec proposal artifact for that target spec.
+    approval_gate:
+    - The pass may consume only one proposal input whose corresponding tracked proposal authority state
+      is approved_for_application.
+    - Proposal review approval authorizes entry into the apply path but is not evidence that canonical
+      materialization has already occurred.
+    - Draft, under_review, rejected, or superseded proposal states are ineligible apply inputs and must
+      be refused without rewriting review state.
     validation:
+    - Exactly one active approved proposal input must resolve to the target spec and structured split
+      artifact before any canonical writeback occurs.
     - The target spec must still be a non-seed spec node and must still satisfy oversized eligibility
       under current atomicity policy.
     - The structured proposal artifact must validate against the current target spec before any canonical
@@ -111,5 +129,10 @@ specification:
     queue_and_artifact_status:
     - Successful application marks the structured proposal artifact as applied and updates the matching
       proposal_queue item to an applied state.
-    - Rejected or failed application leaves canonical spec files unchanged and preserves the proposal
-      as still pending review or repair.
+    - If pre-write validation fails, the result is application_refusal. Canonical spec files remain unchanged
+      and no applied state is recorded.
+    - application_refusal leaves the structured proposal artifact and matching proposal_queue item in
+      a non-applied state so the proposal can be repaired, superseded, or re-reviewed by the appropriate
+      path.
+    - The apply path must not represent application_refusal as proposal rejection by implication, because
+      review authorization and canonical application are separate facts.
