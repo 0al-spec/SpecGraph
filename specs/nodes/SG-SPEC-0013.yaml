@@ -1,0 +1,86 @@
+id: SG-SPEC-0013
+title: SpecGraph - Retrospective Refactor Application Gates
+kind: spec
+status: outlined
+maturity: 0.2
+depends_on: []
+relates_to: []
+refines:
+- SG-SPEC-0005
+inputs:
+- specs/nodes/SG-SPEC-0005.yaml
+outputs:
+- specs/nodes/SG-SPEC-0013.yaml
+allowed_paths:
+- specs/nodes/SG-SPEC-0013.yaml
+acceptance:
+- Defines which derived artifacts, proposals, and review gates must exist before retrospective refactors
+  can be applied to live graph regions
+acceptance_evidence:
+- criterion: Defines which derived artifacts, proposals, and review gates must exist before retrospective
+    refactors can be applied to live graph regions
+  evidence: 'specification.retrospective_policy.required_artifacts requires graph-health signals, explicit
+    reviewable proposal artifacts, and approval-compatible staging before retrospective writeback. It
+    also states that applying retrospective refactor to live graph regions requires an artifact describing
+    intended structure, lineage preservation, downstream reconciliation scope, and the declared writeback
+    envelope.
+
+    '
+prompt: Refine SG-SPEC-0005 by extracting the bounded concern of retrospective refactor application prerequisites.
+  Define which derived artifacts, proposal states, and review gates must exist before a live-region retrospective
+  refactor can be applied, including the explicit reviewable artifact contract for intended structure,
+  lineage preservation, downstream reconciliation scope, and the declared writeback envelope. Keep the
+  child implementation-agnostic and do not broaden it into target selection, local-versus-governance boundary
+  rules, or generalized batch scheduling.
+proposed_status: null
+proposed_maturity: null
+gate_state: blocked
+required_human_action: repair executor environment and rerun supervisor
+last_outcome: blocked
+last_blocker: executor environment failure
+last_run_id: 20260409T065836Z-SG-SPEC-0013
+last_exit_code: 124
+last_changed_files: []
+last_run_at: '2026-04-09T06:58:36.559127+00:00'
+last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0013-20260409T065335Z
+last_branch: sandbox/sg-spec-0013/20260409T065335Z
+last_validator_results:
+  outputs: true
+  allowed_paths: true
+  reconciliation: true
+  atomicity: true
+  transition: true
+  executor_environment: false
+  refinement_acceptance: false
+last_refinement_acceptance:
+  decision: reject
+  change_class: local_refinement
+  checks:
+    content_changed: false
+    hard_validation: false
+    single_spec_scope: true
+    constitutional_diff: false
+    graph_refactor_diff: false
+    atomicity_clear: true
+    within_mutation_budget: true
+  diff_paths: []
+  mutation_classes: []
+  mutation_budget:
+  - policy_text
+  budget_exceeded_classes: []
+  changed_spec_files: []
+  review_reasons: []
+  errors:
+  - refinement acceptance was not evaluated
+  warnings: []
+last_reconciliation:
+  worktree_spec_count: 0
+  changed_spec_ids: []
+  semantic_dependencies_resolved: false
+  work_dependencies_ready: false
+  cycles: []
+last_requested_child_materialization: false
+last_materialized_child_paths: []
+last_errors:
+- 'Nested executor timed out before producing a bounded result. Evidence: supervisor timeout: nested executor
+  timed out after 300 seconds'

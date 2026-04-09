@@ -84,6 +84,9 @@ BLOCKING_GATE_STATES = {
     "escalated",
 }
 ALLOWED_OUTCOMES = {"done", "retry", "split_required", "blocked", "escalate"}
+COMPLETION_STATUS_OK = "ok"
+COMPLETION_STATUS_PROGRESSED = "progressed"
+COMPLETION_STATUS_FAILED = "failed"
 SPEC_ID_PATTERN = re.compile(r"^SG-SPEC-(\d+)$")
 CHILD_EXECUTOR_MODEL = "gpt-5.4"
 CHILD_EXECUTOR_REASONING_EFFORT = "xhigh"
@@ -714,6 +717,18 @@ def resolve_execution_profile(
 
 def reasoning_effort_timeout_floor_seconds(reasoning_effort: str) -> int:
     return REASONING_TIMEOUT_FLOORS.get(reasoning_effort, CHILD_EXECUTOR_TIMEOUT_SECONDS)
+
+
+def classify_completion_status(
+    *,
+    success: bool,
+    productive_split_required: bool,
+) -> str:
+    if success:
+        return COMPLETION_STATUS_OK
+    if productive_split_required:
+        return COMPLETION_STATUS_PROGRESSED
+    return COMPLETION_STATUS_FAILED
 
 
 def effective_child_executor_timeout_seconds(
@@ -3144,11 +3159,17 @@ def write_latest_summary(payload: dict[str, Any]) -> None:
         if isinstance(executor_environment, dict)
         else False
     )
+    completion_status = payload.get("completion_status")
+    if completion_status is None:
+        completion_status = (
+            COMPLETION_STATUS_OK if payload.get("exit_code", 1) == 0 else COMPLETION_STATUS_FAILED
+        )
     summary = (
         f"# Latest Supervisor Run\n\n"
         f"- run_id: {payload['run_id']}\n"
         f"- spec_id: {payload['spec_id']}\n"
         f"- title: {payload['title']}\n"
+        f"- completion_status: {completion_status}\n"
         f"- outcome: {payload['outcome']}\n"
         f"- gate_state: {payload['gate_state']}\n"
         f"- before_status: {payload['before_status']}\n"
@@ -3758,6 +3779,7 @@ def _apply_split_proposal(
         "timestamp_utc": utc_now_iso(),
         "spec_id": node.id,
         "title": node.title,
+        "completion_status": COMPLETION_STATUS_OK if success else COMPLETION_STATUS_FAILED,
         "selected_by_rule": selected_by_rule,
         "before_status": before_status,
         "proposed_status": None,
@@ -3787,7 +3809,7 @@ def _apply_split_proposal(
     log_path = write_run_log(run_id, payload)
     write_latest_summary(payload)
     print(f"Run log: {log_path.as_posix()}")
-    print("Finished status:", "ok" if success else "failed")
+    print("Finished status:", payload["completion_status"])
     if validation_errors:
         print("\n=== validation errors ===", file=sys.stderr)
         for error in validation_errors:
@@ -3997,6 +4019,7 @@ def _process_split_refactor_proposal(
         "timestamp_utc": utc_now_iso(),
         "spec_id": node.id,
         "title": node.title,
+        "completion_status": COMPLETION_STATUS_OK if success else COMPLETION_STATUS_FAILED,
         "selected_by_rule": selected_by_rule,
         "before_status": before_status,
         "proposed_status": None,
@@ -4034,7 +4057,7 @@ def _process_split_refactor_proposal(
     write_latest_summary(payload)
 
     print(f"Run log: {log_path.as_posix()}")
-    print("Finished status:", "ok" if success else "failed")
+    print("Finished status:", payload["completion_status"])
 
     if result.stdout.strip():
         print("\n=== codex stdout ===")
@@ -4062,7 +4085,7 @@ def _process_one_spec(
     mutation_budget: tuple[str, ...] = (),
     run_authority: tuple[str, ...] = (),
     execution_profile: str | None = None,
-) -> tuple[int, str]:
+) -> tuple[int, str, str, str]:
     """Process one ordinary supervisor run.
 
     This is the main path for:
@@ -4366,16 +4389,20 @@ def _process_one_spec(
     node.data["proposed_status"] = None
     node.data["proposed_maturity"] = None
 
-    split_sync_allowed = (
+    productive_split_required = (
         outcome == "split_required"
         and result.returncode == 0
+        and not primary_executor_failure
         and not output_errors
         and not allowed_path_errors
+        and not child_materialization_errors
         and not reconciliation_errors
         and not transition_errors
+        and not worktree_load_errors
         and accepted_refinement
         and bool(changed)
     )
+    split_sync_allowed = productive_split_required
     if split_sync_allowed:
         allowed_changes = select_sync_paths(effective_allowed_paths, changed)
         sync_files_from_worktree(worktree_path, allowed_changes)
@@ -4462,6 +4489,10 @@ def _process_one_spec(
         "executor_environment": not primary_executor_failure,
         "refinement_acceptance": accepted_refinement,
     }
+    completion_status = classify_completion_status(
+        success=success,
+        productive_split_required=productive_split_required,
+    )
 
     node.data["required_human_action"] = required_human_action
     node.data["last_outcome"] = outcome
@@ -4486,6 +4517,7 @@ def _process_one_spec(
         "timestamp_utc": utc_now_iso(),
         "spec_id": node.id,
         "title": node.title,
+        "completion_status": completion_status,
         "selected_by_rule": selected_by_rule,
         "before_status": before_status,
         "proposed_status": node.data.get("proposed_status"),
@@ -4523,7 +4555,7 @@ def _process_one_spec(
         node.reload()
 
     print(f"Run log: {log_path.as_posix()}")
-    print("Finished status:", "ok" if success else "failed")
+    print("Finished status:", completion_status)
 
     if result.stdout.strip():
         print("\n=== codex stdout ===")
@@ -4538,7 +4570,7 @@ def _process_one_spec(
             print(f"- {error}", file=sys.stderr)
 
     exit_code = 0 if success else 1
-    return exit_code, outcome
+    return exit_code, outcome, completion_status, str(payload.get("gate_state") or "none")
 
 
 def main(
@@ -4782,7 +4814,7 @@ def main(
             print(f"\n{prompt}")
             return 0
 
-        exit_code, _outcome = _process_one_spec(
+        exit_code, _outcome, _completion_status, _gate_state = _process_one_spec(
             node=node,
             specs=specs,
             executor=executor,
@@ -4798,6 +4830,7 @@ def main(
     if loop:
         print(f"Starting autonomous loop mode (max_iterations={max_iterations})")
         succeeded = 0
+        progressed = 0
         failed = 0
         for iteration in range(1, max_iterations + 1):
             try:
@@ -4825,7 +4858,7 @@ def main(
             )
             print(f"{'=' * 60}")
 
-            exit_code, outcome = _process_one_spec(
+            exit_code, outcome, completion_status, gate_state = _process_one_spec(
                 node=node,
                 specs=specs,
                 executor=executor,
@@ -4834,19 +4867,25 @@ def main(
                 execution_profile=execution_profile,
             )
 
-            if exit_code == 0:
+            if completion_status == COMPLETION_STATUS_OK:
                 succeeded += 1
                 print(f"[{iteration}] {node.id} promoted successfully.")
+            elif completion_status == COMPLETION_STATUS_PROGRESSED:
+                progressed += 1
+                print(
+                    f"[{iteration}] {node.id} progressed with outcome={outcome},"
+                    f" gate_state={gate_state}. Continuing."
+                )
             else:
                 failed += 1
                 print(
                     f"[{iteration}] {node.id} finished with outcome={outcome},"
-                    f" gate_state={node.gate_state}. Continuing."
+                    f" gate_state={gate_state}. Continuing."
                 )
         else:
             print(f"Safety limit reached ({max_iterations} iterations). Stopping loop.")
 
-        print(f"\nLoop summary: {succeeded} succeeded, {failed} failed")
+        print(f"\nLoop summary: {succeeded} succeeded, {progressed} progressed, {failed} failed")
         return 0
 
     # --- single-pass mode (original behaviour) ---
@@ -4894,7 +4933,7 @@ def main(
         print(f"\n{build_prompt(node, refactor_work_item)}")
         return 0
 
-    exit_code, _outcome = _process_one_spec(
+    exit_code, _outcome, _completion_status, _gate_state = _process_one_spec(
         node=node,
         specs=specs,
         executor=executor,

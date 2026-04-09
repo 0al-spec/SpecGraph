@@ -1,9 +1,12 @@
 id: SG-SPEC-0003
 title: SpecGraph - Reflective Governance Boundary and Graph Health Signals
 kind: spec
-status: specified
-maturity: 0.36
-depends_on: []
+status: linked
+maturity: 0.44
+depends_on:
+- SG-SPEC-0004
+- SG-SPEC-0005
+- SG-SPEC-0006
 relates_to:
 - SG-SPEC-0002
 refines:
@@ -11,6 +14,9 @@ refines:
 inputs:
 - specs/nodes/SG-SPEC-0001.yaml
 - specs/nodes/SG-SPEC-0002.yaml
+- specs/nodes/SG-SPEC-0004.yaml
+- specs/nodes/SG-SPEC-0005.yaml
+- specs/nodes/SG-SPEC-0006.yaml
 - tasks.md
 - AGENTS.md
 outputs:
@@ -76,7 +82,9 @@ acceptance_evidence:
     specification.derived_artifact_policy.refactor_queue defines the first queue artifact as a derived
     projection from graph_health signals, and specification.derived_artifact_policy.proposal_queue defines
     explicit proposal artifacts emitted for recurring or governance-class signals. specification.reflective_loop
-    keeps those artifacts derived until acted on under current governance rules.
+    keeps those artifacts derived until acted on under current governance rules. Descendant specs/nodes/SG-SPEC-0006.yaml
+    then refines the tracked proposal lane and review-visible proposal state without changing the boundary
+    defined here.
 
     '
 - criterion: Defines when supervisor may perform a direct_graph_update versus when it must emit or defer
@@ -85,7 +93,8 @@ acceptance_evidence:
     limits direct graph updates to bounded local_graph_refactor work that stays within current ontology,
     policy, and allowed paths. specification.reflective_loop and specification.derived_artifact_policy.proposal_queue
     then require proposal emission or proposal precedence for recurring pathologies and governance-class
-    signals.
+    signals. Descendant specs/nodes/SG-SPEC-0005.yaml then narrows the same boundary for retrospective
+    refactor over live graph regions without broadening supervisor authority.
 
     '
 - criterion: Defines a proposal-first split_oversized_spec refactoring pass for oversized non-seed specs
@@ -94,6 +103,8 @@ acceptance_evidence:
     limits the first pass to split_oversized_spec on non-seed spec nodes with oversized_spec pathology.
     specification.split_refactor_policy.execution requires explicit operator targeting, proposal-first
     output, no canonical spec writeback, no status or maturity promotion, and no automatic child creation.
+    Descendant specs/nodes/SG-SPEC-0004.yaml then refines the explicit reviewed apply path after that
+    proposal-first stage.
 
     '
 - criterion: Defines a dedicated structured split proposal artifact under derived runs/proposals storage
@@ -307,3 +318,72 @@ specification:
         parent_retained or as one child slot assignment.
       - lineage_updates MUST record both parent-to-child blocking edges to add and child-to-parent refines
         edges to add for the proposed split.
+gate_state: split_required
+required_human_action: split spec scope before rerun
+last_outcome: split_required
+last_blocker: spec exceeds atomicity quality gate
+last_run_id: 20260408T215553Z-SG-SPEC-0003
+last_exit_code: 0
+last_changed_files:
+- specs/nodes/SG-SPEC-0003.yaml
+last_run_at: '2026-04-08T21:55:53.608078+00:00'
+last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0003-20260408T215241Z
+last_branch: codex/sg-spec-0003/20260408T215241Z
+last_validator_results:
+  outputs: true
+  allowed_paths: true
+  reconciliation: true
+  atomicity: false
+  transition: true
+  executor_environment: true
+  refinement_acceptance: true
+last_refinement_acceptance:
+  decision: review_required
+  change_class: graph_refactor
+  checks:
+    content_changed: true
+    hard_validation: true
+    single_spec_scope: true
+    constitutional_diff: false
+    graph_refactor_diff: true
+    atomicity_clear: false
+    within_mutation_budget: true
+  diff_paths:
+  - acceptance_evidence[4].evidence
+  - acceptance_evidence[5].evidence
+  - acceptance_evidence[6].evidence
+  - depends_on[0]
+  - depends_on[1]
+  - depends_on[2]
+  - inputs[2]
+  - inputs[3]
+  - inputs[4]
+  - inputs[5]
+  - inputs[6]
+  - maturity
+  - status
+  mutation_classes:
+  - policy_text
+  mutation_budget: []
+  budget_exceeded_classes: []
+  changed_spec_files:
+  - specs/nodes/SG-SPEC-0003.yaml
+  review_reasons:
+  - run changed graph structure or spec contract paths
+  - atomicity gate still requires follow-up decomposition work
+  errors: []
+  warnings:
+  - 'specs/nodes/SG-SPEC-0003.yaml: Atomicity gate exceeded: 9 acceptance criteria > 5. Split independent
+    concerns into child specs.'
+last_reconciliation:
+  worktree_spec_count: 12
+  changed_spec_ids:
+  - SG-SPEC-0003
+  semantic_dependencies_resolved: true
+  work_dependencies_ready: false
+  cycles: []
+last_requested_child_materialization: false
+last_materialized_child_paths: []
+last_errors:
+- 'specs/nodes/SG-SPEC-0003.yaml: Atomicity gate exceeded: 9 acceptance criteria > 5. Split independent
+  concerns into child specs.'
