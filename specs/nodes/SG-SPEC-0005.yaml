@@ -28,7 +28,8 @@ acceptance:
 - Defines the boundary between local retrospective refactor, upstream ancestor reconciliation, and governance-class
   restructuring of the graph
 - Defines the canonical writeback envelope for one retrospective pass so direct edits cannot expand across
-  sibling or adjacent live canonical branches by implication
+  sibling or adjacent live canonical branches by implication, while explicit live-region application artifacts
+  and review gates remain delegated to a child spec
 - Remains implementation-agnostic about metric formulas, batch scheduling strategy, and viewer UX for
   refactor waves
 acceptance_evidence:
@@ -56,12 +57,14 @@ acceptance_evidence:
 
     '
 - criterion: Defines the canonical writeback envelope for one retrospective pass so direct edits cannot
-    expand across sibling or adjacent live canonical branches by implication
+    expand across sibling or adjacent live canonical branches by implication, while explicit live-region
+    application artifacts and review gates remain delegated to a child spec
   evidence: 'specification.terminology defines retrospective_writeback_envelope. specification.retrospective_policy.writeback_envelope
     limits direct canonical writeback to one primary target parent, directly materialized child outcomes
     rooted in that parent, and explicitly named narrow ancestor reconciliations, while sibling and adjacent
-    branches remain read-only. specification.retrospective_policy.required_artifacts then requires the
-    reviewable artifact to enumerate the envelope and its excluded nearby nodes before application.
+    branches remain read-only. specification.retrospective_policy.required_artifacts keeps SG-SPEC-0005
+    at the boundary layer by requiring those gates before live writeback and delegating the explicit artifact
+    contract and review gates to child spec SG-SPEC-0013.
 
     '
 - criterion: Remains implementation-agnostic about metric formulas, batch scheduling strategy, and viewer
@@ -74,12 +77,12 @@ acceptance_evidence:
 prompt: Keep SG-SPEC-0005 as the overview and execution-boundary node for retrospective graph refactoring,
   retaining the bounded-pass definition, parent-selection and lineage-preservation safety, the boundary
   between local refactor versus ancestor or governance-class work, the canonical writeback envelope, and
-  the implementation-agnostic constraint while depending on a child spec for explicit application artifacts
-  and review gates before live-region writeback.
+  the implementation-agnostic constraint while delegating explicit live-region application artifacts and
+  review gates to child spec SG-SPEC-0013 before writeback.
 specification:
-  objective: Define the first bounded policy for retrospective graph refactoring over existing live spec
-    regions after the graph has already grown suboptimally, including the direct-writeback envelope for
-    one live-region pass.
+  objective: Define the bounded overview policy for retrospective graph refactoring over existing live
+    spec regions after the graph has already grown suboptimally, including the direct-writeback envelope
+    for one live-region pass while leaving explicit application gates to a child spec.
   scope:
     in:
     - Retrospective split or narrowing of already-existing oversized or weakly structured specs
@@ -146,8 +149,63 @@ specification:
     required_artifacts:
     - Derived graph-health signals and explicit proposals remain the first-class trigger artifacts before
       live retrospective writeback.
-    - Applying retrospective refactor to a live graph region requires an explicit reviewable artifact
-      that describes intended parent/child structure, lineage preservation, downstream reconciliation
-      scope, and the declared retrospective_writeback_envelope including nearby nodes that stay read-only.
+    - Applying retrospective refactor to a live graph region still requires explicit application artifacts
+      and review gates before canonical writeback, but the concrete artifact contract, proposal state,
+      and review-gate semantics are delegated to child spec SG-SPEC-0013 rather than expanded here.
 last_requested_child_materialization: false
 last_materialized_child_paths: []
+proposed_status: linked
+proposed_maturity: 0.78
+gate_state: review_pending
+required_human_action: approve or retry refinement
+last_outcome: done
+last_blocker: ''
+last_run_id: 20260409T201455Z-SG-SPEC-0005
+last_exit_code: 0
+last_changed_files:
+- specs/nodes/SG-SPEC-0005.yaml
+last_run_at: '2026-04-09T20:14:55.908164+00:00'
+last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0005-20260409T201259Z
+last_branch: codex/sg-spec-0005/20260409T201259Z
+last_validator_results:
+  outputs: true
+  allowed_paths: true
+  reconciliation: true
+  atomicity: true
+  transition: true
+  executor_environment: true
+  refinement_acceptance: true
+last_refinement_acceptance:
+  decision: approve
+  change_class: local_refinement
+  checks:
+    content_changed: true
+    hard_validation: true
+    single_spec_scope: true
+    constitutional_diff: false
+    graph_refactor_diff: false
+    atomicity_clear: true
+    within_mutation_budget: true
+  diff_paths:
+  - acceptance[3]
+  - acceptance_evidence[3].criterion
+  - acceptance_evidence[3].evidence
+  - prompt
+  - specification.objective
+  - specification.retrospective_policy.required_artifacts[1]
+  mutation_classes:
+  - policy_text
+  mutation_budget: []
+  budget_exceeded_classes: []
+  changed_spec_files:
+  - specs/nodes/SG-SPEC-0005.yaml
+  review_reasons: []
+  errors: []
+  warnings: []
+last_reconciliation:
+  worktree_spec_count: 13
+  changed_spec_ids:
+  - SG-SPEC-0005
+  semantic_dependencies_resolved: true
+  work_dependencies_ready: false
+  cycles: []
