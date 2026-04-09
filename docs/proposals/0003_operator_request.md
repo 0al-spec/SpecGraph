@@ -1,27 +1,95 @@
-Да, риск реальный.
+# Operator Request Contract for Supervisor Runs
 
-Если `supervisor` продолжит обрастать флагами, он станет не “разумным исполнителем”, а неудобным low-level комбайном. Это нормально для bootstrap-этапа, но не должно стать финальным интерфейсом.
+## Status
 
-Я бы зафиксировал такую архитектуру:
+Draft proposal
 
-**1. `supervisor` как kernel, не как user-facing tool**
-Пусть он остаётся низкоуровневым движком:
-- выполнить bounded refinement
-- сделать split proposal
-- применить proposal
-- прогнать validation/gates
-- вернуть structured result
+## Problem
 
-То есть много параметров допустимо, если это внутренний API, а не то, чем человек пользуется напрямую каждый день.
+The current `supervisor` runtime is growing a useful bounded execution surface,
+but much of that surface is still exposed as low-level CLI flags and ad hoc
+operator steering.
 
-**2. Снаружи нужен тонкий слой orchestration**
-Именно то, что ты описываешь:
-- внешний агент
-- viewer/GUI
-- mediator
-- цикл с обратной связью
+This creates several problems:
 
-Он не должен дёргать 10 CLI-флагов руками. Он должен собирать один нормализованный request, например:
+- the user-facing interface becomes harder to reason about as more run options
+  accumulate
+- external agents and GUI workflows have no stable, typed request envelope to
+  target
+- execution authority, mutation budgets, and stop conditions are described
+  indirectly instead of being carried by one explicit request artifact
+- future evaluator loops risk treating the supervisor as a bag of flags instead
+  of a bounded execution kernel
+
+Without a normalized request contract, the system remains difficult to steer
+consistently from a viewer, a mediator, or a future metric-guided loop.
+
+## Goals
+
+- Define a single normalized `OperatorRequest` or `RunRequest` contract for
+  bounded supervisor runs.
+- Keep `supervisor` as an internal execution kernel rather than a primary
+  user-facing interface.
+- Make external callers such as GUI workflows, mediators, and evaluator loops
+  target one structured request artifact instead of assembling many CLI flags.
+- Carry execution authority, mutation budget, and stop conditions in a visible,
+  reviewable form.
+- Prepare the runtime for future orchestration without requiring immediate
+  replacement of the current CLI.
+
+## Non-Goals
+
+- Immediate removal of the existing CLI flags
+- Final wire format for every implementation environment
+- A complete evaluator-loop specification
+- A finished GUI or viewer integration
+- Full autonomy for direct writes to canonical `main`
+
+## Proposed Contract
+
+The system should introduce a normalized run-scoped request object, tentatively
+named `OperatorRequest`.
+
+That request should be the primary way to express:
+
+- requested run mode
+- target spec or graph region
+- bounded instruction
+- authority grant
+- mutation budget
+- stop condition or completion expectation
+
+The request contract should be narrow enough to support one bounded
+intervention at a time rather than a whole plan of unrelated changes.
+
+## Architectural Roles
+
+### Supervisor as Kernel
+
+`supervisor` should remain the bounded execution kernel that:
+
+- performs one requested refinement, proposal emission, or application step
+- validates the result
+- returns structured run outcomes
+
+It may retain a rich internal execution surface, but that surface should no
+longer be treated as the primary operator interface.
+
+### External Orchestration
+
+Higher-level orchestration layers should construct one `OperatorRequest` and
+delegate execution to the supervisor.
+
+Likely callers include:
+
+- a human operator through a GUI or viewer
+- a mediator that reduces ambiguity before execution
+- a future evaluator loop that selects the next bounded intervention
+
+## Expected Request Fields
+
+The exact schema is still open, but a minimal request should eventually express:
+
 - `mode`
 - `target`
 - `instruction`
@@ -29,40 +97,72 @@
 - `mutation_budget`
 - `stop_condition`
 
-А `supervisor` уже внутри раскладывает это на свои детали.
+Optional extensions may later include:
 
-**3. В будущем loop должен быть не “запускай supervisor как попало”, а примерно такой**
-- observe graph
-- derive metrics/signals
-- choose next bounded intervention
-- call supervisor with one normalized request
-- validate result
-- update graph
+- execution profile
+- selected node set
+- context-pack reference
+- provenance back to user intent or mediated intent
+
+## Loop Relationship
+
+The `OperatorRequest` contract should be the layer that lets a future evaluator
+loop call the supervisor in a controlled way.
+
+A long-term loop should look roughly like:
+
+- observe graph state
+- derive metrics or structural signals
+- choose one bounded intervention
+- issue one normalized request
+- validate the result
+- update graph state
 - recompute metrics
-- stop on plateau / budget / review checkpoint
+- stop on plateau, oscillation, budget exhaustion, or review checkpoint
 
-То есть да, идея “внешний агент гоняет supervisor до плато по SIB и другим метрикам” выглядит правильной.
+This proposal does not define that full loop. It defines the request surface
+that such a loop should target.
 
-Но я бы добавил два предохранителя:
-- stop not only on plateau, but also on repeated no-op / oscillation
-- human review checkpoints on constitutional changes
+## Safety Constraints
 
-Иначе система может застрять в локальном оптимуме или начать крутить граф ради метрики.
+The request contract should not remove review boundaries.
 
-**Практический вывод**
-Текущий рост сложности CLI не страшен, если мы сейчас осознанно считаем его internal kernel surface.
+Even with a normalized request, the system should preserve:
 
-Следующий правильный слой:
-- не ещё больше флагов для человека
-- а `OperatorRequest` / `RunRequest` как единый объект
-- и уже GUI/внешний агент работают только с ним
+- human review checkpoints for constitutional changes
+- bounded mutation discipline
+- explicit authority grants for stronger actions
+- supervisor ability to narrow or block unsafe execution
 
-То есть:
-- человек общается с mediator
-- mediator формирует request
-- supervisor исполняет
-- metrics замыкают feedback loop
+## Relationship to Existing Work
 
-Это как раз снимет твоё опасение.
+### SG-SPEC-0007
 
-Если хочешь, следующим шагом я бы занялся именно этим: спроектировать минимальный `OperatorRequest` contract для внешнего агента и GUI, чтобы `supervisor` дальше можно было вызывать стабильно, без разрастания user-facing CLI.
+Mediated intent and ambiguity reduction should feed into `OperatorRequest`
+rather than bypass it.
+
+### SG-SPEC-0008
+
+Project memory consultation and PageIndex-backed recall should help shape the
+request context, but memory access is separate from the request contract itself.
+
+### SG-SPEC-0009
+
+The canonical runtime or spec-layer implementation of this proposal should live
+through `SG-SPEC-0009` and its descendants.
+
+### Evaluator Loop
+
+A later evaluator-loop architecture should consume this request contract instead
+of inventing a parallel execution interface.
+
+## Open Questions
+
+- What is the final typed schema for `OperatorRequest`?
+- Which fields are mandatory for every run mode?
+- How should request provenance link back to `UserIntent` or mediated intent
+  artifacts?
+- Which authority grants belong in the request versus being inferred by the
+  supervisor?
+- How should request objects be stored, surfaced in the viewer, and retained in
+  runtime history?
