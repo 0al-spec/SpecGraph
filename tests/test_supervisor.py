@@ -1923,6 +1923,9 @@ def test_main_blocks_executor_environment_failures_without_graph_health_side_eff
     node_data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
     node_data["acceptance"] = [f"criterion-{i}" for i in range(1, 7)]
     node_path.write_text(json.dumps(node_data), encoding="utf-8")
+    before_data = supervisor_module.get_yaml_module().safe_load(
+        node_path.read_text(encoding="utf-8")
+    )
 
     worktree = make_fake_worktree(repo_fixture)
     monkeypatch.setattr(
@@ -1955,12 +1958,13 @@ def test_main_blocks_executor_environment_failures_without_graph_health_side_eff
     assert exit_code == 1
 
     updated = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
-    assert updated["gate_state"] == "blocked"
-    assert updated["required_human_action"] == "repair executor environment and rerun supervisor"
+    assert updated == before_data
 
     run_logs = sorted((repo_fixture / "runs").glob("*-SG-SPEC-*.json"))
     assert len(run_logs) == 1
     payload = json.loads(run_logs[0].read_text(encoding="utf-8"))
+    assert payload["gate_state"] == "blocked"
+    assert payload["required_human_action"] == "repair executor environment and rerun supervisor"
     assert payload["executor_environment"]["primary_failure"] is True
     assert set(payload["executor_environment"]["issue_kinds"]) == {
         "mcp_startup_failure",
@@ -1974,6 +1978,55 @@ def test_main_blocks_executor_environment_failures_without_graph_health_side_eff
     )
     assert not (repo_fixture / "runs" / "proposal_queue.json").exists()
     assert not (repo_fixture / "runs" / "refactor_queue.json").exists()
+
+
+def test_main_usage_limit_failure_reports_quota_recovery_action(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    before_data = supervisor_module.get_yaml_module().safe_load(
+        node_path.read_text(encoding="utf-8")
+    )
+    worktree = make_fake_worktree(repo_fixture)
+    monkeypatch.setattr(
+        supervisor_module,
+        "create_isolated_worktree",
+        lambda _node_id: (worktree, "codex/sg-spec-0001/test"),
+    )
+    changed_snapshots = [[], []]
+    monkeypatch.setattr(
+        supervisor_module,
+        "git_changed_files",
+        lambda _cwd=None: changed_snapshots.pop(0),
+    )
+
+    def fake_executor(_node: object, _worktree_path: Path) -> subprocess.CompletedProcess[str]:
+        return subprocess.CompletedProcess(
+            args=["codex"],
+            returncode=1,
+            stdout="RUN_OUTCOME: escalate\nBLOCKER: none\n",
+            stderr=(
+                "ERROR: You've hit your usage limit. Upgrade to Pro or purchase more credits.\n"
+            ),
+        )
+
+    exit_code = supervisor_module.main(executor=fake_executor)
+    assert exit_code == 1
+
+    updated = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    assert updated == before_data
+
+    run_logs = sorted((repo_fixture / "runs").glob("*-SG-SPEC-*.json"))
+    assert len(run_logs) == 1
+    payload = json.loads(run_logs[0].read_text(encoding="utf-8"))
+    assert payload["gate_state"] == "blocked"
+    assert (
+        payload["required_human_action"]
+        == "wait for usage reset or add credits and rerun supervisor"
+    )
+    assert payload["executor_environment"]["issue_kinds"] == ["usage_limit_failure"]
 
 
 def test_main_interrupted_source_refinement_cleans_runtime_tail_when_only_source_changed(

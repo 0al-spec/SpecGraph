@@ -2273,6 +2273,17 @@ def executor_environment_validation_errors(executor_environment: dict[str, Any])
     return errors
 
 
+def executor_environment_required_action(executor_environment: dict[str, Any]) -> str:
+    issue_kinds = {
+        str(kind).strip()
+        for kind in executor_environment.get("issue_kinds", [])
+        if str(kind).strip()
+    }
+    if "usage_limit_failure" in issue_kinds:
+        return "wait for usage reset or add credits and rerun supervisor"
+    return "repair executor environment and rerun supervisor"
+
+
 def validate_requested_child_materialization(
     *,
     requested: bool,
@@ -4476,7 +4487,7 @@ def _process_one_spec(
     else:
         if primary_executor_failure:
             node.data["gate_state"] = "blocked"
-            required_human_action = "repair executor environment and rerun supervisor"
+            required_human_action = executor_environment_required_action(executor_environment)
         elif outcome == "blocked":
             node.data["gate_state"] = "blocked"
             required_human_action = "resolve blocker"
