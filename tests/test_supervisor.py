@@ -2088,6 +2088,16 @@ def test_classify_executor_environment_detects_supervisor_timeout(
     assert environment["issue_kinds"] == ["executor_timeout_failure"]
 
 
+def test_classify_executor_environment_detects_usage_limit_failure(
+    supervisor_module: object,
+) -> None:
+    environment = supervisor_module.classify_executor_environment(
+        "ERROR: You've hit your usage limit. Upgrade to Pro or purchase more credits.\n"
+    )
+
+    assert environment["issue_kinds"] == ["usage_limit_failure"]
+
+
 def test_main_does_not_treat_websocket_fallback_warning_as_primary_transport_failure(
     supervisor_module: object,
     repo_fixture: Path,

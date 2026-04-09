@@ -2222,6 +2222,20 @@ def classify_executor_environment(stderr: str) -> dict[str, Any]:
         "Nested executor hit local permission or sandbox restrictions.",
         lambda low: "operation not permitted" in low or "permission denied" in low,
     )
+    add_issue(
+        "usage_limit_failure",
+        "Nested executor was rejected by the provider because the current account "
+        "hit a usage or quota limit.",
+        lambda low: any(
+            fragment in low
+            for fragment in (
+                "you've hit your usage limit",
+                "purchase more credits",
+                "upgrade to pro",
+                "usage to purchase more credits",
+            )
+        ),
+    )
 
     return {
         "issues": issues,
