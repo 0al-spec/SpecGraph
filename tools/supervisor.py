@@ -93,11 +93,11 @@ CHILD_EXECUTOR_REASONING_EFFORT = "xhigh"
 CHILD_EXECUTOR_APPROVAL_POLICY = "never"
 CHILD_EXECUTOR_SANDBOX = "workspace-write"
 CHILD_EXECUTOR_DISABLED_FEATURES = ("shell_snapshot", "multi_agent")
-CHILD_EXECUTOR_TIMEOUT_SECONDS = 180
-CHILD_MATERIALIZATION_TIMEOUT_SECONDS = 420
-FAST_EXECUTION_PROFILE_TIMEOUT_SECONDS = 120
-HIGH_REASONING_TIMEOUT_FLOOR_SECONDS = 180
-XHIGH_REASONING_TIMEOUT_FLOOR_SECONDS = 300
+CHILD_EXECUTOR_TIMEOUT_SECONDS = 420
+CHILD_MATERIALIZATION_TIMEOUT_SECONDS = 720
+FAST_EXECUTION_PROFILE_TIMEOUT_SECONDS = 420
+HIGH_REASONING_TIMEOUT_FLOOR_SECONDS = 300
+XHIGH_REASONING_TIMEOUT_FLOOR_SECONDS = 420
 DEFAULT_EXECUTION_PROFILE_NAME = "standard"
 AUTO_HEURISTIC_PROFILE_NAME = "fast"
 AUTO_CHILD_MATERIALIZATION_PROFILE_NAME = "materialize"
@@ -136,7 +136,7 @@ EXECUTION_PROFILES: dict[str, ExecutionProfile] = {
     "fast": ExecutionProfile(
         name="fast",
         model=CHILD_EXECUTOR_MODEL,
-        reasoning_effort="medium",
+        reasoning_effort=CHILD_EXECUTOR_REASONING_EFFORT,
         timeout_seconds=FAST_EXECUTION_PROFILE_TIMEOUT_SECONDS,
         disabled_features=CHILD_EXECUTOR_DISABLED_FEATURES,
     ),
@@ -3634,10 +3634,11 @@ def resolve_gate_decision(
         proposed_status = node.data.get("proposed_status")
         proposed_maturity = node.data.get("proposed_maturity")
         before_node_data = copy.deepcopy(node.data)
-        transition_errors = validate_transition(node.status, proposed_status)
-        if transition_errors:
-            print("\n".join(transition_errors), file=sys.stderr)
-            return 1
+        if proposed_status is not None:
+            transition_errors = validate_transition(node.status, proposed_status)
+            if transition_errors:
+                print("\n".join(transition_errors), file=sys.stderr)
+                return 1
 
         worktree_path = Path(str(node.data.get("last_worktree_path", ""))).expanduser()
         changed_files = list(node.data.get("last_changed_files", []))
@@ -4215,6 +4216,7 @@ def _process_one_spec(
         }
 
     before_status = node.status
+    before_source_text = node.path.read_text(encoding="utf-8")
     before_node_data = copy.deepcopy(node.data)
     before_canonical = canonical_spec_snapshot(node.data)
     source_spec_relpath = node.path.relative_to(ROOT).as_posix()
@@ -4619,8 +4621,7 @@ def _process_one_spec(
     write_latest_summary(payload)
 
     if cleanup_failed_child_materialization or cleanup_interrupted_source_refinement:
-        node.data = before_node_data
-        node.save()
+        node.path.write_text(before_source_text, encoding="utf-8")
         node.reload()
 
     print(f"Run log: {log_path.as_posix()}")
