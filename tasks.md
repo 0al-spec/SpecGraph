@@ -69,3 +69,4 @@
 46. [done] Add regression coverage for timeout-failed targeted refinements that edit only the selected source spec: canonical source content must remain unchanged while the run log still records the executor failure and partial diff context.
 47. [done] Extend bootstrap-runtime troubleshooting docs so timeout-driven stale tails, partial worktree diffs, and profile-selection mismatches are documented as runtime anomalies rather than spec-quality failures.
 48. [done] Distinguish productive `split_required` refinements from real runtime/spec failures in `supervisor` completion status, latest-summary output, and loop accounting.
+49. [done] Auto-upgrade ordinary seed-like refinement runs from the heuristic `fast` profile to the materialization profile when bootstrap child guidance is already in force, so central decomposition nodes do not time out before writing a bounded child spec.

@@ -259,6 +259,41 @@ def test_resolve_execution_profile_keeps_standard_for_explicit_target(
     assert profile.reasoning_effort == supervisor_module.CHILD_EXECUTOR_REASONING_EFFORT
 
 
+def test_infer_ordinary_execution_profile_uses_materialize_for_seed_like_node(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    node = supervisor_module.SpecNode(
+        path=repo_fixture / "specs" / "nodes" / "SG-SPEC-0002.yaml",
+        data={
+            "id": "SG-SPEC-0002",
+            "title": "Seed-like Delegation Spec",
+            "status": "specified",
+            "maturity": 0.57,
+            "depends_on": [],
+            "relates_to": [],
+            "refines": ["SG-SPEC-0001"],
+            "inputs": ["specs/nodes/SG-SPEC-0001.yaml"],
+            "outputs": ["specs/nodes/SG-SPEC-0002.yaml"],
+            "allowed_paths": ["specs/nodes/*.yaml"],
+            "acceptance": ["Define how the parent delegates one bounded child concern."],
+            "acceptance_evidence": ["seed evidence"],
+            "prompt": "Delegate one child spec when decomposition is needed.",
+        },
+    )
+    specs = [node]
+
+    profile_name = supervisor_module.infer_ordinary_execution_profile_name(
+        node=node,
+        specs=specs,
+        requested_profile=None,
+        operator_target=False,
+        run_authority=(),
+    )
+
+    assert profile_name == supervisor_module.AUTO_CHILD_MATERIALIZATION_PROFILE_NAME
+
+
 def test_create_child_codex_home_writes_minimal_config_and_copies_auth(
     supervisor_module: object,
     tmp_path: Path,
@@ -2498,6 +2533,94 @@ def test_main_split_proposal_passes_operator_target_to_executor(
     assert exit_code == 0
     assert captured["operator_target"] is True
     assert captured["worktree_branch"] == "codex/sg-spec-0001/split-proposal"
+
+
+def test_process_one_spec_uses_materialize_profile_for_seed_like_ordinary_run(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0002.yaml"
+    node_data = {
+        "id": "SG-SPEC-0002",
+        "title": "Seed-like Delegation Spec",
+        "kind": "spec",
+        "status": "specified",
+        "maturity": 0.57,
+        "depends_on": [],
+        "relates_to": [],
+        "refines": ["SG-SPEC-0001"],
+        "inputs": ["specs/nodes/SG-SPEC-0001.yaml"],
+        "outputs": ["specs/nodes/SG-SPEC-0002.yaml"],
+        "allowed_paths": ["specs/nodes/*.yaml"],
+        "acceptance": ["Define how the parent delegates one bounded child concern."],
+        "acceptance_evidence": ["seed evidence"],
+        "prompt": "Delegate one child spec when decomposition is needed.",
+    }
+    node_path.write_text(supervisor_module.dump_yaml_text(node_data), encoding="utf-8")
+    node = supervisor_module.SpecNode(path=node_path, data=node_data)
+    specs = [node]
+    worktree = make_fake_worktree(repo_fixture)
+    monkeypatch.setattr(
+        supervisor_module,
+        "create_isolated_worktree",
+        lambda _node_id: (worktree, "codex/sg-spec-0002/test"),
+    )
+    changed_snapshots = [[], []]
+    monkeypatch.setattr(
+        supervisor_module, "git_changed_files", lambda _cwd=None: changed_snapshots.pop(0)
+    )
+
+    captured: dict[str, object] = {}
+
+    def fake_invoke_executor(
+        executor: object,
+        node: object,
+        worktree_path: Path,
+        refactor_work_item: dict[str, object] | None = None,
+        *,
+        operator_target: bool = False,
+        operator_note: str = "",
+        mutation_budget: tuple[str, ...] = (),
+        run_authority: tuple[str, ...] = (),
+        execution_profile: str | None = None,
+        worktree_branch: str = "",
+    ) -> subprocess.CompletedProcess[str]:
+        _ = (
+            executor,
+            node,
+            worktree_path,
+            refactor_work_item,
+            operator_target,
+            operator_note,
+            mutation_budget,
+            run_authority,
+            worktree_branch,
+        )
+        captured["execution_profile"] = execution_profile
+        return subprocess.CompletedProcess(
+            args=["codex"],
+            returncode=0,
+            stdout="RUN_OUTCOME: blocked\nBLOCKER: none\n",
+            stderr="",
+        )
+
+    monkeypatch.setattr(supervisor_module, "invoke_executor", fake_invoke_executor)
+
+    exit_code, outcome, completion_status, gate_state = supervisor_module._process_one_spec(
+        node=node,
+        specs=specs,
+        executor=supervisor_module.run_codex,
+        auto_approve=False,
+    )
+
+    assert exit_code == 1
+    assert outcome == "blocked"
+    assert completion_status == supervisor_module.COMPLETION_STATUS_FAILED
+    assert gate_state == "blocked"
+    assert (
+        captured["execution_profile"] == supervisor_module.AUTO_CHILD_MATERIALIZATION_PROFILE_NAME
+    )
 
 
 def test_main_split_proposal_blocks_executor_environment_failures_without_queue_updates(

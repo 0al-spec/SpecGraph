@@ -20,7 +20,7 @@ acceptance:
 - Defines how a seed or working spec delegates one or more concrete unresolved areas to child specs while
   preserving atomic spec boundaries and parent terminology
 - Defines the conditions for moving a spec from specified to linked once descendant specs exist, including
-  semantic unlock and narrow ancestor reconciliation
+  semantic unlock, linked-readiness evidence, and narrow ancestor reconciliation
 - Defines when a non-atomic spec should decompose into sibling child specs and surface split_required
   rather than growing in place
 - Defines how acceptance criteria and acceptance_evidence stay aligned across a refinement chain
@@ -43,12 +43,13 @@ acceptance_evidence:
 
     '
 - criterion: Defines the conditions for moving a spec from specified to linked once descendant specs exist,
-    including semantic unlock and narrow ancestor reconciliation
-  evidence: 'specification.terminology defines semantic_unlock and ancestor_reconciliation. specification.linkage_rules.specified_to_linked
-    defines that every declared depends_on child must exist as a concrete descendant spec node and be
-    connected into the refinement chain through refines. specification.reconciliation_policy then states
-    that descendant unlock creates eligibility for a narrow ancestor reconciliation pass, limited to links,
-    blockers, evidence, and status-readiness rather than broad scope expansion.
+    including semantic unlock, linked-readiness evidence, and narrow ancestor reconciliation
+  evidence: 'specification.terminology defines semantic_unlock, ancestor_reconciliation, and linked_readiness_evidence.
+    specification.linkage_rules.specified_to_linked defines that every declared depends_on child must
+    exist as a concrete descendant spec node, be connected into the refinement chain through refines,
+    and be cited in reconciled parent evidence before the ancestor may advance. specification.reconciliation_policy
+    then states that descendant unlock creates eligibility for a narrow ancestor reconciliation pass,
+    limited to links, blockers, evidence, and status-readiness rather than broad scope expansion.
 
     '
 - criterion: Defines when a non-atomic spec should decompose into sibling child specs and surface split_required
@@ -62,8 +63,9 @@ acceptance_evidence:
 - criterion: Defines how acceptance criteria and acceptance_evidence stay aligned across a refinement
     chain
   evidence: 'specification.evidence_policy.rules keeps acceptance and acceptance_evidence 1:1 within each
-    spec, allows parent evidence to cite child specs when refinement becomes concrete, and keeps child
-    evidence rooted in specification content rather than runtime artifacts.
+    spec, requires linked-readiness parent evidence to cite the concrete descendant specs that satisfy
+    blocking refinement dependencies, allows child citations as supporting context outside status advancement,
+    and keeps child evidence rooted in specification content rather than runtime artifacts.
 
     '
 - criterion: Remains implementation-agnostic and limited to specification governance
@@ -138,6 +140,11 @@ specification:
     ancestor_reconciliation: 'A narrow follow-up pass on an ancestor spec after semantic_unlock. It aligns
       links, blockers, acceptance_evidence, and status-readiness with the newly available descendant structure
       without reopening unrelated scope.
+
+      '
+    linked_readiness_evidence: 'A reconciled parent-side evidence update that cites the specific concrete
+      descendant specs satisfying each declared blocking refinement dependency, so semantic_unlock can
+      be promoted into linked status-readiness.
 
       '
   relation_policy:
@@ -215,6 +222,10 @@ specification:
       in depends_on exists as a concrete descendant spec node.
     - For each blocking child, the descendant must explicitly refines the parent or another declared ancestor
       in the same refinement chain.
+    - semantic_unlock makes linked advancement eligible, but the ancestor MUST remain specified until
+      ancestor_reconciliation records linked_readiness_evidence on the parent.
+    - The reconciled parent acceptance_evidence MUST cite the concrete descendant spec IDs or paths that
+      satisfy each declared blocking refinement dependency.
     - linked confirms edge resolution, not downstream implementation completion or review approval.
     - Descendant completion may therefore semantically unlock multiple ancestors in the same refinement
       chain.
@@ -239,8 +250,10 @@ specification:
   evidence_policy:
     rules:
     - acceptance and acceptance_evidence remain 1:1 within each spec node.
-    - Parent evidence may point to child spec IDs and paths when demonstrating that seed refinement has
-      become concrete.
+    - When linked readiness depends on child refinement, parent acceptance_evidence MUST cite the child
+      spec IDs or paths that satisfy each declared blocking refinement dependency.
+    - Outside status advancement, parent evidence MAY still point to child spec IDs and paths as supporting
+      refinement context.
     - Child evidence should cite sections inside the child spec rather than external runtime artifacts.
   examples:
   - name: Seed-to-child linkage
@@ -249,26 +262,80 @@ specification:
       This makes the refinement chain explicit and allows SG-SPEC-0001 to reach linked.
 
       '
-proposed_status: null
-proposed_maturity: null
-gate_state: null
-required_human_action: none
+  - name: Unlock requires parent evidence reconciliation
+    description: 'A parent spec declares depends_on on a blocking child, and that child now exists with
+      an explicit refines link back into the parent''s refinement chain. The parent is semantically unlocked,
+      but it remains specified until ancestor_reconciliation updates the parent acceptance_evidence to
+      cite that child as the concrete refinement that resolved the delegated gap.
+
+      '
+proposed_status: linked
+proposed_maturity: 0.77
+gate_state: review_pending
+required_human_action: review refinement impact before approval
 last_outcome: done
-last_blocker: none
-last_run_id: 20260405T082952Z-SG-SPEC-0002
+last_blocker: ''
+last_run_id: 20260410T063954Z-SG-SPEC-0002
 last_exit_code: 0
 last_changed_files:
 - specs/nodes/SG-SPEC-0002.yaml
-last_run_at: '2026-04-05T08:32:03Z'
-last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0001-20260405T082952Z
-last_branch: codex/sg-spec-0001/20260405T082952Z
+last_run_at: '2026-04-10T06:39:55.408471+00:00'
+last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0002-20260410T063341Z
+last_branch: codex/sg-spec-0002/20260410T063341Z
 last_validator_results:
   outputs: true
   allowed_paths: true
-  yaml_reload: true
-  status_format: true
-  acceptance_evidence: true
+  reconciliation: true
+  atomicity: true
   transition: true
-last_gate_decision: done
-last_gate_note: created bootstrap child for seed refinement linkage
-last_gate_at: '2026-04-05T08:32:03Z'
+  executor_environment: true
+  refinement_acceptance: true
+last_refinement_acceptance:
+  decision: review_required
+  change_class: constitutional_change
+  checks:
+    content_changed: true
+    hard_validation: true
+    single_spec_scope: true
+    constitutional_diff: true
+    graph_refactor_diff: false
+    atomicity_clear: true
+    within_mutation_budget: true
+  diff_paths:
+  - acceptance[2]
+  - acceptance_evidence[2].criterion
+  - acceptance_evidence[2].evidence
+  - acceptance_evidence[4].evidence
+  - last_gate_at
+  - last_gate_decision
+  - last_gate_note
+  - specification.evidence_policy.rules[1]
+  - specification.evidence_policy.rules[2]
+  - specification.evidence_policy.rules[3]
+  - specification.examples[1]
+  - specification.examples[1].name
+  - specification.examples[1].description
+  - specification.linkage_rules.specified_to_linked[2]
+  - specification.linkage_rules.specified_to_linked[3]
+  - specification.linkage_rules.specified_to_linked[4]
+  - specification.linkage_rules.specified_to_linked[5]
+  - specification.terminology.linked_readiness_evidence
+  mutation_classes:
+  - policy_text
+  mutation_budget: []
+  budget_exceeded_classes: []
+  changed_spec_files:
+  - specs/nodes/SG-SPEC-0002.yaml
+  review_reasons:
+  - run changed governance-sensitive specification sections
+  errors: []
+  warnings: []
+last_reconciliation:
+  worktree_spec_count: 13
+  changed_spec_ids:
+  - SG-SPEC-0002
+  semantic_dependencies_resolved: true
+  work_dependencies_ready: true
+  cycles: []
+last_requested_child_materialization: false
+last_materialized_child_paths: []
