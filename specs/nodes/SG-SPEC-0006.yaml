@@ -5,7 +5,6 @@ status: specified
 maturity: 0.4
 depends_on: []
 relates_to:
-- SG-SPEC-0004
 - SG-SPEC-0005
 refines:
 - SG-SPEC-0003
