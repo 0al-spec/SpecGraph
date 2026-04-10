@@ -2070,9 +2070,13 @@ def test_main_interrupted_source_refinement_cleans_runtime_tail_when_only_source
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
-    before_data = supervisor_module.get_yaml_module().safe_load(
-        node_path.read_text(encoding="utf-8")
+    node_path.write_text(
+        "# keep original source text during failed cleanup\n"
+        + node_path.read_text(encoding="utf-8"),
+        encoding="utf-8",
     )
+    before_text = node_path.read_text(encoding="utf-8")
+    before_data = supervisor_module.get_yaml_module().safe_load(before_text)
 
     worktree = make_fake_worktree(repo_fixture)
     monkeypatch.setattr(
@@ -2106,6 +2110,7 @@ def test_main_interrupted_source_refinement_cleans_runtime_tail_when_only_source
 
     updated = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
     assert updated == before_data
+    assert node_path.read_text(encoding="utf-8") == before_text
     assert "gate_state" not in updated
     assert "last_run_id" not in updated
     assert "required_human_action" not in updated

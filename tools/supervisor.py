@@ -4215,6 +4215,7 @@ def _process_one_spec(
         }
 
     before_status = node.status
+    before_source_text = node.path.read_text(encoding="utf-8")
     before_node_data = copy.deepcopy(node.data)
     before_canonical = canonical_spec_snapshot(node.data)
     source_spec_relpath = node.path.relative_to(ROOT).as_posix()
@@ -4619,8 +4620,7 @@ def _process_one_spec(
     write_latest_summary(payload)
 
     if cleanup_failed_child_materialization or cleanup_interrupted_source_refinement:
-        node.data = before_node_data
-        node.save()
+        node.path.write_text(before_source_text, encoding="utf-8")
         node.reload()
 
     print(f"Run log: {log_path.as_posix()}")
