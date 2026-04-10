@@ -3918,6 +3918,7 @@ def _process_split_refactor_proposal(
         node,
         worktree_path,
         refactor_work_item,
+        operator_target=True,
         operator_note=operator_note,
         execution_profile=execution_profile,
         worktree_branch=branch,

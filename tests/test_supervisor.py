@@ -2426,6 +2426,80 @@ def test_main_split_proposal_accepts_untracked_parent_directory_change(
     assert len(queue_items) == 1
 
 
+def test_main_split_proposal_passes_operator_target_to_executor(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    node_data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    node_data["title"] = "Calculator Overview"
+    node_data["prompt"] = "Keep the parent as overview and split detailed concerns."
+    node_data["acceptance"] = [f"criterion-{i}" for i in range(1, 7)]
+    node_path.write_text(json.dumps(node_data), encoding="utf-8")
+
+    worktree = make_fake_worktree(repo_fixture)
+    monkeypatch.setattr(
+        supervisor_module,
+        "create_isolated_worktree",
+        lambda _node_id: (worktree, "codex/sg-spec-0001/split-proposal"),
+    )
+
+    work_item = supervisor_module.build_split_refactor_work_item(supervisor_module.load_specs()[0])
+    changed_snapshots = [[], [work_item["proposal_artifact_relpath"]]]
+    monkeypatch.setattr(
+        supervisor_module, "git_changed_files", lambda _cwd=None: changed_snapshots.pop(0)
+    )
+
+    captured: dict[str, object] = {}
+
+    def fake_invoke_executor(
+        executor: object,
+        node: object,
+        worktree_path: Path,
+        refactor_work_item: dict[str, object] | None = None,
+        *,
+        operator_target: bool = False,
+        operator_note: str = "",
+        mutation_budget: tuple[str, ...] = (),
+        run_authority: tuple[str, ...] = (),
+        execution_profile: str | None = None,
+        worktree_branch: str = "",
+    ) -> subprocess.CompletedProcess[str]:
+        _ = (executor, operator_note, mutation_budget, run_authority, execution_profile)
+        captured["operator_target"] = operator_target
+        captured["worktree_branch"] = worktree_branch
+        proposal_path = worktree_path / str(refactor_work_item["proposal_artifact_relpath"])
+        proposal_path.parent.mkdir(parents=True, exist_ok=True)
+        proposal_path.write_text(
+            json.dumps(
+                make_valid_split_proposal(
+                    node.data,
+                    str(refactor_work_item["planned_run_id"]),
+                )
+            ),
+            encoding="utf-8",
+        )
+        return subprocess.CompletedProcess(
+            args=["codex"],
+            returncode=0,
+            stdout="RUN_OUTCOME: done\nBLOCKER: none\n",
+            stderr="",
+        )
+
+    monkeypatch.setattr(supervisor_module, "invoke_executor", fake_invoke_executor)
+
+    exit_code = supervisor_module.main(
+        executor=supervisor_module.run_codex,
+        target_spec="SG-SPEC-0001",
+        split_proposal=True,
+    )
+
+    assert exit_code == 0
+    assert captured["operator_target"] is True
+    assert captured["worktree_branch"] == "codex/sg-spec-0001/split-proposal"
+
+
 def test_main_split_proposal_blocks_executor_environment_failures_without_queue_updates(
     supervisor_module: object,
     repo_fixture: Path,
