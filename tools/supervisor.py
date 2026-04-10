@@ -721,6 +721,32 @@ def resolve_execution_profile(
     ]
 
 
+def infer_ordinary_execution_profile_name(
+    *,
+    node: SpecNode,
+    specs: list[SpecNode],
+    requested_profile: str | None,
+    operator_target: bool,
+    run_authority: tuple[str, ...],
+) -> str:
+    """Choose the execution profile for an ordinary refinement run.
+
+    Heuristic ordinary runs default to `fast`, but seed-like nodes that already
+    carry bootstrap child guidance need the longer materialization budget even
+    without an explicit operator authority grant.
+    """
+    resolved = resolve_execution_profile_name(
+        requested_profile=requested_profile,
+        run_authority=run_authority,
+        operator_target=operator_target,
+    )
+    if requested_profile or operator_target or run_authority:
+        return resolved
+    if bootstrap_child_hint(node, specs) is not None:
+        return AUTO_CHILD_MATERIALIZATION_PROFILE_NAME
+    return resolved
+
+
 def reasoning_effort_timeout_floor_seconds(reasoning_effort: str) -> int:
     return REASONING_TIMEOUT_FLOORS.get(reasoning_effort, CHILD_EXECUTOR_TIMEOUT_SECONDS)
 
@@ -4148,6 +4174,13 @@ def _process_one_spec(
         refactor_work_item=refactor_work_item,
         operator_target=operator_target,
     )
+    effective_execution_profile = infer_ordinary_execution_profile_name(
+        node=node,
+        specs=specs,
+        requested_profile=execution_profile,
+        operator_target=operator_target,
+        run_authority=run_authority,
+    )
     selected_by_rule = {
         "status_filter": sorted(WORKABLE_STATUSES),
         "dependency_required_statuses": sorted(READY_DEP_STATUSES),
@@ -4171,11 +4204,7 @@ def _process_one_spec(
         selected_by_rule["mutation_budget"] = list(mutation_budget)
     if run_authority:
         selected_by_rule["run_authority"] = list(run_authority)
-    selected_by_rule["execution_profile"] = resolve_execution_profile_name(
-        requested_profile=execution_profile,
-        run_authority=run_authority,
-        operator_target=operator_target,
-    )
+    selected_by_rule["execution_profile"] = effective_execution_profile
     if refactor_work_item is not None:
         selected_by_rule["refactor_work_item"] = {
             "id": str(refactor_work_item.get("id", "")),
@@ -4240,7 +4269,7 @@ def _process_one_spec(
         operator_note=operator_note,
         mutation_budget=mutation_budget,
         run_authority=run_authority,
-        execution_profile=execution_profile,
+        execution_profile=effective_execution_profile,
         worktree_branch=branch,
     )
     print(f"Executor finished for {node.id} with exit_code={result.returncode}")
@@ -4960,10 +4989,12 @@ def main(
             "recommended_action": str(refactor_work_item.get("recommended_action", "")),
             "source_run_id": str(refactor_work_item.get("source_run_id", "")),
         }
-    selected_by_rule["execution_profile"] = resolve_execution_profile_name(
+    selected_by_rule["execution_profile"] = infer_ordinary_execution_profile_name(
+        node=node,
+        specs=specs,
         requested_profile=execution_profile,
-        run_authority=(),
         operator_target=False,
+        run_authority=(),
     )
 
     print(f"Selected spec node: {node.id} — {node.title}")
