@@ -1,8 +1,8 @@
 id: SG-SPEC-0004
 title: SpecGraph - Split Proposal Application Path
 kind: spec
-status: specified
-maturity: 0.6
+status: linked
+maturity: 0.72
 depends_on: []
 relates_to:
 - SG-SPEC-0002
@@ -136,3 +136,10 @@ specification:
       path.
     - The apply path must not represent application_refusal as proposal rejection by implication, because
       review authorization and canonical application are separate facts.
+gate_state: none
+proposed_status: null
+proposed_maturity: null
+required_human_action: '-'
+last_gate_decision: approve
+last_gate_note: Approve successful graph_refactor that links SG-SPEC-0004 after atomicity is clear.
+last_gate_at: '2026-04-10T21:02:39.750086+00:00'
