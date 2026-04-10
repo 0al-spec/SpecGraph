@@ -230,6 +230,7 @@ def test_resolve_execution_profile_prefers_explicit_profile_over_auto_selection(
     )
 
     assert profile.name == "fast"
+    assert profile.reasoning_effort == supervisor_module.CHILD_EXECUTOR_REASONING_EFFORT
     assert profile.timeout_seconds == supervisor_module.FAST_EXECUTION_PROFILE_TIMEOUT_SECONDS
 
 
@@ -243,6 +244,7 @@ def test_resolve_execution_profile_auto_selects_fast_for_heuristic_run(
     )
 
     assert profile.name == supervisor_module.AUTO_HEURISTIC_PROFILE_NAME
+    assert profile.reasoning_effort == supervisor_module.CHILD_EXECUTOR_REASONING_EFFORT
     assert profile.timeout_seconds == supervisor_module.FAST_EXECUTION_PROFILE_TIMEOUT_SECONDS
 
 
@@ -4230,6 +4232,34 @@ def test_resolve_gate_approve_syncs_when_allowed_paths_empty(
 
     updated = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
     assert updated["prompt"] == "Gate approved unrestricted sync"
+
+
+def test_resolve_gate_approve_clears_review_when_status_already_applied(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    data["status"] = "linked"
+    data["maturity"] = 0.72
+    data["gate_state"] = "review_pending"
+    data["proposed_status"] = None
+    data["proposed_maturity"] = None
+    node_path.write_text(json.dumps(data), encoding="utf-8")
+
+    exit_code = supervisor_module.main(
+        resolve_gate="SG-SPEC-0001",
+        decision="approve",
+        note="status was already applied by graph_refactor sync",
+    )
+    assert exit_code == 0
+
+    updated = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    assert updated["status"] == "linked"
+    assert updated["maturity"] == 0.72
+    assert updated["gate_state"] == "none"
+    assert updated["required_human_action"] == "-"
+    assert updated["last_gate_decision"] == "approve"
 
 
 def test_resolve_gate_retry_sets_retry_pending(

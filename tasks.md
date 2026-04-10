@@ -71,3 +71,5 @@
 48. [done] Distinguish productive `split_required` refinements from real runtime/spec failures in `supervisor` completion status, latest-summary output, and loop accounting.
 49. [done] Auto-upgrade ordinary seed-like refinement runs from the heuristic `fast` profile to the materialization profile when bootstrap child guidance is already in force, so central decomposition nodes do not time out before writing a bounded child spec.
 50. [done] Preserve exact canonical source text during interrupted source-refinement cleanup so timeout or executor-environment failures cannot leave behind formatting-only spec diffs after runtime-state rollback.
+51. [done] Increase nested executor timeout budgets and align the heuristic `fast` profile with `xhigh` reasoning so useful atomicity/split outcomes are not prematurely converted into timeout failures.
+52. [done] Fix graph_refactor gate approval when the accepted worktree diff already changed status/maturity but `proposed_status` is null, so `--resolve-gate --decision approve` can clear review_pending instead of failing with an invalid linked->reviewed transition.
