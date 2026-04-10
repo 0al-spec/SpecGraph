@@ -149,6 +149,7 @@ def test_build_codex_exec_command_uses_named_execution_profile(
     profile = supervisor_module.resolve_execution_profile(
         requested_profile="fast",
         run_authority=(),
+        operator_target=False,
     )
     cmd = supervisor_module.build_codex_exec_command(
         prompt="Refine one bounded spec.",
@@ -179,12 +180,16 @@ def test_build_codex_exec_command_bypasses_inner_sandbox_for_sandbox_branch(
 def test_effective_child_executor_timeout_seconds_uses_longer_budget_for_child_materialization(
     supervisor_module: object,
 ) -> None:
-    default_timeout = supervisor_module.effective_child_executor_timeout_seconds(())
+    default_timeout = supervisor_module.effective_child_executor_timeout_seconds(
+        (),
+        operator_target=False,
+    )
     child_timeout = supervisor_module.effective_child_executor_timeout_seconds(
-        (supervisor_module.RUN_AUTHORITY_MATERIALIZE_ONE_CHILD,)
+        (supervisor_module.RUN_AUTHORITY_MATERIALIZE_ONE_CHILD,),
+        operator_target=True,
     )
 
-    assert default_timeout == supervisor_module.XHIGH_REASONING_TIMEOUT_FLOOR_SECONDS
+    assert default_timeout == supervisor_module.FAST_EXECUTION_PROFILE_TIMEOUT_SECONDS
     assert child_timeout == supervisor_module.CHILD_MATERIALIZATION_TIMEOUT_SECONDS
     assert child_timeout > default_timeout
 
@@ -208,6 +213,7 @@ def test_resolve_execution_profile_auto_selects_materialize_for_child_materializ
     profile = supervisor_module.resolve_execution_profile(
         requested_profile=None,
         run_authority=(supervisor_module.RUN_AUTHORITY_MATERIALIZE_ONE_CHILD,),
+        operator_target=True,
     )
 
     assert profile.name == supervisor_module.AUTO_CHILD_MATERIALIZATION_PROFILE_NAME
@@ -220,10 +226,37 @@ def test_resolve_execution_profile_prefers_explicit_profile_over_auto_selection(
     profile = supervisor_module.resolve_execution_profile(
         requested_profile="fast",
         run_authority=(supervisor_module.RUN_AUTHORITY_MATERIALIZE_ONE_CHILD,),
+        operator_target=True,
     )
 
     assert profile.name == "fast"
     assert profile.timeout_seconds == supervisor_module.FAST_EXECUTION_PROFILE_TIMEOUT_SECONDS
+
+
+def test_resolve_execution_profile_auto_selects_fast_for_heuristic_run(
+    supervisor_module: object,
+) -> None:
+    profile = supervisor_module.resolve_execution_profile(
+        requested_profile=None,
+        run_authority=(),
+        operator_target=False,
+    )
+
+    assert profile.name == supervisor_module.AUTO_HEURISTIC_PROFILE_NAME
+    assert profile.timeout_seconds == supervisor_module.FAST_EXECUTION_PROFILE_TIMEOUT_SECONDS
+
+
+def test_resolve_execution_profile_keeps_standard_for_explicit_target(
+    supervisor_module: object,
+) -> None:
+    profile = supervisor_module.resolve_execution_profile(
+        requested_profile=None,
+        run_authority=(),
+        operator_target=True,
+    )
+
+    assert profile.name == supervisor_module.DEFAULT_EXECUTION_PROFILE_NAME
+    assert profile.reasoning_effort == supervisor_module.CHILD_EXECUTOR_REASONING_EFFORT
 
 
 def test_create_child_codex_home_writes_minimal_config_and_copies_auth(
@@ -330,9 +363,9 @@ def test_run_codex_uses_isolated_codex_home(
     assert captured["env"]["CODEX_HOME"] == str(repo_fixture / ".fake-codex-home")
     assert "--ephemeral" in captured["cmd"]
     assert captured["bypass_inner_sandbox"] is False
-    assert captured["profile"].name == supervisor_module.DEFAULT_EXECUTION_PROFILE_NAME
+    assert captured["profile"].name == supervisor_module.AUTO_HEURISTIC_PROFILE_NAME
     assert (
-        captured["process"].wait_timeout == supervisor_module.XHIGH_REASONING_TIMEOUT_FLOOR_SECONDS
+        captured["process"].wait_timeout == supervisor_module.FAST_EXECUTION_PROFILE_TIMEOUT_SECONDS
     )
 
 
@@ -397,11 +430,11 @@ def test_run_codex_bypasses_inner_sandbox_for_sandbox_branch(
     assert captured["cwd"] == repo_fixture
     assert captured["env"]["CODEX_HOME"] == str(repo_fixture / ".fake-codex-home")
     assert captured["bypass_inner_sandbox"] is True
-    assert captured["profile"].name == supervisor_module.DEFAULT_EXECUTION_PROFILE_NAME
+    assert captured["profile"].name == supervisor_module.AUTO_HEURISTIC_PROFILE_NAME
     assert "--dangerously-bypass-approvals-and-sandbox" in captured["cmd"]
     assert "--sandbox" not in captured["cmd"]
     assert (
-        captured["process"].wait_timeout == supervisor_module.XHIGH_REASONING_TIMEOUT_FLOOR_SECONDS
+        captured["process"].wait_timeout == supervisor_module.FAST_EXECUTION_PROFILE_TIMEOUT_SECONDS
     )
 
 
@@ -1470,6 +1503,7 @@ def test_build_prompt_includes_incremental_refinement_policy_for_non_seed_spec(
     assert expected_path_choice in prompt
     assert expected_child_preference in prompt
     assert expected_split_rule in prompt
+    assert "Do not browse the web or external sources" in prompt
     assert "Bootstrap guidance:" not in prompt
 
 
@@ -1889,6 +1923,9 @@ def test_main_blocks_executor_environment_failures_without_graph_health_side_eff
     node_data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
     node_data["acceptance"] = [f"criterion-{i}" for i in range(1, 7)]
     node_path.write_text(json.dumps(node_data), encoding="utf-8")
+    before_data = supervisor_module.get_yaml_module().safe_load(
+        node_path.read_text(encoding="utf-8")
+    )
 
     worktree = make_fake_worktree(repo_fixture)
     monkeypatch.setattr(
@@ -1921,12 +1958,13 @@ def test_main_blocks_executor_environment_failures_without_graph_health_side_eff
     assert exit_code == 1
 
     updated = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
-    assert updated["gate_state"] == "blocked"
-    assert updated["required_human_action"] == "repair executor environment and rerun supervisor"
+    assert updated == before_data
 
     run_logs = sorted((repo_fixture / "runs").glob("*-SG-SPEC-*.json"))
     assert len(run_logs) == 1
     payload = json.loads(run_logs[0].read_text(encoding="utf-8"))
+    assert payload["gate_state"] == "blocked"
+    assert payload["required_human_action"] == "repair executor environment and rerun supervisor"
     assert payload["executor_environment"]["primary_failure"] is True
     assert set(payload["executor_environment"]["issue_kinds"]) == {
         "mcp_startup_failure",
@@ -1940,6 +1978,55 @@ def test_main_blocks_executor_environment_failures_without_graph_health_side_eff
     )
     assert not (repo_fixture / "runs" / "proposal_queue.json").exists()
     assert not (repo_fixture / "runs" / "refactor_queue.json").exists()
+
+
+def test_main_usage_limit_failure_reports_quota_recovery_action(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    before_data = supervisor_module.get_yaml_module().safe_load(
+        node_path.read_text(encoding="utf-8")
+    )
+    worktree = make_fake_worktree(repo_fixture)
+    monkeypatch.setattr(
+        supervisor_module,
+        "create_isolated_worktree",
+        lambda _node_id: (worktree, "codex/sg-spec-0001/test"),
+    )
+    changed_snapshots = [[], []]
+    monkeypatch.setattr(
+        supervisor_module,
+        "git_changed_files",
+        lambda _cwd=None: changed_snapshots.pop(0),
+    )
+
+    def fake_executor(_node: object, _worktree_path: Path) -> subprocess.CompletedProcess[str]:
+        return subprocess.CompletedProcess(
+            args=["codex"],
+            returncode=1,
+            stdout="RUN_OUTCOME: escalate\nBLOCKER: none\n",
+            stderr=(
+                "ERROR: You've hit your usage limit. Upgrade to Pro or purchase more credits.\n"
+            ),
+        )
+
+    exit_code = supervisor_module.main(executor=fake_executor)
+    assert exit_code == 1
+
+    updated = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    assert updated == before_data
+
+    run_logs = sorted((repo_fixture / "runs").glob("*-SG-SPEC-*.json"))
+    assert len(run_logs) == 1
+    payload = json.loads(run_logs[0].read_text(encoding="utf-8"))
+    assert payload["gate_state"] == "blocked"
+    assert (
+        payload["required_human_action"]
+        == "wait for usage reset or add credits and rerun supervisor"
+    )
+    assert payload["executor_environment"]["issue_kinds"] == ["usage_limit_failure"]
 
 
 def test_main_interrupted_source_refinement_cleans_runtime_tail_when_only_source_changed(
@@ -1996,6 +2083,54 @@ def test_main_interrupted_source_refinement_cleans_runtime_tail_when_only_source
     assert payload["exit_code"] == 124
 
 
+def test_main_interrupted_source_refinement_cleans_runtime_tail_when_no_canonical_diff(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    before_data = supervisor_module.get_yaml_module().safe_load(
+        node_path.read_text(encoding="utf-8")
+    )
+
+    worktree = make_fake_worktree(repo_fixture)
+    monkeypatch.setattr(
+        supervisor_module,
+        "create_isolated_worktree",
+        lambda _node_id: (worktree, "codex/sg-spec-0001/test"),
+    )
+
+    monkeypatch.setattr(
+        supervisor_module,
+        "git_changed_files",
+        lambda _cwd=None: [],
+    )
+
+    def fake_executor(_node: object, _worktree_path: Path) -> subprocess.CompletedProcess[str]:
+        return subprocess.CompletedProcess(
+            args=["codex"],
+            returncode=124,
+            stdout="RUN_OUTCOME: blocked\nBLOCKER: none\n",
+            stderr="supervisor timeout: nested executor timed out after 300 seconds\n",
+        )
+
+    exit_code = supervisor_module.main(executor=fake_executor)
+    assert exit_code == 1
+
+    updated = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    assert updated == before_data
+    assert "gate_state" not in updated
+    assert "last_run_id" not in updated
+    assert "required_human_action" not in updated
+
+    run_logs = sorted((repo_fixture / "runs").glob("*-SG-SPEC-*.json"))
+    assert len(run_logs) == 1
+    payload = json.loads(run_logs[0].read_text(encoding="utf-8"))
+    assert payload["gate_state"] == "blocked"
+    assert payload["changed_files"] == []
+    assert payload["exit_code"] == 124
+
+
 def test_classify_executor_environment_detects_supervisor_timeout(
     supervisor_module: object,
 ) -> None:
@@ -2004,6 +2139,16 @@ def test_classify_executor_environment_detects_supervisor_timeout(
     )
 
     assert environment["issue_kinds"] == ["executor_timeout_failure"]
+
+
+def test_classify_executor_environment_detects_usage_limit_failure(
+    supervisor_module: object,
+) -> None:
+    environment = supervisor_module.classify_executor_environment(
+        "ERROR: You've hit your usage limit. Upgrade to Pro or purchase more credits.\n"
+    )
+
+    assert environment["issue_kinds"] == ["usage_limit_failure"]
 
 
 def test_main_does_not_treat_websocket_fallback_warning_as_primary_transport_failure(
@@ -2279,6 +2424,80 @@ def test_main_split_proposal_accepts_untracked_parent_directory_change(
         (repo_fixture / "runs" / "proposal_queue.json").read_text(encoding="utf-8")
     )
     assert len(queue_items) == 1
+
+
+def test_main_split_proposal_passes_operator_target_to_executor(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    node_data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    node_data["title"] = "Calculator Overview"
+    node_data["prompt"] = "Keep the parent as overview and split detailed concerns."
+    node_data["acceptance"] = [f"criterion-{i}" for i in range(1, 7)]
+    node_path.write_text(json.dumps(node_data), encoding="utf-8")
+
+    worktree = make_fake_worktree(repo_fixture)
+    monkeypatch.setattr(
+        supervisor_module,
+        "create_isolated_worktree",
+        lambda _node_id: (worktree, "codex/sg-spec-0001/split-proposal"),
+    )
+
+    work_item = supervisor_module.build_split_refactor_work_item(supervisor_module.load_specs()[0])
+    changed_snapshots = [[], [work_item["proposal_artifact_relpath"]]]
+    monkeypatch.setattr(
+        supervisor_module, "git_changed_files", lambda _cwd=None: changed_snapshots.pop(0)
+    )
+
+    captured: dict[str, object] = {}
+
+    def fake_invoke_executor(
+        executor: object,
+        node: object,
+        worktree_path: Path,
+        refactor_work_item: dict[str, object] | None = None,
+        *,
+        operator_target: bool = False,
+        operator_note: str = "",
+        mutation_budget: tuple[str, ...] = (),
+        run_authority: tuple[str, ...] = (),
+        execution_profile: str | None = None,
+        worktree_branch: str = "",
+    ) -> subprocess.CompletedProcess[str]:
+        _ = (executor, operator_note, mutation_budget, run_authority, execution_profile)
+        captured["operator_target"] = operator_target
+        captured["worktree_branch"] = worktree_branch
+        proposal_path = worktree_path / str(refactor_work_item["proposal_artifact_relpath"])
+        proposal_path.parent.mkdir(parents=True, exist_ok=True)
+        proposal_path.write_text(
+            json.dumps(
+                make_valid_split_proposal(
+                    node.data,
+                    str(refactor_work_item["planned_run_id"]),
+                )
+            ),
+            encoding="utf-8",
+        )
+        return subprocess.CompletedProcess(
+            args=["codex"],
+            returncode=0,
+            stdout="RUN_OUTCOME: done\nBLOCKER: none\n",
+            stderr="",
+        )
+
+    monkeypatch.setattr(supervisor_module, "invoke_executor", fake_invoke_executor)
+
+    exit_code = supervisor_module.main(
+        executor=supervisor_module.run_codex,
+        target_spec="SG-SPEC-0001",
+        split_proposal=True,
+    )
+
+    assert exit_code == 0
+    assert captured["operator_target"] is True
+    assert captured["worktree_branch"] == "codex/sg-spec-0001/split-proposal"
 
 
 def test_main_split_proposal_blocks_executor_environment_failures_without_queue_updates(
