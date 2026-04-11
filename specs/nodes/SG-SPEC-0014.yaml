@@ -2,7 +2,7 @@ id: SG-SPEC-0014
 title: SpecGraph - Spec Edge Semantics and Blocking Policy
 kind: spec
 status: specified
-maturity: 0.4
+maturity: 0.6
 depends_on: []
 relates_to: []
 refines:
@@ -111,121 +111,11 @@ specification:
     - refines contributes semantic ancestry but does not create blocking unless paired with an explicit
       depends_on declaration from the blocked spec.
     - relates_to contributes contextual relevance only and never creates blocking.
-proposed_status: specified
-proposed_maturity: 0.6
-gate_state: review_pending
-required_human_action: review refinement impact before approval
-last_outcome: done
-last_blocker: ''
-last_run_id: 20260411T132423Z-SG-SPEC-0014
-last_exit_code: 0
-last_changed_files:
-- specs/nodes/SG-SPEC-0014.yaml
-last_run_at: '2026-04-11T13:24:23.968970+00:00'
-last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0014-20260411T132204Z
-last_branch: codex/sg-spec-0014/20260411T132204Z
-last_validator_results:
-  outputs: true
-  allowed_paths: true
-  reconciliation: true
-  atomicity: true
-  transition: true
-  executor_environment: true
-  refinement_acceptance: true
-last_refinement_acceptance:
-  decision: review_required
-  change_class: constitutional_change
-  checks:
-    content_changed: true
-    hard_validation: true
-    single_spec_scope: true
-    constitutional_diff: true
-    graph_refactor_diff: false
-    atomicity_clear: true
-    within_mutation_budget: true
-  diff_paths:
-  - acceptance_evidence[0].evidence
-  - maturity
-  - specification
-  - specification.objective
-  - specification.scope
-  - specification.scope.in
-  - specification.scope.in[0]
-  - specification.scope.in[1]
-  - specification.scope.in[2]
-  - specification.scope.out
-  - specification.scope.out[0]
-  - specification.scope.out[1]
-  - specification.scope.out[2]
-  - specification.scope.out[3]
-  - specification.terminology
-  - specification.terminology.parent_spec
-  - specification.terminology.child_spec
-  - specification.terminology.declared_blocking_edge
-  - specification.terminology.effective_blocking
-  - specification.relation_policy
-  - specification.relation_policy[0]
-  - specification.relation_policy[0].relation
-  - specification.relation_policy[0].source
-  - specification.relation_policy[0].target
-  - specification.relation_policy[0].required_when
-  - specification.relation_policy[0].notes
-  - specification.relation_policy[0].notes[0]
-  - specification.relation_policy[0].notes[1]
-  - specification.relation_policy[0].notes[2]
-  - specification.relation_policy[1]
-  - specification.relation_policy[1].relation
-  - specification.relation_policy[1].source
-  - specification.relation_policy[1].target
-  - specification.relation_policy[1].required_when
-  - specification.relation_policy[1].notes
-  - specification.relation_policy[1].notes[0]
-  - specification.relation_policy[1].notes[1]
-  - specification.relation_policy[1].notes[2]
-  - specification.relation_policy[2]
-  - specification.relation_policy[2].relation
-  - specification.relation_policy[2].source
-  - specification.relation_policy[2].target
-  - specification.relation_policy[2].required_when
-  - specification.relation_policy[2].notes
-  - specification.relation_policy[2].notes[0]
-  - specification.relation_policy[2].notes[1]
-  - specification.relation_policy[2].notes[2]
-  - specification.parent_child_edge_rules
-  - specification.parent_child_edge_rules[0]
-  - specification.parent_child_edge_rules[1]
-  - specification.parent_child_edge_rules[2]
-  - specification.parent_child_edge_rules[3]
-  - specification.parent_child_edge_rules[4]
-  - specification.blocking_semantics
-  - specification.blocking_semantics.declared
-  - specification.blocking_semantics.declared[0]
-  - specification.blocking_semantics.declared[1]
-  - specification.blocking_semantics.declared[2]
-  - specification.blocking_semantics.derived
-  - specification.blocking_semantics.derived[0]
-  - specification.blocking_semantics.derived[1]
-  - specification.blocking_semantics.derived[2]
-  - specification.blocking_semantics.non_blocking_relations
-  - specification.blocking_semantics.non_blocking_relations[0]
-  - specification.blocking_semantics.non_blocking_relations[1]
-  - status
-  mutation_classes:
-  - policy_text
-  mutation_budget: []
-  budget_exceeded_classes: []
-  changed_spec_files:
-  - specs/nodes/SG-SPEC-0014.yaml
-  review_reasons:
-  - run changed governance-sensitive specification sections
-  errors: []
-  warnings: []
-last_reconciliation:
-  worktree_spec_count: 16
-  changed_spec_ids:
-  - SG-SPEC-0014
-  semantic_dependencies_resolved: true
-  work_dependencies_ready: true
-  cycles: []
-last_requested_child_materialization: false
-last_materialized_child_paths: []
+gate_state: none
+proposed_status: null
+proposed_maturity: null
+required_human_action: '-'
+last_gate_decision: approve
+last_gate_note: 'Reviewed SG-SPEC-0014 edge semantics refinement: scoped to spec relation semantics and
+  blocking policy.'
+last_gate_at: '2026-04-11T13:24:52.122998+00:00'
