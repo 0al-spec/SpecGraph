@@ -1203,6 +1203,8 @@ Refinement mode: split_refactor_proposal
 - Every current parent acceptance criterion must be mapped exactly once
   to parent_retained or one child slot.
 - Cross-cutting acceptance stays on the parent and must not be duplicated across children.
+- parent_after_split.intended_depends_on must not exceed {ATOMICITY_MAX_BLOCKING_CHILDREN}
+  blocking child slots; if a clean split needs more, end with RUN_OUTCOME: escalate.
 {retrospective_section}
 - Suggested child IDs and paths are advisory snapshot outputs only;
   they do not reserve canonical IDs.
@@ -2865,6 +2867,11 @@ def validate_split_proposal_artifact(
     if not isinstance(intended_depends_on, list):
         errors.append("parent_after_split.intended_depends_on must be a list")
         intended_depends_on = []
+    elif len(intended_depends_on) > ATOMICITY_MAX_BLOCKING_CHILDREN:
+        errors.append(
+            "parent_after_split.intended_depends_on must not exceed "
+            f"{ATOMICITY_MAX_BLOCKING_CHILDREN} blocking child slots"
+        )
 
     suggested_children = artifact.get("suggested_children")
     child_slot_keys: list[str] = []
@@ -3087,10 +3094,23 @@ def validate_split_proposal_application_target(
                 continue
             child_id = str(child.get("suggested_id", "")).strip()
             child_path = str(child.get("suggested_path", "")).strip()
-            if child_id in current_index:
-                errors.append(
-                    f"split proposal application cannot overwrite existing spec id: {child_id}"
-                )
+            existing_child = current_index.get(child_id)
+            if existing_child is not None:
+                existing_relpath = existing_child.path.relative_to(ROOT).as_posix()
+                if existing_relpath != child_path:
+                    errors.append(
+                        "split proposal application cannot reuse existing spec id "
+                        f"{child_id} at a different path: {existing_relpath}"
+                    )
+                existing_refines = existing_child.data.get("refines", [])
+                if not isinstance(existing_refines, list) or node.id not in {
+                    str(item).strip() for item in existing_refines
+                }:
+                    errors.append(
+                        "split proposal application can reuse existing child "
+                        f"{child_id} only when it already refines {node.id}"
+                    )
+                continue
             if child_path and (ROOT / child_path).exists():
                 errors.append(
                     "split proposal application cannot overwrite existing child spec path: "
@@ -3118,9 +3138,7 @@ def apply_split_proposal_to_worktree(
         child_id = str(child["suggested_id"]).strip()
         child_path = str(child["suggested_path"]).strip()
         if child_id in index:
-            raise ValueError(
-                f"Cannot apply split proposal: child spec id already exists: {child_id}"
-            )
+            continue
         absolute_child_path = worktree_path / child_path
         if absolute_child_path.exists():
             raise ValueError(
