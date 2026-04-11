@@ -2,7 +2,7 @@ id: SG-SPEC-0016
 title: SpecGraph - Linked Readiness and Evidence Policy
 kind: spec
 status: specified
-maturity: 0.6
+maturity: 0.8
 depends_on: []
 relates_to: []
 refines:
@@ -162,122 +162,11 @@ specification:
       which parent acceptance criterion the child resolves.
 
       '
-proposed_status: specified
-proposed_maturity: 0.8
-gate_state: review_pending
-required_human_action: review refinement impact before approval
-last_outcome: done
-last_blocker: ''
-last_run_id: 20260411T133310Z-SG-SPEC-0016
-last_exit_code: 0
-last_changed_files:
-- specs/nodes/SG-SPEC-0016.yaml
-last_run_at: '2026-04-11T13:33:10.791255+00:00'
-last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0016-20260411T132932Z
-last_branch: codex/sg-spec-0016/20260411T132932Z
-last_validator_results:
-  outputs: true
-  allowed_paths: true
-  reconciliation: true
-  atomicity: true
-  transition: true
-  executor_environment: true
-  refinement_acceptance: true
-last_refinement_acceptance:
-  decision: review_required
-  change_class: constitutional_change
-  checks:
-    content_changed: true
-    hard_validation: true
-    single_spec_scope: true
-    constitutional_diff: true
-    graph_refactor_diff: false
-    atomicity_clear: true
-    within_mutation_budget: true
-  diff_paths:
-  - acceptance_evidence[0].evidence
-  - acceptance_evidence[1].evidence
-  - maturity
-  - specification
-  - specification.objective
-  - specification.scope
-  - specification.scope.in
-  - specification.scope.in[0]
-  - specification.scope.in[1]
-  - specification.scope.in[2]
-  - specification.scope.in[3]
-  - specification.scope.in[4]
-  - specification.scope.out
-  - specification.scope.out[0]
-  - specification.scope.out[1]
-  - specification.scope.out[2]
-  - specification.scope.out[3]
-  - specification.terminology
-  - specification.terminology.concrete_descendant_spec
-  - specification.terminology.semantic_unlock
-  - specification.terminology.linked_readiness_evidence
-  - specification.terminology.ancestor_reconciliation
-  - specification.terminology.evidence_alignment
-  - specification.linkage_rules
-  - specification.linkage_rules.specified_to_linked
-  - specification.linkage_rules.specified_to_linked[0]
-  - specification.linkage_rules.specified_to_linked[1]
-  - specification.linkage_rules.specified_to_linked[2]
-  - specification.linkage_rules.specified_to_linked[3]
-  - specification.linkage_rules.specified_to_linked[4]
-  - specification.linkage_rules.specified_to_linked[5]
-  - specification.linkage_rules.specified_to_linked[6]
-  - specification.linkage_rules.specified_to_linked[7]
-  - specification.linkage_rules.non_blocking_descendants
-  - specification.linkage_rules.non_blocking_descendants[0]
-  - specification.linkage_rules.non_blocking_descendants[1]
-  - specification.reconciliation_policy
-  - specification.reconciliation_policy.descendant_unlock
-  - specification.reconciliation_policy.descendant_unlock[0]
-  - specification.reconciliation_policy.descendant_unlock[1]
-  - specification.reconciliation_policy.descendant_unlock[2]
-  - specification.reconciliation_policy.ancestor_reconciliation
-  - specification.reconciliation_policy.ancestor_reconciliation[0]
-  - specification.reconciliation_policy.ancestor_reconciliation[1]
-  - specification.reconciliation_policy.ancestor_reconciliation[2]
-  - specification.reconciliation_policy.ancestor_reconciliation[3]
-  - specification.reconciliation_policy.ancestor_reconciliation[4]
-  - specification.evidence_policy
-  - specification.evidence_policy.rules
-  - specification.evidence_policy.rules[0]
-  - specification.evidence_policy.rules[1]
-  - specification.evidence_policy.rules[2]
-  - specification.evidence_policy.rules[3]
-  - specification.evidence_policy.rules[4]
-  - specification.evidence_policy.rules[5]
-  - specification.evidence_policy.acceptance_alignment
-  - specification.evidence_policy.acceptance_alignment[0]
-  - specification.evidence_policy.acceptance_alignment[1]
-  - specification.evidence_policy.acceptance_alignment[2]
-  - specification.examples
-  - specification.examples[0]
-  - specification.examples[0].name
-  - specification.examples[0].description
-  - specification.examples[1]
-  - specification.examples[1].name
-  - specification.examples[1].description
-  - status
-  mutation_classes:
-  - policy_text
-  mutation_budget: []
-  budget_exceeded_classes: []
-  changed_spec_files:
-  - specs/nodes/SG-SPEC-0016.yaml
-  review_reasons:
-  - run changed governance-sensitive specification sections
-  errors: []
-  warnings: []
-last_reconciliation:
-  worktree_spec_count: 16
-  changed_spec_ids:
-  - SG-SPEC-0016
-  semantic_dependencies_resolved: true
-  work_dependencies_ready: true
-  cycles: []
-last_requested_child_materialization: false
-last_materialized_child_paths: []
+gate_state: none
+proposed_status: null
+proposed_maturity: null
+required_human_action: '-'
+last_gate_decision: approve
+last_gate_note: 'Reviewed SG-SPEC-0016 linked readiness and evidence policy: scoped to semantic unlock,
+  ancestor reconciliation, and evidence alignment.'
+last_gate_at: '2026-04-11T13:34:29.974440+00:00'
