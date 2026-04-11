@@ -1,0 +1,182 @@
+id: SG-SPEC-0017
+title: SpecGraph - Runtime Observability Entity Boundary
+kind: spec
+status: linked
+maturity: 0.46
+depends_on: []
+relates_to:
+- SG-SPEC-0003
+refines:
+- SG-SPEC-0001
+inputs:
+- specs/nodes/SG-SPEC-0001.yaml
+- specs/nodes/SG-SPEC-0003.yaml
+outputs:
+- specs/nodes/SG-SPEC-0017.yaml
+allowed_paths:
+- specs/nodes/SG-SPEC-0017.yaml
+acceptance:
+- Defines the bounded role of runtime observability entities without defining metric formulas, storage,
+  instrumentation, queueing, or supervisor implementation
+- Defines the first runtime observability entity seeds: ObservabilityContract, Campaign, and Attestation
+- Defines how runtime observability entities relate to canonical specs, derived graph-health observations,
+  and evidence without violating the canonical versus derived boundary
+acceptance_evidence:
+- criterion: Defines the bounded role of runtime observability entities without defining metric formulas,
+    storage, instrumentation, queueing, or supervisor implementation
+  evidence: 'specification.scope.in limits this child to the semantic boundary for runtime observability
+    entities, and specification.scope.out excludes metric formulas, telemetry schemas, instrumentation,
+    queue behavior, supervisor scheduling, storage schemas, and validator implementation. specification.boundary_policy
+    also states that this node defines entity semantics rather than runtime collection mechanics.
+
+    '
+- criterion: 'Defines the first runtime observability entity seeds: ObservabilityContract, Campaign, and
+    Attestation'
+  evidence: 'specification.terminology defines runtime_observability_entity plus ObservabilityContract,
+    Campaign, and Attestation. specification.entity_catalog then gives each seed entity a role, minimum
+    semantic fields, and boundary notes that keep each entity independently understandable without prescribing
+    implementation details.
+
+    '
+- criterion: Defines how runtime observability entities relate to canonical specs, derived graph-health
+    observations, and evidence without violating the canonical versus derived boundary
+  evidence: 'specification.canonical_vs_derived_boundary separates authored or imported observability
+    entity records from raw telemetry, computed rollups, and graph-health signals. specification.relationship_policy
+    defines how contracts bind to canonical graph subjects, how campaigns organize evidence collection,
+    and how attestations record evidence claims while preserving SG-SPEC-0003 as the owner of derived
+    graph-health observation and signal semantics.
+
+    '
+prompt: Refine SG-SPEC-0001 by defining the runtime observability entity boundary for ObservabilityContract,
+  Campaign, and Attestation. Keep this child focused on ontology semantics and evidence boundaries; do
+  not define metric formulas, telemetry schemas, instrumentation, storage, queueing, supervisor behavior,
+  or validation implementation.
+specification:
+  objective: 'Define the first canonical runtime observability entity seeds that let SpecGraph connect
+    executable product intent to runtime evidence while preserving the separation between authored graph
+    truth and derived observations.
+
+    '
+  scope:
+    in:
+    - Semantic boundary for runtime observability entities
+    - First entity seeds for ObservabilityContract, Campaign, and Attestation
+    - Minimum semantic contracts that make each entity traceable to canonical graph subjects
+    - Relationship between runtime observability entities and derived graph-health observations
+    - Canonical versus derived evidence boundary for runtime observation claims
+    out:
+    - Metric formulas, scoring systems, thresholds, or quantitative observability catalogs
+    - Telemetry schemas, instrumentation APIs, logging formats, trace formats, or storage layouts
+    - Queue behavior, scheduler behavior, supervisor implementation, or validator implementation
+    - Viewer UX, dashboards, alerting policy, or operational incident response
+    - Runtime execution of campaigns or automated promotion of lifecycle status
+  terminology:
+    runtime_observability_entity: 'A canonical graph entity that describes what runtime evidence must
+      be collected, how an observation effort is bounded, or what evidence claim was produced, without
+      making raw telemetry or derived metrics canonical by default.
+
+      '
+    ObservabilityContract: 'A governed declaration that a canonical graph subject has a runtime-observable
+      obligation, including the semantic evidence expected and the graph subject it supports.
+
+      '
+    Campaign: 'A bounded observation effort or evidence-collection context that groups one or more ObservabilityContracts
+      over a declared purpose, scope, and time or release boundary.
+
+      '
+    Attestation: 'An authority-tagged evidence claim that a Campaign or external evidence source observed
+      a result relevant to an ObservabilityContract.
+
+      '
+    graph_subject: 'A canonical node or acceptance surface, such as a spec, requirement, invariant, code_surface,
+      test, or release, that a runtime observability entity traces back to by stable identity.
+
+      '
+  boundary_policy:
+  - Runtime observability entities are ontology-level concepts for evidence traceability, not metric implementations.
+  - This child does not add these entities to the SG-SPEC-0001 seed node_kinds list; it establishes the
+    bounded semantic contract that later refinement can turn into concrete node-kind field contracts.
+  - Raw telemetry, logs, traces, sampled events, and computed rollups remain derived or imported operational
+    data unless distilled into a governed Attestation with explicit authority and provenance.
+  - SG-SPEC-0003 remains the owner of graph-health observation, signal, and proposal-loop semantics; this
+    node only defines runtime observability entities that may provide evidence inputs.
+  entity_catalog:
+  - entity: ObservabilityContract
+    role: Defines the runtime evidence obligation for a graph_subject.
+    minimum_semantic_fields:
+    - stable identity
+    - graph_subject reference
+    - observable obligation statement
+    - expected evidence type or bounded evidence description
+    - authority_class or imported evidence authority expectation
+    boundary_notes:
+    - The contract states what evidence would satisfy runtime observability at a semantic level.
+    - The contract does not prescribe probes, telemetry transport, sampling, storage, thresholds, or alerting.
+  - entity: Campaign
+    role: Groups evidence-collection activity for one or more ObservabilityContracts.
+    minimum_semantic_fields:
+    - stable identity
+    - purpose
+    - covered ObservabilityContracts
+    - bounded context such as release, environment class, time window, or validation occasion
+    - expected attestation outputs
+    boundary_notes:
+    - A Campaign organizes observation context but is not itself proof that a contract was satisfied.
+    - Campaign execution mechanics and scheduling remain out of scope.
+  - entity: Attestation
+    role: Records an authority-tagged claim about observed runtime evidence.
+    minimum_semantic_fields:
+    - stable identity
+    - referenced ObservabilityContract
+    - source Campaign or imported evidence source
+    - observed claim
+    - authority_class and provenance
+    - result state or bounded outcome statement
+    boundary_notes:
+    - An Attestation may support review, release, or impact analysis, but it does not automatically promote
+      any node lifecycle status.
+    - An Attestation is distinct from raw telemetry and from derived graph-health signals.
+  relationship_policy:
+  - Each ObservabilityContract must trace to at least one graph_subject by stable identity.
+  - A Campaign may cover one or more ObservabilityContracts when they share a bounded evidence-collection
+    context.
+  - An Attestation must reference the ObservabilityContract it supports and either the Campaign that produced
+    it or the imported evidence source from which it was derived.
+  - Runtime observability entities may relate_to SG-SPEC-0003 graph-health semantics, but they do not
+    replace graph_health_observation, graph_health_signal, or governance_proposal concepts.
+  - Later specs may decide whether existing edge kinds are sufficient for concrete runtime observability
+    nodes or whether a separate reviewed ontology change is needed.
+  canonical_vs_derived_boundary:
+    canonical:
+    - Authored ObservabilityContracts
+    - Authored Campaign definitions or imported Campaign records with provenance
+    - Attestations that are explicitly authored, imported, inferred, or distilled with authority_class
+      and provenance
+    derived:
+    - Raw telemetry, logs, traces, events, and operational sampling streams
+    - Metric rollups, dashboards, alerts, and quantitative scores
+    - Graph-health observations and signals derived from canonical graph state or run artifacts
+    - Temporary execution state from runtime observation tooling
+  invariants:
+  - id: ROE-001
+    statement: Every ObservabilityContract must identify the graph_subject whose runtime evidence obligation
+      it describes.
+  - id: ROE-002
+    statement: A Campaign cannot stand in for evidence satisfaction without at least one linked or imported
+      Attestation.
+  - id: ROE-003
+    statement: Raw runtime data is not canonical SpecGraph truth unless represented through a governed
+      entity with provenance and authority_class.
+  decisions:
+  - id: ROE-D1
+    statement: Runtime observability entities are evidence semantics, not metric definitions.
+    rationale: 'SpecGraph needs stable entities that connect runtime evidence back to intent and specifications,
+      but metric catalogs, formulas, and thresholds are separable and should remain future refinements.
+
+      '
+  - id: ROE-D2
+    statement: Attestation separates an evidence claim from raw telemetry and derived graph-health signals.
+    rationale: 'The graph can preserve traceable evidence claims without making raw operational streams
+      canonical or collapsing runtime evidence into SG-SPEC-0003 diagnostic signals.
+
+      '
