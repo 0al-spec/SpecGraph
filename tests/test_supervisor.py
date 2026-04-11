@@ -5336,6 +5336,18 @@ def test_loop_processes_until_no_candidates(
     # At least 1 log; may be fewer than 2 due to same-second timestamp collision.
     assert len(run_logs) >= 1
 
+    spec_yaml_path = Path(__file__).resolve().parents[1] / "tools" / "spec_yaml.py"
+    spec_yaml_spec = importlib.util.spec_from_file_location(
+        "test_spec_yaml_module_loop",
+        spec_yaml_path,
+    )
+    assert spec_yaml_spec and spec_yaml_spec.loader
+    spec_yaml_module = importlib.util.module_from_spec(spec_yaml_spec)
+    sys.modules[spec_yaml_spec.name] = spec_yaml_module
+    spec_yaml_spec.loader.exec_module(spec_yaml_module)
+    updated_text = node_path.read_text(encoding="utf-8")
+    assert updated_text == spec_yaml_module.canonicalize_text(updated_text)
+
 
 def test_loop_propagates_semantic_unlock_upstream(
     supervisor_module: object,

@@ -51,9 +51,9 @@
 
 ## Canonical Spec Writeback
 
-37. Make all `supervisor` writes to canonical spec files use one canonical YAML writer, including runtime-state updates after worktree sync.
-38. Add a deterministic post-write normalization/check path so canonical spec files are re-rendered or rejected if a `supervisor` run leaves them non-canonically formatted.
-39. Add regression coverage proving that a live-like `supervisor` refinement run leaves edited spec files canonically formatted without requiring a manual `spec_yaml_format.py` pass.
+37. [done] Make all `supervisor` writes to canonical spec files use one canonical YAML writer, including runtime-state updates after worktree sync.
+38. [done] Add a deterministic post-write normalization/check path so canonical spec files are re-rendered or rejected if a `supervisor` run leaves them non-canonically formatted.
+39. [done] Add regression coverage proving that a live-like `supervisor` refinement run leaves edited spec files canonically formatted without requiring a manual `spec_yaml_format.py` pass.
 
 ## Child Spec Materialization Path
 
@@ -77,4 +77,4 @@
 54. [done] Remove generic child-materialization bootstrap guidance from non-seed runs so proposal-only and ancestor-reconciliation prompts do not tell the child executor both to reconcile or emit a proposal artifact and to create canonical child spec files.
 55. [done] Make review-gate approval idempotent when the accepted worktree already applied the proposed status, so `proposed_status == current status` clears the gate instead of failing transition validation.
 56. [done] Prevent timeout-failed multi-file child-materialization runs from writing any canonical parent diff or escalated runtime-state unless every changed canonical file, including the new child spec, is accepted and synced as one atomic materialization result.
-57. Treat long quiet periods during `xhigh` spec-refinement runs as normal deliberation unless repeated progress windows show no stdout, no worktree/file mtime changes, and no other progress signals, so supervisor does not classify slow bounded reasoning as a runtime anomaly too early.
+57. [done] Treat long quiet periods during `xhigh` spec-refinement runs as normal deliberation unless repeated progress windows show no stdout, no worktree/file mtime changes, and no other progress signals, so supervisor does not classify slow bounded reasoning as a runtime anomaly too early.

@@ -40,6 +40,7 @@ import argparse
 import copy
 import datetime as dt
 import hashlib
+import importlib.util
 import inspect
 import json
 import os
@@ -230,18 +231,24 @@ def get_yaml_module() -> ModuleType:
     return yaml
 
 
+def get_spec_yaml_module() -> ModuleType:
+    module_name = "_specgraph_spec_yaml_runtime"
+    existing = sys.modules.get(module_name)
+    if isinstance(existing, ModuleType):
+        return existing
+
+    module_path = Path(__file__).resolve().with_name("spec_yaml.py")
+    spec = importlib.util.spec_from_file_location(module_name, module_path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"Failed to load canonical YAML helper from {module_path}")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[module_name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
 def dump_yaml_text(data: dict[str, Any]) -> str:
-    yaml_module = get_yaml_module()
-    rendered = yaml_module.safe_dump(
-        data,
-        sort_keys=False,
-        allow_unicode=True,
-        default_flow_style=False,
-        width=100,
-    )
-    if not rendered.endswith("\n"):
-        rendered += "\n"
-    return rendered
+    return str(get_spec_yaml_module().dump_canonical_yaml(data))
 
 
 def strip_runtime_spec_data(value: Any) -> Any:
@@ -310,9 +317,7 @@ class SpecNode:
         return list(self.data.get("allowed_paths", []))
 
     def save(self) -> None:
-        yaml_module = get_yaml_module()
-        with self.path.open("w", encoding="utf-8") as file:
-            yaml_module.safe_dump(self.data, file, sort_keys=False, allow_unicode=True)
+        self.path.write_text(dump_yaml_text(self.data), encoding="utf-8")
 
     def reload(self) -> None:
         yaml_module = get_yaml_module()
@@ -3273,10 +3278,7 @@ def apply_split_proposal_to_worktree(
     node.data["acceptance"] = retained_texts
     node.data["acceptance_evidence"] = retained_evidence
     worktree_parent_path = worktree_path / parent_relpath
-    worktree_parent_path.write_text(
-        get_yaml_module().safe_dump(node.data, sort_keys=False, allow_unicode=True),
-        encoding="utf-8",
-    )
+    worktree_parent_path.write_text(dump_yaml_text(node.data), encoding="utf-8")
 
     for child, child_id, child_path, existing_data in zip(
         child_specs, child_ids, child_paths, child_existing_data, strict=True
@@ -3314,10 +3316,7 @@ def apply_split_proposal_to_worktree(
             child_data["acceptance"] = child_acceptance
             child_data["acceptance_evidence"] = child_evidence
         absolute_child_path.parent.mkdir(parents=True, exist_ok=True)
-        absolute_child_path.write_text(
-            get_yaml_module().safe_dump(child_data, sort_keys=False, allow_unicode=True),
-            encoding="utf-8",
-        )
+        absolute_child_path.write_text(dump_yaml_text(child_data), encoding="utf-8")
 
     return [parent_relpath, *child_paths]
 
