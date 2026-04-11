@@ -3765,7 +3765,7 @@ def resolve_gate_decision(
         proposed_status = node.data.get("proposed_status")
         proposed_maturity = node.data.get("proposed_maturity")
         before_node_data = copy.deepcopy(node.data)
-        if proposed_status is not None:
+        if proposed_status is not None and proposed_status != node.status:
             transition_errors = validate_transition(node.status, proposed_status)
             if transition_errors:
                 print("\n".join(transition_errors), file=sys.stderr)

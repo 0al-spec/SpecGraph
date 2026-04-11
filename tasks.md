@@ -75,3 +75,4 @@
 52. [done] Fix graph_refactor gate approval when the accepted worktree diff already changed status/maturity but `proposed_status` is null, so `--resolve-gate --decision approve` can clear review_pending instead of failing with an invalid linked->reviewed transition.
 53. [done] Make `supervisor` report pending gate actions when no automatic spec gap is eligible, so review_pending, split_required, and blocked queues are not misreported as absence of graph work.
 54. [done] Remove generic child-materialization bootstrap guidance from non-seed runs so proposal-only and ancestor-reconciliation prompts do not tell the child executor both to reconcile or emit a proposal artifact and to create canonical child spec files.
+55. [done] Make review-gate approval idempotent when the accepted worktree already applied the proposed status, so `proposed_status == current status` clears the gate instead of failing transition validation.
