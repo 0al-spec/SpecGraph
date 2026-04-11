@@ -2587,7 +2587,7 @@ def test_process_one_spec_uses_materialize_profile_for_seed_like_ordinary_run(
         "acceptance_evidence": ["seed evidence"],
         "prompt": "Delegate one child spec when decomposition is needed.",
     }
-    node_path.write_text(supervisor_module.dump_yaml_text(node_data), encoding="utf-8")
+    node_path.write_text(json.dumps(node_data), encoding="utf-8")
     node = supervisor_module.SpecNode(path=node_path, data=node_data)
     specs = [node]
     worktree = make_fake_worktree(repo_fixture)
