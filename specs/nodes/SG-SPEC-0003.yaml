@@ -2,7 +2,7 @@ id: SG-SPEC-0003
 title: SpecGraph - Reflective Governance Boundary and Graph Health Signals
 kind: spec
 status: linked
-maturity: 0.44
+maturity: 0.47
 depends_on:
 - SG-SPEC-0004
 - SG-SPEC-0005
@@ -24,46 +24,55 @@ outputs:
 allowed_paths:
 - specs/nodes/SG-SPEC-0003.yaml
 acceptance:
-- Defines the boundary between canonical SpecGraph governance, supervisor execution, and changes that
-  always require human approval
-- Defines observation, signal, and proposal as a derived reflective loop that does not mutate canonical
-  specs by itself
+- Defines the boundary between canonical SpecGraph governance, supervisor execution, bounded autonomous
+  continuation, and changes that always require human approval
+- Defines observation, signal, and proposal as a derived reflective loop, including linked-spec continuation
+  after explicit blocked or gated work clears, that does not mutate canonical specs by itself
 - Defines the first graph-health signals for oversized specs, missing canonical dependencies, repeated
-  split_required, and stalled or weak refinement progression as diagnostic inputs rather than normative
-  scores
-- Defines that graph-health observations, signals, and proposal artifacts are first persisted in run artifacts
-  plus derived queues, not written back into canonical spec nodes
+  split_required, and stalled or weak refinement progression, while treating low-maturity linked specs
+  only as derived follow-up hints rather than normative scores
+- Defines that graph-health observations, signals, latent continuation candidates, and proposal artifacts
+  are first persisted in run artifacts plus derived queues, not written back into canonical spec nodes
 - Remains implementation-agnostic about exact formulas, thresholds, queue algorithms, and future metric
   systems such as SIB or Specification Verifiability
 acceptance_evidence:
-- criterion: Defines the boundary between canonical SpecGraph governance, supervisor execution, and changes
-    that always require human approval
+- criterion: Defines the boundary between canonical SpecGraph governance, supervisor execution, bounded
+    autonomous continuation, and changes that always require human approval
   evidence: 'specification.boundary_policy separates canonical_governance, supervisor_execution, and human_approval.
     It states that specs govern ontology and policy, the supervisor executes bounded refinement and emits
-    derived observations, and constitutional changes require explicit human approval.
+    derived observations, and constitutional changes require explicit human approval. The same section
+    allows bounded autonomous continuation only after blocked/gated work is clear and only within current
+    authority, without authorizing new metrics, cross-branch restructuring, or review bypass.
 
     '
-- criterion: Defines observation, signal, and proposal as a derived reflective loop that does not mutate
-    canonical specs by itself
+- criterion: Defines observation, signal, and proposal as a derived reflective loop, including linked-spec
+    continuation after explicit blocked or gated work clears, that does not mutate canonical specs by
+    itself
   evidence: 'specification.reflective_loop defines the sequence observe -> derive signal -> form proposal
-    -> execute local refactor or await approval. specification.derived_artifact_policy explicitly forbids
-    observations and signals from mutating canonical spec nodes by themselves.
+    -> execute local refactor or await approval, and now adds a continuation contract for selecting at
+    most one next linked latent_graph_improvement_candidate after blocked/gated work is exhausted. specification.derived_artifact_policy
+    explicitly forbids observations, signals, and continuation candidates from mutating canonical spec
+    nodes by themselves.
 
     '
 - criterion: Defines the first graph-health signals for oversized specs, missing canonical dependencies,
-    repeated split_required, and stalled or weak refinement progression as diagnostic inputs rather than
-    normative scores
+    repeated split_required, and stalled or weak refinement progression, while treating low-maturity linked
+    specs only as derived follow-up hints rather than normative scores
   evidence: 'specification.graph_health_signal_policy.initial_signals names oversized_spec, missing_dependency_target,
     repeated_split_required_candidate, stalled_maturity_candidate, and weak_structural_linkage_candidate.
-    The same section defines them as diagnostic and rebuildable, not canonical truth.
+    specification.graph_health_signal_policy.continuation_detection limits low-maturity linked-spec detection
+    to derived context around stalled_maturity_candidate and weak_structural_linkage_candidate rather
+    than a new canonical metric or backlog score.
 
     '
-- criterion: Defines that graph-health observations, signals, and proposal artifacts are first persisted
-    in run artifacts plus derived queues, not written back into canonical spec nodes
-  evidence: 'specification.derived_artifact_policy.first_persistence lists run payloads, summaries, refactor_queue
-    artifacts, and proposal_queue artifacts as the first persistence targets, while specification.derived_artifact_policy.canonical_writeback
-    forbids direct writeback of observations, signals, or proposals into canonical spec nodes without
-    an explicit proposal and approval step.
+- criterion: Defines that graph-health observations, signals, latent continuation candidates, and proposal
+    artifacts are first persisted in run artifacts plus derived queues, not written back into canonical
+    spec nodes
+  evidence: 'specification.derived_artifact_policy.first_persistence lists run payloads, summaries, latent
+    continuation candidate records in run payloads and summaries, refactor_queue artifacts, and proposal_queue
+    artifacts as the first persistence targets, while specification.derived_artifact_policy.canonical_writeback
+    forbids direct writeback of observations, signals, continuation candidates, or proposals into canonical
+    spec nodes without an explicit proposal and approval step.
 
     '
 - criterion: Remains implementation-agnostic about exact formulas, thresholds, queue algorithms, and future
@@ -74,22 +83,24 @@ acceptance_evidence:
 
     '
 prompt: Keep SG-SPEC-0003 as the canonical overview and integration node for reflective graph-health governance.
-  It retains the boundary among SpecGraph governance, supervisor execution, derived observation/signal/proposal
-  flow, diagnostic graph-health vocabulary, derived first-persistence constraints, and implementation-agnostic
-  scope, while child specs own split proposal mechanics, direct-update/refactor boundaries, and proposal-lane
-  queue semantics.
+  It retains the boundary among SpecGraph governance, supervisor execution, bounded autonomous continuation,
+  derived observation/signal/proposal flow, diagnostic graph-health vocabulary, derived first-persistence
+  constraints, and implementation-agnostic scope, while child specs own split proposal mechanics, direct-update/refactor
+  boundaries, and proposal-lane queue semantics.
 specification:
   objective: 'Define how SpecGraph observes its own graph quality, how those observations become derived
-    signals and proposals, and where the boundary lies between canonical governance, supervisor execution,
-    and human approval.
+    signals, continuation candidates, and proposals, and where the boundary lies between canonical governance,
+    supervisor execution, and human approval.
 
     '
   scope:
     in:
     - Boundary between canonical specs, supervisor execution, and human approval
+    - Bounded autonomous continuation selection among linked specs after explicit blocked or gated work
+      clears
     - Reflective loop stages from observation to proposal
     - First graph-health signals related to spec size, dependency integrity, and refinement progression
-    - Derived persistence of observations, signals, and proposals in run artifacts
+    - Derived persistence of observations, signals, continuation candidates, and proposals in run artifacts
     - First derived refactor queue artifact, work-item classification, and proposal queue artifact
     out:
     - Concrete metric formulas or scoring weights
@@ -97,6 +108,8 @@ specification:
     - Viewer UX or visual overlays
     - Automatic self-modification of ontology without approval
     - Detailed SIB, Verifiability, or Observability metric definitions
+    - Canonical backlog labels or new normative maturity metrics inferred from autonomous continuation
+      heuristics
   terminology:
     graph_health_observation: 'A derived operational fact about the current state of the graph or a refinement
       run, produced by tooling and rebuildable from canonical data plus run context.
@@ -135,6 +148,12 @@ specification:
       selection for a single bounded supervisor run.
 
       '
+    latent_graph_improvement_candidate: 'A derived continuation candidate inferred from already linked
+      canonical specs when the active bounded target has no remaining explicit blocked or gated work and
+      existing graph-health signals suggest another bounded follow-up refinement. It is selector input
+      only and does not become canonical backlog truth by itself.
+
+      '
     structured_split_proposal_artifact: 'A derived artifact stored outside canonical spec nodes that captures
       the full proposal payload for split_oversized_spec, including parent-after-split intent, suggested
       child specs, acceptance mapping, and lineage updates.
@@ -155,6 +174,12 @@ specification:
     - The supervisor may perform direct_graph_update only when the selected work is a bounded local_graph_refactor,
       the change stays within current ontology/policy/allowed paths, and no active proposal already owns
       the same pathology.
+    - When the current bounded target has no remaining explicit blocked or gated work, the supervisor
+      may inspect already linked specs for latent_graph_improvement_candidate follow-up work using current
+      canonical links, current status and maturity, and already-defined graph-health signals.
+    - That inspection may select at most one next bounded target or emit or refresh derived artifacts
+      under current policy, but it does not authorize new canonical metrics, cross-branch restructuring,
+      or bypass of active review boundaries.
     - The supervisor may not silently redefine ontology, approval boundaries, or its own authority.
     - Explicit operator_target runs may override heuristic selector choice for one bounded execution,
       but they remain bound by current canonical policy and approval limits.
@@ -176,6 +201,15 @@ specification:
       canonical writeback occurs.
     - Once an active proposal exists for a specific pathology, proposal handling takes precedence over
       further ad hoc direct_graph_update attempts for that same pathology.
+    continuation:
+    - Autonomous continuation is allowed only after the current bounded target has no remaining explicit
+      blocked or gated work within the current authority envelope.
+    - Candidate detection may treat low maturity on an already linked spec as contextual evidence only
+      when combined with existing signal candidates such as stalled_maturity_candidate or weak_structural_linkage_candidate;
+      low maturity alone does not create canonical defect state or mandatory backlog.
+    - The supervisor may continue into at most one linked latent_graph_improvement_candidate at a time;
+      if the inferred work exceeds current direct authority or is already owned by an active proposal
+      or gate, the result remains derived artifact emission rather than canonical mutation.
   graph_health_signal_policy:
     initial_signals:
     - oversized_spec
@@ -187,10 +221,16 @@ specification:
     - Initial signals are diagnostic hints intended to drive refinement quality and graph refactoring.
     - Signal presence does not by itself prove a canonical error; it indicates a region that may need
       review, decomposition, relinking, or policy consideration.
+    continuation_detection:
+    - Low maturity on a linked spec may inform latent_graph_improvement_candidate detection only as derived
+      context around stalled_maturity_candidate or weak_structural_linkage_candidate.
+    - Continuation detection is rebuildable from canonical graph state plus run context and MUST NOT be
+      written back as a canonical obligation, score, or lifecycle field.
   derived_artifact_policy:
     first_persistence:
     - Run payloads
     - Run summaries
+    - Latent continuation candidate records in run payloads and summaries
     - Refactor queue artifacts
     - Proposal queue artifacts
     refactor_queue:
@@ -213,6 +253,8 @@ specification:
     - Graph-health observations and signals MUST NOT be written back into canonical spec nodes unless
       they have first been transformed into an explicit proposal and approved under the current governance
       rules.
+    - Derived latent_graph_improvement_candidate records MUST NOT be written into canonical spec nodes
+      as backlog labels, maturity overrides, or implied work ownership.
   split_refactor_policy:
     v1:
       scope:
@@ -268,3 +310,92 @@ specification:
         parent_retained or as one child slot assignment.
       - lineage_updates MUST record both parent-to-child blocking edges to add and child-to-parent refines
         edges to add for the proposed split.
+proposed_status: linked
+proposed_maturity: 0.67
+gate_state: review_pending
+required_human_action: review refinement impact before approval
+last_outcome: done
+last_blocker: ''
+last_run_id: 20260411T224231Z-SG-SPEC-0003
+last_exit_code: 0
+last_changed_files:
+- specs/nodes/SG-SPEC-0003.yaml
+last_run_at: '2026-04-11T22:42:31.891784+00:00'
+last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0003-20260411T223827Z
+last_branch: codex/sg-spec-0003/20260411T223827Z
+last_validator_results:
+  outputs: true
+  allowed_paths: true
+  reconciliation: true
+  atomicity: true
+  transition: true
+  executor_environment: true
+  refinement_acceptance: true
+last_refinement_acceptance:
+  decision: review_required
+  change_class: constitutional_change
+  checks:
+    content_changed: true
+    hard_validation: true
+    single_spec_scope: true
+    constitutional_diff: true
+    graph_refactor_diff: false
+    atomicity_clear: true
+    within_mutation_budget: true
+  diff_paths:
+  - acceptance[0]
+  - acceptance[1]
+  - acceptance[2]
+  - acceptance[3]
+  - acceptance_evidence[0].criterion
+  - acceptance_evidence[0].evidence
+  - acceptance_evidence[1].criterion
+  - acceptance_evidence[1].evidence
+  - acceptance_evidence[2].criterion
+  - acceptance_evidence[2].evidence
+  - acceptance_evidence[3].criterion
+  - acceptance_evidence[3].evidence
+  - maturity
+  - prompt
+  - specification.boundary_policy.supervisor_execution[2]
+  - specification.boundary_policy.supervisor_execution[3]
+  - specification.boundary_policy.supervisor_execution[4]
+  - specification.boundary_policy.supervisor_execution[5]
+  - specification.derived_artifact_policy.canonical_writeback[1]
+  - specification.derived_artifact_policy.first_persistence[2]
+  - specification.derived_artifact_policy.first_persistence[3]
+  - specification.derived_artifact_policy.first_persistence[4]
+  - specification.graph_health_signal_policy.continuation_detection
+  - specification.graph_health_signal_policy.continuation_detection[0]
+  - specification.graph_health_signal_policy.continuation_detection[1]
+  - specification.objective
+  - specification.reflective_loop.continuation
+  - specification.reflective_loop.continuation[0]
+  - specification.reflective_loop.continuation[1]
+  - specification.reflective_loop.continuation[2]
+  - specification.scope.in[1]
+  - specification.scope.in[2]
+  - specification.scope.in[3]
+  - specification.scope.in[4]
+  - specification.scope.in[5]
+  - specification.scope.out[5]
+  - specification.terminology.latent_graph_improvement_candidate
+  mutation_classes:
+  - policy_text
+  mutation_budget: []
+  budget_exceeded_classes: []
+  changed_spec_files:
+  - specs/nodes/SG-SPEC-0003.yaml
+  review_reasons:
+  - run changed governance-sensitive specification sections
+  errors: []
+  warnings: []
+last_reconciliation:
+  worktree_spec_count: 17
+  changed_spec_ids:
+  - SG-SPEC-0003
+  semantic_dependencies_resolved: true
+  work_dependencies_ready: false
+  cycles: []
+last_requested_child_materialization: false
+last_materialized_child_paths: []
