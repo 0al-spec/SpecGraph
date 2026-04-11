@@ -1,8 +1,8 @@
 id: SG-SPEC-0011
 title: SpecGraph - Bootstrap Relation Vocabulary Slice for Primitive Binding
 kind: spec
-status: specified
-maturity: 0.24
+status: linked
+maturity: 0.44
 depends_on: []
 relates_to:
 - SG-SPEC-0007
@@ -255,79 +255,10 @@ specification:
   - This child does not define broader relation taxonomies for executable domain vocabularies; later bounded
     children may extend the relation vocabulary one slice at a time.
   - This child does not define evaluator execution, project-memory handling, or viewer interaction semantics.
-proposed_status: linked
-proposed_maturity: 0.44
-gate_state: review_pending
-required_human_action: approve or retry refinement
-last_outcome: done
-last_blocker: ''
-last_run_id: 20260408T154103Z-SG-SPEC-0011
-last_exit_code: 0
-last_changed_files:
-- specs/nodes/SG-SPEC-0011.yaml
-last_run_at: '2026-04-08T15:41:03.576580+00:00'
-last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0011-20260408T153905Z
-last_branch: codex/sg-spec-0011/20260408T153905Z
-last_validator_results:
-  outputs: true
-  allowed_paths: true
-  reconciliation: true
-  atomicity: true
-  transition: true
-  executor_environment: true
-  refinement_acceptance: true
-last_refinement_acceptance:
-  decision: approve
-  change_class: local_refinement
-  checks:
-    content_changed: true
-    hard_validation: true
-    single_spec_scope: true
-    constitutional_diff: false
-    graph_refactor_diff: false
-    atomicity_clear: true
-    within_mutation_budget: true
-  diff_paths:
-  - acceptance[2]
-  - acceptance_evidence[2].criterion
-  - acceptance_evidence[2].evidence
-  - specification.cardinality_and_uniqueness
-  - specification.cardinality_and_uniqueness.specializes
-  - specification.cardinality_and_uniqueness.specializes[0]
-  - specification.cardinality_and_uniqueness.specializes[1]
-  - specification.cardinality_and_uniqueness.specializes[2]
-  - specification.cardinality_and_uniqueness.governed_by_state_family
-  - specification.cardinality_and_uniqueness.governed_by_state_family[0]
-  - specification.cardinality_and_uniqueness.governed_by_state_family[1]
-  - specification.cardinality_and_uniqueness.governed_by_state_family[2]
-  - specification.cardinality_and_uniqueness.resolved_by_alias
-  - specification.cardinality_and_uniqueness.resolved_by_alias[0]
-  - specification.cardinality_and_uniqueness.resolved_by_alias[1]
-  - specification.cardinality_and_uniqueness.resolved_by_alias[2]
-  - specification.cardinality_and_uniqueness.constrained_by_invariant
-  - specification.cardinality_and_uniqueness.constrained_by_invariant[0]
-  - specification.cardinality_and_uniqueness.constrained_by_invariant[1]
-  - specification.cardinality_and_uniqueness.constrained_by_invariant[2]
-  - specification.semantic_contracts.constrained_by_invariant[2]
-  - specification.semantic_contracts.governed_by_state_family[2]
-  - specification.semantic_contracts.resolved_by_alias[2]
-  - specification.semantic_contracts.specializes[2]
-  mutation_classes:
-  - policy_text
-  mutation_budget:
-  - policy_text
-  budget_exceeded_classes: []
-  changed_spec_files:
-  - specs/nodes/SG-SPEC-0011.yaml
-  review_reasons: []
-  errors: []
-  warnings: []
-last_reconciliation:
-  worktree_spec_count: 11
-  changed_spec_ids:
-  - SG-SPEC-0011
-  semantic_dependencies_resolved: true
-  work_dependencies_ready: true
-  cycles: []
-last_requested_child_materialization: false
-last_materialized_child_paths: []
+gate_state: none
+proposed_status: null
+proposed_maturity: null
+required_human_action: '-'
+last_gate_decision: approve
+last_gate_note: Approve validated local refinement for bootstrap relation vocabulary slice.
+last_gate_at: '2026-04-11T05:40:49.583290+00:00'

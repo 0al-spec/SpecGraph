@@ -1,8 +1,8 @@
 id: SG-SPEC-0010
 title: SpecGraph - Ubiquitous Vocabulary Meta-Ontology Primitives
 kind: spec
-status: specified
-maturity: 0.33
+status: linked
+maturity: 0.53
 depends_on:
 - SG-SPEC-0011
 relates_to:
@@ -231,63 +231,10 @@ specification:
     UX, intake workflow, or non-canonical phrasing policy beyond Alias as a canonical primitive.
   - This node is adjacent to graph invariants from SG-SPEC-0001, but its Invariant primitive is scoped
     specifically to vocabulary semantics used by later executable domain vocabularies.
-proposed_status: linked
-proposed_maturity: 0.53
-gate_state: review_pending
-required_human_action: review refinement impact before approval
-last_outcome: done
-last_blocker: ''
-last_run_id: 20260408T141202Z-SG-SPEC-0010
-last_exit_code: 0
-last_changed_files:
-- specs/nodes/SG-SPEC-0010.yaml
-- specs/nodes/SG-SPEC-0011.yaml
-last_run_at: '2026-04-08T14:12:03.325843+00:00'
-last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0010-20260408T140548Z
-last_branch: sandbox/sg-spec-0010/20260408T140548Z
-last_validator_results:
-  outputs: true
-  allowed_paths: true
-  reconciliation: true
-  atomicity: true
-  transition: true
-  executor_environment: true
-  refinement_acceptance: true
-last_refinement_acceptance:
-  decision: review_required
-  change_class: graph_refactor
-  checks:
-    content_changed: true
-    hard_validation: true
-    single_spec_scope: false
-    constitutional_diff: false
-    graph_refactor_diff: true
-    atomicity_clear: true
-    within_mutation_budget: true
-  diff_paths:
-  - acceptance_evidence[2].evidence
-  - depends_on[0]
-  - specification.governance_notes[1]
-  mutation_classes:
-  - policy_text
-  mutation_budget: []
-  budget_exceeded_classes: []
-  changed_spec_files:
-  - specs/nodes/SG-SPEC-0010.yaml
-  - specs/nodes/SG-SPEC-0011.yaml
-  review_reasons:
-  - run changed additional spec files beyond the selected source node
-  - run changed graph structure or spec contract paths
-  errors: []
-  warnings: []
-last_reconciliation:
-  worktree_spec_count: 11
-  changed_spec_ids:
-  - SG-SPEC-0010
-  - SG-SPEC-0011
-  semantic_dependencies_resolved: true
-  work_dependencies_ready: false
-  cycles: []
-last_requested_child_materialization: true
-last_materialized_child_paths:
-- specs/nodes/SG-SPEC-0011.yaml
+gate_state: none
+proposed_status: null
+proposed_maturity: null
+required_human_action: '-'
+last_gate_decision: approve
+last_gate_note: Approve parent vocabulary primitive refinement after SG-SPEC-0011 child gate was approved.
+last_gate_at: '2026-04-11T05:42:23.174306+00:00'
