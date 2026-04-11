@@ -74,3 +74,4 @@
 51. [done] Increase nested executor timeout budgets and align the heuristic `fast` profile with `xhigh` reasoning so useful atomicity/split outcomes are not prematurely converted into timeout failures.
 52. [done] Fix graph_refactor gate approval when the accepted worktree diff already changed status/maturity but `proposed_status` is null, so `--resolve-gate --decision approve` can clear review_pending instead of failing with an invalid linked->reviewed transition.
 53. [done] Make `supervisor` report pending gate actions when no automatic spec gap is eligible, so review_pending, split_required, and blocked queues are not misreported as absence of graph work.
+54. Remove generic child-materialization bootstrap guidance from `split_refactor_proposal` prompts so proposal-only runs do not tell the child executor both to emit a `runs/proposals` artifact and to create canonical child spec files.

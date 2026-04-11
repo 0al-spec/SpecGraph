@@ -1,0 +1,41 @@
+id: SG-SPEC-0016
+title: SpecGraph - Linked Readiness and Evidence Policy
+kind: spec
+status: outlined
+maturity: 0.2
+depends_on: []
+relates_to: []
+refines:
+- SG-SPEC-0002
+inputs:
+- specs/nodes/SG-SPEC-0002.yaml
+outputs:
+- specs/nodes/SG-SPEC-0016.yaml
+allowed_paths:
+- specs/nodes/SG-SPEC-0016.yaml
+acceptance:
+- Defines the conditions for moving a spec from specified to linked once descendant specs exist, including
+  semantic unlock, linked-readiness evidence, and narrow ancestor reconciliation
+- Defines how acceptance criteria and acceptance_evidence stay aligned across a refinement chain
+acceptance_evidence:
+- criterion: Defines the conditions for moving a spec from specified to linked once descendant specs exist,
+    including semantic unlock, linked-readiness evidence, and narrow ancestor reconciliation
+  evidence: 'specification.terminology defines semantic_unlock, ancestor_reconciliation, and linked_readiness_evidence.
+    specification.linkage_rules.specified_to_linked defines that every declared depends_on child must
+    exist as a concrete descendant spec node, be connected into the refinement chain through refines,
+    and be cited in reconciled parent evidence before the ancestor may advance. specification.reconciliation_policy
+    then states that descendant unlock creates eligibility for a narrow ancestor reconciliation pass,
+    limited to links, blockers, evidence, and status-readiness rather than broad scope expansion.
+
+    '
+- criterion: Defines how acceptance criteria and acceptance_evidence stay aligned across a refinement
+    chain
+  evidence: 'specification.evidence_policy.rules keeps acceptance and acceptance_evidence 1:1 within each
+    spec, requires linked-readiness parent evidence to cite the concrete descendant specs that satisfy
+    blocking refinement dependencies, allows child citations as supporting context outside status advancement,
+    and keeps child evidence rooted in specification content rather than runtime artifacts.
+
+    '
+prompt: Refine SG-SPEC-0002 by defining the conditions for moving a spec from specified to linked once
+  concrete descendants exist, including semantic unlock, linked-readiness evidence, narrow ancestor reconciliation,
+  and acceptance evidence alignment across refinement chains.

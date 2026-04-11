@@ -1,0 +1,40 @@
+id: SG-SPEC-0015
+title: SpecGraph - Delegation and Atomic Decomposition Policy
+kind: spec
+status: outlined
+maturity: 0.2
+depends_on: []
+relates_to: []
+refines:
+- SG-SPEC-0002
+inputs:
+- specs/nodes/SG-SPEC-0002.yaml
+outputs:
+- specs/nodes/SG-SPEC-0015.yaml
+allowed_paths:
+- specs/nodes/SG-SPEC-0015.yaml
+acceptance:
+- Defines how a seed or working spec delegates one or more concrete unresolved areas to child specs while
+  preserving atomic spec boundaries and parent terminology
+- Defines when a non-atomic spec should decompose into sibling child specs and surface split_required
+  rather than growing in place
+acceptance_evidence:
+- criterion: Defines how a seed or working spec delegates one or more concrete unresolved areas to child
+    specs while preserving atomic spec boundaries and parent terminology
+  evidence: 'specification.delegation_policy defines delegated_gap semantics plus seed_spec_expectations,
+    parent_expectations, and child_expectations. specification.atomicity_policy then constrains each resulting
+    child to one bounded concern, allows multiple sibling children in a single decomposition run, and
+    requires inherited terminology stability.
+
+    '
+- criterion: Defines when a non-atomic spec should decompose into sibling child specs and surface split_required
+    rather than growing in place
+  evidence: 'specification.terminology defines atomic_spec_node and decomposition_pass. specification.atomicity_policy
+    defines envelope exceptions for seed specs, narrow working-node expectations, and the rule that a
+    spec which remains broader than one bounded concern after refinement should decompose into sibling
+    child specs or return split_required rather than continue accreting mixed scope.
+
+    '
+prompt: Refine SG-SPEC-0002 by defining how seed or working specs delegate unresolved areas to child specs,
+  when sibling child specs are required, and when split_required should be surfaced instead of growing
+  an oversized node in place.

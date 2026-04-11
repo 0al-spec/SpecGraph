@@ -1,0 +1,29 @@
+id: SG-SPEC-0014
+title: SpecGraph - Spec Edge Semantics and Blocking Policy
+kind: spec
+status: outlined
+maturity: 0.2
+depends_on: []
+relates_to: []
+refines:
+- SG-SPEC-0002
+inputs:
+- specs/nodes/SG-SPEC-0002.yaml
+outputs:
+- specs/nodes/SG-SPEC-0014.yaml
+allowed_paths:
+- specs/nodes/SG-SPEC-0014.yaml
+acceptance:
+- Defines when spec nodes use refines, depends_on, and relates_to between parent and child specs, and
+  distinguishes declared blocking from derived effective blocking
+acceptance_evidence:
+- criterion: Defines when spec nodes use refines, depends_on, and relates_to between parent and child
+    specs, and distinguishes declared blocking from derived effective blocking
+  evidence: 'specification.terminology defines declared_blocking_edge and effective_blocking. specification.relation_policy
+    defines refines, depends_on, and relates_to with source, target, required_when, and notes. specification.blocking_semantics
+    then separates authored blocking declarations in the canonical graph from transitive or queue-oriented
+    blocking views derived by tooling.
+
+    '
+prompt: Refine SG-SPEC-0002 by defining when spec nodes use refines, depends_on, and relates_to between
+  parent and child specs, and by separating declared blocking edges from derived effective blocking views.

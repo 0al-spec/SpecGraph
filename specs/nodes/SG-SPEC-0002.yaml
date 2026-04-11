@@ -3,7 +3,10 @@ title: SpecGraph - Spec Refinement and Linkage Policy
 kind: spec
 status: specified
 maturity: 0.57
-depends_on: []
+depends_on:
+- SG-SPEC-0014
+- SG-SPEC-0015
+- SG-SPEC-0016
 relates_to: []
 refines:
 - SG-SPEC-0001
@@ -15,72 +18,18 @@ outputs:
 allowed_paths:
 - specs/nodes/*.yaml
 acceptance:
-- Defines when spec nodes use refines, depends_on, and relates_to between parent and child specs, and
-  distinguishes declared blocking from derived effective blocking
-- Defines how a seed or working spec delegates one or more concrete unresolved areas to child specs while
-  preserving atomic spec boundaries and parent terminology
-- Defines the conditions for moving a spec from specified to linked once descendant specs exist, including
-  semantic unlock, linked-readiness evidence, and narrow ancestor reconciliation
-- Defines when a non-atomic spec should decompose into sibling child specs and surface split_required
-  rather than growing in place
-- Defines how acceptance criteria and acceptance_evidence stay aligned across a refinement chain
 - Remains implementation-agnostic and limited to specification governance
 acceptance_evidence:
-- criterion: Defines when spec nodes use refines, depends_on, and relates_to between parent and child
-    specs, and distinguishes declared blocking from derived effective blocking
-  evidence: 'specification.terminology defines declared_blocking_edge and effective_blocking. specification.relation_policy
-    defines refines, depends_on, and relates_to with source, target, required_when, and notes. specification.blocking_semantics
-    then separates authored blocking declarations in the canonical graph from transitive or queue-oriented
-    blocking views derived by tooling.
-
-    '
-- criterion: Defines how a seed or working spec delegates one or more concrete unresolved areas to child
-    specs while preserving atomic spec boundaries and parent terminology
-  evidence: 'specification.delegation_policy defines delegated_gap semantics plus seed_spec_expectations,
-    parent_expectations, and child_expectations. specification.atomicity_policy then constrains each resulting
-    child to one bounded concern, allows multiple sibling children in a single decomposition run, and
-    requires inherited terminology stability.
-
-    '
-- criterion: Defines the conditions for moving a spec from specified to linked once descendant specs exist,
-    including semantic unlock, linked-readiness evidence, and narrow ancestor reconciliation
-  evidence: 'specification.terminology defines semantic_unlock, ancestor_reconciliation, and linked_readiness_evidence.
-    specification.linkage_rules.specified_to_linked defines that every declared depends_on child must
-    exist as a concrete descendant spec node, be connected into the refinement chain through refines,
-    and be cited in reconciled parent evidence before the ancestor may advance. specification.reconciliation_policy
-    then states that descendant unlock creates eligibility for a narrow ancestor reconciliation pass,
-    limited to links, blockers, evidence, and status-readiness rather than broad scope expansion.
-
-    '
-- criterion: Defines when a non-atomic spec should decompose into sibling child specs and surface split_required
-    rather than growing in place
-  evidence: 'specification.terminology defines atomic_spec_node and decomposition_pass. specification.atomicity_policy
-    defines envelope exceptions for seed specs, narrow working-node expectations, and the rule that a
-    spec which remains broader than one bounded concern after refinement should decompose into sibling
-    child specs or return split_required rather than continue accreting mixed scope.
-
-    '
-- criterion: Defines how acceptance criteria and acceptance_evidence stay aligned across a refinement
-    chain
-  evidence: 'specification.evidence_policy.rules keeps acceptance and acceptance_evidence 1:1 within each
-    spec, requires linked-readiness parent evidence to cite the concrete descendant specs that satisfy
-    blocking refinement dependencies, allows child citations as supporting context outside status advancement,
-    and keeps child evidence rooted in specification content rather than runtime artifacts.
-
-    '
 - criterion: Remains implementation-agnostic and limited to specification governance
   evidence: 'specification.scope.out excludes storage schemas, validator implementation, supervisor workflow,
     and runtime generation semantics. The child spec governs only specification relationships and status
     rules.
 
     '
-prompt: 'Refine SG-SPEC-0001 by defining the governance for spec-to-spec refinement
-
-  edges and the rule for advancing a seed spec to linked once concrete descendants
-
-  exist.
-
-  '
+prompt: Keep SG-SPEC-0002 as the overview and integration policy for spec-to-spec refinement and linkage.
+  The parent should preserve stable terminology, define the coordination envelope, and depend on bounded
+  child specs for detailed governance of edge semantics, delegation/decomposition, and linked-readiness
+  evidence.
 specification:
   objective: 'Define how seed specs delegate unresolved areas to child specs, how parent/child spec edges
     are expressed, and what evidence is required for a spec to reach linked without prescribing tooling
@@ -269,77 +218,3 @@ specification:
       cite that child as the concrete refinement that resolved the delegated gap.
 
       '
-proposed_status: null
-proposed_maturity: null
-gate_state: split_required
-required_human_action: split spec scope before rerun
-last_outcome: done
-last_blocker: ''
-last_run_id: 20260410T063954Z-SG-SPEC-0002
-last_exit_code: 0
-last_changed_files:
-- specs/nodes/SG-SPEC-0002.yaml
-last_run_at: '2026-04-10T06:39:55.408471+00:00'
-last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0002-20260410T063341Z
-last_branch: codex/sg-spec-0002/20260410T063341Z
-last_validator_results:
-  outputs: true
-  allowed_paths: true
-  reconciliation: true
-  atomicity: true
-  transition: true
-  executor_environment: true
-  refinement_acceptance: true
-last_refinement_acceptance:
-  decision: review_required
-  change_class: constitutional_change
-  checks:
-    content_changed: true
-    hard_validation: true
-    single_spec_scope: true
-    constitutional_diff: true
-    graph_refactor_diff: false
-    atomicity_clear: true
-    within_mutation_budget: true
-  diff_paths:
-  - acceptance[2]
-  - acceptance_evidence[2].criterion
-  - acceptance_evidence[2].evidence
-  - acceptance_evidence[4].evidence
-  - last_gate_at
-  - last_gate_decision
-  - last_gate_note
-  - specification.evidence_policy.rules[1]
-  - specification.evidence_policy.rules[2]
-  - specification.evidence_policy.rules[3]
-  - specification.examples[1]
-  - specification.examples[1].name
-  - specification.examples[1].description
-  - specification.linkage_rules.specified_to_linked[2]
-  - specification.linkage_rules.specified_to_linked[3]
-  - specification.linkage_rules.specified_to_linked[4]
-  - specification.linkage_rules.specified_to_linked[5]
-  - specification.terminology.linked_readiness_evidence
-  mutation_classes:
-  - policy_text
-  mutation_budget: []
-  budget_exceeded_classes: []
-  changed_spec_files:
-  - specs/nodes/SG-SPEC-0002.yaml
-  review_reasons:
-  - run changed governance-sensitive specification sections
-  errors: []
-  warnings: []
-last_reconciliation:
-  worktree_spec_count: 13
-  changed_spec_ids:
-  - SG-SPEC-0002
-  semantic_dependencies_resolved: true
-  work_dependencies_ready: true
-  cycles: []
-last_requested_child_materialization: false
-last_materialized_child_paths: []
-last_gate_decision: split
-last_gate_note: 'Atomicity review after seed-like heuristic fix: this child policy spec has 6 acceptance
-  criteria and requires split before linked approval.'
-last_gate_at: '2026-04-11T07:29:41.183329+00:00'
