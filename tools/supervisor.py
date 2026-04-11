@@ -3136,10 +3136,30 @@ def apply_split_proposal_to_worktree(
     child_specs: list[dict[str, Any]] = []
     child_ids: list[str] = []
     child_paths: list[str] = []
+    child_existing_data: list[dict[str, Any] | None] = []
     for child in proposal_artifact["suggested_children"]:
         child_id = str(child["suggested_id"]).strip()
         child_path = str(child["suggested_path"]).strip()
         if child_id in index:
+            existing_child = index[child_id]
+            existing_relpath = existing_child.path.relative_to(worktree_path).as_posix()
+            if existing_relpath != child_path:
+                raise ValueError(
+                    "split proposal application cannot reuse existing spec id "
+                    f"{child_id} at a different path: {existing_relpath}"
+                )
+            existing_refines = existing_child.data.get("refines", [])
+            if not isinstance(existing_refines, list) or node.id not in {
+                str(item).strip() for item in existing_refines
+            }:
+                raise ValueError(
+                    "split proposal application can reuse existing child "
+                    f"{child_id} only when it already refines {node.id}"
+                )
+            child_specs.append(child)
+            child_ids.append(child_id)
+            child_paths.append(child_path)
+            child_existing_data.append(existing_child.data)
             continue
         absolute_child_path = worktree_path / child_path
         if absolute_child_path.exists():
@@ -3149,6 +3169,7 @@ def apply_split_proposal_to_worktree(
         child_ids.append(child_id)
         child_paths.append(child_path)
         child_specs.append(child)
+        child_existing_data.append(None)
 
     parent_retained = proposal_artifact["parent_after_split"]["retained_acceptance"]
     retained_texts = [str(item["acceptance_text"]).strip() for item in parent_retained]
@@ -3178,7 +3199,9 @@ def apply_split_proposal_to_worktree(
         encoding="utf-8",
     )
 
-    for child, child_id, child_path in zip(child_specs, child_ids, child_paths, strict=True):
+    for child, child_id, child_path, existing_data in zip(
+        child_specs, child_ids, child_paths, child_existing_data, strict=True
+    ):
         assigned_acceptance = child["assigned_acceptance"]
         child_acceptance = [str(item["acceptance_text"]).strip() for item in assigned_acceptance]
         child_evidence = [
@@ -3189,23 +3212,28 @@ def apply_split_proposal_to_worktree(
             )
             for item in assigned_acceptance
         ]
-        child_data = {
-            "id": child_id,
-            "title": str(child["suggested_title"]).strip(),
-            "kind": "spec",
-            "status": "outlined",
-            "maturity": 0.2,
-            "depends_on": [],
-            "relates_to": [],
-            "refines": [node.id],
-            "inputs": [parent_relpath],
-            "outputs": [child_path],
-            "allowed_paths": [child_path],
-            "acceptance": child_acceptance,
-            "acceptance_evidence": child_evidence,
-            "prompt": str(child["suggested_prompt"]).strip(),
-        }
         absolute_child_path = worktree_path / child_path
+        if existing_data is None:
+            child_data = {
+                "id": child_id,
+                "title": str(child["suggested_title"]).strip(),
+                "kind": "spec",
+                "status": "outlined",
+                "maturity": 0.2,
+                "depends_on": [],
+                "relates_to": [],
+                "refines": [node.id],
+                "inputs": [parent_relpath],
+                "outputs": [child_path],
+                "allowed_paths": [child_path],
+                "acceptance": child_acceptance,
+                "acceptance_evidence": child_evidence,
+                "prompt": str(child["suggested_prompt"]).strip(),
+            }
+        else:
+            child_data = dict(existing_data)
+            child_data["acceptance"] = child_acceptance
+            child_data["acceptance_evidence"] = child_evidence
         absolute_child_path.parent.mkdir(parents=True, exist_ok=True)
         absolute_child_path.write_text(
             get_yaml_module().safe_dump(child_data, sort_keys=False, allow_unicode=True),

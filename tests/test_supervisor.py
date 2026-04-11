@@ -3201,7 +3201,13 @@ def test_main_apply_split_proposal_reuses_existing_refining_child(
     assert updated_parent["depends_on"] == ["SG-SPEC-0002", "SG-SPEC-0003"]
     assert updated_parent["acceptance"] == ["criterion-1"]
     assert reused_child["prompt"] == "Preserve existing accepted child work."
-    assert reused_child["acceptance"] == ["existing acceptance"]
+    assert reused_child["acceptance"] == ["criterion-2", "criterion-3"]
+    assert reused_child["acceptance_evidence"] == [
+        "Retained from applied split proposal refactor_proposal::SG-SPEC-0001::oversized_spec "
+        "for acceptance [2]",
+        "Retained from applied split proposal refactor_proposal::SG-SPEC-0001::oversized_spec "
+        "for acceptance [3]",
+    ]
     assert new_child["refines"] == ["SG-SPEC-0001"]
     assert new_child["acceptance"] == ["criterion-4", "criterion-5", "criterion-6"]
 
