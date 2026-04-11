@@ -4185,7 +4185,7 @@ def test_loop_counts_split_required_progress_separately(
     assert "Loop summary: 0 succeeded, 1 progressed, 0 failed" in out
 
 
-def test_resolve_gate_approve_applies_worktree_changes(
+def test_resolve_gate_approve_accepts_staged_worktree_changes(
     supervisor_module: object,
     repo_fixture: Path,
 ) -> None:
@@ -4203,6 +4203,7 @@ def test_resolve_gate_approve_applies_worktree_changes(
     data["gate_state"] = "review_pending"
     data["proposed_status"] = "specified"
     data["proposed_maturity"] = 0.4
+    data["prompt"] = "Approved from worktree"
     data["last_worktree_path"] = worktree.as_posix()
     data["last_changed_files"] = ["specs/nodes/SG-SPEC-0001.yaml"]
     node_path.write_text(json.dumps(data), encoding="utf-8")
@@ -4220,6 +4221,47 @@ def test_resolve_gate_approve_applies_worktree_changes(
     assert updated["gate_state"] == "none"
     assert updated["prompt"] == "Approved from worktree"
     assert updated["last_gate_decision"] == "approve"
+
+
+def test_resolve_gate_approve_rejects_stale_worktree_candidate(
+    supervisor_module: object,
+    repo_fixture: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    worktree = make_fake_worktree(repo_fixture)
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    worktree_node_path = worktree / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+
+    worktree_data = supervisor_module.get_yaml_module().safe_load(
+        worktree_node_path.read_text(encoding="utf-8")
+    )
+    worktree_data["prompt"] = "Stale candidate"
+    worktree_node_path.write_text(json.dumps(worktree_data), encoding="utf-8")
+
+    data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    data["gate_state"] = "review_pending"
+    data["proposed_status"] = "specified"
+    data["proposed_maturity"] = 0.4
+    data["last_worktree_path"] = worktree.as_posix()
+    data["last_changed_files"] = ["specs/nodes/SG-SPEC-0001.yaml"]
+    node_path.write_text(json.dumps(data), encoding="utf-8")
+
+    exit_code = supervisor_module.main(
+        resolve_gate="SG-SPEC-0001",
+        decision="approve",
+        note="looks good",
+    )
+    assert exit_code == 1
+
+    err = capsys.readouterr().err
+    assert "review gate is stale" in err
+    assert "prompt" in err
+
+    updated = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    assert updated["status"] == "outlined"
+    assert updated["gate_state"] == "review_pending"
+    assert updated["prompt"] == "Refine this node."
+    assert "last_gate_decision" not in updated
 
 
 def test_resolve_gate_approve_syncs_when_allowed_paths_empty(
@@ -4245,6 +4287,7 @@ def test_resolve_gate_approve_syncs_when_allowed_paths_empty(
     node_data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
     node_data["last_worktree_path"] = worktree.as_posix()
     node_data["last_changed_files"] = ["specs/nodes/SG-SPEC-0001.yaml"]
+    node_data["prompt"] = "Gate approved unrestricted sync"
     node_path.write_text(json.dumps(node_data), encoding="utf-8")
 
     exit_code = supervisor_module.main(

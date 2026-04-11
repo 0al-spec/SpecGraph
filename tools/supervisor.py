@@ -201,7 +201,12 @@ SYNC_STRIPPED_SPEC_KEYS = {
     "last_validator_results",
     "last_refinement_acceptance",
     "last_reconciliation",
+    "last_requested_child_materialization",
+    "last_materialized_child_paths",
     "last_errors",
+    "last_gate_decision",
+    "last_gate_note",
+    "last_gate_at",
 }
 DEFAULT_CODEX_HOME = Path(os.environ.get("CODEX_HOME", "~/.codex")).expanduser()
 
@@ -3406,6 +3411,34 @@ def sync_files_from_worktree(worktree_path: Path, rel_paths: list[str]) -> None:
             dst.unlink()
 
 
+def gate_worktree_divergence_paths(
+    node: SpecNode, worktree_path: Path, rel_paths: list[str]
+) -> list[str]:
+    """Return semantic paths that differ between current gate content and its worktree copy."""
+    source_relpath = node.path.relative_to(ROOT).as_posix()
+    if source_relpath not in rel_paths:
+        return []
+
+    worktree_node_path = worktree_path / source_relpath
+    if not worktree_node_path.exists() or not worktree_node_path.is_file():
+        return []
+
+    yaml_module = get_yaml_module()
+    worktree_data = yaml_module.safe_load(worktree_node_path.read_text(encoding="utf-8")) or {}
+    if not isinstance(worktree_data, dict):
+        return ["<root>"]
+
+    current_snapshot = canonical_spec_snapshot(node.data)
+    worktree_snapshot = canonical_spec_snapshot(worktree_data)
+    return collect_changed_paths(current_snapshot, worktree_snapshot)
+
+
+def format_gate_worktree_divergence(paths: list[str], *, limit: int = 8) -> str:
+    preview = paths[:limit]
+    suffix = "" if len(paths) <= limit else f", ... (+{len(paths) - limit} more)"
+    return ", ".join(preview) + suffix
+
+
 def executor_supports_work_item(
     executor: Callable[..., subprocess.CompletedProcess[str]],
 ) -> bool:
@@ -3706,6 +3739,18 @@ def resolve_gate_decision(
         materialized_child_paths = list(node.data.get("last_materialized_child_paths", []))
         if worktree_path.as_posix() and worktree_path.exists():
             allowed_changes = select_sync_paths(node.allowed_paths, changed_files)
+            divergence_paths = gate_worktree_divergence_paths(node, worktree_path, allowed_changes)
+            if divergence_paths:
+                print(
+                    (
+                        f"Spec {spec_id} review gate is stale: current canonical content differs "
+                        "from last_worktree_path at "
+                        f"{format_gate_worktree_divergence(divergence_paths)}. "
+                        "Rerun supervisor or reconcile the gate before approval."
+                    ),
+                    file=sys.stderr,
+                )
+                return 1
             sync_files_from_worktree(worktree_path, allowed_changes)
             normalize_materialized_child_specs(materialized_child_paths)
             # Keep approved content from the worktree while attaching gate metadata in root.
