@@ -68,6 +68,7 @@ AGENTS_FILE = ROOT / "AGENTS.md"
 
 READY_DEP_STATUSES = {"reviewed", "frozen"}
 WORKABLE_STATUSES = {"outlined", "specified"}
+CONTINUATION_STATUSES = {"linked", "reviewed"}
 VALID_STATUSES = {"idea", "stub", "outlined", "specified", "linked", "reviewed", "frozen"}
 ATOMICITY_MAX_ACCEPTANCE = 5
 ATOMICITY_MAX_BLOCKING_CHILDREN = 3
@@ -107,6 +108,7 @@ HIGH_REASONING_TIMEOUT_FLOOR_SECONDS = 300
 XHIGH_REASONING_TIMEOUT_FLOOR_SECONDS = 420
 EXECUTOR_PROGRESS_POLL_SECONDS = 30
 XHIGH_QUIET_PROGRESS_WINDOWS = 3
+LINKED_CONTINUATION_MATURITY_THRESHOLD = 0.85
 DEFAULT_EXECUTION_PROFILE_NAME = "standard"
 AUTO_HEURISTIC_PROFILE_NAME = "fast"
 AUTO_CHILD_MATERIALIZATION_PROFILE_NAME = "materialize"
@@ -440,6 +442,8 @@ def selection_mode_for_node(
     index = index_specs(local_specs)
     if is_ancestor_reconcile_candidate(node, index) and not is_gate_blocking(node):
         return "ancestor_reconcile"
+    if linked_continuation_reasons(node, index):
+        return "linked_continuation"
     return "default_refine"
 
 
@@ -477,6 +481,37 @@ def is_gate_blocking(node: SpecNode) -> bool:
     return node.gate_state in BLOCKING_GATE_STATES
 
 
+def linked_continuation_reasons(
+    spec: SpecNode,
+    index: dict[str, SpecNode],
+) -> list[str]:
+    """Return derived continuation reasons for already-linked graph regions.
+
+    Low maturity alone is not enough. Continuation requires low maturity plus
+    some already-defined signal pressure such as stalled refinement or weak
+    structural linkage.
+    """
+    if spec.status not in CONTINUATION_STATUSES or is_gate_blocking(spec):
+        return []
+
+    reasons: list[str] = []
+    last_outcome = str(spec.data.get("last_outcome", "")).strip()
+    if last_outcome in {"retry", "blocked", "split_required"}:
+        reasons.append("stalled_maturity_candidate")
+
+    unresolved_dependencies = [
+        dep_id
+        for dep_id in spec.depends_on
+        if dep_id not in index or index[dep_id].status not in READY_DEP_STATUSES
+    ]
+    if unresolved_dependencies:
+        reasons.append("weak_structural_linkage_candidate")
+
+    if spec.maturity < LINKED_CONTINUATION_MATURITY_THRESHOLD and reasons:
+        reasons.insert(0, "latent_graph_improvement_candidate")
+    return reasons
+
+
 def pick_next_spec_gap(specs: list[SpecNode]) -> SpecNode | None:
     index = index_specs(specs)
     dependents = reverse_dependents_count(specs)
@@ -499,7 +534,20 @@ def pick_next_spec_gap(specs: list[SpecNode]) -> SpecNode | None:
         and not is_gate_blocking(spec)
     ]
     if not candidates:
-        return None
+        continuation_candidates = [
+            spec for spec in specs if linked_continuation_reasons(spec, index)
+        ]
+        if not continuation_candidates:
+            return None
+        continuation_candidates.sort(
+            key=lambda spec: (
+                0 if spec.status == "linked" else 1,
+                transitive_dependency_count(spec, index),
+                spec.maturity,
+                spec.id,
+            )
+        )
+        return continuation_candidates[0]
 
     candidates.sort(key=lambda spec: (dependents.get(spec.id, 0), spec.maturity, spec.id))
     return candidates[0]
@@ -5226,8 +5274,12 @@ def main(
 
     dependents = reverse_dependents_count(specs)
     selection_mode = selection_mode_for_node(node, specs, refactor_work_item=refactor_work_item)
+    continuation_reasons = linked_continuation_reasons(node, index_specs(specs))
     selected_by_rule = {
-        "status_filter": sorted(WORKABLE_STATUSES),
+        "status_filter": sorted(
+            WORKABLE_STATUSES
+            | (CONTINUATION_STATUSES if selection_mode == "linked_continuation" else set())
+        ),
         "dependency_required_statuses": sorted(READY_DEP_STATUSES),
         "selection_mode": selection_mode,
         "sort_order": [
@@ -5240,6 +5292,8 @@ def main(
         ],
         "dependents_count": dependents.get(node.id, 0),
     }
+    if selection_mode == "linked_continuation":
+        selected_by_rule["continuation_reasons"] = continuation_reasons
     if refactor_work_item is not None:
         selected_by_rule["refactor_work_item"] = {
             "id": str(refactor_work_item.get("id", "")),

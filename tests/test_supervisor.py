@@ -2241,6 +2241,66 @@ def test_main_dry_run_supports_explicit_targeted_refinement_for_review_pending_n
     assert captured.err == ""
 
 
+def test_pick_next_spec_gap_selects_linked_continuation_candidate_when_no_workable_specs(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    node1_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    node1 = supervisor_module.get_yaml_module().safe_load(node1_path.read_text(encoding="utf-8"))
+    node1["status"] = "linked"
+    node1["maturity"] = 0.4
+    node1["depends_on"] = ["SG-SPEC-0002"]
+    node1_path.write_text(json.dumps(node1), encoding="utf-8")
+
+    node2_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0002.yaml"
+    node2_path.write_text(
+        json.dumps(
+            {
+                "id": "SG-SPEC-0002",
+                "title": "Dependency Node",
+                "kind": "spec",
+                "status": "linked",
+                "maturity": 0.6,
+                "depends_on": [],
+                "relates_to": [],
+                "refines": [],
+                "inputs": [],
+                "outputs": ["specs/nodes/SG-SPEC-0002.yaml"],
+                "allowed_paths": ["specs/nodes/SG-SPEC-0002.yaml"],
+                "acceptance": ["kept"],
+                "prompt": "Refine this linked node.",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    specs = supervisor_module.load_specs()
+    selected = supervisor_module.pick_next_spec_gap(specs)
+
+    assert selected is not None
+    assert selected.id == "SG-SPEC-0001"
+    assert supervisor_module.selection_mode_for_node(selected, specs) == "linked_continuation"
+    assert supervisor_module.linked_continuation_reasons(
+        selected, supervisor_module.index_specs(specs)
+    ) == ["latent_graph_improvement_candidate", "weak_structural_linkage_candidate"]
+
+
+def test_pick_next_spec_gap_does_not_select_low_maturity_linked_spec_without_signal_pressure(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    node = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    node["status"] = "linked"
+    node["maturity"] = 0.4
+    node["depends_on"] = []
+    node_path.write_text(json.dumps(node), encoding="utf-8")
+
+    specs = supervisor_module.load_specs()
+
+    assert supervisor_module.pick_next_spec_gap(specs) is None
+
+
 def test_main_explicit_targeted_refinement_dry_run_prints_mutation_budget(
     supervisor_module: object,
     repo_fixture: Path,
