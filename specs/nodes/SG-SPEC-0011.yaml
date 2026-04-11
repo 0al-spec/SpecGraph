@@ -1,8 +1,8 @@
 id: SG-SPEC-0011
 title: SpecGraph - Bootstrap Relation Vocabulary Slice for Primitive Binding
 kind: spec
-status: linked
-maturity: 0.44
+status: reviewed
+maturity: 0.66
 depends_on: []
 relates_to:
 - SG-SPEC-0007
@@ -49,7 +49,8 @@ acceptance_evidence:
     relation types, including bounded cardinality and uniqueness semantics, so later executable domain
     vocabularies can reuse them consistently
   evidence: 'specification.admissibility_rules constrains which primitive kinds may appear as subjects
-    and objects for each relation type, specification.cardinality_and_uniqueness defines when one relation
+    and objects for each relation type, specification.alias_resolution_context_rules bounds the declared
+    context used for Alias uniqueness, specification.cardinality_and_uniqueness defines when one relation
     instance is required, when multiple instances may coexist, and what makes an instance canonically
     unique, and specification.semantic_contracts states the minimum reusable semantic commitments for
     specialization, state-family attachment, alias resolution, and invariant attachment.
@@ -109,11 +110,16 @@ specification:
 
       '
     resolved_by_alias: 'A canonical RelationType linking an Alias surface form to the one canonical primitive
-      identity that the Alias resolves to in context.
+      identity that the Alias resolves to within an alias_resolution_context.
 
       '
     constrained_by_invariant: 'A canonical RelationType attaching an Invariant to the primitive whose
       semantic validity that Invariant governs.
+
+      '
+    alias_resolution_context: 'The declared vocabulary scope in which an Alias is interpreted for uniqueness,
+      so one surface form can remain unambiguous locally without claiming global uniqueness across every
+      later vocabulary slice.
 
       '
   slice_role:
@@ -160,6 +166,8 @@ specification:
     - '`resolved_by_alias` provides alternate phrasing without granting separate canonical authority to
       the Alias.'
     - The relation is identity-resolving, not a semantic-equivalence shortcut between two canonical primitives.
+    - The alias_resolution_context bounds uniqueness only; it must not create a new canonical primitive
+      or runtime lookup rule.
   - relation: constrained_by_invariant
     role: Attaches a governing Invariant to the primitive whose semantic validity must remain constrained.
     subject_scope:
@@ -177,11 +185,18 @@ specification:
   - '`governed_by_state_family` may relate only Concept to StateFamily and must not be used to smuggle
     separate canonical Concepts into state labels.'
   - '`resolved_by_alias` may originate only from Alias and must resolve to exactly one canonical target
-    primitive in the declared context.'
+    primitive in the alias_resolution_context.'
   - '`constrained_by_invariant` may originate only from Concept, RelationType, or StateFamily and must
     target an Invariant whose scope matches the governed primitive.'
   - This slice does not yet define general-purpose domain Concept-to-Concept relation catalogs beyond
     `specializes`.
+  alias_resolution_context_rules:
+  - Each `resolved_by_alias` relation must be evaluated inside one alias_resolution_context, either declared
+    directly on the relation use or inherited from the bounded vocabulary scope that owns the Alias.
+  - The alias_resolution_context may distinguish the same Alias surface form reused across later vocabulary
+    slices, but it does not grant the Alias independent canonical authority.
+  - The alias_resolution_context is a semantic disambiguation boundary, not a storage partition, viewer
+    selection, retrieval source, or executable resolver.
   cardinality_and_uniqueness:
     specializes:
     - A `specializes` relation instance is canonically identified by the ordered pair of subject Concept
@@ -199,12 +214,13 @@ specification:
       governs a distinct admissible state dimension that does not duplicate another attached StateFamily's
       role.
     resolved_by_alias:
-    - A `resolved_by_alias` relation instance is canonically identified by the declared context together
-      with the ordered pair of subject Alias and object canonical primitive.
-    - Within one declared context, an Alias must have exactly one canonical `resolved_by_alias` target.
+    - A `resolved_by_alias` relation instance is canonically identified by the alias_resolution_context
+      together with the ordered pair of subject Alias and object canonical primitive.
+    - Within one alias_resolution_context, an Alias must have exactly one canonical `resolved_by_alias`
+      target.
     - The same Alias surface form may participate in multiple `resolved_by_alias` instances only across
-      distinct declared contexts; such coexistence does not create multiple canonical targets inside any
-      one context.
+      distinct alias_resolution_context values; such coexistence does not create multiple canonical targets
+      inside any one context.
     constrained_by_invariant:
     - A `constrained_by_invariant` relation instance is canonically identified by the ordered pair of
       governed primitive and governing Invariant.
@@ -231,8 +247,8 @@ specification:
     resolved_by_alias:
     - '`resolved_by_alias` must preserve one-way subordination from Alias to canonical primitive identity.'
     - The existence of multiple Aliases must not create ambiguity about which primitive remains canonical.
-    - Uniqueness is context-bounded; one Alias may not resolve to multiple canonical targets within the
-      same declared context, even if the surface form is reused elsewhere.
+    - Uniqueness is bounded by alias_resolution_context; one Alias may not resolve to multiple canonical
+      targets within the same alias_resolution_context, even if the surface form is reused elsewhere.
     constrained_by_invariant:
     - '`constrained_by_invariant` must preserve inspectable linkage between a primitive and the rule that
       governs its semantic validity.'
@@ -260,5 +276,7 @@ proposed_status: null
 proposed_maturity: null
 required_human_action: '-'
 last_gate_decision: approve
-last_gate_note: Approve validated local refinement for bootstrap relation vocabulary slice.
-last_gate_at: '2026-04-11T05:40:49.583290+00:00'
+last_gate_note: 'Reviewed SG-SPEC-0011 alias-resolution refinement: alias_resolution_context now bounds
+  Alias uniqueness without granting canonical authority, storage partitioning, viewer selection, retrieval
+  source, or executable resolver semantics.'
+last_gate_at: '2026-04-11T20:01:11.332519+00:00'

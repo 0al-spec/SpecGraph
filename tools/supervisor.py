@@ -201,7 +201,12 @@ SYNC_STRIPPED_SPEC_KEYS = {
     "last_validator_results",
     "last_refinement_acceptance",
     "last_reconciliation",
+    "last_requested_child_materialization",
+    "last_materialized_child_paths",
     "last_errors",
+    "last_gate_decision",
+    "last_gate_note",
+    "last_gate_at",
 }
 DEFAULT_CODEX_HOME = Path(os.environ.get("CODEX_HOME", "~/.codex")).expanduser()
 
@@ -437,6 +442,10 @@ def selection_mode_for_node(
 
 
 def is_seed_like_spec(node_data: dict[str, Any]) -> bool:
+    refines = node_data.get("refines")
+    if isinstance(refines, list) and any(str(item).strip() for item in refines):
+        return False
+
     texts: list[str] = [
         str(node_data.get("title", "")),
         str(node_data.get("prompt", "")),
@@ -843,6 +852,8 @@ def effective_child_executor_timeout_seconds(
 def bootstrap_child_hint(node: SpecNode, specs: list[SpecNode]) -> dict[str, str] | None:
     if not can_create_new_spec_files(node):
         return None
+    if not is_seed_like_spec(node.data):
+        return None
 
     seed_text_parts = [node.prompt]
     acceptance = node.data.get("acceptance", [])
@@ -1194,6 +1205,8 @@ Refinement mode: split_refactor_proposal
 - Every current parent acceptance criterion must be mapped exactly once
   to parent_retained or one child slot.
 - Cross-cutting acceptance stays on the parent and must not be duplicated across children.
+- parent_after_split.intended_depends_on must not exceed {ATOMICITY_MAX_BLOCKING_CHILDREN}
+  blocking child slots; if a clean split needs more, end with RUN_OUTCOME: escalate.
 {retrospective_section}
 - Suggested child IDs and paths are advisory snapshot outputs only;
   they do not reserve canonical IDs.
@@ -2856,6 +2869,11 @@ def validate_split_proposal_artifact(
     if not isinstance(intended_depends_on, list):
         errors.append("parent_after_split.intended_depends_on must be a list")
         intended_depends_on = []
+    elif len(intended_depends_on) > ATOMICITY_MAX_BLOCKING_CHILDREN:
+        errors.append(
+            "parent_after_split.intended_depends_on must not exceed "
+            f"{ATOMICITY_MAX_BLOCKING_CHILDREN} blocking child slots"
+        )
 
     suggested_children = artifact.get("suggested_children")
     child_slot_keys: list[str] = []
@@ -3078,10 +3096,23 @@ def validate_split_proposal_application_target(
                 continue
             child_id = str(child.get("suggested_id", "")).strip()
             child_path = str(child.get("suggested_path", "")).strip()
-            if child_id in current_index:
-                errors.append(
-                    f"split proposal application cannot overwrite existing spec id: {child_id}"
-                )
+            existing_child = current_index.get(child_id)
+            if existing_child is not None:
+                existing_relpath = existing_child.path.relative_to(ROOT).as_posix()
+                if existing_relpath != child_path:
+                    errors.append(
+                        "split proposal application cannot reuse existing spec id "
+                        f"{child_id} at a different path: {existing_relpath}"
+                    )
+                existing_refines = existing_child.data.get("refines", [])
+                if not isinstance(existing_refines, list) or node.id not in {
+                    str(item).strip() for item in existing_refines
+                }:
+                    errors.append(
+                        "split proposal application can reuse existing child "
+                        f"{child_id} only when it already refines {node.id}"
+                    )
+                continue
             if child_path and (ROOT / child_path).exists():
                 errors.append(
                     "split proposal application cannot overwrite existing child spec path: "
@@ -3109,9 +3140,7 @@ def apply_split_proposal_to_worktree(
         child_id = str(child["suggested_id"]).strip()
         child_path = str(child["suggested_path"]).strip()
         if child_id in index:
-            raise ValueError(
-                f"Cannot apply split proposal: child spec id already exists: {child_id}"
-            )
+            continue
         absolute_child_path = worktree_path / child_path
         if absolute_child_path.exists():
             raise ValueError(
@@ -3406,6 +3435,47 @@ def sync_files_from_worktree(worktree_path: Path, rel_paths: list[str]) -> None:
             dst.unlink()
 
 
+def gate_worktree_divergence_paths(
+    node: SpecNode, worktree_path: Path, rel_paths: list[str]
+) -> list[str]:
+    """Return semantic paths that differ between current gate content and worktree copies."""
+    yaml_module = get_yaml_module()
+    divergence_paths: list[str] = []
+    for rel_path in rel_paths:
+        if not is_spec_node_path(rel_path):
+            continue
+
+        worktree_node_path = worktree_path / rel_path
+        current_node_path = ROOT / rel_path
+        if not worktree_node_path.exists() or not worktree_node_path.is_file():
+            if current_node_path.exists():
+                divergence_paths.append(f"{rel_path}:<missing-worktree-file>")
+            continue
+        if not current_node_path.exists() or not current_node_path.is_file():
+            divergence_paths.append(f"{rel_path}:<missing-canonical-file>")
+            continue
+
+        worktree_data = yaml_module.safe_load(worktree_node_path.read_text(encoding="utf-8")) or {}
+        current_data = yaml_module.safe_load(current_node_path.read_text(encoding="utf-8")) or {}
+        if not isinstance(worktree_data, dict) or not isinstance(current_data, dict):
+            divergence_paths.append(f"{rel_path}:<root>")
+            continue
+
+        current_snapshot = canonical_spec_snapshot(current_data)
+        worktree_snapshot = canonical_spec_snapshot(worktree_data)
+        divergence_paths.extend(
+            f"{rel_path}:{path}"
+            for path in collect_changed_paths(current_snapshot, worktree_snapshot)
+        )
+    return divergence_paths
+
+
+def format_gate_worktree_divergence(paths: list[str], *, limit: int = 8) -> str:
+    preview = paths[:limit]
+    suffix = "" if len(paths) <= limit else f", ... (+{len(paths) - limit} more)"
+    return ", ".join(preview) + suffix
+
+
 def executor_supports_work_item(
     executor: Callable[..., subprocess.CompletedProcess[str]],
 ) -> bool:
@@ -3695,7 +3765,7 @@ def resolve_gate_decision(
         proposed_status = node.data.get("proposed_status")
         proposed_maturity = node.data.get("proposed_maturity")
         before_node_data = copy.deepcopy(node.data)
-        if proposed_status is not None:
+        if proposed_status is not None and proposed_status != node.status:
             transition_errors = validate_transition(node.status, proposed_status)
             if transition_errors:
                 print("\n".join(transition_errors), file=sys.stderr)
@@ -3706,6 +3776,18 @@ def resolve_gate_decision(
         materialized_child_paths = list(node.data.get("last_materialized_child_paths", []))
         if worktree_path.as_posix() and worktree_path.exists():
             allowed_changes = select_sync_paths(node.allowed_paths, changed_files)
+            divergence_paths = gate_worktree_divergence_paths(node, worktree_path, allowed_changes)
+            if divergence_paths:
+                print(
+                    (
+                        f"Spec {spec_id} review gate is stale: current canonical content differs "
+                        "from last_worktree_path at "
+                        f"{format_gate_worktree_divergence(divergence_paths)}. "
+                        "Rerun supervisor or reconcile the gate before approval."
+                    ),
+                    file=sys.stderr,
+                )
+                return 1
             sync_files_from_worktree(worktree_path, allowed_changes)
             normalize_materialized_child_specs(materialized_child_paths)
             # Keep approved content from the worktree while attaching gate metadata in root.
@@ -4448,8 +4530,12 @@ def _process_one_spec(
             )
 
         proposed_status = None if is_graph_refactor_run else STATUS_PROGRESSION.get(node.status)
+        if proposed_status == "reviewed" and not reconciliation.get("work_dependencies_ready"):
+            proposed_status = node.status
         transition_errors = (
-            [] if is_graph_refactor_run else validate_transition(node.status, proposed_status)
+            []
+            if is_graph_refactor_run or proposed_status == node.status
+            else validate_transition(node.status, proposed_status)
         )
 
         validation_errors = []
@@ -4605,11 +4691,11 @@ def _process_one_spec(
         and not success
         and not any(path != source_spec_relpath for path in changed if is_spec_node_path(path))
     )
+    changed_spec_paths = [path for path in changed if is_spec_node_path(path)]
     cleanup_interrupted_source_refinement = (
-        not child_materialization_requested
-        and not success
+        not success
         and bool(executor_environment.get("issues"))
-        and all(path == source_spec_relpath for path in changed if is_spec_node_path(path))
+        and (not changed_spec_paths or source_spec_relpath in changed_spec_paths)
     )
 
     validator_results = {

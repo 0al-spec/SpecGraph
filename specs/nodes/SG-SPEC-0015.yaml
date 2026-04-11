@@ -1,0 +1,175 @@
+id: SG-SPEC-0015
+title: SpecGraph - Delegation and Atomic Decomposition Policy
+kind: spec
+status: linked
+maturity: 1.0
+depends_on: []
+relates_to: []
+refines:
+- SG-SPEC-0002
+inputs:
+- specs/nodes/SG-SPEC-0002.yaml
+outputs:
+- specs/nodes/SG-SPEC-0015.yaml
+allowed_paths:
+- specs/nodes/SG-SPEC-0015.yaml
+acceptance:
+- Defines how a seed or working spec delegates one or more concrete unresolved areas to child specs while
+  preserving atomic spec boundaries and parent terminology
+- Defines when a non-atomic spec should decompose into sibling child specs and surface split_required
+  rather than growing in place
+acceptance_evidence:
+- criterion: Defines how a seed or working spec delegates one or more concrete unresolved areas to child
+    specs while preserving atomic spec boundaries and parent terminology
+  evidence: 'specification.terminology defines delegated_gap, atomic_spec_node, and sibling_child_specs.
+    specification.delegation_policy defines delegated_gap_semantics, delegation_decision_procedure, seed_spec_expectations,
+    working_spec_expectations, parent_expectations, and child_expectations. Those sections require each
+    delegated gap to map to one bounded child concern, provide an ordered choice between in-place refinement
+    and child delegation, preserve inherited terminology unless explicitly narrowed, and keep the parent
+    authoritative for stable shared intent.
+
+    '
+- criterion: Defines when a non-atomic spec should decompose into sibling child specs and surface split_required
+    rather than growing in place
+  evidence: 'specification.terminology defines decomposition_pass and split_required. specification.atomicity_policy
+    defines atomicity_checks, sibling_child_rules, and split_required_surface, while specification.delegation_policy.delegation_decision_procedure
+    defines the decision point that distinguishes one child delegation from sibling decomposition. Those
+    rules require sibling child specs when independent unresolved areas have distinct acceptance, blockers,
+    terminology surfaces, or review paths, and require split_required to be surfaced when the current
+    node remains non-atomic instead of growing the oversized node in place.
+
+    '
+prompt: Refine SG-SPEC-0002 by defining how seed or working specs delegate unresolved areas to child specs,
+  when sibling child specs are required, and when split_required should be surfaced instead of growing
+  an oversized node in place.
+specification:
+  objective: 'Define how seed or working specs delegate concrete unresolved areas to child specs while
+    preserving atomic boundaries, inherited terminology, and a clear split_required signal for specs that
+    remain too broad to finish in place.
+
+    '
+  scope:
+    in:
+    - Delegated unresolved areas from seed or working specs to child specs
+    - Atomic boundaries for delegated child specs
+    - Conditions that require sibling child specs in one decomposition pass
+    - Conditions for surfacing split_required instead of expanding a non-atomic node
+    out:
+    - Edge semantics beyond the delegated parent/child use of refines and depends_on
+    - Linked-readiness evidence and ancestor reconciliation after descendants exist
+    - Validator implementation, queue behavior, or supervisor scheduling
+    - Runtime code, test code, storage schema, or generated artifacts
+  terminology:
+    delegated_gap: 'A concrete unresolved area intentionally left open by a seed or working spec and assigned
+      to one child spec for elaboration in the current refinement step.
+
+      '
+    atomic_spec_node: 'A spec node whose acceptance criteria, delegated scope, blockers, and review path
+      all describe one bounded concern that can advance without hiding unrelated work.
+
+      '
+    decomposition_pass: 'A refinement run that narrows an oversized spec by preserving the parent as a
+      stable coordinating envelope and delegating independent concerns to one or more child specs.
+
+      '
+    sibling_child_specs: 'Two or more child specs created or selected from the same parent in a decomposition
+      pass, where each child owns a distinct unresolved area and can be reviewed independently.
+
+      '
+    split_required: 'A run outcome signal used when the current spec still contains multiple bounded concerns
+      after the permitted refinement step, so the node should be decomposed rather than treated as complete.
+
+      '
+  delegation_policy:
+    delegated_gap_semantics:
+    - A delegated_gap SHOULD be named as a specific unresolved area, not as a broad topic bucket.
+    - In a single refinement step, one delegated_gap SHOULD map to exactly one child spec.
+    - A delegated_gap is concrete enough to delegate when its child can define its own acceptance criteria,
+      evidence, outputs, and allowed paths without reopening the whole parent.
+    - Delegation preserves the parent as the source of stable terminology and shared intent unless the
+      child explicitly defines a compatible narrowing.
+    delegation_decision_procedure:
+    - Identify concrete unresolved areas from the parent objective, scope, acceptance criteria, blockers,
+      and terminology before adding detail to the current node.
+    - Refine in place only when the unresolved area clarifies the same bounded concern and does not need
+      independent acceptance criteria, evidence, allowed paths, blockers, terminology narrowing, or review.
+    - Delegate to one child spec when the unresolved area can own those local criteria, evidence, outputs,
+      allowed paths, blockers, or review decisions without reopening the whole parent.
+    - Use sibling_child_specs when two or more delegated_gap candidates can advance independently or would
+      otherwise force unrelated acceptance criteria into one child.
+    - Surface split_required when the current run cannot complete the required child delegation or sibling
+      decomposition within its allowed paths and bounded refinement step.
+    seed_spec_expectations:
+    - A seed spec MAY remain broad only as a stable coordinating envelope for the graph area it seeds.
+    - A seed spec SHOULD delegate unresolved areas that require separate decisions, acceptance criteria,
+      or validation evidence to child specs.
+    - A seed spec MAY delegate multiple unresolved areas during one decomposition_pass when those areas
+      are independent enough to become sibling_child_specs.
+    working_spec_expectations:
+    - A non-seed working spec SHOULD be an atomic_spec_node after each refinement run.
+    - A working spec SHOULD delegate rather than absorb detail when adding the detail would mix independent
+      acceptance criteria, blockers, terminology changes, or review paths.
+    - A working spec MUST NOT broaden its scope merely to avoid creating or refining a child spec.
+    parent_expectations:
+    - The parent retains stable shared intent, inherited terminology, and coordination context.
+    - The parent records a child in depends_on when the delegated_gap blocks parent advancement.
+    - The parent SHOULD update acceptance_evidence to cite concrete child specs when delegated gaps are
+      satisfied by existing descendants.
+    - The parent MUST NOT duplicate the detailed child specification in place once the unresolved area
+      has been delegated.
+    child_expectations:
+    - The child lists refines pointing at the parent it directly elaborates.
+    - The child owns one bounded delegated_gap unless the child is itself explicitly decomposed before
+      advancement.
+    - The child defines its own acceptance, acceptance_evidence, outputs, and allowed_paths.
+    - The child preserves inherited terminology unless it defines an explicit compatible narrowing inside
+      its own specification.
+  atomicity_policy:
+    atomicity_checks:
+    - A spec is atomic when every acceptance criterion advances the same bounded concern.
+    - A spec is atomic when its blockers, dependencies, and evidence are shared by that bounded concern
+      rather than by unrelated subtopics.
+    - A spec is non-atomic when two or more unresolved areas could advance, block, or be reviewed independently.
+    - A coordinating seed or overview spec may remain broader than one child concern only when it delegates
+      independent detail instead of absorbing that detail.
+    sibling_child_rules:
+    - Sibling child specs are required when independent unresolved areas need distinct acceptance criteria
+      or acceptance_evidence.
+    - Sibling child specs are required when resolving one area would not resolve or materially constrain
+      another area in the same parent.
+    - Sibling child specs are required when separate blockers, allowed_paths, or review authorities would
+      otherwise be hidden inside one oversized node.
+    - Sibling child specs created in one decomposition_pass SHOULD share the same parent and each SHOULD
+      own a distinct delegated_gap.
+    - Sibling child specs SHOULD reuse parent terminology for shared concepts and define only local compatible
+      narrowing where needed.
+    split_required_surface:
+    - A refinement run SHOULD surface split_required when the current node remains broader than one atomic_spec_node
+      after the bounded edit permitted for that run.
+    - A refinement run SHOULD surface split_required when required sibling_child_specs cannot be created
+      or fully scoped within the current allowed paths.
+    - A node with split_required SHOULD preserve any narrowed parent content and any valid child delegation
+      already produced in the run.
+    - A node with split_required MUST NOT be advanced as complete merely because some acceptance evidence
+      was added.
+  examples:
+  - name: Single delegated gap
+    description: 'A seed spec keeps stable ontology terms in the parent and delegates edge-selection details
+      to one child. The parent uses depends_on only if that child blocks parent advancement, while the
+      child uses refines to inherit the parent framing.
+
+      '
+  - name: Sibling decomposition
+    description: 'A working spec discovers that edge semantics, delegation policy, and linked-readiness
+      evidence have separate acceptance criteria and review paths. The parent remains a coordinating envelope,
+      and those areas become sibling child specs instead of one larger mixed node.
+
+      '
+gate_state: none
+proposed_status: null
+proposed_maturity: null
+required_human_action: '-'
+last_gate_decision: approve
+last_gate_note: 'Reviewed SG-SPEC-0015 delegation decision procedure and linked transition: scoped to
+  in-place refinement, child delegation, sibling decomposition, and split_required signaling.'
+last_gate_at: '2026-04-11T13:41:07.926873+00:00'

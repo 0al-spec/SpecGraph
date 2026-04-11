@@ -76,6 +76,37 @@ def canonicalize_text(text: str) -> str:
     return dump_canonical_yaml(data)
 
 
+def _validate_spec_shape(data: dict[str, Any]) -> list[str]:
+    messages: list[str] = []
+
+    acceptance = data.get("acceptance", [])
+    if not isinstance(acceptance, list):
+        messages.append("acceptance must be a list")
+    else:
+        for index, item in enumerate(acceptance, start=1):
+            if not isinstance(item, str):
+                messages.append(f"acceptance[{index}] must be a string; avoid unquoted ': ' values")
+
+    acceptance_evidence = data.get("acceptance_evidence", [])
+    if not isinstance(acceptance_evidence, list):
+        messages.append("acceptance_evidence must be a list")
+    else:
+        for index, item in enumerate(acceptance_evidence, start=1):
+            if isinstance(item, str):
+                continue
+            if isinstance(item, dict):
+                criterion = item.get("criterion")
+                evidence = item.get("evidence")
+                if isinstance(criterion, str) and isinstance(evidence, str):
+                    continue
+            messages.append(
+                "acceptance_evidence"
+                f"[{index}] must be a string or a mapping with string criterion and evidence"
+            )
+
+    return messages
+
+
 def lint_file(path: Path) -> list[LintIssue]:
     issues: list[LintIssue] = []
     try:
@@ -84,10 +115,14 @@ def lint_file(path: Path) -> list[LintIssue]:
         return [LintIssue(path=path, message="file does not exist")]
 
     try:
-        canonical = canonicalize_text(source)
+        data = load_yaml_text(source)
     except Exception as exc:
         return [LintIssue(path=path, message=str(exc))]
 
+    for message in _validate_spec_shape(data):
+        issues.append(LintIssue(path=path, message=message))
+
+    canonical = dump_canonical_yaml(data)
     if source != canonical:
         issues.append(
             LintIssue(

@@ -67,6 +67,27 @@ def test_lint_file_rejects_duplicate_keys(
     assert "duplicate key" in issues[0].message
 
 
+def test_lint_file_rejects_mapping_acceptance_item(
+    tmp_path: Path,
+    spec_yaml_module: object,
+) -> None:
+    target = tmp_path / "spec.yaml"
+    target.write_text(
+        "id: SG-SPEC-0099\n"
+        "status: outlined\n"
+        "acceptance:\n"
+        "- Defines seeds: Foo, Bar\n"
+        "acceptance_evidence:\n"
+        "- criterion: Defines seeds for Foo, Bar\n"
+        "  evidence: covered\n",
+        encoding="utf-8",
+    )
+
+    issues = spec_yaml_module.lint_file(target)
+
+    assert any("acceptance[1] must be a string" in issue.message for issue in issues)
+
+
 def test_lint_file_passes_for_canonical_yaml(
     tmp_path: Path,
     spec_yaml_module: object,

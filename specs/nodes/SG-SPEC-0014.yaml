@@ -1,0 +1,141 @@
+id: SG-SPEC-0014
+title: SpecGraph - Spec Edge Semantics and Blocking Policy
+kind: spec
+status: linked
+maturity: 0.88
+depends_on: []
+relates_to: []
+refines:
+- SG-SPEC-0002
+inputs:
+- specs/nodes/SG-SPEC-0002.yaml
+outputs:
+- specs/nodes/SG-SPEC-0014.yaml
+allowed_paths:
+- specs/nodes/SG-SPEC-0014.yaml
+acceptance:
+- Defines when spec nodes use refines, depends_on, and relates_to between parent and child specs, and
+  distinguishes declared blocking from derived effective blocking
+acceptance_evidence:
+- criterion: Defines when spec nodes use refines, depends_on, and relates_to between parent and child
+    specs, and distinguishes declared blocking from derived effective blocking
+  evidence: 'specification.terminology defines declared_blocking_edge and effective_blocking. specification.relation_policy
+    defines refines, depends_on, and relates_to with source, target, required_when, and notes. specification.edge_selection_procedure
+    gives an ordered decision path for direct refinement, advancement blocking, contextual relation, and
+    no-edge cases. specification.parent_child_edge_rules defines the parent/child selection rules. specification.blocking_semantics
+    separates authored blocking declarations in the canonical graph from transitive or queue-oriented
+    blocking views derived by tooling.
+
+    '
+prompt: Refine SG-SPEC-0002 by defining when spec nodes use refines, depends_on, and relates_to between
+  parent and child specs, and by separating declared blocking edges from derived effective blocking views.
+specification:
+  objective: 'Define the canonical meanings of spec-to-spec relation edges for parent and child specs,
+    and keep authored blocking declarations separate from derived effective blocking views.
+
+    '
+  scope:
+    in:
+    - Direct spec-to-spec relation selection for refines, depends_on, and relates_to
+    - Ordered edge selection for ambiguous parent/child relation cases
+    - Parent/child edge direction and blocking intent
+    - Declared versus derived blocking semantics for spec nodes
+    out:
+    - Delegation and atomic decomposition policy
+    - Linked-readiness evidence and ancestor reconciliation
+    - Validator implementation, queue implementation, or storage schema design
+    - Non-spec node relations
+  terminology:
+    parent_spec: 'A spec whose scope, terminology, or unresolved area is elaborated by a narrower child
+      spec.
+
+      '
+    child_spec: 'A spec that directly narrows or elaborates a bounded concern from a parent spec while
+      preserving the parent''s stable terminology.
+
+      '
+    declared_blocking_edge: 'An authored canonical dependency expressed with depends_on from the blocked
+      spec to the spec that must be satisfied first.
+
+      '
+    effective_blocking: 'A derived operational view computed from canonical graph state, declared blocking
+      edges, transitive closure, and current node states. It is not itself a canonical edge fact.
+
+      '
+  relation_policy:
+  - relation: refines
+    source: child spec
+    target: parent spec
+    required_when: The child directly narrows, elaborates, or resolves a bounded concern owned by the
+      parent.
+    notes:
+    - refines records semantic ancestry and inheritance of problem framing.
+    - A child spec MUST use refines to name the parent it directly elaborates.
+    - refines alone does not declare that the parent is blocked by the child.
+  - relation: depends_on
+    source: blocked spec
+    target: required spec
+    required_when: The source spec cannot advance through its current refinement responsibility until
+      the target spec exists or is satisfied.
+    notes:
+    - In a parent/child refinement chain, a parent uses depends_on for a child only when that child resolves
+      an unresolved area required for parent advancement.
+    - depends_on is the only canonical authored relation that declares blocking intent for spec refinement.
+    - depends_on MUST NOT be added merely because a child refines the parent.
+    - A blocking child creates two distinct directed facts, child-to-parent refines for ancestry and parent-to-child
+      depends_on for blocking.
+  - relation: relates_to
+    source: any spec
+    target: any spec
+    required_when: The specs share relevant context, terminology, risk, or coordination surface, but neither
+      direct semantic refinement nor advancement blocking is being declared.
+    notes:
+    - relates_to is non-blocking.
+    - relates_to MUST NOT stand in for refines when one spec is a child elaboration of another.
+    - relates_to MUST NOT stand in for depends_on when advancement blocking is intended.
+  edge_selection_procedure:
+  - First determine whether one spec directly narrows or elaborates a bounded concern owned by another
+    spec. If so, the narrower child declares refines pointing to that parent.
+  - Then determine whether either spec cannot advance through its current refinement responsibility until
+    the other spec exists or is satisfied. If so, the blocked spec declares depends_on pointing to the
+    required spec.
+  - For a delegated parent gap, the normal blocking direction is parent depends_on child. The child does
+    not depend_on the parent merely to acknowledge inherited framing.
+  - If the specs share useful context but neither direct refinement nor advancement blocking is being
+    declared, use relates_to.
+  - If none of the relation conditions apply, no canonical relation is authored for that pair.
+  parent_child_edge_rules:
+  - A child spec that elaborates a parent MUST declare refines pointing to that parent.
+  - A parent spec MUST declare depends_on pointing to a child only when the child is required to resolve
+    a delegated or otherwise blocking refinement gap.
+  - A parent spec MAY omit depends_on for a child that is useful context but not required for parent advancement.
+  - Parent/child status advancement MUST be reasoned from the explicit depends_on set, not from the mere
+    existence of refines children.
+  - relates_to MAY connect sibling or cross-cutting specs, but it does not create parent/child ancestry
+    and does not create blocking.
+  blocking_semantics:
+    declared:
+    - Declared blocking is authored only through depends_on.
+    - A declared_blocking_edge is direct and local to the source spec.
+    - The canonical graph stores the authored depends_on edge, not a pre-expanded list of transitive blockers.
+    - When a child blocks a parent, the declared_blocking_edge is parent-to-child and remains separate
+      from the child-to-parent refines edge.
+    derived:
+    - effective_blocking may include transitive blockers reachable through depends_on closure.
+    - effective_blocking may also account for current node state when answering readiness or queue questions.
+    - Derived effective_blocking views are rebuildable from canonical data and MUST NOT be written back
+      as replacement depends_on edges.
+    - A derived view MAY report that a parent is effectively blocked by an indirect descendant, but that
+      report does not authorize adding direct depends_on edges to every transitive blocker.
+    non_blocking_relations:
+    - refines contributes semantic ancestry but does not create blocking unless paired with an explicit
+      depends_on declaration from the blocked spec.
+    - relates_to contributes contextual relevance only and never creates blocking.
+gate_state: none
+proposed_status: null
+proposed_maturity: null
+required_human_action: '-'
+last_gate_decision: approve
+last_gate_note: 'Reviewed SG-SPEC-0014 edge selection refinement and linked transition: scoped to relation
+  choice, blocking direction, and derived effective blocking semantics.'
+last_gate_at: '2026-04-11T13:38:27.883988+00:00'
