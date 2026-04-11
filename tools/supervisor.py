@@ -442,6 +442,10 @@ def selection_mode_for_node(
 
 
 def is_seed_like_spec(node_data: dict[str, Any]) -> bool:
+    refines = node_data.get("refines")
+    if isinstance(refines, list) and any(str(item).strip() for item in refines):
+        return False
+
     texts: list[str] = [
         str(node_data.get("title", "")),
         str(node_data.get("prompt", "")),

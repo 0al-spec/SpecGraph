@@ -296,6 +296,27 @@ def test_infer_ordinary_execution_profile_uses_materialize_for_seed_like_node(
     assert profile_name == supervisor_module.AUTO_CHILD_MATERIALIZATION_PROFILE_NAME
 
 
+def test_seed_like_spec_requires_root_or_overview_structure(
+    supervisor_module: object,
+) -> None:
+    assert supervisor_module.is_seed_like_spec(
+        {
+            "title": "Root Spec",
+            "prompt": "This seed spec is a root overview spec with child specs.",
+        }
+    )
+    assert not supervisor_module.is_seed_like_spec(
+        {
+            "title": "Spec Refinement and Linkage Policy",
+            "prompt": "Define rules for advancing a seed spec to linked.",
+            "refines": ["SG-SPEC-0001"],
+            "specification": {
+                "objective": "Define how seed specs delegate unresolved areas to child specs.",
+            },
+        }
+    )
+
+
 def test_create_child_codex_home_writes_minimal_config_and_copies_auth(
     supervisor_module: object,
     tmp_path: Path,
