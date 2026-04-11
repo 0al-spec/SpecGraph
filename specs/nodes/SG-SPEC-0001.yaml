@@ -611,14 +611,14 @@ specification:
       in SG-SPEC-0001.
 
       '
-last_gate_decision: done
-last_gate_note: created SG-SPEC-0009 for the OperatorRequest contract and linked it into the seed refinement
-  chain
-last_gate_at: '2026-04-08T08:47:58Z'
-proposed_status: reviewed
-proposed_maturity: 0.88
-gate_state: review_pending
-required_human_action: approve or retry refinement
+last_gate_decision: retry
+last_gate_note: 'Reject stale review gate: last_worktree_path also contains outdated SG-SPEC-0010 content
+  after later graph approvals. Rerun ancestor reconciliation after blocking children are resolved.'
+last_gate_at: '2026-04-11T07:32:53.139857+00:00'
+proposed_status: null
+proposed_maturity: null
+gate_state: retry_pending
+required_human_action: rerun supervisor
 last_outcome: done
 last_blocker: ''
 last_run_id: 20260408T095951Z-SG-SPEC-0001
