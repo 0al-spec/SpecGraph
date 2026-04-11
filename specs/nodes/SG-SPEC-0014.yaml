@@ -2,7 +2,7 @@ id: SG-SPEC-0014
 title: SpecGraph - Spec Edge Semantics and Blocking Policy
 kind: spec
 status: linked
-maturity: 0.68
+maturity: 0.88
 depends_on: []
 relates_to: []
 refines:
@@ -131,69 +131,11 @@ specification:
     - refines contributes semantic ancestry but does not create blocking unless paired with an explicit
       depends_on declaration from the blocked spec.
     - relates_to contributes contextual relevance only and never creates blocking.
-proposed_status: linked
-proposed_maturity: 0.88
-gate_state: review_pending
-required_human_action: approve or retry refinement
-last_outcome: done
-last_blocker: ''
-last_run_id: 20260411T133756Z-SG-SPEC-0014
-last_exit_code: 0
-last_changed_files:
-- specs/nodes/SG-SPEC-0014.yaml
-last_run_at: '2026-04-11T13:37:56.648723+00:00'
-last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0014-20260411T133501Z
-last_branch: codex/sg-spec-0014/20260411T133501Z
-last_validator_results:
-  outputs: true
-  allowed_paths: true
-  reconciliation: true
-  atomicity: true
-  transition: true
-  executor_environment: true
-  refinement_acceptance: true
-last_refinement_acceptance:
-  decision: approve
-  change_class: local_refinement
-  checks:
-    content_changed: true
-    hard_validation: true
-    single_spec_scope: true
-    constitutional_diff: false
-    graph_refactor_diff: false
-    atomicity_clear: true
-    within_mutation_budget: true
-  diff_paths:
-  - acceptance_evidence[0].evidence
-  - maturity
-  - specification.blocking_semantics.declared[3]
-  - specification.blocking_semantics.derived[3]
-  - specification.edge_selection_procedure
-  - specification.edge_selection_procedure[0]
-  - specification.edge_selection_procedure[1]
-  - specification.edge_selection_procedure[2]
-  - specification.edge_selection_procedure[3]
-  - specification.edge_selection_procedure[4]
-  - specification.relation_policy[1].notes[3]
-  - specification.scope.in[1]
-  - specification.scope.in[2]
-  - specification.scope.in[3]
-  - status
-  mutation_classes:
-  - policy_text
-  mutation_budget: []
-  budget_exceeded_classes: []
-  changed_spec_files:
-  - specs/nodes/SG-SPEC-0014.yaml
-  review_reasons: []
-  errors: []
-  warnings: []
-last_reconciliation:
-  worktree_spec_count: 16
-  changed_spec_ids:
-  - SG-SPEC-0014
-  semantic_dependencies_resolved: true
-  work_dependencies_ready: true
-  cycles: []
-last_requested_child_materialization: false
-last_materialized_child_paths: []
+gate_state: none
+proposed_status: null
+proposed_maturity: null
+required_human_action: '-'
+last_gate_decision: approve
+last_gate_note: 'Reviewed SG-SPEC-0014 edge selection refinement and linked transition: scoped to relation
+  choice, blocking direction, and derived effective blocking semantics.'
+last_gate_at: '2026-04-11T13:38:27.883988+00:00'
