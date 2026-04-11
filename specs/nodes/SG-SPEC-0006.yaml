@@ -1,8 +1,8 @@
 id: SG-SPEC-0006
 title: SpecGraph - Tracked Proposal Lane for Graph Evolution
 kind: spec
-status: specified
-maturity: 0.4
+status: linked
+maturity: 0.6
 depends_on: []
 relates_to:
 - SG-SPEC-0005
@@ -513,70 +513,11 @@ specification:
     - Graph analyses that operate over both layers must treat proposal-lane structure as non-canonical
       unless an explicit canonical application event has materialized the proposal into canonical spec
       nodes.
-proposed_status: linked
-proposed_maturity: 0.6
-gate_state: review_pending
-required_human_action: review refinement impact before approval
-last_outcome: done
-last_blocker: ''
-last_run_id: 20260407T222756Z-SG-SPEC-0006
-last_exit_code: 0
-last_changed_files:
-- specs/nodes/SG-SPEC-0006.yaml
-last_run_at: '2026-04-07T22:27:56.390327+00:00'
-last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0006-20260407T222633Z
-last_branch: codex/sg-spec-0006/20260407T222633Z
-last_validator_results:
-  outputs: true
-  allowed_paths: true
-  reconciliation: true
-  atomicity: true
-  transition: true
-  executor_environment: true
-  refinement_acceptance: true
-last_refinement_acceptance:
-  decision: review_required
-  change_class: constitutional_change
-  checks:
-    content_changed: true
-    hard_validation: true
-    single_spec_scope: true
-    constitutional_diff: true
-    graph_refactor_diff: false
-    atomicity_clear: true
-    within_mutation_budget: true
-  diff_paths:
-  - acceptance_evidence[1].evidence
-  - acceptance_evidence[3].evidence
-  - specification.proposal_lane_policy.identity_and_lineage[6]
-  - specification.proposal_lane_policy.identity_and_lineage[7]
-  - specification.proposal_lane_policy.identity_and_lineage[8]
-  - specification.proposal_lane_policy.identity_and_lineage[9]
-  - specification.proposal_lane_policy.identity_and_lineage[10]
-  - specification.proposal_lane_policy.identity_and_lineage[11]
-  - specification.proposal_lane_policy.identity_and_lineage[12]
-  - specification.proposal_lane_policy.identity_and_lineage[13]
-  - specification.proposal_lane_policy.identity_and_lineage[14]
-  - specification.proposal_lane_policy.viewer_contract[2]
-  - specification.proposal_lane_policy.viewer_contract[3]
-  - specification.proposal_lane_policy.viewer_contract[4]
-  - specification.proposal_lane_policy.viewer_contract[5]
-  - specification.proposal_lane_policy.viewer_contract[6]
-  mutation_classes:
-  - policy_text
-  mutation_budget:
-  - policy_text
-  budget_exceeded_classes: []
-  changed_spec_files:
-  - specs/nodes/SG-SPEC-0006.yaml
-  review_reasons:
-  - run changed governance-sensitive specification sections
-  errors: []
-  warnings: []
-last_reconciliation:
-  worktree_spec_count: 7
-  changed_spec_ids:
-  - SG-SPEC-0006
-  semantic_dependencies_resolved: true
-  work_dependencies_ready: true
-  cycles: []
+gate_state: none
+proposed_status: null
+proposed_maturity: null
+required_human_action: '-'
+last_gate_decision: approve
+last_gate_note: Approve governance-sensitive proposal-lane refinement after review of repository presence,
+  proposal handle, artifact bridge, and viewer query contracts.
+last_gate_at: '2026-04-11T07:11:55.806146+00:00'
