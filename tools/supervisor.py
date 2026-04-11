@@ -852,6 +852,8 @@ def effective_child_executor_timeout_seconds(
 def bootstrap_child_hint(node: SpecNode, specs: list[SpecNode]) -> dict[str, str] | None:
     if not can_create_new_spec_files(node):
         return None
+    if not is_seed_like_spec(node.data):
+        return None
 
     seed_text_parts = [node.prompt]
     acceptance = node.data.get("acceptance", [])

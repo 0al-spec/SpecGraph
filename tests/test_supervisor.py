@@ -261,26 +261,26 @@ def test_resolve_execution_profile_keeps_standard_for_explicit_target(
     assert profile.reasoning_effort == supervisor_module.CHILD_EXECUTOR_REASONING_EFFORT
 
 
-def test_infer_ordinary_execution_profile_uses_materialize_for_seed_like_node(
+def test_infer_ordinary_execution_profile_uses_materialize_for_root_seed_like_node(
     supervisor_module: object,
     repo_fixture: Path,
 ) -> None:
     node = supervisor_module.SpecNode(
-        path=repo_fixture / "specs" / "nodes" / "SG-SPEC-0002.yaml",
+        path=repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml",
         data={
-            "id": "SG-SPEC-0002",
-            "title": "Seed-like Delegation Spec",
+            "id": "SG-SPEC-0001",
+            "title": "Root Spec",
             "status": "specified",
             "maturity": 0.57,
             "depends_on": [],
             "relates_to": [],
-            "refines": ["SG-SPEC-0001"],
-            "inputs": ["specs/nodes/SG-SPEC-0001.yaml"],
-            "outputs": ["specs/nodes/SG-SPEC-0002.yaml"],
+            "refines": [],
+            "inputs": [],
+            "outputs": ["specs/nodes/SG-SPEC-0001.yaml"],
             "allowed_paths": ["specs/nodes/*.yaml"],
             "acceptance": ["Define how the parent delegates one bounded child concern."],
             "acceptance_evidence": ["seed evidence"],
-            "prompt": "Delegate one child spec when decomposition is needed.",
+            "prompt": "This seed spec delegates one child spec when decomposition is needed.",
         },
     )
     specs = [node]
@@ -294,6 +294,44 @@ def test_infer_ordinary_execution_profile_uses_materialize_for_seed_like_node(
     )
 
     assert profile_name == supervisor_module.AUTO_CHILD_MATERIALIZATION_PROFILE_NAME
+
+
+def test_infer_ordinary_execution_profile_keeps_fast_for_refined_policy_with_child_terms(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    node = supervisor_module.SpecNode(
+        path=repo_fixture / "specs" / "nodes" / "SG-SPEC-0002.yaml",
+        data={
+            "id": "SG-SPEC-0002",
+            "title": "Spec Refinement and Linkage Policy",
+            "status": "specified",
+            "maturity": 0.57,
+            "depends_on": [],
+            "relates_to": [],
+            "refines": ["SG-SPEC-0001"],
+            "inputs": ["specs/nodes/SG-SPEC-0001.yaml"],
+            "outputs": ["specs/nodes/SG-SPEC-0002.yaml"],
+            "allowed_paths": ["specs/nodes/*.yaml"],
+            "acceptance": ["Define when descendant child specs unlock the parent."],
+            "acceptance_evidence": ["policy evidence"],
+            "prompt": (
+                "Define rules for advancing a seed spec to linked once concrete descendants exist."
+            ),
+        },
+    )
+    specs = [node]
+
+    profile_name = supervisor_module.infer_ordinary_execution_profile_name(
+        node=node,
+        specs=specs,
+        requested_profile=None,
+        operator_target=False,
+        run_authority=(),
+    )
+
+    assert profile_name == supervisor_module.AUTO_HEURISTIC_PROFILE_NAME
+    assert supervisor_module.bootstrap_child_hint(node, specs) is None
 
 
 def test_seed_like_spec_requires_root_or_overview_structure(
@@ -2630,19 +2668,19 @@ def test_process_one_spec_uses_materialize_profile_for_seed_like_ordinary_run(
     node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0002.yaml"
     node_data = {
         "id": "SG-SPEC-0002",
-        "title": "Seed-like Delegation Spec",
+        "title": "Root Spec",
         "kind": "spec",
         "status": "specified",
         "maturity": 0.57,
         "depends_on": [],
         "relates_to": [],
-        "refines": ["SG-SPEC-0001"],
-        "inputs": ["specs/nodes/SG-SPEC-0001.yaml"],
+        "refines": [],
+        "inputs": [],
         "outputs": ["specs/nodes/SG-SPEC-0002.yaml"],
         "allowed_paths": ["specs/nodes/*.yaml"],
         "acceptance": ["Define how the parent delegates one bounded child concern."],
         "acceptance_evidence": ["seed evidence"],
-        "prompt": "Delegate one child spec when decomposition is needed.",
+        "prompt": "This seed spec delegates one child spec when decomposition is needed.",
     }
     node_path.write_text(json.dumps(node_data), encoding="utf-8")
     node = supervisor_module.SpecNode(path=node_path, data=node_data)
