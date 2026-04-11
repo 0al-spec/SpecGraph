@@ -4285,6 +4285,76 @@ def test_resolve_gate_approve_rejects_stale_worktree_candidate(
     assert "last_gate_decision" not in updated
 
 
+def test_resolve_gate_approve_rejects_stale_additional_spec_candidate(
+    supervisor_module: object,
+    repo_fixture: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    child_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0002.yaml"
+    child_path.write_text(
+        json.dumps(
+            {
+                "id": "SG-SPEC-0002",
+                "title": "Child Spec",
+                "kind": "spec",
+                "status": "specified",
+                "maturity": 0.5,
+                "depends_on": [],
+                "relates_to": [],
+                "refines": ["SG-SPEC-0001"],
+                "inputs": [],
+                "outputs": ["specs/nodes/SG-SPEC-0002.yaml"],
+                "allowed_paths": ["specs/nodes/SG-SPEC-0002.yaml"],
+                "acceptance": ["kept"],
+                "acceptance_evidence": ["kept evidence"],
+                "prompt": "Current child prompt",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    worktree = make_fake_worktree(repo_fixture)
+    worktree_child_path = worktree / "specs" / "nodes" / "SG-SPEC-0002.yaml"
+    worktree_child_data = supervisor_module.get_yaml_module().safe_load(
+        worktree_child_path.read_text(encoding="utf-8")
+    )
+    worktree_child_data["prompt"] = "Stale child prompt"
+    worktree_child_path.write_text(json.dumps(worktree_child_data), encoding="utf-8")
+
+    data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    data["allowed_paths"] = ["specs/nodes/*.yaml"]
+    data["gate_state"] = "review_pending"
+    data["proposed_status"] = "specified"
+    data["proposed_maturity"] = 0.4
+    data["last_worktree_path"] = worktree.as_posix()
+    data["last_changed_files"] = [
+        "specs/nodes/SG-SPEC-0001.yaml",
+        "specs/nodes/SG-SPEC-0002.yaml",
+    ]
+    node_path.write_text(json.dumps(data), encoding="utf-8")
+
+    exit_code = supervisor_module.main(
+        resolve_gate="SG-SPEC-0001",
+        decision="approve",
+        note="looks good",
+    )
+    assert exit_code == 1
+
+    err = capsys.readouterr().err
+    assert "review gate is stale" in err
+    assert "specs/nodes/SG-SPEC-0002.yaml:prompt" in err
+
+    updated_child = supervisor_module.get_yaml_module().safe_load(
+        child_path.read_text(encoding="utf-8")
+    )
+    updated_parent = supervisor_module.get_yaml_module().safe_load(
+        node_path.read_text(encoding="utf-8")
+    )
+    assert updated_child["prompt"] == "Current child prompt"
+    assert updated_parent["gate_state"] == "review_pending"
+
+
 def test_resolve_gate_approve_syncs_when_allowed_paths_empty(
     supervisor_module: object,
     repo_fixture: Path,

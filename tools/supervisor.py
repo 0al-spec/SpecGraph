@@ -3418,23 +3418,36 @@ def sync_files_from_worktree(worktree_path: Path, rel_paths: list[str]) -> None:
 def gate_worktree_divergence_paths(
     node: SpecNode, worktree_path: Path, rel_paths: list[str]
 ) -> list[str]:
-    """Return semantic paths that differ between current gate content and its worktree copy."""
-    source_relpath = node.path.relative_to(ROOT).as_posix()
-    if source_relpath not in rel_paths:
-        return []
-
-    worktree_node_path = worktree_path / source_relpath
-    if not worktree_node_path.exists() or not worktree_node_path.is_file():
-        return []
-
+    """Return semantic paths that differ between current gate content and worktree copies."""
     yaml_module = get_yaml_module()
-    worktree_data = yaml_module.safe_load(worktree_node_path.read_text(encoding="utf-8")) or {}
-    if not isinstance(worktree_data, dict):
-        return ["<root>"]
+    divergence_paths: list[str] = []
+    for rel_path in rel_paths:
+        if not is_spec_node_path(rel_path):
+            continue
 
-    current_snapshot = canonical_spec_snapshot(node.data)
-    worktree_snapshot = canonical_spec_snapshot(worktree_data)
-    return collect_changed_paths(current_snapshot, worktree_snapshot)
+        worktree_node_path = worktree_path / rel_path
+        current_node_path = ROOT / rel_path
+        if not worktree_node_path.exists() or not worktree_node_path.is_file():
+            if current_node_path.exists():
+                divergence_paths.append(f"{rel_path}:<missing-worktree-file>")
+            continue
+        if not current_node_path.exists() or not current_node_path.is_file():
+            divergence_paths.append(f"{rel_path}:<missing-canonical-file>")
+            continue
+
+        worktree_data = yaml_module.safe_load(worktree_node_path.read_text(encoding="utf-8")) or {}
+        current_data = yaml_module.safe_load(current_node_path.read_text(encoding="utf-8")) or {}
+        if not isinstance(worktree_data, dict) or not isinstance(current_data, dict):
+            divergence_paths.append(f"{rel_path}:<root>")
+            continue
+
+        current_snapshot = canonical_spec_snapshot(current_data)
+        worktree_snapshot = canonical_spec_snapshot(worktree_data)
+        divergence_paths.extend(
+            f"{rel_path}:{path}"
+            for path in collect_changed_paths(current_snapshot, worktree_snapshot)
+        )
+    return divergence_paths
 
 
 def format_gate_worktree_divergence(paths: list[str], *, limit: int = 8) -> str:
