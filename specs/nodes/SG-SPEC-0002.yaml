@@ -1,7 +1,7 @@
 id: SG-SPEC-0002
 title: SpecGraph - Spec Refinement and Linkage Policy
 kind: spec
-status: specified
+status: linked
 maturity: 0.57
 depends_on:
 - SG-SPEC-0014
@@ -12,6 +12,9 @@ refines:
 - SG-SPEC-0001
 inputs:
 - specs/nodes/SG-SPEC-0001.yaml
+- specs/nodes/SG-SPEC-0014.yaml
+- specs/nodes/SG-SPEC-0015.yaml
+- specs/nodes/SG-SPEC-0016.yaml
 - AGENTS.md
 outputs:
 - specs/nodes/SG-SPEC-0002.yaml
@@ -22,8 +25,12 @@ acceptance:
 acceptance_evidence:
 - criterion: Remains implementation-agnostic and limited to specification governance
   evidence: 'specification.scope.out excludes storage schemas, validator implementation, supervisor workflow,
-    and runtime generation semantics. The child spec governs only specification relationships and status
-    rules.
+    and runtime generation semantics. The parent records `depends_on: [SG-SPEC-0014, SG-SPEC-0015, SG-SPEC-0016]`
+    while the concrete descendants `specs/nodes/SG-SPEC-0014.yaml`, `specs/nodes/SG-SPEC-0015.yaml`, and
+    `specs/nodes/SG-SPEC-0016.yaml` each declare `refines: [SG-SPEC-0002]`. Those children bound detailed
+    governance for edge semantics and blocking, delegation and atomic decomposition, and linked-readiness
+    evidence, so this node now carries parent-side linked_readiness_evidence without adding implementation
+    scope.
 
     '
 prompt: Keep SG-SPEC-0002 as the overview and integration policy for spec-to-spec refinement and linkage.
@@ -218,3 +225,61 @@ specification:
       cite that child as the concrete refinement that resolved the delegated gap.
 
       '
+proposed_status: linked
+proposed_maturity: 0.77
+gate_state: review_pending
+required_human_action: review refinement impact before approval
+last_outcome: done
+last_blocker: ''
+last_run_id: 20260411T131946Z-SG-SPEC-0002
+last_exit_code: 0
+last_changed_files:
+- specs/nodes/SG-SPEC-0002.yaml
+last_run_at: '2026-04-11T13:19:47.124997+00:00'
+last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0002-20260411T131717Z
+last_branch: codex/sg-spec-0002/20260411T131717Z
+last_validator_results:
+  outputs: true
+  allowed_paths: true
+  reconciliation: true
+  atomicity: true
+  transition: true
+  executor_environment: true
+  refinement_acceptance: true
+last_refinement_acceptance:
+  decision: review_required
+  change_class: graph_refactor
+  checks:
+    content_changed: true
+    hard_validation: true
+    single_spec_scope: true
+    constitutional_diff: false
+    graph_refactor_diff: true
+    atomicity_clear: true
+    within_mutation_budget: true
+  diff_paths:
+  - acceptance_evidence[0].evidence
+  - inputs[1]
+  - inputs[2]
+  - inputs[3]
+  - inputs[4]
+  - status
+  mutation_classes:
+  - policy_text
+  mutation_budget: []
+  budget_exceeded_classes: []
+  changed_spec_files:
+  - specs/nodes/SG-SPEC-0002.yaml
+  review_reasons:
+  - run changed graph structure or spec contract paths
+  errors: []
+  warnings: []
+last_reconciliation:
+  worktree_spec_count: 16
+  changed_spec_ids:
+  - SG-SPEC-0002
+  semantic_dependencies_resolved: true
+  work_dependencies_ready: false
+  cycles: []
+last_requested_child_materialization: false
+last_materialized_child_paths: []
