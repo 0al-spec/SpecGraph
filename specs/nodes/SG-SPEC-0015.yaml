@@ -1,8 +1,8 @@
 id: SG-SPEC-0015
 title: SpecGraph - Delegation and Atomic Decomposition Policy
 kind: spec
-status: outlined
-maturity: 0.2
+status: specified
+maturity: 0.6
 depends_on: []
 relates_to: []
 refines:
@@ -21,20 +21,257 @@ acceptance:
 acceptance_evidence:
 - criterion: Defines how a seed or working spec delegates one or more concrete unresolved areas to child
     specs while preserving atomic spec boundaries and parent terminology
-  evidence: 'specification.delegation_policy defines delegated_gap semantics plus seed_spec_expectations,
-    parent_expectations, and child_expectations. specification.atomicity_policy then constrains each resulting
-    child to one bounded concern, allows multiple sibling children in a single decomposition run, and
-    requires inherited terminology stability.
+  evidence: 'specification.terminology defines delegated_gap, atomic_spec_node, and sibling_child_specs.
+    specification.delegation_policy defines delegated_gap_semantics plus seed_spec_expectations, working_spec_expectations,
+    parent_expectations, and child_expectations. Those sections require each delegated gap to map to one
+    bounded child concern, preserve inherited terminology unless explicitly narrowed, and keep the parent
+    authoritative for stable shared intent.
 
     '
 - criterion: Defines when a non-atomic spec should decompose into sibling child specs and surface split_required
     rather than growing in place
-  evidence: 'specification.terminology defines atomic_spec_node and decomposition_pass. specification.atomicity_policy
-    defines envelope exceptions for seed specs, narrow working-node expectations, and the rule that a
-    spec which remains broader than one bounded concern after refinement should decompose into sibling
-    child specs or return split_required rather than continue accreting mixed scope.
+  evidence: 'specification.terminology defines decomposition_pass and split_required. specification.atomicity_policy
+    defines atomicity_checks, sibling_child_rules, and split_required_surface. Those rules require sibling
+    child specs when independent unresolved areas have distinct acceptance, blockers, terminology surfaces,
+    or review paths, and require split_required to be surfaced when the current node remains non-atomic
+    instead of growing the oversized node in place.
 
     '
 prompt: Refine SG-SPEC-0002 by defining how seed or working specs delegate unresolved areas to child specs,
   when sibling child specs are required, and when split_required should be surfaced instead of growing
   an oversized node in place.
+specification:
+  objective: 'Define how seed or working specs delegate concrete unresolved areas to child specs while
+    preserving atomic boundaries, inherited terminology, and a clear split_required signal for specs that
+    remain too broad to finish in place.
+
+    '
+  scope:
+    in:
+    - Delegated unresolved areas from seed or working specs to child specs
+    - Atomic boundaries for delegated child specs
+    - Conditions that require sibling child specs in one decomposition pass
+    - Conditions for surfacing split_required instead of expanding a non-atomic node
+    out:
+    - Edge semantics beyond the delegated parent/child use of refines and depends_on
+    - Linked-readiness evidence and ancestor reconciliation after descendants exist
+    - Validator implementation, queue behavior, or supervisor scheduling
+    - Runtime code, test code, storage schema, or generated artifacts
+  terminology:
+    delegated_gap: 'A concrete unresolved area intentionally left open by a seed or working spec and assigned
+      to one child spec for elaboration in the current refinement step.
+
+      '
+    atomic_spec_node: 'A spec node whose acceptance criteria, delegated scope, blockers, and review path
+      all describe one bounded concern that can advance without hiding unrelated work.
+
+      '
+    decomposition_pass: 'A refinement run that narrows an oversized spec by preserving the parent as a
+      stable coordinating envelope and delegating independent concerns to one or more child specs.
+
+      '
+    sibling_child_specs: 'Two or more child specs created or selected from the same parent in a decomposition
+      pass, where each child owns a distinct unresolved area and can be reviewed independently.
+
+      '
+    split_required: 'A run outcome signal used when the current spec still contains multiple bounded concerns
+      after the permitted refinement step, so the node should be decomposed rather than treated as complete.
+
+      '
+  delegation_policy:
+    delegated_gap_semantics:
+    - A delegated_gap SHOULD be named as a specific unresolved area, not as a broad topic bucket.
+    - In a single refinement step, one delegated_gap SHOULD map to exactly one child spec.
+    - A delegated_gap is concrete enough to delegate when its child can define its own acceptance criteria,
+      evidence, outputs, and allowed paths without reopening the whole parent.
+    - Delegation preserves the parent as the source of stable terminology and shared intent unless the
+      child explicitly defines a compatible narrowing.
+    seed_spec_expectations:
+    - A seed spec MAY remain broad only as a stable coordinating envelope for the graph area it seeds.
+    - A seed spec SHOULD delegate unresolved areas that require separate decisions, acceptance criteria,
+      or validation evidence to child specs.
+    - A seed spec MAY delegate multiple unresolved areas during one decomposition_pass when those areas
+      are independent enough to become sibling_child_specs.
+    working_spec_expectations:
+    - A non-seed working spec SHOULD be an atomic_spec_node after each refinement run.
+    - A working spec SHOULD delegate rather than absorb detail when adding the detail would mix independent
+      acceptance criteria, blockers, terminology changes, or review paths.
+    - A working spec MUST NOT broaden its scope merely to avoid creating or refining a child spec.
+    parent_expectations:
+    - The parent retains stable shared intent, inherited terminology, and coordination context.
+    - The parent records a child in depends_on when the delegated_gap blocks parent advancement.
+    - The parent SHOULD update acceptance_evidence to cite concrete child specs when delegated gaps are
+      satisfied by existing descendants.
+    - The parent MUST NOT duplicate the detailed child specification in place once the unresolved area
+      has been delegated.
+    child_expectations:
+    - The child lists refines pointing at the parent it directly elaborates.
+    - The child owns one bounded delegated_gap unless the child is itself explicitly decomposed before
+      advancement.
+    - The child defines its own acceptance, acceptance_evidence, outputs, and allowed_paths.
+    - The child preserves inherited terminology unless it defines an explicit compatible narrowing inside
+      its own specification.
+  atomicity_policy:
+    atomicity_checks:
+    - A spec is atomic when every acceptance criterion advances the same bounded concern.
+    - A spec is atomic when its blockers, dependencies, and evidence are shared by that bounded concern
+      rather than by unrelated subtopics.
+    - A spec is non-atomic when two or more unresolved areas could advance, block, or be reviewed independently.
+    - A coordinating seed or overview spec may remain broader than one child concern only when it delegates
+      independent detail instead of absorbing that detail.
+    sibling_child_rules:
+    - Sibling child specs are required when independent unresolved areas need distinct acceptance criteria
+      or acceptance_evidence.
+    - Sibling child specs are required when resolving one area would not resolve or materially constrain
+      another area in the same parent.
+    - Sibling child specs are required when separate blockers, allowed_paths, or review authorities would
+      otherwise be hidden inside one oversized node.
+    - Sibling child specs created in one decomposition_pass SHOULD share the same parent and each SHOULD
+      own a distinct delegated_gap.
+    - Sibling child specs SHOULD reuse parent terminology for shared concepts and define only local compatible
+      narrowing where needed.
+    split_required_surface:
+    - A refinement run SHOULD surface split_required when the current node remains broader than one atomic_spec_node
+      after the bounded edit permitted for that run.
+    - A refinement run SHOULD surface split_required when required sibling_child_specs cannot be created
+      or fully scoped within the current allowed paths.
+    - A node with split_required SHOULD preserve any narrowed parent content and any valid child delegation
+      already produced in the run.
+    - A node with split_required MUST NOT be advanced as complete merely because some acceptance evidence
+      was added.
+  examples:
+  - name: Single delegated gap
+    description: 'A seed spec keeps stable ontology terms in the parent and delegates edge-selection details
+      to one child. The parent uses depends_on only if that child blocks parent advancement, while the
+      child uses refines to inherit the parent framing.
+
+      '
+  - name: Sibling decomposition
+    description: 'A working spec discovers that edge semantics, delegation policy, and linked-readiness
+      evidence have separate acceptance criteria and review paths. The parent remains a coordinating envelope,
+      and those areas become sibling child specs instead of one larger mixed node.
+
+      '
+proposed_status: specified
+proposed_maturity: 0.8
+gate_state: review_pending
+required_human_action: review refinement impact before approval
+last_outcome: done
+last_blocker: ''
+last_run_id: 20260411T132846Z-SG-SPEC-0015
+last_exit_code: 0
+last_changed_files:
+- specs/nodes/SG-SPEC-0015.yaml
+last_run_at: '2026-04-11T13:28:47.255464+00:00'
+last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0015-20260411T132511Z
+last_branch: codex/sg-spec-0015/20260411T132511Z
+last_validator_results:
+  outputs: true
+  allowed_paths: true
+  reconciliation: true
+  atomicity: true
+  transition: true
+  executor_environment: true
+  refinement_acceptance: true
+last_refinement_acceptance:
+  decision: review_required
+  change_class: constitutional_change
+  checks:
+    content_changed: true
+    hard_validation: true
+    single_spec_scope: true
+    constitutional_diff: true
+    graph_refactor_diff: false
+    atomicity_clear: true
+    within_mutation_budget: true
+  diff_paths:
+  - acceptance_evidence[0].evidence
+  - acceptance_evidence[1].evidence
+  - maturity
+  - specification
+  - specification.objective
+  - specification.scope
+  - specification.scope.in
+  - specification.scope.in[0]
+  - specification.scope.in[1]
+  - specification.scope.in[2]
+  - specification.scope.in[3]
+  - specification.scope.out
+  - specification.scope.out[0]
+  - specification.scope.out[1]
+  - specification.scope.out[2]
+  - specification.scope.out[3]
+  - specification.terminology
+  - specification.terminology.delegated_gap
+  - specification.terminology.atomic_spec_node
+  - specification.terminology.decomposition_pass
+  - specification.terminology.sibling_child_specs
+  - specification.terminology.split_required
+  - specification.delegation_policy
+  - specification.delegation_policy.delegated_gap_semantics
+  - specification.delegation_policy.delegated_gap_semantics[0]
+  - specification.delegation_policy.delegated_gap_semantics[1]
+  - specification.delegation_policy.delegated_gap_semantics[2]
+  - specification.delegation_policy.delegated_gap_semantics[3]
+  - specification.delegation_policy.seed_spec_expectations
+  - specification.delegation_policy.seed_spec_expectations[0]
+  - specification.delegation_policy.seed_spec_expectations[1]
+  - specification.delegation_policy.seed_spec_expectations[2]
+  - specification.delegation_policy.working_spec_expectations
+  - specification.delegation_policy.working_spec_expectations[0]
+  - specification.delegation_policy.working_spec_expectations[1]
+  - specification.delegation_policy.working_spec_expectations[2]
+  - specification.delegation_policy.parent_expectations
+  - specification.delegation_policy.parent_expectations[0]
+  - specification.delegation_policy.parent_expectations[1]
+  - specification.delegation_policy.parent_expectations[2]
+  - specification.delegation_policy.parent_expectations[3]
+  - specification.delegation_policy.child_expectations
+  - specification.delegation_policy.child_expectations[0]
+  - specification.delegation_policy.child_expectations[1]
+  - specification.delegation_policy.child_expectations[2]
+  - specification.delegation_policy.child_expectations[3]
+  - specification.atomicity_policy
+  - specification.atomicity_policy.atomicity_checks
+  - specification.atomicity_policy.atomicity_checks[0]
+  - specification.atomicity_policy.atomicity_checks[1]
+  - specification.atomicity_policy.atomicity_checks[2]
+  - specification.atomicity_policy.atomicity_checks[3]
+  - specification.atomicity_policy.sibling_child_rules
+  - specification.atomicity_policy.sibling_child_rules[0]
+  - specification.atomicity_policy.sibling_child_rules[1]
+  - specification.atomicity_policy.sibling_child_rules[2]
+  - specification.atomicity_policy.sibling_child_rules[3]
+  - specification.atomicity_policy.sibling_child_rules[4]
+  - specification.atomicity_policy.split_required_surface
+  - specification.atomicity_policy.split_required_surface[0]
+  - specification.atomicity_policy.split_required_surface[1]
+  - specification.atomicity_policy.split_required_surface[2]
+  - specification.atomicity_policy.split_required_surface[3]
+  - specification.examples
+  - specification.examples[0]
+  - specification.examples[0].name
+  - specification.examples[0].description
+  - specification.examples[1]
+  - specification.examples[1].name
+  - specification.examples[1].description
+  - status
+  mutation_classes:
+  - policy_text
+  mutation_budget: []
+  budget_exceeded_classes: []
+  changed_spec_files:
+  - specs/nodes/SG-SPEC-0015.yaml
+  review_reasons:
+  - run changed governance-sensitive specification sections
+  errors: []
+  warnings: []
+last_reconciliation:
+  worktree_spec_count: 16
+  changed_spec_ids:
+  - SG-SPEC-0015
+  semantic_dependencies_resolved: true
+  work_dependencies_ready: true
+  cycles: []
+last_requested_child_materialization: false
+last_materialized_child_paths: []
