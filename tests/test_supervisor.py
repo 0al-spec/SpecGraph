@@ -2291,6 +2291,93 @@ def test_main_interrupted_source_refinement_cleans_runtime_tail_when_no_canonica
     assert payload["exit_code"] == 124
 
 
+def test_main_interrupted_multi_file_refinement_cleans_parent_runtime_tail(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    before_text = node_path.read_text(encoding="utf-8")
+    before_data = supervisor_module.get_yaml_module().safe_load(before_text)
+
+    worktree = make_fake_worktree(repo_fixture)
+    monkeypatch.setattr(
+        supervisor_module,
+        "create_isolated_worktree",
+        lambda _node_id: (worktree, "codex/sg-spec-0001/test"),
+    )
+
+    changed_snapshots = [
+        [],
+        ["specs/nodes/SG-SPEC-0001.yaml", "specs/nodes/SG-SPEC-0002.yaml"],
+    ]
+    monkeypatch.setattr(
+        supervisor_module,
+        "git_changed_files",
+        lambda _cwd=None: changed_snapshots.pop(0),
+    )
+
+    def fake_executor(_node: object, worktree_path: Path) -> subprocess.CompletedProcess[str]:
+        worktree_node = worktree_path / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+        data = supervisor_module.get_yaml_module().safe_load(
+            worktree_node.read_text(encoding="utf-8")
+        )
+        data["depends_on"] = ["SG-SPEC-0002"]
+        worktree_node.write_text(json.dumps(data), encoding="utf-8")
+
+        child_node = worktree_path / "specs" / "nodes" / "SG-SPEC-0002.yaml"
+        child_node.write_text(
+            json.dumps(
+                {
+                    "id": "SG-SPEC-0002",
+                    "title": "Interrupted Child",
+                    "kind": "spec",
+                    "status": "outlined",
+                    "maturity": 0.2,
+                    "depends_on": [],
+                    "relates_to": [],
+                    "refines": ["SG-SPEC-0001"],
+                    "inputs": ["specs/nodes/SG-SPEC-0001.yaml"],
+                    "outputs": ["specs/nodes/SG-SPEC-0002.yaml"],
+                    "allowed_paths": ["specs/nodes/SG-SPEC-0002.yaml"],
+                    "acceptance": ["Defines the interrupted child boundary"],
+                    "acceptance_evidence": [
+                        {
+                            "criterion": "Defines the interrupted child boundary",
+                            "evidence": "Draft child content existed only in the worktree.",
+                        }
+                    ],
+                    "prompt": "Refine one interrupted child.",
+                }
+            ),
+            encoding="utf-8",
+        )
+        return subprocess.CompletedProcess(
+            args=["codex"],
+            returncode=124,
+            stdout="",
+            stderr="supervisor timeout: nested executor timed out after 420 seconds\n",
+        )
+
+    exit_code = supervisor_module.main(executor=fake_executor)
+    assert exit_code == 1
+
+    updated = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    assert updated == before_data
+    assert node_path.read_text(encoding="utf-8") == before_text
+    assert not (repo_fixture / "specs" / "nodes" / "SG-SPEC-0002.yaml").exists()
+
+    run_logs = sorted((repo_fixture / "runs").glob("*-SG-SPEC-*.json"))
+    assert len(run_logs) == 1
+    payload = json.loads(run_logs[0].read_text(encoding="utf-8"))
+    assert payload["completion_status"] == "failed"
+    assert payload["changed_files"] == [
+        "specs/nodes/SG-SPEC-0001.yaml",
+        "specs/nodes/SG-SPEC-0002.yaml",
+    ]
+    assert payload["executor_environment"]["issue_kinds"] == ["executor_timeout_failure"]
+
+
 def test_classify_executor_environment_detects_supervisor_timeout(
     supervisor_module: object,
 ) -> None:

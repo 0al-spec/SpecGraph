@@ -4687,11 +4687,11 @@ def _process_one_spec(
         and not success
         and not any(path != source_spec_relpath for path in changed if is_spec_node_path(path))
     )
+    changed_spec_paths = [path for path in changed if is_spec_node_path(path)]
     cleanup_interrupted_source_refinement = (
-        not child_materialization_requested
-        and not success
+        not success
         and bool(executor_environment.get("issues"))
-        and all(path == source_spec_relpath for path in changed if is_spec_node_path(path))
+        and (not changed_spec_paths or source_spec_relpath in changed_spec_paths)
     )
 
     validator_results = {
