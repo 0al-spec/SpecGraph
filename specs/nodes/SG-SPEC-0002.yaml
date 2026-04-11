@@ -269,10 +269,10 @@ specification:
       cite that child as the concrete refinement that resolved the delegated gap.
 
       '
-proposed_status: linked
-proposed_maturity: 0.77
-gate_state: review_pending
-required_human_action: review refinement impact before approval
+proposed_status: null
+proposed_maturity: null
+gate_state: split_required
+required_human_action: split spec scope before rerun
 last_outcome: done
 last_blocker: ''
 last_run_id: 20260410T063954Z-SG-SPEC-0002
@@ -339,3 +339,7 @@ last_reconciliation:
   cycles: []
 last_requested_child_materialization: false
 last_materialized_child_paths: []
+last_gate_decision: split
+last_gate_note: 'Atomicity review after seed-like heuristic fix: this child policy spec has 6 acceptance
+  criteria and requires split before linked approval.'
+last_gate_at: '2026-04-11T07:29:41.183329+00:00'
