@@ -1,8 +1,8 @@
 id: SG-SPEC-0014
 title: SpecGraph - Spec Edge Semantics and Blocking Policy
 kind: spec
-status: outlined
-maturity: 0.2
+status: specified
+maturity: 0.4
 depends_on: []
 relates_to: []
 refines:
@@ -20,10 +20,212 @@ acceptance_evidence:
 - criterion: Defines when spec nodes use refines, depends_on, and relates_to between parent and child
     specs, and distinguishes declared blocking from derived effective blocking
   evidence: 'specification.terminology defines declared_blocking_edge and effective_blocking. specification.relation_policy
-    defines refines, depends_on, and relates_to with source, target, required_when, and notes. specification.blocking_semantics
-    then separates authored blocking declarations in the canonical graph from transitive or queue-oriented
-    blocking views derived by tooling.
+    defines refines, depends_on, and relates_to with source, target, required_when, and notes. specification.parent_child_edge_rules
+    defines the parent/child selection rules. specification.blocking_semantics separates authored blocking
+    declarations in the canonical graph from transitive or queue-oriented blocking views derived by tooling.
 
     '
 prompt: Refine SG-SPEC-0002 by defining when spec nodes use refines, depends_on, and relates_to between
   parent and child specs, and by separating declared blocking edges from derived effective blocking views.
+specification:
+  objective: 'Define the canonical meanings of spec-to-spec relation edges for parent and child specs,
+    and keep authored blocking declarations separate from derived effective blocking views.
+
+    '
+  scope:
+    in:
+    - Direct spec-to-spec relation selection for refines, depends_on, and relates_to
+    - Parent/child edge direction and blocking intent
+    - Declared versus derived blocking semantics for spec nodes
+    out:
+    - Delegation and atomic decomposition policy
+    - Linked-readiness evidence and ancestor reconciliation
+    - Validator implementation, queue implementation, or storage schema design
+    - Non-spec node relations
+  terminology:
+    parent_spec: 'A spec whose scope, terminology, or unresolved area is elaborated by a narrower child
+      spec.
+
+      '
+    child_spec: 'A spec that directly narrows or elaborates a bounded concern from a parent spec while
+      preserving the parent''s stable terminology.
+
+      '
+    declared_blocking_edge: 'An authored canonical dependency expressed with depends_on from the blocked
+      spec to the spec that must be satisfied first.
+
+      '
+    effective_blocking: 'A derived operational view computed from canonical graph state, declared blocking
+      edges, transitive closure, and current node states. It is not itself a canonical edge fact.
+
+      '
+  relation_policy:
+  - relation: refines
+    source: child spec
+    target: parent spec
+    required_when: The child directly narrows, elaborates, or resolves a bounded concern owned by the
+      parent.
+    notes:
+    - refines records semantic ancestry and inheritance of problem framing.
+    - A child spec MUST use refines to name the parent it directly elaborates.
+    - refines alone does not declare that the parent is blocked by the child.
+  - relation: depends_on
+    source: blocked spec
+    target: required spec
+    required_when: The source spec cannot advance through its current refinement responsibility until
+      the target spec exists or is satisfied.
+    notes:
+    - In a parent/child refinement chain, a parent uses depends_on for a child only when that child resolves
+      an unresolved area required for parent advancement.
+    - depends_on is the only canonical authored relation that declares blocking intent for spec refinement.
+    - depends_on MUST NOT be added merely because a child refines the parent.
+  - relation: relates_to
+    source: any spec
+    target: any spec
+    required_when: The specs share relevant context, terminology, risk, or coordination surface, but neither
+      direct semantic refinement nor advancement blocking is being declared.
+    notes:
+    - relates_to is non-blocking.
+    - relates_to MUST NOT stand in for refines when one spec is a child elaboration of another.
+    - relates_to MUST NOT stand in for depends_on when advancement blocking is intended.
+  parent_child_edge_rules:
+  - A child spec that elaborates a parent MUST declare refines pointing to that parent.
+  - A parent spec MUST declare depends_on pointing to a child only when the child is required to resolve
+    a delegated or otherwise blocking refinement gap.
+  - A parent spec MAY omit depends_on for a child that is useful context but not required for parent advancement.
+  - Parent/child status advancement MUST be reasoned from the explicit depends_on set, not from the mere
+    existence of refines children.
+  - relates_to MAY connect sibling or cross-cutting specs, but it does not create parent/child ancestry
+    and does not create blocking.
+  blocking_semantics:
+    declared:
+    - Declared blocking is authored only through depends_on.
+    - A declared_blocking_edge is direct and local to the source spec.
+    - The canonical graph stores the authored depends_on edge, not a pre-expanded list of transitive blockers.
+    derived:
+    - effective_blocking may include transitive blockers reachable through depends_on closure.
+    - effective_blocking may also account for current node state when answering readiness or queue questions.
+    - Derived effective_blocking views are rebuildable from canonical data and MUST NOT be written back
+      as replacement depends_on edges.
+    non_blocking_relations:
+    - refines contributes semantic ancestry but does not create blocking unless paired with an explicit
+      depends_on declaration from the blocked spec.
+    - relates_to contributes contextual relevance only and never creates blocking.
+proposed_status: specified
+proposed_maturity: 0.6
+gate_state: review_pending
+required_human_action: review refinement impact before approval
+last_outcome: done
+last_blocker: ''
+last_run_id: 20260411T132423Z-SG-SPEC-0014
+last_exit_code: 0
+last_changed_files:
+- specs/nodes/SG-SPEC-0014.yaml
+last_run_at: '2026-04-11T13:24:23.968970+00:00'
+last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0014-20260411T132204Z
+last_branch: codex/sg-spec-0014/20260411T132204Z
+last_validator_results:
+  outputs: true
+  allowed_paths: true
+  reconciliation: true
+  atomicity: true
+  transition: true
+  executor_environment: true
+  refinement_acceptance: true
+last_refinement_acceptance:
+  decision: review_required
+  change_class: constitutional_change
+  checks:
+    content_changed: true
+    hard_validation: true
+    single_spec_scope: true
+    constitutional_diff: true
+    graph_refactor_diff: false
+    atomicity_clear: true
+    within_mutation_budget: true
+  diff_paths:
+  - acceptance_evidence[0].evidence
+  - maturity
+  - specification
+  - specification.objective
+  - specification.scope
+  - specification.scope.in
+  - specification.scope.in[0]
+  - specification.scope.in[1]
+  - specification.scope.in[2]
+  - specification.scope.out
+  - specification.scope.out[0]
+  - specification.scope.out[1]
+  - specification.scope.out[2]
+  - specification.scope.out[3]
+  - specification.terminology
+  - specification.terminology.parent_spec
+  - specification.terminology.child_spec
+  - specification.terminology.declared_blocking_edge
+  - specification.terminology.effective_blocking
+  - specification.relation_policy
+  - specification.relation_policy[0]
+  - specification.relation_policy[0].relation
+  - specification.relation_policy[0].source
+  - specification.relation_policy[0].target
+  - specification.relation_policy[0].required_when
+  - specification.relation_policy[0].notes
+  - specification.relation_policy[0].notes[0]
+  - specification.relation_policy[0].notes[1]
+  - specification.relation_policy[0].notes[2]
+  - specification.relation_policy[1]
+  - specification.relation_policy[1].relation
+  - specification.relation_policy[1].source
+  - specification.relation_policy[1].target
+  - specification.relation_policy[1].required_when
+  - specification.relation_policy[1].notes
+  - specification.relation_policy[1].notes[0]
+  - specification.relation_policy[1].notes[1]
+  - specification.relation_policy[1].notes[2]
+  - specification.relation_policy[2]
+  - specification.relation_policy[2].relation
+  - specification.relation_policy[2].source
+  - specification.relation_policy[2].target
+  - specification.relation_policy[2].required_when
+  - specification.relation_policy[2].notes
+  - specification.relation_policy[2].notes[0]
+  - specification.relation_policy[2].notes[1]
+  - specification.relation_policy[2].notes[2]
+  - specification.parent_child_edge_rules
+  - specification.parent_child_edge_rules[0]
+  - specification.parent_child_edge_rules[1]
+  - specification.parent_child_edge_rules[2]
+  - specification.parent_child_edge_rules[3]
+  - specification.parent_child_edge_rules[4]
+  - specification.blocking_semantics
+  - specification.blocking_semantics.declared
+  - specification.blocking_semantics.declared[0]
+  - specification.blocking_semantics.declared[1]
+  - specification.blocking_semantics.declared[2]
+  - specification.blocking_semantics.derived
+  - specification.blocking_semantics.derived[0]
+  - specification.blocking_semantics.derived[1]
+  - specification.blocking_semantics.derived[2]
+  - specification.blocking_semantics.non_blocking_relations
+  - specification.blocking_semantics.non_blocking_relations[0]
+  - specification.blocking_semantics.non_blocking_relations[1]
+  - status
+  mutation_classes:
+  - policy_text
+  mutation_budget: []
+  budget_exceeded_classes: []
+  changed_spec_files:
+  - specs/nodes/SG-SPEC-0014.yaml
+  review_reasons:
+  - run changed governance-sensitive specification sections
+  errors: []
+  warnings: []
+last_reconciliation:
+  worktree_spec_count: 16
+  changed_spec_ids:
+  - SG-SPEC-0014
+  semantic_dependencies_resolved: true
+  work_dependencies_ready: true
+  cycles: []
+last_requested_child_materialization: false
+last_materialized_child_paths: []
