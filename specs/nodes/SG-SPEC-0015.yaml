@@ -2,7 +2,7 @@ id: SG-SPEC-0015
 title: SpecGraph - Delegation and Atomic Decomposition Policy
 kind: spec
 status: specified
-maturity: 0.6
+maturity: 0.8
 depends_on: []
 relates_to: []
 refines:
@@ -152,126 +152,11 @@ specification:
       and those areas become sibling child specs instead of one larger mixed node.
 
       '
-proposed_status: specified
-proposed_maturity: 0.8
-gate_state: review_pending
-required_human_action: review refinement impact before approval
-last_outcome: done
-last_blocker: ''
-last_run_id: 20260411T132846Z-SG-SPEC-0015
-last_exit_code: 0
-last_changed_files:
-- specs/nodes/SG-SPEC-0015.yaml
-last_run_at: '2026-04-11T13:28:47.255464+00:00'
-last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0015-20260411T132511Z
-last_branch: codex/sg-spec-0015/20260411T132511Z
-last_validator_results:
-  outputs: true
-  allowed_paths: true
-  reconciliation: true
-  atomicity: true
-  transition: true
-  executor_environment: true
-  refinement_acceptance: true
-last_refinement_acceptance:
-  decision: review_required
-  change_class: constitutional_change
-  checks:
-    content_changed: true
-    hard_validation: true
-    single_spec_scope: true
-    constitutional_diff: true
-    graph_refactor_diff: false
-    atomicity_clear: true
-    within_mutation_budget: true
-  diff_paths:
-  - acceptance_evidence[0].evidence
-  - acceptance_evidence[1].evidence
-  - maturity
-  - specification
-  - specification.objective
-  - specification.scope
-  - specification.scope.in
-  - specification.scope.in[0]
-  - specification.scope.in[1]
-  - specification.scope.in[2]
-  - specification.scope.in[3]
-  - specification.scope.out
-  - specification.scope.out[0]
-  - specification.scope.out[1]
-  - specification.scope.out[2]
-  - specification.scope.out[3]
-  - specification.terminology
-  - specification.terminology.delegated_gap
-  - specification.terminology.atomic_spec_node
-  - specification.terminology.decomposition_pass
-  - specification.terminology.sibling_child_specs
-  - specification.terminology.split_required
-  - specification.delegation_policy
-  - specification.delegation_policy.delegated_gap_semantics
-  - specification.delegation_policy.delegated_gap_semantics[0]
-  - specification.delegation_policy.delegated_gap_semantics[1]
-  - specification.delegation_policy.delegated_gap_semantics[2]
-  - specification.delegation_policy.delegated_gap_semantics[3]
-  - specification.delegation_policy.seed_spec_expectations
-  - specification.delegation_policy.seed_spec_expectations[0]
-  - specification.delegation_policy.seed_spec_expectations[1]
-  - specification.delegation_policy.seed_spec_expectations[2]
-  - specification.delegation_policy.working_spec_expectations
-  - specification.delegation_policy.working_spec_expectations[0]
-  - specification.delegation_policy.working_spec_expectations[1]
-  - specification.delegation_policy.working_spec_expectations[2]
-  - specification.delegation_policy.parent_expectations
-  - specification.delegation_policy.parent_expectations[0]
-  - specification.delegation_policy.parent_expectations[1]
-  - specification.delegation_policy.parent_expectations[2]
-  - specification.delegation_policy.parent_expectations[3]
-  - specification.delegation_policy.child_expectations
-  - specification.delegation_policy.child_expectations[0]
-  - specification.delegation_policy.child_expectations[1]
-  - specification.delegation_policy.child_expectations[2]
-  - specification.delegation_policy.child_expectations[3]
-  - specification.atomicity_policy
-  - specification.atomicity_policy.atomicity_checks
-  - specification.atomicity_policy.atomicity_checks[0]
-  - specification.atomicity_policy.atomicity_checks[1]
-  - specification.atomicity_policy.atomicity_checks[2]
-  - specification.atomicity_policy.atomicity_checks[3]
-  - specification.atomicity_policy.sibling_child_rules
-  - specification.atomicity_policy.sibling_child_rules[0]
-  - specification.atomicity_policy.sibling_child_rules[1]
-  - specification.atomicity_policy.sibling_child_rules[2]
-  - specification.atomicity_policy.sibling_child_rules[3]
-  - specification.atomicity_policy.sibling_child_rules[4]
-  - specification.atomicity_policy.split_required_surface
-  - specification.atomicity_policy.split_required_surface[0]
-  - specification.atomicity_policy.split_required_surface[1]
-  - specification.atomicity_policy.split_required_surface[2]
-  - specification.atomicity_policy.split_required_surface[3]
-  - specification.examples
-  - specification.examples[0]
-  - specification.examples[0].name
-  - specification.examples[0].description
-  - specification.examples[1]
-  - specification.examples[1].name
-  - specification.examples[1].description
-  - status
-  mutation_classes:
-  - policy_text
-  mutation_budget: []
-  budget_exceeded_classes: []
-  changed_spec_files:
-  - specs/nodes/SG-SPEC-0015.yaml
-  review_reasons:
-  - run changed governance-sensitive specification sections
-  errors: []
-  warnings: []
-last_reconciliation:
-  worktree_spec_count: 16
-  changed_spec_ids:
-  - SG-SPEC-0015
-  semantic_dependencies_resolved: true
-  work_dependencies_ready: true
-  cycles: []
-last_requested_child_materialization: false
-last_materialized_child_paths: []
+gate_state: none
+proposed_status: null
+proposed_maturity: null
+required_human_action: '-'
+last_gate_decision: approve
+last_gate_note: 'Reviewed SG-SPEC-0015 delegation and atomic decomposition policy: scoped to delegated
+  gaps, sibling child specs, and split_required semantics.'
+last_gate_at: '2026-04-11T13:29:14.468013+00:00'
