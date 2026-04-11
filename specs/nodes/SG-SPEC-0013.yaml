@@ -1,14 +1,16 @@
 id: SG-SPEC-0013
 title: SpecGraph - Retrospective Refactor Application Gates
 kind: spec
-status: specified
-maturity: 0.4
+status: linked
+maturity: 0.6
 depends_on: []
-relates_to: []
+relates_to:
+- SG-SPEC-0006
 refines:
 - SG-SPEC-0005
 inputs:
 - specs/nodes/SG-SPEC-0005.yaml
+- specs/nodes/SG-SPEC-0006.yaml
 outputs:
 - specs/nodes/SG-SPEC-0013.yaml
 allowed_paths:
@@ -20,10 +22,13 @@ acceptance_evidence:
 - criterion: Defines which derived artifacts, proposals, and review gates must exist before retrospective
     refactors can be applied to live graph regions
   evidence: 'specification.retrospective_application_policy.required_artifacts defines the derived trigger
-    and current-state context artifacts, the reviewable retrospective_application_artifact, and the tracked
-    proposal package required before writeback. specification.retrospective_application_policy.proposal_state_gate
-    requires exactly one compatible proposal-lane owner in approved_for_application state and excludes
-    draft, under_review, rejected, superseded, conflicting, or already-applied proposal states. specification.reviewable_artifact_contract
+    and current-state context artifacts, the reviewable retrospective_application_artifact, and the repository-tracked
+    proposal-lane package required before writeback, aligned to SG-SPEC-0006 proposal_repository_presence,
+    proposal_handle, proposal_authority_state, proposal_target_region, and proposal_lineage_link semantics.
+    specification.retrospective_application_policy.proposal_state_gate requires exactly one compatible
+    proposal-lane owner in approved_for_application state, excludes ineligible authority states, and treats
+    materially incompatible overlaps or existing canonical_application_event markers as package refusal
+    conditions rather than new proposal_authority_state values. specification.reviewable_artifact_contract
     defines the required artifact contract for intended_structure, lineage_preservation, downstream_reconciliation_scope,
     and declared_writeback_envelope. specification.retrospective_application_policy.review_gates defines
     the artifact completeness, lineage, downstream reconciliation, writeback envelope, freshness, and
@@ -118,16 +123,25 @@ specification:
     - The package MUST include a current-state context artifact derived from the canonical graph that
       identifies the live_graph_region assumptions the review is using, including current stable IDs and
       accepted_child_work references relevant to the proposed application.
+    - The proposal-lane portion of the package MUST be reviewable from repository-tracked proposal state
+      that exposes proposal_repository_presence, proposal_handle, proposal_authority_state, proposal_target_region,
+      and proposal_lineage_link semantics as defined by SG-SPEC-0006; runtime-only proposal summaries
+      are insufficient.
     - The package MUST include exactly one reviewable retrospective_application_artifact satisfying specification.reviewable_artifact_contract.
     - Runtime-only artifacts may support review, but they MUST NOT be the only reviewable source for intended
       structure, lineage preservation, downstream reconciliation scope, or the declared writeback envelope.
     proposal_state_gate:
-    - Exactly one active proposal-lane owner MUST match the target region and change scope of the retrospective_application_artifact.
-    - The matching proposal authority state MUST be approved_for_application before application can be
+    - The gate consumes the SG-SPEC-0006 proposal_authority_state enum; it does not introduce additional
+      proposal authority states.
+    - Exactly one active repository-tracked proposal-lane owner MUST match the target region and change
+      scope of the retrospective_application_artifact.
+    - The matching proposal_authority_state MUST be approved_for_application before application can be
       attempted.
-    - Proposal states draft, under_review, rejected, and superseded are ineligible for live_retrospective_application.
+    - Proposal authority states draft, under_review, rejected, and superseded are ineligible for live_retrospective_application.
     - If materially incompatible active proposals overlap the same target region or change scope, application
       MUST be refused until review resolves, supersedes, or redirects the conflict.
+    - Materially incompatible overlap is a refusal condition for the package; it MUST NOT be recorded
+      as a synthetic proposal_authority_state.
     - apply_path_compatibility and proposal_artifact_link presence may identify consumable input for an
       explicit application path, but neither one substitutes for approved_for_application review authority.
     - approved_for_application authorizes entry into an explicit application path only; it MUST NOT be
@@ -137,8 +151,9 @@ specification:
     - A substantive change to the retrospective_application_artifact after approval MUST return the proposal
       to review or create a superseding proposal before application can proceed.
     review_gates:
-    - Repository review gate requires proposal-lane state to expose reviewable proposal identity, target
-      region, authority state, and lineage before the application package can be considered.
+    - Repository review gate requires repository-tracked proposal-lane state to expose reviewable proposal
+      identity, target region, authority state, lineage, and repository presence before the application
+      package can be considered.
     - Artifact completeness gate requires the retrospective_application_artifact to contain exactly one
       intended_structure, one lineage_preservation, one downstream_reconciliation_scope, and one declared_writeback_envelope.
     - Lineage gate requires reviewers to be able to trace stable surviving IDs and accepted_child_work
@@ -152,12 +167,74 @@ specification:
       remain reviewable without inference.
     - Refusal gate requires pre_application_refusal if any prerequisite gate fails; canonical spec files
       remain unchanged and proposal review authority is not rewritten by implication.
-gate_state: none
-proposed_status: null
-proposed_maturity: null
-required_human_action: '-'
-last_gate_decision: approve
-last_gate_note: 'Reviewed SG-SPEC-0013 retrospective application gate specification: scoped to reviewable
-  pre-application artifacts, proposal authority state, writeback envelope, lineage, reconciliation, freshness,
-  and refusal gates.'
-last_gate_at: '2026-04-11T13:52:58.763839+00:00'
+proposed_status: linked
+proposed_maturity: 0.8
+gate_state: review_pending
+required_human_action: review refinement impact before approval
+last_outcome: done
+last_blocker: ''
+last_run_id: 20260411T192439Z-SG-SPEC-0013
+last_exit_code: 0
+last_changed_files:
+- specs/nodes/SG-SPEC-0013.yaml
+last_run_at: '2026-04-11T19:24:39.451644+00:00'
+last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0013-20260411T192140Z
+last_branch: codex/sg-spec-0013/20260411T192140Z
+last_validator_results:
+  outputs: true
+  allowed_paths: true
+  reconciliation: true
+  atomicity: true
+  transition: true
+  executor_environment: true
+  refinement_acceptance: true
+last_refinement_acceptance:
+  decision: review_required
+  change_class: graph_refactor
+  checks:
+    content_changed: true
+    hard_validation: true
+    single_spec_scope: true
+    constitutional_diff: false
+    graph_refactor_diff: true
+    atomicity_clear: true
+    within_mutation_budget: true
+  diff_paths:
+  - acceptance_evidence[0].evidence
+  - inputs[1]
+  - maturity
+  - relates_to[0]
+  - specification.retrospective_application_policy.proposal_state_gate[0]
+  - specification.retrospective_application_policy.proposal_state_gate[1]
+  - specification.retrospective_application_policy.proposal_state_gate[2]
+  - specification.retrospective_application_policy.proposal_state_gate[3]
+  - specification.retrospective_application_policy.proposal_state_gate[4]
+  - specification.retrospective_application_policy.proposal_state_gate[5]
+  - specification.retrospective_application_policy.proposal_state_gate[6]
+  - specification.retrospective_application_policy.proposal_state_gate[7]
+  - specification.retrospective_application_policy.proposal_state_gate[8]
+  - specification.retrospective_application_policy.proposal_state_gate[9]
+  - specification.retrospective_application_policy.required_artifacts[3]
+  - specification.retrospective_application_policy.required_artifacts[4]
+  - specification.retrospective_application_policy.required_artifacts[5]
+  - specification.retrospective_application_policy.review_gates[0]
+  - status
+  mutation_classes:
+  - policy_text
+  mutation_budget: []
+  budget_exceeded_classes: []
+  changed_spec_files:
+  - specs/nodes/SG-SPEC-0013.yaml
+  review_reasons:
+  - run changed graph structure or spec contract paths
+  errors: []
+  warnings: []
+last_reconciliation:
+  worktree_spec_count: 16
+  changed_spec_ids:
+  - SG-SPEC-0013
+  semantic_dependencies_resolved: true
+  work_dependencies_ready: true
+  cycles: []
+last_requested_child_materialization: false
+last_materialized_child_paths: []
