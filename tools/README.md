@@ -164,6 +164,10 @@ Use this decision path:
   - read `runs/latest-summary.md` and the corresponding run log first
   - if the anomaly is timeout-driven stale tail, partial worktree diff, or profile mismatch, repair the
     runtime path and rerun instead of classifying the target spec as poor quality
+- `No eligible auto-refinement gaps found.`
+  - this means the automatic selector found no runnable non-gated work item
+  - if pending gate actions are printed, the graph still has work; resolve or redirect those gates before
+    expecting the default selector to continue
 
 ### Quick Commands
 

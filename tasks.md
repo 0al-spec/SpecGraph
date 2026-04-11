@@ -73,3 +73,4 @@
 50. [done] Preserve exact canonical source text during interrupted source-refinement cleanup so timeout or executor-environment failures cannot leave behind formatting-only spec diffs after runtime-state rollback.
 51. [done] Increase nested executor timeout budgets and align the heuristic `fast` profile with `xhigh` reasoning so useful atomicity/split outcomes are not prematurely converted into timeout failures.
 52. [done] Fix graph_refactor gate approval when the accepted worktree diff already changed status/maturity but `proposed_status` is null, so `--resolve-gate --decision approve` can clear review_pending instead of failing with an invalid linked->reviewed transition.
+53. [done] Make `supervisor` report pending gate actions when no automatic spec gap is eligible, so review_pending, split_required, and blocked queues are not misreported as absence of graph work.

@@ -83,6 +83,13 @@ BLOCKING_GATE_STATES = {
     "redirected",
     "escalated",
 }
+GATE_ACTION_PRIORITY = {
+    "review_pending": 0,
+    "split_required": 1,
+    "blocked": 2,
+    "redirected": 3,
+    "escalated": 4,
+}
 ALLOWED_OUTCOMES = {"done", "retry", "split_required", "blocked", "escalate"}
 COMPLETION_STATUS_OK = "ok"
 COMPLETION_STATUS_PROGRESSED = "progressed"
@@ -580,6 +587,60 @@ def pick_next_work_item(specs: list[SpecNode]) -> tuple[SpecNode | None, dict[st
         return refactor_candidate
     node = pick_next_spec_gap(specs)
     return node, None
+
+
+def pending_gate_actions(specs: list[SpecNode]) -> list[dict[str, Any]]:
+    actions: list[dict[str, Any]] = []
+    for spec in specs:
+        gate_state = spec.gate_state
+        if gate_state not in BLOCKING_GATE_STATES:
+            continue
+        actions.append(
+            {
+                "spec_id": spec.id,
+                "title": spec.title,
+                "status": spec.status,
+                "maturity": spec.maturity,
+                "gate_state": gate_state,
+                "required_human_action": str(spec.data.get("required_human_action", "-")).strip()
+                or "-",
+            }
+        )
+
+    actions.sort(
+        key=lambda action: (
+            GATE_ACTION_PRIORITY.get(str(action["gate_state"]), 9),
+            float(action["maturity"]),
+            str(action["spec_id"]),
+        )
+    )
+    return actions
+
+
+def format_pending_gate_actions(actions: list[dict[str, Any]], *, limit: int = 10) -> str:
+    if not actions:
+        return "No eligible spec gaps found."
+
+    visible = actions[:limit]
+    lines = [
+        "No eligible auto-refinement gaps found.",
+        "Pending gate actions block automatic selection:",
+    ]
+    for action in visible:
+        lines.append(
+            "- "
+            f"{action['spec_id']} | gate={action['gate_state']} | "
+            f"status={action['status']} | maturity={float(action['maturity']):.2f} | "
+            f"action={action['required_human_action']}"
+        )
+    remaining = len(actions) - len(visible)
+    if remaining > 0:
+        lines.append(f"- ... {remaining} more pending gate action(s)")
+    lines.append(
+        "Resolve a gate with `tools/supervisor.py --resolve-gate <SPEC_ID> --decision <decision>` "
+        "or use an explicit targeted run when the gate requires more spec work."
+    )
+    return "\n".join(lines)
 
 
 def detect_cycles(specs: list[SpecNode]) -> list[list[str]]:
@@ -4921,6 +4982,9 @@ def main(
             node, refactor_work_item = pick_next_work_item(specs)
             if node is None:
                 print("No more eligible spec gaps. Loop complete.")
+                gate_actions = pending_gate_actions(specs)
+                if gate_actions:
+                    print(format_pending_gate_actions(gate_actions))
                 break
 
             print(f"\n{'=' * 60}")
@@ -4963,7 +5027,7 @@ def main(
     # --- single-pass mode (original behaviour) ---
     node, refactor_work_item = pick_next_work_item(specs)
     if node is None:
-        print("No eligible spec gaps found.")
+        print(format_pending_gate_actions(pending_gate_actions(specs)))
         return 0
 
     dependents = reverse_dependents_count(specs)

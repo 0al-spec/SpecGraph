@@ -1116,6 +1116,29 @@ def test_pick_next_work_item_does_not_auto_execute_retrospective_refactor_candid
     assert work_item is None
 
 
+def test_main_reports_pending_gate_actions_when_no_auto_eligible_work(
+    supervisor_module: object,
+    repo_fixture: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    node_data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    node_data["status"] = "specified"
+    node_data["gate_state"] = "review_pending"
+    node_data["required_human_action"] = "approve or retry refinement"
+    node_path.write_text(json.dumps(node_data), encoding="utf-8")
+
+    exit_code = supervisor_module.main()
+
+    assert exit_code == 0
+    out = capsys.readouterr().out
+    assert "No eligible auto-refinement gaps found." in out
+    assert "Pending gate actions block automatic selection:" in out
+    assert "SG-SPEC-0001 | gate=review_pending" in out
+    assert "action=approve or retry refinement" in out
+    assert "--resolve-gate <SPEC_ID> --decision <decision>" in out
+
+
 def test_observe_graph_health_reports_reflective_signals(
     supervisor_module: object,
 ) -> None:
