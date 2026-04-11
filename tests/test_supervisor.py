@@ -460,8 +460,9 @@ def test_run_codex_uses_isolated_codex_home(
     assert "--ephemeral" in captured["cmd"]
     assert captured["bypass_inner_sandbox"] is False
     assert captured["profile"].name == supervisor_module.AUTO_HEURISTIC_PROFILE_NAME
-    assert (
-        captured["process"].wait_timeout == supervisor_module.FAST_EXECUTION_PROFILE_TIMEOUT_SECONDS
+    assert captured["process"].wait_timeout == min(
+        supervisor_module.EXECUTOR_PROGRESS_POLL_SECONDS,
+        supervisor_module.FAST_EXECUTION_PROFILE_TIMEOUT_SECONDS,
     )
 
 
@@ -529,8 +530,9 @@ def test_run_codex_bypasses_inner_sandbox_for_sandbox_branch(
     assert captured["profile"].name == supervisor_module.AUTO_HEURISTIC_PROFILE_NAME
     assert "--dangerously-bypass-approvals-and-sandbox" in captured["cmd"]
     assert "--sandbox" not in captured["cmd"]
-    assert (
-        captured["process"].wait_timeout == supervisor_module.FAST_EXECUTION_PROFILE_TIMEOUT_SECONDS
+    assert captured["process"].wait_timeout == min(
+        supervisor_module.EXECUTOR_PROGRESS_POLL_SECONDS,
+        supervisor_module.FAST_EXECUTION_PROFILE_TIMEOUT_SECONDS,
     )
 
 
@@ -591,8 +593,9 @@ def test_run_codex_uses_longer_timeout_for_child_materialization_authority(
 
     assert result.returncode == 0
     assert captured["profile"].name == supervisor_module.AUTO_CHILD_MATERIALIZATION_PROFILE_NAME
-    assert (
-        captured["process"].wait_timeout == supervisor_module.CHILD_MATERIALIZATION_TIMEOUT_SECONDS
+    assert captured["process"].wait_timeout == min(
+        supervisor_module.EXECUTOR_PROGRESS_POLL_SECONDS,
+        supervisor_module.CHILD_MATERIALIZATION_TIMEOUT_SECONDS,
     )
 
 
@@ -655,9 +658,270 @@ def test_run_codex_uses_explicit_fast_execution_profile(
     assert result.returncode == 0
     assert captured["profile"].name == "fast"
     assert f'model_reasoning_effort="{captured["profile"].reasoning_effort}"' in captured["cmd"]
-    assert (
-        captured["process"].wait_timeout == supervisor_module.FAST_EXECUTION_PROFILE_TIMEOUT_SECONDS
+    assert captured["process"].wait_timeout == min(
+        supervisor_module.EXECUTOR_PROGRESS_POLL_SECONDS,
+        supervisor_module.FAST_EXECUTION_PROFILE_TIMEOUT_SECONDS,
     )
+
+
+def test_run_codex_allows_quiet_grace_windows_for_xhigh_reasoning(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class FakeProcess:
+        def __init__(self) -> None:
+            self.stdout = io.StringIO("")
+            self.stderr = io.StringIO("")
+            self.wait_calls: list[float | None] = []
+            self.kill_called = False
+            self.timeout_events_remaining = 3
+
+        def wait(self, timeout: float | None = None) -> int:
+            self.wait_calls.append(timeout)
+            if self.kill_called:
+                return 124
+            if self.timeout_events_remaining > 0:
+                self.timeout_events_remaining -= 1
+                raise subprocess.TimeoutExpired(cmd=["codex"], timeout=timeout or 0)
+            return 0
+
+        def kill(self) -> None:
+            self.kill_called = True
+
+    captured: dict[str, object] = {}
+
+    profile = supervisor_module.ExecutionProfile(
+        name="standard",
+        model=supervisor_module.CHILD_EXECUTOR_MODEL,
+        reasoning_effort="xhigh",
+        timeout_seconds=1,
+        disabled_features=supervisor_module.CHILD_EXECUTOR_DISABLED_FEATURES,
+    )
+
+    def fake_create_child_codex_home(
+        *,
+        source_codex_home: Path = Path(),
+        profile: object | None = None,
+        bypass_inner_sandbox: bool = False,
+    ) -> Path:
+        _ = (source_codex_home, profile, bypass_inner_sandbox)
+        child_home = repo_fixture / ".fake-codex-home"
+        child_home.mkdir(exist_ok=True)
+        return child_home
+
+    def fake_popen(
+        cmd: list[str],
+        *,
+        cwd: Path,
+        env: dict[str, str],
+        stdout: object,
+        stderr: object,
+        text: bool,
+        bufsize: int,
+    ) -> FakeProcess:
+        _ = (cmd, cwd, env, stdout, stderr, text, bufsize)
+        process = FakeProcess()
+        captured["process"] = process
+        return process
+
+    monkeypatch.setattr(supervisor_module, "create_child_codex_home", fake_create_child_codex_home)
+    monkeypatch.setattr(subprocess, "Popen", fake_popen)
+    monkeypatch.setattr(supervisor_module, "resolve_execution_profile", lambda **_kwargs: profile)
+    monkeypatch.setattr(
+        supervisor_module,
+        "effective_child_executor_timeout_seconds",
+        lambda *args, **kwargs: 1,
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "capture_nested_executor_progress",
+        lambda *_args, **_kwargs: (0, 0, 0),
+    )
+    monkeypatch.setattr(supervisor_module, "EXECUTOR_PROGRESS_POLL_SECONDS", 1)
+    monkeypatch.setattr(supervisor_module, "XHIGH_QUIET_PROGRESS_WINDOWS", 3)
+
+    node = supervisor_module.load_specs()[0]
+    result = supervisor_module.run_codex(node, repo_fixture)
+
+    assert result.returncode == 0
+    assert captured["process"].kill_called is False
+    assert captured["process"].wait_calls == [1, 1, 1, 1]
+
+
+def test_run_codex_times_out_after_repeated_quiet_windows_without_progress(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class FakeProcess:
+        def __init__(self) -> None:
+            self.stdout = io.StringIO("")
+            self.stderr = io.StringIO("")
+            self.wait_calls: list[float | None] = []
+            self.kill_called = False
+
+        def wait(self, timeout: float | None = None) -> int:
+            self.wait_calls.append(timeout)
+            if self.kill_called:
+                return 124
+            raise subprocess.TimeoutExpired(cmd=["codex"], timeout=timeout or 0)
+
+        def kill(self) -> None:
+            self.kill_called = True
+
+    captured: dict[str, object] = {}
+
+    profile = supervisor_module.ExecutionProfile(
+        name="standard",
+        model=supervisor_module.CHILD_EXECUTOR_MODEL,
+        reasoning_effort="xhigh",
+        timeout_seconds=1,
+        disabled_features=supervisor_module.CHILD_EXECUTOR_DISABLED_FEATURES,
+    )
+
+    def fake_create_child_codex_home(
+        *,
+        source_codex_home: Path = Path(),
+        profile: object | None = None,
+        bypass_inner_sandbox: bool = False,
+    ) -> Path:
+        _ = (source_codex_home, profile, bypass_inner_sandbox)
+        child_home = repo_fixture / ".fake-codex-home"
+        child_home.mkdir(exist_ok=True)
+        return child_home
+
+    def fake_popen(
+        cmd: list[str],
+        *,
+        cwd: Path,
+        env: dict[str, str],
+        stdout: object,
+        stderr: object,
+        text: bool,
+        bufsize: int,
+    ) -> FakeProcess:
+        _ = (cmd, cwd, env, stdout, stderr, text, bufsize)
+        process = FakeProcess()
+        captured["process"] = process
+        return process
+
+    monkeypatch.setattr(supervisor_module, "create_child_codex_home", fake_create_child_codex_home)
+    monkeypatch.setattr(subprocess, "Popen", fake_popen)
+    monkeypatch.setattr(supervisor_module, "resolve_execution_profile", lambda **_kwargs: profile)
+    monkeypatch.setattr(
+        supervisor_module,
+        "effective_child_executor_timeout_seconds",
+        lambda *args, **kwargs: 1,
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "capture_nested_executor_progress",
+        lambda *_args, **_kwargs: (0, 0, 0),
+    )
+    monkeypatch.setattr(supervisor_module, "EXECUTOR_PROGRESS_POLL_SECONDS", 1)
+    monkeypatch.setattr(supervisor_module, "XHIGH_QUIET_PROGRESS_WINDOWS", 2)
+
+    node = supervisor_module.load_specs()[0]
+    result = supervisor_module.run_codex(node, repo_fixture)
+
+    assert result.returncode == 124
+    assert captured["process"].kill_called is True
+    assert result.stderr.endswith("supervisor timeout: nested executor timed out after 1 seconds\n")
+
+
+def test_run_codex_resets_quiet_grace_when_progress_signals_advance(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class FakeProcess:
+        def __init__(self) -> None:
+            self.stdout = io.StringIO("")
+            self.stderr = io.StringIO("")
+            self.wait_calls: list[float | None] = []
+            self.kill_called = False
+            self.timeout_events_remaining = 4
+
+        def wait(self, timeout: float | None = None) -> int:
+            self.wait_calls.append(timeout)
+            if self.kill_called:
+                return 124
+            if self.timeout_events_remaining > 0:
+                self.timeout_events_remaining -= 1
+                raise subprocess.TimeoutExpired(cmd=["codex"], timeout=timeout or 0)
+            return 0
+
+        def kill(self) -> None:
+            self.kill_called = True
+
+    captured: dict[str, object] = {}
+
+    profile = supervisor_module.ExecutionProfile(
+        name="standard",
+        model=supervisor_module.CHILD_EXECUTOR_MODEL,
+        reasoning_effort="xhigh",
+        timeout_seconds=1,
+        disabled_features=supervisor_module.CHILD_EXECUTOR_DISABLED_FEATURES,
+    )
+    progress_states = iter(
+        [
+            (0, 0, 0),
+            (0, 0, 0),
+            (0, 0, 1),
+            (0, 0, 1),
+            (0, 0, 1),
+        ]
+    )
+
+    def fake_create_child_codex_home(
+        *,
+        source_codex_home: Path = Path(),
+        profile: object | None = None,
+        bypass_inner_sandbox: bool = False,
+    ) -> Path:
+        _ = (source_codex_home, profile, bypass_inner_sandbox)
+        child_home = repo_fixture / ".fake-codex-home"
+        child_home.mkdir(exist_ok=True)
+        return child_home
+
+    def fake_popen(
+        cmd: list[str],
+        *,
+        cwd: Path,
+        env: dict[str, str],
+        stdout: object,
+        stderr: object,
+        text: bool,
+        bufsize: int,
+    ) -> FakeProcess:
+        _ = (cmd, cwd, env, stdout, stderr, text, bufsize)
+        process = FakeProcess()
+        captured["process"] = process
+        return process
+
+    monkeypatch.setattr(supervisor_module, "create_child_codex_home", fake_create_child_codex_home)
+    monkeypatch.setattr(subprocess, "Popen", fake_popen)
+    monkeypatch.setattr(supervisor_module, "resolve_execution_profile", lambda **_kwargs: profile)
+    monkeypatch.setattr(
+        supervisor_module,
+        "effective_child_executor_timeout_seconds",
+        lambda *args, **kwargs: 1,
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "capture_nested_executor_progress",
+        lambda *_args, **_kwargs: next(progress_states),
+    )
+    monkeypatch.setattr(supervisor_module, "EXECUTOR_PROGRESS_POLL_SECONDS", 1)
+    monkeypatch.setattr(supervisor_module, "XHIGH_QUIET_PROGRESS_WINDOWS", 2)
+
+    node = supervisor_module.load_specs()[0]
+    result = supervisor_module.run_codex(node, repo_fixture)
+
+    assert result.returncode == 0
+    assert captured["process"].kill_called is False
+    assert captured["process"].wait_calls == [1, 1, 1, 1, 1]
 
 
 def test_write_latest_summary_includes_executor_environment_fields(

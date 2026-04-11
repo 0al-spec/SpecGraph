@@ -105,6 +105,8 @@ CHILD_MATERIALIZATION_TIMEOUT_SECONDS = 720
 FAST_EXECUTION_PROFILE_TIMEOUT_SECONDS = 420
 HIGH_REASONING_TIMEOUT_FLOOR_SECONDS = 300
 XHIGH_REASONING_TIMEOUT_FLOOR_SECONDS = 420
+EXECUTOR_PROGRESS_POLL_SECONDS = 30
+XHIGH_QUIET_PROGRESS_WINDOWS = 3
 DEFAULT_EXECUTION_PROFILE_NAME = "standard"
 AUTO_HEURISTIC_PROFILE_NAME = "fast"
 AUTO_CHILD_MATERIALIZATION_PROFILE_NAME = "materialize"
@@ -846,6 +848,35 @@ def effective_child_executor_timeout_seconds(
     return max(
         profile.timeout_seconds,
         reasoning_effort_timeout_floor_seconds(profile.reasoning_effort),
+    )
+
+
+def quiet_progress_windows_for_reasoning(reasoning_effort: str) -> int:
+    """Allow extra quiet windows for long-form deliberation on heavier reasoning modes."""
+    if reasoning_effort == "xhigh":
+        return XHIGH_QUIET_PROGRESS_WINDOWS
+    return 0
+
+
+def capture_nested_executor_progress(
+    worktree_path: Path,
+    stdout_chunks: list[str],
+    stderr_chunks: list[str],
+) -> tuple[int, int, int]:
+    """Capture coarse progress signals without inspecting semantic content."""
+    newest_mtime_ns = 0
+    for root, dirs, files in os.walk(worktree_path):
+        dirs[:] = [name for name in dirs if name != ".git"]
+        for filename in files:
+            path = Path(root) / filename
+            try:
+                newest_mtime_ns = max(newest_mtime_ns, path.stat().st_mtime_ns)
+            except FileNotFoundError:
+                continue
+    return (
+        sum(len(chunk) for chunk in stdout_chunks),
+        sum(len(chunk) for chunk in stderr_chunks),
+        newest_mtime_ns,
     )
 
 
@@ -3742,8 +3773,57 @@ def run_codex(
     )
     stdout_thread.start()
     stderr_thread.start()
+    poll_seconds = max(1, min(EXECUTOR_PROGRESS_POLL_SECONDS, timeout_seconds))
+    quiet_progress_windows_allowed = quiet_progress_windows_for_reasoning(profile.reasoning_effort)
+    base_timeout_remaining = timeout_seconds
+    quiet_windows_without_progress = 0
+    last_progress_state = capture_nested_executor_progress(
+        worktree_path, stdout_chunks, stderr_chunks
+    )
     try:
-        returncode = process.wait(timeout=timeout_seconds)
+        while True:
+            wait_timeout = (
+                poll_seconds
+                if base_timeout_remaining <= 0
+                else min(poll_seconds, base_timeout_remaining)
+            )
+            try:
+                returncode = process.wait(timeout=wait_timeout)
+                break
+            except subprocess.TimeoutExpired:
+                if base_timeout_remaining > 0:
+                    base_timeout_remaining = max(0, base_timeout_remaining - wait_timeout)
+                current_progress_state = capture_nested_executor_progress(
+                    worktree_path,
+                    stdout_chunks,
+                    stderr_chunks,
+                )
+                if current_progress_state != last_progress_state:
+                    last_progress_state = current_progress_state
+                    quiet_windows_without_progress = 0
+                    if base_timeout_remaining <= 0 and quiet_progress_windows_allowed > 0:
+                        print(
+                            "[codex stderr] supervisor progress grace: "
+                            "nested executor still shows progress after the base timeout; "
+                            "continuing to wait\n",
+                            end="",
+                            file=sys.stderr,
+                        )
+                    continue
+                if base_timeout_remaining > 0:
+                    continue
+                if quiet_windows_without_progress < quiet_progress_windows_allowed:
+                    quiet_windows_without_progress += 1
+                    print(
+                        "[codex stderr] supervisor quiet grace: "
+                        f"no new progress detected after base timeout "
+                        f"({quiet_windows_without_progress}/{quiet_progress_windows_allowed}); "
+                        "allowing more deliberation\n",
+                        end="",
+                        file=sys.stderr,
+                    )
+                    continue
+                raise
     except subprocess.TimeoutExpired:
         process.kill()
         returncode = 124
