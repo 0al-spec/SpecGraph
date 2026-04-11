@@ -4530,8 +4530,12 @@ def _process_one_spec(
             )
 
         proposed_status = None if is_graph_refactor_run else STATUS_PROGRESSION.get(node.status)
+        if proposed_status == "reviewed" and not reconciliation.get("work_dependencies_ready"):
+            proposed_status = node.status
         transition_errors = (
-            [] if is_graph_refactor_run else validate_transition(node.status, proposed_status)
+            []
+            if is_graph_refactor_run or proposed_status == node.status
+            else validate_transition(node.status, proposed_status)
         )
 
         validation_errors = []

@@ -2109,7 +2109,7 @@ def test_main_blocks_executor_environment_failures_without_graph_health_side_eff
             ),
         )
 
-    exit_code = supervisor_module.main(executor=fake_executor)
+    exit_code = supervisor_module.main(executor=fake_executor, target_spec="SG-SPEC-0001")
     assert exit_code == 1
 
     updated = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
@@ -3601,6 +3601,90 @@ def test_main_auto_approve_syncs_new_child_spec_from_parent_run(
     )
     assert child_data["id"] == "SG-SPEC-0002"
     assert child_data["title"] == "Canonical Substrate and Versioning"
+
+
+def test_main_keeps_linked_status_proposal_when_dependencies_not_review_ready(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    node_data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    node_data["status"] = "linked"
+    node_data["maturity"] = 0.68
+    node_data["allowed_paths"] = ["specs/nodes/*.yaml"]
+    node_data["prompt"] = (
+        "This spec is a seed ontology. Use child specs to refine unresolved areas."
+    )
+    node_data["acceptance_evidence"] = ["evidence"] * len(node_data["acceptance"])
+    node_path.write_text(json.dumps(node_data), encoding="utf-8")
+
+    worktree = make_fake_worktree(repo_fixture)
+    monkeypatch.setattr(
+        supervisor_module,
+        "create_isolated_worktree",
+        lambda _node_id: (worktree, "codex/sg-spec-0001/test"),
+    )
+
+    changed_snapshots = [[], ["specs/nodes/SG-SPEC-0001.yaml", "specs/nodes/SG-SPEC-0002.yaml"]]
+    monkeypatch.setattr(
+        supervisor_module,
+        "git_changed_files",
+        lambda _cwd=None: changed_snapshots.pop(0),
+    )
+
+    def fake_executor(_node: object, worktree_path: Path) -> subprocess.CompletedProcess[str]:
+        root_node = worktree_path / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+        root_data = supervisor_module.get_yaml_module().safe_load(
+            root_node.read_text(encoding="utf-8")
+        )
+        root_data["depends_on"] = ["SG-SPEC-0002"]
+        root_node.write_text(json.dumps(root_data), encoding="utf-8")
+
+        child_node = worktree_path / "specs" / "nodes" / "SG-SPEC-0002.yaml"
+        child_node.write_text(
+            json.dumps(
+                {
+                    "id": "SG-SPEC-0002",
+                    "title": "Linked But Not Review Ready Child",
+                    "kind": "spec",
+                    "status": "linked",
+                    "maturity": 0.5,
+                    "depends_on": [],
+                    "relates_to": [],
+                    "refines": ["SG-SPEC-0001"],
+                    "inputs": ["specs/nodes/SG-SPEC-0001.yaml"],
+                    "outputs": ["specs/nodes/SG-SPEC-0002.yaml"],
+                    "allowed_paths": ["specs/nodes/SG-SPEC-0002.yaml"],
+                    "acceptance": ["Defines a linked but not reviewed child"],
+                    "acceptance_evidence": [
+                        {
+                            "criterion": "Defines a linked but not reviewed child",
+                            "evidence": "The child is linked but not reviewed or frozen.",
+                        }
+                    ],
+                    "prompt": "Refine one linked child.",
+                }
+            ),
+            encoding="utf-8",
+        )
+        return subprocess.CompletedProcess(
+            args=["codex"],
+            returncode=0,
+            stdout="RUN_OUTCOME: done\nBLOCKER: none\n",
+            stderr="",
+        )
+
+    exit_code = supervisor_module.main(executor=fake_executor, target_spec="SG-SPEC-0001")
+    assert exit_code == 0
+
+    updated_root = supervisor_module.get_yaml_module().safe_load(
+        node_path.read_text(encoding="utf-8")
+    )
+    assert updated_root["status"] == "linked"
+    assert updated_root["proposed_status"] == "linked"
+    assert updated_root["gate_state"] == "review_pending"
+    assert updated_root["last_reconciliation"]["work_dependencies_ready"] is False
 
 
 def test_main_auto_approve_reconciles_seed_to_linked_when_child_exists(
