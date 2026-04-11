@@ -76,3 +76,4 @@
 53. [done] Make `supervisor` report pending gate actions when no automatic spec gap is eligible, so review_pending, split_required, and blocked queues are not misreported as absence of graph work.
 54. [done] Remove generic child-materialization bootstrap guidance from non-seed runs so proposal-only and ancestor-reconciliation prompts do not tell the child executor both to reconcile or emit a proposal artifact and to create canonical child spec files.
 55. [done] Make review-gate approval idempotent when the accepted worktree already applied the proposed status, so `proposed_status == current status` clears the gate instead of failing transition validation.
+56. Prevent timeout-failed multi-file child-materialization runs from writing any canonical parent diff or escalated runtime-state unless every changed canonical file, including the new child spec, is accepted and synced as one atomic materialization result.
