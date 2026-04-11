@@ -19,11 +19,15 @@ acceptance:
 acceptance_evidence:
 - criterion: Defines which derived artifacts, proposals, and review gates must exist before retrospective
     refactors can be applied to live graph regions
-  evidence: 'specification.retrospective_policy.required_artifacts requires graph-health signals, explicit
-    reviewable proposal artifacts, and approval-compatible staging before retrospective writeback. It
-    also states that applying retrospective refactor to live graph regions requires an artifact describing
-    intended structure, lineage preservation, downstream reconciliation scope, and the declared writeback
-    envelope.
+  evidence: 'specification.retrospective_application_policy.required_artifacts defines the derived trigger
+    and current-state context artifacts, the reviewable retrospective_application_artifact, and the tracked
+    proposal package required before writeback. specification.retrospective_application_policy.proposal_state_gate
+    requires exactly one compatible proposal-lane owner in approved_for_application state and excludes
+    draft, under_review, rejected, superseded, conflicting, or already-applied proposal states. specification.reviewable_artifact_contract
+    defines the required artifact contract for intended_structure, lineage_preservation, downstream_reconciliation_scope,
+    and declared_writeback_envelope. specification.retrospective_application_policy.review_gates defines
+    the artifact completeness, lineage, downstream reconciliation, writeback envelope, freshness, and
+    refusal gates that must pass before applying a retrospective refactor to a live graph region.
 
     '
 prompt: Refine SG-SPEC-0005 by extracting the bounded concern of retrospective refactor application prerequisites.
@@ -32,55 +36,249 @@ prompt: Refine SG-SPEC-0005 by extracting the bounded concern of retrospective r
   lineage preservation, downstream reconciliation scope, and the declared writeback envelope. Keep the
   child implementation-agnostic and do not broaden it into target selection, local-versus-governance boundary
   rules, or generalized batch scheduling.
-proposed_status: null
-proposed_maturity: null
-gate_state: blocked
-required_human_action: repair executor environment and rerun supervisor
-last_outcome: blocked
-last_blocker: executor environment failure
-last_run_id: 20260409T065836Z-SG-SPEC-0013
-last_exit_code: 124
-last_changed_files: []
-last_run_at: '2026-04-09T06:58:36.559127+00:00'
-last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0013-20260409T065335Z
-last_branch: sandbox/sg-spec-0013/20260409T065335Z
+specification:
+  objective: Define the pre-application prerequisites that must be reviewable before a retrospective_refactor_pass
+    may be applied to a live_graph_region, without making graph-health signals, proposal existence, or
+    apply-path compatibility self-authorizing.
+  scope:
+    in:
+    - Required pre-application artifacts for live-region retrospective refactor writeback
+    - Proposal authority state and active proposal ownership prerequisites before application
+    - Review gates for intended structure, lineage preservation, downstream reconciliation scope, and
+      the declared writeback envelope
+    - Refusal conditions when the application package is missing, stale, ambiguous, or outside its declared
+      envelope
+    out:
+    - Selection rules for retrospective refactor targets
+    - Boundary rules between local retrospective refactor and governance-class restructuring
+    - Generalized batch scheduling, refactor-wave orchestration, or queue priority formulas
+    - Storage schema, exact file naming, viewer UX, or runtime implementation of an application path
+    - Post-write implementation details after a canonical_application_event has been recorded
+  terminology:
+    live_retrospective_application: An attempted canonical writeback that applies a reviewed retrospective_refactor_pass
+      to an already-live graph region.
+    retrospective_application_package: The reviewable set of proposal-lane state, derived support artifacts,
+      and application artifact content that must be present before a live_retrospective_application can
+      be attempted.
+    retrospective_application_artifact: A reviewable non-canonical artifact that states the intended canonical
+      structure, lineage preservation plan, downstream reconciliation scope, and declared writeback envelope
+      for one retrospective_refactor_pass.
+    intended_structure: The artifact component that describes the proposed post-application spec nodes,
+      relation changes, retained stable IDs, and new child outcomes at the level needed for review.
+    lineage_preservation: The artifact component that maps current canonical specs and accepted_child_work
+      to their intended post-application roles so traceability is not inferred after writeback.
+    downstream_reconciliation_scope: The artifact component that names the canonical nodes whose links,
+      blockers, acceptance_evidence, prompt wording, or status-readiness are expected to need narrow reconciliation
+      after the application.
+    declared_writeback_envelope: The artifact component that restates the retrospective_writeback_envelope
+      authorized for this one application attempt.
+    pre_application_refusal: A deterministic refusal to apply the retrospective refactor because one or
+      more pre-application prerequisites are absent, ambiguous, stale, or out of envelope; canonical spec
+      files remain unchanged.
+  reviewable_artifact_contract:
+    required_components:
+    - component: intended_structure
+      cardinality: exactly 1
+      required_content:
+      - Identifies the primary target parent spec and the proposed post-application structure rooted in
+        that parent.
+      - Distinguishes retained canonical specs from newly materialized child outcomes and from nodes that
+        remain read-only.
+      - States intended relation changes and acceptance or evidence redistribution at review level without
+        prescribing a runtime write algorithm.
+    - component: lineage_preservation
+      cardinality: exactly 1
+      required_content:
+      - Maps every surviving stable spec ID named in the envelope to its intended post-application role.
+      - Names accepted_child_work that remains valid and explains how it stays traceable after the refactor.
+      - Identifies any intended supersession or replacement only when that authority is already supplied
+        by the governing proposal path.
+    - component: downstream_reconciliation_scope
+      cardinality: exactly 1
+      required_content:
+      - Names each canonical node expected to need narrow reconciliation after the application.
+      - Limits expected reconciliation to links, blockers, acceptance_evidence, prompt wording, and status-readiness
+        made stale by the applied refactor.
+      - States that unlisted sibling, cousin, and adjacent live-region nodes remain outside the application
+        scope unless later targeted by a separate reviewed path.
+    - component: declared_writeback_envelope
+      cardinality: exactly 1
+      required_content:
+      - Restates one retrospective_writeback_envelope for the application attempt.
+      - Lists direct canonical write targets, direct child outcomes rooted in the target parent, and any
+        explicitly named reconciliation nodes.
+      - Declares refusal when the intended writes cannot fit inside one bounded envelope.
+  retrospective_application_policy:
+    required_artifacts:
+    - A live_retrospective_application MUST have a retrospective_application_package before any canonical
+      writeback is attempted.
+    - The package MUST include a derived trigger or rationale artifact that explains why the retrospective
+      application exists, such as a graph-health signal, refactor work item, proposal queue item, or operator-authored
+      proposal rationale captured in proposal lineage.
+    - The package MUST include a current-state context artifact derived from the canonical graph that
+      identifies the live_graph_region assumptions the review is using, including current stable IDs and
+      accepted_child_work references relevant to the proposed application.
+    - The package MUST include exactly one reviewable retrospective_application_artifact satisfying specification.reviewable_artifact_contract.
+    - Runtime-only artifacts may support review, but they MUST NOT be the only reviewable source for intended
+      structure, lineage preservation, downstream reconciliation scope, or the declared writeback envelope.
+    proposal_state_gate:
+    - Exactly one active proposal-lane owner MUST match the target region and change scope of the retrospective_application_artifact.
+    - The matching proposal authority state MUST be approved_for_application before application can be
+      attempted.
+    - Proposal states draft, under_review, rejected, and superseded are ineligible for live_retrospective_application.
+    - If materially incompatible active proposals overlap the same target region or change scope, application
+      MUST be refused until review resolves, supersedes, or redirects the conflict.
+    - apply_path_compatibility and proposal_artifact_link presence may identify consumable input for an
+      explicit application path, but neither one substitutes for approved_for_application review authority.
+    - approved_for_application authorizes entry into an explicit application path only; it MUST NOT be
+      interpreted as proof that canonical_application_event has already occurred.
+    - If canonical_application_event is already recorded for the same proposal outcome, the package is
+      not an unapplied candidate and MUST be refused or redirected to a separately reviewed repair path.
+    - A substantive change to the retrospective_application_artifact after approval MUST return the proposal
+      to review or create a superseding proposal before application can proceed.
+    review_gates:
+    - Repository review gate requires proposal-lane state to expose reviewable proposal identity, target
+      region, authority state, and lineage before the application package can be considered.
+    - Artifact completeness gate requires the retrospective_application_artifact to contain exactly one
+      intended_structure, one lineage_preservation, one downstream_reconciliation_scope, and one declared_writeback_envelope.
+    - Lineage gate requires reviewers to be able to trace stable surviving IDs and accepted_child_work
+      from the current canonical graph into the intended structure before writeback.
+    - Downstream reconciliation gate requires reviewers to be able to inspect the named downstream reconciliation
+      scope and confirm that unlisted adjacent nodes are not mutated by implication.
+    - Writeback envelope gate requires the declared_writeback_envelope to fit inside the retrospective_writeback_envelope
+      limits delegated by SG-SPEC-0005.
+    - Freshness gate requires the current live_graph_region to still match the package assumptions closely
+      enough that the intended structure, lineage preservation, reconciliation scope, and writeback envelope
+      remain reviewable without inference.
+    - Refusal gate requires pre_application_refusal if any prerequisite gate fails; canonical spec files
+      remain unchanged and proposal review authority is not rewritten by implication.
+proposed_status: specified
+proposed_maturity: 0.4
+gate_state: review_pending
+required_human_action: review refinement impact before approval
+last_outcome: done
+last_blocker: ''
+last_run_id: 20260411T135232Z-SG-SPEC-0013
+last_exit_code: 0
+last_changed_files:
+- specs/nodes/SG-SPEC-0013.yaml
+last_run_at: '2026-04-11T13:52:32.447212+00:00'
+last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0013-20260411T134631Z
+last_branch: codex/sg-spec-0013/20260411T134631Z
 last_validator_results:
   outputs: true
   allowed_paths: true
   reconciliation: true
   atomicity: true
   transition: true
-  executor_environment: false
-  refinement_acceptance: false
+  executor_environment: true
+  refinement_acceptance: true
 last_refinement_acceptance:
-  decision: reject
-  change_class: local_refinement
+  decision: review_required
+  change_class: constitutional_change
   checks:
-    content_changed: false
-    hard_validation: false
+    content_changed: true
+    hard_validation: true
     single_spec_scope: true
-    constitutional_diff: false
+    constitutional_diff: true
     graph_refactor_diff: false
     atomicity_clear: true
     within_mutation_budget: true
-  diff_paths: []
-  mutation_classes: []
-  mutation_budget:
+  diff_paths:
+  - acceptance_evidence[0].evidence
+  - specification
+  - specification.objective
+  - specification.scope
+  - specification.scope.in
+  - specification.scope.in[0]
+  - specification.scope.in[1]
+  - specification.scope.in[2]
+  - specification.scope.in[3]
+  - specification.scope.out
+  - specification.scope.out[0]
+  - specification.scope.out[1]
+  - specification.scope.out[2]
+  - specification.scope.out[3]
+  - specification.scope.out[4]
+  - specification.terminology
+  - specification.terminology.live_retrospective_application
+  - specification.terminology.retrospective_application_package
+  - specification.terminology.retrospective_application_artifact
+  - specification.terminology.intended_structure
+  - specification.terminology.lineage_preservation
+  - specification.terminology.downstream_reconciliation_scope
+  - specification.terminology.declared_writeback_envelope
+  - specification.terminology.pre_application_refusal
+  - specification.reviewable_artifact_contract
+  - specification.reviewable_artifact_contract.required_components
+  - specification.reviewable_artifact_contract.required_components[0]
+  - specification.reviewable_artifact_contract.required_components[0].component
+  - specification.reviewable_artifact_contract.required_components[0].cardinality
+  - specification.reviewable_artifact_contract.required_components[0].required_content
+  - specification.reviewable_artifact_contract.required_components[0].required_content[0]
+  - specification.reviewable_artifact_contract.required_components[0].required_content[1]
+  - specification.reviewable_artifact_contract.required_components[0].required_content[2]
+  - specification.reviewable_artifact_contract.required_components[1]
+  - specification.reviewable_artifact_contract.required_components[1].component
+  - specification.reviewable_artifact_contract.required_components[1].cardinality
+  - specification.reviewable_artifact_contract.required_components[1].required_content
+  - specification.reviewable_artifact_contract.required_components[1].required_content[0]
+  - specification.reviewable_artifact_contract.required_components[1].required_content[1]
+  - specification.reviewable_artifact_contract.required_components[1].required_content[2]
+  - specification.reviewable_artifact_contract.required_components[2]
+  - specification.reviewable_artifact_contract.required_components[2].component
+  - specification.reviewable_artifact_contract.required_components[2].cardinality
+  - specification.reviewable_artifact_contract.required_components[2].required_content
+  - specification.reviewable_artifact_contract.required_components[2].required_content[0]
+  - specification.reviewable_artifact_contract.required_components[2].required_content[1]
+  - specification.reviewable_artifact_contract.required_components[2].required_content[2]
+  - specification.reviewable_artifact_contract.required_components[3]
+  - specification.reviewable_artifact_contract.required_components[3].component
+  - specification.reviewable_artifact_contract.required_components[3].cardinality
+  - specification.reviewable_artifact_contract.required_components[3].required_content
+  - specification.reviewable_artifact_contract.required_components[3].required_content[0]
+  - specification.reviewable_artifact_contract.required_components[3].required_content[1]
+  - specification.reviewable_artifact_contract.required_components[3].required_content[2]
+  - specification.retrospective_application_policy
+  - specification.retrospective_application_policy.required_artifacts
+  - specification.retrospective_application_policy.required_artifacts[0]
+  - specification.retrospective_application_policy.required_artifacts[1]
+  - specification.retrospective_application_policy.required_artifacts[2]
+  - specification.retrospective_application_policy.required_artifacts[3]
+  - specification.retrospective_application_policy.required_artifacts[4]
+  - specification.retrospective_application_policy.proposal_state_gate
+  - specification.retrospective_application_policy.proposal_state_gate[0]
+  - specification.retrospective_application_policy.proposal_state_gate[1]
+  - specification.retrospective_application_policy.proposal_state_gate[2]
+  - specification.retrospective_application_policy.proposal_state_gate[3]
+  - specification.retrospective_application_policy.proposal_state_gate[4]
+  - specification.retrospective_application_policy.proposal_state_gate[5]
+  - specification.retrospective_application_policy.proposal_state_gate[6]
+  - specification.retrospective_application_policy.proposal_state_gate[7]
+  - specification.retrospective_application_policy.review_gates
+  - specification.retrospective_application_policy.review_gates[0]
+  - specification.retrospective_application_policy.review_gates[1]
+  - specification.retrospective_application_policy.review_gates[2]
+  - specification.retrospective_application_policy.review_gates[3]
+  - specification.retrospective_application_policy.review_gates[4]
+  - specification.retrospective_application_policy.review_gates[5]
+  - specification.retrospective_application_policy.review_gates[6]
+  mutation_classes:
   - policy_text
+  mutation_budget: []
   budget_exceeded_classes: []
-  changed_spec_files: []
-  review_reasons: []
-  errors:
-  - refinement acceptance was not evaluated
+  changed_spec_files:
+  - specs/nodes/SG-SPEC-0013.yaml
+  review_reasons:
+  - run changed governance-sensitive specification sections
+  errors: []
   warnings: []
 last_reconciliation:
-  worktree_spec_count: 0
-  changed_spec_ids: []
-  semantic_dependencies_resolved: false
-  work_dependencies_ready: false
+  worktree_spec_count: 16
+  changed_spec_ids:
+  - SG-SPEC-0013
+  semantic_dependencies_resolved: true
+  work_dependencies_ready: true
   cycles: []
 last_requested_child_materialization: false
 last_materialized_child_paths: []
-last_errors:
-- 'Nested executor timed out before producing a bounded result. Evidence: supervisor timeout: nested executor
-  timed out after 300 seconds'
