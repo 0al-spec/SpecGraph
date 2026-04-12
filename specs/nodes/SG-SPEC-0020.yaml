@@ -1,0 +1,231 @@
+id: SG-SPEC-0020
+title: SpecGraph - Executable Layer Traceability Boundary
+kind: spec
+status: linked
+maturity: 0.67
+depends_on: []
+relates_to: []
+refines:
+- SG-SPEC-0001
+inputs:
+- specs/nodes/SG-SPEC-0001.yaml
+outputs:
+- specs/nodes/SG-SPEC-0020.yaml
+allowed_paths:
+- specs/nodes/SG-SPEC-0020.yaml
+acceptance:
+- Defines the bounded role of executable-layer artifacts and trace links without prescribing repository
+  layout, programming language, CI workflow, build system, or deployment tooling
+- Defines the minimum semantic contract for code_surface, test, and release as canonical execution-linked
+  entities
+- Defines how executable-layer artifacts trace to governed specs, requirements, invariants, and one another
+  through explicit canonical links
+- Defines the canonical versus derived boundary for executable-layer evidence, build outputs, and runtime
+  state so operational artifacts do not become canonical truth by default
+acceptance_evidence:
+- criterion: Defines the bounded role of executable-layer artifacts and trace links without prescribing
+    repository layout, programming language, CI workflow, build system, or deployment tooling
+  evidence: 'specification.scope.in limits this child to executable-layer ontology semantics, while specification.scope.out
+    excludes repository layout, language choice, CI workflow, build tooling, deployment mechanics, and
+    runtime implementation. specification.boundary_policy then states that this child elaborates the executable
+    layer already seeded in SG-SPEC-0001 rather than introducing a new canonical layer or making operational
+    artifacts authoritative.
+
+    '
+- criterion: Defines the minimum semantic contract for code_surface, test, and release as canonical execution-linked
+    entities
+  evidence: 'specification.terminology defines code_surface, test, release, execution_traceability, path_hint,
+    and runtime_result. specification.entity_catalog then gives code_surface, test, and release each a
+    role, minimum_semantic_fields, and boundary_notes that preserve stable identity, bounded scope, and
+    canonical meaning without collapsing those entities into files, runners, or deployment records.
+
+    '
+- criterion: Defines how executable-layer artifacts trace to governed specs, requirements, invariants,
+    and one another through explicit canonical links
+  evidence: 'specification.relationship_policy defines when code_surface uses implements, how tested_by
+    records governed verification coverage from specs, requirements, and invariants to tests, how releases
+    reference code_surface entries by stable identity, and how coordination links stay distinct from implementation
+    or verification claims.
+
+    '
+- criterion: Defines the canonical versus derived boundary for executable-layer evidence, build outputs,
+    and runtime state so operational artifacts do not become canonical truth by default
+  evidence: 'specification.canonical_vs_derived_boundary separates authored executable-layer definitions
+    and explicit trace links from rebuildable source indexes, test runs, CI outputs, build artifacts,
+    deployment events, and live runtime state. specification.invariants and decisions then formalize that
+    stable identity and explicit canonical linkage remain authoritative even when operational evidence
+    exists elsewhere.
+
+    '
+prompt: Refine SG-SPEC-0001 by defining the executable-layer boundary for code_surface, test, and release.
+  Keep this child focused on ontology semantics, trace relationships, and canonical versus derived separation;
+  do not define repository layout, CI workflow, build or deployment implementation, or language-specific
+  rules.
+specification:
+  objective: 'Define the bounded ontology contract for executable-layer artifacts so code surfaces, tests,
+    and releases can be traced back to governed specs and requirements without making files, build outputs,
+    or runtime state authoritative.
+
+    '
+  scope:
+    in:
+    - Semantic boundary for executable-layer artifacts in the Code layer seeded by SG-SPEC-0001
+    - Minimum semantic contracts for code_surface, test, and release
+    - Trace relationships from executable-layer artifacts to specs, requirements, invariants, and releases
+    - Canonical versus derived boundary for executable-layer evidence and operational records
+    out:
+    - Repository layout, file naming conventions, package structure, or module loading behavior
+    - Programming language choices, framework choices, or code-generation strategy
+    - CI workflow, test runner configuration, build pipeline design, or deployment automation
+    - Runtime observability contract semantics, attestation adjudication, or release-readiness policy
+    - Storage schema, artifact registry design, or environment inventory implementation
+  terminology:
+    code_surface: 'A stable canonical anchor for one executable capability boundary, such as a symbol,
+      module, endpoint, screen, or workflow step. It is identified by stable identity rather than by file
+      location.
+
+      '
+    test: 'A canonical verification artifact description that states what governed subject it covers,
+      independent of a particular runner, invocation, or transient execution result.
+
+      '
+    release: 'A canonical description of one bounded deployable or distributable cut that groups executable
+      surfaces under a version and rollout context.
+
+      '
+    execution_traceability: 'The governed ability to traverse from intent, specifications, requirements,
+      and invariants into code_surface, test, and release artifacts through explicit canonical references
+      and edges.
+
+      '
+    path_hint: 'An informational locator that helps a human find an implementation or test surface but
+      is not the stable identity of the canonical artifact.
+
+      '
+    runtime_result: 'A derived observation such as a test run, build outcome, deployment event, or live
+      environment state that may support review but does not replace canonical executable-layer definitions.
+
+      '
+  boundary_policy:
+  - This child elaborates the executable layer seeded in SG-SPEC-0001 without adding a new canonical layer
+    or changing the existing seed node-kind list.
+  - code_surface, test, and release remain canonical descriptions of execution-linked artifacts; source
+    files, binaries, CI jobs, and live deployments are adjacent implementation artifacts rather than canonical
+    identity by default.
+  - Stable identity governs executable-layer artifacts; path_hint, runner names, package coordinates,
+    or environment URLs are informative only unless separately canonicalized under another governed spec.
+  - A release may summarize which code surfaces it exposes or bundles, but it does not by itself prove
+    requirement satisfaction, review approval, or runtime health.
+  entity_catalog:
+  - entity: code_surface
+    role: Names one stable implementation anchor that can realize governed specifications or requirements
+      across refactors.
+    minimum_semantic_fields:
+    - stable identity
+    - surface_type
+    - implemented subject reference
+    - authority_class and provenance
+    boundary_notes:
+    - A code_surface should be narrow enough to point to one executable capability boundary, not an entire
+      repository or subsystem.
+    - One code_surface may implement more than one requirement or spec only when those obligations truly
+      share the same stable anchor.
+    - path_hint may assist navigation but must not become the authoritative identity.
+  - entity: test
+    role: Names one governed verification artifact that checks one or more specs, requirements, or invariants.
+    minimum_semantic_fields:
+    - stable identity
+    - covered subject reference
+    - test_type or verification mode
+    - authority_class and provenance
+    boundary_notes:
+    - A canonical test entry describes governed coverage, not one transient run result.
+    - Test framework details, invocation commands, and flaky execution history remain derived unless separately
+      canonicalized.
+    - A test may cover multiple governed subjects only when the coverage statement remains inspectable
+      and bounded.
+  - entity: release
+    role: Names one bounded distributable or deployable cut that groups executable surfaces under a version
+      and rollout context.
+    minimum_semantic_fields:
+    - stable identity
+    - version_tag
+    - referenced code_surface entries
+    - rollout_scope or release context
+    - authority_class and provenance
+    boundary_notes:
+    - A release is narrow enough to describe one governed version or rollout envelope, not an unbounded
+      stream of deployments.
+    - A release may refer to multiple code surfaces, but it should not hide unrelated product areas behind
+      one unbounded umbrella.
+    - Build pipeline IDs, artifact hashes, and live environment state are adjacent evidence, not the release's
+      canonical identity.
+  relationship_policy:
+  - implements is authored when a code_surface is the stable execution anchor that realizes a spec or
+    requirement.
+  - A code_surface MAY implement one or more specs or requirements, but each implements claim must stay
+    inspectable at the level of the stable surface rather than a whole repository.
+  - tested_by from a spec, requirement, or invariant to a test records governed verification coverage;
+    transient test runs or dashboards do not replace that canonical claim.
+  - A release SHOULD reference one or more code_surface entries by stable identity when it claims to package,
+    expose, or distribute those surfaces.
+  - A release MAY relate_to specs, requirements, or observability contracts for coordination, but that
+    contextual relation does not replace implements, tested_by, or release-to-code_surface lineage.
+  - Derived execution outputs such as CI results, build logs, deployment events, or runtime checks may
+    support review but do not replace authored canonical links.
+  canonical_vs_derived_boundary:
+    canonical:
+    - Authored or imported code_surface definitions with stable identities
+    - Authored or imported test definitions with governed coverage references
+    - Authored or imported release definitions with bounded version and rollout context
+    - Explicit implements and tested_by links plus release-to-code_surface references
+    derived:
+    - Source file paths, symbol indexes, package manifests, and call graphs before governed promotion
+    - Test run records, flaky histories, pass or fail dashboards, and CI job outputs
+    - Build artifacts, container images, deployment events, and live environment state
+    - Coverage percentages, dependency graphs, and release notes assembled from other canonical facts
+  invariants:
+  - id: EXE-001
+    statement: Every code_surface, test, and release must be identified by stable canonical identity rather
+      than by path, runner name, or deployment URL alone.
+  - id: EXE-002
+    statement: A tested_by claim records governed coverage through a canonical test artifact; transient
+      execution results do not replace that claim.
+  - id: EXE-003
+    statement: A release may group executable surfaces by version and rollout context, but runtime build
+      or deployment artifacts remain derived unless separately canonicalized with provenance.
+  decisions:
+  - id: EXE-D1
+    statement: Executable-layer ontology is anchored on stable execution surfaces, not repository layout.
+    rationale: 'Implementation files and directories move frequently, but executable capability boundaries
+      are the stable anchors needed for traceability. Canonical executable-layer nodes therefore use stable
+      identity first and treat file locations only as hints.
+
+      '
+  - id: EXE-D2
+    statement: Canonical executable traceability records definitions and links, while operational outcomes
+      remain separate derived evidence.
+    rationale: 'SpecGraph needs to preserve authoritative trace links without conflating them with CI
+      state, deployment telemetry, or transient execution outcomes. Keeping runtime_result-derived data
+      rebuildable protects the canonical versus derived boundary defined in SG-SPEC-0001.
+
+      '
+  examples:
+  - name: Endpoint handler surface
+    description: 'An API endpoint implementation is represented as one code_surface with a stable identity
+      that implements the governing requirement set. The node may include a path_hint for navigation,
+      but the authoritative trace anchor is the stable code_surface identity rather than the file path.
+
+      '
+  - name: Regression test contract
+    description: 'A regression test canonically states that it verifies one invariant and two requirements.
+      The tested_by links express governed coverage, while individual test runs, flakes, and CI logs remain
+      derived runtime_result evidence.
+
+      '
+  - name: Release bundle
+    description: 'A release groups several code_surface entries under one version_tag and rollout_scope.
+      It provides a canonical deployable envelope without turning build artifacts, container registries,
+      or live deployment events into the release''s stable identity.
+
+      '
