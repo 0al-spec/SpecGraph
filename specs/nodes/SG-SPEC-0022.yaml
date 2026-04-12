@@ -1,0 +1,192 @@
+id: SG-SPEC-0022
+title: SpecGraph - Node Maturity Semantics
+kind: spec
+status: linked
+maturity: 0.66
+depends_on: []
+relates_to:
+- SG-SPEC-0003
+- SG-SPEC-0021
+refines:
+- SG-SPEC-0001
+inputs:
+- specs/nodes/SG-SPEC-0001.yaml
+- specs/nodes/SG-SPEC-0003.yaml
+- specs/nodes/SG-SPEC-0021.yaml
+outputs:
+- specs/nodes/SG-SPEC-0022.yaml
+allowed_paths:
+- specs/nodes/SG-SPEC-0022.yaml
+acceptance:
+- Defines the bounded role of canonical node maturity as a continuous diagnostic signal distinct from
+  lifecycle status, review state, priority, and implementation completion
+- Defines the minimum semantic contract for node maturity, including subject scope, 0.0-1.0 scale meaning,
+  and what kinds of changes can justify canonical maturity updates
+- Defines how maturity interacts with lifecycle status so maturity can inform refinement and observation
+  without acting as an automatic gate, regression trigger, or approval surrogate
+- Defines the canonical versus derived boundary for authored maturity values, estimated maturity assessments,
+  and maturity trend artifacts
+acceptance_evidence:
+- criterion: Defines the bounded role of canonical node maturity as a continuous diagnostic signal distinct
+    from lifecycle status, review state, priority, and implementation completion
+  evidence: 'specification.scope.in limits this child to node-maturity semantics, while specification.scope.out
+    excludes formulas, thresholds, dashboards, queue behavior, and runtime adjudication. specification.boundary_policy
+    then states that node_maturity remains diagnostic and per-node, not a surrogate for review, priority,
+    delivery, or lifecycle authority.
+
+    '
+- criterion: Defines the minimum semantic contract for node maturity, including subject scope, 0.0-1.0
+    scale meaning, and what kinds of changes can justify canonical maturity updates
+  evidence: 'specification.terminology defines node_maturity, maturity_assessment, maturity_scale, maturity_delta,
+    and maturity_trend_artifact. specification.maturity_contract then defines subject_scope, scale_meaning,
+    and update_justification, including explicit semantics for the 0.0-1.0 interval and the material content
+    changes that may justify canonical maturity updates.
+
+    '
+- criterion: Defines how maturity interacts with lifecycle status so maturity can inform refinement and
+    observation without acting as an automatic gate, regression trigger, or approval surrogate
+  evidence: 'specification.lifecycle_interaction explicitly separates lifecycle status from node_maturity,
+    rejects universal maturity thresholds for status advancement, and states that low maturity may motivate
+    scrutiny or follow-up work without by itself regressing status, satisfying review, or creating canonical
+    defect state.
+
+    '
+- criterion: Defines the canonical versus derived boundary for authored maturity values, estimated maturity
+    assessments, and maturity trend artifacts
+  evidence: 'specification.canonical_vs_derived_boundary keeps authored or imported node_maturity values
+    and reviewed maturity rationale canonical, while heuristic estimates, rankings, alerts, maturity_trend_artifact
+    projections, and calibration experiments remain derived. MAT-003 formalizes that derived maturity
+    views cannot replace canonical maturity state without an explicit canonical update.
+
+    '
+prompt: Refine SG-SPEC-0001 by defining the canonical semantics of node maturity. Keep this child focused
+  on maturity meaning, lifecycle interaction, and canonical versus derived separation; do not define formulas,
+  automation, dashboards, or threshold policy.
+specification:
+  objective: 'Define the bounded semantic contract for node maturity so SpecGraph can represent how fully
+    one governed node has been elaborated without confusing that diagnostic signal with lifecycle status,
+    approval, or derived metrics.
+
+    '
+  scope:
+    in:
+    - Canonical semantics of node maturity as a per-node continuous signal
+    - Minimum interpretation contract for the 0.0-1.0 maturity scale
+    - Interaction rules between maturity and lifecycle status
+    - Canonical versus derived separation for maturity assessments, estimates, and trend views
+    out:
+    - Exact scoring formulas, weights, or automated estimation algorithms
+    - Normative thresholds that automatically gate status changes, review approval, or proposal escalation
+    - Dashboard design, reporting UI, queue prioritization algorithms, or alert routing
+    - Metric-family formulas or calibration procedures delegated to SG-SPEC-0021
+    - Runtime observability evidence adjudication or supervisor scheduling behavior
+  terminology:
+    node_maturity: 'A canonical continuous diagnostic signal attached to one governed node, expressing
+      how fully that node''s bounded content has been elaborated and evidenced.
+
+      '
+    maturity_assessment: 'One authored, imported, or otherwise governed assignment or interpretation of
+      a node_maturity value for a specific node state.
+
+      '
+    maturity_scale: 'The normalized 0.0-1.0 interval used to express node_maturity, where lower values
+      indicate earlier or thinner elaboration and higher values indicate more complete elaboration within
+      the node''s own bounded responsibility.
+
+      '
+    maturity_delta: 'A change in node_maturity between two governed states of the same node or lineage
+      step.
+
+      '
+    maturity_trend_artifact: 'A derived longitudinal view, comparison, or projection built from one or
+      more maturity_assessment values. It remains rebuildable and non-canonical by default.
+
+      '
+  boundary_policy:
+  - This child refines the maturity semantics seeded in SG-SPEC-0001 without redefining the lifecycle
+    status catalog.
+  - node_maturity is diagnostic rather than normative; it describes elaboration state but does not by
+    itself approve, reject, or freeze a node.
+  - node_maturity is scoped to one node''s bounded responsibility, not to total project completion, downstream
+    implementation progress, or cross-graph business value.
+  - A maturity value may be authored or imported as canonical state, but estimated scores, alerts, and
+    trend projections remain derived unless explicitly governed otherwise.
+  maturity_contract:
+    subject_scope:
+    - node_maturity applies to one canonical node at a time and should be interpreted relative to that
+      node''s declared scope, acceptance surface, and lineage state.
+    - Equal maturity values on different node kinds need not imply equal absolute effort; the scale describes
+      bounded elaboration within each node''s own responsibility.
+    scale_meaning:
+    - 0.0 represents essentially no governed elaboration beyond minimal identity or placeholder state.
+    - Intermediate values represent partial elaboration, partial evidence, or partially resolved linkage
+      relative to the node''s bounded concern.
+    - 1.0 represents full elaboration for the node''s bounded responsibility, not completion of adjacent
+      nodes, downstream execution, or project-wide delivery.
+    update_justification:
+    - Canonical maturity updates SHOULD be justified by material changes in structure, scope clarity,
+      acceptance content, evidence completeness, decisions, or explicit linkage.
+    - Ephemeral runtime activity, viewer state, dashboards, or heuristic alerts MUST NOT by themselves
+      justify canonical maturity updates.
+    - A maturity_delta may increase, decrease, or remain flat as the node changes, but the change should
+      reflect governed understanding of the node''s bounded content rather than cosmetic edits alone.
+  lifecycle_interaction:
+  - 'lifecycle status and node_maturity are distinct signals: status expresses governed stage progression,
+    while maturity expresses elaboration depth within a node''s current state.'
+  - No universal maturity threshold automatically authorizes movement between lifecycle statuses.
+  - Low maturity on a linked, reviewed, or even frozen node may motivate scrutiny or follow-up work, but
+    it does not by itself regress status or create canonical defect state.
+  - A higher maturity value does not substitute for required links, review decisions, or explicit acceptance_evidence.
+  - When a frozen node changes through revision or supersession, the new governed state may receive a
+    different maturity value without mutating the frozen predecessor.
+  canonical_vs_derived_boundary:
+    canonical:
+    - Authored or imported node_maturity values attached to governed nodes
+    - Authored rationale or reviewed notes explaining a maturity assessment when such rationale is preserved
+      canonically
+    - Reviewed decisions that clarify how a bounded node interprets its maturity within current policy
+    derived:
+    - Heuristic maturity estimates inferred from graph shape, runtime activity, or text analysis
+    - Rankings, alerts, comparative scorecards, and queue-prioritization outputs derived from maturity
+    - maturity_trend_artifact timelines, dashboards, and projections
+    - Calibration experiments or candidate threshold recommendations built from maturity data
+  invariants:
+  - id: MAT-001
+    statement: node_maturity must remain a per-node continuous diagnostic signal distinct from lifecycle
+      status, review authority, and implementation completion.
+  - id: MAT-002
+    statement: No node_maturity value or maturity_delta alone may change lifecycle status, satisfy review,
+      or create canonical defect state.
+  - id: MAT-003
+    statement: Derived maturity estimates, rankings, and maturity_trend_artifact views must not replace
+      governed canonical maturity state without an explicit canonical update.
+  decisions:
+  - id: MAT-D1
+    statement: Maturity measures bounded elaboration, not approval or delivery.
+    rationale: 'SpecGraph needs a compact signal for how fully one node has been worked through, but that
+      signal becomes misleading if it is treated as review approval, business priority, or implementation
+      completeness. Keeping maturity diagnostic preserves clarity about what the number can and cannot
+      mean.
+
+      '
+  - id: MAT-D2
+    statement: Lifecycle progression and maturity remain intentionally decoupled.
+    rationale: 'A node can be structurally linked with modest maturity, or highly elaborated while still
+      awaiting one gating edge or review step. Decoupling the two signals lets the graph express those
+      realities without inventing false universal thresholds.
+
+      '
+  examples:
+  - name: Linked seed with moderate maturity
+    description: 'A seed spec has explicit descendants and reconciled dependency edges, so it is validly
+      linked. Its maturity remains below 1.0 because examples, evidence quality, or deeper child refinements
+      are still improving. The linked status stays correct because linkage is about declared structure,
+      not a universal maturity cutoff.
+
+      '
+  - name: Evidence-driven maturity increase
+    description: 'A child spec adds clearer acceptance_evidence and tightens terminology without changing
+      status. Its node_maturity increases because the bounded content is more fully elaborated, while
+      the lifecycle stage remains the same until a separate status condition changes.
+
+      '
