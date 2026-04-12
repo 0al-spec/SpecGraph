@@ -927,6 +927,58 @@ def classify_completion_status(
     return COMPLETION_STATUS_FAILED
 
 
+def normalize_executor_stderr(stderr: str) -> str:
+    """Collapse known transport/runtime noise tails without hiding real errors."""
+    if not stderr.strip():
+        return stderr
+
+    rules: tuple[tuple[str, Callable[[str], bool], str], ...] = (
+        (
+            "model_refresh_timeout",
+            lambda low: (
+                "failed to refresh available models: timeout waiting for child process to exit"
+                in low
+            ),
+            "suppressed model refresh timeout warning",
+        ),
+        (
+            "app_server_queue_full",
+            lambda low: (
+                "dropping in-process app-server event because consumer queue is full" in low
+            ),
+            "suppressed app-server queue-full warning",
+        ),
+        (
+            "app_server_stream_lag",
+            lambda low: "in-process app-server event stream lagged; dropped" in low,
+            "suppressed app-server stream lag warning",
+        ),
+    )
+
+    kept_lines: list[str] = []
+    suppressed_counts = {name: 0 for name, _predicate, _summary in rules}
+    for line in stderr.splitlines():
+        lowered = line.lower()
+        matched_rule = False
+        for name, predicate, _summary in rules:
+            if predicate(lowered):
+                suppressed_counts[name] += 1
+                matched_rule = True
+                break
+        if not matched_rule:
+            kept_lines.append(line)
+
+    for name, _predicate, summary in rules:
+        count = suppressed_counts[name]
+        if count:
+            kept_lines.append(f"[executor-noise] {summary} ({count} occurrence(s))")
+
+    normalized = "\n".join(kept_lines)
+    if stderr.endswith("\n"):
+        normalized += "\n"
+    return normalized
+
+
 def effective_child_executor_timeout_seconds(
     run_authority: tuple[str, ...],
     requested_profile: str | None = None,
@@ -4348,6 +4400,12 @@ def _process_split_refactor_proposal(
         worktree_path,
         refactor_work_item,
         **invoke_kwargs,
+    )
+    result = subprocess.CompletedProcess(
+        args=result.args,
+        returncode=result.returncode,
+        stdout=result.stdout,
+        stderr=normalize_executor_stderr(result.stderr),
     )
     emit(f"Executor finished for {node.id} with exit_code={result.returncode}", enabled=verbose)
     after = git_changed_files(worktree_path)
