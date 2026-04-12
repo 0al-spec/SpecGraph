@@ -3056,6 +3056,29 @@ def test_classify_executor_environment_detects_usage_limit_failure(
     assert environment["issue_kinds"] == ["usage_limit_failure"]
 
 
+def test_normalize_executor_stderr_condenses_known_noise(
+    supervisor_module: object,
+) -> None:
+    stderr = (
+        "2026-04-11T13:11:10Z ERROR codex_core::models_manager::manager: "
+        "failed to refresh available models: timeout waiting for child process to exit\n"
+        "2026-04-11T13:11:18Z WARN codex_app_server_client: "
+        "dropping in-process app-server event because consumer queue is full\n"
+        "warning: in-process app-server event stream lagged; dropped 20 events\n"
+        "ERROR: stream disconnected before completion: error sending request for url\n"
+    )
+
+    normalized = supervisor_module.normalize_executor_stderr(stderr)
+
+    assert "failed to refresh available models" not in normalized
+    assert "consumer queue is full" not in normalized
+    assert "event stream lagged" not in normalized
+    assert "stream disconnected before completion" in normalized
+    assert "suppressed model refresh timeout warning (1 occurrence(s))" in normalized
+    assert "suppressed app-server queue-full warning (1 occurrence(s))" in normalized
+    assert "suppressed app-server stream lag warning (1 occurrence(s))" in normalized
+
+
 def test_main_does_not_treat_websocket_fallback_warning_as_primary_transport_failure(
     supervisor_module: object,
     repo_fixture: Path,
@@ -4712,6 +4735,10 @@ def test_main_atomicity_gate_forces_split_required(
     run_logs = sorted((repo_fixture / "runs").glob("*-SG-SPEC-*.json"))
     payload = json.loads(run_logs[-1].read_text(encoding="utf-8"))
     assert payload["completion_status"] == "progressed"
+    assert payload["outcome"] == "split_required"
+    assert payload["gate_state"] == "split_required"
+    assert payload["changed_files"] == ["specs/nodes/SG-SPEC-0001.yaml"]
+    assert payload["validator_results"]["atomicity"] is False
 
 
 def test_main_split_required_syncs_decomposition_outputs(
@@ -5587,6 +5614,17 @@ def test_main_records_yaml_validation_error(
     assert node_path.read_text(encoding="utf-8") == before_text
     updated = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
     assert "last_errors" not in updated
+    run_logs = sorted((repo_fixture / "runs").glob("*-SG-SPEC-*.json"))
+    assert len(run_logs) == 1
+    payload = json.loads(run_logs[0].read_text(encoding="utf-8"))
+    assert payload["completion_status"] == "failed"
+    assert payload["outcome"] == "split_required"
+    assert payload["gate_state"] == "split_required"
+    assert payload["changed_files"] == ["specs/nodes/SG-SPEC-0001.yaml"]
+    assert any(
+        "Failed to load worktree specs for validation:" in error
+        for error in payload["validation_errors"]
+    )
 
 
 def test_main_aborts_on_cycle(
