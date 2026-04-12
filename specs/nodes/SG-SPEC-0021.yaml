@@ -2,7 +2,7 @@ id: SG-SPEC-0021
 title: SpecGraph - Derived Metric Family Boundary
 kind: spec
 status: linked
-maturity: 0.64
+maturity: 0.69
 depends_on:
 - SG-SPEC-0003
 - SG-SPEC-0017
@@ -47,20 +47,22 @@ acceptance_evidence:
 - criterion: Defines how each metric family binds to a bounded subject and admissible input classes drawn
     from canonical graph state, runtime observability entities, and derived graph-health observations
     or signals
-  evidence: 'specification.metric_family_catalog assigns bounded subject_scope and admissible_input_classes
-    to every family, and specification.relationship_policy requires every metric family to declare explicit
-    subject binding before derived computation. Those rules separate canonical graph state, SG-SPEC-0017
-    runtime observability entities, and SG-SPEC-0003 graph-health diagnostics as admissible inputs without
-    collapsing them into one layer.
+  evidence: 'specification.subject_binding_contract.role_bindings now normalizes the permitted subject
+    classes for structural_quality, specification_checkability, process_visibility, and structural_visibility
+    families, while specification.metric_family_catalog tags each seed family with one family_role plus
+    bounded subject_scope and admissible_input_classes. specification.relationship_policy then requires
+    family-role-consistent subject binding before interpretation, keeping canonical graph state, SG-SPEC-0017
+    runtime observability entities, and SG-SPEC-0003 graph-health diagnostics separated instead of collapsing
+    them into one layer.
 
     '
 - criterion: Defines the canonical versus derived boundary for metric family definitions, computed values,
     threshold proposals, and trend artifacts so scores do not become canonical truth by default
-  evidence: 'specification.canonical_vs_derived_boundary keeps family definitions, subject scope, and
-    reviewed proposal text canonical, while computed scores, threshold evaluations, alerts, dashboards,
-    and trend artifacts remain derived. specification.invariants and decisions then formalize that metric
-    outputs may inform signals or proposals but cannot by themselves change lifecycle status, acceptance,
-    or authority.
+  evidence: 'specification.canonical_vs_derived_boundary keeps family definitions, family_role declarations,
+    and role-to-subject binding rules canonical, while computed scores, concrete execution cohorts, threshold
+    evaluations, alerts, dashboards, and trend artifacts remain derived. specification.invariants and
+    decisions then formalize that metric outputs may inform signals or proposals but cannot by themselves
+    change lifecycle status, acceptance, or authority.
 
     '
 prompt: Refine SG-SPEC-0001 by defining the bounded metric-family boundary for derived quality and observability
@@ -79,6 +81,8 @@ specification:
     - First family seeds for pre-SIB, SIB, Specification Verifiability, Process Observability, and Structural
       Observability
     - Subject binding and admissible input classes for each metric family
+    - Role-to-subject binding contract that distinguishes canonical graph quality families from process-visibility
+      families
     - Relationship between metric families, runtime observability entities, graph-health observations,
       and proposal-triggering discussion
     - Canonical versus derived separation for family definitions, score snapshots, and trend artifacts
@@ -94,13 +98,18 @@ specification:
       values canonical by default.
 
       '
-    metric_subject: 'The bounded canonical node, canonical graph region, proposal target region, or other
-      explicitly governed subject to which a derived metric family applies.
+    metric_subject: 'The bounded canonical node, canonical graph region, proposal target region, bounded
+      execution cohort, or other explicitly governed subject to which a derived metric family applies.
 
       '
     metric_input_class: 'A declared category of admissible source material that a metric family may consume,
       such as canonical graph structure, runtime observability entities, derived graph-health observations,
       or run artifacts.
+
+      '
+    metric_family_role: 'The canonical semantic role a metric family plays, such as structural quality,
+      specification checkability, process visibility, or structural visibility. The role constrains admissible
+      subject binding without prescribing formulas or thresholds.
 
       '
     metric_snapshot: 'One derived computed result for a metric family over one declared metric_subject
@@ -127,8 +136,64 @@ specification:
     but it cannot by itself mutate canonical status, acceptance, proposal authority, or lifecycle state.
   - Opaque or later-named family handles such as PFI or CSI may be added under this boundary in later
     refinement without requiring formulas to be frozen in this node.
+  subject_binding_contract:
+    role_bindings:
+    - family_role: structural_quality
+      permitted_subject_classes:
+      - bounded canonical spec node
+      - bounded canonical graph region
+      binding_requirements:
+      - Subject binding must resolve to canonical graph identity or a reviewed canonical region boundary
+        before any metric_snapshot is interpreted.
+      - Structural quality families may consume derived graph-health observations or signals as inputs,
+        but they still assess canonical graph content rather than run cohorts or queue state.
+      seeded_families:
+      - pre-SIB
+      - SIB
+    - family_role: specification_checkability
+      permitted_subject_classes:
+      - spec
+      - requirement
+      - invariant
+      binding_requirements:
+      - Subject binding must identify the governed acceptance surface, requirement, or invariant by stable
+        identity.
+      - Checkability families may summarize evidence completeness or linkage quality, but they do not
+        stand in for semantic acceptance decisions.
+      seeded_families:
+      - Specification Verifiability
+    - family_role: process_visibility
+      permitted_subject_classes:
+      - bounded supervisor run cohort
+      - bounded proposal or refinement region
+      binding_requirements:
+      - Subject binding must declare the run, proposal, or refinement boundary that defines the cohort
+        being observed.
+      - Process visibility families assess attribution and inspectability of execution flow, not the canonical
+        quality of a spec node.
+      seeded_families:
+      - Process Observability
+    - family_role: structural_visibility
+      permitted_subject_classes:
+      - bounded canonical graph region
+      - proposal target region
+      binding_requirements:
+      - Subject binding must preserve the structural boundary whose visibility is being assessed, even
+        when the boundary is proposal-scoped rather than node-scoped.
+      - Structural visibility families may cite graph-health observations or signals, but they do not
+        convert those diagnostics into canonical defect state.
+      seeded_families:
+      - Structural Observability
+    cross_role_rules:
+    - One metric family definition MUST declare one family_role whose permitted_subject_classes explain
+      every listed subject_scope entry.
+    - Reusing a family label across different family_role categories requires reviewed supersession or
+      explicit semantic redefinition rather than ad hoc scope drift.
+    - A concrete metric_snapshot over a derived execution cohort MUST NOT be presented as if it were a
+      canonical node-quality metric for the same family label without an explicit reviewed bridge definition.
   metric_family_catalog:
   - family: pre-SIB
+    family_role: structural_quality
     role: Provisional named family for early structural quality assessment before a reviewed SIB formulation
       is fixed.
     subject_scope:
@@ -142,6 +207,7 @@ specification:
     - Evolution from pre-SIB to SIB requires reviewed semantic continuity or explicit supersession rather
       than silent relabeling.
   - family: SIB
+    family_role: structural_quality
     role: Stable named family for structural graph-quality assessment once a reviewed formulation exists.
     subject_scope:
     - bounded canonical spec node
@@ -154,6 +220,7 @@ specification:
     - SIB may summarize multiple structural signals later, but those derived combinations remain outside
       this node until separately specified.
   - family: Specification Verifiability
+    family_role: specification_checkability
     role: Family for assessing how inspectable, evidencable, and traceably checkable a governed subject
       is.
     subject_scope:
@@ -169,6 +236,7 @@ specification:
     - Missing evidence may influence a derived score, but that derived result does not itself reject a
       node without existing governance policy.
   - family: Process Observability
+    family_role: process_visibility
     role: Family for assessing how visible and attributable the refinement, execution, or proposal process
       is across bounded runs or graph regions.
     subject_scope:
@@ -183,6 +251,7 @@ specification:
     - The family may cite runtime observability entities, but it does not redefine SG-SPEC-0017 evidence
       semantics.
   - family: Structural Observability
+    family_role: structural_visibility
     role: Family for assessing how visible structural graph issues, lineage gaps, and dependency conditions
       are to derived diagnostics and tooling.
     subject_scope:
@@ -209,20 +278,26 @@ specification:
     they become normative governance policy.
   - A metric family MAY apply to multiple metric_subject classes only when the family definition keeps
     subject binding explicit and inspectable.
+  - A metric family MUST keep its family_role consistent with its subject_scope; process_visibility families
+    cannot silently become canonical node-quality metrics, and structural_quality families cannot silently
+    become run-cohort visibility metrics.
   canonical_vs_derived_boundary:
     canonical:
     - Authored metric-family definitions and boundary notes
+    - Authored family_role declarations and role-to-subject binding rules
     - Authored declarations of subject scope and admissible input classes
     - Reviewed proposal text recommending future formula or threshold policy
     derived:
     - Computed metric values, scorecards, rankings, and percentile comparisons
+    - Concrete execution cohorts, run-window selections, and snapshot subject materializations used at
+      computation time
     - threshold_candidate evaluations, alerts, and automated prioritization outputs
     - trend_artifacts, time-series histories, and dashboard projections
     - Calibration experiments, weight-tuning results, and benchmark runs
   invariants:
   - id: MET-001
-    statement: Every derived_metric_family must declare bounded metric_subject scope and admissible metric_input_class
-      categories.
+    statement: Every derived_metric_family must declare one family_role plus bounded metric_subject scope
+      and admissible metric_input_class categories consistent with that role.
   - id: MET-002
     statement: Computed metric values remain derived artifacts and cannot by themselves change lifecycle
       status, acceptance, proposal authority, or canonical truth.
@@ -232,6 +307,9 @@ specification:
   - id: MET-004
     statement: Stable family labels such as pre-SIB and SIB may evolve only through reviewed continuity
       or supersession, not silent relabeling.
+  - id: MET-005
+    statement: A metric family label must not silently shift between canonical graph-quality assessment
+      and execution-cohort visibility assessment without reviewed supersession or explicit semantic redefinition.
   decisions:
   - id: MET-D1
     statement: Metric families are canonical semantic handles, while scores remain derived artifacts.
@@ -255,6 +333,14 @@ specification:
       execution signals.
 
       '
+  - id: MET-D4
+    statement: Family role determines admissible subject binding.
+    rationale: 'The same family label should not drift between assessing governed graph content and assessing
+      run-process visibility, because those are materially different subjects with different authority
+      boundaries. Declaring family_role explicitly keeps process-scoped observability metrics from masquerading
+      as canonical node-quality truth and preserves inspectable meaning across refinements.
+
+      '
   examples:
   - name: pre-SIB split pressure summary
     description: 'A bounded graph region accumulates repeated oversized_spec and weak_structural_linkage
@@ -267,5 +353,12 @@ specification:
     description: 'A parent spec and its children gain clearer acceptance_evidence and explicit dependency
       links over several runs. A derived trend_artifact shows improving Specification Verifiability, while
       the accepted canonical facts remain the specs and links themselves rather than the reported trend.
+
+      '
+  - name: Process Observability run cohort
+    description: 'A bounded supervisor run cohort emits Attestations, queue transitions, and proposal
+      summaries with uneven attribution quality. A Process Observability metric_snapshot may summarize
+      how inspectable that run cohort was, but the result remains a derived process-visibility view rather
+      than a canonical quality score on any one spec node.
 
       '
