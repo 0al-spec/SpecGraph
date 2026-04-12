@@ -32,8 +32,9 @@ acceptance_evidence:
 - criterion: Defines directedness, endpoint presence rules, and self-edge restrictions for each edge kind
     in SG-SPEC-0001
   evidence: specification.validation_rules and specification.endpoint_contract define that every edge
-    must have source and target IDs, enumerate directionality assumptions, and call out no-self constraints
-    and exception handling by kind.
+    must carry explicit source and target IDs, distinguish missing target node records from malformed
+    endpoints, enumerate directionality assumptions, and call out no-self constraints and exception handling
+    by kind.
 - criterion: Defines which edge kinds block linked-readiness conditions and what unresolved state means
     for those edges
   evidence: specification.linked_readiness defines the canonical set of blocking edge kinds and explicitly
@@ -170,12 +171,15 @@ specification:
     target_node_id_non_empty: true
     missing_node_record_allowed: true
   validation_rules:
-  - All explicit edges in the canonical graph must define a valid source and a valid target ID.
+  - All explicit edges in the canonical graph must define explicit non-empty source and target IDs.
   - Explicit edges whose kind is not present in the compatibility matrix are unsupported and MUST be rejected
     as invalid-kind before any source/target compatibility evaluation.
-  - For every explicit edge, source and target nodes must satisfy the compatibility matrix for that kind.
+  - If a source node record exists, it MUST satisfy the compatibility matrix for that edge kind.
+  - If a target node record exists, it MUST satisfy the compatibility matrix for that edge kind.
+  - If the target node record is absent and missing_node_record_allowed is true, the edge remains structurally
+    valid but enters the unresolved missing_target state until the target exists or the edge is removed.
   - For source_kinds=all and target_kinds=all, edges are only constrained by the source/target existence
-    rule above.
+    and unresolved-target rules above.
   - Self-edges are forbidden unless explicitly allowed for the edge kind.
   - depends_on edges MUST NOT create cycles in the transitive closure of depends_on relations.
   - Relates_to MAY be used for non-core semantically-neutral cross-linking and does not by itself alter
