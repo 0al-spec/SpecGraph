@@ -3166,6 +3166,7 @@ def test_main_split_proposal_passes_operator_target_to_executor(
         mutation_budget: tuple[str, ...] = (),
         run_authority: tuple[str, ...] = (),
         execution_profile: str | None = None,
+        child_timeout_seconds: int | None = None,
         worktree_branch: str = "",
     ) -> subprocess.CompletedProcess[str]:
         _ = (executor, operator_note, mutation_budget, run_authority, execution_profile)
@@ -3251,6 +3252,7 @@ def test_process_one_spec_uses_materialize_profile_for_seed_like_ordinary_run(
         mutation_budget: tuple[str, ...] = (),
         run_authority: tuple[str, ...] = (),
         execution_profile: str | None = None,
+        child_timeout_seconds: int | None = None,
         worktree_branch: str = "",
     ) -> subprocess.CompletedProcess[str]:
         _ = (

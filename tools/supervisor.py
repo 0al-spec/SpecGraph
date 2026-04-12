@@ -892,12 +892,15 @@ def effective_child_executor_timeout_seconds(
     run_authority: tuple[str, ...],
     requested_profile: str | None = None,
     operator_target: bool = False,
+    requested_timeout_seconds: int | None = None,
 ) -> int:
     profile = resolve_execution_profile(
         requested_profile=requested_profile,
         run_authority=run_authority,
         operator_target=operator_target,
     )
+    if requested_timeout_seconds is not None:
+        return requested_timeout_seconds
     return max(
         profile.timeout_seconds,
         reasoning_effort_timeout_floor_seconds(profile.reasoning_effort),
@@ -3617,6 +3620,7 @@ def invoke_executor(
     mutation_budget: tuple[str, ...] = (),
     run_authority: tuple[str, ...] = (),
     execution_profile: str | None = None,
+    child_timeout_seconds: int | None = None,
     worktree_branch: str = "",
 ) -> subprocess.CompletedProcess[str]:
     """Call the executor with optional work-item context when supported.
@@ -3635,6 +3639,7 @@ def invoke_executor(
             mutation_budget=mutation_budget,
             run_authority=run_authority,
             execution_profile=execution_profile,
+            child_timeout_seconds=child_timeout_seconds,
             worktree_branch=worktree_branch,
         )
     if refactor_work_item is not None and (
@@ -3743,6 +3748,7 @@ def run_codex(
     mutation_budget: tuple[str, ...] = (),
     run_authority: tuple[str, ...] = (),
     execution_profile: str | None = None,
+    child_timeout_seconds: int | None = None,
     worktree_branch: str = "",
 ) -> subprocess.CompletedProcess[str]:
     """Run the Codex executor in the isolated worktree and stream logs live."""
@@ -3756,6 +3762,7 @@ def run_codex(
         run_authority,
         requested_profile=execution_profile,
         operator_target=operator_target,
+        requested_timeout_seconds=child_timeout_seconds,
     )
     cmd = build_codex_exec_command(
         prompt=build_prompt(
@@ -4191,6 +4198,7 @@ def _process_split_refactor_proposal(
     executor: Callable[[SpecNode, Path], subprocess.CompletedProcess[str]],
     operator_note: str = "",
     execution_profile: str | None = None,
+    child_timeout_seconds: int | None = None,
 ) -> tuple[int, str]:
     """Run the explicit proposal-first split pass for one oversized non-seed spec.
 
@@ -4251,6 +4259,7 @@ def _process_split_refactor_proposal(
         operator_target=True,
         operator_note=operator_note,
         execution_profile=execution_profile,
+        child_timeout_seconds=child_timeout_seconds,
         worktree_branch=branch,
     )
     print(f"Executor finished for {node.id} with exit_code={result.returncode}")
@@ -4455,6 +4464,7 @@ def _process_one_spec(
     mutation_budget: tuple[str, ...] = (),
     run_authority: tuple[str, ...] = (),
     execution_profile: str | None = None,
+    child_timeout_seconds: int | None = None,
 ) -> tuple[int, str, str, str]:
     """Process one ordinary supervisor run.
 
@@ -4575,6 +4585,7 @@ def _process_one_spec(
         mutation_budget=mutation_budget,
         run_authority=run_authority,
         execution_profile=effective_execution_profile,
+        child_timeout_seconds=child_timeout_seconds,
         worktree_branch=branch,
     )
     print(f"Executor finished for {node.id} with exit_code={result.returncode}")
@@ -4967,6 +4978,7 @@ def main(
     mutation_budget: tuple[str, ...] = (),
     run_authority: tuple[str, ...] = (),
     execution_profile: str | None = None,
+    child_timeout_seconds: int | None = None,
 ) -> int:
     """Entry point for CLI and tests.
 
@@ -5123,6 +5135,7 @@ def main(
             executor=executor,
             operator_note=operator_note,
             execution_profile=execution_profile,
+            child_timeout_seconds=child_timeout_seconds,
         )
         return exit_code
 
@@ -5203,6 +5216,7 @@ def main(
             mutation_budget=mutation_budget,
             run_authority=run_authority,
             execution_profile=execution_profile,
+            child_timeout_seconds=child_timeout_seconds,
         )
         return exit_code
 
@@ -5247,6 +5261,7 @@ def main(
                 auto_approve=auto_approve,
                 refactor_work_item=refactor_work_item,
                 execution_profile=execution_profile,
+                child_timeout_seconds=child_timeout_seconds,
             )
 
             if completion_status == COMPLETION_STATUS_OK:
@@ -5399,6 +5414,11 @@ if __name__ == "__main__":
         ),
     )
     parser.add_argument(
+        "--child-timeout",
+        type=int,
+        help="Optional direct override in seconds for child executor timeout.",
+    )
+    parser.add_argument(
         "--split-proposal",
         action="store_true",
         help="Run explicit split_oversized_spec proposal mode for --target-spec",
@@ -5419,6 +5439,9 @@ if __name__ == "__main__":
     except ValueError as exc:
         print(str(exc), file=sys.stderr)
         raise SystemExit(1) from exc
+    if args.child_timeout is not None and args.child_timeout <= 0:
+        print("--child-timeout must be a positive integer", file=sys.stderr)
+        raise SystemExit(1)
     raise SystemExit(
         main(
             dry_run=args.dry_run,
@@ -5435,5 +5458,6 @@ if __name__ == "__main__":
             mutation_budget=mutation_budget,
             run_authority=run_authority,
             execution_profile=args.execution_profile,
+            child_timeout_seconds=args.child_timeout,
         )
     )
