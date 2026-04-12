@@ -75,14 +75,15 @@ acceptance_evidence:
 - criterion: States that SG-SPEC-0001 is a seed spec that child specs refine before the graph is frozen
   evidence: 'prompt frames SG-SPEC-0001 as a seed ontology and directs unresolved areas into child specs;
     scope.in adds recursive refinement via child specs; scope.out now delegates adoption-layer entities
-    to SG-SPEC-0018 and revision/supersession lineage semantics to SG-SPEC-0019; D7 formalizes the seed-spec
-    rule; spec.node_kinds.spec includes refines; and the concrete descendants `specs/nodes/SG-SPEC-0002.yaml`,
-    `specs/nodes/SG-SPEC-0007.yaml`, `specs/nodes/SG-SPEC-0009.yaml`, `specs/nodes/SG-SPEC-0010.yaml`,
-    `specs/nodes/SG-SPEC-0017.yaml`, `specs/nodes/SG-SPEC-0018.yaml`, and `specs/nodes/SG-SPEC-0019.yaml`
+    to SG-SPEC-0018, executable-layer code_surface/test/release semantics to SG-SPEC-0020, and revision/supersession
+    lineage semantics to SG-SPEC-0019; D7 formalizes the seed-spec rule; spec.node_kinds.spec includes
+    refines; and the concrete descendants `specs/nodes/SG-SPEC-0002.yaml`, `specs/nodes/SG-SPEC-0007.yaml`,
+    `specs/nodes/SG-SPEC-0009.yaml`, `specs/nodes/SG-SPEC-0010.yaml`, `specs/nodes/SG-SPEC-0017.yaml`,
+    `specs/nodes/SG-SPEC-0018.yaml`, `specs/nodes/SG-SPEC-0019.yaml`, and `specs/nodes/SG-SPEC-0020.yaml`
     now declare `refines: [SG-SPEC-0001]`. SG-SPEC-0001 keeps `depends_on: [SG-SPEC-0002, SG-SPEC-0007,
     SG-SPEC-0009, SG-SPEC-0010, SG-SPEC-0017, SG-SPEC-0019]` for blocking descendants, while SG-SPEC-0018
-    remains a non-blocking delegated child, keeping the refinement chain explicit without widening linked
-    blockers beyond concrete descendants.
+    and SG-SPEC-0020 remain non-blocking delegated children, keeping the refinement chain explicit without
+    widening linked blockers beyond concrete descendants.
 
     '
 prompt: 'This spec is a seed ontology, not a finished graph. Use child specs to
@@ -146,6 +147,8 @@ specification:
       by SG-SPEC-0009
     - Ubiquitous vocabulary meta-ontology primitives for executable domain vocabularies — covered by SG-SPEC-0010
     - Adoption-layer entities (DiscoverySurface, AdoptionCriterion, etc.) — covered by SG-SPEC-0018
+    - Detailed executable-layer traceability semantics for code_surface, test, and release — covered by
+      SG-SPEC-0020
     - Detailed canonical revision-record and supersession-lineage semantics — covered by SG-SPEC-0019
   terminology:
     intent: 'A precise, governed representation of what a product must be, how it must behave, and how
@@ -620,18 +623,17 @@ specification:
       '
 proposed_status: null
 proposed_maturity: null
-gate_state: none
-required_human_action: '-'
-last_outcome: done
+gate_state: split_required
+required_human_action: split spec scope before rerun
+last_outcome: split_required
 last_blocker: ''
-last_run_id: 20260412T070303Z-SG-SPEC-0001
+last_run_id: 20260412T071844Z-SG-SPEC-0001
 last_exit_code: 0
 last_changed_files:
-- specs/nodes/SG-SPEC-0001.yaml
-- specs/nodes/SG-SPEC-0019.yaml
-last_run_at: '2026-04-12T07:03:04.621509+00:00'
-last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0001-20260412T065629Z
-last_branch: codex/sg-spec-0001/20260412T065629Z
+- specs/nodes/SG-SPEC-0020.yaml
+last_run_at: '2026-04-12T07:18:44.933281+00:00'
+last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0001-20260412T071017Z
+last_branch: codex/sg-spec-0001/20260412T071017Z
 last_validator_results:
   outputs: true
   allowed_paths: true
@@ -639,39 +641,33 @@ last_validator_results:
   atomicity: true
   transition: true
   executor_environment: true
-  refinement_acceptance: true
+  refinement_acceptance: false
 last_refinement_acceptance:
-  decision: approve
+  decision: reject
   change_class: local_refinement
   checks:
-    content_changed: true
+    content_changed: false
     hard_validation: true
     single_spec_scope: false
     constitutional_diff: false
     graph_refactor_diff: false
     atomicity_clear: true
     within_mutation_budget: true
-  diff_paths:
-  - acceptance_evidence[7].evidence
-  - depends_on[5]
-  - maturity
-  - specification.scope.out[10]
-  mutation_classes:
-  - policy_text
+  diff_paths: []
+  mutation_classes: []
   mutation_budget: []
   budget_exceeded_classes: []
   changed_spec_files:
-  - specs/nodes/SG-SPEC-0001.yaml
-  - specs/nodes/SG-SPEC-0019.yaml
+  - specs/nodes/SG-SPEC-0020.yaml
   review_reasons:
   - run changed additional spec files beyond the selected source node
-  errors: []
+  errors:
+  - No canonical spec change detected after the refinement run
   warnings: []
 last_reconciliation:
-  worktree_spec_count: 19
+  worktree_spec_count: 20
   changed_spec_ids:
-  - SG-SPEC-0001
-  - SG-SPEC-0019
+  - SG-SPEC-0020
   semantic_dependencies_resolved: true
   work_dependencies_ready: false
   cycles: []
