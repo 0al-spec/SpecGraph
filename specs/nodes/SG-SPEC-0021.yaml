@@ -1,0 +1,271 @@
+id: SG-SPEC-0021
+title: SpecGraph - Derived Metric Family Boundary
+kind: spec
+status: linked
+maturity: 0.64
+depends_on:
+- SG-SPEC-0003
+- SG-SPEC-0017
+relates_to: []
+refines:
+- SG-SPEC-0001
+inputs:
+- specs/nodes/SG-SPEC-0001.yaml
+- specs/nodes/SG-SPEC-0003.yaml
+- specs/nodes/SG-SPEC-0017.yaml
+- tasks.md
+outputs:
+- specs/nodes/SG-SPEC-0021.yaml
+allowed_paths:
+- specs/nodes/SG-SPEC-0021.yaml
+acceptance:
+- Defines the bounded role of derived metric families as diagnostic and evidence inputs adjacent to canonical
+  ontology without defining formulas, thresholds, storage, dashboards, or scheduler behavior
+- 'Defines the first metric family seeds in scope for this boundary: pre-SIB, SIB, Specification Verifiability,
+  Process Observability, and Structural Observability'
+- Defines how each metric family binds to a bounded subject and admissible input classes drawn from canonical
+  graph state, runtime observability entities, and derived graph-health observations or signals
+- Defines the canonical versus derived boundary for metric family definitions, computed values, threshold
+  proposals, and trend artifacts so scores do not become canonical truth by default
+acceptance_evidence:
+- criterion: Defines the bounded role of derived metric families as diagnostic and evidence inputs adjacent
+    to canonical ontology without defining formulas, thresholds, storage, dashboards, or scheduler behavior
+  evidence: 'specification.scope.in limits this child to semantic metric-family boundaries, while specification.scope.out
+    excludes formulas, weighting, threshold policy, dashboards, storage, scheduler behavior, and runtime
+    collection mechanics. specification.boundary_policy then states that metric families are canonical
+    semantic handles for derived assessment, not the computed assessments themselves.
+
+    '
+- criterion: 'Defines the first metric family seeds in scope for this boundary: pre-SIB, SIB, Specification
+    Verifiability, Process Observability, and Structural Observability'
+  evidence: 'specification.terminology defines derived_metric_family, metric_subject, metric_input_class,
+    metric_snapshot, and threshold_candidate. specification.metric_family_catalog then materializes five
+    concrete family seeds: pre-SIB, SIB, Specification Verifiability, Process Observability, and Structural
+    Observability, each with role, subject_scope, admissible_input_classes, and boundary_notes.
+
+    '
+- criterion: Defines how each metric family binds to a bounded subject and admissible input classes drawn
+    from canonical graph state, runtime observability entities, and derived graph-health observations
+    or signals
+  evidence: 'specification.metric_family_catalog assigns bounded subject_scope and admissible_input_classes
+    to every family, and specification.relationship_policy requires every metric family to declare explicit
+    subject binding before derived computation. Those rules separate canonical graph state, SG-SPEC-0017
+    runtime observability entities, and SG-SPEC-0003 graph-health diagnostics as admissible inputs without
+    collapsing them into one layer.
+
+    '
+- criterion: Defines the canonical versus derived boundary for metric family definitions, computed values,
+    threshold proposals, and trend artifacts so scores do not become canonical truth by default
+  evidence: 'specification.canonical_vs_derived_boundary keeps family definitions, subject scope, and
+    reviewed proposal text canonical, while computed scores, threshold evaluations, alerts, dashboards,
+    and trend artifacts remain derived. specification.invariants and decisions then formalize that metric
+    outputs may inform signals or proposals but cannot by themselves change lifecycle status, acceptance,
+    or authority.
+
+    '
+prompt: Refine SG-SPEC-0001 by defining the bounded metric-family boundary for derived quality and observability
+  measures such as pre-SIB, SIB, Specification Verifiability, Process Observability, and Structural Observability.
+  Keep this child focused on semantic family roles, subject binding, and canonical versus derived separation;
+  do not define formulas, thresholds, dashboards, storage, or scheduler behavior.
+specification:
+  objective: 'Define the first bounded semantic contract for derived metric families so SpecGraph can
+    name and reason about graph quality, verifiability, and observability measures without turning formulas,
+    thresholds, or computed scores into canonical truth.
+
+    '
+  scope:
+    in:
+    - Semantic boundary for derived metric families adjacent to canonical graph governance
+    - First family seeds for pre-SIB, SIB, Specification Verifiability, Process Observability, and Structural
+      Observability
+    - Subject binding and admissible input classes for each metric family
+    - Relationship between metric families, runtime observability entities, graph-health observations,
+      and proposal-triggering discussion
+    - Canonical versus derived separation for family definitions, score snapshots, and trend artifacts
+    out:
+    - Final formulas, aggregation logic, weighting, or calibration procedures
+    - Normative thresholds, automatic gating rules, or policy-changing trigger semantics
+    - Dashboard design, report layout, viewer overlays, or ranking presentation
+    - Storage schemas, time-series backend choices, and retention policy
+    - Telemetry collection, instrumentation mechanics, or scheduler implementation
+  terminology:
+    derived_metric_family: 'A canonical semantic definition of one class of derived assessment that may
+      be computed from graph state, runtime evidence, or run artifacts, without making the resulting computed
+      values canonical by default.
+
+      '
+    metric_subject: 'The bounded canonical node, canonical graph region, proposal target region, or other
+      explicitly governed subject to which a derived metric family applies.
+
+      '
+    metric_input_class: 'A declared category of admissible source material that a metric family may consume,
+      such as canonical graph structure, runtime observability entities, derived graph-health observations,
+      or run artifacts.
+
+      '
+    metric_snapshot: 'One derived computed result for a metric family over one declared metric_subject
+      and observation context. It is reviewable evidence, not canonical graph truth.
+
+      '
+    threshold_candidate: 'A derived or proposed threshold interpretation for a metric family that may
+      suggest action but does not become normative policy until explicitly reviewed and adopted.
+
+      '
+    trend_artifact: 'A derived longitudinal summary, comparison, or time-series view across multiple metric_snapshots.
+      It remains rebuildable from underlying state and does not become canonical by default.
+
+      '
+  boundary_policy:
+  - Derived metric families are canonical semantic handles for classes of assessment; computed scores,
+    rankings, and comparisons remain derived artifacts.
+  - This child does not define formulas, thresholds, or gating rules; it defines what a family means,
+    what subject it may bind to, and what input classes are admissible.
+  - Metric families may consume canonical graph state, SG-SPEC-0017 runtime observability entities, and
+    SG-SPEC-0003 graph-health observations or signals as inputs, but those sources retain their own ontology
+    boundaries.
+  - A metric_snapshot may inform graph-health interpretation, refactor prioritization, or review discussion,
+    but it cannot by itself mutate canonical status, acceptance, proposal authority, or lifecycle state.
+  - Opaque or later-named family handles such as PFI or CSI may be added under this boundary in later
+    refinement without requiring formulas to be frozen in this node.
+  metric_family_catalog:
+  - family: pre-SIB
+    role: Provisional named family for early structural quality assessment before a reviewed SIB formulation
+      is fixed.
+    subject_scope:
+    - bounded canonical spec node
+    - bounded canonical graph region
+    admissible_input_classes:
+    - canonical graph structure
+    - derived graph_health_observation
+    boundary_notes:
+    - pre-SIB is explicitly provisional and must not be treated as a normative gate by itself.
+    - Evolution from pre-SIB to SIB requires reviewed semantic continuity or explicit supersession rather
+      than silent relabeling.
+  - family: SIB
+    role: Stable named family for structural graph-quality assessment once a reviewed formulation exists.
+    subject_scope:
+    - bounded canonical spec node
+    - bounded canonical graph region
+    admissible_input_classes:
+    - canonical graph structure
+    - derived graph_health_signal
+    boundary_notes:
+    - This child defines the family label and subject boundary, not the score formula, weighting, or thresholds.
+    - SIB may summarize multiple structural signals later, but those derived combinations remain outside
+      this node until separately specified.
+  - family: Specification Verifiability
+    role: Family for assessing how inspectable, evidencable, and traceably checkable a governed subject
+      is.
+    subject_scope:
+    - spec
+    - requirement
+    - invariant
+    admissible_input_classes:
+    - canonical acceptance criteria and acceptance_evidence structure
+    - canonical trace links and dependency linkage
+    boundary_notes:
+    - This family supports reviewability and refinement quality analysis; it does not replace human semantic
+      acceptance judgment.
+    - Missing evidence may influence a derived score, but that derived result does not itself reject a
+      node without existing governance policy.
+  - family: Process Observability
+    role: Family for assessing how visible and attributable the refinement, execution, or proposal process
+      is across bounded runs or graph regions.
+    subject_scope:
+    - bounded supervisor run cohort
+    - bounded proposal or refinement region
+    admissible_input_classes:
+    - runtime observability entities
+    - run artifacts
+    - derived queue or proposal state
+    boundary_notes:
+    - Process Observability summarizes process visibility, not process correctness or approval authority.
+    - The family may cite runtime observability entities, but it does not redefine SG-SPEC-0017 evidence
+      semantics.
+  - family: Structural Observability
+    role: Family for assessing how visible structural graph issues, lineage gaps, and dependency conditions
+      are to derived diagnostics and tooling.
+    subject_scope:
+    - bounded canonical graph region
+    - proposal target region
+    admissible_input_classes:
+    - canonical topology and lineage state
+    - derived graph_health_observation
+    - derived graph_health_signal
+    boundary_notes:
+    - Structural Observability helps determine whether graph pathologies are visible and attributable,
+      not whether they are already resolved.
+    - The family does not replace the underlying observations or signals and does not create canonical
+      defect state by itself.
+  relationship_policy:
+  - Every derived_metric_family MUST declare an explicit metric_subject boundary and admissible metric_input_class
+    set before any metric_snapshot is interpreted.
+  - Metric families MAY consume canonical graph structure, SG-SPEC-0017 runtime observability entities,
+    SG-SPEC-0003 graph-health observations or signals, and run artifacts only as declared input classes;
+    resulting metric_snapshots remain derived.
+  - A metric_snapshot MAY inform graph-health interpretation, refactor_queue prioritization, or proposal
+    discussion, but it MUST NOT by itself mutate canonical status, acceptance, or proposal authority.
+  - threshold_candidate semantics derived from a metric family MUST enter proposal and review flow before
+    they become normative governance policy.
+  - A metric family MAY apply to multiple metric_subject classes only when the family definition keeps
+    subject binding explicit and inspectable.
+  canonical_vs_derived_boundary:
+    canonical:
+    - Authored metric-family definitions and boundary notes
+    - Authored declarations of subject scope and admissible input classes
+    - Reviewed proposal text recommending future formula or threshold policy
+    derived:
+    - Computed metric values, scorecards, rankings, and percentile comparisons
+    - threshold_candidate evaluations, alerts, and automated prioritization outputs
+    - trend_artifacts, time-series histories, and dashboard projections
+    - Calibration experiments, weight-tuning results, and benchmark runs
+  invariants:
+  - id: MET-001
+    statement: Every derived_metric_family must declare bounded metric_subject scope and admissible metric_input_class
+      categories.
+  - id: MET-002
+    statement: Computed metric values remain derived artifacts and cannot by themselves change lifecycle
+      status, acceptance, proposal authority, or canonical truth.
+  - id: MET-003
+    statement: Formulas, thresholds, or trigger semantics that would alter governance meaning must first
+      exist as explicit reviewed proposals before they become normative policy.
+  - id: MET-004
+    statement: Stable family labels such as pre-SIB and SIB may evolve only through reviewed continuity
+      or supersession, not silent relabeling.
+  decisions:
+  - id: MET-D1
+    statement: Metric families are canonical semantic handles, while scores remain derived artifacts.
+    rationale: 'SpecGraph needs stable names for the kinds of assessment it may compute, but it should
+      not confuse those names with the computed scores themselves. Keeping semantic family definitions
+      canonical while leaving scores derived preserves auditability without granting metrics undue authority.
+
+      '
+  - id: MET-D2
+    statement: Stable metric-family labels may exist before final formulas are reviewed.
+    rationale: 'The graph benefits from naming important quality and observability concerns early so later
+      work can align around them. Family labels such as pre-SIB or SIB therefore remain useful even when
+      formulas, thresholds, and calibration are still future refinements.
+
+      '
+  - id: MET-D3
+    statement: Metrics inform reflective selection and review, not self-authorizing governance.
+    rationale: 'Derived measurements can help prioritize work, highlight risk, or support proposals, but
+      they should not bypass existing human approval and proposal boundaries. This keeps metric-guided
+      improvement compatible with the constitutional separation between canonical governance and derived
+      execution signals.
+
+      '
+  examples:
+  - name: pre-SIB split pressure summary
+    description: 'A bounded graph region accumulates repeated oversized_spec and weak_structural_linkage
+      observations. A derived pre-SIB metric_snapshot summarizes that structural pressure for the region,
+      but the snapshot remains advisory input to proposal or refactor selection rather than a canonical
+      defect record.
+
+      '
+  - name: Specification Verifiability trend
+    description: 'A parent spec and its children gain clearer acceptance_evidence and explicit dependency
+      links over several runs. A derived trend_artifact shows improving Specification Verifiability, while
+      the accepted canonical facts remain the specs and links themselves rather than the reported trend.
+
+      '

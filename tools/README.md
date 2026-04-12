@@ -92,6 +92,12 @@ Shared child-runtime constraints:
 If a nested run reports a different profile or timeout than the selected execution profile, treat that as
 runtime drift.
 
+Command-line overrides for nested runs:
+
+- `--child-model` sets an explicit model for the nested codex run (for example `gpt-5.3-codex-spark`).
+- `--child-timeout` sets an explicit timeout in seconds for nested child runs.
+- Explicitly targeting a seed/root-like spec (`--target-spec`) without `--child-timeout` uses a 1200s default.
+
 ### Worktree Fallback Mode
 
 `supervisor` first tries to create an isolated `git worktree`. If local ref creation is blocked by

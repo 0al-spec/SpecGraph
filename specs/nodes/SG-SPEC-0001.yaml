@@ -52,7 +52,8 @@ acceptance_evidence:
     '
 - criterion: Defines the node lifecycle and valid status transitions
   evidence: 'specification.lifecycle defines 7 statuses (idea → stub → outlined → specified → linked →
-    reviewed → frozen) with valid_transitions and a strictly-forward progression rule.
+    reviewed → frozen) with valid_transitions and a strictly-forward progression rule. SG-SPEC-0022 now
+    refines the detailed maturity-to-lifecycle boundary without altering the root transition sequence.
 
     '
 - criterion: Establishes the separation between canonical (user-owned) and derived (rebuildable) data
@@ -74,16 +75,18 @@ acceptance_evidence:
     '
 - criterion: States that SG-SPEC-0001 is a seed spec that child specs refine before the graph is frozen
   evidence: 'prompt frames SG-SPEC-0001 as a seed ontology and directs unresolved areas into child specs;
-    scope.in adds recursive refinement via child specs; scope.out now delegates adoption-layer entities
-    to SG-SPEC-0018, executable-layer code_surface/test/release semantics to SG-SPEC-0020, and revision/supersession
-    lineage semantics to SG-SPEC-0019; D7 formalizes the seed-spec rule; spec.node_kinds.spec includes
-    refines; and the concrete descendants `specs/nodes/SG-SPEC-0002.yaml`, `specs/nodes/SG-SPEC-0007.yaml`,
-    `specs/nodes/SG-SPEC-0009.yaml`, `specs/nodes/SG-SPEC-0010.yaml`, `specs/nodes/SG-SPEC-0017.yaml`,
-    `specs/nodes/SG-SPEC-0018.yaml`, `specs/nodes/SG-SPEC-0019.yaml`, and `specs/nodes/SG-SPEC-0020.yaml`
-    now declare `refines: [SG-SPEC-0001]`. SG-SPEC-0001 keeps `depends_on: [SG-SPEC-0002, SG-SPEC-0007,
-    SG-SPEC-0009, SG-SPEC-0010, SG-SPEC-0017, SG-SPEC-0019]` for blocking descendants, while SG-SPEC-0018
-    and SG-SPEC-0020 remain non-blocking delegated children, keeping the refinement chain explicit without
-    widening linked blockers beyond concrete descendants.
+    scope.in adds recursive refinement via child specs; scope.out now delegates observability metrics
+    to SG-SPEC-0021, adoption-layer entities to SG-SPEC-0018, executable-layer code_surface/test/release
+    semantics to SG-SPEC-0020, revision/supersession lineage semantics to SG-SPEC-0019, and detailed maturity
+    semantics to SG-SPEC-0022; D7 formalizes the seed-spec rule; spec.node_kinds.spec includes refines;
+    and the concrete descendants `specs/nodes/SG-SPEC-0002.yaml`, `specs/nodes/SG-SPEC-0007.yaml`, `specs/nodes/SG-SPEC-0009.yaml`,
+    `specs/nodes/SG-SPEC-0010.yaml`, `specs/nodes/SG-SPEC-0017.yaml`, `specs/nodes/SG-SPEC-0018.yaml`,
+    `specs/nodes/SG-SPEC-0019.yaml`, `specs/nodes/SG-SPEC-0020.yaml`, `specs/nodes/SG-SPEC-0021.yaml`,
+    and `specs/nodes/SG-SPEC-0022.yaml` now declare `refines: [SG-SPEC-0001]`. SG-SPEC-0001 keeps `depends_on:
+    [SG-SPEC-0002, SG-SPEC-0007, SG-SPEC-0009, SG-SPEC-0010, SG-SPEC-0017, SG-SPEC-0019]` for blocking
+    descendants, while SG-SPEC-0018, SG-SPEC-0020, SG-SPEC-0021, and SG-SPEC-0022 remain non-blocking
+    delegated children, keeping the refinement chain explicit without widening linked blockers beyond
+    concrete descendants.
 
     '
 prompt: 'This spec is a seed ontology, not a finished graph. Use child specs to
@@ -140,7 +143,7 @@ specification:
     - Tooling, CLI, or CI implementation
     - Runtime retrieval, indexing, or embedding strategies
     - Fine-tuning, model specialization, or adapter design
-    - Observability metrics (SIB, PFI, CSI, etc.) — covered by dedicated specs
+    - Observability metrics (SIB, PFI, CSI, etc.) — covered by SG-SPEC-0021
     - Runtime observability entities (ObservabilityContract, Campaign, Attestation) — covered by SG-SPEC-0017
     - Intent-facing mediation and discovery semantics before canonicalization — covered by SG-SPEC-0007
     - Single-run OperatorRequest normalization and steering semantics from external actor intent — covered
@@ -150,6 +153,7 @@ specification:
     - Detailed executable-layer traceability semantics for code_surface, test, and release — covered by
       SG-SPEC-0020
     - Detailed canonical revision-record and supersession-lineage semantics — covered by SG-SPEC-0019
+    - Detailed node maturity semantics and maturity-to-lifecycle interaction — covered by SG-SPEC-0022
   terminology:
     intent: 'A precise, governed representation of what a product must be, how it must behave, and how
       its implementation can be validated.  Intent is the source of truth from which all other artifacts
@@ -621,19 +625,20 @@ specification:
       in SG-SPEC-0001.
 
       '
-proposed_status: null
-proposed_maturity: null
-gate_state: split_required
-required_human_action: split spec scope before rerun
-last_outcome: split_required
+proposed_status: linked
+proposed_maturity: 1.0
+gate_state: review_pending
+required_human_action: approve or retry refinement
+last_outcome: done
 last_blocker: ''
-last_run_id: 20260412T071844Z-SG-SPEC-0001
+last_run_id: 20260412T080100Z-SG-SPEC-0001
 last_exit_code: 0
 last_changed_files:
-- specs/nodes/SG-SPEC-0020.yaml
-last_run_at: '2026-04-12T07:18:44.933281+00:00'
-last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0001-20260412T071017Z
-last_branch: codex/sg-spec-0001/20260412T071017Z
+- specs/nodes/SG-SPEC-0001.yaml
+- specs/nodes/SG-SPEC-0022.yaml
+last_run_at: '2026-04-12T08:01:00.962495+00:00'
+last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0001-20260412T075429Z
+last_branch: codex/sg-spec-0001/20260412T075429Z
 last_validator_results:
   outputs: true
   allowed_paths: true
@@ -641,33 +646,38 @@ last_validator_results:
   atomicity: true
   transition: true
   executor_environment: true
-  refinement_acceptance: false
+  refinement_acceptance: true
 last_refinement_acceptance:
-  decision: reject
+  decision: approve
   change_class: local_refinement
   checks:
-    content_changed: false
+    content_changed: true
     hard_validation: true
     single_spec_scope: false
     constitutional_diff: false
     graph_refactor_diff: false
     atomicity_clear: true
     within_mutation_budget: true
-  diff_paths: []
-  mutation_classes: []
+  diff_paths:
+  - acceptance_evidence[3].evidence
+  - acceptance_evidence[7].evidence
+  - specification.scope.out[12]
+  mutation_classes:
+  - policy_text
   mutation_budget: []
   budget_exceeded_classes: []
   changed_spec_files:
-  - specs/nodes/SG-SPEC-0020.yaml
+  - specs/nodes/SG-SPEC-0001.yaml
+  - specs/nodes/SG-SPEC-0022.yaml
   review_reasons:
   - run changed additional spec files beyond the selected source node
-  errors:
-  - No canonical spec change detected after the refinement run
+  errors: []
   warnings: []
 last_reconciliation:
-  worktree_spec_count: 20
+  worktree_spec_count: 22
   changed_spec_ids:
-  - SG-SPEC-0020
+  - SG-SPEC-0001
+  - SG-SPEC-0022
   semantic_dependencies_resolved: true
   work_dependencies_ready: false
   cycles: []
