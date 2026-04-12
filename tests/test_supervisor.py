@@ -664,6 +664,66 @@ def test_run_codex_uses_explicit_fast_execution_profile(
     )
 
 
+def test_run_codex_allows_child_model_override(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class FakeProcess:
+        def __init__(self) -> None:
+            self.stdout = io.StringIO("")
+            self.stderr = io.StringIO("")
+            self.wait_timeout: float | None = None
+
+        def wait(self, timeout: float | None = None) -> int:
+            self.wait_timeout = timeout
+            return 0
+
+    captured: dict[str, object] = {}
+    child_model = "gpt-5.3-codex-spark"
+
+    def fake_create_child_codex_home(
+        *,
+        source_codex_home: Path = Path(),
+        profile: object | None = None,
+        bypass_inner_sandbox: bool = False,
+    ) -> Path:
+        _ = source_codex_home
+        _ = bypass_inner_sandbox
+        captured["profile"] = profile
+        child_home = repo_fixture / ".fake-codex-home"
+        child_home.mkdir(exist_ok=True)
+        return child_home
+
+    def fake_popen(
+        cmd: list[str],
+        *,
+        cwd: Path,
+        env: dict[str, str],
+        stdout: object,
+        stderr: object,
+        text: bool,
+        bufsize: int,
+    ) -> FakeProcess:
+        captured["cmd"] = cmd
+        _ = (cwd, env, stdout, stderr, text, bufsize)
+        process = FakeProcess()
+        captured["process"] = process
+        return process
+
+    monkeypatch.setattr(supervisor_module, "create_child_codex_home", fake_create_child_codex_home)
+    monkeypatch.setattr(subprocess, "Popen", fake_popen)
+
+    node = supervisor_module.load_specs()[0]
+    result = supervisor_module.run_codex(node, repo_fixture, child_model=child_model)
+
+    assert result.returncode == 0
+    assert captured["profile"].model == child_model
+    cmd = captured["cmd"]
+    assert "--model" in cmd
+    assert cmd[cmd.index("--model") + 1] == child_model
+
+
 def test_run_codex_allows_quiet_grace_windows_for_xhigh_reasoning(
     supervisor_module: object,
     repo_fixture: Path,
@@ -3166,6 +3226,7 @@ def test_main_split_proposal_passes_operator_target_to_executor(
         mutation_budget: tuple[str, ...] = (),
         run_authority: tuple[str, ...] = (),
         execution_profile: str | None = None,
+        child_model: str | None = None,
         child_timeout_seconds: int | None = None,
         worktree_branch: str = "",
     ) -> subprocess.CompletedProcess[str]:
@@ -3252,6 +3313,7 @@ def test_process_one_spec_uses_materialize_profile_for_seed_like_ordinary_run(
         mutation_budget: tuple[str, ...] = (),
         run_authority: tuple[str, ...] = (),
         execution_profile: str | None = None,
+        child_model: str | None = None,
         child_timeout_seconds: int | None = None,
         worktree_branch: str = "",
     ) -> subprocess.CompletedProcess[str]:
@@ -3290,6 +3352,49 @@ def test_process_one_spec_uses_materialize_profile_for_seed_like_ordinary_run(
     assert (
         captured["execution_profile"] == supervisor_module.AUTO_CHILD_MATERIALIZATION_PROFILE_NAME
     )
+
+
+def test_main_targeted_root_like_run_defaults_to_20min_timeout(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    node_data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    node_data["title"] = "Root Spec"
+    node_data["prompt"] = "Root spec for overall project."
+    node_path.write_text(json.dumps(node_data), encoding="utf-8")
+
+    captured: dict[str, object] = {}
+
+    def fake_process_one_spec(
+        node: object,
+        specs: object,
+        executor: object,
+        auto_approve: bool,
+        refactor_work_item: object | None = None,
+        operator_target: bool = False,
+        operator_note: str = "",
+        mutation_budget: tuple[str, ...] = (),
+        run_authority: tuple[str, ...] = (),
+        execution_profile: str | None = None,
+        child_model: str | None = None,
+        child_timeout_seconds: int | None = None,
+    ) -> tuple[int, str, str, str]:
+        captured["child_timeout_seconds"] = child_timeout_seconds
+        captured["child_model"] = child_model
+        captured["execution_profile"] = execution_profile
+        captured["operator_target"] = operator_target
+        return 0, "blocked", supervisor_module.COMPLETION_STATUS_FAILED, "blocked"
+
+    monkeypatch.setattr(supervisor_module, "_process_one_spec", fake_process_one_spec)
+
+    exit_code = supervisor_module.main(
+        target_spec="SG-SPEC-0001",
+        executor=supervisor_module.run_codex,
+    )
+    assert exit_code == 0
+    assert captured["child_timeout_seconds"] == supervisor_module.ROOT_REFACTOR_TIMEOUT_SECONDS
 
 
 def test_main_split_proposal_blocks_executor_environment_failures_without_queue_updates(
