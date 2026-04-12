@@ -1,0 +1,194 @@
+id: SG-SPEC-0018
+title: SpecGraph - Adoption-Layer Entity Boundary
+kind: spec
+status: linked
+maturity: 0.72
+depends_on: []
+relates_to:
+- SG-SPEC-0007
+- SG-SPEC-0017
+refines:
+- SG-SPEC-0001
+inputs:
+- specs/nodes/SG-SPEC-0001.yaml
+- specs/nodes/SG-SPEC-0007.yaml
+- specs/nodes/SG-SPEC-0017.yaml
+outputs:
+- specs/nodes/SG-SPEC-0018.yaml
+allowed_paths:
+- specs/nodes/SG-SPEC-0018.yaml
+acceptance:
+- Defines the bounded role of adoption-layer entities without defining UX taxonomy, analytics formulas,
+  campaign operations, storage, or runtime implementation
+- Defines the first adoption-layer entity seeds for DiscoverySurface and AdoptionCriterion
+- Defines how adoption-layer entities relate to canonical graph subjects, pre-canonical discovery inputs,
+  and evidence boundaries without violating the canonical versus derived split
+acceptance_evidence:
+- criterion: Defines the bounded role of adoption-layer entities without defining UX taxonomy, analytics
+    formulas, campaign operations, storage, or runtime implementation
+  evidence: 'specification.scope.in limits this child to adoption-layer ontology semantics, and specification.scope.out
+    excludes UX taxonomy, IA, onboarding design, analytics formulas, campaign operations, storage schemas,
+    runtime tooling, and observability implementation. specification.boundary_policy also states that
+    this node is adjacent to the canonical layers defined in SG-SPEC-0001 rather than a fifth layer, and
+    that it defines semantic anchors instead of product-growth execution mechanics.
+
+    '
+- criterion: Defines the first adoption-layer entity seeds for DiscoverySurface and AdoptionCriterion
+  evidence: 'specification.terminology defines adoption_layer_entity, DiscoverySurface, AdoptionCriterion,
+    canonical_subject, audience_context, and qualifying_outcome. specification.entity_catalog then gives
+    DiscoverySurface and AdoptionCriterion each a role, minimum_semantic_fields, and boundary_notes that
+    keep both seeds independently understandable without prescribing implementation details.
+
+    '
+- criterion: Defines how adoption-layer entities relate to canonical graph subjects, pre-canonical discovery
+    inputs, and evidence boundaries without violating the canonical versus derived split
+  evidence: 'specification.relationship_policy requires each DiscoverySurface and AdoptionCriterion to
+    trace to canonical subjects by stable identity, keeps raw_goal_signal and mediated_intent_frame under
+    SG-SPEC-0007 rather than collapsing them into adoption entities, and allows evidence-class references
+    without importing SG-SPEC-0017 runtime evidence semantics into this node. specification.canonical_vs_derived_boundary
+    then separates canonical surface and criterion records from telemetry, funnel rollups, experiment
+    outputs, and campaign state.
+
+    '
+prompt: Refine SG-SPEC-0001 by defining the adoption-layer entity boundary for DiscoverySurface and AdoptionCriterion.
+  Keep this child focused on ontology semantics, adjacency to mediated discovery, and canonical versus
+  derived evidence boundaries; do not define UX structure, analytics formulas, campaign operations, storage,
+  or runtime implementation.
+specification:
+  objective: 'Define the first canonical adoption-layer entity seeds that let SpecGraph describe where
+    users or operators encounter product value and what counts as meaningful uptake, without collapsing
+    UX, analytics, or business operations into the seed ontology.
+
+    '
+  scope:
+    in:
+    - Semantic boundary for adoption-layer entities
+    - First entity seeds for DiscoverySurface and AdoptionCriterion
+    - Relationship between adoption-layer entities, canonical graph subjects, and pre-canonical discovery
+      inputs
+    - Canonical versus derived boundary for adoption evidence references
+    out:
+    - UX taxonomy, IA, copywriting, onboarding flow design, or discovery-surface implementation
+    - Analytics event schemas, attribution models, dashboards, conversion formulas, or experimentation
+      policy
+    - Campaign operations, CRM state, sales workflows, marketing execution, or pricing strategy
+    - Storage schema, repository layout, queue behavior, or runtime tooling
+    - Runtime observability evidence semantics beyond cross-reference to SG-SPEC-0017
+  terminology:
+    adoption_layer_entity: 'A canonical graph entity that describes how a bounded audience encounters
+      a product surface or what condition qualifies as meaningful uptake, without making UX state, revenue
+      operations, or telemetry canonical by default.
+
+      '
+    DiscoverySurface: 'A governed description of a bounded channel, touchpoint, or entry path through
+      which an actor encounters a canonical subject or its value framing.
+
+      '
+    AdoptionCriterion: 'A governed declaration of the bounded outcome that counts as adoption, readiness,
+      or successful uptake for a canonical subject within a declared audience context.
+
+      '
+    canonical_subject: 'A canonical node, such as an intent, spec, requirement, code_surface, test, or
+      release, whose exposure or adoption condition is being described by an adoption-layer entity.
+
+      '
+    audience_context: 'The bounded actor class, user segment, operator role, or situational context for
+      which a DiscoverySurface or AdoptionCriterion is defined, without implying a full segmentation system.
+
+      '
+    qualifying_outcome: 'The narrow condition an AdoptionCriterion treats as meaningful uptake for the
+      referenced canonical_subject and audience_context.
+
+      '
+  boundary_policy:
+  - Adoption-layer entities are adjacent ontology concepts that connect canonical subjects to discovery
+    and uptake semantics; they do not introduce a fifth canonical layer beyond Intent, Specification,
+    Graph, and Code.
+  - This child does not add DiscoverySurface or AdoptionCriterion to the SG-SPEC-0001 seed node_kinds
+    list; it establishes their bounded semantic contract so later refinement can decide concrete field
+    envelopes if needed.
+  - A DiscoverySurface records canonical meaning about where or how a subject is encountered, not live
+    UI state, taxonomy trees, or campaign execution logic.
+  - An AdoptionCriterion records what counts as meaningful uptake for a bounded audience_context, not
+    a funnel dashboard, experimentation framework, or business KPI program.
+  - Incoming user requests, feedback, or discovery signals originating from a DiscoverySurface remain
+    raw_goal_signal or mediated_intent_frame until canonicalized under SG-SPEC-0007.
+  - Evidence that might support an AdoptionCriterion may be canonical, imported, or derived depending
+    on provenance, but this child defines only the entity boundary rather than evidence adjudication.
+  entity_catalog:
+  - entity: DiscoverySurface
+    role: Describes a bounded entry point, touchpoint, or channel through which an actor encounters a
+      canonical_subject or its value framing.
+    minimum_semantic_fields:
+    - stable identity
+    - canonical_subject reference
+    - audience_context
+    - encounter context or entry condition
+    - surface promise or value framing statement
+    - authority_class and provenance
+    boundary_notes:
+    - A DiscoverySurface may refer to internal or external entry points, but it stays at the level of
+      canonical meaning rather than full UX composition.
+    - A DiscoverySurface is narrow enough to be reasoned about as one encounter surface, not an open-ended
+      marketing or product area.
+    - The surface may later be implemented by multiple screens, docs, or workflows without changing the
+      canonical surface identity.
+  - entity: AdoptionCriterion
+    role: Defines the qualifying_outcome that counts as adoption for a canonical_subject in a bounded
+      audience_context.
+    minimum_semantic_fields:
+    - stable identity
+    - canonical_subject reference
+    - audience_context
+    - qualifying_outcome statement
+    - bounded evaluation context or window
+    - expected evidence class
+    - authority_class and provenance
+    boundary_notes:
+    - An AdoptionCriterion may be behavioral, contractual, or evidence-based, but it must stay narrow
+      enough to evaluate one bounded outcome.
+    - An AdoptionCriterion does not automatically change lifecycle status for the referenced subject.
+    - Numeric thresholds, attribution formulas, and experimentation logic remain out of scope unless a
+      later child spec explicitly owns them.
+  relationship_policy:
+  - Every DiscoverySurface MUST reference at least one canonical_subject by stable identity.
+  - A DiscoverySurface MAY relate_to SG-SPEC-0007 mediation concerns when it is a source of raw_goal_signal,
+    but it does not replace raw_goal_signal or mediated_intent_frame.
+  - Every AdoptionCriterion MUST reference the canonical_subject whose uptake it qualifies and MAY reference
+    one or more DiscoverySurface entries when the criterion is surface-specific.
+  - An AdoptionCriterion MAY cite ObservabilityContract, Attestation, imported business records, or other
+    evidence classes as acceptable support, but the evidence semantics remain governed by SG-SPEC-0017
+    or later child specs.
+  - Later specs may decide whether existing edge kinds are sufficient for concrete adoption-layer nodes
+    or whether a separate reviewed ontology change is needed.
+  canonical_vs_derived_boundary:
+    canonical:
+    - Authored DiscoverySurface definitions
+    - Authored AdoptionCriterion definitions
+    - Imported surface or criterion records with explicit provenance
+    derived:
+    - UI event streams, click paths, logs, and telemetry
+    - Funnel rollups, dashboards, conversion calculations, and experiment outputs
+    - Campaign state, CRM workflow execution state, and operational growth tooling data
+    - Uncanonicalized survey responses or feedback streams before governed import or distillation
+  invariants:
+  - id: ALE-001
+    statement: Every DiscoverySurface must reference at least one canonical_subject by stable identity.
+  - id: ALE-002
+    statement: Every AdoptionCriterion must define one bounded qualifying_outcome for one declared audience_context.
+  - id: ALE-003
+    statement: Adoption-layer entities may name evidence classes, but telemetry, dashboards, and operational
+      campaign data remain derived unless separately canonicalized with provenance.
+  examples:
+  - name: Docs entry surface
+    description: 'A product capability is exposed through an API documentation landing page for integration
+      engineers. The DiscoverySurface captures that bounded entry path and value framing without defining
+      the full docs IA or page implementation.
+
+      '
+  - name: Activation criterion
+    description: 'A release is considered adopted for self-serve administrators once they complete a bounded
+      workflow and retain access in the declared context window. The AdoptionCriterion states that qualifying_outcome
+      without prescribing a telemetry formula or experimentation policy.
+
+      '

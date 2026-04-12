@@ -2,7 +2,7 @@ id: SG-SPEC-0001
 title: SpecGraph - The Executable Product Ontology
 kind: spec
 status: linked
-maturity: 0.88
+maturity: 0.89
 depends_on:
 - SG-SPEC-0002
 - SG-SPEC-0007
@@ -73,12 +73,13 @@ acceptance_evidence:
     '
 - criterion: States that SG-SPEC-0001 is a seed spec that child specs refine before the graph is frozen
   evidence: 'prompt frames SG-SPEC-0001 as a seed ontology and directs unresolved areas into child specs;
-    scope.in adds recursive refinement via child specs; D7 formalizes the seed-spec rule; spec.node_kinds.spec
-    includes refines; and the concrete descendants `specs/nodes/SG-SPEC-0002.yaml`, `specs/nodes/SG-SPEC-0007.yaml`,
-    `specs/nodes/SG-SPEC-0009.yaml`, `specs/nodes/SG-SPEC-0010.yaml`, and `specs/nodes/SG-SPEC-0017.yaml`
-    now declare `refines: [SG-SPEC-0001]` while SG-SPEC-0001 declares `depends_on: [SG-SPEC-0002, SG-SPEC-0007,
-    SG-SPEC-0009, SG-SPEC-0010, SG-SPEC-0017]`, making the refinement chain explicit enough for linked
-    status.
+    scope.in adds recursive refinement via child specs; scope.out now delegates adoption-layer entities
+    to SG-SPEC-0018; D7 formalizes the seed-spec rule; spec.node_kinds.spec includes refines; and the
+    concrete descendants `specs/nodes/SG-SPEC-0002.yaml`, `specs/nodes/SG-SPEC-0007.yaml`, `specs/nodes/SG-SPEC-0009.yaml`,
+    `specs/nodes/SG-SPEC-0010.yaml`, `specs/nodes/SG-SPEC-0017.yaml`, and `specs/nodes/SG-SPEC-0018.yaml`
+    now declare `refines: [SG-SPEC-0001]`. SG-SPEC-0001 keeps `depends_on: [SG-SPEC-0002, SG-SPEC-0007,
+    SG-SPEC-0009, SG-SPEC-0010, SG-SPEC-0017]` for blocking descendants, while SG-SPEC-0018 remains a
+    non-blocking delegated child, keeping the refinement chain explicit without widening linked blockers.
 
     '
 prompt: 'This spec is a seed ontology, not a finished graph. Use child specs to
@@ -141,7 +142,7 @@ specification:
     - Single-run OperatorRequest normalization and steering semantics from external actor intent — covered
       by SG-SPEC-0009
     - Ubiquitous vocabulary meta-ontology primitives for executable domain vocabularies — covered by SG-SPEC-0010
-    - Adoption-layer entities (DiscoverySurface, AdoptionCriterion, etc.) — future specs
+    - Adoption-layer entities (DiscoverySurface, AdoptionCriterion, etc.) — covered by SG-SPEC-0018
   terminology:
     intent: 'A precise, governed representation of what a product must be, how it must behave, and how
       its implementation can be validated.  Intent is the source of truth from which all other artifacts
@@ -613,12 +614,59 @@ specification:
       in SG-SPEC-0001.
 
       '
-gate_state: none
-proposed_status: null
-proposed_maturity: null
-required_human_action: '-'
-last_gate_decision: approve
-last_gate_note: 'Reviewed SG-SPEC-0017 runtime observability entity boundary materialization: parent remains
-  linked because the new child is not reviewed/frozen; the change only delegates the previously future
-  runtime observability entity slice.'
-last_gate_at: '2026-04-11T19:46:22.159456+00:00'
+gate_state: split_required
+required_human_action: split spec scope before rerun
+last_outcome: split_required
+last_blocker: ''
+last_run_id: 20260412T065602Z-SG-SPEC-0001
+last_exit_code: 0
+last_changed_files:
+- specs/nodes/SG-SPEC-0001.yaml
+- specs/nodes/SG-SPEC-0018.yaml
+last_run_at: '2026-04-12T06:56:03.079696+00:00'
+last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0001-20260412T065046Z
+last_branch: codex/sg-spec-0001/20260412T065046Z
+last_validator_results:
+  outputs: true
+  allowed_paths: true
+  reconciliation: true
+  atomicity: true
+  transition: true
+  executor_environment: true
+  refinement_acceptance: true
+last_refinement_acceptance:
+  decision: approve
+  change_class: local_refinement
+  checks:
+    content_changed: true
+    hard_validation: true
+    single_spec_scope: false
+    constitutional_diff: false
+    graph_refactor_diff: false
+    atomicity_clear: true
+    within_mutation_budget: true
+  diff_paths:
+  - acceptance_evidence[7].evidence
+  - maturity
+  - specification.scope.out[9]
+  mutation_classes:
+  - policy_text
+  mutation_budget: []
+  budget_exceeded_classes: []
+  changed_spec_files:
+  - specs/nodes/SG-SPEC-0001.yaml
+  - specs/nodes/SG-SPEC-0018.yaml
+  review_reasons:
+  - run changed additional spec files beyond the selected source node
+  errors: []
+  warnings: []
+last_reconciliation:
+  worktree_spec_count: 18
+  changed_spec_ids:
+  - SG-SPEC-0001
+  - SG-SPEC-0018
+  semantic_dependencies_resolved: true
+  work_dependencies_ready: false
+  cycles: []
+last_requested_child_materialization: false
+last_materialized_child_paths: []
