@@ -256,73 +256,32 @@ specification:
     - Derived latent_graph_improvement_candidate records MUST NOT be written into canonical spec nodes
       as backlog labels, maturity overrides, or implied work ownership.
   split_refactor_policy:
-    v1:
-      scope:
-      - split_oversized_spec only
-      - non-seed spec nodes only
-      - proposal-first only
-      - no canonical spec mutation during the pass
-      - no merge, reparent, or generalized relinking
-      eligibility:
-      - The target node must be an oversized non-seed spec node under current graph-health policy.
-      - The run must be selected by explicit operator_target rather than heuristic queue pickup.
-    parent_after_split:
-    - The parent keeps the same stable ID and remains an overview or integration node after the proposed
-      split.
-    - The parent keeps only cross-cutting or integration acceptance that should not be duplicated into
-      multiple children.
-    - The parent narrows its role summary and prompt toward overview or integration responsibility rather
-      than keeping all detailed concerns.
-    - The parent depends_on the suggested child specs only when those children are blocking for parent
-      advancement.
-    child_contract:
-    - Each suggested child represents exactly one bounded concern.
-    - Each moved parent acceptance criterion maps to exactly one child slot.
-    - Suggested child IDs and paths are advisory snapshot outputs and do not reserve canonical IDs by
-      themselves.
-    - 'Each suggested child records child-to-parent lineage as refines: [parent_id] in the proposal payload.'
-    execution:
-    - The split pass emits a structured proposal artifact plus proposal_queue index metadata and does
-      not write canonical spec files by itself.
-    - The split pass does not promote status or maturity and does not auto-create child spec files.
-    - If an active proposal already exists for the same spec and signal, the structured proposal artifact
-      is refreshed rather than duplicated.
-    artifact_contract:
-      required_fields:
-      - id
-      - proposal_type
-      - refactor_kind
-      - target_spec_id
-      - source_signal
-      - source_run_ids
-      - execution_policy
-      - parent_after_split
-      - suggested_children
-      - acceptance_mapping
-      - lineage_updates
-      - status
-      rules:
-      - parent_after_split MUST retain acceptance that stays on the parent and describe the narrowed overview
-        role.
-      - suggested_children MUST include advisory child IDs, advisory paths, bounded concern summaries,
-        suggested titles, suggested prompts, and assigned acceptance criteria.
-      - acceptance_mapping MUST cover every current parent acceptance criterion exactly once, either as
-        parent_retained or as one child slot assignment.
-      - lineage_updates MUST record both parent-to-child blocking edges to add and child-to-parent refines
-        edges to add for the proposed split.
-proposed_status: linked
-proposed_maturity: 0.67
-gate_state: review_pending
-required_human_action: review refinement impact before approval
-last_outcome: done
+    governance_scope:
+    - SG-SPEC-0003 defines split-oriented governance triggers from graph-health signals, not the detailed
+      split mechanics.
+    - Candidate handling at this layer remains proposal-first and must not mutate canonical nodes directly
+      during detection.
+    ownership_delegation:
+    - SG-SPEC-0004 owns split_oversized_spec proposal payload structure, canonical split application contract,
+      and approval-triggered writeback mechanics.
+    - SG-SPEC-0005 owns retrospective split/refactor constraints for already-live graph regions.
+    - SG-SPEC-0006 owns proposal-lane tracking and active ownership semantics for split proposals.
+    governance_decisions:
+    - SG-SPEC-0003 decides when a split candidate should remain queued, be elevated to a governance proposal,
+      or be deferred.
+    - SG-SPEC-0003 does not define child ID minting, child spec file generation sequence, or final canonical
+      persistence contracts.
+gate_state: split_required
+required_human_action: split spec scope before rerun
+last_outcome: split_required
 last_blocker: ''
-last_run_id: 20260411T224231Z-SG-SPEC-0003
+last_run_id: 20260412T112804Z-SG-SPEC-0003
 last_exit_code: 0
 last_changed_files:
 - specs/nodes/SG-SPEC-0003.yaml
-last_run_at: '2026-04-11T22:42:31.891784+00:00'
-last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0003-20260411T223827Z
-last_branch: codex/sg-spec-0003/20260411T223827Z
+last_run_at: '2026-04-12T11:28:04.969535+00:00'
+last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0003-20260412T112717Z
+last_branch: codex/sg-spec-0003/20260412T112717Z
 last_validator_results:
   outputs: true
   allowed_paths: true
@@ -332,66 +291,81 @@ last_validator_results:
   executor_environment: true
   refinement_acceptance: true
 last_refinement_acceptance:
-  decision: review_required
-  change_class: constitutional_change
+  decision: approve
+  change_class: local_refinement
   checks:
     content_changed: true
     hard_validation: true
     single_spec_scope: true
-    constitutional_diff: true
+    constitutional_diff: false
     graph_refactor_diff: false
     atomicity_clear: true
     within_mutation_budget: true
   diff_paths:
-  - acceptance[0]
-  - acceptance[1]
-  - acceptance[2]
-  - acceptance[3]
-  - acceptance_evidence[0].criterion
-  - acceptance_evidence[0].evidence
-  - acceptance_evidence[1].criterion
-  - acceptance_evidence[1].evidence
-  - acceptance_evidence[2].criterion
-  - acceptance_evidence[2].evidence
-  - acceptance_evidence[3].criterion
-  - acceptance_evidence[3].evidence
-  - maturity
-  - prompt
-  - specification.boundary_policy.supervisor_execution[2]
-  - specification.boundary_policy.supervisor_execution[3]
-  - specification.boundary_policy.supervisor_execution[4]
-  - specification.boundary_policy.supervisor_execution[5]
-  - specification.derived_artifact_policy.canonical_writeback[1]
-  - specification.derived_artifact_policy.first_persistence[2]
-  - specification.derived_artifact_policy.first_persistence[3]
-  - specification.derived_artifact_policy.first_persistence[4]
-  - specification.graph_health_signal_policy.continuation_detection
-  - specification.graph_health_signal_policy.continuation_detection[0]
-  - specification.graph_health_signal_policy.continuation_detection[1]
-  - specification.objective
-  - specification.reflective_loop.continuation
-  - specification.reflective_loop.continuation[0]
-  - specification.reflective_loop.continuation[1]
-  - specification.reflective_loop.continuation[2]
-  - specification.scope.in[1]
-  - specification.scope.in[2]
-  - specification.scope.in[3]
-  - specification.scope.in[4]
-  - specification.scope.in[5]
-  - specification.scope.out[5]
-  - specification.terminology.latent_graph_improvement_candidate
+  - specification.split_refactor_policy.artifact_contract
+  - specification.split_refactor_policy.artifact_contract.required_fields
+  - specification.split_refactor_policy.artifact_contract.required_fields[0]
+  - specification.split_refactor_policy.artifact_contract.required_fields[1]
+  - specification.split_refactor_policy.artifact_contract.required_fields[2]
+  - specification.split_refactor_policy.artifact_contract.required_fields[3]
+  - specification.split_refactor_policy.artifact_contract.required_fields[4]
+  - specification.split_refactor_policy.artifact_contract.required_fields[5]
+  - specification.split_refactor_policy.artifact_contract.required_fields[6]
+  - specification.split_refactor_policy.artifact_contract.required_fields[7]
+  - specification.split_refactor_policy.artifact_contract.required_fields[8]
+  - specification.split_refactor_policy.artifact_contract.required_fields[9]
+  - specification.split_refactor_policy.artifact_contract.required_fields[10]
+  - specification.split_refactor_policy.artifact_contract.required_fields[11]
+  - specification.split_refactor_policy.artifact_contract.rules
+  - specification.split_refactor_policy.artifact_contract.rules[0]
+  - specification.split_refactor_policy.artifact_contract.rules[1]
+  - specification.split_refactor_policy.artifact_contract.rules[2]
+  - specification.split_refactor_policy.artifact_contract.rules[3]
+  - specification.split_refactor_policy.child_contract
+  - specification.split_refactor_policy.child_contract[0]
+  - specification.split_refactor_policy.child_contract[1]
+  - specification.split_refactor_policy.child_contract[2]
+  - specification.split_refactor_policy.child_contract[3]
+  - specification.split_refactor_policy.execution
+  - specification.split_refactor_policy.execution[0]
+  - specification.split_refactor_policy.execution[1]
+  - specification.split_refactor_policy.execution[2]
+  - specification.split_refactor_policy.governance_decisions
+  - specification.split_refactor_policy.governance_decisions[0]
+  - specification.split_refactor_policy.governance_decisions[1]
+  - specification.split_refactor_policy.governance_scope
+  - specification.split_refactor_policy.governance_scope[0]
+  - specification.split_refactor_policy.governance_scope[1]
+  - specification.split_refactor_policy.ownership_delegation
+  - specification.split_refactor_policy.ownership_delegation[0]
+  - specification.split_refactor_policy.ownership_delegation[1]
+  - specification.split_refactor_policy.ownership_delegation[2]
+  - specification.split_refactor_policy.parent_after_split
+  - specification.split_refactor_policy.parent_after_split[0]
+  - specification.split_refactor_policy.parent_after_split[1]
+  - specification.split_refactor_policy.parent_after_split[2]
+  - specification.split_refactor_policy.parent_after_split[3]
+  - specification.split_refactor_policy.v1
+  - specification.split_refactor_policy.v1.scope
+  - specification.split_refactor_policy.v1.scope[0]
+  - specification.split_refactor_policy.v1.scope[1]
+  - specification.split_refactor_policy.v1.scope[2]
+  - specification.split_refactor_policy.v1.scope[3]
+  - specification.split_refactor_policy.v1.scope[4]
+  - specification.split_refactor_policy.v1.eligibility
+  - specification.split_refactor_policy.v1.eligibility[0]
+  - specification.split_refactor_policy.v1.eligibility[1]
   mutation_classes:
   - policy_text
   mutation_budget: []
   budget_exceeded_classes: []
   changed_spec_files:
   - specs/nodes/SG-SPEC-0003.yaml
-  review_reasons:
-  - run changed governance-sensitive specification sections
+  review_reasons: []
   errors: []
   warnings: []
 last_reconciliation:
-  worktree_spec_count: 17
+  worktree_spec_count: 22
   changed_spec_ids:
   - SG-SPEC-0003
   semantic_dependencies_resolved: true

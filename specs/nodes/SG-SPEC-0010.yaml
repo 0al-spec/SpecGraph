@@ -133,6 +133,19 @@ specification:
     first reusable substrate.
   - Bootstrap relation-vocabulary elaboration is delegated beyond this parent node; here RelationType
     is defined only as a reusable primitive contract.
+  child_spec_governance:
+  - child_spec: SG-SPEC-0011
+    concern: First bounded relation-vocabulary slice for primitive binding within the ubiquitous vocabulary
+      layer.
+    parent_summary:
+    - SG-SPEC-0011 owns the admissible RelationType signatures used to connect Concept, StateFamily, Alias,
+      and Invariant in this primitive layer.
+    - This node owns the primitive-level contracts, while the child owns the first concrete catalog of
+      relation semantics for those primitive bindings.
+    detailed_governance_owned_by_child:
+    - relation signature definitions for first-priority primitive bindings
+    - admissible subject/object scopes and uniqueness rules for bootstrap relation instances
+    - alias_resolution_context boundary semantics for Alias target resolution
   primitive_catalog:
   - primitive: Concept
     role: Canonical semantic anchor for later domain vocabulary terms.
@@ -231,10 +244,63 @@ specification:
     UX, intake workflow, or non-canonical phrasing policy beyond Alias as a canonical primitive.
   - This node is adjacent to graph invariants from SG-SPEC-0001, but its Invariant primitive is scoped
     specifically to vocabulary semantics used by later executable domain vocabularies.
-gate_state: none
-proposed_status: null
-proposed_maturity: null
-required_human_action: '-'
-last_gate_decision: approve
-last_gate_note: Approve parent vocabulary primitive refinement after SG-SPEC-0011 child gate was approved.
-last_gate_at: '2026-04-11T05:42:23.174306+00:00'
+gate_state: split_required
+required_human_action: split spec scope before rerun
+last_outcome: split_required
+last_blocker: ''
+last_run_id: 20260412T112923Z-SG-SPEC-0010
+last_exit_code: 0
+last_changed_files:
+- specs/nodes/SG-SPEC-0010.yaml
+last_run_at: '2026-04-12T11:29:24.475019+00:00'
+last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0010-20260412T112903Z
+last_branch: codex/sg-spec-0010/20260412T112903Z
+last_validator_results:
+  outputs: true
+  allowed_paths: true
+  reconciliation: true
+  atomicity: true
+  transition: true
+  executor_environment: true
+  refinement_acceptance: true
+last_refinement_acceptance:
+  decision: approve
+  change_class: local_refinement
+  checks:
+    content_changed: true
+    hard_validation: true
+    single_spec_scope: true
+    constitutional_diff: false
+    graph_refactor_diff: false
+    atomicity_clear: true
+    within_mutation_budget: true
+  diff_paths:
+  - specification.child_spec_governance
+  - specification.child_spec_governance[0]
+  - specification.child_spec_governance[0].child_spec
+  - specification.child_spec_governance[0].concern
+  - specification.child_spec_governance[0].parent_summary
+  - specification.child_spec_governance[0].parent_summary[0]
+  - specification.child_spec_governance[0].parent_summary[1]
+  - specification.child_spec_governance[0].detailed_governance_owned_by_child
+  - specification.child_spec_governance[0].detailed_governance_owned_by_child[0]
+  - specification.child_spec_governance[0].detailed_governance_owned_by_child[1]
+  - specification.child_spec_governance[0].detailed_governance_owned_by_child[2]
+  mutation_classes:
+  - policy_text
+  mutation_budget: []
+  budget_exceeded_classes: []
+  changed_spec_files:
+  - specs/nodes/SG-SPEC-0010.yaml
+  review_reasons: []
+  errors: []
+  warnings: []
+last_reconciliation:
+  worktree_spec_count: 22
+  changed_spec_ids:
+  - SG-SPEC-0010
+  semantic_dependencies_resolved: true
+  work_dependencies_ready: true
+  cycles: []
+last_requested_child_materialization: false
+last_materialized_child_paths: []
