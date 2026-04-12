@@ -145,7 +145,8 @@ specification:
     different maturity value without mutating the frozen predecessor.
   canonical_vs_derived_boundary:
     canonical:
-    - Authored maturity_assessment entries recorded directly on a governed node snapshot
+    - Authored maturity_assessment entries recorded directly on a governed node snapshot with preserved
+      rationale, authority_class, and snapshot binding
     - Imported or estimated maturity values explicitly recorded as a governed node_maturity assessment
       for the same snapshot, with preserved rationale and provenance
     - Authored rationale or reviewed notes explaining a maturity assessment when such rationale is preserved
