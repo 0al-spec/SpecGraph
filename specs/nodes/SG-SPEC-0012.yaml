@@ -144,8 +144,17 @@ specification:
       or refinement rather than redundant materialization.
 
       '
-    source_attributed_context: 'Any context_pack element that retains the source class and attributable
-      origin from which it was derived so downstream review can inspect why that element was present.
+    source_attributed_context: 'Any context_pack element that retains a source class, stable source locator,
+      and attributable origin from which it was derived so downstream review can inspect why that element
+      was present.
+
+      '
+    retention_reason: 'The governance-relevant rationale for keeping a specific context_pack element in
+      the current run, such as canonical coverage, candidate overlap, or unresolved-wording preservation.
+
+      '
+    current_operator_wording: 'The unresolved operator-provided phrasing included in the pack for the
+      current run before canonical mapping, used to keep ambiguity explicit.
 
       '
   derivation_contract:
@@ -204,11 +213,17 @@ specification:
       a distinct bounded concern not yet governed elsewhere.
   traceability_policy:
     source_attribution:
-    - Each context_pack element should retain whether it came from canonical_graph_vocabulary, adjacent_spec_lineage,
-      or declared_project_memory_source.
-    - The pack must distinguish current operator wording from inherited canonical vocabulary and remembered
+    - Each context_pack element must retain:
+      - source_class
+      - source_locator
+      - retention_reason
+    - source_class must be one of canonical_graph_vocabulary, adjacent_spec_lineage, declared_project_memory_source,
+      or current_operator_wording.
+    - source_locator must preserve enough detail to reconstruct the element's source class and origin
+      for review.
+    - source_class distinguishes current operator wording from inherited canonical vocabulary and remembered
       project context.
-    - Unresolved operator wording included in the pack must remain attributable to current operator wording
+    - Unresolved operator wording included in the pack must remain attributable to current_operator_wording
       rather than being rewritten as canonical vocabulary or remembered project context.
     - source_attributed_context should preserve enough attribution that downstream review can inspect
       why a context element was included.
@@ -272,12 +287,68 @@ specification:
       type. The pack preserves that phrase as unresolved current-run wording and may list nearby canonical
       candidates as duplicate_avoidance_signal items, but it does not treat the phrase as already governed
       or silently coin a synonym for it.
+proposed_status: reviewed
+proposed_maturity: 0.71
+gate_state: review_pending
+required_human_action: review refinement impact before approval
+last_outcome: done
+last_blocker: ''
+last_run_id: 20260412T170953Z-SG-SPEC-0012
+last_exit_code: 0
+last_changed_files:
+- specs/nodes/SG-SPEC-0012.yaml
+last_run_at: '2026-04-12T17:09:53.893896+00:00'
+last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0012-20260412T170813Z
+last_branch: codex/sg-spec-0012/20260412T170813Z
+last_validator_results:
+  outputs: true
+  allowed_paths: true
+  reconciliation: true
+  atomicity: true
+  transition: true
+  executor_environment: true
+  refinement_acceptance: true
+last_refinement_acceptance:
+  decision: review_required
+  change_class: constitutional_change
+  checks:
+    content_changed: true
+    hard_validation: true
+    single_spec_scope: true
+    constitutional_diff: true
+    graph_refactor_diff: false
+    atomicity_clear: true
+    within_mutation_budget: true
+  diff_paths:
+  - specification.terminology.current_operator_wording
+  - specification.terminology.retention_reason
+  - specification.terminology.source_attributed_context
+  - specification.traceability_policy.source_attribution[0]
+  - specification.traceability_policy.source_attribution[0].Each context_pack element must retain
+  - specification.traceability_policy.source_attribution[0].Each context_pack element must retain[0]
+  - specification.traceability_policy.source_attribution[0].Each context_pack element must retain[1]
+  - specification.traceability_policy.source_attribution[0].Each context_pack element must retain[2]
+  - specification.traceability_policy.source_attribution[1]
+  - specification.traceability_policy.source_attribution[2]
+  - specification.traceability_policy.source_attribution[3]
+  - specification.traceability_policy.source_attribution[4]
+  - specification.traceability_policy.source_attribution[5]
+  mutation_classes:
+  - policy_text
+  mutation_budget: []
+  budget_exceeded_classes: []
+  changed_spec_files:
+  - specs/nodes/SG-SPEC-0012.yaml
+  review_reasons:
+  - run changed governance-sensitive specification sections
+  errors: []
+  warnings: []
+last_reconciliation:
+  worktree_spec_count: 22
+  changed_spec_ids:
+  - SG-SPEC-0012
+  semantic_dependencies_resolved: true
+  work_dependencies_ready: true
+  cycles: []
 last_requested_child_materialization: false
 last_materialized_child_paths: []
-gate_state: none
-proposed_status: null
-proposed_maturity: null
-required_human_action: '-'
-last_gate_decision: approve
-last_gate_note: Approve validated context pack refinement.
-last_gate_at: '2026-04-11T05:41:38.476416+00:00'
