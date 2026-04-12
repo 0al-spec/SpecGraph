@@ -69,7 +69,7 @@ AGENTS_FILE = ROOT / "AGENTS.md"
 
 READY_DEP_STATUSES = {"reviewed", "frozen"}
 WORKABLE_STATUSES = {"outlined", "specified"}
-CONTINUATION_STATUSES = {"linked", "reviewed"}
+CONTINUATION_STATUSES = {"linked"}
 VALID_STATUSES = {"idea", "stub", "outlined", "specified", "linked", "reviewed", "frozen"}
 ATOMICITY_MAX_ACCEPTANCE = 5
 ATOMICITY_MAX_BLOCKING_CHILDREN = 3
@@ -3845,10 +3845,12 @@ def run_codex(
                     stdout_chunks,
                     stderr_chunks,
                 )
-                if current_progress_state != last_progress_state:
-                    last_progress_state = current_progress_state
-                    quiet_windows_without_progress = 0
-                    if base_timeout_remaining <= 0 and quiet_progress_windows_allowed > 0:
+                if base_timeout_remaining <= 0:
+                    if quiet_progress_windows_allowed <= 0:
+                        raise
+                    if current_progress_state != last_progress_state:
+                        last_progress_state = current_progress_state
+                        quiet_windows_without_progress = 0
                         print(
                             "[codex stderr] supervisor progress grace: "
                             "nested executor still shows progress after the base timeout; "
@@ -3856,21 +3858,24 @@ def run_codex(
                             end="",
                             file=sys.stderr,
                         )
+                        continue
+                    if quiet_windows_without_progress < quiet_progress_windows_allowed:
+                        quiet_windows_without_progress += 1
+                        print(
+                            "[codex stderr] supervisor quiet grace: "
+                            f"no new progress detected after base timeout "
+                            f"({quiet_windows_without_progress}/{quiet_progress_windows_allowed}); "
+                            "allowing more deliberation\n",
+                            end="",
+                            file=sys.stderr,
+                        )
+                        continue
+                    raise
+                if current_progress_state != last_progress_state:
+                    last_progress_state = current_progress_state
+                    quiet_windows_without_progress = 0
                     continue
-                if base_timeout_remaining > 0:
-                    continue
-                if quiet_windows_without_progress < quiet_progress_windows_allowed:
-                    quiet_windows_without_progress += 1
-                    print(
-                        "[codex stderr] supervisor quiet grace: "
-                        f"no new progress detected after base timeout "
-                        f"({quiet_windows_without_progress}/{quiet_progress_windows_allowed}); "
-                        "allowing more deliberation\n",
-                        end="",
-                        file=sys.stderr,
-                    )
-                    continue
-                raise
+                continue
     except subprocess.TimeoutExpired:
         process.kill()
         returncode = 124
