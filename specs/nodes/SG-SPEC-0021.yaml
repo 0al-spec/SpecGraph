@@ -97,8 +97,8 @@ specification:
 
       '
     metric_family_role: 'A canonical semantic role label that classifies the kind of question a derived
-      metric family asks about its subject, without fixing formulas, thresholds, or making same-role families
-      interchangeable by default.
+      metric family asks about its subject. Role membership defines semantic intent and subject envelope,
+      but does not authorize formula, threshold, ranking, or score portability without a reviewed proposal.
 
       '
     metric_subject: 'A bounded subject class for a metric family. The bound subject defines the maximum
@@ -133,8 +133,26 @@ specification:
     boundaries.
   - A metric_snapshot may inform graph-health interpretation, refactor prioritization, or review discussion,
     but it cannot by itself mutate canonical status, acceptance, proposal authority, or lifecycle state.
-  - Opaque or later-named family handles such as PFI or CSI may be added under this boundary in later
+    - Opaque or later-named family handles such as PFI or CSI may be added under this boundary in later
     refinement without requiring formulas to be frozen in this node.
+  role_contract:
+  - role: structural_quality
+    family_names:
+    - pre-SIB
+    - SIB
+    role_scope_note: Structural questions over bounded structure entities and region topology.
+  - role: specification_assurance
+    family_names:
+    - Specification Verifiability
+    role_scope_note: Verifiability and reviewability questions over governed specification objects.
+  - role: process_visibility
+    family_names:
+    - Process Observability
+    role_scope_note: Process and execution visibility over bounded supervision and refinement runs.
+  - role: structural_visibility
+    family_names:
+    - Structural Observability
+    role_scope_note: Visibility of structural defects, lineage gaps, and dependency exposure.
   metric_family_catalog:
   - family: pre-SIB
     family_role: structural_quality
@@ -253,6 +271,9 @@ specification:
   - id: MET-005
     statement: Shared metric_family_role membership does not by itself make metric families formula-equivalent,
       threshold-equivalent, or snapshot-comparable.
+  - id: MET-006
+    statement: Each family_role assignment must match the role_contract mapping in this node, and any
+      role change requires reviewed continuity or supersession before the family remains in scope.
   decisions:
   - id: MET-D1
     statement: Metric families are canonical semantic handles, while scores remain derived artifacts.
@@ -290,10 +311,83 @@ specification:
       the accepted canonical facts remain the specs and links themselves rather than the reported trend.
 
       '
-gate_state: none
-proposed_status: null
-proposed_maturity: null
-required_human_action: '-'
-last_gate_decision: approve
-last_gate_note: Approve narrowed derived metric family boundary without catalog-level role taxonomy.
-last_gate_at: '2026-04-12T12:18:00+00:00'
+proposed_status: linked
+proposed_maturity: 0.98
+gate_state: review_pending
+required_human_action: review refinement impact before approval
+last_outcome: done
+last_blocker: ''
+last_run_id: 20260412T143616Z-SG-SPEC-0021
+last_exit_code: 0
+last_changed_files:
+- specs/nodes/SG-SPEC-0021.yaml
+last_run_at: '2026-04-12T14:36:16.672923+00:00'
+last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0021-20260412T143555Z
+last_branch: codex/sg-spec-0021/20260412T143555Z
+last_validator_results:
+  outputs: true
+  allowed_paths: true
+  reconciliation: true
+  atomicity: true
+  transition: true
+  executor_environment: true
+  refinement_acceptance: true
+last_refinement_acceptance:
+  decision: review_required
+  change_class: constitutional_change
+  checks:
+    content_changed: true
+    hard_validation: true
+    single_spec_scope: true
+    constitutional_diff: true
+    graph_refactor_diff: false
+    atomicity_clear: true
+    within_mutation_budget: true
+  diff_paths:
+  - specification.boundary_policy[4]
+  - specification.boundary_policy[5]
+  - specification.invariants[5]
+  - specification.invariants[5].id
+  - specification.invariants[5].statement
+  - specification.role_contract
+  - specification.role_contract[0]
+  - specification.role_contract[0].role
+  - specification.role_contract[0].family_names
+  - specification.role_contract[0].family_names[0]
+  - specification.role_contract[0].family_names[1]
+  - specification.role_contract[0].role_scope_note
+  - specification.role_contract[1]
+  - specification.role_contract[1].role
+  - specification.role_contract[1].family_names
+  - specification.role_contract[1].family_names[0]
+  - specification.role_contract[1].role_scope_note
+  - specification.role_contract[2]
+  - specification.role_contract[2].role
+  - specification.role_contract[2].family_names
+  - specification.role_contract[2].family_names[0]
+  - specification.role_contract[2].role_scope_note
+  - specification.role_contract[3]
+  - specification.role_contract[3].role
+  - specification.role_contract[3].family_names
+  - specification.role_contract[3].family_names[0]
+  - specification.role_contract[3].role_scope_note
+  - specification.terminology.metric_family_role
+  mutation_classes:
+  - policy_text
+  mutation_budget: []
+  budget_exceeded_classes: []
+  changed_spec_files:
+  - specs/nodes/SG-SPEC-0021.yaml
+  review_reasons:
+  - run changed governance-sensitive specification sections
+  errors: []
+  warnings: []
+last_reconciliation:
+  worktree_spec_count: 22
+  changed_spec_ids:
+  - SG-SPEC-0021
+  semantic_dependencies_resolved: true
+  work_dependencies_ready: false
+  cycles: []
+last_requested_child_materialization: false
+last_materialized_child_paths: []
