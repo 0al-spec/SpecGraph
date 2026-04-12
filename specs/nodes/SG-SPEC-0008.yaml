@@ -17,8 +17,9 @@ acceptance:
 - Defines project memory consultation, including PageIndex-backed conversation recall, as explicit mediated
   context that must be declared and preserved rather than treated as an implicit side channel
 - Defines the minimal traceability contract for consulted project memory by preserving the consulted source
-  class, distinguishing recalled context from direct user wording, and keeping PageIndex-backed conversation
-  recall attributable when used
+  class, distinguishing recalled context from direct user wording, keeping PageIndex-backed conversation
+  recall attributable when used, and preserving an explicit mediation-record decision when project memory
+  is not consulted
 - Defines mediated consultation quality only at the policy boundary by requiring evaluation of declared
   use, preserved source class, whether declared local project memory was preferred before external browsing
   for project-internal ambiguity, and whether recalled context materially clarified ambiguity without
@@ -31,48 +32,40 @@ acceptance:
 acceptance_evidence:
 - criterion: Defines project memory consultation, including PageIndex-backed conversation recall, as explicit
     mediated context that must be declared and preserved rather than treated as an implicit side channel
-  evidence: 'specification.terminology defines consulted_project_memory, pageindex_backed_conversation_recall,
+  evidence: specification.terminology defines consulted_project_memory, pageindex_backed_conversation_recall,
     and declared_memory_consultation. specification.consultation_policy.declaration_rules requires project
     memory use during mediated discovery to appear only as declared mediated context rather than as an
     undeclared side channel, including when the consulted memory comes from PageIndex-backed conversation
     recall.
-
-    '
 - criterion: Defines the minimal traceability contract for consulted project memory by preserving the
     consulted source class, distinguishing recalled context from direct user wording, and keeping PageIndex-backed
     conversation recall attributable when used
-  evidence: 'specification.traceability_policy.consultation_traceability requires each declared_memory_consultation
-    to preserve the consulted source class, keep recalled context distinct from direct user wording, and
-    retain enough attribution to identify PageIndex-backed conversation recall as consulted project memory
-    rather than flattened current-request text.
-
-    '
+  evidence: specification.consultation_policy.declaration_rules requires every mediation event to record
+    whether consulted_project_memory was consulted or explicitly not consulted. specification.traceability_policy.consultation_traceability
+    then requires each declared_memory_consultation to preserve the consulted source class, keep recalled
+    context distinct from direct user wording, retain enough attribution to identify PageIndex-backed
+    conversation recall as consulted project memory rather than flattened current-request text, and keep
+    a review-visible record when project memory was deliberately not consulted.
 - criterion: Defines mediated consultation quality only at the policy boundary by requiring evaluation
     of declared use, preserved source class, whether declared local project memory was preferred before
     external browsing for project-internal ambiguity, and whether recalled context materially clarified
     ambiguity without prescribing retrieval mechanics or scoring formulas
-  evidence: 'specification.quality_policy requires consultation quality assessment to consider declared
+  evidence: specification.quality_policy requires consultation quality assessment to consider declared
     use, preserved source class, whether declared local project memory was preferred before external browsing
     when resolving project-internal ambiguity or recalling prior project-specific constraints, and whether
     consulted project memory materially clarified ambiguity in the current mediation record, while specification.scope.out
     excludes exact retrieval mechanics and scoring formulas.
-
-    '
 - criterion: Defines the source-boundary rule that external browsing, when used during the same mediation
     task, remains distinct from consulted project memory and must not be represented as project-memory
     recall or attributed conversation recall
-  evidence: 'specification.traceability_policy.consultation_traceability requires external browsing, when
+  evidence: specification.traceability_policy.consultation_traceability requires external browsing, when
     used, to remain distinguishable from consulted_project_memory and prohibits representing browsed material
     as project-memory recall or attributed PageIndex-backed conversation recall.
-
-    '
 - criterion: Keeps GUI protocol, storage layout, exact retrieval mechanics, and model workflow explicitly
     out of scope while naming future operator-request memory policy as adjacent follow-on work
-  evidence: 'specification.scope.out excludes GUI protocol, storage layout, exact retrieval mechanics,
+  evidence: specification.scope.out excludes GUI protocol, storage layout, exact retrieval mechanics,
     and model workflow. specification.adjacency_notes names future operator-request memory policy as an
     adjacent concern without resolving that policy here.
-
-    '
 prompt: Refine SG-SPEC-0007 by extracting the bounded concern of explicit project-memory consultation
   during intent mediation. Define consulted project memory, including PageIndex-backed conversation recall,
   as declared mediated context with preservation and traceability expectations. Keep the child scoped
@@ -88,7 +81,8 @@ specification:
     in:
     - Explicit declaration of project-memory consultation during mediated discovery
     - Consulted project memory as mediated context distinct from direct user wording
-    - Minimal traceability expectations for source class and attributable recall
+    - Minimal traceability expectations for source class, attributable recall, and explicit consultation
+      decision capture
     - Policy-level quality expectations for whether recalled context materially clarified ambiguity
     out:
     - GUI protocol or operator-facing controls for invoking memory consultation
@@ -128,6 +122,8 @@ specification:
       or silent prior assumption.
     - PageIndex-backed conversation recall is one form of consulted_project_memory and must be declared
       when it informs interpretation of the current raw goal signal.
+    - Every mediation event must record a declaration decision for consulted_project_memory as either
+      consulted (with preserved consulted_source_class) or explicitly not consulted.
     authority_boundary:
     - Consulted project memory may clarify interpretation but does not override the current raw goal signal
       by default.
@@ -146,6 +142,8 @@ specification:
     - External browsing, when used during the same mediation task, must remain distinguishable from consulted_project_memory
       and must not be represented as project-memory recall or as attributed PageIndex-backed conversation
       recall.
+    - The record must retain the mediation decision that consulted_project_memory was either used or explicitly
+      not used, so review can assess whether unconsulted cases were a deliberate decision.
     preservation_expectations:
     - Preserved consultation detail should be sufficient for downstream inspection of declared use, consulted
       source class, and the role the recalled context played in clarifying ambiguity.
@@ -188,5 +186,6 @@ proposed_status: null
 proposed_maturity: null
 required_human_action: '-'
 last_gate_decision: approve
-last_gate_note: Approve validated project-memory consultation refinement.
-last_gate_at: '2026-04-11T05:43:41.701559+00:00'
+last_gate_note: Approve validated project-memory consultation refinement with explicit no-consultation
+  declaration.
+last_gate_at: '2026-04-12T12:10:00+00:00'

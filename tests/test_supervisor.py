@@ -4555,6 +4555,7 @@ def test_main_atomicity_gate_forces_split_required(
     assert exit_code == 1
 
     updated = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    assert updated["acceptance"] != [f"criterion-{i}" for i in range(6)]
     assert updated["gate_state"] == "split_required"
     assert updated["required_human_action"] == "split spec scope before rerun"
     assert updated["last_blocker"] == "spec exceeds atomicity quality gate"
