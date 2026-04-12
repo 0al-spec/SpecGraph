@@ -50,21 +50,23 @@ acceptance_evidence:
   evidence: 'specification.subject_binding_contract.role_bindings now normalizes the permitted subject
     classes for structural_quality, specification_checkability, process_visibility, and structural_visibility
     families, while specification.subject_binding_contract.selector_boundary distinguishes canonical subject_binding_selector
-    meaning from derived subject_materialization. specification.metric_family_catalog then tags each seed
-    family with one family_role plus bounded subject_scope and admissible_input_classes. specification.relationship_policy
-    requires family-role-consistent subject binding and traceable selector carry-through before interpretation,
-    keeping canonical graph state, SG-SPEC-0017 runtime observability entities, and SG-SPEC-0003 graph-health
-    diagnostics separated instead of collapsing them into one layer.
+    meaning from derived subject_materialization. specification.subject_binding_contract.input_alignment_rules
+    then requires each admitted input instance to remain attributable to the same bound selector or reviewed
+    nested boundary. specification.metric_family_catalog then tags each seed family with one family_role
+    plus bounded subject_scope and admissible_input_classes. specification.relationship_policy requires
+    family-role-consistent subject binding, subject-local input attribution, and traceable selector carry-through
+    before interpretation, keeping canonical graph state, SG-SPEC-0017 runtime observability entities,
+    and SG-SPEC-0003 graph-health diagnostics separated instead of collapsing them into one layer.
 
     '
 - criterion: Defines the canonical versus derived boundary for metric family definitions, computed values,
     threshold proposals, and trend artifacts so scores do not become canonical truth by default
   evidence: 'specification.canonical_vs_derived_boundary keeps family definitions, family_role declarations,
-    authored subject_binding_selector rules, and role-to-subject binding rules canonical, while computed
-    scores, concrete subject_materializations, execution cohorts, threshold evaluations, alerts, dashboards,
-    and trend artifacts remain derived. specification.invariants and decisions then formalize that metric
-    outputs may inform signals or proposals but cannot by themselves change lifecycle status, acceptance,
-    or authority.
+    authored subject_binding_selector rules, and input-alignment rules canonical, while computed scores,
+    concrete subject_materializations, input-local evidence selections, execution cohorts, threshold evaluations,
+    alerts, dashboard projections, and trend artifacts remain derived. specification.invariants and decisions
+    then formalize that metric outputs may inform signals or proposals but cannot by themselves change
+    lifecycle status, acceptance, or authority.
 
     '
 prompt: Refine SG-SPEC-0001 by defining the bounded metric-family boundary for derived quality and observability
@@ -87,6 +89,7 @@ specification:
       families
     - Canonical subject-binding selector semantics versus derived subject materialization for concrete
       metric snapshots
+    - Input-to-subject alignment rules for multi-source metric families
     - Relationship between metric families, runtime observability entities, graph-health observations,
       and proposal-triggering discussion
     - Canonical versus derived separation for family definitions, score snapshots, and trend artifacts
@@ -102,13 +105,16 @@ specification:
       values canonical by default.
 
       '
-    metric_subject: 'The bounded canonical node, canonical graph region, proposal target region, bounded
-      execution cohort, or other explicitly governed subject to which a derived metric family applies.
+    metric_subject: 'The bounded subject reference a derived metric family applies to, such as a canonical
+      node, canonical graph region, proposal target region, governed acceptance surface, or declared execution
+      cohort boundary. One concrete node set, proposal slice, or cohort membership remains part of derived
+      subject_materialization rather than canonical subject meaning.
 
       '
     metric_input_class: 'A declared category of admissible source material that a metric family may consume,
       such as canonical graph structure, runtime observability entities, derived graph-health observations,
-      or run artifacts.
+      or run artifacts. Admissibility names the class of evidence, not permission to borrow unrelated
+      inputs outside the bound metric_subject.
 
       '
     metric_family_role: 'The canonical semantic role a metric family plays, such as structural quality,
@@ -218,6 +224,18 @@ specification:
       the referenced selector or reviewed boundary.
     - Recomputing or restating a subject_materialization does not by itself change canonical family meaning
       or subject-binding semantics.
+    input_alignment_rules:
+    - Canonical graph structure is admissible only when it directly describes the bound node, acceptance
+      surface, or reviewed graph region named by the subject_binding_selector.
+    - Runtime observability entities are admissible only when their traced graph_subject, Campaign boundary,
+      or Attestation provenance stays within the bound selector or an explicitly reviewed nested boundary
+      declared for that family.
+    - Graph-health observations or signals are admissible only when they cite, summarize, or are attributable
+      to the same canonical region, proposal target, or declared cohort boundary named by the subject_binding_selector.
+    - Run artifacts, queue state, or proposal state are admissible only when their provenance identifies
+      the same bounded run, proposal, or refinement region being assessed.
+    - Admissible input classes may supply evidence about a bound subject, but they MUST NOT silently widen
+      subject_materialization beyond the selector or reviewed boundary they support.
   metric_family_catalog:
   - family: pre-SIB
     family_role: structural_quality
@@ -299,6 +317,9 @@ specification:
   - Metric families MAY consume canonical graph structure, SG-SPEC-0017 runtime observability entities,
     SG-SPEC-0003 graph-health observations or signals, and run artifacts only as declared input classes;
     resulting metric_snapshots remain derived.
+  - Admissible input class membership alone is insufficient; every concrete input used in a metric_snapshot
+    MUST remain attributable to the same subject_binding_selector or to a reviewed nested boundary declared
+    by that selector.
   - Every metric_snapshot MUST preserve the subject_binding_selector or reviewed boundary reference from
     which its concrete subject_materialization was resolved.
   - A metric_snapshot MAY inform graph-health interpretation, refactor_queue prioritization, or proposal
@@ -314,13 +335,13 @@ specification:
     canonical:
     - Authored metric-family definitions and boundary notes
     - Authored family_role declarations and role-to-subject binding rules
-    - Authored declarations of subject scope, subject_binding_selector semantics, and admissible input
-      classes
+    - Authored declarations of subject scope, subject_binding_selector semantics, admissible input classes,
+      and input-alignment rules
     - Reviewed proposal text recommending future formula or threshold policy
     derived:
     - Computed metric values, scorecards, rankings, and percentile comparisons
-    - Concrete subject_materializations, execution cohorts, region expansions, and run-window selections
-      used at computation time
+    - Concrete subject_materializations, input-local evidence selections, execution cohorts, region expansions,
+      and run-window selections used at computation time
     - threshold_candidate evaluations, alerts, and automated prioritization outputs
     - trend_artifacts, time-series histories, and dashboard projections
     - Calibration experiments, weight-tuning results, and benchmark runs
@@ -343,6 +364,10 @@ specification:
   - id: MET-006
     statement: Every metric_snapshot must remain traceable to one canonical subject_binding_selector or
       reviewed boundary reference, while its resolved subject_materialization remains derived.
+  - id: MET-007
+    statement: Every concrete input used in a metric_snapshot must remain attributable to the bound subject_binding_selector
+      or to a reviewed nested boundary declared for that selector; admissible class membership alone is
+      insufficient.
   decisions:
   - id: MET-D1
     statement: Metric families are canonical semantic handles, while scores remain derived artifacts.
@@ -417,13 +442,13 @@ gate_state: review_pending
 required_human_action: review refinement impact before approval
 last_outcome: done
 last_blocker: ''
-last_run_id: 20260412T100405Z-SG-SPEC-0021
+last_run_id: 20260412T100813Z-SG-SPEC-0021
 last_exit_code: 0
 last_changed_files:
 - specs/nodes/SG-SPEC-0021.yaml
-last_run_at: '2026-04-12T10:04:05.501488+00:00'
-last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0021-20260412T095401Z/.worktrees/sg-spec-0021-20260412T095838Z
-last_branch: codex/sg-spec-0021/20260412T095838Z
+last_run_at: '2026-04-12T10:08:14.303895+00:00'
+last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0021-20260412T095401Z/.worktrees/sg-spec-0021-20260412T100417Z
+last_branch: codex/sg-spec-0021/20260412T100417Z
 last_validator_results:
   outputs: true
   allowed_paths: true
@@ -446,36 +471,28 @@ last_refinement_acceptance:
   diff_paths:
   - acceptance_evidence[2].evidence
   - acceptance_evidence[3].evidence
-  - specification.boundary_policy[3]
-  - specification.boundary_policy[4]
-  - specification.boundary_policy[5]
   - specification.canonical_vs_derived_boundary.canonical[2]
   - specification.canonical_vs_derived_boundary.derived[1]
-  - specification.decisions[4]
-  - specification.decisions[4].id
-  - specification.decisions[4].statement
-  - specification.decisions[4].rationale
-  - specification.examples[3]
-  - specification.examples[3].name
-  - specification.examples[3].description
-  - specification.invariants[5]
-  - specification.invariants[5].id
-  - specification.invariants[5].statement
+  - specification.invariants[6]
+  - specification.invariants[6].id
+  - specification.invariants[6].statement
   - specification.relationship_policy[2]
   - specification.relationship_policy[3]
   - specification.relationship_policy[4]
   - specification.relationship_policy[5]
   - specification.relationship_policy[6]
-  - specification.scope.in[4]
+  - specification.relationship_policy[7]
   - specification.scope.in[5]
   - specification.scope.in[6]
-  - specification.subject_binding_contract.selector_boundary
-  - specification.subject_binding_contract.selector_boundary[0]
-  - specification.subject_binding_contract.selector_boundary[1]
-  - specification.subject_binding_contract.selector_boundary[2]
-  - specification.subject_binding_contract.selector_boundary[3]
-  - specification.terminology.subject_binding_selector
-  - specification.terminology.subject_materialization
+  - specification.scope.in[7]
+  - specification.subject_binding_contract.input_alignment_rules
+  - specification.subject_binding_contract.input_alignment_rules[0]
+  - specification.subject_binding_contract.input_alignment_rules[1]
+  - specification.subject_binding_contract.input_alignment_rules[2]
+  - specification.subject_binding_contract.input_alignment_rules[3]
+  - specification.subject_binding_contract.input_alignment_rules[4]
+  - specification.terminology.metric_input_class
+  - specification.terminology.metric_subject
   mutation_classes:
   - policy_text
   mutation_budget: []
