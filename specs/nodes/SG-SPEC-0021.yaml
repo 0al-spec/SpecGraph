@@ -49,20 +49,22 @@ acceptance_evidence:
     or signals
   evidence: 'specification.subject_binding_contract.role_bindings now normalizes the permitted subject
     classes for structural_quality, specification_checkability, process_visibility, and structural_visibility
-    families, while specification.metric_family_catalog tags each seed family with one family_role plus
-    bounded subject_scope and admissible_input_classes. specification.relationship_policy then requires
-    family-role-consistent subject binding before interpretation, keeping canonical graph state, SG-SPEC-0017
-    runtime observability entities, and SG-SPEC-0003 graph-health diagnostics separated instead of collapsing
-    them into one layer.
+    families, while specification.subject_binding_contract.selector_boundary distinguishes canonical subject_binding_selector
+    meaning from derived subject_materialization. specification.metric_family_catalog then tags each seed
+    family with one family_role plus bounded subject_scope and admissible_input_classes. specification.relationship_policy
+    requires family-role-consistent subject binding and traceable selector carry-through before interpretation,
+    keeping canonical graph state, SG-SPEC-0017 runtime observability entities, and SG-SPEC-0003 graph-health
+    diagnostics separated instead of collapsing them into one layer.
 
     '
 - criterion: Defines the canonical versus derived boundary for metric family definitions, computed values,
     threshold proposals, and trend artifacts so scores do not become canonical truth by default
   evidence: 'specification.canonical_vs_derived_boundary keeps family definitions, family_role declarations,
-    and role-to-subject binding rules canonical, while computed scores, concrete execution cohorts, threshold
-    evaluations, alerts, dashboards, and trend artifacts remain derived. specification.invariants and
-    decisions then formalize that metric outputs may inform signals or proposals but cannot by themselves
-    change lifecycle status, acceptance, or authority.
+    authored subject_binding_selector rules, and role-to-subject binding rules canonical, while computed
+    scores, concrete subject_materializations, execution cohorts, threshold evaluations, alerts, dashboards,
+    and trend artifacts remain derived. specification.invariants and decisions then formalize that metric
+    outputs may inform signals or proposals but cannot by themselves change lifecycle status, acceptance,
+    or authority.
 
     '
 prompt: Refine SG-SPEC-0001 by defining the bounded metric-family boundary for derived quality and observability
@@ -83,6 +85,8 @@ specification:
     - Subject binding and admissible input classes for each metric family
     - Role-to-subject binding contract that distinguishes canonical graph quality families from process-visibility
       families
+    - Canonical subject-binding selector semantics versus derived subject materialization for concrete
+      metric snapshots
     - Relationship between metric families, runtime observability entities, graph-health observations,
       and proposal-triggering discussion
     - Canonical versus derived separation for family definitions, score snapshots, and trend artifacts
@@ -112,6 +116,16 @@ specification:
       subject binding without prescribing formulas or thresholds.
 
       '
+    subject_binding_selector: 'The canonical declaration of how a metric family identifies or bounds the
+      metric_subject it may assess, such as stable node identity, reviewed region boundary, proposal target
+      reference, or declared run/proposal cohort handle.
+
+      '
+    subject_materialization: 'The derived resolution of one subject_binding_selector into the concrete
+      node set, proposal slice, cohort membership, or time-bounded subject instance used by one metric_snapshot
+      computation.
+
+      '
     metric_snapshot: 'One derived computed result for a metric family over one declared metric_subject
       and observation context. It is reviewable evidence, not canonical graph truth.
 
@@ -132,6 +146,8 @@ specification:
   - Metric families may consume canonical graph state, SG-SPEC-0017 runtime observability entities, and
     SG-SPEC-0003 graph-health observations or signals as inputs, but those sources retain their own ontology
     boundaries.
+  - Canonical family definitions may declare subject_binding_selector semantics, but the concrete subject_materialization
+    resolved for one metric_snapshot remains derived and recomputable.
   - A metric_snapshot may inform graph-health interpretation, refactor prioritization, or review discussion,
     but it cannot by itself mutate canonical status, acceptance, proposal authority, or lifecycle state.
   - Opaque or later-named family handles such as PFI or CSI may be added under this boundary in later
@@ -191,6 +207,17 @@ specification:
       explicit semantic redefinition rather than ad hoc scope drift.
     - A concrete metric_snapshot over a derived execution cohort MUST NOT be presented as if it were a
       canonical node-quality metric for the same family label without an explicit reviewed bridge definition.
+    selector_boundary:
+    - A subject_binding_selector may canonically name stable node identity, reviewed graph-region boundary,
+      proposal target reference, governed acceptance surface, or declared run/proposal cohort handle.
+    - A subject_binding_selector defines the governed boundary class a family may assess; it does not
+      freeze the concrete member set, run-instance membership, or time-bounded slice later resolved for
+      one metric_snapshot.
+    - When a metric_snapshot resolves a selector into a concrete region expansion, proposal slice, or
+      run cohort membership, that subject_materialization remains derived and must stay attributable to
+      the referenced selector or reviewed boundary.
+    - Recomputing or restating a subject_materialization does not by itself change canonical family meaning
+      or subject-binding semantics.
   metric_family_catalog:
   - family: pre-SIB
     family_role: structural_quality
@@ -272,6 +299,8 @@ specification:
   - Metric families MAY consume canonical graph structure, SG-SPEC-0017 runtime observability entities,
     SG-SPEC-0003 graph-health observations or signals, and run artifacts only as declared input classes;
     resulting metric_snapshots remain derived.
+  - Every metric_snapshot MUST preserve the subject_binding_selector or reviewed boundary reference from
+    which its concrete subject_materialization was resolved.
   - A metric_snapshot MAY inform graph-health interpretation, refactor_queue prioritization, or proposal
     discussion, but it MUST NOT by itself mutate canonical status, acceptance, or proposal authority.
   - threshold_candidate semantics derived from a metric family MUST enter proposal and review flow before
@@ -285,12 +314,13 @@ specification:
     canonical:
     - Authored metric-family definitions and boundary notes
     - Authored family_role declarations and role-to-subject binding rules
-    - Authored declarations of subject scope and admissible input classes
+    - Authored declarations of subject scope, subject_binding_selector semantics, and admissible input
+      classes
     - Reviewed proposal text recommending future formula or threshold policy
     derived:
     - Computed metric values, scorecards, rankings, and percentile comparisons
-    - Concrete execution cohorts, run-window selections, and snapshot subject materializations used at
-      computation time
+    - Concrete subject_materializations, execution cohorts, region expansions, and run-window selections
+      used at computation time
     - threshold_candidate evaluations, alerts, and automated prioritization outputs
     - trend_artifacts, time-series histories, and dashboard projections
     - Calibration experiments, weight-tuning results, and benchmark runs
@@ -310,6 +340,9 @@ specification:
   - id: MET-005
     statement: A metric family label must not silently shift between canonical graph-quality assessment
       and execution-cohort visibility assessment without reviewed supersession or explicit semantic redefinition.
+  - id: MET-006
+    statement: Every metric_snapshot must remain traceable to one canonical subject_binding_selector or
+      reviewed boundary reference, while its resolved subject_materialization remains derived.
   decisions:
   - id: MET-D1
     statement: Metric families are canonical semantic handles, while scores remain derived artifacts.
@@ -341,6 +374,15 @@ specification:
       as canonical node-quality truth and preserves inspectable meaning across refinements.
 
       '
+  - id: MET-D5
+    statement: Subject-binding selectors are canonical contracts, while concrete subject materializations
+      are derived computation inputs.
+    rationale: 'SpecGraph needs stable semantic meaning for what kind of subject a metric family assesses
+      without freezing one run''s concrete cohort membership or region expansion into canonical truth.
+      Separating authored selector meaning from derived subject materialization keeps family definitions
+      portable and auditable while allowing repeated recomputation over evolving graph or run context.
+
+      '
   examples:
   - name: pre-SIB split pressure summary
     description: 'A bounded graph region accumulates repeated oversized_spec and weak_structural_linkage
@@ -362,3 +404,94 @@ specification:
       than a canonical quality score on any one spec node.
 
       '
+  - name: Structural Observability proposal slice
+    description: 'A Structural Observability family canonically binds to a proposal target region identified
+      by reviewed proposal scope. One metric_snapshot then expands that selector into the currently affected
+      dependency slice for a single computation. The expanded slice is a derived subject_materialization;
+      the canonical truth remains the family definition and referenced proposal boundary.
+
+      '
+proposed_status: linked
+proposed_maturity: 0.89
+gate_state: review_pending
+required_human_action: review refinement impact before approval
+last_outcome: done
+last_blocker: ''
+last_run_id: 20260412T100405Z-SG-SPEC-0021
+last_exit_code: 0
+last_changed_files:
+- specs/nodes/SG-SPEC-0021.yaml
+last_run_at: '2026-04-12T10:04:05.501488+00:00'
+last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0021-20260412T095401Z/.worktrees/sg-spec-0021-20260412T095838Z
+last_branch: codex/sg-spec-0021/20260412T095838Z
+last_validator_results:
+  outputs: true
+  allowed_paths: true
+  reconciliation: true
+  atomicity: true
+  transition: true
+  executor_environment: true
+  refinement_acceptance: true
+last_refinement_acceptance:
+  decision: review_required
+  change_class: constitutional_change
+  checks:
+    content_changed: true
+    hard_validation: true
+    single_spec_scope: true
+    constitutional_diff: true
+    graph_refactor_diff: false
+    atomicity_clear: true
+    within_mutation_budget: true
+  diff_paths:
+  - acceptance_evidence[2].evidence
+  - acceptance_evidence[3].evidence
+  - specification.boundary_policy[3]
+  - specification.boundary_policy[4]
+  - specification.boundary_policy[5]
+  - specification.canonical_vs_derived_boundary.canonical[2]
+  - specification.canonical_vs_derived_boundary.derived[1]
+  - specification.decisions[4]
+  - specification.decisions[4].id
+  - specification.decisions[4].statement
+  - specification.decisions[4].rationale
+  - specification.examples[3]
+  - specification.examples[3].name
+  - specification.examples[3].description
+  - specification.invariants[5]
+  - specification.invariants[5].id
+  - specification.invariants[5].statement
+  - specification.relationship_policy[2]
+  - specification.relationship_policy[3]
+  - specification.relationship_policy[4]
+  - specification.relationship_policy[5]
+  - specification.relationship_policy[6]
+  - specification.scope.in[4]
+  - specification.scope.in[5]
+  - specification.scope.in[6]
+  - specification.subject_binding_contract.selector_boundary
+  - specification.subject_binding_contract.selector_boundary[0]
+  - specification.subject_binding_contract.selector_boundary[1]
+  - specification.subject_binding_contract.selector_boundary[2]
+  - specification.subject_binding_contract.selector_boundary[3]
+  - specification.terminology.subject_binding_selector
+  - specification.terminology.subject_materialization
+  mutation_classes:
+  - policy_text
+  mutation_budget: []
+  budget_exceeded_classes: []
+  changed_spec_files:
+  - specs/nodes/SG-SPEC-0021.yaml
+  review_reasons:
+  - run changed governance-sensitive specification sections
+  errors: []
+  warnings: []
+last_reconciliation:
+  worktree_spec_count: 22
+  changed_spec_ids:
+  - SG-SPEC-0021
+  semantic_dependencies_resolved: true
+  work_dependencies_ready: false
+  cycles: []
+last_requested_child_materialization: false
+last_materialized_child_paths: []
