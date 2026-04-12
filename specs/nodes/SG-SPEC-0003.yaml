@@ -2,7 +2,7 @@ id: SG-SPEC-0003
 title: SpecGraph - Reflective Governance Boundary and Graph Health Signals
 kind: spec
 status: linked
-maturity: 0.47
+maturity: 0.67
 depends_on:
 - SG-SPEC-0004
 - SG-SPEC-0005
@@ -310,92 +310,10 @@ specification:
         parent_retained or as one child slot assignment.
       - lineage_updates MUST record both parent-to-child blocking edges to add and child-to-parent refines
         edges to add for the proposed split.
-proposed_status: linked
-proposed_maturity: 0.67
-gate_state: review_pending
-required_human_action: review refinement impact before approval
-last_outcome: done
-last_blocker: ''
-last_run_id: 20260411T224231Z-SG-SPEC-0003
-last_exit_code: 0
-last_changed_files:
-- specs/nodes/SG-SPEC-0003.yaml
-last_run_at: '2026-04-11T22:42:31.891784+00:00'
-last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0003-20260411T223827Z
-last_branch: codex/sg-spec-0003/20260411T223827Z
-last_validator_results:
-  outputs: true
-  allowed_paths: true
-  reconciliation: true
-  atomicity: true
-  transition: true
-  executor_environment: true
-  refinement_acceptance: true
-last_refinement_acceptance:
-  decision: review_required
-  change_class: constitutional_change
-  checks:
-    content_changed: true
-    hard_validation: true
-    single_spec_scope: true
-    constitutional_diff: true
-    graph_refactor_diff: false
-    atomicity_clear: true
-    within_mutation_budget: true
-  diff_paths:
-  - acceptance[0]
-  - acceptance[1]
-  - acceptance[2]
-  - acceptance[3]
-  - acceptance_evidence[0].criterion
-  - acceptance_evidence[0].evidence
-  - acceptance_evidence[1].criterion
-  - acceptance_evidence[1].evidence
-  - acceptance_evidence[2].criterion
-  - acceptance_evidence[2].evidence
-  - acceptance_evidence[3].criterion
-  - acceptance_evidence[3].evidence
-  - maturity
-  - prompt
-  - specification.boundary_policy.supervisor_execution[2]
-  - specification.boundary_policy.supervisor_execution[3]
-  - specification.boundary_policy.supervisor_execution[4]
-  - specification.boundary_policy.supervisor_execution[5]
-  - specification.derived_artifact_policy.canonical_writeback[1]
-  - specification.derived_artifact_policy.first_persistence[2]
-  - specification.derived_artifact_policy.first_persistence[3]
-  - specification.derived_artifact_policy.first_persistence[4]
-  - specification.graph_health_signal_policy.continuation_detection
-  - specification.graph_health_signal_policy.continuation_detection[0]
-  - specification.graph_health_signal_policy.continuation_detection[1]
-  - specification.objective
-  - specification.reflective_loop.continuation
-  - specification.reflective_loop.continuation[0]
-  - specification.reflective_loop.continuation[1]
-  - specification.reflective_loop.continuation[2]
-  - specification.scope.in[1]
-  - specification.scope.in[2]
-  - specification.scope.in[3]
-  - specification.scope.in[4]
-  - specification.scope.in[5]
-  - specification.scope.out[5]
-  - specification.terminology.latent_graph_improvement_candidate
-  mutation_classes:
-  - policy_text
-  mutation_budget: []
-  budget_exceeded_classes: []
-  changed_spec_files:
-  - specs/nodes/SG-SPEC-0003.yaml
-  review_reasons:
-  - run changed governance-sensitive specification sections
-  errors: []
-  warnings: []
-last_reconciliation:
-  worktree_spec_count: 17
-  changed_spec_ids:
-  - SG-SPEC-0003
-  semantic_dependencies_resolved: true
-  work_dependencies_ready: false
-  cycles: []
-last_requested_child_materialization: false
-last_materialized_child_paths: []
+gate_state: none
+proposed_status: null
+proposed_maturity: null
+required_human_action: '-'
+last_gate_decision: approve
+last_gate_note: ''
+last_gate_at: '2026-04-12T19:14:36.060730+00:00'

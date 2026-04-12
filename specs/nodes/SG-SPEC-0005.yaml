@@ -2,7 +2,7 @@ id: SG-SPEC-0005
 title: SpecGraph - Retrospective Spec Refactoring Passes
 kind: spec
 status: linked
-maturity: 0.8
+maturity: 1.0
 depends_on:
 - SG-SPEC-0013
 relates_to:
@@ -38,6 +38,8 @@ acceptance_evidence:
   evidence: 'specification.terminology defines retrospective_refactor_pass and live_graph_region, while
     specification.retrospective_policy.target_selection states that retrospective work starts from one
     explicit target inside an already-existing live graph region rather than only from new-node creation.
+    It also states that explicit operator intent takes precedence over heuristic target ordering for bounded
+    passes.
 
     '
 - criterion: Defines how an existing oversized or weakly structured parent spec can be selected for retrospective
@@ -89,6 +91,7 @@ specification:
     in:
     - Retrospective split or narrowing of already-existing oversized or weakly structured specs
     - Selection and staging of one bounded retrospective refactor target inside a live graph
+    - Explicit operator intent precedence in bounded target selection
     - Coordination between retrospective local refactor, ancestor reconciliation, and proposal precedence
     - Containment of direct canonical writeback during one retrospective pass
     - Execution-boundary delegation for what must be governed by a child spec before live retrospective
@@ -122,6 +125,8 @@ specification:
       an unrestricted batch rewrite.
     - Candidate targets may arise from graph-health signals, approved proposals, or explicit operator
       intent, but the selected pass remains bounded to one primary parent spec at a time.
+    - Explicit operator intent identifies the primary target parent and scope and takes priority over
+      heuristic candidate ordering and signal ranking.
     safety:
     - A retrospective pass must preserve stable IDs for surviving parent and child specs unless a separate
       governance-class change explicitly authorizes supersession or replacement.
@@ -157,25 +162,28 @@ specification:
     application_boundary:
     - SG-SPEC-0005 governs whether a retrospective change remains a bounded local pass and what direct
       canonical writes may fit inside one retrospective_writeback_envelope; it does not define the concrete
-      live-region application package or review checklist.
+      live-region application artifacts or review checklist.
     - No live retrospective writeback may proceed from this node's policy alone; the selected pass must
       also satisfy the explicit pre-writeback application prerequisites delegated to SG-SPEC-0013.
+    - SG-SPEC-0005 constrains structural scope and candidate progression only; it does not define proposal-lane
+      state transitions, gate algorithms, or proposal-artifact schemas. SG-SPEC-0013 owns the reviewable
+      application package and the pre-writeback refusal conditions.
     - SG-SPEC-0013 owns the concrete live-region application artifact contract, proposal-state gate semantics,
       review-gate semantics, and refusal conditions for pre-writeback application readiness, while SG-SPEC-0005
       remains the overview and execution-boundary node.
-proposed_status: linked
-proposed_maturity: 1.0
-gate_state: review_pending
-required_human_action: review refinement impact before approval
+proposed_status: null
+proposed_maturity: null
+gate_state: none
+required_human_action: '-'
 last_outcome: done
 last_blocker: ''
-last_run_id: 20260411T230439Z-SG-SPEC-0005
+last_run_id: 20260412T191700Z-SG-SPEC-0005
 last_exit_code: 0
 last_changed_files:
 - specs/nodes/SG-SPEC-0005.yaml
-last_run_at: '2026-04-11T23:04:39.540993+00:00'
-last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0005-20260411T230211Z
-last_branch: codex/sg-spec-0005/20260411T230211Z
+last_run_at: '2026-04-12T19:17:01.224263+00:00'
+last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0005-20260412T191630Z
+last_branch: codex/sg-spec-0005/20260412T191630Z
 last_validator_results:
   outputs: true
   allowed_paths: true
@@ -185,43 +193,29 @@ last_validator_results:
   executor_environment: true
   refinement_acceptance: true
 last_refinement_acceptance:
-  decision: review_required
-  change_class: constitutional_change
+  decision: approve
+  change_class: local_refinement
   checks:
     content_changed: true
     hard_validation: true
     single_spec_scope: true
-    constitutional_diff: true
+    constitutional_diff: false
     graph_refactor_diff: false
     atomicity_clear: true
     within_mutation_budget: true
   diff_paths:
-  - acceptance_evidence[3].evidence
-  - maturity
-  - specification.objective
-  - specification.retrospective_policy.application_boundary
   - specification.retrospective_policy.application_boundary[0]
-  - specification.retrospective_policy.application_boundary[1]
-  - specification.retrospective_policy.application_boundary[2]
-  - specification.retrospective_policy.required_artifacts
-  - specification.retrospective_policy.required_artifacts[0]
-  - specification.retrospective_policy.required_artifacts[1]
-  - specification.scope.in[4]
-  - specification.scope.out[4]
-  - specification.scope.out[5]
-  - specification.terminology.retrospective_application_boundary
   mutation_classes:
   - policy_text
   mutation_budget: []
   budget_exceeded_classes: []
   changed_spec_files:
   - specs/nodes/SG-SPEC-0005.yaml
-  review_reasons:
-  - run changed governance-sensitive specification sections
+  review_reasons: []
   errors: []
   warnings: []
 last_reconciliation:
-  worktree_spec_count: 17
+  worktree_spec_count: 22
   changed_spec_ids:
   - SG-SPEC-0005
   semantic_dependencies_resolved: true
