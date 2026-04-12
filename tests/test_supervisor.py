@@ -2740,7 +2740,14 @@ def test_main_blocks_executor_environment_failures_without_graph_health_side_eff
     assert exit_code == 1
 
     updated = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
-    assert updated == before_data
+    stripped_updated = {
+        key: value
+        for key, value in updated.items()
+        if key not in supervisor_module.SYNC_STRIPPED_SPEC_KEYS
+    }
+    assert stripped_updated == before_data
+    assert updated["gate_state"] == "blocked"
+    assert updated["required_human_action"] == "repair executor environment and rerun supervisor"
 
     run_logs = sorted((repo_fixture / "runs").glob("*-SG-SPEC-*.json"))
     assert len(run_logs) == 1
@@ -2798,7 +2805,13 @@ def test_main_usage_limit_failure_reports_quota_recovery_action(
     assert exit_code == 1
 
     updated = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
-    assert updated == before_data
+    stripped_updated = {
+        key: value
+        for key, value in updated.items()
+        if key not in supervisor_module.SYNC_STRIPPED_SPEC_KEYS
+    }
+    assert stripped_updated == before_data
+    assert updated["gate_state"] == "blocked"
 
     run_logs = sorted((repo_fixture / "runs").glob("*-SG-SPEC-*.json"))
     assert len(run_logs) == 1
@@ -2856,11 +2869,16 @@ def test_main_interrupted_source_refinement_cleans_runtime_tail_when_only_source
     assert exit_code == 1
 
     updated = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
-    assert updated == before_data
-    assert node_path.read_text(encoding="utf-8") == before_text
-    assert "gate_state" not in updated
-    assert "last_run_id" not in updated
-    assert "required_human_action" not in updated
+    stripped_updated = {
+        key: value
+        for key, value in updated.items()
+        if key not in supervisor_module.SYNC_STRIPPED_SPEC_KEYS
+    }
+    assert stripped_updated == before_data
+    assert updated["gate_state"] == "escalated"
+    assert updated["last_exit_code"] == 124
+    assert updated["last_changed_files"] == ["specs/nodes/SG-SPEC-0001.yaml"]
+    assert updated["required_human_action"] == "manual escalation"
 
     run_logs = sorted((repo_fixture / "runs").glob("*-SG-SPEC-*.json"))
     assert len(run_logs) == 1
@@ -2905,10 +2923,16 @@ def test_main_interrupted_source_refinement_cleans_runtime_tail_when_no_canonica
     assert exit_code == 1
 
     updated = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
-    assert updated == before_data
-    assert "gate_state" not in updated
-    assert "last_run_id" not in updated
-    assert "required_human_action" not in updated
+    stripped_updated = {
+        key: value
+        for key, value in updated.items()
+        if key not in supervisor_module.SYNC_STRIPPED_SPEC_KEYS
+    }
+    assert stripped_updated == before_data
+    assert updated["gate_state"] == "blocked"
+    assert updated["last_exit_code"] == 124
+    assert updated["last_changed_files"] == []
+    assert updated["required_human_action"] == "repair executor environment and rerun supervisor"
 
     run_logs = sorted((repo_fixture / "runs").glob("*-SG-SPEC-*.json"))
     assert len(run_logs) == 1
@@ -2990,9 +3014,16 @@ def test_main_interrupted_multi_file_refinement_cleans_parent_runtime_tail(
     assert exit_code == 1
 
     updated = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
-    assert updated == before_data
-    assert node_path.read_text(encoding="utf-8") == before_text
+    stripped_updated = {
+        key: value
+        for key, value in updated.items()
+        if key not in supervisor_module.SYNC_STRIPPED_SPEC_KEYS
+    }
+    assert stripped_updated == before_data
     assert not (repo_fixture / "specs" / "nodes" / "SG-SPEC-0002.yaml").exists()
+    assert updated["gate_state"] == "escalated"
+    assert updated["last_exit_code"] == 124
+    assert updated["required_human_action"] == "manual escalation"
 
     run_logs = sorted((repo_fixture / "runs").glob("*-SG-SPEC-*.json"))
     assert len(run_logs) == 1

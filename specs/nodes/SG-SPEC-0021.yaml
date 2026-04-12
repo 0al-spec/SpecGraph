@@ -133,7 +133,7 @@ specification:
     boundaries.
   - A metric_snapshot may inform graph-health interpretation, refactor prioritization, or review discussion,
     but it cannot by itself mutate canonical status, acceptance, proposal authority, or lifecycle state.
-    - Opaque or later-named family handles such as PFI or CSI may be added under this boundary in later
+  - Opaque or later-named family handles such as PFI or CSI may be added under this boundary in later
     refinement without requiring formulas to be frozen in this node.
   role_contract:
   - role: structural_quality
