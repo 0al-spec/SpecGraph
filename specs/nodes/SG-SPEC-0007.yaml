@@ -2,7 +2,7 @@ id: SG-SPEC-0007
 title: SpecGraph - Intent Mediation and Discovery Boundary
 kind: spec
 status: linked
-maturity: 0.62
+maturity: 0.65
 depends_on:
 - SG-SPEC-0008
 relates_to:
@@ -11,6 +11,7 @@ refines:
 - SG-SPEC-0001
 inputs:
 - specs/nodes/SG-SPEC-0001.yaml
+- specs/nodes/SG-SPEC-0008.yaml
 - AGENTS.md
 outputs:
 - specs/nodes/SG-SPEC-0007.yaml
@@ -23,8 +24,9 @@ acceptance:
   into canonical intent-facing graph inputs
 - Defines provenance and traceability expectations across the mediation boundary so promoted canonical
   nodes preserve the originating user goal context
-- Keeps vocabulary harmonization, discovery-surface design, and proposal-lane governance related but explicitly
-  out of scope for full resolution in this node
+- Keeps vocabulary harmonization, discovery-surface design, proposal-lane governance, and explicit project-memory
+  consultation policy related but explicitly out of scope for full resolution in this node, with the memory-policy
+  concern delegated to child SG-SPEC-0008
 - Remains implementation-agnostic about storage, UI, agent workflow, and model-specific mediation strategies
 acceptance_evidence:
 - criterion: Defines the pre-canonical mediation boundary between raw user goals and canonical intent
@@ -50,12 +52,16 @@ acceptance_evidence:
     raw_goal_signal or mediated_intent_frame.
 
     '
-- criterion: Keeps vocabulary harmonization, discovery-surface design, and proposal-lane governance related
-    but explicitly out of scope for full resolution in this node
+- criterion: Keeps vocabulary harmonization, discovery-surface design, proposal-lane governance, and explicit
+    project-memory consultation policy related but explicitly out of scope for full resolution in this
+    node, with the memory-policy concern delegated to child SG-SPEC-0008
   evidence: 'specification.scope.out excludes full vocabulary ontology, discovery-surface taxonomy, proposal-lane
-    lifecycle, and review workflow. specification.adjacency_notes then names vocabulary work and proposal-lane
-    coordination as adjacent concerns that may consume mediated discovery outputs without being resolved
-    here.
+    lifecycle, review workflow, and project-memory consultation policy. specification.boundary_policy.memory_boundary
+    states that compliant mediation does not require project-memory consultation and that any explicit
+    consultation remains adjacent policy owned by SG-SPEC-0008 rather than by this node. The parent records
+    `depends_on: [SG-SPEC-0008]`, inputs include `specs/nodes/SG-SPEC-0008.yaml`, and specification.adjacency_notes
+    names vocabulary work, proposal-lane coordination, and child SG-SPEC-0008 as adjacent concerns not
+    resolved here.
 
     '
 - criterion: Remains implementation-agnostic about storage, UI, agent workflow, and model-specific mediation
@@ -68,7 +74,7 @@ acceptance_evidence:
 prompt: Retain SG-SPEC-0007 as the overview boundary spec for pre-canonical intent mediation between raw
   user goals and canonical intent or spec nodes, including minimal mediation artifacts, promotion traceability,
   adjacent out-of-scope boundaries, and implementation-agnostic constraints, while deferring explicit
-  project-memory consultation policy to a dedicated child concern.
+  project-memory consultation policy to child SG-SPEC-0008.
 specification:
   objective: 'Define the bounded pre-canonical discovery and mediation semantics that translate raw user
     goals into governed canonical intent-facing artifacts without expanding the canonical layer model
@@ -123,6 +129,13 @@ specification:
     - Canonical authority begins only when an intent node, spec node, or another governed canonical artifact
       is explicitly created or updated.
     - The mediation boundary exists to reduce premature structuring, not to replace canonical intent ownership.
+    memory_boundary:
+    - A compliant mediated_intent_frame may be formed from the current raw_goal_signal without requiring
+      project-memory consultation.
+    - When project memory is explicitly consulted during mediated discovery, that consultation remains
+      adjacent mediated context governed by SG-SPEC-0008 rather than by this overview node.
+    - Explicit project-memory consultation may inform interpretation, but it is not a constitutive step
+      of canonicalization within this node's boundary definition.
   discovery_flow:
     intake_rules:
     - A raw_goal_signal may contain mixed goals, constraints, preferences, and ambiguous phrasing.
@@ -159,9 +172,9 @@ specification:
   - Proposal-lane governance is adjacent because pre-canonical mediation outputs may later be represented
     in proposal structures, but this node does not define proposal authority, lifecycle, or application
     semantics.
-  - Explicit project-memory consultation, PageIndex-backed recall, and memory-specific traceability or
-    quality rules are delegated to a dedicated child concern; this node only notes that such consultation,
-    when defined elsewhere, remains adjacent to rather than constitutive of canonicalization.
+  - Explicit project-memory consultation, including PageIndex-backed recall and memory-specific traceability
+    or quality rules, is delegated to child SG-SPEC-0008; this node only requires that such consultation,
+    when present, remain adjacent to rather than constitutive of canonicalization.
   examples:
   - name: Raw goal to intent
     description: A user says they want faster onboarding with fewer confusing steps. Mediated discovery
@@ -176,11 +189,67 @@ specification:
     description: A user request mixes multiple desired outcomes and leaves key constraints unresolved.
       Mediated discovery preserves the raw wording, separates candidate concerns, and stops before canonicalization
       until ambiguity is low enough to support a trustworthy intent or spec node.
-gate_state: none
-proposed_status: null
-proposed_maturity: null
-required_human_action: '-'
-last_gate_decision: approve
-last_gate_note: Approve governance-sensitive operator-request refinement after validator and stale-worktree
-  review.
-last_gate_at: '2026-04-11T07:26:50.687932+00:00'
+proposed_status: linked
+proposed_maturity: 0.85
+gate_state: review_pending
+required_human_action: review refinement impact before approval
+last_outcome: done
+last_blocker: ''
+last_run_id: 20260411T230124Z-SG-SPEC-0007
+last_exit_code: 0
+last_changed_files:
+- specs/nodes/SG-SPEC-0007.yaml
+last_run_at: '2026-04-11T23:01:24.379886+00:00'
+last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0007-20260411T225912Z
+last_branch: codex/sg-spec-0007/20260411T225912Z
+last_validator_results:
+  outputs: true
+  allowed_paths: true
+  reconciliation: true
+  atomicity: true
+  transition: true
+  executor_environment: true
+  refinement_acceptance: true
+last_refinement_acceptance:
+  decision: review_required
+  change_class: constitutional_change
+  checks:
+    content_changed: true
+    hard_validation: true
+    single_spec_scope: true
+    constitutional_diff: true
+    graph_refactor_diff: false
+    atomicity_clear: true
+    within_mutation_budget: true
+  diff_paths:
+  - acceptance[3]
+  - acceptance_evidence[3].criterion
+  - acceptance_evidence[3].evidence
+  - inputs[1]
+  - inputs[2]
+  - maturity
+  - prompt
+  - specification.adjacency_notes[3]
+  - specification.boundary_policy.memory_boundary
+  - specification.boundary_policy.memory_boundary[0]
+  - specification.boundary_policy.memory_boundary[1]
+  - specification.boundary_policy.memory_boundary[2]
+  mutation_classes:
+  - policy_text
+  mutation_budget: []
+  budget_exceeded_classes: []
+  changed_spec_files:
+  - specs/nodes/SG-SPEC-0007.yaml
+  review_reasons:
+  - run changed governance-sensitive specification sections
+  errors: []
+  warnings: []
+last_reconciliation:
+  worktree_spec_count: 17
+  changed_spec_ids:
+  - SG-SPEC-0007
+  semantic_dependencies_resolved: true
+  work_dependencies_ready: false
+  cycles: []
+last_requested_child_materialization: false
+last_materialized_child_paths: []

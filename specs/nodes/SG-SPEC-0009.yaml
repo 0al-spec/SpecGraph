@@ -2,7 +2,7 @@ id: SG-SPEC-0009
 title: SpecGraph - OperatorRequest Contract for Single-Run Steering
 kind: spec
 status: linked
-maturity: 0.57
+maturity: 0.63
 depends_on:
 - SG-SPEC-0012
 relates_to:
@@ -43,17 +43,23 @@ acceptance_evidence:
     '
 - criterion: Defines the request normalization and target selection contract, including how a single run
     receives explicit target identity, execution mode, and bounded selection intent
-  evidence: 'specification.normalization_contract requires incoming steering signals to be normalized
-    into one bounded request shape with source preservation, normalized target intent, and run-mode declarations.
-    specification.target_selection_contract then requires explicit target_selector content, including
-    whether the run addresses a specific spec node, a derived work item, or another bounded target already
-    allowed by current governance.
+  evidence: 'specification.terminology defines source_declaration, mode_declaration, request_envelope,
+    and request_executability alongside operator_request. specification.normalization_contract.required_properties
+    and specification.normalization_contract.core_sections require incoming steering signals to normalize
+    into one bounded request_envelope with preserved source context, explicit target_selector, explicit
+    mode_declaration, scope_declaration, and authority_declaration. specification.normalization_contract.executability_rules
+    then requires those core sections to remain mutually consistent before the request is treated as executable
+    steering, while specification.target_selection_contract requires explicit target_selector content,
+    including whether the run addresses a specific spec node, a derived work item, or another bounded
+    target already allowed by current governance.
 
     '
 - criterion: Defines scope and authority declarations for a requested run, including mutation posture
     and explicit adjacency to SG-SPEC-0008 for memory-related steering without resolving memory policy
     here
-  evidence: 'specification.scope_authority_contract defines scope_declaration, authority_declaration,
+  evidence: 'specification.normalization_contract.core_sections states that memory-related steering or
+    context-pack hints may appear only as declared adjunct context and must not replace scope_declaration
+    or authority_declaration. specification.scope_authority_contract then defines scope_declaration, authority_declaration,
     and authority_stack, including requested mutation posture, supervisor narrowing or blocking authority,
     node-local semantic constraints, and the rule that memory-related steering may only be expressed as
     an explicit declaration adjacent to SG-SPEC-0008 rather than resolved policy inside this node. specification.scope.out
@@ -104,7 +110,26 @@ specification:
 
       '
     operator_request: 'The normalized pre-execution contract that converts external_actor_intent into
-      a single supervisor-run request with explicit target, mode, scope, and authority declarations.
+      a single supervisor-run request with explicit source, target, mode, scope, and authority declarations.
+
+      '
+    source_declaration: 'The preserved statement of which admissible upstream source or source combination
+      produced the operator_request, including enough attributable wording, selection state, or mediation
+      output to support review of normalization.
+
+      '
+    mode_declaration: 'The explicit statement of which already-governed execution mode the selected run
+      is requesting, such as refinement, observation, or proposal emission.
+
+      '
+    request_envelope: 'The normalized semantic section set for one operator_request, consisting of source_declaration,
+      target_selector, mode_declaration, scope_declaration, and authority_declaration, regardless of storage
+      format.
+
+      '
+    request_executability: 'The condition in which a request_envelope is explicit and mutually consistent
+      enough for the supervisor to treat it as one bounded executable run request rather than as incomplete
+      steering.
 
       '
     target_selector: 'The portion of an operator_request that names or constrains the bounded work target
@@ -152,10 +177,32 @@ specification:
     required_properties:
     - Normalization must preserve enough source context to distinguish direct operator wording, GUI-originated
       selection, and mediator-produced steering.
-    - Normalization must reduce ambiguous upstream signals into one bounded request shape or stop and
+    - Normalization must reduce ambiguous upstream signals into one bounded request_envelope or stop and
       defer when bounded selection is not yet trustworthy.
     - Normalization must express the requested execution mode and target intent explicitly rather than
       relying on hidden defaults that alter scope.
+    core_sections:
+    - One executable operator_request must normalize into a request_envelope containing source_declaration,
+      target_selector, mode_declaration, scope_declaration, and authority_declaration.
+    - The contract governs those semantic sections, not a particular serialization order or wire format.
+    - Optional adjunct context such as memory-related steering or context-pack hints may appear only as
+      declared narrowing context and must not replace the core sections.
+    source_declaration_rules:
+    - source_declaration must preserve whether the request came from direct operator input, GUI selection,
+      mediator output, or a normalized combination of those admissible sources.
+    - source_declaration should retain enough attributable wording, selection state, or mediation output
+      that downstream review can inspect how normalization interpreted the upstream signal.
+    mode_declaration_rules:
+    - mode_declaration must name one already-governed execution mode for the run.
+    - If upstream intent implies multiple sequential or unrelated modes, normalization must narrow to
+      one bounded mode or stop and defer rather than hiding a multi-step workflow inside one request.
+    executability_rules:
+    - request_executability requires target_selector, mode_declaration, scope_declaration, and authority_declaration
+      to be mutually consistent enough to steer one bounded run.
+    - A request that preserves source context but lacks executable consistency remains reviewable input,
+      not executable steering.
+    - If core sections conflict, normalization must preserve the conflict and stop, narrow, or defer rather
+      than silently choosing the broader interpretation.
     failure_rules:
     - If normalization cannot identify a bounded target_selector or clear scope_declaration, the request
       should not be treated as executable steering.
@@ -237,10 +284,87 @@ specification:
       policy. Normalization may preserve that source intent, but the resulting operator_request cannot
       expand supervisor authority; the policy portion must be deferred or proposed instead of executed
       directly.
-gate_state: none
-proposed_status: null
-proposed_maturity: null
-required_human_action: '-'
-last_gate_decision: approve
-last_gate_note: Approve OperatorRequest contract after SG-SPEC-0012 context pack gate was approved.
-last_gate_at: '2026-04-11T05:44:17.568524+00:00'
+  - name: Conflicting envelope stays non-executable
+    description: A GUI selection points at one spec node in observation mode while another admissible
+      upstream signal asks for a broader mutating rewrite. Normalization may preserve both inputs in source_declaration,
+      but if one request_envelope cannot produce mutually consistent target_selector, mode_declaration,
+      scope_declaration, and authority_declaration for one bounded run, the result is reviewable input
+      that must narrow, defer, or request clarification instead of executing.
+proposed_status: linked
+proposed_maturity: 0.83
+gate_state: review_pending
+required_human_action: review refinement impact before approval
+last_outcome: done
+last_blocker: ''
+last_run_id: 20260411T225737Z-SG-SPEC-0009
+last_exit_code: 0
+last_changed_files:
+- specs/nodes/SG-SPEC-0009.yaml
+last_run_at: '2026-04-11T22:57:38.175742+00:00'
+last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0009-20260411T225333Z
+last_branch: codex/sg-spec-0009/20260411T225333Z
+last_validator_results:
+  outputs: true
+  allowed_paths: true
+  reconciliation: true
+  atomicity: true
+  transition: true
+  executor_environment: true
+  refinement_acceptance: true
+last_refinement_acceptance:
+  decision: review_required
+  change_class: constitutional_change
+  checks:
+    content_changed: true
+    hard_validation: true
+    single_spec_scope: true
+    constitutional_diff: true
+    graph_refactor_diff: false
+    atomicity_clear: true
+    within_mutation_budget: true
+  diff_paths:
+  - acceptance_evidence[1].evidence
+  - acceptance_evidence[2].evidence
+  - maturity
+  - specification.examples[2]
+  - specification.examples[2].name
+  - specification.examples[2].description
+  - specification.normalization_contract.core_sections
+  - specification.normalization_contract.core_sections[0]
+  - specification.normalization_contract.core_sections[1]
+  - specification.normalization_contract.core_sections[2]
+  - specification.normalization_contract.executability_rules
+  - specification.normalization_contract.executability_rules[0]
+  - specification.normalization_contract.executability_rules[1]
+  - specification.normalization_contract.executability_rules[2]
+  - specification.normalization_contract.mode_declaration_rules
+  - specification.normalization_contract.mode_declaration_rules[0]
+  - specification.normalization_contract.mode_declaration_rules[1]
+  - specification.normalization_contract.required_properties[1]
+  - specification.normalization_contract.source_declaration_rules
+  - specification.normalization_contract.source_declaration_rules[0]
+  - specification.normalization_contract.source_declaration_rules[1]
+  - specification.terminology.mode_declaration
+  - specification.terminology.operator_request
+  - specification.terminology.request_envelope
+  - specification.terminology.request_executability
+  - specification.terminology.source_declaration
+  mutation_classes:
+  - policy_text
+  mutation_budget: []
+  budget_exceeded_classes: []
+  changed_spec_files:
+  - specs/nodes/SG-SPEC-0009.yaml
+  review_reasons:
+  - run changed governance-sensitive specification sections
+  errors: []
+  warnings: []
+last_reconciliation:
+  worktree_spec_count: 17
+  changed_spec_ids:
+  - SG-SPEC-0009
+  semantic_dependencies_resolved: true
+  work_dependencies_ready: false
+  cycles: []
+last_requested_child_materialization: false
+last_materialized_child_paths: []

@@ -40,6 +40,7 @@ import argparse
 import copy
 import datetime as dt
 import hashlib
+import importlib.util
 import inspect
 import json
 import os
@@ -68,6 +69,7 @@ AGENTS_FILE = ROOT / "AGENTS.md"
 
 READY_DEP_STATUSES = {"reviewed", "frozen"}
 WORKABLE_STATUSES = {"outlined", "specified"}
+CONTINUATION_STATUSES = {"linked"}
 VALID_STATUSES = {"idea", "stub", "outlined", "specified", "linked", "reviewed", "frozen"}
 ATOMICITY_MAX_ACCEPTANCE = 5
 ATOMICITY_MAX_BLOCKING_CHILDREN = 3
@@ -105,6 +107,9 @@ CHILD_MATERIALIZATION_TIMEOUT_SECONDS = 720
 FAST_EXECUTION_PROFILE_TIMEOUT_SECONDS = 420
 HIGH_REASONING_TIMEOUT_FLOOR_SECONDS = 300
 XHIGH_REASONING_TIMEOUT_FLOOR_SECONDS = 420
+EXECUTOR_PROGRESS_POLL_SECONDS = 30
+XHIGH_QUIET_PROGRESS_WINDOWS = 3
+LINKED_CONTINUATION_MATURITY_THRESHOLD = 0.85
 DEFAULT_EXECUTION_PROFILE_NAME = "standard"
 AUTO_HEURISTIC_PROFILE_NAME = "fast"
 AUTO_CHILD_MATERIALIZATION_PROFILE_NAME = "materialize"
@@ -226,18 +231,24 @@ def get_yaml_module() -> ModuleType:
     return yaml
 
 
+def get_spec_yaml_module() -> ModuleType:
+    module_name = "_specgraph_spec_yaml_runtime"
+    existing = sys.modules.get(module_name)
+    if isinstance(existing, ModuleType):
+        return existing
+
+    module_path = Path(__file__).resolve().with_name("spec_yaml.py")
+    spec = importlib.util.spec_from_file_location(module_name, module_path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"Failed to load canonical YAML helper from {module_path}")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[module_name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
 def dump_yaml_text(data: dict[str, Any]) -> str:
-    yaml_module = get_yaml_module()
-    rendered = yaml_module.safe_dump(
-        data,
-        sort_keys=False,
-        allow_unicode=True,
-        default_flow_style=False,
-        width=100,
-    )
-    if not rendered.endswith("\n"):
-        rendered += "\n"
-    return rendered
+    return str(get_spec_yaml_module().dump_canonical_yaml(data))
 
 
 def strip_runtime_spec_data(value: Any) -> Any:
@@ -306,9 +317,7 @@ class SpecNode:
         return list(self.data.get("allowed_paths", []))
 
     def save(self) -> None:
-        yaml_module = get_yaml_module()
-        with self.path.open("w", encoding="utf-8") as file:
-            yaml_module.safe_dump(self.data, file, sort_keys=False, allow_unicode=True)
+        self.path.write_text(dump_yaml_text(self.data), encoding="utf-8")
 
     def reload(self) -> None:
         yaml_module = get_yaml_module()
@@ -438,6 +447,8 @@ def selection_mode_for_node(
     index = index_specs(local_specs)
     if is_ancestor_reconcile_candidate(node, index) and not is_gate_blocking(node):
         return "ancestor_reconcile"
+    if linked_continuation_reasons(node, index):
+        return "linked_continuation"
     return "default_refine"
 
 
@@ -475,6 +486,37 @@ def is_gate_blocking(node: SpecNode) -> bool:
     return node.gate_state in BLOCKING_GATE_STATES
 
 
+def linked_continuation_reasons(
+    spec: SpecNode,
+    index: dict[str, SpecNode],
+) -> list[str]:
+    """Return derived continuation reasons for already-linked graph regions.
+
+    Low maturity alone is not enough. Continuation requires low maturity plus
+    some already-defined signal pressure such as stalled refinement or weak
+    structural linkage.
+    """
+    if spec.status not in CONTINUATION_STATUSES or is_gate_blocking(spec):
+        return []
+
+    reasons: list[str] = []
+    last_outcome = str(spec.data.get("last_outcome", "")).strip()
+    if last_outcome in {"retry", "blocked", "split_required"}:
+        reasons.append("stalled_maturity_candidate")
+
+    unresolved_dependencies = [
+        dep_id
+        for dep_id in spec.depends_on
+        if dep_id not in index or index[dep_id].status not in READY_DEP_STATUSES
+    ]
+    if unresolved_dependencies:
+        reasons.append("weak_structural_linkage_candidate")
+
+    if spec.maturity < LINKED_CONTINUATION_MATURITY_THRESHOLD and reasons:
+        reasons.insert(0, "latent_graph_improvement_candidate")
+    return reasons
+
+
 def pick_next_spec_gap(specs: list[SpecNode]) -> SpecNode | None:
     index = index_specs(specs)
     dependents = reverse_dependents_count(specs)
@@ -497,7 +539,20 @@ def pick_next_spec_gap(specs: list[SpecNode]) -> SpecNode | None:
         and not is_gate_blocking(spec)
     ]
     if not candidates:
-        return None
+        continuation_candidates = [
+            spec for spec in specs if linked_continuation_reasons(spec, index)
+        ]
+        if not continuation_candidates:
+            return None
+        continuation_candidates.sort(
+            key=lambda spec: (
+                0 if spec.status == "linked" else 1,
+                transitive_dependency_count(spec, index),
+                spec.maturity,
+                spec.id,
+            )
+        )
+        return continuation_candidates[0]
 
     candidates.sort(key=lambda spec: (dependents.get(spec.id, 0), spec.maturity, spec.id))
     return candidates[0]
@@ -846,6 +901,35 @@ def effective_child_executor_timeout_seconds(
     return max(
         profile.timeout_seconds,
         reasoning_effort_timeout_floor_seconds(profile.reasoning_effort),
+    )
+
+
+def quiet_progress_windows_for_reasoning(reasoning_effort: str) -> int:
+    """Allow extra quiet windows for long-form deliberation on heavier reasoning modes."""
+    if reasoning_effort == "xhigh":
+        return XHIGH_QUIET_PROGRESS_WINDOWS
+    return 0
+
+
+def capture_nested_executor_progress(
+    worktree_path: Path,
+    stdout_chunks: list[str],
+    stderr_chunks: list[str],
+) -> tuple[int, int, int]:
+    """Capture coarse progress signals without inspecting semantic content."""
+    newest_mtime_ns = 0
+    for root, dirs, files in os.walk(worktree_path):
+        dirs[:] = [name for name in dirs if name != ".git"]
+        for filename in files:
+            path = Path(root) / filename
+            try:
+                newest_mtime_ns = max(newest_mtime_ns, path.stat().st_mtime_ns)
+            except FileNotFoundError:
+                continue
+    return (
+        sum(len(chunk) for chunk in stdout_chunks),
+        sum(len(chunk) for chunk in stderr_chunks),
+        newest_mtime_ns,
     )
 
 
@@ -3194,10 +3278,7 @@ def apply_split_proposal_to_worktree(
     node.data["acceptance"] = retained_texts
     node.data["acceptance_evidence"] = retained_evidence
     worktree_parent_path = worktree_path / parent_relpath
-    worktree_parent_path.write_text(
-        get_yaml_module().safe_dump(node.data, sort_keys=False, allow_unicode=True),
-        encoding="utf-8",
-    )
+    worktree_parent_path.write_text(dump_yaml_text(node.data), encoding="utf-8")
 
     for child, child_id, child_path, existing_data in zip(
         child_specs, child_ids, child_paths, child_existing_data, strict=True
@@ -3235,10 +3316,7 @@ def apply_split_proposal_to_worktree(
             child_data["acceptance"] = child_acceptance
             child_data["acceptance_evidence"] = child_evidence
         absolute_child_path.parent.mkdir(parents=True, exist_ok=True)
-        absolute_child_path.write_text(
-            get_yaml_module().safe_dump(child_data, sort_keys=False, allow_unicode=True),
-            encoding="utf-8",
-        )
+        absolute_child_path.write_text(dump_yaml_text(child_data), encoding="utf-8")
 
     return [parent_relpath, *child_paths]
 
@@ -3742,8 +3820,62 @@ def run_codex(
     )
     stdout_thread.start()
     stderr_thread.start()
+    poll_seconds = max(1, min(EXECUTOR_PROGRESS_POLL_SECONDS, timeout_seconds))
+    quiet_progress_windows_allowed = quiet_progress_windows_for_reasoning(profile.reasoning_effort)
+    base_timeout_remaining = timeout_seconds
+    quiet_windows_without_progress = 0
+    last_progress_state = capture_nested_executor_progress(
+        worktree_path, stdout_chunks, stderr_chunks
+    )
     try:
-        returncode = process.wait(timeout=timeout_seconds)
+        while True:
+            wait_timeout = (
+                poll_seconds
+                if base_timeout_remaining <= 0
+                else min(poll_seconds, base_timeout_remaining)
+            )
+            try:
+                returncode = process.wait(timeout=wait_timeout)
+                break
+            except subprocess.TimeoutExpired:
+                if base_timeout_remaining > 0:
+                    base_timeout_remaining = max(0, base_timeout_remaining - wait_timeout)
+                current_progress_state = capture_nested_executor_progress(
+                    worktree_path,
+                    stdout_chunks,
+                    stderr_chunks,
+                )
+                if base_timeout_remaining <= 0:
+                    if quiet_progress_windows_allowed <= 0:
+                        raise
+                    if current_progress_state != last_progress_state:
+                        last_progress_state = current_progress_state
+                        quiet_windows_without_progress = 0
+                        print(
+                            "[codex stderr] supervisor progress grace: "
+                            "nested executor still shows progress after the base timeout; "
+                            "continuing to wait\n",
+                            end="",
+                            file=sys.stderr,
+                        )
+                        continue
+                    if quiet_windows_without_progress < quiet_progress_windows_allowed:
+                        quiet_windows_without_progress += 1
+                        print(
+                            "[codex stderr] supervisor quiet grace: "
+                            f"no new progress detected after base timeout "
+                            f"({quiet_windows_without_progress}/{quiet_progress_windows_allowed}); "
+                            "allowing more deliberation\n",
+                            end="",
+                            file=sys.stderr,
+                        )
+                        continue
+                    raise
+                if current_progress_state != last_progress_state:
+                    last_progress_state = current_progress_state
+                    quiet_windows_without_progress = 0
+                    continue
+                continue
     except subprocess.TimeoutExpired:
         process.kill()
         returncode = 124
@@ -5146,8 +5278,12 @@ def main(
 
     dependents = reverse_dependents_count(specs)
     selection_mode = selection_mode_for_node(node, specs, refactor_work_item=refactor_work_item)
+    continuation_reasons = linked_continuation_reasons(node, index_specs(specs))
     selected_by_rule = {
-        "status_filter": sorted(WORKABLE_STATUSES),
+        "status_filter": sorted(
+            WORKABLE_STATUSES
+            | (CONTINUATION_STATUSES if selection_mode == "linked_continuation" else set())
+        ),
         "dependency_required_statuses": sorted(READY_DEP_STATUSES),
         "selection_mode": selection_mode,
         "sort_order": [
@@ -5160,6 +5296,8 @@ def main(
         ],
         "dependents_count": dependents.get(node.id, 0),
     }
+    if selection_mode == "linked_continuation":
+        selected_by_rule["continuation_reasons"] = continuation_reasons
     if refactor_work_item is not None:
         selected_by_rule["refactor_work_item"] = {
             "id": str(refactor_work_item.get("id", "")),

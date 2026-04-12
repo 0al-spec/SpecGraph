@@ -460,8 +460,9 @@ def test_run_codex_uses_isolated_codex_home(
     assert "--ephemeral" in captured["cmd"]
     assert captured["bypass_inner_sandbox"] is False
     assert captured["profile"].name == supervisor_module.AUTO_HEURISTIC_PROFILE_NAME
-    assert (
-        captured["process"].wait_timeout == supervisor_module.FAST_EXECUTION_PROFILE_TIMEOUT_SECONDS
+    assert captured["process"].wait_timeout == min(
+        supervisor_module.EXECUTOR_PROGRESS_POLL_SECONDS,
+        supervisor_module.FAST_EXECUTION_PROFILE_TIMEOUT_SECONDS,
     )
 
 
@@ -529,8 +530,9 @@ def test_run_codex_bypasses_inner_sandbox_for_sandbox_branch(
     assert captured["profile"].name == supervisor_module.AUTO_HEURISTIC_PROFILE_NAME
     assert "--dangerously-bypass-approvals-and-sandbox" in captured["cmd"]
     assert "--sandbox" not in captured["cmd"]
-    assert (
-        captured["process"].wait_timeout == supervisor_module.FAST_EXECUTION_PROFILE_TIMEOUT_SECONDS
+    assert captured["process"].wait_timeout == min(
+        supervisor_module.EXECUTOR_PROGRESS_POLL_SECONDS,
+        supervisor_module.FAST_EXECUTION_PROFILE_TIMEOUT_SECONDS,
     )
 
 
@@ -591,8 +593,9 @@ def test_run_codex_uses_longer_timeout_for_child_materialization_authority(
 
     assert result.returncode == 0
     assert captured["profile"].name == supervisor_module.AUTO_CHILD_MATERIALIZATION_PROFILE_NAME
-    assert (
-        captured["process"].wait_timeout == supervisor_module.CHILD_MATERIALIZATION_TIMEOUT_SECONDS
+    assert captured["process"].wait_timeout == min(
+        supervisor_module.EXECUTOR_PROGRESS_POLL_SECONDS,
+        supervisor_module.CHILD_MATERIALIZATION_TIMEOUT_SECONDS,
     )
 
 
@@ -655,9 +658,356 @@ def test_run_codex_uses_explicit_fast_execution_profile(
     assert result.returncode == 0
     assert captured["profile"].name == "fast"
     assert f'model_reasoning_effort="{captured["profile"].reasoning_effort}"' in captured["cmd"]
-    assert (
-        captured["process"].wait_timeout == supervisor_module.FAST_EXECUTION_PROFILE_TIMEOUT_SECONDS
+    assert captured["process"].wait_timeout == min(
+        supervisor_module.EXECUTOR_PROGRESS_POLL_SECONDS,
+        supervisor_module.FAST_EXECUTION_PROFILE_TIMEOUT_SECONDS,
     )
+
+
+def test_run_codex_allows_quiet_grace_windows_for_xhigh_reasoning(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class FakeProcess:
+        def __init__(self) -> None:
+            self.stdout = io.StringIO("")
+            self.stderr = io.StringIO("")
+            self.wait_calls: list[float | None] = []
+            self.kill_called = False
+            self.timeout_events_remaining = 3
+
+        def wait(self, timeout: float | None = None) -> int:
+            self.wait_calls.append(timeout)
+            if self.kill_called:
+                return 124
+            if self.timeout_events_remaining > 0:
+                self.timeout_events_remaining -= 1
+                raise subprocess.TimeoutExpired(cmd=["codex"], timeout=timeout or 0)
+            return 0
+
+        def kill(self) -> None:
+            self.kill_called = True
+
+    captured: dict[str, object] = {}
+
+    profile = supervisor_module.ExecutionProfile(
+        name="standard",
+        model=supervisor_module.CHILD_EXECUTOR_MODEL,
+        reasoning_effort="xhigh",
+        timeout_seconds=1,
+        disabled_features=supervisor_module.CHILD_EXECUTOR_DISABLED_FEATURES,
+    )
+
+    def fake_create_child_codex_home(
+        *,
+        source_codex_home: Path = Path(),
+        profile: object | None = None,
+        bypass_inner_sandbox: bool = False,
+    ) -> Path:
+        _ = (source_codex_home, profile, bypass_inner_sandbox)
+        child_home = repo_fixture / ".fake-codex-home"
+        child_home.mkdir(exist_ok=True)
+        return child_home
+
+    def fake_popen(
+        cmd: list[str],
+        *,
+        cwd: Path,
+        env: dict[str, str],
+        stdout: object,
+        stderr: object,
+        text: bool,
+        bufsize: int,
+    ) -> FakeProcess:
+        _ = (cmd, cwd, env, stdout, stderr, text, bufsize)
+        process = FakeProcess()
+        captured["process"] = process
+        return process
+
+    monkeypatch.setattr(supervisor_module, "create_child_codex_home", fake_create_child_codex_home)
+    monkeypatch.setattr(subprocess, "Popen", fake_popen)
+    monkeypatch.setattr(supervisor_module, "resolve_execution_profile", lambda **_kwargs: profile)
+    monkeypatch.setattr(
+        supervisor_module,
+        "effective_child_executor_timeout_seconds",
+        lambda *args, **kwargs: 1,
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "capture_nested_executor_progress",
+        lambda *_args, **_kwargs: (0, 0, 0),
+    )
+    monkeypatch.setattr(supervisor_module, "EXECUTOR_PROGRESS_POLL_SECONDS", 1)
+    monkeypatch.setattr(supervisor_module, "XHIGH_QUIET_PROGRESS_WINDOWS", 3)
+
+    node = supervisor_module.load_specs()[0]
+    result = supervisor_module.run_codex(node, repo_fixture)
+
+    assert result.returncode == 0
+    assert captured["process"].kill_called is False
+    assert captured["process"].wait_calls == [1, 1, 1, 1]
+
+
+def test_run_codex_times_out_after_repeated_quiet_windows_without_progress(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class FakeProcess:
+        def __init__(self) -> None:
+            self.stdout = io.StringIO("")
+            self.stderr = io.StringIO("")
+            self.wait_calls: list[float | None] = []
+            self.kill_called = False
+
+        def wait(self, timeout: float | None = None) -> int:
+            self.wait_calls.append(timeout)
+            if self.kill_called:
+                return 124
+            raise subprocess.TimeoutExpired(cmd=["codex"], timeout=timeout or 0)
+
+        def kill(self) -> None:
+            self.kill_called = True
+
+    captured: dict[str, object] = {}
+
+    profile = supervisor_module.ExecutionProfile(
+        name="standard",
+        model=supervisor_module.CHILD_EXECUTOR_MODEL,
+        reasoning_effort="xhigh",
+        timeout_seconds=1,
+        disabled_features=supervisor_module.CHILD_EXECUTOR_DISABLED_FEATURES,
+    )
+
+    def fake_create_child_codex_home(
+        *,
+        source_codex_home: Path = Path(),
+        profile: object | None = None,
+        bypass_inner_sandbox: bool = False,
+    ) -> Path:
+        _ = (source_codex_home, profile, bypass_inner_sandbox)
+        child_home = repo_fixture / ".fake-codex-home"
+        child_home.mkdir(exist_ok=True)
+        return child_home
+
+    def fake_popen(
+        cmd: list[str],
+        *,
+        cwd: Path,
+        env: dict[str, str],
+        stdout: object,
+        stderr: object,
+        text: bool,
+        bufsize: int,
+    ) -> FakeProcess:
+        _ = (cmd, cwd, env, stdout, stderr, text, bufsize)
+        process = FakeProcess()
+        captured["process"] = process
+        return process
+
+    monkeypatch.setattr(supervisor_module, "create_child_codex_home", fake_create_child_codex_home)
+    monkeypatch.setattr(subprocess, "Popen", fake_popen)
+    monkeypatch.setattr(supervisor_module, "resolve_execution_profile", lambda **_kwargs: profile)
+    monkeypatch.setattr(
+        supervisor_module,
+        "effective_child_executor_timeout_seconds",
+        lambda *args, **kwargs: 1,
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "capture_nested_executor_progress",
+        lambda *_args, **_kwargs: (0, 0, 0),
+    )
+    monkeypatch.setattr(supervisor_module, "EXECUTOR_PROGRESS_POLL_SECONDS", 1)
+    monkeypatch.setattr(supervisor_module, "XHIGH_QUIET_PROGRESS_WINDOWS", 2)
+
+    node = supervisor_module.load_specs()[0]
+    result = supervisor_module.run_codex(node, repo_fixture)
+
+    assert result.returncode == 124
+    assert captured["process"].kill_called is True
+    assert result.stderr.endswith("supervisor timeout: nested executor timed out after 1 seconds\n")
+
+
+def test_run_codex_resets_quiet_grace_when_progress_signals_advance(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class FakeProcess:
+        def __init__(self) -> None:
+            self.stdout = io.StringIO("")
+            self.stderr = io.StringIO("")
+            self.wait_calls: list[float | None] = []
+            self.kill_called = False
+            self.timeout_events_remaining = 4
+
+        def wait(self, timeout: float | None = None) -> int:
+            self.wait_calls.append(timeout)
+            if self.kill_called:
+                return 124
+            if self.timeout_events_remaining > 0:
+                self.timeout_events_remaining -= 1
+                raise subprocess.TimeoutExpired(cmd=["codex"], timeout=timeout or 0)
+            return 0
+
+        def kill(self) -> None:
+            self.kill_called = True
+
+    captured: dict[str, object] = {}
+
+    profile = supervisor_module.ExecutionProfile(
+        name="standard",
+        model=supervisor_module.CHILD_EXECUTOR_MODEL,
+        reasoning_effort="xhigh",
+        timeout_seconds=1,
+        disabled_features=supervisor_module.CHILD_EXECUTOR_DISABLED_FEATURES,
+    )
+    progress_states = iter(
+        [
+            (0, 0, 0),
+            (0, 0, 0),
+            (0, 0, 1),
+            (0, 0, 1),
+            (0, 0, 1),
+        ]
+    )
+
+    def fake_create_child_codex_home(
+        *,
+        source_codex_home: Path = Path(),
+        profile: object | None = None,
+        bypass_inner_sandbox: bool = False,
+    ) -> Path:
+        _ = (source_codex_home, profile, bypass_inner_sandbox)
+        child_home = repo_fixture / ".fake-codex-home"
+        child_home.mkdir(exist_ok=True)
+        return child_home
+
+    def fake_popen(
+        cmd: list[str],
+        *,
+        cwd: Path,
+        env: dict[str, str],
+        stdout: object,
+        stderr: object,
+        text: bool,
+        bufsize: int,
+    ) -> FakeProcess:
+        _ = (cmd, cwd, env, stdout, stderr, text, bufsize)
+        process = FakeProcess()
+        captured["process"] = process
+        return process
+
+    monkeypatch.setattr(supervisor_module, "create_child_codex_home", fake_create_child_codex_home)
+    monkeypatch.setattr(subprocess, "Popen", fake_popen)
+    monkeypatch.setattr(supervisor_module, "resolve_execution_profile", lambda **_kwargs: profile)
+    monkeypatch.setattr(
+        supervisor_module,
+        "effective_child_executor_timeout_seconds",
+        lambda *args, **kwargs: 1,
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "capture_nested_executor_progress",
+        lambda *_args, **_kwargs: next(progress_states),
+    )
+    monkeypatch.setattr(supervisor_module, "EXECUTOR_PROGRESS_POLL_SECONDS", 1)
+    monkeypatch.setattr(supervisor_module, "XHIGH_QUIET_PROGRESS_WINDOWS", 2)
+
+    node = supervisor_module.load_specs()[0]
+    result = supervisor_module.run_codex(node, repo_fixture)
+
+    assert result.returncode == 0
+    assert captured["process"].kill_called is False
+    assert captured["process"].wait_calls == [1, 1, 1, 1, 1]
+
+
+def test_run_codex_times_out_after_base_budget_when_no_quiet_grace_is_allowed(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class FakeProcess:
+        def __init__(self) -> None:
+            self.stdout = io.StringIO("")
+            self.stderr = io.StringIO("")
+            self.wait_calls: list[float | None] = []
+            self.kill_called = False
+
+        def wait(self, timeout: float | None = None) -> int:
+            self.wait_calls.append(timeout)
+            if self.kill_called:
+                return 124
+            raise subprocess.TimeoutExpired(cmd=["codex"], timeout=timeout or 0)
+
+        def kill(self) -> None:
+            self.kill_called = True
+
+    captured: dict[str, object] = {}
+
+    profile = supervisor_module.ExecutionProfile(
+        name="standard",
+        model=supervisor_module.CHILD_EXECUTOR_MODEL,
+        reasoning_effort="high",
+        timeout_seconds=1,
+        disabled_features=supervisor_module.CHILD_EXECUTOR_DISABLED_FEATURES,
+    )
+    progress_states = iter(
+        [
+            (0, 0, 0),
+            (0, 0, 1),
+        ]
+    )
+
+    def fake_create_child_codex_home(
+        *,
+        source_codex_home: Path = Path(),
+        profile: object | None = None,
+        bypass_inner_sandbox: bool = False,
+    ) -> Path:
+        _ = (source_codex_home, profile, bypass_inner_sandbox)
+        child_home = repo_fixture / ".fake-codex-home"
+        child_home.mkdir(exist_ok=True)
+        return child_home
+
+    def fake_popen(
+        cmd: list[str],
+        *,
+        cwd: Path,
+        env: dict[str, str],
+        stdout: object,
+        stderr: object,
+        text: bool,
+        bufsize: int,
+    ) -> FakeProcess:
+        _ = (cmd, cwd, env, stdout, stderr, text, bufsize)
+        process = FakeProcess()
+        captured["process"] = process
+        return process
+
+    monkeypatch.setattr(supervisor_module, "create_child_codex_home", fake_create_child_codex_home)
+    monkeypatch.setattr(subprocess, "Popen", fake_popen)
+    monkeypatch.setattr(supervisor_module, "resolve_execution_profile", lambda **_kwargs: profile)
+    monkeypatch.setattr(
+        supervisor_module,
+        "effective_child_executor_timeout_seconds",
+        lambda *args, **kwargs: 1,
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "capture_nested_executor_progress",
+        lambda *_args, **_kwargs: next(progress_states),
+    )
+    monkeypatch.setattr(supervisor_module, "EXECUTOR_PROGRESS_POLL_SECONDS", 1)
+
+    node = supervisor_module.load_specs()[0]
+    result = supervisor_module.run_codex(node, repo_fixture)
+
+    assert result.returncode == 124
+    assert captured["process"].kill_called is True
+    assert captured["process"].wait_calls == [1, None]
 
 
 def test_write_latest_summary_includes_executor_environment_fields(
@@ -1975,6 +2325,111 @@ def test_main_dry_run_supports_explicit_targeted_refinement_for_review_pending_n
     assert "Operator intent:" in captured.out
     assert "Tighten only the proposal-lane ownership semantics." in captured.out
     assert captured.err == ""
+
+
+def test_pick_next_spec_gap_selects_linked_continuation_candidate_when_no_workable_specs(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    node1_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    node1 = supervisor_module.get_yaml_module().safe_load(node1_path.read_text(encoding="utf-8"))
+    node1["status"] = "linked"
+    node1["maturity"] = 0.4
+    node1["depends_on"] = ["SG-SPEC-0002"]
+    node1_path.write_text(json.dumps(node1), encoding="utf-8")
+
+    node2_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0002.yaml"
+    node2_path.write_text(
+        json.dumps(
+            {
+                "id": "SG-SPEC-0002",
+                "title": "Dependency Node",
+                "kind": "spec",
+                "status": "linked",
+                "maturity": 0.6,
+                "depends_on": [],
+                "relates_to": [],
+                "refines": [],
+                "inputs": [],
+                "outputs": ["specs/nodes/SG-SPEC-0002.yaml"],
+                "allowed_paths": ["specs/nodes/SG-SPEC-0002.yaml"],
+                "acceptance": ["kept"],
+                "prompt": "Refine this linked node.",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    specs = supervisor_module.load_specs()
+    selected = supervisor_module.pick_next_spec_gap(specs)
+
+    assert selected is not None
+    assert selected.id == "SG-SPEC-0001"
+    assert supervisor_module.selection_mode_for_node(selected, specs) == "linked_continuation"
+    assert supervisor_module.linked_continuation_reasons(
+        selected, supervisor_module.index_specs(specs)
+    ) == ["latent_graph_improvement_candidate", "weak_structural_linkage_candidate"]
+
+
+def test_pick_next_spec_gap_does_not_select_low_maturity_linked_spec_without_signal_pressure(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    node = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    node["status"] = "linked"
+    node["maturity"] = 0.4
+    node["depends_on"] = []
+    node_path.write_text(json.dumps(node), encoding="utf-8")
+
+    specs = supervisor_module.load_specs()
+
+    assert supervisor_module.pick_next_spec_gap(specs) is None
+
+
+def test_pick_next_spec_gap_does_not_select_reviewed_spec_for_linked_continuation(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    node = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    node["status"] = "reviewed"
+    node["maturity"] = 0.4
+    node["depends_on"] = ["SG-SPEC-0002"]
+    node["last_outcome"] = "blocked"
+    node_path.write_text(json.dumps(node), encoding="utf-8")
+
+    node2_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0002.yaml"
+    node2_path.write_text(
+        json.dumps(
+            {
+                "id": "SG-SPEC-0002",
+                "title": "Dependency Node",
+                "kind": "spec",
+                "status": "specified",
+                "maturity": 0.6,
+                "depends_on": [],
+                "relates_to": [],
+                "refines": [],
+                "inputs": [],
+                "outputs": ["specs/nodes/SG-SPEC-0002.yaml"],
+                "allowed_paths": ["specs/nodes/SG-SPEC-0002.yaml"],
+                "acceptance": ["kept"],
+                "prompt": "Refine this node.",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    specs = supervisor_module.load_specs()
+
+    assert (
+        supervisor_module.linked_continuation_reasons(
+            specs[0], supervisor_module.index_specs(specs)
+        )
+        == []
+    )
+    assert supervisor_module.pick_next_spec_gap(specs).id == "SG-SPEC-0002"
 
 
 def test_main_explicit_targeted_refinement_dry_run_prints_mutation_budget(
@@ -5011,6 +5466,18 @@ def test_loop_processes_until_no_candidates(
     run_logs = sorted((repo_fixture / "runs").glob("*-SG-SPEC-*.json"))
     # At least 1 log; may be fewer than 2 due to same-second timestamp collision.
     assert len(run_logs) >= 1
+
+    spec_yaml_path = Path(__file__).resolve().parents[1] / "tools" / "spec_yaml.py"
+    spec_yaml_spec = importlib.util.spec_from_file_location(
+        "test_spec_yaml_module_loop",
+        spec_yaml_path,
+    )
+    assert spec_yaml_spec and spec_yaml_spec.loader
+    spec_yaml_module = importlib.util.module_from_spec(spec_yaml_spec)
+    sys.modules[spec_yaml_spec.name] = spec_yaml_module
+    spec_yaml_spec.loader.exec_module(spec_yaml_module)
+    updated_text = node_path.read_text(encoding="utf-8")
+    assert updated_text == spec_yaml_module.canonicalize_text(updated_text)
 
 
 def test_loop_propagates_semantic_unlock_upstream(

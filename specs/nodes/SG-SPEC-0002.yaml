@@ -2,7 +2,7 @@ id: SG-SPEC-0002
 title: SpecGraph - Spec Refinement and Linkage Policy
 kind: spec
 status: linked
-maturity: 0.77
+maturity: 0.84
 depends_on:
 - SG-SPEC-0014
 - SG-SPEC-0015
@@ -21,16 +21,36 @@ outputs:
 allowed_paths:
 - specs/nodes/*.yaml
 acceptance:
-- Remains implementation-agnostic and limited to specification governance
+- Preserves SG-SPEC-0002 as the implementation-agnostic parent overview for spec-to-spec refinement and
+  linkage, with stable shared terminology and no child-level runtime or tooling detail
+- Defines the coordination envelope that assigns detailed governance of edge semantics, delegation/decomposition,
+  and linked-readiness evidence to bounded child specs SG-SPEC-0014, SG-SPEC-0015, and SG-SPEC-0016
+- Defines parent-side integration rules that keep dependency declarations, descendant linkage, and acceptance-evidence
+  citations aligned across the refinement chain
 acceptance_evidence:
-- criterion: Remains implementation-agnostic and limited to specification governance
-  evidence: 'specification.scope.out excludes storage schemas, validator implementation, supervisor workflow,
-    and runtime generation semantics. The parent records `depends_on: [SG-SPEC-0014, SG-SPEC-0015, SG-SPEC-0016]`
-    while the concrete descendants `specs/nodes/SG-SPEC-0014.yaml`, `specs/nodes/SG-SPEC-0015.yaml`, and
-    `specs/nodes/SG-SPEC-0016.yaml` each declare `refines: [SG-SPEC-0002]`. Those children bound detailed
-    governance for edge semantics and blocking, delegation and atomic decomposition, and linked-readiness
-    evidence, so this node now carries parent-side linked_readiness_evidence without adding implementation
-    scope.
+- criterion: Preserves SG-SPEC-0002 as the implementation-agnostic parent overview for spec-to-spec refinement
+    and linkage, with stable shared terminology and no child-level runtime or tooling detail
+  evidence: 'specification.objective and specification.scope.in keep this node at the overview layer,
+    while specification.scope.out excludes detailed edge procedures, delegation/decomposition procedures,
+    linked-readiness decision procedures, and implementation concerns. specification.terminology preserves
+    the shared parent vocabulary used across the refinement chain without reintroducing child-level runtime
+    or tooling scope.
+
+    '
+- criterion: Defines the coordination envelope that assigns detailed governance of edge semantics, delegation/decomposition,
+    and linked-readiness evidence to bounded child specs SG-SPEC-0014, SG-SPEC-0015, and SG-SPEC-0016
+  evidence: 'specification.coordination_envelope.parent_role defines the narrow parent responsibility
+    surface, and specification.child_governance_map assigns detailed governance ownership to SG-SPEC-0014,
+    SG-SPEC-0015, and SG-SPEC-0016. The top-level depends_on list cites those same children, matching
+    the bounded ownership map that keeps detailed policy below the parent.
+
+    '
+- criterion: Defines parent-side integration rules that keep dependency declarations, descendant linkage,
+    and acceptance-evidence citations aligned across the refinement chain
+  evidence: 'specification.integration_rules.refinement_chain_coordination and specification.integration_rules.parent_evidence_coordination
+    define how refines ancestry, parent depends_on declarations, child concern ownership, and local parent
+    acceptance_evidence stay aligned. The examples then show SG-SPEC-0002 citing concrete descendants
+    without collapsing child-local governance back into the parent.
 
     '
 prompt: Keep SG-SPEC-0002 as the overview and integration policy for spec-to-spec refinement and linkage.
@@ -38,198 +58,367 @@ prompt: Keep SG-SPEC-0002 as the overview and integration policy for spec-to-spe
   child specs for detailed governance of edge semantics, delegation/decomposition, and linked-readiness
   evidence.
 specification:
-  objective: 'Define how seed specs delegate unresolved areas to child specs, how parent/child spec edges
-    are expressed, and what evidence is required for a spec to reach linked without prescribing tooling
-    or storage.
+  objective: 'Define the parent overview and integration policy for spec-to-spec refinement and linkage,
+    preserving stable shared terminology and coordinating bounded child specs without reabsorbing their
+    detailed governance.
 
     '
   scope:
     in:
-    - Spec-to-spec use of refines, depends_on, and relates_to
-    - Distinction between authored blocking declarations and derived effective blocking views
-    - Delegation of one or more concrete unresolved areas from a parent spec to child specs
-    - Atomic spec-node boundaries and decomposition policy
-    - Linked-status completion rules for spec nodes
-    - Ancestor reconciliation after descendant semantic unlock
-    - Acceptance and acceptance_evidence expectations across refinement chains
+    - Stable shared terminology for spec-to-spec refinement and linkage
+    - Parent-side coordination of edge semantics, delegation/decomposition, and linked-readiness governance
+      across bounded child specs
+    - Child responsibility boundaries for SG-SPEC-0014, SG-SPEC-0015, and SG-SPEC-0016
+    - Parent-side integration rules for depends_on, refines, and evidence citations across the refinement
+      chain
     out:
+    - Detailed relation-selection or declared-versus-derived blocking rules delegated to SG-SPEC-0014
+    - Detailed delegation, atomic decomposition, sibling decomposition, or split_required rules delegated
+      to SG-SPEC-0015
+    - Detailed specified-to-linked readiness checks, ancestor_reconciliation steps, or evidence_alignment
+      procedures delegated to SG-SPEC-0016
     - Non-spec node refinement rules
-    - Storage schemas, file layouts, or database design
-    - Validator implementation or supervisor workflow
-    - Runtime code generation or test execution semantics
+    - Storage schemas, file layouts, validator implementation, supervisor workflow, or runtime generation
+      semantics
   terminology:
-    refinement_chain: 'An explicit parent/child path in which a child spec lists refines: [parent] and
-      the parent lists depends_on: [child] when the child blocks the parent''s advancement.
+    refinement_chain: 'An explicit parent/child path in which descendants connect back through refines
+      and blocking parent dependencies are declared through depends_on where advancement requires them.
 
       '
-    delegated_gap: 'A concrete unresolved area intentionally left open in a seed spec and assigned to
-      exactly one child spec for elaboration in a given refinement step.
+    coordination_envelope: 'The narrow parent-side policy surface that preserves shared terminology, stable
+      scope boundaries, and integration expectations across child specs without duplicating their detailed
+      rules.
 
       '
-    atomic_spec_node: 'A working spec node that captures one bounded concern or refinement question, so
-      that its acceptance criteria, blockers, and lifecycle advance together without hiding unrelated
-      work inside the same envelope.
+    bounded_child_spec: 'A child spec that owns one detailed governance concern beneath a coordinating
+      parent and can advance, be reviewed, and be cited independently.
 
       '
-    decomposition_pass: 'A refinement run that narrows an oversized spec by emitting one or more sibling
-      child specs and reducing the parent back to a stable coordinating envelope.
+    delegated_gap: 'A concrete unresolved area intentionally left open in a parent overview or seed spec
+      and assigned to one bounded child spec for elaboration in a given refinement step.
 
       '
-    linked_spec: 'A spec whose required dependency and refinement edges are present and whose declared
-      refinement responsibilities are connected to concrete descendant specs.
+    atomic_spec_node: 'A spec node whose acceptance criteria, blockers, evidence, and review path all
+      describe one bounded concern that can advance without hiding unrelated work.
 
       '
-    declared_blocking_edge: 'An authored canonical dependency expressed with depends_on. It records that
-      the source spec may not advance until the target refinement dependency is satisfied.
+    semantic_unlock: 'A state in which the parent''s declared blocking descendants exist in the graph
+      with an explicit refinement chain, making the parent eligible for linked-readiness reconciliation.
 
       '
-    effective_blocking: 'A derived view computed from canonical graph state. It may include transitive
-      blockers, queue readiness, or other operational projections, but it does not create new canonical
-      edge facts.
+    ancestor_reconciliation: 'A narrow parent-side follow-up pass that aligns links, acceptance_evidence,
+      and status-readiness after semantic_unlock without reopening unrelated scope.
 
       '
-    semantic_unlock: 'A state in which a spec''s declared blocking descendants now exist in the graph
-      with an explicit refinement chain, making the ancestor eligible for status advancement work even
-      if downstream implementation or review work is incomplete.
+    linked_readiness_evidence: 'A parent-side evidence update that cites the concrete descendant specs
+      satisfying each declared blocking refinement dependency without replacing child-local acceptance
+      evidence.
 
       '
-    ancestor_reconciliation: 'A narrow follow-up pass on an ancestor spec after semantic_unlock. It aligns
-      links, blockers, acceptance_evidence, and status-readiness with the newly available descendant structure
-      without reopening unrelated scope.
-
-      '
-    linked_readiness_evidence: 'A reconciled parent-side evidence update that cites the specific concrete
-      descendant specs satisfying each declared blocking refinement dependency, so semantic_unlock can
-      be promoted into linked status-readiness.
-
-      '
-  relation_policy:
-  - relation: refines
-    source: child spec
-    target: ancestor spec
-    required_when: The child narrows or elaborates a specific unresolved area owned by the ancestor.
-    notes:
-    - A child spec MUST list every ancestor spec it directly elaborates.
-    - refines expresses semantic inheritance of terminology and problem framing, not execution order.
-  - relation: depends_on
-    source: parent spec
-    target: child spec
-    required_when: Completion of the child is required before the parent can advance beyond its current
-      unresolved area.
-    notes:
-    - depends_on is the canonical authored declaration of a blocking refinement edge.
-    - A parent MAY depend_on multiple children, but each child SHOULD own a distinct unresolved area.
-    - Tooling MAY derive additional effective blocking views from depends_on closure, but those derived
-      views MUST NOT replace the authored dependency edge in canonical data.
-  - relation: relates_to
-    source: any spec
-    target: any spec
-    required_when: The specs are relevant to each other but neither semantic refinement nor advancement
-      blocking applies.
-    notes:
-    - relates_to MUST NOT replace refines or depends_on when those stronger relations are true.
-  blocking_semantics:
-    canonical_graph:
-    - The graph stores only authored blocking intent via depends_on.
-    - Canonical blocking facts are local declarations, not transitive expansions.
-    - A missing depends_on means the parent is not canonically blocked by that child, even if the two
-      specs are otherwise connected through refines or relates_to.
-    derived_views:
-    - Tooling may compute effective_blocking from declared_blocking_edge closure plus current node states.
-    - Derived effective_blocking may be used for queue ordering, viewer overlays, diagnostics, and "what
-      still blocks this spec?" queries.
-    - Derived effective_blocking is rebuildable operational metadata and MUST NOT be written back as a
-      substitute for canonical depends_on facts.
-  delegation_policy:
-    seed_spec_expectations:
-    - A seed spec may remain intentionally incomplete in narrowly bounded areas.
-    - Each child created from a seed spec SHOULD name one concrete unresolved area and keep its scope
-      narrower than the parent.
-    - Child specs MUST preserve stable IDs and inherited terminology from the parent unless the child
-      explicitly defines a compatible narrowing.
-    parent_expectations:
-    - The parent spec records blocking child specs in depends_on.
-    - The parent remains authoritative for the stable core and delegates only the unresolved slice.
-    - Parent acceptance_evidence for seed refinement SHOULD cite concrete descendant specs once they exist.
-    child_expectations:
-    - The child spec lists refines pointing at the parent it elaborates.
-    - The child defines its own acceptance, acceptance_evidence, outputs, and allowed_paths.
-    - The child MUST NOT widen scope into unrelated ontology areas.
-  atomicity_policy:
-    working_node_expectations:
-    - Non-seed working specs SHOULD remain atomic_spec_nodes that answer one bounded refinement question.
-    - A spec MAY act as a broad coordinating envelope only when it is explicitly seed-like or overview-like
-      and delegates mixed concerns to child specs instead of absorbing them.
-    decomposition_rules:
-    - When a refinement step reveals multiple independent concerns, the agent MAY emit multiple sibling
-      child specs in one decomposition_pass.
-    - Each sibling created in one decomposition_pass SHOULD own a distinct bounded concern and SHOULD
-      be independently reviewable on the graph.
-    - The parent SHOULD shrink back to stable shared intent, terminology, and linkage once the sibling
-      child specs exist.
-    split_required:
-    - If the current spec still mixes multiple bounded concerns after refinement, tooling SHOULD surface
-      split_required rather than treating the larger node as complete.
-    - split_required may preserve newly created child specs and narrowed parent edits even when the parent
-      still needs another pass.
-  linkage_rules:
-    specified_to_linked:
-    - A spec may move from specified to linked once every refinement dependency it explicitly declares
-      in depends_on exists as a concrete descendant spec node.
-    - For each blocking child, the descendant must explicitly refines the parent or another declared ancestor
-      in the same refinement chain.
-    - semantic_unlock makes linked advancement eligible, but the ancestor MUST remain specified until
-      ancestor_reconciliation records linked_readiness_evidence on the parent.
-    - The reconciled parent acceptance_evidence MUST cite the concrete descendant spec IDs or paths that
-      satisfy each declared blocking refinement dependency.
-    - linked confirms edge resolution, not downstream implementation completion or review approval.
-    - Descendant completion may therefore semantically unlock multiple ancestors in the same refinement
-      chain.
-    non_blocking_children:
-    - A parent does not need to declare depends_on for non-blocking related specs.
-    - Open future work that is not yet delegated does not block linked unless the parent explicitly marks
-      it as a dependency.
-  reconciliation_policy:
-    descendant_unlock:
-    - When a descendant makes the blocking refinement chain explicit, each affected ancestor becomes eligible
-      for ancestor_reconciliation.
-    - Eligibility created by semantic_unlock is a derived operational fact; it does not mutate the canonical
-      graph by itself.
-    ancestor_reconciliation:
-    - Ancestor reconciliation MUST happen one spec node at a time.
-    - 'The reconciliation pass SHOULD stay narrow: update links, blockers, acceptance_evidence, prompt
-      wording, and status-readiness that depend on the unlocked descendant.'
-    - Ancestor reconciliation MUST NOT expand unrelated unresolved areas or silently absorb work better
-      represented as a new child spec.
-    - Tooling MAY prioritize the nearest semantically unlocked ancestor first and propagate the wave upward
-      across the chain in later runs.
-  evidence_policy:
-    rules:
-    - acceptance and acceptance_evidence remain 1:1 within each spec node.
-    - When linked readiness depends on child refinement, parent acceptance_evidence MUST cite the child
-      spec IDs or paths that satisfy each declared blocking refinement dependency.
-    - Outside status advancement, parent evidence MAY still point to child spec IDs and paths as supporting
-      refinement context.
-    - Child evidence should cite sections inside the child spec rather than external runtime artifacts.
+  coordination_envelope:
+    parent_role:
+    - SG-SPEC-0002 preserves the stable shared framing for spec-to-spec refinement and linkage across
+      this graph area.
+    - SG-SPEC-0002 coordinates how its child specs fit together, but it MUST NOT carry the detailed decision
+      procedures that those bounded children own.
+    - SG-SPEC-0002 MAY summarize the shared relationship between refines ancestry, depends_on blocking
+      intent, delegated gaps, and parent evidence only at the level needed to keep the refinement chain
+      coherent.
+    shared_invariants:
+    - Detailed governance for a delegated concern SHOULD live in exactly one bounded_child_spec at this
+      overview layer.
+    - Child specs SHOULD preserve the parent terminology unless they define a compatible narrowing inside
+      their own scope.
+    - Parent acceptance_evidence remains local to the parent even when it cites child specs as supporting
+      descendants.
+    - Later refinement work SHOULD narrow the owning child concern or a descendant of that child instead
+      of expanding this parent with child-level detail.
+  child_governance_map:
+  - child_spec: SG-SPEC-0014
+    concern: Detailed edge semantics and blocking policy
+    parent_summary:
+    - Child ancestry in this refinement area is expressed through refines.
+    - Blocking intent in this refinement area is expressed through depends_on.
+    - Detailed selection and declared-versus-derived blocking rules live in the child, not in SG-SPEC-0002.
+    detailed_governance_owned_by_child:
+    - Relation selection for refines, depends_on, and relates_to between parent and child specs
+    - declared_blocking_edge versus effective_blocking semantics
+  - child_spec: SG-SPEC-0015
+    concern: Delegation and atomic decomposition policy
+    parent_summary:
+    - SG-SPEC-0002 remains a coordinating envelope and delegates mixed detailed governance instead of
+      growing in place.
+    - Each blocking child under this overview SHOULD own a distinct bounded concern.
+    - Detailed delegation and decomposition rules live in the child, not in SG-SPEC-0002.
+    detailed_governance_owned_by_child:
+    - delegated_gap decision rules
+    - atomic_spec_node boundaries, sibling decomposition, and split_required semantics
+  - child_spec: SG-SPEC-0016
+    concern: Linked readiness and evidence policy
+    parent_summary:
+    - SG-SPEC-0002 may cite concrete descendants as linked_readiness_evidence when they satisfy its declared
+      refinement dependencies.
+    - Parent acceptance_evidence stays local even when it cites child specs as supporting descendants.
+    - Detailed readiness and reconciliation procedures live in the child, not in SG-SPEC-0002.
+    detailed_governance_owned_by_child:
+    - specified-to-linked readiness checks
+    - semantic_unlock, ancestor_reconciliation, and evidence_alignment procedures
+  integration_rules:
+    refinement_chain_coordination:
+    - Every child that SG-SPEC-0002 depends_on MUST connect back into this parent's refinement_chain through
+      explicit refines ancestry.
+    - Each depended-on child SHOULD own a distinct bounded concern from the child_governance_map rather
+      than overlapping another child's detailed governance.
+    - If a later refinement need fits one existing child concern, the change SHOULD be made under that
+      child or one of its descendants instead of broadening SG-SPEC-0002.
+    - If a later refinement need is independent of the existing child_governance_map, SG-SPEC-0002 SHOULD
+      stay narrow and delegate that concern to a new sibling child spec.
+    parent_evidence_coordination:
+    - SG-SPEC-0002 keeps one local acceptance_evidence entry per local acceptance criterion even when
+      the evidence cites child specs.
+    - Parent evidence MUST identify which bounded child concern is satisfied and which concrete descendant
+      spec carries the detailed governance.
+    - A child spec's acceptance_evidence proves the child policy; it does not replace the parent's overview-level
+      evidence that the refinement chain is coordinated and linked.
   examples:
-  - name: Seed-to-child linkage
-    description: 'SG-SPEC-0001 remains the seed ontology, SG-SPEC-0002 refines its spec-to-spec linkage
-      policy, SG-SPEC-0002 lists refines: [SG-SPEC-0001], and SG-SPEC-0001 lists depends_on: [SG-SPEC-0002].
-      This makes the refinement chain explicit and allows SG-SPEC-0001 to reach linked.
+  - name: Coordinated child ownership
+    description: 'SG-SPEC-0002 keeps the shared overview and depends_on SG-SPEC-0014, SG-SPEC-0015, and
+      SG-SPEC-0016. Those children respectively own edge semantics, delegation/decomposition, and linked-readiness
+      evidence, so the parent stays narrow while the refinement chain remains explicit.
 
       '
-  - name: Unlock requires parent evidence reconciliation
-    description: 'A parent spec declares depends_on on a blocking child, and that child now exists with
-      an explicit refines link back into the parent''s refinement chain. The parent is semantically unlocked,
-      but it remains specified until ancestor_reconciliation updates the parent acceptance_evidence to
-      cite that child as the concrete refinement that resolved the delegated gap.
+  - name: Future refinement routing
+    description: 'If a later run needs a finer rule for linked-readiness evidence, that rule belongs under
+      SG-SPEC-0016 or one of its descendants rather than inside SG-SPEC-0002. If a new independent governance
+      concern appears, SG-SPEC-0002 stays narrow and delegates that concern to a new sibling child spec
+      instead of absorbing it.
 
       '
-gate_state: none
-proposed_status: null
-proposed_maturity: null
-required_human_action: '-'
-last_gate_decision: approve
-last_gate_note: 'Reviewed SG-SPEC-0002 ancestor reconciliation after split: concrete child specs 0014/0015/0016
-  exist and refine the parent.'
-last_gate_at: '2026-04-11T13:21:31.442959+00:00'
+proposed_status: linked
+proposed_maturity: 1.0
+gate_state: review_pending
+required_human_action: review refinement impact before approval
+last_outcome: done
+last_blocker: ''
+last_run_id: 20260411T231058Z-SG-SPEC-0002
+last_exit_code: 0
+last_changed_files:
+- specs/nodes/SG-SPEC-0002.yaml
+last_run_at: '2026-04-11T23:10:59.151576+00:00'
+last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0002-20260411T230557Z
+last_branch: codex/sg-spec-0002/20260411T230557Z
+last_validator_results:
+  outputs: true
+  allowed_paths: true
+  reconciliation: true
+  atomicity: true
+  transition: true
+  executor_environment: true
+  refinement_acceptance: true
+last_refinement_acceptance:
+  decision: review_required
+  change_class: constitutional_change
+  checks:
+    content_changed: true
+    hard_validation: true
+    single_spec_scope: true
+    constitutional_diff: true
+    graph_refactor_diff: false
+    atomicity_clear: true
+    within_mutation_budget: true
+  diff_paths:
+  - acceptance[0]
+  - acceptance[1]
+  - acceptance[2]
+  - acceptance_evidence[0].criterion
+  - acceptance_evidence[0].evidence
+  - acceptance_evidence[1]
+  - acceptance_evidence[1].criterion
+  - acceptance_evidence[1].evidence
+  - acceptance_evidence[2]
+  - acceptance_evidence[2].criterion
+  - acceptance_evidence[2].evidence
+  - maturity
+  - specification.atomicity_policy
+  - specification.atomicity_policy.working_node_expectations
+  - specification.atomicity_policy.working_node_expectations[0]
+  - specification.atomicity_policy.working_node_expectations[1]
+  - specification.atomicity_policy.decomposition_rules
+  - specification.atomicity_policy.decomposition_rules[0]
+  - specification.atomicity_policy.decomposition_rules[1]
+  - specification.atomicity_policy.decomposition_rules[2]
+  - specification.atomicity_policy.split_required
+  - specification.atomicity_policy.split_required[0]
+  - specification.atomicity_policy.split_required[1]
+  - specification.blocking_semantics
+  - specification.blocking_semantics.canonical_graph
+  - specification.blocking_semantics.canonical_graph[0]
+  - specification.blocking_semantics.canonical_graph[1]
+  - specification.blocking_semantics.canonical_graph[2]
+  - specification.blocking_semantics.derived_views
+  - specification.blocking_semantics.derived_views[0]
+  - specification.blocking_semantics.derived_views[1]
+  - specification.blocking_semantics.derived_views[2]
+  - specification.child_governance_map
+  - specification.child_governance_map[0]
+  - specification.child_governance_map[0].child_spec
+  - specification.child_governance_map[0].concern
+  - specification.child_governance_map[0].parent_summary
+  - specification.child_governance_map[0].parent_summary[0]
+  - specification.child_governance_map[0].parent_summary[1]
+  - specification.child_governance_map[0].parent_summary[2]
+  - specification.child_governance_map[0].detailed_governance_owned_by_child
+  - specification.child_governance_map[0].detailed_governance_owned_by_child[0]
+  - specification.child_governance_map[0].detailed_governance_owned_by_child[1]
+  - specification.child_governance_map[1]
+  - specification.child_governance_map[1].child_spec
+  - specification.child_governance_map[1].concern
+  - specification.child_governance_map[1].parent_summary
+  - specification.child_governance_map[1].parent_summary[0]
+  - specification.child_governance_map[1].parent_summary[1]
+  - specification.child_governance_map[1].parent_summary[2]
+  - specification.child_governance_map[1].detailed_governance_owned_by_child
+  - specification.child_governance_map[1].detailed_governance_owned_by_child[0]
+  - specification.child_governance_map[1].detailed_governance_owned_by_child[1]
+  - specification.child_governance_map[2]
+  - specification.child_governance_map[2].child_spec
+  - specification.child_governance_map[2].concern
+  - specification.child_governance_map[2].parent_summary
+  - specification.child_governance_map[2].parent_summary[0]
+  - specification.child_governance_map[2].parent_summary[1]
+  - specification.child_governance_map[2].parent_summary[2]
+  - specification.child_governance_map[2].detailed_governance_owned_by_child
+  - specification.child_governance_map[2].detailed_governance_owned_by_child[0]
+  - specification.child_governance_map[2].detailed_governance_owned_by_child[1]
+  - specification.coordination_envelope
+  - specification.coordination_envelope.parent_role
+  - specification.coordination_envelope.parent_role[0]
+  - specification.coordination_envelope.parent_role[1]
+  - specification.coordination_envelope.parent_role[2]
+  - specification.coordination_envelope.shared_invariants
+  - specification.coordination_envelope.shared_invariants[0]
+  - specification.coordination_envelope.shared_invariants[1]
+  - specification.coordination_envelope.shared_invariants[2]
+  - specification.coordination_envelope.shared_invariants[3]
+  - specification.delegation_policy
+  - specification.delegation_policy.seed_spec_expectations
+  - specification.delegation_policy.seed_spec_expectations[0]
+  - specification.delegation_policy.seed_spec_expectations[1]
+  - specification.delegation_policy.seed_spec_expectations[2]
+  - specification.delegation_policy.parent_expectations
+  - specification.delegation_policy.parent_expectations[0]
+  - specification.delegation_policy.parent_expectations[1]
+  - specification.delegation_policy.parent_expectations[2]
+  - specification.delegation_policy.child_expectations
+  - specification.delegation_policy.child_expectations[0]
+  - specification.delegation_policy.child_expectations[1]
+  - specification.delegation_policy.child_expectations[2]
+  - specification.evidence_policy
+  - specification.evidence_policy.rules
+  - specification.evidence_policy.rules[0]
+  - specification.evidence_policy.rules[1]
+  - specification.evidence_policy.rules[2]
+  - specification.evidence_policy.rules[3]
+  - specification.examples[0].description
+  - specification.examples[0].name
+  - specification.examples[1].description
+  - specification.examples[1].name
+  - specification.integration_rules
+  - specification.integration_rules.refinement_chain_coordination
+  - specification.integration_rules.refinement_chain_coordination[0]
+  - specification.integration_rules.refinement_chain_coordination[1]
+  - specification.integration_rules.refinement_chain_coordination[2]
+  - specification.integration_rules.refinement_chain_coordination[3]
+  - specification.integration_rules.parent_evidence_coordination
+  - specification.integration_rules.parent_evidence_coordination[0]
+  - specification.integration_rules.parent_evidence_coordination[1]
+  - specification.integration_rules.parent_evidence_coordination[2]
+  - specification.linkage_rules
+  - specification.linkage_rules.specified_to_linked
+  - specification.linkage_rules.specified_to_linked[0]
+  - specification.linkage_rules.specified_to_linked[1]
+  - specification.linkage_rules.specified_to_linked[2]
+  - specification.linkage_rules.specified_to_linked[3]
+  - specification.linkage_rules.specified_to_linked[4]
+  - specification.linkage_rules.specified_to_linked[5]
+  - specification.linkage_rules.non_blocking_children
+  - specification.linkage_rules.non_blocking_children[0]
+  - specification.linkage_rules.non_blocking_children[1]
+  - specification.objective
+  - specification.reconciliation_policy
+  - specification.reconciliation_policy.descendant_unlock
+  - specification.reconciliation_policy.descendant_unlock[0]
+  - specification.reconciliation_policy.descendant_unlock[1]
+  - specification.reconciliation_policy.ancestor_reconciliation
+  - specification.reconciliation_policy.ancestor_reconciliation[0]
+  - specification.reconciliation_policy.ancestor_reconciliation[1]
+  - specification.reconciliation_policy.ancestor_reconciliation[2]
+  - specification.reconciliation_policy.ancestor_reconciliation[3]
+  - specification.relation_policy
+  - specification.relation_policy[0]
+  - specification.relation_policy[0].relation
+  - specification.relation_policy[0].source
+  - specification.relation_policy[0].target
+  - specification.relation_policy[0].required_when
+  - specification.relation_policy[0].notes
+  - specification.relation_policy[0].notes[0]
+  - specification.relation_policy[0].notes[1]
+  - specification.relation_policy[1]
+  - specification.relation_policy[1].relation
+  - specification.relation_policy[1].source
+  - specification.relation_policy[1].target
+  - specification.relation_policy[1].required_when
+  - specification.relation_policy[1].notes
+  - specification.relation_policy[1].notes[0]
+  - specification.relation_policy[1].notes[1]
+  - specification.relation_policy[1].notes[2]
+  - specification.relation_policy[2]
+  - specification.relation_policy[2].relation
+  - specification.relation_policy[2].source
+  - specification.relation_policy[2].target
+  - specification.relation_policy[2].required_when
+  - specification.relation_policy[2].notes
+  - specification.relation_policy[2].notes[0]
+  - specification.scope.in[0]
+  - specification.scope.in[1]
+  - specification.scope.in[2]
+  - specification.scope.in[3]
+  - specification.scope.in[4]
+  - specification.scope.in[5]
+  - specification.scope.in[6]
+  - specification.scope.out[0]
+  - specification.scope.out[1]
+  - specification.scope.out[2]
+  - specification.scope.out[3]
+  - specification.scope.out[4]
+  - specification.terminology.ancestor_reconciliation
+  - specification.terminology.atomic_spec_node
+  - specification.terminology.bounded_child_spec
+  - specification.terminology.coordination_envelope
+  - specification.terminology.declared_blocking_edge
+  - specification.terminology.decomposition_pass
+  - specification.terminology.delegated_gap
+  - specification.terminology.effective_blocking
+  - specification.terminology.linked_readiness_evidence
+  - specification.terminology.linked_spec
+  - specification.terminology.refinement_chain
+  - specification.terminology.semantic_unlock
+  mutation_classes:
+  - policy_text
+  mutation_budget: []
+  budget_exceeded_classes: []
+  changed_spec_files:
+  - specs/nodes/SG-SPEC-0002.yaml
+  review_reasons:
+  - run changed governance-sensitive specification sections
+  errors: []
+  warnings: []
+last_reconciliation:
+  worktree_spec_count: 17
+  changed_spec_ids:
+  - SG-SPEC-0002
+  semantic_dependencies_resolved: true
+  work_dependencies_ready: false
+  cycles: []
+last_requested_child_materialization: false
+last_materialized_child_paths: []
