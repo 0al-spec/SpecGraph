@@ -1,0 +1,183 @@
+id: SG-SPEC-0019
+title: SpecGraph - Canonical Revision and Supersession Lineage
+kind: spec
+status: linked
+maturity: 0.68
+depends_on: []
+relates_to: []
+refines:
+- SG-SPEC-0001
+inputs:
+- specs/nodes/SG-SPEC-0001.yaml
+- AGENTS.md
+outputs:
+- specs/nodes/SG-SPEC-0019.yaml
+allowed_paths:
+- specs/nodes/SG-SPEC-0019.yaml
+acceptance:
+- Defines the bounded role of canonical revision records, revision lineage, and supersession without prescribing
+  storage backends, VCS workflow, or merge implementation
+- Defines the minimum semantic contract for recording a canonical change, including subject identity,
+  predecessor or superseded reference, authority or provenance, and bounded change scope
+- Defines the canonical versus derived boundary for revision history so diffs, timelines, indexes, and
+  working-tree state do not replace governed lineage
+acceptance_evidence:
+- criterion: Defines the bounded role of canonical revision records, revision lineage, and supersession
+    without prescribing storage backends, VCS workflow, or merge implementation
+  evidence: 'specification.scope.in limits this child to ontology semantics for revision lineage, while
+    specification.scope.out excludes YAML fields, database schemas, VCS workflow, merge mechanics, review
+    workflow, and viewer implementation. specification.boundary_policy also states that this child clarifies
+    revision and supersession semantics without adding a new seed node kind to SG-SPEC-0001.
+
+    '
+- criterion: Defines the minimum semantic contract for recording a canonical change, including subject
+    identity, predecessor or superseded reference, authority or provenance, and bounded change scope
+  evidence: 'specification.terminology defines revision_subject, revision_record, predecessor_reference,
+    supersession_event, and revision_scope. specification.revision_contract.record_minimum_semantics and
+    specification.revision_contract.supersession_rules then require a stable subject reference, predecessor
+    or superseded linkage, authority_class and provenance, and a bounded change summary for each canonical
+    lineage step.
+
+    '
+- criterion: Defines the canonical versus derived boundary for revision history so diffs, timelines, indexes,
+    and working-tree state do not replace governed lineage
+  evidence: 'specification.canonical_vs_derived_boundary separates authored or imported revision records,
+    supersedes edges, and explicit predecessor references from rebuildable git metadata, diff views, timelines,
+    and working-tree state. RSL-003 formalizes that derived history projections cannot stand in for canonical
+    lineage.
+
+    '
+prompt: Refine SG-SPEC-0001 by defining the canonical revision and supersession lineage boundary. Keep
+  this child implementation-agnostic and focused on ontology semantics for change history, stable identity,
+  and canonical versus derived history separation.
+specification:
+  objective: 'Define the bounded ontology contract for canonical revision lineage and supersession so
+    SpecGraph can preserve inspectable change history without collapsing that history into storage-native
+    commit structure or runtime tooling.
+
+    '
+  scope:
+    in:
+    - Semantic boundary for canonical revision records and supersession lineage
+    - Minimum semantic components required to trace change across node and explicit edge evolution
+    - Relationship between stable identity, frozen immutability, in-place revision, and supersession
+    - Canonical versus derived boundary for revision history projections
+    out:
+    - YAML field names, database schemas, storage backends, or repository layout
+    - Git workflow, commit hash requirements, branching strategy, or merge implementation
+    - Review workflow, queue policy, supervisor scheduling, or proposal-lane mechanics
+    - Diff rendering, timeline UX, audit dashboards, or history index implementation
+  terminology:
+    revision_subject: 'A canonical node or explicit canonical edge whose governed state changes while
+      its lineage must remain inspectable through stable identity and ordered predecessor references.
+
+      '
+    revision_record: 'A canonical record of one bounded change to a revision_subject, preserving what
+      changed, what predecessor state it follows, under what authority and provenance the change occurred,
+      and whether the change is in-place revision or supersession.
+
+      '
+    predecessor_reference: 'The explicit pointer from one canonical lineage step to the immediately prior
+      governed state of the same revision_subject, or to the superseded subject when replacement creates
+      a new stable identity.
+
+      '
+    supersession_event: 'A lineage step in which a new canonical subject replaces an older one while preserving
+      both stable identities and the directed relationship between them.
+
+      '
+    revision_scope: 'The bounded statement of what semantic surface changed in one lineage step, sufficient
+      for a reader to understand the change without requiring storage-native diffs.
+
+      '
+    lineage_projection: 'A rebuildable derived view such as a diff, timeline, audit feed, or index that
+      summarizes canonical revision lineage without becoming the canonical record itself.
+
+      '
+  boundary_policy:
+  - Canonical revision lineage is preserved through governed revision_record facts and explicit supersession
+    links, not through storage-native commit topology by itself.
+  - This child does not add revision_record as a new SG-SPEC-0001 seed node kind; it defines the semantic
+    contract that later refinement may materialize differently if needed.
+  - A frozen subject cannot be changed in place; any further canonical change must be represented as a
+    supersession_event that preserves both identities.
+  - Non-frozen subjects may evolve through in-place revision, but each revision step must still preserve
+    predecessor_reference, authority_class, provenance, and revision_scope.
+  revision_contract:
+    record_minimum_semantics:
+    - Every canonical revision_record MUST identify exactly one revision_subject by stable identity.
+    - Every canonical revision_record MUST preserve one predecessor_reference or an explicit origin marker
+      when the record starts a lineage.
+    - Every canonical revision_record MUST preserve authority_class, provenance, and a bounded revision_scope
+      or equivalent change summary.
+    - Every canonical revision_record MUST distinguish whether the change is an in-place revision or a
+      supersession_event.
+    - If the revision_subject is an explicit edge, the lineage step must still preserve enough canonical
+      identity to distinguish the prior governed edge instance from the new one.
+    supersession_rules:
+    - A supersession_event MUST preserve the stable identity of the new subject and the stable identity
+      of the superseded subject.
+    - The supersedes edge records replacement semantics between governed artifacts, while revision_record
+      preserves the lineage event and provenance of that replacement.
+    - Supersession MUST be append-only; the superseded subject remains inspectable rather than being deleted
+      from canonical history.
+    - A supersession_event MAY narrow, broaden, or restate semantics, but the lineage step must preserve
+      enough revision_scope for a reader to see why replacement occurred.
+    lineage_ordering:
+    - Canonical lineage ordering must be reconstructable from explicit predecessor or supersession references
+      plus governed provenance, without depending on one particular storage engine.
+    - A lineage step must not silently skip its immediate predecessor when canonical history intends a
+      continuous sequence.
+    - Later derived lineage_projection views may compress or visualize the chain, but they must remain
+      rebuildable from canonical lineage facts.
+  canonical_vs_derived_boundary:
+    canonical:
+    - Authored or imported revision_record facts with stable subject references
+    - Explicit predecessor_reference values or equivalent canonical lineage links
+    - Authored supersedes edges between governed artifacts
+    - Bounded change summaries, authority_class, and provenance attached to lineage steps
+    derived:
+    - Git commit graphs, branch names, and repository-native history topology
+    - Diff hunks, timeline views, audit dashboards, and change feeds
+    - Search indexes, cached history slices, and visual lineage layouts
+    - Working-tree state, patch queues, and merge-conflict artifacts before canonicalization
+  invariants:
+  - id: RSL-001
+    statement: Every canonical revision_record must identify exactly one revision_subject and preserve
+      a predecessor_reference or explicit origin marker.
+  - id: RSL-002
+    statement: Any canonical change to a frozen subject must be represented as a supersession_event that
+      preserves both the new stable identity and the superseded stable identity.
+  - id: RSL-003
+    statement: Derived diffs, timelines, indexes, and repository-native history metadata must not be treated
+      as a substitute for canonical revision lineage.
+  decisions:
+  - id: RSL-D1
+    statement: Canonical change history is represented as bounded lineage facts, not as storage-native
+      commit structure.
+    rationale: 'SpecGraph needs portable and inspectable revision meaning across repositories or storage
+      engines. The ontology therefore anchors change history in canonical lineage semantics instead of
+      in one implementation''s native history model.
+
+      '
+  - id: RSL-D2
+    statement: Supersession preserves truth evolution by replacement, not by mutating frozen artifacts.
+    rationale: 'Frozen artifacts only remain auditable if later changes create a new governed identity
+      and retain visible lineage back to the superseded subject.
+
+      '
+  examples:
+  - name: In-place revision before freeze
+    description: 'A specified spec clarifies one acceptance statement before it is frozen. A revision_record
+      points to the same stable spec identity, preserves the predecessor_reference to the prior governed
+      state, and records the bounded revision_scope without requiring a storage-level diff to understand
+      the change.
+
+      '
+  - name: Superseding a frozen requirement
+    description: 'A reviewed or frozen requirement needs semantic replacement. The new requirement receives
+      its own stable identity, declares a supersedes edge to the older requirement, and preserves the
+      supersession_event as canonical lineage so the replaced requirement remains inspectable history
+      rather than disappearing.
+
+      '
