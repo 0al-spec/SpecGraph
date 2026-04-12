@@ -2,13 +2,14 @@ id: SG-SPEC-0001
 title: SpecGraph - The Executable Product Ontology
 kind: spec
 status: linked
-maturity: 0.89
+maturity: 1.0
 depends_on:
 - SG-SPEC-0002
 - SG-SPEC-0007
 - SG-SPEC-0009
 - SG-SPEC-0010
 - SG-SPEC-0017
+- SG-SPEC-0019
 relates_to: []
 inputs:
 - README.md
@@ -74,12 +75,14 @@ acceptance_evidence:
 - criterion: States that SG-SPEC-0001 is a seed spec that child specs refine before the graph is frozen
   evidence: 'prompt frames SG-SPEC-0001 as a seed ontology and directs unresolved areas into child specs;
     scope.in adds recursive refinement via child specs; scope.out now delegates adoption-layer entities
-    to SG-SPEC-0018; D7 formalizes the seed-spec rule; spec.node_kinds.spec includes refines; and the
-    concrete descendants `specs/nodes/SG-SPEC-0002.yaml`, `specs/nodes/SG-SPEC-0007.yaml`, `specs/nodes/SG-SPEC-0009.yaml`,
-    `specs/nodes/SG-SPEC-0010.yaml`, `specs/nodes/SG-SPEC-0017.yaml`, and `specs/nodes/SG-SPEC-0018.yaml`
+    to SG-SPEC-0018 and revision/supersession lineage semantics to SG-SPEC-0019; D7 formalizes the seed-spec
+    rule; spec.node_kinds.spec includes refines; and the concrete descendants `specs/nodes/SG-SPEC-0002.yaml`,
+    `specs/nodes/SG-SPEC-0007.yaml`, `specs/nodes/SG-SPEC-0009.yaml`, `specs/nodes/SG-SPEC-0010.yaml`,
+    `specs/nodes/SG-SPEC-0017.yaml`, `specs/nodes/SG-SPEC-0018.yaml`, and `specs/nodes/SG-SPEC-0019.yaml`
     now declare `refines: [SG-SPEC-0001]`. SG-SPEC-0001 keeps `depends_on: [SG-SPEC-0002, SG-SPEC-0007,
-    SG-SPEC-0009, SG-SPEC-0010, SG-SPEC-0017]` for blocking descendants, while SG-SPEC-0018 remains a
-    non-blocking delegated child, keeping the refinement chain explicit without widening linked blockers.
+    SG-SPEC-0009, SG-SPEC-0010, SG-SPEC-0017, SG-SPEC-0019]` for blocking descendants, while SG-SPEC-0018
+    remains a non-blocking delegated child, keeping the refinement chain explicit without widening linked
+    blockers beyond concrete descendants.
 
     '
 prompt: 'This spec is a seed ontology, not a finished graph. Use child specs to
@@ -143,6 +146,7 @@ specification:
       by SG-SPEC-0009
     - Ubiquitous vocabulary meta-ontology primitives for executable domain vocabularies — covered by SG-SPEC-0010
     - Adoption-layer entities (DiscoverySurface, AdoptionCriterion, etc.) — covered by SG-SPEC-0018
+    - Detailed canonical revision-record and supersession-lineage semantics — covered by SG-SPEC-0019
   terminology:
     intent: 'A precise, governed representation of what a product must be, how it must behave, and how
       its implementation can be validated.  Intent is the source of truth from which all other artifacts
@@ -614,18 +618,20 @@ specification:
       in SG-SPEC-0001.
 
       '
-gate_state: split_required
-required_human_action: split spec scope before rerun
-last_outcome: split_required
+proposed_status: null
+proposed_maturity: null
+gate_state: none
+required_human_action: '-'
+last_outcome: done
 last_blocker: ''
-last_run_id: 20260412T065602Z-SG-SPEC-0001
+last_run_id: 20260412T070303Z-SG-SPEC-0001
 last_exit_code: 0
 last_changed_files:
 - specs/nodes/SG-SPEC-0001.yaml
-- specs/nodes/SG-SPEC-0018.yaml
-last_run_at: '2026-04-12T06:56:03.079696+00:00'
-last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0001-20260412T065046Z
-last_branch: codex/sg-spec-0001/20260412T065046Z
+- specs/nodes/SG-SPEC-0019.yaml
+last_run_at: '2026-04-12T07:03:04.621509+00:00'
+last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0001-20260412T065629Z
+last_branch: codex/sg-spec-0001/20260412T065629Z
 last_validator_results:
   outputs: true
   allowed_paths: true
@@ -647,24 +653,25 @@ last_refinement_acceptance:
     within_mutation_budget: true
   diff_paths:
   - acceptance_evidence[7].evidence
+  - depends_on[5]
   - maturity
-  - specification.scope.out[9]
+  - specification.scope.out[10]
   mutation_classes:
   - policy_text
   mutation_budget: []
   budget_exceeded_classes: []
   changed_spec_files:
   - specs/nodes/SG-SPEC-0001.yaml
-  - specs/nodes/SG-SPEC-0018.yaml
+  - specs/nodes/SG-SPEC-0019.yaml
   review_reasons:
   - run changed additional spec files beyond the selected source node
   errors: []
   warnings: []
 last_reconciliation:
-  worktree_spec_count: 18
+  worktree_spec_count: 19
   changed_spec_ids:
   - SG-SPEC-0001
-  - SG-SPEC-0018
+  - SG-SPEC-0019
   semantic_dependencies_resolved: true
   work_dependencies_ready: false
   cycles: []
