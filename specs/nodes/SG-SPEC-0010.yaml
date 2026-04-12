@@ -1,8 +1,8 @@
 id: SG-SPEC-0010
 title: SpecGraph - Ubiquitous Vocabulary Meta-Ontology Primitives
 kind: spec
-status: linked
-maturity: 0.53
+status: reviewed
+maturity: 0.73
 depends_on:
 - SG-SPEC-0011
 relates_to:
@@ -232,60 +232,10 @@ specification:
     UX, intake workflow, or non-canonical phrasing policy beyond Alias as a canonical primitive.
   - This node is adjacent to graph invariants from SG-SPEC-0001, but its Invariant primitive is scoped
     specifically to vocabulary semantics used by later executable domain vocabularies.
-proposed_status: reviewed
-proposed_maturity: 0.73
-gate_state: review_pending
-required_human_action: approve or retry refinement
-last_outcome: done
-last_blocker: ''
-last_run_id: 20260412T172240Z-SG-SPEC-0010
-last_exit_code: 0
-last_changed_files:
-- specs/nodes/SG-SPEC-0010.yaml
-last_run_at: '2026-04-12T17:22:41.026297+00:00'
-last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0010-20260412T172207Z
-last_branch: codex/sg-spec-0010/20260412T172207Z
-last_validator_results:
-  outputs: true
-  allowed_paths: true
-  reconciliation: true
-  atomicity: true
-  transition: true
-  executor_environment: true
-  refinement_acceptance: true
-last_refinement_acceptance:
-  decision: approve
-  change_class: local_refinement
-  checks:
-    content_changed: true
-    hard_validation: true
-    single_spec_scope: true
-    constitutional_diff: false
-    graph_refactor_diff: false
-    atomicity_clear: true
-    within_mutation_budget: true
-  diff_paths:
-  - acceptance_evidence[2].evidence
-  - specification.governance_notes[1]
-  - specification.governance_notes[2]
-  - specification.governance_notes[3]
-  - specification.governance_notes[4]
-  - specification.relationship_rules[0]
-  mutation_classes:
-  - policy_text
-  mutation_budget: []
-  budget_exceeded_classes: []
-  changed_spec_files:
-  - specs/nodes/SG-SPEC-0010.yaml
-  review_reasons: []
-  errors: []
-  warnings: []
-last_reconciliation:
-  worktree_spec_count: 22
-  changed_spec_ids:
-  - SG-SPEC-0010
-  semantic_dependencies_resolved: true
-  work_dependencies_ready: true
-  cycles: []
-last_requested_child_materialization: false
-last_materialized_child_paths: []
+gate_state: none
+proposed_status: null
+proposed_maturity: null
+required_human_action: '-'
+last_gate_decision: approve
+last_gate_note: ''
+last_gate_at: '2026-04-12T19:14:38.998128+00:00'

@@ -1,8 +1,8 @@
 id: SG-SPEC-0006
 title: SpecGraph - Tracked Proposal Lane for Graph Evolution
 kind: spec
-status: linked
-maturity: 0.6
+status: reviewed
+maturity: 0.8
 depends_on: []
 relates_to:
 - SG-SPEC-0005
@@ -517,57 +517,10 @@ specification:
     - Graph analyses that operate over both layers must treat proposal-lane structure as non-canonical
       unless an explicit canonical application event has materialized the proposal into canonical spec
       nodes.
-proposed_status: reviewed
-proposed_maturity: 0.8
-gate_state: review_pending
-required_human_action: review refinement impact before approval
-last_outcome: done
-last_blocker: ''
-last_run_id: 20260412T113138Z-SG-SPEC-0006
-last_exit_code: 0
-last_changed_files:
-- specs/nodes/SG-SPEC-0006.yaml
-last_run_at: '2026-04-12T11:31:38.594018+00:00'
-last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0006-20260412T112959Z
-last_branch: codex/sg-spec-0006/20260412T112959Z
-last_validator_results:
-  outputs: true
-  allowed_paths: true
-  reconciliation: true
-  atomicity: true
-  transition: true
-  executor_environment: true
-  refinement_acceptance: true
-last_refinement_acceptance:
-  decision: review_required
-  change_class: constitutional_change
-  checks:
-    content_changed: true
-    hard_validation: true
-    single_spec_scope: true
-    constitutional_diff: true
-    graph_refactor_diff: false
-    atomicity_clear: true
-    within_mutation_budget: true
-  diff_paths:
-  - specification.proposal_lane_policy.identity_and_lineage[0]
-  - specification.terminology.proposal_handle.collision_handling[2]
-  mutation_classes:
-  - policy_text
-  mutation_budget: []
-  budget_exceeded_classes: []
-  changed_spec_files:
-  - specs/nodes/SG-SPEC-0006.yaml
-  review_reasons:
-  - run changed governance-sensitive specification sections
-  errors: []
-  warnings: []
-last_reconciliation:
-  worktree_spec_count: 22
-  changed_spec_ids:
-  - SG-SPEC-0006
-  semantic_dependencies_resolved: true
-  work_dependencies_ready: true
-  cycles: []
-last_requested_child_materialization: false
-last_materialized_child_paths: []
+gate_state: none
+proposed_status: null
+proposed_maturity: null
+required_human_action: '-'
+last_gate_decision: approve
+last_gate_note: ''
+last_gate_at: '2026-04-12T19:14:37.090881+00:00'
