@@ -4663,6 +4663,7 @@ def _process_one_spec(
         "errors": ["refinement acceptance was not evaluated"],
         "warnings": [],
     }
+    executor_requested_split_required = False
 
     if primary_executor_failure:
         worktree_specs = []
@@ -4735,6 +4736,8 @@ def _process_one_spec(
         validation_errors.extend(reconciliation_errors)
         validation_errors.extend(atomicity_errors)
         validation_errors.extend(transition_errors)
+
+        executor_requested_split_required = outcome == "split_required"
 
         if child_materialization_errors and outcome == "done":
             outcome = "blocked"
@@ -4811,7 +4814,13 @@ def _process_one_spec(
         and accepted_refinement
         and bool(changed)
     )
-    split_sync_allowed = productive_split_required
+    split_sync_allowed = productive_split_required and (
+        not atomicity_errors
+        or executor_requested_split_required
+        or bool(materialized_child_paths)
+        or child_materialization_requested
+        or any(path != source_spec_relpath for path in changed)
+    )
     if split_sync_allowed:
         allowed_changes = select_sync_paths(effective_allowed_paths, changed)
         sync_files_from_worktree(worktree_path, allowed_changes)

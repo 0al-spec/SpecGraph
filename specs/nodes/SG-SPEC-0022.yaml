@@ -109,8 +109,10 @@ specification:
     itself approve, reject, or freeze a node.
   - node_maturity is scoped to one node''s bounded responsibility, not to total project completion, downstream
     implementation progress, or cross-graph business value.
-  - A maturity value may be authored or imported as canonical state, but estimated scores, alerts, and
-    trend projections remain derived unless explicitly governed otherwise.
+  - A maturity value may be authored as canonical state. Imported external values stay derived unless
+    a governed maturity_assessment is explicitly recorded for the target snapshot with preserved rationale.
+  - node_maturity is bound to one governed node snapshot; a revision or supersession creates a successor
+    node that carries its own canonical maturity assessment for that successor state.
   maturity_contract:
     subject_scope:
     - node_maturity applies to one canonical node at a time and should be interpreted relative to that
@@ -142,6 +144,8 @@ specification:
   canonical_vs_derived_boundary:
     canonical:
     - Authored or imported node_maturity values attached to governed nodes
+    - Imported or heuristic assessments that have been explicitly recorded as a governed node_maturity
+      assessment for that snapshot
     - Authored rationale or reviewed notes explaining a maturity assessment when such rationale is preserved
       canonically
     - Reviewed decisions that clarify how a bounded node interprets its maturity within current policy
@@ -190,3 +194,10 @@ specification:
       the lifecycle stage remains the same until a separate status condition changes.
 
       '
+gate_state: none
+proposed_status: null
+proposed_maturity: null
+required_human_action: '-'
+last_gate_decision: approve
+last_gate_note: Approve refined node maturity boundary for canonical-vs-derived assessments.
+last_gate_at: '2026-04-12T12:12:00+00:00'

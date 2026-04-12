@@ -2,7 +2,7 @@ id: SG-SPEC-0021
 title: SpecGraph - Derived Metric Family Boundary
 kind: spec
 status: linked
-maturity: 0.64
+maturity: 0.78
 depends_on:
 - SG-SPEC-0003
 - SG-SPEC-0017
@@ -38,10 +38,11 @@ acceptance_evidence:
     '
 - criterion: 'Defines the first metric family seeds in scope for this boundary: pre-SIB, SIB, Specification
     Verifiability, Process Observability, and Structural Observability'
-  evidence: 'specification.terminology defines derived_metric_family, metric_subject, metric_input_class,
-    metric_snapshot, and threshold_candidate. specification.metric_family_catalog then materializes five
-    concrete family seeds: pre-SIB, SIB, Specification Verifiability, Process Observability, and Structural
-    Observability, each with role, subject_scope, admissible_input_classes, and boundary_notes.
+  evidence: 'specification.terminology defines derived_metric_family, metric_family_role, metric_subject,
+    metric_input_class, metric_snapshot, and threshold_candidate. specification.metric_family_catalog
+    then materializes five concrete family seeds: pre-SIB, SIB, Specification Verifiability, Process Observability,
+    and Structural Observability, each with family_role, role, subject_scope, admissible_input_classes,
+    and boundary_notes.
 
     '
 - criterion: Defines how each metric family binds to a bounded subject and admissible input classes drawn
@@ -49,18 +50,19 @@ acceptance_evidence:
     or signals
   evidence: 'specification.metric_family_catalog assigns bounded subject_scope and admissible_input_classes
     to every family, and specification.relationship_policy requires every metric family to declare explicit
-    subject binding before derived computation. Those rules separate canonical graph state, SG-SPEC-0017
-    runtime observability entities, and SG-SPEC-0003 graph-health diagnostics as admissible inputs without
-    collapsing them into one layer.
+    subject binding and one semantic family_role before derived computation. Those rules separate canonical
+    graph state, SG-SPEC-0017 runtime observability entities, and SG-SPEC-0003 graph-health diagnostics
+    as admissible inputs without collapsing them into one layer.
 
     '
 - criterion: Defines the canonical versus derived boundary for metric family definitions, computed values,
     threshold proposals, and trend artifacts so scores do not become canonical truth by default
-  evidence: 'specification.canonical_vs_derived_boundary keeps family definitions, subject scope, and
-    reviewed proposal text canonical, while computed scores, threshold evaluations, alerts, dashboards,
-    and trend artifacts remain derived. specification.invariants and decisions then formalize that metric
-    outputs may inform signals or proposals but cannot by themselves change lifecycle status, acceptance,
-    or authority.
+  evidence: 'specification.canonical_vs_derived_boundary keeps family definitions, family-role assignments,
+    subject scope, and reviewed proposal text canonical, while computed scores, cross-family equivalence
+    claims, threshold evaluations, alerts, dashboards, and trend artifacts remain derived. specification.invariants
+    and decisions then formalize that shared family roles do not make scores canonical or interchangeable,
+    and metric outputs may inform signals or proposals but cannot by themselves change lifecycle status,
+    acceptance, or authority.
 
     '
 prompt: Refine SG-SPEC-0001 by defining the bounded metric-family boundary for derived quality and observability
@@ -94,13 +96,17 @@ specification:
       values canonical by default.
 
       '
-    metric_subject: 'The bounded canonical node, canonical graph region, proposal target region, or other
-      explicitly governed subject to which a derived metric family applies.
+    metric_family_role: 'A canonical semantic role label that classifies the kind of question a derived
+      metric family asks about its subject, without fixing formulas, thresholds, or making same-role families
+      interchangeable by default.
 
       '
-    metric_input_class: 'A declared category of admissible source material that a metric family may consume,
-      such as canonical graph structure, runtime observability entities, derived graph-health observations,
-      or run artifacts.
+    metric_subject: 'A bounded subject class for a metric family. The bound subject defines the maximum
+      legal domain where this metric family definition can apply.
+
+      '
+    metric_input_class: 'A declared input class for admissible source material. Input classes are bounded
+      categories that must remain explicit in each metric family binding.
 
       '
     metric_snapshot: 'One derived computed result for a metric family over one declared metric_subject
@@ -120,6 +126,8 @@ specification:
     rankings, and comparisons remain derived artifacts.
   - This child does not define formulas, thresholds, or gating rules; it defines what a family means,
     what subject it may bind to, and what input classes are admissible.
+  - Family roles classify semantic intent and the expected subject envelope for a family, but they do
+    not by themselves define formulas, thresholds, or score comparability across different families.
   - Metric families may consume canonical graph state, SG-SPEC-0017 runtime observability entities, and
     SG-SPEC-0003 graph-health observations or signals as inputs, but those sources retain their own ontology
     boundaries.
@@ -129,31 +137,34 @@ specification:
     refinement without requiring formulas to be frozen in this node.
   metric_family_catalog:
   - family: pre-SIB
+    family_role: structural_quality
     role: Provisional named family for early structural quality assessment before a reviewed SIB formulation
       is fixed.
     subject_scope:
-    - bounded canonical spec node
-    - bounded canonical graph region
+    - bounded_spec_node
+    - bounded_graph_region
     admissible_input_classes:
-    - canonical graph structure
-    - derived graph_health_observation
+    - canonical_graph_structure
+    - derived_graph_health_observation
     boundary_notes:
     - pre-SIB is explicitly provisional and must not be treated as a normative gate by itself.
     - Evolution from pre-SIB to SIB requires reviewed semantic continuity or explicit supersession rather
       than silent relabeling.
   - family: SIB
+    family_role: structural_quality
     role: Stable named family for structural graph-quality assessment once a reviewed formulation exists.
     subject_scope:
-    - bounded canonical spec node
-    - bounded canonical graph region
+    - bounded_spec_node
+    - bounded_graph_region
     admissible_input_classes:
-    - canonical graph structure
-    - derived graph_health_signal
+    - canonical_graph_structure
+    - derived_graph_health_signal
     boundary_notes:
     - This child defines the family label and subject boundary, not the score formula, weighting, or thresholds.
     - SIB may summarize multiple structural signals later, but those derived combinations remain outside
       this node until separately specified.
   - family: Specification Verifiability
+    family_role: specification_assurance
     role: Family for assessing how inspectable, evidencable, and traceably checkable a governed subject
       is.
     subject_scope:
@@ -161,37 +172,39 @@ specification:
     - requirement
     - invariant
     admissible_input_classes:
-    - canonical acceptance criteria and acceptance_evidence structure
-    - canonical trace links and dependency linkage
+    - acceptance_criteria_and_evidence
+    - trace_dependency_links
     boundary_notes:
     - This family supports reviewability and refinement quality analysis; it does not replace human semantic
       acceptance judgment.
     - Missing evidence may influence a derived score, but that derived result does not itself reject a
       node without existing governance policy.
   - family: Process Observability
+    family_role: process_visibility
     role: Family for assessing how visible and attributable the refinement, execution, or proposal process
       is across bounded runs or graph regions.
     subject_scope:
-    - bounded supervisor run cohort
-    - bounded proposal or refinement region
+    - bounded_supervisor_run_cohort
+    - bounded_refinement_region
     admissible_input_classes:
-    - runtime observability entities
-    - run artifacts
-    - derived queue or proposal state
+    - runtime_observability_entities
+    - run_artifacts
+    - queue_or_proposal_state
     boundary_notes:
     - Process Observability summarizes process visibility, not process correctness or approval authority.
     - The family may cite runtime observability entities, but it does not redefine SG-SPEC-0017 evidence
       semantics.
   - family: Structural Observability
+    family_role: structural_visibility
     role: Family for assessing how visible structural graph issues, lineage gaps, and dependency conditions
       are to derived diagnostics and tooling.
     subject_scope:
-    - bounded canonical graph region
-    - proposal target region
+    - bounded_graph_region
+    - proposal_target_region
     admissible_input_classes:
-    - canonical topology and lineage state
-    - derived graph_health_observation
-    - derived graph_health_signal
+    - canonical_topology_and_lineage_state
+    - derived_graph_health_observation
+    - derived_graph_health_signal
     boundary_notes:
     - Structural Observability helps determine whether graph pathologies are visible and attributable,
       not whether they are already resolved.
@@ -200,6 +213,8 @@ specification:
   relationship_policy:
   - Every derived_metric_family MUST declare an explicit metric_subject boundary and admissible metric_input_class
     set before any metric_snapshot is interpreted.
+  - Every derived_metric_family MUST declare one metric_family_role alongside its metric_subject boundary
+    and admissible metric_input_class set.
   - Metric families MAY consume canonical graph structure, SG-SPEC-0017 runtime observability entities,
     SG-SPEC-0003 graph-health observations or signals, and run artifacts only as declared input classes;
     resulting metric_snapshots remain derived.
@@ -209,20 +224,23 @@ specification:
     they become normative governance policy.
   - A metric family MAY apply to multiple metric_subject classes only when the family definition keeps
     subject binding explicit and inspectable.
+  - Shared metric_family_role membership MUST NOT be interpreted as formula identity, score normalization,
+    or threshold equivalence across distinct metric families.
   canonical_vs_derived_boundary:
     canonical:
-    - Authored metric-family definitions and boundary notes
-    - Authored declarations of subject scope and admissible input classes
+    - Authored metric-family definitions, family-role assignments, and boundary notes
+    - Authored subject-scope declarations and admissible input class declarations
     - Reviewed proposal text recommending future formula or threshold policy
     derived:
     - Computed metric values, scorecards, rankings, and percentile comparisons
+    - Cross-family normalization experiments and equivalence claims
     - threshold_candidate evaluations, alerts, and automated prioritization outputs
     - trend_artifacts, time-series histories, and dashboard projections
     - Calibration experiments, weight-tuning results, and benchmark runs
   invariants:
   - id: MET-001
-    statement: Every derived_metric_family must declare bounded metric_subject scope and admissible metric_input_class
-      categories.
+    statement: Every derived_metric_family must declare one metric_family_role plus bounded metric_subject
+      scope and admissible metric_input_class categories.
   - id: MET-002
     statement: Computed metric values remain derived artifacts and cannot by themselves change lifecycle
       status, acceptance, proposal authority, or canonical truth.
@@ -232,6 +250,9 @@ specification:
   - id: MET-004
     statement: Stable family labels such as pre-SIB and SIB may evolve only through reviewed continuity
       or supersession, not silent relabeling.
+  - id: MET-005
+    statement: Shared metric_family_role membership does not by itself make metric families formula-equivalent,
+      threshold-equivalent, or snapshot-comparable.
   decisions:
   - id: MET-D1
     statement: Metric families are canonical semantic handles, while scores remain derived artifacts.
@@ -269,3 +290,10 @@ specification:
       the accepted canonical facts remain the specs and links themselves rather than the reported trend.
 
       '
+gate_state: none
+proposed_status: null
+proposed_maturity: null
+required_human_action: '-'
+last_gate_decision: approve
+last_gate_note: Approve narrowed derived metric family boundary without catalog-level role taxonomy.
+last_gate_at: '2026-04-12T12:18:00+00:00'
