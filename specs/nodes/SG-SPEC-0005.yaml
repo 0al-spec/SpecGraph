@@ -101,8 +101,8 @@ specification:
     - Batch refactor orchestration across many targets at once
     - Viewer UX for visualizing retrospective refactor waves
     - Fully automatic governance or ontology rewrites
-    - Concrete live-region application artifact contracts, proposal-state gate semantics, and review-gate
-      semantics delegated to SG-SPEC-0013
+    - Concrete live-region application artifact contracts, proposal-state readiness criteria, and review-gate
+      pass/fail outcomes for pre-writeback, delegated to SG-SPEC-0013
     - Implicit region-wide canonical rewrites inferred only from adjacency to the selected target
   terminology:
     retrospective_refactor_pass: A bounded graph-refactoring pass aimed at improving an already-existing
@@ -164,10 +164,10 @@ specification:
       canonical writes may fit inside one retrospective_writeback_envelope; it does not define the concrete
       live-region application artifacts or review checklist.
     - No live retrospective writeback may proceed from this node's policy alone; the selected pass must
-      also satisfy the explicit pre-writeback application prerequisites delegated to SG-SPEC-0013.
+      also satisfy the explicit pre-writeback readiness package defined by SG-SPEC-0013 for that envelope.
     - SG-SPEC-0005 constrains structural scope and candidate progression only; it does not define proposal-lane
       state transitions, gate algorithms, or proposal-artifact schemas. SG-SPEC-0013 owns the reviewable
-      application package and the pre-writeback refusal conditions.
+      application package, pass/fail gate outcomes, and pre-writeback refusal conditions.
     - SG-SPEC-0013 owns the concrete live-region application artifact contract, proposal-state gate semantics,
       review-gate semantics, and refusal conditions for pre-writeback application readiness, while SG-SPEC-0005
       remains the overview and execution-boundary node.
@@ -177,13 +177,13 @@ gate_state: none
 required_human_action: '-'
 last_outcome: done
 last_blocker: ''
-last_run_id: 20260412T191700Z-SG-SPEC-0005
+last_run_id: 20260412T212454Z-SG-SPEC-0005
 last_exit_code: 0
 last_changed_files:
 - specs/nodes/SG-SPEC-0005.yaml
-last_run_at: '2026-04-12T19:17:01.224263+00:00'
-last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0005-20260412T191630Z
-last_branch: codex/sg-spec-0005/20260412T191630Z
+last_run_at: '2026-04-12T21:24:54.768916+00:00'
+last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0005-20260412T212429Z
+last_branch: codex/sg-spec-0005/20260412T212429Z
 last_validator_results:
   outputs: true
   allowed_paths: true
@@ -204,7 +204,9 @@ last_refinement_acceptance:
     atomicity_clear: true
     within_mutation_budget: true
   diff_paths:
-  - specification.retrospective_policy.application_boundary[0]
+  - specification.retrospective_policy.application_boundary[1]
+  - specification.retrospective_policy.application_boundary[2]
+  - specification.scope.out[4]
   mutation_classes:
   - policy_text
   mutation_budget: []

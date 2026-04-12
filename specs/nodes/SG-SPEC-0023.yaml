@@ -1,0 +1,267 @@
+id: SG-SPEC-0023
+title: SpecGraph - Edge Kind Validation Contract
+kind: spec
+status: linked
+maturity: 0.98
+depends_on: []
+relates_to: []
+refines:
+- SG-SPEC-0001
+inputs:
+- specs/nodes/SG-SPEC-0001.yaml
+outputs:
+- specs/nodes/SG-SPEC-0023.yaml
+allowed_paths:
+- specs/nodes/SG-SPEC-0023.yaml
+acceptance:
+- Defines the edge compatibility matrix for each SG-SPEC-0001 edge kind with explicit source and target
+  kind limits
+- Defines directedness, endpoint presence rules, and self-edge restrictions for each edge kind in SG-SPEC-0001
+- Defines which edge kinds block linked-readiness conditions and what unresolved state means for those
+  edges
+- Defines how SG-SPEC-0001 edge kinds map to static classification and where dynamic edges are intentionally
+  out of scope
+acceptance_evidence:
+- criterion: Defines the edge compatibility matrix for each SG-SPEC-0001 edge kind with explicit source
+    and target kind limits
+  evidence: 'The section specification.edge_contract.compatibility_matrix in this child lists every edge
+    kind from SG-SPEC-0001 with source_kinds and target_kinds constraints and the matrix row format used
+    for machine validation.
+
+    '
+- criterion: Defines directedness, endpoint presence rules, and self-edge restrictions for each edge kind
+    in SG-SPEC-0001
+  evidence: specification.validation_rules and specification.endpoint_contract define that every edge
+    must have source and target IDs, enumerate directionality assumptions, and call out no-self constraints
+    and exception handling by kind.
+- criterion: Defines which edge kinds block linked-readiness conditions and what unresolved state means
+    for those edges
+  evidence: specification.linked_readiness defines the canonical set of blocking edge kinds and explicitly
+    states that unresolved target links in those kinds prevent a node from being considered linked.
+- criterion: Defines how SG-SPEC-0001 edge kinds map to static classification and where dynamic edges
+    are intentionally out of scope
+  evidence: specification.classification_policy makes static-only edge kinds explicit and defines that
+    dynamic or inferred edge kinds are deferred to separate ontology extensions.
+prompt: Refine SG-SPEC-0001 by externalizing edge-kind validation rules. Keep this child bounded to semantic
+  contracts for compatibility checks, blocking behavior, and static/dynamic boundary. Do not define storage,
+  query, or runtime inference implementations.
+specification:
+  objective: Define a bounded, machine-checkable contract for validating SG-SPEC-0001 edge declarations.
+  scope:
+    in:
+    - The edge compatibility contract for all edge kinds declared in SG-SPEC-0001
+    - Direction, source-target shape, and self-edge handling for each edge kind
+    - Blocking behavior for linked-readiness for edge kinds that appear in SG-SPEC-0001
+    - Static classification and explicit out-of-scope boundary for dynamic/inferred extension edges
+    out:
+    - Validation query execution, traversal algorithms, or index design
+    - Edge recommendation, recommendation ranking, or automatic inference
+    - Runtime scheduler, queue behavior, or observability metrics tied to unresolved edges
+    - Storage format, schema, or transport concerns
+  terminology:
+    edge_kind: One named relation in the SG-SPEC ontology, such as depends_on, refines, or tested_by.
+    compatibility_matrix: A complete per-kind specification of legal source kinds, target kinds, and kind-level
+      validation flags.
+    blocking_edge: An edge kind that must be fully resolved for linked status readiness in the parent
+      scope.
+    resolved_edge: An edge whose target exists and satisfies both compatibility and scope constraints.
+    unresolved_edge: An edge whose target, direction, or kind constraints are not yet satisfied.
+  edge_contract:
+    compatibility_matrix:
+    - kind: depends_on
+      source_kinds:
+      - spec
+      - requirement
+      - code_surface
+      target_kinds:
+      - spec
+      - requirement
+      - code_surface
+      blocking_for_linked: true
+      directed: true
+      requires_distinct_nodes: true
+    - kind: refines
+      source_kinds:
+      - spec
+      - requirement
+      target_kinds:
+      - intent
+      - spec
+      blocking_for_linked: true
+      directed: true
+      requires_distinct_nodes: true
+    - kind: implements
+      source_kinds:
+      - code_surface
+      target_kinds:
+      - spec
+      - requirement
+      blocking_for_linked: true
+      directed: true
+      requires_distinct_nodes: true
+    - kind: tested_by
+      source_kinds:
+      - requirement
+      - spec
+      - invariant
+      target_kinds:
+      - test
+      blocking_for_linked: true
+      directed: true
+      requires_distinct_nodes: true
+    - kind: conflicts_with
+      source_kinds:
+      - requirement
+      - decision
+      - constraint
+      target_kinds:
+      - requirement
+      - decision
+      - constraint
+      blocking_for_linked: false
+      directed: true
+      requires_distinct_nodes: true
+    - kind: supersedes
+      source_kinds:
+      - spec
+      - decision
+      - requirement
+      target_kinds:
+      - spec
+      - decision
+      - requirement
+      blocking_for_linked: false
+      directed: true
+      requires_distinct_nodes: true
+    - kind: derived_from
+      source_kinds:
+      - requirement
+      - spec
+      - decision
+      target_kinds:
+      - intent
+      - spec
+      blocking_for_linked: false
+      directed: true
+      requires_distinct_nodes: true
+    - kind: owns
+      source_kinds:
+      - intent
+      target_kinds:
+      - spec
+      - requirement
+      - code_surface
+      blocking_for_linked: false
+      directed: true
+      requires_distinct_nodes: true
+    - kind: relates_to
+      source_kinds:
+      - all
+      target_kinds:
+      - all
+      blocking_for_linked: false
+      directed: true
+      allows_self_edge: true
+      requires_distinct_nodes: false
+  endpoint_contract:
+    source_node_id_required: true
+    target_node_id_required: true
+    source_node_id_non_empty: true
+    target_node_id_non_empty: true
+    missing_node_record_allowed: true
+  validation_rules:
+  - All explicit edges in the canonical graph must define a valid source and a valid target ID.
+  - Explicit edges whose kind is not present in the compatibility matrix are unsupported and MUST be rejected
+    as invalid-kind before any source/target compatibility evaluation.
+  - For every explicit edge, source and target nodes must satisfy the compatibility matrix for that kind.
+  - For source_kinds=all and target_kinds=all, edges are only constrained by the source/target existence
+    rule above.
+  - Self-edges are forbidden unless explicitly allowed for the edge kind.
+  - depends_on edges MUST NOT create cycles in the transitive closure of depends_on relations.
+  - Relates_to MAY be used for non-core semantically-neutral cross-linking and does not by itself alter
+    linked readiness.
+  linked_readiness:
+    blocking_kinds:
+    - depends_on
+    - refines
+    - implements
+    - tested_by
+    unresolved_definition:
+      missing_target: The target node is not present in canonical data.
+      invalid_target_kind: The target node kind is not in the compatibility row for the source node kind.
+      unsupported_kind: The edge kind is not declared in SG-SPEC-0001/this compatibility matrix.
+      unresolved_target: The target exists but is not in an allowed status for the current parent readiness
+        check.
+      self_reference_forbidden: The source and target are identical where source_node_constraint requires
+        distinct nodes.
+  classification_policy:
+    static: All edge kinds in SG-SPEC-0001 are authored canonical edges by default.
+    dynamic:
+    - No additional dynamic edge kinds are introduced in this spec.
+    - Dynamic edge kinds are allowed only when a child spec explicitly extends the ontology and updates
+      this child.
+  invariants:
+  - id: EDG-001
+    statement: Every explicit edge must satisfy the compatibility_matrix contract for its kind.
+  - id: EDG-002
+    statement: depends_on edges are directed, acyclic, and distinct-node by default.
+  - id: EDG-003
+    statement: Blocking edge kinds must be resolved for linked-readiness according to SG-SPEC-0001 definitions.
+proposed_status: reviewed
+proposed_maturity: 1.0
+gate_state: review_pending
+required_human_action: approve or retry refinement
+last_outcome: done
+last_blocker: ''
+last_run_id: 20260412T212525Z-SG-SPEC-0023
+last_exit_code: 0
+last_changed_files:
+- specs/nodes/SG-SPEC-0023.yaml
+last_run_at: '2026-04-12T21:25:26.588901+00:00'
+last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0023-20260412T212508Z
+last_branch: codex/sg-spec-0023/20260412T212508Z
+last_validator_results:
+  outputs: true
+  allowed_paths: true
+  reconciliation: true
+  atomicity: true
+  transition: true
+  executor_environment: true
+  refinement_acceptance: true
+last_refinement_acceptance:
+  decision: approve
+  change_class: local_refinement
+  checks:
+    content_changed: true
+    hard_validation: true
+    single_spec_scope: true
+    constitutional_diff: false
+    graph_refactor_diff: false
+    atomicity_clear: true
+    within_mutation_budget: true
+  diff_paths:
+  - acceptance_evidence[1].evidence
+  - specification.endpoint_contract
+  - specification.endpoint_contract.source_node_id_required
+  - specification.endpoint_contract.target_node_id_required
+  - specification.endpoint_contract.source_node_id_non_empty
+  - specification.endpoint_contract.target_node_id_non_empty
+  - specification.endpoint_contract.missing_node_record_allowed
+  mutation_classes:
+  - policy_text
+  mutation_budget: []
+  budget_exceeded_classes: []
+  changed_spec_files:
+  - specs/nodes/SG-SPEC-0023.yaml
+  review_reasons: []
+  errors: []
+  warnings: []
+last_reconciliation:
+  worktree_spec_count: 23
+  changed_spec_ids:
+  - SG-SPEC-0023
+  semantic_dependencies_resolved: true
+  work_dependencies_ready: true
+  cycles: []
+last_requested_child_materialization: false
+last_materialized_child_paths: []

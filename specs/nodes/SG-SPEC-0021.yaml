@@ -2,7 +2,7 @@ id: SG-SPEC-0021
 title: SpecGraph - Derived Metric Family Boundary
 kind: spec
 status: linked
-maturity: 0.78
+maturity: 0.98
 depends_on:
 - SG-SPEC-0003
 - SG-SPEC-0017
@@ -121,6 +121,15 @@ specification:
       It remains rebuildable from underlying state and does not become canonical by default.
 
       '
+  subject_scope_contract:
+  - bounded_spec_node
+  - bounded_graph_region
+  - spec
+  - requirement
+  - invariant
+  - bounded_supervisor_run_cohort
+  - bounded_refinement_region
+  - proposal_target_region
   boundary_policy:
   - Derived metric families are canonical semantic handles for classes of assessment; computed scores,
     rankings, and comparisons remain derived artifacts.
@@ -233,6 +242,8 @@ specification:
     set before any metric_snapshot is interpreted.
   - Every derived_metric_family MUST declare one metric_family_role alongside its metric_subject boundary
     and admissible metric_input_class set.
+  - Every declared metric_subject value MUST be one entry from subject_scope_contract, and families must
+    not introduce unbounded subjects (such as `all_graph`, `global`, or `unspecified`) outside this contract.
   - Metric families MAY consume canonical graph structure, SG-SPEC-0017 runtime observability entities,
     SG-SPEC-0003 graph-health observations or signals, and run artifacts only as declared input classes;
     resulting metric_snapshots remain derived.
@@ -311,83 +322,10 @@ specification:
       the accepted canonical facts remain the specs and links themselves rather than the reported trend.
 
       '
-proposed_status: linked
-proposed_maturity: 0.98
-gate_state: review_pending
-required_human_action: review refinement impact before approval
-last_outcome: done
-last_blocker: ''
-last_run_id: 20260412T143616Z-SG-SPEC-0021
-last_exit_code: 0
-last_changed_files:
-- specs/nodes/SG-SPEC-0021.yaml
-last_run_at: '2026-04-12T14:36:16.672923+00:00'
-last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0021-20260412T143555Z
-last_branch: codex/sg-spec-0021/20260412T143555Z
-last_validator_results:
-  outputs: true
-  allowed_paths: true
-  reconciliation: true
-  atomicity: true
-  transition: true
-  executor_environment: true
-  refinement_acceptance: true
-last_refinement_acceptance:
-  decision: review_required
-  change_class: constitutional_change
-  checks:
-    content_changed: true
-    hard_validation: true
-    single_spec_scope: true
-    constitutional_diff: true
-    graph_refactor_diff: false
-    atomicity_clear: true
-    within_mutation_budget: true
-  diff_paths:
-  - specification.boundary_policy[4]
-  - specification.boundary_policy[5]
-  - specification.invariants[5]
-  - specification.invariants[5].id
-  - specification.invariants[5].statement
-  - specification.role_contract
-  - specification.role_contract[0]
-  - specification.role_contract[0].role
-  - specification.role_contract[0].family_names
-  - specification.role_contract[0].family_names[0]
-  - specification.role_contract[0].family_names[1]
-  - specification.role_contract[0].role_scope_note
-  - specification.role_contract[1]
-  - specification.role_contract[1].role
-  - specification.role_contract[1].family_names
-  - specification.role_contract[1].family_names[0]
-  - specification.role_contract[1].role_scope_note
-  - specification.role_contract[2]
-  - specification.role_contract[2].role
-  - specification.role_contract[2].family_names
-  - specification.role_contract[2].family_names[0]
-  - specification.role_contract[2].role_scope_note
-  - specification.role_contract[3]
-  - specification.role_contract[3].role
-  - specification.role_contract[3].family_names
-  - specification.role_contract[3].family_names[0]
-  - specification.role_contract[3].role_scope_note
-  - specification.terminology.metric_family_role
-  mutation_classes:
-  - policy_text
-  mutation_budget: []
-  budget_exceeded_classes: []
-  changed_spec_files:
-  - specs/nodes/SG-SPEC-0021.yaml
-  review_reasons:
-  - run changed governance-sensitive specification sections
-  errors: []
-  warnings: []
-last_reconciliation:
-  worktree_spec_count: 22
-  changed_spec_ids:
-  - SG-SPEC-0021
-  semantic_dependencies_resolved: true
-  work_dependencies_ready: false
-  cycles: []
-last_requested_child_materialization: false
-last_materialized_child_paths: []
+gate_state: none
+proposed_status: null
+proposed_maturity: null
+required_human_action: '-'
+last_gate_decision: approve
+last_gate_note: ''
+last_gate_at: '2026-04-12T21:23:01.043334+00:00'

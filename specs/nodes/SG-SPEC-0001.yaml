@@ -10,6 +10,7 @@ depends_on:
 - SG-SPEC-0010
 - SG-SPEC-0017
 - SG-SPEC-0019
+- SG-SPEC-0023
 relates_to: []
 inputs:
 - README.md
@@ -45,9 +46,9 @@ acceptance_evidence:
 
     '
 - criterion: Defines the edge kinds currently in scope with source/target constraints and semantics
-  evidence: 'specification.edge_kinds lists 9 kinds (depends_on, refines, implements, tested_by, conflicts_with,
-    supersedes, derived_from, owns, relates_to) each with semantics, source_kinds, target_kinds, and classification
-    as static or dynamic.
+  evidence: 'specification.edge_kinds in SG-SPEC-0001 defines the edge set and baseline semantics. SG-SPEC-0023
+    adds the machine-checkable compatibility matrix, directedness constraints, and blocked-edge rules
+    for each edge kind.
 
     '
 - criterion: Defines the node lifecycle and valid status transitions
@@ -154,6 +155,8 @@ specification:
       SG-SPEC-0020
     - Detailed canonical revision-record and supersession-lineage semantics — covered by SG-SPEC-0019
     - Detailed node maturity semantics and maturity-to-lifecycle interaction — covered by SG-SPEC-0022
+    - Detailed edge-kind compatibility matrix, blocked-edge semantics, and directedness constraints —
+      covered by SG-SPEC-0023
   terminology:
     intent: 'A precise, governed representation of what a product must be, how it must behave, and how
       its implementation can be validated.  Intent is the source of truth from which all other artifacts
@@ -625,20 +628,18 @@ specification:
       in SG-SPEC-0001.
 
       '
-proposed_status: linked
-proposed_maturity: 1.0
-gate_state: review_pending
-required_human_action: approve or retry refinement
-last_outcome: done
+gate_state: split_required
+required_human_action: split spec scope before rerun
+last_outcome: split_required
 last_blocker: ''
-last_run_id: 20260412T080100Z-SG-SPEC-0001
+last_run_id: 20260412T212250Z-SG-SPEC-0001
 last_exit_code: 0
 last_changed_files:
 - specs/nodes/SG-SPEC-0001.yaml
-- specs/nodes/SG-SPEC-0022.yaml
-last_run_at: '2026-04-12T08:01:00.962495+00:00'
-last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0001-20260412T075429Z
-last_branch: codex/sg-spec-0001/20260412T075429Z
+- specs/nodes/SG-SPEC-0023.yaml
+last_run_at: '2026-04-12T21:22:51.504375+00:00'
+last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0001-20260412T212215Z
+last_branch: codex/sg-spec-0001/20260412T212215Z
 last_validator_results:
   outputs: true
   allowed_paths: true
@@ -659,25 +660,25 @@ last_refinement_acceptance:
     atomicity_clear: true
     within_mutation_budget: true
   diff_paths:
-  - acceptance_evidence[3].evidence
-  - acceptance_evidence[7].evidence
-  - specification.scope.out[12]
+  - acceptance_evidence[2].evidence
+  - depends_on[6]
+  - specification.scope.out[13]
   mutation_classes:
   - policy_text
   mutation_budget: []
   budget_exceeded_classes: []
   changed_spec_files:
   - specs/nodes/SG-SPEC-0001.yaml
-  - specs/nodes/SG-SPEC-0022.yaml
+  - specs/nodes/SG-SPEC-0023.yaml
   review_reasons:
   - run changed additional spec files beyond the selected source node
   errors: []
   warnings: []
 last_reconciliation:
-  worktree_spec_count: 22
+  worktree_spec_count: 23
   changed_spec_ids:
   - SG-SPEC-0001
-  - SG-SPEC-0022
+  - SG-SPEC-0023
   semantic_dependencies_resolved: true
   work_dependencies_ready: false
   cycles: []
