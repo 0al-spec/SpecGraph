@@ -118,6 +118,44 @@ REFINEMENT_ACCEPT_DECISION_APPROVE = "approve"
 REFINEMENT_ACCEPT_DECISION_REJECT = "reject"
 REFINEMENT_ACCEPT_DECISION_REVIEW_REQUIRED = "review_required"
 REFINEMENT_CLASS_LOCAL = "local_refinement"
+
+
+def emit(
+    message: str,
+    *,
+    file: Any | None = None,
+    verbose: bool = False,
+    enabled: bool = True,
+) -> None:
+    if not enabled:
+        return
+    target = sys.stdout if file is None else file
+    print(message, file=target)
+
+
+def emit_run_footer(
+    *,
+    log_path: Path,
+    completion_status: str,
+    stdout: str,
+    stderr: str,
+    validation_errors: list[str],
+    verbose: bool,
+) -> None:
+    emit(f"Run log: {log_path.as_posix()}")
+    emit(f"Finished status: {completion_status}")
+    if verbose and stdout.strip():
+        emit("\n=== codex stdout ===")
+        emit(stdout.strip())
+    if verbose and stderr.strip():
+        emit("\n=== codex stderr ===", file=sys.stderr)
+        emit(stderr.strip(), file=sys.stderr)
+    if validation_errors:
+        emit("\n=== validation errors ===", file=sys.stderr)
+        for error in validation_errors:
+            emit(f"- {error}", file=sys.stderr)
+
+
 REFINEMENT_CLASS_GRAPH_REFACTOR = "graph_refactor"
 REFINEMENT_CLASS_CONSTITUTIONAL = "constitutional_change"
 MUTATION_CLASS_POLICY_TEXT = "policy_text"
@@ -3610,6 +3648,18 @@ def executor_supports_work_item(
     return has_varargs or len(positional) >= 3
 
 
+def callable_supports_keyword(func: Callable[..., Any], keyword: str) -> bool:
+    try:
+        signature = inspect.signature(func)
+    except (TypeError, ValueError):
+        return False
+
+    for parameter in signature.parameters.values():
+        if parameter.kind == inspect.Parameter.VAR_KEYWORD:
+            return True
+    return keyword in signature.parameters
+
+
 def invoke_executor(
     executor: Callable[..., subprocess.CompletedProcess[str]],
     node: SpecNode,
@@ -3624,6 +3674,7 @@ def invoke_executor(
     child_model: str | None = None,
     child_timeout_seconds: int | None = None,
     worktree_branch: str = "",
+    verbose: bool = False,
 ) -> subprocess.CompletedProcess[str]:
     """Call the executor with optional work-item context when supported.
 
@@ -3644,6 +3695,7 @@ def invoke_executor(
             child_model=child_model,
             child_timeout_seconds=child_timeout_seconds,
             worktree_branch=worktree_branch,
+            verbose=verbose,
         )
     if refactor_work_item is not None and (
         executor is run_codex or executor_supports_work_item(executor)
@@ -3754,6 +3806,7 @@ def run_codex(
     child_model: str | None = None,
     child_timeout_seconds: int | None = None,
     worktree_branch: str = "",
+    verbose: bool = False,
 ) -> subprocess.CompletedProcess[str]:
     """Run the Codex executor in the isolated worktree and stream logs live."""
     bypass_inner_sandbox = child_executor_should_bypass_inner_sandbox(branch=worktree_branch)
@@ -3790,14 +3843,15 @@ def run_codex(
         profile=profile,
         bypass_inner_sandbox=bypass_inner_sandbox,
     )
-    print(
+    emit(
         f"Launching codex exec for {node.id} in {worktree_path} "
         "("
         f"profile={profile.name}, "
         f"reasoning={profile.reasoning_effort}, "
         f"model={profile.model}, "
         f"timeout={timeout_seconds}s"
-        ")"
+        ")",
+        enabled=verbose,
     )
     child_codex_home = create_child_codex_home(
         profile=profile,
@@ -3822,22 +3876,32 @@ def run_codex(
     stdout_chunks: list[str] = []
     stderr_chunks: list[str] = []
 
-    def _forward(stream: Any, sink: list[str], prefix: str, target: Any) -> None:
+    def _forward(
+        stream: Any,
+        sink: list[str],
+        prefix: str,
+        target: Any,
+        *,
+        enabled: bool,
+    ) -> None:
         try:
             for line in iter(stream.readline, ""):
                 sink.append(line)
-                print(f"{prefix}{line}", end="", file=target)
+                if enabled:
+                    print(f"{prefix}{line}", end="", file=target)
         finally:
             stream.close()
 
     stdout_thread = threading.Thread(
         target=_forward,
         args=(process.stdout, stdout_chunks, "[codex stdout] ", sys.stdout),
+        kwargs={"enabled": verbose},
         daemon=True,
     )
     stderr_thread = threading.Thread(
         target=_forward,
         args=(process.stderr, stderr_chunks, "[codex stderr] ", sys.stderr),
+        kwargs={"enabled": verbose},
         daemon=True,
     )
     stdout_thread.start()
@@ -3873,23 +3937,23 @@ def run_codex(
                     if current_progress_state != last_progress_state:
                         last_progress_state = current_progress_state
                         quiet_windows_without_progress = 0
-                        print(
+                        emit(
                             "[codex stderr] supervisor progress grace: "
                             "nested executor still shows progress after the base timeout; "
-                            "continuing to wait\n",
-                            end="",
+                            "continuing to wait",
                             file=sys.stderr,
+                            enabled=verbose,
                         )
                         continue
                     if quiet_windows_without_progress < quiet_progress_windows_allowed:
                         quiet_windows_without_progress += 1
-                        print(
+                        emit(
                             "[codex stderr] supervisor quiet grace: "
                             f"no new progress detected after base timeout "
                             f"({quiet_windows_without_progress}/{quiet_progress_windows_allowed}); "
-                            "allowing more deliberation\n",
-                            end="",
+                            "allowing more deliberation",
                             file=sys.stderr,
+                            enabled=verbose,
                         )
                         continue
                     raise
@@ -3905,7 +3969,7 @@ def run_codex(
             f"supervisor timeout: nested executor timed out after {timeout_seconds} seconds\n"
         )
         stderr_chunks.append(timeout_message)
-        print(f"[codex stderr] {timeout_message}", end="", file=sys.stderr)
+        emit(f"[codex stderr] {timeout_message.rstrip()}", file=sys.stderr)
         process.wait()
         stdout_thread.join()
         stderr_thread.join()
@@ -4215,6 +4279,7 @@ def _process_split_refactor_proposal(
     execution_profile: str | None = None,
     child_model: str | None = None,
     child_timeout_seconds: int | None = None,
+    verbose: bool = False,
 ) -> tuple[int, str]:
     """Run the explicit proposal-first split pass for one oversized non-seed spec.
 
@@ -4258,28 +4323,33 @@ def _process_split_refactor_proposal(
     except RuntimeError as exc:
         print(f"Failed to create worktree: {exc}", file=sys.stderr)
         return 1, "escalate"
-    print(f"Created worktree: {worktree_path}")
-    print(f"Branch: {branch}")
+    emit(f"Created worktree: {worktree_path}", enabled=verbose)
+    emit(f"Branch: {branch}", enabled=verbose)
     synced_node_path = sync_current_node_into_worktree(node, worktree_path)
-    print(f"Seeded worktree node from current tree: {synced_node_path}")
+    emit(f"Seeded worktree node from current tree: {synced_node_path}", enabled=verbose)
 
     before = git_changed_files(worktree_path)
     tracked_paths = sorted(set(before))
     before_digests = snapshot_file_digests(tracked_paths, base_dir=worktree_path)
-    print(f"Starting executor for {node.id}...")
+    emit(f"Starting executor for {node.id}...", enabled=verbose)
+    invoke_kwargs: dict[str, Any] = {
+        "operator_target": True,
+        "operator_note": operator_note,
+        "execution_profile": execution_profile,
+        "child_model": child_model,
+        "child_timeout_seconds": child_timeout_seconds,
+        "worktree_branch": branch,
+    }
+    if callable_supports_keyword(invoke_executor, "verbose"):
+        invoke_kwargs["verbose"] = verbose
     result = invoke_executor(
         executor,
         node,
         worktree_path,
         refactor_work_item,
-        operator_target=True,
-        operator_note=operator_note,
-        execution_profile=execution_profile,
-        child_model=child_model,
-        child_timeout_seconds=child_timeout_seconds,
-        worktree_branch=branch,
+        **invoke_kwargs,
     )
-    print(f"Executor finished for {node.id} with exit_code={result.returncode}")
+    emit(f"Executor finished for {node.id} with exit_code={result.returncode}", enabled=verbose)
     after = git_changed_files(worktree_path)
     tracked_paths = sorted(set(before) | set(after))
     after_digests = snapshot_file_digests(tracked_paths, base_dir=worktree_path)
@@ -4291,7 +4361,7 @@ def _process_split_refactor_proposal(
         if before_digests.get(path) != after_digests.get(path)
         or (path in (after_set - before_set) and not is_spec_node_path(path))
     )
-    print(f"Detected changed files: {changed or ['(none)']}")
+    emit(f"Detected changed files: {changed or ['(none)']}", enabled=verbose)
     outcome, blocker = parse_outcome(result.stdout, result.returncode)
     executor_environment = classify_executor_environment(result.stderr)
     primary_executor_failure = is_primary_executor_environment_failure(
@@ -4452,19 +4522,14 @@ def _process_split_refactor_proposal(
     log_path = write_run_log(run_id, payload)
     write_latest_summary(payload)
 
-    print(f"Run log: {log_path.as_posix()}")
-    print("Finished status:", payload["completion_status"])
-
-    if result.stdout.strip():
-        print("\n=== codex stdout ===")
-        print(result.stdout.strip())
-    if result.stderr.strip():
-        print("\n=== codex stderr ===", file=sys.stderr)
-        print(result.stderr.strip(), file=sys.stderr)
-    if validation_errors:
-        print("\n=== validation errors ===", file=sys.stderr)
-        for error in validation_errors:
-            print(f"- {error}", file=sys.stderr)
+    emit_run_footer(
+        log_path=log_path,
+        completion_status=payload["completion_status"],
+        stdout=result.stdout,
+        stderr=result.stderr,
+        validation_errors=validation_errors,
+        verbose=verbose,
+    )
 
     return (0 if success else 1), outcome
 
@@ -4483,6 +4548,7 @@ def _process_one_spec(
     execution_profile: str | None = None,
     child_model: str | None = None,
     child_timeout_seconds: int | None = None,
+    verbose: bool = False,
 ) -> tuple[int, str, str, str]:
     """Process one ordinary supervisor run.
 
@@ -4584,30 +4650,35 @@ def _process_one_spec(
     except RuntimeError as exc:
         print(f"Failed to create worktree: {exc}", file=sys.stderr)
         return 1, "escalate"
-    print(f"Created worktree: {worktree_path}")
-    print(f"Branch: {branch}")
+    emit(f"Created worktree: {worktree_path}", enabled=verbose)
+    emit(f"Branch: {branch}", enabled=verbose)
     synced_node_path = sync_current_node_into_worktree(node, worktree_path)
-    print(f"Seeded worktree node from current tree: {synced_node_path}")
+    emit(f"Seeded worktree node from current tree: {synced_node_path}", enabled=verbose)
 
     before = git_changed_files(worktree_path)
     tracked_paths = sorted(set(before))
     before_digests = snapshot_file_digests(tracked_paths, base_dir=worktree_path)
-    print(f"Starting executor for {node.id}...")
+    emit(f"Starting executor for {node.id}...", enabled=verbose)
+    invoke_kwargs: dict[str, Any] = {
+        "operator_target": operator_target,
+        "operator_note": operator_note,
+        "mutation_budget": mutation_budget,
+        "run_authority": run_authority,
+        "execution_profile": effective_execution_profile,
+        "child_model": child_model,
+        "child_timeout_seconds": child_timeout_seconds,
+        "worktree_branch": branch,
+    }
+    if callable_supports_keyword(invoke_executor, "verbose"):
+        invoke_kwargs["verbose"] = verbose
     result = invoke_executor(
         executor,
         node,
         worktree_path,
         refactor_work_item,
-        operator_target=operator_target,
-        operator_note=operator_note,
-        mutation_budget=mutation_budget,
-        run_authority=run_authority,
-        execution_profile=effective_execution_profile,
-        child_model=child_model,
-        child_timeout_seconds=child_timeout_seconds,
-        worktree_branch=branch,
+        **invoke_kwargs,
     )
-    print(f"Executor finished for {node.id} with exit_code={result.returncode}")
+    emit(f"Executor finished for {node.id} with exit_code={result.returncode}", enabled=verbose)
     after = git_changed_files(worktree_path)
     tracked_paths = sorted(set(before) | set(after))
     after_digests = snapshot_file_digests(tracked_paths, base_dir=worktree_path)
@@ -4619,7 +4690,7 @@ def _process_one_spec(
         if before_digests.get(path) != after_digests.get(path)
         or (path in (after_set - before_set) and not is_spec_node_path(path))
     )
-    print(f"Detected changed files: {changed or ['(none)']}")
+    emit(f"Detected changed files: {changed or ['(none)']}", enabled=verbose)
     materialized_child_paths = (
         [path for path in changed if is_spec_node_path(path) and path != source_spec_relpath]
         if child_materialization_requested
@@ -4970,20 +5041,14 @@ def _process_one_spec(
         node.path.write_text(before_source_text, encoding="utf-8")
         node.reload()
 
-    print(f"Run log: {log_path.as_posix()}")
-    print("Finished status:", completion_status)
-
-    if result.stdout.strip():
-        print("\n=== codex stdout ===")
-        print(result.stdout.strip())
-    if result.stderr.strip():
-        print("\n=== codex stderr ===", file=sys.stderr)
-        print(result.stderr.strip(), file=sys.stderr)
-
-    if validation_errors:
-        print("\n=== validation errors ===", file=sys.stderr)
-        for error in validation_errors:
-            print(f"- {error}", file=sys.stderr)
+    emit_run_footer(
+        log_path=log_path,
+        completion_status=completion_status,
+        stdout=result.stdout,
+        stderr=result.stderr,
+        validation_errors=validation_errors,
+        verbose=verbose,
+    )
 
     exit_code = 0 if success else 1
     return exit_code, outcome, completion_status, str(payload.get("gate_state") or "none")
@@ -5008,6 +5073,7 @@ def main(
     execution_profile: str | None = None,
     child_model: str | None = None,
     child_timeout_seconds: int | None = None,
+    verbose: bool = False,
 ) -> int:
     """Entry point for CLI and tests.
 
@@ -5163,14 +5229,17 @@ def main(
         if proposal_timeout is None and is_seed_like_spec(node.data):
             proposal_timeout = ROOT_REFACTOR_TIMEOUT_SECONDS
 
-        exit_code, _outcome = _process_split_refactor_proposal(
-            node=node,
-            executor=executor,
-            operator_note=operator_note,
-            execution_profile=execution_profile,
-            child_model=child_model,
-            child_timeout_seconds=proposal_timeout,
-        )
+        proposal_kwargs: dict[str, Any] = {
+            "node": node,
+            "executor": executor,
+            "operator_note": operator_note,
+            "execution_profile": execution_profile,
+            "child_model": child_model,
+            "child_timeout_seconds": proposal_timeout,
+        }
+        if callable_supports_keyword(_process_split_refactor_proposal, "verbose"):
+            proposal_kwargs["verbose"] = verbose
+        exit_code, _outcome = _process_split_refactor_proposal(**proposal_kwargs)
         return exit_code
 
     if apply_split_proposal:
@@ -5244,19 +5313,22 @@ def main(
         if target_timeout is None and is_seed_like_spec(node.data):
             target_timeout = ROOT_REFACTOR_TIMEOUT_SECONDS
 
-        exit_code, _outcome, _completion_status, _gate_state = _process_one_spec(
-            node=node,
-            specs=specs,
-            executor=executor,
-            auto_approve=auto_approve,
-            operator_target=True,
-            operator_note=operator_note,
-            mutation_budget=mutation_budget,
-            run_authority=run_authority,
-            execution_profile=execution_profile,
-            child_model=child_model,
-            child_timeout_seconds=target_timeout,
-        )
+        process_kwargs: dict[str, Any] = {
+            "node": node,
+            "specs": specs,
+            "executor": executor,
+            "auto_approve": auto_approve,
+            "operator_target": True,
+            "operator_note": operator_note,
+            "mutation_budget": mutation_budget,
+            "run_authority": run_authority,
+            "execution_profile": execution_profile,
+            "child_model": child_model,
+            "child_timeout_seconds": target_timeout,
+        }
+        if callable_supports_keyword(_process_one_spec, "verbose"):
+            process_kwargs["verbose"] = verbose
+        exit_code, _outcome, _completion_status, _gate_state = _process_one_spec(**process_kwargs)
         return exit_code
 
     if loop:
@@ -5293,16 +5365,19 @@ def main(
             )
             print(f"{'=' * 60}")
 
-            exit_code, outcome, completion_status, gate_state = _process_one_spec(
-                node=node,
-                specs=specs,
-                executor=executor,
-                auto_approve=auto_approve,
-                refactor_work_item=refactor_work_item,
-                execution_profile=execution_profile,
-                child_model=child_model,
-                child_timeout_seconds=child_timeout_seconds,
-            )
+            process_kwargs = {
+                "node": node,
+                "specs": specs,
+                "executor": executor,
+                "auto_approve": auto_approve,
+                "refactor_work_item": refactor_work_item,
+                "execution_profile": execution_profile,
+                "child_model": child_model,
+                "child_timeout_seconds": child_timeout_seconds,
+            }
+            if callable_supports_keyword(_process_one_spec, "verbose"):
+                process_kwargs["verbose"] = verbose
+            exit_code, outcome, completion_status, gate_state = _process_one_spec(**process_kwargs)
 
             if completion_status == COMPLETION_STATUS_OK:
                 succeeded += 1
@@ -5379,22 +5454,30 @@ def main(
         print(f"\n{build_prompt(node, refactor_work_item)}")
         return 0
 
-    exit_code, _outcome, _completion_status, _gate_state = _process_one_spec(
-        node=node,
-        specs=specs,
-        executor=executor,
-        auto_approve=auto_approve,
-        refactor_work_item=refactor_work_item,
-        execution_profile=execution_profile,
-        child_model=child_model,
-        child_timeout_seconds=child_timeout_seconds,
-    )
+    process_kwargs = {
+        "node": node,
+        "specs": specs,
+        "executor": executor,
+        "auto_approve": auto_approve,
+        "refactor_work_item": refactor_work_item,
+        "execution_profile": execution_profile,
+        "child_model": child_model,
+        "child_timeout_seconds": child_timeout_seconds,
+    }
+    if callable_supports_keyword(_process_one_spec, "verbose"):
+        process_kwargs["verbose"] = verbose
+    exit_code, _outcome, _completion_status, _gate_state = _process_one_spec(**process_kwargs)
     return exit_code
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="SpecGraph supervisor")
     parser.add_argument("--dry-run", action="store_true", help="Show selection and prompt only")
+    parser.add_argument(
+        "--verbose",
+        action="store_true",
+        help="Print full executor stdout/stderr and detailed runtime trace",
+    )
     parser.add_argument(
         "--auto-approve",
         action="store_true",
@@ -5510,5 +5593,6 @@ if __name__ == "__main__":
             execution_profile=args.execution_profile,
             child_model=child_model,
             child_timeout_seconds=args.child_timeout,
+            verbose=args.verbose,
         )
     )

@@ -2514,6 +2514,118 @@ def test_main_explicit_targeted_refinement_dry_run_prints_mutation_budget(
     assert "- schema_required_addition" in captured.out
 
 
+def test_main_targeted_refinement_hides_executor_transcript_by_default(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    node_data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    node_data["title"] = "Working Node"
+    node_data["prompt"] = "Refine one bounded slice of this node."
+    node_data["allowed_paths"] = ["specs/nodes/SG-SPEC-0001.yaml"]
+    if not isinstance(node_data.get("acceptance_evidence"), list):
+        acceptance = node_data.get("acceptance", [])
+        node_data["acceptance_evidence"] = [f"evidence-{idx}" for idx, _ in enumerate(acceptance)]
+    node_path.write_text(json.dumps(node_data), encoding="utf-8")
+
+    worktree = make_fake_worktree(repo_fixture)
+    monkeypatch.setattr(
+        supervisor_module,
+        "create_isolated_worktree",
+        lambda _node_id: (worktree, "codex/sg-spec-0001/test"),
+    )
+
+    changed_snapshots = [[], ["specs/nodes/SG-SPEC-0001.yaml"]]
+    monkeypatch.setattr(
+        supervisor_module, "git_changed_files", lambda _cwd=None: changed_snapshots.pop(0)
+    )
+
+    def fake_executor(_node: object, worktree_path: Path) -> subprocess.CompletedProcess[str]:
+        worktree_node = worktree_path / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+        data = supervisor_module.get_yaml_module().safe_load(
+            worktree_node.read_text(encoding="utf-8")
+        )
+        data["prompt"] = "Refined prompt."
+        worktree_node.write_text(supervisor_module.dump_yaml_text(data), encoding="utf-8")
+        return subprocess.CompletedProcess(
+            args=["codex"],
+            returncode=0,
+            stdout="RUN_OUTCOME: done\nBLOCKER: none\nexecutor detail line\n",
+            stderr="executor stderr detail\n",
+        )
+
+    exit_code = supervisor_module.main(executor=fake_executor, target_spec="SG-SPEC-0001")
+
+    assert exit_code == 0
+    captured = capsys.readouterr()
+    assert "Run log:" in captured.out
+    assert "Finished status: ok" in captured.out
+    assert "=== codex stdout ===" not in captured.out
+    assert "executor detail line" not in captured.out
+    assert "=== codex stderr ===" not in captured.err
+    assert "executor stderr detail" not in captured.err
+
+
+def test_main_targeted_refinement_shows_executor_transcript_in_verbose_mode(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    node_data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    node_data["title"] = "Working Node"
+    node_data["prompt"] = "Refine one bounded slice of this node."
+    node_data["allowed_paths"] = ["specs/nodes/SG-SPEC-0001.yaml"]
+    if not isinstance(node_data.get("acceptance_evidence"), list):
+        acceptance = node_data.get("acceptance", [])
+        node_data["acceptance_evidence"] = [f"evidence-{idx}" for idx, _ in enumerate(acceptance)]
+    node_path.write_text(json.dumps(node_data), encoding="utf-8")
+
+    worktree = make_fake_worktree(repo_fixture)
+    monkeypatch.setattr(
+        supervisor_module,
+        "create_isolated_worktree",
+        lambda _node_id: (worktree, "codex/sg-spec-0001/test"),
+    )
+
+    changed_snapshots = [[], ["specs/nodes/SG-SPEC-0001.yaml"]]
+    monkeypatch.setattr(
+        supervisor_module, "git_changed_files", lambda _cwd=None: changed_snapshots.pop(0)
+    )
+
+    def fake_executor(_node: object, worktree_path: Path) -> subprocess.CompletedProcess[str]:
+        worktree_node = worktree_path / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+        data = supervisor_module.get_yaml_module().safe_load(
+            worktree_node.read_text(encoding="utf-8")
+        )
+        data["prompt"] = "Refined prompt."
+        worktree_node.write_text(supervisor_module.dump_yaml_text(data), encoding="utf-8")
+        return subprocess.CompletedProcess(
+            args=["codex"],
+            returncode=0,
+            stdout="RUN_OUTCOME: done\nBLOCKER: none\nexecutor detail line\n",
+            stderr="executor stderr detail\n",
+        )
+
+    exit_code = supervisor_module.main(
+        executor=fake_executor,
+        target_spec="SG-SPEC-0001",
+        verbose=True,
+    )
+
+    assert exit_code == 0
+    captured = capsys.readouterr()
+    assert "Created worktree:" in captured.out
+    assert "Detected changed files:" in captured.out
+    assert "=== codex stdout ===" in captured.out
+    assert "executor detail line" in captured.out
+    assert "=== codex stderr ===" in captured.err
+    assert "executor stderr detail" in captured.err
+
+
 def test_main_explicit_targeted_refinement_reruns_review_pending_spec(
     supervisor_module: object,
     repo_fixture: Path,
