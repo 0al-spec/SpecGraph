@@ -1,8 +1,8 @@
 id: SG-SPEC-0022
 title: SpecGraph - Node Maturity Semantics
 kind: spec
-status: linked
-maturity: 0.66
+status: reviewed
+maturity: 0.86
 depends_on: []
 relates_to:
 - SG-SPEC-0003
@@ -149,12 +149,15 @@ specification:
       rationale, authority_class, and snapshot binding
     - Imported or estimated maturity values explicitly recorded as a governed node_maturity assessment
       for the same snapshot, with preserved rationale and provenance
+    - Any value copied from another snapshot, parent, or sibling is derived until it is explicitly re-authored
+      as a governed node_maturity assessment for the target snapshot with its own preserved rationale
+      and binding
     - Authored rationale or reviewed notes explaining a maturity assessment when such rationale is preserved
       canonically
     - Reviewed decisions that clarify how a bounded node interprets its maturity within current policy
     derived:
     - Imported or estimated maturity values lacking explicit governed snapshot binding, rationale, or
-      provenance
+      provenance, including copied values that remain unsanctioned by a snapshot-local canonical update
     - Heuristic maturity estimates inferred from graph shape, runtime activity, or text analysis
     - Rankings, alerts, comparative scorecards, and queue-prioritization outputs derived from maturity
     - maturity_trend_artifact timelines, dashboards, and projections
@@ -199,65 +202,10 @@ specification:
       the lifecycle stage remains the same until a separate status condition changes.
 
       '
-proposed_status: reviewed
-proposed_maturity: 0.86
-gate_state: review_pending
-required_human_action: review refinement impact before approval
-last_outcome: done
-last_blocker: ''
-last_run_id: 20260412T174113Z-SG-SPEC-0022
-last_exit_code: 0
-last_changed_files:
-- specs/nodes/SG-SPEC-0022.yaml
-last_run_at: '2026-04-12T17:41:13.700451+00:00'
-last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0022-20260412T174042Z
-last_branch: codex/sg-spec-0022/20260412T174042Z
-last_validator_results:
-  outputs: true
-  allowed_paths: true
-  reconciliation: true
-  atomicity: true
-  transition: true
-  executor_environment: true
-  refinement_acceptance: true
-last_refinement_acceptance:
-  decision: review_required
-  change_class: constitutional_change
-  checks:
-    content_changed: true
-    hard_validation: true
-    single_spec_scope: true
-    constitutional_diff: true
-    graph_refactor_diff: false
-    atomicity_clear: true
-    within_mutation_budget: true
-  diff_paths:
-  - specification.boundary_policy[3]
-  - specification.boundary_policy[4]
-  - specification.boundary_policy[5]
-  - specification.canonical_vs_derived_boundary.canonical[0]
-  - specification.canonical_vs_derived_boundary.canonical[1]
-  - specification.canonical_vs_derived_boundary.derived[0]
-  - specification.canonical_vs_derived_boundary.derived[1]
-  - specification.canonical_vs_derived_boundary.derived[2]
-  - specification.canonical_vs_derived_boundary.derived[3]
-  - specification.canonical_vs_derived_boundary.derived[4]
-  mutation_classes:
-  - policy_text
-  mutation_budget: []
-  budget_exceeded_classes: []
-  changed_spec_files:
-  - specs/nodes/SG-SPEC-0022.yaml
-  review_reasons:
-  - run changed governance-sensitive specification sections
-  errors: []
-  warnings: []
-last_reconciliation:
-  worktree_spec_count: 22
-  changed_spec_ids:
-  - SG-SPEC-0022
-  semantic_dependencies_resolved: true
-  work_dependencies_ready: true
-  cycles: []
-last_requested_child_materialization: false
-last_materialized_child_paths: []
+gate_state: none
+proposed_status: null
+proposed_maturity: null
+required_human_action: '-'
+last_gate_decision: approve
+last_gate_note: ''
+last_gate_at: '2026-04-12T21:23:01.582744+00:00'
