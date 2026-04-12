@@ -5526,6 +5526,8 @@ def test_main_records_yaml_validation_error(
     repo_fixture: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    before_text = node_path.read_text(encoding="utf-8")
     worktree = make_fake_worktree(repo_fixture)
     monkeypatch.setattr(
         supervisor_module,
@@ -5551,9 +5553,9 @@ def test_main_records_yaml_validation_error(
     exit_code = supervisor_module.main(executor=fake_executor)
     assert exit_code == 1
 
-    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    assert node_path.read_text(encoding="utf-8") == before_text
     updated = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
-    assert any("Invalid YAML" in err or "Failed to reload" in err for err in updated["last_errors"])
+    assert "last_errors" not in updated
 
 
 def test_main_aborts_on_cycle(

@@ -82,3 +82,4 @@
 59. Add regression coverage proving that `RUN_OUTCOME: done` followed by atomicity failure on a source-only diff leaves canonical source content unchanged while still recording `split_required` runtime state in run artifacts.
 60. Triage and reduce repeated nested executor stderr noise such as `failed to refresh available models: timeout waiting for child process to exit` so transport/runtime tails do not masquerade as graph-quality signals.
 61. [done] Add a `--verbose` supervisor mode so default CLI output stays concise while full executor stdout/stderr, progress-grace diagnostics, and worktree trace remain available on demand.
+62. [inprogress] Restore canonical source specs unchanged when an ordinary source-only refinement fails validation before any accepted sync, including invalid YAML in the worktree candidate.

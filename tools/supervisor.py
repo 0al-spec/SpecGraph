@@ -4962,10 +4962,15 @@ def _process_one_spec(
         and not any(path != source_spec_relpath for path in changed if is_spec_node_path(path))
     )
     changed_spec_paths = [path for path in changed if is_spec_node_path(path)]
-    cleanup_interrupted_source_refinement = (
+    source_only_changed_spec_paths = not changed_spec_paths or set(changed_spec_paths) == {
+        source_spec_relpath
+    }
+    canonical_writeback_succeeded = success or split_sync_allowed
+    cleanup_failed_source_refinement = (
         not success
-        and bool(executor_environment.get("issues"))
-        and (not changed_spec_paths or source_spec_relpath in changed_spec_paths)
+        and not canonical_writeback_succeeded
+        and source_only_changed_spec_paths
+        and bool(worktree_load_errors)
     )
 
     validator_results = {
@@ -5037,7 +5042,7 @@ def _process_one_spec(
     log_path = write_run_log(run_id, payload)
     write_latest_summary(payload)
 
-    if cleanup_failed_child_materialization or cleanup_interrupted_source_refinement:
+    if cleanup_failed_child_materialization or cleanup_failed_source_refinement:
         node.path.write_text(before_source_text, encoding="utf-8")
         node.reload()
 
