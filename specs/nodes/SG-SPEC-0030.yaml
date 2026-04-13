@@ -1,0 +1,98 @@
+id: SG-SPEC-0030
+title: SpecGraph - Proposal/Split Prerequisite Contract
+kind: spec
+status: linked
+depends_on:
+- SG-SPEC-0005
+- SG-SPEC-0025
+- SG-SPEC-0006
+refines:
+- SG-SPEC-0028
+inputs:
+- specs/nodes/SG-SPEC-0028.yaml
+- specs/nodes/SG-SPEC-0005.yaml
+- specs/nodes/SG-SPEC-0025.yaml
+- specs/nodes/SG-SPEC-0006.yaml
+- tasks.md
+outputs:
+- specs/nodes/SG-SPEC-0030.yaml
+allowed_paths:
+- specs/nodes/SG-SPEC-0030.yaml
+acceptance:
+- Defines the bounded parent-facing prerequisite contract by which SG-SPEC-0027 may treat SG-SPEC-0028
+  as a proposal/split readiness predecessor without bypassing concern-level mechanics descendants.
+- 'Specifies the non-bypass rule for this prerequisite contract: while SG-SPEC-0028 exists, a parent must
+  not add direct dependencies on SG-SPEC-0006, SG-SPEC-0025, or SG-SPEC-0004 for proposal/split readiness.'
+- Preserves the separation that SG-SPEC-0005 direct-update boundary semantics remain a distinct concern
+  and are not implied by SG-SPEC-0028 proposal/split readiness.
+- Remains implementation-agnostic about queue ranking formulas, proposal-lane execution timing, and runtime
+  orchestration.
+- 'Adds a one-gateway consumption rule: proposal/split readiness is satisfied only when a parent consumes
+  SG-SPEC-0028 as the single prerequisite entry point for that concern.'
+acceptance_evidence:
+- criterion: Defines the bounded parent-facing prerequisite contract by which SG-SPEC-0027 may treat SG-SPEC-0028
+    as a proposal/split readiness predecessor without bypassing concern-level mechanics descendants.
+  evidence: specification.prerequisite_contract defines SG-SPEC-0027 may depend_on SG-SPEC-0028 as one
+    bounded predecessor for proposal/split readiness, while ownership of mechanics remains with SG-SPEC-0025
+    and SG-SPEC-0006.
+- criterion: 'Specifies the non-bypass rule for this prerequisite contract: while SG-SPEC-0028 exists,
+    a parent must not add direct dependencies on SG-SPEC-0006, SG-SPEC-0025, or SG-SPEC-0004 for proposal/split
+    readiness.'
+  evidence: specification.consumer_rules states that direct depends_on to SG-SPEC-0006/SG-SPEC-0025/SG-SPEC-0004
+    for proposal/split readiness are forbidden while SG-SPEC-0028 is present, and this contract is fulfilled
+    through SG-SPEC-0028.
+- criterion: Preserves the separation that SG-SPEC-0005 direct-update boundary semantics remain a distinct
+    concern and are not implied by SG-SPEC-0028 proposal/split readiness.
+  evidence: specification.boundary_separation states that SG-SPEC-0005 is outside this prerequisite contract,
+    and SG-SPEC-0027 must not treat SG-SPEC-0028 as a proxy for direct-update semantics.
+- criterion: Remains implementation-agnostic about queue ranking formulas, proposal-lane execution timing,
+    and runtime orchestration.
+  evidence: specification.scope.out excludes queue ranking formulas, proposal-lane timing/orchestration
+    details, and runtime implementation.
+- criterion: 'Adds a one-gateway consumption rule: proposal/split readiness is satisfied only when a parent
+    consumes SG-SPEC-0028 as the single prerequisite entry point for that concern.'
+  evidence: specification.gateway_rule states concern-level readiness consumption must be represented
+    by exactly one bounded depends_on entry to SG-SPEC-0028 and excludes alternate direct-dependency readiness
+    paths.
+prompt: Define the parent-facing prerequisite contract inside SG-SPEC-0028 so proposal/split readiness
+  is consumed through one bounded gateway, while non-bypass and retrospective direct-update separation
+  rules remain explicit.
+specification:
+  objective: Define the bounded prerequisite contract that governs how parents consume SG-SPEC-0028 for
+    proposal/split readiness.
+  scope:
+    in:
+    - Parent-facing prerequisite contract for proposal/split mechanics readiness.
+    - Non-bypass constraint for consumers of SG-SPEC-0028 in this concern.
+    - Separation between proposal/split readiness and SG-SPEC-0005 retrospective direct-update boundaries.
+    out:
+    - Split payload schema and proposal queue field-level contracts.
+    - Proposal-lane state transitions, authority transitions, and execution semantics.
+    - Runtime orchestration, ranking formulas, or implementation storage layout.
+  prerequisite_contract:
+  - SG-SPEC-0027 may depend_on SG-SPEC-0028 as one bounded prerequisite for proposal/split readiness.
+  - SG-SPEC-0028 is consumed only as a concern-level gateway in this context.
+  - Concrete proposal-lane and split mechanics remain owned by SG-SPEC-0006 and SG-SPEC-0025 respectively.
+  - For proposal/split readiness, SG-SPEC-0028 is the single prerequisite edge used by parent specs.
+  gateway_rule:
+  - Parents evaluating proposal/split readiness must model exactly one bounded prerequisite path by depending
+    on SG-SPEC-0028 for that concern.
+  - Parents must not create additional direct depends_on entries to SG-SPEC-0004, SG-SPEC-0006, or SG-SPEC-0025
+    for the same proposal/split readiness concern.
+  consumer_rules:
+  - While SG-SPEC-0028 exists, consumers that require proposal/split readiness must not directly depend_on
+    SG-SPEC-0006, SG-SPEC-0025, or SG-SPEC-0004 for that same concern.
+  - SG-SPEC-0004 remains nested under SG-SPEC-0025 and is not a direct proposal/split readiness prerequisite.
+  - SG-SPEC-0028 readiness is evaluated via this contract node, not via direct descendant readiness checks.
+  boundary_separation:
+  - SG-SPEC-0005 remains independently consumed for retrospective direct-update boundary semantics.
+  - SG-SPEC-0027 must not treat SG-SPEC-0028 as a proxy for SG-SPEC-0005.
+  - SG-SPEC-0005 is out of scope for this prerequisite contract.
+maturity: 0.2
+gate_state: none
+proposed_status: null
+proposed_maturity: null
+required_human_action: '-'
+last_gate_decision: approve
+last_gate_note: ''
+last_gate_at: '2026-04-13T21:17:50.630495+00:00'
