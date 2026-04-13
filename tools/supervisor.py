@@ -982,6 +982,10 @@ def normalize_executor_stderr(stderr: str) -> str:
 YAML_KEY_LINE_RE = re.compile(r"^(?P<indent>\s*)(?P<key>[A-Za-z0-9_][A-Za-z0-9_-]*):(?:\s|$)")
 YAML_SEQUENCE_ITEM_RE = re.compile(r"^(?P<indent>\s*)-\s+(?P<content>.*)$")
 YAML_MAPPING_SEQUENCE_CONTENT_RE = re.compile(r"^[A-Za-z0-9_][A-Za-z0-9_-]*:\s")
+YAML_QUOTED_KEY_LINE_RE = re.compile(r"^\s*[\"'][^\"']+[\"']:\s")
+YAML_SEQUENCE_MAPPING_SCALAR_RE = re.compile(
+    r"^(?P<indent>\s*)-\s+(?P<key>[A-Za-z0-9_][A-Za-z0-9_-]*):\s+(?P<value>.+)$"
+)
 YAML_MAPPING_SCALAR_RE = re.compile(
     r"^(?P<indent>\s*)(?P<key>[A-Za-z0-9_][A-Za-z0-9_-]*):\s+(?P<value>.+)$"
 )
@@ -1139,6 +1143,39 @@ def repair_candidate_yaml_text(candidate_text: str, original_text: str | None = 
     index = 0
     while index < len(lines):
         line = lines[index]
+        sequence_mapping_match = YAML_SEQUENCE_MAPPING_SCALAR_RE.match(line)
+        if sequence_mapping_match is not None:
+            indent = len(sequence_mapping_match.group("indent"))
+            key = sequence_mapping_match.group("key")
+            value = sequence_mapping_match.group("value").strip()
+            if value and value[0] not in "\"'[{|>":
+                continuation_index = index + 1
+                continuation_parts: list[str] = []
+                while continuation_index < len(lines):
+                    continuation_line = lines[continuation_index]
+                    if not continuation_line.strip():
+                        break
+                    continuation_indent = len(continuation_line) - len(
+                        continuation_line.lstrip(" ")
+                    )
+                    if continuation_indent <= indent:
+                        break
+                    if YAML_KEY_LINE_RE.match(continuation_line) is not None:
+                        break
+                    if YAML_QUOTED_KEY_LINE_RE.match(continuation_line) is not None:
+                        break
+                    if YAML_SEQUENCE_ITEM_RE.match(continuation_line) is not None:
+                        break
+                    continuation_parts.append(continuation_line.strip())
+                    continuation_index += 1
+                if continuation_parts:
+                    flattened = " ".join([value, *continuation_parts]).strip()
+                    repaired_lines.append(
+                        (" " * indent) + f"- {key}: " + _yaml_single_quote(flattened)
+                    )
+                    index = continuation_index
+                    continue
+
         mapping_match = YAML_MAPPING_SCALAR_RE.match(line)
         if mapping_match is not None:
             indent = len(mapping_match.group("indent"))

@@ -1,0 +1,150 @@
+id: SG-SPEC-0028
+title: SpecGraph - Proposal and Split Mechanics Subcluster
+kind: spec
+status: linked
+maturity: 0.69
+depends_on:
+- SG-SPEC-0006
+- SG-SPEC-0025
+refines:
+- SG-SPEC-0027
+inputs:
+- specs/nodes/SG-SPEC-0027.yaml
+- specs/nodes/SG-SPEC-0006.yaml
+- specs/nodes/SG-SPEC-0025.yaml
+- tasks.md
+outputs:
+- specs/nodes/SG-SPEC-0028.yaml
+allowed_paths:
+- specs/nodes/SG-SPEC-0028.yaml
+acceptance:
+- Defines one bounded proposal-and-split mechanics subcluster beneath SG-SPEC-0027 so proposal lifecycle,
+  proposal-lane execution semantics, and split payload mechanics stay jointly inspectable without forcing
+  SG-SPEC-0027 to exceed its blocking-child atomicity limit.
+- Defines how SG-SPEC-0025 and SG-SPEC-0006 remain individually bounded as the direct concern-level children
+  of this subcluster, with SG-SPEC-0004 nested beneath SG-SPEC-0025 rather than hanging directly from
+  SG-SPEC-0027.
+- Defines the weakest integration contract by which SG-SPEC-0027 may treat this subcluster as one bounded
+  prerequisite while preserving retrospective direct-update boundary semantics in SG-SPEC-0005.
+- Remains implementation-agnostic about proposal storage layout, queue ranking formulas, and runtime orchestration.
+acceptance_evidence:
+- criterion: Defines one bounded proposal-and-split mechanics subcluster beneath SG-SPEC-0027 so proposal
+    lifecycle, proposal-lane execution semantics, and split payload mechanics stay jointly inspectable
+    without forcing SG-SPEC-0027 to exceed its blocking-child atomicity limit.
+  evidence: specification.subcluster_role defines SG-SPEC-0028 as the intermediate proposal/split mechanics
+    node, while specification.subcluster_members assigns proposal-lane execution semantics to SG-SPEC-0006
+    and split payload plus lifecycle-anchor mechanics to SG-SPEC-0025, which now owns nested SG-SPEC-0004
+    lifecycle refinement.
+- criterion: Defines how SG-SPEC-0025 and SG-SPEC-0006 remain individually bounded as the direct concern-level
+    children of this subcluster, with SG-SPEC-0004 nested beneath SG-SPEC-0025 rather than hanging directly
+    from SG-SPEC-0027.
+  evidence: specification.subcluster_boundaries and specification.parent_contract state that SG-SPEC-0027
+    and equivalent parents consume SG-SPEC-0028 as the concern-level predecessor and must not depend_on
+    SG-SPEC-0006 or SG-SPEC-0025 directly for proposal/split readiness while SG-SPEC-0028 exists, while
+    SG-SPEC-0004 remains nested under SG-SPEC-0025.
+- criterion: Defines the weakest integration contract by which SG-SPEC-0027 may treat this subcluster
+    as one bounded prerequisite while preserving retrospective direct-update boundary semantics in SG-SPEC-0005.
+  evidence: specification.parent_contract states that SG-SPEC-0027 may depend_on SG-SPEC-0028 as one proposal/split
+    mechanics prerequisite and must not depend_on SG-SPEC-0004, SG-SPEC-0006, or SG-SPEC-0025 directly
+    for proposal/split mechanics while the subcluster exists; SG-SPEC-0005 remains the direct boundary
+    owner for retrospective direct-update semantics and is not absorbed by SG-SPEC-0028.
+- criterion: Remains implementation-agnostic about proposal storage layout, queue ranking formulas, and
+    runtime orchestration.
+  evidence: specification.scope.out excludes proposal storage layout, queue ranking formulas, and runtime
+    orchestration details. SG-SPEC-0028 governs only subcluster coherence and integration boundaries.
+prompt: Keep SG-SPEC-0028 as the bounded proposal-and-split mechanics subcluster beneath SG-SPEC-0027.
+  It should group split proposal lifecycle, proposal-lane execution semantics, and split payload mechanics
+  into one inspectable subtree while preserving each descendant's bounded role.
+specification:
+  objective: Define the bounded proposal-and-split mechanics subcluster that groups proposal execution
+    descendants beneath SG-SPEC-0027 without merging their distinct contracts.
+  scope:
+    in:
+    - Proposal/split mechanics subcluster role beneath SG-SPEC-0027
+    - Membership and boundary notes for SG-SPEC-0025 and SG-SPEC-0006 as direct concern-level children
+    - Nested lifecycle-anchor relation from SG-SPEC-0025 to SG-SPEC-0004
+    - Weakest parent integration contract from SG-SPEC-0027 to the subcluster
+    out:
+    - Concrete mechanics semantics already owned by descendant specs
+    - Retrospective direct-update boundary semantics owned by SG-SPEC-0005
+    - Viewer layout, queue ranking formulas, and runtime orchestration
+  subcluster_role:
+  - SG-SPEC-0028 is the intermediate proposal-and-split mechanics node beneath SG-SPEC-0027.
+  - SG-SPEC-0028 exists to keep proposal lifecycle, proposal-lane execution, and split payload mechanics
+    structurally coherent without forcing SG-SPEC-0027 to exceed its blocking-child atomicity limit.
+  subcluster_members:
+    split_payload_mechanics:
+    - SG-SPEC-0025 owns the split proposal mechanics parent contract, including payload schema and split
+      queue mechanics, inside this subcluster.
+    nested_split_proposal_lifecycle:
+    - SG-SPEC-0004 refines SG-SPEC-0025 as the deterministic split proposal lifecycle anchor nested beneath
+      split mechanics rather than as a direct subcluster child.
+    proposal_lane_execution:
+    - SG-SPEC-0006 owns proposal-lane execution semantics and tracked proposal identity.
+  subcluster_boundaries:
+  - Refining through SG-SPEC-0028 does not collapse descendant node identities or their bounded concerns.
+  - SG-SPEC-0028 does not redefine the mechanics contracts already owned by its descendants.
+  - Cross-descendant consistency is expressed here only at the proposal/split subcluster integration level.
+  - SG-SPEC-0028 provides the only concern-level prerequisite edge for proposal/split readiness for this
+    topic; parents that consume this topic must not directly depend_on SG-SPEC-0006 or SG-SPEC-0025 for
+    that same concern while the subcluster is present, and SG-SPEC-0004 remains nested through SG-SPEC-0025.
+  parent_contract:
+  - SG-SPEC-0027 may depend_on SG-SPEC-0028 as one bounded prerequisite for proposal/split mechanics readiness.
+  - SG-SPEC-0027 must not depend_on SG-SPEC-0006 or SG-SPEC-0025 directly for proposal/split mechanics
+    while SG-SPEC-0028 is present as the dedicated subcluster, and must not treat SG-SPEC-0004 as a direct
+    proposal/split readiness prerequisite either.
+  - SG-SPEC-0027 may consume SG-SPEC-0028 for proposal/split readiness only as a concern-level gateway;
+    concrete proposal-lane and split payload mechanics remain normatively owned by SG-SPEC-0006 and SG-SPEC-0025
+    respectively, with SG-SPEC-0004 nested as the lifecycle anchor under SG-SPEC-0025.
+  - SG-SPEC-0027 must not read SG-SPEC-0028 as a proxy for SG-SPEC-0005; direct-update semantics remain
+    a separately consumed concern and are not part of this proposal/split prerequisite contract.
+gate_state: split_required
+required_human_action: split spec scope before rerun
+last_outcome: split_required
+last_blocker: ''
+last_run_id: 20260413T081312Z-SG-SPEC-0028
+last_exit_code: 0
+last_changed_files:
+- specs/nodes/SG-SPEC-0028.yaml
+last_run_at: '2026-04-13T08:13:13.419298+00:00'
+last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0028-20260413T081258Z
+last_branch: codex/sg-spec-0028/20260413T081258Z
+last_validator_results:
+  outputs: true
+  allowed_paths: true
+  reconciliation: true
+  atomicity: true
+  transition: true
+  executor_environment: true
+  refinement_acceptance: true
+last_refinement_acceptance:
+  decision: approve
+  change_class: local_refinement
+  checks:
+    content_changed: true
+    hard_validation: true
+    single_spec_scope: true
+    constitutional_diff: false
+    graph_refactor_diff: false
+    atomicity_clear: true
+    within_mutation_budget: true
+  diff_paths:
+  - specification.parent_contract[1]
+  mutation_classes:
+  - policy_text
+  mutation_budget: []
+  budget_exceeded_classes: []
+  changed_spec_files:
+  - specs/nodes/SG-SPEC-0028.yaml
+  review_reasons: []
+  errors: []
+  warnings: []
+last_reconciliation:
+  worktree_spec_count: 28
+  changed_spec_ids:
+  - SG-SPEC-0028
+  semantic_dependencies_resolved: true
+  work_dependencies_ready: false
+  cycles: []
+last_requested_child_materialization: false
+last_materialized_child_paths: []

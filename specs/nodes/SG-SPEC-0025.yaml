@@ -1,14 +1,14 @@
 id: SG-SPEC-0025
 title: SpecGraph - Split Proposal Mechanics and Artifact Schema
 kind: spec
-status: specified
-maturity: 0.67
+status: linked
+maturity: 0.87
 depends_on:
 - SG-SPEC-0004
 relates_to:
 - SG-SPEC-0006
 refines:
-- SG-SPEC-0003
+- SG-SPEC-0028
 inputs:
 - specs/nodes/SG-SPEC-0003.yaml
 - specs/nodes/SG-SPEC-0004.yaml
@@ -93,6 +93,12 @@ specification:
       for proposal-lane handoff.
     split_payload_validation_outcome: A derived validation result used by split mechanics to reject malformed
       or out-of-scope payloads.
+    split_lifecycle_anchor: The subordinate deterministic apply-path spec that materializes one approved
+      split proposal input after proposal/split mechanics have already emitted a bounded payload.
+  delegated_child_relation:
+  - SG-SPEC-0025 owns the split proposal mechanics parent contract inside SG-SPEC-0028.
+  - SG-SPEC-0004 refines SG-SPEC-0025 as the deterministic split proposal lifecycle anchor that consumes
+    one approved split artifact after SG-SPEC-0025 has already defined the payload and queue contract.
   split_payload_schema:
     required_components:
     - component: parent_target
@@ -164,6 +170,38 @@ specification:
       - advisory
       - reviewed
   emission_policy:
+    deterministic_split_pass:
+    - phase: Evaluate split pass context
+      rules:
+      - split_oversized_spec MAY run only when the run context explicitly selected the split intent for
+        the target spec and the operator-target marker matches.
+      - If the split pass is not selected for the current target, split_payload emission is not permitted
+        even when candidate signals exist.
+    - phase: Build fingerprint and select targets
+      rules:
+      - For each bounded oversized target, compute one `target_signal_fingerprint` from:
+        - target_spec_id
+        - split_signal_family
+        - operator_target_marker
+        - split_trigger_snapshot.window_bucket
+      - Only one `split_payload` decision is made per target+family window bucket per run in split_oversized_spec.
+    - phase: Emit or refresh
+      rules:
+      - If no active split_payload exists for the computed fingerprint, emit one split_payload and one
+        emitted split_queue_item.
+      - If an active split_payload exists with the same fingerprint and a structurally compatible payload
+        shape, refresh that split_payload, increment recurrence_count on the queue item, and set queue_status=refreshed.
+      - If an active split_payload exists with the same fingerprint but incompatible payload structure,
+        set queue_status=deprecated on the existing item and emit a new split_payload with queue_status=emitted
+        and `collision_marker=advisory`.
+    - phase: Constrain repetition
+      rules:
+      - A second split_payload for the same target is forbidden unless split_signal_family differs or
+        window_bucket changes and both are actionably distinct.
+      - Split_candidate_signal pressure in the same family/window may only change state through refresh
+        or explicit deprecation by incompatibility marker.
+      - If bounded oversized targets become empty, the run MUST stop emitting and MUST NOT refresh legacy
+        split_payloads outside that target set.
     triggers:
     - split_oversized_spec may only be entered during split run context selected by explicit operator
       intent for that bounded target.
@@ -225,3 +263,10 @@ specification:
     invalid_outcome:
     - Invalid payloads become advisory split_payload_validation_outcome records only.
     - Validation failures do not create queue precedence changes and do not alter proposal-lane state.
+gate_state: none
+proposed_status: null
+proposed_maturity: null
+required_human_action: '-'
+last_gate_decision: approve
+last_gate_note: Approve bounded split mechanics refinement and explicit lifecycle anchor chain.
+last_gate_at: '2026-04-13T08:08:08.345945+00:00'

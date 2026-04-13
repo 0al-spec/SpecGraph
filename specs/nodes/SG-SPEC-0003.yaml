@@ -2,12 +2,9 @@ id: SG-SPEC-0003
 title: SpecGraph - Reflective Governance Boundary and Graph Health Signals
 kind: spec
 status: linked
-maturity: 0.67
+maturity: 0.87
 depends_on:
-- SG-SPEC-0004
-- SG-SPEC-0005
-- SG-SPEC-0006
-- SG-SPEC-0025
+- SG-SPEC-0026
 relates_to:
 - SG-SPEC-0002
 refines:
@@ -42,10 +39,10 @@ acceptance_evidence:
   evidence: 'specification.boundary_policy separates canonical_governance, supervisor_execution, and human_approval.
     It states that specs govern ontology and policy, the supervisor executes bounded refinement and emits
     derived observations, and constitutional changes require explicit human approval. Direct-update authorization
-    is delegated to bounded child specs (notably SG-SPEC-0005 and SG-SPEC-0006), while SG-SPEC-0003 retains
-    the boundary contract. The same section allows bounded autonomous continuation only after blocked/gated
-    work is clear and only within current authority, without authorizing new metrics, cross-branch restructuring,
-    or review bypass.
+    and continuation execution mechanics are delegated through SG-SPEC-0026 and its bounded descendant
+    mechanics specs, while SG-SPEC-0003 retains the boundary contract. The same section allows bounded
+    autonomous continuation only after blocked/gated work is clear and only within current authority,
+    without authorizing new metrics, cross-branch restructuring, or review bypass.
 
     '
 - criterion: Defines observation, signal, and proposal as a derived reflective loop, including linked-spec
@@ -88,8 +85,8 @@ acceptance_evidence:
 prompt: Keep SG-SPEC-0003 as the canonical overview and integration node for reflective graph-health governance.
   It retains the boundary among SpecGraph governance, supervisor execution, bounded autonomous continuation,
   derived observation/signal/proposal flow, diagnostic graph-health vocabulary, derived first-persistence
-  constraints, and implementation-agnostic scope, while child specs own split proposal mechanics, direct-update/refactor
-  boundaries, and proposal-lane queue semantics.
+  constraints, and implementation-agnostic scope, while SG-SPEC-0026 and its descendants own continuation
+  selection and delegated reflective execution mechanics.
 specification:
   objective: 'Define how SpecGraph observes its own graph quality, how those observations become derived
     signals, continuation candidates, and proposals, and where the boundary lies between canonical governance,
@@ -178,9 +175,9 @@ specification:
     - The supervisor may execute bounded spec refinement, ancestor reconciliation, local graph refactors,
       and derived graph-health observation as long as those actions stay within current canonical policy.
     - The supervisor may perform direct_graph_update only for bounded local_graph_refactor work that is
-      explicitly authorized in current canonical policy; concrete authorization matrices and precedence
-      handling for direct updates are delegated to child specs (notably SG-SPEC-0005 and SG-SPEC-0006),
-      while SG-SPEC-0003 retains only the boundary contract.
+      explicitly authorized in current canonical policy; concrete authorization matrices, proposal-lane
+      execution semantics, split mechanics, and continuation-selection rules are delegated through SG-SPEC-0026
+      and its bounded descendant mechanics specs, while SG-SPEC-0003 retains only the boundary contract.
     - When the current bounded target has no remaining explicit blocked or gated work, the supervisor
       may inspect already linked specs for latent_graph_improvement_candidate follow-up work using current
       canonical links, current status and maturity, and already-defined graph-health signals.
@@ -208,15 +205,23 @@ specification:
       canonical writeback occurs.
     - Active proposal states are derived control artifacts; exact proposal-lane precedence, dedupe, and
       retry semantics are defined by dedicated proposal-lane child specs, not by SG-SPEC-0003.
-    continuation:
-    - Autonomous continuation is allowed only after the current bounded target has no remaining explicit
-      blocked or gated work within the current authority envelope.
-    - Candidate detection may treat low maturity on an already linked spec as contextual evidence only
-      when combined with existing signal candidates such as stalled_maturity_candidate or weak_structural_linkage_candidate;
-      low maturity alone does not create canonical defect state or mandatory backlog.
-    - The supervisor may continue into at most one linked latent_graph_improvement_candidate at a time;
-      if the inferred work exceeds current direct authority or is already owned by an active proposal
-      or gate, the result remains derived artifact emission rather than canonical mutation.
+  continuation:
+  - Autonomous continuation is allowed only after the current bounded target has no remaining explicit
+    blocked or gated work within the current authority envelope.
+  - Candidate detection may treat low maturity on an already linked spec as contextual evidence only when
+    combined with existing signal candidates such as stalled_maturity_candidate or weak_structural_linkage_candidate;
+    low maturity alone does not create canonical defect state or mandatory backlog. It does not emit or
+    suppress canonical obligations.
+  - A latent_graph_improvement_candidate is valid only when it is linked to at least one active graph_health_signal
+    already in graph_health_signal_policy.initial_signals; maturity context without a signal tie-in is
+    not enough to derive continuation.
+  - The supervisor may continue into at most one linked latent_graph_improvement_candidate at a time;
+    if the inferred work exceeds current direct authority or is already owned by an active proposal or
+    gate, the result remains derived artifact emission rather than canonical mutation.
+  - Detailed criteria for deriving, de-duplicating, and selecting the next linked latent_graph_improvement_candidate
+    are delegated to SG-SPEC-0026.
+  - When blocked or gated work remains, latent continuation candidates may still be recorded as derived
+    evidence, but they must not be promoted to execution or canonical writeback candidates.
   graph_health_signal_policy:
     initial_signals:
     - oversized_spec
@@ -228,6 +233,17 @@ specification:
     - Initial signals are diagnostic hints intended to drive refinement quality and graph refactoring.
     - Signal presence does not by itself prove a canonical error; it indicates a region that may need
       review, decomposition, relinking, or policy consideration.
+    - oversized_spec is a structural warning emitted when canonical shape indicators for a spec exceed
+      current policy envelope (for example, repeated large node breadth, dependency fan-out, or lineage
+      depth), and does not imply a mandatory canonical defect.
+    - missing_dependency_target is observed when a required dependency relation points to an absent, unresolved,
+      or unavailable canonical target and requires follow-up planning rather than direct canonical mutation.
+    - repeated_split_required_candidate is emitted when the same split-refactor need is derived repeatedly
+      for the same canonical node across bounded refinement attempts without closure.
+    - stalled_maturity_candidate is emitted when a linked target repeatedly remains active in attempts
+      but its refinement maturity does not meaningfully progress under current authority bounds.
+    - weak_structural_linkage_candidate is emitted when linked-candidate context appears thin, brittle,
+      or under-supported relative to observed graph-health context and is used only for derived prioritization.
     continuation_detection:
     - Low maturity on a linked spec may inform latent_graph_improvement_candidate detection only as derived
       context around stalled_maturity_candidate or weak_structural_linkage_candidate.
@@ -264,116 +280,23 @@ specification:
     - Derived latent_graph_improvement_candidate records MUST NOT be written into canonical spec nodes
       as backlog labels, maturity overrides, or implied work ownership.
   split_refactor_policy:
-    v1:
-      scope:
-      - split_oversized_spec only
-      - non-seed spec nodes only
-      - proposal-first only
-      - no canonical spec mutation during the pass
-      - no merge, reparent, or generalized relinking
-      eligibility:
-      - The target node must be an oversized non-seed spec node under current graph-health policy.
-      - The run must be selected by explicit operator_target rather than heuristic queue pickup.
-    parent_after_split:
-    - The parent keeps the same stable ID and remains an overview or integration node after the proposed
-      split.
-    - The parent keeps only cross-cutting or integration acceptance that should not be duplicated into
-      multiple children.
-    - The parent narrows its role summary and prompt toward overview or integration responsibility rather
-      than keeping all detailed concerns.
-    - The parent depends_on the suggested child specs only when those children are blocking for parent
-      advancement.
-    child_contract:
-    - Each suggested child represents exactly one bounded concern.
-    - Each moved parent acceptance criterion maps to exactly one child slot.
-    - Suggested child IDs and paths are advisory snapshot outputs and do not reserve canonical IDs by
-      themselves.
-    - 'Each suggested child records child-to-parent lineage as refines: [parent_id] in the proposal payload.'
-    - Concrete split_refactor payload schemas, field-level requirements, and split-mechanics validation
-      rules are specified by SG-SPEC-0025; SG-SPEC-0003 retains only boundary and non-mutation policy.
-    execution:
-    - The split pass emits a structured proposal artifact plus proposal_queue index metadata and does
-      not write canonical spec files by itself.
-    - The split pass does not promote status or maturity and does not auto-create child spec files.
-    - If an active proposal already exists for the same spec and signal, the structured proposal artifact
-      is refreshed rather than duplicated.
-    artifact_contract:
-      required_outcome:
-      - The split pass emits an index entry plus structured payload metadata in derived artifacts, with
-        no direct canonical writeback.
-      boundary:
-      - Full field-level payload schema, queue indexing constraints, and payload validation rules are
-        owned by SG-SPEC-0025.
-      parent_retention:
-      - parent_after_split retains narrowed overview acceptance and parent rationale; child acceptance
-        assignment remains an advisory split artifact until proposal-lane approval.
-gate_state: split_required
-required_human_action: split spec scope before rerun
-last_outcome: split_required
-last_blocker: ''
-last_run_id: 20260413T072535Z-SG-SPEC-0003
-last_exit_code: 0
-last_changed_files:
-- specs/nodes/SG-SPEC-0003.yaml
-- specs/nodes/SG-SPEC-0025.yaml
-last_run_at: '2026-04-13T07:25:36.374672+00:00'
-last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0003-20260413T072433Z
-last_branch: codex/sg-spec-0003/20260413T072433Z
-last_validator_results:
-  outputs: false
-  allowed_paths: false
-  reconciliation: false
-  atomicity: false
-  transition: true
-  executor_environment: true
-  refinement_acceptance: false
-last_refinement_acceptance:
-  decision: reject
-  change_class: graph_refactor
-  checks:
-    content_changed: false
-    hard_validation: false
-    single_spec_scope: false
-    constitutional_diff: false
-    graph_refactor_diff: true
-    atomicity_clear: false
-    within_mutation_budget: true
-  diff_paths: []
-  mutation_classes: []
-  mutation_budget: []
-  budget_exceeded_classes: []
-  changed_spec_files:
-  - specs/nodes/SG-SPEC-0003.yaml
-  - specs/nodes/SG-SPEC-0025.yaml
-  review_reasons:
-  - run changed additional spec files beyond the selected source node
-  - atomicity gate still requires follow-up decomposition work
-  errors:
-  - "Invalid YAML in /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0003-20260413T072433Z/specs/nodes/SG-SPEC-0025.yaml:\
-    \ mapping values are not allowed here\n  in \"/Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0003-20260413T072433Z/specs/nodes/SG-SPEC-0025.yaml\"\
-    , line 124, column 18"
-  - 'Changed file outside allowed_paths: specs/nodes/SG-SPEC-0025.yaml'
-  - "Failed to load worktree specs: mapping values are not allowed here\n  in \"/Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0003-20260413T072433Z/specs/nodes/SG-SPEC-0025.yaml\"\
-    , line 124, column 18"
-  warnings:
-  - "Failed to load worktree specs for validation: mapping values are not allowed here\n  in \"/Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0003-20260413T072433Z/specs/nodes/SG-SPEC-0025.yaml\"\
-    , line 124, column 18"
-last_reconciliation:
-  worktree_spec_count: 0
-  changed_spec_ids: []
-  semantic_dependencies_resolved: false
-  work_dependencies_ready: false
-  cycles: []
-last_requested_child_materialization: false
-last_materialized_child_paths: []
+    boundary_contract:
+    - SG-SPEC-0003 only constrains split_refactor behavior at governance boundary level.
+    - Split-refactor runs are proposal-first and must not directly mutate canonical spec nodes.
+    - Split-refactor payload construction, parent-child acceptance mapping, child-creation mechanics,
+      and queue algorithms are delegated to SG-SPEC-0025 and its bounded descendants.
+    - Split-refactor selection, reflection-driven continuation routing, and executor mechanics after a
+      blocked/gated clear are delegated to SG-SPEC-0026 and its bounded descendants.
+    - SG-SPEC-0003 forbids split_refactor mechanics from altering ontology, thresholds, authority, or
+      review gate semantics on their own.
+    canonical_constraints:
+    - A split proposal retains the parent spec’s stable ID and overview role boundary until approved.
+    - Candidate follow-up children are represented as derived proposal artifacts for governance review,
+      not as canonical commitments.
+gate_state: none
 proposed_status: null
 proposed_maturity: null
-last_errors:
-- "Invalid YAML in /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0003-20260413T072433Z/specs/nodes/SG-SPEC-0025.yaml:\
-  \ mapping values are not allowed here\n  in \"/Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0003-20260413T072433Z/specs/nodes/SG-SPEC-0025.yaml\"\
-  , line 124, column 18"
-- 'Changed file outside allowed_paths: specs/nodes/SG-SPEC-0025.yaml'
-- "Failed to load worktree specs: mapping values are not allowed here\n  in \"/Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0003-20260413T072433Z/specs/nodes/SG-SPEC-0025.yaml\"\
-  , line 124, column 18"
-- "Failed to load worktree specs for validation: mapping values are not allowed here\n  in \"/Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0003-20260413T072433Z/specs/nodes/SG-SPEC-0025.yaml\"\
-  , line 124, column 18"
+required_human_action: '-'
+last_gate_decision: approve
+last_gate_note: Approve graph-health and continuation-boundary refinement after mechanics subtree cleanup.
+last_gate_at: '2026-04-13T08:12:20.410593+00:00'

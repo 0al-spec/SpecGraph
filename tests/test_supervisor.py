@@ -3263,6 +3263,63 @@ def test_repair_candidate_yaml_text_quotes_multiline_mapping_scalar(
     )
 
 
+def test_repair_candidate_yaml_text_quotes_multiline_sequence_mapping_scalar(
+    supervisor_module: object,
+) -> None:
+    candidate = (
+        "acceptance_evidence:\n"
+        "- criterion: Defines the bounded execution-mechanics cluster beneath "
+        "SG-SPEC-0026 that groups exactly two concerns:\n"
+        "    retrospective direct-update boundaries and one proposal/split "
+        "mechanics subcluster.\n"
+        "  evidence: specification.cluster_members assigns retrospective "
+        "direct-update boundary to SG-SPEC-0005.\n"
+    )
+
+    repaired = supervisor_module.repair_candidate_yaml_text(candidate)
+
+    parsed = supervisor_module.get_yaml_module().safe_load(repaired)
+    assert parsed["acceptance_evidence"][0]["criterion"] == (
+        "Defines the bounded execution-mechanics cluster beneath SG-SPEC-0026 "
+        "that groups exactly two concerns: retrospective direct-update "
+        "boundaries and one proposal/split mechanics subcluster."
+    )
+    assert parsed["acceptance_evidence"][0]["evidence"] == (
+        "specification.cluster_members assigns retrospective direct-update "
+        "boundary to SG-SPEC-0005."
+    )
+
+
+def test_repair_candidate_yaml_text_preserves_quoted_sibling_key_in_sequence_mapping(
+    supervisor_module: object,
+) -> None:
+    candidate = (
+        "acceptance_evidence:\n"
+        "- criterion: Defines the bounded execution-mechanics cluster beneath "
+        "SG-SPEC-0026 that groups exactly two concerns:\n"
+        "    retrospective direct-update boundaries and one proposal/split "
+        "mechanics subcluster.\n"
+        '  "evidence note": Keep the sibling key intact.\n'
+        "  evidence: specification.cluster_members assigns retrospective "
+        "direct-update boundary to SG-SPEC-0005.\n"
+    )
+
+    repaired = supervisor_module.repair_candidate_yaml_text(candidate)
+
+    parsed = supervisor_module.get_yaml_module().safe_load(repaired)
+    item = parsed["acceptance_evidence"][0]
+    assert item["criterion"] == (
+        "Defines the bounded execution-mechanics cluster beneath SG-SPEC-0026 "
+        "that groups exactly two concerns: retrospective direct-update "
+        "boundaries and one proposal/split mechanics subcluster."
+    )
+    assert item["evidence note"] == "Keep the sibling key intact."
+    assert item["evidence"] == (
+        "specification.cluster_members assigns retrospective direct-update "
+        "boundary to SG-SPEC-0005."
+    )
+
+
 def test_repair_candidate_yaml_text_does_not_swallow_nested_mapping_key(
     supervisor_module: object,
 ) -> None:
