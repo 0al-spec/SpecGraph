@@ -3263,6 +3263,22 @@ def test_repair_candidate_yaml_text_quotes_multiline_mapping_scalar(
     )
 
 
+def test_repair_candidate_yaml_text_does_not_swallow_nested_mapping_key(
+    supervisor_module: object,
+) -> None:
+    candidate = "specification:\n  summary: Short summary line\n    new_key: value\n"
+
+    repaired = supervisor_module.repair_candidate_yaml_text(candidate)
+
+    assert "new_key: value" in repaired
+    parse_failed = False
+    try:
+        supervisor_module.get_yaml_module().safe_load(repaired)
+    except BaseException:
+        parse_failed = True
+    assert parse_failed is True
+
+
 def test_repair_candidate_yaml_text_skips_ambiguous_original_line_indent(
     supervisor_module: object,
 ) -> None:

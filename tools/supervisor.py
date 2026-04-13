@@ -1156,11 +1156,9 @@ def repair_candidate_yaml_text(candidate_text: str, original_text: str | None = 
                     if continuation_indent < indent:
                         break
                     if YAML_KEY_LINE_RE.match(continuation_line) is not None:
-                        if continuation_indent <= indent:
-                            break
+                        break
                     if YAML_SEQUENCE_ITEM_RE.match(continuation_line) is not None:
-                        if continuation_indent <= indent:
-                            break
+                        break
                     continuation_parts.append(continuation_line.strip())
                     continuation_index += 1
                 if continuation_parts:

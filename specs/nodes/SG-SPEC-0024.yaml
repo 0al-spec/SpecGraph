@@ -105,7 +105,7 @@ specification:
   invariants:
   - id: PVE-001
     statement: Every canonical node and edge record must carry provenance metadata, including actor_id,
-      authority_class, source_ref, and recorded_at.
+      authority_class, and recorded_at, plus source_ref whenever authority_class is imported or inferred.
   - id: PVE-002
     statement: authored, imported, inferred, and distilled classes each enforce their source_ref and source_confidence
       requirements as defined in this contract.
