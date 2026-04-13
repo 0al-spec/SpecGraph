@@ -205,6 +205,14 @@ specification:
       - component: source_reference
         cardinality: exactly 1
         meaning: Stable reference to the specific source named by source_kind.
+      lineage_resolution:
+      - If source_kind is proposal_handle, source_reference MUST be equal to the referenced proposal lane
+        node's proposal_handle.handle_value (active or retired) and that source proposal-node must be
+        resolvable from repository-tracked proposal content.
+      - If a proposal_handle source_reference points to multiple active proposal_handle instances, the
+        lineage is in invalid review state until the ambiguity is resolved by repair or explicit supersession.
+      - proposal-lineage references with source_kind proposal_handle must never treat proposal IDs as
+        canonical spec IDs; they are metadata links for review only.
       cardinality: At least one proposal_lineage_link must be declared per proposal-lane node.
     proposal_artifact_link:
       meaning: A weakest machine-readable bridge from a proposal-lane node to an explicit apply-path input
@@ -367,6 +375,10 @@ specification:
     - proposal_lineage_link.source_reference must resolve according to proposal_lineage_link.source_kind,
       and multiple lineage links are allowed only when each link contributes a distinct motivating, derivation,
       or supersession relationship.
+    - When proposal_lineage_link.source_kind is proposal_handle, proposal_lineage_link.source_reference
+      must resolve to a single source proposal-lane node handle value that is present in repository-tracked
+      state; if more than one active node exposes the same handle, the downstream proposal is review-visible
+      invalid but not absent and cannot be treated as deterministically targeted by handle.
     - When a proposal describes a candidate node not yet present in the canonical graph, the lineage still
       points back to the motivating canonical parent, target region, or originating proposal artifact
       rather than inventing canonical ancestry.

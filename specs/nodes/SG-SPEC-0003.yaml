@@ -7,6 +7,7 @@ depends_on:
 - SG-SPEC-0004
 - SG-SPEC-0005
 - SG-SPEC-0006
+- SG-SPEC-0025
 relates_to:
 - SG-SPEC-0002
 refines:
@@ -71,8 +72,8 @@ acceptance_evidence:
     artifacts are first persisted in run artifacts plus derived queues, not written back into canonical
     spec nodes
   evidence: 'specification.derived_artifact_policy.first_persistence lists run payloads, summaries, latent
-    continuation candidate records in run payloads and summaries, refactor_queue artifacts, and proposal_queue
-    artifacts as the first persistence targets, while specification.derived_artifact_policy.canonical_writeback
+    continuation candidate records in run payloads and summaries, refactor_queue artifacts, proposal_queue
+    artifacts, and full proposal payload artifacts as the first persistence targets, while specification.derived_artifact_policy.canonical_writeback
     forbids direct writeback of observations, signals, continuation candidates, or proposals into canonical
     spec nodes without an explicit proposal and approval step.
 
@@ -109,6 +110,7 @@ specification:
     - Final queue prioritization algorithms
     - Proposal-lane queue semantics, including active-item precedence, dedupe, retry gating, and proposal-direct
       handoff
+    - Concrete split_refactor execution steps, split payload schema, and handoff/selection heuristics
     - Viewer UX or visual overlays
     - Automatic self-modification of ontology without approval
     - Detailed SIB, Verifiability, or Observability metric definitions
@@ -238,6 +240,7 @@ specification:
     - Latent continuation candidate records in run payloads and summaries
     - Refactor queue artifacts
     - Proposal queue artifacts
+    - Full proposal payload artifacts
     refactor_queue:
     - The first refactor queue is a derived artifact built from graph_health signals and their current
       classification.
@@ -286,6 +289,8 @@ specification:
     - Suggested child IDs and paths are advisory snapshot outputs and do not reserve canonical IDs by
       themselves.
     - 'Each suggested child records child-to-parent lineage as refines: [parent_id] in the proposal payload.'
+    - Concrete split_refactor payload schemas, field-level requirements, and split-mechanics validation
+      rules are specified by SG-SPEC-0025; SG-SPEC-0003 retains only boundary and non-mutation policy.
     execution:
     - The split pass emits a structured proposal artifact plus proposal_queue index metadata and does
       not write canonical spec files by itself.
@@ -293,81 +298,82 @@ specification:
     - If an active proposal already exists for the same spec and signal, the structured proposal artifact
       is refreshed rather than duplicated.
     artifact_contract:
-      required_fields:
-      - id
-      - proposal_type
-      - refactor_kind
-      - target_spec_id
-      - source_signal
-      - source_run_ids
-      - execution_policy
-      - parent_after_split
-      - suggested_children
-      - acceptance_mapping
-      - lineage_updates
-      - status
-      rules:
-      - parent_after_split MUST retain acceptance that stays on the parent and describe the narrowed overview
-        role.
-      - suggested_children MUST include advisory child IDs, advisory paths, bounded concern summaries,
-        suggested titles, suggested prompts, and assigned acceptance criteria.
-      - acceptance_mapping MUST cover every current parent acceptance criterion exactly once, either as
-        parent_retained or as one child slot assignment.
-      - lineage_updates MUST record both parent-to-child blocking edges to add and child-to-parent refines
-        edges to add for the proposed split.
+      required_outcome:
+      - The split pass emits an index entry plus structured payload metadata in derived artifacts, with
+        no direct canonical writeback.
+      boundary:
+      - Full field-level payload schema, queue indexing constraints, and payload validation rules are
+        owned by SG-SPEC-0025.
+      parent_retention:
+      - parent_after_split retains narrowed overview acceptance and parent rationale; child acceptance
+        assignment remains an advisory split artifact until proposal-lane approval.
 gate_state: split_required
 required_human_action: split spec scope before rerun
 last_outcome: split_required
 last_blocker: ''
-last_run_id: 20260413T053234Z-SG-SPEC-0003
+last_run_id: 20260413T072535Z-SG-SPEC-0003
 last_exit_code: 0
 last_changed_files:
 - specs/nodes/SG-SPEC-0003.yaml
-last_run_at: '2026-04-13T05:32:35.305023+00:00'
-last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0003-20260413T053216Z
-last_branch: codex/sg-spec-0003/20260413T053216Z
+- specs/nodes/SG-SPEC-0025.yaml
+last_run_at: '2026-04-13T07:25:36.374672+00:00'
+last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0003-20260413T072433Z
+last_branch: codex/sg-spec-0003/20260413T072433Z
 last_validator_results:
-  outputs: true
-  allowed_paths: true
-  reconciliation: true
-  atomicity: true
+  outputs: false
+  allowed_paths: false
+  reconciliation: false
+  atomicity: false
   transition: true
   executor_environment: true
-  refinement_acceptance: true
+  refinement_acceptance: false
 last_refinement_acceptance:
-  decision: approve
-  change_class: local_refinement
+  decision: reject
+  change_class: graph_refactor
   checks:
-    content_changed: true
-    hard_validation: true
-    single_spec_scope: true
+    content_changed: false
+    hard_validation: false
+    single_spec_scope: false
     constitutional_diff: false
-    graph_refactor_diff: false
-    atomicity_clear: true
+    graph_refactor_diff: true
+    atomicity_clear: false
     within_mutation_budget: true
-  diff_paths:
-  - specification.derived_artifact_policy.proposal_queue[3]
-  - specification.reflective_loop.rules[3]
-  - specification.scope.out[2]
-  - specification.scope.out[3]
-  - specification.scope.out[4]
-  - specification.scope.out[5]
-  - specification.scope.out[6]
-  mutation_classes:
-  - policy_text
+  diff_paths: []
+  mutation_classes: []
   mutation_budget: []
   budget_exceeded_classes: []
   changed_spec_files:
   - specs/nodes/SG-SPEC-0003.yaml
-  review_reasons: []
-  errors: []
-  warnings: []
+  - specs/nodes/SG-SPEC-0025.yaml
+  review_reasons:
+  - run changed additional spec files beyond the selected source node
+  - atomicity gate still requires follow-up decomposition work
+  errors:
+  - "Invalid YAML in /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0003-20260413T072433Z/specs/nodes/SG-SPEC-0025.yaml:\
+    \ mapping values are not allowed here\n  in \"/Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0003-20260413T072433Z/specs/nodes/SG-SPEC-0025.yaml\"\
+    , line 124, column 18"
+  - 'Changed file outside allowed_paths: specs/nodes/SG-SPEC-0025.yaml'
+  - "Failed to load worktree specs: mapping values are not allowed here\n  in \"/Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0003-20260413T072433Z/specs/nodes/SG-SPEC-0025.yaml\"\
+    , line 124, column 18"
+  warnings:
+  - "Failed to load worktree specs for validation: mapping values are not allowed here\n  in \"/Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0003-20260413T072433Z/specs/nodes/SG-SPEC-0025.yaml\"\
+    , line 124, column 18"
 last_reconciliation:
-  worktree_spec_count: 23
-  changed_spec_ids:
-  - SG-SPEC-0003
-  semantic_dependencies_resolved: true
+  worktree_spec_count: 0
+  changed_spec_ids: []
+  semantic_dependencies_resolved: false
   work_dependencies_ready: false
   cycles: []
 last_requested_child_materialization: false
 last_materialized_child_paths: []
+proposed_status: null
+proposed_maturity: null
+last_errors:
+- "Invalid YAML in /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0003-20260413T072433Z/specs/nodes/SG-SPEC-0025.yaml:\
+  \ mapping values are not allowed here\n  in \"/Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0003-20260413T072433Z/specs/nodes/SG-SPEC-0025.yaml\"\
+  , line 124, column 18"
+- 'Changed file outside allowed_paths: specs/nodes/SG-SPEC-0025.yaml'
+- "Failed to load worktree specs: mapping values are not allowed here\n  in \"/Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0003-20260413T072433Z/specs/nodes/SG-SPEC-0025.yaml\"\
+  , line 124, column 18"
+- "Failed to load worktree specs for validation: mapping values are not allowed here\n  in \"/Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0003-20260413T072433Z/specs/nodes/SG-SPEC-0025.yaml\"\
+  , line 124, column 18"
