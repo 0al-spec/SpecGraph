@@ -67,6 +67,9 @@ specification:
   - SG-SPEC-0027 is the intermediate execution cluster node beneath SG-SPEC-0026.
   - SG-SPEC-0027 exists to keep reflective execution mechanics structurally coherent without forcing SG-SPEC-0026
     to exceed its blocking-child atomicity limit.
+  - 'SG-SPEC-0027 exposes exactly two direct execution-mechanics children: SG-SPEC-0005 for retrospective
+    direct-update boundary and SG-SPEC-0028 for the proposal/split mechanics subtree. SG-SPEC-0026 therefore
+    depends on SG-SPEC-0027 as the single execution-mechanics dependency for this cluster.'
   cluster_members:
     retrospective_direct_update_boundary:
     - SG-SPEC-0005 owns retrospective direct-update boundary and application envelope.
@@ -84,21 +87,20 @@ specification:
     readiness.
   - SG-SPEC-0027 must remain narrow enough that SG-SPEC-0026 keeps continuation-selection logic separate
     from mechanics integration.
-  - SG-SPEC-0027 may expose at most one subordinate proposal/split mechanics subcluster when that indirection
-    is needed to keep the execution subtree within atomicity limits.
+  - SG-SPEC-0027 must expose exactly one subordinate proposal/split mechanics subcluster and it is SG-SPEC-0028.
   - SG-SPEC-0026 must not depend_on SG-SPEC-0005, SG-SPEC-0004, SG-SPEC-0006, SG-SPEC-0025, or SG-SPEC-0028
     directly for execution-mechanics readiness while SG-SPEC-0027 remains present.
 gate_state: split_required
 required_human_action: split spec scope before rerun
 last_outcome: split_required
 last_blocker: ''
-last_run_id: 20260413T080414Z-SG-SPEC-0027
+last_run_id: 20260413T081131Z-SG-SPEC-0027
 last_exit_code: 0
 last_changed_files:
 - specs/nodes/SG-SPEC-0027.yaml
-last_run_at: '2026-04-13T08:04:15.149928+00:00'
-last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0027-20260413T080344Z
-last_branch: codex/sg-spec-0027/20260413T080344Z
+last_run_at: '2026-04-13T08:11:32.142053+00:00'
+last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0027-20260413T081056Z
+last_branch: codex/sg-spec-0027/20260413T081056Z
 last_validator_results:
   outputs: true
   allowed_paths: true
@@ -119,9 +121,7 @@ last_refinement_acceptance:
     atomicity_clear: true
     within_mutation_budget: true
   diff_paths:
-  - acceptance_evidence[2].evidence
-  - specification.parent_contract[0]
-  - specification.parent_contract[3]
+  - specification.cluster_role[2]
   mutation_classes:
   - policy_text
   mutation_budget: []

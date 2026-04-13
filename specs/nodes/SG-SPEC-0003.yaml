@@ -2,7 +2,7 @@ id: SG-SPEC-0003
 title: SpecGraph - Reflective Governance Boundary and Graph Health Signals
 kind: spec
 status: linked
-maturity: 0.67
+maturity: 0.87
 depends_on:
 - SG-SPEC-0026
 relates_to:
@@ -212,6 +212,9 @@ specification:
     combined with existing signal candidates such as stalled_maturity_candidate or weak_structural_linkage_candidate;
     low maturity alone does not create canonical defect state or mandatory backlog. It does not emit or
     suppress canonical obligations.
+  - A latent_graph_improvement_candidate is valid only when it is linked to at least one active graph_health_signal
+    already in graph_health_signal_policy.initial_signals; maturity context without a signal tie-in is
+    not enough to derive continuation.
   - The supervisor may continue into at most one linked latent_graph_improvement_candidate at a time;
     if the inferred work exceeds current direct authority or is already owned by an active proposal or
     gate, the result remains derived artifact emission rather than canonical mutation.
@@ -230,6 +233,17 @@ specification:
     - Initial signals are diagnostic hints intended to drive refinement quality and graph refactoring.
     - Signal presence does not by itself prove a canonical error; it indicates a region that may need
       review, decomposition, relinking, or policy consideration.
+    - oversized_spec is a structural warning emitted when canonical shape indicators for a spec exceed
+      current policy envelope (for example, repeated large node breadth, dependency fan-out, or lineage
+      depth), and does not imply a mandatory canonical defect.
+    - missing_dependency_target is observed when a required dependency relation points to an absent, unresolved,
+      or unavailable canonical target and requires follow-up planning rather than direct canonical mutation.
+    - repeated_split_required_candidate is emitted when the same split-refactor need is derived repeatedly
+      for the same canonical node across bounded refinement attempts without closure.
+    - stalled_maturity_candidate is emitted when a linked target repeatedly remains active in attempts
+      but its refinement maturity does not meaningfully progress under current authority bounds.
+    - weak_structural_linkage_candidate is emitted when linked-candidate context appears thin, brittle,
+      or under-supported relative to observed graph-health context and is used only for derived prioritization.
     continuation_detection:
     - Low maturity on a linked spec may inform latent_graph_improvement_candidate detection only as derived
       context around stalled_maturity_candidate or weak_structural_linkage_candidate.
@@ -279,53 +293,10 @@ specification:
     - A split proposal retains the parent spec’s stable ID and overview role boundary until approved.
     - Candidate follow-up children are represented as derived proposal artifacts for governance review,
       not as canonical commitments.
-gate_state: split_required
-required_human_action: split spec scope before rerun
-last_outcome: split_required
-last_blocker: ''
-last_run_id: 20260413T080129Z-SG-SPEC-0003
-last_exit_code: 0
-last_changed_files:
-- specs/nodes/SG-SPEC-0003.yaml
-last_run_at: '2026-04-13T08:01:29.950243+00:00'
-last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0003-20260413T080110Z
-last_branch: codex/sg-spec-0003/20260413T080110Z
-last_validator_results:
-  outputs: true
-  allowed_paths: true
-  reconciliation: true
-  atomicity: true
-  transition: true
-  executor_environment: true
-  refinement_acceptance: true
-last_refinement_acceptance:
-  decision: approve
-  change_class: local_refinement
-  checks:
-    content_changed: true
-    hard_validation: true
-    single_spec_scope: true
-    constitutional_diff: false
-    graph_refactor_diff: false
-    atomicity_clear: true
-    within_mutation_budget: true
-  diff_paths:
-  - specification.continuation[4]
-  mutation_classes:
-  - policy_text
-  mutation_budget: []
-  budget_exceeded_classes: []
-  changed_spec_files:
-  - specs/nodes/SG-SPEC-0003.yaml
-  review_reasons: []
-  errors: []
-  warnings: []
-last_reconciliation:
-  worktree_spec_count: 28
-  changed_spec_ids:
-  - SG-SPEC-0003
-  semantic_dependencies_resolved: true
-  work_dependencies_ready: false
-  cycles: []
-last_requested_child_materialization: false
-last_materialized_child_paths: []
+gate_state: none
+proposed_status: null
+proposed_maturity: null
+required_human_action: '-'
+last_gate_decision: approve
+last_gate_note: Approve graph-health and continuation-boundary refinement after mechanics subtree cleanup.
+last_gate_at: '2026-04-13T08:12:20.410593+00:00'
