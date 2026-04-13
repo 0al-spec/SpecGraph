@@ -22,7 +22,6 @@ inputs:
 - AGENTS.md
 outputs:
 - specs/nodes/SG-SPEC-0003.yaml
-- specs/nodes/SG-SPEC-0025.yaml
 allowed_paths:
 - specs/nodes/SG-SPEC-0003.yaml
 acceptance:

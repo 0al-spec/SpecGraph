@@ -146,9 +146,18 @@ specification:
     - child_title: required
       cardinality: exactly 1
       meaning: Title for candidate child-spec payload.
+    - split_reason: required
+      cardinality: exactly 1
+      meaning: Bounded justification for why this child is split out of the parent.
     - acceptance_slot: required
       cardinality: exactly 1
       meaning: Bounded parent acceptance criterion moved into one child.
+    - acceptance_evidence_slot: required
+      cardinality: exactly 1
+      meaning: Acceptance-evidence slot paired with the moved parent acceptance criterion.
+    - expected_refine_parent_id: required
+      cardinality: exactly 1
+      meaning: Parent spec ID that the child candidate is expected to refine after materialization.
     - readiness: optional
       cardinality: exactly 1
       allowed_values:
