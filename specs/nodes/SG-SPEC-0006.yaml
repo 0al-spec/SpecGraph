@@ -7,7 +7,7 @@ depends_on: []
 relates_to:
 - SG-SPEC-0005
 refines:
-- SG-SPEC-0027
+- SG-SPEC-0028
 inputs:
 - specs/nodes/SG-SPEC-0003.yaml
 - specs/nodes/SG-SPEC-0004.yaml

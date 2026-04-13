@@ -8,7 +8,7 @@ relates_to:
 - SG-SPEC-0002
 - SG-SPEC-0006
 refines:
-- SG-SPEC-0027
+- SG-SPEC-0028
 inputs:
 - specs/nodes/SG-SPEC-0002.yaml
 - specs/nodes/SG-SPEC-0003.yaml

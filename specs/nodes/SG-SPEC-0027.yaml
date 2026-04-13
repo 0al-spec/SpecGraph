@@ -4,26 +4,22 @@ kind: spec
 status: specified
 maturity: 0.49
 depends_on:
-- SG-SPEC-0004
 - SG-SPEC-0005
-- SG-SPEC-0006
-- SG-SPEC-0025
+- SG-SPEC-0028
 refines:
 - SG-SPEC-0026
 inputs:
 - specs/nodes/SG-SPEC-0026.yaml
-- specs/nodes/SG-SPEC-0004.yaml
 - specs/nodes/SG-SPEC-0005.yaml
-- specs/nodes/SG-SPEC-0006.yaml
-- specs/nodes/SG-SPEC-0025.yaml
+- specs/nodes/SG-SPEC-0028.yaml
 - tasks.md
 outputs:
 - specs/nodes/SG-SPEC-0027.yaml
 allowed_paths:
 - specs/nodes/SG-SPEC-0027.yaml
 acceptance:
-- Defines the bounded execution-mechanics cluster beneath SG-SPEC-0026 that groups split proposal mechanics,
-  retrospective direct-update boundaries, and proposal-lane execution semantics.
+- Defines the bounded execution-mechanics cluster beneath SG-SPEC-0026 that groups retrospective direct-update
+  boundaries with one subordinate proposal/split mechanics subcluster.
 - Defines how the mechanics descendants remain jointly inspectable as one execution cluster without collapsing
   their distinct bounded responsibilities.
 - Defines the weakest integration contract by which SG-SPEC-0026 may depend on this cluster while keeping
@@ -33,9 +29,8 @@ acceptance_evidence:
 - criterion: Defines the bounded execution-mechanics cluster beneath SG-SPEC-0026 that groups split proposal
     mechanics, retrospective direct-update boundaries, and proposal-lane execution semantics.
   evidence: specification.cluster_role defines SG-SPEC-0027 as the intermediate execution cluster node,
-    while specification.cluster_members assigns split mechanics to SG-SPEC-0025, retrospective direct-update
-    boundaries to SG-SPEC-0005, and proposal-lane execution semantics to SG-SPEC-0006, with SG-SPEC-0004
-    retained as the concrete split proposal lifecycle anchor inside the same cluster.
+    while specification.cluster_members assigns retrospective direct-update boundary to SG-SPEC-0005 and
+    delegates all proposal/split mechanics coherence to subordinate subcluster SG-SPEC-0028.
 - criterion: Defines how the mechanics descendants remain jointly inspectable as one execution cluster
     without collapsing their distinct bounded responsibilities.
   evidence: specification.cluster_boundaries states that the child mechanics specs remain individually
@@ -50,19 +45,22 @@ acceptance_evidence:
     orchestration.
   evidence: specification.scope.out excludes viewer layout, queue ranking formulas, and runtime orchestration
     details. SG-SPEC-0027 governs only subtree coherence and integration boundaries.
-prompt: Keep SG-SPEC-0027 as the bounded execution cluster beneath SG-SPEC-0026. It should group the reflective
-  execution mechanics descendants into one inspectable subtree, preserve their bounded roles, and give
-  SG-SPEC-0026 one coherent dependency instead of several direct mechanics children.
+prompt: Keep SG-SPEC-0027 as the bounded execution cluster beneath SG-SPEC-0026. It should group retrospective
+  direct-update boundary and one proposal/split mechanics subcluster into one inspectable subtree, preserve
+  their bounded roles, and give SG-SPEC-0026 one coherent dependency instead of several direct mechanics
+  children.
 specification:
   objective: Define the bounded execution-mechanics cluster that groups reflective execution descendants
     beneath SG-SPEC-0026 without merging their distinct mechanics contracts.
   scope:
     in:
     - Execution cluster role beneath SG-SPEC-0026
-    - Membership and boundary notes for SG-SPEC-0004, SG-SPEC-0005, SG-SPEC-0006, and SG-SPEC-0025
+    - Membership and boundary notes for SG-SPEC-0005 and subordinate proposal/split mechanics subcluster
+      SG-SPEC-0028
     - Weakest parent integration contract from SG-SPEC-0026 to the cluster
     out:
     - Concrete mechanics semantics already owned by descendant specs
+    - Internal proposal/split membership semantics delegated to SG-SPEC-0028
     - Continuation-selection policy owned by SG-SPEC-0026
     - Viewer layout, queue ranking formulas, and runtime orchestration
   cluster_role:
@@ -70,19 +68,85 @@ specification:
   - SG-SPEC-0027 exists to keep reflective execution mechanics structurally coherent without forcing SG-SPEC-0026
     to exceed its blocking-child atomicity limit.
   cluster_members:
-    split_proposal_lifecycle:
-    - SG-SPEC-0004 remains the split proposal lifecycle anchor inside this cluster.
-    split_proposal_mechanics:
-    - SG-SPEC-0025 owns concrete split payload schema and split queue mechanics.
     retrospective_direct_update_boundary:
     - SG-SPEC-0005 owns retrospective direct-update boundary and application envelope.
-    proposal_lane_execution:
-    - SG-SPEC-0006 owns proposal-lane execution semantics and tracked proposal identity.
+    proposal_and_split_mechanics_subcluster:
+    - SG-SPEC-0028 owns coherence for split proposal lifecycle, split mechanics schema, and proposal-lane
+      execution descendants.
   cluster_boundaries:
   - Refining through SG-SPEC-0027 does not collapse descendant node identities or their bounded concerns.
   - SG-SPEC-0027 does not redefine the mechanics contracts already owned by its descendants.
   - Cross-descendant consistency is expressed here only at the subtree-integration level.
+  - SG-SPEC-0027 does not restate field-level proposal or split artifact contracts once those are delegated
+    through SG-SPEC-0028.
   parent_contract:
   - SG-SPEC-0026 may depend_on SG-SPEC-0027 as one bounded prerequisite for reflective execution readiness.
   - SG-SPEC-0027 must remain narrow enough that SG-SPEC-0026 keeps continuation-selection logic separate
     from mechanics integration.
+  - SG-SPEC-0027 may expose at most one subordinate proposal/split mechanics subcluster when that indirection
+    is needed to keep the execution subtree within atomicity limits.
+proposed_status: null
+proposed_maturity: null
+gate_state: split_required
+required_human_action: split spec scope before rerun
+last_outcome: split_required
+last_blocker: 'Node is still non-atomic: SG-SPEC-0027 has 4 direct mechanics descendants (SG-SPEC-0004,
+  SG-SPEC-0005, SG-SPEC-0006, SG-SPEC-0025), so this run only refines the cluster contract and records
+  the required split path through SG-SPEC-0028.'
+last_run_id: 20260413T075534Z-SG-SPEC-0027
+last_exit_code: 0
+last_changed_files:
+- specs/nodes/SG-SPEC-0027.yaml
+last_run_at: '2026-04-13T07:55:34.808065+00:00'
+last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0027-20260413T075508Z
+last_branch: codex/sg-spec-0027/20260413T075508Z
+last_validator_results:
+  outputs: true
+  allowed_paths: true
+  reconciliation: false
+  atomicity: true
+  transition: true
+  executor_environment: true
+  refinement_acceptance: false
+last_refinement_acceptance:
+  decision: reject
+  change_class: graph_refactor
+  checks:
+    content_changed: true
+    hard_validation: false
+    single_spec_scope: true
+    constitutional_diff: false
+    graph_refactor_diff: true
+    atomicity_clear: true
+    within_mutation_budget: true
+  diff_paths:
+  - acceptance_evidence[0].criterion
+  - acceptance_evidence[0].evidence
+  - acceptance_evidence[1].evidence
+  - depends_on[0]
+  - depends_on[1]
+  - specification.cluster_boundaries[4]
+  - specification.cluster_members.proposal_and_split_mechanics_subcluster[1]
+  - specification.parent_contract[3]
+  mutation_classes:
+  - policy_text
+  mutation_budget: []
+  budget_exceeded_classes: []
+  changed_spec_files:
+  - specs/nodes/SG-SPEC-0027.yaml
+  review_reasons:
+  - run changed graph structure or spec contract paths
+  errors:
+  - 'Cannot advance to linked: missing declared dependency nodes SG-SPEC-0028'
+  warnings: []
+last_reconciliation:
+  worktree_spec_count: 27
+  changed_spec_ids:
+  - SG-SPEC-0027
+  semantic_dependencies_resolved: false
+  work_dependencies_ready: false
+  cycles: []
+last_requested_child_materialization: false
+last_materialized_child_paths: []
+last_errors:
+- 'Cannot advance to linked: missing declared dependency nodes SG-SPEC-0028'

@@ -1,0 +1,84 @@
+id: SG-SPEC-0028
+title: SpecGraph - Proposal and Split Mechanics Subcluster
+kind: spec
+status: specified
+maturity: 0.49
+depends_on:
+- SG-SPEC-0004
+- SG-SPEC-0006
+- SG-SPEC-0025
+refines:
+- SG-SPEC-0027
+inputs:
+- specs/nodes/SG-SPEC-0027.yaml
+- specs/nodes/SG-SPEC-0004.yaml
+- specs/nodes/SG-SPEC-0006.yaml
+- specs/nodes/SG-SPEC-0025.yaml
+- tasks.md
+outputs:
+- specs/nodes/SG-SPEC-0028.yaml
+allowed_paths:
+- specs/nodes/SG-SPEC-0028.yaml
+acceptance:
+- Defines one bounded proposal-and-split mechanics subcluster beneath SG-SPEC-0027 so proposal lifecycle,
+  proposal-lane execution semantics, and split payload mechanics stay jointly inspectable without forcing
+  SG-SPEC-0027 to exceed its blocking-child atomicity limit.
+- Defines how SG-SPEC-0004, SG-SPEC-0006, and SG-SPEC-0025 remain individually bounded while refining
+  through one subordinate subcluster rather than hanging directly from SG-SPEC-0027.
+- Defines the weakest integration contract by which SG-SPEC-0027 may treat this subcluster as one bounded
+  prerequisite while leaving retrospective direct-update boundary semantics to SG-SPEC-0005.
+- Remains implementation-agnostic about proposal storage layout, queue ranking formulas, and runtime orchestration.
+acceptance_evidence:
+- criterion: Defines one bounded proposal-and-split mechanics subcluster beneath SG-SPEC-0027 so proposal
+    lifecycle, proposal-lane execution semantics, and split payload mechanics stay jointly inspectable
+    without forcing SG-SPEC-0027 to exceed its blocking-child atomicity limit.
+  evidence: specification.subcluster_role defines SG-SPEC-0028 as the intermediate proposal/split mechanics
+    node, while specification.subcluster_members assigns split proposal lifecycle to SG-SPEC-0004, proposal-lane
+    execution semantics to SG-SPEC-0006, and split payload mechanics to SG-SPEC-0025.
+- criterion: Defines how SG-SPEC-0004, SG-SPEC-0006, and SG-SPEC-0025 remain individually bounded while
+    refining through one subordinate subcluster rather than hanging directly from SG-SPEC-0027.
+  evidence: specification.subcluster_boundaries states that the descendants keep their distinct bounded
+    contracts and refine through SG-SPEC-0028 only for subtree coherence rather than contract merger.
+- criterion: Defines the weakest integration contract by which SG-SPEC-0027 may treat this subcluster
+    as one bounded prerequisite while leaving retrospective direct-update boundary semantics to SG-SPEC-0005.
+  evidence: specification.parent_contract states that SG-SPEC-0027 may depend_on SG-SPEC-0028 as one proposal/split
+    mechanics prerequisite and must not depend_on SG-SPEC-0004, SG-SPEC-0006, or SG-SPEC-0025 directly
+    for that concern while the subcluster exists.
+- criterion: Remains implementation-agnostic about proposal storage layout, queue ranking formulas, and
+    runtime orchestration.
+  evidence: specification.scope.out excludes proposal storage layout, queue ranking formulas, and runtime
+    orchestration details. SG-SPEC-0028 governs only subcluster coherence and integration boundaries.
+prompt: Keep SG-SPEC-0028 as the bounded proposal-and-split mechanics subcluster beneath SG-SPEC-0027.
+  It should group split proposal lifecycle, proposal-lane execution semantics, and split payload mechanics
+  into one inspectable subtree while preserving each descendant's bounded role.
+specification:
+  objective: Define the bounded proposal-and-split mechanics subcluster that groups proposal execution
+    descendants beneath SG-SPEC-0027 without merging their distinct contracts.
+  scope:
+    in:
+    - Proposal/split mechanics subcluster role beneath SG-SPEC-0027
+    - Membership and boundary notes for SG-SPEC-0004, SG-SPEC-0006, and SG-SPEC-0025
+    - Weakest parent integration contract from SG-SPEC-0027 to the subcluster
+    out:
+    - Concrete mechanics semantics already owned by descendant specs
+    - Retrospective direct-update boundary semantics owned by SG-SPEC-0005
+    - Viewer layout, queue ranking formulas, and runtime orchestration
+  subcluster_role:
+  - SG-SPEC-0028 is the intermediate proposal-and-split mechanics node beneath SG-SPEC-0027.
+  - SG-SPEC-0028 exists to keep proposal lifecycle, proposal-lane execution, and split payload mechanics
+    structurally coherent without forcing SG-SPEC-0027 to exceed its blocking-child atomicity limit.
+  subcluster_members:
+    split_proposal_lifecycle:
+    - SG-SPEC-0004 remains the split proposal lifecycle anchor inside this subcluster.
+    proposal_lane_execution:
+    - SG-SPEC-0006 owns proposal-lane execution semantics and tracked proposal identity.
+    split_payload_mechanics:
+    - SG-SPEC-0025 owns concrete split payload schema and split queue mechanics.
+  subcluster_boundaries:
+  - Refining through SG-SPEC-0028 does not collapse descendant node identities or their bounded concerns.
+  - SG-SPEC-0028 does not redefine the mechanics contracts already owned by its descendants.
+  - Cross-descendant consistency is expressed here only at the proposal/split subcluster integration level.
+  parent_contract:
+  - SG-SPEC-0027 may depend_on SG-SPEC-0028 as one bounded prerequisite for proposal/split mechanics readiness.
+  - SG-SPEC-0027 must not depend_on SG-SPEC-0004, SG-SPEC-0006, or SG-SPEC-0025 directly for proposal/split
+    mechanics while SG-SPEC-0028 is present as the dedicated subcluster.
