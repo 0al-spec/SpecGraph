@@ -205,17 +205,20 @@ specification:
       canonical writeback occurs.
     - Active proposal states are derived control artifacts; exact proposal-lane precedence, dedupe, and
       retry semantics are defined by dedicated proposal-lane child specs, not by SG-SPEC-0003.
-    continuation:
-    - Autonomous continuation is allowed only after the current bounded target has no remaining explicit
-      blocked or gated work within the current authority envelope.
-    - Candidate detection may treat low maturity on an already linked spec as contextual evidence only
-      when combined with existing signal candidates such as stalled_maturity_candidate or weak_structural_linkage_candidate;
-      low maturity alone does not create canonical defect state or mandatory backlog.
-    - The supervisor may continue into at most one linked latent_graph_improvement_candidate at a time;
-      if the inferred work exceeds current direct authority or is already owned by an active proposal
-      or gate, the result remains derived artifact emission rather than canonical mutation.
-    - Detailed criteria for deriving, de-duplicating, and selecting the next linked latent_graph_improvement_candidate
-      are delegated to SG-SPEC-0026.
+  continuation:
+  - Autonomous continuation is allowed only after the current bounded target has no remaining explicit
+    blocked or gated work within the current authority envelope.
+  - Candidate detection may treat low maturity on an already linked spec as contextual evidence only when
+    combined with existing signal candidates such as stalled_maturity_candidate or weak_structural_linkage_candidate;
+    low maturity alone does not create canonical defect state or mandatory backlog. It does not emit or
+    suppress canonical obligations.
+  - The supervisor may continue into at most one linked latent_graph_improvement_candidate at a time;
+    if the inferred work exceeds current direct authority or is already owned by an active proposal or
+    gate, the result remains derived artifact emission rather than canonical mutation.
+  - Detailed criteria for deriving, de-duplicating, and selecting the next linked latent_graph_improvement_candidate
+    are delegated to SG-SPEC-0026.
+  - When blocked or gated work remains, latent continuation candidates may still be recorded as derived
+    evidence, but they must not be promoted to execution or canonical writeback candidates.
   graph_health_signal_policy:
     initial_signals:
     - oversized_spec
@@ -280,13 +283,13 @@ gate_state: split_required
 required_human_action: split spec scope before rerun
 last_outcome: split_required
 last_blocker: ''
-last_run_id: 20260413T075125Z-SG-SPEC-0003
+last_run_id: 20260413T080129Z-SG-SPEC-0003
 last_exit_code: 0
 last_changed_files:
 - specs/nodes/SG-SPEC-0003.yaml
-last_run_at: '2026-04-13T07:51:25.971626+00:00'
-last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0003-20260413T075108Z
-last_branch: codex/sg-spec-0003/20260413T075108Z
+last_run_at: '2026-04-13T08:01:29.950243+00:00'
+last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0003-20260413T080110Z
+last_branch: codex/sg-spec-0003/20260413T080110Z
 last_validator_results:
   outputs: true
   allowed_paths: true
@@ -307,9 +310,7 @@ last_refinement_acceptance:
     atomicity_clear: true
     within_mutation_budget: true
   diff_paths:
-  - specification.split_refactor_policy.boundary_contract[2]
-  - specification.split_refactor_policy.boundary_contract[3]
-  - specification.split_refactor_policy.boundary_contract[4]
+  - specification.continuation[4]
   mutation_classes:
   - policy_text
   mutation_budget: []
@@ -320,7 +321,7 @@ last_refinement_acceptance:
   errors: []
   warnings: []
 last_reconciliation:
-  worktree_spec_count: 27
+  worktree_spec_count: 28
   changed_spec_ids:
   - SG-SPEC-0003
   semantic_dependencies_resolved: true
