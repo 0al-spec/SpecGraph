@@ -1533,6 +1533,22 @@ def restore_ephemeral_child_authority_fields(
         node.data.pop("allowed_paths", None)
 
 
+def restore_source_lifecycle_fields_after_split_sync(
+    *,
+    node: SpecNode,
+    before_data: dict[str, Any],
+) -> None:
+    """Keep source lifecycle fields canonical during split-required sync."""
+
+    for field in ("status", "maturity", "gate_state", "required_human_action"):
+        if field in before_data:
+            node.data[field] = copy.deepcopy(before_data[field])
+        else:
+            node.data.pop(field, None)
+    node.data["proposed_status"] = None
+    node.data["proposed_maturity"] = None
+
+
 def normalize_materialized_child_specs(child_relpaths: list[str]) -> None:
     yaml_module = get_yaml_module()
     for child_relpath in child_relpaths:
@@ -5309,6 +5325,10 @@ def _process_one_spec(
         sync_files_from_worktree(worktree_path, allowed_changes)
         normalize_materialized_child_specs(materialized_child_paths)
         node.reload()
+        restore_source_lifecycle_fields_after_split_sync(
+            node=node,
+            before_data=before_node_data,
+        )
         restore_ephemeral_child_authority_fields(
             node=node,
             before_data=before_node_data,

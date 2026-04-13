@@ -5168,6 +5168,63 @@ def test_main_split_required_syncs_decomposition_outputs(
     assert child_three["refines"] == ["SG-SPEC-0001"]
 
 
+def test_main_split_required_sync_preserves_source_lifecycle_fields(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    node_data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    node_data["status"] = "linked"
+    node_data["maturity"] = 0.4
+    node_data["prompt"] = "Split this node into several atomic children."
+    node_data["allowed_paths"] = ["specs/nodes/*.yaml"]
+    node_data["acceptance_evidence"] = ["seed evidence"]
+    node_path.write_text(json.dumps(node_data), encoding="utf-8")
+
+    worktree = make_fake_worktree(repo_fixture)
+    monkeypatch.setattr(
+        supervisor_module,
+        "create_isolated_worktree",
+        lambda _node_id: (worktree, "codex/sg-spec-0001/test"),
+    )
+
+    changed_snapshots = [[], ["specs/nodes/SG-SPEC-0001.yaml"]]
+    monkeypatch.setattr(
+        supervisor_module, "git_changed_files", lambda _cwd=None: changed_snapshots.pop(0)
+    )
+
+    def fake_executor(_node: object, worktree_path: Path) -> subprocess.CompletedProcess[str]:
+        worktree_node = worktree_path / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+        data = supervisor_module.get_yaml_module().safe_load(
+            worktree_node.read_text(encoding="utf-8")
+        )
+        data["status"] = "reviewed"
+        data["maturity"] = 0.99
+        data.setdefault("specification", {})["objective"] = "Refined objective."
+        worktree_node.write_text(json.dumps(data), encoding="utf-8")
+        return subprocess.CompletedProcess(
+            args=["codex"],
+            returncode=0,
+            stdout="RUN_OUTCOME: split_required\nBLOCKER: split remains required\n",
+            stderr="",
+        )
+
+    exit_code = supervisor_module.main(
+        executor=fake_executor,
+        target_spec="SG-SPEC-0001",
+        operator_note="Exercise productive split sync without lifecycle drift.",
+    )
+    assert exit_code == 1
+
+    updated = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    assert updated["status"] == "linked"
+    assert updated["maturity"] == 0.4
+    assert updated["gate_state"] == "split_required"
+    assert updated["required_human_action"] == "split spec scope before rerun"
+    assert updated["specification"]["objective"] == "Refined objective."
+
+
 def test_main_targeted_non_root_run_materializes_one_child_spec(
     supervisor_module: object,
     repo_fixture: Path,

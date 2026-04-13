@@ -1,5 +1,8 @@
 # Tools
 
+For a practical operator/contributor guide to the supervisor, see
+[docs/supervisor_manual.md](/Users/egor/Development/GitHub/0AL/SpecGraph/docs/supervisor_manual.md).
+
 ## Minimal Spec-Node Supervisor MVP
 
 This repository includes a local MVP that orchestrates **specification nodes** (not tasks):

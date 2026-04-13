@@ -218,6 +218,9 @@ specification:
   - The supervisor may continue into at most one linked latent_graph_improvement_candidate at a time;
     if the inferred work exceeds current direct authority or is already owned by an active proposal or
     gate, the result remains derived artifact emission rather than canonical mutation.
+  - Candidate selection is limited to direct links of the currently bounded target (current run context),
+    preventing implicit global scans or off-graph branch leaps until a new bounded target is selected
+    by proposal or operator instruction.
   - Detailed criteria for deriving, de-duplicating, and selecting the next linked latent_graph_improvement_candidate
     are delegated to SG-SPEC-0026.
   - When blocked or gated work remains, latent continuation candidates may still be recorded as derived
@@ -293,10 +296,57 @@ specification:
     - A split proposal retains the parent spec’s stable ID and overview role boundary until approved.
     - Candidate follow-up children are represented as derived proposal artifacts for governance review,
       not as canonical commitments.
-gate_state: none
+gate_state: split_required
+required_human_action: split spec scope before rerun
 proposed_status: null
 proposed_maturity: null
-required_human_action: '-'
-last_gate_decision: approve
-last_gate_note: Approve graph-health and continuation-boundary refinement after mechanics subtree cleanup.
-last_gate_at: '2026-04-13T08:12:20.410593+00:00'
+last_outcome: split_required
+last_blocker: ''
+last_run_id: 20260413T185649Z-SG-SPEC-0003
+last_exit_code: 0
+last_changed_files:
+- specs/nodes/SG-SPEC-0003.yaml
+last_run_at: '2026-04-13T18:56:50.783239+00:00'
+last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0003-20260413T185633Z
+last_branch: codex/sg-spec-0003/20260413T185633Z
+last_validator_results:
+  outputs: true
+  allowed_paths: true
+  reconciliation: true
+  atomicity: true
+  transition: true
+  executor_environment: true
+  refinement_acceptance: true
+last_refinement_acceptance:
+  decision: approve
+  change_class: local_refinement
+  checks:
+    content_changed: true
+    hard_validation: true
+    single_spec_scope: true
+    constitutional_diff: false
+    graph_refactor_diff: false
+    atomicity_clear: true
+    within_mutation_budget: true
+  diff_paths:
+  - specification.continuation[4]
+  - specification.continuation[5]
+  - specification.continuation[6]
+  mutation_classes:
+  - policy_text
+  mutation_budget: []
+  budget_exceeded_classes: []
+  changed_spec_files:
+  - specs/nodes/SG-SPEC-0003.yaml
+  review_reasons: []
+  errors: []
+  warnings: []
+last_reconciliation:
+  worktree_spec_count: 28
+  changed_spec_ids:
+  - SG-SPEC-0003
+  semantic_dependencies_resolved: true
+  work_dependencies_ready: false
+  cycles: []
+last_requested_child_materialization: false
+last_materialized_child_paths: []
