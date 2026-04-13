@@ -982,6 +982,7 @@ def normalize_executor_stderr(stderr: str) -> str:
 YAML_KEY_LINE_RE = re.compile(r"^(?P<indent>\s*)(?P<key>[A-Za-z0-9_][A-Za-z0-9_-]*):(?:\s|$)")
 YAML_SEQUENCE_ITEM_RE = re.compile(r"^(?P<indent>\s*)-\s+(?P<content>.*)$")
 YAML_MAPPING_SEQUENCE_CONTENT_RE = re.compile(r"^[A-Za-z0-9_][A-Za-z0-9_-]*:\s")
+YAML_QUOTED_KEY_LINE_RE = re.compile(r"^\s*[\"'][^\"']+[\"']:\s")
 YAML_SEQUENCE_MAPPING_SCALAR_RE = re.compile(
     r"^(?P<indent>\s*)-\s+(?P<key>[A-Za-z0-9_][A-Za-z0-9_-]*):\s+(?P<value>.+)$"
 )
@@ -1160,6 +1161,8 @@ def repair_candidate_yaml_text(candidate_text: str, original_text: str | None = 
                     if continuation_indent <= indent:
                         break
                     if YAML_KEY_LINE_RE.match(continuation_line) is not None:
+                        break
+                    if YAML_QUOTED_KEY_LINE_RE.match(continuation_line) is not None:
                         break
                     if YAML_SEQUENCE_ITEM_RE.match(continuation_line) is not None:
                         break
