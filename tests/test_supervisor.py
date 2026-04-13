@@ -3169,6 +3169,130 @@ def test_repair_candidate_yaml_text_quotes_multiline_sequence_scalar_with_colon(
     ]
 
 
+def test_repair_candidate_yaml_text_indents_sequence_under_new_key(
+    supervisor_module: object,
+) -> None:
+    candidate = (
+        "specification:\n"
+        "  semantic_contracts:\n"
+        "    governed_by_state_family:\n"
+        "    - '`governed_by_state_family` must identify the authoritative "
+        "StateFamily used to describe the subject\n"
+        "      Concept''s admissible condition space.'\n"
+        "    - This relation must not collapse StateFamily semantics into "
+        "free-floating tags without a governing\n"
+        "      Concept.\n"
+        "    resolved_by_alias:\n"
+        "    - '`resolved_by_alias` must preserve one-way subordination from "
+        "Alias to canonical primitive identity.'\n"
+    )
+
+    repaired = supervisor_module.repair_candidate_yaml_text(candidate)
+
+    assert "    governed_by_state_family:\n      - " in repaired
+    parsed = supervisor_module.get_yaml_module().safe_load(repaired)
+    assert parsed["specification"]["semantic_contracts"]["governed_by_state_family"][0].startswith(
+        "`governed_by_state_family` must identify"
+    )
+
+
+def test_repair_candidate_yaml_text_restores_existing_key_outdent(
+    supervisor_module: object,
+) -> None:
+    original = (
+        "specification:\n  scope:\n    out:\n    - Existing item.\n  terminology:\n    key: value\n"
+    )
+    candidate = (
+        "specification:\n"
+        "  scope:\n"
+        "    out:\n"
+        "    - Existing item.\n"
+        "        terminology:\n"
+        "    key: value\n"
+    )
+
+    repaired = supervisor_module.repair_candidate_yaml_text(candidate, original)
+
+    assert "\n  terminology:\n" in repaired
+    parsed = supervisor_module.get_yaml_module().safe_load(repaired)
+    assert parsed["specification"]["terminology"]["key"] == "value"
+
+
+def test_repair_candidate_yaml_text_quotes_multiline_sequence_scalar_with_colon_suffix(
+    supervisor_module: object,
+) -> None:
+    candidate = (
+        "specification:\n"
+        "  continuation:\n"
+        "    - The supervisor may continue into at most one linked "
+        "latent_graph_improvement_candidate at a time;\n"
+        "      each continuation decision emits one derived selection record with at least:\n"
+        "      candidate_spec_id, triggering_signal_id, and rationale.\n"
+    )
+
+    repaired = supervisor_module.repair_candidate_yaml_text(candidate)
+
+    parsed = supervisor_module.get_yaml_module().safe_load(repaired)
+    assert parsed["specification"]["continuation"] == [
+        (
+            "The supervisor may continue into at most one linked "
+            "latent_graph_improvement_candidate at a time; "
+            "each continuation decision emits one derived selection record "
+            "with at least: candidate_spec_id, triggering_signal_id, and rationale."
+        )
+    ]
+
+
+def test_repair_candidate_yaml_text_quotes_multiline_mapping_scalar(
+    supervisor_module: object,
+) -> None:
+    candidate = (
+        "validation_invariants:\n"
+        "- id: LYR-003\n"
+        "  statement: Any newly proposed node kind must be refined through a "
+        "dedicated child spec before changing\n"
+        "  ownership semantics.\n"
+    )
+
+    repaired = supervisor_module.repair_candidate_yaml_text(candidate)
+
+    parsed = supervisor_module.get_yaml_module().safe_load(repaired)
+    assert parsed["validation_invariants"][0]["statement"] == (
+        "Any newly proposed node kind must be refined through a dedicated "
+        "child spec before changing ownership semantics."
+    )
+
+
+def test_repair_candidate_yaml_text_skips_ambiguous_original_line_indent(
+    supervisor_module: object,
+) -> None:
+    original = (
+        "depends_on:\n- SG-SPEC-0001\nlast_reconciliation:\n  changed_spec_ids:\n  - SG-SPEC-0001\n"
+    )
+    candidate = (
+        "depends_on:\n"
+        "- SG-SPEC-0001\n"
+        "last_reconciliation:\n"
+        "  changed_spec_ids:\n"
+        "    - SG-SPEC-0001\n"
+    )
+
+    repaired = supervisor_module.repair_candidate_yaml_text(candidate, original)
+
+    assert repaired.splitlines()[-1] == "    - SG-SPEC-0001"
+
+
+def test_repair_candidate_yaml_text_keeps_sequence_siblings_under_same_key(
+    supervisor_module: object,
+) -> None:
+    original = "runtime:\n  changed_spec_ids:\n  - SG-SPEC-0001\n- SG-SPEC-0023\n"
+    candidate = "runtime:\n  changed_spec_ids:\n    - SG-SPEC-0001\n- SG-SPEC-0023\n"
+
+    repaired = supervisor_module.repair_candidate_yaml_text(candidate, original)
+
+    assert repaired.splitlines()[3] == "    - SG-SPEC-0023"
+
+
 def test_repair_worktree_changed_spec_yaml_skips_valid_candidate(
     supervisor_module: object,
     tmp_path: Path,
