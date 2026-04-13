@@ -1,0 +1,4 @@
+interface:
+  display_name: "Supervisor Runtime Debug"
+  short_description: "Diagnose supervisor runtime failures"
+  default_prompt: "Use $specgraph-supervisor-runtime-debug to classify a SpecGraph supervisor run as runtime failure or real spec blocker."

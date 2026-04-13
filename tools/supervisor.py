@@ -1128,6 +1128,18 @@ def repair_candidate_yaml_text(candidate_text: str, original_text: str | None = 
             current_indent = len(current_line) - len(current_line.lstrip(" "))
             current_key_match = YAML_KEY_LINE_RE.match(current_line)
             current_sequence_match = YAML_SEQUENCE_ITEM_RE.match(current_line)
+            if current_sequence_match is not None and current_indent > sequence_indent:
+                previous_nonempty_index = scan_index - 1
+                while (
+                    previous_nonempty_index > index and not lines[previous_nonempty_index].strip()
+                ):
+                    previous_nonempty_index -= 1
+                previous_nonempty = lines[previous_nonempty_index].rstrip()
+                previous_nonempty_sequence_match = YAML_SEQUENCE_ITEM_RE.match(previous_nonempty)
+                if previous_nonempty_sequence_match is None and not previous_nonempty.endswith(":"):
+                    lines[scan_index] = (" " * sequence_indent) + current_line.lstrip()
+                    scan_index += 1
+                    continue
             if current_sequence_match is not None and current_indent < sequence_indent:
                 lines[scan_index] = (" " * sequence_indent) + current_line.lstrip()
                 scan_index += 1
@@ -1520,6 +1532,22 @@ def restore_ephemeral_child_authority_fields(
         node.data["allowed_paths"] = copy.deepcopy(before_data["allowed_paths"])
     else:
         node.data.pop("allowed_paths", None)
+
+
+def restore_source_lifecycle_fields_after_split_sync(
+    *,
+    node: SpecNode,
+    before_data: dict[str, Any],
+) -> None:
+    """Keep source lifecycle fields canonical during split-required sync."""
+
+    for field in ("status", "maturity", "gate_state", "required_human_action"):
+        if field in before_data:
+            node.data[field] = copy.deepcopy(before_data[field])
+        else:
+            node.data.pop(field, None)
+    node.data["proposed_status"] = None
+    node.data["proposed_maturity"] = None
 
 
 def normalize_materialized_child_specs(child_relpaths: list[str]) -> None:
@@ -5298,6 +5326,10 @@ def _process_one_spec(
         sync_files_from_worktree(worktree_path, allowed_changes)
         normalize_materialized_child_specs(materialized_child_paths)
         node.reload()
+        restore_source_lifecycle_fields_after_split_sync(
+            node=node,
+            before_data=before_node_data,
+        )
         restore_ephemeral_child_authority_fields(
             node=node,
             before_data=before_node_data,

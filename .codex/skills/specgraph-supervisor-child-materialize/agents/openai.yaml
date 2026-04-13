@@ -1,0 +1,4 @@
+interface:
+  display_name: "Supervisor Child Materialize"
+  short_description: "Materialize one bounded child spec"
+  default_prompt: "Use $specgraph-supervisor-child-materialize to run one explicit child-materialization pass with the SpecGraph supervisor."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "SpecGraph Supervisor"
+  short_description: "Run the SpecGraph supervisor safely"
+  default_prompt: "Use $specgraph-supervisor to run one bounded SpecGraph supervisor pass and interpret the result."

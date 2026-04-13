@@ -1,0 +1,155 @@
+id: SG-SPEC-0029
+title: SpecGraph - Proposal/Split Mechanics Gateway
+kind: spec
+status: specified
+maturity: 0.49
+depends_on:
+- SG-SPEC-0028
+refines:
+- SG-SPEC-0027
+inputs:
+- specs/nodes/SG-SPEC-0027.yaml
+- specs/nodes/SG-SPEC-0028.yaml
+- tasks.md
+outputs:
+- specs/nodes/SG-SPEC-0029.yaml
+allowed_paths:
+- specs/nodes/SG-SPEC-0029.yaml
+acceptance:
+- Defines SG-SPEC-0029 as the single proposal/split mechanics child of SG-SPEC-0027 so SG-SPEC-0027 keeps
+  exactly two mechanics direct children and does not expose SG-SPEC-0028 directly.
+- Defines SG-SPEC-0027’s proposal/split mechanics readiness contract as a single bounded prerequisite
+  through SG-SPEC-0029.
+- Delegates concrete proposal/split mechanics contracts to SG-SPEC-0028 without redefining its field-level
+  payload, queue, or lane semantics.
+- Remains implementation-agnostic about queue ranking formulas, proposal-lane orchestration, and runtime
+  execution behavior.
+acceptance_evidence:
+- criterion: Defines SG-SPEC-0029 as the single proposal/split mechanics child of SG-SPEC-0027 so SG-SPEC-0027
+    keeps exactly two mechanics direct children and does not expose SG-SPEC-0028 directly.
+  evidence: specification.gateway_role defines SG-SPEC-0029 as the proposal/split mechanics child under
+    SG-SPEC-0027, while specification.mechanics_gateway defines SG-SPEC-0029 as the direct descendant
+    channel to proposal/split readiness.
+- criterion: Defines SG-SPEC-0027’s proposal/split mechanics readiness contract as a single bounded prerequisite
+    through SG-SPEC-0029.
+  evidence: specification.parent_contract requires SG-SPEC-0027 to consume SG-SPEC-0029 as the bounded
+    prerequisite for proposal/split readiness while preserving retrospective direct-update readiness as
+    a separate concern through SG-SPEC-0005.
+- criterion: Delegates concrete proposal/split mechanics contracts to SG-SPEC-0028 without redefining
+    its field-level payload, queue, or lane semantics.
+  evidence: specification.mechanics_gateway defines SG-SPEC-0029 as a gateway node and specifies that
+    SG-SPEC-0028 owns split proposal lifecycle, split mechanics schema, and proposal-lane execution descendants
+    under this subtree.
+- criterion: Remains implementation-agnostic about queue ranking formulas, proposal-lane orchestration,
+    and runtime execution behavior.
+  evidence: specification.scope.out excludes queue ranking formulas, execution orchestration, and implementation
+    mechanics.
+prompt: Keep SG-SPEC-0029 as the bounded proposal/split mechanics gateway under SG-SPEC-0027. It should
+  separate the proposal/split subtree as one inspectable unit from the cluster-level mechanics child list
+  while leaving concrete mechanics ownership to SG-SPEC-0028.
+specification:
+  objective: Define a bounded proposal/split mechanics gateway under SG-SPEC-0027 so SG-SPEC-0026 remains
+    coupled to one execution-mechanics subtree without losing inspection-level access to concrete proposal/split
+    mechanics.
+  scope:
+    in:
+    - Proposal/split mechanics gateway role beneath SG-SPEC-0027
+    - Parent integration contract that keeps SG-SPEC-0005 separate from proposal/split readiness
+    - Delegation of concrete mechanics ownership to SG-SPEC-0028
+    out:
+    - Concrete split payload schema, queue field semantics, or proposal-lane runtime policy details already
+      owned by SG-SPEC-0028
+    - Continuation-selection policy or retrospective direct-update semantics
+    - Viewer UX, persistence implementation, or runtime orchestration decisions
+  gateway_role:
+  - SG-SPEC-0029 is the proposal/split mechanics child beneath SG-SPEC-0027.
+  - SG-SPEC-0029 provides one inspectable mechanism to preserve atomic boundaries between direct-update
+    mechanics and proposal/split mechanics.
+  mechanics_gateway:
+    proposal_split_ownership:
+    - SG-SPEC-0028 remains the concrete owner of split proposal lifecycle, split mechanics schema, and
+      proposal-lane execution descendants.
+    integration_surface:
+    - SG-SPEC-0029 is the only direct descendant of SG-SPEC-0027 for proposal/split readiness.
+  integration_boundaries:
+  - SG-SPEC-0029 may not merge or redefine descendant contracts from SG-SPEC-0028.
+  - SG-SPEC-0029 does not add field-level queue, ranking, or runtime orchestration rules.
+  - SG-SPEC-0029 allows SG-SPEC-0027 to continue treating SG-SPEC-0005 and proposal/split concerns as
+    independently bounded predecessors.
+  parent_contract:
+  - SG-SPEC-0027 may consume SG-SPEC-0029 as one bounded prerequisite for proposal/split mechanics readiness.
+  - SG-SPEC-0027 must not depend_on SG-SPEC-0028 directly for proposal/split mechanics while SG-SPEC-0029
+    is present.
+  - SG-SPEC-0005 and its retrospective direct-update boundary semantics remain outside SG-SPEC-0029’s
+    scope.
+proposed_status: null
+proposed_maturity: null
+gate_state: retry_pending
+required_human_action: rerun supervisor
+last_outcome: done
+last_blocker: ''
+last_run_id: 20260413T190110Z-SG-SPEC-0029
+last_exit_code: 0
+last_changed_files:
+- specs/nodes/SG-SPEC-0029.yaml
+last_run_at: '2026-04-13T19:01:11.476358+00:00'
+last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0029-20260413T190054Z
+last_branch: codex/sg-spec-0029/20260413T190054Z
+last_validator_results:
+  outputs: true
+  allowed_paths: true
+  reconciliation: false
+  atomicity: true
+  transition: true
+  executor_environment: true
+  refinement_acceptance: false
+last_refinement_acceptance:
+  decision: reject
+  change_class: local_refinement
+  checks:
+    content_changed: true
+    hard_validation: false
+    single_spec_scope: true
+    constitutional_diff: false
+    graph_refactor_diff: false
+    atomicity_clear: true
+    within_mutation_budget: true
+  diff_paths:
+  - acceptance[0]
+  - acceptance_evidence[0].criterion
+  - acceptance_evidence[0].evidence
+  - maturity
+  - specification.objective
+  - specification.parent_contract[1]
+  - specification.parent_contract[2]
+  - specification.parent_contract[3]
+  - specification.scope.in[0]
+  - specification.scope.in[1]
+  - specification.scope.in[2]
+  - specification.scope.in[3]
+  - status
+  mutation_classes:
+  - policy_text
+  mutation_budget: []
+  budget_exceeded_classes: []
+  changed_spec_files:
+  - specs/nodes/SG-SPEC-0029.yaml
+  review_reasons: []
+  errors:
+  - 'specs/nodes/SG-SPEC-0029.yaml: Unknown status: review_pending'
+  - 'Cannot advance to linked: dependency SG-SPEC-0028 must declare refines: [SG-SPEC-0029] to make the
+    refinement chain explicit'
+  warnings: []
+last_reconciliation:
+  worktree_spec_count: 29
+  changed_spec_ids:
+  - SG-SPEC-0029
+  semantic_dependencies_resolved: true
+  work_dependencies_ready: false
+  cycles: []
+last_requested_child_materialization: false
+last_materialized_child_paths: []
+last_errors:
+- 'specs/nodes/SG-SPEC-0029.yaml: Unknown status: review_pending'
+- 'Cannot advance to linked: dependency SG-SPEC-0028 must declare refines: [SG-SPEC-0029] to make the
+  refinement chain explicit'

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Supervisor Apply Split"
+  short_description: "Apply an approved split proposal"
+  default_prompt: "Use $specgraph-supervisor-apply-split to apply one approved SpecGraph split proposal safely."

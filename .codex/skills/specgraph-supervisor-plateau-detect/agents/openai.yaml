@@ -1,0 +1,4 @@
+interface:
+  display_name: "Supervisor Plateau Detect"
+  short_description: "Detect structural refinement plateau"
+  default_prompt: "Use $specgraph-supervisor-plateau-detect to decide whether a SpecGraph node is at structural plateau and needs a different path."

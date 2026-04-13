@@ -1,0 +1,36 @@
+name: Markdown Links
+
+on:
+  pull_request:
+    paths:
+      - "**/*.md"
+      - ".github/workflows/markdown-links.yml"
+      - ".mlc_config.json"
+  push:
+    branches:
+      - main
+      - master
+    paths:
+      - "**/*.md"
+      - ".github/workflows/markdown-links.yml"
+      - ".mlc_config.json"
+
+jobs:
+  markdown-links:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check repository Markdown file links
+        uses: ruzickap/action-my-markdown-link-checker@v1.5.0
+        with:
+          config_file: .mlc_config.json
+          search_paths: |
+            README.md
+            CONTRIBUTING.md
+            docs/
+            tools/README.md
+          exclude: |
+            docs/proposals_drafts/
+            .codex/skills/
