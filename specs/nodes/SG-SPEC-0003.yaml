@@ -40,9 +40,11 @@ acceptance_evidence:
     autonomous continuation, and changes that always require human approval
   evidence: 'specification.boundary_policy separates canonical_governance, supervisor_execution, and human_approval.
     It states that specs govern ontology and policy, the supervisor executes bounded refinement and emits
-    derived observations, and constitutional changes require explicit human approval. The same section
-    allows bounded autonomous continuation only after blocked/gated work is clear and only within current
-    authority, without authorizing new metrics, cross-branch restructuring, or review bypass.
+    derived observations, and constitutional changes require explicit human approval. Direct-update authorization
+    is delegated to bounded child specs (notably SG-SPEC-0005 and SG-SPEC-0006), while SG-SPEC-0003 retains
+    the boundary contract. The same section allows bounded autonomous continuation only after blocked/gated
+    work is clear and only within current authority, without authorizing new metrics, cross-branch restructuring,
+    or review bypass.
 
     '
 - criterion: Defines observation, signal, and proposal as a derived reflective loop, including linked-spec
@@ -171,9 +173,10 @@ specification:
     supervisor_execution:
     - The supervisor may execute bounded spec refinement, ancestor reconciliation, local graph refactors,
       and derived graph-health observation as long as those actions stay within current canonical policy.
-    - The supervisor may perform direct_graph_update only when the selected work is a bounded local_graph_refactor,
-      the change stays within current ontology/policy/allowed paths, and no active proposal already owns
-      the same pathology.
+    - The supervisor may perform direct_graph_update only for bounded local_graph_refactor work that is
+      explicitly authorized in current canonical policy; concrete authorization matrices and precedence
+      handling for direct updates are delegated to child specs (notably SG-SPEC-0005 and SG-SPEC-0006),
+      while SG-SPEC-0003 retains only the boundary contract.
     - When the current bounded target has no remaining explicit blocked or gated work, the supervisor
       may inspect already linked specs for latent_graph_improvement_candidate follow-up work using current
       canonical links, current status and maturity, and already-defined graph-health signals.
@@ -310,10 +313,55 @@ specification:
         parent_retained or as one child slot assignment.
       - lineage_updates MUST record both parent-to-child blocking edges to add and child-to-parent refines
         edges to add for the proposed split.
-gate_state: none
-proposed_status: null
-proposed_maturity: null
-required_human_action: '-'
-last_gate_decision: approve
-last_gate_note: ''
-last_gate_at: '2026-04-12T19:14:36.060730+00:00'
+gate_state: split_required
+required_human_action: split spec scope before rerun
+last_outcome: split_required
+last_blocker: ''
+last_run_id: 20260412T221216Z-SG-SPEC-0003
+last_exit_code: 0
+last_changed_files:
+- specs/nodes/SG-SPEC-0003.yaml
+last_run_at: '2026-04-12T22:12:16.967056+00:00'
+last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0003-20260412T221127Z
+last_branch: codex/sg-spec-0003/20260412T221127Z
+last_validator_results:
+  outputs: true
+  allowed_paths: true
+  reconciliation: true
+  atomicity: true
+  transition: true
+  executor_environment: true
+  refinement_acceptance: true
+last_refinement_acceptance:
+  decision: review_required
+  change_class: constitutional_change
+  checks:
+    content_changed: true
+    hard_validation: true
+    single_spec_scope: true
+    constitutional_diff: true
+    graph_refactor_diff: false
+    atomicity_clear: true
+    within_mutation_budget: true
+  diff_paths:
+  - acceptance_evidence[0].evidence
+  - specification.boundary_policy.supervisor_execution[1]
+  mutation_classes:
+  - policy_text
+  mutation_budget: []
+  budget_exceeded_classes: []
+  changed_spec_files:
+  - specs/nodes/SG-SPEC-0003.yaml
+  review_reasons:
+  - run changed governance-sensitive specification sections
+  errors: []
+  warnings: []
+last_reconciliation:
+  worktree_spec_count: 23
+  changed_spec_ids:
+  - SG-SPEC-0003
+  semantic_dependencies_resolved: true
+  work_dependencies_ready: false
+  cycles: []
+last_requested_child_materialization: false
+last_materialized_child_paths: []

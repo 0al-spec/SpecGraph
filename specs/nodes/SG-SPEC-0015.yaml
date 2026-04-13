@@ -1,7 +1,7 @@
 id: SG-SPEC-0015
 title: SpecGraph - Delegation and Atomic Decomposition Policy
 kind: spec
-status: linked
+status: reviewed
 maturity: 1.0
 depends_on: []
 relates_to: []
@@ -95,8 +95,11 @@ specification:
       independent acceptance criteria, evidence, allowed paths, blockers, terminology narrowing, or review.
     - Delegate to one child spec when the unresolved area can own those local criteria, evidence, outputs,
       allowed paths, blockers, or review decisions without reopening the whole parent.
-    - Use sibling_child_specs when two or more delegated_gap candidates can advance independently or would
-      otherwise force unrelated acceptance criteria into one child.
+    - Use sibling_child_specs when two or more delegated_gap candidates are independent and each has distinct
+      acceptance criteria, blockers, evidence needs, or review paths. Do not collapse these into one child.
+    - Use split_required when independent delegated_gap candidates remain after the first scoped delegation
+      would still leave the parent with multiple unresolved areas but sibling_child_specs are not yet
+      all creatable within the bounded step.
     - Surface split_required when the current run cannot complete the required child delegation or sibling
       decomposition within its allowed paths and bounded refinement step.
     seed_spec_expectations:
@@ -170,6 +173,5 @@ proposed_status: null
 proposed_maturity: null
 required_human_action: '-'
 last_gate_decision: approve
-last_gate_note: 'Reviewed SG-SPEC-0015 delegation decision procedure and linked transition: scoped to
-  in-place refinement, child delegation, sibling decomposition, and split_required signaling.'
-last_gate_at: '2026-04-11T13:41:07.926873+00:00'
+last_gate_note: ''
+last_gate_at: '2026-04-12T22:19:28.604449+00:00'

@@ -1,8 +1,8 @@
 id: SG-SPEC-0006
 title: SpecGraph - Tracked Proposal Lane for Graph Evolution
 kind: spec
-status: reviewed
-maturity: 0.8
+status: frozen
+maturity: 1.0
 depends_on: []
 relates_to:
 - SG-SPEC-0005
@@ -388,8 +388,9 @@ specification:
       the same target_kind and target_reference but different change_scope values, or they declare the
       same full proposal_target_region while remaining in different active proposal-lane subgraphs with
       no visible lineage-based ownership unification.
-    - At most one active proposal-lane subgraph should own the same proposal_target_region for the same
-      proposal class or pathology at a time.
+    - At most one active proposal-lane subgraph should own the same proposal_target_region, where ownership
+      is evaluated by the exact proposal_target_region tuple (target_kind, target_reference, change_scope),
+      for a bounded concern at a time.
     - When supervisor encounters new evidence for a proposal_target_region already owned by an active
       compatible proposal, it should refresh or extend that existing proposal-lane subgraph rather than
       mint a duplicate competing draft.
@@ -523,4 +524,4 @@ proposed_maturity: null
 required_human_action: '-'
 last_gate_decision: approve
 last_gate_note: ''
-last_gate_at: '2026-04-12T19:14:37.090881+00:00'
+last_gate_at: '2026-04-12T22:18:06.068081+00:00'

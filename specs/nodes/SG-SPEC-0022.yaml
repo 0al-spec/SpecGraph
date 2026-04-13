@@ -1,8 +1,8 @@
 id: SG-SPEC-0022
 title: SpecGraph - Node Maturity Semantics
 kind: spec
-status: reviewed
-maturity: 0.86
+status: frozen
+maturity: 1.0
 depends_on: []
 relates_to:
 - SG-SPEC-0003
@@ -55,8 +55,9 @@ acceptance_evidence:
     assessments, and maturity trend artifacts
   evidence: 'specification.canonical_vs_derived_boundary keeps authored or imported node_maturity values
     and reviewed maturity rationale canonical, while heuristic estimates, rankings, alerts, maturity_trend_artifact
-    projections, and calibration experiments remain derived. MAT-003 formalizes that derived maturity
-    views cannot replace canonical maturity state without an explicit canonical update.
+    projections, and calibration experiments remain derived. specification.terminology.estimated_maturity_assessment
+    and maturity_contract.update_justification then require snapshot-bound governed maturity_assessment
+    reification before any estimated value can become canonical, complementing MAT-003.
 
     '
 prompt: Refine SG-SPEC-0001 by defining the canonical semantics of node maturity. Keep this child focused
@@ -87,6 +88,11 @@ specification:
       '
     maturity_assessment: 'One authored, imported, or otherwise governed assignment or interpretation of
       a node_maturity value for a specific node state.
+
+      '
+    estimated_maturity_assessment: 'A non-authoritative maturity value generated from heuristics, imports,
+      interpolation, or external estimates that remains non-canonical until explicitly captured as a governed
+      maturity_assessment for a specific node snapshot with preserved rationale and snapshot binding.
 
       '
     maturity_scale: 'The normalized 0.0-1.0 interval used to express node_maturity, where lower values
@@ -130,6 +136,8 @@ specification:
     update_justification:
     - Canonical maturity updates SHOULD be justified by material changes in structure, scope clarity,
       acceptance content, evidence completeness, decisions, or explicit linkage.
+    - An estimated or imported maturity value is non-canonical until it is reified as a governed `maturity_assessment`
+      on the target snapshot with preserved rationale, authority_class, and snapshot binding.
     - Ephemeral runtime activity, viewer state, dashboards, or heuristic alerts MUST NOT by themselves
       justify canonical maturity updates.
     - A maturity_delta may increase, decrease, or remain flat as the node changes, but the change should
@@ -208,4 +216,4 @@ proposed_maturity: null
 required_human_action: '-'
 last_gate_decision: approve
 last_gate_note: ''
-last_gate_at: '2026-04-12T21:23:01.582744+00:00'
+last_gate_at: '2026-04-12T22:18:06.195794+00:00'

@@ -1,8 +1,8 @@
 id: SG-SPEC-0011
 title: SpecGraph - Bootstrap Relation Vocabulary Slice for Primitive Binding
 kind: spec
-status: reviewed
-maturity: 0.66
+status: frozen
+maturity: 0.86
 depends_on: []
 relates_to:
 - SG-SPEC-0007
@@ -141,6 +141,7 @@ specification:
     semantic_notes:
     - '`specializes` is for subtype-like semantic refinement, not for temporary state, instance membership,
       or mere association.'
+    - '`specializes` is irreflexive: a Concept must not specialize itself.'
     - The subject Concept must remain semantically compatible with the object Concept rather than contradicting
       or bypassing it.
   - relation: governed_by_state_family
@@ -180,8 +181,8 @@ specification:
     - '`constrained_by_invariant` makes semantic restrictions inspectable at the vocabulary layer.'
     - The attached Invariant governs validity conditions, not evaluator scoring or implementation behavior.
   admissibility_rules:
-  - '`specializes` may relate only Concept to Concept and should be used only when the narrower Concept
-    preserves the broader Concept''s semantic core.'
+  - '`specializes` may relate only Concept to Concept, must not be reflexive, and should be used only
+    when the narrower Concept preserves the broader Concept''s semantic core.'
   - '`governed_by_state_family` may relate only Concept to StateFamily and must not be used to smuggle
     separate canonical Concepts into state labels.'
   - '`resolved_by_alias` may originate only from Alias and must resolve to exactly one canonical target
@@ -276,7 +277,5 @@ proposed_status: null
 proposed_maturity: null
 required_human_action: '-'
 last_gate_decision: approve
-last_gate_note: 'Reviewed SG-SPEC-0011 alias-resolution refinement: alias_resolution_context now bounds
-  Alias uniqueness without granting canonical authority, storage partitioning, viewer selection, retrieval
-  source, or executable resolver semantics.'
-last_gate_at: '2026-04-11T20:01:11.332519+00:00'
+last_gate_note: ''
+last_gate_at: '2026-04-12T21:45:32.302737+00:00'

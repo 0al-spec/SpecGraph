@@ -17,6 +17,8 @@ acceptance:
 - Defines the conditions for moving a spec from specified to linked once descendant specs exist, including
   semantic unlock, linked-readiness evidence, and narrow ancestor reconciliation
 - Defines how acceptance criteria and acceptance_evidence stay aligned across a refinement chain
+- Defines that linked-readiness checks for a specified ancestor are based on declared dependency existence
+  and refines connectivity, not descendant lifecycle status
 acceptance_evidence:
 - criterion: Defines the conditions for moving a spec from specified to linked once descendant specs exist,
     including semantic unlock, linked-readiness evidence, and narrow ancestor reconciliation
@@ -37,6 +39,16 @@ acceptance_evidence:
     and keeps child evidence rooted in specification content rather than runtime artifacts. specification.evidence_policy.acceptance_alignment
     then separates parent and child acceptance lists while allowing parent evidence to cite the child
     that resolves a delegated parent gap.
+
+    '
+- criterion: Defines that linked-readiness checks for a specified ancestor are based on declared dependency
+    existence and refines connectivity, not descendant lifecycle status
+  evidence: 'specification.terminology and linkage rules define concrete_descendant_spec and semantic_unlock
+    in terms of concrete graph presence and explicit refines-chain connectivity. specification.linkage_rules
+    explicitly requires depends_on coverage and refines connectivity while allowing child status changes
+    to remain outside this readiness gate unless separately declared. specification.readiness_decision_procedure
+    adds no child-status checks and treats existing concrete descendants as potential unlockers as long
+    as the ancestor readiness path remains valid.
 
     '
 prompt: Refine SG-SPEC-0002 by defining the conditions for moving a spec from specified to linked once
@@ -63,7 +75,7 @@ specification:
   terminology:
     concrete_descendant_spec: 'A spec node that exists in the canonical graph and is connected to an ancestor
       through an explicit refines chain. A path may be cited as evidence, but the policy concerns the
-      graph fact rather than a storage format.
+      graph fact rather than a storage format. Lifecycle status is not part of the existence criterion.
 
       '
     semantic_unlock: 'A state in which every declared blocking refinement dependency for a specified ancestor
@@ -94,6 +106,8 @@ specification:
       by refining the ancestor directly or by refining another spec already in that chain.
     - A depends_on target that is missing, non-spec, or not connected through refines keeps the ancestor
       from semantic_unlock.
+    - Descendant lifecycle state (such as specified, linked, or review_pending) does not add requirements
+      to specified-to-linked readiness unless explicitly introduced in the ancestor's own criteria.
     - semantic_unlock creates eligibility for linked advancement, but it does not itself change the ancestor
       status.
     - The ancestor MUST remain specified until ancestor_reconciliation records linked_readiness_evidence
@@ -106,7 +120,8 @@ specification:
       acceptance criterion or blocking dependency requires that state.
     readiness_decision_procedure:
     - Evaluate specified-to-linked readiness from the ancestor's authored status and declared depends_on
-      set, not from derived blockers, child work queues, or non-blocking related specs.
+      set, not from derived blockers, child work queues, non-blocking related specs, or child lifecycle
+      status.
     - Confirm the ancestor is currently specified; earlier statuses must first satisfy their own lifecycle
       transitions, and later statuses are outside this policy.
     - For each declared depends_on entry, confirm the target exists, is a spec node, and is a concrete_descendant_spec
@@ -176,11 +191,65 @@ specification:
       which parent acceptance criterion the child resolves.
 
       '
-gate_state: none
-proposed_status: null
-proposed_maturity: null
-required_human_action: '-'
-last_gate_decision: approve
-last_gate_note: 'Reviewed SG-SPEC-0016 readiness decision procedure and linked transition: scoped to specified-to-linked
-  checks, evidence reconciliation, and stale descendant evidence handling.'
-last_gate_at: '2026-04-11T13:45:45.625116+00:00'
+gate_state: split_required
+required_human_action: split spec scope before rerun
+last_outcome: split_required
+last_blocker: ''
+last_run_id: 20260412T221841Z-SG-SPEC-0016
+last_exit_code: 0
+last_changed_files:
+- specs/nodes/SG-SPEC-0016.yaml
+last_run_at: '2026-04-12T22:18:41.522015+00:00'
+last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0016-20260412T221823Z
+last_branch: codex/sg-spec-0016/20260412T221823Z
+last_validator_results:
+  outputs: true
+  allowed_paths: true
+  reconciliation: true
+  atomicity: true
+  transition: true
+  executor_environment: true
+  refinement_acceptance: true
+last_refinement_acceptance:
+  decision: review_required
+  change_class: constitutional_change
+  checks:
+    content_changed: true
+    hard_validation: true
+    single_spec_scope: true
+    constitutional_diff: true
+    graph_refactor_diff: false
+    atomicity_clear: true
+    within_mutation_budget: true
+  diff_paths:
+  - acceptance[2]
+  - acceptance_evidence[2]
+  - acceptance_evidence[2].criterion
+  - acceptance_evidence[2].evidence
+  - specification.linkage_rules.readiness_decision_procedure[0]
+  - specification.linkage_rules.specified_to_linked[3]
+  - specification.linkage_rules.specified_to_linked[4]
+  - specification.linkage_rules.specified_to_linked[5]
+  - specification.linkage_rules.specified_to_linked[6]
+  - specification.linkage_rules.specified_to_linked[7]
+  - specification.linkage_rules.specified_to_linked[8]
+  - specification.terminology.concrete_descendant_spec
+  mutation_classes:
+  - policy_text
+  mutation_budget: []
+  budget_exceeded_classes: []
+  changed_spec_files:
+  - specs/nodes/SG-SPEC-0016.yaml
+  review_reasons:
+  - run changed governance-sensitive specification sections
+  errors: []
+  warnings: []
+last_reconciliation:
+  worktree_spec_count: 23
+  changed_spec_ids:
+  - SG-SPEC-0016
+  semantic_dependencies_resolved: true
+  work_dependencies_ready: true
+  cycles: []
+last_requested_child_materialization: false
+last_materialized_child_paths: []

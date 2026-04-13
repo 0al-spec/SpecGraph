@@ -1,8 +1,8 @@
 id: SG-SPEC-0008
 title: SpecGraph - Explicit Project Memory Consultation in Intent Mediation
 kind: spec
-status: reviewed
-maturity: 0.75
+status: frozen
+maturity: 0.95
 depends_on: []
 relates_to: []
 refines:
@@ -99,8 +99,9 @@ specification:
 
       '
     declared_memory_consultation: 'The explicit mediation-record statement that consulted_project_memory
-      was used, including preservation of the consulted source class and enough attribution to distinguish
-      recalled context from direct current-turn wording.
+      was used, omitted, or explicitly rejected for the mediation event, including preserved consulted
+      source class where applicable and enough attribution to distinguish recalled context from direct
+      current-turn wording.
 
       '
     consulted_source_class: 'The preserved category of consulted_project_memory, such as prior conversation
@@ -122,6 +123,8 @@ specification:
       when it informs interpretation of the current raw goal signal.
     - Every mediation event must record a declaration decision for consulted_project_memory as either
       consulted (with preserved consulted_source_class) or explicitly not consulted.
+    - The declaration record for consulted_project_memory must include the explicit decision, the consulted
+      source class when consulted, and a brief rationale when explicitly not consulted.
     authority_boundary:
     - Consulted project memory may clarify interpretation but does not override the current raw goal signal
       by default.
@@ -137,6 +140,8 @@ specification:
     - When PageIndex-backed conversation recall is consulted, the resulting context must remain attributable
       as recalled conversation material rather than flattened into an unattributed rewrite of the present
       request.
+    - For explicitly not consulted outcomes, the trace must capture why consultation was skipped so the
+      declaration is auditable rather than being interpreted as implicit omission.
     - External browsing, when used during the same mediation task, must remain distinguishable from consulted_project_memory
       and must not be represented as project-memory recall or as attributed PageIndex-backed conversation
       recall.
@@ -184,4 +189,4 @@ proposed_maturity: null
 required_human_action: '-'
 last_gate_decision: approve
 last_gate_note: ''
-last_gate_at: '2026-04-12T19:14:38.043733+00:00'
+last_gate_at: '2026-04-12T21:46:19.737089+00:00'

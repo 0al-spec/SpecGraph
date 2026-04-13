@@ -1,7 +1,7 @@
 id: SG-SPEC-0002
 title: SpecGraph - Spec Refinement and Linkage Policy
 kind: spec
-status: linked
+status: frozen
 maturity: 1.0
 depends_on:
 - SG-SPEC-0014
@@ -131,6 +131,8 @@ specification:
       their own scope.
     - Parent acceptance_evidence remains local to the parent even when it cites child specs as supporting
       descendants.
+    - A blocking depends_on entry in the parent MUST map to one child in child_governance_map and be cited
+      as the matching parent-side blocked gap.
     - Later refinement work SHOULD narrow the owning child concern or a descendant of that child instead
       of expanding this parent with child-level detail.
   child_governance_map:
@@ -178,6 +180,9 @@ specification:
       the evidence cites child specs.
     - Parent evidence MUST identify which bounded child concern is satisfied and which concrete descendant
       spec carries the detailed governance.
+    - If a parent evidence claim references a child-owned concern, it MUST name that concern from the
+      corresponding child_governance_map entry so review remains traceable without reusing the child policy
+      text.
     - A child spec's acceptance_evidence proves the child policy; it does not replace the parent's overview-level
       evidence that the refinement chain is coordinated and linked.
   examples:
@@ -200,4 +205,4 @@ proposed_maturity: null
 required_human_action: '-'
 last_gate_decision: approve
 last_gate_note: ''
-last_gate_at: '2026-04-12T19:14:35.561705+00:00'
+last_gate_at: '2026-04-12T22:20:16.079294+00:00'

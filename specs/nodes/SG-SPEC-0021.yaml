@@ -2,7 +2,7 @@ id: SG-SPEC-0021
 title: SpecGraph - Derived Metric Family Boundary
 kind: spec
 status: linked
-maturity: 0.98
+maturity: 1.0
 depends_on:
 - SG-SPEC-0003
 - SG-SPEC-0017
@@ -49,7 +49,8 @@ acceptance_evidence:
     from canonical graph state, runtime observability entities, and derived graph-health observations
     or signals
   evidence: 'specification.metric_family_catalog assigns bounded subject_scope and admissible_input_classes
-    to every family, and specification.relationship_policy requires every metric family to declare explicit
+    to every family, specification.metric_input_class_ontology enumerates each admissible class by provenance
+    and allowed family use, and specification.relationship_policy requires each family to declare explicit
     subject binding and one semantic family_role before derived computation. Those rules separate canonical
     graph state, SG-SPEC-0017 runtime observability entities, and SG-SPEC-0003 graph-health diagnostics
     as admissible inputs without collapsing them into one layer.
@@ -121,6 +122,74 @@ specification:
       It remains rebuildable from underlying state and does not become canonical by default.
 
       '
+  metric_input_class_ontology:
+  - class: canonical_graph_structure
+    ontology_layer: canonical
+    source: SG-SPEC-0001
+    nature: source graph schema and topology snapshots
+    boundary: Bound to bounded_spec_node and bounded_graph_region families via canonical semantic structure
+      only.
+    allowed_for_families:
+    - pre-SIB
+    - SIB
+  - class: canonical_topology_and_lineage_state
+    ontology_layer: canonical
+    source: SG-SPEC-0001
+    nature: structural topology, lineage, and ownership references from canonical graph records
+    boundary: Canonical ancestry visibility; not a computed health judgement.
+    allowed_for_families:
+    - Structural Observability
+  - class: derived_graph_health_observation
+    ontology_layer: derived
+    source: SG-SPEC-0003
+    nature: structural risk or pressure observation emitted by graph-health diagnostics
+    boundary: Bounded to diagnostic artifacts and does not authorize governance state changes.
+    allowed_for_families:
+    - pre-SIB
+    - Structural Observability
+  - class: derived_graph_health_signal
+    ontology_layer: derived
+    source: SG-SPEC-0003
+    nature: condensed derived signal from one or more observations
+    boundary: Bounded to interpretation and prioritization inputs, not to canonical status.
+    allowed_for_families:
+    - SIB
+    - Structural Observability
+  - class: acceptance_criteria_and_evidence
+    ontology_layer: canonical
+    source: governance artifacts authored under SG-SPEC-0001
+    nature: acceptance text and evidence blocks currently used by governance decisions
+    boundary: Review evidence only; families cannot infer canonical acceptance by themselves.
+    allowed_for_families:
+    - Specification Verifiability
+  - class: trace_dependency_links
+    ontology_layer: canonical
+    source: SG-SPEC-0001 traceability semantics
+    nature: dependency links used for inspectability and evidence chain tracing
+    boundary: Structural traceability input; does not substitute for review outcomes.
+    allowed_for_families:
+    - Specification Verifiability
+  - class: runtime_observability_entities
+    ontology_layer: derived
+    source: SG-SPEC-0017
+    nature: events and entities collected during supervisor runtime execution
+    boundary: Runtime observations remain non-canonical and advisory for process visibility.
+    allowed_for_families:
+    - Process Observability
+  - class: run_artifacts
+    ontology_layer: derived
+    source: supervisor run output objects
+    nature: summaries, logs, and artifacts emitted by bounded runs
+    boundary: Runtime-derived evidence only; cannot be promoted to canonical truth.
+    allowed_for_families:
+    - Process Observability
+  - class: queue_or_proposal_state
+    ontology_layer: canonical
+    source: proposal and queue artifacts
+    nature: current state of refactor/proposal queues
+    boundary: Workflow-state context, not governance policy or approval outcome.
+    allowed_for_families:
+    - Process Observability
   subject_scope_contract:
   - bounded_spec_node
   - bounded_graph_region
@@ -328,4 +397,4 @@ proposed_maturity: null
 required_human_action: '-'
 last_gate_decision: approve
 last_gate_note: ''
-last_gate_at: '2026-04-12T21:23:01.043334+00:00'
+last_gate_at: '2026-04-12T22:18:06.207382+00:00'

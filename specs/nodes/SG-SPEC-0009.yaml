@@ -1,8 +1,8 @@
 id: SG-SPEC-0009
 title: SpecGraph - OperatorRequest Contract for Single-Run Steering
 kind: spec
-status: linked
-maturity: 0.83
+status: reviewed
+maturity: 1.0
 depends_on:
 - SG-SPEC-0012
 relates_to:
@@ -213,7 +213,12 @@ specification:
     - Each operator_request must declare a target_selector for one bounded run target.
     - target_selector may reference a specific spec node, a specific derived work item, or another execution
       target already allowed by current governance.
-    - Target selection should prefer explicit identity over inferred intent when both are available.
+    - Target selection prefers explicit identity over inferred intent when both are available from admissible
+      sources.
+    - If one admissible source provides explicit bounded target identity and another provides only implicit
+      inference, the explicit target SHALL be normalized as target_selector.
+    - If two explicit bounded targets conflict, normalization MUST NOT choose a blended interpretation
+      and the request becomes non-executable input until clarified or deferred.
     mode_requirements:
     - The request should declare whether the intended run is refinement, observation, proposal emission,
       or another already-governed execution mode.
@@ -296,4 +301,4 @@ proposed_maturity: null
 required_human_action: '-'
 last_gate_decision: approve
 last_gate_note: ''
-last_gate_at: '2026-04-12T19:14:38.532566+00:00'
+last_gate_at: '2026-04-12T21:46:19.669313+00:00'

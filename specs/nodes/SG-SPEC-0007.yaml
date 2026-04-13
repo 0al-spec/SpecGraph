@@ -1,8 +1,8 @@
 id: SG-SPEC-0007
 title: SpecGraph - Intent Mediation and Discovery Boundary
 kind: spec
-status: linked
-maturity: 0.85
+status: frozen
+maturity: 1.0
 depends_on:
 - SG-SPEC-0008
 relates_to:
@@ -134,8 +134,8 @@ specification:
       project-memory consultation.
     - When project memory is explicitly consulted during mediated discovery, that consultation remains
       adjacent mediated context governed by SG-SPEC-0008 rather than by this overview node.
-    - Explicit project-memory consultation may inform interpretation, but it is not a constitutive step
-      of canonicalization within this node's boundary definition.
+    - This node does not define memory retrieval sources, recall surfaces, quality thresholds, or ranking
+      policy.
   discovery_flow:
     intake_rules:
     - A raw_goal_signal may contain mixed goals, constraints, preferences, and ambiguous phrasing.
@@ -152,6 +152,33 @@ specification:
       narrower canonical nodes over one overloaded artifact.
     - Mediation may stop before canonicalization when ambiguity, conflict, or missing user context is
       still too high for a trustworthy canonical node.
+    minimal_artifacts:
+    - type
+    - source_context
+    - candidate_signals
+    - confidence_notes
+    - unresolved_questions
+    - promotion_candidate_kinds
+    artifact_minimum:
+      type: The artifact SHALL be classified as either user_goal_bundle or interpretation_bundle and is
+        required to preserve original raw_goal_signal references.
+      source_context:
+      - raw_goal_signal_ref
+      - source_actor_or_channel
+      - capture_timestamp
+      candidate_signals:
+      - distilled_goal_statement
+      - extracted_constraints
+      - candidate_success_signals
+      - candidate_risks_or_conflicts
+      - ambiguity_vectors
+      unresolved_questions:
+      - required_missing_items
+      - required_disambiguation_questions
+      promotion_candidate_kinds:
+      - preferred_target
+      - fallback_target
+      - rationale
   traceability_policy:
     mediation_record:
     - Each mediated_intent_frame should retain the source wording, source actor or channel when known,
@@ -172,7 +199,7 @@ specification:
   - Proposal-lane governance is adjacent because pre-canonical mediation outputs may later be represented
     in proposal structures, but this node does not define proposal authority, lifecycle, or application
     semantics.
-  - Explicit project-memory consultation, including PageIndex-backed recall and memory-specific traceability
+  - Explicit project-memory consultation, including retrieval mechanics and memory-specific traceability
     or quality rules, is delegated to child SG-SPEC-0008; this node only requires that such consultation,
     when present, remain adjacent to rather than constitutive of canonicalization.
   examples:
@@ -195,4 +222,4 @@ proposed_maturity: null
 required_human_action: '-'
 last_gate_decision: approve
 last_gate_note: ''
-last_gate_at: '2026-04-12T19:14:37.584018+00:00'
+last_gate_at: '2026-04-12T22:19:28.555275+00:00'

@@ -1,8 +1,8 @@
 id: SG-SPEC-0017
 title: SpecGraph - Runtime Observability Entity Boundary
 kind: spec
-status: reviewed
-maturity: 0.78
+status: frozen
+maturity: 0.98
 depends_on: []
 relates_to:
 - SG-SPEC-0003
@@ -169,6 +169,8 @@ specification:
     context.
   - An Attestation must reference the ObservabilityContract it supports and either the Campaign that produced
     it or the imported evidence source from which it was derived.
+  - An Attestation is scoped to one referenced ObservabilityContract and one origin context (Campaign
+    or imported evidence source); evidence across multiple contracts is represented by separate Attestations.
   - Runtime observability entities may relate_to SG-SPEC-0003 graph-health semantics, but they do not
     replace graph_health_observation, graph_health_signal, or governance_proposal concepts.
   - Later specs may decide whether existing edge kinds are sufficient for concrete runtime observability
@@ -232,6 +234,10 @@ specification:
   - id: ROE-005
     statement: An Attestation claim_disposition is claim-local and cannot by itself decide release readiness,
       product health, graph_subject validity, or lifecycle promotion.
+  - id: ROE-006
+    statement: An Attestation must be scoped to one ObservabilityContract and one producing origin context
+      (Campaign or imported evidence source); cross-contract evidence requires separate Attestations per
+      target contract.
   decisions:
   - id: ROE-D1
     statement: Runtime observability entities are evidence semantics, not metric definitions.
@@ -257,7 +263,5 @@ proposed_status: null
 proposed_maturity: null
 required_human_action: '-'
 last_gate_decision: approve
-last_gate_note: 'Reviewed SG-SPEC-0017 claim-disposition refinement: Attestation outcome posture is explicitly
-  claim-local and cannot by itself decide release readiness, product health, graph_subject validity, or
-  lifecycle promotion.'
-last_gate_at: '2026-04-11T19:56:45.444767+00:00'
+last_gate_note: ''
+last_gate_at: '2026-04-12T22:18:06.172155+00:00'
