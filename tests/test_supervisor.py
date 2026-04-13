@@ -3320,6 +3320,26 @@ def test_repair_candidate_yaml_text_preserves_quoted_sibling_key_in_sequence_map
     )
 
 
+def test_repair_candidate_yaml_text_outdents_nested_sibling_sequence_item(
+    supervisor_module: object,
+) -> None:
+    candidate = (
+        "acceptance_evidence:\n"
+        "- criterion: First criterion.\n"
+        "  evidence: First evidence line.\n"
+        "  - criterion: Second criterion.\n"
+        "  evidence: Second evidence line.\n"
+    )
+
+    repaired = supervisor_module.repair_candidate_yaml_text(candidate)
+
+    parsed = supervisor_module.get_yaml_module().safe_load(repaired)
+    assert parsed["acceptance_evidence"][0]["criterion"] == "First criterion."
+    assert parsed["acceptance_evidence"][0]["evidence"] == "First evidence line."
+    assert parsed["acceptance_evidence"][1]["criterion"] == "Second criterion."
+    assert parsed["acceptance_evidence"][1]["evidence"] == "Second evidence line."
+
+
 def test_repair_candidate_yaml_text_does_not_swallow_nested_mapping_key(
     supervisor_module: object,
 ) -> None:

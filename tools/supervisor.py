@@ -1128,6 +1128,17 @@ def repair_candidate_yaml_text(candidate_text: str, original_text: str | None = 
             current_indent = len(current_line) - len(current_line.lstrip(" "))
             current_key_match = YAML_KEY_LINE_RE.match(current_line)
             current_sequence_match = YAML_SEQUENCE_ITEM_RE.match(current_line)
+            if current_sequence_match is not None and current_indent > sequence_indent:
+                previous_nonempty_index = scan_index - 1
+                while (
+                    previous_nonempty_index > index and not lines[previous_nonempty_index].strip()
+                ):
+                    previous_nonempty_index -= 1
+                previous_nonempty = lines[previous_nonempty_index].rstrip()
+                if not previous_nonempty.endswith(":"):
+                    lines[scan_index] = (" " * sequence_indent) + current_line.lstrip()
+                    scan_index += 1
+                    continue
             if current_sequence_match is not None and current_indent < sequence_indent:
                 lines[scan_index] = (" " * sequence_indent) + current_line.lstrip()
                 scan_index += 1
