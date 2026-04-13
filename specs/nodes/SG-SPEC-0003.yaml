@@ -109,6 +109,7 @@ specification:
     - Final queue prioritization algorithms
     - Proposal-lane queue semantics, including active-item precedence, dedupe, retry gating, and proposal-direct
       handoff
+    - Concrete split_refactor execution steps, split payload schema, and handoff/selection heuristics
     - Viewer UX or visual overlays
     - Automatic self-modification of ontology without approval
     - Detailed SIB, Verifiability, or Observability metric definitions
@@ -286,6 +287,8 @@ specification:
     - Suggested child IDs and paths are advisory snapshot outputs and do not reserve canonical IDs by
       themselves.
     - 'Each suggested child records child-to-parent lineage as refines: [parent_id] in the proposal payload.'
+    - Concrete split_refactor payload schemas, field-level requirements, and proposal-lane execution semantics
+      are specified by split mechanics child specs; this node retains only boundary and non-mutation policy.
     execution:
     - The split pass emits a structured proposal artifact plus proposal_queue index metadata and does
       not write canonical spec files by itself.
@@ -319,13 +322,13 @@ gate_state: split_required
 required_human_action: split spec scope before rerun
 last_outcome: split_required
 last_blocker: ''
-last_run_id: 20260413T053234Z-SG-SPEC-0003
+last_run_id: 20260413T070223Z-SG-SPEC-0003
 last_exit_code: 0
 last_changed_files:
 - specs/nodes/SG-SPEC-0003.yaml
-last_run_at: '2026-04-13T05:32:35.305023+00:00'
-last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0003-20260413T053216Z
-last_branch: codex/sg-spec-0003/20260413T053216Z
+last_run_at: '2026-04-13T07:02:24.255907+00:00'
+last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0003-20260413T070157Z
+last_branch: codex/sg-spec-0003/20260413T070157Z
 last_validator_results:
   outputs: true
   allowed_paths: true
@@ -346,13 +349,12 @@ last_refinement_acceptance:
     atomicity_clear: true
     within_mutation_budget: true
   diff_paths:
-  - specification.derived_artifact_policy.proposal_queue[3]
-  - specification.reflective_loop.rules[3]
-  - specification.scope.out[2]
   - specification.scope.out[3]
   - specification.scope.out[4]
   - specification.scope.out[5]
   - specification.scope.out[6]
+  - specification.scope.out[7]
+  - specification.split_refactor_policy.child_contract[4]
   mutation_classes:
   - policy_text
   mutation_budget: []
@@ -363,7 +365,7 @@ last_refinement_acceptance:
   errors: []
   warnings: []
 last_reconciliation:
-  worktree_spec_count: 23
+  worktree_spec_count: 24
   changed_spec_ids:
   - SG-SPEC-0003
   semantic_dependencies_resolved: true
