@@ -11,6 +11,7 @@ depends_on:
 - SG-SPEC-0017
 - SG-SPEC-0019
 - SG-SPEC-0023
+- SG-SPEC-0024
 relates_to: []
 inputs:
 - README.md
@@ -26,6 +27,7 @@ acceptance:
 - Defines the node lifecycle and valid status transitions
 - Establishes the separation between canonical (user-owned) and derived (rebuildable) data
 - States the governing invariants that every node and edge must satisfy
+- Defines a bounded canonical provenance envelope for all SG-SPEC-0001 nodes and edges
 - 'Is implementation-agnostic: no file format, storage engine, or language choices'
 - States that SG-SPEC-0001 is a seed spec that child specs refine before the graph is frozen
 acceptance_evidence:
@@ -69,6 +71,10 @@ acceptance_evidence:
     tagging, and stable identity.
 
     '
+- criterion: Defines a bounded canonical provenance envelope for all SG-SPEC-0001 nodes and edges
+  evidence: 'SG-SPEC-0024 defines a shared provenance envelope contract for all node and edge records,
+    including actor identity, authority class, source references, timestamps, and revision/supersession
+    behavior under lineage transitions. '
 - criterion: 'Is implementation-agnostic: no file format, storage engine, or language choices'
   evidence: 'scope.out explicitly excludes storage format choices, tooling/CI implementation, runtime
     retrieval strategies, and model specialization. Decision D2 formalizes this as a governing principle.
@@ -84,10 +90,10 @@ acceptance_evidence:
     `specs/nodes/SG-SPEC-0010.yaml`, `specs/nodes/SG-SPEC-0017.yaml`, `specs/nodes/SG-SPEC-0018.yaml`,
     `specs/nodes/SG-SPEC-0019.yaml`, `specs/nodes/SG-SPEC-0020.yaml`, `specs/nodes/SG-SPEC-0021.yaml`,
     and `specs/nodes/SG-SPEC-0022.yaml` now declare `refines: [SG-SPEC-0001]`. SG-SPEC-0001 keeps `depends_on:
-    [SG-SPEC-0002, SG-SPEC-0007, SG-SPEC-0009, SG-SPEC-0010, SG-SPEC-0017, SG-SPEC-0019]` for blocking
-    descendants, while SG-SPEC-0018, SG-SPEC-0020, SG-SPEC-0021, and SG-SPEC-0022 remain non-blocking
-    delegated children, keeping the refinement chain explicit without widening linked blockers beyond
-    concrete descendants.
+    [SG-SPEC-0002, SG-SPEC-0007, SG-SPEC-0009, SG-SPEC-0010, SG-SPEC-0017, SG-SPEC-0019, SG-SPEC-0023,
+    SG-SPEC-0024]` for blocking descendants, while SG-SPEC-0018, SG-SPEC-0020, SG-SPEC-0021, and SG-SPEC-0022
+    remain non-blocking delegated children, keeping the refinement chain explicit without widening linked
+    blockers beyond concrete descendants.
 
     '
 prompt: 'This spec is a seed ontology, not a finished graph. Use child specs to
@@ -137,6 +143,7 @@ specification:
     - Edge kind taxonomy with source/target type constraints and static/dynamic classification
     - 'Node lifecycle: statuses, valid transitions, maturity semantics'
     - Separation of canonical vs derived data
+    - Canonical provenance envelope and actor-source metadata for node and edge records
     - Authority classes for provenance (authored, imported, inferred, distilled)
     - Cross-cutting invariants (provenance, versioning, traceability, contradiction resistance)
     out:
@@ -632,14 +639,14 @@ gate_state: split_required
 required_human_action: split spec scope before rerun
 last_outcome: split_required
 last_blocker: ''
-last_run_id: 20260412T212250Z-SG-SPEC-0001
+last_run_id: 20260413T053552Z-SG-SPEC-0001
 last_exit_code: 0
 last_changed_files:
 - specs/nodes/SG-SPEC-0001.yaml
-- specs/nodes/SG-SPEC-0023.yaml
-last_run_at: '2026-04-12T21:22:51.504375+00:00'
-last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0001-20260412T212215Z
-last_branch: codex/sg-spec-0001/20260412T212215Z
+- specs/nodes/SG-SPEC-0024.yaml
+last_run_at: '2026-04-13T05:35:53.369244+00:00'
+last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0001-20260413T053428Z
+last_branch: codex/sg-spec-0001/20260413T053428Z
 last_validator_results:
   outputs: true
   allowed_paths: true
@@ -660,25 +667,36 @@ last_refinement_acceptance:
     atomicity_clear: true
     within_mutation_budget: true
   diff_paths:
-  - acceptance_evidence[2].evidence
-  - depends_on[6]
-  - specification.scope.out[13]
+  - acceptance[6]
+  - acceptance[7]
+  - acceptance[8]
+  - acceptance_evidence[6].criterion
+  - acceptance_evidence[6].evidence
+  - acceptance_evidence[7].criterion
+  - acceptance_evidence[7].evidence
+  - acceptance_evidence[8]
+  - acceptance_evidence[8].criterion
+  - acceptance_evidence[8].evidence
+  - depends_on[7]
+  - specification.scope.in[6]
+  - specification.scope.in[7]
+  - specification.scope.in[8]
   mutation_classes:
   - policy_text
   mutation_budget: []
   budget_exceeded_classes: []
   changed_spec_files:
   - specs/nodes/SG-SPEC-0001.yaml
-  - specs/nodes/SG-SPEC-0023.yaml
+  - specs/nodes/SG-SPEC-0024.yaml
   review_reasons:
   - run changed additional spec files beyond the selected source node
   errors: []
   warnings: []
 last_reconciliation:
-  worktree_spec_count: 23
+  worktree_spec_count: 24
   changed_spec_ids:
   - SG-SPEC-0001
-  - SG-SPEC-0023
+  - SG-SPEC-0024
   semantic_dependencies_resolved: true
   work_dependencies_ready: false
   cycles: []

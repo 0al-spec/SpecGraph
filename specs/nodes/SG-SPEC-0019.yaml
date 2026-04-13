@@ -86,6 +86,9 @@ specification:
     supersession_event: 'A lineage step in which a new canonical subject replaces an older one while preserving
       both stable identities and the directed relationship between them.
 
+      For a supersession_event, the predecessor_reference must bind the replacement to the latest governed
+      state of the superseded subject.
+
       '
     revision_scope: 'The bounded statement of what semantic surface changed in one lineage step, sufficient
       for a reader to understand the change without requiring storage-native diffs.
@@ -125,6 +128,9 @@ specification:
       of the superseded subject.
     - The supersedes edge records replacement semantics between governed artifacts, while revision_record
       preserves the lineage event and provenance of that replacement.
+    - A supersession_event MUST set predecessor_reference to the superseded subject's terminal canonical
+      revision, not to a lineage_origin_marker, so lineage ordering remains continuous across identity
+      replacement.
     - Supersession MUST be append-only; the superseded subject remains inspectable rather than being deleted
       from canonical history.
     - A supersession_event MAY narrow, broaden, or restate semantics, but the lineage step must preserve
@@ -191,10 +197,59 @@ specification:
       rather than disappearing.
 
       '
-gate_state: none
-proposed_status: null
-proposed_maturity: null
-required_human_action: '-'
-last_gate_decision: approve
-last_gate_note: ''
-last_gate_at: '2026-04-12T22:18:06.178052+00:00'
+proposed_status: frozen
+proposed_maturity: 1.0
+gate_state: review_pending
+required_human_action: review refinement impact before approval
+last_outcome: done
+last_blocker: ''
+last_run_id: 20260413T052558Z-SG-SPEC-0019
+last_exit_code: 0
+last_changed_files:
+- specs/nodes/SG-SPEC-0019.yaml
+last_run_at: '2026-04-13T05:25:58.890662+00:00'
+last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0019-20260413T052541Z
+last_branch: codex/sg-spec-0019/20260413T052541Z
+last_validator_results:
+  outputs: true
+  allowed_paths: true
+  reconciliation: true
+  atomicity: true
+  transition: true
+  executor_environment: true
+  refinement_acceptance: true
+last_refinement_acceptance:
+  decision: review_required
+  change_class: constitutional_change
+  checks:
+    content_changed: true
+    hard_validation: true
+    single_spec_scope: true
+    constitutional_diff: true
+    graph_refactor_diff: false
+    atomicity_clear: true
+    within_mutation_budget: true
+  diff_paths:
+  - specification.revision_contract.supersession_rules[2]
+  - specification.revision_contract.supersession_rules[3]
+  - specification.revision_contract.supersession_rules[4]
+  - specification.terminology.supersession_event
+  mutation_classes:
+  - policy_text
+  mutation_budget: []
+  budget_exceeded_classes: []
+  changed_spec_files:
+  - specs/nodes/SG-SPEC-0019.yaml
+  review_reasons:
+  - run changed governance-sensitive specification sections
+  errors: []
+  warnings: []
+last_reconciliation:
+  worktree_spec_count: 23
+  changed_spec_ids:
+  - SG-SPEC-0019
+  semantic_dependencies_resolved: true
+  work_dependencies_ready: true
+  cycles: []
+last_requested_child_materialization: false
+last_materialized_child_paths: []

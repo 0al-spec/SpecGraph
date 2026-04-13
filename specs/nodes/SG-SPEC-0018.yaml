@@ -97,6 +97,11 @@ specification:
       which a DiscoverySurface or AdoptionCriterion is defined, without implying a full segmentation system.
 
       '
+    adoption_evidence_reference: 'A pointer to an externally governed evidence artifact, carrying only
+      stable identity and provenance metadata. It is used by AdoptionCriterion for support claims but
+      never imports raw telemetry, normalization logic, or computed formulas.
+
+      '
     qualifying_outcome: 'The narrow condition an AdoptionCriterion treats as meaningful uptake for the
       referenced canonical_subject and audience_context.
 
@@ -158,8 +163,9 @@ specification:
   - Every AdoptionCriterion MUST reference the canonical_subject whose uptake it qualifies and MAY reference
     one or more DiscoverySurface entries when the criterion is surface-specific.
   - An AdoptionCriterion MAY cite ObservabilityContract, Attestation, imported business records, or other
-    evidence classes as acceptable support by reference; evidence computation, attribution, and recency
-    windows remain governed by SG-SPEC-0017 or later child specs.
+    evidence classes as adoption_evidence_reference pointers only (identity, source, and provenance metadata);
+    evidence computation, attribution, recency windows, score functions, and raw telemetry payloads remain
+    out of scope and governed by SG-SPEC-0017 or later child specs.
   - Later specs may decide whether existing edge kinds are sufficient for concrete adoption-layer nodes
     or whether a separate reviewed ontology change is needed.
   canonical_vs_derived_boundary:
@@ -167,11 +173,13 @@ specification:
     - Authored DiscoverySurface definitions
     - Authored AdoptionCriterion definitions
     - Imported surface or criterion records with explicit provenance
+    - AdoptionEvidenceReference records that are governed pointers to already canonical evidence contracts
     derived:
     - UI event streams, click paths, logs, and telemetry
     - Funnel rollups, dashboards, conversion calculations, and experiment outputs
     - Campaign state, CRM workflow execution state, and operational growth tooling data
     - Uncanonicalized survey responses or feedback streams before governed import or distillation
+    - Raw evidence payload values, normalization scripts, and attribution formulas referenced by AdoptionCriterion
   invariants:
   - id: ALE-001
     statement: Every DiscoverySurface must reference at least one canonical_subject by stable identity.
@@ -183,6 +191,9 @@ specification:
   - id: ALE-004
     statement: DiscoverySurface can reference raw_goal_signal or mediated_intent_frame only as provenance
       links; it cannot absorb pre-canonical discovery payload semantics.
+  - id: ALE-005
+    statement: AdoptionCriterion MAY reference adoption_evidence_reference artifacts, but the criterion
+      must never embed raw evidence payloads, formula derivations, or attribution logic.
   examples:
   - name: Docs entry surface
     description: 'A product capability is exposed through an API documentation landing page for integration
@@ -196,10 +207,62 @@ specification:
       without prescribing a telemetry formula or experimentation policy.
 
       '
-gate_state: none
-proposed_status: null
-proposed_maturity: null
-required_human_action: '-'
-last_gate_decision: approve
-last_gate_note: ''
-last_gate_at: '2026-04-12T21:44:05.035051+00:00'
+proposed_status: frozen
+proposed_maturity: 1.0
+gate_state: review_pending
+required_human_action: review refinement impact before approval
+last_outcome: done
+last_blocker: ''
+last_run_id: 20260413T052539Z-SG-SPEC-0018
+last_exit_code: 0
+last_changed_files:
+- specs/nodes/SG-SPEC-0018.yaml
+last_run_at: '2026-04-13T05:25:39.797481+00:00'
+last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0018-20260413T052526Z
+last_branch: codex/sg-spec-0018/20260413T052526Z
+last_validator_results:
+  outputs: true
+  allowed_paths: true
+  reconciliation: true
+  atomicity: true
+  transition: true
+  executor_environment: true
+  refinement_acceptance: true
+last_refinement_acceptance:
+  decision: review_required
+  change_class: constitutional_change
+  checks:
+    content_changed: true
+    hard_validation: true
+    single_spec_scope: true
+    constitutional_diff: true
+    graph_refactor_diff: false
+    atomicity_clear: true
+    within_mutation_budget: true
+  diff_paths:
+  - specification.canonical_vs_derived_boundary.canonical[3]
+  - specification.canonical_vs_derived_boundary.derived[4]
+  - specification.invariants[4]
+  - specification.invariants[4].id
+  - specification.invariants[4].statement
+  - specification.relationship_policy[3]
+  - specification.terminology.adoption_evidence_reference
+  mutation_classes:
+  - policy_text
+  mutation_budget: []
+  budget_exceeded_classes: []
+  changed_spec_files:
+  - specs/nodes/SG-SPEC-0018.yaml
+  review_reasons:
+  - run changed governance-sensitive specification sections
+  errors: []
+  warnings: []
+last_reconciliation:
+  worktree_spec_count: 23
+  changed_spec_ids:
+  - SG-SPEC-0018
+  semantic_dependencies_resolved: true
+  work_dependencies_ready: true
+  cycles: []
+last_requested_child_materialization: false
+last_materialized_child_paths: []
