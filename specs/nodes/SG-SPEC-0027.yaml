@@ -1,0 +1,88 @@
+id: SG-SPEC-0027
+title: SpecGraph - Reflective Execution Mechanics Cluster
+kind: spec
+status: specified
+maturity: 0.49
+depends_on:
+- SG-SPEC-0004
+- SG-SPEC-0005
+- SG-SPEC-0006
+- SG-SPEC-0025
+refines:
+- SG-SPEC-0026
+inputs:
+- specs/nodes/SG-SPEC-0026.yaml
+- specs/nodes/SG-SPEC-0004.yaml
+- specs/nodes/SG-SPEC-0005.yaml
+- specs/nodes/SG-SPEC-0006.yaml
+- specs/nodes/SG-SPEC-0025.yaml
+- tasks.md
+outputs:
+- specs/nodes/SG-SPEC-0027.yaml
+allowed_paths:
+- specs/nodes/SG-SPEC-0027.yaml
+acceptance:
+- Defines the bounded execution-mechanics cluster beneath SG-SPEC-0026 that groups split proposal mechanics,
+  retrospective direct-update boundaries, and proposal-lane execution semantics.
+- Defines how the mechanics descendants remain jointly inspectable as one execution cluster without collapsing
+  their distinct bounded responsibilities.
+- Defines the weakest integration contract by which SG-SPEC-0026 may depend on this cluster while keeping
+  continuation selection separate from concrete execution mechanics.
+- Remains implementation-agnostic about viewer layout, queue ranking formulas, and runtime orchestration.
+acceptance_evidence:
+- criterion: Defines the bounded execution-mechanics cluster beneath SG-SPEC-0026 that groups split proposal
+    mechanics, retrospective direct-update boundaries, and proposal-lane execution semantics.
+  evidence: specification.cluster_role defines SG-SPEC-0027 as the intermediate execution cluster node,
+    while specification.cluster_members assigns split mechanics to SG-SPEC-0025, retrospective direct-update
+    boundaries to SG-SPEC-0005, and proposal-lane execution semantics to SG-SPEC-0006, with SG-SPEC-0004
+    retained as the concrete split proposal lifecycle anchor inside the same cluster.
+- criterion: Defines how the mechanics descendants remain jointly inspectable as one execution cluster
+    without collapsing their distinct bounded responsibilities.
+  evidence: specification.cluster_boundaries states that the child mechanics specs remain individually
+    bounded and refine through SG-SPEC-0027 only for subtree coherence, not because their contracts are
+    merged into one node.
+- criterion: Defines the weakest integration contract by which SG-SPEC-0026 may depend on this cluster
+    while keeping continuation selection separate from concrete execution mechanics.
+  evidence: specification.parent_contract states that SG-SPEC-0026 may treat SG-SPEC-0027 as one bounded
+    required dependency for reflective execution readiness, while continuation-selection rules remain
+    owned by SG-SPEC-0026 itself.
+- criterion: Remains implementation-agnostic about viewer layout, queue ranking formulas, and runtime
+    orchestration.
+  evidence: specification.scope.out excludes viewer layout, queue ranking formulas, and runtime orchestration
+    details. SG-SPEC-0027 governs only subtree coherence and integration boundaries.
+prompt: Keep SG-SPEC-0027 as the bounded execution cluster beneath SG-SPEC-0026. It should group the reflective
+  execution mechanics descendants into one inspectable subtree, preserve their bounded roles, and give
+  SG-SPEC-0026 one coherent dependency instead of several direct mechanics children.
+specification:
+  objective: Define the bounded execution-mechanics cluster that groups reflective execution descendants
+    beneath SG-SPEC-0026 without merging their distinct mechanics contracts.
+  scope:
+    in:
+    - Execution cluster role beneath SG-SPEC-0026
+    - Membership and boundary notes for SG-SPEC-0004, SG-SPEC-0005, SG-SPEC-0006, and SG-SPEC-0025
+    - Weakest parent integration contract from SG-SPEC-0026 to the cluster
+    out:
+    - Concrete mechanics semantics already owned by descendant specs
+    - Continuation-selection policy owned by SG-SPEC-0026
+    - Viewer layout, queue ranking formulas, and runtime orchestration
+  cluster_role:
+  - SG-SPEC-0027 is the intermediate execution cluster node beneath SG-SPEC-0026.
+  - SG-SPEC-0027 exists to keep reflective execution mechanics structurally coherent without forcing SG-SPEC-0026
+    to exceed its blocking-child atomicity limit.
+  cluster_members:
+    split_proposal_lifecycle:
+    - SG-SPEC-0004 remains the split proposal lifecycle anchor inside this cluster.
+    split_proposal_mechanics:
+    - SG-SPEC-0025 owns concrete split payload schema and split queue mechanics.
+    retrospective_direct_update_boundary:
+    - SG-SPEC-0005 owns retrospective direct-update boundary and application envelope.
+    proposal_lane_execution:
+    - SG-SPEC-0006 owns proposal-lane execution semantics and tracked proposal identity.
+  cluster_boundaries:
+  - Refining through SG-SPEC-0027 does not collapse descendant node identities or their bounded concerns.
+  - SG-SPEC-0027 does not redefine the mechanics contracts already owned by its descendants.
+  - Cross-descendant consistency is expressed here only at the subtree-integration level.
+  parent_contract:
+  - SG-SPEC-0026 may depend_on SG-SPEC-0027 as one bounded prerequisite for reflective execution readiness.
+  - SG-SPEC-0027 must remain narrow enough that SG-SPEC-0026 keeps continuation-selection logic separate
+    from mechanics integration.

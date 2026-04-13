@@ -4,10 +4,7 @@ kind: spec
 status: specified
 maturity: 0.49
 depends_on:
-- SG-SPEC-0004
-- SG-SPEC-0005
-- SG-SPEC-0006
-- SG-SPEC-0025
+- SG-SPEC-0027
 refines:
 - SG-SPEC-0003
 inputs:
@@ -22,9 +19,8 @@ outputs:
 allowed_paths:
 - specs/nodes/SG-SPEC-0026.yaml
 acceptance:
-- Defines the intermediate reflective-mechanics integration layer that groups split proposal mechanics,
-  retrospective direct-update boundaries, and proposal-lane execution semantics under one bounded child
-  of SG-SPEC-0003.
+- Defines the bounded continuation-selection integration layer under SG-SPEC-0003 and delegates concrete
+  reflective execution mechanics to a dedicated child cluster node.
 - Defines the bounded continuation-selection policy for deriving, de-duplicating, and choosing at most
   one linked latent_graph_improvement_candidate after explicit blocked or gated work clears.
 - Defines suppression and handoff behavior when continuation cannot proceed because authority limits,
@@ -32,13 +28,12 @@ acceptance:
 - Remains implementation-agnostic about scoring formulas, queue prioritization engines, and viewer UX
   while keeping continuation and delegated mechanics non-canonical until explicit execution or approval.
 acceptance_evidence:
-- criterion: Defines the intermediate reflective-mechanics integration layer that groups split proposal
-    mechanics, retrospective direct-update boundaries, and proposal-lane execution semantics under one
-    bounded child of SG-SPEC-0003.
-  evidence: specification.integration_role defines SG-SPEC-0026 as the bounded integration child between
-    SG-SPEC-0003 and its mechanics descendants, while specification.delegated_domains assigns split mechanics
-    to SG-SPEC-0025, retrospective direct-update boundaries to SG-SPEC-0005, and proposal-lane execution
-    semantics to SG-SPEC-0006.
+- criterion: Defines the bounded continuation-selection integration layer under SG-SPEC-0003 and delegates
+    concrete reflective execution mechanics to a dedicated child cluster node.
+  evidence: specification.integration_role defines SG-SPEC-0026 as the continuation-selection integration
+    child beneath SG-SPEC-0003, while specification.delegated_execution_cluster assigns SG-SPEC-0027 as
+    the bounded mechanics cluster for split mechanics, retrospective direct-update boundaries, and proposal-lane
+    execution semantics.
 - criterion: Defines the bounded continuation-selection policy for deriving, de-duplicating, and choosing
     at most one linked latent_graph_improvement_candidate after explicit blocked or gated work clears.
   evidence: specification.continuation_selection.preconditions gates continuation to runs whose current
@@ -59,38 +54,31 @@ acceptance_evidence:
     remain derived or review-gated rather than canonical graph truth unless a separately authorized path
     applies them.
 prompt: Keep SG-SPEC-0026 as the bounded integration child under SG-SPEC-0003 for reflective execution
-  mechanics. It should group the delegated mechanics children, define deterministic continuation selection,
-  and specify suppression and handoff behavior without drifting into scoring formulas, proposal-lane precedence
-  engines, or viewer design.
+  continuation. It should define deterministic continuation selection, delegate concrete reflective execution
+  mechanics to SG-SPEC-0027, and specify suppression and handoff behavior without drifting into scoring
+  formulas, proposal-lane precedence engines, or viewer design.
 specification:
-  objective: Define the bounded integration layer under SG-SPEC-0003 that groups delegated reflective
-    mechanics and owns continuation-selection policy without reabsorbing the parent boundary role.
+  objective: Define the bounded continuation-selection integration layer under SG-SPEC-0003 that owns
+    continuation policy while delegating concrete reflective execution mechanics to SG-SPEC-0027.
   scope:
     in:
-    - Integration role between SG-SPEC-0003 and delegated reflective mechanics descendants
+    - Integration role between SG-SPEC-0003 and delegated continuation or execution descendants
     - Continuation-selection preconditions, candidate derivation, and at-most-one selection behavior
     - Suppression and handoff behavior when continuation cannot proceed directly
     - Non-canonical persistence expectations for continuation artifacts
     out:
     - Parent boundary and human-approval policy retained by SG-SPEC-0003
-    - Concrete split payload schema owned by SG-SPEC-0025
-    - Retrospective direct-update artifact and review-gate details owned by SG-SPEC-0005
-    - Proposal-lane precedence, authority-state transitions, and overlay semantics owned by SG-SPEC-0006
+    - Concrete reflective execution mechanics grouped under SG-SPEC-0027
     - Scoring formulas, queue ranking engines, and viewer UX
   integration_role:
-  - SG-SPEC-0026 is the intermediate overview child that keeps SG-SPEC-0003 below the blocking-child atomicity
-    limit while preserving explicit delegation to bounded mechanics descendants.
-  - SG-SPEC-0026 may depend_on delegated mechanics descendants that are jointly required before continuation-aware
-    reflective execution can be treated as coherent.
-  delegated_domains:
-    split_mechanics:
-    - SG-SPEC-0025 owns split payload schema, queue contract, emission or refresh behavior, and split-specific
-      validation boundaries.
-    direct_update_boundary:
-    - SG-SPEC-0005 owns retrospective direct-update boundaries and pre-writeback application envelope.
-    proposal_lane_execution:
-    - SG-SPEC-0006 owns proposal-lane execution semantics, tracked proposal identity, and proposal review-visible
-      state.
+  - SG-SPEC-0026 is the intermediate child that keeps SG-SPEC-0003 below the blocking-child atomicity
+    limit while preserving explicit continuation-selection governance.
+  - SG-SPEC-0026 may depend_on exactly one bounded execution cluster child when multiple reflective execution
+    mechanics remain jointly required before continuation-aware operation is coherent.
+  delegated_execution_cluster:
+  - SG-SPEC-0027 owns the integrated reflective execution mechanics cluster beneath SG-SPEC-0026.
+  - Descendant mechanics specs such as SG-SPEC-0025, SG-SPEC-0005, and SG-SPEC-0006 refine through SG-SPEC-0027
+    rather than directly through SG-SPEC-0026 when they belong to the same execution cluster.
   continuation_selection:
     preconditions:
     - The current bounded target has no remaining explicit blocked or gated work within current authority.
@@ -116,89 +104,65 @@ specification:
     - Continuation records must not set canonical backlog labels, ownership fields, status, or maturity
       directly.
   boundary_notes:
-  - SG-SPEC-0026 integrates delegated mechanics and continuation rules but does not redefine parent governance
-    boundaries.
+  - SG-SPEC-0026 integrates continuation rules and delegated execution clustering but does not redefine
+    parent governance boundaries.
   - Continuation records and delegated mechanics outputs remain non-canonical until separately authorized
     execution or approval paths apply them.
 proposed_status: null
 proposed_maturity: null
-gate_state: split_required
-required_human_action: split spec scope before rerun
-last_outcome: split_required
-last_blocker: spec exceeds atomicity quality gate
-last_run_id: 20260413T074505Z-SG-SPEC-0026
+gate_state: retry_pending
+required_human_action: rerun supervisor
+last_outcome: done
+last_blocker: ''
+last_run_id: 20260413T074927Z-SG-SPEC-0026
 last_exit_code: 0
 last_changed_files:
 - specs/nodes/SG-SPEC-0026.yaml
-last_run_at: '2026-04-13T07:45:05.954674+00:00'
-last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0026-20260413T074440Z
-last_branch: codex/sg-spec-0026/20260413T074440Z
+last_run_at: '2026-04-13T07:49:28.544827+00:00'
+last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0026-20260413T074911Z
+last_branch: codex/sg-spec-0026/20260413T074911Z
 last_validator_results:
   outputs: true
   allowed_paths: true
   reconciliation: false
-  atomicity: false
+  atomicity: true
   transition: true
   executor_environment: true
   refinement_acceptance: false
 last_refinement_acceptance:
   decision: reject
-  change_class: graph_refactor
+  change_class: local_refinement
   checks:
     content_changed: true
     hard_validation: false
     single_spec_scope: true
     constitutional_diff: false
-    graph_refactor_diff: true
-    atomicity_clear: false
+    graph_refactor_diff: false
+    atomicity_clear: true
     within_mutation_budget: true
   diff_paths:
-  - acceptance_evidence[1].evidence
+  - specification.continuation_selection.handoff[1]
+  - specification.continuation_selection.handoff[2]
   - specification.continuation_selection.selection[1]
-  - specification.continuation_selection.selection[2]
-  - specification.continuation_selection.selection[3]
-  - specification.continuation_selection.selection[4]
-  - specification.continuation_selection.selection[5]
-  - specification.continuation_selection.selection[6]
-  - specification.continuation_selection.selection[7]
-  - specification.continuation_selection.selection[8]
+  - specification.delegated_execution_cluster[1]
   mutation_classes:
   - policy_text
   mutation_budget: []
   budget_exceeded_classes: []
   changed_spec_files:
   - specs/nodes/SG-SPEC-0026.yaml
-  review_reasons:
-  - atomicity gate still requires follow-up decomposition work
+  review_reasons: []
   errors:
-  - 'Cannot advance to linked: dependency SG-SPEC-0004 must declare refines: [SG-SPEC-0026] to make the
-    refinement chain explicit'
-  - 'Cannot advance to linked: dependency SG-SPEC-0005 must declare refines: [SG-SPEC-0026] to make the
-    refinement chain explicit'
-  - 'Cannot advance to linked: dependency SG-SPEC-0006 must declare refines: [SG-SPEC-0026] to make the
-    refinement chain explicit'
-  - 'Cannot advance to linked: dependency SG-SPEC-0025 must declare refines: [SG-SPEC-0026] to make the
-    refinement chain explicit'
-  warnings:
-  - 'specs/nodes/SG-SPEC-0026.yaml: Atomicity gate exceeded: 4 blocking children > 3. Prefer smaller sibling
-    specs or an intermediate overview node.'
+  - 'Cannot advance to linked: missing declared dependency nodes SG-SPEC-0027'
+  warnings: []
 last_reconciliation:
   worktree_spec_count: 26
   changed_spec_ids:
   - SG-SPEC-0026
-  semantic_dependencies_resolved: true
+  semantic_dependencies_resolved: false
   work_dependencies_ready: false
   cycles: []
 last_requested_child_materialization: false
 last_materialized_child_paths: []
 last_errors:
-- 'Cannot advance to linked: dependency SG-SPEC-0004 must declare refines: [SG-SPEC-0026] to make the
-  refinement chain explicit'
-- 'Cannot advance to linked: dependency SG-SPEC-0005 must declare refines: [SG-SPEC-0026] to make the
-  refinement chain explicit'
-- 'Cannot advance to linked: dependency SG-SPEC-0006 must declare refines: [SG-SPEC-0026] to make the
-  refinement chain explicit'
-- 'Cannot advance to linked: dependency SG-SPEC-0025 must declare refines: [SG-SPEC-0026] to make the
-  refinement chain explicit'
-- 'specs/nodes/SG-SPEC-0026.yaml: Atomicity gate exceeded: 4 blocking children > 3. Prefer smaller sibling
-  specs or an intermediate overview node.'
+- 'Cannot advance to linked: missing declared dependency nodes SG-SPEC-0027'
