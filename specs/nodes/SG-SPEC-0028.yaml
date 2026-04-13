@@ -82,3 +82,58 @@ specification:
   - SG-SPEC-0027 may depend_on SG-SPEC-0028 as one bounded prerequisite for proposal/split mechanics readiness.
   - SG-SPEC-0027 must not depend_on SG-SPEC-0004, SG-SPEC-0006, or SG-SPEC-0025 directly for proposal/split
     mechanics while SG-SPEC-0028 is present as the dedicated subcluster.
+  - SG-SPEC-0027 may consume SG-SPEC-0028 for proposal/split readiness only as a concern-level gateway;
+    concrete lifecycle, proposal-lane, and payload mechanics remain normatively owned by SG-SPEC-0004,
+    SG-SPEC-0006, and SG-SPEC-0025 respectively.
+proposed_status: linked
+proposed_maturity: 0.69
+gate_state: review_pending
+required_human_action: approve or retry refinement
+last_outcome: done
+last_blocker: ''
+last_run_id: 20260413T075635Z-SG-SPEC-0028
+last_exit_code: 0
+last_changed_files:
+- specs/nodes/SG-SPEC-0028.yaml
+last_run_at: '2026-04-13T07:56:36.285113+00:00'
+last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0028-20260413T075556Z
+last_branch: codex/sg-spec-0028/20260413T075556Z
+last_validator_results:
+  outputs: true
+  allowed_paths: true
+  reconciliation: true
+  atomicity: true
+  transition: true
+  executor_environment: true
+  refinement_acceptance: true
+last_refinement_acceptance:
+  decision: approve
+  change_class: local_refinement
+  checks:
+    content_changed: true
+    hard_validation: true
+    single_spec_scope: true
+    constitutional_diff: false
+    graph_refactor_diff: false
+    atomicity_clear: true
+    within_mutation_budget: true
+  diff_paths:
+  - specification.parent_contract[2]
+  mutation_classes:
+  - policy_text
+  mutation_budget: []
+  budget_exceeded_classes: []
+  changed_spec_files:
+  - specs/nodes/SG-SPEC-0028.yaml
+  review_reasons: []
+  errors: []
+  warnings: []
+last_reconciliation:
+  worktree_spec_count: 28
+  changed_spec_ids:
+  - SG-SPEC-0028
+  semantic_dependencies_resolved: true
+  work_dependencies_ready: false
+  cycles: []
+last_requested_child_materialization: false
+last_materialized_child_paths: []
