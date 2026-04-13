@@ -26,8 +26,8 @@ acceptance:
   continuation selection separate from concrete execution mechanics.
 - Remains implementation-agnostic about viewer layout, queue ranking formulas, and runtime orchestration.
 acceptance_evidence:
-- criterion: Defines the bounded execution-mechanics cluster beneath SG-SPEC-0026 that groups split proposal
-    mechanics, retrospective direct-update boundaries, and proposal-lane execution semantics.
+- criterion: Defines the bounded execution-mechanics cluster beneath SG-SPEC-0026 that groups retrospective
+    direct-update boundaries with one subordinate proposal/split mechanics subcluster.
   evidence: specification.cluster_role defines SG-SPEC-0027 as the intermediate execution cluster node,
     while specification.cluster_members assigns retrospective direct-update boundary to SG-SPEC-0005 and
     delegates all proposal/split mechanics coherence to subordinate subcluster SG-SPEC-0028.
@@ -38,8 +38,8 @@ acceptance_evidence:
     merged into one node.
 - criterion: Defines the weakest integration contract by which SG-SPEC-0026 may depend on this cluster
     while keeping continuation selection separate from concrete execution mechanics.
-  evidence: specification.parent_contract states that SG-SPEC-0026 may treat SG-SPEC-0027 as one bounded
-    required dependency for reflective execution readiness, while continuation-selection rules remain
+  evidence: specification.parent_contract requires SG-SPEC-0026 to consume SG-SPEC-0027 as the single
+    bounded prerequisite for reflective execution readiness, while continuation-selection rules remain
     owned by SG-SPEC-0026 itself.
 - criterion: Remains implementation-agnostic about viewer layout, queue ranking formulas, and runtime
     orchestration.
@@ -80,53 +80,47 @@ specification:
   - SG-SPEC-0027 does not restate field-level proposal or split artifact contracts once those are delegated
     through SG-SPEC-0028.
   parent_contract:
-  - SG-SPEC-0026 may depend_on SG-SPEC-0027 as one bounded prerequisite for reflective execution readiness.
+  - SG-SPEC-0026 must depend_on SG-SPEC-0027 as the single bounded prerequisite for reflective execution
+    readiness.
   - SG-SPEC-0027 must remain narrow enough that SG-SPEC-0026 keeps continuation-selection logic separate
     from mechanics integration.
   - SG-SPEC-0027 may expose at most one subordinate proposal/split mechanics subcluster when that indirection
     is needed to keep the execution subtree within atomicity limits.
-proposed_status: null
-proposed_maturity: null
+  - SG-SPEC-0026 must not depend_on SG-SPEC-0005, SG-SPEC-0004, SG-SPEC-0006, SG-SPEC-0025, or SG-SPEC-0028
+    directly for execution-mechanics readiness while SG-SPEC-0027 remains present.
 gate_state: split_required
 required_human_action: split spec scope before rerun
 last_outcome: split_required
-last_blocker: 'Node is still non-atomic: SG-SPEC-0027 has 4 direct mechanics descendants (SG-SPEC-0004,
-  SG-SPEC-0005, SG-SPEC-0006, SG-SPEC-0025), so this run only refines the cluster contract and records
-  the required split path through SG-SPEC-0028.'
-last_run_id: 20260413T075534Z-SG-SPEC-0027
+last_blocker: ''
+last_run_id: 20260413T080414Z-SG-SPEC-0027
 last_exit_code: 0
 last_changed_files:
 - specs/nodes/SG-SPEC-0027.yaml
-last_run_at: '2026-04-13T07:55:34.808065+00:00'
-last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0027-20260413T075508Z
-last_branch: codex/sg-spec-0027/20260413T075508Z
+last_run_at: '2026-04-13T08:04:15.149928+00:00'
+last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0027-20260413T080344Z
+last_branch: codex/sg-spec-0027/20260413T080344Z
 last_validator_results:
   outputs: true
   allowed_paths: true
-  reconciliation: false
+  reconciliation: true
   atomicity: true
   transition: true
   executor_environment: true
-  refinement_acceptance: false
+  refinement_acceptance: true
 last_refinement_acceptance:
-  decision: reject
-  change_class: graph_refactor
+  decision: approve
+  change_class: local_refinement
   checks:
     content_changed: true
-    hard_validation: false
+    hard_validation: true
     single_spec_scope: true
     constitutional_diff: false
-    graph_refactor_diff: true
+    graph_refactor_diff: false
     atomicity_clear: true
     within_mutation_budget: true
   diff_paths:
-  - acceptance_evidence[0].criterion
-  - acceptance_evidence[0].evidence
-  - acceptance_evidence[1].evidence
-  - depends_on[0]
-  - depends_on[1]
-  - specification.cluster_boundaries[4]
-  - specification.cluster_members.proposal_and_split_mechanics_subcluster[1]
+  - acceptance_evidence[2].evidence
+  - specification.parent_contract[0]
   - specification.parent_contract[3]
   mutation_classes:
   - policy_text
@@ -134,19 +128,15 @@ last_refinement_acceptance:
   budget_exceeded_classes: []
   changed_spec_files:
   - specs/nodes/SG-SPEC-0027.yaml
-  review_reasons:
-  - run changed graph structure or spec contract paths
-  errors:
-  - 'Cannot advance to linked: missing declared dependency nodes SG-SPEC-0028'
+  review_reasons: []
+  errors: []
   warnings: []
 last_reconciliation:
-  worktree_spec_count: 27
+  worktree_spec_count: 28
   changed_spec_ids:
   - SG-SPEC-0027
-  semantic_dependencies_resolved: false
+  semantic_dependencies_resolved: true
   work_dependencies_ready: false
   cycles: []
 last_requested_child_materialization: false
 last_materialized_child_paths: []
-last_errors:
-- 'Cannot advance to linked: missing declared dependency nodes SG-SPEC-0028'

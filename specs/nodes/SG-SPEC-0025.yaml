@@ -93,6 +93,12 @@ specification:
       for proposal-lane handoff.
     split_payload_validation_outcome: A derived validation result used by split mechanics to reject malformed
       or out-of-scope payloads.
+    split_lifecycle_anchor: The subordinate deterministic apply-path spec that materializes one approved
+      split proposal input after proposal/split mechanics have already emitted a bounded payload.
+  delegated_child_relation:
+  - SG-SPEC-0025 owns the split proposal mechanics parent contract inside SG-SPEC-0028.
+  - SG-SPEC-0004 refines SG-SPEC-0025 as the deterministic split proposal lifecycle anchor that consumes
+    one approved split artifact after SG-SPEC-0025 has already defined the payload and queue contract.
   split_payload_schema:
     required_components:
     - component: parent_target

@@ -68,12 +68,14 @@ specification:
   - SG-SPEC-0028 exists to keep proposal lifecycle, proposal-lane execution, and split payload mechanics
     structurally coherent without forcing SG-SPEC-0027 to exceed its blocking-child atomicity limit.
   subcluster_members:
+    split_payload_mechanics:
+    - SG-SPEC-0025 owns the split proposal mechanics parent contract, including payload schema and split
+      queue mechanics, inside this subcluster.
     split_proposal_lifecycle:
-    - SG-SPEC-0004 remains the split proposal lifecycle anchor inside this subcluster.
+    - SG-SPEC-0004 refines SG-SPEC-0025 as the deterministic split proposal lifecycle anchor inside this
+      subcluster.
     proposal_lane_execution:
     - SG-SPEC-0006 owns proposal-lane execution semantics and tracked proposal identity.
-    split_payload_mechanics:
-    - SG-SPEC-0025 owns concrete split payload schema and split queue mechanics.
   subcluster_boundaries:
   - Refining through SG-SPEC-0028 does not collapse descendant node identities or their bounded concerns.
   - SG-SPEC-0028 does not redefine the mechanics contracts already owned by its descendants.
