@@ -1,0 +1,4 @@
+interface:
+  display_name: "Supervisor Branch Continue"
+  short_description: "Resume a supervisor graph branch"
+  default_prompt: "Use $specgraph-supervisor-branch-continue to reconstruct the current state of one SpecGraph branch and choose the next bounded supervisor step."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Supervisor Split Proposal"
+  short_description: "Emit a bounded split proposal"
+  default_prompt: "Use $specgraph-supervisor-split-proposal to emit one bounded split proposal with the SpecGraph supervisor."

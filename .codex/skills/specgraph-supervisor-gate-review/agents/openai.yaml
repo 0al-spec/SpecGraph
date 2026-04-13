@@ -1,0 +1,4 @@
+interface:
+  display_name: "Supervisor Gate Review"
+  short_description: "Resolve review and split gates"
+  default_prompt: "Use $specgraph-supervisor-gate-review to inspect a SpecGraph supervisor gate and prepare the next bounded action."
