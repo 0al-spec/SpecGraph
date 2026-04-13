@@ -979,6 +979,177 @@ def normalize_executor_stderr(stderr: str) -> str:
     return normalized
 
 
+YAML_KEY_LINE_RE = re.compile(r"^(?P<indent>\s*)(?P<key>[A-Za-z0-9_][A-Za-z0-9_-]*):(?:\s|$)")
+YAML_SEQUENCE_ITEM_RE = re.compile(r"^(?P<indent>\s*)-\s+(?P<content>.*)$")
+YAML_MAPPING_SEQUENCE_CONTENT_RE = re.compile(r"^[A-Za-z0-9_][A-Za-z0-9_-]*:\s")
+
+
+def _yaml_single_quote(value: str) -> str:
+    return "'" + value.replace("'", "''") + "'"
+
+
+def build_yaml_key_indent_map(text: str) -> dict[str, tuple[int, ...]]:
+    indents: dict[str, set[int]] = {}
+    for line in text.splitlines():
+        match = YAML_KEY_LINE_RE.match(line)
+        if match is None:
+            continue
+        key = match.group("key")
+        indent = len(match.group("indent"))
+        indents.setdefault(key, set()).add(indent)
+    return {key: tuple(sorted(values)) for key, values in indents.items()}
+
+
+def build_yaml_line_indent_map(text: str) -> dict[str, tuple[int, ...]]:
+    indents: dict[str, set[int]] = {}
+    for line in text.splitlines():
+        stripped = line.strip()
+        if not stripped:
+            continue
+        indent = len(line) - len(line.lstrip(" "))
+        indents.setdefault(stripped, set()).add(indent)
+    return {line: tuple(sorted(values)) for line, values in indents.items()}
+
+
+def repair_candidate_yaml_text(candidate_text: str, original_text: str | None = None) -> str:
+    lines = candidate_text.splitlines()
+    original_indent_map = (
+        build_yaml_key_indent_map(original_text) if original_text is not None else {}
+    )
+    original_line_indent_map = (
+        build_yaml_line_indent_map(original_text) if original_text is not None else {}
+    )
+
+    for index, line in enumerate(lines):
+        stripped = line.strip()
+        if not stripped:
+            continue
+        current_indent = len(line) - len(line.lstrip(" "))
+        original_indents = original_line_indent_map.get(stripped, ())
+        if current_indent in original_indents:
+            continue
+        target_indent = min(
+            original_indents,
+            key=lambda indent: abs(indent - current_indent),
+            default=None,
+        )
+        if target_indent is None or abs(target_indent - current_indent) > 4:
+            continue
+        lines[index] = (" " * target_indent) + line.lstrip()
+
+    for index, line in enumerate(lines):
+        match = YAML_KEY_LINE_RE.match(line)
+        if match is None:
+            continue
+        key = match.group("key")
+        current_indent = len(match.group("indent"))
+        original_indents = original_indent_map.get(key, ())
+        if len(original_indents) != 1:
+            continue
+        target_indent = next(
+            (indent for indent in original_indents if indent > current_indent),
+            None,
+        )
+        if target_indent is None or target_indent - current_indent > 4:
+            continue
+        lines[index] = (" " * target_indent) + line.lstrip()
+
+    repaired_lines: list[str] = []
+    index = 0
+    while index < len(lines):
+        line = lines[index]
+        match = YAML_SEQUENCE_ITEM_RE.match(line)
+        if match is None:
+            repaired_lines.append(line)
+            index += 1
+            continue
+
+        indent = len(match.group("indent"))
+        content = match.group("content").strip()
+        if (
+            not content
+            or YAML_MAPPING_SEQUENCE_CONTENT_RE.match(content) is not None
+            or content[0] in "\"'[{|>"
+        ):
+            repaired_lines.append(line)
+            index += 1
+            continue
+
+        continuation_index = index + 1
+        continuation_parts: list[str] = []
+        while continuation_index < len(lines):
+            continuation_line = lines[continuation_index]
+            if not continuation_line.strip():
+                break
+            continuation_indent = len(continuation_line) - len(continuation_line.lstrip(" "))
+            if continuation_indent <= indent:
+                break
+            continuation_parts.append(continuation_line.strip())
+            continuation_index += 1
+
+        needs_quote = ": " in content or any(": " in part for part in continuation_parts)
+        if continuation_parts and needs_quote:
+            flattened = " ".join([content, *continuation_parts]).strip()
+            repaired_lines.append((" " * indent) + "- " + _yaml_single_quote(flattened))
+            index = continuation_index
+            continue
+
+        if needs_quote:
+            repaired_lines.append((" " * indent) + "- " + _yaml_single_quote(content))
+            index += 1
+            continue
+
+        repaired_lines.append(line)
+        index += 1
+
+    repaired = "\n".join(repaired_lines)
+    if candidate_text.endswith("\n"):
+        repaired += "\n"
+    return repaired
+
+
+def repair_worktree_changed_spec_yaml(
+    *,
+    repo_root: Path,
+    worktree_path: Path,
+    changed_files: list[str],
+) -> list[str]:
+    yaml_module = get_yaml_module()
+    repair_notes: list[str] = []
+
+    for rel_path in changed_files:
+        if not is_spec_node_path(rel_path):
+            continue
+        candidate_path = worktree_path / rel_path
+        if not candidate_path.exists():
+            continue
+        original_path = repo_root / rel_path
+        original_text = (
+            original_path.read_text(encoding="utf-8") if original_path.exists() else None
+        )
+        candidate_text = candidate_path.read_text(encoding="utf-8")
+        try:
+            candidate_data = yaml_module.safe_load(candidate_text)
+        except Exception:
+            candidate_data = None
+        else:
+            if isinstance(candidate_data, dict):
+                continue
+        repaired_text = repair_candidate_yaml_text(candidate_text, original_text)
+        if repaired_text == candidate_text:
+            continue
+        try:
+            repaired_data = yaml_module.safe_load(repaired_text)
+        except Exception:
+            continue
+        if not isinstance(repaired_data, dict):
+            continue
+        candidate_path.write_text(dump_yaml_text(repaired_data), encoding="utf-8")
+        repair_notes.append(rel_path)
+
+    return repair_notes
+
+
 def effective_child_executor_timeout_seconds(
     run_authority: tuple[str, ...],
     requested_profile: str | None = None,
@@ -4748,6 +4919,29 @@ def _process_one_spec(
         if before_digests.get(path) != after_digests.get(path)
         or (path in (after_set - before_set) and not is_spec_node_path(path))
     )
+    outcome, blocker = parse_outcome(result.stdout, result.returncode)
+    yaml_repair_paths: list[str] = []
+    if result.returncode == 0 and outcome in {"done", "split_required"} and changed:
+        yaml_repair_paths = repair_worktree_changed_spec_yaml(
+            repo_root=ROOT,
+            worktree_path=worktree_path,
+            changed_files=changed,
+        )
+        if yaml_repair_paths:
+            emit(
+                f"Repaired worktree YAML candidates: {yaml_repair_paths}",
+                enabled=verbose,
+            )
+            after = git_changed_files(worktree_path)
+            tracked_paths = sorted(set(before) | set(after))
+            after_digests = snapshot_file_digests(tracked_paths, base_dir=worktree_path)
+            after_set = set(after)
+            changed = sorted(
+                path
+                for path in tracked_paths
+                if before_digests.get(path) != after_digests.get(path)
+                or (path in (after_set - before_set) and not is_spec_node_path(path))
+            )
     emit(f"Detected changed files: {changed or ['(none)']}", enabled=verbose)
     materialized_child_paths = (
         [path for path in changed if is_spec_node_path(path) and path != source_spec_relpath]
@@ -4757,7 +4951,6 @@ def _process_one_spec(
 
     run_timestamp = dt.datetime.now(dt.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     run_id = f"{run_timestamp}-{node.id}"
-    outcome, blocker = parse_outcome(result.stdout, result.returncode)
     executor_environment = classify_executor_environment(result.stderr)
     primary_executor_failure = is_primary_executor_environment_failure(
         executor_environment=executor_environment,
@@ -5084,6 +5277,7 @@ def _process_one_spec(
             and refinement_acceptance["decision"] == REFINEMENT_ACCEPT_DECISION_APPROVE
         ),
         "worktree_path": worktree_path.as_posix(),
+        "yaml_repair_paths": yaml_repair_paths,
         "branch": branch,
         "changed_files": changed,
         "validation_errors": validation_errors,

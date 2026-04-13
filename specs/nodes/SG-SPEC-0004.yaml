@@ -1,8 +1,8 @@
 id: SG-SPEC-0004
 title: SpecGraph - Split Proposal Application Path
 kind: spec
-status: linked
-maturity: 0.72
+status: reviewed
+maturity: 0.92
 depends_on: []
 relates_to:
 - SG-SPEC-0002
@@ -141,13 +141,14 @@ specification:
       canonical_application_record because review authorization, input compatibility, and canonical materialization
       are separate facts.
     queue_and_artifact_status:
-    - Successful application emits canonical_application_record, marks the structured proposal artifact
-      as applied, and updates the matching proposal_queue item to an applied state.
-    - If pre-write validation fails, the result is application_refusal. Canonical spec files remain unchanged
-      and no canonical_application_record or applied state is recorded.
-    - application_refusal leaves the structured proposal artifact and matching proposal_queue item in
-      a non-applied state so the proposal can be repaired, superseded, or re-reviewed by the appropriate
-      path.
+    - Successful application emits canonical_application_record (SG-SPEC-0006-style canonical_application_event
+      marker with event_status=canonical_materialization_recorded), marks the structured proposal artifact
+      as applied, and updates the matching proposal_queue item to include the same applied marker.
+    - If pre-write validation fails, the result is application_refusal. Canonical spec files remain unchanged,
+      no canonical_application_record is emitted, and no new queue/artifact applied marker is emitted.
+    - application_refusal must not mutate proposal review authority state; it only indicates that canonical
+      writeback cannot safely proceed so the proposal can be repaired, superseded, or re-reviewed by the
+      appropriate path.
     - The apply path must not represent application_refusal as proposal rejection by implication, because
       review authorization and canonical application are separate facts.
 gate_state: none
@@ -155,5 +156,5 @@ proposed_status: null
 proposed_maturity: null
 required_human_action: '-'
 last_gate_decision: approve
-last_gate_note: Approve successful graph_refactor that links SG-SPEC-0004 after atomicity is clear.
-last_gate_at: '2026-04-10T21:02:39.750086+00:00'
+last_gate_note: ''
+last_gate_at: '2026-04-12T22:18:06.015925+00:00'

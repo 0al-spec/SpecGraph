@@ -1,8 +1,8 @@
 id: SG-SPEC-0014
 title: SpecGraph - Spec Edge Semantics and Blocking Policy
 kind: spec
-status: linked
-maturity: 0.88
+status: reviewed
+maturity: 1.0
 depends_on: []
 relates_to: []
 refines:
@@ -16,6 +16,8 @@ allowed_paths:
 acceptance:
 - Defines when spec nodes use refines, depends_on, and relates_to between parent and child specs, and
   distinguishes declared blocking from derived effective blocking
+- Defines explicit parent-child edge patterns and anti-patterns so that refinement ancestry and blocking
+  are not conflated
 acceptance_evidence:
 - criterion: Defines when spec nodes use refines, depends_on, and relates_to between parent and child
     specs, and distinguishes declared blocking from derived effective blocking
@@ -25,6 +27,14 @@ acceptance_evidence:
     no-edge cases. specification.parent_child_edge_rules defines the parent/child selection rules. specification.blocking_semantics
     separates authored blocking declarations in the canonical graph from transitive or queue-oriented
     blocking views derived by tooling.
+
+    '
+- criterion: Defines explicit parent-child edge patterns and anti-patterns so refinement ancestry and
+    blocking are not conflated
+  evidence: 'specification.relation_policy distinguishes the parent-to-child depends_on blocking case
+    from child-to-parent refines ancestry. specification.parent_child_edge_rules states the normal pair
+    of edges and the permitted non-blocking variant, and disallows replacing parent-child blocking intent
+    with relates_to.
 
     '
 prompt: Refine SG-SPEC-0002 by defining when spec nodes use refines, depends_on, and relates_to between
@@ -106,9 +116,16 @@ specification:
   - If none of the relation conditions apply, no canonical relation is authored for that pair.
   parent_child_edge_rules:
   - A child spec that elaborates a parent MUST declare refines pointing to that parent.
+  - 'A parent-child pair that is a non-blocking elaboration MUST have exactly one authored edge: child->parent
+    refines.'
   - A parent spec MUST declare depends_on pointing to a child only when the child is required to resolve
     a delegated or otherwise blocking refinement gap.
   - A parent spec MAY omit depends_on for a child that is useful context but not required for parent advancement.
+  - A parent-child pair with only parent->child depends_on but no child->parent refines is not a hierarchy
+    edge and must be treated as non-hierarchical dependency unless a parent-child claim is separately
+    authored.
+  - 'A blocking parent-child pair MUST include both edges: child->parent refines and parent->child depends_on.'
+  - A parent-child pair with both edges must be interpreted as a required child for parent advancement.
   - Parent/child status advancement MUST be reasoned from the explicit depends_on set, not from the mere
     existence of refines children.
   - relates_to MAY connect sibling or cross-cutting specs, but it does not create parent/child ancestry
@@ -136,6 +153,5 @@ proposed_status: null
 proposed_maturity: null
 required_human_action: '-'
 last_gate_decision: approve
-last_gate_note: 'Reviewed SG-SPEC-0014 edge selection refinement and linked transition: scoped to relation
-  choice, blocking direction, and derived effective blocking semantics.'
-last_gate_at: '2026-04-11T13:38:27.883988+00:00'
+last_gate_note: ''
+last_gate_at: '2026-04-12T22:18:06.169478+00:00'

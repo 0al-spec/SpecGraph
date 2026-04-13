@@ -1,8 +1,8 @@
 id: SG-SPEC-0020
 title: SpecGraph - Executable Layer Traceability Boundary
 kind: spec
-status: linked
-maturity: 0.67
+status: reviewed
+maturity: 0.87
 depends_on: []
 relates_to: []
 refines:
@@ -162,13 +162,16 @@ specification:
       canonical identity.
   relationship_policy:
   - implements is authored when a code_surface is the stable execution anchor that realizes a spec or
-    requirement.
+    requirement. Every canonical code_surface must have at least one implements edge to at least one spec
+    or requirement.
   - A code_surface MAY implement one or more specs or requirements, but each implements claim must stay
     inspectable at the level of the stable surface rather than a whole repository.
-  - tested_by from a spec, requirement, or invariant to a test records governed verification coverage;
-    transient test runs or dashboards do not replace that canonical claim.
+  - A canonical test must be the target of tested_by from at least one spec, requirement, or invariant.
+    The tested_by edge set is the canonical coverage statement; transient test runs or dashboards do not
+    replace that canonical claim.
   - A release SHOULD reference one or more code_surface entries by stable identity when it claims to package,
-    expose, or distribute those surfaces.
+    expose, or distribute those surfaces, and that reference set must be non-empty when the release is
+    canonical.
   - A release MAY relate_to specs, requirements, or observability contracts for coordination, but that
     contextual relation does not replace implements, tested_by, or release-to-code_surface lineage.
   - Derived execution outputs such as CI results, build logs, deployment events, or runtime checks may
@@ -194,6 +197,9 @@ specification:
   - id: EXE-003
     statement: A release may group executable surfaces by version and rollout context, but runtime build
       or deployment artifacts remain derived unless separately canonicalized with provenance.
+  - id: EXE-004
+    statement: A canonical code_surface, test, or release must contain at least one canonical link consistent
+      with this spec (implements, tested_by, or release-to-code_surface, respectively).
   decisions:
   - id: EXE-D1
     statement: Executable-layer ontology is anchored on stable execution surfaces, not repository layout.
@@ -229,3 +235,10 @@ specification:
       or live deployment events into the release''s stable identity.
 
       '
+gate_state: none
+proposed_status: null
+proposed_maturity: null
+required_human_action: '-'
+last_gate_decision: approve
+last_gate_note: ''
+last_gate_at: '2026-04-12T21:43:58.215137+00:00'

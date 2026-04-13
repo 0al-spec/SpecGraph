@@ -1,12 +1,12 @@
 id: SG-SPEC-0010
 title: SpecGraph - Ubiquitous Vocabulary Meta-Ontology Primitives
 kind: spec
-status: reviewed
-maturity: 0.73
-depends_on:
-- SG-SPEC-0011
+status: frozen
+maturity: 0.93
+depends_on: []
 relates_to:
 - SG-SPEC-0007
+- SG-SPEC-0011
 refines:
 - SG-SPEC-0001
 inputs:
@@ -238,4 +238,4 @@ proposed_maturity: null
 required_human_action: '-'
 last_gate_decision: approve
 last_gate_note: ''
-last_gate_at: '2026-04-12T19:14:38.998128+00:00'
+last_gate_at: '2026-04-12T22:18:06.163897+00:00'

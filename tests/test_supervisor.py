@@ -2296,7 +2296,11 @@ def test_main_creates_review_gate_and_provenance_metadata(
         lambda _node_id: (worktree, "codex/sg-spec-0001/test"),
     )
 
-    changed_snapshots = [[], ["specs/nodes/SG-SPEC-0001.yaml"]]
+    changed_snapshots = [
+        [],
+        ["specs/nodes/SG-SPEC-0001.yaml"],
+        ["specs/nodes/SG-SPEC-0001.yaml"],
+    ]
     monkeypatch.setattr(
         supervisor_module,
         "git_changed_files",
@@ -2537,7 +2541,11 @@ def test_main_targeted_refinement_hides_executor_transcript_by_default(
         lambda _node_id: (worktree, "codex/sg-spec-0001/test"),
     )
 
-    changed_snapshots = [[], ["specs/nodes/SG-SPEC-0001.yaml"]]
+    changed_snapshots = [
+        [],
+        ["specs/nodes/SG-SPEC-0001.yaml"],
+        ["specs/nodes/SG-SPEC-0001.yaml"],
+    ]
     monkeypatch.setattr(
         supervisor_module, "git_changed_files", lambda _cwd=None: changed_snapshots.pop(0)
     )
@@ -2591,7 +2599,11 @@ def test_main_targeted_refinement_shows_executor_transcript_in_verbose_mode(
         lambda _node_id: (worktree, "codex/sg-spec-0001/test"),
     )
 
-    changed_snapshots = [[], ["specs/nodes/SG-SPEC-0001.yaml"]]
+    changed_snapshots = [
+        [],
+        ["specs/nodes/SG-SPEC-0001.yaml"],
+        ["specs/nodes/SG-SPEC-0001.yaml"],
+    ]
     monkeypatch.setattr(
         supervisor_module, "git_changed_files", lambda _cwd=None: changed_snapshots.pop(0)
     )
@@ -2646,7 +2658,11 @@ def test_main_explicit_targeted_refinement_reruns_review_pending_spec(
         lambda _node_id: (worktree, "codex/sg-spec-0001/explicit-target"),
     )
 
-    changed_snapshots = [[], ["specs/nodes/SG-SPEC-0001.yaml"]]
+    changed_snapshots = [
+        [],
+        ["specs/nodes/SG-SPEC-0001.yaml"],
+        ["specs/nodes/SG-SPEC-0001.yaml"],
+    ]
     monkeypatch.setattr(
         supervisor_module,
         "git_changed_files",
@@ -2801,7 +2817,10 @@ def test_main_usage_limit_failure_reports_quota_recovery_action(
             ),
         )
 
-    exit_code = supervisor_module.main(executor=fake_executor)
+    exit_code = supervisor_module.main(
+        executor=fake_executor,
+        target_spec="SG-SPEC-0001",
+    )
     assert exit_code == 1
 
     updated = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
@@ -2865,7 +2884,10 @@ def test_main_interrupted_source_refinement_cleans_runtime_tail_when_only_source
             stderr="supervisor timeout: nested executor timed out after 180 seconds\n",
         )
 
-    exit_code = supervisor_module.main(executor=fake_executor)
+    exit_code = supervisor_module.main(
+        executor=fake_executor,
+        target_spec="SG-SPEC-0001",
+    )
     assert exit_code == 1
 
     updated = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
@@ -3077,6 +3099,100 @@ def test_normalize_executor_stderr_condenses_known_noise(
     assert "suppressed model refresh timeout warning (1 occurrence(s))" in normalized
     assert "suppressed app-server queue-full warning (1 occurrence(s))" in normalized
     assert "suppressed app-server stream lag warning (1 occurrence(s))" in normalized
+
+
+def test_repair_candidate_yaml_text_restores_original_key_indentation(
+    supervisor_module: object,
+) -> None:
+    original = (
+        "specification:\n"
+        "  graph_health_signal_policy:\n"
+        "    initial_signals:\n"
+        "    - oversized_spec\n"
+        "    semantics:\n"
+        "    - Signal presence is diagnostic only.\n"
+    )
+    candidate = original.replace("    initial_signals:", "  initial_signals:")
+
+    repaired = supervisor_module.repair_candidate_yaml_text(candidate, original)
+
+    assert "    initial_signals:" in repaired
+    parsed = supervisor_module.get_yaml_module().safe_load(repaired)
+    assert parsed["specification"]["graph_health_signal_policy"]["initial_signals"] == [
+        "oversized_spec"
+    ]
+
+
+def test_repair_candidate_yaml_text_restores_original_list_item_indentation(
+    supervisor_module: object,
+) -> None:
+    original = (
+        "acceptance:\n"
+        "- criterion: Keeps canonical application and refusal semantics separate.\n"
+        "  evidence: Evidence.\n"
+    )
+    candidate = original.replace(
+        "- criterion: Keeps canonical application and refusal semantics separate.",
+        "  - criterion: Keeps canonical application and refusal semantics separate.",
+    )
+
+    repaired = supervisor_module.repair_candidate_yaml_text(candidate, original)
+
+    repaired_item = "\n- criterion: Keeps canonical application and refusal semantics separate.\n"
+    assert repaired_item in repaired
+    parsed = supervisor_module.get_yaml_module().safe_load(repaired)
+    assert parsed["acceptance"][0]["criterion"] == (
+        "Keeps canonical application and refusal semantics separate."
+    )
+
+
+def test_repair_candidate_yaml_text_quotes_multiline_sequence_scalar_with_colon(
+    supervisor_module: object,
+) -> None:
+    candidate = (
+        "specification:\n"
+        "  revision_contract:\n"
+        "    record_minimum_semantics:\n"
+        "    - Every revision_origin_marker MUST justify history origin (for\n"
+        "      example: seeded, imported, migrated).\n"
+    )
+
+    repaired = supervisor_module.repair_candidate_yaml_text(candidate)
+
+    assert "example: seeded, imported, migrated" in repaired
+    parsed = supervisor_module.get_yaml_module().safe_load(repaired)
+    assert parsed["specification"]["revision_contract"]["record_minimum_semantics"] == [
+        (
+            "Every revision_origin_marker MUST justify history origin "
+            "(for example: seeded, imported, migrated)."
+        )
+    ]
+
+
+def test_repair_worktree_changed_spec_yaml_skips_valid_candidate(
+    supervisor_module: object,
+    tmp_path: Path,
+) -> None:
+    repo_root = tmp_path / "repo"
+    worktree = tmp_path / "worktree"
+    repo_spec = repo_root / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    worktree_spec = worktree / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    repo_spec.parent.mkdir(parents=True)
+    worktree_spec.parent.mkdir(parents=True)
+
+    original_text = "specification:\n  nested:\n    key: value\n"
+    valid_candidate_text = "specification:\n  key: value\n"
+    repo_spec.write_text(original_text, encoding="utf-8")
+    worktree_spec.write_text(valid_candidate_text, encoding="utf-8")
+
+    repaired_paths = supervisor_module.repair_worktree_changed_spec_yaml(
+        repo_root=repo_root,
+        worktree_path=worktree,
+        changed_files=["specs/nodes/SG-SPEC-0001.yaml"],
+    )
+
+    assert repaired_paths == []
+    assert worktree_spec.read_text(encoding="utf-8") == valid_candidate_text
 
 
 def test_main_does_not_treat_websocket_fallback_warning_as_primary_transport_failure(
@@ -5625,6 +5741,85 @@ def test_main_records_yaml_validation_error(
         "Failed to load worktree specs for validation:" in error
         for error in payload["validation_errors"]
     )
+
+
+def test_main_repairs_recoverable_worktree_yaml_indentation(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    node_data = {
+        "id": "SG-SPEC-0001",
+        "kind": "spec",
+        "title": "Recoverable YAML Node",
+        "status": "linked",
+        "maturity": 0.4,
+        "depends_on": [],
+        "relates_to": [],
+        "refines": [],
+        "inputs": ["specs/nodes/SG-SPEC-0001.yaml"],
+        "outputs": ["specs/nodes/SG-SPEC-0001.yaml"],
+        "allowed_paths": ["specs/nodes/SG-SPEC-0001.yaml"],
+        "acceptance": ["Criterion 1"],
+        "acceptance_evidence": ["Evidence 1"],
+        "prompt": "Initial prompt.",
+        "specification": {
+            "graph_health_signal_policy": {
+                "initial_signals": ["oversized_spec"],
+                "semantics": ["Signal presence is diagnostic only."],
+            }
+        },
+    }
+    node_path.write_text(supervisor_module.dump_yaml_text(node_data), encoding="utf-8")
+
+    worktree = make_fake_worktree(repo_fixture)
+    monkeypatch.setattr(
+        supervisor_module,
+        "create_isolated_worktree",
+        lambda _node_id: (worktree, "codex/sg-spec-0001/test"),
+    )
+
+    changed_snapshots = [
+        [],
+        ["specs/nodes/SG-SPEC-0001.yaml"],
+        ["specs/nodes/SG-SPEC-0001.yaml"],
+    ]
+    monkeypatch.setattr(
+        supervisor_module, "git_changed_files", lambda _cwd=None: changed_snapshots.pop(0)
+    )
+
+    def fake_executor(_node: object, worktree_path: Path) -> subprocess.CompletedProcess[str]:
+        node_path = worktree_path / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+        data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+        data["prompt"] = "Updated by recoverable YAML repair path."
+        broken_text = supervisor_module.dump_yaml_text(data).replace(
+            "\n    initial_signals:",
+            "\n  initial_signals:",
+            1,
+        )
+        node_path.write_text(broken_text, encoding="utf-8")
+        return subprocess.CompletedProcess(
+            args=["codex"],
+            returncode=0,
+            stdout="RUN_OUTCOME: done\nBLOCKER: none\n",
+            stderr="",
+        )
+
+    exit_code = supervisor_module.main(
+        executor=fake_executor,
+        target_spec="SG-SPEC-0001",
+    )
+
+    assert exit_code == 0
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    updated = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    assert updated["prompt"] == "Updated by recoverable YAML repair path."
+    assert updated["gate_state"] == "review_pending"
+    run_logs = sorted((repo_fixture / "runs").glob("*-SG-SPEC-*.json"))
+    payload = json.loads(run_logs[0].read_text(encoding="utf-8"))
+    assert payload["completion_status"] == "ok"
+    assert payload["yaml_repair_paths"] == ["specs/nodes/SG-SPEC-0001.yaml"]
 
 
 def test_main_aborts_on_cycle(

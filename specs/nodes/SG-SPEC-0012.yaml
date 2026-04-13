@@ -1,8 +1,8 @@
 id: SG-SPEC-0012
 title: SpecGraph - OperatorRequest Context Pack and Ambient Vocabulary Resolution
 kind: spec
-status: reviewed
-maturity: 0.71
+status: frozen
+maturity: 0.91
 depends_on: []
 relates_to:
 - SG-SPEC-0008
@@ -219,8 +219,9 @@ specification:
       - retention_reason
     - source_class must be one of canonical_graph_vocabulary, adjacent_spec_lineage, declared_project_memory_source,
       or current_operator_wording.
-    - source_locator must preserve enough detail to reconstruct the element's source class and origin
-      for review.
+    - source_locator must be stable for the selected run and include a source-class-specific locator (such
+      as spec id, graph node id, memory record id, or request phrase reference) to reconstruct element
+      origin for review.
     - source_class distinguishes current operator wording from inherited canonical vocabulary and remembered
       project context.
     - Unresolved operator wording included in the pack must remain attributable to current_operator_wording
@@ -234,8 +235,8 @@ specification:
       the source distinction instead of collapsing them into one unattributed token.
     - If unresolved operator wording is shown alongside canonical candidates, the pack should preserve
       that distinction instead of collapsing both into one governed term.
-    - External browsing, if separately used during the run, must remain source-distinct from declared_project_memory_source
-      and must not be represented as project-memory recall.
+    - Context elements not attributable to the four source classes listed in this policy are outside the
+      context_pack boundary.
   authority_boundary:
     authority_order:
     - canonical_graph_vocabulary is authoritative for canonical term identity, alias subordination, and
@@ -293,4 +294,4 @@ proposed_maturity: null
 required_human_action: '-'
 last_gate_decision: approve
 last_gate_note: ''
-last_gate_at: '2026-04-12T19:14:39.485642+00:00'
+last_gate_at: '2026-04-12T21:45:32.408268+00:00'

@@ -1,8 +1,8 @@
 id: SG-SPEC-0018
 title: SpecGraph - Adoption-Layer Entity Boundary
 kind: spec
-status: linked
-maturity: 0.72
+status: reviewed
+maturity: 0.92
 depends_on: []
 relates_to:
 - SG-SPEC-0007
@@ -67,6 +67,7 @@ specification:
     - Relationship between adoption-layer entities, canonical graph subjects, and pre-canonical discovery
       inputs
     - Canonical versus derived boundary for adoption evidence references
+    - Reference-only adjacency from adoption-layer entities to pre-canonical discovery inputs
     out:
     - UX taxonomy, IA, copywriting, onboarding flow design, or discovery-surface implementation
     - Analytics event schemas, attribution models, dashboards, conversion formulas, or experimentation
@@ -152,13 +153,13 @@ specification:
       later child spec explicitly owns them.
   relationship_policy:
   - Every DiscoverySurface MUST reference at least one canonical_subject by stable identity.
-  - A DiscoverySurface MAY relate_to SG-SPEC-0007 mediation concerns when it is a source of raw_goal_signal,
-    but it does not replace raw_goal_signal or mediated_intent_frame.
+  - A DiscoverySurface MAY reference SG-SPEC-0007 discovery inputs (raw_goal_signal, mediated_intent_frame)
+    via stable provenance pointers only; it must not internalize their payload or normalization logic.
   - Every AdoptionCriterion MUST reference the canonical_subject whose uptake it qualifies and MAY reference
     one or more DiscoverySurface entries when the criterion is surface-specific.
   - An AdoptionCriterion MAY cite ObservabilityContract, Attestation, imported business records, or other
-    evidence classes as acceptable support, but the evidence semantics remain governed by SG-SPEC-0017
-    or later child specs.
+    evidence classes as acceptable support by reference; evidence computation, attribution, and recency
+    windows remain governed by SG-SPEC-0017 or later child specs.
   - Later specs may decide whether existing edge kinds are sufficient for concrete adoption-layer nodes
     or whether a separate reviewed ontology change is needed.
   canonical_vs_derived_boundary:
@@ -179,6 +180,9 @@ specification:
   - id: ALE-003
     statement: Adoption-layer entities may name evidence classes, but telemetry, dashboards, and operational
       campaign data remain derived unless separately canonicalized with provenance.
+  - id: ALE-004
+    statement: DiscoverySurface can reference raw_goal_signal or mediated_intent_frame only as provenance
+      links; it cannot absorb pre-canonical discovery payload semantics.
   examples:
   - name: Docs entry surface
     description: 'A product capability is exposed through an API documentation landing page for integration
@@ -192,3 +196,10 @@ specification:
       without prescribing a telemetry formula or experimentation policy.
 
       '
+gate_state: none
+proposed_status: null
+proposed_maturity: null
+required_human_action: '-'
+last_gate_decision: approve
+last_gate_note: ''
+last_gate_at: '2026-04-12T21:44:05.035051+00:00'

@@ -1,8 +1,8 @@
 id: SG-SPEC-0019
 title: SpecGraph - Canonical Revision and Supersession Lineage
 kind: spec
-status: linked
-maturity: 0.68
+status: reviewed
+maturity: 0.88
 depends_on: []
 relates_to: []
 refines:
@@ -62,6 +62,7 @@ specification:
     - Minimum semantic components required to trace change across node and explicit edge evolution
     - Relationship between stable identity, frozen immutability, in-place revision, and supersession
     - Canonical versus derived boundary for revision history projections
+    - Explicit lineage origin marker semantics for first-step revisions
     out:
     - YAML field names, database schemas, storage backends, or repository layout
     - Git workflow, commit hash requirements, branching strategy, or merge implementation
@@ -94,6 +95,10 @@ specification:
       summarizes canonical revision lineage without becoming the canonical record itself.
 
       '
+    lineage_origin_marker: 'A canonical declaration attached to the first revision_record in a lineage
+      indicating that the subject has no predecessor_reference and that the record is the lineage root.
+
+      '
   boundary_policy:
   - Canonical revision lineage is preserved through governed revision_record facts and explicit supersession
     links, not through storage-native commit topology by itself.
@@ -106,8 +111,9 @@ specification:
   revision_contract:
     record_minimum_semantics:
     - Every canonical revision_record MUST identify exactly one revision_subject by stable identity.
-    - Every canonical revision_record MUST preserve one predecessor_reference or an explicit origin marker
-      when the record starts a lineage.
+    - Every canonical revision_record MUST preserve one predecessor_reference or lineage_origin_marker.
+    - A revision_record with lineage_origin_marker MUST NOT have a predecessor_reference and MUST indicate
+      that no predecessor is possible for that lineage_subject.
     - Every canonical revision_record MUST preserve authority_class, provenance, and a bounded revision_scope
       or equivalent change summary.
     - Every canonical revision_record MUST distinguish whether the change is an in-place revision or a
@@ -151,6 +157,10 @@ specification:
   - id: RSL-003
     statement: Derived diffs, timelines, indexes, and repository-native history metadata must not be treated
       as a substitute for canonical revision lineage.
+  - id: RSL-004
+    statement: The first canonical revision step for any revision_subject lineage MUST be explicitly marked
+      with lineage_origin_marker and MUST NOT include predecessor_reference; all non-origin steps MUST
+      include exactly one predecessor_reference.
   decisions:
   - id: RSL-D1
     statement: Canonical change history is represented as bounded lineage facts, not as storage-native
@@ -181,3 +191,10 @@ specification:
       rather than disappearing.
 
       '
+gate_state: none
+proposed_status: null
+proposed_maturity: null
+required_human_action: '-'
+last_gate_decision: approve
+last_gate_note: ''
+last_gate_at: '2026-04-12T22:18:06.178052+00:00'
