@@ -1,7 +1,7 @@
 id: SG-SPEC-0005
 title: SpecGraph - Retrospective Spec Refactoring Passes
 kind: spec
-status: linked
+status: reviewed
 maturity: 1.0
 depends_on:
 - SG-SPEC-0013
@@ -66,8 +66,9 @@ acceptance_evidence:
     target parent, directly materialized child outcomes rooted in that parent, and explicitly named narrow
     ancestor reconciliations, while sibling and adjacent branches remain read-only. specification.retrospective_policy.application_boundary
     then keeps SG-SPEC-0005 at the execution-boundary layer by requiring SG-SPEC-0013 pre-writeback application
-    governance before live writeback and by delegating the concrete application artifact contract, proposal-state
-    gate semantics, and review gates to that child spec.
+    governance before live writeback, by limiting child materialization authority to one SG-SPEC-0013
+    handoff, and by delegating the concrete application artifact contract, proposal-state gate semantics,
+    and review gates to that child spec.
 
     '
 - criterion: Remains implementation-agnostic about metric formulas, batch scheduling strategy, and viewer
@@ -80,8 +81,8 @@ acceptance_evidence:
 prompt: Keep SG-SPEC-0005 as the overview and execution-boundary node for retrospective graph refactoring,
   retaining the bounded-pass definition, parent-selection and lineage-preservation safety, the boundary
   between local refactor versus ancestor or governance-class work, the canonical writeback envelope, and
-  the implementation-agnostic constraint while delegating explicit live-region application artifacts and
-  review gates to child spec SG-SPEC-0013 before writeback.
+  the implementation-agnostic constraint while limiting handoff to one child path and delegating explicit
+  live-region application artifacts and review gates to child spec SG-SPEC-0013 before writeback.
 specification:
   objective: Define the bounded overview policy for retrospective graph refactoring over existing live
     spec regions after the graph has already grown suboptimally, including the direct-writeback envelope
@@ -96,6 +97,8 @@ specification:
     - Containment of direct canonical writeback during one retrospective pass
     - Execution-boundary delegation for what must be governed by a child spec before live retrospective
       writeback can proceed
+    - At most one direct child-materialization handoff from this node, bounded to SG-SPEC-0013, for pre-writeback
+      retrospective application governance
     out:
     - Metric formulas or scoring weights
     - Batch refactor orchestration across many targets at once
@@ -168,6 +171,9 @@ specification:
     - SG-SPEC-0005 constrains structural scope and candidate progression only; it does not define proposal-lane
       state transitions, gate algorithms, or proposal-artifact schemas. SG-SPEC-0013 owns the reviewable
       application package, pass/fail gate outcomes, and pre-writeback refusal conditions.
+    - SG-SPEC-0005 may authorize at most one child-materialization handoff per run, and that handoff is
+      explicitly SG-SPEC-0013, reinforcing that SG-SPEC-0005 is execution-boundary and not a proposal-artifact
+      generator.
     - SG-SPEC-0013 owns the concrete live-region application artifact contract, proposal-state gate semantics,
       review-gate semantics, and refusal conditions for pre-writeback application readiness, while SG-SPEC-0005
       remains the overview and execution-boundary node.
@@ -177,13 +183,13 @@ gate_state: none
 required_human_action: '-'
 last_outcome: done
 last_blocker: ''
-last_run_id: 20260412T212454Z-SG-SPEC-0005
+last_run_id: 20260413T071400Z-SG-SPEC-0005
 last_exit_code: 0
 last_changed_files:
 - specs/nodes/SG-SPEC-0005.yaml
-last_run_at: '2026-04-12T21:24:54.768916+00:00'
-last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0005-20260412T212429Z
-last_branch: codex/sg-spec-0005/20260412T212429Z
+last_run_at: '2026-04-13T07:14:01.559882+00:00'
+last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0005-20260413T071326Z
+last_branch: codex/sg-spec-0005/20260413T071326Z
 last_validator_results:
   outputs: true
   allowed_paths: true
@@ -204,9 +210,11 @@ last_refinement_acceptance:
     atomicity_clear: true
     within_mutation_budget: true
   diff_paths:
-  - specification.retrospective_policy.application_boundary[1]
-  - specification.retrospective_policy.application_boundary[2]
-  - specification.scope.out[4]
+  - acceptance_evidence[3].evidence
+  - prompt
+  - specification.retrospective_policy.application_boundary[3]
+  - specification.retrospective_policy.application_boundary[4]
+  - specification.scope.in[6]
   mutation_classes:
   - policy_text
   mutation_budget: []
@@ -217,11 +225,11 @@ last_refinement_acceptance:
   errors: []
   warnings: []
 last_reconciliation:
-  worktree_spec_count: 22
+  worktree_spec_count: 24
   changed_spec_ids:
   - SG-SPEC-0005
   semantic_dependencies_resolved: true
-  work_dependencies_ready: false
+  work_dependencies_ready: true
   cycles: []
 last_requested_child_materialization: false
 last_materialized_child_paths: []

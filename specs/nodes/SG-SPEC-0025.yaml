@@ -1,0 +1,218 @@
+id: SG-SPEC-0025
+title: SpecGraph - Split Proposal Mechanics and Artifact Schema
+kind: spec
+status: specified
+maturity: 0.67
+depends_on:
+- SG-SPEC-0004
+relates_to:
+- SG-SPEC-0006
+refines:
+- SG-SPEC-0003
+inputs:
+- specs/nodes/SG-SPEC-0003.yaml
+- specs/nodes/SG-SPEC-0004.yaml
+- specs/nodes/SG-SPEC-0006.yaml
+- tasks.md
+outputs:
+- specs/nodes/SG-SPEC-0025.yaml
+allowed_paths:
+- specs/nodes/SG-SPEC-0025.yaml
+acceptance:
+- Defines the first concrete field-level schema for split_oversized_spec proposal payloads, including
+  parent-after-split intent, suggested child specs, acceptance redistribution, and lineage links, without
+  broadening into proposal-lane semantics.
+- Defines deterministic split-proposal emission and refresh behavior so recurring split-related signals
+  produce bounded derived payloads while avoiding duplicate active split artifacts for the same target
+  and signal context.
+- Defines the derived split queue item contract (signal trace, target fingerprint, recurrence evidence,
+  and payload references) used by run artifacts before proposal-lane handoff.
+- Defines explicit validation boundaries for split mechanics so split passes remain proposal-first, non-mutating
+  for canonical specs, and disallow proposal behavior outside split_refactor boundaries such as merge,
+  reparent, or generalized relinking.
+acceptance_evidence:
+- criterion: Defines the first concrete field-level schema for split_oversized_spec proposal payloads,
+    including parent-after-split intent, suggested child specs, acceptance redistribution, and lineage
+    links, without broadening into proposal-lane semantics.
+  evidence: specification.split_payload_schema declares required components parent_target, split_context,
+    parent_after_split, suggested_children, acceptance_mapping, lineage_package, and payload_control with
+    explicit cardinality and required_content constraints. specification.split_payload_schema.split_candidate_item
+    separately constrains each child entry to stable child ID, child title, split intent, acceptance assignment,
+    and optional readiness without taking ownership of proposal-lane state transitions.
+- criterion: Defines deterministic split-proposal emission and refresh behavior so recurring split-related
+    signals produce bounded derived payloads while avoiding duplicate active split artifacts for the same
+    target and signal context.
+  evidence: specification.emission_policy sets explicit operator-targeted split-pass triggers, binds payload
+    emission to bounded oversized-spec split signal families, and defines duplicate handling through target_signal_fingerprint
+    plus refresh-over-duplication rules for active split_payload records.
+- criterion: Defines the derived split queue item contract (signal trace, target fingerprint, recurrence
+    evidence, and payload references) used by run artifacts before proposal-lane handoff.
+  evidence: specification.split_queue_contract requires split_item_id, split_queue_kind, target_signal_fingerprint,
+    target_spec_id, split_payload_reference, recurrence_count, evidence_snapshot_ref, created_run_ref,
+    and queue_status, while proposal_queue_bridge keeps downstream handoff reference-only and non-authoritative.
+- criterion: Defines explicit validation boundaries for split mechanics so split passes remain proposal-first,
+    non-mutating for canonical specs, and disallow proposal behavior outside split_refactor boundaries
+    such as merge, reparent, or generalized relinking.
+  evidence: specification.split_mechanics_validation defines first-persistence into derived artifacts
+    only, forbids direct canonical writes during the split pass, enumerates disallowed operations outside
+    split_refactor scope, and constrains invalid payload handling to advisory validation outcomes rather
+    than proposal-lane state changes.
+prompt: 'Refine SG-SPEC-0003 by formalizing the concrete split proposal mechanics it delegates here: split
+  payload schema, queue trace fields, deterministic split-pass emission and refresh behavior, and first-pass
+  split-specific validation boundaries.'
+specification:
+  objective: Define the concrete split_oversized_spec proposal machinery delegated by SG-SPEC-0003 so
+    split passes emit bounded, validated, refreshable artifacts and queue metadata without mutating canonical
+    specs directly.
+  scope:
+    in:
+    - Concrete schema and field-level requirements for split_oversized_spec proposal payload artifacts
+    - Deterministic emission and refresh behavior for split candidate handling
+    - Derived split queue item contract and payload-to-queue trace references
+    - Split-pass validation boundaries that keep split mechanics proposal-first and non-mutating
+    out:
+    - Proposal-lane state transitions, active-item precedence, retry gating, and proposal handoff adjudication
+    - Proposal-lane apply-path behavior and canonical application procedures
+    - Merge, reparent, or generalized relinking mechanics
+    - Score formulas, thresholds, or queue prioritization engines
+    - Viewer UX or repository layout decisions for split proposal artifacts
+  terminology:
+    split_oversized_spec: A bounded refactor-pass mode that targets one oversized non-seed spec and emits
+      one advisory split plan candidate without canonical mutation.
+    split_candidate_signal: A derived diagnostic trigger family that authorizes creation or refresh of
+      split machinery artifacts for a bounded target.
+    split_payload: A derived proposal artifact that captures the concrete split plan data generated during
+      split_oversized_spec, including parent_after_split intent, suggested child specs, and lineage metadata.
+    split_payload_reference: A stable run-derived handle inside queue artifacts referencing a specific
+      split_payload instance for traceability and idempotent refresh.
+    target_signal_fingerprint: A stable derived identity derived from target spec ID plus split signal
+      family and run context.
+    split_recurrence_record: Rebuildable recurrence metadata that records repeated split signal pressure
+      for one target family.
+    split_queue_item: A derived queue node used by split mechanics as an execution envelope precursor
+      for proposal-lane handoff.
+    split_payload_validation_outcome: A derived validation result used by split mechanics to reject malformed
+      or out-of-scope payloads.
+  split_payload_schema:
+    required_components:
+    - component: parent_target
+      cardinality: exactly 1
+      required_content:
+      - Must reference a non-seed, currently governed spec node ID.
+      - Must record current canonical ID and current stable status.
+    - component: split_context
+      cardinality: exactly 1
+      required_content:
+      - run_id and selected operator-target marker for the split pass
+      - split_signal_family and split_trigger_snapshot
+      - explicit proposal_first marker set true
+    - component: parent_after_split
+      cardinality: exactly 1
+      required_content:
+      - role_summary and prompt_delta recommendations
+      - narrowed acceptance list while preserving governance ownership on the parent
+      - depends_on and relates_to suggestions constrained to local post-split scope
+    - component: suggested_children
+      cardinality: at least 1
+      required_content:
+      - child_id
+      - child_title
+      - split_reason
+      - acceptance_slot
+      - acceptance_evidence_slot
+      - expected_refine_parent_id
+    - component: acceptance_mapping
+      cardinality: exactly 1
+      required_content:
+      - One-to-many transfer mapping from moved parent criteria to concrete child slots
+      - No duplication of the same acceptance criterion in multiple child slots unless explicitly allowed
+    - component: lineage_package
+      cardinality: exactly 1
+      required_content:
+      - source_spec_snapshot
+      - parent_contract_id
+      - previous_payload_reference optional for refresh or rewrite
+      - draft_parent_snapshot
+    - component: payload_control
+      cardinality: exactly 1
+      required_content:
+      - payload_version
+      - target_signal_fingerprint
+      - generated_at and refreshed_at boundaries
+    split_candidate_item:
+    - child_id: required
+      cardinality: exactly 1
+      meaning: Stable child ID placeholder before canonical application.
+    - child_title: required
+      cardinality: exactly 1
+      meaning: Title for candidate child-spec payload.
+    - acceptance_slot: required
+      cardinality: exactly 1
+      meaning: Bounded parent acceptance criterion moved into one child.
+    - readiness: optional
+      cardinality: exactly 1
+      allowed_values:
+      - advisory
+      - reviewed
+  emission_policy:
+    triggers:
+    - split_oversized_spec may only be entered during split run context selected by explicit operator
+      intent for that bounded target.
+    - The pass may generate a split_payload when bounded split_candidate_signal pressure remains active
+      for a non-seed target.
+    - If no bounded oversized target remains in the active continuation state, no split_payload is emitted.
+    - Split payloads emitted outside split_oversized_spec are invalid.
+    duplicate_handling:
+    - Build target_signal_fingerprint from target ID, split signal family, and run context version.
+    - If an active split_payload with the same fingerprint already exists, refresh that payload and increment
+      its recurrence counter.
+    - If the same target has a different signal family, create a separate split_payload only when both
+      remain actionably distinct in run context.
+    - When two active split_payloads describe incompatible structures for the same target and signature,
+      emit an advisory collision marker in split queue metadata and avoid automatic overwrite.
+  split_queue_contract:
+    required_fields:
+    - split_item_id
+    - split_queue_kind
+    - target_signal_fingerprint
+    - target_spec_id
+    - split_payload_reference
+    - recurrence_count
+    - evidence_snapshot_ref
+    - created_run_ref
+    - queue_status
+    split_queue_kind: split_refactor
+    queue_status_values:
+    - emitted
+    - refreshed
+    - superseded
+    - deprecated
+    item_lifecycle:
+    - Emitted items MUST expose split_payload_reference and queue_status.
+    - Refreshed items MUST retain the same split_item_id and target_signal_fingerprint for idempotent
+      continuity.
+    - Deprecated items remain visible as derived history and do not mutate canonical graph directly.
+    proposal_queue_bridge:
+    - Queue metadata MAY include proposal_queue_ref for downstream proposal-lane handoff.
+    - proposal_queue_ref is advisory and does not define proposal-lane authority.
+  split_mechanics_validation:
+    first_persistence:
+    - split_payload and split_queue_item records are first persisted in derived run artifacts and derived
+      queue payloads.
+    - Derived records remain non-canonical until an explicit human-approved proposal path applies them
+      later.
+    execution_boundary:
+    - Split mechanics output only derived payload and queue records during the pass.
+    - Split mechanics MUST NOT write directly to canonical spec nodes, regardless of signal strength.
+    - The pass is invalid if it attempts merge, reparent, generalized relinking, or canonical proposal
+      semantics unrelated to split_refactor.
+    payload_integrity:
+    - Payload must be non-empty, contain at least one suggested child, and include a complete parent_after_split
+      object.
+    - suggested_children entries must map to unique acceptance slots inside acceptance_mapping.
+    - parent_after_split must preserve stable parent ID and explicitly state that direct governance scope
+      is unchanged.
+    - Target must remain non-seed under current policy when payload is emitted.
+    invalid_outcome:
+    - Invalid payloads become advisory split_payload_validation_outcome records only.
+    - Validation failures do not create queue precedence changes and do not alter proposal-lane state.
