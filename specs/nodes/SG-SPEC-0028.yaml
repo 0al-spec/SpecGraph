@@ -91,7 +91,8 @@ specification:
   parent_contract:
   - SG-SPEC-0027 may depend_on SG-SPEC-0028 as one bounded prerequisite for proposal/split mechanics readiness.
   - SG-SPEC-0027 must not depend_on SG-SPEC-0006 or SG-SPEC-0025 directly for proposal/split mechanics
-    while SG-SPEC-0028 is present as the dedicated subcluster.
+    while SG-SPEC-0028 is present as the dedicated subcluster, and must not treat SG-SPEC-0004 as a direct
+    proposal/split readiness prerequisite either.
   - SG-SPEC-0027 may consume SG-SPEC-0028 for proposal/split readiness only as a concern-level gateway;
     concrete proposal-lane and split payload mechanics remain normatively owned by SG-SPEC-0006 and SG-SPEC-0025
     respectively, with SG-SPEC-0004 nested as the lifecycle anchor under SG-SPEC-0025.
@@ -101,13 +102,13 @@ gate_state: split_required
 required_human_action: split spec scope before rerun
 last_outcome: split_required
 last_blocker: ''
-last_run_id: 20260413T081028Z-SG-SPEC-0028
+last_run_id: 20260413T081312Z-SG-SPEC-0028
 last_exit_code: 0
 last_changed_files:
 - specs/nodes/SG-SPEC-0028.yaml
-last_run_at: '2026-04-13T08:10:29.318264+00:00'
-last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0028-20260413T081010Z
-last_branch: codex/sg-spec-0028/20260413T081010Z
+last_run_at: '2026-04-13T08:13:13.419298+00:00'
+last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0028-20260413T081258Z
+last_branch: codex/sg-spec-0028/20260413T081258Z
 last_validator_results:
   outputs: true
   allowed_paths: true
@@ -128,10 +129,7 @@ last_refinement_acceptance:
     atomicity_clear: true
     within_mutation_budget: true
   diff_paths:
-  - acceptance[2]
-  - acceptance_evidence[2].criterion
-  - acceptance_evidence[2].evidence
-  - specification.parent_contract[3]
+  - specification.parent_contract[1]
   mutation_classes:
   - policy_text
   mutation_budget: []
