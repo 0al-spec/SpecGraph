@@ -24,29 +24,8 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -e .[dev]
 
-      - name: Ruff lint (project-wide)
-        run: ruff check .
-
-      - name: Ruff format check (project-wide)
-        run: ruff format --check .
-
-      - name: Ruff lint (project-wide, non-blocking)
-        continue-on-error: true
-        run: ruff check .
-
-      - name: Ruff format check (project-wide, non-blocking)
-        continue-on-error: true
-        run: ruff format --check .
-
-      - name: Ruff lint (project-wide, non-blocking)
-        if: always()
-        continue-on-error: true
-        run: ruff check .
-
-      - name: Ruff format check (project-wide, non-blocking)
-        if: always()
-        continue-on-error: true
-        run: ruff format --check .
+      - name: Run blocking Python and spec YAML quality checks
+        run: python tools/python_quality.py
 
   test:
     runs-on: ubuntu-latest

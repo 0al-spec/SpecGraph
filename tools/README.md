@@ -199,6 +199,7 @@ and fails when a file has drifted from canonical formatting.
 
 - `ruff check .`
 - `ruff format --check .`
+- `python tools/spec_yaml_lint.py`
 
 The same project-wide gate is also installed in `.pre-commit-config.yaml` as the
 `python-quality` hook.

@@ -1,0 +1,174 @@
+id: SG-SPEC-0024
+title: SpecGraph - Canonical Provenance Envelope
+kind: spec
+status: specified
+maturity: 0.7
+depends_on: []
+relates_to: []
+refines:
+- SG-SPEC-0001
+inputs:
+- specs/nodes/SG-SPEC-0001.yaml
+- AGENTS.md
+outputs:
+- specs/nodes/SG-SPEC-0024.yaml
+allowed_paths:
+- specs/nodes/SG-SPEC-0024.yaml
+acceptance:
+- Defines a bounded provenance envelope that every SG-SPEC-0001 node and edge record must carry
+- Defines valid authority and source-reference handling for canonical provenance records
+- Defines provenance behavior across in-place revisions and supersession events without defining storage
+  or index implementation
+acceptance_evidence:
+- criterion: Defines a bounded provenance envelope that every SG-SPEC-0001 node and edge record must carry
+  evidence: specification.provenance_contract defines the mandatory actor_id, authority_class, and recorded_at
+    fields that every canonical node and edge record must include, plus conditional source_ref requirements
+    by authority class and optional source_metadata for context.
+- criterion: Defines valid authority and source-reference handling for canonical provenance records
+  evidence: specification.authority_rules binds source_ref requirements to authority class and requires
+    confidence for inferred provenance updates; specification.provenance_contract.required_metadata_rules
+    adds the condition that source_ref is mandatory exactly when authority_class is imported or inferred.
+- criterion: Defines provenance behavior across in-place revisions and supersession events without defining
+    storage or index implementation
+  evidence: specification.lineage_rules requires provenance continuity for in-place revision updates and
+    explicit provenance attribution when a supersession edge replaces a subject.
+prompt: Refine SG-SPEC-0001 by externalizing the provenance envelope contract and rules for authoritative
+  provenance handling across canonical node and edge records. Keep this child implementation-agnostic.
+specification:
+  objective: Define a bounded contract for provenance and authority metadata that applies to all SG-SPEC-0001
+    node and edge records, while preserving portable source-of-truth semantics.
+  scope:
+    in:
+    - Canonical metadata that all SG-SPEC-0001 nodes and edges must carry
+    - Authority class semantics and source-reference validation for canonical records
+    - Provenance behavior when records are revised in place versus when subjects are superseded
+    - Relationship between provenance metadata and canonical/derived boundaries
+    out:
+    - Storage format (YAML/JSON/DB), persistence tooling, or event bus transport
+    - Hashing, indexing, signatures, or secret management mechanisms
+    - Reviewer workflows, queue design, or CI/CD policy
+  terminology:
+    provenance_record: A structured metadata envelope attached to a canonical node or explicit edge.
+    actor_id: Identity token of the principal responsible for creating or updating the record.
+    authority_class: A trusted origin classification, matching SG-SPEC-0001 authority classes.
+    source_ref: Deterministic pointer to the external or internal trigger artifact for the record.
+    source_confidence: A bounded confidence marker for non-authoritative or inferred provenance.
+    recorded_at: Timestamp of when the provenance metadata is established or updated.
+    provenance_lineage: Ordered context for revision and supersession updates.
+  provenance_contract:
+    required_for_all_records:
+    - provenance.actor_id
+    - provenance.authority_class
+    - provenance.recorded_at
+    optional_for_all_records:
+    - provenance.source_system
+    - provenance.source_confidence
+    - provenance.notes
+    - provenance.trace_context
+    required_metadata_rules:
+    - Every canonical node record in SG-SPEC-0001 must include provenance metadata.
+    - Every explicit edge record in SG-SPEC-0001 must include provenance metadata.
+    - provenance.actor_id must be non-empty whenever authority_class is authored, imported, or inferred.
+    - provenance.recorded_at must be a timestamp.
+    - provenance.source_ref is required when authority_class is imported or inferred.
+    - For imported and inferred records, provenance.source_ref must be a stable, deterministic pointer
+      to the triggering artifact and MUST not be rewritten to refer to a different artifact for the same
+      update.
+  authority_rules:
+  - authority_class: authored
+    source_ref_required: false
+    source_confidence_required: false
+  - authority_class: imported
+    source_ref_required: true
+    source_confidence_required: false
+  - authority_class: inferred
+    source_ref_required: true
+    source_confidence_required: true
+  - authority_class: distilled
+    source_ref_required: false
+    source_confidence_required: false
+  lineage_rules:
+  - kind: in_place_revision
+    statement: A revision of an existing canonical subject must preserve subject identity and provenance
+      continuity.
+    requirements:
+    - Actor and recorded_at must be updated on every revision.
+    - Existing provenance context may be retained where semantically helpful, but new changes must be
+      attributable.
+  - kind: supersession
+    statement: A supersession transition must create new subject identity and preserve legacy subject
+      discoverability.
+    requirements:
+    - Supersession must be explicit via SG-SPEC-0001 supersedes edge and preserve link targets.
+    - Provenance of replacement must include actor_id, authority_class, source_ref, and recorded_at.
+    - Superseded record remains inspectable in canonical lineage with clear replacement context.
+  invariants:
+  - id: PVE-001
+    statement: Every canonical node and edge record must carry provenance metadata, including actor_id,
+      authority_class, and recorded_at, plus source_ref whenever authority_class is imported or inferred.
+  - id: PVE-002
+    statement: authored, imported, inferred, and distilled classes each enforce their source_ref and source_confidence
+      requirements as defined in this contract.
+  - id: PVE-003
+    statement: Supersession events must be explicitly attributable and preserve inspectability of the
+      replaced subject.
+proposed_status: null
+proposed_maturity: null
+gate_state: none
+required_human_action: '-'
+last_outcome: done
+last_blocker: ''
+last_run_id: 20260413T053659Z-SG-SPEC-0024
+last_exit_code: 0
+last_changed_files:
+- specs/nodes/SG-SPEC-0024.yaml
+last_run_at: '2026-04-13T05:36:59.693839+00:00'
+last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0024-20260413T053634Z
+last_branch: codex/sg-spec-0024/20260413T053634Z
+last_validator_results:
+  outputs: true
+  allowed_paths: true
+  reconciliation: true
+  atomicity: true
+  transition: true
+  executor_environment: true
+  refinement_acceptance: true
+last_refinement_acceptance:
+  decision: approve
+  change_class: local_refinement
+  checks:
+    content_changed: true
+    hard_validation: true
+    single_spec_scope: true
+    constitutional_diff: false
+    graph_refactor_diff: false
+    atomicity_clear: true
+    within_mutation_budget: true
+  diff_paths:
+  - acceptance_evidence[0].evidence
+  - acceptance_evidence[1].evidence
+  - maturity
+  - specification.provenance_contract.required_for_all_records[2]
+  - specification.provenance_contract.required_for_all_records[3]
+  - specification.provenance_contract.required_metadata_rules[2]
+  - specification.provenance_contract.required_metadata_rules[4]
+  - specification.provenance_contract.required_metadata_rules[5]
+  - status
+  mutation_classes:
+  - policy_text
+  mutation_budget: []
+  budget_exceeded_classes: []
+  changed_spec_files:
+  - specs/nodes/SG-SPEC-0024.yaml
+  review_reasons: []
+  errors: []
+  warnings: []
+last_reconciliation:
+  worktree_spec_count: 24
+  changed_spec_ids:
+  - SG-SPEC-0024
+  semantic_dependencies_resolved: true
+  work_dependencies_ready: true
+  cycles: []
+last_requested_child_materialization: false
+last_materialized_child_paths: []

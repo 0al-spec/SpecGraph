@@ -1,8 +1,8 @@
 id: SG-SPEC-0004
 title: SpecGraph - Split Proposal Application Path
 kind: spec
-status: reviewed
-maturity: 0.92
+status: frozen
+maturity: 1.0
 depends_on: []
 relates_to:
 - SG-SPEC-0002
@@ -53,10 +53,10 @@ acceptance_evidence:
     application versus deterministic application_refusal, including the weakest explicit applied record
     and without conflating apply refusal with proposal review rejection
   evidence: 'specification.terminology.application_refusal and specification.terminology.canonical_application_record
-    distinguish successful canonical application from pre-write application refusal. specification.application_policy.application_recording
+    distinguish successful canonical application from pre-write application_refusal. specification.application_policy.application_recording
     and specification.application_policy.queue_and_artifact_status require the applied record to appear
     only after canonical writeback succeeds, keep refusal from producing an applied marker, and preserve
-    separation between proposal review semantics and apply-path outcomes.
+    separation between proposal review authorization and canonical application facts.
 
     '
 - criterion: Defines validation requirements before writeback, including exactly one approved_for_application
@@ -65,7 +65,8 @@ acceptance_evidence:
   evidence: 'specification.application_policy.approval_gate requires exactly one active split proposal
     input whose tracked proposal authority is approved_for_application before writeback may begin. specification.application_policy.validation
     then re-checks target eligibility, artifact validity, and child-file collisions, and routes any pre-write
-    failure into application_refusal rather than implicit review rejection.
+    failure (including missing/ambiguous proposal-input selection) into application_refusal rather than
+    implicit review rejection.
 
     '
 - criterion: Remains implementation-agnostic about future generalized proposal application beyond split_oversized_spec
@@ -120,6 +121,8 @@ specification:
     validation:
     - Exactly one active approved proposal input must resolve to the target spec and structured split
       artifact before any canonical writeback occurs.
+    - If zero or more than one eligible proposal input matches the same target, the pass must return application_refusal
+      with a deterministic ambiguity outcome and no automatic tie-breaking or target re-selection.
     - The target spec must still be a non-seed spec node and must still satisfy oversized eligibility
       under current atomicity policy.
     - The structured proposal artifact must validate against the current target spec before any canonical
@@ -142,8 +145,9 @@ specification:
       are separate facts.
     queue_and_artifact_status:
     - Successful application emits canonical_application_record (SG-SPEC-0006-style canonical_application_event
-      marker with event_status=canonical_materialization_recorded), marks the structured proposal artifact
-      as applied, and updates the matching proposal_queue item to include the same applied marker.
+      with event_status=canonical_materialization_recorded), marks the structured proposal artifact as
+      applied, and updates the matching proposal_queue item to include the same applied marker and aligned
+      applied metadata.
     - If pre-write validation fails, the result is application_refusal. Canonical spec files remain unchanged,
       no canonical_application_record is emitted, and no new queue/artifact applied marker is emitted.
     - application_refusal must not mutate proposal review authority state; it only indicates that canonical
@@ -151,10 +155,61 @@ specification:
       appropriate path.
     - The apply path must not represent application_refusal as proposal rejection by implication, because
       review authorization and canonical application are separate facts.
-gate_state: none
 proposed_status: null
 proposed_maturity: null
+gate_state: none
 required_human_action: '-'
-last_gate_decision: approve
-last_gate_note: ''
-last_gate_at: '2026-04-12T22:18:06.015925+00:00'
+last_outcome: done
+last_blocker: ''
+last_run_id: 20260413T052230Z-SG-SPEC-0004
+last_exit_code: 0
+last_changed_files:
+- specs/nodes/SG-SPEC-0004.yaml
+last_run_at: '2026-04-13T05:22:31.175954+00:00'
+last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0004-20260413T052149Z
+last_branch: codex/sg-spec-0004/20260413T052149Z
+last_validator_results:
+  outputs: true
+  allowed_paths: true
+  reconciliation: true
+  atomicity: true
+  transition: true
+  executor_environment: true
+  refinement_acceptance: true
+last_refinement_acceptance:
+  decision: approve
+  change_class: local_refinement
+  checks:
+    content_changed: true
+    hard_validation: true
+    single_spec_scope: true
+    constitutional_diff: false
+    graph_refactor_diff: false
+    atomicity_clear: true
+    within_mutation_budget: true
+  diff_paths:
+  - acceptance_evidence[2].evidence
+  - acceptance_evidence[3].evidence
+  - specification.application_policy.queue_and_artifact_status[0]
+  - specification.application_policy.validation[1]
+  - specification.application_policy.validation[2]
+  - specification.application_policy.validation[3]
+  - specification.application_policy.validation[4]
+  mutation_classes:
+  - policy_text
+  mutation_budget: []
+  budget_exceeded_classes: []
+  changed_spec_files:
+  - specs/nodes/SG-SPEC-0004.yaml
+  review_reasons: []
+  errors: []
+  warnings: []
+last_reconciliation:
+  worktree_spec_count: 23
+  changed_spec_ids:
+  - SG-SPEC-0004
+  semantic_dependencies_resolved: true
+  work_dependencies_ready: true
+  cycles: []
+last_requested_child_materialization: false
+last_materialized_child_paths: []

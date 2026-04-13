@@ -982,6 +982,9 @@ def normalize_executor_stderr(stderr: str) -> str:
 YAML_KEY_LINE_RE = re.compile(r"^(?P<indent>\s*)(?P<key>[A-Za-z0-9_][A-Za-z0-9_-]*):(?:\s|$)")
 YAML_SEQUENCE_ITEM_RE = re.compile(r"^(?P<indent>\s*)-\s+(?P<content>.*)$")
 YAML_MAPPING_SEQUENCE_CONTENT_RE = re.compile(r"^[A-Za-z0-9_][A-Za-z0-9_-]*:\s")
+YAML_MAPPING_SCALAR_RE = re.compile(
+    r"^(?P<indent>\s*)(?P<key>[A-Za-z0-9_][A-Za-z0-9_-]*):\s+(?P<value>.+)$"
+)
 
 
 def _yaml_single_quote(value: str) -> str:
@@ -1026,6 +1029,8 @@ def repair_candidate_yaml_text(candidate_text: str, original_text: str | None = 
             continue
         current_indent = len(line) - len(line.lstrip(" "))
         original_indents = original_line_indent_map.get(stripped, ())
+        if len(set(original_indents)) != 1:
+            continue
         if current_indent in original_indents:
             continue
         target_indent = min(
@@ -1046,18 +1051,126 @@ def repair_candidate_yaml_text(candidate_text: str, original_text: str | None = 
         original_indents = original_indent_map.get(key, ())
         if len(original_indents) != 1:
             continue
-        target_indent = next(
-            (indent for indent in original_indents if indent > current_indent),
-            None,
-        )
-        if target_indent is None or target_indent - current_indent > 4:
+        target_indent = original_indents[0]
+        if target_indent == current_indent or abs(target_indent - current_indent) > 8:
             continue
         lines[index] = (" " * target_indent) + line.lstrip()
+
+    index = 0
+    while index < len(lines):
+        line = lines[index]
+        key_match = YAML_KEY_LINE_RE.match(line)
+        if key_match is None or line.rstrip().endswith(":") is False:
+            index += 1
+            continue
+        key_indent = len(key_match.group("indent"))
+        if key_indent == 0:
+            index += 1
+            continue
+        next_index = index + 1
+        while next_index < len(lines) and not lines[next_index].strip():
+            next_index += 1
+        if next_index >= len(lines):
+            break
+        first_child = lines[next_index]
+        child_match = YAML_SEQUENCE_ITEM_RE.match(first_child)
+        if child_match is None:
+            index += 1
+            continue
+        child_indent = len(child_match.group("indent"))
+        if child_indent != key_indent:
+            index += 1
+            continue
+        target_indent = key_indent + 2
+        while next_index < len(lines):
+            current_line = lines[next_index]
+            if not current_line.strip():
+                next_index += 1
+                continue
+            current_indent = len(current_line) - len(current_line.lstrip(" "))
+            if current_indent < child_indent:
+                break
+            if current_indent == child_indent and YAML_KEY_LINE_RE.match(current_line):
+                break
+            adjusted_indent = target_indent + (current_indent - child_indent)
+            lines[next_index] = (" " * adjusted_indent) + current_line.lstrip()
+            next_index += 1
+        index = next_index
+
+    index = 0
+    while index < len(lines):
+        line = lines[index]
+        key_match = YAML_KEY_LINE_RE.match(line)
+        if key_match is None or line.rstrip().endswith(":") is False:
+            index += 1
+            continue
+        key_indent = len(key_match.group("indent"))
+        next_index = index + 1
+        while next_index < len(lines) and not lines[next_index].strip():
+            next_index += 1
+        if next_index >= len(lines):
+            break
+        first_child_match = YAML_SEQUENCE_ITEM_RE.match(lines[next_index])
+        if first_child_match is None:
+            index += 1
+            continue
+        sequence_indent = len(first_child_match.group("indent"))
+        scan_index = next_index + 1
+        while scan_index < len(lines):
+            current_line = lines[scan_index]
+            if not current_line.strip():
+                scan_index += 1
+                continue
+            current_indent = len(current_line) - len(current_line.lstrip(" "))
+            current_key_match = YAML_KEY_LINE_RE.match(current_line)
+            current_sequence_match = YAML_SEQUENCE_ITEM_RE.match(current_line)
+            if current_sequence_match is not None and current_indent < sequence_indent:
+                lines[scan_index] = (" " * sequence_indent) + current_line.lstrip()
+                scan_index += 1
+                continue
+            if current_key_match is not None and current_indent <= key_indent:
+                break
+            if current_indent < sequence_indent and current_sequence_match is None:
+                break
+            scan_index += 1
+        index = scan_index
 
     repaired_lines: list[str] = []
     index = 0
     while index < len(lines):
         line = lines[index]
+        mapping_match = YAML_MAPPING_SCALAR_RE.match(line)
+        if mapping_match is not None:
+            indent = len(mapping_match.group("indent"))
+            value = mapping_match.group("value").strip()
+            if value and value[0] not in "\"'[{|>":
+                continuation_index = index + 1
+                continuation_parts: list[str] = []
+                while continuation_index < len(lines):
+                    continuation_line = lines[continuation_index]
+                    if not continuation_line.strip():
+                        break
+                    continuation_indent = len(continuation_line) - len(
+                        continuation_line.lstrip(" ")
+                    )
+                    if continuation_indent < indent:
+                        break
+                    if YAML_KEY_LINE_RE.match(continuation_line) is not None:
+                        break
+                    if YAML_SEQUENCE_ITEM_RE.match(continuation_line) is not None:
+                        break
+                    continuation_parts.append(continuation_line.strip())
+                    continuation_index += 1
+                if continuation_parts:
+                    flattened = " ".join([value, *continuation_parts]).strip()
+                    repaired_lines.append(
+                        (" " * indent)
+                        + f"{mapping_match.group('key')}: "
+                        + _yaml_single_quote(flattened)
+                    )
+                    index = continuation_index
+                    continue
+
         match = YAML_SEQUENCE_ITEM_RE.match(line)
         if match is None:
             repaired_lines.append(line)
@@ -1087,7 +1200,7 @@ def repair_candidate_yaml_text(candidate_text: str, original_text: str | None = 
             continuation_parts.append(continuation_line.strip())
             continuation_index += 1
 
-        needs_quote = ": " in content or any(": " in part for part in continuation_parts)
+        needs_quote = ":" in content or any(":" in part for part in continuation_parts)
         if continuation_parts and needs_quote:
             flattened = " ".join([content, *continuation_parts]).strip()
             repaired_lines.append((" " * indent) + "- " + _yaml_single_quote(flattened))

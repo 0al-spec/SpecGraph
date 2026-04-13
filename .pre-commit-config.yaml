@@ -5,7 +5,7 @@ repos:
         name: python-quality
         entry: python tools/python_quality.py
         language: python
-        additional_dependencies: [ruff==0.15.9]
+        additional_dependencies: [ruff==0.15.9, pyyaml==6.0.3]
         pass_filenames: false
         files: ^(src|tools|tests)/.*\.py$
         require_serial: true

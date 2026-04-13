@@ -54,7 +54,7 @@ def test_quality_tool_versions_are_pinned_and_aligned() -> None:
     assert "ruff==0.15.9" in dev_dependencies
 
     python_quality = find_local_hook(pre_commit, "python-quality")
-    assert python_quality["additional_dependencies"] == ["ruff==0.15.9"]
+    assert python_quality["additional_dependencies"] == ["ruff==0.15.9", "pyyaml==6.0.3"]
 
     spec_yaml_format = find_local_hook(pre_commit, "spec-yaml-format")
     assert spec_yaml_format["additional_dependencies"] == ["pyyaml==6.0.3"]
@@ -66,3 +66,4 @@ def test_quality_tool_versions_are_pinned_and_aligned() -> None:
     assert ruff_repo["rev"] == "v0.15.9"
 
     assert "python -m pip install -e .[dev]" in python_ci
+    assert "python tools/python_quality.py" in python_ci

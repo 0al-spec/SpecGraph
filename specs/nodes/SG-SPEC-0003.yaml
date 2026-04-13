@@ -107,6 +107,8 @@ specification:
     out:
     - Concrete metric formulas or scoring weights
     - Final queue prioritization algorithms
+    - Proposal-lane queue semantics, including active-item precedence, dedupe, retry gating, and proposal-direct
+      handoff
     - Viewer UX or visual overlays
     - Automatic self-modification of ontology without approval
     - Detailed SIB, Verifiability, or Observability metric definitions
@@ -202,8 +204,8 @@ specification:
     - Signals may motivate proposals, but they MUST NOT mutate canonical spec nodes by themselves.
     - Recurring local graph pathologies MAY emit explicit derived refactor_proposal artifacts before any
       canonical writeback occurs.
-    - Once an active proposal exists for a specific pathology, proposal handling takes precedence over
-      further ad hoc direct_graph_update attempts for that same pathology.
+    - Active proposal states are derived control artifacts; exact proposal-lane precedence, dedupe, and
+      retry semantics are defined by dedicated proposal-lane child specs, not by SG-SPEC-0003.
     continuation:
     - Autonomous continuation is allowed only after the current bounded target has no remaining explicit
       blocked or gated work within the current authority envelope.
@@ -250,8 +252,8 @@ specification:
       recurrence and source-run lineage without becoming canonical graph data by itself.
     - proposal_queue acts as an index and summary surface for proposal artifacts; it MUST NOT be the only
       persistence location for full split-refactor payloads.
-    - Active proposal_queue items take precedence over further direct_graph_update attempts for the same
-      spec and signal.
+    - Active proposal_queue control behavior (including whether a proposal preempts direct updates, dedupe,
+      and retry conditions) is defined in proposal-lane child specs.
     canonical_writeback:
     - Graph-health observations and signals MUST NOT be written back into canonical spec nodes unless
       they have first been transformed into an explicit proposal and approved under the current governance
@@ -317,13 +319,13 @@ gate_state: split_required
 required_human_action: split spec scope before rerun
 last_outcome: split_required
 last_blocker: ''
-last_run_id: 20260412T221216Z-SG-SPEC-0003
+last_run_id: 20260413T053234Z-SG-SPEC-0003
 last_exit_code: 0
 last_changed_files:
 - specs/nodes/SG-SPEC-0003.yaml
-last_run_at: '2026-04-12T22:12:16.967056+00:00'
-last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0003-20260412T221127Z
-last_branch: codex/sg-spec-0003/20260412T221127Z
+last_run_at: '2026-04-13T05:32:35.305023+00:00'
+last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0003-20260413T053216Z
+last_branch: codex/sg-spec-0003/20260413T053216Z
 last_validator_results:
   outputs: true
   allowed_paths: true
@@ -333,27 +335,31 @@ last_validator_results:
   executor_environment: true
   refinement_acceptance: true
 last_refinement_acceptance:
-  decision: review_required
-  change_class: constitutional_change
+  decision: approve
+  change_class: local_refinement
   checks:
     content_changed: true
     hard_validation: true
     single_spec_scope: true
-    constitutional_diff: true
+    constitutional_diff: false
     graph_refactor_diff: false
     atomicity_clear: true
     within_mutation_budget: true
   diff_paths:
-  - acceptance_evidence[0].evidence
-  - specification.boundary_policy.supervisor_execution[1]
+  - specification.derived_artifact_policy.proposal_queue[3]
+  - specification.reflective_loop.rules[3]
+  - specification.scope.out[2]
+  - specification.scope.out[3]
+  - specification.scope.out[4]
+  - specification.scope.out[5]
+  - specification.scope.out[6]
   mutation_classes:
   - policy_text
   mutation_budget: []
   budget_exceeded_classes: []
   changed_spec_files:
   - specs/nodes/SG-SPEC-0003.yaml
-  review_reasons:
-  - run changed governance-sensitive specification sections
+  review_reasons: []
   errors: []
   warnings: []
 last_reconciliation:

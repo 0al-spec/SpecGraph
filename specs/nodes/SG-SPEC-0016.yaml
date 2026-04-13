@@ -102,6 +102,8 @@ specification:
     specified_to_linked:
     - A specified spec MAY move to linked only after every spec it declares in depends_on as a blocking
       refinement dependency exists as a concrete_descendant_spec.
+    - Each blocking depends_on target must be paired with dependency-specific linked_readiness_evidence
+      that cites one or more concrete_descendant_spec IDs or paths that satisfy that target.
     - Each blocking descendant MUST connect back into the ancestor refinement chain through refines, either
       by refining the ancestor directly or by refining another spec already in that chain.
     - A depends_on target that is missing, non-spec, or not connected through refines keeps the ancestor
@@ -126,6 +128,9 @@ specification:
       transitions, and later statuses are outside this policy.
     - For each declared depends_on entry, confirm the target exists, is a spec node, and is a concrete_descendant_spec
       connected to the ancestor by an explicit refines chain.
+    - Confirm every declared blocking depends_on entry has corresponding dependency-specific linked_readiness_evidence
+      that cites at least one concrete_descendant_spec resolving that dependency; uncovered dependencies
+      block advancement.
     - Confirm ancestor_reconciliation has updated the parent acceptance_evidence so every local criterion
       that depends on child refinement cites the concrete descendant ID or path and states the resolved
       parent gap.
@@ -195,13 +200,13 @@ gate_state: split_required
 required_human_action: split spec scope before rerun
 last_outcome: split_required
 last_blocker: ''
-last_run_id: 20260412T221841Z-SG-SPEC-0016
+last_run_id: 20260413T052802Z-SG-SPEC-0016
 last_exit_code: 0
 last_changed_files:
 - specs/nodes/SG-SPEC-0016.yaml
-last_run_at: '2026-04-12T22:18:41.522015+00:00'
-last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0016-20260412T221823Z
-last_branch: codex/sg-spec-0016/20260412T221823Z
+last_run_at: '2026-04-13T05:28:03.787134+00:00'
+last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0016-20260413T052733Z
+last_branch: codex/sg-spec-0016/20260413T052733Z
 last_validator_results:
   outputs: true
   allowed_paths: true
@@ -211,37 +216,37 @@ last_validator_results:
   executor_environment: true
   refinement_acceptance: true
 last_refinement_acceptance:
-  decision: review_required
-  change_class: constitutional_change
+  decision: approve
+  change_class: local_refinement
   checks:
     content_changed: true
     hard_validation: true
     single_spec_scope: true
-    constitutional_diff: true
+    constitutional_diff: false
     graph_refactor_diff: false
     atomicity_clear: true
     within_mutation_budget: true
   diff_paths:
-  - acceptance[2]
-  - acceptance_evidence[2]
-  - acceptance_evidence[2].criterion
-  - acceptance_evidence[2].evidence
-  - specification.linkage_rules.readiness_decision_procedure[0]
+  - specification.linkage_rules.readiness_decision_procedure[3]
+  - specification.linkage_rules.readiness_decision_procedure[4]
+  - specification.linkage_rules.readiness_decision_procedure[5]
+  - specification.linkage_rules.readiness_decision_procedure[6]
+  - specification.linkage_rules.specified_to_linked[1]
+  - specification.linkage_rules.specified_to_linked[2]
   - specification.linkage_rules.specified_to_linked[3]
   - specification.linkage_rules.specified_to_linked[4]
   - specification.linkage_rules.specified_to_linked[5]
   - specification.linkage_rules.specified_to_linked[6]
   - specification.linkage_rules.specified_to_linked[7]
   - specification.linkage_rules.specified_to_linked[8]
-  - specification.terminology.concrete_descendant_spec
+  - specification.linkage_rules.specified_to_linked[9]
   mutation_classes:
   - policy_text
   mutation_budget: []
   budget_exceeded_classes: []
   changed_spec_files:
   - specs/nodes/SG-SPEC-0016.yaml
-  review_reasons:
-  - run changed governance-sensitive specification sections
+  review_reasons: []
   errors: []
   warnings: []
 last_reconciliation:
