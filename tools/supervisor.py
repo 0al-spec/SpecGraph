@@ -1128,6 +1128,13 @@ def repair_worktree_changed_spec_yaml(
             original_path.read_text(encoding="utf-8") if original_path.exists() else None
         )
         candidate_text = candidate_path.read_text(encoding="utf-8")
+        try:
+            candidate_data = yaml_module.safe_load(candidate_text)
+        except Exception:
+            candidate_data = None
+        else:
+            if isinstance(candidate_data, dict):
+                continue
         repaired_text = repair_candidate_yaml_text(candidate_text, original_text)
         if repaired_text == candidate_text:
             continue

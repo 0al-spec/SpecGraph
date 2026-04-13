@@ -3169,6 +3169,32 @@ def test_repair_candidate_yaml_text_quotes_multiline_sequence_scalar_with_colon(
     ]
 
 
+def test_repair_worktree_changed_spec_yaml_skips_valid_candidate(
+    supervisor_module: object,
+    tmp_path: Path,
+) -> None:
+    repo_root = tmp_path / "repo"
+    worktree = tmp_path / "worktree"
+    repo_spec = repo_root / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    worktree_spec = worktree / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    repo_spec.parent.mkdir(parents=True)
+    worktree_spec.parent.mkdir(parents=True)
+
+    original_text = "specification:\n  nested:\n    key: value\n"
+    valid_candidate_text = "specification:\n  key: value\n"
+    repo_spec.write_text(original_text, encoding="utf-8")
+    worktree_spec.write_text(valid_candidate_text, encoding="utf-8")
+
+    repaired_paths = supervisor_module.repair_worktree_changed_spec_yaml(
+        repo_root=repo_root,
+        worktree_path=worktree,
+        changed_files=["specs/nodes/SG-SPEC-0001.yaml"],
+    )
+
+    assert repaired_paths == []
+    assert worktree_spec.read_text(encoding="utf-8") == valid_candidate_text
+
+
 def test_main_does_not_treat_websocket_fallback_warning_as_primary_transport_failure(
     supervisor_module: object,
     repo_fixture: Path,
