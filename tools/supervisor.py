@@ -1135,7 +1135,8 @@ def repair_candidate_yaml_text(candidate_text: str, original_text: str | None = 
                 ):
                     previous_nonempty_index -= 1
                 previous_nonempty = lines[previous_nonempty_index].rstrip()
-                if not previous_nonempty.endswith(":"):
+                previous_nonempty_sequence_match = YAML_SEQUENCE_ITEM_RE.match(previous_nonempty)
+                if previous_nonempty_sequence_match is None and not previous_nonempty.endswith(":"):
                     lines[scan_index] = (" " * sequence_indent) + current_line.lstrip()
                     scan_index += 1
                     continue

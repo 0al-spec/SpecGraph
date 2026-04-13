@@ -3340,6 +3340,25 @@ def test_repair_candidate_yaml_text_outdents_nested_sibling_sequence_item(
     assert parsed["acceptance_evidence"][1]["evidence"] == "Second evidence line."
 
 
+def test_repair_candidate_yaml_text_preserves_nested_sequence_items(
+    supervisor_module: object,
+) -> None:
+    candidate = (
+        "specification:\n"
+        "  items:\n"
+        "  - name: parent\n"
+        "    children:\n"
+        "      - child_one\n"
+        "      - child_two\n"
+    )
+
+    repaired = supervisor_module.repair_candidate_yaml_text(candidate)
+
+    parsed = supervisor_module.get_yaml_module().safe_load(repaired)
+    assert parsed["specification"]["items"][0]["name"] == "parent"
+    assert parsed["specification"]["items"][0]["children"] == ["child_one", "child_two"]
+
+
 def test_repair_candidate_yaml_text_does_not_swallow_nested_mapping_key(
     supervisor_module: object,
 ) -> None:
