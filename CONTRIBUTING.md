@@ -4,8 +4,8 @@
 
 For practical supervisor workflow, operator modes, outcome interpretation, and runtime-versus-spec troubleshooting, start with:
 
-- [docs/supervisor_manual.md](/Users/egor/Development/GitHub/0AL/SpecGraph/docs/supervisor_manual.md)
-- [tools/README.md](/Users/egor/Development/GitHub/0AL/SpecGraph/tools/README.md)
+- [docs/supervisor_manual.md](docs/supervisor_manual.md)
+- [tools/README.md](tools/README.md)
 
 ## Python Scaffold
 

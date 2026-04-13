@@ -10,8 +10,8 @@ Use it when you need to:
 - debug runtime failures versus real spec-quality blockers
 - continue work on an existing branch of the graph without losing context
 
-For constitutional limits, see [CONSTITUTION.md](/Users/egor/Development/GitHub/0AL/SpecGraph/CONSTITUTION.md).
-For repository editing rules, see [AGENTS.md](/Users/egor/Development/GitHub/0AL/SpecGraph/AGENTS.md).
+For constitutional limits, see [CONSTITUTION.md](../CONSTITUTION.md).
+For repository editing rules, see [AGENTS.md](../AGENTS.md).
 
 ## 1. Supervisor Role
 
@@ -369,10 +369,10 @@ Loop mode can waste time when it keeps selecting:
 
 Use the documents in this order:
 
-1. [CONSTITUTION.md](/Users/egor/Development/GitHub/0AL/SpecGraph/CONSTITUTION.md)
-2. [AGENTS.md](/Users/egor/Development/GitHub/0AL/SpecGraph/AGENTS.md)
+1. [CONSTITUTION.md](../CONSTITUTION.md)
+2. [AGENTS.md](../AGENTS.md)
 3. this manual
-4. [tools/README.md](/Users/egor/Development/GitHub/0AL/SpecGraph/tools/README.md)
+4. [tools/README.md](../tools/README.md)
 5. relevant spec nodes and current run artifacts
 
 This manual should stay practical and process-oriented.
