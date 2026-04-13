@@ -1,8 +1,8 @@
 id: SG-SPEC-0026
 title: SpecGraph - Reflective Mechanics Integration and Continuation Selection
 kind: spec
-status: specified
-maturity: 0.49
+status: linked
+maturity: 0.69
 depends_on:
 - SG-SPEC-0027
 refines:
@@ -92,8 +92,9 @@ specification:
     - Candidate derivation must de-duplicate identical target regions within the same run context.
     selection:
     - At most one linked latent_graph_improvement_candidate may be selected per run.
-    - Deterministic tie-breaking prefers explicit recurring signal conjunction over weaker single-signal
-      hints.
+    - 'Deterministic tie-breaking is strictly ordered by signal class: first explicit recurring conjunction,
+      then stalled_maturity_candidate, then weak_structural_linkage_candidate; if still tied, choose the
+      lexicographically smallest linked spec identifier and defer all other candidates to derived handoff.'
     - If no eligible candidate survives derivation and suppression, no continuation selection occurs.
     suppression:
     - Do not select direct continuation when required authority exceeds the current continuation envelope.
@@ -110,41 +111,38 @@ specification:
     execution or approval paths apply them.
 proposed_status: null
 proposed_maturity: null
-gate_state: retry_pending
-required_human_action: rerun supervisor
+gate_state: none
+required_human_action: '-'
 last_outcome: done
 last_blocker: ''
-last_run_id: 20260413T074927Z-SG-SPEC-0026
+last_run_id: 20260413T075043Z-SG-SPEC-0026
 last_exit_code: 0
 last_changed_files:
 - specs/nodes/SG-SPEC-0026.yaml
-last_run_at: '2026-04-13T07:49:28.544827+00:00'
-last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0026-20260413T074911Z
-last_branch: codex/sg-spec-0026/20260413T074911Z
+last_run_at: '2026-04-13T07:50:43.571420+00:00'
+last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0026-20260413T075024Z
+last_branch: codex/sg-spec-0026/20260413T075024Z
 last_validator_results:
   outputs: true
   allowed_paths: true
-  reconciliation: false
+  reconciliation: true
   atomicity: true
   transition: true
   executor_environment: true
-  refinement_acceptance: false
+  refinement_acceptance: true
 last_refinement_acceptance:
-  decision: reject
+  decision: approve
   change_class: local_refinement
   checks:
     content_changed: true
-    hard_validation: false
+    hard_validation: true
     single_spec_scope: true
     constitutional_diff: false
     graph_refactor_diff: false
     atomicity_clear: true
     within_mutation_budget: true
   diff_paths:
-  - specification.continuation_selection.handoff[1]
-  - specification.continuation_selection.handoff[2]
   - specification.continuation_selection.selection[1]
-  - specification.delegated_execution_cluster[1]
   mutation_classes:
   - policy_text
   mutation_budget: []
@@ -152,17 +150,14 @@ last_refinement_acceptance:
   changed_spec_files:
   - specs/nodes/SG-SPEC-0026.yaml
   review_reasons: []
-  errors:
-  - 'Cannot advance to linked: missing declared dependency nodes SG-SPEC-0027'
+  errors: []
   warnings: []
 last_reconciliation:
-  worktree_spec_count: 26
+  worktree_spec_count: 27
   changed_spec_ids:
   - SG-SPEC-0026
-  semantic_dependencies_resolved: false
+  semantic_dependencies_resolved: true
   work_dependencies_ready: false
   cycles: []
 last_requested_child_materialization: false
 last_materialized_child_paths: []
-last_errors:
-- 'Cannot advance to linked: missing declared dependency nodes SG-SPEC-0027'

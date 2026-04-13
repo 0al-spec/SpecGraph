@@ -267,7 +267,9 @@ specification:
     - SG-SPEC-0003 only constrains split_refactor behavior at governance boundary level.
     - Split-refactor runs are proposal-first and must not directly mutate canonical spec nodes.
     - Split-refactor payload construction, parent-child acceptance mapping, child-creation mechanics,
-      and queue/selection algorithms are delegated to SG-SPEC-0025 and its bounded descendants.
+      and queue algorithms are delegated to SG-SPEC-0025 and its bounded descendants.
+    - Split-refactor selection, reflection-driven continuation routing, and executor mechanics after a
+      blocked/gated clear are delegated to SG-SPEC-0026 and its bounded descendants.
     - SG-SPEC-0003 forbids split_refactor mechanics from altering ontology, thresholds, authority, or
       review gate semantics on their own.
     canonical_constraints:
@@ -278,13 +280,13 @@ gate_state: split_required
 required_human_action: split spec scope before rerun
 last_outcome: split_required
 last_blocker: ''
-last_run_id: 20260413T074414Z-SG-SPEC-0003
+last_run_id: 20260413T075125Z-SG-SPEC-0003
 last_exit_code: 0
 last_changed_files:
 - specs/nodes/SG-SPEC-0003.yaml
-last_run_at: '2026-04-13T07:44:15.652168+00:00'
-last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0003-20260413T074400Z
-last_branch: codex/sg-spec-0003/20260413T074400Z
+last_run_at: '2026-04-13T07:51:25.971626+00:00'
+last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0003-20260413T075108Z
+last_branch: codex/sg-spec-0003/20260413T075108Z
 last_validator_results:
   outputs: true
   allowed_paths: true
@@ -305,46 +307,9 @@ last_refinement_acceptance:
     atomicity_clear: true
     within_mutation_budget: true
   diff_paths:
-  - specification.split_refactor_policy.artifact_contract
-  - specification.split_refactor_policy.artifact_contract.required_outcome
-  - specification.split_refactor_policy.artifact_contract.required_outcome[0]
-  - specification.split_refactor_policy.artifact_contract.boundary
-  - specification.split_refactor_policy.artifact_contract.boundary[0]
-  - specification.split_refactor_policy.artifact_contract.parent_retention
-  - specification.split_refactor_policy.artifact_contract.parent_retention[0]
-  - specification.split_refactor_policy.boundary_contract
-  - specification.split_refactor_policy.boundary_contract[0]
-  - specification.split_refactor_policy.boundary_contract[1]
   - specification.split_refactor_policy.boundary_contract[2]
   - specification.split_refactor_policy.boundary_contract[3]
-  - specification.split_refactor_policy.canonical_constraints
-  - specification.split_refactor_policy.canonical_constraints[0]
-  - specification.split_refactor_policy.canonical_constraints[1]
-  - specification.split_refactor_policy.child_contract
-  - specification.split_refactor_policy.child_contract[0]
-  - specification.split_refactor_policy.child_contract[1]
-  - specification.split_refactor_policy.child_contract[2]
-  - specification.split_refactor_policy.child_contract[3]
-  - specification.split_refactor_policy.child_contract[4]
-  - specification.split_refactor_policy.execution
-  - specification.split_refactor_policy.execution[0]
-  - specification.split_refactor_policy.execution[1]
-  - specification.split_refactor_policy.execution[2]
-  - specification.split_refactor_policy.parent_after_split
-  - specification.split_refactor_policy.parent_after_split[0]
-  - specification.split_refactor_policy.parent_after_split[1]
-  - specification.split_refactor_policy.parent_after_split[2]
-  - specification.split_refactor_policy.parent_after_split[3]
-  - specification.split_refactor_policy.v1
-  - specification.split_refactor_policy.v1.scope
-  - specification.split_refactor_policy.v1.scope[0]
-  - specification.split_refactor_policy.v1.scope[1]
-  - specification.split_refactor_policy.v1.scope[2]
-  - specification.split_refactor_policy.v1.scope[3]
-  - specification.split_refactor_policy.v1.scope[4]
-  - specification.split_refactor_policy.v1.eligibility
-  - specification.split_refactor_policy.v1.eligibility[0]
-  - specification.split_refactor_policy.v1.eligibility[1]
+  - specification.split_refactor_policy.boundary_contract[4]
   mutation_classes:
   - policy_text
   mutation_budget: []
@@ -355,10 +320,10 @@ last_refinement_acceptance:
   errors: []
   warnings: []
 last_reconciliation:
-  worktree_spec_count: 25
+  worktree_spec_count: 27
   changed_spec_ids:
   - SG-SPEC-0003
-  semantic_dependencies_resolved: false
+  semantic_dependencies_resolved: true
   work_dependencies_ready: false
   cycles: []
 last_requested_child_materialization: false
