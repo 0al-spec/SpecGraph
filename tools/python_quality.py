@@ -2,7 +2,8 @@ import subprocess
 import sys
 
 # Mirrors the blocking GitHub Actions `python-quality` job so pre-commit can
-# fail on the same project-wide Ruff lint and format checks before push.
+# fail on the same project-wide Python and canonical spec-YAML quality checks
+# before push.
 
 
 def run_step(args: list[str]) -> int:
@@ -14,6 +15,7 @@ def main() -> int:
     steps = [
         [sys.executable, "-m", "ruff", "check", "."],
         [sys.executable, "-m", "ruff", "format", "--check", "."],
+        [sys.executable, "tools/spec_yaml_lint.py"],
     ]
     for step in steps:
         exit_code = run_step(step)
