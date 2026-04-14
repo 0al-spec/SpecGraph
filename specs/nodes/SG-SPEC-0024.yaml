@@ -1,8 +1,8 @@
 id: SG-SPEC-0024
 title: SpecGraph - Canonical Provenance Envelope
 kind: spec
-status: specified
-maturity: 0.7
+status: linked
+maturity: 0.9
 depends_on: []
 relates_to: []
 refines:
@@ -25,9 +25,10 @@ acceptance_evidence:
     fields that every canonical node and edge record must include, plus conditional source_ref requirements
     by authority class and optional source_metadata for context.
 - criterion: Defines valid authority and source-reference handling for canonical provenance records
-  evidence: specification.authority_rules binds source_ref requirements to authority class and requires
-    confidence for inferred provenance updates; specification.provenance_contract.required_metadata_rules
-    adds the condition that source_ref is mandatory exactly when authority_class is imported or inferred.
+  evidence: specification.authority_rules binds source_ref and source_confidence requirements to authority
+    class. specification.provenance_contract.required_metadata_rules adds the condition that source_ref
+    is mandatory exactly when authority_class is imported or inferred, and that source_confidence is mandatory
+    and bounded for inferred provenance.
 - criterion: Defines provenance behavior across in-place revisions and supersession events without defining
     storage or index implementation
   evidence: specification.lineage_rules requires provenance continuity for in-place revision updates and
@@ -71,6 +72,8 @@ specification:
     - provenance.actor_id must be non-empty whenever authority_class is authored, imported, or inferred.
     - provenance.recorded_at must be a timestamp.
     - provenance.source_ref is required when authority_class is imported or inferred.
+    - provenance.source_confidence is required when authority_class is inferred.
+    - provenance.source_confidence for inferred provenance must be one of: low, medium, high.
     - For imported and inferred records, provenance.source_ref must be a stable, deterministic pointer
       to the triggering artifact and MUST not be rewritten to refer to a different artifact for the same
       update.
@@ -112,63 +115,10 @@ specification:
   - id: PVE-003
     statement: Supersession events must be explicitly attributable and preserve inspectability of the
       replaced subject.
+gate_state: none
 proposed_status: null
 proposed_maturity: null
-gate_state: none
 required_human_action: '-'
-last_outcome: done
-last_blocker: ''
-last_run_id: 20260413T053659Z-SG-SPEC-0024
-last_exit_code: 0
-last_changed_files:
-- specs/nodes/SG-SPEC-0024.yaml
-last_run_at: '2026-04-13T05:36:59.693839+00:00'
-last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0024-20260413T053634Z
-last_branch: codex/sg-spec-0024/20260413T053634Z
-last_validator_results:
-  outputs: true
-  allowed_paths: true
-  reconciliation: true
-  atomicity: true
-  transition: true
-  executor_environment: true
-  refinement_acceptance: true
-last_refinement_acceptance:
-  decision: approve
-  change_class: local_refinement
-  checks:
-    content_changed: true
-    hard_validation: true
-    single_spec_scope: true
-    constitutional_diff: false
-    graph_refactor_diff: false
-    atomicity_clear: true
-    within_mutation_budget: true
-  diff_paths:
-  - acceptance_evidence[0].evidence
-  - acceptance_evidence[1].evidence
-  - maturity
-  - specification.provenance_contract.required_for_all_records[2]
-  - specification.provenance_contract.required_for_all_records[3]
-  - specification.provenance_contract.required_metadata_rules[2]
-  - specification.provenance_contract.required_metadata_rules[4]
-  - specification.provenance_contract.required_metadata_rules[5]
-  - status
-  mutation_classes:
-  - policy_text
-  mutation_budget: []
-  budget_exceeded_classes: []
-  changed_spec_files:
-  - specs/nodes/SG-SPEC-0024.yaml
-  review_reasons: []
-  errors: []
-  warnings: []
-last_reconciliation:
-  worktree_spec_count: 24
-  changed_spec_ids:
-  - SG-SPEC-0024
-  semantic_dependencies_resolved: true
-  work_dependencies_ready: true
-  cycles: []
-last_requested_child_materialization: false
-last_materialized_child_paths: []
+last_gate_decision: approve
+last_gate_note: ''
+last_gate_at: '2026-04-14T19:27:52.844061+00:00'
