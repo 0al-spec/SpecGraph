@@ -1,0 +1,111 @@
+id: SG-SPEC-0035
+title: SpecGraph - Proposal Queue Retry Condition Contract
+kind: spec
+status: reviewed
+maturity: 0.3
+depends_on:
+- SG-SPEC-0004
+- SG-SPEC-0006
+refines:
+- SG-SPEC-0041
+inputs:
+- specs/nodes/SG-SPEC-0041.yaml
+- specs/nodes/SG-SPEC-0003.yaml
+- specs/nodes/SG-SPEC-0004.yaml
+- specs/nodes/SG-SPEC-0006.yaml
+- tasks.md
+outputs:
+- specs/nodes/SG-SPEC-0035.yaml
+allowed_paths:
+- specs/nodes/SG-SPEC-0035.yaml
+acceptance:
+- Defines retry_condition control metadata fields for queue artifacts derived in SG-SPEC-0003 and SG-SPEC-0034.
+- Constrains retry-condition semantics so retries are advisory derived metadata, with explicit reason
+  codes and backoff/attempt state.
+- Ensures retry-condition artifacts remain noncanonical and only become actionable through existing governance
+  and proposal/review/apply pathways.
+acceptance_evidence:
+- criterion: Defines retry_condition control metadata fields for queue artifacts derived in SG-SPEC-0003
+    and SG-SPEC-0034.
+  evidence: specification.retry_condition_schema defines the concrete retry_condition object with reason,
+    retry_attempt, and retry_after_seconds as the only retry-control fields owned by this node.
+- criterion: Constrains retry-condition semantics so retries are advisory derived metadata, with explicit
+    reason codes and backoff/attempt state.
+  evidence: specification.retry_condition_schema and specification.retry_governance describe the allowed
+    reason values, non-negative integer state fields, and the advisory eligibility rule for retry scheduling.
+- criterion: Ensures retry-condition artifacts remain noncanonical and only become actionable through
+    existing governance and proposal/review/apply pathways.
+  evidence: specification.noncanonical_boundary and specification.actionability_constraints keep retry_condition
+    as derived metadata and require canonical queue action only through existing governance paths.
+prompt: Materialize SG-SPEC-0035 as the bounded retry-condition contract child for SG-SPEC-0041.
+scope:
+  in:
+  - Retry-condition control metadata for proposal_queue and refactor_queue artifacts
+  - Retry eligibility and retry-after governance for derived queue interpretation
+  - Derived-only persistence and non-authoritative scope for retry artifacts
+  out:
+  - Queue scheduling engine implementation or ranking formulas
+  - Proposal/review/apply authority transitions
+  - Direct canonical writeback policies
+specification:
+  objective: Define and bound retry-condition metadata used by queue control interpretation in SG-SPEC-0003/0041
+    so retry gating is concrete without extending canonical authority.
+  retry_contract_scope:
+  - SG-SPEC-0035 owns retry-condition control metadata for proposal/refactor queue processing.
+  - SG-SPEC-0035 is consumed by SG-SPEC-0041 and SG-SPEC-0003 as derived metadata only.
+  retry_condition_schema:
+  - retry_condition:
+      description: A structured object describing when and why a queued control item is eligible for retry.
+      required_fields:
+      - reason
+      - retry_attempt
+      - retry_after_seconds
+      reason:
+        type: string
+        allowed_values:
+        - dependency_unblocked
+        - validation_retryable
+        - transport_retryable
+        - policy_reject_retryable
+      retry_attempt:
+        type: integer
+        min: 0
+      retry_after_seconds:
+        type: integer
+        min: 0
+      reason_invariants:
+        dependency_unblocked:
+          requires_retry_after_seconds: 0
+          max_retry_attempt_for_initial: 0
+        validation_retryable:
+          requires_retry_after_seconds: '>=0'
+        transport_retryable:
+          requires_retry_after_seconds: '>=0'
+        policy_reject_retryable:
+          requires_retry_after_seconds: '>=0'
+  retry_governance:
+  - Retry processing can only consider an item retry-eligible when retry_condition is present in derived
+    queue context and retry_after_seconds delay has elapsed.
+  - Retry eligibility MUST be re-evaluated in derived control cycles because retry_condition is advisory
+    metadata and not canonical state.
+  - retry_attempt is advisory state that may increment on each derived retry evaluation cycle.
+  - retry_condition does not by itself authorize canonical writeback, direct queue ownership changes,
+    or policy expansion.
+  - proposal_queue and refactor_queue control paths must consume retry_condition through SG-SPEC-0041's
+    parent-facing retry/precedence gateway contract.
+  noncanonical_boundary:
+  - SG-SPEC-0035 retry metadata is first-persisted in run payloads, run summaries, and derived queue artifacts.
+  - Retry artifacts remain noncanonical and cannot authorize independent writeback outside existing governance
+    rules.
+  actionability_constraints:
+  - Canonical action on retry-conditioned items still requires valid proposal/review/apply pathways defined
+    by SG-SPEC-0003 and SG-SPEC-0004.
+  - Queue-control effects of retry_condition are interpreted only for derived prioritization and retry
+    scheduling signals.
+gate_state: none
+proposed_status: null
+proposed_maturity: null
+required_human_action: '-'
+last_gate_decision: approve
+last_gate_note: ''
+last_gate_at: '2026-04-14T08:34:14.179147+00:00'

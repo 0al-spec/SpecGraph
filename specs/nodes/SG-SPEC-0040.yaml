@@ -1,0 +1,86 @@
+id: SG-SPEC-0040
+title: SpecGraph - Non-Retry Queue-Control First-Persistence and Consumption Boundary
+kind: spec
+status: reviewed
+maturity: 0.43
+refines:
+- SG-SPEC-0039
+inputs:
+- specs/nodes/SG-SPEC-0039.yaml
+- tasks.md
+outputs:
+- specs/nodes/SG-SPEC-0040.yaml
+allowed_paths:
+- specs/nodes/SG-SPEC-0040.yaml
+acceptance:
+- Defines first-persistence and noncanonical metadata behavior for dedupe_key, preempt_direct_update,
+  and proposal_direct_handoff in proposal_queue and refactor_queue under the non-retry queue-control cluster.
+- Defines the consumption boundary so SG-SPEC-0003 receives these non-retry controls only through SG-SPEC-0034.
+- Defines a delegation rule that SG-SPEC-0037 and SG-SPEC-0038 are not direct consumers of non-retry queue-control
+  contract controls.
+acceptance_evidence:
+- criterion: Defines first-persistence and noncanonical metadata behavior for dedupe_key, preempt_direct_update,
+    and proposal_direct_handoff in proposal_queue and refactor_queue under the non-retry queue-control
+    cluster.
+  evidence: specification.first_persistence_contract lists proposal_queue/refactor_queue as first persistence
+    artifacts for all three fields and marks them as derived, noncanonical controls.
+- criterion: Defines the consumption boundary so SG-SPEC-0003 receives these non-retry controls only through
+    SG-SPEC-0034.
+  evidence: specification.consumer_boundary requires SG-SPEC-0003 to consume these controls only via SG-SPEC-0034
+    and states SG-SPEC-0039 forwards this boundary as a noncanonical contract.
+- criterion: Defines a delegation rule that SG-SPEC-0037 and SG-SPEC-0038 are not direct consumers of
+    non-retry queue-control contract controls.
+  evidence: specification.consumer_rule requires SG-SPEC-0003 to consume these controls only through SG-SPEC-0034,
+    forbids direct consumption from SG-SPEC-0037/0038/0040, and prohibits SG-SPEC-0037 and SG-SPEC-0038
+    from publishing direct contracts to SG-SPEC-0003 for these fields.
+prompt: Refine the non-retry queue-control consumption boundary as a standalone child under SG-SPEC-0039.
+  Define first persistence, consumption-chain constraints, and concrete non-canonical consumer-rule semantics,
+  while leaving non-retry execution semantics and field-shape ownership to SG-SPEC-0037 and SG-SPEC-0038.
+specification:
+  objective: Define first-persistence, noncanonical consumption, and consumer-rule semantics for non-retry
+    queue-control metadata so SG-SPEC-0003 consumes it only through SG-SPEC-0034.
+  scope:
+    in:
+    - First persistence contracts for dedupe_key, preempt_direct_update, and proposal_direct_handoff in
+      proposal_queue and refactor_queue artifacts
+    - Noncanonical consumption boundary and chain constraints for SG-SPEC-0003 and SG-SPEC-0034
+    - Consumer-rule constraints that prevent direct consumption from SG-SPEC-0037 and SG-SPEC-0038
+    out:
+    - Concrete non-retry control semantics for when each field activates (delegated to SG-SPEC-0037)
+    - Artifact field-shape contracts for proposal_queue/refactor_queue fields (delegated to SG-SPEC-0038)
+    - Canonical writeback policies, proposal authority transitions, or runtime queue scheduler formulas
+  first_persistence_contract:
+    field_set:
+    - dedupe_key
+    - preempt_direct_update
+    - proposal_direct_handoff
+    first_persistence_locations:
+    - proposal_queue metadata entry carrying the non-retry cluster controls
+    - refactor_queue metadata entry carrying the non-retry cluster controls
+    - derived handoff records linking proposal_queue/refactor_queue control expectations to SG-SPEC-0034
+    derived_nature:
+    - The listed fields are persisted as derived, noncanonical controls.
+    - Canonical interpretation and authority transitions are defined outside this contract slice.
+  consumer_boundary:
+  - SG-SPEC-0003 may consume these non-retry controls only via SG-SPEC-0034.
+  - SG-SPEC-0034 consumes through SG-SPEC-0039 using SG-SPEC-0039's delegated boundary contract.
+  - SG-SPEC-0003 does not consume these controls directly from SG-SPEC-0037, SG-SPEC-0038, or SG-SPEC-0040.
+  consumer_rule:
+  - SG-SPEC-0003 reads non-retry queue-control controls for dedupe_key, preempt_direct_update, and proposal_direct_handoff
+    only through SG-SPEC-0034.
+  - SG-SPEC-0003 MUST NOT consume those controls directly from SG-SPEC-0037, SG-SPEC-0038, or SG-SPEC-0040.
+  - SG-SPEC-0037 and SG-SPEC-0038 MUST NOT publish a direct consumer contract for SG-SPEC-0003 for these
+    fields.
+  - SG-SPEC-0040 constrains first persistence and the noncanonical chain hop semantics for this cluster
+    as an intermediary contract slice.
+  consumer_chain:
+  - SG-SPEC-0003 <- SG-SPEC-0034 <- SG-SPEC-0039 <- SG-SPEC-0040.
+  - SG-SPEC-0039 receives first-persistence and noncanonical-consumption rules from SG-SPEC-0040 as its
+    dedicated child.
+gate_state: none
+proposed_status: null
+proposed_maturity: null
+required_human_action: '-'
+last_gate_decision: approve
+last_gate_note: ''
+last_gate_at: '2026-04-14T08:58:37.783021+00:00'

@@ -1,0 +1,125 @@
+id: SG-SPEC-0038
+title: SpecGraph - Queue Field Surface and Artifact Shape Contracts
+kind: spec
+status: frozen
+maturity: 0.6
+depends_on: []
+refines:
+- SG-SPEC-0039
+inputs:
+- specs/nodes/SG-SPEC-0039.yaml
+- tasks.md
+outputs:
+- specs/nodes/SG-SPEC-0038.yaml
+allowed_paths:
+- specs/nodes/SG-SPEC-0038.yaml
+acceptance:
+- Defines explicit proposal_queue/refactor_queue field-surface contract for dedupe_key, preempt_direct_update,
+  and proposal_direct_handoff as consumed by SG-SPEC-0003 through SG-SPEC-0034.
+- Defines artifact-shape expectations for queue-control metadata placement on proposal_queue and refactor_queue
+  payloads without assigning runtime meaning to any field values.
+- Keeps SG-SPEC-0038 as a surface-only child under SG-SPEC-0039 while leaving concrete non-retry semantics
+  to SG-SPEC-0037 and retry/active-item precedence to SG-SPEC-0035/SG-SPEC-0036.
+- Keeps queue-related artifact contracts noncanonical and first-persistence only within reflective-loop
+  derivation.
+acceptance_evidence:
+- criterion: Defines explicit proposal_queue/refactor_queue field-surface contract for dedupe_key, preempt_direct_update,
+    and proposal_direct_handoff as consumed by SG-SPEC-0003 through SG-SPEC-0034.
+  evidence: specification.field_surface_contract enumerates proposal_queue and refactor_queue entries
+    and binds each to dedupe_key, preempt_direct_update, and proposal_direct_handoff as required parent-facing
+    field names.
+- criterion: Defines artifact-shape expectations for queue-control metadata placement on proposal_queue
+    and refactor_queue payloads without assigning runtime meaning to any field values.
+  evidence: specification.artifact_shape_contract requires identical queue-control metadata keys under
+    proposal_queue and refactor_queue, and explicitly marks value interpretation as out-of-scope for this
+    node.
+- criterion: Keeps SG-SPEC-0038 as a surface-only child under SG-SPEC-0039 while leaving concrete non-retry
+    semantics to SG-SPEC-0037 and retry/active-item precedence to SG-SPEC-0035/SG-SPEC-0036.
+  evidence: specification.delegation_scope excludes runtime semantics from SG-SPEC-0038 and delegates
+    concrete field semantics ownership to SG-SPEC-0037 and retry/active-item precedence to SG-SPEC-0035
+    and SG-SPEC-0036.
+- criterion: Keeps queue-related artifact contracts noncanonical and first-persistence only within reflective-loop
+    derivation.
+  evidence: specification.scope.out and specification.noncanonical_boundary state that SG-SPEC-0038 governs
+    naming and shape only, with no canonical status/maturity mutations or authority transitions.
+prompt: Materialize SG-SPEC-0038 as the bounded child under SG-SPEC-0039 that owns explicit proposal_queue
+  and refactor_queue field-surface and artifact-shape contracts while leaving concrete non-retry queue-control
+  meanings to SG-SPEC-0037.
+specification:
+  objective: Define the bounded field surface and artifact-shape contract for queue-control metadata used
+    by proposal_queue and refactor_queue artifacts in the reflective loop.
+  scope:
+    in:
+    - Explicit field-surface contract for dedupe_key, preempt_direct_update, and proposal_direct_handoff.
+    - Proposal/refactor queue artifact placement for queue-control metadata keys.
+    - Immediate child role under SG-SPEC-0039 for parent-facing queue contract consumption.
+    - Delegation boundaries toward concrete semantics owners.
+    out:
+    - Concrete semantics of dedupe_key, preempt_direct_update, and proposal_direct_handoff.
+    - Retry-condition meanings and active-item precedence contracts.
+    - Queue scheduling algorithms, queue persistence architecture, or supervisor runtime execution.
+    - Canonical writeback or authority transitions for proposals.
+  field_surface_contract:
+  - artifact: proposal_queue
+    queue_control_path: queue_control
+    metadata_key_set:
+    - dedupe_key
+    - preempt_direct_update
+    - proposal_direct_handoff
+    contract: queue_control keys are required on proposal_queue payloads and MUST be present whenever
+      queue-control metadata is emitted.
+    key_shape: each key is an independently opaque value carried as metadata; this contract binds only
+      field presence and surface path.
+  - artifact: refactor_queue
+    queue_control_path: queue_control
+    metadata_key_set:
+    - dedupe_key
+    - preempt_direct_update
+    - proposal_direct_handoff
+    contract: queue_control keys are required on refactor_queue payloads and MUST be present whenever
+      queue-control metadata is emitted.
+    key_shape: each key is an independently opaque value carried as metadata; this contract binds only
+      field presence and surface path.
+  artifact_shape_contract:
+  - artifact: proposal_queue
+    payload_shape:
+      queue_control:
+        required_metadata_keys:
+        - dedupe_key
+        - preempt_direct_update
+        - proposal_direct_handoff
+    note: This contract defines surface placement only; value domains and execution meanings are delegated
+      and in-scope only for downstream mechanics specs.
+  - artifact: refactor_queue
+    payload_shape:
+      queue_control:
+        required_metadata_keys:
+        - dedupe_key
+        - preempt_direct_update
+        - proposal_direct_handoff
+    note: This contract defines surface placement only; value domains and execution meanings are delegated
+      and in-scope only for downstream mechanics specs.
+  - SG-SPEC-0003 and SG-SPEC-0034 consume these key names and placement; this node does not define runtime
+    value domains.
+  delegation_scope:
+  - Concrete non-retry semantics for dedupe_key, preempt_direct_update, and proposal_direct_handoff remain
+    in SG-SPEC-0037.
+  - Retry-condition semantics remain in SG-SPEC-0035.
+  - Active-item precedence semantics remain in SG-SPEC-0036.
+  - SG-SPEC-0038 is source-of-truth only for field names, artifact placement, and surface key presence/shape.
+  parent_contract:
+  - SG-SPEC-0039 consumes SG-SPEC-0038 as the bounded child for queue field-surface and artifact-shape
+    contract.
+  - SG-SPEC-0034 remains implementation-agnostic and consumes this surface contract through SG-SPEC-0039.
+  - SG-SPEC-0039 and SG-SPEC-0034 must not treat SG-SPEC-0038 as policy or execution semantics owner.
+  noncanonical_boundary:
+  - Queue-control surface and artifact-shape fields remain first-persistence derivation artifacts.
+  - Canonical proposal semantics and authority transitions remain in existing governance and execution
+    specs.
+gate_state: none
+proposed_status: null
+proposed_maturity: null
+required_human_action: '-'
+last_gate_decision: approve
+last_gate_note: ''
+last_gate_at: '2026-04-14T09:05:41.821915+00:00'
