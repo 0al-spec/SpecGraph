@@ -1023,7 +1023,22 @@ def build_yaml_line_indent_map(text: str) -> dict[str, tuple[int, ...]]:
 
 
 def repair_candidate_yaml_text(candidate_text: str, original_text: str | None = None) -> str:
-    lines = candidate_text.splitlines()
+    lines = [
+        line
+        for line in candidate_text.splitlines()
+        if line.strip()
+        not in {
+            "*** Begin Patch",
+            "*** End Patch",
+            "*** End of File",
+        }
+        and not line.startswith("*** Update File: ")
+        and not line.startswith("*** Add File: ")
+        and not line.startswith("*** Delete File: ")
+        and not line.startswith("*** Move to: ")
+        and line.strip() != "@@"
+        and not line.startswith("@@ ")
+    ]
     original_indent_map = (
         build_yaml_key_indent_map(original_text) if original_text is not None else {}
     )
@@ -1313,6 +1328,15 @@ def repair_worktree_changed_spec_yaml(
             candidate_data = None
         else:
             if isinstance(candidate_data, dict):
+                acceptance = candidate_data.get("acceptance")
+                acceptance_evidence = candidate_data.get("acceptance_evidence")
+                if not (
+                    isinstance(acceptance, list)
+                    and isinstance(acceptance_evidence, list)
+                    and len(acceptance) != len(acceptance_evidence)
+                ):
+                    continue
+            else:
                 continue
         repaired_text = repair_candidate_yaml_text(candidate_text, original_text)
         if repaired_text == candidate_text:

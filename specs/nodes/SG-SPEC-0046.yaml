@@ -1,0 +1,135 @@
+id: SG-SPEC-0046
+title: SpecGraph - Proposal/Split Upstream Parent-Path No-Bypass Topology
+kind: spec
+status: linked
+maturity: 0.2
+depends_on:
+- SG-SPEC-0026
+- SG-SPEC-0027
+refines:
+- SG-SPEC-0045
+inputs:
+- specs/nodes/SG-SPEC-0045.yaml
+- specs/nodes/SG-SPEC-0026.yaml
+- specs/nodes/SG-SPEC-0027.yaml
+outputs:
+- specs/nodes/SG-SPEC-0046.yaml
+allowed_paths:
+- specs/nodes/SG-SPEC-0046.yaml
+acceptance:
+- Defines SG-SPEC-0046 as the bounded upstream parent-consumer no-bypass child for SG-SPEC-0026 and SG-SPEC-0027
+  under SG-SPEC-0045.
+- Constrains SG-SPEC-0026 proposal/split readiness to flow through SG-SPEC-0027 as the only immediate
+  parent-consumer path under SG-SPEC-0046.
+- Ends responsibility at the SG-SPEC-0027 handoff and leaves the downstream SG-SPEC-0032 -> SG-SPEC-0043
+  segment to sibling child SG-SPEC-0047 under SG-SPEC-0045.
+- Preserves topology-only responsibility in this node by leaving downstream gateway semantics, proposal/split
+  execution behavior, and concrete mechanics ownership outside this node.
+acceptance_evidence:
+- criterion: Defines SG-SPEC-0046 as the bounded upstream parent-consumer no-bypass child for SG-SPEC-0026
+    and SG-SPEC-0027 under SG-SPEC-0045.
+  evidence: specification.objective defines SG-SPEC-0046 as the bounded parent-consumer no-bypass control
+    slice under SG-SPEC-0045.
+- criterion: Constrains SG-SPEC-0026 proposal/split readiness to flow through SG-SPEC-0027 as the only
+    immediate parent-consumer path under SG-SPEC-0046.
+  evidence: specification.upstream_path requires SG-SPEC-0026 proposal/split readiness to use only the
+    SG-SPEC-0027 parent-consumer edge within this concern.
+- criterion: Ends responsibility at the SG-SPEC-0027 handoff and leaves the downstream SG-SPEC-0032 ->
+    SG-SPEC-0043 segment to sibling child SG-SPEC-0047 under SG-SPEC-0045.
+  evidence: specification.handoff_boundary and specification.parent_contract require SG-SPEC-0046 to stop
+    at the SG-SPEC-0027 handoff and leave downstream gateway-segment semantics to SG-SPEC-0047.
+- criterion: Preserves topology-only responsibility in this node by leaving downstream gateway semantics,
+    proposal/split execution behavior, and concrete mechanics ownership outside this node.
+  evidence: specification.scope.out and specification.boundaries keep SG-SPEC-0046 constrained to the
+    upstream parent-consumer path while downstream gateway and concrete mechanics ownership remain outside
+    this node.
+prompt: Define upstream proposal/split parent-consumer no-bypass topology under SG-SPEC-0045 for SG-SPEC-0026
+  and SG-SPEC-0027, stopping at the SG-SPEC-0027 handoff and leaving the downstream segment to sibling
+  child SG-SPEC-0047.
+specification:
+  objective: Keep SG-SPEC-0026 parent-consumer proposal/split readiness bounded to the SG-SPEC-0026 ->
+    SG-SPEC-0027 no-bypass handoff only.
+  scope:
+    in:
+    - Bounded no-bypass path topology for SG-SPEC-0026 -> SG-SPEC-0027 proposal/split readiness.
+    - Parent-consumer handoff boundary where downstream gateway-segment semantics move to sibling SG-SPEC-0047.
+    - Relationship to SG-SPEC-0045 as the aggregate parent-integration node.
+    out:
+    - Downstream SG-SPEC-0027 -> SG-SPEC-0032 -> SG-SPEC-0043 gateway-segment semantics.
+    - Concrete split/proposal mechanics payloads and lifecycle owned by SG-SPEC-0029.
+    - Ranking formulas, queue priorities, and continuation-selection policy.
+  upstream_path:
+  - SG-SPEC-0026 reaches proposal/split readiness for this subtree only via a direct SG-SPEC-0026 -> SG-SPEC-0027
+    dependency under SG-SPEC-0046.
+  - SG-SPEC-0046 allows no intermediate SG-SPEC-0026 parent-consumer nodes between SG-SPEC-0026 and SG-SPEC-0027.
+  handoff_boundary:
+  - SG-SPEC-0046 stops at the SG-SPEC-0027 handoff for this subtree.
+  - SG-SPEC-0045 composes sibling SG-SPEC-0047 for the downstream SG-SPEC-0027 -> SG-SPEC-0032 -> SG-SPEC-0043
+    segment.
+  no_bypass_rules:
+  - SG-SPEC-0026 must not depend_on SG-SPEC-0029 directly for proposal/split readiness while the SG-SPEC-0045
+    subtree is present.
+  - SG-SPEC-0026 must not bypass SG-SPEC-0027 for proposal/split readiness in this subtree.
+  - SG-SPEC-0026 must not depend_on SG-SPEC-0032, SG-SPEC-0043, or any downstream SG-SPEC-0027 descendants
+    for proposal/split readiness in this subtree.
+  parent_contract:
+  - SG-SPEC-0045 delegates upstream parent-consumer readiness no-bypass constraints to SG-SPEC-0046.
+  - SG-SPEC-0045 composes SG-SPEC-0046 with sibling SG-SPEC-0047 for the full parent-integration path.
+  boundaries:
+  - SG-SPEC-0046 does not define downstream gateway-segment semantics, concrete mechanics, scoring, runtime
+    engine, or authority-transition semantics.
+  - SG-SPEC-0046 only constrains the upstream parent-consumer handoff topology for SG-SPEC-0026.
+gate_state: split_required
+required_human_action: split spec scope before rerun
+proposed_status: null
+proposed_maturity: null
+last_outcome: split_required
+last_blocker: ''
+last_run_id: 20260414T204935Z-SG-SPEC-0046
+last_exit_code: 0
+last_changed_files:
+- specs/nodes/SG-SPEC-0046.yaml
+last_run_at: '2026-04-14T20:49:36.704769+00:00'
+last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0046-20260414T204923Z
+last_branch: codex/sg-spec-0046/20260414T204923Z
+last_validator_results:
+  outputs: true
+  allowed_paths: true
+  reconciliation: true
+  atomicity: true
+  transition: true
+  executor_environment: true
+  refinement_acceptance: true
+last_refinement_acceptance:
+  decision: approve
+  change_class: local_refinement
+  checks:
+    content_changed: true
+    hard_validation: true
+    single_spec_scope: true
+    constitutional_diff: false
+    graph_refactor_diff: false
+    atomicity_clear: true
+    within_mutation_budget: true
+  diff_paths:
+  - specification.no_bypass_rules[2]
+  - specification.upstream_path[0]
+  - specification.upstream_path[1]
+  mutation_classes:
+  - policy_text
+  mutation_budget: []
+  budget_exceeded_classes: []
+  changed_spec_files:
+  - specs/nodes/SG-SPEC-0046.yaml
+  review_reasons: []
+  errors: []
+  warnings: []
+last_reconciliation:
+  worktree_spec_count: 44
+  changed_spec_ids:
+  - SG-SPEC-0046
+  semantic_dependencies_resolved: true
+  work_dependencies_ready: false
+  cycles: []
+last_requested_child_materialization: false
+last_materialized_child_paths: []
