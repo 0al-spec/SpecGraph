@@ -20,7 +20,6 @@ outputs:
 - specs/nodes/SG-SPEC-0026.yaml
 allowed_paths:
 - specs/nodes/SG-SPEC-0026.yaml
-- specs/nodes/SG-SPEC-0033.yaml
 acceptance:
 - Defines SG-SPEC-0026 as the bounded continuation-selection integration child beneath SG-SPEC-0003.
 - Delegates concrete continuation candidate derivation, de-duplication, and deterministic tie-break to
