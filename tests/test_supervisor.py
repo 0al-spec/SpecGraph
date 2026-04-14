@@ -3243,6 +3243,29 @@ def test_repair_candidate_yaml_text_quotes_multiline_sequence_scalar_with_colon_
     ]
 
 
+def test_repair_candidate_yaml_text_quotes_multiline_sequence_scalar_starting_with_backtick(
+    supervisor_module: object,
+) -> None:
+    candidate = (
+        "specification:\n"
+        "  output_contract:\n"
+        "  - `derived_continuation_handoff` contains one entry per non-selected "
+        "candidate after deterministic ranking\n"
+        "    and may include suppression or ranking-rationale annotations.\n"
+    )
+
+    repaired = supervisor_module.repair_candidate_yaml_text(candidate)
+
+    parsed = supervisor_module.get_yaml_module().safe_load(repaired)
+    assert parsed["specification"]["output_contract"] == [
+        (
+            "`derived_continuation_handoff` contains one entry per non-selected "
+            "candidate after deterministic ranking and may include suppression "
+            "or ranking-rationale annotations."
+        )
+    ]
+
+
 def test_repair_candidate_yaml_text_quotes_multiline_mapping_scalar(
     supervisor_module: object,
 ) -> None:

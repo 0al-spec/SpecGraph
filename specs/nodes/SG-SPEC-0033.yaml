@@ -1,0 +1,94 @@
+id: SG-SPEC-0033
+title: SpecGraph - Deterministic Continuation Candidate Selection
+kind: spec
+status: reviewed
+maturity: 0.89
+depends_on:
+- SG-SPEC-0004
+- SG-SPEC-0006
+refines:
+- SG-SPEC-0026
+inputs:
+- specs/nodes/SG-SPEC-0026.yaml
+- specs/nodes/SG-SPEC-0004.yaml
+- specs/nodes/SG-SPEC-0005.yaml
+- specs/nodes/SG-SPEC-0006.yaml
+- tasks.md
+outputs:
+- specs/nodes/SG-SPEC-0033.yaml
+allowed_paths:
+- specs/nodes/SG-SPEC-0033.yaml
+acceptance:
+- Defines bounded derivation constraints for continuation candidates from already linked canonical frontier
+  specs.
+- 'Defines de-duplication and at-most-one deterministic selection semantics with the exact tie-break precedence:
+  repeated_split_required_candidate, then stalled_maturity_candidate, then weak_structural_linkage_candidate,
+  then lexicographically smallest candidate identifier.'
+- Defines the selection output contract for SG-SPEC-0026, including selected and suppressed continuation
+  artifacts.
+- Remains implementation-agnostic about scoring formulas, viewer/UX, and queue-priority engines.
+acceptance_evidence:
+- criterion: Defines bounded derivation constraints for continuation candidates from already linked canonical
+    frontier specs.
+  evidence: specification.candidate_discovery restricts candidates to linked canonical specs and to the
+    active reflective frontier.
+- criterion: 'Defines de-duplication and at-most-one deterministic selection semantics with the exact
+    tie-break precedence: repeated_split_required_candidate, then stalled_maturity_candidate, then weak_structural_linkage_candidate,
+    then lexicographically smallest candidate identifier.'
+  evidence: specification.selection_contract limits output to at most one selected candidate and encodes
+    the ordered tie-break sequence with deterministic lexicographic fallback.
+- criterion: Defines the selection output contract for SG-SPEC-0026, including selected and suppressed
+    continuation artifacts.
+  evidence: specification.output_contract emits only derived continuation-selection and continuation-handoff
+    artifacts, with no canonical status/maturity updates.
+- criterion: Remains implementation-agnostic about scoring formulas, viewer/UX, and queue-priority engines.
+  evidence: specification.scope.out excludes scoring formulas, viewer/UX, and queue-priority engines.
+prompt: Materialize SG-SPEC-0033 as the bounded continuation-candidate selection child for SG-SPEC-0026.
+  It must constrain derivation sources, enforce deterministic de-duplication and tie-break ordering, and
+  emit only derived selection and handoff artifacts for SG-SPEC-0026.
+specification:
+  objective: Define deterministic continuation candidate derivation and selection mechanics so SG-SPEC-0026
+    can integrate continuation handoff without owning execution-scoring or viewer behavior.
+  scope:
+    in:
+    - Candidate derivation constraints from linked canonical frontier specs
+    - De-duplication and tie-break rules for continuation candidates
+    - Selection output contract used by SG-SPEC-0026 for handoff
+    - Derived-only continuation records when no valid candidate or suppression applies
+    out:
+    - Concrete reflective execution mechanics owned by SG-SPEC-0027
+    - Authority limits, proposal ownership, or gate suppression policies that control direct continuation
+    - Scoring formulas, queue-priority engines, and viewer/UX design
+  candidate_discovery:
+  - SG-SPEC-0033 searches only linked canonical specs in the current reflective frontier.
+  - 'Candidate candidates may be informed by status, maturity, and graph-health signal classes: repeated_split_required_candidate,
+    stalled_maturity_candidate, weak_structural_linkage_candidate.'
+  - Candidate derivation de-duplicates identical target regions before selection ranking.
+  selection_contract:
+  - SG-SPEC-0033 emits at most one selected_continuation_candidate per run context.
+  - 'When multiple candidates survive, ordering is deterministic by signal class: repeated_split_required_candidate
+    > stalled_maturity_candidate > weak_structural_linkage_candidate.'
+  - If tie persists after signal-ordering, choose the lexicographically smallest linked candidate identifier.
+  - All non-selected candidates are emitted as derived handoff entries, never direct canonical updates.
+  output_contract:
+  - 'SG-SPEC-0033 emits exactly one derived `continuation_selection` artifact per run context with fields:
+    selected_candidate_id (or null), selection_rationale, and de-duplicated candidate_set.'
+  - SG-SPEC-0033 emits derived `continuation_handoff` artifacts for each suppressed or non-selected candidate.
+    Suppression handoff artifacts carry candidate_id, suppression_reason, and rerank_position.
+  - SG-SPEC-0026 consumes only these derived continuation artifacts and this node performs no canonical
+    status/maturity/backlog/ownership mutations.
+  parent_contract:
+  - SG-SPEC-0026 depends_on SG-SPEC-0033 for deterministic continuation candidate selection mechanics.
+  - SG-SPEC-0026 retains suppression, gating, and handoff policy at integration level.
+  - SG-SPEC-0033 must remain implementation-agnostic to scoring formulas, queue-priority engines, and
+    viewer/UX.
+  boundary_notes:
+  - SG-SPEC-0033 is a bounded selection-mechanics node and does not redefine proposal ownership or direct
+    execution contracts.
+gate_state: none
+proposed_status: null
+proposed_maturity: null
+required_human_action: '-'
+last_gate_decision: approve
+last_gate_note: ''
+last_gate_at: '2026-04-14T08:02:05.119541+00:00'

@@ -995,6 +995,10 @@ def _yaml_single_quote(value: str) -> str:
     return "'" + value.replace("'", "''") + "'"
 
 
+def _yaml_plain_scalar_needs_quote(value: str) -> bool:
+    return value.startswith("`") or ":" in value
+
+
 def build_yaml_key_indent_map(text: str) -> dict[str, tuple[int, ...]]:
     indents: dict[str, set[int]] = {}
     for line in text.splitlines():
@@ -1249,9 +1253,9 @@ def repair_candidate_yaml_text(candidate_text: str, original_text: str | None = 
             continuation_parts.append(continuation_line.strip())
             continuation_index += 1
 
-        needs_quote = ":" in content or any(":" in part for part in continuation_parts)
+        flattened = " ".join([content, *continuation_parts]).strip()
+        needs_quote = _yaml_plain_scalar_needs_quote(flattened)
         if continuation_parts and needs_quote:
-            flattened = " ".join([content, *continuation_parts]).strip()
             repaired_lines.append((" " * indent) + "- " + _yaml_single_quote(flattened))
             index = continuation_index
             continue
