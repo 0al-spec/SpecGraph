@@ -1,0 +1,83 @@
+id: SG-SPEC-0032
+title: SpecGraph - Proposal/Split Mechanics Subcluster
+kind: spec
+status: linked
+maturity: 0.69
+depends_on:
+- SG-SPEC-0029
+refines:
+- SG-SPEC-0027
+inputs:
+- specs/nodes/SG-SPEC-0027.yaml
+- specs/nodes/SG-SPEC-0029.yaml
+- tasks.md
+outputs:
+- specs/nodes/SG-SPEC-0032.yaml
+allowed_paths:
+- specs/nodes/SG-SPEC-0032.yaml
+acceptance:
+- Defines SG-SPEC-0032 as the proposal/split mechanics child beneath SG-SPEC-0027.
+- Defines that SG-SPEC-0029 is the immediate proposal/split mechanics descendant of SG-SPEC-0032 and that
+  SG-SPEC-0032 delegates proposal/split mechanics contracts behind a bounded gateway.
+- Defines how SG-SPEC-0026 remains insulated from direct proposal/split child dependencies while depending
+  on SG-SPEC-0027 for reflective execution mechanics.
+- Keeps SG-SPEC-0032 bounded to integration-surface concerns and implementation-agnostic to queue ranking,
+  continuation selection, and runtime orchestration.
+acceptance_evidence:
+- criterion: Defines SG-SPEC-0032 as the proposal/split mechanics child beneath SG-SPEC-0027.
+  evidence: specification.cluster_members and specification.cluster_role make SG-SPEC-0032 the proposal/split
+    subcluster node exposed directly under SG-SPEC-0027.
+- criterion: Defines that SG-SPEC-0029 is the immediate proposal/split mechanics descendant of SG-SPEC-0032
+    and that SG-SPEC-0032 delegates proposal/split mechanics contracts through a bounded gateway contract.
+  evidence: depends_on records SG-SPEC-0029 as the immediate proposal/split mechanics descendant, and
+    specification.cluster_members plus specification.cluster_boundaries identify SG-SPEC-0029 as the delegated
+    descendant under SG-SPEC-0032 while SG-SPEC-0032 keeps the integration contract narrow.
+- criterion: Defines how SG-SPEC-0026 remains insulated from direct proposal/split child dependencies
+    while depending on SG-SPEC-0027 for reflective execution mechanics.
+  evidence: specification.parent_contract and SG-SPEC-0027.cluster_topology require SG-SPEC-0026 to depend
+    on SG-SPEC-0027 only and not on SG-SPEC-0029.
+- criterion: Keeps SG-SPEC-0032 bounded to integration-surface concerns and implementation-agnostic to
+    queue ranking, continuation selection, and runtime orchestration.
+  evidence: specification.scope.out excludes continuation-selection policy, queue ranking formulas, viewer/runtime
+    orchestration while defining proposal/split gateway integration roles in scope.
+prompt: Materialize SG-SPEC-0032 as the bounded proposal/split mechanics child under SG-SPEC-0027 so that
+  SG-SPEC-0026 gets one coherent execution-mechanics dependency and the proposal/split mechanics descendants
+  remain inspectable as an intact subcluster.
+specification:
+  objective: Define the proposal/split mechanics subcluster boundary beneath SG-SPEC-0027 without redefining
+    downstream mechanics contracts.
+  scope:
+    in:
+    - Proposal and split mechanics gateway role beneath SG-SPEC-0027
+    - Delegation of concrete proposal/split contracts and lifecycle semantics to SG-SPEC-0029
+    - Subtree-integration contract between SG-SPEC-0026, SG-SPEC-0027, and this subcluster
+    out:
+    - Field-level split artifact schemas already owned by SG-SPEC-0029
+    - Continuation-selection policy owned by SG-SPEC-0026
+    - Queue ranking formulas, viewer layout, and runtime orchestration
+  cluster_role:
+  - SG-SPEC-0032 is the single proposal/split mechanics child under SG-SPEC-0027.
+  - SG-SPEC-0032 preserves subtree inspectability while keeping proposal/split mechanics contracts delegated.
+  cluster_topology:
+  - SG-SPEC-0027 depends on SG-SPEC-0032 as its proposal/split mechanics child.
+  - SG-SPEC-0032 delegates concrete proposal/split mechanics contracts to SG-SPEC-0029 through gateway
+    integration.
+  - While SG-SPEC-0032 remains present, SG-SPEC-0026 must not depend directly on SG-SPEC-0029 for execution-mechanics
+    readiness.
+  cluster_members:
+    proposal_gateway:
+    - SG-SPEC-0029 owns the concrete proposal and split mechanics contracts.
+  cluster_boundaries:
+  - SG-SPEC-0032 does not redefine SG-SPEC-0029-owned mechanics semantics.
+  - SG-SPEC-0032 does not define continuation-selection rules, viewer behavior, or queue ranking formulas.
+  parent_contract:
+  - SG-SPEC-0027 must consume SG-SPEC-0032 as a single bounded proposal/split mechanics gateway dependency.
+  - SG-SPEC-0032 must keep the proposal/split mechanics subcluster inspectable and bounded to gateway-level
+    integration constraints.
+gate_state: none
+proposed_status: null
+proposed_maturity: null
+required_human_action: '-'
+last_gate_decision: approve
+last_gate_note: ''
+last_gate_at: '2026-04-14T05:00:29.929429+00:00'
