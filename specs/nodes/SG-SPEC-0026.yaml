@@ -2,7 +2,7 @@ id: SG-SPEC-0026
 title: SpecGraph - Reflective Mechanics Integration and Continuation Selection
 kind: spec
 status: linked
-maturity: 0.69
+maturity: 0.89
 depends_on:
 - SG-SPEC-0027
 refines:
@@ -32,8 +32,7 @@ acceptance_evidence:
     concrete reflective execution mechanics to a dedicated child cluster node.
   evidence: specification.integration_role defines SG-SPEC-0026 as the continuation-selection integration
     child beneath SG-SPEC-0003, while specification.delegated_execution_cluster assigns SG-SPEC-0027 as
-    the bounded mechanics cluster for split mechanics, retrospective direct-update boundaries, and proposal-lane
-    execution semantics.
+    the bounded mechanics cluster through which reflective execution descendants are consumed.
 - criterion: Defines the bounded continuation-selection policy for deriving, de-duplicating, and choosing
     at most one linked latent_graph_improvement_candidate after explicit blocked or gated work clears.
   evidence: specification.continuation_selection.preconditions gates continuation to runs whose current
@@ -77,8 +76,9 @@ specification:
     mechanics remain jointly required before continuation-aware operation is coherent.
   delegated_execution_cluster:
   - SG-SPEC-0027 owns the integrated reflective execution mechanics cluster beneath SG-SPEC-0026.
-  - Descendant mechanics specs such as SG-SPEC-0025, SG-SPEC-0005, and SG-SPEC-0006 refine through SG-SPEC-0027
-    rather than directly through SG-SPEC-0026 when they belong to the same execution cluster.
+  - Execution-mechanics descendants that belong to this cluster are refined through SG-SPEC-0027.
+  - SG-SPEC-0026 may depend directly only on SG-SPEC-0027 for execution-readiness; no other direct execution-mechanics
+    dependencies are allowed while this cluster is present.
   continuation_selection:
     preconditions:
     - The current bounded target has no remaining explicit blocked or gated work within current authority.
@@ -92,7 +92,7 @@ specification:
     - Candidate derivation must de-duplicate identical target regions within the same run context.
     selection:
     - At most one linked latent_graph_improvement_candidate may be selected per run.
-    - 'Deterministic tie-breaking is strictly ordered by signal class: first explicit recurring conjunction,
+    - 'Deterministic tie-breaking is strictly ordered by signal class: first repeated_split_required_candidate,
       then stalled_maturity_candidate, then weak_structural_linkage_candidate; if still tied, choose the
       lexicographically smallest linked spec identifier and defer all other candidates to derived handoff.'
     - If no eligible candidate survives derivation and suppression, no continuation selection occurs.
@@ -109,19 +109,19 @@ specification:
     parent governance boundaries.
   - Continuation records and delegated mechanics outputs remain non-canonical until separately authorized
     execution or approval paths apply them.
+gate_state: split_required
+required_human_action: split spec scope before rerun
 proposed_status: null
 proposed_maturity: null
-gate_state: none
-required_human_action: '-'
-last_outcome: done
+last_outcome: split_required
 last_blocker: ''
-last_run_id: 20260413T075043Z-SG-SPEC-0026
+last_run_id: 20260414T063826Z-SG-SPEC-0026
 last_exit_code: 0
 last_changed_files:
 - specs/nodes/SG-SPEC-0026.yaml
-last_run_at: '2026-04-13T07:50:43.571420+00:00'
-last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0026-20260413T075024Z
-last_branch: codex/sg-spec-0026/20260413T075024Z
+last_run_at: '2026-04-14T06:38:27.249213+00:00'
+last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0026-20260414T063805Z
+last_branch: codex/sg-spec-0026/20260414T063805Z
 last_validator_results:
   outputs: true
   allowed_paths: true
@@ -142,7 +142,9 @@ last_refinement_acceptance:
     atomicity_clear: true
     within_mutation_budget: true
   diff_paths:
-  - specification.continuation_selection.selection[1]
+  - acceptance_evidence[0].evidence
+  - specification.delegated_execution_cluster[1]
+  - specification.delegated_execution_cluster[2]
   mutation_classes:
   - policy_text
   mutation_budget: []
@@ -153,7 +155,7 @@ last_refinement_acceptance:
   errors: []
   warnings: []
 last_reconciliation:
-  worktree_spec_count: 27
+  worktree_spec_count: 32
   changed_spec_ids:
   - SG-SPEC-0026
   semantic_dependencies_resolved: true
