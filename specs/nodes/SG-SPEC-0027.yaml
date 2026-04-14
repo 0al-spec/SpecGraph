@@ -5,13 +5,13 @@ status: linked
 maturity: 0.69
 depends_on:
 - SG-SPEC-0005
-- SG-SPEC-0029
+- SG-SPEC-0032
 refines:
 - SG-SPEC-0026
 inputs:
 - specs/nodes/SG-SPEC-0026.yaml
 - specs/nodes/SG-SPEC-0005.yaml
-- specs/nodes/SG-SPEC-0029.yaml
+- specs/nodes/SG-SPEC-0032.yaml
 - tasks.md
 outputs:
 - specs/nodes/SG-SPEC-0027.yaml
@@ -19,7 +19,7 @@ allowed_paths:
 - specs/nodes/SG-SPEC-0027.yaml
 acceptance:
 - Defines SG-SPEC-0027 as the bounded execution-mechanics cluster beneath SG-SPEC-0026 with exactly two
-  direct mechanics children (SG-SPEC-0005 and SG-SPEC-0029), so SG-SPEC-0026 receives one coherent execution-mechanics
+  direct mechanics children (SG-SPEC-0005 and SG-SPEC-0032), so SG-SPEC-0026 receives one coherent execution-mechanics
   dependency for this subtree and no bypass paths to descendants.
 - Defines how the mechanics descendants remain jointly inspectable as one execution cluster without collapsing
   their distinct bounded responsibilities.
@@ -28,10 +28,10 @@ acceptance:
 - Remains implementation-agnostic about viewer layout, queue ranking formulas, and runtime orchestration.
 acceptance_evidence:
 - criterion: Defines SG-SPEC-0027 as the bounded execution-mechanics cluster beneath SG-SPEC-0026 with
-    exactly two direct mechanics children (SG-SPEC-0005 and SG-SPEC-0029), so SG-SPEC-0026 receives one
+    exactly two direct mechanics children (SG-SPEC-0005 and SG-SPEC-0032), so SG-SPEC-0026 receives one
     coherent execution-mechanics dependency for this subtree and no bypass paths to descendants.
   evidence: specification.cluster_topology and specification.parent_contract require SG-SPEC-0027 to expose
-    exactly SG-SPEC-0005 and SG-SPEC-0029 as direct mechanics children, define SG-SPEC-0026’s single execution-mechanics
+    exactly SG-SPEC-0005 and SG-SPEC-0032 as direct mechanics children, define SG-SPEC-0026’s single execution-mechanics
     dependency as SG-SPEC-0027, and disallow direct bypass dependencies.
 - criterion: Defines how the mechanics descendants remain jointly inspectable as one execution cluster
     without collapsing their distinct bounded responsibilities.
@@ -58,11 +58,11 @@ specification:
     in:
     - Execution cluster role beneath SG-SPEC-0026
     - Membership and boundary notes for SG-SPEC-0005 and subordinate proposal/split mechanics subcluster
-      SG-SPEC-0029
+      SG-SPEC-0032
     - Weakest parent integration contract from SG-SPEC-0026 to the cluster
     out:
     - Concrete mechanics semantics already owned by descendant specs
-    - Internal proposal/split membership semantics delegated through SG-SPEC-0029 to SG-SPEC-0028
+    - Internal proposal/split membership semantics delegated through SG-SPEC-0032 to SG-SPEC-0029
     - Continuation-selection policy owned by SG-SPEC-0026
     - Viewer layout, queue ranking formulas, and runtime orchestration
   cluster_role:
@@ -70,10 +70,10 @@ specification:
   - SG-SPEC-0027 exists to keep reflective execution mechanics structurally coherent without forcing SG-SPEC-0026
     to exceed its blocking-child atomicity limit.
   - 'SG-SPEC-0027 exposes exactly two direct execution-mechanics children: SG-SPEC-0005 for retrospective
-    direct-update boundary and SG-SPEC-0029 for the proposal/split mechanics subtree. SG-SPEC-0026 therefore
+    direct-update boundary and SG-SPEC-0032 for the proposal/split mechanics subtree. SG-SPEC-0026 therefore
     depends on SG-SPEC-0027 as the single execution-mechanics dependency for this cluster.'
   cluster_topology:
-  - SG-SPEC-0027 depends on exactly SG-SPEC-0005 and SG-SPEC-0029 as direct execution-mechanics descendants.
+  - SG-SPEC-0027 depends on exactly SG-SPEC-0005 and SG-SPEC-0032 as direct execution-mechanics descendants.
   - SG-SPEC-0026 consumes SG-SPEC-0027 as the single execution-mechanics dependency path for this subtree.
   - While SG-SPEC-0027 exists, SG-SPEC-0026 must not have direct execution-mechanics dependencies to SG-SPEC-0005
     or SG-SPEC-0029.
@@ -81,20 +81,20 @@ specification:
     retrospective_direct_update_boundary:
     - SG-SPEC-0005 owns retrospective direct-update boundary and application envelope.
     proposal_and_split_mechanics_subcluster:
-    - SG-SPEC-0029 owns the proposal/split mechanics subcluster gateway and delegates split proposal lifecycle,
-      split mechanics schema, and proposal-lane execution descendants to SG-SPEC-0028.
+    - SG-SPEC-0032 owns the proposal/split mechanics subcluster gateway and delegates split proposal lifecycle,
+      split mechanics schema, and proposal-lane execution descendants to SG-SPEC-0029.
   cluster_boundaries:
   - Refining through SG-SPEC-0027 does not collapse descendant node identities or their bounded concerns.
   - SG-SPEC-0027 does not redefine the mechanics contracts already owned by its descendants.
   - Cross-descendant consistency is expressed here only at the subtree-integration level.
   - SG-SPEC-0027 does not restate field-level proposal or split artifact contracts once those are delegated
-    through SG-SPEC-0029 and SG-SPEC-0028.
+    through SG-SPEC-0032 and SG-SPEC-0029.
   parent_contract:
   - SG-SPEC-0026 must depend_on SG-SPEC-0027 as the single bounded prerequisite for reflective execution
     readiness.
   - SG-SPEC-0027 must remain narrow enough that SG-SPEC-0026 keeps continuation-selection logic separate
     from mechanics integration.
-  - SG-SPEC-0027 must expose exactly one subordinate proposal/split mechanics subcluster and it is SG-SPEC-0029.
+  - SG-SPEC-0027 must expose exactly one subordinate proposal/split mechanics subcluster and it is SG-SPEC-0032.
   - SG-SPEC-0026 must not depend on any execution-mechanics node other than SG-SPEC-0027 for execution-mechanics
     readiness while SG-SPEC-0027 remains present.
 gate_state: none

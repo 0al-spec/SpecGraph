@@ -3,7 +3,8 @@ title: SpecGraph - Proposal/Split Mechanics Subcluster
 kind: spec
 status: linked
 maturity: 0.69
-depends_on: []
+depends_on:
+- SG-SPEC-0029
 refines:
 - SG-SPEC-0027
 inputs:
@@ -28,8 +29,9 @@ acceptance_evidence:
     subcluster node exposed directly under SG-SPEC-0027.
 - criterion: Defines that SG-SPEC-0029 is the immediate proposal/split mechanics descendant of SG-SPEC-0032
     and that SG-SPEC-0032 delegates proposal/split mechanics contracts through a bounded gateway contract.
-  evidence: specification.cluster_members and specification.cluster_boundaries identify SG-SPEC-0029 as
-    the delegated descendant under SG-SPEC-0032 while SG-SPEC-0032 keeps the integration contract narrow.
+  evidence: depends_on records SG-SPEC-0029 as the immediate proposal/split mechanics descendant, and
+    specification.cluster_members plus specification.cluster_boundaries identify SG-SPEC-0029 as the delegated
+    descendant under SG-SPEC-0032 while SG-SPEC-0032 keeps the integration contract narrow.
 - criterion: Defines how SG-SPEC-0026 remains insulated from direct proposal/split child dependencies
     while depending on SG-SPEC-0027 for reflective execution mechanics.
   evidence: specification.parent_contract and SG-SPEC-0027.cluster_topology require SG-SPEC-0026 to depend
