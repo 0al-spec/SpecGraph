@@ -2,10 +2,11 @@ id: SG-SPEC-0003
 title: SpecGraph - Reflective Governance Boundary and Graph Health Signals
 kind: spec
 status: linked
-maturity: 0.87
+maturity: 1.0
 depends_on:
 - SG-SPEC-0026
 - SG-SPEC-0034
+- SG-SPEC-0049
 relates_to:
 - SG-SPEC-0002
 refines:
@@ -33,8 +34,9 @@ acceptance:
 - Defines that graph-health observations, signals, latent continuation candidates, and proposal artifacts
   are first persisted in run artifacts plus derived queues, not written back into canonical spec nodes
 - Remains implementation-agnostic about exact formulas, thresholds, queue algorithms, and future metric
-  systems such as SIB or Specification Verifiability, while delegating concrete proposal and queue contract
-  details to SG-SPEC-0034
+  systems such as SIB or Specification Verifiability, while delegating concrete continuation selection
+  and reflective execution mechanics to SG-SPEC-0026 and its descendants, concrete proposal/queue control
+  details to SG-SPEC-0034, and detailed subtree-shape and lower-boundary handoff signal contracts to SG-SPEC-0049
 acceptance_evidence:
 - criterion: Defines the boundary between canonical SpecGraph governance, supervisor execution, bounded
     autonomous continuation, and changes that always require human approval
@@ -78,22 +80,28 @@ acceptance_evidence:
 
     '
 - criterion: Remains implementation-agnostic about exact formulas, thresholds, queue algorithms, and future
-    metric systems such as SIB or Specification Verifiability, while delegating concrete proposal and
-    queue contract details to SG-SPEC-0034
-  evidence: 'specification.scope.out excludes concrete metric formulas and threshold tuning while keeping
-    SG-SPEC-0003 focused on governance boundary and derived persistence. Concrete proposal/queue control
-    semantics remain in SG-SPEC-0034, including precedence, dedupe, retry, and handoff behavior.
+    metric systems such as SIB or Specification Verifiability, while delegating concrete continuation
+    selection and reflective execution mechanics to SG-SPEC-0026 and its descendants, concrete proposal/queue
+    control details to SG-SPEC-0034, and detailed subtree-shape and lower-boundary handoff signal contracts
+    to SG-SPEC-0049
+  evidence: 'specification.scope.out excludes concrete metric formulas, threshold tuning, continuation-selection
+    truth tables, queue-control semantics, and tracked implementation-layer design while keeping SG-SPEC-0003
+    focused on governance boundary and derived persistence. specification.delegated_integration_map assigns
+    parent-facing continuation integration to SG-SPEC-0026, proposal/queue control semantics to SG-SPEC-0034,
+    and bounded subtree-shape plus lower-boundary handoff signal semantics to SG-SPEC-0049.
 
     '
 prompt: Keep SG-SPEC-0003 as the canonical overview and integration node for reflective graph-health governance.
   It retains the boundary among SpecGraph governance, supervisor execution, bounded autonomous continuation,
   derived observation/signal/proposal flow, diagnostic graph-health vocabulary, derived first-persistence
   constraints, and implementation-agnostic scope, while SG-SPEC-0026 and its descendants own continuation
-  selection and delegated reflective execution mechanics.
+  selection and delegated reflective execution mechanics, SG-SPEC-0034 owns proposal/queue control contracts,
+  and SG-SPEC-0049 owns derived subtree-shape and lower-boundary handoff signal contracts.
 specification:
   objective: 'Define how SpecGraph observes its own graph quality, how those observations become derived
-    signals, continuation candidates, and proposals, and where the boundary lies between canonical governance,
-    supervisor execution, and human approval.
+    signals, continuation candidates, and proposals, where the boundary lies between canonical governance,
+    supervisor execution, and human approval, and how this overview node coordinates bounded delegated
+    mechanics without reabsorbing them.
 
     '
   scope:
@@ -105,11 +113,17 @@ specification:
     - First graph-health signals related to spec size, dependency integrity, and refinement progression
     - Derived persistence of observations, signals, continuation candidates, and proposals in run artifacts
     - First derived refactor queue artifact, work-item classification, and proposal queue artifact
+    - Parent-side coordination of bounded continuation and proposal/queue contract descendants
+    - Parent-side boundary for derived subtree-shape and lower-boundary handoff signal descendants
     out:
     - Concrete metric formulas or scoring weights
     - Final queue prioritization algorithms
+    - Concrete continuation candidate derivation, deterministic tie-break rules, suppression/handoff truth
+      tables, and delegated reflective execution mechanics owned by SG-SPEC-0026 and its descendants
     - Concrete proposal/queue control semantics, including active-item precedence, dedupe, retry gating,
       and proposal-direct handoff behavior, are delegated to SG-SPEC-0034
+    - Concrete subtree-shape and lower-boundary handoff signal semantics, consumer penalties, and any
+      tracked implementation-facing layer contract are delegated to SG-SPEC-0049
     - Concrete split_refactor execution steps, split payload schema, and handoff/selection heuristics
     - Viewer UX or visual overlays
     - Automatic self-modification of ontology without approval
@@ -169,6 +183,51 @@ specification:
       the governing rules of SpecGraph and therefore requires human approval.
 
       '
+  delegated_integration_map:
+    parent_role:
+    - SG-SPEC-0003 remains the overview node that defines the reflective governance boundary, shared graph-health
+      vocabulary, and first-persistence envelope for this graph area.
+    - SG-SPEC-0003 coordinates bounded dependency children and their descendant mechanics surfaces, but
+      it MUST NOT restate detailed continuation-selection, execution, or queue-control truth tables once
+      those concerns are delegated below.
+    dependency_children:
+    - child_spec: SG-SPEC-0026
+      concern: Bounded autonomous continuation integration
+      parent_summary:
+      - SG-SPEC-0003 defines when bounded autonomous continuation may be considered and preserves the
+        non-canonical boundary for latent_graph_improvement_candidate records.
+      - SG-SPEC-0003 retains the approval and governance boundary for continuation without owning selection
+        or execution mechanics.
+      delegated_detail_owned_by_child:
+      - SG-SPEC-0026 owns parent-facing continuation suppression and handoff integration.
+      - SG-SPEC-0033 owns concrete continuation candidate derivation, de-duplication, and deterministic
+        selection ordering beneath SG-SPEC-0026.
+      - SG-SPEC-0027 and its descendants own delegated reflective execution mechanics after continuation
+        handoff is allowed.
+    - child_spec: SG-SPEC-0034
+      concern: Proposal and queue control contract boundary
+      parent_summary:
+      - SG-SPEC-0003 defines reflective-loop staging and the rule that proposal and queue artifacts remain
+        derived and non-canonical at first persistence.
+      - SG-SPEC-0003 keeps only the implementation-agnostic boundary for when proposals or direct refactors
+        are considered under current governance.
+      delegated_detail_owned_by_child:
+      - SG-SPEC-0034 owns the parent-facing proposal_queue and refactor_queue control contract surface.
+      - SG-SPEC-0039, SG-SPEC-0041, and their descendants own concrete queue-control field surfaces, retry
+        conditions, precedence, and proposal-direct handoff semantics.
+    - child_spec: SG-SPEC-0049
+      concern: Derived subtree-shape and lower-boundary handoff signal boundary
+      parent_summary:
+      - SG-SPEC-0003 retains shared graph-health vocabulary, first-persistence constraints, and the rule
+        that shape and handoff signals remain derived rather than canonical graph truth.
+      - SG-SPEC-0003 keeps only the implementation-agnostic boundary for when subtree-shape or lower-boundary
+        handoff signals may redirect work toward rebalance, proposal, or stop-or-redirect behavior.
+      delegated_detail_owned_by_child:
+      - SG-SPEC-0049 owns the bounded signal families for subtree shape, missing aggregate grouping, and
+        lower-boundary handoff candidates.
+      - SG-SPEC-0049 defines evaluator and supervisor consumption boundaries for those signals without
+        introducing a tracked implementation-facing layer or redefining queue-control or continuation-selection
+        mechanics.
   boundary_policy:
     canonical_governance:
     - Canonical specs define what counts as valid graph structure, allowed edge semantics, lifecycle transitions,
@@ -255,6 +314,13 @@ specification:
       context around stalled_maturity_candidate or weak_structural_linkage_candidate.
     - Continuation detection is rebuildable from canonical graph state plus run context and MUST NOT be
       written back as a canonical obligation, score, or lifecycle field.
+    delegated_signal_families:
+    - SG-SPEC-0049 owns detailed subtree-shape signals such as serial_refinement_ladder, over_atomized_subtree,
+      missing_aggregate_node, depth_without_breadth, and delegation_only_chain.
+    - SG-SPEC-0049 owns lower-boundary handoff signals such as lower_boundary_handoff_candidate and graph_layer_exhausted_for_subtree.
+    - Those descendant signals remain derived and advisory; they may inform evaluator or supervisor stop-or-redirect
+      decisions but do not create a tracked implementation-facing layer or canonical writeback path by
+      themselves.
   derived_artifact_policy:
     first_persistence:
     - Run payloads
@@ -299,69 +365,10 @@ specification:
     - A split proposal retains the parent spec’s stable ID and overview role boundary until approved.
     - Candidate follow-up children are represented as derived proposal artifacts for governance review,
       not as canonical commitments.
-gate_state: split_required
-required_human_action: split spec scope before rerun
+gate_state: none
 proposed_status: null
 proposed_maturity: null
-last_outcome: split_required
-last_blocker: ''
-last_run_id: 20260414T082612Z-SG-SPEC-0003
-last_exit_code: 0
-last_changed_files:
-- specs/nodes/SG-SPEC-0003.yaml
-- specs/nodes/SG-SPEC-0034.yaml
-last_run_at: '2026-04-14T08:26:12.781849+00:00'
-last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0003-20260414T082422Z
-last_branch: codex/sg-spec-0003/20260414T082422Z
-last_validator_results:
-  outputs: true
-  allowed_paths: true
-  reconciliation: true
-  atomicity: true
-  transition: true
-  executor_environment: true
-  refinement_acceptance: true
-last_refinement_acceptance:
-  decision: review_required
-  change_class: graph_refactor
-  checks:
-    content_changed: true
-    hard_validation: true
-    single_spec_scope: false
-    constitutional_diff: false
-    graph_refactor_diff: true
-    atomicity_clear: true
-    within_mutation_budget: true
-  diff_paths:
-  - acceptance[4]
-  - acceptance_evidence[4].criterion
-  - acceptance_evidence[4].evidence
-  - depends_on[1]
-  - specification.derived_artifact_policy.proposal_queue[3]
-  - specification.reflective_loop.rules[3]
-  - specification.reflective_loop.rules[4]
-  - specification.reflective_loop.stages[5]
-  - specification.scope.out[2]
-  mutation_classes:
-  - policy_text
-  mutation_budget: []
-  budget_exceeded_classes: []
-  changed_spec_files:
-  - specs/nodes/SG-SPEC-0003.yaml
-  - specs/nodes/SG-SPEC-0034.yaml
-  review_reasons:
-  - run changed additional spec files beyond the selected source node
-  - run changed graph structure or spec contract paths
-  errors: []
-  warnings: []
-last_reconciliation:
-  worktree_spec_count: 34
-  changed_spec_ids:
-  - SG-SPEC-0003
-  - SG-SPEC-0034
-  semantic_dependencies_resolved: true
-  work_dependencies_ready: false
-  cycles: []
-last_requested_child_materialization: true
-last_materialized_child_paths:
-- specs/nodes/SG-SPEC-0034.yaml
+required_human_action: '-'
+last_gate_decision: approve
+last_gate_note: ''
+last_gate_at: '2026-04-14T22:19:52.661153+00:00'
