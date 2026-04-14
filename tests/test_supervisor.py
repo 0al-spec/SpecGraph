@@ -3488,6 +3488,25 @@ def test_repair_candidate_yaml_text_keeps_sequence_siblings_under_same_key(
     assert repaired.splitlines()[3] == "    - SG-SPEC-0023"
 
 
+def test_repair_candidate_yaml_text_strips_patch_markers(
+    supervisor_module: object,
+) -> None:
+    candidate = (
+        "specification:\n"
+        "  objective: Keep the downstream proposal/split gateway-edge contract non-bypass.\n"
+        "*** Begin Patch\n"
+        "  scope:\n"
+        "    in:\n"
+        "    - Gateway-edge topology only.\n"
+    )
+
+    repaired = supervisor_module.repair_candidate_yaml_text(candidate)
+
+    assert "*** Begin Patch" not in repaired
+    parsed = supervisor_module.get_yaml_module().safe_load(repaired)
+    assert parsed["specification"]["scope"]["in"] == ["Gateway-edge topology only."]
+
+
 def test_repair_worktree_changed_spec_yaml_skips_valid_candidate(
     supervisor_module: object,
     tmp_path: Path,
@@ -3512,6 +3531,56 @@ def test_repair_worktree_changed_spec_yaml_skips_valid_candidate(
 
     assert repaired_paths == []
     assert worktree_spec.read_text(encoding="utf-8") == valid_candidate_text
+
+
+def test_repair_worktree_changed_spec_yaml_repairs_acceptance_size_mismatch(
+    supervisor_module: object,
+    tmp_path: Path,
+) -> None:
+    repo_root = tmp_path / "repo"
+    worktree = tmp_path / "worktree"
+    repo_spec = repo_root / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    worktree_spec = worktree / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    repo_spec.parent.mkdir(parents=True)
+    worktree_spec.parent.mkdir(parents=True)
+
+    original_text = (
+        "id: SG-SPEC-0001\n"
+        "acceptance:\n"
+        "- First criterion.\n"
+        "- Second criterion.\n"
+        "acceptance_evidence:\n"
+        "- criterion: First criterion.\n"
+        "  evidence: First evidence.\n"
+        "- criterion: Second criterion.\n"
+        "  evidence: Second evidence.\n"
+    )
+    candidate_text = (
+        "id: SG-SPEC-0001\n"
+        "acceptance:\n"
+        "- First criterion.\n"
+        "  - Second criterion.\n"
+        "acceptance_evidence:\n"
+        "- criterion: First criterion.\n"
+        "  evidence: First evidence.\n"
+        "- criterion: Second criterion.\n"
+        "  evidence: Second evidence.\n"
+    )
+    repo_spec.write_text(original_text, encoding="utf-8")
+    worktree_spec.write_text(candidate_text, encoding="utf-8")
+
+    repaired_paths = supervisor_module.repair_worktree_changed_spec_yaml(
+        repo_root=repo_root,
+        worktree_path=worktree,
+        changed_files=["specs/nodes/SG-SPEC-0001.yaml"],
+    )
+
+    assert repaired_paths == ["specs/nodes/SG-SPEC-0001.yaml"]
+    repaired = supervisor_module.get_yaml_module().safe_load(
+        worktree_spec.read_text(encoding="utf-8")
+    )
+    assert repaired["acceptance"] == ["First criterion.", "Second criterion."]
+    assert len(repaired["acceptance_evidence"]) == 2
 
 
 def test_main_does_not_treat_websocket_fallback_warning_as_primary_transport_failure(

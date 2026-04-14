@@ -1,0 +1,169 @@
+id: SG-SPEC-0043
+title: SpecGraph - Proposal/Split Gateway Boundary
+kind: spec
+status: linked
+maturity: 0.38
+depends_on:
+- SG-SPEC-0029
+refines:
+- SG-SPEC-0032
+inputs:
+- specs/nodes/SG-SPEC-0032.yaml
+- specs/nodes/SG-SPEC-0029.yaml
+- tasks.md
+- specs/nodes/SG-SPEC-0044.yaml
+outputs:
+- specs/nodes/SG-SPEC-0043.yaml
+allowed_paths:
+- specs/nodes/SG-SPEC-0043.yaml
+acceptance:
+- Defines SG-SPEC-0043 as the single bounded proposal/split gateway child under SG-SPEC-0032 with one
+  direct readiness edge.
+- Delegates concrete proposal/split mechanics contracts to SG-SPEC-0029 while keeping SG-SPEC-0032 narrow.
+- Delegates execution-readiness path and non-bypass constraints (SG-SPEC-0026 -> SG-SPEC-0027 -> SG-SPEC-0032
+  -> SG-SPEC-0043 -> SG-SPEC-0029) to SG-SPEC-0044.
+- Keeps SG-SPEC-0043 implementation-agnostic to queue ranking, continuation-selection policy, and runtime
+  orchestration.
+acceptance_evidence:
+- criterion: Defines SG-SPEC-0043 as the single bounded proposal/split gateway child under SG-SPEC-0032
+    with one direct readiness edge.
+  evidence: specification.gateway_role identifies SG-SPEC-0043 as the direct proposal/split gateway under
+    SG-SPEC-0032, and specification.gateway_topology makes SG-SPEC-0032’s direct readiness dependency
+    explicit as SG-SPEC-0043.
+- criterion: Delegates concrete proposal/split mechanics contracts to SG-SPEC-0029 while keeping SG-SPEC-0032
+    narrow.
+  evidence: specification.gateway_topology defines SG-SPEC-0043’s dependency on SG-SPEC-0029 and specification.cluster_members
+    assigns concrete mechanics to SG-SPEC-0029 while SG-SPEC-0043 keeps only boundary-level contracts.
+- criterion: Delegates execution-readiness path and non-bypass constraints (SG-SPEC-0026 -> SG-SPEC-0027
+    -> SG-SPEC-0032 -> SG-SPEC-0043 -> SG-SPEC-0029) to SG-SPEC-0044.
+  evidence: specification.execution_readiness_contract references SG-SPEC-0044 as the dedicated non-bypass
+    readiness and pathway child for this concern.
+- criterion: Keeps SG-SPEC-0043 implementation-agnostic to queue ranking, continuation-selection policy,
+    and runtime orchestration.
+  evidence: specification.scope.out excludes queue ranking formulas, continuation-selection policy, and
+    runtime orchestration while specification.cluster_boundaries and parent_contract keep implementation
+    semantics in other specs.
+prompt: Materialize SG-SPEC-0043 as the bounded proposal/split gateway beneath SG-SPEC-0032 so proposal/split
+  readiness is inspectable through one direct gateway edge and direct proposal/split detail remains in
+  SG-SPEC-0029.
+specification:
+  objective: Define one bounded gateway boundary beneath SG-SPEC-0032 that keeps proposal/split mechanics
+    inspectable without redefining downstream concrete contracts while delegating non-bypass execution-readiness
+    constraints to SG-SPEC-0044.
+  scope:
+    in:
+    - Proposal/split gateway role beneath SG-SPEC-0032.
+    - Bounded handoff from SG-SPEC-0032 to SG-SPEC-0029 for concrete mechanics.
+    - Delegation of execution-readiness no-bypass pathway constraints to SG-SPEC-0044.
+    - Concrete mechanics isolation for queue ranking, continuation-selection policy, and runtime orchestration.
+    out:
+    - Concrete split lifecycle field-level semantics and payloads owned by SG-SPEC-0029.
+    - Continuation-selection policy owned by SG-SPEC-0026.
+    - Queue ranking formulas, ranking-engine policy, viewer layout, and runtime orchestration.
+    - Execution-readiness no-bypass pathway constraints and chain-composition details (moved to SG-SPEC-0044).
+  gateway_role:
+  - SG-SPEC-0043 is the bounded proposal/split gateway child under SG-SPEC-0032.
+  - SG-SPEC-0043 preserves inspectability by constraining gateway-level contracts and delegating concrete
+    mechanics.
+  gateway_topology:
+  - SG-SPEC-0032 depends on SG-SPEC-0043 as its direct proposal/split gateway dependency.
+  - SG-SPEC-0043 depends on SG-SPEC-0029 for concrete mechanics ownership and readiness surface details.
+  - SG-SPEC-0032 consumes SG-SPEC-0043 as the sole direct proposal/split-readiness gateway edge.
+  execution_readiness_contract:
+  - SG-SPEC-0044 defines the non-bypass execution-readiness pathway constraints for this subcluster.
+  cluster_members:
+    concrete_mechanics_contract:
+    - SG-SPEC-0029 owns concrete proposal/split lifecycle mechanics and schema details.
+  cluster_boundaries:
+  - SG-SPEC-0043 does not redefine field-level split artifact schemas, queue ranking formulas, continuation-selection
+    policy, or runtime orchestration.
+  - SG-SPEC-0043 only defines delegation topology while SG-SPEC-0044 holds explicit non-bypass pathway
+    constraints.
+  parent_contract:
+  - SG-SPEC-0032 must consume SG-SPEC-0043 as its bounded gateway dependency.
+  - SG-SPEC-0043 must preserve SG-SPEC-0029 as the concrete mechanics leaf under this subcluster.
+  - SG-SPEC-0043 delegates execution-readiness non-bypass pathway constraints to SG-SPEC-0044.
+gate_state: split_required
+required_human_action: split spec scope before rerun
+proposed_status: null
+proposed_maturity: null
+last_outcome: split_required
+last_blocker: ''
+last_run_id: 20260414T194357Z-SG-SPEC-0043
+last_exit_code: 0
+last_changed_files:
+- specs/nodes/SG-SPEC-0043.yaml
+- specs/nodes/SG-SPEC-0044.yaml
+last_run_at: '2026-04-14T19:43:58.468032+00:00'
+last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0043-20260414T194312Z
+last_branch: codex/sg-spec-0043/20260414T194312Z
+last_validator_results:
+  outputs: true
+  allowed_paths: true
+  reconciliation: true
+  atomicity: true
+  transition: true
+  executor_environment: true
+  refinement_acceptance: true
+last_refinement_acceptance:
+  decision: review_required
+  change_class: graph_refactor
+  checks:
+    content_changed: true
+    hard_validation: true
+    single_spec_scope: false
+    constitutional_diff: false
+    graph_refactor_diff: true
+    atomicity_clear: true
+    within_mutation_budget: true
+  diff_paths:
+  - acceptance[2]
+  - acceptance_evidence[2].criterion
+  - acceptance_evidence[2].evidence
+  - inputs[3]
+  - specification.cluster_boundaries[1]
+  - specification.execution_readiness_contract
+  - specification.execution_readiness_contract[0]
+  - specification.gateway_topology
+  - specification.gateway_topology.proposal_split_gateway
+  - specification.gateway_topology.proposal_split_gateway[0]
+  - specification.gateway_topology.proposal_split_gateway[1]
+  - specification.gateway_topology.proposal_split_gateway[2]
+  - specification.gateway_topology[0]
+  - specification.gateway_topology[1]
+  - specification.gateway_topology[2]
+  - specification.integration_path
+  - specification.integration_path[0]
+  - specification.integration_path[1]
+  - specification.objective
+  - specification.parent_contract[2]
+  - specification.readiness_graph
+  - specification.readiness_graph[0]
+  - specification.readiness_graph[0].Directness
+  - specification.readiness_graph[1]
+  - specification.readiness_graph[1].Bypass_guard
+  - specification.scope.in[2]
+  - specification.scope.out[3]
+  mutation_classes:
+  - policy_text
+  mutation_budget: []
+  budget_exceeded_classes: []
+  changed_spec_files:
+  - specs/nodes/SG-SPEC-0043.yaml
+  - specs/nodes/SG-SPEC-0044.yaml
+  review_reasons:
+  - run changed additional spec files beyond the selected source node
+  - run changed graph structure or spec contract paths
+  errors: []
+  warnings: []
+last_reconciliation:
+  worktree_spec_count: 44
+  changed_spec_ids:
+  - SG-SPEC-0043
+  - SG-SPEC-0044
+  semantic_dependencies_resolved: true
+  work_dependencies_ready: false
+  cycles: []
+last_requested_child_materialization: true
+last_materialized_child_paths:
+- specs/nodes/SG-SPEC-0044.yaml

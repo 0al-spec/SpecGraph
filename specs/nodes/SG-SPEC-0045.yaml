@@ -1,0 +1,156 @@
+id: SG-SPEC-0045
+title: SpecGraph - Proposal/Split Parent Integration Non-Bypass Rule
+kind: spec
+status: linked
+maturity: 0.2
+depends_on:
+- SG-SPEC-0046
+- SG-SPEC-0047
+refines:
+- SG-SPEC-0044
+inputs:
+- specs/nodes/SG-SPEC-0044.yaml
+- specs/nodes/SG-SPEC-0046.yaml
+- specs/nodes/SG-SPEC-0047.yaml
+- tasks.md
+outputs:
+- specs/nodes/SG-SPEC-0045.yaml
+allowed_paths:
+- specs/nodes/SG-SPEC-0045.yaml
+acceptance:
+- 'Defines SG-SPEC-0045 as the aggregate parent-integration non-bypass node beneath SG-SPEC-0044 with
+  exactly two bounded child slices: SG-SPEC-0046 for the SG-SPEC-0026 → SG-SPEC-0027 upstream segment
+  and SG-SPEC-0047 for the SG-SPEC-0027 → SG-SPEC-0032 → SG-SPEC-0043 downstream gateway segment.'
+- Requires proposal/split readiness for SG-SPEC-0026 and SG-SPEC-0027 to traverse the composed SG-SPEC-0046
+  then SG-SPEC-0047 path in this order, never by direct parent-integration bypass to SG-SPEC-0029 while
+  SG-SPEC-0043 is present.
+- Keeps the parent-integration bypass contract limited to aggregate topology while leaving concrete mechanics
+  ownership, ranking policy, and continuation-selection policy in existing downstream specs.
+acceptance_evidence:
+- criterion: 'Defines SG-SPEC-0045 as the aggregate parent-integration non-bypass node beneath SG-SPEC-0044
+    with exactly two bounded child slices: SG-SPEC-0046 for the SG-SPEC-0026 → SG-SPEC-0027 upstream segment
+    and SG-SPEC-0047 for the SG-SPEC-0027 → SG-SPEC-0032 → SG-SPEC-0043 downstream gateway segment.'
+  evidence: specification.child_clusters anchors SG-SPEC-0046 and SG-SPEC-0047 as bounded child slices
+    under SG-SPEC-0045, and the updated scope entries map SG-SPEC-0046 to SG-SPEC-0026 → SG-SPEC-0027
+    and SG-SPEC-0047 to SG-SPEC-0027 → SG-SPEC-0032 → SG-SPEC-0043.
+- criterion: Requires proposal/split readiness in this subtree to reach concrete mechanics only through
+    the composed SG-SPEC-0046 + SG-SPEC-0047 path, never by direct parent-integration bypass to SG-SPEC-0029
+    while SG-SPEC-0043 is present.
+  evidence: specification.composed_path and specification.no_bypass_rules require SG-SPEC-0026 and SG-SPEC-0027
+    readiness to pass through SG-SPEC-0046 and then SG-SPEC-0047 before SG-SPEC-0043 is considered part
+    of the ready path and before SG-SPEC-0029 mechanics are reachable.
+- criterion: Keeps the parent-integration bypass contract limited to aggregate topology while leaving
+    concrete mechanics ownership, ranking policy, and continuation-selection policy in existing downstream
+    specs.
+  evidence: specification.boundaries assigns concrete mechanics ownership to SG-SPEC-0029, ranking policy
+    to SG-SPEC-0027 descendants, and continuation-selection policy to SG-SPEC-0026 while specification.scope.out
+    keeps SG-SPEC-0045 at aggregate topology scope only.
+prompt: Define the bounded no-bypass parent-integration rule so SG-SPEC-0026 and SG-SPEC-0027 route proposal/split
+  readiness through SG-SPEC-0027 -> SG-SPEC-0032 -> SG-SPEC-0043 without bypassing to SG-SPEC-0029, using
+  SG-SPEC-0046 and SG-SPEC-0047 as sibling child slices beneath this aggregate node.
+specification:
+  objective: 'Keep parent-integration proposal/split readiness composed from two bounded child slices:
+    SG-SPEC-0046 for the SG-SPEC-0026 → SG-SPEC-0027 upstream parent-consumer path and SG-SPEC-0047 for
+    the SG-SPEC-0027 → SG-SPEC-0032 → SG-SPEC-0043 downstream gateway segment.'
+  scope:
+    in:
+    - Aggregate non-bypass composition for parent-integration proposal/split readiness from SG-SPEC-0026
+      and SG-SPEC-0027.
+    - Delegation of SG-SPEC-0026 → SG-SPEC-0027 upstream parent-consumer constraints to SG-SPEC-0046.
+    - Delegation of SG-SPEC-0027 → SG-SPEC-0032 → SG-SPEC-0043 downstream gateway-segment constraints
+      to SG-SPEC-0047.
+    - Composed path from SG-SPEC-0026 toward SG-SPEC-0043 through both child slices, with no direct SG-SPEC-0029
+      bypass.
+    out:
+    - Concrete proposal/split mechanics payloads, schema, and lifecycle policy.
+    - Queue ranking formulas, proposal-lane runtime orchestration, and continuation-selection policy.
+    - Direct SG-SPEC-0032 -> SG-SPEC-0043 gateway-edge semantics owned by SG-SPEC-0047 and its descendants.
+  child_clusters:
+  - SG-SPEC-0046 owns the bounded upstream parent-consumer path and edge behavior for SG-SPEC-0026 ->
+    SG-SPEC-0027.
+  - SG-SPEC-0047 owns the bounded downstream gateway segment and completion semantics for SG-SPEC-0027
+    -> SG-SPEC-0032 -> SG-SPEC-0043.
+  composed_path:
+  - Proposal/split readiness for SG-SPEC-0026 and SG-SPEC-0027 reaches readiness completion only through
+    SG-SPEC-0046 then SG-SPEC-0047.
+  - Readiness composition is specifically SG-SPEC-0026 -> SG-SPEC-0046 -> SG-SPEC-0027 -> SG-SPEC-0047
+    -> SG-SPEC-0032 -> SG-SPEC-0043.
+  no_bypass_rules:
+  - While SG-SPEC-0043 is present, SG-SPEC-0045 must not expose a parent-integration bypass path from
+    SG-SPEC-0026 or SG-SPEC-0027 directly to SG-SPEC-0029.
+  - SG-SPEC-0045 must not retain direct dependency edges for concrete readiness mechanics once equivalent
+    child-slice contracts exist in SG-SPEC-0046 and SG-SPEC-0047.
+  boundaries:
+  - SG-SPEC-0045 defines only aggregate parent-integration topology and child-slice composition for proposal/split
+    readiness.
+  - Concrete mechanics ownership remains in SG-SPEC-0029.
+  - Ranking policy remains in ranking-specific descendants.
+  - Continuation-selection policy remains in SG-SPEC-0026.
+gate_state: split_required
+required_human_action: split spec scope before rerun
+proposed_status: null
+proposed_maturity: null
+last_outcome: split_required
+last_blocker: Atomicity remains unresolved; the node still spans multiple child concerns and needs further
+  bounded splitting before advancing beyond `split_required`.
+last_run_id: 20260414T204851Z-SG-SPEC-0045
+last_exit_code: 0
+last_changed_files:
+- specs/nodes/SG-SPEC-0045.yaml
+last_run_at: '2026-04-14T20:48:53.253224+00:00'
+last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0045-20260414T204838Z
+last_branch: codex/sg-spec-0045/20260414T204838Z
+last_validator_results:
+  outputs: true
+  allowed_paths: true
+  reconciliation: true
+  atomicity: true
+  transition: true
+  executor_environment: true
+  refinement_acceptance: true
+last_refinement_acceptance:
+  decision: approve
+  change_class: local_refinement
+  checks:
+    content_changed: true
+    hard_validation: true
+    single_spec_scope: true
+    constitutional_diff: false
+    graph_refactor_diff: false
+    atomicity_clear: true
+    within_mutation_budget: true
+  diff_paths:
+  - acceptance[0]
+  - acceptance[1]
+  - acceptance_evidence[0].criterion
+  - acceptance_evidence[0].evidence
+  - acceptance_evidence[1].evidence
+  - specification.child_clusters[0]
+  - specification.child_clusters[1]
+  - specification.composed_path[0]
+  - specification.composed_path[1]
+  - specification.no_bypass_rules[0]
+  - specification.no_bypass_rules[1]
+  - specification.objective
+  - specification.scope.in[0]
+  - specification.scope.in[1]
+  - specification.scope.in[2]
+  - specification.scope.in[3]
+  mutation_classes:
+  - policy_text
+  mutation_budget: []
+  budget_exceeded_classes: []
+  changed_spec_files:
+  - specs/nodes/SG-SPEC-0045.yaml
+  review_reasons: []
+  errors: []
+  warnings: []
+last_reconciliation:
+  worktree_spec_count: 44
+  changed_spec_ids:
+  - SG-SPEC-0045
+  semantic_dependencies_resolved: false
+  work_dependencies_ready: false
+  cycles: []
+last_requested_child_materialization: false
+last_materialized_child_paths: []

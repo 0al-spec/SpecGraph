@@ -85,3 +85,9 @@
 62. [done] Restore canonical source specs unchanged when an ordinary source-only refinement fails validation before any accepted sync, including invalid YAML in the worktree candidate.
 63. [done] Add a bounded worktree-YAML repair pass for recoverable spec-node formatting errors, such as misindented existing keys or multiline plain-sequence scalars with `:` continuations, so valid refinement intent is not discarded by trivial candidate serialization defects.
 64. [todo] De-prioritize or suppress `linked_continuation` selection for `linked` specs already at `maturity: 1.0` when the only continuation signal is `weak_structural_linkage_candidate`, so long-running `--loop` batches do not burn iterations on effectively complete nodes like `SG-SPEC-0021` or the earlier `SG-SPEC-0005` case.
+65. [done] Strip stray patch-transcript markers from parse-failing worktree spec candidates before YAML validation, so nested refinement runs do not fail when a child executor leaves `*** Begin Patch` / `*** End Patch` residue in candidate YAML.
+66. [done] Run worktree-YAML repair for parseable spec candidates when `acceptance` and `acceptance_evidence` cardinalities diverge, so nested list-indentation defects that still parse as YAML do not survive into semantic validation as false spec failures.
+
+## Graph Shape Quality
+
+67. [todo] Add a graph-health signal and evaluator penalty for excessive one-child refinement ladders, so supervisor can prefer bounded aggregate nodes or sibling groupings over deep serial `refines` chains like the emerging `SG-SPEC-0043` -> `SG-SPEC-0048` subtree.
