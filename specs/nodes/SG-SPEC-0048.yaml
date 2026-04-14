@@ -56,8 +56,8 @@ specification:
   - SG-SPEC-0032 depends on SG-SPEC-0043 for proposal/split readiness in this segment.
   - SG-SPEC-0043 is the direct gateway node for SG-SPEC-0032 readiness in this segment.
   no_bypass_rules:
-  - While SG-SPEC-0043 exists, SG-SPEC-0032 must not route proposal/split readiness directly to SG-SPEC-0043
-    downstream mechanics without passing through SG-SPEC-0043.
+  - While SG-SPEC-0043 exists, SG-SPEC-0032 must not route proposal/split readiness directly to downstream
+    readiness nodes such as SG-SPEC-0029 without passing through SG-SPEC-0043.
   - SG-SPEC-0032 readiness edges to SG-SPEC-0029 must pass through SG-SPEC-0043.
   path_contract:
   - SG-SPEC-0027 readiness for this subtree reaches SG-SPEC-0043 through SG-SPEC-0032.
