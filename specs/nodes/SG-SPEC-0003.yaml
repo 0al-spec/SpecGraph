@@ -5,6 +5,7 @@ status: linked
 maturity: 0.87
 depends_on:
 - SG-SPEC-0026
+- SG-SPEC-0034
 relates_to:
 - SG-SPEC-0002
 refines:
@@ -32,7 +33,8 @@ acceptance:
 - Defines that graph-health observations, signals, latent continuation candidates, and proposal artifacts
   are first persisted in run artifacts plus derived queues, not written back into canonical spec nodes
 - Remains implementation-agnostic about exact formulas, thresholds, queue algorithms, and future metric
-  systems such as SIB or Specification Verifiability
+  systems such as SIB or Specification Verifiability, while delegating concrete proposal and queue contract
+  details to SG-SPEC-0034
 acceptance_evidence:
 - criterion: Defines the boundary between canonical SpecGraph governance, supervisor execution, bounded
     autonomous continuation, and changes that always require human approval
@@ -76,10 +78,11 @@ acceptance_evidence:
 
     '
 - criterion: Remains implementation-agnostic about exact formulas, thresholds, queue algorithms, and future
-    metric systems such as SIB or Specification Verifiability
-  evidence: 'specification.scope.out excludes concrete metric formulas, threshold tuning, queue scheduling
-    algorithms, and future metric catalogs including SIB and Specification Verifiability. The spec governs
-    the boundary and the role of signals, not their final quantitative implementation.
+    metric systems such as SIB or Specification Verifiability, while delegating concrete proposal and
+    queue contract details to SG-SPEC-0034
+  evidence: 'specification.scope.out excludes concrete metric formulas and threshold tuning while keeping
+    SG-SPEC-0003 focused on governance boundary and derived persistence. Concrete proposal/queue control
+    semantics remain in SG-SPEC-0034, including precedence, dedupe, retry, and handoff behavior.
 
     '
 prompt: Keep SG-SPEC-0003 as the canonical overview and integration node for reflective graph-health governance.
@@ -105,8 +108,8 @@ specification:
     out:
     - Concrete metric formulas or scoring weights
     - Final queue prioritization algorithms
-    - Proposal-lane queue semantics, including active-item precedence, dedupe, retry gating, and proposal-direct
-      handoff
+    - Concrete proposal/queue control semantics, including active-item precedence, dedupe, retry gating,
+      and proposal-direct handoff behavior, are delegated to SG-SPEC-0034
     - Concrete split_refactor execution steps, split payload schema, and handoff/selection heuristics
     - Viewer UX or visual overlays
     - Automatic self-modification of ontology without approval
@@ -203,8 +206,8 @@ specification:
     - Signals may motivate proposals, but they MUST NOT mutate canonical spec nodes by themselves.
     - Recurring local graph pathologies MAY emit explicit derived refactor_proposal artifacts before any
       canonical writeback occurs.
-    - Active proposal states are derived control artifacts; exact proposal-lane precedence, dedupe, and
-      retry semantics are defined by dedicated proposal-lane child specs, not by SG-SPEC-0003.
+    - Active proposal states are derived control artifacts; exact proposal/queue control semantics are
+      defined by SG-SPEC-0034.
   continuation:
   - Autonomous continuation is allowed only after the current bounded target has no remaining explicit
     blocked or gated work within the current authority envelope.
@@ -275,7 +278,7 @@ specification:
     - proposal_queue acts as an index and summary surface for proposal artifacts; it MUST NOT be the only
       persistence location for full split-refactor payloads.
     - Active proposal_queue control behavior (including whether a proposal preempts direct updates, dedupe,
-      and retry conditions) is defined in proposal-lane child specs.
+      and retry conditions) is defined in SG-SPEC-0034.
     canonical_writeback:
     - Graph-health observations and signals MUST NOT be written back into canonical spec nodes unless
       they have first been transformed into an explicit proposal and approved under the current governance
@@ -302,13 +305,14 @@ proposed_status: null
 proposed_maturity: null
 last_outcome: split_required
 last_blocker: ''
-last_run_id: 20260413T185649Z-SG-SPEC-0003
+last_run_id: 20260414T082612Z-SG-SPEC-0003
 last_exit_code: 0
 last_changed_files:
 - specs/nodes/SG-SPEC-0003.yaml
-last_run_at: '2026-04-13T18:56:50.783239+00:00'
-last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0003-20260413T185633Z
-last_branch: codex/sg-spec-0003/20260413T185633Z
+- specs/nodes/SG-SPEC-0034.yaml
+last_run_at: '2026-04-14T08:26:12.781849+00:00'
+last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0003-20260414T082422Z
+last_branch: codex/sg-spec-0003/20260414T082422Z
 last_validator_results:
   outputs: true
   allowed_paths: true
@@ -318,35 +322,46 @@ last_validator_results:
   executor_environment: true
   refinement_acceptance: true
 last_refinement_acceptance:
-  decision: approve
-  change_class: local_refinement
+  decision: review_required
+  change_class: graph_refactor
   checks:
     content_changed: true
     hard_validation: true
-    single_spec_scope: true
+    single_spec_scope: false
     constitutional_diff: false
-    graph_refactor_diff: false
+    graph_refactor_diff: true
     atomicity_clear: true
     within_mutation_budget: true
   diff_paths:
-  - specification.continuation[4]
-  - specification.continuation[5]
-  - specification.continuation[6]
+  - acceptance[4]
+  - acceptance_evidence[4].criterion
+  - acceptance_evidence[4].evidence
+  - depends_on[1]
+  - specification.derived_artifact_policy.proposal_queue[3]
+  - specification.reflective_loop.rules[3]
+  - specification.reflective_loop.rules[4]
+  - specification.reflective_loop.stages[5]
+  - specification.scope.out[2]
   mutation_classes:
   - policy_text
   mutation_budget: []
   budget_exceeded_classes: []
   changed_spec_files:
   - specs/nodes/SG-SPEC-0003.yaml
-  review_reasons: []
+  - specs/nodes/SG-SPEC-0034.yaml
+  review_reasons:
+  - run changed additional spec files beyond the selected source node
+  - run changed graph structure or spec contract paths
   errors: []
   warnings: []
 last_reconciliation:
-  worktree_spec_count: 28
+  worktree_spec_count: 34
   changed_spec_ids:
   - SG-SPEC-0003
+  - SG-SPEC-0034
   semantic_dependencies_resolved: true
   work_dependencies_ready: false
   cycles: []
-last_requested_child_materialization: false
-last_materialized_child_paths: []
+last_requested_child_materialization: true
+last_materialized_child_paths:
+- specs/nodes/SG-SPEC-0034.yaml

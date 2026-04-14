@@ -1,0 +1,101 @@
+id: SG-SPEC-0036
+title: SpecGraph - Active Item Precedence Contract for Queue Control
+kind: spec
+status: reviewed
+maturity: 0.4
+depends_on:
+- SG-SPEC-0004
+- SG-SPEC-0006
+refines:
+- SG-SPEC-0041
+inputs:
+- specs/nodes/SG-SPEC-0041.yaml
+- specs/nodes/SG-SPEC-0004.yaml
+- specs/nodes/SG-SPEC-0006.yaml
+- tasks.md
+outputs:
+- specs/nodes/SG-SPEC-0036.yaml
+allowed_paths:
+- specs/nodes/SG-SPEC-0036.yaml
+acceptance:
+- Defines active_item_precedence as a bounded derived control field for queue interpretation within proposal_queue
+  and refactor_queue artifacts, including a concrete value representation contract.
+- Defines active_item_precedence as non-authoritative control metadata with no direct canonical writeback
+  authority.
+- Defines how SG-SPEC-0034 consumes active_item_precedence through SG-SPEC-0034’s parent-facing contract
+  without expanding queue implementation details or retry-condition semantics.
+- Keeps active-item precedence behavior implementation-agnostic with respect to concrete queue scheduling
+  formulas, queue engine internals, and priority tuning.
+acceptance_evidence:
+- criterion: Defines active_item_precedence as a bounded derived control field for queue interpretation
+    within proposal_queue and refactor_queue artifacts, including a concrete value representation contract.
+  evidence: specification.scope.in, specification.active_item_precedence_contract, and specification.active_item_precedence_value_contract
+    define one bounded field-level control signal, its allowed forms, and its mapping into advisory preference
+    tiers.
+- criterion: Defines active_item_precedence as non-authoritative control metadata with no direct canonical
+    writeback authority.
+  evidence: specification.control_semantics and specification.noncanonical_boundary keep active_item_precedence
+    advisory-only, and explicit noncanonical boundary language forbids direct canonical effect without
+    an established proposal/review/apply pathway.
+- criterion: Defines how SG-SPEC-0034 consumes active_item_precedence through SG-SPEC-0034’s parent-facing
+    contract without expanding queue implementation details or retry-condition semantics.
+  evidence: specification.parent_contract delegates concrete control semantics to SG-SPEC-0034 and explicit
+    scope exclusions reject retry-condition fields.
+- criterion: Keeps active-item precedence behavior implementation-agnostic with respect to concrete queue
+    scheduling formulas, queue engine internals, and priority tuning.
+  evidence: specification.scope.out excludes queue scheduling formulas, engine internals, and priority
+    tuning policy; SG-SPEC-0034 keeps noncanonical boundary separation.
+prompt: Materialize SG-SPEC-0036 as the bounded child for active-item precedence queue-control contract
+  so SG-SPEC-0041 can defer this concern and keep the parent gateway scope narrow.
+specification:
+  objective: Define the bounded derived contract for active_item_precedence in proposal/refactor queue
+    control artifacts so the parent can treat this ranking signal as noncanonical and advisory.
+  scope:
+    in:
+    - Active-item precedence contract for queue-control artifacts in proposal_queue and refactor_queue
+    - Advisory semantics for derived queue interpretation by rank-preference signal
+    - Parent integration contract with SG-SPEC-0034
+    - Noncanonical first-persistence boundaries for this control signal
+    - Retry-condition exclusion delegated to SG-SPEC-0035
+    out:
+    - Retry-condition semantics owned by SG-SPEC-0035
+    - Concrete queue scheduler implementation, formulas, or backlog balancing policy
+    - Canonical ontology or authority transitions
+    - Proposal/review/apply engine internals and direct writeback decisions
+  active_item_precedence_contract:
+  - SG-SPEC-0036 defines `active_item_precedence` as a derived control signal for queue items in proposal/refactor
+    lane artifacts.
+  - The signal is advisory and signals which queue item is currently preferred within derived processing
+    context.
+  active_item_precedence_value_contract:
+  - 'Producers in derived artifacts MUST emit `active_item_precedence` only in these bounded forms: omitted
+    (missing), boolean, or integer.'
+  - Missing or boolean `false` means `neutral` preference.
+  - Boolean `true` is normalized to integer `1` and means `preferred`.
+  - Integer `active_item_precedence` values are treated as comparable ranking hints within the same artifact
+    scope; larger values indicate stronger preference.
+  - No arithmetic transformation, formula, or scheduling policy may be encoded by this spec for these
+    values.
+  control_semantics:
+  - active_item_precedence is non-authoritative by design; it may bias derived processing but cannot authorize
+    direct canonical writeback or authority expansion.
+  - Active-item precedence semantics are consumed by SG-SPEC-0034 and remain distinct from retry-condition
+    semantics owned by SG-SPEC-0035.
+  - Conflicting active-item precedence signals are outside this spec’s scope and remain the domain of
+    broader queue processing policy in consuming parents.
+  noncanonical_boundary:
+  - SG-SPEC-0036 artifacts are first-persistence queue-control metadata and become active in derived processing
+    artifacts only.
+  - This contract does not authorize proposals, reviews, approvals, or direct writeback on its own.
+  parent_contract:
+  - SG-SPEC-0041 consumes SG-SPEC-0036 as the bounded child contract for active_item_precedence.
+  - SG-SPEC-0034 remains responsible only for parent-facing queue-control integration and preserves the
+    implementation-agnostic boundary with existing queue execution policy.
+  - SG-SPEC-0035 remains authoritative for retry-condition semantics and is out of this child’s scope.
+gate_state: none
+proposed_status: null
+proposed_maturity: null
+required_human_action: '-'
+last_gate_decision: approve
+last_gate_note: ''
+last_gate_at: '2026-04-14T08:39:41.967263+00:00'

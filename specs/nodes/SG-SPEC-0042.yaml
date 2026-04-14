@@ -1,0 +1,73 @@
+id: SG-SPEC-0042
+title: SpecGraph - Non-Retry Queue-Control Dedup Key Semantics
+kind: spec
+status: reviewed
+maturity: 0.43
+depends_on: []
+refines:
+- SG-SPEC-0037
+inputs:
+- specs/nodes/SG-SPEC-0037.yaml
+- tasks.md
+outputs:
+- specs/nodes/SG-SPEC-0042.yaml
+allowed_paths:
+- specs/nodes/SG-SPEC-0042.yaml
+acceptance:
+- Defines the concrete semantics of dedupe_key for non-retry queue-control artifacts.
+- Defines the dedupe_key comparison model and duplicate suppression behavior used within one first-persistence
+  batch.
+- Constrains dedupe_key to advisory, noncanonical behavior that cannot authorize direct writeback or authority
+  changes.
+acceptance_evidence:
+- criterion: Defines the concrete semantics of dedupe_key for non-retry queue-control artifacts.
+  evidence: specification.scope.in and specification.dedupe_key details type, meaning, default, and non-retry
+    scope for the field in non-retry queue-control artifacts.
+- criterion: Defines the dedupe_key comparison model and duplicate suppression behavior used within one
+    first-persistence batch.
+  evidence: specification.dedupe_key_behavior defines strict string matching and first-wins suppression
+    for equal keys when the same first-persistence batch is producing duplicate derived queue-control
+    representations.
+- criterion: Constrains dedupe_key to advisory, noncanonical behavior that cannot authorize direct writeback
+    or authority changes.
+  evidence: specification.noncanonical_boundary defines dedupe_key as advisory metadata with no standalone
+    canonical state, writeback, or authority effects.
+prompt: Define dedupe_key semantics for non-retry queue-control artifacts so dedupe_key identity and suppression
+  are explicit and strictly separate from retry-condition and routing precedence controls.
+specification:
+  objective: Define bounded dedupe_key contract for non-retry queue-control fields while keeping preempt
+    and proposal handoff routing controls in SG-SPEC-0037.
+  scope:
+    in:
+    - Concrete semantics for dedupe_key as advisory metadata on non-retry derived queue-control items
+    - Dedupe-key default and omission behavior in first-persistence payloads
+    - Duplicate suppression rules for equal dedupe_key values within the same first-persistence batch
+    out:
+    - preempt_direct_update and proposal_direct_handoff routing behavior
+    - Retry-condition semantics and active-item precedence
+    - Canonical governance authority, direct writeback, or policy expansion
+  dedupe_key:
+    type: optional_text
+    meaning: Identity key that identifies repeated derived queue-control representations of the same logical
+      control item in one first-persistence cycle.
+    default: null
+    scope: Optional; omission disables deduplication behavior for that item.
+  dedupe_key_behavior:
+  - dedupe_key participates only in non-retry queue-control artifacts and is ignored outside that concern.
+  - duplicate suppression is evaluated per first-persistence batch at queue-control materialization boundaries.
+  - suppression key is the exact `dedupe_key` string value; equal values are treated as duplicates.
+  - duplicate suppression is strict string comparison on raw text only; no case folding, trimming, normalization,
+    parsing, or tokenization is performed.
+  - when dedupe_key values duplicate within a batch, only the first materialized derived representation
+    is retained; later duplicates are advisory-noops for downstream queue semantics.
+  - empty string is a valid key value and participates in strict string equality.
+  noncanonical_boundary:
+  - dedupe_key is advisory control metadata written into first-persistence outputs and queue artifacts.
+  - dedupe_key does not authorize direct writeback, canonical state transitions, or additional authority.
+  - canonical transitions still require the normal governance and execution gates defined by SG-SPEC-0037
+    context.
+  parent_integration:
+  - SG-SPEC-0037 delegates concrete dedupe_key control semantics to SG-SPEC-0042.
+  - SG-SPEC-0037 continues to own preempt/proposal routing ordering and default behavior.
+  - SG-SPEC-0039 should consume SG-SPEC-0037 for preempt/proposal controls and SG-SPEC-0042 for dedupe
+    semantics.

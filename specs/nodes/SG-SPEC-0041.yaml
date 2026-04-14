@@ -1,0 +1,94 @@
+id: SG-SPEC-0041
+title: SpecGraph - Proposal Queue Retry-Condition and Active-Item Precedence Gateway
+kind: spec
+status: linked
+maturity: 0.4
+depends_on:
+- SG-SPEC-0035
+- SG-SPEC-0036
+refines:
+- SG-SPEC-0034
+inputs:
+- specs/nodes/SG-SPEC-0034.yaml
+- specs/nodes/SG-SPEC-0035.yaml
+- specs/nodes/SG-SPEC-0036.yaml
+- tasks.md
+outputs:
+- specs/nodes/SG-SPEC-0041.yaml
+allowed_paths:
+- specs/nodes/SG-SPEC-0041.yaml
+acceptance:
+- Defines SG-SPEC-0041 as the bounded gateway child of SG-SPEC-0034 for the retry-condition and active-item
+  precedence queue-control cluster.
+- Delegates concrete retry-condition semantics to SG-SPEC-0035 and active-item precedence semantics to
+  SG-SPEC-0036 while keeping SG-SPEC-0041 focused on the parent-facing cluster boundary.
+- Keeps retry/precedence coordination implementation-agnostic with respect to queue engine, persistence,
+  and authority transitions.
+- Preserves SG-SPEC-0034 and SG-SPEC-0003 parent-facing integration by giving SG-SPEC-0003 one bounded
+  retry/precedence gateway through SG-SPEC-0034.
+acceptance_evidence:
+- criterion: Defines SG-SPEC-0041 as the bounded gateway child of SG-SPEC-0034 for the retry-condition
+    and active-item precedence queue-control cluster.
+  evidence: specification.cluster_role identifies SG-SPEC-0041 as the parent-facing retry/precedence cluster
+    gateway under SG-SPEC-0034, and specification.cluster_topology marks it as the bounded direct child.
+- criterion: Delegates concrete retry-condition semantics to SG-SPEC-0035 and active-item precedence semantics
+    to SG-SPEC-0036 while keeping SG-SPEC-0041 focused on the parent-facing cluster boundary.
+  evidence: specification.cluster_members assigns concrete retry semantics to SG-SPEC-0035 and active-item
+    precedence semantics to SG-SPEC-0036, while specification.cluster_boundaries explicitly forbids SG-SPEC-0041
+    from redefining those concrete semantics.
+- criterion: Keeps retry/precedence coordination implementation-agnostic with respect to queue engine,
+    persistence, and authority transitions.
+  evidence: specification.scope.out excludes runtime queue engine behavior, storage layout, and authority
+    transitions; SG-SPEC-0041 is implementation-agnostic and bound to topology/delegation constraints.
+- criterion: Preserves SG-SPEC-0034 and SG-SPEC-0003 parent-facing integration by giving SG-SPEC-0003
+    one bounded retry/precedence gateway through SG-SPEC-0034.
+  evidence: specification.parent_contract requires SG-SPEC-0034 to depend on SG-SPEC-0041 as the parent-facing
+    retry/precedence gateway and keeps SG-SPEC-0003 integration at SG-SPEC-0034.
+prompt: Materialize SG-SPEC-0041 as the bounded retry-condition/active-item precedence gateway under SG-SPEC-0034
+  so SG-SPEC-0003 consumes retry/precedence behavior through SG-SPEC-0034 without direct sibling spread.
+specification:
+  objective: Define one bounded parent-facing retry-condition and active-item precedence gateway under
+    SG-SPEC-0034 and keep concrete semantics delegated to SG-SPEC-0035 and SG-SPEC-0036.
+  scope:
+    in:
+    - Gateway contract for retry-condition and active-item precedence queue-control semantics under SG-SPEC-0034
+    - Delegation of concrete retry semantics to SG-SPEC-0035
+    - Delegation of concrete active-item precedence semantics to SG-SPEC-0036
+    - Parent-facing integration path for SG-SPEC-0003 and SG-SPEC-0034 consumption
+    out:
+    - Concrete queue semantics for dedupe_key, preempt_direct_update, or proposal_direct_handoff
+    - Queue-field-surface and artifact-shape contracts owned by SG-SPEC-0039 and SG-SPEC-0038
+    - Queue execution algorithms, persistence implementation, and authority-transition behavior
+  cluster_role:
+  - SG-SPEC-0041 is a bounded gateway node for the retry-condition/active-item precedence cluster beneath
+    SG-SPEC-0034.
+  - It keeps the cluster atomic by exposing SG-SPEC-0035 and SG-SPEC-0036 as bounded siblings while preserving
+    a single parent-facing integration edge.
+  cluster_topology:
+  - SG-SPEC-0041 depends on SG-SPEC-0035 and SG-SPEC-0036 exactly.
+  - SG-SPEC-0034 must depend on SG-SPEC-0041 for retry-condition and active-item precedence readiness.
+  - While SG-SPEC-0041 exists, SG-SPEC-0034 must not consume SG-SPEC-0035 or SG-SPEC-0036 directly for
+    these same concerns.
+  cluster_members:
+    retry_condition_contract:
+    - SG-SPEC-0035 owns concrete retry-condition control semantics.
+    active_item_precedence_contract:
+    - SG-SPEC-0036 owns concrete active-item precedence control semantics.
+  cluster_boundaries:
+  - SG-SPEC-0041 does not define concrete retry semantics, active-item precedence truth tables, queue
+    engines, persistence details, or authority transitions.
+  - SG-SPEC-0041 only defines parent-facing integration and delegation topology for this bounded cluster.
+  parent_contract:
+  - SG-SPEC-0034 must consume SG-SPEC-0041 for retry-condition and active-item precedence coordination.
+  - SG-SPEC-0035 and SG-SPEC-0036 refine SG-SPEC-0041 as its concrete retry and active-item precedence
+    leaves.
+  - SG-SPEC-0003 remains downstream consumer of these concerns through SG-SPEC-0034.
+  - SG-SPEC-0041 must keep both child concerns non-bypassable through SG-SPEC-0034 while retaining bounded
+    atomicity.
+gate_state: none
+proposed_status: null
+proposed_maturity: null
+required_human_action: '-'
+last_gate_decision: approve
+last_gate_note: ''
+last_gate_at: '2026-04-14T09:03:14.074083+00:00'

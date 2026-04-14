@@ -1056,6 +1056,16 @@ def repair_candidate_yaml_text(candidate_text: str, original_text: str | None = 
             continue
         key = match.group("key")
         current_indent = len(match.group("indent"))
+        previous_nonempty_index = index - 1
+        while previous_nonempty_index >= 0 and not lines[previous_nonempty_index].strip():
+            previous_nonempty_index -= 1
+        if previous_nonempty_index >= 0:
+            previous_nonempty = lines[previous_nonempty_index]
+            previous_key_match = YAML_KEY_LINE_RE.match(previous_nonempty)
+            if previous_key_match is not None and previous_nonempty.rstrip().endswith(":"):
+                previous_indent = len(previous_key_match.group("indent"))
+                if current_indent > previous_indent:
+                    continue
         original_indents = original_indent_map.get(key, ())
         if len(original_indents) != 1:
             continue
@@ -1180,8 +1190,11 @@ def repair_candidate_yaml_text(candidate_text: str, original_text: str | None = 
                         break
                     if YAML_QUOTED_KEY_LINE_RE.match(continuation_line) is not None:
                         break
-                    if YAML_SEQUENCE_ITEM_RE.match(continuation_line) is not None:
-                        break
+                    sequence_match = YAML_SEQUENCE_ITEM_RE.match(continuation_line)
+                    if sequence_match is not None:
+                        continuation_parts.append(sequence_match.group("content").strip())
+                        continuation_index += 1
+                        continue
                     continuation_parts.append(continuation_line.strip())
                     continuation_index += 1
                 if continuation_parts:

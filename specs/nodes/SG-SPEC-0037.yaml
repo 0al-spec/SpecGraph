@@ -1,0 +1,102 @@
+id: SG-SPEC-0037
+title: SpecGraph - Non-Retry Queue-Control Field Semantics
+kind: spec
+status: frozen
+maturity: 0.63
+depends_on:
+- SG-SPEC-0004
+- SG-SPEC-0006
+- SG-SPEC-0042
+refines:
+- SG-SPEC-0039
+inputs:
+- specs/nodes/SG-SPEC-0039.yaml
+- specs/nodes/SG-SPEC-0004.yaml
+- specs/nodes/SG-SPEC-0006.yaml
+- tasks.md
+- specs/nodes/SG-SPEC-0042.yaml
+outputs:
+- specs/nodes/SG-SPEC-0037.yaml
+allowed_paths:
+- specs/nodes/SG-SPEC-0037.yaml
+acceptance:
+- Defines concrete non-retry routing semantics for preempt_direct_update and proposal_direct_handoff,
+  including defaults and evaluation order for derived queue processing.
+- Delegates dedupe_key semantics to SG-SPEC-0042 so dedupe behavior remains isolated from routing controls.
+- Restricts routed non-retry queue-control behavior to first-persistence advisory metadata that cannot
+  authorize direct writeback or authority expansion.
+acceptance_evidence:
+- criterion: Defines concrete non-retry routing semantics for preempt_direct_update and proposal_direct_handoff,
+    including defaults and evaluation order for derived queue processing.
+  evidence: specification.scope.in and specification.queue_control_fields bind preempt_direct_update and
+    proposal_direct_handoff to bounded routing controls and defaults; specification.control_semantics
+    defines their ordered evaluation.
+- criterion: Delegates dedupe_key semantics to SG-SPEC-0042 so dedupe behavior remains isolated from routing
+    controls.
+  evidence: specification.scope.out and specification.parent_integration identify dedupe_key as delegated
+    to SG-SPEC-0042.
+- criterion: Restricts routed non-retry queue-control behavior to first-persistence advisory metadata
+    that cannot authorize direct writeback or authority expansion.
+  evidence: specification.noncanonical_boundary and specification.parent_integration state these routed
+    controls remain advisory artifacts in first-persistence payloads and have no standalone authority
+    path.
+prompt: Define the concrete non-retry queue-control field contract for SG-SPEC-0039, including dedupe_key,
+  preempt_direct_update, and proposal_direct_handoff, so retry-condition and active-item precedence controls
+  remain delegated elsewhere and SG-SPEC-0034 can stay parent-facing only.
+specification:
+  objective: Define exact non-retry routing semantics for preempt_direct_update and proposal_direct_handoff
+    that SG-SPEC-0039 delegates through this child contract while dedupe_key is handled by SG-SPEC-0042.
+  scope:
+    in:
+    - Concrete semantics, defaults, and interaction order for preempt_direct_update
+    - Concrete semantics, defaults, and interaction order for proposal_direct_handoff
+    - Noncanonical boundary for these derived control fields
+    out:
+    - Retry-condition semantics owned by SG-SPEC-0035
+    - Active-item precedence semantics owned by SG-SPEC-0036
+    - Concrete dedupe_key semantics owned by SG-SPEC-0042
+    - Runtime execution, governance policy, or canonical storage design
+  queue_control_fields:
+    preempt_direct_update:
+      type: optional_boolean
+      meaning: Selects queue-based preempt handling for the control item and blocks proposal handoff handling
+        in the same decision point.
+      default: false
+      scope: Optional; omission is equivalent to false.
+    proposal_direct_handoff:
+      type: optional_boolean
+      meaning: Permits routing the control item into proposal workflow context when preempt handling is
+        not selected.
+      default: false
+      scope: Optional; omission is equivalent to false.
+  control_semantics:
+  - routing_evaluation order is fixed: preempt_direct_update has first priority, then proposal_direct_handoff.
+  - if preempt_direct_update=true, route behavior is preempt_queue; proposal_direct_handoff is treated
+    as inert for this item.
+  - if preempt_direct_update=false and proposal_direct_handoff=true, route behavior is proposal_queue_handoff.
+  - if preempt_direct_update=false and proposal_direct_handoff=false, route behavior is standard_queue_flow.
+  - retry-condition outcome and active-item precedence are evaluated outside this spec; non-retry queue-control
+    fields only provide routing hints and are ignored when external retry/precedence gates deny routing.
+  - proposal_direct_handoff is advisory reroute signal only; it never alters governance authority or canonical
+    state.
+  - All two fields are optional and safe to omit.
+  noncanonical_boundary:
+  - These fields are advisory control metadata written into first-persistence outputs (run payloads, summaries,
+    queue artifacts).
+  - They do not authorize canonical state transitions, proposal writeback, or supervisor authority changes
+    by themselves.
+  - Existing governance and execution approvals remain required before any canonical action occurs.
+  parent_integration:
+  - SG-SPEC-0039 consumes SG-SPEC-0037 as the concrete semantic child for non-retry queue-control fields.
+  - SG-SPEC-0034 remains the parent-facing predecessor and receives non-retry field semantics through
+    SG-SPEC-0039.
+  - SG-SPEC-0003 and downstream consumers must treat these fields as advisory and noncanonical unless
+    coupled with external governance state.
+  - SG-SPEC-0042 owns concrete dedupe_key semantics; this spec owns only preempt/proposal routing semantics.
+gate_state: none
+proposed_status: null
+proposed_maturity: null
+required_human_action: '-'
+last_gate_decision: approve
+last_gate_note: ''
+last_gate_at: '2026-04-14T09:07:12.875525+00:00'

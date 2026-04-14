@@ -3313,6 +3313,35 @@ def test_repair_candidate_yaml_text_quotes_multiline_sequence_mapping_scalar(
     )
 
 
+def test_repair_candidate_yaml_text_quotes_sequence_mapping_scalar_with_nested_list(
+    supervisor_module: object,
+) -> None:
+    candidate = (
+        "specification:\n"
+        "  queue_contract_fields:\n"
+        "  - retry_condition: a bounded retry state enum controlling whether "
+        "a queued control item is currently\n"
+        "      considered for retry selection. Allowed values:\n"
+        "      - retry_ready\n"
+        "      - retry_blocked_by_dependency\n"
+        "      - retry_blocked_by_governance\n"
+        "      - retry_exhausted\n"
+    )
+
+    repaired = supervisor_module.repair_candidate_yaml_text(candidate)
+
+    parsed = supervisor_module.get_yaml_module().safe_load(repaired)
+    assert parsed["specification"]["queue_contract_fields"] == [
+        {
+            "retry_condition": (
+                "a bounded retry state enum controlling whether a queued control item is currently "
+                "considered for retry selection. Allowed values: retry_ready "
+                "retry_blocked_by_dependency retry_blocked_by_governance retry_exhausted"
+            )
+        }
+    ]
+
+
 def test_repair_candidate_yaml_text_preserves_quoted_sibling_key_in_sequence_mapping(
     supervisor_module: object,
 ) -> None:
@@ -3396,6 +3425,37 @@ def test_repair_candidate_yaml_text_does_not_swallow_nested_mapping_key(
     except BaseException:
         parse_failed = True
     assert parse_failed is True
+
+
+def test_repair_candidate_yaml_text_preserves_nested_mapping_under_nested_key(
+    supervisor_module: object,
+) -> None:
+    original = (
+        "specification:\n"
+        "  retry_condition_fields:\n"
+        "    retry_condition:\n"
+        "      description: Base description.\n"
+    )
+    candidate = (
+        "specification:\n"
+        "  retry_condition_fields:\n"
+        "    retry_condition:\n"
+        "      reason:\n"
+        "        description: Retry rationale.\n"
+        "        allowed_values:\n"
+        "        - dependency_unblocked\n"
+        "        - transport_retryable\n"
+    )
+
+    repaired = supervisor_module.repair_candidate_yaml_text(candidate, original)
+
+    parsed = supervisor_module.get_yaml_module().safe_load(repaired)
+    reason = parsed["specification"]["retry_condition_fields"]["retry_condition"]["reason"]
+    assert reason["description"] == "Retry rationale."
+    assert reason["allowed_values"] == [
+        "dependency_unblocked",
+        "transport_retryable",
+    ]
 
 
 def test_repair_candidate_yaml_text_skips_ambiguous_original_line_indent(
