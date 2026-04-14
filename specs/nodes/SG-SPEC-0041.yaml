@@ -1,8 +1,8 @@
 id: SG-SPEC-0041
 title: SpecGraph - Proposal Queue Retry-Condition and Active-Item Precedence Gateway
 kind: spec
-status: linked
-maturity: 0.4
+status: reviewed
+maturity: 0.6
 depends_on:
 - SG-SPEC-0035
 - SG-SPEC-0036
@@ -69,6 +69,8 @@ specification:
   - SG-SPEC-0034 must depend on SG-SPEC-0041 for retry-condition and active-item precedence readiness.
   - While SG-SPEC-0041 exists, SG-SPEC-0034 must not consume SG-SPEC-0035 or SG-SPEC-0036 directly for
     these same concerns.
+  - SG-SPEC-0003 may consume retry-condition and active-item precedence through SG-SPEC-0034 only; direct
+    dependencies from SG-SPEC-0003 to SG-SPEC-0035 or SG-SPEC-0036 for these concerns are disallowed.
   cluster_members:
     retry_condition_contract:
     - SG-SPEC-0035 owns concrete retry-condition control semantics.
@@ -82,7 +84,7 @@ specification:
   - SG-SPEC-0034 must consume SG-SPEC-0041 for retry-condition and active-item precedence coordination.
   - SG-SPEC-0035 and SG-SPEC-0036 refine SG-SPEC-0041 as its concrete retry and active-item precedence
     leaves.
-  - SG-SPEC-0003 remains downstream consumer of these concerns through SG-SPEC-0034.
+  - SG-SPEC-0003 remains downstream consumer of these concerns through SG-SPEC-0034 only.
   - SG-SPEC-0041 must keep both child concerns non-bypassable through SG-SPEC-0034 while retaining bounded
     atomicity.
 gate_state: none
@@ -91,4 +93,4 @@ proposed_maturity: null
 required_human_action: '-'
 last_gate_decision: approve
 last_gate_note: ''
-last_gate_at: '2026-04-14T09:03:14.074083+00:00'
+last_gate_at: '2026-04-14T19:26:43.560075+00:00'
