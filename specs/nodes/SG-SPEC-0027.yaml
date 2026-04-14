@@ -1,8 +1,8 @@
 id: SG-SPEC-0027
 title: SpecGraph - Reflective Execution Mechanics Cluster
 kind: spec
-status: specified
-maturity: 0.49
+status: linked
+maturity: 0.69
 depends_on:
 - SG-SPEC-0005
 - SG-SPEC-0029
@@ -76,13 +76,13 @@ specification:
   - SG-SPEC-0027 depends on exactly SG-SPEC-0005 and SG-SPEC-0029 as direct execution-mechanics descendants.
   - SG-SPEC-0026 consumes SG-SPEC-0027 as the single execution-mechanics dependency path for this subtree.
   - While SG-SPEC-0027 exists, SG-SPEC-0026 must not have direct execution-mechanics dependencies to SG-SPEC-0005
-    or SG-SPEC-0028.
+    or SG-SPEC-0029.
   cluster_members:
     retrospective_direct_update_boundary:
     - SG-SPEC-0005 owns retrospective direct-update boundary and application envelope.
     proposal_and_split_mechanics_subcluster:
-    - SG-SPEC-0029 owns the proposal/split mechanics gateway and delegates split proposal lifecycle, split
-      mechanics schema, and proposal-lane execution descendants to SG-SPEC-0028.
+    - SG-SPEC-0029 owns the proposal/split mechanics subcluster gateway and delegates split proposal lifecycle,
+      split mechanics schema, and proposal-lane execution descendants to SG-SPEC-0028.
   cluster_boundaries:
   - Refining through SG-SPEC-0027 does not collapse descendant node identities or their bounded concerns.
   - SG-SPEC-0027 does not redefine the mechanics contracts already owned by its descendants.
@@ -97,72 +97,10 @@ specification:
   - SG-SPEC-0027 must expose exactly one subordinate proposal/split mechanics subcluster and it is SG-SPEC-0029.
   - SG-SPEC-0026 must not depend on any execution-mechanics node other than SG-SPEC-0027 for execution-mechanics
     readiness while SG-SPEC-0027 remains present.
-gate_state: split_required
-required_human_action: split spec scope before rerun
+gate_state: none
 proposed_status: null
 proposed_maturity: null
-last_outcome: split_required
-last_blocker: ''
-last_run_id: 20260413T190014Z-SG-SPEC-0027
-last_exit_code: 0
-last_changed_files:
-- specs/nodes/SG-SPEC-0027.yaml
-- specs/nodes/SG-SPEC-0029.yaml
-last_run_at: '2026-04-13T19:00:15.067255+00:00'
-last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0027-20260413T185931Z
-last_branch: codex/sg-spec-0027/20260413T185931Z
-last_validator_results:
-  outputs: true
-  allowed_paths: true
-  reconciliation: true
-  atomicity: true
-  transition: true
-  executor_environment: true
-  refinement_acceptance: true
-last_refinement_acceptance:
-  decision: review_required
-  change_class: graph_refactor
-  checks:
-    content_changed: true
-    hard_validation: true
-    single_spec_scope: false
-    constitutional_diff: false
-    graph_refactor_diff: true
-    atomicity_clear: true
-    within_mutation_budget: true
-  diff_paths:
-  - acceptance[0]
-  - acceptance_evidence[0].criterion
-  - acceptance_evidence[0].evidence
-  - depends_on[1]
-  - inputs[2]
-  - specification.cluster_boundaries[3]
-  - specification.cluster_members.proposal_and_split_mechanics_subcluster[0]
-  - specification.cluster_role[2]
-  - specification.cluster_topology[0]
-  - specification.parent_contract[2]
-  - specification.scope.in[1]
-  - specification.scope.out[1]
-  mutation_classes:
-  - policy_text
-  mutation_budget: []
-  budget_exceeded_classes: []
-  changed_spec_files:
-  - specs/nodes/SG-SPEC-0027.yaml
-  - specs/nodes/SG-SPEC-0029.yaml
-  review_reasons:
-  - run changed additional spec files beyond the selected source node
-  - run changed graph structure or spec contract paths
-  errors: []
-  warnings: []
-last_reconciliation:
-  worktree_spec_count: 29
-  changed_spec_ids:
-  - SG-SPEC-0027
-  - SG-SPEC-0029
-  semantic_dependencies_resolved: true
-  work_dependencies_ready: false
-  cycles: []
-last_requested_child_materialization: true
-last_materialized_child_paths:
-- specs/nodes/SG-SPEC-0029.yaml
+required_human_action: '-'
+last_gate_decision: approve
+last_gate_note: ''
+last_gate_at: '2026-04-14T05:03:01.509195+00:00'

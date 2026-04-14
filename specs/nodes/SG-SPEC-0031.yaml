@@ -1,0 +1,70 @@
+id: SG-SPEC-0031
+title: SpecGraph - Proposal/Split Gateway Prerequisite Contract
+kind: spec
+status: linked
+maturity: 0.4
+depends_on: []
+refines:
+- SG-SPEC-0029
+inputs:
+- specs/nodes/SG-SPEC-0029.yaml
+- specs/nodes/SG-SPEC-0005.yaml
+- specs/nodes/SG-SPEC-0028.yaml
+- tasks.md
+outputs:
+- specs/nodes/SG-SPEC-0031.yaml
+allowed_paths:
+- specs/nodes/SG-SPEC-0031.yaml
+acceptance:
+- Defines the parent-facing prerequisite contract by which SG-SPEC-0032 consumes SG-SPEC-0029 for proposal/split
+  readiness as a single bounded prerequisite path.
+- 'Enforces the non-bypass rule for that concern: while SG-SPEC-0029 exists, parents must not depend_on
+  SG-SPEC-0028 directly for proposal/split readiness.'
+- Preserves concern separation by keeping SG-SPEC-0005 direct-update readiness outside SG-SPEC-0031’s
+  scope.
+acceptance_evidence:
+- criterion: Defines the parent-facing prerequisite contract by which SG-SPEC-0032 consumes SG-SPEC-0029
+    for proposal/split readiness as a single bounded prerequisite path.
+  evidence: specification.gateway_contract requires SG-SPEC-0032 to consume SG-SPEC-0029 through the proposal/split
+    prerequisite channel as one concern-level bounded path.
+- criterion: 'Enforces the non-bypass rule for that concern: while SG-SPEC-0029 exists, parents must not
+    depend_on SG-SPEC-0028 directly for proposal/split readiness.'
+  evidence: specification.consumer_rules forbids direct depends_on to SG-SPEC-0028 for proposal/split
+    readiness while SG-SPEC-0029 is present.
+- criterion: Preserves concern separation by keeping SG-SPEC-0005 direct-update readiness outside SG-SPEC-0031’s
+    scope.
+  evidence: specification.boundary_separation states SG-SPEC-0005 is out of scope, and SG-SPEC-0031 is
+    limited to proposal/split gateway readiness semantics.
+prompt: Define the bounded parent-facing prerequisite contract inside SG-SPEC-0029 so proposal/split readiness
+  is consumed through SG-SPEC-0029 by SG-SPEC-0032 while direct-update readiness remains separately bounded.
+specification:
+  objective: Define the bounded parent-facing prerequisite contract that governs how SG-SPEC-0032 consumes
+    SG-SPEC-0029 for proposal/split readiness and where bypass is forbidden.
+  scope:
+    in:
+    - Parent-facing prerequisite semantics for proposal/split readiness through SG-SPEC-0029.
+    - Non-bypass constraints for consumers requiring proposal/split readiness while SG-SPEC-0029 exists.
+    - Separation between proposal/split readiness and neighboring direct-update boundaries.
+    out:
+    - Concrete split payload schema or proposal-lane mechanics semantics.
+    - Queue ranking formulas, execution timing, or persistence/runtime orchestration details.
+  gateway_contract:
+  - SG-SPEC-0032 may satisfy proposal/split readiness by depending_on SG-SPEC-0029 as one direct bounded
+    prerequisite edge.
+  - SG-SPEC-0029 is the concern-level readiness gateway for proposal/split consumption under SG-SPEC-0032.
+  - Adjacent direct-update boundaries remain outside this prerequisite contract.
+  consumer_rules:
+  - While SG-SPEC-0029 exists, a parent that requires proposal/split readiness must not directly depend_on
+    SG-SPEC-0028 for that same concern.
+  - This contract does not redefine SG-SPEC-0028 mechanics, split payload structure, or lane execution
+    runtime policy.
+  boundary_separation:
+  - Direct-update boundaries remain explicitly outside this prerequisite contract.
+  - SG-SPEC-0029 readiness for this concern is not a proxy for retrospective direct-update semantics.
+gate_state: none
+proposed_status: null
+proposed_maturity: null
+required_human_action: '-'
+last_gate_decision: approve
+last_gate_note: ''
+last_gate_at: '2026-04-14T05:05:17.588279+00:00'
