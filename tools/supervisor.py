@@ -2363,12 +2363,12 @@ def validate_acceptance_evidence(node_data: dict[str, Any]) -> list[str]:
     return errors
 
 
-def semantic_text_tokens(text: str) -> set[str]:
+def semantic_text_tokens(text: str, *, min_len: int = 4) -> set[str]:
     lowered = str(text).lower()
     tokens = {
         token
         for token in SEMANTIC_WORD_RE.findall(lowered)
-        if len(token) >= 4 and token not in SEMANTIC_ACCEPTANCE_STOPWORDS
+        if len(token) >= min_len and token not in SEMANTIC_ACCEPTANCE_STOPWORDS
     }
     for token in BACKTICK_TOKEN_RE.findall(str(text)):
         normalized = token.strip().lower()
@@ -2408,9 +2408,15 @@ def acceptance_evidence_semantically_grounded(
 
     criterion_tokens = semantic_text_tokens(criterion_text)
     if not criterion_tokens:
-        return True
+        criterion_tokens = semantic_text_tokens(criterion_text, min_len=2)
+        if not criterion_tokens:
+            normalized_criterion = " ".join(SEMANTIC_WORD_RE.findall(criterion_text.lower()))
+            normalized_evidence = " ".join(SEMANTIC_WORD_RE.findall(evidence_text.lower()))
+            return bool(normalized_criterion and normalized_criterion in normalized_evidence)
 
     evidence_tokens = semantic_text_tokens(evidence_text)
+    if not evidence_tokens:
+        evidence_tokens = semantic_text_tokens(evidence_text, min_len=2)
     return bool(criterion_tokens & evidence_tokens)
 
 

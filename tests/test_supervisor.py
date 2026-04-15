@@ -2727,7 +2727,7 @@ def test_main_creates_review_gate_and_provenance_metadata(
     def fake_executor(_node: object, worktree_path: Path) -> subprocess.CompletedProcess[str]:
         node_path = worktree_path / "specs" / "nodes" / "SG-SPEC-0001.yaml"
         data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
-        data["acceptance_evidence"] = ["criterion satisfied by refined section"]
+        data["acceptance_evidence"] = grounded_acceptance_evidence(data["acceptance"])
         data["prompt"] = "Updated by Codex"
         node_path.write_text(
             supervisor_module.dump_yaml_text(data) + "RUN_OUTCOME: done\nBLOCKER: none\n",
@@ -2749,7 +2749,7 @@ def test_main_creates_review_gate_and_provenance_metadata(
     assert updated["gate_state"] == "review_pending"
     assert updated["proposed_status"] == "specified"
     assert updated["prompt"] == "Updated by Codex"
-    assert updated["acceptance_evidence"] == ["criterion satisfied by refined section"]
+    assert updated["acceptance_evidence"] == grounded_acceptance_evidence(updated["acceptance"])
     assert "RUN_OUTCOME" not in updated
     assert "BLOCKER" not in updated
     assert "RUN_OUTCOME:" not in node_path.read_text(encoding="utf-8")
@@ -3138,7 +3138,9 @@ def test_main_explicit_targeted_refinement_reruns_review_pending_spec(
             current_path.read_text(encoding="utf-8")
         )
         current_data["prompt"] = "Proposal lane policy now distinguishes tracked handles."
-        current_data["acceptance_evidence"] = ["criterion satisfied by targeted rerun"]
+        current_data["acceptance_evidence"] = grounded_acceptance_evidence(
+            current_data["acceptance"]
+        )
         current_path.write_text(
             supervisor_module.dump_yaml_text(current_data),
             encoding="utf-8",
@@ -3161,7 +3163,7 @@ def test_main_explicit_targeted_refinement_reruns_review_pending_spec(
     assert updated["gate_state"] == "review_pending"
     assert updated["proposed_status"] == "linked"
     assert updated["prompt"] == "Proposal lane policy now distinguishes tracked handles."
-    assert updated["acceptance_evidence"] == ["criterion satisfied by targeted rerun"]
+    assert updated["acceptance_evidence"] == grounded_acceptance_evidence(updated["acceptance"])
 
     run_logs = sorted((repo_fixture / "runs").glob("*-SG-SPEC-*.json"))
     assert len(run_logs) == 1
@@ -4131,7 +4133,7 @@ def test_main_selects_graph_refactor_work_item_before_default_gap(
     def fake_executor(_node: object, worktree_path: Path) -> subprocess.CompletedProcess[str]:
         node_path = worktree_path / "specs" / "nodes" / "SG-SPEC-0001.yaml"
         data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
-        data["acceptance_evidence"] = ["criterion satisfied by refined section"]
+        data["acceptance_evidence"] = grounded_acceptance_evidence(data["acceptance"])
         node_path.write_text(json.dumps(data), encoding="utf-8")
         return subprocess.CompletedProcess(
             args=["codex"],
@@ -5090,6 +5092,27 @@ def test_validate_changed_spec_nodes_accepts_grounded_dict_acceptance_evidence(
     assert errors == []
 
 
+def test_validate_changed_spec_nodes_rejects_short_identifier_placeholder_evidence(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    node_data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    node_data["acceptance"] = ["API URI ID"]
+    node_data["acceptance_evidence"] = ["updated evidence"]
+    node_path.write_text(json.dumps(node_data), encoding="utf-8")
+
+    worktree_specs = supervisor_module.load_specs_from_dir(repo_fixture / "specs" / "nodes")
+    errors = supervisor_module.validate_changed_spec_nodes(
+        source_node_id="SG-SPEC-0001",
+        changed_files=["specs/nodes/SG-SPEC-0001.yaml"],
+        worktree_specs=worktree_specs,
+        worktree_path=repo_fixture,
+    )
+
+    assert any("must semantically ground acceptance[1]" in error for error in errors)
+
+
 def test_main_seeds_worktree_with_current_uncommitted_node(
     supervisor_module: object,
     repo_fixture: Path,
@@ -5503,7 +5526,7 @@ def test_main_auto_approve_reconciles_seed_to_linked_when_child_exists(
             root_node.read_text(encoding="utf-8")
         )
         root_data["depends_on"] = ["SG-SPEC-0002"]
-        root_data["acceptance_evidence"][-1] = "SG-SPEC-0002 now refines the seed linkage policy."
+        root_data["acceptance_evidence"] = grounded_acceptance_evidence(root_data["acceptance"])
         root_node.write_text(json.dumps(root_data), encoding="utf-8")
 
         child_node = worktree_path / "specs" / "nodes" / "SG-SPEC-0002.yaml"
@@ -5799,7 +5822,7 @@ def test_main_split_required_syncs_decomposition_outputs(
     node_data["title"] = "Working Node"
     node_data["prompt"] = "Split this node into several atomic children."
     node_data["allowed_paths"] = ["specs/nodes/*.yaml"]
-    node_data["acceptance_evidence"] = ["seed evidence"]
+    node_data["acceptance_evidence"] = grounded_acceptance_evidence(node_data["acceptance"])
     node_path.write_text(json.dumps(node_data), encoding="utf-8")
 
     worktree = make_fake_worktree(repo_fixture)
@@ -5827,7 +5850,7 @@ def test_main_split_required_syncs_decomposition_outputs(
             root_node.read_text(encoding="utf-8")
         )
         root_data["depends_on"] = ["SG-SPEC-0002", "SG-SPEC-0003"]
-        root_data["acceptance_evidence"] = ["Split into atomic children."]
+        root_data["acceptance_evidence"] = grounded_acceptance_evidence(root_data["acceptance"])
         root_node.write_text(json.dumps(root_data), encoding="utf-8")
 
         for child_id, title in (
@@ -5894,7 +5917,7 @@ def test_main_split_required_sync_preserves_source_lifecycle_fields(
     node_data["maturity"] = 0.4
     node_data["prompt"] = "Split this node into several atomic children."
     node_data["allowed_paths"] = ["specs/nodes/*.yaml"]
-    node_data["acceptance_evidence"] = ["seed evidence"]
+    node_data["acceptance_evidence"] = grounded_acceptance_evidence(node_data["acceptance"])
     node_path.write_text(json.dumps(node_data), encoding="utf-8")
 
     worktree = make_fake_worktree(repo_fixture)
