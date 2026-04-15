@@ -488,23 +488,31 @@ def subtree_shape_metrics(node: SpecNode, specs: list[SpecNode]) -> dict[str, An
 
     level_widths: dict[int, int] = {}
 
-    def walk_depth(spec_id: str, depth: int) -> int:
+    def walk_depth(spec_id: str, depth: int, active: frozenset[str]) -> int:
+        if spec_id in active:
+            return depth - 1
         level_widths[depth] = level_widths.get(depth, 0) + 1
         child_depths = [
-            walk_depth(child.id, depth + 1)
+            walk_depth(child.id, depth + 1, active | {spec_id})
             for child in children_map.get(spec_id, [])
             if child.id in index
         ]
         return max([depth, *child_depths])
 
-    def one_child_chain(spec_id: str) -> int:
+    def one_child_chain(spec_id: str, active: frozenset[str]) -> int:
+        if spec_id in active:
+            return 0
         children = [child for child in children_map.get(spec_id, []) if child.id in index]
         if len(children) != 1:
             return 1
-        return 1 + one_child_chain(children[0].id)
+        return 1 + one_child_chain(children[0].id, active | {spec_id})
 
-    max_depth = walk_depth(node.id, 0) if node.id in index else 0
-    longest_chain = one_child_chain(node.id) if node.id in index else 1
+    max_depth = walk_depth(node.id, 0, frozenset()) if node.id in index else 0
+    longest_chain = (
+        max(one_child_chain(spec_id, frozenset()) for spec_id in index)
+        if node.id in index and index
+        else 1
+    )
     internal_nodes = [spec_id for spec_id, children in children_map.items() if children]
     single_child_internal_count = sum(
         1 for spec_id in internal_nodes if len(children_map.get(spec_id, [])) == 1

@@ -1901,6 +1901,151 @@ def test_observe_graph_health_reports_shape_and_handoff_signals(
     assert serial["details"]["longest_one_child_chain"] >= 4
 
 
+def test_observe_graph_health_handles_refines_cycle_in_subtree_metrics(
+    supervisor_module: object,
+) -> None:
+    spec_node = supervisor_module.SpecNode
+    source = spec_node(
+        path=Path("/tmp/source.yaml"),
+        data={
+            "id": "SG-SPEC-9100",
+            "title": "Cycle Root",
+            "kind": "spec",
+            "status": "linked",
+            "maturity": 0.4,
+            "depends_on": [],
+            "acceptance": ["root criterion"],
+            "prompt": "Delegate one child boundary.",
+            "last_outcome": "split_required",
+        },
+    )
+    child = spec_node(
+        path=Path("/tmp/child.yaml"),
+        data={
+            "id": "SG-SPEC-9101",
+            "title": "Cycle Child",
+            "kind": "spec",
+            "status": "linked",
+            "maturity": 0.3,
+            "depends_on": [],
+            "refines": ["SG-SPEC-9100"],
+            "acceptance": ["child criterion"],
+            "prompt": "Delegate child boundary.",
+        },
+    )
+    source.data["refines"] = ["SG-SPEC-9101"]
+
+    metrics = supervisor_module.subtree_shape_metrics(source, [source, child])
+
+    assert metrics["descendant_count"] == 1
+    assert metrics["longest_one_child_chain"] == 2
+    assert metrics["max_depth"] == 1
+
+
+def test_observe_graph_health_detects_serial_chain_below_branched_root(
+    supervisor_module: object,
+) -> None:
+    spec_node = supervisor_module.SpecNode
+    source = spec_node(
+        path=Path("/tmp/source.yaml"),
+        data={
+            "id": "SG-SPEC-9200",
+            "title": "Branched Root",
+            "kind": "spec",
+            "status": "linked",
+            "maturity": 0.4,
+            "depends_on": [],
+            "acceptance": ["root criterion"],
+            "prompt": "Delegate one child boundary.",
+            "last_outcome": "split_required",
+        },
+    )
+    child_a = spec_node(
+        path=Path("/tmp/child-a.yaml"),
+        data={
+            "id": "SG-SPEC-9201",
+            "title": "Gateway Branch",
+            "kind": "spec",
+            "status": "linked",
+            "maturity": 0.3,
+            "depends_on": [],
+            "refines": ["SG-SPEC-9200"],
+            "acceptance": ["child a"],
+            "prompt": "Delegate gateway boundary.",
+        },
+    )
+    child_b = spec_node(
+        path=Path("/tmp/child-b.yaml"),
+        data={
+            "id": "SG-SPEC-9202",
+            "title": "Sibling Branch",
+            "kind": "spec",
+            "status": "linked",
+            "maturity": 0.3,
+            "depends_on": [],
+            "refines": ["SG-SPEC-9200"],
+            "acceptance": ["child b"],
+            "prompt": "Keep sibling branch separate.",
+        },
+    )
+    child_c = spec_node(
+        path=Path("/tmp/child-c.yaml"),
+        data={
+            "id": "SG-SPEC-9203",
+            "title": "Gateway Child",
+            "kind": "spec",
+            "status": "linked",
+            "maturity": 0.3,
+            "depends_on": [],
+            "refines": ["SG-SPEC-9201"],
+            "acceptance": ["child c"],
+            "prompt": "Delegate queue routing.",
+        },
+    )
+    child_d = spec_node(
+        path=Path("/tmp/child-d.yaml"),
+        data={
+            "id": "SG-SPEC-9204",
+            "title": "Routing Leaf",
+            "kind": "spec",
+            "status": "linked",
+            "maturity": 0.3,
+            "depends_on": [],
+            "refines": ["SG-SPEC-9203"],
+            "acceptance": ["child d"],
+            "prompt": "Delegate runtime payload routing.",
+        },
+    )
+    child_e = spec_node(
+        path=Path("/tmp/child-e.yaml"),
+        data={
+            "id": "SG-SPEC-9205",
+            "title": "Payload Leaf",
+            "kind": "spec",
+            "status": "linked",
+            "maturity": 0.3,
+            "depends_on": [],
+            "refines": ["SG-SPEC-9204"],
+            "acceptance": ["child e"],
+            "prompt": "Delegate runtime payload field.",
+        },
+    )
+
+    graph_health = supervisor_module.observe_graph_health(
+        source_node=source,
+        worktree_specs=[source, child_a, child_b, child_c, child_d, child_e],
+        reconciliation={"semantic_dependencies_resolved": True},
+        atomicity_errors=[],
+        outcome="split_required",
+    )
+
+    assert "serial_refinement_ladder" in graph_health["signals"]
+    serial = next(
+        item for item in graph_health["observations"] if item["kind"] == "serial_refinement_ladder"
+    )
+    assert serial["details"]["longest_one_child_chain"] >= 4
+
+
 def test_update_refactor_queue_writes_classified_work_items(
     supervisor_module: object,
     repo_fixture: Path,
