@@ -4,7 +4,6 @@ Active backlog only. Completed tasks were moved to [tasks_archive.md](/Users/ego
 Task numbers are preserved for traceability across commits and PRs.
 
 4. [todo] Upgrade `search_kg_json.py` from plain keyword matching to structured requirement extraction.
-6. [todo] Add semantic acceptance validation that verifies each acceptance criterion is actually satisfied, not only structurally present.
 7. [todo] Add graph-projection/provenance artifacts beyond run JSON/summary (projection-ready links or derived graph outputs).
 
 ## Reflective Evolution Loop

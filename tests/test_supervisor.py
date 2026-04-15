@@ -87,6 +87,10 @@ def repo_fixture(
     return root
 
 
+def grounded_acceptance_evidence(acceptance: list[object]) -> list[str]:
+    return [f"Evidence grounds criterion: {str(item).strip()}" for item in acceptance]
+
+
 @pytest.fixture()
 def git_repo_fixture(
     tmp_path: Path,
@@ -2990,7 +2994,7 @@ def test_main_targeted_refinement_hides_executor_transcript_by_default(
     node_data["allowed_paths"] = ["specs/nodes/SG-SPEC-0001.yaml"]
     if not isinstance(node_data.get("acceptance_evidence"), list):
         acceptance = node_data.get("acceptance", [])
-        node_data["acceptance_evidence"] = [f"evidence-{idx}" for idx, _ in enumerate(acceptance)]
+        node_data["acceptance_evidence"] = grounded_acceptance_evidence(acceptance)
     node_path.write_text(json.dumps(node_data), encoding="utf-8")
 
     worktree = make_fake_worktree(repo_fixture)
@@ -3048,7 +3052,7 @@ def test_main_targeted_refinement_shows_executor_transcript_in_verbose_mode(
     node_data["allowed_paths"] = ["specs/nodes/SG-SPEC-0001.yaml"]
     if not isinstance(node_data.get("acceptance_evidence"), list):
         acceptance = node_data.get("acceptance", [])
-        node_data["acceptance_evidence"] = [f"evidence-{idx}" for idx, _ in enumerate(acceptance)]
+        node_data["acceptance_evidence"] = grounded_acceptance_evidence(acceptance)
     node_path.write_text(json.dumps(node_data), encoding="utf-8")
 
     worktree = make_fake_worktree(repo_fixture)
@@ -4894,10 +4898,20 @@ def test_main_apply_split_proposal_reuses_existing_refining_child(
     assert reused_child["prompt"] == "Preserve existing accepted child work."
     assert reused_child["acceptance"] == ["criterion-2", "criterion-3"]
     assert reused_child["acceptance_evidence"] == [
-        "Retained from applied split proposal refactor_proposal::SG-SPEC-0001::oversized_spec "
-        "for acceptance [2]",
-        "Retained from applied split proposal refactor_proposal::SG-SPEC-0001::oversized_spec "
-        "for acceptance [3]",
+        {
+            "criterion": "criterion-2",
+            "evidence": (
+                "Applied split proposal refactor_proposal::SG-SPEC-0001::oversized_spec "
+                "mapped acceptance [2] for criterion-2 into this canonical node."
+            ),
+        },
+        {
+            "criterion": "criterion-3",
+            "evidence": (
+                "Applied split proposal refactor_proposal::SG-SPEC-0001::oversized_spec "
+                "mapped acceptance [3] for criterion-3 into this canonical node."
+            ),
+        },
     ]
     assert new_child["refines"] == ["SG-SPEC-0001"]
     assert new_child["acceptance"] == ["criterion-4", "criterion-5", "criterion-6"]
@@ -5025,6 +5039,57 @@ def test_validate_changed_spec_nodes_rejects_relates_to_overlap_with_refines(
     )
 
 
+def test_validate_changed_spec_nodes_rejects_semantically_ungrounded_acceptance_evidence(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    node_data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    node_data["acceptance"] = ["Defines canonical substrate choices and revision/export invariants"]
+    node_data["acceptance_evidence"] = ["updated evidence"]
+    node_path.write_text(json.dumps(node_data), encoding="utf-8")
+
+    worktree_specs = supervisor_module.load_specs_from_dir(repo_fixture / "specs" / "nodes")
+    errors = supervisor_module.validate_changed_spec_nodes(
+        source_node_id="SG-SPEC-0001",
+        changed_files=["specs/nodes/SG-SPEC-0001.yaml"],
+        worktree_specs=worktree_specs,
+        worktree_path=repo_fixture,
+    )
+
+    assert any("must semantically ground acceptance[1]" in error for error in errors)
+
+
+def test_validate_changed_spec_nodes_accepts_grounded_dict_acceptance_evidence(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    criterion = "Defines canonical substrate choices and revision/export invariants"
+    node_data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    node_data["acceptance"] = [criterion]
+    node_data["acceptance_evidence"] = [
+        {
+            "criterion": criterion,
+            "evidence": (
+                "specification.substrate records the canonical substrate choices and "
+                "the revision/export invariants."
+            ),
+        }
+    ]
+    node_path.write_text(json.dumps(node_data), encoding="utf-8")
+
+    worktree_specs = supervisor_module.load_specs_from_dir(repo_fixture / "specs" / "nodes")
+    errors = supervisor_module.validate_changed_spec_nodes(
+        source_node_id="SG-SPEC-0001",
+        changed_files=["specs/nodes/SG-SPEC-0001.yaml"],
+        worktree_specs=worktree_specs,
+        worktree_path=repo_fixture,
+    )
+
+    assert errors == []
+
+
 def test_main_seeds_worktree_with_current_uncommitted_node(
     supervisor_module: object,
     repo_fixture: Path,
@@ -5064,7 +5129,7 @@ def test_main_seeds_worktree_with_current_uncommitted_node(
         )
         assert data["prompt"] == "Current working tree prompt"
         assert data["allowed_paths"] == ["specs/nodes/*.yaml"]
-        data["acceptance_evidence"] = ["evidence"]
+        data["acceptance_evidence"] = grounded_acceptance_evidence(data["acceptance"])
         worktree_node.write_text(json.dumps(data), encoding="utf-8")
         return subprocess.CompletedProcess(
             args=["codex"],
@@ -5097,7 +5162,7 @@ def test_main_auto_approve_applies_status_and_copies_changes(
     def fake_executor(_node: object, worktree_path: Path) -> subprocess.CompletedProcess[str]:
         node_path = worktree_path / "specs" / "nodes" / "SG-SPEC-0001.yaml"
         data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
-        data["acceptance_evidence"] = ["evidence"]
+        data["acceptance_evidence"] = grounded_acceptance_evidence(data["acceptance"])
         data["prompt"] = "Auto-approved prompt"
         node_path.write_text(json.dumps(data), encoding="utf-8")
         return subprocess.CompletedProcess(
@@ -5136,7 +5201,7 @@ def test_main_auto_approve_does_not_bypass_review_required_refinement(
 ) -> None:
     node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
     node_data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
-    node_data["acceptance_evidence"] = ["initial evidence"]
+    node_data["acceptance_evidence"] = grounded_acceptance_evidence(node_data["acceptance"])
     node_path.write_text(json.dumps(node_data), encoding="utf-8")
 
     worktree = make_fake_worktree(repo_fixture)
@@ -5156,7 +5221,7 @@ def test_main_auto_approve_does_not_bypass_review_required_refinement(
         data = supervisor_module.get_yaml_module().safe_load(
             worktree_node.read_text(encoding="utf-8")
         )
-        data["acceptance_evidence"] = ["updated evidence"]
+        data["acceptance_evidence"] = grounded_acceptance_evidence(data["acceptance"])
         data["specification"] = {
             "boundary_policy": {
                 "layer_separation": ["Canonical nodes remain the accepted graph of record."]
@@ -5203,7 +5268,7 @@ def test_main_rejects_noop_successful_refinement_run(
 ) -> None:
     node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
     node_data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
-    node_data["acceptance_evidence"] = ["initial evidence"]
+    node_data["acceptance_evidence"] = grounded_acceptance_evidence(node_data["acceptance"])
     node_path.write_text(json.dumps(node_data), encoding="utf-8")
 
     worktree = make_fake_worktree(repo_fixture)
@@ -5269,7 +5334,7 @@ def test_main_auto_approve_syncs_new_child_spec_from_parent_run(
         root_data = supervisor_module.get_yaml_module().safe_load(
             root_node.read_text(encoding="utf-8")
         )
-        root_data["acceptance_evidence"] = ["evidence"]
+        root_data["acceptance_evidence"] = grounded_acceptance_evidence(root_data["acceptance"])
         root_data["depends_on"] = ["SG-SPEC-0002"]
         root_node.write_text(json.dumps(root_data), encoding="utf-8")
 
@@ -5333,7 +5398,7 @@ def test_main_keeps_linked_status_proposal_when_dependencies_not_review_ready(
     node_data["prompt"] = (
         "This spec is a seed ontology. Use child specs to refine unresolved areas."
     )
-    node_data["acceptance_evidence"] = ["evidence"] * len(node_data["acceptance"])
+    node_data["acceptance_evidence"] = grounded_acceptance_evidence(node_data["acceptance"])
     node_path.write_text(json.dumps(node_data), encoding="utf-8")
 
     worktree = make_fake_worktree(repo_fixture)
@@ -5417,7 +5482,7 @@ def test_main_auto_approve_reconciles_seed_to_linked_when_child_exists(
     node_data["prompt"] = (
         "This spec is a seed ontology. Use child specs to refine unresolved areas."
     )
-    node_data["acceptance_evidence"] = ["evidence"] * len(node_data["acceptance"])
+    node_data["acceptance_evidence"] = grounded_acceptance_evidence(node_data["acceptance"])
     node_path.write_text(json.dumps(node_data), encoding="utf-8")
 
     worktree = make_fake_worktree(repo_fixture)
@@ -5466,8 +5531,8 @@ def test_main_auto_approve_reconciles_seed_to_linked_when_child_exists(
                                 "and unblocks linked status"
                             ),
                             "evidence": (
-                                "specification.linkage_rules describes "
-                                "the parent-child edge contract"
+                                "specification.linkage_rules describes how the child "
+                                "refines the seed and unblocks linked status"
                             ),
                         }
                     ],
@@ -5538,7 +5603,7 @@ def test_main_auto_approve_syncs_when_allowed_paths_empty(
         data = supervisor_module.get_yaml_module().safe_load(
             worktree_node.read_text(encoding="utf-8")
         )
-        data["acceptance_evidence"] = ["evidence"]
+        data["acceptance_evidence"] = grounded_acceptance_evidence(data["acceptance"])
         data["prompt"] = "Synced with unrestricted allowed_paths"
         worktree_node.write_text(json.dumps(data), encoding="utf-8")
         return subprocess.CompletedProcess(
@@ -5575,7 +5640,7 @@ def test_main_outcome_blocked_sets_gate(
     def fake_executor(_node: object, worktree_path: Path) -> subprocess.CompletedProcess[str]:
         node_path = worktree_path / "specs" / "nodes" / "SG-SPEC-0001.yaml"
         data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
-        data["acceptance_evidence"] = ["evidence"]
+        data["acceptance_evidence"] = grounded_acceptance_evidence(data["acceptance"])
         node_path.write_text(json.dumps(data), encoding="utf-8")
         return subprocess.CompletedProcess(
             args=["codex"],
@@ -5691,7 +5756,7 @@ def test_main_atomicity_gate_forces_split_required(
             worktree_node.read_text(encoding="utf-8")
         )
         data["acceptance"] = [f"criterion-{i}" for i in range(6)]
-        data["acceptance_evidence"] = [f"evidence-{i}" for i in range(6)]
+        data["acceptance_evidence"] = grounded_acceptance_evidence(data["acceptance"])
         worktree_node.write_text(json.dumps(data), encoding="utf-8")
         return subprocess.CompletedProcess(
             args=["codex"],
@@ -5895,7 +5960,9 @@ def test_main_targeted_non_root_run_materializes_one_child_spec(
         "outputs": ["specs/nodes/SG-SPEC-0002.yaml"],
         "allowed_paths": ["specs/nodes/SG-SPEC-0002.yaml"],
         "acceptance": ["Delegate one bounded child vocabulary slice."],
-        "acceptance_evidence": ["Parent evidence."],
+        "acceptance_evidence": grounded_acceptance_evidence(
+            ["Delegate one bounded child vocabulary slice."]
+        ),
         "prompt": "Materialize one bounded child from this parent delegation boundary.",
     }
     parent_path.write_text(supervisor_module.dump_yaml_text(parent_data), encoding="utf-8")
@@ -5922,7 +5989,7 @@ def test_main_targeted_non_root_run_materializes_one_child_spec(
             parent_file.read_text(encoding="utf-8")
         )
         parent["depends_on"] = ["SG-SPEC-0003"]
-        parent["acceptance_evidence"] = ["Parent now delegates a concrete child slice."]
+        parent["acceptance_evidence"] = grounded_acceptance_evidence(parent["acceptance"])
         parent_file.write_text(supervisor_module.dump_yaml_text(parent), encoding="utf-8")
 
         child_file = worktree_path / "specs" / "nodes" / "SG-SPEC-0003.yaml"
@@ -6006,7 +6073,9 @@ def test_main_targeted_child_materialization_run_blocks_when_no_child_is_produce
                 "outputs": ["specs/nodes/SG-SPEC-0002.yaml"],
                 "allowed_paths": ["specs/nodes/SG-SPEC-0002.yaml"],
                 "acceptance": ["Delegate one bounded child vocabulary slice."],
-                "acceptance_evidence": ["Parent evidence."],
+                "acceptance_evidence": grounded_acceptance_evidence(
+                    ["Delegate one bounded child vocabulary slice."]
+                ),
                 "prompt": "Materialize one bounded child from this parent delegation boundary.",
             }
         ),
@@ -6083,7 +6152,9 @@ def test_main_targeted_child_materialization_split_required_does_not_count_as_pr
                 "outputs": ["specs/nodes/SG-SPEC-0002.yaml"],
                 "allowed_paths": ["specs/nodes/SG-SPEC-0002.yaml"],
                 "acceptance": ["Delegate one bounded child vocabulary slice."],
-                "acceptance_evidence": ["Parent evidence."],
+                "acceptance_evidence": grounded_acceptance_evidence(
+                    ["Delegate one bounded child vocabulary slice."]
+                ),
                 "prompt": "Materialize one bounded child from this parent delegation boundary.",
             }
         ),
@@ -6108,7 +6179,7 @@ def test_main_targeted_child_materialization_split_required_does_not_count_as_pr
             worktree_parent.read_text(encoding="utf-8")
         )
         data["acceptance"] = [f"criterion-{i}" for i in range(6)]
-        data["acceptance_evidence"] = [f"evidence-{i}" for i in range(6)]
+        data["acceptance_evidence"] = grounded_acceptance_evidence(data["acceptance"])
         worktree_parent.write_text(json.dumps(data), encoding="utf-8")
         return subprocess.CompletedProcess(
             args=["codex"],
@@ -6162,7 +6233,9 @@ def test_main_targeted_child_materialization_blocks_without_run_authority(
                 "outputs": ["specs/nodes/SG-SPEC-0002.yaml"],
                 "allowed_paths": ["specs/nodes/SG-SPEC-0002.yaml"],
                 "acceptance": ["Delegate one bounded child vocabulary slice."],
-                "acceptance_evidence": ["Parent evidence."],
+                "acceptance_evidence": grounded_acceptance_evidence(
+                    ["Delegate one bounded child vocabulary slice."]
+                ),
                 "prompt": "Materialize one bounded child from this parent delegation boundary.",
             }
         ),
@@ -6212,14 +6285,16 @@ def test_main_split_required_preserves_source_spec_refinement(
             "Criterion 5",
             "Criterion 6",
         ],
-        "acceptance_evidence": [
-            "Evidence 1",
-            "Evidence 2",
-            "Evidence 3",
-            "Evidence 4",
-            "Evidence 5",
-            "Evidence 6",
-        ],
+        "acceptance_evidence": grounded_acceptance_evidence(
+            [
+                "Criterion 1",
+                "Criterion 2",
+                "Criterion 3",
+                "Criterion 4",
+                "Criterion 5",
+                "Criterion 6",
+            ]
+        ),
         "prompt": "Initial prompt.",
     }
     spec_path.write_text(supervisor_module.dump_yaml_text(spec_data), encoding="utf-8")
@@ -6242,14 +6317,7 @@ def test_main_split_required_preserves_source_spec_refinement(
             worktree_node.read_text(encoding="utf-8")
         )
         data["prompt"] = "Refined prompt while node remains oversized."
-        data["acceptance_evidence"] = [
-            "Updated evidence 1",
-            "Updated evidence 2",
-            "Updated evidence 3",
-            "Updated evidence 4",
-            "Updated evidence 5",
-            "Updated evidence 6",
-        ]
+        data["acceptance_evidence"] = grounded_acceptance_evidence(data["acceptance"])
         worktree_node.write_text(supervisor_module.dump_yaml_text(data), encoding="utf-8")
         return subprocess.CompletedProcess(
             args=["codex"],
@@ -6268,14 +6336,7 @@ def test_main_split_required_preserves_source_spec_refinement(
     updated = supervisor_module.get_yaml_module().safe_load(spec_path.read_text(encoding="utf-8"))
     assert updated["gate_state"] == "split_required"
     assert updated["prompt"] == "Refined prompt while node remains oversized."
-    assert updated["acceptance_evidence"] == [
-        "Updated evidence 1",
-        "Updated evidence 2",
-        "Updated evidence 3",
-        "Updated evidence 4",
-        "Updated evidence 5",
-        "Updated evidence 6",
-    ]
+    assert updated["acceptance_evidence"] == grounded_acceptance_evidence(updated["acceptance"])
 
 
 def test_loop_counts_split_required_progress_separately(
@@ -6309,7 +6370,7 @@ def test_loop_counts_split_required_progress_separately(
             worktree_node.read_text(encoding="utf-8")
         )
         data["acceptance"] = [f"criterion-{i}" for i in range(6)]
-        data["acceptance_evidence"] = [f"evidence-{i}" for i in range(6)]
+        data["acceptance_evidence"] = grounded_acceptance_evidence(data["acceptance"])
         worktree_node.write_text(json.dumps(data), encoding="utf-8")
         return subprocess.CompletedProcess(
             args=["codex"],
@@ -6928,7 +6989,7 @@ def test_main_repairs_recoverable_worktree_yaml_indentation(
         "outputs": ["specs/nodes/SG-SPEC-0001.yaml"],
         "allowed_paths": ["specs/nodes/SG-SPEC-0001.yaml"],
         "acceptance": ["Criterion 1"],
-        "acceptance_evidence": ["Evidence 1"],
+        "acceptance_evidence": grounded_acceptance_evidence(["Criterion 1"]),
         "prompt": "Initial prompt.",
         "specification": {
             "graph_health_signal_policy": {
@@ -7067,7 +7128,7 @@ def _make_successful_executor(supervisor_module: object) -> object:
         node_file = worktree_path / "specs" / "nodes" / f"{node.id}.yaml"
         data = supervisor_module.get_yaml_module().safe_load(node_file.read_text(encoding="utf-8"))
         acceptance = data.get("acceptance", [])
-        data["acceptance_evidence"] = [f"evidence-{i}" for i in range(len(acceptance))]
+        data["acceptance_evidence"] = grounded_acceptance_evidence(acceptance)
         data["prompt"] = f"Refined at status {data.get('status', 'unknown')}."
         node_file.write_text(json.dumps(data), encoding="utf-8")
         return subprocess.CompletedProcess(
@@ -7144,7 +7205,7 @@ def test_loop_propagates_semantic_unlock_upstream(
     root_data["status"] = "specified"
     root_data["maturity"] = 0.6
     root_data["depends_on"] = ["SG-SPEC-0002"]
-    root_data["acceptance_evidence"] = ["evidence"]
+    root_data["acceptance_evidence"] = grounded_acceptance_evidence(root_data["acceptance"])
     root_data["allowed_paths"] = ["specs/nodes/*.yaml"]
     root_path.write_text(json.dumps(root_data), encoding="utf-8")
 
@@ -7161,7 +7222,7 @@ def test_loop_propagates_semantic_unlock_upstream(
                 "outputs": ["specs/nodes/SG-SPEC-0002.yaml"],
                 "allowed_paths": ["specs/nodes/*.yaml"],
                 "acceptance": ["criterion"],
-                "acceptance_evidence": ["evidence"],
+                "acceptance_evidence": grounded_acceptance_evidence(["criterion"]),
                 "prompt": "Reconcile one bounded ancestor step.",
             }
         ),
@@ -7276,7 +7337,7 @@ def test_loop_processes_multiple_specs(
                 node_file.read_text(encoding="utf-8")
             )
             acceptance = data.get("acceptance", [])
-            data["acceptance_evidence"] = [f"ev-{i}" for i in range(len(acceptance))]
+            data["acceptance_evidence"] = grounded_acceptance_evidence(acceptance)
             data["prompt"] = f"Refined {node.id} at status {data.get('status', 'unknown')}."
             node_file.write_text(json.dumps(data), encoding="utf-8")
         return subprocess.CompletedProcess(
@@ -7366,7 +7427,7 @@ def test_loop_continues_past_failures(
                 node_file.read_text(encoding="utf-8")
             )
             acceptance = data.get("acceptance", [])
-            data["acceptance_evidence"] = [f"ev-{i}" for i in range(len(acceptance))]
+            data["acceptance_evidence"] = grounded_acceptance_evidence(acceptance)
             data["prompt"] = f"Refined {node.id} at status {data.get('status', 'unknown')}."
             node_file.write_text(json.dumps(data), encoding="utf-8")
 

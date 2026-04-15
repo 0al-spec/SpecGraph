@@ -7,6 +7,7 @@ Task numbers are preserved for traceability across commits, PRs, and review thre
 2. [done] Add branch/worktree freshness validation in gate resolution (do not blindly trust `last_worktree_path`).
 3. [done] Add a command to list and clean stale gate states and stale worktrees.
 5. [done] Add integration tests that exercise real `git worktree` commands (beyond monkeypatched fake worktrees).
+6. [done] Add semantic acceptance validation that verifies each acceptance criterion is actually satisfied, not only structurally present.
 
 ## Reflective Evolution Loop
 
