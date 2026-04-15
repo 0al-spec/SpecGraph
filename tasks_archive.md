@@ -3,6 +3,9 @@
 Completed tasks moved out of [tasks.md](/Users/egor/Development/GitHub/0AL/SpecGraph/tasks.md) to keep the active backlog short and readable.
 Task numbers are preserved for traceability across commits, PRs, and review threads.
 
+2. [done] Add branch/worktree freshness validation in gate resolution (do not blindly trust `last_worktree_path`).
+3. [done] Add a command to list and clean stale gate states and stale worktrees.
+
 ## Reflective Evolution Loop
 
 8. [done] Specify the reflective loop boundary explicitly: what is governed by SpecGraph specs, what is executed by `supervisor`, and what always requires human approval.

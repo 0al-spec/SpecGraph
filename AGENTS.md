@@ -3,6 +3,7 @@
 See [CONSTITUTION.md](/Users/egor/Development/GitHub/0AL/SpecGraph/CONSTITUTION.md) for the runtime governance model used to grow SpecGraph during bootstrap.
 
 ## Repository rules
+- Merge in main branch ONLY  via Pull (Merge) Request on GitHub
 - Work on one spec node at a time.
 - Refine specifications, not runtime code.
 - Preserve stable spec IDs and terminology.

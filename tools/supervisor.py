@@ -4446,6 +4446,241 @@ def gate_worktree_divergence_paths(
     return divergence_paths
 
 
+def list_registered_worktrees() -> dict[Path, str]:
+    result = subprocess.run(
+        ["git", "worktree", "list", "--porcelain"],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if result.returncode != 0:
+        return {}
+
+    entries: dict[Path, str] = {}
+    current_path: Path | None = None
+    current_branch = ""
+    for line in result.stdout.splitlines():
+        if not line.strip():
+            if current_path is not None:
+                entries[current_path] = current_branch
+            current_path = None
+            current_branch = ""
+            continue
+        if line.startswith("worktree "):
+            current_path = Path(line.removeprefix("worktree ").strip()).resolve()
+            continue
+        if line.startswith("branch "):
+            branch_ref = line.removeprefix("branch ").strip()
+            current_branch = branch_ref.removeprefix("refs/heads/")
+    if current_path is not None:
+        entries[current_path] = current_branch
+    return entries
+
+
+def gate_worktree_freshness_issue(
+    node: SpecNode,
+    *,
+    registered_worktrees: dict[Path, str] | None = None,
+) -> str | None:
+    worktree_value = str(node.data.get("last_worktree_path", "")).strip()
+    changed_files = list(node.data.get("last_changed_files", []))
+    materialized_child_paths = list(node.data.get("last_materialized_child_paths", []))
+    branch = str(node.data.get("last_branch", "")).strip()
+    has_pending_worktree_content = bool(changed_files or materialized_child_paths)
+
+    if not worktree_value:
+        if node.gate_state == "review_pending" and has_pending_worktree_content:
+            return "missing last_worktree_path for review gate with pending worktree content"
+        return None
+
+    worktree_path = Path(worktree_value).expanduser()
+    if not worktree_path.exists():
+        return f"recorded last_worktree_path does not exist: {worktree_path.as_posix()}"
+
+    if not branch:
+        return None
+
+    if branch.startswith("sandbox/"):
+        return None
+
+    worktree_key = worktree_path.resolve()
+    registered = (
+        registered_worktrees if registered_worktrees is not None else list_registered_worktrees()
+    )
+    registered_branch = registered.get(worktree_key)
+    if registered_branch is None:
+        return (
+            "recorded last_worktree_path is not a currently registered git worktree: "
+            f"{worktree_path.as_posix()}"
+        )
+    if registered_branch != branch:
+        return (
+            f"recorded last_branch {branch} does not match current worktree branch "
+            f"{registered_branch or '<detached>'}"
+        )
+    return None
+
+
+def stale_gate_entries(
+    specs: list[SpecNode],
+    *,
+    registered_worktrees: dict[Path, str] | None = None,
+) -> list[dict[str, Any]]:
+    entries: list[dict[str, Any]] = []
+    registered = (
+        registered_worktrees if registered_worktrees is not None else list_registered_worktrees()
+    )
+    for node in specs:
+        if node.gate_state != "review_pending":
+            continue
+        issue = gate_worktree_freshness_issue(node, registered_worktrees=registered)
+        if not issue:
+            continue
+        entries.append(
+            {
+                "spec_id": node.id,
+                "gate_state": node.gate_state,
+                "worktree_path": str(node.data.get("last_worktree_path", "")).strip(),
+                "branch": str(node.data.get("last_branch", "")).strip(),
+                "issue": issue,
+            }
+        )
+    entries.sort(
+        key=lambda item: (
+            GATE_ACTION_PRIORITY.get(item["gate_state"], 9),
+            item["spec_id"],
+        )
+    )
+    return entries
+
+
+def stale_worktree_entries(
+    specs: list[SpecNode],
+    *,
+    registered_worktrees: dict[Path, str] | None = None,
+) -> list[dict[str, Any]]:
+    if not WORKTREES_DIR.exists():
+        return []
+
+    referenced = {
+        Path(str(node.data.get("last_worktree_path", "")).strip()).expanduser().resolve()
+        for node in specs
+        if str(node.data.get("last_worktree_path", "")).strip()
+    }
+    registered = (
+        registered_worktrees if registered_worktrees is not None else list_registered_worktrees()
+    )
+    entries: list[dict[str, Any]] = []
+    for child in sorted(WORKTREES_DIR.iterdir()):
+        if not child.is_dir():
+            continue
+        child_resolved = child.resolve()
+        if child_resolved in referenced:
+            continue
+        entries.append(
+            {
+                "path": child.as_posix(),
+                "branch": registered.get(child_resolved, ""),
+            }
+        )
+    return entries
+
+
+def format_stale_runtime_report(
+    *,
+    stale_gates: list[dict[str, Any]],
+    stale_worktrees: list[dict[str, Any]],
+) -> str:
+    if not stale_gates and not stale_worktrees:
+        return "No stale gate states or worktrees found."
+
+    lines: list[str] = []
+    if stale_gates:
+        lines.append("Stale gate states:")
+        for item in stale_gates:
+            lines.append(
+                "- "
+                f"{item['spec_id']} | gate={item['gate_state']} | "
+                f"branch={item['branch'] or '-'} | "
+                f"worktree={item['worktree_path'] or '-'} | "
+                f"issue={item['issue']}"
+            )
+    if stale_worktrees:
+        lines.append("Stale worktrees:")
+        for item in stale_worktrees:
+            lines.append(f"- {item['path']} | branch={item['branch'] or '-'}")
+    return "\n".join(lines)
+
+
+def clear_stale_gate(node: SpecNode, *, issue: str) -> None:
+    node.data["gate_state"] = "retry_pending"
+    node.data["required_human_action"] = "rerun supervisor"
+    node.data["proposed_status"] = None
+    node.data["proposed_maturity"] = None
+    node.data["last_changed_files"] = []
+    node.data["last_materialized_child_paths"] = []
+    node.data["last_requested_child_materialization"] = False
+    node.data["last_worktree_path"] = ""
+    node.data["last_branch"] = ""
+    node.data["last_gate_decision"] = "stale_cleanup"
+    node.data["last_gate_note"] = issue
+    node.data["last_gate_at"] = utc_now_iso()
+    node.save()
+
+
+def remove_stale_worktree(path: str, *, branch: str = "") -> None:
+    worktree_path = Path(path)
+    if not worktree_path.exists():
+        return
+    if branch and not branch.startswith("sandbox/"):
+        subprocess.run(
+            ["git", "worktree", "remove", "--force", worktree_path.as_posix()],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if not worktree_path.exists():
+            return
+    shutil.rmtree(worktree_path)
+
+
+def handle_stale_runtime(*, specs: list[SpecNode], clean: bool) -> int:
+    registered = list_registered_worktrees()
+    stale_gates = stale_gate_entries(specs, registered_worktrees=registered)
+    stale_worktrees = stale_worktree_entries(specs, registered_worktrees=registered)
+
+    if not clean:
+        print(format_stale_runtime_report(stale_gates=stale_gates, stale_worktrees=stale_worktrees))
+        return 0
+
+    for item in stale_gates:
+        node = next((spec for spec in specs if spec.id == item["spec_id"]), None)
+        if node is None:
+            continue
+        clear_stale_gate(node, issue=item["issue"])
+
+    for item in stale_worktrees:
+        remove_stale_worktree(item["path"], branch=item.get("branch", ""))
+
+    refreshed_specs = load_specs()
+    refreshed_registered = list_registered_worktrees()
+    print(
+        format_stale_runtime_report(
+            stale_gates=stale_gate_entries(
+                refreshed_specs,
+                registered_worktrees=refreshed_registered,
+            ),
+            stale_worktrees=stale_worktree_entries(
+                refreshed_specs,
+                registered_worktrees=refreshed_registered,
+            ),
+        )
+    )
+    return 0
+
+
 def format_gate_worktree_divergence(paths: list[str], *, limit: int = 8) -> str:
     preview = paths[:limit]
     suffix = "" if len(paths) <= limit else f", ... (+{len(paths) - limit} more)"
@@ -4844,6 +5079,15 @@ def resolve_gate_decision(
             if transition_errors:
                 print("\n".join(transition_errors), file=sys.stderr)
                 return 1
+
+        freshness_issue = gate_worktree_freshness_issue(node)
+        if freshness_issue:
+            print(
+                f"Spec {spec_id} review gate is stale: {freshness_issue}. "
+                "Rerun supervisor or clean stale runtime state before approval.",
+                file=sys.stderr,
+            )
+            return 1
 
         worktree_path = Path(str(node.data.get("last_worktree_path", ""))).expanduser()
         changed_files = list(node.data.get("last_changed_files", []))
@@ -5940,6 +6184,8 @@ def main(
     child_model: str | None = None,
     child_timeout_seconds: int | None = None,
     verbose: bool = False,
+    list_stale_runtime: bool = False,
+    clean_stale_runtime: bool = False,
 ) -> int:
     """Entry point for CLI and tests.
 
@@ -5971,6 +6217,40 @@ def main(
     if not specs:
         print("No spec nodes found in specs/nodes")
         return 0
+
+    if list_stale_runtime and clean_stale_runtime:
+        print(
+            "--list-stale-runtime cannot be combined with --clean-stale-runtime",
+            file=sys.stderr,
+        )
+        return 1
+
+    if list_stale_runtime or clean_stale_runtime:
+        if clean_stale_runtime and dry_run:
+            print(
+                "--dry-run cannot be combined with --clean-stale-runtime",
+                file=sys.stderr,
+            )
+            return 1
+        if any(
+            (
+                resolve_gate,
+                decision,
+                target_spec,
+                split_proposal,
+                apply_split_proposal,
+                loop,
+                operator_note,
+                mutation_budget,
+                run_authority,
+            )
+        ):
+            print(
+                "--list-stale-runtime/--clean-stale-runtime must be used as standalone commands",
+                file=sys.stderr,
+            )
+            return 1
+        return handle_stale_runtime(specs=specs, clean=clean_stale_runtime)
 
     if resolve_gate:
         if not decision:
@@ -6349,6 +6629,16 @@ if __name__ == "__main__":
         action="store_true",
         help="Apply proposed status/maturity immediately when run succeeds",
     )
+    parser.add_argument(
+        "--list-stale-runtime",
+        action="store_true",
+        help="List stale gate states and orphaned worktrees without modifying anything",
+    )
+    parser.add_argument(
+        "--clean-stale-runtime",
+        action="store_true",
+        help="Clean stale gate states and orphaned worktrees",
+    )
     parser.add_argument("--resolve-gate", metavar="SPEC_ID", help="Resolve gate for a spec id")
     parser.add_argument(
         "--decision",
@@ -6460,5 +6750,7 @@ if __name__ == "__main__":
             child_model=child_model,
             child_timeout_seconds=args.child_timeout,
             verbose=args.verbose,
+            list_stale_runtime=args.list_stale_runtime,
+            clean_stale_runtime=args.clean_stale_runtime,
         )
     )
