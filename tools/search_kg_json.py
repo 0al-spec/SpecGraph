@@ -11,9 +11,12 @@ MVP goals:
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
+import sys
 from dataclasses import asdict, dataclass
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -25,6 +28,11 @@ class Match:
     text: str
     score: int
     kind: str = "unknown"
+    heading: str | None = None
+    source_form: str = "line"
+    source_index: int = 0
+    signal: int = 0
+    requirement_id: str = ""
 
 
 @dataclass(frozen=True)
@@ -32,6 +40,23 @@ class RequirementCandidate:
     path: str
     text: str
     kind: str
+    heading: str | None = None
+    signal: int = 0
+    source_form: str = "line"
+    source_index: int = 0
+
+
+@dataclass(frozen=True)
+class RequirementRecord:
+    file: Path
+    path: str
+    text: str
+    kind: str
+    heading: str | None
+    signal: int
+    source_form: str
+    source_index: int
+    requirement_id: str
 
 
 _BULLET_PREFIX_RE = re.compile(r"^\s*(?:[-*•–—]|\d+[.)])\s+")
@@ -248,7 +273,7 @@ def extract_requirements_from_text(text: str, path: str) -> list[RequirementCand
     candidates: list[RequirementCandidate] = []
     current_heading: str | None = None
 
-    for raw_line in text.splitlines():
+    for line_index, raw_line in enumerate(text.splitlines(), start=1):
         stripped = raw_line.strip()
         if not stripped:
             continue
@@ -272,7 +297,17 @@ def extract_requirements_from_text(text: str, path: str) -> list[RequirementCand
         if signal < 3:
             continue
 
-        candidates.append(RequirementCandidate(path=path, text=normalized, kind=kind))
+        candidates.append(
+            RequirementCandidate(
+                path=path,
+                text=normalized,
+                kind=kind,
+                heading=current_heading,
+                signal=signal,
+                source_form="line",
+                source_index=line_index,
+            )
+        )
 
     if candidates:
         return candidates
@@ -282,7 +317,7 @@ def extract_requirements_from_text(text: str, path: str) -> list[RequirementCand
         return []
 
     sentence_candidates: list[RequirementCandidate] = []
-    for sentence in _SENTENCE_SPLIT_RE.split(normalized_text):
+    for sentence_index, sentence in enumerate(_SENTENCE_SPLIT_RE.split(normalized_text), start=1):
         sentence_text = sentence.strip()
         if not sentence_text:
             continue
@@ -294,7 +329,16 @@ def extract_requirements_from_text(text: str, path: str) -> list[RequirementCand
         if signal < 3:
             continue
 
-        sentence_candidates.append(RequirementCandidate(path=path, text=sentence_text, kind=kind))
+        sentence_candidates.append(
+            RequirementCandidate(
+                path=path,
+                text=sentence_text,
+                kind=kind,
+                signal=signal,
+                source_form="sentence",
+                source_index=sentence_index,
+            )
+        )
 
     if sentence_candidates:
         return sentence_candidates
@@ -303,12 +347,99 @@ def extract_requirements_from_text(text: str, path: str) -> list[RequirementCand
     if kind == "unknown" or len(normalized_text) > 240:
         return []
 
-    return [RequirementCandidate(path=path, text=normalized_text, kind=kind)]
+    return [
+        RequirementCandidate(
+            path=path,
+            text=normalized_text,
+            kind=kind,
+            signal=line_requirement_signal(normalized_text, kind=kind, was_bullet=False),
+            source_form="blob",
+            source_index=1,
+        )
+    ]
 
 
 def iter_requirement_candidates(node: Any, path: str = "$"):
     for json_path, text in iter_text_nodes(node, path=path):
         yield from extract_requirements_from_text(text, path=json_path)
+
+
+def requirement_id_for_record(
+    file: Path,
+    path: str,
+    text: str,
+    kind: str,
+    source_form: str,
+    source_index: int,
+) -> str:
+    payload = "|".join(
+        (
+            file.as_posix(),
+            path,
+            text,
+            kind,
+            source_form,
+            str(source_index),
+        )
+    )
+    digest = hashlib.sha1(payload.encode("utf-8")).hexdigest()[:16]
+    return f"req-{digest}"
+
+
+def requirement_record_from_candidate(
+    file: Path,
+    candidate: RequirementCandidate,
+) -> RequirementRecord:
+    requirement_id = requirement_id_for_record(
+        file=file,
+        path=candidate.path,
+        text=candidate.text,
+        kind=candidate.kind,
+        source_form=candidate.source_form,
+        source_index=candidate.source_index,
+    )
+    return RequirementRecord(
+        file=file,
+        path=candidate.path,
+        text=candidate.text,
+        kind=candidate.kind,
+        heading=candidate.heading,
+        signal=candidate.signal,
+        source_form=candidate.source_form,
+        source_index=candidate.source_index,
+        requirement_id=requirement_id,
+    )
+
+
+def serialize_requirement_records(records: list[RequirementRecord]) -> list[dict[str, Any]]:
+    return [{**asdict(item), "file": str(item.file)} for item in records]
+
+
+def collect_requirement_records(
+    json_dir: Path,
+    kind: str | None = None,
+) -> list[RequirementRecord]:
+    normalized_kind = normalize_kind(kind)
+    valid_kinds = set(_KIND_KEYWORDS) | {"unknown"}
+    if normalized_kind is not None and normalized_kind not in valid_kinds:
+        kinds = ", ".join(sorted(valid_kinds))
+        raise ValueError(f"Unknown kind '{normalized_kind}'. Expected one of: {kinds}")
+
+    records: list[RequirementRecord] = []
+    for file in sorted(json_dir.glob("*.json")):
+        if file.name.startswith("."):
+            continue
+        try:
+            payload = json.loads(file.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, UnicodeDecodeError):
+            continue
+
+        for candidate in iter_requirement_candidates(payload):
+            if normalized_kind is not None and candidate.kind != normalized_kind:
+                continue
+            records.append(requirement_record_from_candidate(file=file, candidate=candidate))
+
+    return records
 
 
 def score_requirement(text: str, terms: list[str], kind: str) -> int:
@@ -372,6 +503,11 @@ def deserialize_matches(items: list[dict[str, Any]]) -> list[Match]:
                 text=item["text"],
                 score=item["score"],
                 kind=item.get("kind", "unknown"),
+                heading=item.get("heading"),
+                source_form=item.get("source_form", "line"),
+                source_index=item.get("source_index", 0),
+                signal=item.get("signal", 0),
+                requirement_id=item.get("requirement_id", ""),
             )
         )
     return matches
@@ -390,37 +526,130 @@ def find_matches(
     if limit < 0:
         raise ValueError("Limit must be a non-negative integer.")
 
-    valid_kinds = set(_KIND_KEYWORDS) | {"unknown"}
-    if normalized_kind is not None and normalized_kind not in valid_kinds:
-        kinds = ", ".join(sorted(valid_kinds))
-        raise ValueError(f"Unknown kind '{normalized_kind}'. Expected one of: {kinds}")
-
     matches: list[Match] = []
-    for file in sorted(json_dir.glob("*.json")):
-        if file.name.startswith("."):
-            continue
-        try:
-            payload = json.loads(file.read_text(encoding="utf-8"))
-        except (json.JSONDecodeError, UnicodeDecodeError):
-            continue
-
-        for candidate in iter_requirement_candidates(payload):
-            if normalized_kind is not None and candidate.kind != normalized_kind:
-                continue
-            score = score_requirement(candidate.text, terms=terms, kind=candidate.kind)
-            if score > 0:
-                matches.append(
-                    Match(
-                        file=file,
-                        path=candidate.path,
-                        text=candidate.text,
-                        score=score,
-                        kind=candidate.kind,
-                    )
+    for record in collect_requirement_records(json_dir=json_dir, kind=normalized_kind):
+        score = score_requirement(record.text, terms=terms, kind=record.kind)
+        if score > 0:
+            matches.append(
+                Match(
+                    file=record.file,
+                    path=record.path,
+                    text=record.text,
+                    score=score,
+                    kind=record.kind,
+                    heading=record.heading,
+                    source_form=record.source_form,
+                    source_index=record.source_index,
+                    signal=record.signal,
+                    requirement_id=record.requirement_id,
                 )
+            )
 
     matches.sort(key=lambda item: (item.score, len(item.text)), reverse=True)
     return matches[:limit]
+
+
+def build_requirement_projection_artifact(
+    *,
+    json_dir: Path,
+    records: list[RequirementRecord],
+) -> dict[str, Any]:
+    generated_at = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+    by_kind: dict[str, int] = {}
+    requirements: list[dict[str, Any]] = []
+
+    for record in records:
+        by_kind[record.kind] = by_kind.get(record.kind, 0) + 1
+        requirements.append(
+            {
+                "requirement_id": record.requirement_id,
+                "kind": record.kind,
+                "text": record.text,
+                "heading": record.heading,
+                "source_form": record.source_form,
+                "source_index": record.source_index,
+                "projection_links": [
+                    {"rel": "source_file", "target": record.file.as_posix()},
+                    {"rel": "source_json_path", "target": f"{record.file.name}#{record.path}"},
+                    {"rel": "provenance", "target": record.requirement_id},
+                ],
+            }
+        )
+
+    return {
+        "artifact_version": 1,
+        "artifact_kind": "requirement_projection",
+        "generator": "tools/search_kg_json.py",
+        "generated_at": generated_at,
+        "json_dir": json_dir.as_posix(),
+        "dataset_fingerprint": dataset_fingerprint(json_dir),
+        "requirement_count": len(records),
+        "file_count": len({record.file for record in records}),
+        "by_kind": by_kind,
+        "requirements": requirements,
+    }
+
+
+def build_requirement_provenance_artifact(
+    *,
+    json_dir: Path,
+    records: list[RequirementRecord],
+) -> dict[str, Any]:
+    generated_at = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+    provenance_records = [
+        {
+            "requirement_id": record.requirement_id,
+            "file": record.file.as_posix(),
+            "json_path": record.path,
+            "heading": record.heading,
+            "source_form": record.source_form,
+            "source_index": record.source_index,
+            "signal": record.signal,
+            "text": record.text,
+        }
+        for record in records
+    ]
+
+    return {
+        "artifact_version": 1,
+        "artifact_kind": "requirement_provenance",
+        "generator": "tools/search_kg_json.py",
+        "generated_at": generated_at,
+        "json_dir": json_dir.as_posix(),
+        "dataset_fingerprint": dataset_fingerprint(json_dir),
+        "record_count": len(records),
+        "provenance_records": provenance_records,
+    }
+
+
+def write_requirement_artifacts(
+    *,
+    artifact_dir: Path,
+    json_dir: Path,
+    records: list[RequirementRecord],
+) -> tuple[Path, Path]:
+    artifact_dir.mkdir(parents=True, exist_ok=True)
+    projection_path = artifact_dir / "requirement_projection.json"
+    provenance_path = artifact_dir / "requirement_provenance.json"
+    projection_path.write_text(
+        json.dumps(
+            build_requirement_projection_artifact(json_dir=json_dir, records=records),
+            ensure_ascii=False,
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    provenance_path.write_text(
+        json.dumps(
+            build_requirement_provenance_artifact(json_dir=json_dir, records=records),
+            ensure_ascii=False,
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    return projection_path, provenance_path
 
 
 def find_matches_with_cache(
@@ -454,6 +683,8 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "query",
+        nargs="?",
+        default="",
         help="Free text query, for example: 'success criteria limitations'",
     )
     parser.add_argument(
@@ -487,6 +718,26 @@ def build_parser() -> argparse.ArgumentParser:
             "Examples: goal, constraint, acceptance, risk, scope, assumption."
         ),
     )
+    parser.add_argument(
+        "--dump-requirements",
+        action="store_true",
+        help="Print extracted requirement records instead of ranked query matches.",
+    )
+    parser.add_argument(
+        "--format",
+        choices=("text", "json"),
+        default="text",
+        help="Output format for matches or dumped requirement records (default: text).",
+    )
+    parser.add_argument(
+        "--artifact-dir",
+        type=Path,
+        default=None,
+        help=(
+            "Optional directory for derived requirement projection/provenance artifacts "
+            "(requirement_projection.json and requirement_provenance.json)."
+        ),
+    )
     return parser
 
 
@@ -498,23 +749,92 @@ def main() -> int:
     if args.limit < 0:
         raise SystemExit("--limit must be a non-negative integer.")
 
+    if args.dump_requirements and args.no_cache:
+        # No-op, but keep the CLI behavior explicit: dumping requirements does not use cache.
+        pass
+
+    normalized_kind = normalize_kind(args.kind)
+    records: list[RequirementRecord] | None = None
+    if args.dump_requirements or args.artifact_dir is not None:
+        try:
+            records = collect_requirement_records(json_dir=args.json_dir, kind=normalized_kind)
+        except ValueError as exc:
+            raise SystemExit(str(exc)) from exc
+
+    if args.artifact_dir is not None:
+        assert records is not None
+        projection_path, provenance_path = write_requirement_artifacts(
+            artifact_dir=args.artifact_dir,
+            json_dir=args.json_dir,
+            records=records,
+        )
+        print(f"[artifacts] projection: {projection_path}", file=sys.stderr)
+        print(f"[artifacts] provenance: {provenance_path}", file=sys.stderr)
+
+    if args.dump_requirements:
+        assert records is not None
+        limited_records = records[: args.limit]
+        if args.format == "json":
+            print(
+                json.dumps(
+                    serialize_requirement_records(limited_records),
+                    ensure_ascii=False,
+                    indent=2,
+                )
+            )
+        else:
+            if not limited_records:
+                print("No requirement records found.")
+                return 0
+            for idx, record in enumerate(limited_records, start=1):
+                preview = " ".join(record.text.split())
+                if len(preview) > 180:
+                    preview = preview[:177] + "..."
+                heading = f" heading={record.heading!r}" if record.heading else ""
+                print(
+                    f"{idx:02d}. kind={record.kind:<10} signal={record.signal:<2} "
+                    f"form={record.source_form:<8} file={record.file.name} "
+                    f"path={record.path}{heading}\n"
+                    f"    {preview}"
+                )
+        return 0
+
+    if not args.query.strip() and args.artifact_dir is not None:
+        return 0
+
+    if not args.query.strip() and normalized_kind is None:
+        raise SystemExit(
+            "Query must contain at least one non-space character unless "
+            "--dump-requirements, --artifact-dir, or --kind is used."
+        )
+
     cache_file = args.cache_file or (args.json_dir / ".search_kg_cache.json")
-    matches, cache_hit = find_matches_with_cache(
-        json_dir=args.json_dir,
-        query=args.query,
-        limit=args.limit,
-        cache_file=cache_file,
-        use_cache=not args.no_cache,
-        kind=args.kind,
-    )
+    try:
+        matches, cache_hit = find_matches_with_cache(
+            json_dir=args.json_dir,
+            query=args.query,
+            limit=args.limit,
+            cache_file=cache_file,
+            use_cache=not args.no_cache,
+            kind=normalized_kind,
+        )
+    except ValueError as exc:
+        raise SystemExit(str(exc)) from exc
 
     if cache_hit:
-        print(f"[cache] hit: {cache_file}")
+        print(f"[cache] hit: {cache_file}", file=sys.stderr)
     elif not args.no_cache:
-        print(f"[cache] miss -> saved: {cache_file}")
+        print(f"[cache] miss -> saved: {cache_file}", file=sys.stderr)
 
     if not matches:
-        print("No matches found.")
+        if args.format == "json":
+            print("[]")
+        else:
+            print("No matches found.")
+        return 0
+
+    if args.format == "json":
+        print(json.dumps(serialize_matches(matches), ensure_ascii=False, indent=2))
         return 0
 
     for idx, match in enumerate(matches, start=1):

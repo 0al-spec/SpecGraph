@@ -3,9 +3,6 @@
 Active backlog only. Completed tasks were moved to [tasks_archive.md](/Users/egor/Development/GitHub/0AL/SpecGraph/tasks_archive.md).
 Task numbers are preserved for traceability across commits and PRs.
 
-4. [todo] Upgrade `search_kg_json.py` from plain keyword matching to structured requirement extraction.
-7. [todo] Add graph-projection/provenance artifacts beyond run JSON/summary (projection-ready links or derived graph outputs).
-
 ## Reflective Evolution Loop
 
 17. [inprogress] Add support for retrospective spec refactoring after a graph has already grown suboptimally, not only at creation time.

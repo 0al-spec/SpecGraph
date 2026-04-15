@@ -91,6 +91,10 @@ def test_extract_requirements_from_text_detects_structured_sections() -> None:
     assert "goal" in kinds
     assert "constraint" in kinds
     assert "acceptance" in kinds
+    assert any(item.heading == "Success Criteria" for item in extracted)
+    assert all(item.signal >= 3 for item in extracted)
+    assert all(item.source_form == "line" for item in extracted)
+    assert all(item.source_index > 0 for item in extracted)
 
 
 def test_find_matches_can_filter_by_kind(tmp_path: Path) -> None:
@@ -178,3 +182,205 @@ def test_find_matches_with_cache_request_response_pair(tmp_path: Path) -> None:
     assert cache_file.exists()
     assert [m.text for m in second_matches] == [m.text for m in first_matches]
     assert [m.kind for m in second_matches] == [m.kind for m in first_matches]
+
+
+def test_collect_requirement_records_captures_provenance_shape(tmp_path: Path) -> None:
+    (tmp_path / "ideas.json").write_text(
+        json.dumps(
+            {
+                "conversation": {
+                    "content": "\n".join(
+                        [
+                            "Constraints",
+                            "- Must preserve stable IDs",
+                            "Success Criteria",
+                            "- Acceptance evidence aligns 1:1",
+                        ]
+                    )
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    records = search_kg_json.collect_requirement_records(tmp_path)
+
+    assert len(records) == 2
+    assert {record.kind for record in records} == {"constraint", "acceptance"}
+    assert all(record.file.name == "ideas.json" for record in records)
+    assert all(record.requirement_id.startswith("req-") for record in records)
+    assert any(record.heading == "Constraints" for record in records)
+    assert any(record.heading == "Success Criteria" for record in records)
+
+
+def test_build_requirement_artifacts_provide_projection_and_provenance(tmp_path: Path) -> None:
+    (tmp_path / "ideas.json").write_text(
+        json.dumps(
+            {
+                "notes": "\n".join(
+                    [
+                        "Goal",
+                        "- Keep the graph readable",
+                        "Risks",
+                        "- Over-atomized ladders are hard to review",
+                    ]
+                )
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    records = search_kg_json.collect_requirement_records(tmp_path)
+    artifact_dir = tmp_path / "artifacts"
+    projection_path, provenance_path = search_kg_json.write_requirement_artifacts(
+        artifact_dir=artifact_dir,
+        json_dir=tmp_path,
+        records=records,
+    )
+
+    projection = json.loads(projection_path.read_text(encoding="utf-8"))
+    provenance = json.loads(provenance_path.read_text(encoding="utf-8"))
+
+    assert projection["artifact_kind"] == "requirement_projection"
+    assert projection["requirement_count"] == 2
+    assert projection["by_kind"]["goal"] == 1
+    assert projection["by_kind"]["risk"] == 1
+    assert projection["requirements"][0]["projection_links"]
+
+    assert provenance["artifact_kind"] == "requirement_provenance"
+    assert provenance["record_count"] == 2
+    assert provenance["provenance_records"][0]["requirement_id"].startswith("req-")
+    assert provenance["provenance_records"][0]["json_path"].startswith("$.")
+
+
+def test_main_can_dump_requirements_and_write_artifacts_json(tmp_path: Path, capsys) -> None:
+    (tmp_path / "ideas.json").write_text(
+        json.dumps(
+            {
+                "notes": "\n".join(
+                    [
+                        "Assumptions",
+                        "- Assume the viewer stays read-only",
+                        "Constraints",
+                        "- Do not mutate canonical specs directly",
+                    ]
+                )
+            }
+        ),
+        encoding="utf-8",
+    )
+    artifact_dir = tmp_path / "derived"
+    original_argv = sys.argv
+    sys.argv = [
+        "search_kg_json.py",
+        "--json-dir",
+        str(tmp_path),
+        "--dump-requirements",
+        "--format",
+        "json",
+        "--artifact-dir",
+        str(artifact_dir),
+    ]
+    try:
+        exit_code = search_kg_json.main()
+    finally:
+        sys.argv = original_argv
+
+    assert exit_code == 0
+    captured = capsys.readouterr()
+    dumped = json.loads(captured.out)
+    assert len(dumped) == 2
+    assert {item["kind"] for item in dumped} == {"assumption", "constraint"}
+    assert (artifact_dir / "requirement_projection.json").exists()
+    assert (artifact_dir / "requirement_provenance.json").exists()
+    assert "[artifacts] projection:" in captured.err
+
+
+def test_main_can_write_artifacts_without_query(tmp_path: Path, capsys) -> None:
+    (tmp_path / "ideas.json").write_text(
+        json.dumps({"notes": "Goal: Keep grouped aggregate nodes visible."}),
+        encoding="utf-8",
+    )
+    artifact_dir = tmp_path / "derived"
+    original_argv = sys.argv
+    sys.argv = [
+        "search_kg_json.py",
+        "--json-dir",
+        str(tmp_path),
+        "--artifact-dir",
+        str(artifact_dir),
+    ]
+    try:
+        exit_code = search_kg_json.main()
+    finally:
+        sys.argv = original_argv
+
+    assert exit_code == 0
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert "[artifacts] projection:" in captured.err
+    assert (artifact_dir / "requirement_projection.json").exists()
+    assert (artifact_dir / "requirement_provenance.json").exists()
+
+
+def test_main_json_search_returns_empty_array_for_no_matches(tmp_path: Path, capsys) -> None:
+    (tmp_path / "ideas.json").write_text(
+        json.dumps({"notes": "Goal: keep grouped aggregate nodes visible."}),
+        encoding="utf-8",
+    )
+    original_argv = sys.argv
+    sys.argv = [
+        "search_kg_json.py",
+        "nonexistent token",
+        "--json-dir",
+        str(tmp_path),
+        "--format",
+        "json",
+        "--no-cache",
+    ]
+    try:
+        exit_code = search_kg_json.main()
+    finally:
+        sys.argv = original_argv
+
+    assert exit_code == 0
+    captured = capsys.readouterr()
+    assert json.loads(captured.out) == []
+    assert captured.err == ""
+
+
+def test_main_dump_requirements_respects_zero_limit(tmp_path: Path, capsys) -> None:
+    (tmp_path / "ideas.json").write_text(
+        json.dumps(
+            {
+                "notes": "\n".join(
+                    [
+                        "Goal",
+                        "- Keep aggregate nodes visible",
+                        "Risks",
+                        "- Deep ladders are hard to read",
+                    ]
+                )
+            }
+        ),
+        encoding="utf-8",
+    )
+    original_argv = sys.argv
+    sys.argv = [
+        "search_kg_json.py",
+        "--json-dir",
+        str(tmp_path),
+        "--dump-requirements",
+        "--format",
+        "json",
+        "--limit",
+        "0",
+    ]
+    try:
+        exit_code = search_kg_json.main()
+    finally:
+        sys.argv = original_argv
+
+    assert exit_code == 0
+    captured = capsys.readouterr()
+    assert json.loads(captured.out) == []

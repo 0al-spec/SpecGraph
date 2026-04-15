@@ -232,11 +232,36 @@ The script traverses each JSON tree, extracts requirement-like lines, classifies
 - requirement kind
 - matched text preview
 
+For machine-readable search output:
+
+```bash
+python tools/search_kg_json.py "acceptance evidence" --json-dir /path/to/jsons --format json
+```
+
+To dump all extracted requirement records instead of ranked matches:
+
+```bash
+python tools/search_kg_json.py --json-dir /path/to/jsons --dump-requirements --format json
+```
+
 Filter by kind when needed:
 
 ```bash
 python tools/search_kg_json.py "acceptance evidence" --json-dir /path/to/jsons --kind acceptance
 ```
+
+To emit derived projection/provenance artifacts for downstream tooling:
+
+```bash
+python tools/search_kg_json.py \
+  --json-dir /path/to/jsons \
+  --dump-requirements \
+  --artifact-dir /path/to/output
+```
+
+This writes:
+- `requirement_projection.json`
+- `requirement_provenance.json`
 
 The tool also stores a request-response cache at `<json-dir>/.search_kg_cache.json` by default for fast repeated queries.
 Use `--cache-file` to override location or `--no-cache` to disable it.
