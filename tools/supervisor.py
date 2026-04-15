@@ -4372,6 +4372,42 @@ def create_isolated_worktree(node_id: str) -> tuple[Path, str]:
     return worktree_path, branch
 
 
+def cleanup_isolated_worktree(worktree_path: Path, branch: str) -> None:
+    """Remove one supervisor-created isolated worktree and its ephemeral branch.
+
+    Review gates keep a worktree temporarily so approval can replay the accepted
+    diff. All other paths should clean up their isolated workspace once the run
+    is logged and canonical state is updated.
+    """
+
+    worktree = Path(worktree_path).expanduser()
+    branch_name = branch.strip()
+
+    if branch_name.startswith("sandbox/"):
+        shutil.rmtree(worktree, ignore_errors=True)
+        return
+
+    if worktree.exists():
+        subprocess.run(
+            ["git", "worktree", "remove", "--force", worktree.as_posix()],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    if worktree.exists():
+        shutil.rmtree(worktree, ignore_errors=True)
+
+    if branch_name.startswith("codex/"):
+        subprocess.run(
+            ["git", "branch", "-D", branch_name],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+
+
 def sync_current_node_into_worktree(node: SpecNode, worktree_path: Path) -> Path:
     worktree_node_path = worktree_path / node.path.relative_to(ROOT)
     worktree_node_path.parent.mkdir(parents=True, exist_ok=True)
@@ -4630,20 +4666,7 @@ def clear_stale_gate(node: SpecNode, *, issue: str) -> None:
 
 
 def remove_stale_worktree(path: str, *, branch: str = "") -> None:
-    worktree_path = Path(path)
-    if not worktree_path.exists():
-        return
-    if branch and not branch.startswith("sandbox/"):
-        subprocess.run(
-            ["git", "worktree", "remove", "--force", worktree_path.as_posix()],
-            cwd=ROOT,
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-        if not worktree_path.exists():
-            return
-    shutil.rmtree(worktree_path)
+    cleanup_isolated_worktree(Path(path), branch)
 
 
 def handle_stale_runtime(*, specs: list[SpecNode], clean: bool) -> int:
@@ -5066,6 +5089,12 @@ def resolve_gate_decision(
         print(f"Spec not found: {spec_id}", file=sys.stderr)
         return 1
 
+    retained_worktree_value = str(node.data.get("last_worktree_path", "")).strip()
+    retained_worktree_path = (
+        Path(retained_worktree_value).expanduser() if retained_worktree_value else None
+    )
+    retained_branch = str(node.data.get("last_branch", "")).strip()
+
     if decision == "approve":
         if node.gate_state != "review_pending":
             print(f"Spec {spec_id} is not in review_pending gate.", file=sys.stderr)
@@ -5139,10 +5168,15 @@ def resolve_gate_decision(
         node.data["proposed_status"] = None
         node.data["proposed_maturity"] = None
 
+    node.data["last_worktree_path"] = ""
+    node.data["last_branch"] = ""
     node.data["last_gate_decision"] = decision
     node.data["last_gate_note"] = note
     node.data["last_gate_at"] = utc_now_iso()
     node.save()
+
+    if retained_worktree_path is not None:
+        cleanup_isolated_worktree(retained_worktree_path, retained_branch)
 
     print(f"Resolved gate for {spec_id}: {decision}")
     return 0
@@ -5340,6 +5374,7 @@ def _apply_split_proposal(
         print("\n=== validation errors ===", file=sys.stderr)
         for error in validation_errors:
             print(f"- {error}", file=sys.stderr)
+    cleanup_isolated_worktree(worktree_path, branch)
     return 0 if success else 1
 
 
@@ -5600,6 +5635,7 @@ def _process_split_refactor_proposal(
     log_path = write_run_log(run_id, payload)
     write_latest_summary(payload)
 
+    cleanup_isolated_worktree(worktree_path, branch)
     emit_run_footer(
         log_path=log_path,
         completion_status=payload["completion_status"],
@@ -6090,6 +6126,7 @@ def _process_one_spec(
         success=success,
         productive_split_required=productive_split_required,
     )
+    preserve_run_worktree = node.data.get("gate_state") == "review_pending"
 
     node.data["required_human_action"] = required_human_action
     node.data["last_outcome"] = outcome
@@ -6098,8 +6135,8 @@ def _process_one_spec(
     node.data["last_exit_code"] = result.returncode
     node.data["last_changed_files"] = changed
     node.data["last_run_at"] = utc_now_iso()
-    node.data["last_worktree_path"] = worktree_path.as_posix()
-    node.data["last_branch"] = branch
+    node.data["last_worktree_path"] = worktree_path.as_posix() if preserve_run_worktree else ""
+    node.data["last_branch"] = branch if preserve_run_worktree else ""
     node.data["last_validator_results"] = validator_results
     node.data["last_refinement_acceptance"] = refinement_acceptance
     node.data["last_reconciliation"] = reconciliation
@@ -6150,6 +6187,9 @@ def _process_one_spec(
     if cleanup_failed_child_materialization or cleanup_failed_source_refinement:
         node.path.write_text(before_source_text, encoding="utf-8")
         node.reload()
+
+    if not preserve_run_worktree:
+        cleanup_isolated_worktree(worktree_path, branch)
 
     emit_run_footer(
         log_path=log_path,

@@ -3,9 +3,7 @@
 Active backlog only. Completed tasks were moved to [tasks_archive.md](/Users/egor/Development/GitHub/0AL/SpecGraph/tasks_archive.md).
 Task numbers are preserved for traceability across commits and PRs.
 
-1. [todo] Implement worktree cleanup to prevent `.worktrees/*` accumulation over time.
 4. [todo] Upgrade `search_kg_json.py` from plain keyword matching to structured requirement extraction.
-5. [todo] Add integration tests that exercise real `git worktree` commands (beyond monkeypatched fake worktrees).
 6. [todo] Add semantic acceptance validation that verifies each acceptance criterion is actually satisfied, not only structurally present.
 7. [todo] Add graph-projection/provenance artifacts beyond run JSON/summary (projection-ready links or derived graph outputs).
 

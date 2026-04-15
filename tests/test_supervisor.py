@@ -87,6 +87,73 @@ def repo_fixture(
     return root
 
 
+@pytest.fixture()
+def git_repo_fixture(
+    tmp_path: Path,
+    supervisor_module: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> Path:
+    if shutil.which("git") is None:
+        pytest.skip("git is required for real worktree integration tests")
+
+    root = tmp_path / "repo"
+    root.mkdir()
+    specs_dir = root / "specs" / "nodes"
+    runs_dir = root / "runs"
+    specs_dir.mkdir(parents=True)
+    runs_dir.mkdir(parents=True)
+    (root / "AGENTS.md").write_text("# AGENTS\n", encoding="utf-8")
+
+    node_path = specs_dir / "SG-SPEC-0001.yaml"
+    node_path.write_text(
+        json.dumps(
+            {
+                "id": "SG-SPEC-0001",
+                "title": "Golden Path Node",
+                "kind": "spec",
+                "status": "outlined",
+                "maturity": 0.2,
+                "depends_on": [],
+                "relates_to": [],
+                "inputs": [],
+                "outputs": ["specs/nodes/SG-SPEC-0001.yaml"],
+                "allowed_paths": ["specs/nodes/SG-SPEC-0001.yaml"],
+                "acceptance": ["kept"],
+                "prompt": "Refine this node.",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    subprocess.run(["git", "init", "-b", "main"], cwd=root, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "config", "user.email", "test@example.com"],
+        cwd=root,
+        check=True,
+        capture_output=True,
+    )
+    subprocess.run(
+        ["git", "config", "user.name", "SpecGraph Tests"],
+        cwd=root,
+        check=True,
+        capture_output=True,
+    )
+    subprocess.run(["git", "add", "."], cwd=root, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "commit", "-m", "init"],
+        cwd=root,
+        check=True,
+        capture_output=True,
+    )
+
+    monkeypatch.setattr(supervisor_module, "ROOT", root)
+    monkeypatch.setattr(supervisor_module, "SPECS_DIR", specs_dir)
+    monkeypatch.setattr(supervisor_module, "RUNS_DIR", runs_dir)
+    monkeypatch.setattr(supervisor_module, "WORKTREES_DIR", root / ".worktrees")
+    monkeypatch.setattr(supervisor_module, "AGENTS_FILE", root / "AGENTS.md")
+    return root
+
+
 def make_fake_worktree(root: Path) -> Path:
     worktree = root / ".fake-worktree"
     if worktree.exists():
@@ -94,6 +161,16 @@ def make_fake_worktree(root: Path) -> Path:
     (worktree / "specs").mkdir(parents=True, exist_ok=True)
     shutil.copytree(root / "specs" / "nodes", worktree / "specs" / "nodes")
     return worktree
+
+
+def run_git(cwd: Path, *args: str) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        ["git", *args],
+        cwd=cwd,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
 
 
 def test_create_isolated_worktree_falls_back_to_sandbox_copy_on_ref_lock_error(
@@ -122,6 +199,30 @@ def test_create_isolated_worktree_falls_back_to_sandbox_copy_on_ref_lock_error(
     assert worktree_path.is_dir()
     assert (worktree_path / "AGENTS.md").exists()
     assert (worktree_path / "specs" / "nodes" / "SG-SPEC-0001.yaml").exists()
+
+
+def test_create_and_cleanup_isolated_worktree_with_real_git(
+    supervisor_module: object,
+    git_repo_fixture: Path,
+) -> None:
+    worktree_path, branch = supervisor_module.create_isolated_worktree("SG-SPEC-0001")
+
+    assert worktree_path.is_dir()
+    assert branch.startswith("codex/sg-spec-0001/")
+    assert (
+        worktree_path.as_posix()
+        in run_git(git_repo_fixture, "worktree", "list", "--porcelain").stdout
+    )
+    assert branch in run_git(git_repo_fixture, "branch", "--list", branch).stdout
+
+    supervisor_module.cleanup_isolated_worktree(worktree_path, branch)
+
+    assert not worktree_path.exists()
+    assert (
+        worktree_path.as_posix()
+        not in run_git(git_repo_fixture, "worktree", "list", "--porcelain").stdout
+    )
+    assert run_git(git_repo_fixture, "branch", "--list", branch).stdout.strip() == ""
 
 
 def test_build_codex_exec_command_uses_explicit_child_runtime_profile(
@@ -5006,6 +5107,13 @@ def test_main_auto_approve_applies_status_and_copies_changes(
             stderr="",
         )
 
+    cleaned: list[tuple[str, str]] = []
+    monkeypatch.setattr(
+        supervisor_module,
+        "cleanup_isolated_worktree",
+        lambda worktree_path, branch: cleaned.append((Path(worktree_path).as_posix(), branch)),
+    )
+
     exit_code = supervisor_module.main(executor=fake_executor, auto_approve=True)
     assert exit_code == 0
 
@@ -5016,6 +5124,9 @@ def test_main_auto_approve_applies_status_and_copies_changes(
     assert updated["proposed_status"] is None
     assert updated["maturity"] == 0.4
     assert updated["prompt"] == "Auto-approved prompt"
+    assert updated["last_worktree_path"] == ""
+    assert updated["last_branch"] == ""
+    assert cleaned == [(worktree.as_posix(), "codex/sg-spec-0001/test")]
 
 
 def test_main_auto_approve_does_not_bypass_review_required_refinement(
@@ -5059,6 +5170,13 @@ def test_main_auto_approve_does_not_bypass_review_required_refinement(
             stderr="",
         )
 
+    cleaned: list[tuple[str, str]] = []
+    monkeypatch.setattr(
+        supervisor_module,
+        "cleanup_isolated_worktree",
+        lambda worktree_path, branch: cleaned.append((Path(worktree_path).as_posix(), branch)),
+    )
+
     exit_code = supervisor_module.main(executor=fake_executor, auto_approve=True)
     assert exit_code == 0
 
@@ -5068,6 +5186,9 @@ def test_main_auto_approve_does_not_bypass_review_required_refinement(
     assert updated["proposed_status"] == "specified"
     assert updated["last_refinement_acceptance"]["decision"] == "review_required"
     assert updated["last_refinement_acceptance"]["change_class"] == "constitutional_change"
+    assert updated["last_worktree_path"] == worktree.as_posix()
+    assert updated["last_branch"] == "codex/sg-spec-0001/test"
+    assert cleaned == []
 
     run_logs = sorted((repo_fixture / "runs").glob("*-SG-SPEC-*.json"))
     payload = json.loads(run_logs[0].read_text(encoding="utf-8"))
@@ -6242,6 +6363,49 @@ def test_resolve_gate_approve_accepts_staged_worktree_changes(
     assert updated["gate_state"] == "none"
     assert updated["prompt"] == "Approved from worktree"
     assert updated["last_gate_decision"] == "approve"
+
+
+def test_resolve_gate_approve_cleans_real_git_worktree_and_branch(
+    supervisor_module: object,
+    git_repo_fixture: Path,
+) -> None:
+    worktree_path, branch = supervisor_module.create_isolated_worktree("SG-SPEC-0001")
+    node_path = git_repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    worktree_node_path = worktree_path / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+
+    approved_prompt = "Approved from retained git worktree"
+    worktree_data = supervisor_module.get_yaml_module().safe_load(
+        worktree_node_path.read_text(encoding="utf-8")
+    )
+    worktree_data["prompt"] = approved_prompt
+    worktree_node_path.write_text(json.dumps(worktree_data), encoding="utf-8")
+
+    data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    data["gate_state"] = "review_pending"
+    data["proposed_status"] = "specified"
+    data["proposed_maturity"] = 0.4
+    data["prompt"] = approved_prompt
+    data["last_worktree_path"] = worktree_path.as_posix()
+    data["last_branch"] = branch
+    data["last_changed_files"] = ["specs/nodes/SG-SPEC-0001.yaml"]
+    node_path.write_text(json.dumps(data), encoding="utf-8")
+
+    exit_code = supervisor_module.main(
+        resolve_gate="SG-SPEC-0001",
+        decision="approve",
+        note="approve retained git worktree",
+    )
+    assert exit_code == 0
+
+    updated = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    assert updated["status"] == "specified"
+    assert updated["maturity"] == 0.4
+    assert updated["gate_state"] == "none"
+    assert updated["prompt"] == approved_prompt
+    assert updated["last_worktree_path"] == ""
+    assert updated["last_branch"] == ""
+    assert not worktree_path.exists()
+    assert run_git(git_repo_fixture, "branch", "--list", branch).stdout.strip() == ""
 
 
 def test_resolve_gate_approve_rejects_stale_worktree_candidate(
