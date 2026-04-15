@@ -6,8 +6,10 @@ Task numbers are preserved for traceability across commits, PRs, and review thre
 1. [done] Implement worktree cleanup to prevent `.worktrees/*` accumulation over time.
 2. [done] Add branch/worktree freshness validation in gate resolution (do not blindly trust `last_worktree_path`).
 3. [done] Add a command to list and clean stale gate states and stale worktrees.
+4. [done] Upgrade `search_kg_json.py` from plain keyword matching to structured requirement extraction.
 5. [done] Add integration tests that exercise real `git worktree` commands (beyond monkeypatched fake worktrees).
 6. [done] Add semantic acceptance validation that verifies each acceptance criterion is actually satisfied, not only structurally present.
+7. [done] Add graph-projection/provenance artifacts beyond run JSON/summary (projection-ready links or derived graph outputs).
 
 ## Reflective Evolution Loop
 
