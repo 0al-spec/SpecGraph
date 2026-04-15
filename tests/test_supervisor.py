@@ -1621,6 +1621,43 @@ def test_pick_next_work_item_does_not_auto_execute_retrospective_refactor_candid
     assert work_item is None
 
 
+def test_pick_next_spec_gap_skips_linked_continuation_with_active_shape_signal(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    (repo_fixture / "runs" / "refactor_queue.json").write_text(
+        json.dumps(
+            [
+                {
+                    "id": "graph_refactor::SG-SPEC-0001::serial_refinement_ladder",
+                    "work_item_type": "graph_refactor",
+                    "spec_id": "SG-SPEC-0001",
+                    "signal": "serial_refinement_ladder",
+                    "recommended_action": "rebalance_subtree_shape",
+                    "status": "proposed",
+                    "source_run_id": "RUN-1",
+                    "execution_policy": "emit_proposal",
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+    linked = supervisor_module.SpecNode(
+        path=Path("/tmp/linked.yaml"),
+        data={
+            "id": "SG-SPEC-0001",
+            "title": "Linked subtree root",
+            "kind": "spec",
+            "status": "linked",
+            "maturity": 0.4,
+            "depends_on": ["SG-SPEC-0999"],
+            "last_outcome": "split_required",
+        },
+    )
+
+    assert supervisor_module.pick_next_spec_gap([linked]) is None
+
+
 def test_main_reports_pending_gate_actions_when_no_auto_eligible_work(
     supervisor_module: object,
     repo_fixture: Path,
@@ -1768,6 +1805,102 @@ def test_observe_graph_health_emits_retrospective_signal_for_live_oversized_pare
     assert retrospective["details"]["accepted_child_ids"] == ["SG-SPEC-1000"]
 
 
+def test_observe_graph_health_reports_shape_and_handoff_signals(
+    supervisor_module: object,
+) -> None:
+    spec_node = supervisor_module.SpecNode
+    source = spec_node(
+        path=Path("/tmp/source.yaml"),
+        data={
+            "id": "SG-SPEC-9000",
+            "title": "Reflective Gateway Boundary",
+            "kind": "spec",
+            "status": "linked",
+            "maturity": 0.4,
+            "depends_on": [],
+            "acceptance": ["parent criterion"],
+            "prompt": "Delegate the next gateway child.",
+            "last_outcome": "split_required",
+        },
+    )
+    child1 = spec_node(
+        path=Path("/tmp/child1.yaml"),
+        data={
+            "id": "SG-SPEC-9001",
+            "title": "Delegation Gateway Boundary",
+            "kind": "spec",
+            "status": "linked",
+            "maturity": 0.3,
+            "depends_on": [],
+            "refines": ["SG-SPEC-9000"],
+            "acceptance": ["delegate child"],
+            "prompt": "Delegate routing detail.",
+        },
+    )
+    child2 = spec_node(
+        path=Path("/tmp/child2.yaml"),
+        data={
+            "id": "SG-SPEC-9002",
+            "title": "Payload Routing Surface",
+            "kind": "spec",
+            "status": "linked",
+            "maturity": 0.3,
+            "depends_on": [],
+            "refines": ["SG-SPEC-9001"],
+            "acceptance": ["payload route"],
+            "prompt": "Own payload field routing.",
+        },
+    )
+    child3 = spec_node(
+        path=Path("/tmp/child3.yaml"),
+        data={
+            "id": "SG-SPEC-9003",
+            "title": "Queue Consumer Gateway",
+            "kind": "spec",
+            "status": "linked",
+            "maturity": 0.3,
+            "depends_on": [],
+            "refines": ["SG-SPEC-9002"],
+            "acceptance": ["queue consumer"],
+            "prompt": "Delegate queue consumer field.",
+        },
+    )
+    child4 = spec_node(
+        path=Path("/tmp/child4.yaml"),
+        data={
+            "id": "SG-SPEC-9004",
+            "title": "Runtime Payload Leaf",
+            "kind": "spec",
+            "status": "linked",
+            "maturity": 0.3,
+            "depends_on": [],
+            "refines": ["SG-SPEC-9003"],
+            "acceptance": ["runtime payload"],
+            "prompt": "Leaf payload field detail.",
+        },
+    )
+
+    graph_health = supervisor_module.observe_graph_health(
+        source_node=source,
+        worktree_specs=[source, child1, child2, child3, child4],
+        reconciliation={"semantic_dependencies_resolved": True},
+        atomicity_errors=[],
+        outcome="split_required",
+    )
+
+    assert "serial_refinement_ladder" in graph_health["signals"]
+    assert "depth_without_breadth" in graph_health["signals"]
+    assert "over_atomized_subtree" in graph_health["signals"]
+    assert "missing_aggregate_node" in graph_health["signals"]
+    assert "delegation_only_chain" in graph_health["signals"]
+    assert "lower_boundary_handoff_candidate" in graph_health["signals"]
+    assert "review_lower_boundary_handoff" in graph_health["recommended_actions"]
+    serial = next(
+        item for item in graph_health["observations"] if item["kind"] == "serial_refinement_ladder"
+    )
+    assert serial["details"]["longest_one_child_chain"] >= 4
+
+
 def test_update_refactor_queue_writes_classified_work_items(
     supervisor_module: object,
     repo_fixture: Path,
@@ -1834,6 +1967,40 @@ def test_update_refactor_queue_marks_retrospective_candidate_proposal_first(
     assert item["signal"] == supervisor_module.RETROSPECTIVE_REFACTOR_SIGNAL
     assert item["recommended_action"] == "propose_retrospective_refactor"
     assert item["execution_policy"] == "emit_proposal"
+
+
+def test_update_refactor_queue_routes_shape_signals_to_proposal_first(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    graph_health = {
+        "source_spec_id": "SG-SPEC-9999",
+        "observations": [
+            {
+                "kind": "serial_refinement_ladder",
+                "details": {"longest_one_child_chain": 5, "max_width": 1},
+            },
+            {
+                "kind": "lower_boundary_handoff_candidate",
+                "details": {"longest_one_child_chain": 5, "execution_marker_ratio": 0.8},
+            },
+        ],
+        "signals": ["serial_refinement_ladder", "lower_boundary_handoff_candidate"],
+        "recommended_actions": ["rebalance_subtree_shape", "review_lower_boundary_handoff"],
+    }
+
+    path = supervisor_module.update_refactor_queue(graph_health=graph_health, run_id="RUN-1")
+    items = json.loads(path.read_text(encoding="utf-8"))
+
+    shape_item = next(item for item in items if item["signal"] == "serial_refinement_ladder")
+    handoff_item = next(
+        item for item in items if item["signal"] == "lower_boundary_handoff_candidate"
+    )
+
+    assert shape_item["work_item_type"] == "graph_refactor"
+    assert shape_item["execution_policy"] == "emit_proposal"
+    assert handoff_item["work_item_type"] == "governance_proposal"
+    assert handoff_item["execution_policy"] == "emit_proposal"
 
 
 def test_update_refactor_queue_defers_direct_execution_when_active_proposal_exists(

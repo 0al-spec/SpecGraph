@@ -90,4 +90,5 @@
 
 ## Graph Shape Quality
 
-67. [todo] Add a graph-health signal and evaluator penalty for excessive one-child refinement ladders, so supervisor can prefer bounded aggregate nodes or sibling groupings over deep serial `refines` chains like the emerging `SG-SPEC-0043` -> `SG-SPEC-0048` subtree.
+67. [done] Add a graph-health signal and evaluator penalty for excessive one-child refinement ladders, so supervisor can prefer bounded aggregate nodes or sibling groupings over deep serial `refines` chains like the emerging `SG-SPEC-0043` -> `SG-SPEC-0048` subtree.
+68. [done] Surface `SG-SPEC-0049` subtree-shape and lower-boundary handoff signals in `supervisor` run artifacts and derived queues as advisory runtime diagnostics, and suppress ordinary linked-continuation selection when active shape/handoff items already indicate rebalance-or-redirect pressure.
