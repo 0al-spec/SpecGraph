@@ -1,0 +1,127 @@
+id: SG-SPEC-0051
+title: SpecGraph - Pre-Spec Promotion Boundaries for Proposal, SpecDraft, and Canonical Materialization
+kind: spec
+status: specified
+maturity: 0.15
+depends_on: []
+relates_to: []
+refines:
+- SG-SPEC-0050
+inputs:
+- specs/nodes/SG-SPEC-0050.yaml
+- docs/proposals/0005_intent_to_proposal_workflow.md
+outputs:
+- specs/nodes/SG-SPEC-0051.yaml
+allowed_paths:
+- specs/nodes/SG-SPEC-0051.yaml
+acceptance:
+- Defines explicit, non-silent promotion transitions for IntentDraft, Proposal, SpecDraft, and canonical
+  artifacts
+- Makes Proposal->SpecDraft review a required and recorded step before any canonical materialization from
+  that Proposal
+- Forbids direct canonical materialization from IntentDraft or Proposal and requires an explicit transition
+  record for every promotion edge
+- Declares SpecDraft as the first pre-spec artifact that can be explicitly materialized into canonical
+  artifacts when review/confirmation is present
+- Keeps primary kinds, auxiliary kinds, orthogonal draft axes, memory consultation policy, operator-request
+  runtime steering, tracked proposal-lane persistence, GUI protocol, and storage layout out of scope
+acceptance_evidence:
+- criterion: Defines explicit, non-silent promotion transitions for IntentDraft, Proposal, SpecDraft,
+    and canonical artifacts
+  evidence: specification.promotion_rules.allowed_transitions defines the explicit promotion transitions
+    `intent_draft -> proposal`, `proposal -> spec_draft`, and `spec_draft -> canonical_artifact`, and
+    specification.promotion_records.transition_record_required defines the non-silent promotion record
+    required for every promotion_edge.
+- criterion: Makes Proposal->SpecDraft review a required and recorded step before any canonical materialization
+    from that Proposal
+  evidence: specification.promotion_rules.proposal_to_spec_draft_review states that review_required is
+    true, requires an explicit review record, and only permits the `proposal -> spec_draft` transition
+    when review_outcome is approved.
+- criterion: Forbids direct canonical materialization from IntentDraft or Proposal and requires an explicit
+    transition record for every promotion edge
+  evidence: specification.promotion_rules.forbidden_transitions explicitly forbids the direct canonical
+    materialization edges `intent_draft -> canonical_artifact` and `proposal -> canonical_artifact`, and
+    specification.promotion_records.transition_record_required requires an explicit transition record
+    for every promotion_edge.
+- criterion: Declares SpecDraft as the first pre-spec artifact that can be explicitly materialized into
+    canonical artifacts when review/confirmation is present
+  evidence: specification.promotion_rules.spec_draft_to_canonical makes `spec_draft -> canonical_artifact`
+    the first pre-spec-to-canonical path and requires review or confirmation plus a recorded transition
+    before canonical materialization.
+- criterion: Keeps primary kinds, auxiliary kinds, orthogonal draft axes, memory consultation policy,
+    operator-request runtime steering, tracked proposal-lane persistence, GUI protocol, and storage layout
+    out of scope
+  evidence: specification.scope.out explicitly lists primary kinds, auxiliary kinds, orthogonal draft
+    axes, memory consultation policy, operator-request runtime steering, tracked proposal-lane persistence,
+    GUI protocol, and storage layout as out-of-scope concerns for this child node.
+prompt: Define the concrete promotion boundary between IntentDraft, Proposal, SpecDraft, and canonical
+  materialization in the pre-spec layer. Specify explicit review gates and non-silent transition records.
+  Do not redefine primary semantic kinds, orthogonal draft axes, memory policy, operator-request execution
+  semantics, proposal-lane persistence, GUI protocol, or storage layout.
+specification:
+  objective: Define the narrow promotion contract that governs when and how IntentDraft, Proposal, and
+    SpecDraft can progress toward canonical materialization.
+  scope:
+    in:
+    - Transition constraints and review gates for `proposal -> spec_draft` and `spec_draft -> canonical_artifact`
+    - Explicitly required transition records for every promotion edge
+    - Non-silent promotion prohibitions for Proposal or IntentDraft shortcutting to canonical artifacts
+    - Canonical eligibility boundary for SpecDraft within the pre-spec layer
+    out:
+    - Primary semantic-kind ontology for Intent, Hypothesis, Proposal, IntentFragment, or IntentDraft
+    - Auxiliary-kind semantics beyond the promotion boundary itself
+    - Orthogonal draft axes such as authority, provenance, confidence, and status
+    - Project-memory consultation policy and operator-request runtime execution semantics
+    - Tracked proposal-lane persistence, GUI protocol, repository layout, or viewer behavior
+  terminology:
+    promotion_edge: A directed transition from one pre-spec node to a later pre-spec or canonical node.
+    transition_record: The explicit decision artifact containing actor, timestamp, outcome, rationale,
+      source_ref, and target_ref for one promotion_edge.
+    proposal_to_spec_draft_review: The required review gate for `proposal -> spec_draft`.
+    non_silent_promotion: A promotion that executes only when it carries an explicit transition_record.
+    canonical_materialization: A boundary transition from pre-spec material into canonical artifacts.
+  promotion_rules:
+    allowed_transitions:
+    - intent_draft -> proposal
+    - proposal -> spec_draft
+    - spec_draft -> canonical_artifact
+    forbidden_transitions:
+    - intent_draft -> canonical_artifact
+    - proposal -> canonical_artifact
+    proposal_to_spec_draft_review:
+      review_required: true
+      requirements:
+      - explicit review record must exist
+      - review_outcome must be approved
+      - proposal must preserve motivating intent_draft or intent lineage
+    spec_draft_to_canonical:
+      review_or_confirmation_required: true
+      requirements:
+      - explicit review or confirmation record must exist
+      - transition_record must be complete
+      - no shortcut from proposal or intent_draft is permitted
+  promotion_records:
+    transition_record_required:
+    - Every promotion_edge must carry an explicit transition record.
+    - A transition record must include reviewer_or_decider, decision_timestamp, outcome, rationale, source_ref,
+      target_ref, and transition identifier.
+    - A transition with outcome other than `approved` is blocked from entering the next materialization
+      stage.
+  transition_checks:
+  - If `proposal -> spec_draft` is attempted without approved review, the promotion edge is rejected.
+  - If `spec_draft -> canonical_artifact` lacks a complete transition record, the canonical materialization
+    is rejected as silent.
+  - If a proposal is revised after rejection, the promotion edge may be retried only after a new review
+    record exists.
+  examples:
+  - name: Proposal review gate enforced
+    description: A proposal remains reviewable until an explicit approved review record is created; only
+      then may a transition record move it to SpecDraft.
+  - name: Non-silent canonical materialization
+    description: A SpecDraft without a complete transition record cannot be materialized as a canonical
+      artifact, even if the draft text itself appears complete.
+  - name: Direct shortcut blocked
+    description: An IntentDraft or Proposal cannot jump directly to canonical artifacts; the path must
+      pass through review-gated SpecDraft.
+gate_state: none
+required_human_action: '-'

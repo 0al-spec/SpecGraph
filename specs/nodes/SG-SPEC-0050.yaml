@@ -3,7 +3,8 @@ title: SpecGraph - Pre-Spec Semantic Layer for Observable Intent
 kind: spec
 status: specified
 maturity: 0.35
-depends_on: []
+depends_on:
+- SG-SPEC-0051
 relates_to:
 - SG-SPEC-0006
 - SG-SPEC-0009
@@ -11,6 +12,7 @@ refines:
 - SG-SPEC-0007
 inputs:
 - specs/nodes/SG-SPEC-0007.yaml
+- specs/nodes/SG-SPEC-0051.yaml
 - specs/nodes/SG-SPEC-0009.yaml
 - specs/nodes/SG-SPEC-0006.yaml
 - docs/proposals/0002_intent_layer.md
@@ -27,8 +29,8 @@ acceptance:
   later Proposal or SpecDraft material
 - Defines orthogonal pre-spec axes for phase, status, authority, confidence, provenance, context_tags,
   and supersedes so assistant-generated draft declarations remain inspectable and non-magical
-- Defines promotion rules from raw input through IntentFragment and IntentDraft into Proposal or SpecDraft,
-  with explicit Proposal->SpecDraft review before any canonical materialization
+- Delegates the concrete promotion boundary between IntentDraft, Proposal, SpecDraft, and canonical materialization
+  to child SG-SPEC-0051, including explicit Proposal->SpecDraft review and non-silent promotion constraints
 - Keeps memory consultation policy, operator-request execution steering, tracked proposal-lane persistence,
   GUI protocol, and final storage layout out of scope for follow-on nodes
 acceptance_evidence:
@@ -48,11 +50,13 @@ acceptance_evidence:
     and supersedes as explicit axes adjacent to kind, and specification.boundary_policy.assistant_visibility
     requires assistant-generated nodes to preserve those axes so review can distinguish inferred draft
     material from user-originated or promoted artifacts.
-- criterion: Defines promotion rules from raw input through IntentFragment and IntentDraft into Proposal
-    or SpecDraft, with explicit Proposal->SpecDraft review before any canonical materialization
-  evidence: specification.promotion_pipeline.nominal_paths includes Proposal->SpecDraft and direct SpecDraft
-    routes, and specification.boundary_policy.promotion_constraints now includes proposal may not be promoted
-    directly to canonical artifacts, as well as explicit promotion gates for reviewed pre-spec material.
+- criterion: Delegates the concrete promotion boundary between IntentDraft, Proposal, SpecDraft, and canonical
+    materialization to child SG-SPEC-0051, including explicit Proposal->SpecDraft review and non-silent
+    promotion constraints
+  evidence: specification.promotion_pipeline.delegated_to names `SG-SPEC-0051`, specification.promotion_pipeline.delegation_note
+    says that concrete pre-spec promotion gates and explicit Proposal->SpecDraft review live in the child,
+    and specification.adjacency_notes explicitly delegate those non-silent promotion constraints away
+    from this parent overview node.
 - criterion: Keeps memory consultation policy, operator-request execution steering, tracked proposal-lane
     persistence, GUI protocol, and final storage layout out of scope for follow-on nodes
   evidence: specification.scope.out excludes project-memory consultation policy, supervisor-facing operator-request
@@ -61,7 +65,8 @@ acceptance_evidence:
     concerns rather than concerns resolved here.
 prompt: Define the first canonical child under SG-SPEC-0007 for the pre-spec semantic layer. Keep it focused
   on Intent, Hypothesis, Proposal, IntentFragment, IntentDraft, orthogonal provenance or authority axes,
-  and promotion boundaries into Proposal or SpecDraft. Do not define project-memory consultation policy,
+  and promotion boundaries into Proposal or SpecDraft. Delegate explicit Proposal->SpecDraft review and
+  non-silent transition constraints to child SG-SPEC-0051. Do not define project-memory consultation policy,
   operator-request runtime execution semantics, tracked proposal-lane storage, GUI protocol, or repository
   layout here.
 specification:
@@ -73,8 +78,6 @@ specification:
     - Auxiliary observed-intent kinds IntentFragment and IntentDraft
     - Orthogonal draft axes such as phase, status, authority, confidence, provenance, context_tags, and
       supersedes
-    - Promotion boundary from raw input into Proposal or SpecDraft, including explicit Proposal->SpecDraft
-      review before any canonical materialization
     - Suggested edge semantics between pre-spec declarations
     out:
     - Project-memory consultation policy or retrieval behavior
@@ -139,37 +142,11 @@ specification:
   - proposal assumes hypothesis
   - question answers or blocks proposal
   - intent_draft derived_from raw_input or precursor graph context
-  - intent_draft promoted_to proposal or spec_draft
-  - proposal promoted_to spec_draft or canonical_artifact
-  - spec_draft promoted_to canonical_artifact
-  - decision supersedes proposal
   promotion_pipeline:
-    nominal_paths:
-    - route: via_proposal_then_spec_draft
-      sequence:
-      - raw_input
-      - intent_fragment
-      - intent_draft
-      - proposal
-      - spec_draft
-      - canonical_artifact
-    - route: direct_specdraft
-      sequence:
-      - raw_input
-      - intent_fragment
-      - intent_draft
-      - spec_draft
-      - canonical_artifact
-    constraints:
-    - intent_fragment may be synthesized into intent_draft when the intent signal is coherent enough for
-      bounded review.
-    - intent_draft must remain non-final until explicitly confirmed, reviewed, or later promoted through
-      governed workflow.
-    - proposal remains reviewable and non-authoritative; it must remain linked to motivating intent and
-      hypotheses before it can be promoted to spec_draft.
-    - spec_draft may be created only from confirmed or explicitly reviewed pre-spec material and is the
-      first explicit bounded pre-spec node eligible for canonical materialization.
-    - proposal may not be promoted directly to canonical artifacts.
+    delegated_to: SG-SPEC-0051
+    delegation_note: SG-SPEC-0050 defines pre-spec semantic kinds and orthogonal axes; SG-SPEC-0051 governs
+      the concrete pre-spec promotion gates, non-silent transition requirements, and explicit Proposal->SpecDraft
+      review before canonical materialization.
   boundary_policy:
     pre_canonical_status:
     - Pre-spec nodes are reviewable declarations, not canonical graph truth.
@@ -177,14 +154,12 @@ specification:
     assistant_visibility:
     - Assistant-generated pre-spec nodes must preserve authority, confidence, and provenance so their
       synthesis remains inspectable.
-    promotion_constraints:
-    - Assistant-inferred pre-spec nodes must not silently become canonical spec artifacts.
-    - Promotion into canonical artifacts requires explicit confirmation, explicit review, or another governed
-      promotion path defined elsewhere.
     context_boundary:
     - Context should default to metadata, overlays, selectors, filters, or weighting lenses rather than
       to a separate primary semantic kind.
   adjacency_notes:
+  - SG-SPEC-0051 defines the concrete promotion boundary for IntentDraft, Proposal, SpecDraft, and canonical
+    materialization, including explicit Proposal->SpecDraft review and non-silent transition constraints.
   - SG-SPEC-0008 remains the adjacent node for explicit project-memory consultation during mediated discovery.
   - SG-SPEC-0009 remains the adjacent node for one-run operator-request normalization and supervisor steering.
   - SG-SPEC-0006 remains the adjacent node for tracked proposal-lane persistence, review state, and application
@@ -198,94 +173,7 @@ specification:
   - name: Hypothesis-backed proposal
     description: The system records a hypothesis that premature proposals bias framing, then links a proposal
       to that hypothesis and to the motivating intent rather than silently flattening both into one spec.
-  - name: Promotion boundary
-    description: An assistant infers a plausible draft structure from conversation context, but that draft
-      remains pre-spec material until explicit review promotes it toward Proposal or SpecDraft.
 proposed_status: null
 proposed_maturity: null
-gate_state: split_required
-required_human_action: split spec scope before rerun
-last_outcome: split_required
-last_blocker: ''
-last_run_id: 20260415T220021Z-SG-SPEC-0050
-last_exit_code: 0
-last_changed_files:
-- specs/nodes/SG-SPEC-0050.yaml
-last_run_at: '2026-04-15T22:00:22.204306+00:00'
-last_worktree_path: ''
-last_branch: ''
-last_validator_results:
-  outputs: true
-  allowed_paths: true
-  reconciliation: true
-  atomicity: true
-  transition: true
-  executor_environment: true
-  refinement_acceptance: true
-last_refinement_acceptance:
-  decision: review_required
-  change_class: constitutional_change
-  checks:
-    content_changed: true
-    hard_validation: true
-    single_spec_scope: true
-    constitutional_diff: true
-    graph_refactor_diff: false
-    atomicity_clear: true
-    within_mutation_budget: true
-  diff_paths:
-  - acceptance[3]
-  - acceptance_evidence[3].criterion
-  - acceptance_evidence[3].evidence
-  - specification.edge_semantics[6]
-  - specification.edge_semantics[7]
-  - specification.edge_semantics[8]
-  - specification.edge_semantics[9]
-  - specification.promotion_pipeline.constraints[2]
-  - specification.promotion_pipeline.constraints[3]
-  - specification.promotion_pipeline.constraints[4]
-  - specification.promotion_pipeline.nominal_path
-  - specification.promotion_pipeline.nominal_path[0]
-  - specification.promotion_pipeline.nominal_path[1]
-  - specification.promotion_pipeline.nominal_path[2]
-  - specification.promotion_pipeline.nominal_path[3]
-  - specification.promotion_pipeline.nominal_path[4]
-  - specification.promotion_pipeline.nominal_paths
-  - specification.promotion_pipeline.nominal_paths[0]
-  - specification.promotion_pipeline.nominal_paths[0].route
-  - specification.promotion_pipeline.nominal_paths[0].sequence
-  - specification.promotion_pipeline.nominal_paths[0].sequence[0]
-  - specification.promotion_pipeline.nominal_paths[0].sequence[1]
-  - specification.promotion_pipeline.nominal_paths[0].sequence[2]
-  - specification.promotion_pipeline.nominal_paths[0].sequence[3]
-  - specification.promotion_pipeline.nominal_paths[0].sequence[4]
-  - specification.promotion_pipeline.nominal_paths[0].sequence[5]
-  - specification.promotion_pipeline.nominal_paths[1]
-  - specification.promotion_pipeline.nominal_paths[1].route
-  - specification.promotion_pipeline.nominal_paths[1].sequence
-  - specification.promotion_pipeline.nominal_paths[1].sequence[0]
-  - specification.promotion_pipeline.nominal_paths[1].sequence[1]
-  - specification.promotion_pipeline.nominal_paths[1].sequence[2]
-  - specification.promotion_pipeline.nominal_paths[1].sequence[3]
-  - specification.promotion_pipeline.nominal_paths[1].sequence[4]
-  - specification.scope.in[3]
-  - specification.terminology.proposal
-  mutation_classes:
-  - policy_text
-  mutation_budget: []
-  budget_exceeded_classes: []
-  changed_spec_files:
-  - specs/nodes/SG-SPEC-0050.yaml
-  review_reasons:
-  - run changed governance-sensitive specification sections
-  errors: []
-  warnings: []
-last_reconciliation:
-  worktree_spec_count: 50
-  changed_spec_ids:
-  - SG-SPEC-0050
-  semantic_dependencies_resolved: true
-  work_dependencies_ready: true
-  cycles: []
-last_requested_child_materialization: false
-last_materialized_child_paths: []
+gate_state: none
+required_human_action: '-'
