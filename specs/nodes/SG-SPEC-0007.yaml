@@ -5,6 +5,7 @@ status: frozen
 maturity: 1.0
 depends_on:
 - SG-SPEC-0008
+- SG-SPEC-0050
 relates_to:
 - SG-SPEC-0006
 refines:
@@ -12,6 +13,8 @@ refines:
 inputs:
 - specs/nodes/SG-SPEC-0001.yaml
 - specs/nodes/SG-SPEC-0008.yaml
+- specs/nodes/SG-SPEC-0050.yaml
+- docs/proposals/0011_pre_spec_semantic_layer.md
 - AGENTS.md
 outputs:
 - specs/nodes/SG-SPEC-0007.yaml
@@ -21,7 +24,8 @@ acceptance:
 - Defines the pre-canonical mediation boundary between raw user goals and canonical intent or spec nodes
   without introducing a fifth canonical layer
 - Defines the minimal mediated-discovery artifacts and transitions that can normalize raw goal signals
-  into canonical intent-facing graph inputs
+  into canonical intent-facing graph inputs while delegating first-class pre-spec semantic kinds and promotion
+  graph shape to child SG-SPEC-0050
 - Defines provenance and traceability expectations across the mediation boundary so promoted canonical
   nodes preserve the originating user goal context
 - Keeps vocabulary harmonization, discovery-surface design, proposal-lane governance, and explicit project-memory
@@ -38,10 +42,15 @@ acceptance_evidence:
 
     '
 - criterion: Defines the minimal mediated-discovery artifacts and transitions that can normalize raw goal
-    signals into canonical intent-facing graph inputs
+    signals into canonical intent-facing graph inputs while delegating first-class pre-spec semantic kinds
+    and promotion graph shape to child SG-SPEC-0050
   evidence: 'specification.discovery_flow defines the bounded path raw_goal_signal -> mediated_intent_frame
     -> canonical intent or spec node, including decision rules for when a signal should become an intent
-    node versus a governed spec node.
+    node versus a governed spec node. The parent now records `depends_on: [SG-SPEC-0008, SG-SPEC-0050]`
+    and inputs include `specs/nodes/SG-SPEC-0050.yaml` and `docs/proposals/0011_pre_spec_semantic_layer.md`,
+    while specification.scope.out and specification.adjacency_notes explicitly delegate first-class pre-spec
+    semantic kinds, draft axes, and promotion graph shape to child SG-SPEC-0050 rather than resolving
+    them inside this overview node.
 
     '
 - criterion: Defines provenance and traceability expectations across the mediation boundary so promoted
@@ -74,7 +83,8 @@ acceptance_evidence:
 prompt: Retain SG-SPEC-0007 as the overview boundary spec for pre-canonical intent mediation between raw
   user goals and canonical intent or spec nodes, including minimal mediation artifacts, promotion traceability,
   adjacent out-of-scope boundaries, and implementation-agnostic constraints, while deferring explicit
-  project-memory consultation policy to child SG-SPEC-0008.
+  project-memory consultation policy to child SG-SPEC-0008 and first-class pre-spec semantic-layer kinds
+  and promotion graph shape to child SG-SPEC-0050.
 specification:
   objective: 'Define the bounded pre-canonical discovery and mediation semantics that translate raw user
     goals into governed canonical intent-facing artifacts without expanding the canonical layer model
@@ -93,6 +103,8 @@ specification:
     - Proposal-lane governance, review state, or canonical application workflow
     - Storage schema, file layout, or queue implementation
     - Project-memory consultation policy, retrieval protocol, or memory quality rules
+    - First-class pre-spec semantic kinds, draft axes, and promotion graph shape for Intent, Hypothesis,
+      Proposal, IntentFragment, or IntentDraft
     - Model-specific prompting, ranking, or embedding techniques
   terminology:
     raw_goal_signal: 'An external, not-yet-canonical expression of user intent such as a request, complaint,
@@ -202,6 +214,9 @@ specification:
   - Explicit project-memory consultation, including retrieval mechanics and memory-specific traceability
     or quality rules, is delegated to child SG-SPEC-0008; this node only requires that such consultation,
     when present, remain adjacent to rather than constitutive of canonicalization.
+  - First-class pre-spec semantic kinds, orthogonal draft axes, and promotion graph shape are delegated
+    to child SG-SPEC-0050 so this node can remain the overview mediation-boundary contract rather than
+    the full semantic ontology for pre-spec material.
   examples:
   - name: Raw goal to intent
     description: A user says they want faster onboarding with fewer confusing steps. Mediated discovery

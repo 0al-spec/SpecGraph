@@ -1,0 +1,188 @@
+id: SG-SPEC-0050
+title: SpecGraph - Pre-Spec Semantic Layer for Observable Intent
+kind: spec
+status: specified
+maturity: 0.35
+depends_on: []
+relates_to:
+- SG-SPEC-0006
+- SG-SPEC-0009
+refines:
+- SG-SPEC-0007
+inputs:
+- specs/nodes/SG-SPEC-0007.yaml
+- specs/nodes/SG-SPEC-0009.yaml
+- specs/nodes/SG-SPEC-0006.yaml
+- docs/proposals/0002_intent_layer.md
+- docs/proposals/0005_intent_to_proposal_workflow.md
+- docs/proposals/0011_pre_spec_semantic_layer.md
+outputs:
+- specs/nodes/SG-SPEC-0050.yaml
+allowed_paths:
+- specs/nodes/SG-SPEC-0050.yaml
+acceptance:
+- Defines the primary pre-spec semantic kinds Intent, Hypothesis, and Proposal as reviewable pre-canonical
+  declarations rather than canonical graph truth
+- Defines IntentFragment and IntentDraft as the minimal observed-intent path between raw user input and
+  later Proposal or SpecDraft material
+- Defines orthogonal pre-spec axes for phase, status, authority, confidence, provenance, context_tags,
+  and supersedes so assistant-generated draft declarations remain inspectable and non-magical
+- Defines promotion rules from raw input through IntentFragment and IntentDraft into Proposal or SpecDraft
+  while prohibiting silent promotion of assistant-inferred material into canonical spec artifacts
+- Keeps memory consultation policy, operator-request execution steering, tracked proposal-lane persistence,
+  GUI protocol, and final storage layout out of scope for follow-on nodes
+acceptance_evidence:
+- criterion: Defines the primary pre-spec semantic kinds Intent, Hypothesis, and Proposal as reviewable
+    pre-canonical declarations rather than canonical graph truth
+  evidence: specification.terminology defines intent, hypothesis, and proposal, while specification.boundary_policy.pre_canonical_status
+    states that these kinds belong to the pre-spec layer and remain reviewable draft declarations until
+    an explicit promotion step materializes a governed canonical artifact.
+- criterion: Defines IntentFragment and IntentDraft as the minimal observed-intent path between raw user
+    input and later Proposal or SpecDraft material
+  evidence: specification.terminology defines intent_fragment and intent_draft, and specification.observation_model
+    defines the path raw_input -> IntentFragment -> IntentDraft together with the rule that one draft
+    may synthesize multiple fragments plus linked constraints, questions, or hypotheses.
+- criterion: Defines orthogonal pre-spec axes for phase, status, authority, confidence, provenance, context_tags,
+    and supersedes so assistant-generated draft declarations remain inspectable and non-magical
+  evidence: specification.node_axes defines phase, status, authority, confidence, provenance, context_tags,
+    and supersedes as explicit axes adjacent to kind, and specification.boundary_policy.assistant_visibility
+    requires assistant-generated nodes to preserve those axes so review can distinguish inferred draft
+    material from user-originated or promoted artifacts.
+- criterion: Defines promotion rules from raw input through IntentFragment and IntentDraft into Proposal
+    or SpecDraft while prohibiting silent promotion of assistant-inferred material into canonical spec
+    artifacts
+  evidence: specification.promotion_pipeline defines raw_input -> IntentFragment -> IntentDraft -> Proposal
+    or SpecDraft -> canonical artifact, and specification.boundary_policy.promotion_constraints forbids
+    assistant-inferred pre-spec nodes from becoming canonical spec truth without explicit confirmation,
+    review, or later governed promotion.
+- criterion: Keeps memory consultation policy, operator-request execution steering, tracked proposal-lane
+    persistence, GUI protocol, and final storage layout out of scope for follow-on nodes
+  evidence: specification.scope.out excludes project-memory consultation policy, supervisor-facing operator-request
+    execution semantics, tracked proposal-lane storage and authority, GUI protocol, and repository layout.
+    specification.adjacency_notes names SG-SPEC-0008, SG-SPEC-0009, and SG-SPEC-0006 as adjacent follow-on
+    concerns rather than concerns resolved here.
+prompt: Define the first canonical child under SG-SPEC-0007 for the pre-spec semantic layer. Keep it focused
+  on Intent, Hypothesis, Proposal, IntentFragment, IntentDraft, orthogonal provenance or authority axes,
+  and promotion boundaries into Proposal or SpecDraft. Do not define project-memory consultation policy,
+  operator-request runtime execution semantics, tracked proposal-lane storage, GUI protocol, or repository
+  layout here.
+specification:
+  objective: Define the minimal graph-native semantic layer that captures observable pre-spec intent formation
+    before canonical spec or proposal promotion.
+  scope:
+    in:
+    - Primary pre-spec semantic kinds Intent, Hypothesis, and Proposal
+    - Auxiliary observed-intent kinds IntentFragment and IntentDraft
+    - Orthogonal draft axes such as phase, status, authority, confidence, provenance, context_tags, and
+      supersedes
+    - Promotion boundary from raw input into Proposal, SpecDraft, and later canonical artifacts
+    - Suggested edge semantics between pre-spec declarations
+    out:
+    - Project-memory consultation policy or retrieval behavior
+    - Supervisor-facing operator-request execution contract
+    - Tracked proposal-lane repository persistence and authority states
+    - GUI protocol, canvas layout, or renderer behavior
+    - Final repository storage layout for pre-spec artifacts
+    - Full natural-language understanding or model-specific interpretation logic
+  terminology:
+    pre_spec_layer: Graph-native, reviewable semantics that capture intent formation before canonical
+      spec or proposal artifacts are accepted as governed graph truth.
+    raw_input: A human-originated utterance, note, or selection-adjacent expression that has not yet been
+      normalized into pre-spec graph structure.
+    intent: A normative declaration of what should become true, remain possible, be preserved, or be prevented.
+    hypothesis: An epistemic declaration of what may be true in the problem space.
+    proposal: A candidate design move intended to operationalize one or more intents under constraints
+      and assumptions.
+    intent_fragment: The minimal extracted semantic unit from raw_input that appears to express part of
+      an intent but is not yet stable enough to become a full draft.
+    intent_draft: A synthesized pre-spec node assembled from one or more intent_fragment nodes plus optional
+      linked constraints, questions, and hypotheses.
+    spec_draft: A reviewable pre-canonical draft of later specification shape that may be promoted only
+      from confirmed or explicitly reviewed pre-spec material.
+  node_axes:
+    phase:
+    - pre-spec nodes must remain distinguishable from canonical intent, canonical spec, and runtime artifact
+      phases.
+    - The pre-spec layer may remain visible even when later canonical artifacts are created from the same
+      underlying concern.
+    status:
+    - Pre-spec nodes may be inferred, confirmed, superseded, rejected, deferred, or promoted.
+    - Status remains review semantics and must not be conflated with canonical lifecycle status.
+    authority:
+    - authority records whether a node is human-originated, assistant-inferred, mediator-normalized, or
+      otherwise reviewable pre-canonical material.
+    confidence:
+    - confidence may express how stable or provisional a draft interpretation currently is.
+    provenance:
+    - provenance must retain the source utterances, graph elements, or other declared precursor artifacts
+      that produced the pre-spec node.
+    context_tags:
+    - context_tags may express view or situational lenses without becoming separate primary semantic kinds.
+    supersedes:
+    - supersedes may relate later drafts or decisions to earlier pre-spec declarations without implying
+      canonical promotion.
+  observation_model:
+    fragment_rules:
+    - intent_fragment is the smallest extracted semantic unit that still carries observable intent meaning.
+    - Fragments may preserve partial goals, objections, constraints, or questions without forcing one
+      final interpretation too early.
+    draft_rules:
+    - intent_draft may synthesize one or more intent_fragment nodes plus linked constraints, questions,
+      and hypotheses.
+    - intent_draft remains the primary observed-intent object until explicit confirmation, review, or
+      promotion occurs.
+    - A single raw_input may produce multiple drafts when one utterance carries multiple bounded concerns.
+  edge_semantics:
+  - intent_fragment refines intent_draft
+  - constraint constrains intent_draft or proposal
+  - proposal operationalizes intent
+  - proposal assumes hypothesis
+  - question answers or blocks proposal
+  - intent_draft derived_from raw_input or precursor graph context
+  - intent_draft promoted_to spec_draft or later canonical artifact
+  - decision supersedes proposal
+  promotion_pipeline:
+    nominal_path:
+    - raw_input
+    - intent_fragment
+    - intent_draft
+    - proposal_or_spec_draft
+    - canonical_artifact
+    constraints:
+    - intent_fragment may be synthesized into intent_draft when the intent signal is coherent enough for
+      bounded review.
+    - intent_draft must remain non-final until explicitly confirmed, reviewed, or later promoted through
+      governed workflow.
+    - proposal must remain linked to motivating intent and assumptions.
+    - spec_draft may be created only from confirmed or explicitly reviewed pre-spec material.
+  boundary_policy:
+    pre_canonical_status:
+    - Pre-spec nodes are reviewable declarations, not canonical graph truth.
+    - Presence in the pre-spec layer does not by itself mutate canonical intent or specification nodes.
+    assistant_visibility:
+    - Assistant-generated pre-spec nodes must preserve authority, confidence, and provenance so their
+      synthesis remains inspectable.
+    promotion_constraints:
+    - Assistant-inferred pre-spec nodes must not silently become canonical spec artifacts.
+    - Promotion into canonical artifacts requires explicit confirmation, explicit review, or another governed
+      promotion path defined elsewhere.
+    context_boundary:
+    - Context should default to metadata, overlays, selectors, filters, or weighting lenses rather than
+      to a separate primary semantic kind.
+  adjacency_notes:
+  - SG-SPEC-0008 remains the adjacent node for explicit project-memory consultation during mediated discovery.
+  - SG-SPEC-0009 remains the adjacent node for one-run operator-request normalization and supervisor steering.
+  - SG-SPEC-0006 remains the adjacent node for tracked proposal-lane persistence, review state, and application
+    semantics.
+  - This node defines semantic kinds and promotion boundaries, not final repository storage layout or
+    viewer rendering.
+  examples:
+  - name: Intent-first draft
+    description: A user says the original intent should survive formalization. The system captures fragments,
+      synthesizes an intent_draft, and keeps it reviewable before any canonical spec node is created.
+  - name: Hypothesis-backed proposal
+    description: The system records a hypothesis that premature proposals bias framing, then links a proposal
+      to that hypothesis and to the motivating intent rather than silently flattening both into one spec.
+  - name: Promotion boundary
+    description: An assistant infers a plausible draft structure from conversation context, but that draft
+      remains pre-spec material until explicit review promotes it toward Proposal or SpecDraft.
