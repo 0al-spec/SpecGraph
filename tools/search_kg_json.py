@@ -773,7 +773,7 @@ def main() -> int:
 
     if args.dump_requirements:
         assert records is not None
-        limited_records = records[: args.limit] if args.limit else records
+        limited_records = records[: args.limit]
         if args.format == "json":
             print(
                 json.dumps(
@@ -827,7 +827,10 @@ def main() -> int:
         print(f"[cache] miss -> saved: {cache_file}", file=sys.stderr)
 
     if not matches:
-        print("No matches found.")
+        if args.format == "json":
+            print("[]")
+        else:
+            print("No matches found.")
         return 0
 
     if args.format == "json":

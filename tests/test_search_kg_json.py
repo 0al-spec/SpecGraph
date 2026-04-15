@@ -321,3 +321,66 @@ def test_main_can_write_artifacts_without_query(tmp_path: Path, capsys) -> None:
     assert "[artifacts] projection:" in captured.err
     assert (artifact_dir / "requirement_projection.json").exists()
     assert (artifact_dir / "requirement_provenance.json").exists()
+
+
+def test_main_json_search_returns_empty_array_for_no_matches(tmp_path: Path, capsys) -> None:
+    (tmp_path / "ideas.json").write_text(
+        json.dumps({"notes": "Goal: keep grouped aggregate nodes visible."}),
+        encoding="utf-8",
+    )
+    original_argv = sys.argv
+    sys.argv = [
+        "search_kg_json.py",
+        "nonexistent token",
+        "--json-dir",
+        str(tmp_path),
+        "--format",
+        "json",
+        "--no-cache",
+    ]
+    try:
+        exit_code = search_kg_json.main()
+    finally:
+        sys.argv = original_argv
+
+    assert exit_code == 0
+    captured = capsys.readouterr()
+    assert json.loads(captured.out) == []
+    assert captured.err == ""
+
+
+def test_main_dump_requirements_respects_zero_limit(tmp_path: Path, capsys) -> None:
+    (tmp_path / "ideas.json").write_text(
+        json.dumps(
+            {
+                "notes": "\n".join(
+                    [
+                        "Goal",
+                        "- Keep aggregate nodes visible",
+                        "Risks",
+                        "- Deep ladders are hard to read",
+                    ]
+                )
+            }
+        ),
+        encoding="utf-8",
+    )
+    original_argv = sys.argv
+    sys.argv = [
+        "search_kg_json.py",
+        "--json-dir",
+        str(tmp_path),
+        "--dump-requirements",
+        "--format",
+        "json",
+        "--limit",
+        "0",
+    ]
+    try:
+        exit_code = search_kg_json.main()
+    finally:
+        sys.argv = original_argv
+
+    assert exit_code == 0
+    captured = capsys.readouterr()
+    assert json.loads(captured.out) == []
