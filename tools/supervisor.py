@@ -77,6 +77,22 @@ RECURRING_REFACTOR_PROPOSAL_THRESHOLD = 2
 SPLIT_REFACTOR_SIGNAL = "oversized_spec"
 SPLIT_REFACTOR_KIND = "split_oversized_spec"
 RETROSPECTIVE_REFACTOR_SIGNAL = "retrospective_refactor_candidate"
+SUBTREE_SHAPE_SIGNALS = {
+    "serial_refinement_ladder",
+    "over_atomized_subtree",
+    "missing_aggregate_node",
+    "depth_without_breadth",
+    "delegation_only_chain",
+}
+LOWER_BOUNDARY_HANDOFF_SIGNALS = {
+    "lower_boundary_handoff_candidate",
+    "graph_layer_exhausted_for_subtree",
+}
+SUBTREE_SHAPE_ONE_CHILD_CHAIN_THRESHOLD = 4
+GRAPH_LAYER_EXHAUSTED_CHAIN_THRESHOLD = 5
+SUBTREE_SHAPE_MIN_SINGLE_CHILD_RATIO = 0.75
+OVER_ATOMIZED_ACCEPTANCE_MAX = 3
+TEXT_MARKER_RATIO_THRESHOLD = 0.5
 APPLICABLE_PROPOSAL_STATUSES = {"proposed", "review_pending", "pending_review", "approved"}
 BLOCKING_GATE_STATES = {
     "review_pending",
@@ -405,6 +421,159 @@ def accepted_child_spec_ids(node: SpecNode, specs: list[SpecNode]) -> list[str]:
     return accepted
 
 
+def subtree_nodes(node: SpecNode, specs: list[SpecNode]) -> list[SpecNode]:
+    index = index_specs(specs)
+    seen: set[str] = set()
+    ordered: list[SpecNode] = []
+    stack = [node]
+
+    while stack:
+        current = stack.pop()
+        if not current.id or current.id in seen:
+            continue
+        seen.add(current.id)
+        ordered.append(current)
+        children = refining_child_specs(current, specs)
+        for child in reversed(children):
+            indexed_child = index.get(child.id, child)
+            stack.append(indexed_child)
+    return ordered
+
+
+def subtree_children_map(node: SpecNode, specs: list[SpecNode]) -> dict[str, list[SpecNode]]:
+    descendants = subtree_nodes(node, specs)
+    descendant_ids = {spec.id for spec in descendants if spec.id}
+    children_map: dict[str, list[SpecNode]] = {}
+    for spec in descendants:
+        if not spec.id:
+            continue
+        children_map[spec.id] = [
+            child for child in refining_child_specs(spec, specs) if child.id in descendant_ids
+        ]
+    return children_map
+
+
+def node_acceptance_count(node: SpecNode) -> int:
+    acceptance = node.data.get("acceptance")
+    if not isinstance(acceptance, list):
+        return 0
+    return len(acceptance)
+
+
+def median_int(values: list[int]) -> float:
+    if not values:
+        return 0.0
+    ordered = sorted(values)
+    midpoint = len(ordered) // 2
+    if len(ordered) % 2 == 1:
+        return float(ordered[midpoint])
+    return (ordered[midpoint - 1] + ordered[midpoint]) / 2.0
+
+
+def node_text_for_shape_analysis(node: SpecNode) -> str:
+    parts: list[str] = [node.title, node.prompt]
+    acceptance = node.data.get("acceptance")
+    if isinstance(acceptance, list):
+        parts.extend(str(item) for item in acceptance)
+    specification = node.data.get("specification")
+    if isinstance(specification, dict):
+        parts.append(json.dumps(specification, ensure_ascii=False, sort_keys=True))
+    return " ".join(part for part in parts if part).lower()
+
+
+def subtree_shape_metrics(node: SpecNode, specs: list[SpecNode]) -> dict[str, Any]:
+    descendants = subtree_nodes(node, specs)
+    children_map = subtree_children_map(node, specs)
+    index = {spec.id: spec for spec in descendants if spec.id}
+
+    level_widths: dict[int, int] = {}
+
+    def walk_depth(spec_id: str, depth: int, active: frozenset[str]) -> int:
+        if spec_id in active:
+            return depth - 1
+        level_widths[depth] = level_widths.get(depth, 0) + 1
+        child_depths = [
+            walk_depth(child.id, depth + 1, active | {spec_id})
+            for child in children_map.get(spec_id, [])
+            if child.id in index
+        ]
+        return max([depth, *child_depths])
+
+    def one_child_chain(spec_id: str, active: frozenset[str]) -> int:
+        if spec_id in active:
+            return 0
+        children = [child for child in children_map.get(spec_id, []) if child.id in index]
+        if len(children) != 1:
+            return 1
+        return 1 + one_child_chain(children[0].id, active | {spec_id})
+
+    max_depth = walk_depth(node.id, 0, frozenset()) if node.id in index else 0
+    longest_chain = (
+        max(one_child_chain(spec_id, frozenset()) for spec_id in index)
+        if node.id in index and index
+        else 1
+    )
+    internal_nodes = [spec_id for spec_id, children in children_map.items() if children]
+    single_child_internal_count = sum(
+        1 for spec_id in internal_nodes if len(children_map.get(spec_id, [])) == 1
+    )
+    max_width = max(level_widths.values(), default=1)
+    acceptance_median = median_int([node_acceptance_count(spec) for spec in descendants])
+    delegation_markers = (
+        "delegate",
+        "delegation",
+        "handoff",
+        "boundary",
+        "descendant",
+        "child",
+        "parent",
+        "integration",
+        "gateway",
+    )
+    execution_markers = (
+        "execution",
+        "payload",
+        "field",
+        "runtime",
+        "queue",
+        "retry",
+        "artifact",
+        "surface",
+        "sequencing",
+        "routing",
+        "topology",
+        "consumer",
+        "producer",
+    )
+    texts = [node_text_for_shape_analysis(spec) for spec in descendants]
+    delegation_ratio = (
+        sum(1 for text in texts if any(marker in text for marker in delegation_markers))
+        / len(texts)
+        if texts
+        else 0.0
+    )
+    execution_ratio = (
+        sum(1 for text in texts if any(marker in text for marker in execution_markers)) / len(texts)
+        if texts
+        else 0.0
+    )
+
+    return {
+        "subtree_node_count": len(descendants),
+        "descendant_count": max(0, len(descendants) - 1),
+        "max_depth": max_depth,
+        "max_width": max_width,
+        "longest_one_child_chain": longest_chain,
+        "internal_node_count": len(internal_nodes),
+        "single_child_internal_ratio": (
+            single_child_internal_count / len(internal_nodes) if internal_nodes else 0.0
+        ),
+        "median_acceptance_count": acceptance_median,
+        "delegation_marker_ratio": delegation_ratio,
+        "execution_marker_ratio": execution_ratio,
+    }
+
+
 def merge_unique_strings(*groups: list[str]) -> list[str]:
     merged: list[str] = []
     for group in groups:
@@ -556,6 +725,34 @@ def linked_continuation_reasons(
     return reasons
 
 
+def active_signal_items_for_spec(
+    spec_id: str,
+    *,
+    signals: set[str],
+    refactor_items: list[dict[str, Any]] | None = None,
+    proposal_items: list[dict[str, Any]] | None = None,
+) -> bool:
+    local_refactor_items = refactor_items if refactor_items is not None else load_refactor_queue()
+    local_proposal_items = proposal_items if proposal_items is not None else load_proposal_queue()
+
+    for item in local_refactor_items:
+        if str(item.get("spec_id", "")).strip() != spec_id:
+            continue
+        if str(item.get("signal", "")).strip() not in signals:
+            continue
+        if str(item.get("status", "proposed")).strip() in {"proposed", "retry_pending"}:
+            return True
+
+    for item in local_proposal_items:
+        if str(item.get("spec_id", "")).strip() != spec_id:
+            continue
+        if str(item.get("signal", "")).strip() not in signals:
+            continue
+        if proposal_is_active(item):
+            return True
+    return False
+
+
 def pick_next_spec_gap(specs: list[SpecNode]) -> SpecNode | None:
     index = index_specs(specs)
     dependents = reverse_dependents_count(specs)
@@ -578,8 +775,18 @@ def pick_next_spec_gap(specs: list[SpecNode]) -> SpecNode | None:
         and not is_gate_blocking(spec)
     ]
     if not candidates:
+        refactor_items = load_refactor_queue()
+        proposal_items = load_proposal_queue()
         continuation_candidates = [
-            spec for spec in specs if linked_continuation_reasons(spec, index)
+            spec
+            for spec in specs
+            if linked_continuation_reasons(spec, index)
+            and not active_signal_items_for_spec(
+                spec.id,
+                signals=SUBTREE_SHAPE_SIGNALS | LOWER_BOUNDARY_HANDOFF_SIGNALS,
+                refactor_items=refactor_items,
+                proposal_items=proposal_items,
+            )
         ]
         if not continuation_candidates:
             return None
@@ -629,6 +836,11 @@ def refactor_signal_priority(signal: str) -> int:
         "weak_structural_linkage_candidate": 1,
         "oversized_spec": 2,
         RETROSPECTIVE_REFACTOR_SIGNAL: 2,
+        "serial_refinement_ladder": 2,
+        "missing_aggregate_node": 2,
+        "depth_without_breadth": 3,
+        "over_atomized_subtree": 3,
+        "delegation_only_chain": 3,
     }.get(signal, 9)
 
 
@@ -2805,6 +3017,164 @@ def observe_graph_health(
             signals.append("weak_structural_linkage_candidate")
             recommended_actions.append("repair_refinement_chain")
 
+        metrics = subtree_shape_metrics(reconciled_node, worktree_specs)
+        if metrics["descendant_count"] > 0:
+            shape_details = {
+                "longest_one_child_chain": metrics["longest_one_child_chain"],
+                "max_depth": metrics["max_depth"],
+                "max_width": metrics["max_width"],
+                "single_child_internal_ratio": round(
+                    float(metrics["single_child_internal_ratio"]), 3
+                ),
+                "median_acceptance_count": metrics["median_acceptance_count"],
+                "delegation_marker_ratio": round(float(metrics["delegation_marker_ratio"]), 3),
+                "execution_marker_ratio": round(float(metrics["execution_marker_ratio"]), 3),
+                "subtree_node_count": metrics["subtree_node_count"],
+            }
+            shape_pressure = False
+            if metrics["longest_one_child_chain"] >= SUBTREE_SHAPE_ONE_CHILD_CHAIN_THRESHOLD:
+                observations.append(
+                    {
+                        "kind": "serial_refinement_ladder",
+                        "spec_id": source_node.id,
+                        "details": {
+                            **shape_details,
+                            "summary": (
+                                "A long one-child refines chain is forming in the same bounded "
+                                "subtree."
+                            ),
+                        },
+                    }
+                )
+                signals.append("serial_refinement_ladder")
+                recommended_actions.append("rebalance_subtree_shape")
+                shape_pressure = True
+
+            if (
+                metrics["max_depth"] >= SUBTREE_SHAPE_ONE_CHILD_CHAIN_THRESHOLD
+                and metrics["max_width"] <= 2
+                and metrics["single_child_internal_ratio"] >= SUBTREE_SHAPE_MIN_SINGLE_CHILD_RATIO
+            ):
+                observations.append(
+                    {
+                        "kind": "depth_without_breadth",
+                        "spec_id": source_node.id,
+                        "details": {
+                            **shape_details,
+                            "summary": "Subtree depth is growing faster than meaningful breadth.",
+                        },
+                    }
+                )
+                signals.append("depth_without_breadth")
+                recommended_actions.append("rebalance_subtree_shape")
+                shape_pressure = True
+
+            if (
+                metrics["longest_one_child_chain"] >= SUBTREE_SHAPE_ONE_CHILD_CHAIN_THRESHOLD
+                and metrics["median_acceptance_count"] <= OVER_ATOMIZED_ACCEPTANCE_MAX
+                and metrics["single_child_internal_ratio"] >= SUBTREE_SHAPE_MIN_SINGLE_CHILD_RATIO
+            ):
+                observations.append(
+                    {
+                        "kind": "over_atomized_subtree",
+                        "spec_id": source_node.id,
+                        "details": {
+                            **shape_details,
+                            "summary": (
+                                "The subtree is becoming deep while each node carries only a very "
+                                "small payload."
+                            ),
+                        },
+                    }
+                )
+                signals.append("over_atomized_subtree")
+                recommended_actions.append("rebalance_subtree_shape")
+                shape_pressure = True
+
+            if (
+                metrics["longest_one_child_chain"] >= SUBTREE_SHAPE_ONE_CHILD_CHAIN_THRESHOLD
+                and metrics["max_width"] == 1
+            ):
+                observations.append(
+                    {
+                        "kind": "missing_aggregate_node",
+                        "spec_id": source_node.id,
+                        "details": {
+                            **shape_details,
+                            "summary": (
+                                "The subtree reads like a serial ladder and lacks an aggregate "
+                                "grouping node."
+                            ),
+                        },
+                    }
+                )
+                signals.append("missing_aggregate_node")
+                recommended_actions.append("materialize_aggregate_node")
+                shape_pressure = True
+
+            if (
+                metrics["longest_one_child_chain"] >= SUBTREE_SHAPE_ONE_CHILD_CHAIN_THRESHOLD
+                and metrics["delegation_marker_ratio"] >= TEXT_MARKER_RATIO_THRESHOLD
+            ):
+                observations.append(
+                    {
+                        "kind": "delegation_only_chain",
+                        "spec_id": source_node.id,
+                        "details": {
+                            **shape_details,
+                            "summary": (
+                                "Consecutive nodes mostly restate delegation or boundary language."
+                            ),
+                        },
+                    }
+                )
+                signals.append("delegation_only_chain")
+                recommended_actions.append("compress_delegation_chain")
+                shape_pressure = True
+
+            if (
+                shape_pressure
+                and outcome == "split_required"
+                and metrics["execution_marker_ratio"] >= TEXT_MARKER_RATIO_THRESHOLD
+            ):
+                observations.append(
+                    {
+                        "kind": "lower_boundary_handoff_candidate",
+                        "spec_id": source_node.id,
+                        "details": {
+                            **shape_details,
+                            "summary": (
+                                "Shape pressure now coexists with execution-facing unresolved "
+                                "detail."
+                            ),
+                        },
+                    }
+                )
+                signals.append("lower_boundary_handoff_candidate")
+                recommended_actions.append("review_lower_boundary_handoff")
+
+            if (
+                outcome == "split_required"
+                and metrics["longest_one_child_chain"] >= GRAPH_LAYER_EXHAUSTED_CHAIN_THRESHOLD
+                and metrics["max_width"] == 1
+                and metrics["execution_marker_ratio"] >= TEXT_MARKER_RATIO_THRESHOLD
+            ):
+                observations.append(
+                    {
+                        "kind": "graph_layer_exhausted_for_subtree",
+                        "spec_id": source_node.id,
+                        "details": {
+                            **shape_details,
+                            "summary": (
+                                "Further canonical decomposition is unlikely to restore readable "
+                                "grouping in this region."
+                            ),
+                        },
+                    }
+                )
+                signals.append("graph_layer_exhausted_for_subtree")
+                recommended_actions.append("review_lower_boundary_handoff")
+
     return {
         "source_spec_id": source_node.id,
         "observations": observations,
@@ -3080,7 +3450,11 @@ def run_log_paths() -> list[Path]:
 
 
 def classify_refactor_work_item(signal: str) -> str:
-    if signal in {"repeated_split_required_candidate", "stalled_maturity_candidate"}:
+    if signal in {
+        "repeated_split_required_candidate",
+        "stalled_maturity_candidate",
+        *LOWER_BOUNDARY_HANDOFF_SIGNALS,
+    }:
         return "governance_proposal"
     return "graph_refactor"
 
@@ -3093,6 +3467,13 @@ def default_action_for_signal(signal: str) -> str:
         "repeated_split_required_candidate": "review_decomposition_policy",
         "stalled_maturity_candidate": "review_refinement_strategy",
         "weak_structural_linkage_candidate": "repair_refinement_chain",
+        "serial_refinement_ladder": "rebalance_subtree_shape",
+        "over_atomized_subtree": "rebalance_subtree_shape",
+        "missing_aggregate_node": "materialize_aggregate_node",
+        "depth_without_breadth": "rebalance_subtree_shape",
+        "delegation_only_chain": "compress_delegation_chain",
+        "lower_boundary_handoff_candidate": "review_lower_boundary_handoff",
+        "graph_layer_exhausted_for_subtree": "review_lower_boundary_handoff",
     }.get(signal, "review_graph_health_signal")
 
 
@@ -3142,6 +3523,8 @@ def refactor_execution_policy(
     ):
         return "defer_to_active_proposal"
     if signal == RETROSPECTIVE_REFACTOR_SIGNAL:
+        return "emit_proposal"
+    if signal in SUBTREE_SHAPE_SIGNALS:
         return "emit_proposal"
     return "direct_graph_update"
 
