@@ -173,7 +173,55 @@ specification:
   - name: Hypothesis-backed proposal
     description: The system records a hypothesis that premature proposals bias framing, then links a proposal
       to that hypothesis and to the motivating intent rather than silently flattening both into one spec.
+gate_state: split_required
+required_human_action: split spec scope before rerun
 proposed_status: null
 proposed_maturity: null
-gate_state: none
-required_human_action: '-'
+last_outcome: split_required
+last_blocker: ''
+last_run_id: 20260415T220833Z-SG-SPEC-0050
+last_exit_code: 0
+last_changed_files:
+- specs/nodes/SG-SPEC-0050.yaml
+last_run_at: '2026-04-15T22:08:33.913155+00:00'
+last_worktree_path: ''
+last_branch: ''
+last_validator_results:
+  outputs: true
+  allowed_paths: true
+  reconciliation: true
+  atomicity: true
+  transition: true
+  executor_environment: true
+  refinement_acceptance: true
+last_refinement_acceptance:
+  decision: approve
+  change_class: local_refinement
+  checks:
+    content_changed: true
+    hard_validation: true
+    single_spec_scope: true
+    constitutional_diff: false
+    graph_refactor_diff: false
+    atomicity_clear: true
+    within_mutation_budget: true
+  diff_paths:
+  - status
+  mutation_classes:
+  - policy_text
+  mutation_budget: []
+  budget_exceeded_classes: []
+  changed_spec_files:
+  - specs/nodes/SG-SPEC-0050.yaml
+  review_reasons: []
+  errors: []
+  warnings: []
+last_reconciliation:
+  worktree_spec_count: 51
+  changed_spec_ids:
+  - SG-SPEC-0050
+  semantic_dependencies_resolved: true
+  work_dependencies_ready: false
+  cycles: []
+last_requested_child_materialization: false
+last_materialized_child_paths: []
