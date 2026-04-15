@@ -160,6 +160,8 @@ specification:
   adjacency_notes:
   - SG-SPEC-0051 defines the concrete promotion boundary for IntentDraft, Proposal, SpecDraft, and canonical
     materialization, including explicit Proposal->SpecDraft review and non-silent transition constraints.
+  - SG-SPEC-0052 defines the orthogonal axis value spaces and traceability semantics for pre-spec nodes
+    using phase, status, authority, confidence, provenance, context_tags, and supersedes.
   - SG-SPEC-0008 remains the adjacent node for explicit project-memory consultation during mediated discovery.
   - SG-SPEC-0009 remains the adjacent node for one-run operator-request normalization and supervisor steering.
   - SG-SPEC-0006 remains the adjacent node for tracked proposal-lane persistence, review state, and application
@@ -179,11 +181,12 @@ proposed_status: null
 proposed_maturity: null
 last_outcome: split_required
 last_blocker: ''
-last_run_id: 20260415T220833Z-SG-SPEC-0050
+last_run_id: 20260415T221011Z-SG-SPEC-0050
 last_exit_code: 0
 last_changed_files:
 - specs/nodes/SG-SPEC-0050.yaml
-last_run_at: '2026-04-15T22:08:33.913155+00:00'
+- specs/nodes/SG-SPEC-0052.yaml
+last_run_at: '2026-04-15T22:10:12.426970+00:00'
 last_worktree_path: ''
 last_branch: ''
 last_validator_results:
@@ -195,33 +198,41 @@ last_validator_results:
   executor_environment: true
   refinement_acceptance: true
 last_refinement_acceptance:
-  decision: approve
-  change_class: local_refinement
+  decision: review_required
+  change_class: graph_refactor
   checks:
     content_changed: true
     hard_validation: true
-    single_spec_scope: true
+    single_spec_scope: false
     constitutional_diff: false
-    graph_refactor_diff: false
+    graph_refactor_diff: true
     atomicity_clear: true
     within_mutation_budget: true
   diff_paths:
-  - status
+  - specification.adjacency_notes[1]
+  - specification.adjacency_notes[2]
+  - specification.adjacency_notes[3]
+  - specification.adjacency_notes[4]
+  - specification.adjacency_notes[5]
   mutation_classes:
   - policy_text
   mutation_budget: []
   budget_exceeded_classes: []
   changed_spec_files:
   - specs/nodes/SG-SPEC-0050.yaml
-  review_reasons: []
+  - specs/nodes/SG-SPEC-0052.yaml
+  review_reasons:
+  - run changed additional spec files beyond the selected source node
   errors: []
   warnings: []
 last_reconciliation:
-  worktree_spec_count: 51
+  worktree_spec_count: 52
   changed_spec_ids:
   - SG-SPEC-0050
+  - SG-SPEC-0052
   semantic_dependencies_resolved: true
   work_dependencies_ready: false
   cycles: []
-last_requested_child_materialization: false
-last_materialized_child_paths: []
+last_requested_child_materialization: true
+last_materialized_child_paths:
+- specs/nodes/SG-SPEC-0052.yaml

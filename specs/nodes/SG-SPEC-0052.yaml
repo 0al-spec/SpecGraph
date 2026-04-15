@@ -1,0 +1,222 @@
+id: SG-SPEC-0052
+title: Pre-Spec Orthogonal Axis Semantics and Traceability for Intent Drafts
+kind: spec
+status: linked
+maturity: 0.35
+depends_on: []
+relates_to: []
+refines:
+- SG-SPEC-0050
+inputs:
+- specs/nodes/SG-SPEC-0050.yaml
+outputs:
+- specs/nodes/SG-SPEC-0052.yaml
+allowed_paths:
+- specs/nodes/SG-SPEC-0052.yaml
+acceptance:
+- Defines explicit value spaces for phase, status, authority, confidence, provenance, context_tags, and
+  supersedes on pre-spec Intent, IntentFragment, IntentDraft, and Proposal nodes.
+- Defines traceability rules so those axis fields remain explainable from raw_input to IntentFragment
+  to IntentDraft to Proposal without invoking promotion boundary logic.
+- Defines axis-consistency constraints that preserve orthogonality and reviewability, including immutable
+  provenance roots and provenance-aware supersession, before any canonical materialization.
+- Keeps concrete promotion boundaries, Proposal->SpecDraft review requirements, non-silent transition
+  constraints, memory consultation policy, operator-request runtime semantics, proposal-lane persistence,
+  GUI protocol, and storage layout out of scope.
+acceptance_evidence:
+- criterion: Defines explicit value spaces for phase, status, authority, confidence, provenance, context_tags,
+    and supersedes on pre-spec Intent, IntentFragment, IntentDraft, and Proposal nodes.
+  evidence: specification.axis_model.phase.value_space, specification.axis_model.status.value_space, specification.axis_model.authority.value_space,
+    specification.axis_model.confidence.value_space, specification.axis_model.provenance.value_space,
+    specification.axis_model.context_tags.value_space, and specification.axis_model.supersedes.value_space
+    enumerate explicit values for Intent, IntentFragment, IntentDraft, and Proposal nodes.
+- criterion: Defines traceability rules so those axis fields remain explainable from raw_input to IntentFragment
+    to IntentDraft to Proposal without invoking promotion boundary logic.
+  evidence: specification.axis_traceability.event_stream and specification.axis_traceability.axioms require
+    a trace chain raw_input -> intent_fragment -> intent_draft -> proposal with axis provenance/lineage
+    fields on every link.
+- criterion: Defines axis-consistency constraints that preserve orthogonality and reviewability, including
+    immutable provenance roots and provenance-aware supersession, before any canonical materialization.
+  evidence: specification.axis_consistency.orthogonality_constraints, specification.axis_consistency.immutable_fields,
+    and specification.axis_consistency.supersession_rules require non-rewrite provenance roots, independent
+    axis mutation, and supersede-only replacement of prior pre-spec nodes.
+- criterion: Keeps concrete promotion boundaries, Proposal->SpecDraft review requirements, non-silent
+    transition constraints, memory consultation policy, operator-request runtime semantics, proposal-lane
+    persistence, GUI protocol, and storage layout out of scope.
+  evidence: specification.scope.out and specification.boundary.out explicitly list those concerns, while
+    specification. scope.in remains limited to orthogonal axes plus pre-spec traceability.
+prompt: Define concrete axis and traceability semantics for phase, status, authority, confidence, provenance,
+  context_tags, and supersedes in the pre-spec layer for Intent, IntentFragment, IntentDraft, and Proposal.
+  Keep the behavior focused on inspectable node metadata and lineage edges, and do not redefine promotion
+  gates, operator runtime semantics, memory policy, proposal-lane persistence, GUI protocol, or repository
+  storage layout.
+specification:
+  objective: Provide concrete, orthogonal semantics for pre-spec metadata axes and their traceability
+    so assistant drafts remain reviewable and explainable through origin, lineage, and supersession.
+  scope:
+    in:
+    - Axis value spaces and defaulting rules for phase, status, authority, confidence, provenance, context_tags,
+      and supersedes
+    - Traceability fields required on raw_input, IntentFragment, IntentDraft, and Proposal edges
+    - Axis-consistency checks that preserve orthogonality and prevent silent metadata rewrites
+    out:
+    - Promotion boundaries into Proposal or SpecDraft, including explicit Proposal->SpecDraft review or
+      non-silent checks
+    - Project-memory consultation policy or retrieval behavior
+    - Operator-request execution steering and runtime contract
+    - Tracked proposal-lane persistence and authority states
+    - GUI protocol, canvas behavior, or repository storage layout
+  terminology:
+    axis_record: The metadata bundle attached to each pre-spec node capturing phase, status, authority,
+      confidence, provenance, context_tags, and supersedes together.
+    provenance_root: An immutable identifier or reference set proving how a node was produced from antecedents.
+    lineage_chain: The ordered derivation path linking raw_input through IntentFragment and IntentDraft
+      to Proposal.
+    reviewable_status: Any status that indicates the node is still pre-canonical and not yet implicitly
+      authoritative.
+    supersession: The explicit relationship where a later draft node replaces one prior node for the same
+      concern.
+  axis_model:
+    phase:
+      value_space:
+      - intent_fragment
+      - intent_draft
+      - proposal
+      - deferred_hold
+      default_for:
+        intent_fragment: intent_fragment
+        intent_draft: intent_draft
+        proposal: proposal
+      immutable_by_axis: true
+    status:
+      value_space:
+      - inferred
+      - confirmed
+      - review_ready
+      - rejected
+      - deferred
+      - superseded
+      - promoted
+      default_for:
+        intent: inferred
+        intent_fragment: inferred
+        intent_draft: inferred
+        proposal: review_ready
+    authority:
+      value_space:
+      - human
+      - assistant_inferred
+      - mediator_normalized
+      - reviewer_confirmed
+      - reviewer_rejected
+      default_for:
+        intent: human
+        intent_fragment: assistant_inferred
+        intent_draft: assistant_inferred
+        proposal: mediator_normalized
+      immutable_by_axis: true
+    confidence:
+      value_space:
+      - low
+      - medium
+      - high
+      - unresolved
+      default_for:
+        inferred: low
+        confirmed: high
+        review_ready: medium
+    provenance:
+      value_space:
+      - raw_input_ref
+      - origin_channel
+      - extractor_id
+      - source_refs
+      - trace_signature
+      required_fields:
+      - raw_input_ref
+      - origin_channel
+      - source_refs
+      default_for:
+        intent_fragment: raw_input
+        intent_draft: intent_fragment
+        proposal: intent_draft
+    context_tags:
+      value_space:
+      - policy_surface
+      - architecture_surface
+      - risk_surface
+      - implementation_surface
+      - operator_surface
+      max_count: 12
+      merge_rule: union
+    supersedes:
+      value_space:
+      - null
+      - superseded_id
+      - superseded_reason
+      - superseded_at
+      - replacing_node
+      required_fields:
+      - superseded_id
+      - replacing_node
+      default_for:
+        superseded: null
+        else: null
+  axis_traceability:
+    event_stream:
+    - link: raw_input -> intent_fragment
+      axis_requirements:
+      - phase must be intent_fragment
+      - authority cannot be declared human
+      - provenance.raw_input_ref is required
+      - confidence starts at inferred unless explicitly set by review
+    - link: intent_fragment -> intent_draft
+      axis_requirements:
+      - all source fragments contribute to draft provenance.source_refs
+      - status may move from inferred to confirmed only with reviewer_confirmed authority
+      - context_tags merges from source fragments
+    - link: intent_draft -> proposal
+      axis_requirements:
+      - proposal.phase must be proposal
+      - proposal.status may be review_ready or inferred
+      - provenance.source_refs must include at least one intent_draft
+      - proposal authority is mediator_normalized unless explicitly rejected later
+    provenance_chain:
+    - Every node in the chain must expose provenance.source_refs to immediate predecessors.
+    - proposal nodes must retain intent_derived_from and may include multiple source_refs.
+    - provenance roots are immutable after first persistence.
+  axis_consistency:
+    orthogonality_constraints:
+    - phase changes do not imply default status transitions unless explicit evidence exists.
+    - authority and provenance are tracked independently; changing one does not auto-derive the other.
+    - context_tags may be expanded by intersection but may never replace prior tags without supersession.
+    - confidence may rise or fall while provenance.source_refs remains unchanged unless superseded.
+    immutable_fields:
+    - provenance.raw_input_ref
+    - provenance.origin_channel
+    - provenance.trace_signature
+    - supersedes.superseded_id
+    supersession_rules:
+    - A node may supersede only nodes of equal or lower semantic specificity for the same lineage.
+    - Supersession sets status = superseded for replaced nodes and status = inferred or confirmed for
+      replacing node.
+    - Supersession is only valid when provenance includes all replaced node ids and replacement lineage
+      references.
+    status_review_guard:
+    - status `promoted` is only a terminal review metadata state and must remain pre-canonical.
+    - status `promoted` does not alter phase without a separate transition decision.
+  axis_updates:
+  - status updates are append-only events in the node record; history must preserve prior status values.
+  - authority updates are logged with source actor and rationale; replacing provenance without review
+    is forbidden.
+  examples:
+  - name: Fragment to draft traceability
+    description: One raw_input maps to two intent_fragments, and each fragment is retained via provenance.source_refs
+      into one intent_draft without dropping lineage.
+  - name: Proposal context preservation
+    description: A proposal promoted for review keeps phase/provenance/status lines from draft lineage
+      so a reviewer can inspect whether confidence changed from inferred to review_ready through explicit
+      evidence.
+  - name: Supersession without mutation
+    description: A later intent_draft supersedes an earlier one for the same concern, marks prior status
+      as superseded, and keeps provenance roots immutable.
