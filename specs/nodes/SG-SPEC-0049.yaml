@@ -1,0 +1,184 @@
+id: SG-SPEC-0049
+title: SpecGraph - Subtree Shape and Lower-Boundary Handoff Signals
+kind: spec
+status: reviewed
+maturity: 0.4
+depends_on: []
+refines:
+- SG-SPEC-0003
+inputs:
+- specs/nodes/SG-SPEC-0003.yaml
+- tasks.md
+outputs:
+- specs/nodes/SG-SPEC-0049.yaml
+allowed_paths:
+- specs/nodes/SG-SPEC-0049.yaml
+acceptance:
+- Defines SG-SPEC-0049 as the bounded derived-signal child under SG-SPEC-0003 for subtree shape and lower-boundary
+  handoff interpretation.
+- Defines first derived subtree-shape signals for serial ladders, over-atomized subtrees, missing aggregate
+  grouping, depth without breadth, and delegation-only chains.
+- Defines lower-boundary handoff signals, their distinction from subtree-shape pressure, and their non-canonical
+  meaning so further graph decomposition can be redirected without introducing a tracked Tech Spec layer.
+- Defines how evaluator and supervisor may consume these signals as advisory penalties, rebalance or handoff
+  hints, and proposal-first triggers while leaving formulas, thresholds, queue-control truth tables, and
+  tracked-layer design out of scope.
+acceptance_evidence:
+- criterion: Defines SG-SPEC-0049 as the bounded derived-signal child under SG-SPEC-0003 for subtree shape
+    and lower-boundary handoff interpretation.
+  evidence: specification.objective, specification.scope.in, and specification.parent_contract define
+    SG-SPEC-0049 as the delegated child for this signal slice beneath SG-SPEC-0003.
+- criterion: Defines first derived subtree-shape signals for serial ladders, over-atomized subtrees, missing
+    aggregate grouping, depth without breadth, and delegation-only chains.
+  evidence: specification.signal_families.subtree_shape enumerates serial_refinement_ladder, over_atomized_subtree,
+    missing_aggregate_node, depth_without_breadth, and delegation_only_chain with bounded indicative evidence
+    for each.
+- criterion: Defines lower-boundary handoff signals, their distinction from subtree-shape pressure, and
+    their non-canonical meaning so further graph decomposition can be redirected without introducing a
+    tracked Tech Spec layer.
+  evidence: specification.signal_families.lower_boundary_handoff, specification.derivation_contract.family_distinction,
+    specification.derivation_contract.no_conflation_rules, and specification.signal_policy define lower_boundary_handoff_candidate
+    and graph_layer_exhausted_for_subtree as derived, rebuildable signals that remain distinguishable
+    from regrouping pressure and question further canonical decomposition without creating a tracked implementation-facing
+    layer.
+- criterion: Defines how evaluator and supervisor may consume these signals as advisory penalties, rebalance
+    or handoff hints, and proposal-first triggers while leaving formulas, thresholds, queue-control truth
+    tables, and tracked-layer design out of scope.
+  evidence: specification.consumer_contract defines evaluator and supervisor usage boundaries, while specification.scope.out
+    excludes formulas, thresholds, queue-control semantics, and tracked-layer design.
+prompt: Materialize SG-SPEC-0049 as the bounded child beneath SG-SPEC-0003 for derived subtree-shape and
+  lower-boundary handoff signals. It should let evaluator and supervisor consume advisory graph-health
+  signals for over-serialized or graph-layer-exhausted subtrees without introducing a tracked Tech Spec
+  layer or concrete scoring formulas.
+specification:
+  objective: Define the bounded derived signal contract for subtree-shape pathologies and lower-boundary
+    handoff detection so SG-SPEC-0003 can delegate detailed signal semantics without expanding canonical
+    ontology into tracked implementation-layer design.
+  scope:
+    in:
+    - Derived signal families for subtree shape over bounded canonical subtrees
+    - Derived lower-boundary handoff signals for subtrees whose remaining detail is no longer graph-native
+    - Derivation boundary between regrouping pressure and lower-boundary handoff pressure
+    - Advisory consumer contract for evaluator and supervisor
+    - Non-canonical persistence and proposal-first redirection boundary for these signals
+    out:
+    - Numeric formulas, scoring weights, or hard thresholds
+    - Automatic canonical rewrites, lifecycle transitions, or authority expansion
+    - Tracked Tech Spec layer, Tech Spec schema, or implementation-task management
+    - Queue-control semantics, continuation-selection truth tables, or viewer UX
+  terminology:
+    subtree_shape_signal: A derived graph-health signal about the navigability and grouped readability
+      of a bounded canonical subtree rather than the atomicity of one node.
+    lower_boundary_handoff_signal: A derived graph-health signal that a bounded subtree has likely captured
+      its graph-native structure and that further decomposition would mostly express implementation-facing
+      detail.
+    graph_native_aggregate_concern: A concern whose next useful refinement still improves the graph as
+      a concept map by introducing a readable aggregate or sibling grouping rather than a mostly serial
+      technical ladder.
+    handoff_candidate_artifact: A derived proposal or external-facing handoff artifact that may be suggested
+      when lower_boundary_handoff_signal pressure persists, without itself becoming canonical graph truth.
+  signal_families:
+    subtree_shape:
+    - signal: serial_refinement_ladder
+      meaning: A subtree is becoming mostly one vertical refinement path and is losing readable sibling
+        grouping.
+      indicative_evidence:
+      - one-child `refines` chains keep growing across the same bounded region
+      - breadth does not emerge as depth grows
+      - intermediate nodes primarily restate delegation or handoff boundaries
+    - signal: over_atomized_subtree
+      meaning: Local atomicity has become too fine-grained for practical subtree comprehension.
+      indicative_evidence:
+      - many nodes have very small bounded payloads
+      - the subtree is deeper than it is broad
+      - no stable grouped cluster makes the region readable as one concern
+    - signal: missing_aggregate_node
+      meaning: Related child concerns are present or implied, but no stable aggregate node groups them
+        into one readable cluster.
+      indicative_evidence:
+      - a readable cluster would benefit from one aggregate parent but no such node exists
+      - sibling grouping is absent despite recurring related children or repeated delegation
+    - signal: depth_without_breadth
+      meaning: Depth is growing faster than effective breadth in a way that suggests serialization pressure.
+      indicative_evidence:
+      - subtree depth outpaces effective breadth across the same region
+      - one-child internal nodes dominate the path
+    - signal: delegation_only_chain
+      meaning: Consecutive nodes mostly define ownership or handoff boundaries rather than distinct concept
+        groups.
+      indicative_evidence:
+      - neighboring nodes repeat parent-child delegation language with little new grouping value
+      - boundary-only or routing-only text dominates a serial chain
+    lower_boundary_handoff:
+    - signal: lower_boundary_handoff_candidate
+      meaning: A subtree has likely reached the lower boundary of useful graph-native refinement and should
+        prefer proposal-first handoff or stop-or-redirect behavior over another canonical child unless
+        a new aggregate concern appears.
+      indicative_evidence:
+      - subtree-shape signals recur in the same bounded region
+      - remaining unresolved detail is increasingly execution-facing, sequencing-facing, payload-facing,
+        or field-facing
+      - new candidate children would mostly narrow technical mechanics rather than introduce graph-native
+        aggregate structure
+    - signal: graph_layer_exhausted_for_subtree
+      meaning: Further canonical decomposition would mainly serialize implementation detail and no longer
+        improve the graph as a readable concept map.
+      indicative_evidence:
+      - local atomicity improves while subtree readability worsens
+      - sibling grouping stops emerging
+      - the subtree is more useful as handoff context than as another graph-native branch
+  derivation_contract:
+    bounded_region_rules:
+    - A derived signal instance must be attributable to one bounded canonical subtree or bounded path
+      segment rather than to the graph as a whole.
+    - Derivation may combine canonical subtree shape with bounded run-context observations about the type
+      of unresolved detail that remains.
+    family_distinction:
+    - Subtree-shape signals indicate weak graph-native grouping and still leave room for regrouping, aggregate-node
+      creation, or sibling rebalance within the graph.
+    - lower_boundary_handoff_candidate is appropriate only when subtree-shape pressure coexists with evidence
+      that the next useful detail is no longer primarily graph-native.
+    - graph_layer_exhausted_for_subtree is appropriate only when additional canonical decomposition is
+      unlikely to restore readable sibling grouping or aggregate structure within the same bounded region.
+    no_conflation_rules:
+    - missing_aggregate_node by itself is not evidence that the graph layer is exhausted if a graph_native_aggregate_concern
+      can still be named.
+    - delegation_only_chain or serial_refinement_ladder by themselves are not evidence that implementation-facing
+      handoff is correct unless the remaining unresolved detail has crossed the lower graph-native boundary.
+    - Lower-boundary handoff signals remain advisory and proposal-first even when graph_layer_exhausted_for_subtree
+      is present.
+  signal_policy:
+  - Subtree-shape and lower-boundary handoff signals are derived from canonical graph state plus bounded
+    run context; they are rebuildable and non-canonical.
+  - These signals evaluate subtree quality and graph-layer exhaustion, not single-node validity or acceptance.
+  - Lower-boundary handoff signals may use subtree-shape signals as inputs, but shape problems and handoff
+    readiness are not identical and must remain distinguishable.
+  - A lower-boundary handoff signal does not imply that a tracked Tech Spec layer exists or must be materialized;
+    it only indicates that further canonical graph refinement should be questioned.
+  consumer_contract:
+    evaluator:
+    - Repeated subtree-shape signals may penalize continuing ordinary refinement along the same one-child
+      ladder and may favor aggregate regrouping, sibling clustering, or retrospective subtree rebalance.
+    - Lower-boundary handoff signals may prefer stop or redirect behavior, explicit proposal emission,
+      or handoff-oriented follow-up rather than deeper canonical decomposition.
+    supervisor:
+    - Supervisor may surface these signals in run artifacts, summaries, and derived proposal or refactor
+      queues under SG-SPEC-0003's first-persistence rules.
+    - Supervisor may use these signals to avoid materializing another canonical child when the remaining
+      concern is not graph-native under current policy.
+    - Supervisor must not treat these signals as authorization to create a tracked implementation layer,
+      bypass review, or mutate canonical specs without an allowed direct or proposal path.
+  parent_contract:
+  - SG-SPEC-0003 retains shared graph-health vocabulary, first-persistence rules, and governance boundary
+    for graph-health-derived actions.
+  - SG-SPEC-0049 owns the detailed subtree-shape and lower-boundary handoff signal families beneath that
+    boundary.
+  - SG-SPEC-0049 does not redefine continuation-selection mechanics owned by SG-SPEC-0026 or queue-control
+    semantics owned by SG-SPEC-0034.
+gate_state: none
+proposed_status: null
+proposed_maturity: null
+required_human_action: '-'
+last_gate_decision: approve
+last_gate_note: ''
+last_gate_at: '2026-04-14T22:23:11.575662+00:00'
