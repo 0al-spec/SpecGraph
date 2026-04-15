@@ -93,6 +93,67 @@ GRAPH_LAYER_EXHAUSTED_CHAIN_THRESHOLD = 5
 SUBTREE_SHAPE_MIN_SINGLE_CHILD_RATIO = 0.75
 OVER_ATOMIZED_ACCEPTANCE_MAX = 3
 TEXT_MARKER_RATIO_THRESHOLD = 0.5
+SEMANTIC_ACCEPTANCE_STOPWORDS = {
+    "a",
+    "an",
+    "and",
+    "are",
+    "as",
+    "be",
+    "by",
+    "do",
+    "for",
+    "from",
+    "how",
+    "in",
+    "into",
+    "is",
+    "it",
+    "of",
+    "on",
+    "or",
+    "that",
+    "the",
+    "this",
+    "to",
+    "use",
+    "uses",
+    "using",
+    "via",
+    "with",
+    "without",
+    "define",
+    "defines",
+    "defined",
+    "keep",
+    "keeps",
+    "kept",
+    "ensure",
+    "ensures",
+    "ensured",
+    "require",
+    "requires",
+    "required",
+    "support",
+    "supports",
+    "supported",
+    "allow",
+    "allows",
+    "allowed",
+    "remain",
+    "remains",
+    "remaining",
+    "provide",
+    "provides",
+    "provided",
+    "spec",
+    "specs",
+    "node",
+    "nodes",
+    "child",
+    "children",
+    "parent",
+}
 APPLICABLE_PROPOSAL_STATUSES = {"proposed", "review_pending", "pending_review", "approved"}
 BLOCKING_GATE_STATES = {
     "review_pending",
@@ -113,6 +174,9 @@ COMPLETION_STATUS_OK = "ok"
 COMPLETION_STATUS_PROGRESSED = "progressed"
 COMPLETION_STATUS_FAILED = "failed"
 SPEC_ID_PATTERN = re.compile(r"^SG-SPEC-(\d+)$")
+SEMANTIC_WORD_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9_-]*")
+BACKTICK_TOKEN_RE = re.compile(r"`([^`]+)`")
+UPPER_IDENTIFIER_RE = re.compile(r"\b[A-Z]{2,}(?:-[A-Z0-9]+)+\b")
 CHILD_EXECUTOR_MODEL = "gpt-5.4"
 CHILD_EXECUTOR_REASONING_EFFORT = "xhigh"
 CHILD_EXECUTOR_APPROVAL_POLICY = "never"
@@ -2194,6 +2258,8 @@ Rules:
 - Preserve stable IDs and terminology.
 - Do not edit files outside allowed paths.
 - Keep acceptance_evidence aligned 1:1 with acceptance criteria.
+- Ground each acceptance_evidence item in the matching criterion using the same
+  concrete terms, identifiers, or outcome; avoid placeholder evidence text.
 - If blocked, stop and explain blocker clearly.
 - Print RUN_OUTCOME and BLOCKER to stdout only; never write them into edited files.
 - End with exactly two machine-readable lines:
@@ -2284,8 +2350,102 @@ def validate_acceptance_evidence(node_data: dict[str, Any]) -> list[str]:
 
     errors: list[str] = []
     for idx, item in enumerate(evidence, start=1):
+        if isinstance(item, dict):
+            criterion_text = str(item.get("criterion", "")).strip()
+            evidence_text = str(item.get("evidence", "")).strip()
+            if not criterion_text:
+                errors.append(f"acceptance_evidence[{idx}].criterion must be non-empty")
+            if not evidence_text:
+                errors.append(f"acceptance_evidence[{idx}].evidence must be non-empty")
+            continue
         if not str(item).strip():
             errors.append(f"acceptance_evidence[{idx}] must be non-empty")
+    return errors
+
+
+def semantic_text_tokens(text: str, *, min_len: int = 4) -> set[str]:
+    lowered = str(text).lower()
+    tokens = {
+        token
+        for token in SEMANTIC_WORD_RE.findall(lowered)
+        if len(token) >= min_len and token not in SEMANTIC_ACCEPTANCE_STOPWORDS
+    }
+    for token in BACKTICK_TOKEN_RE.findall(str(text)):
+        normalized = token.strip().lower()
+        if normalized:
+            tokens.add(normalized)
+    for token in UPPER_IDENTIFIER_RE.findall(str(text)):
+        normalized = token.strip().lower()
+        if normalized:
+            tokens.add(normalized)
+    return tokens
+
+
+def acceptance_evidence_text(item: Any) -> tuple[str, str]:
+    if isinstance(item, dict):
+        return (
+            str(item.get("criterion", "")).strip(),
+            str(item.get("evidence", "")).strip(),
+        )
+    return "", str(item).strip()
+
+
+def acceptance_evidence_semantically_grounded(
+    *,
+    criterion: str,
+    evidence_item: Any,
+) -> bool:
+    evidence_criterion, evidence_text = acceptance_evidence_text(evidence_item)
+    if not evidence_text:
+        return False
+
+    criterion_text = str(criterion).strip()
+    if not criterion_text:
+        return True
+
+    if evidence_criterion and evidence_criterion != criterion_text:
+        return False
+
+    criterion_tokens = semantic_text_tokens(criterion_text)
+    if not criterion_tokens:
+        criterion_tokens = semantic_text_tokens(criterion_text, min_len=2)
+        if not criterion_tokens:
+            normalized_criterion = " ".join(SEMANTIC_WORD_RE.findall(criterion_text.lower()))
+            normalized_evidence = " ".join(SEMANTIC_WORD_RE.findall(evidence_text.lower()))
+            return bool(normalized_criterion and normalized_criterion in normalized_evidence)
+
+    evidence_tokens = semantic_text_tokens(evidence_text)
+    if not evidence_tokens:
+        evidence_tokens = semantic_text_tokens(evidence_text, min_len=2)
+    return bool(criterion_tokens & evidence_tokens)
+
+
+def validate_acceptance_evidence_semantics(node_data: dict[str, Any]) -> list[str]:
+    acceptance = node_data.get("acceptance")
+    evidence = node_data.get("acceptance_evidence")
+    if not isinstance(acceptance, list) or not isinstance(evidence, list):
+        return []
+    if len(acceptance) != len(evidence):
+        return []
+
+    errors: list[str] = []
+    for idx, criterion in enumerate(acceptance, start=1):
+        criterion_text = str(criterion).strip()
+        evidence_item = evidence[idx - 1]
+        evidence_criterion, _evidence_text = acceptance_evidence_text(evidence_item)
+        if evidence_criterion and evidence_criterion != criterion_text:
+            errors.append(
+                f"acceptance_evidence[{idx}].criterion must match acceptance[{idx}] exactly"
+            )
+            continue
+        if not acceptance_evidence_semantically_grounded(
+            criterion=criterion_text,
+            evidence_item=evidence_item,
+        ):
+            errors.append(
+                f"acceptance_evidence[{idx}] must semantically ground acceptance[{idx}] "
+                "using criterion terms, identifiers, or a concrete outcome"
+            )
     return errors
 
 
@@ -2777,6 +2937,8 @@ def validate_changed_spec_nodes(
         }
         if requires_acceptance_evidence:
             acceptance_errors = validate_acceptance_evidence(spec.data)
+            if not acceptance_errors:
+                acceptance_errors.extend(validate_acceptance_evidence_semantics(spec.data))
         output_errors = validate_outputs(spec, base_dir=worktree_path)
         rel_path = spec.path.relative_to(worktree_path).as_posix()
         errors.extend(f"{rel_path}: {error}" for error in status_errors)
@@ -4015,12 +4177,23 @@ def proposal_evidence_for_index(
     *,
     acceptance_index: int,
     proposal_id: str,
+    acceptance_text: str,
 ) -> Any:
     if 0 < acceptance_index <= len(evidence_items):
         existing = evidence_items[acceptance_index - 1]
-        if str(existing).strip():
+        if acceptance_evidence_semantically_grounded(
+            criterion=acceptance_text,
+            evidence_item=existing,
+        ):
             return existing
-    return f"Retained from applied split proposal {proposal_id} for acceptance [{acceptance_index}]"
+    criterion_text = str(acceptance_text).strip()
+    return {
+        "criterion": criterion_text,
+        "evidence": (
+            f"Applied split proposal {proposal_id} mapped acceptance [{acceptance_index}] "
+            f"for {criterion_text} into this canonical node."
+        ),
+    }
 
 
 def validate_split_proposal_application_target(
@@ -4132,6 +4305,7 @@ def apply_split_proposal_to_worktree(
             evidence_items,
             acceptance_index=int(item["acceptance_index"]),
             proposal_id=str(proposal_artifact["id"]),
+            acceptance_text=str(item["acceptance_text"]).strip(),
         )
         for item in parent_retained
     ]
@@ -4160,6 +4334,7 @@ def apply_split_proposal_to_worktree(
                 evidence_items,
                 acceptance_index=int(item["acceptance_index"]),
                 proposal_id=str(proposal_artifact["id"]),
+                acceptance_text=str(item["acceptance_text"]).strip(),
             )
             for item in assigned_acceptance
         ]
