@@ -29,7 +29,8 @@ acceptance_evidence:
   evidence: specification.axis_model.phase.value_space, specification.axis_model.status.value_space, specification.axis_model.authority.value_space,
     specification.axis_model.confidence.value_space, specification.axis_model.provenance.value_space,
     specification.axis_model.context_tags.value_space, and specification.axis_model.supersedes.value_space
-    enumerate explicit values for Intent, IntentFragment, IntentDraft, and Proposal nodes.
+    plus specification.axis_model.supersedes.required_fields enumerate explicit values and replacement-shape
+    requirements for Intent, IntentFragment, IntentDraft, and Proposal nodes.
 - criterion: Defines traceability rules so those axis fields remain explainable from raw_input to IntentFragment
     to IntentDraft to Proposal without invoking promotion boundary logic.
   evidence: specification.axis_traceability.event_stream and specification.axis_traceability.axioms require
@@ -38,8 +39,9 @@ acceptance_evidence:
 - criterion: Defines axis-consistency constraints that preserve orthogonality and reviewability, including
     immutable provenance roots and provenance-aware supersession, before any canonical materialization.
   evidence: specification.axis_consistency.orthogonality_constraints, specification.axis_consistency.immutable_fields,
-    and specification.axis_consistency.supersession_rules require non-rewrite provenance roots, independent
-    axis mutation, and supersede-only replacement of prior pre-spec nodes.
+    specification.axis_consistency.supersession_rules, and specification.axis_updates require non-rewrite
+    provenance roots, independent axis mutation, write-once supersedes anchors, and supersede-only replacement
+    of prior pre-spec nodes.
 - criterion: Keeps concrete promotion boundaries, Proposal->SpecDraft review requirements, non-silent
     transition constraints, memory consultation policy, operator-request runtime semantics, proposal-lane
     persistence, GUI protocol, and storage layout out of scope.
@@ -151,17 +153,23 @@ specification:
       merge_rule: union
     supersedes:
       value_space:
-      - null
-      - superseded_id
-      - superseded_reason
-      - superseded_at
-      - replacing_node
+      - none
+      - replaces
       required_fields:
-      - superseded_id
-      - replacing_node
+        none: []
+        replaces:
+        - superseded_id
+        - superseded_by
+        - superseded_reason
+        - superseded_at
       default_for:
-        superseded: null
-        else: null
+        default: none
+      notes:
+      - none means no active replacement edge
+      - replaces means this node explicitly replaces one prior node in the same lineage family
+      - superseded_id and superseded_by refs are immutable and cannot be cleared once set
+      - status semantics remain orthogonal to supersedes values; a replacing node may still be inferred,
+        confirmed, review_ready, or superseded
   axis_traceability:
     event_stream:
     - link: raw_input -> intent_fragment
@@ -195,9 +203,12 @@ specification:
     - provenance.raw_input_ref
     - provenance.origin_channel
     - provenance.trace_signature
-    - supersedes.superseded_id
+    - supersedes.superseded_id (when non-null)
+    - supersedes.superseded_at (when non-null)
     supersession_rules:
     - A node may supersede only nodes of equal or lower semantic specificity for the same lineage.
+    - 'A valid supersedes edge requires `supersedes: replaces` and all required_fields set in the same
+      revision.'
     - Supersession sets status = superseded for replaced nodes and status = inferred or confirmed for
       replacing node.
     - Supersession is only valid when provenance includes all replaced node ids and replacement lineage
@@ -209,6 +220,8 @@ specification:
   - status updates are append-only events in the node record; history must preserve prior status values.
   - authority updates are logged with source actor and rationale; replacing provenance without review
     is forbidden.
+  - 'supersedes updates are write-once; once a node is marked `supersedes: replaces`, both superseded_id
+    and superseded_at are immutable unless a new immutable revision is created.'
   examples:
   - name: Fragment to draft traceability
     description: One raw_input maps to two intent_fragments, and each fragment is retained via provenance.source_refs

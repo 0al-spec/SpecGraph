@@ -5,6 +5,7 @@ status: specified
 maturity: 0.35
 depends_on:
 - SG-SPEC-0051
+- SG-SPEC-0052
 relates_to:
 - SG-SPEC-0006
 - SG-SPEC-0009
@@ -13,6 +14,7 @@ refines:
 inputs:
 - specs/nodes/SG-SPEC-0007.yaml
 - specs/nodes/SG-SPEC-0051.yaml
+- specs/nodes/SG-SPEC-0052.yaml
 - specs/nodes/SG-SPEC-0009.yaml
 - specs/nodes/SG-SPEC-0006.yaml
 - docs/proposals/0002_intent_layer.md
@@ -27,8 +29,9 @@ acceptance:
   declarations rather than canonical graph truth
 - Defines IntentFragment and IntentDraft as the minimal observed-intent path between raw user input and
   later Proposal or SpecDraft material
-- Defines orthogonal pre-spec axes for phase, status, authority, confidence, provenance, context_tags,
-  and supersedes so assistant-generated draft declarations remain inspectable and non-magical
+- Declares orthogonal pre-spec axes for phase, status, authority, confidence, provenance, context_tags,
+  and supersedes, and delegates their concrete value spaces plus traceability semantics to child SG-SPEC-0052
+  so assistant-generated draft declarations remain inspectable and non-magical
 - Delegates the concrete promotion boundary between IntentDraft, Proposal, SpecDraft, and canonical materialization
   to child SG-SPEC-0051, including explicit Proposal->SpecDraft review and non-silent promotion constraints
 - Keeps memory consultation policy, operator-request execution steering, tracked proposal-lane persistence,
@@ -44,10 +47,12 @@ acceptance_evidence:
   evidence: specification.terminology defines intent_fragment and intent_draft, and specification.observation_model
     defines the path raw_input -> IntentFragment -> IntentDraft together with the rule that one draft
     may synthesize multiple fragments plus linked constraints, questions, or hypotheses.
-- criterion: Defines orthogonal pre-spec axes for phase, status, authority, confidence, provenance, context_tags,
-    and supersedes so assistant-generated draft declarations remain inspectable and non-magical
-  evidence: specification.node_axes defines phase, status, authority, confidence, provenance, context_tags,
-    and supersedes as explicit axes adjacent to kind, and specification.boundary_policy.assistant_visibility
+- criterion: Declares orthogonal pre-spec axes for phase, status, authority, confidence, provenance, context_tags,
+    and supersedes, and delegates their concrete value spaces plus traceability semantics to child SG-SPEC-0052
+    so assistant-generated draft declarations remain inspectable and non-magical
+  evidence: specification.node_axes.retained_parent_role keeps phase, status, authority, confidence, provenance,
+    context_tags, and supersedes as explicit review axes adjacent to kind, specification.node_axes.delegated_to
+    assigns concrete value spaces, defaulting rules, and traceability semantics to SG-SPEC-0052, and specification.boundary_policy.assistant_visibility
     requires assistant-generated nodes to preserve those axes so review can distinguish inferred draft
     material from user-originated or promoted artifacts.
 - criterion: Delegates the concrete promotion boundary between IntentDraft, Proposal, SpecDraft, and canonical
@@ -66,9 +71,10 @@ acceptance_evidence:
 prompt: Define the first canonical child under SG-SPEC-0007 for the pre-spec semantic layer. Keep it focused
   on Intent, Hypothesis, Proposal, IntentFragment, IntentDraft, orthogonal provenance or authority axes,
   and promotion boundaries into Proposal or SpecDraft. Delegate explicit Proposal->SpecDraft review and
-  non-silent transition constraints to child SG-SPEC-0051. Do not define project-memory consultation policy,
-  operator-request runtime execution semantics, tracked proposal-lane storage, GUI protocol, or repository
-  layout here.
+  non-silent transition constraints to child SG-SPEC-0051, and delegate concrete orthogonal axis value
+  spaces plus traceability semantics to child SG-SPEC-0052. Do not define project-memory consultation
+  policy, operator-request runtime execution semantics, tracked proposal-lane storage, GUI protocol, or
+  repository layout here.
 specification:
   objective: Define the minimal graph-native semantic layer that captures observable pre-spec intent formation
     before canonical spec or proposal promotion.
@@ -103,27 +109,14 @@ specification:
     spec_draft: A reviewable pre-canonical draft of later specification shape that may be promoted only
       from confirmed or explicitly reviewed pre-spec material.
   node_axes:
-    phase:
-    - pre-spec nodes must remain distinguishable from canonical intent, canonical spec, and runtime artifact
-      phases.
-    - The pre-spec layer may remain visible even when later canonical artifacts are created from the same
-      underlying concern.
-    status:
-    - Pre-spec nodes may be inferred, confirmed, superseded, rejected, deferred, or promoted.
-    - Status remains review semantics and must not be conflated with canonical lifecycle status.
-    authority:
-    - authority records whether a node is human-originated, assistant-inferred, mediator-normalized, or
-      otherwise reviewable pre-canonical material.
-    confidence:
-    - confidence may express how stable or provisional a draft interpretation currently is.
-    provenance:
-    - provenance must retain the source utterances, graph elements, or other declared precursor artifacts
-      that produced the pre-spec node.
-    context_tags:
-    - context_tags may express view or situational lenses without becoming separate primary semantic kinds.
-    supersedes:
-    - supersedes may relate later drafts or decisions to earlier pre-spec declarations without implying
-      canonical promotion.
+    delegated_to: SG-SPEC-0052
+    retained_parent_role:
+    - phase, status, authority, confidence, provenance, context_tags, and supersedes remain explicit review
+      axes adjacent to pre-spec kind, not separate primary semantic kinds.
+    - The parent only establishes that these axes exist for pre-spec nodes and must remain inspectable
+      through review.
+    - Concrete value spaces, defaulting rules, traceability requirements, and supersession immutability
+      semantics are delegated to SG-SPEC-0052.
   observation_model:
     fragment_rules:
     - intent_fragment is the smallest extracted semantic unit that still carries observable intent meaning.
@@ -144,9 +137,10 @@ specification:
   - intent_draft derived_from raw_input or precursor graph context
   promotion_pipeline:
     delegated_to: SG-SPEC-0051
-    delegation_note: SG-SPEC-0050 defines pre-spec semantic kinds and orthogonal axes; SG-SPEC-0051 governs
-      the concrete pre-spec promotion gates, non-silent transition requirements, and explicit Proposal->SpecDraft
-      review before canonical materialization.
+    delegation_note: SG-SPEC-0050 defines pre-spec semantic kinds and aggregate adjacency; SG-SPEC-0051
+      governs the concrete pre-spec promotion gates, non-silent transition requirements, and explicit
+      Proposal->SpecDraft review before canonical materialization, while SG-SPEC-0052 governs concrete
+      orthogonal axis value spaces and traceability semantics.
   boundary_policy:
     pre_canonical_status:
     - Pre-spec nodes are reviewable declarations, not canonical graph truth.
