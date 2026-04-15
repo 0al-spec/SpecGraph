@@ -1,8 +1,8 @@
 id: SG-SPEC-0051
 title: SpecGraph - Pre-Spec Promotion Boundaries for Proposal, SpecDraft, and Canonical Materialization
 kind: spec
-status: specified
-maturity: 0.15
+status: linked
+maturity: 0.35
 depends_on: []
 relates_to: []
 refines:
@@ -102,11 +102,21 @@ specification:
       - no shortcut from proposal or intent_draft is permitted
   promotion_records:
     transition_record_required:
-    - Every promotion_edge must carry an explicit transition record.
-    - A transition record must include reviewer_or_decider, decision_timestamp, outcome, rationale, source_ref,
-      target_ref, and transition identifier.
-    - A transition with outcome other than `approved` is blocked from entering the next materialization
-      stage.
+      any_transition_requires_record: true
+      mandatory_record_fields:
+      - transition_record_id
+      - transition_identifier
+      - reviewer_or_decider
+      - decision_timestamp
+      - outcome
+      - rationale
+      - source_ref
+      - target_ref
+      non_silent_gating:
+      - A promotion_edge without a complete transition record is invalid and rejected.
+      - A transition with outcome `approved` is required to enter the next materialization stage.
+      - Any outcome other than `approved` (`rejected`, `needs_revision`, `cancelled`) does not satisfy
+        promotion gating and cannot advance the artifact stage.
   transition_checks:
   - If `proposal -> spec_draft` is attempted without approved review, the promotion edge is rejected.
   - If `spec_draft -> canonical_artifact` lacks a complete transition record, the canonical materialization
@@ -124,4 +134,11 @@ specification:
     description: An IntentDraft or Proposal cannot jump directly to canonical artifacts; the path must
       pass through review-gated SpecDraft.
 gate_state: none
+proposed_status: null
+proposed_maturity: null
 required_human_action: '-'
+last_worktree_path: ''
+last_branch: ''
+last_gate_decision: approve
+last_gate_note: ''
+last_gate_at: '2026-04-15T22:07:38.836504+00:00'
