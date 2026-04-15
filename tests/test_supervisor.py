@@ -6285,6 +6285,72 @@ def test_resolve_gate_approve_rejects_stale_worktree_candidate(
     assert "last_gate_decision" not in updated
 
 
+def test_resolve_gate_approve_rejects_missing_worktree_with_pending_content(
+    supervisor_module: object,
+    repo_fixture: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    missing_worktree = repo_fixture / ".worktrees" / "missing-gate-worktree"
+
+    data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    data["gate_state"] = "review_pending"
+    data["proposed_status"] = "specified"
+    data["proposed_maturity"] = 0.4
+    data["last_worktree_path"] = missing_worktree.as_posix()
+    data["last_changed_files"] = ["specs/nodes/SG-SPEC-0001.yaml"]
+    node_path.write_text(json.dumps(data), encoding="utf-8")
+
+    exit_code = supervisor_module.main(
+        resolve_gate="SG-SPEC-0001",
+        decision="approve",
+    )
+    assert exit_code == 1
+
+    err = capsys.readouterr().err
+    assert "review gate is stale" in err
+    assert "does not exist" in err
+
+    updated = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    assert updated["gate_state"] == "review_pending"
+    assert "last_gate_decision" not in updated
+
+
+def test_resolve_gate_approve_rejects_branch_mismatched_worktree(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    worktree = make_fake_worktree(repo_fixture)
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+
+    data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    data["gate_state"] = "review_pending"
+    data["proposed_status"] = "specified"
+    data["proposed_maturity"] = 0.4
+    data["last_worktree_path"] = worktree.as_posix()
+    data["last_branch"] = "codex/expected/branch"
+    data["last_changed_files"] = ["specs/nodes/SG-SPEC-0001.yaml"]
+    node_path.write_text(json.dumps(data), encoding="utf-8")
+
+    monkeypatch.setattr(
+        supervisor_module,
+        "list_registered_worktrees",
+        lambda: {worktree.resolve(): "codex/other/branch"},
+    )
+
+    exit_code = supervisor_module.main(
+        resolve_gate="SG-SPEC-0001",
+        decision="approve",
+    )
+    assert exit_code == 1
+
+    err = capsys.readouterr().err
+    assert "review gate is stale" in err
+    assert "does not match current worktree branch" in err
+
+
 def test_resolve_gate_approve_rejects_stale_additional_spec_candidate(
     supervisor_module: object,
     repo_fixture: Path,
@@ -6463,6 +6529,65 @@ def test_resolve_gate_retry_sets_retry_pending(
     updated = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
     assert updated["gate_state"] == "retry_pending"
     assert updated["proposed_status"] is None
+
+
+def test_main_lists_stale_runtime(
+    supervisor_module: object,
+    repo_fixture: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    missing_worktree = repo_fixture / ".worktrees" / "missing-gate-worktree"
+    orphan_worktree = repo_fixture / ".worktrees" / "orphan-worktree"
+    orphan_worktree.mkdir(parents=True)
+
+    data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    data["gate_state"] = "review_pending"
+    data["proposed_status"] = "specified"
+    data["last_worktree_path"] = missing_worktree.as_posix()
+    data["last_changed_files"] = ["specs/nodes/SG-SPEC-0001.yaml"]
+    node_path.write_text(json.dumps(data), encoding="utf-8")
+
+    exit_code = supervisor_module.main(list_stale_runtime=True)
+
+    assert exit_code == 0
+    out = capsys.readouterr().out
+    assert "Stale gate states:" in out
+    assert "SG-SPEC-0001" in out
+    assert "Stale worktrees:" in out
+    assert orphan_worktree.as_posix() in out
+
+
+def test_main_cleans_stale_runtime(
+    supervisor_module: object,
+    repo_fixture: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    missing_worktree = repo_fixture / ".worktrees" / "missing-gate-worktree"
+    orphan_worktree = repo_fixture / ".worktrees" / "orphan-worktree"
+    orphan_worktree.mkdir(parents=True)
+
+    data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    data["gate_state"] = "review_pending"
+    data["proposed_status"] = "specified"
+    data["proposed_maturity"] = 0.4
+    data["last_worktree_path"] = missing_worktree.as_posix()
+    data["last_changed_files"] = ["specs/nodes/SG-SPEC-0001.yaml"]
+    node_path.write_text(json.dumps(data), encoding="utf-8")
+
+    exit_code = supervisor_module.main(clean_stale_runtime=True)
+
+    assert exit_code == 0
+    out = capsys.readouterr().out
+    assert "No stale gate states or worktrees found." in out
+
+    updated = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    assert updated["gate_state"] == "retry_pending"
+    assert updated["required_human_action"] == "rerun supervisor"
+    assert updated["last_gate_decision"] == "stale_cleanup"
+    assert updated["last_worktree_path"] == ""
+    assert not orphan_worktree.exists()
 
 
 def test_main_fails_when_changed_file_outside_allowed_paths(
