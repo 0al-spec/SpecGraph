@@ -6590,6 +6590,44 @@ def test_main_cleans_stale_runtime(
     assert not orphan_worktree.exists()
 
 
+def test_main_does_not_clean_non_review_pending_stale_gate(
+    supervisor_module: object,
+    repo_fixture: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    missing_worktree = repo_fixture / ".worktrees" / "missing-split-worktree"
+
+    data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    data["gate_state"] = "split_required"
+    data["required_human_action"] = "split spec scope before rerun"
+    data["last_worktree_path"] = missing_worktree.as_posix()
+    data["last_changed_files"] = ["specs/nodes/SG-SPEC-0001.yaml"]
+    node_path.write_text(json.dumps(data), encoding="utf-8")
+
+    exit_code = supervisor_module.main(clean_stale_runtime=True)
+
+    assert exit_code == 0
+    out = capsys.readouterr().out
+    assert "No stale gate states or worktrees found." in out
+
+    updated = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    assert updated["gate_state"] == "split_required"
+    assert updated["required_human_action"] == "split spec scope before rerun"
+    assert updated["last_worktree_path"] == missing_worktree.as_posix()
+
+
+def test_main_rejects_dry_run_with_clean_stale_runtime(
+    supervisor_module: object,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    exit_code = supervisor_module.main(clean_stale_runtime=True, dry_run=True)
+
+    assert exit_code == 1
+    err = capsys.readouterr().err
+    assert "--dry-run cannot be combined with --clean-stale-runtime" in err
+
+
 def test_main_fails_when_changed_file_outside_allowed_paths(
     supervisor_module: object,
     repo_fixture: Path,

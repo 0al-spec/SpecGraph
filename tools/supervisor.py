@@ -4532,7 +4532,7 @@ def stale_gate_entries(
         registered_worktrees if registered_worktrees is not None else list_registered_worktrees()
     )
     for node in specs:
-        if node.gate_state not in BLOCKING_GATE_STATES:
+        if node.gate_state != "review_pending":
             continue
         issue = gate_worktree_freshness_issue(node, registered_worktrees=registered)
         if not issue:
@@ -6226,6 +6226,12 @@ def main(
         return 1
 
     if list_stale_runtime or clean_stale_runtime:
+        if clean_stale_runtime and dry_run:
+            print(
+                "--dry-run cannot be combined with --clean-stale-runtime",
+                file=sys.stderr,
+            )
+            return 1
         if any(
             (
                 resolve_gate,
