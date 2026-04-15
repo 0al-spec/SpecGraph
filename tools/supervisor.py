@@ -720,6 +720,9 @@ def linked_continuation_reasons(
     if unresolved_dependencies:
         reasons.append("weak_structural_linkage_candidate")
 
+    if spec.maturity >= 1.0 and reasons == ["weak_structural_linkage_candidate"]:
+        return []
+
     if spec.maturity < LINKED_CONTINUATION_MATURITY_THRESHOLD and reasons:
         reasons.insert(0, "latent_graph_improvement_candidate")
     return reasons

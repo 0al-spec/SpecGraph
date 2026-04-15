@@ -32,7 +32,3 @@ Task numbers are preserved for traceability across commits and PRs.
 34. [todo] Distinguish `UserIntent` and `OperatorRequest` from canonical `spec` and proposal-lane nodes.
 35. [todo] Add a bounded operator-request bridge so GUI selections and chat instructions can steer one supervisor run without mutating canonical specs directly.
 36. [todo] Define how mediator outputs become canonical specs or proposals through reviewable supervisor-driven refinement instead of raw chat-to-spec mutation.
-
-## Supervisor Runtime Hardening
-
-64. [todo] De-prioritize or suppress `linked_continuation` selection for `linked` specs already at `maturity: 1.0` when the only continuation signal is `weak_structural_linkage_candidate`, so long-running `--loop` batches do not burn iterations on effectively complete nodes like `SG-SPEC-0021` or the earlier `SG-SPEC-0005` case.
