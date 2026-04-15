@@ -4372,6 +4372,17 @@ def create_isolated_worktree(node_id: str) -> tuple[Path, str]:
     return worktree_path, branch
 
 
+def is_supervisor_managed_worktree_path(worktree_path: Path) -> bool:
+    candidate = Path(worktree_path).expanduser()
+    try:
+        candidate_resolved = candidate.resolve()
+        worktrees_root = WORKTREES_DIR.expanduser().resolve()
+        candidate_resolved.relative_to(worktrees_root)
+    except (FileNotFoundError, ValueError):
+        return False
+    return True
+
+
 def cleanup_isolated_worktree(worktree_path: Path, branch: str) -> None:
     """Remove one supervisor-created isolated worktree and its ephemeral branch.
 
@@ -4382,6 +4393,9 @@ def cleanup_isolated_worktree(worktree_path: Path, branch: str) -> None:
 
     worktree = Path(worktree_path).expanduser()
     branch_name = branch.strip()
+
+    if not is_supervisor_managed_worktree_path(worktree):
+        return
 
     if branch_name.startswith("sandbox/"):
         shutil.rmtree(worktree, ignore_errors=True)

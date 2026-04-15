@@ -6449,6 +6449,42 @@ def test_resolve_gate_approve_rejects_stale_worktree_candidate(
     assert "last_gate_decision" not in updated
 
 
+def test_resolve_gate_retry_skips_cleanup_for_path_outside_worktrees_dir(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    unsafe_dir = repo_fixture / "unsafe-retained-dir"
+    unsafe_dir.mkdir()
+
+    data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    data["gate_state"] = "review_pending"
+    data["proposed_status"] = "specified"
+    data["proposed_maturity"] = 0.4
+    data["last_worktree_path"] = unsafe_dir.as_posix()
+    data["last_branch"] = "codex/unsafe/branch"
+    node_path.write_text(json.dumps(data), encoding="utf-8")
+
+    def fail_subprocess_run(*_args: object, **_kwargs: object) -> subprocess.CompletedProcess[str]:
+        raise AssertionError("cleanup should skip subprocess calls for unsafe paths")
+
+    monkeypatch.setattr(subprocess, "run", fail_subprocess_run)
+
+    exit_code = supervisor_module.main(
+        resolve_gate="SG-SPEC-0001",
+        decision="retry",
+        note="unsafe path should not be removed",
+    )
+    assert exit_code == 0
+
+    assert unsafe_dir.exists()
+    updated = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    assert updated["gate_state"] == "retry_pending"
+    assert updated["last_worktree_path"] == ""
+    assert updated["last_branch"] == ""
+
+
 def test_resolve_gate_approve_rejects_missing_worktree_with_pending_content(
     supervisor_module: object,
     repo_fixture: Path,
