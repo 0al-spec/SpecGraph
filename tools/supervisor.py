@@ -789,6 +789,10 @@ def linked_continuation_reasons(
     if unresolved_dependencies:
         reasons.append("weak_structural_linkage_candidate")
 
+    last_gate_decision = str(spec.data.get("last_gate_decision", "")).strip().lower()
+    if last_gate_decision == "approve" and reasons == ["weak_structural_linkage_candidate"]:
+        return []
+
     if spec.maturity >= 1.0 and reasons == ["weak_structural_linkage_candidate"]:
         return []
 
@@ -4495,6 +4499,29 @@ def write_latest_summary(payload: dict[str, Any]) -> None:
     (RUNS_DIR / "latest-summary.md").write_text(summary, encoding="utf-8")
 
 
+def refresh_latest_summary_for_gate_resolution(node: SpecNode) -> None:
+    """Rewrite the latest summary to reflect the current gate decision state."""
+    run_id = str(node.data.get("last_run_id", "")).strip()
+    title = str(node.title).strip() or str(node.data.get("title", "")).strip() or node.id
+    before_status = str(node.data.get("proposed_status") or node.status)
+    payload = {
+        "run_id": run_id or "gate-resolution",
+        "spec_id": node.id,
+        "title": title,
+        "completion_status": COMPLETION_STATUS_OK,
+        "outcome": str(node.data.get("last_outcome", "")).strip() or "done",
+        "gate_state": str(node.data.get("gate_state", "")).strip() or "none",
+        "before_status": before_status,
+        "proposed_status": node.data.get("proposed_status"),
+        "final_status": node.status,
+        "validation_errors": list(node.data.get("last_errors", [])),
+        "executor_environment": {},
+        "required_human_action": str(node.data.get("required_human_action", "")).strip() or "-",
+        "exit_code": 0,
+    }
+    write_latest_summary(payload)
+
+
 def sanitize_for_git(value: str) -> str:
     slug = re.sub(r"[^a-zA-Z0-9._-]", "-", value).strip("-._").lower()
     return slug or "spec"
@@ -5376,6 +5403,7 @@ def resolve_gate_decision(
     node.data["last_gate_note"] = note
     node.data["last_gate_at"] = utc_now_iso()
     node.save()
+    refresh_latest_summary_for_gate_resolution(node)
 
     if retained_worktree_path is not None:
         cleanup_isolated_worktree(retained_worktree_path, retained_branch)
