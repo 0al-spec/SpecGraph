@@ -476,6 +476,8 @@ def test_create_child_codex_home_writes_minimal_config_and_copies_auth(
         assert 'sandbox_mode = "workspace-write"' in config_text
         assert "shell_snapshot = false" in config_text
         assert "multi_agent = false" in config_text
+        assert "plugins = false" in config_text
+        assert "general_analytics = false" in config_text
         assert (child_home / "auth.json").read_text(encoding="utf-8") == '{"token":"secret"}'
     finally:
         shutil.rmtree(child_home, ignore_errors=True)
@@ -563,6 +565,9 @@ def test_run_codex_uses_isolated_codex_home(
     assert captured["cwd"] == repo_fixture
     assert captured["env"]["CODEX_HOME"] == str(repo_fixture / ".fake-codex-home")
     assert "--ephemeral" in captured["cmd"]
+    disable_pairs = list(zip(captured["cmd"], captured["cmd"][1:], strict=False))
+    for feature in supervisor_module.CHILD_EXECUTOR_DISABLED_FEATURES:
+        assert ("--disable", feature) in disable_pairs
     assert captured["bypass_inner_sandbox"] is False
     assert captured["profile"].name == supervisor_module.AUTO_HEURISTIC_PROFILE_NAME
     assert captured["process"].wait_timeout == min(
