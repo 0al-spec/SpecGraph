@@ -2,8 +2,8 @@ id: SG-SPEC-0053
 title: SpecGraph - Primary Pre-Spec Kind Semantics for Intent, Hypothesis, Proposal, IntentFragment, and
   IntentDraft
 kind: spec
-status: linked
-maturity: 0.2
+status: reviewed
+maturity: 0.4
 depends_on: []
 relates_to: []
 refines:
@@ -25,11 +25,9 @@ acceptance:
   IntentFragment as minimal extracted signal, and IntentDraft as synthesized observed-intent object
 - Requires mixed pre-spec content to stay split by primary kind, so one node does not silently collapse
   intent, hypothesis, and proposal semantics into a single overloaded declaration
-- Keeps concrete Proposal->SpecDraft review, non-silent transition records, and canonical materialization
-  rules delegated to SG-SPEC-0051, and keeps orthogonal axis value spaces plus traceability semantics
-  delegated to SG-SPEC-0052
-- Keeps memory consultation policy, operator-request runtime execution, tracked proposal-lane persistence,
-  GUI protocol, and repository layout out of scope
+- Keeps concrete Proposal->SpecDraft review, non-silent transition records, canonical materialization
+  rules, orthogonal axis value spaces, traceability procedure definitions, and repository implementation
+  details out of scope, with delegated ownership left to SG-SPEC-0051 and SG-SPEC-0052
 acceptance_evidence:
 - criterion: Defines SG-SPEC-0053 as the bounded child under SG-SPEC-0050 for the detailed semantic roles
     of Intent, Hypothesis, Proposal, IntentFragment, and IntentDraft
@@ -54,17 +52,15 @@ acceptance_evidence:
     and specification.kind_separation.required_edges require one primary kind per node, preserve sibling
     nodes when mixed semantic families co-occur, and keep intent, hypothesis, and proposal semantics linked
     by explicit edges rather than collapsed into one overloaded declaration.
-- criterion: Keeps concrete Proposal->SpecDraft review, non-silent transition records, and canonical materialization
-    rules delegated to SG-SPEC-0051, and keeps orthogonal axis value spaces plus traceability semantics
-    delegated to SG-SPEC-0052
+- criterion: Keeps concrete Proposal->SpecDraft review, non-silent transition records, canonical materialization
+    rules, orthogonal axis value spaces, traceability procedure definitions, and repository implementation
+    details out of scope, with delegated ownership left to SG-SPEC-0051 and SG-SPEC-0052
   evidence: specification.scope.out excludes concrete Proposal->SpecDraft review, non-silent transition
-    records, canonical materialization rules, orthogonal axis value spaces, and traceability semantics,
-    and specification.adjacency_notes names SG-SPEC-0051 and SG-SPEC-0052 as the owning children for those
-    delegated concerns.
-- criterion: Keeps memory consultation policy, operator-request runtime execution, tracked proposal-lane
-    persistence, GUI protocol, and repository layout out of scope
-  evidence: specification.scope.out explicitly excludes project-memory consultation policy, operator-request
-    runtime execution semantics, tracked proposal-lane persistence, GUI protocol, and repository layout.
+    records, canonical materialization rules, orthogonal axis value spaces, traceability procedure definitions,
+    and repository implementation details; specification.boundary_rules delegates concrete Proposal->SpecDraft
+    review and canonical materialization to SG-SPEC-0051 and orthogonal axis value spaces plus traceability
+    semantics to SG-SPEC-0052; and specification.adjacency_notes names SG-SPEC-0051 and SG-SPEC-0052 as
+    the owning children for those delegated concerns.
 prompt: Define the bounded primary pre-spec kind semantics beneath SG-SPEC-0050 for Intent, Hypothesis,
   Proposal, IntentFragment, and IntentDraft. Clarify their semantic roles, immediate adjacency, and the
   minimal observed-intent path without defining concrete Proposal->SpecDraft review, axis value spaces,
@@ -83,10 +79,10 @@ specification:
     out:
     - Concrete Proposal->SpecDraft review gates, non-silent transition records, and canonical materialization
       rules
-    - Orthogonal axis value spaces, provenance record shapes, and traceability procedures
-    - Project-memory consultation policy or retrieval behavior
-    - Operator-request runtime steering or execution behavior
-    - Tracked proposal-lane persistence, GUI protocol, or repository layout
+    - Orthogonal axis value spaces, provenance record shapes, and traceability procedure definitions
+    - Repository implementation details including project-memory consultation policy or retrieval behavior,
+      operator-request runtime steering or execution behavior, tracked proposal-lane persistence, GUI
+      protocol, and repository layout
     - Model-specific natural-language interpretation algorithms
   terminology:
     intent: A normative declaration of what should become true, remain possible, be preserved, or be prevented.
@@ -193,3 +189,6 @@ proposed_maturity: null
 required_human_action: '-'
 last_worktree_path: ''
 last_branch: ''
+last_gate_decision: approve
+last_gate_note: ''
+last_gate_at: '2026-04-16T08:16:54.927459+00:00'

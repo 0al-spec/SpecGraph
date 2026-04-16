@@ -239,12 +239,14 @@ def test_build_codex_exec_command_uses_explicit_child_runtime_profile(
     assert supervisor_module.CHILD_EXECUTOR_MODEL in cmd
     assert "--sandbox" in cmd
     assert supervisor_module.CHILD_EXECUTOR_SANDBOX in cmd
-    assert "--ephemeral" in cmd
-    assert "--disable" in cmd
-    assert "shell_snapshot" in cmd
-    assert "multi_agent" in cmd
+    assert "--ephemeral" not in cmd
+    assert "--disable" not in cmd
     assert f'approval_policy="{supervisor_module.CHILD_EXECUTOR_APPROVAL_POLICY}"' in cmd
-    assert f'model_reasoning_effort="{supervisor_module.CHILD_EXECUTOR_REASONING_EFFORT}"' in cmd
+    assert (
+        f'model_reasoning_effort="'
+        f'{supervisor_module.codex_cli_reasoning_effort(supervisor_module.CHILD_EXECUTOR_REASONING_EFFORT)}"'
+        in cmd
+    )
     assert cmd[-1] == "Refine one bounded spec."
 
 
@@ -263,7 +265,10 @@ def test_build_codex_exec_command_uses_named_execution_profile(
 
     assert "--model" in cmd
     assert profile.model in cmd
-    assert f'model_reasoning_effort="{profile.reasoning_effort}"' in cmd
+    assert (
+        f'model_reasoning_effort="{supervisor_module.codex_cli_reasoning_effort(profile.reasoning_effort)}"'
+        in cmd
+    )
     assert "--sandbox" in cmd
     assert profile.sandbox in cmd
 
@@ -472,6 +477,7 @@ def test_create_child_codex_home_writes_minimal_config_and_copies_auth(
     try:
         config_text = (child_home / "config.toml").read_text(encoding="utf-8")
         assert 'model = "gpt-5.4"' in config_text
+        assert 'model_reasoning_effort = "high"' in config_text
         assert 'approval_policy = "never"' in config_text
         assert 'sandbox_mode = "workspace-write"' in config_text
         assert "shell_snapshot = false" in config_text
@@ -564,10 +570,8 @@ def test_run_codex_uses_isolated_codex_home(
     assert result.returncode == 0
     assert captured["cwd"] == repo_fixture
     assert captured["env"]["CODEX_HOME"] == str(repo_fixture / ".fake-codex-home")
-    assert "--ephemeral" in captured["cmd"]
-    disable_pairs = list(zip(captured["cmd"], captured["cmd"][1:], strict=False))
-    for feature in supervisor_module.CHILD_EXECUTOR_DISABLED_FEATURES:
-        assert ("--disable", feature) in disable_pairs
+    assert "--ephemeral" not in captured["cmd"]
+    assert "--disable" not in captured["cmd"]
     assert captured["bypass_inner_sandbox"] is False
     assert captured["profile"].name == supervisor_module.AUTO_HEURISTIC_PROFILE_NAME
     assert captured["process"].wait_timeout == min(
@@ -767,7 +771,11 @@ def test_run_codex_uses_explicit_fast_execution_profile(
 
     assert result.returncode == 0
     assert captured["profile"].name == "fast"
-    assert f'model_reasoning_effort="{captured["profile"].reasoning_effort}"' in captured["cmd"]
+    assert (
+        f'model_reasoning_effort="'
+        f'{supervisor_module.codex_cli_reasoning_effort(captured["profile"].reasoning_effort)}"'
+        in captured["cmd"]
+    )
     assert captured["process"].wait_timeout == min(
         supervisor_module.EXECUTOR_PROGRESS_POLL_SECONDS,
         supervisor_module.FAST_EXECUTION_PROFILE_TIMEOUT_SECONDS,

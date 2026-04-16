@@ -3373,7 +3373,11 @@ def classify_executor_environment(stderr: str) -> dict[str, Any]:
     issues: list[dict[str, Any]] = []
 
     def add_issue(kind: str, summary: str, predicate: Callable[[str], bool]) -> None:
-        evidence = [line for line, low in zip(lines, lowered, strict=False) if predicate(low)]
+        evidence = [
+            line
+            for line, low in zip(lines, lowered)  # noqa: B905 - local runner uses Python 3.9
+            if predicate(low)
+        ]
         if evidence:
             issues.append(
                 {
@@ -4988,6 +4992,13 @@ def child_executor_should_bypass_inner_sandbox(*, branch: str) -> bool:
     return branch.startswith("sandbox/")
 
 
+def codex_cli_reasoning_effort(reasoning_effort: str) -> str:
+    """Map supervisor reasoning presets onto the current Codex CLI surface."""
+    if reasoning_effort == "xhigh":
+        return "high"
+    return reasoning_effort
+
+
 def build_codex_exec_command(
     *,
     prompt: str,
@@ -5007,18 +5018,15 @@ def build_codex_exec_command(
         "exec",
         "--model",
         profile.model,
-        "--ephemeral",
         "-c",
         f'approval_policy="{profile.approval_policy}"',
         "-c",
-        f'model_reasoning_effort="{profile.reasoning_effort}"',
+        f'model_reasoning_effort="{codex_cli_reasoning_effort(profile.reasoning_effort)}"',
     ]
     if bypass_inner_sandbox:
         cmd.append("--dangerously-bypass-approvals-and-sandbox")
     else:
         cmd.extend(["--sandbox", profile.sandbox])
-    for feature in profile.disabled_features:
-        cmd.extend(["--disable", feature])
     cmd.append(prompt)
     return cmd
 
@@ -5035,7 +5043,7 @@ def render_child_codex_config(
     sandbox_line = "" if bypass_inner_sandbox else f'sandbox_mode = "{profile.sandbox}"\n'
     return (
         f'model = "{profile.model}"\n'
-        f'model_reasoning_effort = "{profile.reasoning_effort}"\n'
+        f'model_reasoning_effort = "{codex_cli_reasoning_effort(profile.reasoning_effort)}"\n'
         f'approval_policy = "{profile.approval_policy}"\n'
         f"{sandbox_line}"
         "\n"
