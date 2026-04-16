@@ -2865,7 +2865,7 @@ def test_pick_next_spec_gap_selects_linked_continuation_candidate_when_no_workab
     ) == ["latent_graph_improvement_candidate", "weak_structural_linkage_candidate"]
 
 
-def test_pick_next_spec_gap_skips_recently_approved_weak_linkage_continuation(
+def test_pick_next_spec_gap_skips_freshly_approved_weak_linkage_continuation(
     supervisor_module: object,
     repo_fixture: Path,
 ) -> None:
@@ -2875,6 +2875,8 @@ def test_pick_next_spec_gap_skips_recently_approved_weak_linkage_continuation(
     node1["maturity"] = 0.4
     node1["depends_on"] = ["SG-SPEC-0002"]
     node1["last_gate_decision"] = "approve"
+    node1["last_run_at"] = "2026-04-16T19:40:00+00:00"
+    node1["last_gate_at"] = "2026-04-16T19:41:00+00:00"
     node1["last_outcome"] = "done"
     node1["gate_state"] = "none"
     node1_path.write_text(json.dumps(node1), encoding="utf-8")
@@ -2910,6 +2912,54 @@ def test_pick_next_spec_gap_skips_recently_approved_weak_linkage_continuation(
         == []
     )
     assert supervisor_module.pick_next_spec_gap(specs) is None
+
+
+def test_pick_next_spec_gap_reconsiders_weak_linkage_after_new_run(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    node1_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    node1 = supervisor_module.get_yaml_module().safe_load(node1_path.read_text(encoding="utf-8"))
+    node1["status"] = "linked"
+    node1["maturity"] = 0.4
+    node1["depends_on"] = ["SG-SPEC-0002"]
+    node1["last_gate_decision"] = "approve"
+    node1["last_gate_at"] = "2026-04-16T19:41:00+00:00"
+    node1["last_run_at"] = "2026-04-16T19:50:00+00:00"
+    node1["last_outcome"] = "done"
+    node1["gate_state"] = "none"
+    node1_path.write_text(json.dumps(node1), encoding="utf-8")
+
+    node2_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0002.yaml"
+    node2_path.write_text(
+        json.dumps(
+            {
+                "id": "SG-SPEC-0002",
+                "title": "Dependency Node",
+                "kind": "spec",
+                "status": "linked",
+                "maturity": 0.6,
+                "depends_on": [],
+                "relates_to": [],
+                "refines": [],
+                "inputs": [],
+                "outputs": ["specs/nodes/SG-SPEC-0002.yaml"],
+                "allowed_paths": ["specs/nodes/SG-SPEC-0002.yaml"],
+                "acceptance": ["kept"],
+                "prompt": "Refine this linked node.",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    specs = supervisor_module.load_specs()
+    reasons = supervisor_module.linked_continuation_reasons(
+        specs[0],
+        supervisor_module.index_specs(specs),
+    )
+
+    assert reasons == ["latent_graph_improvement_candidate", "weak_structural_linkage_candidate"]
+    assert supervisor_module.pick_next_spec_gap(specs) is not None
 
 
 def test_pick_next_spec_gap_skips_fully_mature_linked_spec_with_only_weak_linkage_signal(

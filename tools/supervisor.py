@@ -763,6 +763,26 @@ def is_gate_blocking(node: SpecNode) -> bool:
     return node.gate_state in BLOCKING_GATE_STATES
 
 
+def parse_iso_datetime(value: object) -> dt.datetime | None:
+    text = str(value).strip()
+    if not text:
+        return None
+    try:
+        return dt.datetime.fromisoformat(text)
+    except ValueError:
+        return None
+
+
+def has_fresh_gate_approval_without_new_run(spec: SpecNode) -> bool:
+    if str(spec.data.get("last_gate_decision", "")).strip().lower() != "approve":
+        return False
+    gate_at = parse_iso_datetime(spec.data.get("last_gate_at", ""))
+    run_at = parse_iso_datetime(spec.data.get("last_run_at", ""))
+    if gate_at is None or run_at is None:
+        return False
+    return gate_at >= run_at
+
+
 def linked_continuation_reasons(
     spec: SpecNode,
     index: dict[str, SpecNode],
@@ -789,8 +809,9 @@ def linked_continuation_reasons(
     if unresolved_dependencies:
         reasons.append("weak_structural_linkage_candidate")
 
-    last_gate_decision = str(spec.data.get("last_gate_decision", "")).strip().lower()
-    if last_gate_decision == "approve" and reasons == ["weak_structural_linkage_candidate"]:
+    if has_fresh_gate_approval_without_new_run(spec) and reasons == [
+        "weak_structural_linkage_candidate"
+    ]:
         return []
 
     if spec.maturity >= 1.0 and reasons == ["weak_structural_linkage_candidate"]:
