@@ -1,0 +1,164 @@
+id: SG-SPEC-0053
+title: SpecGraph - Primary Pre-Spec Kind Semantics for Intent, Hypothesis, Proposal, IntentFragment, and
+  IntentDraft
+kind: spec
+status: linked
+maturity: 0.2
+depends_on: []
+relates_to: []
+refines:
+- SG-SPEC-0050
+inputs:
+- specs/nodes/SG-SPEC-0050.yaml
+- docs/proposals/0011_pre_spec_semantic_layer.md
+outputs:
+- specs/nodes/SG-SPEC-0053.yaml
+allowed_paths:
+- specs/nodes/SG-SPEC-0053.yaml
+acceptance:
+- Defines SG-SPEC-0053 as the bounded child under SG-SPEC-0050 for the detailed semantic roles of Intent,
+  Hypothesis, Proposal, IntentFragment, and IntentDraft
+- Defines the minimal observed-intent path raw_input -> IntentFragment -> IntentDraft and the immediate
+  downstream relationship from IntentDraft toward Intent or Proposal without introducing concrete promotion
+  gate procedure
+- Distinguishes Intent as normative, Hypothesis as epistemic, Proposal as candidate operationalization,
+  IntentFragment as minimal extracted signal, and IntentDraft as synthesized observed-intent object
+- Keeps concrete Proposal->SpecDraft review, non-silent transition records, and canonical materialization
+  rules delegated to SG-SPEC-0051, and keeps orthogonal axis value spaces plus traceability semantics
+  delegated to SG-SPEC-0052
+- Keeps memory consultation policy, operator-request runtime execution, tracked proposal-lane persistence,
+  GUI protocol, and repository layout out of scope
+acceptance_evidence:
+- criterion: Defines SG-SPEC-0053 as the bounded child under SG-SPEC-0050 for the detailed semantic roles
+    of Intent, Hypothesis, Proposal, IntentFragment, and IntentDraft
+  evidence: specification.objective and specification.scope.in keep SG-SPEC-0053 focused on the detailed
+    semantic roles of Intent, Hypothesis, Proposal, IntentFragment, and IntentDraft, while specification.boundary_rules
+    states that this child remains beneath SG-SPEC-0050 rather than replacing the parent overview.
+- criterion: Defines the minimal observed-intent path raw_input -> IntentFragment -> IntentDraft and the
+    immediate downstream relationship from IntentDraft toward Intent or Proposal without introducing concrete
+    promotion gate procedure
+  evidence: specification.observed_intent_path.allowed_edges defines raw_input -> intent_fragment -> intent_draft,
+    and specification.observed_intent_path.downstream_relations defines intent_draft -> intent and intent_draft
+    -> proposal as immediate downstream relationships while explicitly excluding concrete promotion gate
+    procedure from scope.
+- criterion: Distinguishes Intent as normative, Hypothesis as epistemic, Proposal as candidate operationalization,
+    IntentFragment as minimal extracted signal, and IntentDraft as synthesized observed-intent object
+  evidence: specification.kind_roles.intent, specification.kind_roles.hypothesis, specification.kind_roles.proposal,
+    specification.kind_roles.intent_fragment, and specification.kind_roles.intent_draft each define a
+    distinct semantic role and boundary for the corresponding primary pre-spec kind.
+- criterion: Keeps concrete Proposal->SpecDraft review, non-silent transition records, and canonical materialization
+    rules delegated to SG-SPEC-0051, and keeps orthogonal axis value spaces plus traceability semantics
+    delegated to SG-SPEC-0052
+  evidence: specification.scope.out excludes concrete Proposal->SpecDraft review, non-silent transition
+    records, canonical materialization rules, orthogonal axis value spaces, and traceability semantics,
+    and specification.adjacency_notes names SG-SPEC-0051 and SG-SPEC-0052 as the owning children for those
+    delegated concerns.
+- criterion: Keeps memory consultation policy, operator-request runtime execution, tracked proposal-lane
+    persistence, GUI protocol, and repository layout out of scope
+  evidence: specification.scope.out explicitly excludes project-memory consultation policy, operator-request
+    runtime execution semantics, tracked proposal-lane persistence, GUI protocol, and repository layout.
+prompt: Define the bounded primary pre-spec kind semantics beneath SG-SPEC-0050 for Intent, Hypothesis,
+  Proposal, IntentFragment, and IntentDraft. Clarify their semantic roles, immediate adjacency, and the
+  minimal observed-intent path without defining concrete Proposal->SpecDraft review, axis value spaces,
+  traceability procedure, or repository implementation details.
+specification:
+  objective: Define the bounded semantic roles and immediate relationships of the primary pre-spec kinds
+    that make observable intent reviewable before downstream promotion work.
+  scope:
+    in:
+    - Detailed semantic roles for Intent, Hypothesis, Proposal, IntentFragment, and IntentDraft
+    - Minimal observed-intent path from raw_input through IntentFragment and IntentDraft
+    - Immediate downstream relationship from IntentDraft toward Intent or Proposal
+    - Immediate semantic adjacency between the primary pre-spec kinds
+    out:
+    - Concrete Proposal->SpecDraft review gates, non-silent transition records, and canonical materialization
+      rules
+    - Orthogonal axis value spaces, provenance record shapes, and traceability procedures
+    - Project-memory consultation policy or retrieval behavior
+    - Operator-request runtime steering or execution behavior
+    - Tracked proposal-lane persistence, GUI protocol, or repository layout
+    - Model-specific natural-language interpretation algorithms
+  terminology:
+    intent: A normative declaration of what should become true, remain possible, be preserved, or be prevented.
+    hypothesis: An epistemic declaration of what may be true in the problem space and may inform later
+      review or design moves.
+    proposal: A candidate operationalization of one or more intents under assumptions and constraints,
+      still reviewable and pre-canonical.
+    intent_fragment: The minimal extracted semantic signal from raw_input that carries only part of a
+      later stable concern.
+    intent_draft: A synthesized observed-intent object assembled from one or more intent_fragment nodes
+      plus optional supporting hypotheses or bounded review context.
+  kind_roles:
+    intent:
+      role: Normative declaration of desired or undesired future state.
+      boundary:
+      - Intent is not yet canonical graph truth in this subtree.
+      - Intent may stabilize an IntentDraft but does not itself define downstream promotion gates.
+    hypothesis:
+      role: Reviewable epistemic statement about what may be true in the problem space.
+      boundary:
+      - Hypothesis may support or challenge IntentDraft or Proposal without replacing either kind.
+      - Hypothesis does not authorize promotion or implementation by itself.
+    proposal:
+      role: Candidate design move that operationalizes one or more intents or stabilized intent_drafts.
+      boundary:
+      - Proposal remains pre-canonical and reviewable here.
+      - Concrete promotion from Proposal to SpecDraft is not defined in this node.
+    intent_fragment:
+      role: Smallest extracted observable-intent unit from raw_input.
+      boundary:
+      - IntentFragment may preserve partial wording or unresolved meaning.
+      - IntentFragment is too small to stand in for a full intent_draft by itself.
+    intent_draft:
+      role: Primary synthesized observed-intent object prepared for later review, stabilization, or proposal-facing
+        work.
+      boundary:
+      - IntentDraft is not yet a canonical Intent node.
+      - IntentDraft may motivate Intent or Proposal but does not itself define concrete promotion procedure.
+  observed_intent_path:
+    allowed_edges:
+    - raw_input -> intent_fragment
+    - intent_fragment -> intent_draft
+    downstream_relations:
+    - intent_draft -> intent
+    - intent_draft -> proposal
+    path_rules:
+    - One raw_input may yield multiple intent_fragment nodes when multiple bounded concerns are present.
+    - One intent_draft may synthesize one or more intent_fragment nodes and optional supporting hypotheses.
+    - Intent records a stabilized normative statement derived from one or more intent_draft nodes.
+    - Proposal operationalizes one or more intents or intent_drafts without replacing their reviewable
+      history.
+    - This node does not define whether a downstream relation is gated by review, confirmation, or promotion
+      record.
+  semantic_adjacency:
+  - intent_fragment contributes partial observable meaning to intent_draft
+  - intent_draft synthesizes one or more intent_fragment nodes into one reviewable observed-intent object
+  - hypothesis may support, challenge, or contextualize intent_draft or proposal without becoming intent
+  - intent may stabilize a normative declaration previously carried by intent_draft
+  - proposal may operationalize one or more intents or intent_drafts under explicit assumptions and constraints
+  boundary_rules:
+  - All primary kinds in this node remain pre-canonical declarations beneath SG-SPEC-0050.
+  - Concrete Proposal->SpecDraft review and canonical materialization remain delegated to SG-SPEC-0051.
+  - Orthogonal axis value spaces and traceability semantics remain delegated to SG-SPEC-0052.
+  - This node defines semantic-kind roles and immediate adjacency, not promotion gate procedure or storage
+    behavior.
+  adjacency_notes:
+  - SG-SPEC-0050 remains the parent overview and integration envelope for this subtree.
+  - SG-SPEC-0051 owns concrete promotion boundaries for Proposal, SpecDraft, and canonical materialization.
+  - SG-SPEC-0052 owns orthogonal axis value spaces and traceability semantics.
+  examples:
+  - name: Fragment to draft synthesis
+    description: One raw_input yields two intent_fragment nodes capturing preservation and timing concerns,
+      and one intent_draft synthesizes both fragments into a reviewable observed-intent object.
+  - name: Draft stabilizes into intent
+    description: An intent_draft about preserving original user meaning later stabilizes into an intent
+      once reviewers agree on the normative statement, without yet becoming canonical graph truth.
+  - name: Hypothesis informs proposal
+    description: A hypothesis that premature proposals bias framing remains epistemic context while a
+      proposal operationalizes an intent about delaying solution pressure.
+gate_state: none
+proposed_status: null
+proposed_maturity: null
+required_human_action: '-'
+last_worktree_path: ''
+last_branch: ''

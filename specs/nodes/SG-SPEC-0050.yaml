@@ -4,6 +4,7 @@ kind: spec
 status: linked
 maturity: 0.55
 depends_on:
+- SG-SPEC-0053
 - SG-SPEC-0051
 - SG-SPEC-0052
 relates_to:
@@ -13,6 +14,7 @@ refines:
 - SG-SPEC-0007
 inputs:
 - specs/nodes/SG-SPEC-0007.yaml
+- specs/nodes/SG-SPEC-0053.yaml
 - specs/nodes/SG-SPEC-0051.yaml
 - specs/nodes/SG-SPEC-0052.yaml
 - specs/nodes/SG-SPEC-0009.yaml
@@ -25,10 +27,11 @@ outputs:
 allowed_paths:
 - specs/nodes/SG-SPEC-0050.yaml
 acceptance:
-- Preserves SG-SPEC-0050 as the parent overview for the pre-spec semantic layer, with shared meanings
-  for Intent, Hypothesis, Proposal, IntentFragment, and IntentDraft as reviewable pre-canonical declarations
-- Defines IntentFragment and IntentDraft as the minimal observed-intent path from raw user input toward
-  later Proposal or SpecDraft material without collapsing directly into canonical graph truth
+- Preserves SG-SPEC-0050 as the parent overview for the pre-spec semantic layer while delegating detailed
+  primary kind semantics for Intent, Hypothesis, Proposal, IntentFragment, and IntentDraft to child SG-SPEC-0053
+- Defines only the parent-side observed-intent envelope from raw_input through IntentFragment and IntentDraft
+  toward later Intent, Proposal, or SpecDraft material, while delegating detailed primary kind roles and
+  semantic adjacency to child SG-SPEC-0053
 - Declares orthogonal pre-spec review axes for phase, status, authority, confidence, provenance, context_tags,
   and supersedes as inspectable metadata adjacent to kind, and delegates their concrete value spaces plus
   traceability semantics to child SG-SPEC-0052
@@ -38,19 +41,20 @@ acceptance:
 - Keeps memory consultation policy, operator-request execution steering, tracked proposal-lane persistence,
   GUI protocol, and final storage layout out of scope for follow-on nodes
 acceptance_evidence:
-- criterion: Preserves SG-SPEC-0050 as the parent overview for the pre-spec semantic layer, with shared
-    meanings for Intent, Hypothesis, Proposal, IntentFragment, and IntentDraft as reviewable pre-canonical
-    declarations
+- criterion: Preserves SG-SPEC-0050 as the parent overview for the pre-spec semantic layer while delegating
+    detailed primary kind semantics for Intent, Hypothesis, Proposal, IntentFragment, and IntentDraft
+    to child SG-SPEC-0053
   evidence: specification.objective and specification.coordination_envelope.parent_role keep SG-SPEC-0050
-    at the overview layer, specification.terminology defines intent, hypothesis, proposal, intent_fragment,
-    and intent_draft, and specification.boundary_policy.pre_canonical_status states that these kinds remain
-    reviewable declarations rather than canonical graph truth.
-- criterion: Defines IntentFragment and IntentDraft as the minimal observed-intent path from raw user
-    input toward later Proposal or SpecDraft material without collapsing directly into canonical graph
-    truth
-  evidence: specification.observation_model.fragment_rules and specification.observation_model.draft_rules
-    define the bounded path raw_input -> IntentFragment -> IntentDraft, while specification.observation_model.promotion_targets
-    states that Proposal and SpecDraft are downstream targets rather than immediate canonical outputs.
+    at the overview layer, specification.child_governance_map records SG-SPEC-0053 as the bounded child
+    owning detailed primary kind semantics, and specification.boundary_policy.pre_canonical_status states
+    that those primary kinds remain reviewable declarations rather than canonical graph truth.
+- criterion: Defines only the parent-side observed-intent envelope from raw_input through IntentFragment
+    and IntentDraft toward later Intent, Proposal, or SpecDraft material, while delegating detailed primary
+    kind roles and semantic adjacency to child SG-SPEC-0053
+  evidence: specification.observation_model.retained_parent_role keeps only the coarse path raw_input
+    -> IntentFragment -> IntentDraft with downstream Intent, Proposal, and SpecDraft targets, specification.primary_kind_coordination.delegated_to
+    assigns detailed primary kind roles and semantic adjacency to SG-SPEC-0053, and specification.child_governance_map
+    records SG-SPEC-0053 as the owning child for that detailed concern.
 - criterion: Declares orthogonal pre-spec review axes for phase, status, authority, confidence, provenance,
     context_tags, and supersedes as inspectable metadata adjacent to kind, and delegates their concrete
     value spaces plus traceability semantics to child SG-SPEC-0052
@@ -83,12 +87,14 @@ specification:
     intent formation before governed Proposal or SpecDraft promotion.
   scope:
     in:
-    - Shared semantic meanings for Intent, Hypothesis, Proposal, IntentFragment, and IntentDraft
-    - Minimal observed-intent path from raw_input through IntentFragment and IntentDraft toward Proposal
-      or SpecDraft
+    - Parent-side overview of the pre-spec semantic layer and its bounded primary kinds
+    - Coarse observed-intent path from raw_input through IntentFragment and IntentDraft toward Intent,
+      Proposal, or SpecDraft
     - Parent-side coordination of orthogonal review-axis ownership and promotion-boundary ownership across
-      child specs SG-SPEC-0051 and SG-SPEC-0052
+      child specs SG-SPEC-0051, SG-SPEC-0052, and SG-SPEC-0053
     out:
+    - Detailed role contracts and semantic adjacency for Intent, Hypothesis, Proposal, IntentFragment,
+      and IntentDraft
     - Concrete axis value spaces, defaulting rules, and traceability semantics
     - Concrete Proposal->SpecDraft review gates, non-silent transition records, and canonical materialization
       rules
@@ -103,10 +109,10 @@ specification:
     parent_role:
     - SG-SPEC-0050 preserves the shared semantic framing for observable intent before governed Proposal
       or SpecDraft promotion.
-    - SG-SPEC-0050 defines only the shared meanings of Intent, Hypothesis, Proposal, IntentFragment, and
-      IntentDraft together with the minimal observed-intent path between them.
-    - SG-SPEC-0050 MUST NOT absorb concrete promotion review procedure or concrete axis record semantics
-      owned by child specs.
+    - SG-SPEC-0050 coordinates child ownership for primary kind semantics, promotion boundaries, and orthogonal
+      axis semantics without reabsorbing those detailed child concerns.
+    - SG-SPEC-0050 MUST NOT absorb concrete primary kind role semantics, concrete promotion review procedure,
+      or concrete axis record semantics owned by child specs.
     shared_invariants:
     - Intent, Hypothesis, Proposal, IntentFragment, and IntentDraft remain reviewable pre-canonical declarations
       rather than canonical graph truth.
@@ -131,6 +137,18 @@ specification:
     spec_draft: A reviewable pre-canonical draft of later specification shape that may be promoted only
       from confirmed or explicitly reviewed pre-spec material.
   child_governance_map:
+  - child_spec: SG-SPEC-0053
+    concern: Detailed primary kind semantics and immediate semantic adjacency
+    parent_summary:
+    - This parent establishes that Intent, Hypothesis, Proposal, IntentFragment, and IntentDraft are the
+      shared primary pre-spec kinds for observable intent work.
+    - Concrete role semantics, immediate semantic adjacency, and the detailed observed-intent path for
+      those kinds live in SG-SPEC-0053 rather than in this overview node.
+    detailed_governance_owned_by_child:
+    - Detailed role definitions for Intent, Hypothesis, Proposal, IntentFragment, and IntentDraft
+    - Immediate semantic adjacency between those primary kinds
+    - Detailed observed-intent path from raw_input through IntentFragment and IntentDraft toward Intent
+      or Proposal
   - child_spec: SG-SPEC-0051
     concern: Concrete promotion boundary for Proposal, SpecDraft, and canonical materialization
     parent_summary:
@@ -163,24 +181,18 @@ specification:
     - Concrete value spaces, defaulting rules, traceability requirements, and supersession immutability
       semantics are delegated to SG-SPEC-0052.
   observation_model:
-    fragment_rules:
-    - intent_fragment is the smallest extracted semantic unit that still carries observable intent meaning.
-    - Fragments may preserve partial goals, objections, hypotheses, or unresolved wording without forcing
-      one final interpretation too early.
-    draft_rules:
-    - intent_draft may synthesize one or more intent_fragment nodes plus optional supporting hypotheses
-      or bounded review context.
-    - intent_draft remains the primary observed-intent object until explicit confirmation, review, or
-      promotion occurs.
-    - A single raw_input may produce multiple drafts when one utterance carries multiple bounded concerns.
-    promotion_targets:
-    - Proposal and SpecDraft are the downstream pre-spec targets for an IntentDraft in this overview.
-    - This node does not define the concrete review procedure or transition records required to reach
-      those downstream targets.
-  semantic_adjacency:
-  - intent_fragment refines intent_draft
-  - proposal operationalizes intent or a confirmed intent_draft
-  - proposal may rely on one or more hypotheses
+    delegated_to: SG-SPEC-0053
+    retained_parent_role:
+    - raw_input may be normalized through IntentFragment and IntentDraft before downstream Intent, Proposal,
+      or SpecDraft work begins.
+    - This parent keeps only the coarse observed-intent envelope and does not define detailed primary
+      kind role semantics or per-kind adjacency.
+  primary_kind_coordination:
+    delegated_to: SG-SPEC-0053
+    retained_parent_role:
+    - Intent, Hypothesis, Proposal, IntentFragment, and IntentDraft remain the shared primary pre-spec
+      kinds coordinated by this subtree.
+    - Detailed role semantics and immediate semantic adjacency for those kinds are delegated to SG-SPEC-0053.
   promotion_envelope:
     delegated_to: SG-SPEC-0051
     parent_rules:
@@ -204,6 +216,8 @@ specification:
     - Context should default to metadata, overlays, selectors, filters, or weighting lenses rather than
       to a separate primary semantic kind.
   adjacency_notes:
+  - SG-SPEC-0053 defines the detailed primary kind semantics and immediate semantic adjacency for Intent,
+    Hypothesis, Proposal, IntentFragment, and IntentDraft beneath this overview node.
   - SG-SPEC-0051 defines the concrete promotion boundary for IntentDraft, Proposal, SpecDraft, and canonical
     materialization, including explicit Proposal->SpecDraft review and non-silent transition constraints.
   - SG-SPEC-0052 defines the orthogonal axis value spaces and traceability semantics for pre-spec nodes
