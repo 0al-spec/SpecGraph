@@ -2,7 +2,7 @@ id: SG-SPEC-0048
 title: SpecGraph - Proposal/Split Gateway Edge (0032->0043)
 kind: spec
 status: linked
-maturity: 0.2
+maturity: 0.4
 depends_on:
 - SG-SPEC-0032
 - SG-SPEC-0043
@@ -20,48 +20,61 @@ allowed_paths:
 acceptance:
 - Defines SG-SPEC-0048 as the bounded direct proposal/split gateway edge contract for SG-SPEC-0032 ->
   SG-SPEC-0043 under SG-SPEC-0047.
-- Forbids SG-SPEC-0032 from bypassing SG-SPEC-0043 for proposal/split readiness while SG-SPEC-0043 is
-  present.
-- Keeps the SG-SPEC-0027 readiness path constrained to SG-SPEC-0027 -> SG-SPEC-0032 -> SG-SPEC-0043 before
-  delegation to SG-SPEC-0029.
+- Requires SG-SPEC-0032 to consume SG-SPEC-0043 as its sole direct proposal/split gateway dependency while
+  SG-SPEC-0043 is present.
+- Restricts SG-SPEC-0048 to direct-edge governance only, leaving broader segment topology and downstream
+  delegation outside this node.
 acceptance_evidence:
 - criterion: Defines SG-SPEC-0048 as the bounded direct proposal/split gateway edge contract for SG-SPEC-0032
     -> SG-SPEC-0043 under SG-SPEC-0047.
   evidence: specification.edge_contract identifies SG-SPEC-0048 as the direct SG-SPEC-0032 -> SG-SPEC-0043
     edge slice and specification.parent_contract requires SG-SPEC-0047 to consume it.
-- criterion: Forbids SG-SPEC-0032 from bypassing SG-SPEC-0043 for proposal/split readiness while SG-SPEC-0043
+- criterion: Requires SG-SPEC-0032 to consume SG-SPEC-0043 as its sole direct proposal/split gateway dependency
+    while SG-SPEC-0043 is present.
+  evidence: specification.edge_constraints requires SG-SPEC-0032 to keep SG-SPEC-0043 as its sole direct
+    proposal/split gateway dependency and forbids parallel direct gateway dependencies while SG-SPEC-0043
     is present.
-  evidence: specification.no_bypass_rules requires SG-SPEC-0032 to route proposal/split readiness through
-    SG-SPEC-0043 and forbids direct dependency from SG-SPEC-0032 to SG-SPEC-0043 downstream readiness
-    nodes.
-- criterion: Keeps the SG-SPEC-0027 readiness path constrained to SG-SPEC-0027 -> SG-SPEC-0032 -> SG-SPEC-0043
-    before delegation to SG-SPEC-0029.
-  evidence: specification.path_contract requires SG-SPEC-0027 and SG-SPEC-0032 readiness edges to SG-SPEC-0029
-    to pass through SG-SPEC-0032 -> SG-SPEC-0043.
+- criterion: Restricts SG-SPEC-0048 to direct-edge governance only, leaving broader segment topology and
+    downstream delegation outside this node.
+  evidence: specification.scope.out and specification.boundaries exclude SG-SPEC-0027 segment topology
+    and SG-SPEC-0043 -> SG-SPEC-0029 delegation mechanics from SG-SPEC-0048.
 prompt: Materialize SG-SPEC-0048 as the bounded direct gateway edge so SG-SPEC-0047 can keep only the
   segment handoff and non-bypass topology, while this node owns only SG-SPEC-0032 -> SG-SPEC-0043 edge
   governance.
 specification:
-  objective: Materialize a single bounded edge slice for SG-SPEC-0032 -> SG-SPEC-0043 so proposal/split
-    readiness in SG-SPEC-0047 cannot bypass SG-SPEC-0043 and remains inspectable.
+  objective: Materialize a single bounded edge slice for SG-SPEC-0032 -> SG-SPEC-0043 so SG-SPEC-0047
+    can compose the downstream segment while this node owns only the direct gateway-edge contract.
   scope:
     in:
     - Direct SG-SPEC-0032 -> SG-SPEC-0043 gateway-edge contract under SG-SPEC-0047.
-    - Non-bypass readiness routing requirement for SG-SPEC-0032 while SG-SPEC-0043 exists.
-    - Parent-facing consumption contract for this direct edge.
+    - Sole-direct-gateway requirement for SG-SPEC-0032 while SG-SPEC-0043 exists.
+    - Parent-facing consumption contract for this direct edge slice.
     out:
-    - Concrete SG-SPEC-0043 -> SG-SPEC-0029 mechanics ownership.
+    - SG-SPEC-0027 -> SG-SPEC-0032 -> SG-SPEC-0043 segment topology and non-bypass chain composition.
+    - Concrete SG-SPEC-0043 -> SG-SPEC-0029 delegation mechanics and readiness semantics.
     - Ranking formulas, continuation policy, or runtime orchestration policy.
   edge_contract:
-  - SG-SPEC-0032 depends on SG-SPEC-0043 for proposal/split readiness in this segment.
-  - SG-SPEC-0043 is the direct gateway node for SG-SPEC-0032 readiness in this segment.
-  no_bypass_rules:
-  - While SG-SPEC-0043 exists, SG-SPEC-0032 must not route proposal/split readiness directly to downstream
-    readiness nodes such as SG-SPEC-0029 without passing through SG-SPEC-0043.
-  - SG-SPEC-0032 readiness edges to SG-SPEC-0029 must pass through SG-SPEC-0043.
-  path_contract:
-  - SG-SPEC-0027 readiness for this subtree reaches SG-SPEC-0043 through SG-SPEC-0032.
-  - SG-SPEC-0027 and SG-SPEC-0032 readiness edges to SG-SPEC-0029 must include SG-SPEC-0027 -> SG-SPEC-0032
-    -> SG-SPEC-0043.
+  - SG-SPEC-0032 depends on SG-SPEC-0043 as its direct proposal/split gateway dependency in this segment.
+  - SG-SPEC-0043 is the sole direct gateway node consumed by SG-SPEC-0032 for this segment.
+  edge_constraints:
+  - While SG-SPEC-0043 exists, SG-SPEC-0032 must keep SG-SPEC-0043 as its sole direct proposal/split gateway
+    dependency for this segment.
+  - SG-SPEC-0032 must not define a parallel direct proposal/split gateway dependency in place of or alongside
+    SG-SPEC-0043 for this segment.
   parent_contract:
-  - SG-SPEC-0047 consumes SG-SPEC-0048 as the direct SG-SPEC-0032 -> SG-SPEC-0043 gateway-edge contract.
+  - SG-SPEC-0047 consumes SG-SPEC-0048 as the sole source of the direct SG-SPEC-0032 -> SG-SPEC-0043 gateway-edge
+    contract.
+  boundaries:
+  - SG-SPEC-0048 does not define SG-SPEC-0027 segment topology, parent-integration non-bypass routing,
+    or broader chain composition.
+  - SG-SPEC-0048 does not define SG-SPEC-0043 -> SG-SPEC-0029 delegation mechanics, concrete readiness
+    semantics, ranking policy, or runtime orchestration.
+gate_state: none
+proposed_status: null
+proposed_maturity: null
+required_human_action: '-'
+last_worktree_path: ''
+last_branch: ''
+last_gate_decision: approve
+last_gate_note: ''
+last_gate_at: '2026-04-16T19:29:06.235896+00:00'
