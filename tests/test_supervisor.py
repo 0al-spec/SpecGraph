@@ -2774,6 +2774,7 @@ def test_update_proposal_queue_requires_recurrence_for_refactor_proposal(
 ) -> None:
     historical_run = {
         "run_id": "RUN-1",
+        "graph_health_truth_basis": "accepted_canonical",
         "graph_health": {
             "source_spec_id": "SG-SPEC-9999",
             "signals": ["oversized_spec"],
@@ -2848,6 +2849,7 @@ def test_update_proposal_queue_counts_current_occurrence_when_run_id_collides(
 ) -> None:
     historical_run = {
         "run_id": "RUN-1",
+        "graph_health_truth_basis": "accepted_canonical",
         "graph_health": {
             "source_spec_id": "SG-SPEC-9999",
             "signals": ["oversized_spec"],
@@ -2877,6 +2879,26 @@ def test_update_proposal_queue_counts_current_occurrence_when_run_id_collides(
     assert proposal["proposal_type"] == "refactor_proposal"
     assert proposal["occurrence_count"] == 2
     assert proposal["supporting_run_ids"] == ["RUN-1"]
+
+
+def test_signal_supporting_run_ids_ignores_review_candidate_runs(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    historical_run = {
+        "run_id": "RUN-1",
+        "graph_health_truth_basis": "review_candidate",
+        "graph_health": {
+            "source_spec_id": "SG-SPEC-9999",
+            "signals": ["oversized_spec"],
+        },
+    }
+    (repo_fixture / "runs" / "20260405T000000Z-SG-SPEC-9999.json").write_text(
+        json.dumps(historical_run),
+        encoding="utf-8",
+    )
+
+    assert supervisor_module.signal_supporting_run_ids("SG-SPEC-9999", "oversized_spec") == []
 
 
 def test_build_prompt_includes_bootstrap_child_guidance_for_seed_spec(
@@ -3217,6 +3239,7 @@ def test_main_creates_review_gate_and_provenance_metadata(
     assert payload["outcome"] == "done"
     assert payload["worktree_path"] == worktree.as_posix()
     assert payload["graph_health"]["source_spec_id"] == "SG-SPEC-0001"
+    assert payload["graph_health_truth_basis"] == "accepted_canonical"
     assert payload["refactor_queue_artifact"].endswith("runs/refactor_queue.json")
     assert payload["proposal_queue_artifact"].endswith("runs/proposal_queue.json")
     assert payload["selected_by_rule"]["selection_mode"] == "default_refine"

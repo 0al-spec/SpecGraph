@@ -3733,6 +3733,30 @@ def observe_graph_health(
     }
 
 
+def derive_accepted_graph_health(
+    *,
+    source_node: SpecNode,
+    current_specs: list[SpecNode],
+    outcome: str,
+) -> dict[str, Any]:
+    index = index_specs(current_specs)
+    reconciled_node = index.get(source_node.id)
+    if reconciled_node is None:
+        return empty_graph_health(source_node.id)
+    return observe_graph_health(
+        source_node=source_node,
+        worktree_specs=current_specs,
+        reconciliation={
+            "semantic_dependencies_resolved": semantic_dependencies_resolved(
+                reconciled_node, index
+            ),
+            "work_dependencies_ready": work_dependencies_ready(reconciled_node, index),
+        },
+        atomicity_errors=validate_atomicity(reconciled_node),
+        outcome=outcome,
+    )
+
+
 def empty_graph_health(source_spec_id: str) -> dict[str, Any]:
     return {
         "source_spec_id": source_spec_id,
@@ -4148,6 +4172,8 @@ def signal_supporting_run_ids(spec_id: str, signal: str) -> list[str]:
         except (OSError, json.JSONDecodeError):
             continue
         if not isinstance(payload, dict):
+            continue
+        if str(payload.get("graph_health_truth_basis", "")).strip() != "accepted_canonical":
             continue
         graph_health = payload.get("graph_health")
         if not isinstance(graph_health, dict):
@@ -6071,6 +6097,7 @@ def _apply_split_proposal(
         },
         "reconciliation": {},
         "graph_health": graph_health,
+        "graph_health_truth_basis": "accepted_canonical",
         "refactor_queue_artifact": refactor_queue_artifact.as_posix(),
         "proposal_queue_artifact": proposal_queue_artifact.as_posix(),
         "proposal_artifact_path": proposal_artifact_path.as_posix(),
@@ -6343,6 +6370,7 @@ def _process_split_refactor_proposal(
             "work_dependencies_ready": False,
         },
         "graph_health": graph_health,
+        "graph_health_truth_basis": "review_candidate",
         "executor_environment": executor_environment,
         "refactor_queue_artifact": refactor_queue_artifact.as_posix(),
         "proposal_queue_artifact": proposal_queue_artifact.as_posix(),
@@ -6614,9 +6642,8 @@ def _process_one_spec(
         proposed_status = None if is_graph_refactor_run else STATUS_PROGRESSION.get(node.status)
         transition_errors = []
         validation_errors = executor_environment_validation_errors(executor_environment)
-        graph_health = empty_graph_health(node.id)
+        candidate_graph_health = empty_graph_health(node.id)
         proposal_queue_artifact = proposal_queue_path()
-        proposal_items: list[dict[str, Any]] = load_proposal_queue()
         refactor_queue_artifact = refactor_queue_path()
         candidate_after_data = before_canonical
     else:
@@ -6681,21 +6708,12 @@ def _process_one_spec(
             if not blocker:
                 blocker = "spec exceeds atomicity quality gate"
 
-        graph_health = observe_graph_health(
+        candidate_graph_health = observe_graph_health(
             source_node=node,
             worktree_specs=worktree_specs,
             reconciliation=reconciliation,
             atomicity_errors=atomicity_errors,
             outcome=outcome,
-        )
-        proposal_queue_artifact, proposal_items = update_proposal_queue(
-            graph_health=graph_health,
-            run_id=run_id,
-        )
-        refactor_queue_artifact = update_refactor_queue(
-            graph_health=graph_health,
-            run_id=run_id,
-            proposal_items=proposal_items,
         )
         candidate_after_node = next((spec for spec in worktree_specs if spec.id == node.id), None)
         candidate_after_data = sanitize_source_after_child_materialization(
@@ -6831,6 +6849,26 @@ def _process_one_spec(
             required_human_action = "rerun supervisor"
         clear_pending_review_state(node)
 
+    graph_health = empty_graph_health(node.id)
+    if not primary_executor_failure and not worktree_load_errors:
+        graph_health = derive_accepted_graph_health(
+            source_node=node,
+            current_specs=load_specs(),
+            outcome=outcome,
+        )
+        proposal_queue_artifact, proposal_items = update_proposal_queue(
+            graph_health=graph_health,
+            run_id=run_id,
+        )
+        refactor_queue_artifact = update_refactor_queue(
+            graph_health=graph_health,
+            run_id=run_id,
+            proposal_items=proposal_items,
+        )
+    else:
+        proposal_queue_artifact = proposal_queue_path()
+        refactor_queue_artifact = refactor_queue_path()
+
     cleanup_failed_child_materialization = (
         child_materialization_requested
         and not success
@@ -6909,6 +6947,7 @@ def _process_one_spec(
         "validator_results": validator_results,
         "reconciliation": reconciliation,
         "graph_health": graph_health,
+        "graph_health_truth_basis": "accepted_canonical",
         "executor_environment": executor_environment,
         "refinement_acceptance": refinement_acceptance,
         "refactor_queue_artifact": refactor_queue_artifact.as_posix(),
@@ -6916,6 +6955,9 @@ def _process_one_spec(
         "stdout": result.stdout,
         "stderr": result.stderr,
     }
+    if candidate_graph_health != graph_health:
+        payload["candidate_graph_health"] = candidate_graph_health
+        payload["candidate_graph_health_truth_basis"] = "review_candidate"
     log_path = write_run_log(run_id, payload)
     write_latest_summary(payload)
 

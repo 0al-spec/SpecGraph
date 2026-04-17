@@ -33,7 +33,9 @@ acceptance:
   split_required, and stalled or weak refinement progression, while treating low-maturity linked specs
   only as derived follow-up hints rather than normative scores
 - Defines that graph-health observations, signals, latent continuation candidates, and proposal artifacts
-  are first persisted in run artifacts plus derived queues, not written back into canonical spec nodes
+  are first persisted in run artifacts plus derived queues, that canonical-state graph health and queues
+  derive only from accepted canonical content or explicit proposal artifacts, and that review candidates
+  remain non-canonical inspection context until approval
 - Remains implementation-agnostic about exact formulas, thresholds, queue algorithms, and future metric
   systems such as SIB or Specification Verifiability, while delegating concrete continuation selection
   and reflective execution mechanics to SG-SPEC-0026 and its descendants, concrete proposal/queue control
@@ -75,13 +77,18 @@ acceptance_evidence:
 
     '
 - criterion: Defines that graph-health observations, signals, latent continuation candidates, and proposal
-    artifacts are first persisted in run artifacts plus derived queues, not written back into canonical
-    spec nodes
+    artifacts are first persisted in run artifacts plus derived queues, that canonical-state graph health
+    and queues derive only from accepted canonical content or explicit proposal artifacts, and that review
+    candidates remain non-canonical inspection context until approval
   evidence: 'specification.derived_artifact_policy.first_persistence lists run payloads, summaries, latent
     continuation candidate records in run payloads and summaries, refactor_queue artifacts, proposal_queue
     artifacts, and full proposal payload artifacts as the first persistence targets, while specification.derived_artifact_policy.canonical_writeback
     forbids direct writeback of observations, signals, continuation candidates, or proposals into canonical
-    spec nodes without an explicit proposal and approval step.
+    spec nodes without an explicit proposal and approval step. specification.derived_artifact_policy.refactor_queue
+    and proposal_queue now require canonical-state queue derivation to use only accepted canonical content
+    or explicit proposal artifacts, and specification.derived_artifact_policy.first_persistence allows
+    review-candidate inspection in run payloads only when it is explicitly marked as non-canonical review
+    context rather than current graph truth.
 
     '
 - criterion: Remains implementation-agnostic about exact formulas, thresholds, queue algorithms, and future
@@ -342,9 +349,13 @@ specification:
     - Refactor queue artifacts
     - Proposal queue artifacts
     - Full proposal payload artifacts
+    - review_pending candidate-state inspection MAY appear in run payloads only when it is explicitly
+      marked as non-canonical review context rather than current graph truth
     refactor_queue:
     - The first refactor queue is a derived artifact built from graph_health signals and their current
       classification.
+    - Canonical-state refactor_queue derivation MUST use accepted canonical content or explicit proposal
+      artifacts, and MUST NOT treat review_pending candidate worktree content as current graph truth.
     - A refactor queue item may classify work as graph_refactor or governance_proposal, but that classification
       remains derived until acted on under the current governance rules.
     - Refactor queue items SHOULD expose whether their current execution_policy is direct_graph_update
@@ -352,6 +363,9 @@ specification:
     proposal_queue:
     - The first proposal queue is a derived artifact built from recurring graph-health signals and governance-class
       signals that should no longer remain implicit.
+    - Canonical-state proposal_queue derivation MUST use accepted canonical content or explicit proposal
+      artifacts, and MUST NOT count review_pending candidate worktree content as current graph truth or
+      recurrence-supporting evidence.
     - A proposal queue item may classify work as refactor_proposal or governance_proposal, and it records
       recurrence and source-run lineage without becoming canonical graph data by itself.
     - proposal_queue acts as an index and summary surface for proposal artifacts; it MUST NOT be the only
@@ -366,6 +380,9 @@ specification:
       as backlog labels, maturity overrides, or implied work ownership.
     - Staged candidate content produced by a successful refinement candidate MUST NOT be synced into canonical
       root paths while the candidate remains in review_pending.
+    - review_pending candidate graph-health inspection MAY inform human review context, but it MUST remain
+      explicitly non-canonical until accepted into canonical content or materialized as an explicit proposal
+      artifact.
   split_refactor_policy:
     boundary_contract:
     - SG-SPEC-0003 only constrains split_refactor behavior at governance boundary level.
