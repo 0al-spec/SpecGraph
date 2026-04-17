@@ -17,7 +17,7 @@ acceptance:
 - Defines SG-SPEC-0049 as the bounded derived-signal child under SG-SPEC-0003 for subtree shape and lower-boundary
   handoff interpretation.
 - Defines first derived subtree-shape signals for serial ladders, over-atomized subtrees, missing aggregate
-  grouping, depth without breadth, and delegation-only chains.
+  grouping, depth without breadth, delegation-only chains, role-obscured nodes, and bookkeeping-only nodes.
 - Defines lower-boundary handoff signals, their distinction from subtree-shape pressure, and their non-canonical
   meaning so further graph decomposition can be redirected without introducing a tracked Tech Spec layer.
 - Defines how evaluator and supervisor may consume these signals as advisory penalties, rebalance or handoff
@@ -29,10 +29,11 @@ acceptance_evidence:
   evidence: specification.objective, specification.scope.in, and specification.parent_contract define
     SG-SPEC-0049 as the delegated child for this signal slice beneath SG-SPEC-0003.
 - criterion: Defines first derived subtree-shape signals for serial ladders, over-atomized subtrees, missing
-    aggregate grouping, depth without breadth, and delegation-only chains.
+    aggregate grouping, depth without breadth, delegation-only chains, role-obscured nodes, and bookkeeping-only
+    nodes.
   evidence: specification.signal_families.subtree_shape enumerates serial_refinement_ladder, over_atomized_subtree,
-    missing_aggregate_node, depth_without_breadth, and delegation_only_chain with bounded indicative evidence
-    for each.
+    missing_aggregate_node, depth_without_breadth, delegation_only_chain, role_obscured_node, and bookkeeping_only_node
+    with bounded indicative evidence for each.
 - criterion: Defines lower-boundary handoff signals, their distinction from subtree-shape pressure, and
     their non-canonical meaning so further graph decomposition can be redirected without introducing a
     tracked Tech Spec layer.
@@ -48,15 +49,17 @@ acceptance_evidence:
     excludes formulas, thresholds, queue-control semantics, and tracked-layer design.
 prompt: Materialize SG-SPEC-0049 as the bounded child beneath SG-SPEC-0003 for derived subtree-shape and
   lower-boundary handoff signals. It should let evaluator and supervisor consume advisory graph-health
-  signals for over-serialized or graph-layer-exhausted subtrees without introducing a tracked Tech Spec
-  layer or concrete scoring formulas.
+  signals for over-serialized, role-obscured, or graph-layer-exhausted subtrees without introducing a
+  tracked Tech Spec layer or concrete scoring formulas.
 specification:
   objective: Define the bounded derived signal contract for subtree-shape pathologies and lower-boundary
-    handoff detection so SG-SPEC-0003 can delegate detailed signal semantics without expanding canonical
-    ontology into tracked implementation-layer design.
+    handoff detection so SG-SPEC-0003 can delegate detailed signal semantics, including human-readable
+    node-role loss and bookkeeping-only decomposition drift, without expanding canonical ontology into
+    tracked implementation-layer design.
   scope:
     in:
     - Derived signal families for subtree shape over bounded canonical subtrees
+    - Role-legibility and bookkeeping-drift inspection for bounded canonical nodes within those subtrees
     - Derived lower-boundary handoff signals for subtrees whose remaining detail is no longer graph-native
     - Derivation boundary between regrouping pressure and lower-boundary handoff pressure
     - Advisory consumer contract for evaluator and supervisor
@@ -77,6 +80,12 @@ specification:
       technical ladder.
     handoff_candidate_artifact: A derived proposal or external-facing handoff artifact that may be suggested
       when lower_boundary_handoff_signal pressure persists, without itself becoming canonical graph truth.
+    node_role: The human-comprehensible bounded responsibility a node plays in system meaning, independent
+      of the fact that it owns, consumes, or delegates adjacent nodes.
+    composed_function: The new system-facing function, invariant, or reviewable contract that a node synthesizes
+      by composing child concerns plus its own boundary logic.
+    bookkeeping_only_decomposition: A refinement move whose text mostly restates ownership, delegation,
+      edge routing, or slice placement without making the node_role or composed_function more legible.
   signal_families:
     subtree_shape:
     - signal: serial_refinement_ladder
@@ -109,6 +118,26 @@ specification:
       indicative_evidence:
       - neighboring nodes repeat parent-child delegation language with little new grouping value
       - boundary-only or routing-only text dominates a serial chain
+    - signal: role_obscured_node
+      meaning: A node stops reading as a bounded role in the system and becomes understandable mainly
+        through neighboring spec IDs, edge placement, or decomposition bookkeeping.
+      indicative_evidence:
+      - the title, objective, or acceptance focus on edge slices, segments, ownership, or child consumption
+        more than on the node_role it serves
+      - a human reader must inspect adjacent spec IDs to infer what system-facing responsibility the node
+        actually carries
+      - the node names what it delegates or owns but does not clearly state the composed_function or distinct
+        invariant it adds
+    - signal: bookkeeping_only_node
+      meaning: A node primarily restates decomposition bookkeeping and contributes little distinct graph-native
+        semantic value beyond ownership or handoff structure.
+      indicative_evidence:
+      - owns, consumes, delegates, edge, segment, slice, or handoff language dominates the node's bounded
+        contract
+      - neighboring nodes already express the same direct route or boundary and this node adds little
+        new runtime-observable or review-observable meaning
+      - deleting or merging the node would mostly collapse structural bookkeeping rather than erase a
+        distinct named role or composed_function
     lower_boundary_handoff:
     - signal: lower_boundary_handoff_candidate
       meaning: A subtree has likely reached the lower boundary of useful graph-native refinement and should
@@ -133,6 +162,8 @@ specification:
       segment rather than to the graph as a whole.
     - Derivation may combine canonical subtree shape with bounded run-context observations about the type
       of unresolved detail that remains.
+    - Derivation may inspect bounded node text such as title, objective, acceptance, and parent/child
+      contract language when role legibility or bookkeeping drift is the concern.
     family_distinction:
     - Subtree-shape signals indicate weak graph-native grouping and still leave room for regrouping, aggregate-node
       creation, or sibling rebalance within the graph.
@@ -145,6 +176,8 @@ specification:
       can still be named.
     - delegation_only_chain or serial_refinement_ladder by themselves are not evidence that implementation-facing
       handoff is correct unless the remaining unresolved detail has crossed the lower graph-native boundary.
+    - role_obscured_node or bookkeeping_only_node indicate human-legibility failure and semantic drift,
+      but do not by themselves prove that the correct next move is deeper decomposition.
     - Lower-boundary handoff signals remain advisory and proposal-first even when graph_layer_exhausted_for_subtree
       is present.
   signal_policy:
@@ -153,12 +186,16 @@ specification:
   - These signals evaluate subtree quality and graph-layer exhaustion, not single-node validity or acceptance.
   - Lower-boundary handoff signals may use subtree-shape signals as inputs, but shape problems and handoff
     readiness are not identical and must remain distinguishable.
+  - Role-legibility signals may use node text as bounded evidence because human readability is itself
+    a governed graph-quality property under SG-SPEC-0001.
   - A lower-boundary handoff signal does not imply that a tracked Tech Spec layer exists or must be materialized;
     it only indicates that further canonical graph refinement should be questioned.
   consumer_contract:
     evaluator:
     - Repeated subtree-shape signals may penalize continuing ordinary refinement along the same one-child
       ladder and may favor aggregate regrouping, sibling clustering, or retrospective subtree rebalance.
+    - role_obscured_node or bookkeeping_only_node may favor rewrite, merge, or aggregate regrouping over
+      another child slice when no new graph-native role can be named.
     - Lower-boundary handoff signals may prefer stop or redirect behavior, explicit proposal emission,
       or handoff-oriented follow-up rather than deeper canonical decomposition.
     supervisor:
@@ -166,6 +203,8 @@ specification:
       queues under SG-SPEC-0003's first-persistence rules.
     - Supervisor may use these signals to avoid materializing another canonical child when the remaining
       concern is not graph-native under current policy.
+    - Supervisor may treat role_obscured_node or bookkeeping_only_node as evidence that a subtree should
+      be rewritten around clearer roles before any further bounded child materialization is attempted.
     - Supervisor must not treat these signals as authorization to create a tracked implementation layer,
       bypass review, or mutate canonical specs without an allowed direct or proposal path.
   parent_contract:

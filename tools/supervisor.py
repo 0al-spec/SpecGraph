@@ -83,6 +83,8 @@ SUBTREE_SHAPE_SIGNALS = {
     "missing_aggregate_node",
     "depth_without_breadth",
     "delegation_only_chain",
+    "role_obscured_node",
+    "bookkeeping_only_node",
 }
 LOWER_BOUNDARY_HANDOFF_SIGNALS = {
     "lower_boundary_handoff_candidate",
@@ -93,6 +95,70 @@ GRAPH_LAYER_EXHAUSTED_CHAIN_THRESHOLD = 5
 SUBTREE_SHAPE_MIN_SINGLE_CHILD_RATIO = 0.75
 OVER_ATOMIZED_ACCEPTANCE_MAX = 3
 TEXT_MARKER_RATIO_THRESHOLD = 0.5
+ROLE_OBSCURED_BOOKKEEPING_RATIO_THRESHOLD = 4.0
+BOOKKEEPING_ONLY_RATIO_THRESHOLD = 5.0
+BOOKKEEPING_ONLY_CONTEXT_RATIO_THRESHOLD = 6.0
+ROLE_OBSCURED_SPEC_REFERENCE_THRESHOLD = 4
+SPEC_ID_TEXT_RE = re.compile(r"\bsg-spec-\d{4}\b")
+ROLE_OBSCURED_TITLE_MARKERS = ("edge", "segment", "slice", "topology")
+BOOKKEEPING_TEXT_MARKERS = (
+    "owns",
+    "own",
+    "consumes",
+    "consume",
+    "delegates",
+    "delegate",
+    "delegated",
+    "handoff",
+    "boundary",
+    "child",
+    "parent",
+    "dependency",
+    "depends on",
+    "depends_on",
+    "edge",
+    "segment",
+    "slice",
+    "topology",
+    "gateway",
+)
+ROLE_LEGIBILITY_MARKERS = (
+    "semantic",
+    "meaning",
+    "role",
+    "function",
+    "invariant",
+    "reviewable",
+    "readable",
+    "inspectable",
+    "implementation-agnostic",
+    "aggregate",
+    "forbid",
+    "forbids",
+    "require",
+    "requires",
+    "must",
+    "only allowed",
+    "explains why",
+    "governs",
+)
+ROLE_OBSCURED_CONTEXT_PHRASES = (
+    "materialize one bounded",
+    "materialize a single bounded",
+    "owns only",
+    "topology-only",
+    "delegation topology",
+    "direct-edge governance only",
+)
+BOOKKEEPING_ONLY_CONTEXT_PHRASES = (
+    "edge slice",
+    "child slice",
+    "gateway segment",
+    "direct-edge governance only",
+    "delegation topology",
+    "topology-only",
+    "only constrains the gateway-segment edges",
+)
 SEMANTIC_ACCEPTANCE_STOPWORDS = {
     "a",
     "an",
@@ -437,6 +503,10 @@ class SpecNode:
         return list(self.data.get("outputs", []))
 
     @property
+    def inputs(self) -> list[str]:
+        return list(self.data.get("inputs", []))
+
+    @property
     def allowed_paths(self) -> list[str]:
         return list(self.data.get("allowed_paths", []))
 
@@ -470,6 +540,25 @@ def index_specs(specs: list[SpecNode]) -> dict[str, SpecNode]:
     return {spec.id: spec for spec in specs if spec.id}
 
 
+def relation_ids(node_data: dict[str, Any], field: str) -> list[str]:
+    value = node_data.get(field)
+    if value is None:
+        return []
+    if isinstance(value, list):
+        return [str(item).strip() for item in value if str(item).strip()]
+    text = str(value).strip()
+    return [text] if text else []
+
+
+def superseded_spec_ids(specs: list[SpecNode]) -> set[str]:
+    superseded: set[str] = set()
+    for spec in specs:
+        if spec.id and relation_ids(spec.data, "superseded_by"):
+            superseded.add(spec.id)
+        superseded.update(relation_ids(spec.data, "supersedes"))
+    return superseded
+
+
 def refining_child_specs(node: SpecNode, specs: list[SpecNode]) -> list[SpecNode]:
     children: list[SpecNode] = []
     for spec in specs:
@@ -481,9 +570,14 @@ def refining_child_specs(node: SpecNode, specs: list[SpecNode]) -> list[SpecNode
     return children
 
 
+def active_refining_child_specs(node: SpecNode, specs: list[SpecNode]) -> list[SpecNode]:
+    excluded_ids = superseded_spec_ids(specs)
+    return [child for child in refining_child_specs(node, specs) if child.id not in excluded_ids]
+
+
 def accepted_child_spec_ids(node: SpecNode, specs: list[SpecNode]) -> list[str]:
     accepted: list[str] = []
-    for child in refining_child_specs(node, specs):
+    for child in active_refining_child_specs(node, specs):
         evidence = child.data.get("acceptance_evidence")
         if isinstance(evidence, list) and evidence and child.id:
             accepted.append(child.id)
@@ -509,6 +603,25 @@ def subtree_nodes(node: SpecNode, specs: list[SpecNode]) -> list[SpecNode]:
     return ordered
 
 
+def active_subtree_nodes(node: SpecNode, specs: list[SpecNode]) -> list[SpecNode]:
+    index = index_specs(specs)
+    seen: set[str] = set()
+    ordered: list[SpecNode] = []
+    stack = [node]
+
+    while stack:
+        current = stack.pop()
+        if not current.id or current.id in seen:
+            continue
+        seen.add(current.id)
+        ordered.append(current)
+        children = active_refining_child_specs(current, specs)
+        for child in reversed(children):
+            indexed_child = index.get(child.id, child)
+            stack.append(indexed_child)
+    return ordered
+
+
 def subtree_children_map(node: SpecNode, specs: list[SpecNode]) -> dict[str, list[SpecNode]]:
     descendants = subtree_nodes(node, specs)
     descendant_ids = {spec.id for spec in descendants if spec.id}
@@ -518,6 +631,21 @@ def subtree_children_map(node: SpecNode, specs: list[SpecNode]) -> dict[str, lis
             continue
         children_map[spec.id] = [
             child for child in refining_child_specs(spec, specs) if child.id in descendant_ids
+        ]
+    return children_map
+
+
+def active_subtree_children_map(node: SpecNode, specs: list[SpecNode]) -> dict[str, list[SpecNode]]:
+    descendants = active_subtree_nodes(node, specs)
+    descendant_ids = {spec.id for spec in descendants if spec.id}
+    children_map: dict[str, list[SpecNode]] = {}
+    for spec in descendants:
+        if not spec.id:
+            continue
+        children_map[spec.id] = [
+            child
+            for child in active_refining_child_specs(spec, specs)
+            if child.id in descendant_ids
         ]
     return children_map
 
@@ -550,9 +678,61 @@ def node_text_for_shape_analysis(node: SpecNode) -> str:
     return " ".join(part for part in parts if part).lower()
 
 
+def text_marker_hits(text: str, markers: tuple[str, ...]) -> int:
+    return sum(text.count(marker) for marker in markers)
+
+
+def unique_spec_reference_count(text: str) -> int:
+    return len(set(SPEC_ID_TEXT_RE.findall(text)))
+
+
+def node_role_legibility_profile(node: SpecNode) -> dict[str, Any]:
+    text = node_text_for_shape_analysis(node)
+    title = str(node.title).lower()
+    bookkeeping_hits = text_marker_hits(text, BOOKKEEPING_TEXT_MARKERS)
+    role_hits = text_marker_hits(text, ROLE_LEGIBILITY_MARKERS)
+    bookkeeping_ratio = bookkeeping_hits / max(role_hits, 1)
+    unique_spec_refs = unique_spec_reference_count(text)
+    has_structural_title = any(marker in title for marker in ROLE_OBSCURED_TITLE_MARKERS)
+    has_role_obscured_context = any(phrase in text for phrase in ROLE_OBSCURED_CONTEXT_PHRASES)
+    has_bookkeeping_only_context = any(
+        phrase in text for phrase in BOOKKEEPING_ONLY_CONTEXT_PHRASES
+    )
+    role_obscured = (
+        bookkeeping_ratio >= ROLE_OBSCURED_BOOKKEEPING_RATIO_THRESHOLD
+        and unique_spec_refs >= ROLE_OBSCURED_SPEC_REFERENCE_THRESHOLD
+        and (has_structural_title or (has_role_obscured_context and bookkeeping_ratio >= 8.0))
+    )
+    bookkeeping_only = (
+        bookkeeping_ratio >= BOOKKEEPING_ONLY_RATIO_THRESHOLD
+        and unique_spec_refs >= ROLE_OBSCURED_SPEC_REFERENCE_THRESHOLD
+        and (
+            has_structural_title
+            or (
+                has_bookkeeping_only_context
+                and bookkeeping_ratio >= BOOKKEEPING_ONLY_CONTEXT_RATIO_THRESHOLD
+            )
+        )
+    )
+    return {
+        "spec_id": node.id,
+        "title": node.title,
+        "bookkeeping_hits": bookkeeping_hits,
+        "role_hits": role_hits,
+        "bookkeeping_ratio": round(float(bookkeeping_ratio), 3),
+        "unique_spec_references": unique_spec_refs,
+        "role_obscured": role_obscured,
+        "bookkeeping_only": bookkeeping_only,
+    }
+
+
+def subtree_role_legibility_profiles(node: SpecNode, specs: list[SpecNode]) -> list[dict[str, Any]]:
+    return [node_role_legibility_profile(spec) for spec in active_subtree_nodes(node, specs)]
+
+
 def subtree_shape_metrics(node: SpecNode, specs: list[SpecNode]) -> dict[str, Any]:
-    descendants = subtree_nodes(node, specs)
-    children_map = subtree_children_map(node, specs)
+    descendants = active_subtree_nodes(node, specs)
+    children_map = active_subtree_children_map(node, specs)
     index = {spec.id: spec for spec in descendants if spec.id}
 
     level_widths: dict[int, int] = {}
@@ -1101,6 +1281,27 @@ def git_changed_files(cwd: Path = ROOT) -> list[str]:
     for line in result.stdout.splitlines():
         if len(line) >= 4:
             changed.append(line[3:].strip())
+    return changed
+
+
+def git_status_changed_files(cwd: Path = ROOT) -> list[str]:
+    result = subprocess.run(
+        ["git", "status", "--porcelain"],
+        cwd=cwd,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if result.returncode != 0:
+        return []
+
+    changed: list[str] = []
+    for line in result.stdout.splitlines():
+        if len(line) >= 4:
+            candidate = line[3:].strip()
+            if " -> " in candidate:
+                candidate = candidate.split(" -> ", 1)[1].strip()
+            changed.append(candidate)
     return changed
 
 
@@ -2551,7 +2752,9 @@ def build_split_refactor_work_item(
     specs: list[SpecNode] | None = None,
 ) -> dict[str, Any]:
     local_specs = specs or load_specs()
-    live_child_ids = [child.id for child in refining_child_specs(node, local_specs) if child.id]
+    live_child_ids = [
+        child.id for child in active_refining_child_specs(node, local_specs) if child.id
+    ]
     accepted_child_ids = accepted_child_spec_ids(node, local_specs)
     proposal_type = "refactor_proposal"
     proposal_id = f"{proposal_type}::{node.id}::{SPLIT_REFACTOR_SIGNAL}"
@@ -3214,6 +3417,10 @@ def observe_graph_health(
 
         metrics = subtree_shape_metrics(reconciled_node, worktree_specs)
         if metrics["descendant_count"] > 0:
+            role_legibility_profiles = subtree_role_legibility_profiles(
+                reconciled_node,
+                worktree_specs,
+            )
             shape_details = {
                 "longest_one_child_chain": metrics["longest_one_child_chain"],
                 "max_depth": metrics["max_depth"],
@@ -3327,6 +3534,52 @@ def observe_graph_health(
                 recommended_actions.append("compress_delegation_chain")
                 shape_pressure = True
 
+            role_obscured_profiles = [
+                profile for profile in role_legibility_profiles if profile["role_obscured"]
+            ]
+            if role_obscured_profiles:
+                observations.append(
+                    {
+                        "kind": "role_obscured_node",
+                        "spec_id": source_node.id,
+                        "details": {
+                            **shape_details,
+                            "affected_count": len(role_obscured_profiles),
+                            "affected_nodes": role_obscured_profiles,
+                            "summary": (
+                                "Some nodes in the subtree read more like decomposition "
+                                "bookkeeping than like clear system roles."
+                            ),
+                        },
+                    }
+                )
+                signals.append("role_obscured_node")
+                recommended_actions.append("rewrite_node_role_boundary")
+                shape_pressure = True
+
+            bookkeeping_only_profiles = [
+                profile for profile in role_legibility_profiles if profile["bookkeeping_only"]
+            ]
+            if bookkeeping_only_profiles:
+                observations.append(
+                    {
+                        "kind": "bookkeeping_only_node",
+                        "spec_id": source_node.id,
+                        "details": {
+                            **shape_details,
+                            "affected_count": len(bookkeeping_only_profiles),
+                            "affected_nodes": bookkeeping_only_profiles,
+                            "summary": (
+                                "Some nodes mostly restate ownership or edge-placement "
+                                "bookkeeping without adding a clearer graph-native role."
+                            ),
+                        },
+                    }
+                )
+                signals.append("bookkeeping_only_node")
+                recommended_actions.append("merge_bookkeeping_slice")
+                shape_pressure = True
+
             if (
                 shape_pressure
                 and outcome == "split_required"
@@ -3384,6 +3637,47 @@ def empty_graph_health(source_spec_id: str) -> dict[str, Any]:
         "observations": [],
         "signals": [],
         "recommended_actions": [],
+    }
+
+
+def graph_health_outcome_basis(node: SpecNode) -> str:
+    last_outcome = str(node.data.get("last_outcome", "")).strip()
+    if last_outcome:
+        return last_outcome
+    gate_state = node.gate_state
+    if gate_state in {"split_required", "blocked"}:
+        return gate_state
+    if gate_state == "retry_pending":
+        return "retry"
+    return "done"
+
+
+def inspect_canonical_graph_health(*, node: SpecNode, specs: list[SpecNode]) -> dict[str, Any]:
+    index = index_specs(specs)
+    outcome = graph_health_outcome_basis(node)
+    graph_health = observe_graph_health(
+        source_node=node,
+        worktree_specs=specs,
+        reconciliation={
+            "semantic_dependencies_resolved": semantic_dependencies_resolved(node, index),
+        },
+        atomicity_errors=[],
+        outcome=outcome,
+    )
+    active_subtree_ids = [spec.id for spec in active_subtree_nodes(node, specs) if spec.id]
+    raw_subtree_ids = [spec.id for spec in subtree_nodes(node, specs) if spec.id]
+    historical_descendant_ids = [
+        spec_id
+        for spec_id in raw_subtree_ids
+        if spec_id and spec_id != node.id and spec_id not in set(active_subtree_ids)
+    ]
+    return {
+        "source_spec_id": node.id,
+        "source_title": node.title,
+        "diagnostic_outcome": outcome,
+        "subtree_spec_ids": active_subtree_ids,
+        "historical_descendant_ids": historical_descendant_ids,
+        "graph_health": graph_health,
     }
 
 
@@ -3671,6 +3965,8 @@ def default_action_for_signal(signal: str) -> str:
         "missing_aggregate_node": "materialize_aggregate_node",
         "depth_without_breadth": "rebalance_subtree_shape",
         "delegation_only_chain": "compress_delegation_chain",
+        "role_obscured_node": "rewrite_node_role_boundary",
+        "bookkeeping_only_node": "merge_bookkeeping_slice",
         "lower_boundary_handoff_candidate": "review_lower_boundary_handoff",
         "graph_layer_exhausted_for_subtree": "review_lower_boundary_handoff",
     }.get(signal, "review_graph_health_signal")
@@ -4661,6 +4957,42 @@ def sync_current_node_into_worktree(node: SpecNode, worktree_path: Path) -> Path
     return worktree_node_path
 
 
+def dirty_local_input_spec_paths(
+    node: SpecNode,
+    *,
+    changed_files: list[str] | None = None,
+) -> list[str]:
+    changed = set(changed_files if changed_files is not None else git_status_changed_files(ROOT))
+    synced: list[str] = []
+    source_relpath = node.path.relative_to(ROOT).as_posix()
+    for rel_path in node.inputs:
+        if rel_path == source_relpath or not is_spec_node_path(rel_path):
+            continue
+        if rel_path not in changed:
+            continue
+        src = ROOT / rel_path
+        if src.exists() and src.is_file():
+            synced.append(rel_path)
+    return sorted(set(synced))
+
+
+def sync_local_input_specs_into_worktree(
+    node: SpecNode,
+    worktree_path: Path,
+    *,
+    changed_files: list[str] | None = None,
+) -> list[Path]:
+    synced_paths: list[Path] = []
+    for rel_path in dirty_local_input_spec_paths(node, changed_files=changed_files):
+        src = ROOT / rel_path
+        dst = worktree_path / rel_path
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        sanitized_text = sanitize_spec_sync_text(src.read_text(encoding="utf-8"))
+        dst.write_text(sanitized_text, encoding="utf-8")
+        synced_paths.append(dst)
+    return synced_paths
+
+
 def sanitize_spec_sync_text(text: str) -> str:
     """Remove runtime-only contamination before syncing a spec back to root.
 
@@ -5496,6 +5828,12 @@ def _apply_split_proposal(
     print(f"Branch: {branch}")
     synced_node_path = sync_current_node_into_worktree(node, worktree_path)
     print(f"Seeded worktree node from current tree: {synced_node_path}")
+    supporting_inputs = sync_local_input_specs_into_worktree(node, worktree_path)
+    if supporting_inputs:
+        print(
+            "Seeded supporting input specs from current tree: "
+            + ", ".join(path.as_posix() for path in supporting_inputs)
+        )
 
     before_status = node.status
     validation_errors: list[str] = []
@@ -5685,6 +6023,13 @@ def _process_split_refactor_proposal(
     emit(f"Branch: {branch}", enabled=verbose)
     synced_node_path = sync_current_node_into_worktree(node, worktree_path)
     emit(f"Seeded worktree node from current tree: {synced_node_path}", enabled=verbose)
+    supporting_inputs = sync_local_input_specs_into_worktree(node, worktree_path)
+    if supporting_inputs:
+        emit(
+            "Seeded supporting input specs from current tree: "
+            + ", ".join(path.as_posix() for path in supporting_inputs),
+            enabled=verbose,
+        )
 
     before = git_changed_files(worktree_path)
     tracked_paths = sorted(set(before))
@@ -6019,6 +6364,13 @@ def _process_one_spec(
     emit(f"Branch: {branch}", enabled=verbose)
     synced_node_path = sync_current_node_into_worktree(node, worktree_path)
     emit(f"Seeded worktree node from current tree: {synced_node_path}", enabled=verbose)
+    supporting_inputs = sync_local_input_specs_into_worktree(node, worktree_path)
+    if supporting_inputs:
+        emit(
+            "Seeded supporting input specs from current tree: "
+            + ", ".join(path.as_posix() for path in supporting_inputs),
+            enabled=verbose,
+        )
 
     before = git_changed_files(worktree_path)
     tracked_paths = sorted(set(before))
@@ -6477,11 +6829,13 @@ def main(
     verbose: bool = False,
     list_stale_runtime: bool = False,
     clean_stale_runtime: bool = False,
+    observe_graph_health_mode: bool = False,
 ) -> int:
     """Entry point for CLI and tests.
 
-    `main()` dispatches between four high-level modes:
+    `main()` dispatches between high-level modes:
     - gate resolution
+    - non-mutating graph-health observation
     - explicit split proposal mode
     - explicit split proposal application
     - autonomous loop mode
@@ -6542,6 +6896,53 @@ def main(
             )
             return 1
         return handle_stale_runtime(specs=specs, clean=clean_stale_runtime)
+
+    if observe_graph_health_mode:
+        if not target_spec:
+            print("--observe-graph-health requires --target-spec", file=sys.stderr)
+            return 1
+        if any(
+            (
+                resolve_gate,
+                decision,
+                split_proposal,
+                apply_split_proposal,
+                loop,
+                auto_approve,
+                dry_run,
+                operator_note,
+                mutation_budget,
+                run_authority,
+            )
+        ):
+            print(
+                "--observe-graph-health must be used only with --target-spec",
+                file=sys.stderr,
+            )
+            return 1
+        index = index_specs(specs)
+        node = index.get(str(target_spec).strip())
+        if node is None:
+            print(f"Spec not found: {target_spec}", file=sys.stderr)
+            return 1
+        if str(node.data.get("kind", "")).strip() != "spec":
+            print(f"Explicit target is not a spec node: {target_spec}", file=sys.stderr)
+            return 1
+
+        snapshot = inspect_canonical_graph_health(node=node, specs=specs)
+        print(f"Selected spec node: {node.id} — {node.title}")
+        print("\n=== graph-health observation mode ===")
+        print(f"Diagnostic outcome basis: {snapshot['diagnostic_outcome']}")
+        print(
+            "Subtree nodes: " + ", ".join(str(spec_id) for spec_id in snapshot["subtree_spec_ids"])
+        )
+        if snapshot["historical_descendant_ids"]:
+            print(
+                "Historical descendants excluded: "
+                + ", ".join(str(spec_id) for spec_id in snapshot["historical_descendant_ids"])
+            )
+        print(json.dumps(snapshot, ensure_ascii=False, indent=2))
+        return 0
 
     if resolve_gate:
         if not decision:
@@ -6930,6 +7331,11 @@ if __name__ == "__main__":
         action="store_true",
         help="Clean stale gate states and orphaned worktrees",
     )
+    parser.add_argument(
+        "--observe-graph-health",
+        action="store_true",
+        help="Print non-mutating graph-health diagnostics for --target-spec and its subtree",
+    )
     parser.add_argument("--resolve-gate", metavar="SPEC_ID", help="Resolve gate for a spec id")
     parser.add_argument(
         "--decision",
@@ -7043,5 +7449,6 @@ if __name__ == "__main__":
             verbose=args.verbose,
             list_stale_runtime=args.list_stale_runtime,
             clean_stale_runtime=args.clean_stale_runtime,
+            observe_graph_health_mode=args.observe_graph_health,
         )
     )
