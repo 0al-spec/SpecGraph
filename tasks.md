@@ -27,7 +27,7 @@ Task numbers are preserved for traceability across commits and PRs.
 
 ## Supervisor Trust and Governance
 
-37. [todo] Turn `review_pending` into a true pre-merge truth barrier so unapproved candidate content does not enter canonical root before approval.
+37. [done] Turn `review_pending` into a true pre-merge truth barrier so unapproved candidate content does not enter canonical root before approval.
 38. [todo] Rebuild canonical graph-health and queue derivation from accepted canonical state or first-class proposal artifacts, not from unapproved candidate worktrees.
 39. [todo] Make supervisor write authority default-deny so empty `allowed_paths` collapses to source-node-only scope instead of unrestricted sync authority.
 40. [todo] Require explicit structural authority for new spec creation so child materialization cannot occur from permissive path defaults alone.

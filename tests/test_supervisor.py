@@ -3154,6 +3154,11 @@ def test_main_creates_review_gate_and_provenance_metadata(
     repo_fixture: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    original_data = supervisor_module.get_yaml_module().safe_load(
+        node_path.read_text(encoding="utf-8")
+    )
+    original_prompt = original_data["prompt"]
     worktree = make_fake_worktree(repo_fixture)
     monkeypatch.setattr(
         supervisor_module,
@@ -3191,13 +3196,13 @@ def test_main_creates_review_gate_and_provenance_metadata(
     exit_code = supervisor_module.main(executor=fake_executor)
     assert exit_code == 0
 
-    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
     updated = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
     assert updated["status"] == "outlined"
     assert updated["gate_state"] == "review_pending"
     assert updated["proposed_status"] == "specified"
-    assert updated["prompt"] == "Updated by Codex"
-    assert updated["acceptance_evidence"] == grounded_acceptance_evidence(updated["acceptance"])
+    assert updated["prompt"] == original_prompt
+    assert updated.get("acceptance_evidence") == original_data.get("acceptance_evidence")
+    assert updated["pending_sync_paths"] == ["specs/nodes/SG-SPEC-0001.yaml"]
     assert "RUN_OUTCOME" not in updated
     assert "BLOCKER" not in updated
     assert "RUN_OUTCOME:" not in node_path.read_text(encoding="utf-8")
@@ -3223,6 +3228,7 @@ def test_main_creates_review_gate_and_provenance_metadata(
         "lower_maturity",
         "stable_id",
     ]
+    assert updated["pending_run_id"] == payload["run_id"]
     assert (repo_fixture / "runs" / "latest-summary.md").exists()
 
 
@@ -3707,8 +3713,9 @@ def test_main_explicit_targeted_refinement_reruns_review_pending_spec(
     updated = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
     assert updated["gate_state"] == "review_pending"
     assert updated["proposed_status"] == "linked"
-    assert updated["prompt"] == "Proposal lane policy now distinguishes tracked handles."
-    assert updated["acceptance_evidence"] == grounded_acceptance_evidence(updated["acceptance"])
+    assert updated["prompt"] == "Proposal lane policy needs tightening."
+    assert updated["pending_sync_paths"] == ["specs/nodes/SG-SPEC-0001.yaml"]
+    assert updated.get("acceptance_evidence") == node_data.get("acceptance_evidence")
 
     run_logs = sorted((repo_fixture / "runs").glob("*-SG-SPEC-*.json"))
     assert len(run_logs) == 1
@@ -6606,17 +6613,17 @@ def test_main_targeted_non_root_run_materializes_one_child_spec(
     updated_parent = supervisor_module.get_yaml_module().safe_load(
         parent_path.read_text(encoding="utf-8")
     )
-    child = supervisor_module.get_yaml_module().safe_load(
-        (specs_dir / "SG-SPEC-0003.yaml").read_text(encoding="utf-8")
-    )
 
-    assert updated_parent["depends_on"] == ["SG-SPEC-0003"]
+    assert updated_parent["gate_state"] == "review_pending"
+    assert updated_parent["depends_on"] == []
     assert updated_parent["outputs"] == ["specs/nodes/SG-SPEC-0002.yaml"]
     assert updated_parent["allowed_paths"] == ["specs/nodes/SG-SPEC-0002.yaml"]
-    assert child["refines"] == ["SG-SPEC-0002"]
-    assert child["title"] == "Bootstrap Relation Vocabulary"
-    assert child["outputs"] == ["specs/nodes/SG-SPEC-0003.yaml"]
-    assert child["allowed_paths"] == ["specs/nodes/SG-SPEC-0003.yaml"]
+    assert updated_parent["pending_sync_paths"] == [
+        "specs/nodes/SG-SPEC-0002.yaml",
+        "specs/nodes/SG-SPEC-0003.yaml",
+    ]
+    assert updated_parent["last_materialized_child_paths"] == ["specs/nodes/SG-SPEC-0003.yaml"]
+    assert not (specs_dir / "SG-SPEC-0003.yaml").exists()
 
 
 def test_main_targeted_child_materialization_run_blocks_when_no_child_is_produced(
@@ -6963,6 +6970,7 @@ def test_resolve_gate_approve_accepts_staged_worktree_changes(
     worktree = make_fake_worktree(repo_fixture)
     node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
     worktree_node_path = worktree / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    rel_path = "specs/nodes/SG-SPEC-0001.yaml"
 
     worktree_data = supervisor_module.get_yaml_module().safe_load(
         worktree_node_path.read_text(encoding="utf-8")
@@ -6974,9 +6982,14 @@ def test_resolve_gate_approve_accepts_staged_worktree_changes(
     data["gate_state"] = "review_pending"
     data["proposed_status"] = "specified"
     data["proposed_maturity"] = 0.4
-    data["prompt"] = "Approved from worktree"
     data["last_worktree_path"] = worktree.as_posix()
-    data["last_changed_files"] = ["specs/nodes/SG-SPEC-0001.yaml"]
+    data["last_changed_files"] = [rel_path]
+    data["pending_sync_paths"] = [rel_path]
+    data["pending_base_digests"] = supervisor_module.snapshot_sync_digests([rel_path], repo_fixture)
+    data["pending_candidate_digests"] = supervisor_module.snapshot_sync_digests(
+        [rel_path], worktree
+    )
+    data["pending_run_id"] = "RUN-1"
     node_path.write_text(json.dumps(data), encoding="utf-8")
 
     exit_code = supervisor_module.main(
@@ -7005,6 +7018,7 @@ def test_resolve_gate_approve_cleans_real_git_worktree_and_branch(
     worktree_path, branch = supervisor_module.create_isolated_worktree("SG-SPEC-0001")
     node_path = git_repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
     worktree_node_path = worktree_path / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    rel_path = "specs/nodes/SG-SPEC-0001.yaml"
 
     approved_prompt = "Approved from retained git worktree"
     worktree_data = supervisor_module.get_yaml_module().safe_load(
@@ -7017,10 +7031,17 @@ def test_resolve_gate_approve_cleans_real_git_worktree_and_branch(
     data["gate_state"] = "review_pending"
     data["proposed_status"] = "specified"
     data["proposed_maturity"] = 0.4
-    data["prompt"] = approved_prompt
     data["last_worktree_path"] = worktree_path.as_posix()
     data["last_branch"] = branch
-    data["last_changed_files"] = ["specs/nodes/SG-SPEC-0001.yaml"]
+    data["last_changed_files"] = [rel_path]
+    data["pending_sync_paths"] = [rel_path]
+    data["pending_base_digests"] = supervisor_module.snapshot_sync_digests(
+        [rel_path], git_repo_fixture
+    )
+    data["pending_candidate_digests"] = supervisor_module.snapshot_sync_digests(
+        [rel_path], worktree_path
+    )
+    data["pending_run_id"] = "RUN-1"
     node_path.write_text(json.dumps(data), encoding="utf-8")
 
     exit_code = supervisor_module.main(
@@ -7048,20 +7069,22 @@ def test_resolve_gate_approve_rejects_stale_worktree_candidate(
 ) -> None:
     worktree = make_fake_worktree(repo_fixture)
     node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
-    worktree_node_path = worktree / "specs" / "nodes" / "SG-SPEC-0001.yaml"
-
-    worktree_data = supervisor_module.get_yaml_module().safe_load(
-        worktree_node_path.read_text(encoding="utf-8")
-    )
-    worktree_data["prompt"] = "Stale candidate"
-    worktree_node_path.write_text(json.dumps(worktree_data), encoding="utf-8")
+    rel_path = "specs/nodes/SG-SPEC-0001.yaml"
+    base_digests = supervisor_module.snapshot_sync_digests([rel_path], repo_fixture)
 
     data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
     data["gate_state"] = "review_pending"
     data["proposed_status"] = "specified"
     data["proposed_maturity"] = 0.4
     data["last_worktree_path"] = worktree.as_posix()
-    data["last_changed_files"] = ["specs/nodes/SG-SPEC-0001.yaml"]
+    data["last_changed_files"] = [rel_path]
+    data["pending_sync_paths"] = [rel_path]
+    data["pending_base_digests"] = base_digests
+    data["pending_candidate_digests"] = supervisor_module.snapshot_sync_digests(
+        [rel_path], worktree
+    )
+    data["pending_run_id"] = "RUN-1"
+    data["prompt"] = "Canonical advanced"
     node_path.write_text(json.dumps(data), encoding="utf-8")
 
     exit_code = supervisor_module.main(
@@ -7073,12 +7096,12 @@ def test_resolve_gate_approve_rejects_stale_worktree_candidate(
 
     err = capsys.readouterr().err
     assert "review gate is stale" in err
-    assert "prompt" in err
+    assert "canonical-base-mismatch" in err
 
     updated = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
     assert updated["status"] == "outlined"
     assert updated["gate_state"] == "review_pending"
-    assert updated["prompt"] == "Refine this node."
+    assert updated["prompt"] == "Canonical advanced"
     assert "last_gate_decision" not in updated
 
 
@@ -7259,6 +7282,7 @@ def test_resolve_gate_approve_syncs_when_allowed_paths_empty(
     repo_fixture: Path,
 ) -> None:
     node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    rel_path = "specs/nodes/SG-SPEC-0001.yaml"
     node_data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
     node_data["allowed_paths"] = []
     node_data["gate_state"] = "review_pending"
@@ -7276,8 +7300,15 @@ def test_resolve_gate_approve_syncs_when_allowed_paths_empty(
 
     node_data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
     node_data["last_worktree_path"] = worktree.as_posix()
-    node_data["last_changed_files"] = ["specs/nodes/SG-SPEC-0001.yaml"]
-    node_data["prompt"] = "Gate approved unrestricted sync"
+    node_data["last_changed_files"] = [rel_path]
+    node_data["pending_sync_paths"] = [rel_path]
+    node_data["pending_base_digests"] = supervisor_module.snapshot_sync_digests(
+        [rel_path], repo_fixture
+    )
+    node_data["pending_candidate_digests"] = supervisor_module.snapshot_sync_digests(
+        [rel_path], worktree
+    )
+    node_data["pending_run_id"] = "RUN-1"
     node_path.write_text(json.dumps(node_data), encoding="utf-8")
 
     exit_code = supervisor_module.main(
@@ -7762,8 +7793,9 @@ def test_main_repairs_recoverable_worktree_yaml_indentation(
     assert exit_code == 0
     node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
     updated = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
-    assert updated["prompt"] == "Updated by recoverable YAML repair path."
+    assert updated["prompt"] == "Initial prompt."
     assert updated["gate_state"] == "review_pending"
+    assert updated["pending_sync_paths"] == ["specs/nodes/SG-SPEC-0001.yaml"]
     run_logs = sorted((repo_fixture / "runs").glob("*-SG-SPEC-*.json"))
     payload = json.loads(run_logs[0].read_text(encoding="utf-8"))
     assert payload["completion_status"] == "ok"

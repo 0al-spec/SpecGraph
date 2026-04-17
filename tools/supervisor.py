@@ -402,6 +402,10 @@ SYNC_STRIPPED_SPEC_KEYS = {
     "last_gate_decision",
     "last_gate_note",
     "last_gate_at",
+    "pending_sync_paths",
+    "pending_base_digests",
+    "pending_candidate_digests",
+    "pending_run_id",
 }
 DEFAULT_CODEX_HOME = Path(os.environ.get("CODEX_HOME", "~/.codex")).expanduser()
 
@@ -1339,6 +1343,21 @@ def snapshot_file_digests(paths: list[str], base_dir: Path) -> dict[str, str | N
             continue
         digest = hashlib.sha256(file_path.read_bytes()).hexdigest()
         digests[rel_path] = digest
+    return digests
+
+
+def snapshot_sync_digests(paths: list[str], base_dir: Path) -> dict[str, str | None]:
+    digests: dict[str, str | None] = {}
+    for rel_path in paths:
+        file_path = base_dir / rel_path
+        if not file_path.exists() or not file_path.is_file():
+            digests[rel_path] = None
+            continue
+        if is_spec_node_path(rel_path):
+            sync_text = sanitize_spec_sync_text(file_path.read_text(encoding="utf-8"))
+            digests[rel_path] = hashlib.sha256(sync_text.encode("utf-8")).hexdigest()
+            continue
+        digests[rel_path] = hashlib.sha256(file_path.read_bytes()).hexdigest()
     return digests
 
 
@@ -2578,6 +2597,64 @@ def select_sync_paths(allowed_paths: list[str], changed_files: list[str]) -> lis
         for path in changed_files
         if any(PurePosixPath(path).match(pattern) for pattern in allowed_paths)
     ]
+
+
+def coerce_pending_digest_map(value: Any) -> dict[str, str | None]:
+    if not isinstance(value, dict):
+        return {}
+    coerced: dict[str, str | None] = {}
+    for key, digest in value.items():
+        rel_path = str(key).strip()
+        if not rel_path:
+            continue
+        if digest is None:
+            coerced[rel_path] = None
+            continue
+        digest_text = str(digest).strip()
+        coerced[rel_path] = digest_text or None
+    return coerced
+
+
+def pending_review_sync_paths(node: SpecNode) -> list[str]:
+    raw_paths = node.data.get("pending_sync_paths")
+    if isinstance(raw_paths, list):
+        paths = [str(path).strip() for path in raw_paths if str(path).strip()]
+        return sorted(dict.fromkeys(paths))
+    changed_files = list(node.data.get("last_changed_files", []))
+    return select_sync_paths(node.allowed_paths, changed_files)
+
+
+def pending_review_base_divergence_paths(node: SpecNode, rel_paths: list[str]) -> list[str]:
+    recorded = coerce_pending_digest_map(node.data.get("pending_base_digests"))
+    if not recorded:
+        return []
+    current = snapshot_sync_digests(rel_paths, base_dir=ROOT)
+    return [
+        f"{rel_path}:<canonical-base-mismatch>"
+        for rel_path in rel_paths
+        if current.get(rel_path) != recorded.get(rel_path)
+    ]
+
+
+def pending_review_candidate_divergence_paths(
+    node: SpecNode, worktree_path: Path, rel_paths: list[str]
+) -> list[str]:
+    recorded = coerce_pending_digest_map(node.data.get("pending_candidate_digests"))
+    if not recorded:
+        return []
+    current = snapshot_sync_digests(rel_paths, base_dir=worktree_path)
+    return [
+        f"{rel_path}:<staged-candidate-mismatch>"
+        for rel_path in rel_paths
+        if current.get(rel_path) != recorded.get(rel_path)
+    ]
+
+
+def clear_pending_review_state(node: SpecNode) -> None:
+    node.data.pop("pending_sync_paths", None)
+    node.data.pop("pending_base_digests", None)
+    node.data.pop("pending_candidate_digests", None)
+    node.data.pop("pending_run_id", None)
 
 
 def validate_status_format(node_data: dict[str, Any]) -> list[str]:
@@ -5726,11 +5803,29 @@ def resolve_gate_decision(
             return 1
 
         worktree_path = Path(str(node.data.get("last_worktree_path", ""))).expanduser()
+        pending_sync_paths = pending_review_sync_paths(node)
         changed_files = list(node.data.get("last_changed_files", []))
         materialized_child_paths = list(node.data.get("last_materialized_child_paths", []))
         if worktree_path.as_posix() and worktree_path.exists():
-            allowed_changes = select_sync_paths(node.allowed_paths, changed_files)
-            divergence_paths = gate_worktree_divergence_paths(node, worktree_path, allowed_changes)
+            allowed_changes = pending_sync_paths or select_sync_paths(
+                node.allowed_paths, changed_files
+            )
+            has_pending_candidate_digests = bool(
+                coerce_pending_digest_map(node.data.get("pending_candidate_digests"))
+            )
+            has_pending_base_digests = bool(
+                coerce_pending_digest_map(node.data.get("pending_base_digests"))
+            )
+            candidate_divergence_paths = pending_review_candidate_divergence_paths(
+                node, worktree_path, allowed_changes
+            )
+            base_divergence_paths = pending_review_base_divergence_paths(node, allowed_changes)
+            if has_pending_candidate_digests or has_pending_base_digests:
+                divergence_paths = candidate_divergence_paths + base_divergence_paths
+            else:
+                divergence_paths = gate_worktree_divergence_paths(
+                    node, worktree_path, allowed_changes
+                )
             if divergence_paths:
                 print(
                     (
@@ -5761,6 +5856,7 @@ def resolve_gate_decision(
         node.data["proposed_status"] = None
         node.data["proposed_maturity"] = None
         node.data["required_human_action"] = "-"
+        clear_pending_review_state(node)
     else:
         gate_map = {
             "retry": ("retry_pending", "rerun supervisor"),
@@ -5774,6 +5870,7 @@ def resolve_gate_decision(
         node.data["required_human_action"] = required_action
         node.data["proposed_status"] = None
         node.data["proposed_maturity"] = None
+        clear_pending_review_state(node)
 
     node.data["last_worktree_path"] = ""
     node.data["last_branch"] = ""
@@ -6649,6 +6746,7 @@ def _process_one_spec(
         and accepted_refinement
         and bool(changed)
     )
+    allowed_changes = select_sync_paths(effective_allowed_paths, changed)
     split_sync_allowed = productive_split_required and (
         not atomicity_errors
         or executor_requested_split_required
@@ -6657,7 +6755,6 @@ def _process_one_spec(
         or any(path != source_spec_relpath for path in changed)
     )
     if split_sync_allowed:
-        allowed_changes = select_sync_paths(effective_allowed_paths, changed)
         sync_files_from_worktree(worktree_path, allowed_changes)
         normalize_materialized_child_specs(materialized_child_paths)
         node.reload()
@@ -6670,17 +6767,9 @@ def _process_one_spec(
             before_data=before_node_data,
             requested=child_materialization_requested,
         )
+        clear_pending_review_state(node)
 
     if success:
-        allowed_changes = select_sync_paths(effective_allowed_paths, changed)
-        sync_files_from_worktree(worktree_path, allowed_changes)
-        normalize_materialized_child_specs(materialized_child_paths)
-        node.reload()
-        restore_ephemeral_child_authority_fields(
-            node=node,
-            before_data=before_node_data,
-            requested=child_materialization_requested,
-        )
         proposed_maturity = (
             None if is_graph_refactor_run else min(1.0, round(node.maturity + 0.2, 2))
         )
@@ -6688,6 +6777,14 @@ def _process_one_spec(
         node.data["proposed_maturity"] = proposed_maturity
         acceptance_decision = refinement_acceptance["decision"]
         if auto_approve and acceptance_decision == REFINEMENT_ACCEPT_DECISION_APPROVE:
+            sync_files_from_worktree(worktree_path, allowed_changes)
+            normalize_materialized_child_specs(materialized_child_paths)
+            node.reload()
+            restore_ephemeral_child_authority_fields(
+                node=node,
+                before_data=before_node_data,
+                requested=child_materialization_requested,
+            )
             if proposed_status:
                 node.data["status"] = proposed_status
             node.data["maturity"] = proposed_maturity
@@ -6695,12 +6792,21 @@ def _process_one_spec(
             node.data["proposed_status"] = None
             node.data["proposed_maturity"] = None
             required_human_action = "-"
+            clear_pending_review_state(node)
         else:
             node.data["gate_state"] = "review_pending"
             if acceptance_decision == REFINEMENT_ACCEPT_DECISION_APPROVE:
                 required_human_action = "approve or retry refinement"
             else:
                 required_human_action = "review refinement impact before approval"
+            node.data["pending_sync_paths"] = allowed_changes
+            node.data["pending_base_digests"] = snapshot_sync_digests(
+                allowed_changes, base_dir=ROOT
+            )
+            node.data["pending_candidate_digests"] = snapshot_sync_digests(
+                allowed_changes, base_dir=worktree_path
+            )
+            node.data["pending_run_id"] = run_id
     else:
         if primary_executor_failure:
             node.data["gate_state"] = "blocked"
@@ -6723,6 +6829,7 @@ def _process_one_spec(
         else:
             node.data["gate_state"] = "retry_pending"
             required_human_action = "rerun supervisor"
+        clear_pending_review_state(node)
 
     cleanup_failed_child_materialization = (
         child_materialization_requested

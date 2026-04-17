@@ -25,7 +25,8 @@ allowed_paths:
 - specs/nodes/SG-SPEC-0003.yaml
 acceptance:
 - Defines the boundary between canonical SpecGraph governance, supervisor execution, bounded autonomous
-  continuation, and changes that always require human approval
+  continuation, review_pending staging of successful refinement candidates, and changes that always require
+  human approval
 - Defines observation, signal, and proposal as a derived reflective loop, including linked-spec continuation
   after explicit blocked or gated work clears, that does not mutate canonical specs by itself
 - Defines the first graph-health signals for oversized specs, missing canonical dependencies, repeated
@@ -39,14 +40,18 @@ acceptance:
   details to SG-SPEC-0034, and detailed subtree-shape and lower-boundary handoff signal contracts to SG-SPEC-0049
 acceptance_evidence:
 - criterion: Defines the boundary between canonical SpecGraph governance, supervisor execution, bounded
-    autonomous continuation, and changes that always require human approval
+    autonomous continuation, review_pending staging of successful refinement candidates, and changes that
+    always require human approval
   evidence: 'specification.boundary_policy separates canonical_governance, supervisor_execution, and human_approval.
     It states that specs govern ontology and policy, the supervisor executes bounded refinement and emits
     derived observations, and constitutional changes require explicit human approval. Direct-update authorization
     and continuation execution mechanics are delegated through SG-SPEC-0026 and its bounded descendant
-    mechanics specs, while SG-SPEC-0003 retains the boundary contract. The same section allows bounded
-    autonomous continuation only after blocked/gated work is clear and only within current authority,
-    without authorizing new metrics, cross-branch restructuring, or review bypass.
+    mechanics specs, while SG-SPEC-0003 retains the boundary contract. specification.boundary_policy.human_approval
+    now restores review_pending as a pre-merge barrier by requiring successful refinement candidates to
+    remain staged until explicit approve, forbidding sync of staged candidate paths into the canonical
+    root before approval, and requiring approval-time freshness revalidation before sync. The same section
+    allows bounded autonomous continuation only after blocked/gated work is clear and only within current
+    authority, without authorizing new metrics, cross-branch restructuring, or review bypass.
 
     '
 - criterion: Defines observation, signal, and proposal as a derived reflective loop, including linked-spec
@@ -107,6 +112,7 @@ specification:
   scope:
     in:
     - Boundary between canonical specs, supervisor execution, and human approval
+    - review_pending staging boundary for successful refinement candidates before canonical sync
     - Bounded autonomous continuation selection among linked specs after explicit blocked or gated work
       clears
     - Reflective loop stages from observation to proposal
@@ -253,6 +259,13 @@ specification:
     - Human approval is required for constitutional_change, including ontology changes, policy changes,
       threshold changes that alter governance meaning, and supervisor behavior changes that expand autonomous
       authority.
+    - review_pending is a pre-merge barrier for successful refinement candidates that would change canonical
+      content.
+    - Successful refinement candidates MUST remain staged in review_pending until an explicit approve
+      decision authorizes sync of the staged candidate paths into the canonical root.
+    - Approval to sync staged candidate paths MUST revalidate candidate freshness against the current
+      canonical root before sync; stale staged candidates MUST remain non-canonical until refreshed or
+      rerun.
   reflective_loop:
     stages:
     - Observe graph and run state
@@ -351,6 +364,8 @@ specification:
       rules.
     - Derived latent_graph_improvement_candidate records MUST NOT be written into canonical spec nodes
       as backlog labels, maturity overrides, or implied work ownership.
+    - Staged candidate content produced by a successful refinement candidate MUST NOT be synced into canonical
+      root paths while the candidate remains in review_pending.
   split_refactor_policy:
     boundary_contract:
     - SG-SPEC-0003 only constrains split_refactor behavior at governance boundary level.
@@ -369,6 +384,8 @@ gate_state: none
 proposed_status: null
 proposed_maturity: null
 required_human_action: '-'
+last_worktree_path: ''
+last_branch: ''
 last_gate_decision: approve
 last_gate_note: ''
-last_gate_at: '2026-04-14T22:19:52.661153+00:00'
+last_gate_at: '2026-04-17T21:54:35.668921+00:00'
