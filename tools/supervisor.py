@@ -550,10 +550,29 @@ def relation_ids(node_data: dict[str, Any], field: str) -> list[str]:
     return [text] if text else []
 
 
+def presence_state(node_data: dict[str, Any]) -> str:
+    value = node_data.get("presence")
+    if isinstance(value, dict):
+        state = str(value.get("state", "")).strip().lower()
+        return state
+    if isinstance(value, str):
+        return value.strip().lower()
+    return ""
+
+
+def is_historical_spec(node_data: dict[str, Any]) -> bool:
+    state = presence_state(node_data)
+    if state == "active":
+        return False
+    if state in {"historical", "historical_lineage_only"}:
+        return True
+    return bool(relation_ids(node_data, "superseded_by"))
+
+
 def superseded_spec_ids(specs: list[SpecNode]) -> set[str]:
     superseded: set[str] = set()
     for spec in specs:
-        if spec.id and relation_ids(spec.data, "superseded_by"):
+        if spec.id and is_historical_spec(spec.data):
             superseded.add(spec.id)
         superseded.update(relation_ids(spec.data, "supersedes"))
     return superseded

@@ -12,10 +12,12 @@ depends_on:
 - SG-SPEC-0019
 - SG-SPEC-0023
 - SG-SPEC-0024
+- SG-SPEC-0054
 relates_to: []
 inputs:
 - README.md
 - AGENTS.md
+- specs/nodes/SG-SPEC-0054.yaml
 outputs:
 - specs/nodes/SG-SPEC-0001.yaml
 allowed_paths:
@@ -42,15 +44,17 @@ acceptance_evidence:
     path
   evidence: 'specification.node_kinds lists the seed kinds (intent, spec, requirement, decision, constraint,
     invariant, code_surface, test, release) each with description, required_fields, and optional_fields.
-    The spec kind also exposes refines so descendant specs can point back to ancestor specs and elaborate
-    them incrementally.  The authority_class cross-cutting field is defined in specification.authority_classes
-    and applies to every node.
+    Every seed kind now exposes optional `presence` as the cross-cutting current-versus-historical field,
+    while SG-SPEC-0054 owns the detailed contract for that field. The spec kind also exposes refines so
+    descendant specs can point back to ancestor specs and elaborate them incrementally. The authority_class
+    cross-cutting field is defined in specification.authority_classes and applies to every node.
 
     '
 - criterion: Defines the edge kinds currently in scope with source/target constraints and semantics
   evidence: 'specification.edge_kinds in SG-SPEC-0001 defines the edge set and baseline semantics. SG-SPEC-0023
     adds the machine-checkable compatibility matrix, directedness constraints, and blocked-edge rules
-    for each edge kind.
+    for each edge kind, while SG-SPEC-0019 refines the revision and supersession lineage semantics consumed
+    by the `supersedes` edge.
 
     '
 - criterion: Defines the node lifecycle and valid status transitions
@@ -60,9 +64,12 @@ acceptance_evidence:
 
     '
 - criterion: Establishes the separation between canonical (user-owned) and derived (rebuildable) data
-  evidence: 'specification.canonical_vs_derived explicitly lists what belongs to each category.  INV-005
-    formalizes the invariant.  specification.authority_classes distinguishes authored, imported, inferred,
-    and distilled provenance.
+  evidence: 'specification.canonical_vs_derived explicitly lists canonical records versus rebuildable
+    derived artifacts, and INV-005 formalizes that separation. specification.terminology.presence names
+    `presence` as the concrete current-versus-historical node field, specification.scope.out delegates
+    the detailed `presence` surface semantics to SG-SPEC-0054, and SG-SPEC-0054 specification.canonical_vs_derived_boundary
+    keeps authored `presence` records canonical while filters, badges, and inferred current-state projections
+    remain derived and rebuildable.
 
     '
 - criterion: States the governing invariants that every node and edge must satisfy
@@ -84,16 +91,18 @@ acceptance_evidence:
   evidence: 'prompt frames SG-SPEC-0001 as a seed ontology and directs unresolved areas into child specs;
     scope.in adds recursive refinement via child specs; scope.out now delegates observability metrics
     to SG-SPEC-0021, adoption-layer entities to SG-SPEC-0018, executable-layer code_surface/test/release
-    semantics to SG-SPEC-0020, revision/supersession lineage semantics to SG-SPEC-0019, and detailed maturity
-    semantics to SG-SPEC-0022; D7 formalizes the seed-spec rule; spec.node_kinds.spec includes refines;
-    and the concrete descendants `specs/nodes/SG-SPEC-0002.yaml`, `specs/nodes/SG-SPEC-0007.yaml`, `specs/nodes/SG-SPEC-0009.yaml`,
+    semantics to SG-SPEC-0020, revision/supersession lineage semantics to SG-SPEC-0019, detailed maturity
+    semantics to SG-SPEC-0022, and active-versus-historical presence surface semantics to SG-SPEC-0054;
+    D7 formalizes the seed-spec rule; spec.node_kinds.spec includes refines; and the concrete descendants
+    `specs/nodes/SG-SPEC-0002.yaml`, `specs/nodes/SG-SPEC-0007.yaml`, `specs/nodes/SG-SPEC-0009.yaml`,
     `specs/nodes/SG-SPEC-0010.yaml`, `specs/nodes/SG-SPEC-0017.yaml`, `specs/nodes/SG-SPEC-0018.yaml`,
     `specs/nodes/SG-SPEC-0019.yaml`, `specs/nodes/SG-SPEC-0020.yaml`, `specs/nodes/SG-SPEC-0021.yaml`,
-    and `specs/nodes/SG-SPEC-0022.yaml` now declare `refines: [SG-SPEC-0001]`. SG-SPEC-0001 keeps `depends_on:
-    [SG-SPEC-0002, SG-SPEC-0007, SG-SPEC-0009, SG-SPEC-0010, SG-SPEC-0017, SG-SPEC-0019, SG-SPEC-0023,
-    SG-SPEC-0024]` for blocking descendants, while SG-SPEC-0018, SG-SPEC-0020, SG-SPEC-0021, and SG-SPEC-0022
-    remain non-blocking delegated children, keeping the refinement chain explicit without widening linked
-    blockers beyond concrete descendants.
+    `specs/nodes/SG-SPEC-0022.yaml`, and `specs/nodes/SG-SPEC-0054.yaml` now declare or serve delegated
+    refinement under `SG-SPEC-0001`. SG-SPEC-0001 keeps `depends_on: [SG-SPEC-0002, SG-SPEC-0007, SG-SPEC-0009,
+    SG-SPEC-0010, SG-SPEC-0017, SG-SPEC-0019, SG-SPEC-0023, SG-SPEC-0024, SG-SPEC-0054]` for concrete
+    blocking descendants, while SG-SPEC-0018, SG-SPEC-0020, SG-SPEC-0021, and SG-SPEC-0022 remain non-blocking
+    delegated children, keeping the refinement chain explicit without widening linked blockers beyond
+    concrete descendants.
 
     '
 prompt: 'This spec is a seed ontology, not a finished graph. Use child specs to
@@ -164,6 +173,8 @@ specification:
     - Detailed node maturity semantics and maturity-to-lifecycle interaction — covered by SG-SPEC-0022
     - Detailed edge-kind compatibility matrix, blocked-edge semantics, and directedness constraints —
       covered by SG-SPEC-0023
+    - Detailed active-versus-historical node presence surface semantics and visible current-vs-lineage
+      markers — covered by SG-SPEC-0054
   terminology:
     intent: 'A precise, governed representation of what a product must be, how it must behave, and how
       its implementation can be validated.  Intent is the source of truth from which all other artifacts
@@ -202,8 +213,13 @@ specification:
       through which revisions.
 
       '
+    presence: 'A concrete field named `presence` that denotes whether a governed node is the active current
+      expression for its bounded concern or retained only as historical lineage. SG-SPEC-0001 names this
+      field and delegates its detailed surface semantics and canonical-versus-derived boundary to SG-SPEC-0054.
+
+      '
     supersession: 'The act of replacing one node or edge version with a newer one while preserving the
-      history chain.  The old node is archived, not deleted.
+      history chain. The older subject remains inspectable historical lineage; it is not deleted.
 
       '
     authority_class: 'A tag on every node indicating its origin: authored (human-written), imported (from
@@ -263,6 +279,7 @@ specification:
     - authority_class
     optional_fields:
     - maturity
+    - presence
     - owner
     - source_refs
     - created_at
@@ -281,6 +298,7 @@ specification:
     - acceptance
     optional_fields:
     - maturity
+    - presence
     - depends_on
     - relates_to
     - intent_refs
@@ -302,6 +320,7 @@ specification:
     - authority_class
     - source_ref
     optional_fields:
+    - presence
     - priority
     - verification_mode
     - success_signals
@@ -317,6 +336,7 @@ specification:
     - statement
     - rationale
     optional_fields:
+    - presence
     - alternatives_considered
     - superseded_by
   - kind: constraint
@@ -329,6 +349,7 @@ specification:
     - authority_class
     - statement
     optional_fields:
+    - presence
     - source_ref
     - enforcement
   - kind: invariant
@@ -341,6 +362,7 @@ specification:
     - authority_class
     - statement
     optional_fields:
+    - presence
     - scope
     - verification_mode
   - kind: code_surface
@@ -356,6 +378,7 @@ specification:
     - authority_class
     - surface_type
     optional_fields:
+    - presence
     - task_refs
     - criterion_refs
     - runtime_surface_refs
@@ -370,6 +393,7 @@ specification:
     - authority_class
     - covers
     optional_fields:
+    - presence
     - test_type
     - path_hint
   - kind: release
@@ -382,6 +406,7 @@ specification:
     - authority_class
     - version_tag
     optional_fields:
+    - presence
     - code_surface_refs
     - rollout_scope
   authority_classes:
@@ -446,8 +471,9 @@ specification:
     - constraint
     classification: static
   - kind: supersedes
-    semantics: 'Source node replaces target node.  Target status becomes frozen or archived.  The history
-      chain is preserved.
+    semantics: 'Source node replaces target node in canonical lineage. Historical presence and lifecycle
+      disposition remain orthogonal; SG-SPEC-0019 governs the detailed revision and supersession contract.
+      The history chain is preserved.
 
       '
     source_kinds:
@@ -635,18 +661,20 @@ specification:
       in SG-SPEC-0001.
 
       '
-gate_state: split_required
-required_human_action: split spec scope before rerun
-last_outcome: split_required
+proposed_status: linked
+proposed_maturity: 1.0
+gate_state: review_pending
+required_human_action: review refinement impact before approval
+last_outcome: done
 last_blocker: ''
-last_run_id: 20260413T053552Z-SG-SPEC-0001
+last_run_id: 20260417T210751Z-SG-SPEC-0001
 last_exit_code: 0
 last_changed_files:
 - specs/nodes/SG-SPEC-0001.yaml
-- specs/nodes/SG-SPEC-0024.yaml
-last_run_at: '2026-04-13T05:35:53.369244+00:00'
-last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0001-20260413T053428Z
-last_branch: codex/sg-spec-0001/20260413T053428Z
+- specs/nodes/SG-SPEC-0054.yaml
+last_run_at: '2026-04-17T21:07:53.179329+00:00'
+last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0001-20260417T210050Z
+last_branch: codex/sg-spec-0001/20260417T210050Z
 last_validator_results:
   outputs: true
   allowed_paths: true
@@ -656,49 +684,43 @@ last_validator_results:
   executor_environment: true
   refinement_acceptance: true
 last_refinement_acceptance:
-  decision: approve
-  change_class: local_refinement
+  decision: review_required
+  change_class: constitutional_change
   checks:
     content_changed: true
     hard_validation: true
     single_spec_scope: false
-    constitutional_diff: false
+    constitutional_diff: true
     graph_refactor_diff: false
     atomicity_clear: true
     within_mutation_budget: true
   diff_paths:
-  - acceptance[6]
-  - acceptance[7]
-  - acceptance[8]
-  - acceptance_evidence[6].criterion
-  - acceptance_evidence[6].evidence
-  - acceptance_evidence[7].criterion
-  - acceptance_evidence[7].evidence
-  - acceptance_evidence[8]
-  - acceptance_evidence[8].criterion
+  - acceptance_evidence[4].evidence
   - acceptance_evidence[8].evidence
-  - depends_on[7]
-  - specification.scope.in[6]
-  - specification.scope.in[7]
-  - specification.scope.in[8]
+  - depends_on[8]
+  - inputs[2]
+  - specification.scope.out[14]
+  - specification.terminology.presence
   mutation_classes:
   - policy_text
   mutation_budget: []
   budget_exceeded_classes: []
   changed_spec_files:
   - specs/nodes/SG-SPEC-0001.yaml
-  - specs/nodes/SG-SPEC-0024.yaml
+  - specs/nodes/SG-SPEC-0054.yaml
   review_reasons:
   - run changed additional spec files beyond the selected source node
+  - run changed governance-sensitive specification sections
   errors: []
   warnings: []
 last_reconciliation:
-  worktree_spec_count: 24
+  worktree_spec_count: 54
   changed_spec_ids:
   - SG-SPEC-0001
-  - SG-SPEC-0024
+  - SG-SPEC-0054
   semantic_dependencies_resolved: true
   work_dependencies_ready: false
   cycles: []
-last_requested_child_materialization: false
-last_materialized_child_paths: []
+last_requested_child_materialization: true
+last_materialized_child_paths:
+- specs/nodes/SG-SPEC-0054.yaml

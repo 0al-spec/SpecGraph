@@ -2,7 +2,10 @@ id: SG-SPEC-0045
 title: SpecGraph - Proposal/Split Gateway Entry Contract
 kind: spec
 status: linked
-maturity: 0.2
+maturity: 0.4
+presence:
+  state: active
+  lineage_basis: current_expression
 depends_on:
 - SG-SPEC-0043
 refines:
@@ -35,18 +38,18 @@ acceptance_evidence:
 - criterion: 'Defines one human-readable upstream gateway-entry chain beneath SG-SPEC-0044: SG-SPEC-0026
     -> SG-SPEC-0027 -> SG-SPEC-0032 -> SG-SPEC-0043.'
   evidence: specification.terminology.gateway_entry_chain, specification.gateway_entry_contract, and specification.entry_chain_steps
-    define the exact ordered upstream chain that reaches SG-SPEC-0043 and stops before the downstream
-    SG-SPEC-0043 -> SG-SPEC-0029 mechanics handoff.
+    define the exact ordered upstream chain that reaches the active SG-SPEC-0043 gateway boundary and
+    stops before the downstream SG-SPEC-0043 -> SG-SPEC-0029 mechanics handoff.
 - criterion: Forbids upstream proposal/split bypasses that would let SG-SPEC-0026 or SG-SPEC-0027 reach
     SG-SPEC-0043 or SG-SPEC-0029 by any shorter or parallel route.
   evidence: specification.invalid_shortcuts names the invalid SG-SPEC-0026 -> SG-SPEC-0032/SG-SPEC-0043/SG-SPEC-0029
     and SG-SPEC-0027 -> SG-SPEC-0043/SG-SPEC-0029 shortcuts, while specification.invariants requires the
-    full gateway_entry_chain before SG-SPEC-0043 is reached.
+    full gateway_entry_chain before the active SG-SPEC-0043 gateway boundary is reached.
 - criterion: Explains that this contract stops at SG-SPEC-0043 as the human-reviewable gateway boundary,
     while SG-SPEC-0043 and SG-SPEC-0029 govern the downstream gateway-to-mechanics handoff.
   evidence: specification.gateway_boundary_reason and specification.boundaries identify SG-SPEC-0043 as
-    the stopping point for this contract and explicitly leave the downstream SG-SPEC-0043 -> SG-SPEC-0029
-    handoff to SG-SPEC-0043 and SG-SPEC-0029.
+    the stopping point for this contract while its presence marker is active and explicitly leave the
+    downstream SG-SPEC-0043 -> SG-SPEC-0029 handoff to SG-SPEC-0043 and SG-SPEC-0029.
 - criterion: Explains why SG-SPEC-0045 stays one readable upstream role instead of re-splitting the same
     chain into bookkeeping-only child slices.
   evidence: specification.single_role_rationale explains why the full upstream chain is one readable role,
@@ -64,13 +67,16 @@ specification:
   scope:
     in:
     - Upstream proposal/split readiness path from SG-SPEC-0026 to the SG-SPEC-0043 gateway boundary.
-    - Upstream no-bypass rules for SG-SPEC-0026 and SG-SPEC-0027 before SG-SPEC-0043 is reached.
+    - Upstream no-bypass rules for SG-SPEC-0026 and SG-SPEC-0027 before the active SG-SPEC-0043 gateway
+      boundary is reached.
     - Human-readable explanation of why this node stops at SG-SPEC-0043 instead of restating downstream
       concrete mechanics.
     - The single readable role that keeps the whole upstream chain inspectable without child-slice bookkeeping.
     out:
     - The downstream SG-SPEC-0043 -> SG-SPEC-0029 gateway-to-mechanics handoff owned by SG-SPEC-0043 and
       SG-SPEC-0029.
+    - Any alternate routing that would apply only if the SG-SPEC-0043 gateway boundary presence marker
+      were not active.
     - Concrete proposal/split mechanics payloads, lifecycle details, queue ranking, and runtime orchestration.
     - Continuation-selection policy owned by SG-SPEC-0026.
     - Further slice, segment, or edge bookkeeping unless a new runtime-observable invariant appears.
@@ -80,14 +86,16 @@ specification:
     upstream_shortcut: Any direct or parallel route that lets SG-SPEC-0026 or SG-SPEC-0027 bypass one
       or more required nodes in the gateway_entry_chain before reaching SG-SPEC-0043 or SG-SPEC-0029.
     gateway_boundary: The human-reviewable stopping point at SG-SPEC-0043 where this upstream contract
-      ends.
+      ends while the SG-SPEC-0043 presence marker remains active.
+    gateway_boundary_presence_marker: The explicit SG-SPEC-0043 presence.state marker that keeps the gateway_boundary
+      active for this upstream contract.
     single_readable_role: The one composed explanatory role that SG-SPEC-0045 serves by keeping the full
       upstream gateway-entry chain readable in one place.
   gateway_entry_contract:
   - For this subtree, upstream proposal/split readiness reaches the gateway_boundary only as SG-SPEC-0026
     -> SG-SPEC-0027 -> SG-SPEC-0032 -> SG-SPEC-0043.
-  - 'This contract is upstream-only: it explains how readiness arrives at SG-SPEC-0043 and which upstream_shortcuts
-    are invalid before that boundary is reached.'
+  - 'This contract is upstream-only: it explains how readiness arrives at SG-SPEC-0043 while the gateway_boundary_presence_marker
+    remains active and which upstream_shortcuts are invalid before that boundary is reached.'
   entry_chain_steps:
   - SG-SPEC-0026 reaches proposal/split readiness for this contract only through SG-SPEC-0027.
   - SG-SPEC-0027 reaches proposal/split readiness for this contract only through SG-SPEC-0032.
@@ -100,8 +108,9 @@ specification:
   - No direct or parallel route may let SG-SPEC-0026 or SG-SPEC-0027 reach SG-SPEC-0043 or SG-SPEC-0029
     without traversing the full gateway_entry_chain.
   gateway_boundary_reason:
-  - SG-SPEC-0043 is the gateway_boundary because it is the first human-reviewable proposal/split gateway
-    dependency consumed directly by SG-SPEC-0032 in this subtree.
+  - SG-SPEC-0043 is the gateway_boundary while the gateway_boundary_presence_marker is active because
+    it is the first human-reviewable proposal/split gateway dependency consumed directly by SG-SPEC-0032
+    in this subtree.
   - SG-SPEC-0045 stops at SG-SPEC-0043 because the downstream SG-SPEC-0043 -> SG-SPEC-0029 handoff belongs
     to SG-SPEC-0043 and SG-SPEC-0029 rather than to this upstream entry contract.
   single_role_rationale:
@@ -117,120 +126,30 @@ specification:
     the complete readiness chain.
   - SG-SPEC-0043 and SG-SPEC-0029 own the downstream gateway-to-mechanics handoff and concrete mechanics
     detail beyond this gateway_boundary.
+  - SG-SPEC-0045 does not define a replacement route for cases where the gateway_boundary_presence_marker
+    is not active.
   - SG-SPEC-0045 must not be re-split into edge, segment, or upstream-handoff slices unless a new runtime-observable
     invariant appears that is not already captured by this single_readable_role.
   invariants:
   - id: PSP-0045-1
-    statement: The only allowed upstream gateway_entry_chain in this subtree is SG-SPEC-0026 -> SG-SPEC-0027
-      -> SG-SPEC-0032 -> SG-SPEC-0043.
+    statement: The only allowed upstream gateway_entry_chain in this subtree while the gateway_boundary_presence_marker
+      is active is SG-SPEC-0026 -> SG-SPEC-0027 -> SG-SPEC-0032 -> SG-SPEC-0043.
   - id: PSP-0045-2
     statement: Direct or parallel upstream_shortcuts from SG-SPEC-0026 to SG-SPEC-0032, SG-SPEC-0043,
       or SG-SPEC-0029, or from SG-SPEC-0027 to SG-SPEC-0043 or SG-SPEC-0029, are invalid in this subtree.
   - id: PSP-0045-3
-    statement: SG-SPEC-0045 stops at SG-SPEC-0043 as the gateway_boundary and does not restate the downstream
-      SG-SPEC-0043 -> SG-SPEC-0029 mechanics handoff.
+    statement: SG-SPEC-0045 stops at SG-SPEC-0043 as the gateway_boundary while the gateway_boundary_presence_marker
+      is active and does not restate the downstream SG-SPEC-0043 -> SG-SPEC-0029 mechanics handoff.
   - id: PSP-0045-4
     statement: SG-SPEC-0045 remains one single_readable_role for the full upstream gateway_entry_chain
       and must not be decomposed into bookkeeping-only child slices unless a new runtime-observable invariant
       appears.
-proposed_status: linked
-proposed_maturity: 0.4
-gate_state: review_pending
-required_human_action: review refinement impact before approval
-last_outcome: done
-last_blocker: ''
-last_run_id: 20260417T072729Z-SG-SPEC-0045
-last_exit_code: 0
-last_changed_files:
-- specs/nodes/SG-SPEC-0045.yaml
-last_run_at: '2026-04-17T07:27:30.700336+00:00'
-last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0045-20260417T072338Z
-last_branch: codex/sg-spec-0045/20260417T072338Z
-last_validator_results:
-  outputs: true
-  allowed_paths: true
-  reconciliation: true
-  atomicity: true
-  transition: true
-  executor_environment: true
-  refinement_acceptance: true
-last_refinement_acceptance:
-  decision: review_required
-  change_class: constitutional_change
-  checks:
-    content_changed: true
-    hard_validation: true
-    single_spec_scope: true
-    constitutional_diff: true
-    graph_refactor_diff: false
-    atomicity_clear: true
-    within_mutation_budget: true
-  diff_paths:
-  - acceptance[3]
-  - acceptance_evidence[0].evidence
-  - acceptance_evidence[1].evidence
-  - acceptance_evidence[2].evidence
-  - acceptance_evidence[3].criterion
-  - acceptance_evidence[3].evidence
-  - specification.boundaries[2]
-  - specification.boundaries[3]
-  - specification.composed_function
-  - specification.composed_function[0]
-  - specification.composed_function[1]
-  - specification.entry_chain_steps
-  - specification.entry_chain_steps[0]
-  - specification.entry_chain_steps[1]
-  - specification.entry_chain_steps[2]
-  - specification.forbidden_upstream_bypasses
-  - specification.forbidden_upstream_bypasses[0]
-  - specification.forbidden_upstream_bypasses[1]
-  - specification.forbidden_upstream_bypasses[2]
-  - specification.gateway_boundary_handoff
-  - specification.gateway_boundary_handoff[0]
-  - specification.gateway_boundary_handoff[1]
-  - specification.gateway_boundary_reason
-  - specification.gateway_boundary_reason[0]
-  - specification.gateway_boundary_reason[1]
-  - specification.gateway_entry_contract[0]
-  - specification.gateway_entry_contract[1]
-  - specification.gateway_entry_contract[2]
-  - specification.invalid_shortcuts
-  - specification.invalid_shortcuts[0]
-  - specification.invalid_shortcuts[1]
-  - specification.invalid_shortcuts[2]
-  - specification.invariants[1].statement
-  - specification.invariants[2].statement
-  - specification.invariants[3]
-  - specification.invariants[3].id
-  - specification.invariants[3].statement
-  - specification.objective
-  - specification.scope.in[3]
-  - specification.single_role_rationale
-  - specification.single_role_rationale[0]
-  - specification.single_role_rationale[1]
-  - specification.single_role_rationale[2]
-  - specification.terminology.composed_function
-  - specification.terminology.gateway_boundary
-  - specification.terminology.node_role
-  - specification.terminology.single_readable_role
-  - specification.terminology.upstream_bypass
-  - specification.terminology.upstream_shortcut
-  mutation_classes:
-  - policy_text
-  mutation_budget: []
-  budget_exceeded_classes: []
-  changed_spec_files:
-  - specs/nodes/SG-SPEC-0045.yaml
-  review_reasons:
-  - run changed governance-sensitive specification sections
-  errors: []
-  warnings: []
-last_reconciliation:
-  worktree_spec_count: 53
-  changed_spec_ids:
-  - SG-SPEC-0045
-  semantic_dependencies_resolved: true
-  work_dependencies_ready: false
-  cycles: []
-last_requested_child_materialization: false
-last_materialized_child_paths: []
+gate_state: none
+proposed_status: null
+proposed_maturity: null
+required_human_action: '-'
+last_worktree_path: ''
+last_branch: ''
+last_gate_decision: approve
+last_gate_note: ''
+last_gate_at: '2026-04-17T21:17:34.981494+00:00'

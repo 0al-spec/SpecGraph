@@ -3,6 +3,9 @@ title: SpecGraph - Historical Gateway Segment Slice
 kind: spec
 status: reviewed
 maturity: 0.4
+presence:
+  state: historical
+  lineage_basis: superseded_lineage
 depends_on:
 - SG-SPEC-0045
 refines:
