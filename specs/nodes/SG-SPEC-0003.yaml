@@ -26,7 +26,7 @@ allowed_paths:
 acceptance:
 - Defines the boundary between canonical SpecGraph governance, supervisor execution, bounded autonomous
   continuation, review_pending staging of successful refinement candidates, default-deny write scope,
-  and changes that always require human approval
+  non-escalating fallback isolation, and changes that always require human approval
 - Defines observation, signal, and proposal as a derived reflective loop, including linked-spec continuation
   after explicit blocked or gated work clears, that does not mutate canonical specs by itself
 - Defines the first graph-health signals for oversized specs, missing canonical dependencies, repeated
@@ -43,7 +43,7 @@ acceptance:
 acceptance_evidence:
 - criterion: Defines the boundary between canonical SpecGraph governance, supervisor execution, bounded
     autonomous continuation, review_pending staging of successful refinement candidates, default-deny
-    write scope, and changes that always require human approval
+    write scope, non-escalating fallback isolation, and changes that always require human approval
   evidence: 'specification.boundary_policy separates canonical_governance, supervisor_execution, and human_approval.
     It states that specs govern ontology and policy, the supervisor executes bounded refinement and emits
     derived observations, and constitutional changes require explicit human approval. Direct-update authorization
@@ -53,9 +53,10 @@ acceptance_evidence:
     remain staged until explicit approve, forbidding sync of staged candidate paths into the canonical
     root before approval, and requiring approval-time freshness revalidation before sync. specification.boundary_policy.supervisor_execution
     now also makes missing or empty write policy collapse to implicit source-spec-only scope rather than
-    unrestricted sync authority. The same section allows bounded autonomous continuation only after blocked/gated
-    work is clear and only within current authority, without authorizing new metrics, cross-branch restructuring,
-    or review bypass.
+    unrestricted sync authority, and it requires degraded copied-worktree fallback isolation to preserve
+    or narrow nested sandbox and approval authority rather than bypass it. The same section allows bounded
+    autonomous continuation only after blocked/gated work is clear and only within current authority,
+    without authorizing new metrics, cross-branch restructuring, or review bypass.
 
     '
 - criterion: Defines observation, signal, and proposal as a derived reflective loop, including linked-spec
@@ -257,6 +258,9 @@ specification:
       and its bounded descendant mechanics specs, while SG-SPEC-0003 retains only the boundary contract.
     - Missing or empty write policy MUST collapse to implicit source-spec-only scope for bounded refinement;
       it MUST NOT expand to unrestricted canonical sync authority.
+    - Degraded copied-worktree fallback MAY change the isolation implementation, but it MUST preserve
+      or narrow nested sandbox and approval authority relative to the normal git-worktree path; it MUST
+      NOT bypass those controls.
     - When the current bounded target has no remaining explicit blocked or gated work, the supervisor
       may inspect already linked specs for latent_graph_improvement_candidate follow-up work using current
       canonical links, current status and maturity, and already-defined graph-health signals.

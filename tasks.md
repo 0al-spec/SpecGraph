@@ -31,7 +31,7 @@ Task numbers are preserved for traceability across commits and PRs.
 38. [done] Rebuild canonical graph-health and queue derivation from accepted canonical state or first-class proposal artifacts, not from unapproved candidate worktrees.
 39. [done] Make supervisor write authority default-deny so empty `allowed_paths` collapses to source-node-only scope instead of unrestricted sync authority.
 40. [todo] Require explicit structural authority for new spec creation so child materialization cannot occur from permissive path defaults alone.
-41. [todo] Ensure fallback isolation never expands child executor privileges beyond the normal execution path.
+41. [done] Ensure fallback isolation never expands child executor privileges beyond the normal execution path.
 42. [todo] Add atomic write and lock discipline for run logs, summaries, queues, and proposal artifacts.
 43. [todo] Add collision-safe run, branch, and worktree identifiers plus reserved spec-ID allocation for parallel child materialization safety.
 44. [todo] Harden malformed-artifact loading and executor machine protocol so missing structured outcomes or corrupted queue files fail safely.

@@ -273,7 +273,7 @@ def test_build_codex_exec_command_uses_named_execution_profile(
     assert profile.sandbox in cmd
 
 
-def test_build_codex_exec_command_bypasses_inner_sandbox_for_sandbox_branch(
+def test_build_codex_exec_command_keeps_inner_sandbox_when_bypass_requested(
     supervisor_module: object,
 ) -> None:
     cmd = supervisor_module.build_codex_exec_command(
@@ -282,9 +282,21 @@ def test_build_codex_exec_command_bypasses_inner_sandbox_for_sandbox_branch(
     )
 
     assert cmd[:2] == ["codex", "exec"]
-    assert "--dangerously-bypass-approvals-and-sandbox" in cmd
-    assert "--sandbox" not in cmd
+    assert "--dangerously-bypass-approvals-and-sandbox" not in cmd
+    assert "--sandbox" in cmd
+    assert supervisor_module.CHILD_EXECUTOR_SANDBOX in cmd
     assert cmd[-1] == "Refine one bounded spec."
+
+
+def test_isolation_mode_for_branch_marks_copied_fallback(
+    supervisor_module: object,
+) -> None:
+    assert supervisor_module.isolation_mode_for_branch("sandbox/sg-spec-0001/test") == (
+        "copied_fallback"
+    )
+    assert supervisor_module.isolation_mode_for_branch("codex/sg-spec-0001/test") == (
+        "git_worktree"
+    )
 
 
 def test_effective_child_executor_timeout_seconds_uses_longer_budget_for_child_materialization(
@@ -489,7 +501,7 @@ def test_create_child_codex_home_writes_minimal_config_and_copies_auth(
         shutil.rmtree(child_home, ignore_errors=True)
 
 
-def test_create_child_codex_home_omits_inner_sandbox_in_bypass_mode(
+def test_create_child_codex_home_keeps_inner_sandbox_in_bypass_mode(
     supervisor_module: object,
     tmp_path: Path,
 ) -> None:
@@ -504,7 +516,7 @@ def test_create_child_codex_home_omits_inner_sandbox_in_bypass_mode(
     try:
         config_text = (child_home / "config.toml").read_text(encoding="utf-8")
         assert 'approval_policy = "never"' in config_text
-        assert 'sandbox_mode = "workspace-write"' not in config_text
+        assert 'sandbox_mode = "workspace-write"' in config_text
         assert (child_home / "auth.json").read_text(encoding="utf-8") == '{"token":"secret"}'
     finally:
         shutil.rmtree(child_home, ignore_errors=True)
@@ -580,7 +592,7 @@ def test_run_codex_uses_isolated_codex_home(
     )
 
 
-def test_run_codex_bypasses_inner_sandbox_for_sandbox_branch(
+def test_run_codex_keeps_inner_sandbox_for_sandbox_branch(
     supervisor_module: object,
     repo_fixture: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -640,10 +652,11 @@ def test_run_codex_bypasses_inner_sandbox_for_sandbox_branch(
     assert result.returncode == 0
     assert captured["cwd"] == repo_fixture
     assert captured["env"]["CODEX_HOME"] == str(repo_fixture / ".fake-codex-home")
-    assert captured["bypass_inner_sandbox"] is True
+    assert captured["bypass_inner_sandbox"] is False
     assert captured["profile"].name == supervisor_module.AUTO_HEURISTIC_PROFILE_NAME
-    assert "--dangerously-bypass-approvals-and-sandbox" in captured["cmd"]
-    assert "--sandbox" not in captured["cmd"]
+    assert "--dangerously-bypass-approvals-and-sandbox" not in captured["cmd"]
+    assert "--sandbox" in captured["cmd"]
+    assert supervisor_module.CHILD_EXECUTOR_SANDBOX in captured["cmd"]
     assert captured["process"].wait_timeout == min(
         supervisor_module.EXECUTOR_PROGRESS_POLL_SECONDS,
         supervisor_module.FAST_EXECUTION_PROFILE_TIMEOUT_SECONDS,
@@ -3268,6 +3281,7 @@ def test_main_creates_review_gate_and_provenance_metadata(
     assert payload["spec_id"] == "SG-SPEC-0001"
     assert payload["outcome"] == "done"
     assert payload["worktree_path"] == worktree.as_posix()
+    assert payload["isolation_mode"] == "git_worktree"
     assert payload["graph_health"]["source_spec_id"] == "SG-SPEC-0001"
     assert payload["graph_health_truth_basis"] == "accepted_canonical"
     assert payload["refactor_queue_artifact"].endswith("runs/refactor_queue.json")

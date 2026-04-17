@@ -5506,7 +5506,14 @@ def invoke_executor(
 
 
 def child_executor_should_bypass_inner_sandbox(*, branch: str) -> bool:
-    return branch.startswith("sandbox/")
+    _ = branch
+    return False
+
+
+def isolation_mode_for_branch(branch: str) -> str:
+    if branch.startswith("sandbox/"):
+        return "copied_fallback"
+    return "git_worktree"
 
 
 def codex_cli_reasoning_effort(reasoning_effort: str) -> str:
@@ -5540,10 +5547,8 @@ def build_codex_exec_command(
         "-c",
         f'model_reasoning_effort="{codex_cli_reasoning_effort(profile.reasoning_effort)}"',
     ]
-    if bypass_inner_sandbox:
-        cmd.append("--dangerously-bypass-approvals-and-sandbox")
-    else:
-        cmd.extend(["--sandbox", profile.sandbox])
+    _ = bypass_inner_sandbox
+    cmd.extend(["--sandbox", profile.sandbox])
     cmd.append(prompt)
     return cmd
 
@@ -5557,7 +5562,8 @@ def render_child_codex_config(
     if profile is None:
         profile = EXECUTION_PROFILES[DEFAULT_EXECUTION_PROFILE_NAME]
     disabled = "\n".join(f"{feature} = false" for feature in profile.disabled_features)
-    sandbox_line = "" if bypass_inner_sandbox else f'sandbox_mode = "{profile.sandbox}"\n'
+    _ = bypass_inner_sandbox
+    sandbox_line = f'sandbox_mode = "{profile.sandbox}"\n'
     return (
         f'model = "{profile.model}"\n'
         f'model_reasoning_effort = "{codex_cli_reasoning_effort(profile.reasoning_effort)}"\n'
@@ -6097,6 +6103,7 @@ def _apply_split_proposal(
         "exit_code": 0 if success else 1,
         "auto_approved": False,
         "worktree_path": worktree_path.as_posix(),
+        "isolation_mode": isolation_mode_for_branch(branch),
         "branch": branch,
         "changed_files": changed,
         "validation_errors": validation_errors,
@@ -6364,6 +6371,7 @@ def _process_split_refactor_proposal(
         "exit_code": result.returncode,
         "auto_approved": False,
         "worktree_path": worktree_path.as_posix(),
+        "isolation_mode": isolation_mode_for_branch(branch),
         "branch": branch,
         "changed_files": changed,
         "validation_errors": validation_errors,
@@ -6949,6 +6957,7 @@ def _process_one_spec(
             and refinement_acceptance["decision"] == REFINEMENT_ACCEPT_DECISION_APPROVE
         ),
         "worktree_path": worktree_path.as_posix(),
+        "isolation_mode": isolation_mode_for_branch(branch),
         "yaml_repair_paths": yaml_repair_paths,
         "branch": branch,
         "changed_files": changed,
