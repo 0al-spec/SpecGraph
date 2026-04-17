@@ -678,8 +678,14 @@ def node_text_for_shape_analysis(node: SpecNode) -> str:
     return " ".join(part for part in parts if part).lower()
 
 
+def bounded_marker_pattern(marker: str) -> re.Pattern[str]:
+    words = [re.escape(part) for part in marker.split()]
+    pattern = r"(?<!\w)" + r"\s+".join(words) + r"(?!\w)"
+    return re.compile(pattern)
+
+
 def text_marker_hits(text: str, markers: tuple[str, ...]) -> int:
-    return sum(text.count(marker) for marker in markers)
+    return sum(len(bounded_marker_pattern(marker).findall(text)) for marker in markers)
 
 
 def unique_spec_reference_count(text: str) -> int:
@@ -3328,7 +3334,7 @@ def observe_graph_health(
         if local_atomicity:
             live_child_ids = [
                 child.id
-                for child in refining_child_specs(reconciled_node, worktree_specs)
+                for child in active_refining_child_specs(reconciled_node, worktree_specs)
                 if child.id
             ]
             accepted_child_ids = accepted_child_spec_ids(reconciled_node, worktree_specs)

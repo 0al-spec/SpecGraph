@@ -2215,6 +2215,17 @@ def test_observe_graph_health_reports_role_legibility_signals(
     assert "merge_bookkeeping_slice" in graph_health["recommended_actions"]
 
 
+def test_text_marker_hits_uses_token_boundaries(
+    supervisor_module: object,
+) -> None:
+    hits = supervisor_module.text_marker_hits(
+        "downstream owns the edge and requires review of the boundary",
+        ("own", "owns", "require", "requires"),
+    )
+
+    assert hits == 2
+
+
 def test_observe_graph_health_ignores_superseded_descendants(
     supervisor_module: object,
 ) -> None:
@@ -2281,6 +2292,73 @@ def test_observe_graph_health_ignores_superseded_descendants(
     assert "bookkeeping_only_node" not in graph_health["signals"]
     assert snapshot["subtree_spec_ids"] == ["SG-SPEC-9300"]
     assert snapshot["historical_descendant_ids"] == ["SG-SPEC-9301", "SG-SPEC-9302"]
+
+
+def test_observe_graph_health_excludes_superseded_descendants_from_retrospective_signal(
+    supervisor_module: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    spec_node = supervisor_module.SpecNode
+    source = spec_node(
+        path=Path("/tmp/source.yaml"),
+        data={
+            "id": "SG-SPEC-9400",
+            "title": "Readable Aggregate Root",
+            "kind": "spec",
+            "status": "linked",
+            "maturity": 0.4,
+            "depends_on": [],
+            "supersedes": ["SG-SPEC-9401"],
+            "acceptance": ["Defines one readable aggregate role."],
+            "prompt": "Keep this subtree readable.",
+            "last_outcome": "split_required",
+        },
+    )
+    historical_child = spec_node(
+        path=Path("/tmp/child1.yaml"),
+        data={
+            "id": "SG-SPEC-9401",
+            "title": "Historical Slice",
+            "kind": "spec",
+            "status": "reviewed",
+            "maturity": 0.3,
+            "depends_on": [],
+            "refines": ["SG-SPEC-9400"],
+            "superseded_by": ["SG-SPEC-9400"],
+            "acceptance": ["Historical artifact only."],
+            "prompt": "Do not treat this as active.",
+            "acceptance_evidence": [
+                {"criterion": "Historical artifact only.", "evidence": "lineage"}
+            ],
+        },
+    )
+
+    monkeypatch.setattr(
+        supervisor_module,
+        "validate_atomicity",
+        lambda node: (
+            ["acceptance count 6 exceeds 5 for bounded atomicity"]
+            if node.id == "SG-SPEC-9400"
+            else []
+        ),
+    )
+
+    graph_health = supervisor_module.observe_graph_health(
+        source_node=source,
+        worktree_specs=[source, historical_child],
+        reconciliation={"semantic_dependencies_resolved": True},
+        atomicity_errors=[],
+        outcome="split_required",
+    )
+
+    retrospective = [
+        item
+        for item in graph_health["observations"]
+        if item["kind"] == supervisor_module.RETROSPECTIVE_REFACTOR_SIGNAL
+    ]
+
+    assert retrospective == []
+    assert supervisor_module.RETROSPECTIVE_REFACTOR_SIGNAL not in graph_health["signals"]
 
 
 def test_observe_graph_health_handles_refines_cycle_in_subtree_metrics(
