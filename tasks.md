@@ -24,3 +24,16 @@ Task numbers are preserved for traceability across commits and PRs.
 34. [todo] Distinguish `UserIntent` and `OperatorRequest` from canonical `spec` and proposal-lane nodes.
 35. [todo] Add a bounded operator-request bridge so GUI selections and chat instructions can steer one supervisor run without mutating canonical specs directly.
 36. [todo] Define how mediator outputs become canonical specs or proposals through reviewable supervisor-driven refinement instead of raw chat-to-spec mutation.
+
+## Supervisor Trust and Governance
+
+37. [todo] Turn `review_pending` into a true pre-merge truth barrier so unapproved candidate content does not enter canonical root before approval.
+38. [todo] Rebuild canonical graph-health and queue derivation from accepted canonical state or first-class proposal artifacts, not from unapproved candidate worktrees.
+39. [todo] Make supervisor write authority default-deny so empty `allowed_paths` collapses to source-node-only scope instead of unrestricted sync authority.
+40. [todo] Require explicit structural authority for new spec creation so child materialization cannot occur from permissive path defaults alone.
+41. [todo] Ensure fallback isolation never expands child executor privileges beyond the normal execution path.
+42. [todo] Add atomic write and lock discipline for run logs, summaries, queues, and proposal artifacts.
+43. [todo] Add collision-safe run, branch, and worktree identifiers plus reserved spec-ID allocation for parallel child materialization safety.
+44. [todo] Harden malformed-artifact loading and executor machine protocol so missing structured outcomes or corrupted queue files fail safely.
+45. [todo] Move supervisor thresholds, selection priorities, mutation classes, and execution profiles into a declarative policy layer instead of Python constants.
+46. [todo] Add a Decision Inspector artifact that explains selection, gate, diff-classification, and queue-emission decisions from applied rules.
