@@ -3,6 +3,9 @@ title: SpecGraph - Historical Upstream Parent-Path Slice
 kind: spec
 status: reviewed
 maturity: 0.2
+presence:
+  state: historical
+  lineage_basis: superseded_lineage
 depends_on:
 - SG-SPEC-0045
 refines:

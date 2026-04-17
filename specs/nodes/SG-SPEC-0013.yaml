@@ -1,16 +1,18 @@
 id: SG-SPEC-0013
 title: SpecGraph - Retrospective Refactor Application Gates
 kind: spec
-status: reviewed
+status: frozen
 maturity: 1.0
 depends_on: []
 relates_to:
 - SG-SPEC-0006
+- SG-SPEC-0019
 refines:
 - SG-SPEC-0005
 inputs:
 - specs/nodes/SG-SPEC-0005.yaml
 - specs/nodes/SG-SPEC-0006.yaml
+- specs/nodes/SG-SPEC-0019.yaml
 outputs:
 - specs/nodes/SG-SPEC-0013.yaml
 allowed_paths:
@@ -30,9 +32,14 @@ acceptance_evidence:
     materially incompatible overlaps or existing canonical_application_event markers as package refusal
     conditions rather than new proposal_authority_state values. specification.reviewable_artifact_contract
     defines the required artifact contract for intended_structure, lineage_preservation, downstream_reconciliation_scope,
-    and declared_writeback_envelope. specification.retrospective_application_policy.review_gates defines
-    the artifact completeness, lineage, downstream reconciliation, writeback envelope, freshness, and
-    refusal gates that must pass before applying a retrospective refactor to a live graph region.
+    and declared_writeback_envelope, including same-pass active topology rewiring whenever a node or explicit
+    canonical edge becomes historical_lineage_only under SG-SPEC-0019 lineage preservation semantics.
+    specification.retrospective_application_policy.proposal_state_gate requires the approved proposal
+    owner to cover both any historical_lineage_only transition and the successor topology kept active
+    after application. specification.retrospective_application_policy.review_gates defines the artifact
+    completeness, lineage, active topology, downstream reconciliation, writeback envelope, freshness,
+    connectivity, and refusal gates that must pass before applying a retrospective refactor to a live
+    graph region.
 
     '
 prompt: Refine SG-SPEC-0005 by extracting the bounded concern of retrospective refactor application prerequisites.
@@ -43,14 +50,16 @@ prompt: Refine SG-SPEC-0005 by extracting the bounded concern of retrospective r
   rules, or generalized batch scheduling.
 specification:
   objective: Define the pre-application prerequisites that must be reviewable before a retrospective_refactor_pass
-    may be applied to a live_graph_region, without making graph-health signals, proposal existence, or
-    apply-path compatibility self-authorizing.
+    may be applied to a live_graph_region, including reviewable same-pass rewiring that keeps lineage-preserved
+    historical subjects out of the resulting active projection, without making graph-health signals, proposal
+    existence, or apply-path compatibility self-authorizing.
   scope:
     in:
     - Required pre-application artifacts for live-region retrospective refactor writeback
     - Proposal authority state and active proposal ownership prerequisites before application
     - Review gates for intended structure, lineage preservation, downstream reconciliation scope, and
       the declared writeback envelope
+    - Reviewable active-versus-historical topology rewiring inside one declared writeback envelope
     - Refusal conditions when the application package is missing, stale, ambiguous, or outside its declared
       envelope
     out:
@@ -59,6 +68,7 @@ specification:
     - Generalized batch scheduling, refactor-wave orchestration, or queue priority formulas
     - Storage schema, exact file naming, viewer UX, or runtime implementation of an application path
     - Post-write implementation details after a canonical_application_event has been recorded
+    - General active-versus-historical ontology rules outside one reviewed application package
   terminology:
     live_retrospective_application: An attempted canonical writeback that applies a reviewed retrospective_refactor_pass
       to an already-live graph region.
@@ -72,6 +82,12 @@ specification:
       relation changes, retained stable IDs, and new child outcomes at the level needed for review.
     lineage_preservation: The artifact component that maps current canonical specs and accepted_child_work
       to their intended post-application roles so traceability is not inferred after writeback.
+    historical_lineage_only: The post-application state for a retained canonical node or explicit canonical
+      edge that remains inspectable for SG-SPEC-0019 lineage but is no longer part of the active projection
+      after the reviewed retrospective application.
+    active_projection: The reviewer-visible post-application topology of nodes and explicit canonical
+      edges that remain traversable as active current graph structure after any historical_lineage_only
+      preservation is applied.
     downstream_reconciliation_scope: The artifact component that names the canonical nodes whose links,
       blockers, acceptance_evidence, prompt wording, or status-readiness are expected to need narrow reconciliation
       after the application.
@@ -91,6 +107,9 @@ specification:
         remain read-only.
       - States intended relation changes and acceptance or evidence redistribution at review level without
         prescribing a runtime write algorithm.
+      - Shows the resulting active_projection for the declared envelope, including successor nodes or
+        explicit canonical edges that replace any subject becoming historical_lineage_only in the same
+        pass.
     - component: lineage_preservation
       cardinality: exactly 1
       required_content:
@@ -98,6 +117,9 @@ specification:
       - Names accepted_child_work that remains valid and explains how it stays traceable after the refactor.
       - Identifies any intended supersession or replacement only when that authority is already supplied
         by the governing proposal path.
+      - Marks every node or explicit canonical edge that will become historical_lineage_only and ties
+        it to the successor split, merge, or replacement structure that preserves lineage without leaving
+        the historical subject on an active traversal path.
     - component: downstream_reconciliation_scope
       cardinality: exactly 1
       required_content:
@@ -125,6 +147,9 @@ specification:
     - The package MUST include a current-state context artifact derived from the canonical graph that
       identifies the live_graph_region assumptions the review is using, including current stable IDs and
       accepted_child_work references relevant to the proposed application.
+    - If the reviewed application will move any node or explicit canonical edge to historical_lineage_only,
+      the current-state context artifact MUST identify that subject's current active-topology position
+      so the same package can show the required rewiring into the resulting active_projection.
     - The proposal-lane portion of the package MUST be reviewable from repository-tracked proposal state
       that exposes proposal_repository_presence, proposal_handle, proposal_authority_state, proposal_target_region,
       and proposal_lineage_link semantics as defined by SG-SPEC-0006; runtime-only proposal summaries
@@ -139,6 +164,8 @@ specification:
       scope of the retrospective_application_artifact.
     - The matching proposal_authority_state MUST be approved_for_application before application can be
       attempted.
+    - The matching approved proposal scope MUST cover both any intended historical_lineage_only transition
+      and the successor topology that remains active after the application.
     - Proposal authority states draft, under_review, rejected, and superseded are ineligible for live_retrospective_application.
     - If materially incompatible active proposals overlap the same target region or change scope, application
       MUST be refused until review resolves, supersedes, or redirects the conflict.
@@ -160,6 +187,13 @@ specification:
       intended_structure, one lineage_preservation, one downstream_reconciliation_scope, and one declared_writeback_envelope.
     - Lineage gate requires reviewers to be able to trace stable surviving IDs and accepted_child_work
       from the current canonical graph into the intended structure before writeback.
+    - Active topology gate requires same-pass reviewable rewiring for every node or explicit canonical
+      edge that becomes historical_lineage_only, so the resulting active_projection is explicit rather
+      than inferred after writeback.
+    - Historical subject exclusion gate requires the package to forbid any node or explicit canonical
+      edge marked historical_lineage_only from remaining on an active traversal path after application.
+    - Connectivity gate requires any split, merge, or replacement successors named by the package to keep
+      the resulting active_projection connected and reviewable without deleting lineage-preserved subjects.
     - Downstream reconciliation gate requires reviewers to be able to inspect the named downstream reconciliation
       scope and confirm that unlisted adjacent nodes are not mutated by implication.
     - Writeback envelope gate requires the declared_writeback_envelope to fit inside the retrospective_writeback_envelope
@@ -169,6 +203,8 @@ specification:
         live graph.
       - Canonical nodes in scope retain the stable IDs and accepted_child_work references assumed by the
         package.
+      - Any node or explicit canonical edge proposed to become historical_lineage_only still occupies
+        the active-topology role that the package rewires.
       - Links, blockers, acceptance_evidence, prompt wording, or status-readiness assumptions on named
         scope nodes have not changed to a materially different meaning since assumptions were captured.
       - Any material mismatch in these assumptions makes the package stale, and the package is refused
@@ -179,6 +215,8 @@ gate_state: none
 proposed_status: null
 proposed_maturity: null
 required_human_action: '-'
+last_worktree_path: ''
+last_branch: ''
 last_gate_decision: approve
 last_gate_note: ''
-last_gate_at: '2026-04-12T22:18:06.137647+00:00'
+last_gate_at: '2026-04-17T20:51:05.301955+00:00'

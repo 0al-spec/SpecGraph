@@ -2294,6 +2294,65 @@ def test_observe_graph_health_ignores_superseded_descendants(
     assert snapshot["historical_descendant_ids"] == ["SG-SPEC-9301", "SG-SPEC-9302"]
 
 
+def test_observe_graph_health_ignores_presence_marked_historical_descendants(
+    supervisor_module: object,
+) -> None:
+    spec_node = supervisor_module.SpecNode
+    source = spec_node(
+        path=Path("/tmp/source.yaml"),
+        data={
+            "id": "SG-SPEC-9350",
+            "title": "Readable Gateway Entry Contract",
+            "kind": "spec",
+            "status": "linked",
+            "maturity": 0.4,
+            "presence": {
+                "state": "active",
+                "lineage_basis": "current_expression",
+            },
+            "acceptance": ["Defines one active readable role for the subtree."],
+            "prompt": "Keep this subtree human-readable.",
+            "last_outcome": "done",
+        },
+    )
+    historical_child = spec_node(
+        path=Path("/tmp/historical.yaml"),
+        data={
+            "id": "SG-SPEC-9351",
+            "title": "Historical Gateway Segment Slice",
+            "kind": "spec",
+            "status": "reviewed",
+            "maturity": 0.3,
+            "refines": ["SG-SPEC-9350"],
+            "presence": {
+                "state": "historical",
+                "lineage_basis": "superseded_lineage",
+            },
+            "acceptance": ["Historical artifact only."],
+            "prompt": "Do not treat this as active.",
+            "acceptance_evidence": [
+                {"criterion": "Historical artifact only.", "evidence": "lineage"}
+            ],
+        },
+    )
+
+    graph_health = supervisor_module.observe_graph_health(
+        source_node=source,
+        worktree_specs=[source, historical_child],
+        reconciliation={"semantic_dependencies_resolved": True},
+        atomicity_errors=[],
+        outcome="done",
+    )
+    snapshot = supervisor_module.inspect_canonical_graph_health(
+        node=source,
+        specs=[source, historical_child],
+    )
+
+    assert "role_obscured_node" not in graph_health["signals"]
+    assert snapshot["subtree_spec_ids"] == ["SG-SPEC-9350"]
+    assert snapshot["historical_descendant_ids"] == ["SG-SPEC-9351"]
+
+
 def test_observe_graph_health_excludes_superseded_descendants_from_retrospective_signal(
     supervisor_module: object,
     monkeypatch: pytest.MonkeyPatch,

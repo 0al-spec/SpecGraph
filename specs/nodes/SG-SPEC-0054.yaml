@@ -1,0 +1,187 @@
+id: SG-SPEC-0054
+title: SpecGraph - Canonical Node Presence Surface
+kind: spec
+status: linked
+maturity: 0.56
+depends_on:
+- SG-SPEC-0019
+relates_to: []
+refines:
+- SG-SPEC-0001
+inputs:
+- specs/nodes/SG-SPEC-0001.yaml
+- specs/nodes/SG-SPEC-0019.yaml
+- specs/nodes/SG-SPEC-0045.yaml
+- specs/nodes/SG-SPEC-0046.yaml
+- specs/nodes/SG-SPEC-0047.yaml
+- specs/nodes/SG-SPEC-0048.yaml
+- AGENTS.md
+outputs:
+- specs/nodes/SG-SPEC-0054.yaml
+allowed_paths:
+- specs/nodes/SG-SPEC-0054.yaml
+acceptance:
+- Defines one canonical `presence` node field for SG-SPEC-0001 node kinds that marks active versus historical
+  presence without redefining lifecycle status.
+- Defines the minimum `presence` record contract, including `state`, `lineage_basis`, and the conditions
+  under which historical presence must be paired with SG-SPEC-0019-compatible supersession lineage.
+- Defines how active and historical presence remain machine-readable on nodes like SG-SPEC-0045 through
+  SG-SPEC-0048 without prescribing storage layout, query engine, or viewer UX.
+- Keeps revision-record structure, predecessor ordering, renderer affordances, and storage or index implementation
+  out of scope for this child.
+acceptance_evidence:
+- criterion: Defines one canonical `presence` node field for SG-SPEC-0001 node kinds that marks active
+    versus historical presence without redefining lifecycle status.
+  evidence: specification.presence_field.field_name fixes the canonical field name as `presence`, specification.presence_field.applies_to
+    covers every SG-SPEC-0001 seed node kind, and specification.boundary_policy states that presence is
+    orthogonal to lifecycle status rather than a replacement for `status`.
+- criterion: Defines the minimum `presence` record contract, including `state`, `lineage_basis`, and the
+    conditions under which historical presence must be paired with SG-SPEC-0019-compatible supersession
+    lineage.
+  evidence: specification.presence_field.minimum_record defines required `state` and `lineage_basis` fields,
+    while specification.presence_rules.historical_rules requires `lineage_basis = superseded_lineage`
+    to be backed by explicit SG-SPEC-0019-compatible lineage such as `superseded_by`, `supersedes`, or
+    equivalent predecessor-linked replacement facts.
+- criterion: Defines how active and historical presence remain machine-readable on nodes like SG-SPEC-0045
+    through SG-SPEC-0048 without prescribing storage layout, query engine, or viewer UX.
+  evidence: 'specification.examples.active_readable_contract assigns `presence.state = active` and `presence.lineage_basis
+    = current_expression` to SG-SPEC-0045, while specification.examples.historical_lineage_contract assigns
+    `presence.state = historical` and `presence.lineage_basis = superseded_lineage` to SG-SPEC-0046, SG-SPEC-0047,
+    and SG-SPEC-0048 alongside the existing `superseded_by: [SG-SPEC-0045]` lineage markers.'
+- criterion: Keeps revision-record structure, predecessor ordering, renderer affordances, and storage
+    or index implementation out of scope for this child.
+  evidence: specification.scope.out excludes revision-record internals, predecessor ordering mechanics,
+    storage backends, query or index implementation, and viewer-specific badges or affordances. specification.boundary_policy
+    also states that presence consumes SG-SPEC-0019 lineage semantics rather than replacing them.
+prompt: Define the bounded canonical node presence field beneath SG-SPEC-0001 so nodes can expose explicit
+  active versus historical presence without overloading lifecycle status. Keep the child implementation-agnostic,
+  consume SG-SPEC-0019 lineage semantics, and make the contract narrow enough to support visible machine-readable
+  markers on nodes like SG-SPEC-0045 through SG-SPEC-0048.
+specification:
+  objective: Define the canonical node-level presence marker that makes current versus historical graph
+    presence explicit without collapsing that concern into lifecycle status, storage layout, or viewer
+    rendering.
+  scope:
+    in:
+    - Canonical field semantics for active versus historical node presence
+    - Minimum record shape for the `presence` field on SG-SPEC-0001 node kinds
+    - Boundary between presence surface semantics and SG-SPEC-0019 revision or supersession lineage
+    - Machine-readable examples for active readable nodes and retained historical lineage nodes
+    out:
+    - Revision-record structure, predecessor ordering, or supersession event internals
+    - Storage engine, file layout, indexing strategy, or query planner behavior
+    - Viewer badges, colors, iconography, sorting, or interaction design
+    - Automatic current-node selection heuristics beyond the explicit canonical markers defined here
+  terminology:
+    presence_record: The canonical record attached to one node that states whether the node is currently
+      surfaced as the active subject for its bounded concern or retained only as historical lineage.
+    active_presence: Presence state for the current canonical subject that should be surfaced as the live
+      readable node for its bounded concern.
+    historical_presence: Presence state for a node that remains canonical lineage but is no longer the
+      current readable subject for that bounded concern.
+    lineage_basis: The explicit reason why a node has its current presence state, kept separate from lifecycle
+      status and grounded in canonical lineage facts.
+  boundary_policy:
+  - The canonical field name for this concern is `presence`; presence is a node field, not a replacement
+    for lifecycle `status`.
+  - Presence records current-versus-historical visibility only; it does not authorize review transitions,
+    freeze transitions, or any other lifecycle move.
+  - Presence consumes SG-SPEC-0019 revision and supersession lineage semantics and therefore must not
+    replace revision_record facts, predecessor references, `supersedes`, or `superseded_by`.
+  - Viewer badges, repository projections, indexes, or filters derived from presence remain rebuildable
+    derived surfaces rather than canonical truth.
+  presence_field:
+    field_name: presence
+    applies_to:
+    - intent
+    - spec
+    - requirement
+    - decision
+    - constraint
+    - invariant
+    - code_surface
+    - test
+    - release
+    minimum_record:
+      required_fields:
+      - state
+      - lineage_basis
+      state:
+        allowed_values:
+        - active
+        - historical
+        semantics:
+          active: The node is the current canonical subject to surface for its bounded concern.
+          historical: The node remains canonical lineage but is no longer the current subject to surface
+            for that bounded concern.
+      lineage_basis:
+        allowed_values:
+        - current_expression
+        - superseded_lineage
+        - retained_archive
+        semantics:
+          current_expression: The node is presently surfaced as the current readable expression for the
+            concern.
+          superseded_lineage: A later canonical subject replaced this node and the older node remains
+            visible only as inspectable lineage.
+          retained_archive: The node remains canonical history without this child asserting a replacement
+            successor.
+  presence_rules:
+    active_rules:
+    - '`presence.state = active` MUST pair with `presence.lineage_basis = current_expression`.'
+    - Active presence does not imply one lifecycle status; linked, reviewed, and frozen nodes may all
+      remain active when they are the current canonical subject for the concern.
+    - Active presence MUST NOT be inferred solely from the absence of `superseded_by`; it must be stated
+      explicitly when this field is used.
+    historical_rules:
+    - '`presence.state = historical` MUST pair with `presence.lineage_basis = superseded_lineage` or `presence.lineage_basis
+      = retained_archive`.'
+    - Historical presence MUST NOT be inferred solely from lifecycle status; reviewed or frozen nodes
+      may still be active if they remain the current canonical subject.
+    - If `presence.lineage_basis = superseded_lineage`, the node MUST preserve explicit SG-SPEC-0019-compatible
+      lineage to its replacement through `superseded_by`, `supersedes`, predecessor-linked revision facts,
+      or an equivalent canonical replacement marker.
+    - If `presence.lineage_basis = retained_archive`, this child defines only that the node is historical;
+      any more specific archival rationale remains outside the bounded concern of this child.
+  canonical_vs_derived_boundary:
+    canonical:
+    - Authored `presence` records recorded directly on governed node snapshots
+    - Imported `presence` records explicitly accepted into canonical lineage for the matching node snapshot
+    - Reviewed canonical edits that explicitly add, remove, or replace a node's `presence` record
+    derived:
+    - Viewer badges, dashboards, or query/filter projections that summarize active versus historical nodes
+    - Inferred current-node selection or visibility projections rebuilt from canonical `presence` and
+      lineage facts
+    - Cached repository summaries, health signals, or overlays derived from canonical `presence` plus
+      lineage inspection
+  parent_contract:
+  - SG-SPEC-0001 names the concrete `presence` field and delegates detailed active-versus-historical node-presence
+    surface semantics to SG-SPEC-0054.
+  - SG-SPEC-0054 refines SG-SPEC-0001 without redefining the root canonical-versus-derived policy outside
+    node-presence surface semantics.
+  invariants:
+  - id: NPS-001
+    statement: Presence and lifecycle status are orthogonal; `presence.state` must not be used as a synonym
+      for `status`, and `status` must not be used as a proxy for current versus historical presence.
+  - id: NPS-002
+    statement: Historical presence caused by replacement must remain anchored in SG-SPEC-0019-compatible
+      supersession lineage rather than in viewer state, index state, or missing-edge inference.
+  - id: NPS-003
+    statement: Any badge, filter, or repository-visible marker that shows active versus historical nodes
+      must be derivable from canonical `presence` plus canonical lineage facts alone.
+  examples:
+    active_readable_contract:
+    - SG-SPEC-0045 may expose `presence.state = active` and `presence.lineage_basis = current_expression`
+      because it is the current readable contract after superseding the earlier split attempt.
+    - SG-SPEC-0045 remains free to be linked, reviewed, or frozen later without changing the meaning of
+      its active presence marker.
+    historical_lineage_contract:
+    - 'SG-SPEC-0046, SG-SPEC-0047, and SG-SPEC-0048 may expose `presence.state = historical` and `presence.lineage_basis
+      = superseded_lineage` while preserving `superseded_by: [SG-SPEC-0045]` as the explicit lineage successor
+      marker.'
+    - Those historical nodes remain inspectable lineage only; their historical presence does not require
+      a special lifecycle status beyond whatever lifecycle state they canonically retain.
+gate_state: none
+required_human_action: '-'
+proposed_status: null
+proposed_maturity: null

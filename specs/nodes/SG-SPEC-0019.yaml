@@ -1,8 +1,8 @@
 id: SG-SPEC-0019
 title: SpecGraph - Canonical Revision and Supersession Lineage
 kind: spec
-status: reviewed
-maturity: 0.88
+status: frozen
+maturity: 1.0
 depends_on: []
 relates_to: []
 refines:
@@ -15,36 +15,52 @@ outputs:
 allowed_paths:
 - specs/nodes/SG-SPEC-0019.yaml
 acceptance:
-- Defines the bounded role of canonical revision records, revision lineage, and supersession without prescribing
-  storage backends, VCS workflow, or merge implementation
+- Defines the bounded role of canonical revision records, revision lineage, supersession, and active-vs-historical
+  graph presence without prescribing storage backends, VCS workflow, merge implementation, or viewer UX
 - Defines the minimum semantic contract for recording a canonical change, including subject identity,
-  predecessor or superseded reference, authority or provenance, and bounded change scope
-- Defines the canonical versus derived boundary for revision history so diffs, timelines, indexes, and
-  working-tree state do not replace governed lineage
+  predecessor or superseded reference, authority or provenance, bounded change scope, and resulting presence-state
+  effect on active topology
+- Defines supersession kinds and successor mapping for canonical nodes and explicit canonical edges so
+  superseded subjects remain inspectable lineage only and do not participate in active topology
+- Defines the canonical versus derived boundary for revision history and active graph projection so diffs,
+  timelines, indexes, working-tree state, and default historical filtering do not replace governed lineage
 acceptance_evidence:
-- criterion: Defines the bounded role of canonical revision records, revision lineage, and supersession
-    without prescribing storage backends, VCS workflow, or merge implementation
-  evidence: 'specification.scope.in limits this child to ontology semantics for revision lineage, while
-    specification.scope.out excludes YAML fields, database schemas, VCS workflow, merge mechanics, review
-    workflow, and viewer implementation. specification.boundary_policy also states that this child clarifies
-    revision and supersession semantics without adding a new seed node kind to SG-SPEC-0001.
+- criterion: Defines the bounded role of canonical revision records, revision lineage, supersession, and
+    active-vs-historical graph presence without prescribing storage backends, VCS workflow, merge implementation,
+    or viewer UX
+  evidence: 'specification.scope.in now includes active-versus-historical graph presence and derived active
+    projection semantics, while specification.scope.out excludes YAML fields, database schemas, VCS workflow,
+    merge mechanics, retention storage policy, and viewer UX behavior. specification.boundary_policy also
+    states that this child clarifies revision, supersession, and topology-presence semantics without adding
+    a new seed node kind to SG-SPEC-0001.
 
     '
 - criterion: Defines the minimum semantic contract for recording a canonical change, including subject
-    identity, predecessor or superseded reference, authority or provenance, and bounded change scope
+    identity, predecessor or superseded reference, authority or provenance, bounded change scope, and
+    resulting presence-state effect on active topology
   evidence: 'specification.terminology defines revision_subject, revision_record, predecessor_reference,
-    supersession_event, and revision_scope. specification.revision_contract.record_minimum_semantics and
-    specification.revision_contract.supersession_rules then require a stable subject reference, predecessor
-    or superseded linkage, authority_class and provenance, and a bounded change summary for each canonical
-    lineage step.
+    revision_scope, and subject_presence_state. specification.revision_contract.record_minimum_semantics
+    and specification.presence_contract then require a stable subject reference, predecessor or superseded
+    linkage, authority_class and provenance, a bounded change summary, and explicit semantics for whether
+    the subject remains active or becomes historical_lineage_only.
 
     '
-- criterion: Defines the canonical versus derived boundary for revision history so diffs, timelines, indexes,
-    and working-tree state do not replace governed lineage
+- criterion: Defines supersession kinds and successor mapping for canonical nodes and explicit canonical
+    edges so superseded subjects remain inspectable lineage only and do not participate in active topology
+  evidence: 'specification.terminology defines supersession_kind and successor_mapping. specification.supersession_topology
+    then defines node_successor and explicit_edge_successor kinds, requires one-to-one successor mapping
+    for this child, and states that superseded subjects remain inspectable lineage only while specification.presence_contract
+    excludes them from active topology.
+
+    '
+- criterion: Defines the canonical versus derived boundary for revision history and active graph projection
+    so diffs, timelines, indexes, working-tree state, and default historical filtering do not replace
+    governed lineage
   evidence: 'specification.canonical_vs_derived_boundary separates authored or imported revision records,
-    supersedes edges, and explicit predecessor references from rebuildable git metadata, diff views, timelines,
-    and working-tree state. RSL-003 formalizes that derived history projections cannot stand in for canonical
-    lineage.
+    supersedes edges, predecessor references, and canonical presence-state facts from rebuildable git
+    metadata, diff views, timelines, indexes, working-tree state, and active_graph_projection. specification.active_projection_policy
+    and RSL-003 formalize that default filtering of historical subjects is derived behavior and cannot
+    stand in for canonical lineage.
 
     '
 prompt: Refine SG-SPEC-0001 by defining the canonical revision and supersession lineage boundary. Keep
@@ -61,13 +77,17 @@ specification:
     - Semantic boundary for canonical revision records and supersession lineage
     - Minimum semantic components required to trace change across node and explicit edge evolution
     - Relationship between stable identity, frozen immutability, in-place revision, and supersession
+    - Active versus historical presence semantics for canonical nodes and explicit canonical edges
+    - One-to-one successor mapping for supersession within this child's bounded scope
     - Canonical versus derived boundary for revision history projections
+    - Derived active projection semantics that may filter historical lineage by default
     - Explicit lineage origin marker semantics for first-step revisions
     out:
     - YAML field names, database schemas, storage backends, or repository layout
     - Git workflow, commit hash requirements, branching strategy, or merge implementation
     - Review workflow, queue policy, supervisor scheduling, or proposal-lane mechanics
-    - Diff rendering, timeline UX, audit dashboards, or history index implementation
+    - Diff rendering, timeline UX, audit dashboards, history index implementation, or viewer UX behavior
+    - Retention storage policy, archival transport, or garbage-collection rules for historical subjects
   terminology:
     revision_subject: 'A canonical node or explicit canonical edge whose governed state changes while
       its lineage must remain inspectable through stable identity and ordered predecessor references.
@@ -98,6 +118,27 @@ specification:
       summarizes canonical revision lineage without becoming the canonical record itself.
 
       '
+    subject_presence_state: 'The canonical topology state of a revision_subject in the governed graph:
+      either active or historical_lineage_only.
+
+      '
+    supersession_kind: 'The semantic class of a supersession_event for this child: node_successor when
+      one canonical node replaces another, or explicit_edge_successor when one explicit canonical edge
+      replaces another.
+
+      '
+    successor_mapping: 'The canonical statement of which active successor subject inherits the superseded
+      subject''s active-topology role after a supersession_event.
+
+      For this child, successor_mapping is one-to-one: one superseded subject maps to exactly one active
+      successor subject.
+
+      '
+    active_graph_projection: 'A derived current-state view rebuilt from canonical lineage facts that includes
+      active subjects and active explicit canonical edges while filtering historical_lineage_only subjects
+      by default unless lineage inspection is requested.
+
+      '
     lineage_origin_marker: 'A canonical declaration attached to the first revision_record in a lineage
       indicating that the subject has no predecessor_reference and that the record is the lineage root.
 
@@ -111,6 +152,10 @@ specification:
     supersession_event that preserves both identities.
   - Non-frozen subjects may evolve through in-place revision, but each revision step must still preserve
     predecessor_reference, authority_class, provenance, and revision_scope.
+  - Superseded subjects remain canonical history and become historical_lineage_only rather than being
+    deleted from the graph.
+  - Active-topology reads are derived from canonical lineage facts; filtering historical_lineage_only
+    subjects by default does not alter or erase governed history.
   revision_contract:
     record_minimum_semantics:
     - Every canonical revision_record MUST identify exactly one revision_subject by stable identity.
@@ -121,6 +166,8 @@ specification:
       or equivalent change summary.
     - Every canonical revision_record MUST distinguish whether the change is an in-place revision or a
       supersession_event.
+    - Every canonical revision_record MUST preserve enough canonical meaning to determine whether the
+      resulting subject_presence_state is active or historical_lineage_only.
     - If the revision_subject is an explicit edge, the lineage step must still preserve enough canonical
       identity to distinguish the prior governed edge instance from the new one.
     supersession_rules:
@@ -135,24 +182,66 @@ specification:
       from canonical history.
     - A supersession_event MAY narrow, broaden, or restate semantics, but the lineage step must preserve
       enough revision_scope for a reader to see why replacement occurred.
-    lineage_ordering:
-    - Canonical lineage ordering must be reconstructable from explicit predecessor or supersession references
-      plus governed provenance, without depending on one particular storage engine.
-    - A lineage step must not silently skip its immediate predecessor when canonical history intends a
-      continuous sequence.
-    - Later derived lineage_projection views may compress or visualize the chain, but they must remain
-      rebuildable from canonical lineage facts.
+  supersession_topology:
+    supersession_kinds:
+    - kind: node_successor
+      subject_class: canonical node
+      semantics: A new canonical node replaces one older canonical node in active topology, and the older
+        node becomes historical_lineage_only while remaining inspectable in lineage.
+    - kind: explicit_edge_successor
+      subject_class: explicit canonical edge
+      semantics: A new explicit canonical edge replaces one older explicit canonical edge in active topology,
+        and the older edge becomes historical_lineage_only while remaining inspectable in lineage.
+    successor_mapping_rules:
+    - Every supersession_event in this child MUST declare exactly one supersession_kind.
+    - Every supersession_event in this child MUST preserve exactly one successor_mapping from the superseded
+      subject to exactly one active successor subject.
+    - A successor_mapping MUST point to the subject that inherits the superseded subject's active-topology
+      role after the supersession_event.
+    - The superseded subject MUST become historical_lineage_only when the successor_mapping takes effect.
+    - One-to-many or many-to-one successor mapping is out of scope for this child and requires a future
+      refinement if needed.
+  presence_contract:
+    presence_states:
+    - active
+    - historical_lineage_only
+    rules:
+    - A canonical node or explicit canonical edge is active when it is the latest governed subject in
+      its lineage and no successor_mapping has superseded it.
+    - A canonical node or explicit canonical edge is historical_lineage_only when a successor_mapping
+      supersedes it, even though the subject remains canonically inspectable.
+    - historical_lineage_only subjects MUST NOT participate in active topology traversal, readiness evaluation,
+      or current-state dependency satisfaction.
+    - Newly authored current-state canonical edges MUST reference active subjects unless the edge exists
+      only to preserve lineage semantics such as predecessor_reference or supersession explanation.
+    - If an explicit canonical edge becomes historical_lineage_only, the edge remains inspectable in lineage
+      but no longer contributes to the active source-target topology.
+  lineage_ordering:
+  - Canonical lineage ordering must be reconstructable from explicit predecessor or supersession references
+    plus governed provenance, without depending on one particular storage engine.
+  - A lineage step must not silently skip its immediate predecessor when canonical history intends a continuous
+    sequence.
+  - Later derived lineage_projection views may compress or visualize the chain, but they must remain rebuildable
+    from canonical lineage facts.
+  active_projection_policy:
+  - active_graph_projection is derived from canonical subjects whose subject_presence_state is active
+    plus explicit canonical edges whose subject_presence_state is active and whose endpoints are active.
+  - active_graph_projection MAY filter historical_lineage_only subjects by default for current-state reads.
+  - Filtering historical_lineage_only subjects out of active_graph_projection MUST NOT delete them from
+    canonical history or make their lineage non-reconstructable.
   canonical_vs_derived_boundary:
     canonical:
     - Authored or imported revision_record facts with stable subject references
     - Explicit predecessor_reference values or equivalent canonical lineage links
     - Authored supersedes edges between governed artifacts
     - Bounded change summaries, authority_class, and provenance attached to lineage steps
+    - Canonical facts sufficient to determine subject_presence_state and successor_mapping
     derived:
     - Git commit graphs, branch names, and repository-native history topology
     - Diff hunks, timeline views, audit dashboards, and change feeds
     - Search indexes, cached history slices, and visual lineage layouts
     - Working-tree state, patch queues, and merge-conflict artifacts before canonicalization
+    - active_graph_projection views that omit historical_lineage_only subjects by default
   invariants:
   - id: RSL-001
     statement: Every canonical revision_record must identify exactly one revision_subject and preserve
@@ -167,6 +256,12 @@ specification:
     statement: The first canonical revision step for any revision_subject lineage MUST be explicitly marked
       with lineage_origin_marker and MUST NOT include predecessor_reference; all non-origin steps MUST
       include exactly one predecessor_reference.
+  - id: RSL-005
+    statement: Every supersession_event in this child MUST declare one supersession_kind and exactly one
+      successor_mapping that demotes the superseded subject to historical_lineage_only.
+  - id: RSL-006
+    statement: historical_lineage_only subjects remain inspectable in canonical lineage but MUST NOT participate
+      in active topology; any active_graph_projection that hides them remains derived and rebuildable.
   decisions:
   - id: RSL-D1
     statement: Canonical change history is represented as bounded lineage facts, not as storage-native
@@ -180,6 +275,14 @@ specification:
     statement: Supersession preserves truth evolution by replacement, not by mutating frozen artifacts.
     rationale: 'Frozen artifacts only remain auditable if later changes create a new governed identity
       and retain visible lineage back to the superseded subject.
+
+      '
+  - id: RSL-D3
+    statement: Active topology is a derived present-state projection over canonical lineage, not a replacement
+      for historical records.
+    rationale: 'SpecGraph needs current-state traversal without sacrificing inspectable history. Treating
+      active topology as a rebuildable projection preserves both goals: active reads stay concise while
+      historical lineage remains canonical and recoverable.
 
       '
   examples:
@@ -197,59 +300,19 @@ specification:
       rather than disappearing.
 
       '
-proposed_status: frozen
-proposed_maturity: 1.0
-gate_state: review_pending
-required_human_action: review refinement impact before approval
-last_outcome: done
-last_blocker: ''
-last_run_id: 20260413T052558Z-SG-SPEC-0019
-last_exit_code: 0
-last_changed_files:
-- specs/nodes/SG-SPEC-0019.yaml
-last_run_at: '2026-04-13T05:25:58.890662+00:00'
-last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0019-20260413T052541Z
-last_branch: codex/sg-spec-0019/20260413T052541Z
-last_validator_results:
-  outputs: true
-  allowed_paths: true
-  reconciliation: true
-  atomicity: true
-  transition: true
-  executor_environment: true
-  refinement_acceptance: true
-last_refinement_acceptance:
-  decision: review_required
-  change_class: constitutional_change
-  checks:
-    content_changed: true
-    hard_validation: true
-    single_spec_scope: true
-    constitutional_diff: true
-    graph_refactor_diff: false
-    atomicity_clear: true
-    within_mutation_budget: true
-  diff_paths:
-  - specification.revision_contract.supersession_rules[2]
-  - specification.revision_contract.supersession_rules[3]
-  - specification.revision_contract.supersession_rules[4]
-  - specification.terminology.supersession_event
-  mutation_classes:
-  - policy_text
-  mutation_budget: []
-  budget_exceeded_classes: []
-  changed_spec_files:
-  - specs/nodes/SG-SPEC-0019.yaml
-  review_reasons:
-  - run changed governance-sensitive specification sections
-  errors: []
-  warnings: []
-last_reconciliation:
-  worktree_spec_count: 23
-  changed_spec_ids:
-  - SG-SPEC-0019
-  semantic_dependencies_resolved: true
-  work_dependencies_ready: true
-  cycles: []
-last_requested_child_materialization: false
-last_materialized_child_paths: []
+  - name: Superseding an explicit canonical edge
+    description: 'A governed depends_on edge is replaced because the active predecessor requirement changes.
+      The new explicit edge becomes the active successor, the prior explicit edge becomes historical_lineage_only,
+      and an active_graph_projection may omit the prior edge by default while canonical lineage still
+      preserves it for inspection.
+
+      '
+gate_state: none
+proposed_status: null
+proposed_maturity: null
+required_human_action: '-'
+last_worktree_path: ''
+last_branch: ''
+last_gate_decision: approve
+last_gate_note: ''
+last_gate_at: '2026-04-17T20:48:33.287219+00:00'
