@@ -1377,10 +1377,10 @@ def implicit_source_allowed_paths(node: SpecNode) -> list[str]:
         return [node.path.as_posix()]
 
 
-def can_create_new_spec_files(node: SpecNode) -> bool:
+def can_create_new_spec_files(node: SpecNode, rel_path: str | None = None) -> bool:
     if not node.allowed_paths:
         return False
-    sample_path = PurePosixPath("specs/nodes/SG-SPEC-9999.yaml")
+    sample_path = PurePosixPath(rel_path or "specs/nodes/SG-SPEC-9999.yaml")
     return any(sample_path.match(pattern) for pattern in node.allowed_paths)
 
 
@@ -1963,8 +1963,6 @@ def capture_nested_executor_progress(
 
 
 def bootstrap_child_hint(node: SpecNode, specs: list[SpecNode]) -> dict[str, str] | None:
-    if not can_create_new_spec_files(node):
-        return None
     if not is_seed_like_spec(node.data):
         return None
 
@@ -1981,6 +1979,8 @@ def bootstrap_child_hint(node: SpecNode, specs: list[SpecNode]) -> dict[str, str
 
     child_id = next_sequential_spec_id(specs)
     child_path = f"specs/nodes/{child_id}.yaml"
+    if not can_create_new_spec_files(node, child_path):
+        return None
     return {
         "id": child_id,
         "path": child_path,
@@ -2028,6 +2028,8 @@ def targeted_child_materialization_hint(
 
     child_id = next_sequential_spec_id(specs)
     child_path = f"specs/nodes/{child_id}.yaml"
+    if not can_create_new_spec_files(node, child_path):
+        return None
     return {
         "id": child_id,
         "path": child_path,
@@ -2054,13 +2056,8 @@ def effective_allowed_paths_for_run(
     *,
     child_materialization_hint: dict[str, str] | None = None,
 ) -> list[str]:
-    allowed_paths = list(node.allowed_paths) or implicit_source_allowed_paths(node)
-    if child_materialization_hint is None:
-        return allowed_paths
-    child_path = str(child_materialization_hint.get("path", "")).strip()
-    if child_path and child_path not in allowed_paths:
-        allowed_paths.append(child_path)
-    return allowed_paths
+    _ = child_materialization_hint
+    return list(node.allowed_paths) or implicit_source_allowed_paths(node)
 
 
 def effective_outputs_for_run(
@@ -2080,6 +2077,7 @@ def effective_outputs_for_run(
 def child_materialization_preflight_errors(
     *,
     node: SpecNode,
+    specs: list[SpecNode],
     operator_target: bool = False,
     operator_note: str = "",
     run_authority: tuple[str, ...] = (),
@@ -2097,6 +2095,13 @@ def child_materialization_preflight_errors(
         errors.append(
             "Child materialization was requested, but the selected node does not expose "
             "semantic delegation constraints compatible with creating a bounded child."
+        )
+    child_id = next_sequential_spec_id(specs)
+    child_path = f"specs/nodes/{child_id}.yaml"
+    if not can_create_new_spec_files(node, child_path):
+        errors.append(
+            "Child materialization was requested, but allowed_paths do not explicitly "
+            f"authorize the proposed child spec path: {child_path}"
         )
     return errors
 
@@ -6496,6 +6501,7 @@ def _process_one_spec(
     source_spec_relpath = node.path.relative_to(ROOT).as_posix()
     child_materialization_preflight = child_materialization_preflight_errors(
         node=node,
+        specs=specs,
         operator_target=operator_target,
         operator_note=operator_note,
         run_authority=run_authority,
@@ -7313,6 +7319,7 @@ def main(
         print(f"Selected spec node: {node.id} — {node.title}")
         preflight_errors = child_materialization_preflight_errors(
             node=node,
+            specs=specs,
             operator_target=True,
             operator_note=operator_note,
             run_authority=run_authority,
