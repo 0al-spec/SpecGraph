@@ -1370,9 +1370,16 @@ def next_sequential_spec_id(specs: list[SpecNode]) -> str:
     return f"SG-SPEC-{max_number + 1:04d}"
 
 
+def implicit_source_allowed_paths(node: SpecNode) -> list[str]:
+    try:
+        return [node.path.relative_to(ROOT).as_posix()]
+    except ValueError:
+        return [node.path.as_posix()]
+
+
 def can_create_new_spec_files(node: SpecNode) -> bool:
     if not node.allowed_paths:
-        return True
+        return False
     sample_path = PurePosixPath("specs/nodes/SG-SPEC-9999.yaml")
     return any(sample_path.match(pattern) for pattern in node.allowed_paths)
 
@@ -2047,9 +2054,7 @@ def effective_allowed_paths_for_run(
     *,
     child_materialization_hint: dict[str, str] | None = None,
 ) -> list[str]:
-    if not node.allowed_paths:
-        return []
-    allowed_paths = list(node.allowed_paths)
+    allowed_paths = list(node.allowed_paths) or implicit_source_allowed_paths(node)
     if child_materialization_hint is None:
         return allowed_paths
     child_path = str(child_materialization_hint.get("path", "")).strip()
@@ -2571,7 +2576,7 @@ def validate_changed_files_against_allowed_paths(
     changed_files: list[str],
 ) -> list[str]:
     if not allowed_paths:
-        return []
+        return [f"Changed file outside allowed_paths: {changed}" for changed in changed_files]
 
     errors: list[str] = []
     for changed in changed_files:
@@ -2582,16 +2587,20 @@ def validate_changed_files_against_allowed_paths(
 
 
 def validate_allowed_paths(node: SpecNode, changed_files: list[str]) -> list[str]:
-    return validate_changed_files_against_allowed_paths(node.allowed_paths, changed_files)
+    return validate_changed_files_against_allowed_paths(
+        effective_allowed_paths_for_run(node),
+        changed_files,
+    )
 
 
 def select_sync_paths(allowed_paths: list[str], changed_files: list[str]) -> list[str]:
     """Return changed paths eligible for sync back to root.
 
-    Empty allowed_paths means unrestricted sync.
+    Callers should pass effective allowed paths after applying default-deny
+    fallback semantics for the selected source node.
     """
     if not allowed_paths:
-        return list(changed_files)
+        return []
     return [
         path
         for path in changed_files
@@ -2621,7 +2630,7 @@ def pending_review_sync_paths(node: SpecNode) -> list[str]:
         paths = [str(path).strip() for path in raw_paths if str(path).strip()]
         return sorted(dict.fromkeys(paths))
     changed_files = list(node.data.get("last_changed_files", []))
-    return select_sync_paths(node.allowed_paths, changed_files)
+    return select_sync_paths(effective_allowed_paths_for_run(node), changed_files)
 
 
 def pending_review_base_divergence_paths(node: SpecNode, rel_paths: list[str]) -> list[str]:
