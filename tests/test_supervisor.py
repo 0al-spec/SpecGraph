@@ -1249,6 +1249,105 @@ last_run_id: old-run
     assert sanitized == spec_yaml_module.canonicalize_text(sanitized)
 
 
+def test_dirty_local_input_spec_paths_filters_to_modified_input_specs(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    dirty_neighbor_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0002.yaml"
+    dirty_neighbor_path.write_text(
+        supervisor_module.dump_yaml_text(
+            {
+                "id": "SG-SPEC-0002",
+                "title": "Dirty Neighbor",
+                "kind": "spec",
+                "status": "linked",
+                "maturity": 0.3,
+                "inputs": [],
+                "outputs": ["specs/nodes/SG-SPEC-0002.yaml"],
+                "allowed_paths": ["specs/nodes/SG-SPEC-0002.yaml"],
+                "acceptance": ["neighbor criterion"],
+                "prompt": "Dirty neighbor rewrite.",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    node = supervisor_module.SpecNode(
+        path=repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml",
+        data={
+            "id": "SG-SPEC-0001",
+            "title": "Root",
+            "kind": "spec",
+            "status": "outlined",
+            "inputs": [
+                "specs/nodes/SG-SPEC-0001.yaml",
+                "specs/nodes/SG-SPEC-0002.yaml",
+                "tasks.md",
+            ],
+        },
+    )
+
+    rel_paths = supervisor_module.dirty_local_input_spec_paths(
+        node,
+        changed_files=["specs/nodes/SG-SPEC-0002.yaml", "runs/latest-summary.md"],
+    )
+
+    assert rel_paths == ["specs/nodes/SG-SPEC-0002.yaml"]
+
+
+def test_sync_local_input_specs_into_worktree_copies_dirty_neighbors(
+    supervisor_module: object,
+    repo_fixture: Path,
+    tmp_path: Path,
+) -> None:
+    node = supervisor_module.SpecNode(
+        path=repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml",
+        data={
+            "id": "SG-SPEC-0001",
+            "title": "Root",
+            "kind": "spec",
+            "status": "outlined",
+            "inputs": [
+                "specs/nodes/SG-SPEC-0001.yaml",
+                "specs/nodes/SG-SPEC-0002.yaml",
+            ],
+        },
+    )
+    dirty_neighbor_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0002.yaml"
+    dirty_neighbor = {
+        "id": "SG-SPEC-0002",
+        "title": "Dirty Neighbor",
+        "kind": "spec",
+        "status": "linked",
+        "maturity": 0.3,
+        "inputs": [],
+        "outputs": ["specs/nodes/SG-SPEC-0002.yaml"],
+        "allowed_paths": ["specs/nodes/SG-SPEC-0002.yaml"],
+        "acceptance": ["neighbor criterion"],
+        "prompt": "Dirty neighbor rewrite.",
+        "gate_state": "blocked",
+        "last_run_id": "stale-run",
+    }
+    dirty_neighbor_path.write_text(
+        supervisor_module.dump_yaml_text(dirty_neighbor),
+        encoding="utf-8",
+    )
+
+    synced_paths = supervisor_module.sync_local_input_specs_into_worktree(
+        node,
+        tmp_path,
+        changed_files=["specs/nodes/SG-SPEC-0002.yaml"],
+    )
+
+    assert synced_paths == [tmp_path / "specs" / "nodes" / "SG-SPEC-0002.yaml"]
+    synced_neighbor = supervisor_module.get_yaml_module().safe_load(
+        synced_paths[0].read_text(encoding="utf-8")
+    )
+    assert synced_neighbor["prompt"] == "Dirty neighbor rewrite."
+    assert "gate_state" not in synced_neighbor
+    assert "last_run_id" not in synced_neighbor
+
+
 def test_validate_refinement_acceptance_approves_local_refinement(
     supervisor_module: object,
     repo_fixture: Path,
@@ -2019,6 +2118,249 @@ def test_observe_graph_health_reports_shape_and_handoff_signals(
     assert serial["details"]["longest_one_child_chain"] >= 4
 
 
+def test_observe_graph_health_reports_role_legibility_signals(
+    supervisor_module: object,
+) -> None:
+    spec_node = supervisor_module.SpecNode
+    source = spec_node(
+        path=Path("/tmp/source.yaml"),
+        data={
+            "id": "SG-SPEC-9200",
+            "title": "Gateway Boundary Root",
+            "kind": "spec",
+            "status": "linked",
+            "maturity": 0.4,
+            "depends_on": [],
+            "acceptance": ["root criterion"],
+            "prompt": "Review the subtree for readability drift.",
+            "last_outcome": "split_required",
+        },
+    )
+    child1 = spec_node(
+        path=Path("/tmp/child1.yaml"),
+        data={
+            "id": "SG-SPEC-9201",
+            "title": "Gateway Segment (9202->9203)",
+            "kind": "spec",
+            "status": "linked",
+            "maturity": 0.3,
+            "depends_on": [],
+            "refines": ["SG-SPEC-9200"],
+            "acceptance": [
+                (
+                    "Defines SG-SPEC-9201 as the bounded downstream gateway segment "
+                    "under SG-SPEC-9200 so SG-SPEC-9202 consumes SG-SPEC-9203 and "
+                    "SG-SPEC-9204 owns the edge slice."
+                )
+            ],
+            "prompt": (
+                "Materialize one bounded gateway segment so SG-SPEC-9200 can "
+                "delegate the SG-SPEC-9202 -> SG-SPEC-9203 path while "
+                "SG-SPEC-9204 owns the direct edge slice."
+            ),
+        },
+    )
+    child2 = spec_node(
+        path=Path("/tmp/child2.yaml"),
+        data={
+            "id": "SG-SPEC-9202",
+            "title": "Gateway Edge (9203->9204)",
+            "kind": "spec",
+            "status": "linked",
+            "maturity": 0.3,
+            "depends_on": [],
+            "refines": ["SG-SPEC-9201"],
+            "acceptance": [
+                (
+                    "Defines SG-SPEC-9202 as the direct edge slice so "
+                    "SG-SPEC-9201 consumes the SG-SPEC-9203 -> SG-SPEC-9204 "
+                    "gateway dependency and delegates broader segment topology "
+                    "elsewhere."
+                )
+            ],
+            "prompt": (
+                "Materialize a single bounded edge slice for SG-SPEC-9203 -> "
+                "SG-SPEC-9204 so SG-SPEC-9201 owns only the direct "
+                "gateway-edge contract."
+            ),
+        },
+    )
+
+    graph_health = supervisor_module.observe_graph_health(
+        source_node=source,
+        worktree_specs=[source, child1, child2],
+        reconciliation={"semantic_dependencies_resolved": True},
+        atomicity_errors=[],
+        outcome="split_required",
+    )
+
+    assert "role_obscured_node" in graph_health["signals"]
+    assert "bookkeeping_only_node" in graph_health["signals"]
+
+    role_obscured = next(
+        item for item in graph_health["observations"] if item["kind"] == "role_obscured_node"
+    )
+    bookkeeping_only = next(
+        item for item in graph_health["observations"] if item["kind"] == "bookkeeping_only_node"
+    )
+
+    role_obscured_ids = {item["spec_id"] for item in role_obscured["details"]["affected_nodes"]}
+    bookkeeping_only_ids = {
+        item["spec_id"] for item in bookkeeping_only["details"]["affected_nodes"]
+    }
+
+    assert "SG-SPEC-9201" in role_obscured_ids
+    assert "SG-SPEC-9202" in bookkeeping_only_ids
+    assert "rewrite_node_role_boundary" in graph_health["recommended_actions"]
+    assert "merge_bookkeeping_slice" in graph_health["recommended_actions"]
+
+
+def test_text_marker_hits_uses_token_boundaries(
+    supervisor_module: object,
+) -> None:
+    hits = supervisor_module.text_marker_hits(
+        "downstream owns the edge and requires review of the boundary",
+        ("own", "owns", "require", "requires"),
+    )
+
+    assert hits == 2
+
+
+def test_observe_graph_health_ignores_superseded_descendants(
+    supervisor_module: object,
+) -> None:
+    spec_node = supervisor_module.SpecNode
+    source = spec_node(
+        path=Path("/tmp/source.yaml"),
+        data={
+            "id": "SG-SPEC-9300",
+            "title": "Readable Gateway Entry Contract",
+            "kind": "spec",
+            "status": "linked",
+            "maturity": 0.4,
+            "depends_on": [],
+            "supersedes": ["SG-SPEC-9301", "SG-SPEC-9302"],
+            "acceptance": ["Defines one active readable role for the subtree."],
+            "prompt": "Keep this subtree human-readable.",
+            "last_outcome": "split_required",
+        },
+    )
+    child1 = spec_node(
+        path=Path("/tmp/child1.yaml"),
+        data={
+            "id": "SG-SPEC-9301",
+            "title": "Historical Gateway Segment Slice",
+            "kind": "spec",
+            "status": "reviewed",
+            "maturity": 0.3,
+            "depends_on": [],
+            "refines": ["SG-SPEC-9300"],
+            "superseded_by": ["SG-SPEC-9300"],
+            "acceptance": ["Records a superseded split attempt."],
+            "prompt": "Historical artifact only.",
+        },
+    )
+    child2 = spec_node(
+        path=Path("/tmp/child2.yaml"),
+        data={
+            "id": "SG-SPEC-9302",
+            "title": "Historical Gateway Edge Slice",
+            "kind": "spec",
+            "status": "reviewed",
+            "maturity": 0.3,
+            "depends_on": [],
+            "refines": ["SG-SPEC-9301"],
+            "superseded_by": ["SG-SPEC-9300"],
+            "acceptance": ["Records a superseded direct-edge split attempt."],
+            "prompt": "Historical artifact only.",
+        },
+    )
+
+    graph_health = supervisor_module.observe_graph_health(
+        source_node=source,
+        worktree_specs=[source, child1, child2],
+        reconciliation={"semantic_dependencies_resolved": True},
+        atomicity_errors=[],
+        outcome="split_required",
+    )
+    snapshot = supervisor_module.inspect_canonical_graph_health(
+        node=source,
+        specs=[source, child1, child2],
+    )
+
+    assert "role_obscured_node" not in graph_health["signals"]
+    assert "bookkeeping_only_node" not in graph_health["signals"]
+    assert snapshot["subtree_spec_ids"] == ["SG-SPEC-9300"]
+    assert snapshot["historical_descendant_ids"] == ["SG-SPEC-9301", "SG-SPEC-9302"]
+
+
+def test_observe_graph_health_excludes_superseded_descendants_from_retrospective_signal(
+    supervisor_module: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    spec_node = supervisor_module.SpecNode
+    source = spec_node(
+        path=Path("/tmp/source.yaml"),
+        data={
+            "id": "SG-SPEC-9400",
+            "title": "Readable Aggregate Root",
+            "kind": "spec",
+            "status": "linked",
+            "maturity": 0.4,
+            "depends_on": [],
+            "supersedes": ["SG-SPEC-9401"],
+            "acceptance": ["Defines one readable aggregate role."],
+            "prompt": "Keep this subtree readable.",
+            "last_outcome": "split_required",
+        },
+    )
+    historical_child = spec_node(
+        path=Path("/tmp/child1.yaml"),
+        data={
+            "id": "SG-SPEC-9401",
+            "title": "Historical Slice",
+            "kind": "spec",
+            "status": "reviewed",
+            "maturity": 0.3,
+            "depends_on": [],
+            "refines": ["SG-SPEC-9400"],
+            "superseded_by": ["SG-SPEC-9400"],
+            "acceptance": ["Historical artifact only."],
+            "prompt": "Do not treat this as active.",
+            "acceptance_evidence": [
+                {"criterion": "Historical artifact only.", "evidence": "lineage"}
+            ],
+        },
+    )
+
+    monkeypatch.setattr(
+        supervisor_module,
+        "validate_atomicity",
+        lambda node: (
+            ["acceptance count 6 exceeds 5 for bounded atomicity"]
+            if node.id == "SG-SPEC-9400"
+            else []
+        ),
+    )
+
+    graph_health = supervisor_module.observe_graph_health(
+        source_node=source,
+        worktree_specs=[source, historical_child],
+        reconciliation={"semantic_dependencies_resolved": True},
+        atomicity_errors=[],
+        outcome="split_required",
+    )
+
+    retrospective = [
+        item
+        for item in graph_health["observations"]
+        if item["kind"] == supervisor_module.RETROSPECTIVE_REFACTOR_SIGNAL
+    ]
+
+    assert retrospective == []
+    assert supervisor_module.RETROSPECTIVE_REFACTOR_SIGNAL not in graph_health["signals"]
+
+
 def test_observe_graph_health_handles_refines_cycle_in_subtree_metrics(
     supervisor_module: object,
 ) -> None:
@@ -2264,6 +2606,40 @@ def test_update_refactor_queue_routes_shape_signals_to_proposal_first(
     assert shape_item["execution_policy"] == "emit_proposal"
     assert handoff_item["work_item_type"] == "governance_proposal"
     assert handoff_item["execution_policy"] == "emit_proposal"
+
+
+def test_update_refactor_queue_routes_role_legibility_signals_to_proposal_first(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    graph_health = {
+        "source_spec_id": "SG-SPEC-9999",
+        "observations": [
+            {
+                "kind": "role_obscured_node",
+                "details": {"affected_count": 2},
+            },
+            {
+                "kind": "bookkeeping_only_node",
+                "details": {"affected_count": 1},
+            },
+        ],
+        "signals": ["role_obscured_node", "bookkeeping_only_node"],
+        "recommended_actions": ["rewrite_node_role_boundary", "merge_bookkeeping_slice"],
+    }
+
+    path = supervisor_module.update_refactor_queue(graph_health=graph_health, run_id="RUN-1")
+    items = json.loads(path.read_text(encoding="utf-8"))
+
+    role_item = next(item for item in items if item["signal"] == "role_obscured_node")
+    bookkeeping_item = next(item for item in items if item["signal"] == "bookkeeping_only_node")
+
+    assert role_item["work_item_type"] == "graph_refactor"
+    assert role_item["execution_policy"] == "emit_proposal"
+    assert role_item["recommended_action"] == "rewrite_node_role_boundary"
+    assert bookkeeping_item["work_item_type"] == "graph_refactor"
+    assert bookkeeping_item["execution_policy"] == "emit_proposal"
+    assert bookkeeping_item["recommended_action"] == "merge_bookkeeping_slice"
 
 
 def test_update_refactor_queue_defers_direct_execution_when_active_proposal_exists(
@@ -7024,6 +7400,155 @@ def test_main_rejects_dry_run_with_clean_stale_runtime(
     assert exit_code == 1
     err = capsys.readouterr().err
     assert "--dry-run cannot be combined with --clean-stale-runtime" in err
+
+
+def test_main_observe_graph_health_requires_target_spec(
+    supervisor_module: object,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    exit_code = supervisor_module.main(observe_graph_health_mode=True)
+
+    assert exit_code == 1
+    err = capsys.readouterr().err
+    assert "--observe-graph-health requires --target-spec" in err
+
+
+def test_main_observe_graph_health_prints_subtree_report(
+    supervisor_module: object,
+    repo_fixture: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    root_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    root_data = supervisor_module.get_yaml_module().safe_load(root_path.read_text(encoding="utf-8"))
+    root_data["status"] = "linked"
+    root_data["maturity"] = 0.4
+    root_data["prompt"] = "Inspect subtree readability."
+    root_data["acceptance"] = ["root criterion"]
+    root_data["last_outcome"] = "split_required"
+    root_path.write_text(json.dumps(root_data), encoding="utf-8")
+
+    child_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0002.yaml"
+    child_path.write_text(
+        json.dumps(
+            {
+                "id": "SG-SPEC-0002",
+                "title": "Gateway Segment (0003->0004)",
+                "kind": "spec",
+                "status": "linked",
+                "maturity": 0.3,
+                "depends_on": [],
+                "refines": ["SG-SPEC-0001"],
+                "inputs": [],
+                "outputs": ["specs/nodes/SG-SPEC-0002.yaml"],
+                "allowed_paths": ["specs/nodes/SG-SPEC-0002.yaml"],
+                "acceptance": [
+                    (
+                        "Defines SG-SPEC-0002 as the bounded gateway segment "
+                        "under SG-SPEC-0001 so SG-SPEC-0003 consumes "
+                        "SG-SPEC-0004 and SG-SPEC-0005 owns the edge slice."
+                    )
+                ],
+                "prompt": (
+                    "Materialize one bounded gateway segment so SG-SPEC-0001 "
+                    "delegates SG-SPEC-0003 -> SG-SPEC-0004 while "
+                    "SG-SPEC-0005 owns the direct edge slice."
+                ),
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    child2_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0003.yaml"
+    child2_path.write_text(
+        json.dumps(
+            {
+                "id": "SG-SPEC-0003",
+                "title": "Gateway Edge (0004->0005)",
+                "kind": "spec",
+                "status": "linked",
+                "maturity": 0.3,
+                "depends_on": [],
+                "refines": ["SG-SPEC-0002"],
+                "inputs": [],
+                "outputs": ["specs/nodes/SG-SPEC-0003.yaml"],
+                "allowed_paths": ["specs/nodes/SG-SPEC-0003.yaml"],
+                "acceptance": [
+                    (
+                        "Defines SG-SPEC-0003 as the direct edge slice so "
+                        "SG-SPEC-0002 consumes SG-SPEC-0004 -> SG-SPEC-0005 "
+                        "and delegates broader segment topology elsewhere."
+                    )
+                ],
+                "prompt": (
+                    "Materialize a single bounded edge slice for SG-SPEC-0004 "
+                    "-> SG-SPEC-0005 so SG-SPEC-0002 owns only the direct "
+                    "gateway-edge contract."
+                ),
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    exit_code = supervisor_module.main(
+        target_spec="SG-SPEC-0001",
+        observe_graph_health_mode=True,
+    )
+
+    assert exit_code == 0
+    out = capsys.readouterr().out
+    assert "=== graph-health observation mode ===" in out
+    assert "Subtree nodes: SG-SPEC-0001, SG-SPEC-0002, SG-SPEC-0003" in out
+    assert '"role_obscured_node"' in out
+    assert '"bookkeeping_only_node"' in out
+
+
+def test_main_observe_graph_health_prints_historical_descendants(
+    supervisor_module: object,
+    repo_fixture: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    root_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    root_data = supervisor_module.get_yaml_module().safe_load(root_path.read_text(encoding="utf-8"))
+    root_data["status"] = "linked"
+    root_data["maturity"] = 0.4
+    root_data["prompt"] = "Inspect subtree readability."
+    root_data["acceptance"] = ["root criterion"]
+    root_data["last_outcome"] = "split_required"
+    root_data["supersedes"] = ["SG-SPEC-0002"]
+    root_path.write_text(json.dumps(root_data), encoding="utf-8")
+
+    child_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0002.yaml"
+    child_path.write_text(
+        json.dumps(
+            {
+                "id": "SG-SPEC-0002",
+                "title": "Historical Gateway Segment Slice",
+                "kind": "spec",
+                "status": "reviewed",
+                "maturity": 0.3,
+                "depends_on": [],
+                "refines": ["SG-SPEC-0001"],
+                "superseded_by": ["SG-SPEC-0001"],
+                "inputs": [],
+                "outputs": ["specs/nodes/SG-SPEC-0002.yaml"],
+                "allowed_paths": ["specs/nodes/SG-SPEC-0002.yaml"],
+                "acceptance": ["Records a superseded split attempt."],
+                "prompt": "Historical artifact only.",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    exit_code = supervisor_module.main(
+        target_spec="SG-SPEC-0001",
+        observe_graph_health_mode=True,
+    )
+
+    assert exit_code == 0
+    out = capsys.readouterr().out
+    assert "Subtree nodes: SG-SPEC-0001" in out
+    assert "Historical descendants excluded: SG-SPEC-0002" in out
+    assert '"historical_descendant_ids": [' in out
 
 
 def test_main_fails_when_changed_file_outside_allowed_paths(

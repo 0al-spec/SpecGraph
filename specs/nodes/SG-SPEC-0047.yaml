@@ -1,147 +1,73 @@
 id: SG-SPEC-0047
-title: SpecGraph - Proposal/Split Gateway Segment (0032->0043)
+title: SpecGraph - Historical Gateway Segment Slice
 kind: spec
-status: linked
-maturity: 0.2
+status: reviewed
+maturity: 0.4
 depends_on:
-- SG-SPEC-0027
-- SG-SPEC-0048
+- SG-SPEC-0045
 refines:
+- SG-SPEC-0045
+superseded_by:
 - SG-SPEC-0045
 inputs:
 - specs/nodes/SG-SPEC-0045.yaml
-- specs/nodes/SG-SPEC-0027.yaml
-- specs/nodes/SG-SPEC-0032.yaml
-- specs/nodes/SG-SPEC-0043.yaml
-- specs/nodes/SG-SPEC-0048.yaml
 outputs:
 - specs/nodes/SG-SPEC-0047.yaml
 allowed_paths:
 - specs/nodes/SG-SPEC-0047.yaml
 acceptance:
-- Defines SG-SPEC-0047 as the bounded downstream gateway-segment child beneath SG-SPEC-0045 for the SG-SPEC-0027
-  proposal/split readiness path.
-- Constrains SG-SPEC-0027 readiness to flow through SG-SPEC-0032 then SG-SPEC-0043 and consumes SG-SPEC-0048
-  for the direct SG-SPEC-0032 -> SG-SPEC-0043 edge contract.
-- Forbids direct SG-SPEC-0027 proposal/split dependency on SG-SPEC-0029 while SG-SPEC-0043 exists.
-- Restricts SG-SPEC-0047 to topology contracts only, leaving concrete mechanics and policy ownership to
-  downstream descendants.
+- Records SG-SPEC-0047 as a superseded decomposition artifact from an earlier SG-SPEC-0045 split attempt.
+- Preserves inspectable lineage to SG-SPEC-0045 without claiming a distinct active node_role or composed_function.
+- Must not be treated as an active refinement child while SG-SPEC-0045 remains the superseding readable
+  contract.
 acceptance_evidence:
-- criterion: Defines SG-SPEC-0047 as the bounded downstream gateway-segment child beneath SG-SPEC-0045
-    for the SG-SPEC-0027 proposal/split readiness path.
-  evidence: specification.objective and specification.scope.in define SG-SPEC-0047 as the delegated downstream
-    gateway segment for SG-SPEC-0027 readiness, and specification.parent_contract requires SG-SPEC-0045
-    to consume this child.
-- criterion: Constrains SG-SPEC-0027 readiness to flow through SG-SPEC-0032 then SG-SPEC-0043 and delegates
-    the direct SG-SPEC-0032 -> SG-SPEC-0043 edge contract exclusively to SG-SPEC-0048.
-  evidence: specification.gateway_segment defines SG-SPEC-0027 -> SG-SPEC-0032 -> SG-SPEC-0043 flow under
-    this segment, and specification.gateway_topology plus specification.parent_contract route and constrain
-    the direct SG-SPEC-0032 -> SG-SPEC-0043 edge contract to SG-SPEC-0048.
-- criterion: Forbids direct SG-SPEC-0027 proposal/split dependency on SG-SPEC-0029 while SG-SPEC-0043
-    exists.
-  evidence: specification.no_bypass_rules forbids direct SG-SPEC-0027 -> SG-SPEC-0029 dependence in this
-    subtree when SG-SPEC-0043 is present.
-- criterion: Restricts SG-SPEC-0047 to topology contracts only, leaving concrete mechanics and policy
-    ownership to downstream descendants.
-  evidence: specification.scope.out and specification.segment_boundaries keep queue ranking formulas,
-    continuation policy, mechanics payload ownership, and runtime orchestration outside this segment.
-prompt: Materialize SG-SPEC-0047 as the delegated downstream readiness segment so SG-SPEC-0027 reaches
-  proposal/split mechanics only through SG-SPEC-0032 -> SG-SPEC-0043, with SG-SPEC-0048 owning the direct
-  SG-SPEC-0032 -> SG-SPEC-0043 edge contract beneath this segment.
+- criterion: Records SG-SPEC-0047 as a superseded decomposition artifact from an earlier SG-SPEC-0045
+    split attempt.
+  evidence: top-level superseded_by marks SG-SPEC-0045 as the superseding contract, and specification.historical_status
+    states that SG-SPEC-0047 remains inspectable only as a prior split attempt.
+- criterion: Preserves inspectable lineage to SG-SPEC-0045 without claiming a distinct active node_role
+    or composed_function.
+  evidence: refines keeps SG-SPEC-0045 as the lineage anchor, while specification.boundaries says SG-SPEC-0047
+    no longer defines an active runtime-observable role distinct from SG-SPEC-0045.
+- criterion: Must not be treated as an active refinement child while SG-SPEC-0045 remains the superseding
+    readable contract.
+  evidence: specification.inactive_rules require graph-health inspection and future subtree work to treat
+    SG-SPEC-0047 as inactive while superseded_by points to SG-SPEC-0045.
+prompt: Preserve SG-SPEC-0047 only as inspectable lineage for a superseded split attempt beneath SG-SPEC-0045.
+  Do not present it as an active subtree role.
 specification:
-  objective: Materialize one bounded downstream gateway segment so SG-SPEC-0045 can keep proposal/split
-    parent-integration grouped while SG-SPEC-0048 owns the direct edge slice.
+  objective: Preserve SG-SPEC-0047 as historical lineage for a superseded split attempt beneath SG-SPEC-0045
+    without treating it as an active role-bearing child.
   scope:
     in:
-    - Gateway-segment topology for SG-SPEC-0027 proposal/split readiness from SG-SPEC-0032 into SG-SPEC-0043.
-    - Delegated non-bypass readiness edge policy for SG-SPEC-0027 while SG-SPEC-0043 remains present.
-    - Conformance boundary to keep SG-SPEC-0047 topology-only and bounded.
+    - Inspectable lineage for one superseded decomposition attempt beneath SG-SPEC-0045.
+    - Explicit superseded_by relation to the active readable contract in SG-SPEC-0045.
+    - Inactive-child rules for active subtree reads and graph-health inspection.
     out:
-    - Concrete mechanics schema and lifecycle details owned by SG-SPEC-0029.
-    - Ranking formulas, continuation policy, and runtime orchestration.
-    - Queue fairness and scoring policy ownership.
-  gateway_segment:
-  - SG-SPEC-0027 readiness for this subtree is constrained through SG-SPEC-0032.
-  - SG-SPEC-0032 readiness for this subtree is constrained through SG-SPEC-0043.
-  - SG-SPEC-0043 delegates concrete readiness details to SG-SPEC-0029.
-  - SG-SPEC-0048 owns the direct SG-SPEC-0032 -> SG-SPEC-0043 edge contract for this segment and no other
-    sibling node may redefine this edge contract here.
-  - While SG-SPEC-0043 exists, SG-SPEC-0027 cannot reach SG-SPEC-0029 for proposal/split readiness by
-    any shorter path than SG-SPEC-0027 -> SG-SPEC-0032 -> SG-SPEC-0043 -> SG-SPEC-0029.
-  gateway_topology:
-  - SG-SPEC-0027 depends on SG-SPEC-0032 as the proposal/split mechanics child in this segment.
-  - SG-SPEC-0032 depends on SG-SPEC-0043 as the direct gateway in this segment as contractually defined
-    by SG-SPEC-0048.
-  - SG-SPEC-0043 depends on SG-SPEC-0029 for concrete mechanics/inspection artifacts.
-  no_bypass_rules:
-  - SG-SPEC-0027 must not depend_on SG-SPEC-0029 directly for proposal/split readiness while SG-SPEC-0043
-    exists.
-  - SG-SPEC-0027 readiness edges to SG-SPEC-0029 must be exactly SG-SPEC-0027 -> SG-SPEC-0032 -> SG-SPEC-0043
-    -> SG-SPEC-0029 while SG-SPEC-0043 exists.
-  parent_contract:
-  - SG-SPEC-0045 must consume SG-SPEC-0047 as the bounded downstream gateway segment for SG-SPEC-0027
-    readiness.
-  - SG-SPEC-0047 consumes SG-SPEC-0048 as the sole source of the direct SG-SPEC-0032 -> SG-SPEC-0043 gateway-edge
-    contract.
-  - SG-SPEC-0029 owns concrete readiness mechanics and payload details under this segment.
-  segment_boundaries:
-  - SG-SPEC-0047 does not redefine concrete SG-SPEC-0029 mechanics, ranking policy, continuation policy,
-    or runtime orchestration.
-  - SG-SPEC-0047 only constrains the gateway-segment edges and non-bypass rule for this path.
-gate_state: split_required
-required_human_action: split spec scope before rerun
+    - Any distinct active runtime-observable invariant beyond SG-SPEC-0045.
+    - New decomposition authority, child materialization, or queue-control semantics.
+    - Concrete proposal/split mechanics, ranking policy, or runtime orchestration.
+  historical_status:
+  - SG-SPEC-0047 records a prior gateway segment slice that has been superseded by SG-SPEC-0045.
+  - SG-SPEC-0047 remains inspectable lineage only and does not define the active subtree role.
+  lineage_contract:
+  - SG-SPEC-0045 supersedes SG-SPEC-0047.
+  - SG-SPEC-0047 refines SG-SPEC-0045 only as historical lineage, not as an active child for continued
+    splitting.
+  inactive_rules:
+  - Graph-health inspection must exclude SG-SPEC-0047 from the active SG-SPEC-0045 subtree while superseded_by
+    points to SG-SPEC-0045.
+  - Future refinement should target SG-SPEC-0045 rather than reopening SG-SPEC-0047 unless a later reviewed
+    supersession changes lineage again.
+  boundaries:
+  - SG-SPEC-0047 no longer defines an active node_role, composed_function, or downstream contract.
+  - This node exists only to preserve inspectable lineage for the superseded split attempt.
+gate_state: none
 proposed_status: null
 proposed_maturity: null
-last_outcome: split_required
-last_blocker: ''
-last_run_id: 20260414T205011Z-SG-SPEC-0047
-last_exit_code: 0
-last_changed_files:
-- specs/nodes/SG-SPEC-0047.yaml
-last_run_at: '2026-04-14T20:50:13.135729+00:00'
-last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0047-20260414T204957Z
-last_branch: codex/sg-spec-0047/20260414T204957Z
-last_validator_results:
-  outputs: true
-  allowed_paths: true
-  reconciliation: true
-  atomicity: true
-  transition: true
-  executor_environment: true
-  refinement_acceptance: true
-last_refinement_acceptance:
-  decision: approve
-  change_class: local_refinement
-  checks:
-    content_changed: true
-    hard_validation: true
-    single_spec_scope: true
-    constitutional_diff: false
-    graph_refactor_diff: false
-    atomicity_clear: true
-    within_mutation_budget: true
-  diff_paths:
-  - acceptance_evidence[1].criterion
-  - acceptance_evidence[1].evidence
-  - specification.gateway_segment[3]
-  - specification.gateway_segment[4]
-  - specification.gateway_topology[1]
-  - specification.parent_contract[1]
-  mutation_classes:
-  - policy_text
-  mutation_budget: []
-  budget_exceeded_classes: []
-  changed_spec_files:
-  - specs/nodes/SG-SPEC-0047.yaml
-  review_reasons: []
-  errors: []
-  warnings: []
-last_reconciliation:
-  worktree_spec_count: 44
-  changed_spec_ids:
-  - SG-SPEC-0047
-  semantic_dependencies_resolved: false
-  work_dependencies_ready: false
-  cycles: []
-last_requested_child_materialization: false
-last_materialized_child_paths: []
+required_human_action: '-'
+last_worktree_path: ''
+last_branch: ''
+last_gate_decision: approve
+last_gate_note: superseded by SG-SPEC-0045 readable merge
+last_gate_at: '2026-04-17T00:00:00+00:00'

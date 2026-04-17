@@ -1,8 +1,8 @@
 id: SG-SPEC-0044
 title: SpecGraph - Proposal/Split Readiness Non-Bypass Path
 kind: spec
-status: linked
-maturity: 0.38
+status: reviewed
+maturity: 0.72
 depends_on: []
 refines:
 - SG-SPEC-0043
@@ -18,130 +18,134 @@ outputs:
 allowed_paths:
 - specs/nodes/SG-SPEC-0044.yaml
 acceptance:
-- Defines the bounded non-bypass execution-readiness route for proposal/split readiness from SG-SPEC-0026
-  to SG-SPEC-0029 through SG-SPEC-0027 -> SG-SPEC-0032 -> SG-SPEC-0043 only.
-- Constrains parent-level integration for this subtree so SG-SPEC-0026 and SG-SPEC-0027 do not bypass
-  the SG-SPEC-0027 -> SG-SPEC-0032 -> SG-SPEC-0043 segment for proposal/split readiness.
-- Restricts this node to gateway/pathway constraints while keeping concrete mechanics ownership, continuation
-  policy, and queue ranking outside this boundary.
+- 'Defines the only allowed proposal/split readiness chain for this subtree: SG-SPEC-0026 -> SG-SPEC-0027
+  -> SG-SPEC-0032 -> SG-SPEC-0043 -> SG-SPEC-0029.'
+- Forbids direct or parallel proposal/split readiness bypass edges from SG-SPEC-0026, SG-SPEC-0027, or
+  SG-SPEC-0032 while SG-SPEC-0043 remains the direct gateway boundary.
+- Explains why SG-SPEC-0043 is the human-reviewable direct gateway boundary before concrete mechanics
+  in SG-SPEC-0029.
+- Keeps this node at path-governance scope only; continuation-selection policy, concrete mechanics ownership,
+  queue ranking, runtime orchestration, and bookkeeping-only slice decomposition remain outside this boundary.
 acceptance_evidence:
-- criterion: Defines the bounded non-bypass execution-readiness route for proposal/split readiness from
-    SG-SPEC-0026 to SG-SPEC-0029 through SG-SPEC-0027 -> SG-SPEC-0032 -> SG-SPEC-0043 only.
-  evidence: specification.execution_readiness_path requires this exact sequence and names SG-SPEC-0043
-    as the gateway segment before SG-SPEC-0029.
-- criterion: Constrains parent-level integration for this subtree so SG-SPEC-0026 and SG-SPEC-0027 do
-    not bypass the SG-SPEC-0027 -> SG-SPEC-0032 -> SG-SPEC-0043 segment for proposal/split readiness.
-  evidence: specification.path_constraints explicitly forbids direct readiness bypass edges and specification.parent_integration
-    anchors parent-level routing to this bounded path.
-- criterion: Restricts this node to gateway/pathway constraints while keeping concrete mechanics ownership,
-    continuation policy, and queue ranking outside this boundary.
-  evidence: specification.scope.out and specification.boundaries keep concrete mechanics ownership and
-    ranking policy with downstream descendants and prevent this node from defining mechanics details.
-prompt: Materialize a bounded non-bypass proposal/split readiness-path contract under SG-SPEC-0043 so
-  the parent-to-leaf path is enforced without moving concrete mechanics into this boundary.
+- criterion: 'Defines the only allowed proposal/split readiness chain for this subtree: SG-SPEC-0026 ->
+    SG-SPEC-0027 -> SG-SPEC-0032 -> SG-SPEC-0043 -> SG-SPEC-0029.'
+  evidence: specification.terminology.readiness_chain and specification.readiness_chain define the exact
+    ordered route and keep SG-SPEC-0043 as the gateway boundary before SG-SPEC-0029 concrete mechanics.
+- criterion: Forbids direct or parallel proposal/split readiness bypass edges from SG-SPEC-0026, SG-SPEC-0027,
+    or SG-SPEC-0032 while SG-SPEC-0043 remains the direct gateway boundary.
+  evidence: specification.forbidden_bypasses names the invalid direct edges from SG-SPEC-0026, SG-SPEC-0027,
+    and SG-SPEC-0032, while specification.invariants makes any shorter or parallel route than the readiness_chain
+    invalid for this subtree.
+- criterion: Explains why SG-SPEC-0043 is the human-reviewable direct gateway boundary before concrete
+    mechanics in SG-SPEC-0029.
+  evidence: specification.direct_gateway_rules requires SG-SPEC-0032 to consume only SG-SPEC-0043 as its
+    direct proposal/split gateway, and specification.gateway_boundary plus specification.gateway_rationale
+    define why review stops at SG-SPEC-0043 before SG-SPEC-0029 concrete mechanics.
+- criterion: Keeps this node at path-governance scope only; continuation-selection policy, concrete mechanics
+    ownership, queue ranking, runtime orchestration, and bookkeeping-only slice decomposition remain outside
+    this boundary.
+  evidence: specification.scope.out and specification.boundaries exclude continuation-selection policy,
+    concrete mechanics, queue ranking, runtime orchestration, and bookkeeping-only decomposition that
+    does not add a new runtime-observable path constraint.
+prompt: Define one human-reviewable no-bypass proposal/split readiness contract under SG-SPEC-0043. The
+  spec should say exactly how readiness moves from SG-SPEC-0026 to SG-SPEC-0029, what bypasses are forbidden,
+  why SG-SPEC-0043 is the direct gateway boundary, and what remains outside this node.
 specification:
-  objective: Keep execution-readiness for proposal/split readiness constrained to a single non-bypass
-    path through the SG-SPEC-0026 -> SG-SPEC-0027 -> SG-SPEC-0032 -> SG-SPEC-0043 -> SG-SPEC-0029.
+  objective: 'Define one human-reviewable non-bypass proposal/split readiness contract for this subtree:
+    SG-SPEC-0026 reaches concrete proposal/split mechanics only through SG-SPEC-0027 -> SG-SPEC-0032 ->
+    SG-SPEC-0043 -> SG-SPEC-0029, without shorter or parallel bypass routes.'
   scope:
     in:
-    - Bounded non-bypass execution-readiness path through the proposal/split gateway chain.
-    - Parent-level dependency constraints for SG-SPEC-0026 and SG-SPEC-0027 regarding proposal/split mechanics
-      routing.
-    - Gateway-visibility contract that keeps SG-SPEC-0043 as the inspectable path segment.
+    - The full proposal/split readiness chain from SG-SPEC-0026 to SG-SPEC-0029 for this subtree.
+    - Direct-gateway and no-bypass rules for SG-SPEC-0026, SG-SPEC-0027, and SG-SPEC-0032 while SG-SPEC-0043
+      is present.
+    - Gateway-boundary semantics that keep SG-SPEC-0043 human-reviewable and SG-SPEC-0029 concrete.
+    - The single readable rule that governs this subtree without splitting it into bookkeeping-only child
+      slices.
     out:
-    - Concrete proposal/split mechanics schemas, queue ranking formulas, and runtime orchestration policy.
+    - Concrete proposal/split mechanics schemas, lifecycle payloads, and readiness semantics owned by
+      SG-SPEC-0029.
     - Continuation-selection policy owned by SG-SPEC-0026.
-    - Field-level concrete execution mechanics owned by SG-SPEC-0029.
-  execution_readiness_path:
+    - Queue ranking formulas and runtime orchestration policy.
+    - Bookkeeping-only child-slice ownership or edge-segment decomposition that does not introduce a new
+      runtime-observable path constraint.
+  terminology:
+    readiness_contract: The single human-reviewable rule that defines how proposal/split readiness moves
+      through this subtree and which bypasses are forbidden.
+    readiness_chain: The only allowed ordered proposal/split readiness route for this subtree from SG-SPEC-0026
+      to concrete mechanics in SG-SPEC-0029.
+    bypass_edge: Any shorter, parallel, or direct dependency that would let SG-SPEC-0026, SG-SPEC-0027,
+      or SG-SPEC-0032 reach downstream proposal/split mechanics without traversing the full readiness_chain.
+    direct_gateway_dependency: The one immediate proposal/split gateway dependency that SG-SPEC-0032 is
+      allowed to consume while SG-SPEC-0043 remains present.
+    human_reviewable_gateway_boundary: The last parent-facing readiness contract that reviewers inspect
+      before concrete mechanics owned by SG-SPEC-0029 begin.
+  readiness_contract:
+  - For this subtree, proposal/split readiness moves only as SG-SPEC-0026 -> SG-SPEC-0027 -> SG-SPEC-0032
+    -> SG-SPEC-0043 -> SG-SPEC-0029.
+  - Any direct or parallel dependency that reaches downstream proposal/split readiness without traversing
+    that ordered route is a bypass_edge and is forbidden while SG-SPEC-0043 remains present.
+  readiness_chain:
+  - The only allowed readiness_chain for this subtree is SG-SPEC-0026 -> SG-SPEC-0027 -> SG-SPEC-0032
+    -> SG-SPEC-0043 -> SG-SPEC-0029.
   - SG-SPEC-0026 reaches proposal/split readiness only through SG-SPEC-0027.
   - SG-SPEC-0027 reaches proposal/split readiness only through SG-SPEC-0032.
   - SG-SPEC-0032 reaches proposal/split readiness only through SG-SPEC-0043.
-  - SG-SPEC-0043 reaches concrete readiness semantics only through SG-SPEC-0029.
-  path_constraints:
-  - SG-SPEC-0026 must not define proposal/split readiness bypass dependency to SG-SPEC-0029 for this subtree.
-  - SG-SPEC-0027 must not define proposal/split readiness bypass dependency to SG-SPEC-0043 for this subtree.
-  - SG-SPEC-0032 must not define proposal/split readiness bypass dependency to SG-SPEC-0029 for this subtree.
-  parent_integration:
-  - SG-SPEC-0026 remains an execution-cluster consumer via SG-SPEC-0027 and must not collapse this path.
-  - Parent-level governance outside this boundary enforces non-bypass routing, so SG-SPEC-0026 and SG-SPEC-0027
-    must route proposal/split readiness through SG-SPEC-0027 -> SG-SPEC-0032 -> SG-SPEC-0043.
-  - SG-SPEC-0026 may continue to enforce continuation-selection policy independently.
+  - SG-SPEC-0043 reaches concrete proposal/split mechanics only through SG-SPEC-0029.
+  direct_gateway_rules:
+  - While SG-SPEC-0043 exists, SG-SPEC-0032 must treat SG-SPEC-0043 as its sole direct gateway dependency
+    for proposal/split readiness in this subtree.
+  - SG-SPEC-0032 must not define a parallel direct proposal/split gateway alongside SG-SPEC-0043 for this
+    subtree.
+  forbidden_bypasses:
+  - SG-SPEC-0026 must not depend on SG-SPEC-0032, SG-SPEC-0043, or SG-SPEC-0029 for proposal/split readiness
+    in this subtree.
+  - SG-SPEC-0027 must not depend on SG-SPEC-0043 or SG-SPEC-0029 for proposal/split readiness in this
+    subtree.
+  - SG-SPEC-0032 must not depend on SG-SPEC-0029 or any parallel direct proposal/split gateway in place
+    of SG-SPEC-0043 for this subtree.
+  - No shorter or parallel route than the readiness_chain is valid while SG-SPEC-0043 remains the active
+    gateway boundary.
+  gateway_boundary:
+  - SG-SPEC-0043 is the human_reviewable_gateway_boundary between proposal/split path governance and concrete
+    mechanics.
+  - SG-SPEC-0029 remains the concrete mechanics leaf and is not exposed as a direct proposal/split readiness
+    dependency above SG-SPEC-0043 in this subtree.
+  gateway_rationale:
+  - SG-SPEC-0043 is the direct gateway boundary because it is the single proposal/split readiness dependency
+    consumed directly by SG-SPEC-0032 in this subtree.
+  - Keeping review at SG-SPEC-0043 lets a human verify chain order and no-bypass conformance without inspecting
+    concrete proposal/split payload or lifecycle mechanics owned by SG-SPEC-0029.
+  - SG-SPEC-0029 remains downstream of the gateway boundary as the concrete mechanics leaf, so it satisfies
+    the gateway contract rather than replacing it as the direct parent-facing readiness surface.
   boundaries:
-  - SG-SPEC-0044 defines only path governance and bypass behavior.
+  - SG-SPEC-0044 defines only path governance, direct-gateway rules, gateway-boundary rationale, and bypass
+    behavior for this subtree.
   - Concrete proposal/split payload and schema semantics remain owned by SG-SPEC-0029.
-  - Queue ranking and runtime orchestration semantics remain outside this gateway contract.
-gate_state: split_required
-required_human_action: split spec scope before rerun
+  - Continuation-selection policy remains owned by SG-SPEC-0026.
+  - Queue ranking and runtime orchestration semantics remain outside this contract.
+  - This node does not require separate child-slice specs merely to restate upstream, downstream, or direct-edge
+    subsegments of the same readiness_chain unless a new runtime-observable invariant appears.
+  invariants:
+  - id: PSP-0044-1
+    statement: The only allowed proposal/split readiness chain in this subtree is SG-SPEC-0026 -> SG-SPEC-0027
+      -> SG-SPEC-0032 -> SG-SPEC-0043 -> SG-SPEC-0029.
+  - id: PSP-0044-2
+    statement: While SG-SPEC-0043 exists, SG-SPEC-0032 consumes SG-SPEC-0043 as its sole direct proposal/split
+      gateway dependency for this subtree.
+  - id: PSP-0044-3
+    statement: Direct proposal/split readiness edges from SG-SPEC-0026 to SG-SPEC-0032, SG-SPEC-0043,
+      or SG-SPEC-0029; from SG-SPEC-0027 to SG-SPEC-0043 or SG-SPEC-0029; or from SG-SPEC-0032 to SG-SPEC-0029
+      are invalid in this subtree while SG-SPEC-0043 remains present.
+  - id: PSP-0044-4
+    statement: Human review of proposal/split readiness conformance for this subtree stops at SG-SPEC-0043;
+      SG-SPEC-0029 remains the downstream concrete mechanics leaf rather than a direct readiness dependency.
+gate_state: none
 proposed_status: null
 proposed_maturity: null
-last_outcome: split_required
-last_blocker: atomicity still unresolved on this spec node; non-bypass readiness path and parent-integration
-  governance need a bounded sibling split under the same chain.
-last_run_id: 20260414T195702Z-SG-SPEC-0044
-last_exit_code: 0
-last_changed_files:
-- specs/nodes/SG-SPEC-0044.yaml
-last_run_at: '2026-04-14T19:57:03.608871+00:00'
-last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0044-20260414T195625Z
-last_branch: codex/sg-spec-0044/20260414T195625Z
-last_validator_results:
-  outputs: true
-  allowed_paths: true
-  reconciliation: true
-  atomicity: true
-  transition: true
-  executor_environment: true
-  refinement_acceptance: true
-last_refinement_acceptance:
-  decision: review_required
-  change_class: graph_refactor
-  checks:
-    content_changed: true
-    hard_validation: true
-    single_spec_scope: true
-    constitutional_diff: false
-    graph_refactor_diff: true
-    atomicity_clear: true
-    within_mutation_budget: true
-  diff_paths:
-  - acceptance[0]
-  - acceptance[1]
-  - acceptance[2]
-  - acceptance_evidence[0].criterion
-  - acceptance_evidence[0].evidence
-  - acceptance_evidence[1].criterion
-  - acceptance_evidence[1].evidence
-  - acceptance_evidence[2].criterion
-  - acceptance_evidence[2].evidence
-  - inputs[6]
-  - specification.execution_readiness_path[0]
-  - specification.execution_readiness_path[1]
-  - specification.execution_readiness_path[2]
-  - specification.execution_readiness_path[3]
-  - specification.execution_readiness_path[4]
-  - specification.objective
-  - specification.parent_integration[1]
-  - specification.path_constraints
-  - specification.path_constraints[0]
-  - specification.path_constraints[1]
-  - specification.path_constraints[2]
-  - specification.scope.in[1]
-  mutation_classes:
-  - policy_text
-  mutation_budget: []
-  budget_exceeded_classes: []
-  changed_spec_files:
-  - specs/nodes/SG-SPEC-0044.yaml
-  review_reasons:
-  - run changed graph structure or spec contract paths
-  errors: []
-  warnings: []
-last_reconciliation:
-  worktree_spec_count: 44
-  changed_spec_ids:
-  - SG-SPEC-0044
-  semantic_dependencies_resolved: true
-  work_dependencies_ready: true
-  cycles: []
-last_requested_child_materialization: false
-last_materialized_child_paths: []
+required_human_action: '-'
+last_worktree_path: ''
+last_branch: ''
+last_gate_decision: approve
+last_gate_note: ''
+last_gate_at: '2026-04-16T21:26:22.830223+00:00'
