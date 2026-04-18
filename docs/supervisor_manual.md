@@ -303,6 +303,18 @@ authoritative.
   - derived queue of refactor-oriented next moves
 - `runs/proposals/*.json`
   - structured proposal artifacts emitted by split-proposal mode
+- `runs/spec_id_reservations.json`
+  - temporary in-flight reservations for explicit child-materialization IDs
+
+These runtime artifacts are now written with atomic replace plus a short-lived
+sidecar lock. If a queue file is malformed, ordinary supervisor runs stop
+instead of silently treating it as an empty queue.
+Run logs and isolated worktree identities also carry a nonce so concurrent
+runs do not collide on timestamp-only names.
+
+Explicit child-materialization runs now reserve one child `SG-SPEC-XXXX` ID
+for the active run and require the produced child file to use that reserved
+path.
 
 ### Trace and inspection surfaces
 
@@ -346,6 +358,13 @@ Important fields:
 - `graph_health`
 - `graph_health_truth_basis`
 - `decision_inspector`
+
+Machine-protocol invariant:
+
+- a successful child executor run must emit both `RUN_OUTCOME:` and `BLOCKER:`
+  markers on stdout
+- missing markers are treated as executor protocol failure, not as an implicit
+  `done`
 
 ### `done`
 

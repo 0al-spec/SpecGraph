@@ -51,6 +51,20 @@ Key derived artifacts:
 - `runs/proposals/*.json`: structured split proposal artifacts
 - `runs/spec_trace_index.json`: weak spec-to-code coverage index from code/test mentions
 - `runs/proposal_runtime_index.json`: proposal posture and reflective runtime-closure index
+- `runs/spec_id_reservations.json`: temporary active child-materialization spec-id reservations
+
+Runtime artifact safety:
+
+- run logs, summaries, queue files, proposal artifacts, and derived indexes are
+  now written through atomic replace with short-lived sidecar locks
+- run IDs and isolated worktree/branch names now include a nonce so concurrent
+  runs do not collide on one-second timestamps alone
+- explicit child-materialization runs reserve one `SG-SPEC-XXXX` ID while the
+  run is active and require the produced child file to use that reserved path
+- malformed `runs/proposal_queue.json` or `runs/refactor_queue.json` now block
+  normal supervisor runs instead of being silently treated as empty queues
+- a child executor success path must emit both `RUN_OUTCOME:` and `BLOCKER:`
+  markers; missing markers are treated as protocol failure
 
 Transition-packet validation now reports:
 
@@ -137,6 +151,7 @@ permission-style errors (for example `cannot lock ref` or `Operation not permitt
 Interpretation:
 
 - `git worktree` mode is preferred and should be used when the local environment allows it.
+- branch/worktree allocation retries on branch/path collision before failing.
 - copied worktree mode is an operational fallback, not a canonical storage mode.
 - stale `.worktrees/` directories are safe to delete when no run is actively using them.
 
