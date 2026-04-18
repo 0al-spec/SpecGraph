@@ -1,0 +1,156 @@
+[
+  {
+    "proposal_id": "0016",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "tools/supervisor.py",
+      "tests/test_supervisor.py"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def build_decision_inspector("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "\"decision_inspector\": build_decision_inspector("
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_summarize_queue_transition_tracks_emitted_cleared_and_updated_ids("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "payload[\"decision_inspector\"][\"selection\"][\"mode\"] == \"default_refine\""
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "\"decision_inspector\": build_decision_inspector("
+      }
+    ]
+  },
+  {
+    "proposal_id": "0019",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "tools/supervisor.py",
+      "tests/test_supervisor.py"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def build_spec_trace_index("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def write_spec_trace_index("
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_spec_trace_index_collects_tool_and_test_refs("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_main_builds_spec_trace_index_as_standalone_command("
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "SPEC_TRACE_INDEX_FILENAME = \"spec_trace_index.json\""
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "write_spec_trace_index(index)"
+      }
+    ]
+  },
+  {
+    "proposal_id": "0021",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "tools/supervisor.py",
+      "tests/test_supervisor.py"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def validate_transition_packet("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def validate_transition_packet_file("
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_validate_transition_packet_accepts_minimal_apply_packet("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_main_validates_transition_packet_as_standalone_command("
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "--validate-transition-packet"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "print(json.dumps(report, ensure_ascii=False, indent=2))"
+      }
+    ]
+  },
+  {
+    "proposal_id": "0023",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "tools/supervisor.py",
+      "tests/test_supervisor.py"
+    ],
+    "task_ids": [
+      81,
+      82,
+      83,
+      84
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def build_proposal_runtime_index("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "PROPOSAL_PROCESSING_POSTURES = {"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_proposal_runtime_index_reports_reflective_chain("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_main_builds_proposal_runtime_index_as_standalone_command("
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "PROPOSAL_RUNTIME_INDEX_FILENAME = \"proposal_runtime_index.json\""
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "write_proposal_runtime_index(index)"
+      }
+    ]
+  }
+]

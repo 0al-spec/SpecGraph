@@ -98,7 +98,7 @@ Task numbers are preserved for traceability across commits and PRs.
 
 ## Reflective Co-Evolution
 
-81. [todo] Define a proposal-processing posture that distinguishes `document_only`, `bounded_runtime_followup`, `synchronous_runtime_slice`, and `deferred_until_canonicalized` for implementation-relevant proposals.
-82. [todo] Make backlog generation treat proposal normalization, runtime realization, validation, and re-observation as one connected reflective chain instead of separate planning layers.
-83. [todo] Pair implementation-relevant proposal work with bounded `tools/` or `tests/` slices by default where the affected runtime surface already exists.
-84. [todo] Add inspection or trace artifacts that show, for each proposal, its runtime realization status, validation closure, and observation coverage.
+81. [done] Define a proposal-processing posture that distinguishes `document_only`, `bounded_runtime_followup`, `synchronous_runtime_slice`, and `deferred_until_canonicalized` for implementation-relevant proposals.
+82. [done] Make backlog generation treat proposal normalization, runtime realization, validation, and re-observation as one connected reflective chain instead of separate planning layers.
+83. [done] Pair implementation-relevant proposal work with bounded `tools/` or `tests/` slices by default where the affected runtime surface already exists.
+84. [done] Add inspection or trace artifacts that show, for each proposal, its runtime realization status, validation closure, and observation coverage.

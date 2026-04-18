@@ -5170,6 +5170,178 @@ def test_main_builds_spec_trace_index_as_standalone_command(
     assert artifact["entries"][0]["spec_id"] == "SG-SPEC-0001"
 
 
+def seed_proposal_runtime_fixture(root: Path, *, include_heuristic_proposal: bool) -> None:
+    proposals_dir = root / "docs" / "proposals"
+    tools_dir = root / "tools"
+    tests_dir = root / "tests"
+    proposals_dir.mkdir(parents=True)
+    tools_dir.mkdir()
+    tests_dir.mkdir()
+    (root / "tasks.md").write_text(
+        "\n".join(
+            [
+                "81. [done] Define proposal-processing posture.",
+                "82. [done] Connect backlog generation to reflective chain.",
+                "83. [done] Pair implementation-relevant proposals with bounded runtime slices.",
+                "84. [done] Add proposal runtime realization inspection artifacts.",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    registry = [
+        {
+            "proposal_id": "0023",
+            "posture": "synchronous_runtime_slice",
+            "runtime_surfaces": ["tools/supervisor.py", "tests/test_supervisor.py"],
+            "task_ids": [81, 82, 83, 84],
+            "runtime_markers": [
+                {
+                    "path": "tools/supervisor.py",
+                    "pattern": "def build_proposal_runtime_index(",
+                },
+                {
+                    "path": "tools/supervisor.py",
+                    "pattern": "PROPOSAL_PROCESSING_POSTURES = {",
+                },
+            ],
+            "validation_markers": [
+                {
+                    "path": "tests/test_supervisor.py",
+                    "pattern": ("def test_build_proposal_runtime_index_reports_reflective_chain("),
+                },
+                {
+                    "path": "tests/test_supervisor.py",
+                    "pattern": (
+                        "def test_main_builds_proposal_runtime_index_as_standalone_command("
+                    ),
+                },
+            ],
+            "observation_markers": [
+                {
+                    "path": "tools/supervisor.py",
+                    "pattern": ('PROPOSAL_RUNTIME_INDEX_FILENAME = "proposal_runtime_index.json"'),
+                },
+                {
+                    "path": "tools/supervisor.py",
+                    "pattern": "write_proposal_runtime_index(index)",
+                },
+            ],
+        }
+    ]
+    (tools_dir / "proposal_runtime_registry.json").write_text(
+        json.dumps(registry),
+        encoding="utf-8",
+    )
+    (tools_dir / "supervisor.py").write_text(
+        "\n".join(
+            [
+                'PROPOSAL_RUNTIME_INDEX_FILENAME = "proposal_runtime_index.json"',
+                "PROPOSAL_PROCESSING_POSTURES = {}",
+                "def build_proposal_runtime_index():",
+                "    return {}",
+                "def write_proposal_runtime_index(index):",
+                "    return index",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    (tests_dir / "test_supervisor.py").write_text(
+        "\n".join(
+            [
+                "def test_build_proposal_runtime_index_reports_reflective_chain():",
+                "    assert True",
+                "",
+                "def test_main_builds_proposal_runtime_index_as_standalone_command():",
+                "    assert True",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    (proposals_dir / "0023_reflective_proposal_runtime_coevolution.md").write_text(
+        "\n".join(
+            [
+                "# Reflective Co-Evolution of Proposals and Runtime Realization",
+                "",
+                "## Status",
+                "",
+                "Draft proposal",
+                "",
+                (
+                    "Proposal processing should close the reflective loop through "
+                    "supervisor runtime artifacts."
+                ),
+            ]
+        ),
+        encoding="utf-8",
+    )
+    if include_heuristic_proposal:
+        (proposals_dir / "0017_role_first_semantic_bias_for_supervisor.md").write_text(
+            "\n".join(
+                [
+                    "# Role-First Semantic Bias for Supervisor",
+                    "",
+                    "## Status",
+                    "",
+                    "Draft proposal",
+                    "",
+                    (
+                        "This proposal changes supervisor behavior and should eventually "
+                        "pair with tools/ and tests/ work."
+                    ),
+                ]
+            ),
+            encoding="utf-8",
+        )
+
+
+def test_build_proposal_runtime_index_reports_reflective_chain(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    seed_proposal_runtime_fixture(repo_fixture, include_heuristic_proposal=True)
+
+    index = supervisor_module.build_proposal_runtime_index()
+
+    assert index["entry_count"] == 2
+    by_id = {entry["proposal_id"]: entry for entry in index["entries"]}
+    assert by_id["0023"]["posture"] == "synchronous_runtime_slice"
+    assert by_id["0023"]["runtime_realization"]["status"] == "implemented"
+    assert by_id["0023"]["validation_closure"]["status"] == "covered"
+    assert by_id["0023"]["observation_coverage"]["status"] == "covered"
+    assert by_id["0023"]["reflective_chain"]["next_gap"] == "none"
+    assert [task["status"] for task in by_id["0023"]["related_tasks"]] == [
+        "done",
+        "done",
+        "done",
+        "done",
+    ]
+
+    assert by_id["0017"]["posture"] == "bounded_runtime_followup"
+    assert by_id["0017"]["posture_source"] == "heuristic"
+    assert by_id["0017"]["runtime_realization"]["status"] == "untracked"
+    assert by_id["0017"]["reflective_chain"]["next_gap"] == "runtime_realization"
+    assert index["reflective_backlog"]["grouped_by_next_gap"]["runtime_realization"] == ["0017"]
+
+
+def test_main_builds_proposal_runtime_index_as_standalone_command(
+    supervisor_module: object,
+    repo_fixture: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    seed_proposal_runtime_fixture(repo_fixture, include_heuristic_proposal=False)
+
+    exit_code = supervisor_module.main(build_proposal_runtime_index_mode=True)
+
+    assert exit_code == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["entry_count"] == 1
+    assert report["entries"][0]["proposal_id"] == "0023"
+    artifact = json.loads(
+        (repo_fixture / "runs" / "proposal_runtime_index.json").read_text(encoding="utf-8")
+    )
+    assert artifact["entries"][0]["runtime_realization"]["status"] == "implemented"
+
+
 def test_main_split_proposal_accepts_untracked_parent_directory_change(
     supervisor_module: object,
     repo_fixture: Path,

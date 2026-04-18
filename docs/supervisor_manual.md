@@ -77,6 +77,8 @@ particular task.
   `--validate-transition-packet path/to/packet.json`
 - build a derived spec-to-code trace index:
   `--build-spec-trace-index`
+- build a derived proposal runtime index:
+  `--build-proposal-runtime-index`
 - inspect stale review/runtime residue without refinement:
   `--list-stale-runtime`
 - clean stale review/runtime residue:
@@ -155,6 +157,24 @@ python3 tools/supervisor.py --build-spec-trace-index
 Builds `runs/spec_trace_index.json` from literal `SG-SPEC-XXXX` mentions in
 `tools/` and `tests/`. Use it as the first weak derived view of spec-to-code
 coverage.
+
+### Proposal runtime index
+
+```bash
+python3 tools/supervisor.py --build-proposal-runtime-index
+```
+
+Builds `runs/proposal_runtime_index.json` from `docs/proposals/`,
+`tools/proposal_runtime_registry.json`, `tasks.md`, and repository markers in
+`tools/` and `tests/`.
+
+Use it when you want to inspect, for each proposal:
+
+- processing posture
+- runtime realization status
+- validation closure
+- observation coverage
+- next reflective backlog gap
 
 ### Gate resolution
 
@@ -276,6 +296,9 @@ authoritative.
 - `runs/spec_trace_index.json`
   - derived spec-to-code trace index from literal spec-id mentions in
     `tools/` and `tests/`
+- `runs/proposal_runtime_index.json`
+  - derived proposal runtime index with posture, realization, validation, and
+    re-observation status
 - `graph_health` payload in run logs
   - reflective signals, subtree-shape pressure, and recommended actions
 - `decision_inspector` payload in run logs

@@ -32,6 +32,8 @@ Derived artifacts:
 - graph refactor queue: `runs/refactor_queue.json`
 - proposal queue index: `runs/proposal_queue.json`
 - structured proposal artifacts: `runs/proposals/*.json`
+- spec trace index: `runs/spec_trace_index.json`
+- proposal runtime index: `runs/proposal_runtime_index.json`
 """
 
 from __future__ import annotations
@@ -151,6 +153,68 @@ TRANSITION_PACKET_TYPE_REQUIRED_FIELDS = {
     "handoff": {"target_artifact_class"},
 }
 SPEC_TRACE_INDEX_FILENAME = "spec_trace_index.json"
+PROPOSAL_RUNTIME_INDEX_FILENAME = "proposal_runtime_index.json"
+PROPOSAL_DOC_FILENAME_RE = re.compile(r"^(?P<proposal_id>\d{4})_(?P<slug>.+)\.md$")
+TASK_LINE_RE = re.compile(r"^(?P<task_id>\d+)\.\s+\[(?P<status>[a-z_]+)\]\s+(?P<body>.+)$")
+PROPOSAL_PROCESSING_POSTURES = {
+    "document_only": (
+        "Proposal is reviewable as design material, but no immediate bounded runtime slice is "
+        "required."
+    ),
+    "bounded_runtime_followup": (
+        "Proposal touches an active runtime surface and should produce a bounded follow-up slice, "
+        "but not necessarily in the same change."
+    ),
+    "synchronous_runtime_slice": (
+        "Proposal touches an active runtime surface and should be paired with "
+        "a bounded tools/tests slice now."
+    ),
+    "deferred_until_canonicalized": (
+        "Runtime realization should wait until the proposal is first anchored in canonical graph "
+        "semantics."
+    ),
+}
+IMPLEMENTATION_RELEVANT_PROPOSAL_POSTURES = {
+    "bounded_runtime_followup",
+    "synchronous_runtime_slice",
+}
+PROPOSAL_POSTURE_RUNTIME_RELEVANT_HINTS = (
+    "supervisor",
+    "validator",
+    "tools/",
+    "tests/",
+    "tooling",
+    "runtime surface",
+    "runtime behavior",
+    "inspection",
+    "decision inspector",
+    "trace artifact",
+)
+PROPOSAL_POSTURE_DEFERRED_HINTS = (
+    "deferred until canonicalized",
+    "before runtime changes would be legitimate",
+    "first needs acceptance into canonical graph semantics",
+    "runtime changes would be premature",
+)
+PROPOSAL_RUNTIME_SURFACE_HINTS = {
+    "tools/supervisor.py": (
+        "supervisor",
+        "graph-health",
+        "decision inspector",
+        "validator",
+        "transition packet",
+        "trace artifact",
+    ),
+    "tests/test_supervisor.py": (
+        "tests/",
+        "test surface",
+        "validation",
+        "validator",
+        "decision inspector",
+        "transition packet",
+        "trace plane",
+    ),
+}
 ROLE_OBSCURED_CONTEXT_PHRASES = (
     "materialize one bounded",
     "materialize a single bounded",
@@ -4792,6 +4856,402 @@ def write_spec_trace_index(index: dict[str, Any]) -> Path:
     return path
 
 
+def proposal_runtime_registry_path() -> Path:
+    return ROOT / "tools" / "proposal_runtime_registry.json"
+
+
+def proposal_runtime_index_path() -> Path:
+    return RUNS_DIR / PROPOSAL_RUNTIME_INDEX_FILENAME
+
+
+def proposal_docs_dir() -> Path:
+    return ROOT / "docs" / "proposals"
+
+
+def tasks_file_path() -> Path:
+    return ROOT / "tasks.md"
+
+
+def load_json_list(path: Path) -> list[dict[str, Any]]:
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return []
+    if not isinstance(data, list):
+        return []
+    return [item for item in data if isinstance(item, dict)]
+
+
+def load_proposal_runtime_registry() -> dict[str, dict[str, Any]]:
+    registry: dict[str, dict[str, Any]] = {}
+    for item in load_json_list(proposal_runtime_registry_path()):
+        proposal_id = str(item.get("proposal_id", "")).strip()
+        if not proposal_id:
+            continue
+        registry[proposal_id] = item
+    return registry
+
+
+def load_task_status_index() -> dict[int, dict[str, str]]:
+    path = tasks_file_path()
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return {}
+
+    tasks: dict[int, dict[str, str]] = {}
+    for line in lines:
+        match = TASK_LINE_RE.match(line.strip())
+        if not match:
+            continue
+        task_id = int(match.group("task_id"))
+        tasks[task_id] = {
+            "status": match.group("status"),
+            "body": match.group("body").strip(),
+        }
+    return tasks
+
+
+def parse_proposal_document(path: Path) -> dict[str, Any] | None:
+    match = PROPOSAL_DOC_FILENAME_RE.match(path.name)
+    if not match:
+        return None
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError:
+        return None
+
+    lines = text.splitlines()
+    title = ""
+    for line in lines:
+        stripped = line.strip()
+        if stripped.startswith("# "):
+            title = stripped[2:].strip()
+            break
+
+    status = ""
+    for index, line in enumerate(lines):
+        if line.strip() != "## Status":
+            continue
+        for following in lines[index + 1 :]:
+            stripped = following.strip()
+            if stripped:
+                status = stripped
+                break
+        break
+
+    return {
+        "proposal_id": match.group("proposal_id"),
+        "slug": match.group("slug"),
+        "path": path.relative_to(ROOT).as_posix(),
+        "title": title or path.stem,
+        "status": status,
+        "text": text,
+    }
+
+
+def iter_proposal_documents() -> list[dict[str, Any]]:
+    docs_dir = proposal_docs_dir()
+    if not docs_dir.exists():
+        return []
+    documents: list[dict[str, Any]] = []
+    for path in sorted(docs_dir.glob("*.md")):
+        parsed = parse_proposal_document(path)
+        if parsed is not None:
+            documents.append(parsed)
+    return documents
+
+
+def infer_proposal_runtime_surfaces(text: str) -> list[str]:
+    normalized = text.lower()
+    surfaces = [
+        path
+        for path, hints in PROPOSAL_RUNTIME_SURFACE_HINTS.items()
+        if any(hint in normalized for hint in hints)
+    ]
+    return sorted(set(surfaces))
+
+
+def infer_proposal_posture(*, text: str, runtime_surfaces: list[str]) -> str:
+    normalized = text.lower()
+    if any(hint in normalized for hint in PROPOSAL_POSTURE_DEFERRED_HINTS):
+        return "deferred_until_canonicalized"
+    if runtime_surfaces or any(
+        hint in normalized for hint in PROPOSAL_POSTURE_RUNTIME_RELEVANT_HINTS
+    ):
+        return "bounded_runtime_followup"
+    return "document_only"
+
+
+def evaluate_path_markers(markers: list[dict[str, Any]]) -> dict[str, Any]:
+    checked_markers: list[dict[str, Any]] = []
+    satisfied_count = 0
+    for marker in markers:
+        relpath = str(marker.get("path", "")).strip()
+        pattern = str(marker.get("pattern", "")).strip()
+        path = ROOT / relpath if relpath else ROOT
+        try:
+            text = path.read_text(encoding="utf-8")
+            exists = True
+        except OSError:
+            text = ""
+            exists = False
+        satisfied = bool(exists and pattern and pattern in text)
+        if satisfied:
+            satisfied_count += 1
+        checked_markers.append(
+            {
+                "path": relpath,
+                "pattern": pattern,
+                "exists": exists,
+                "satisfied": satisfied,
+            }
+        )
+
+    missing_markers = [marker for marker in checked_markers if not marker["satisfied"]]
+    status = "not_configured"
+    if checked_markers:
+        if satisfied_count == len(checked_markers):
+            status = "covered"
+        elif satisfied_count == 0:
+            status = "missing"
+        else:
+            status = "partial"
+    return {
+        "status": status,
+        "required_count": len(checked_markers),
+        "satisfied_count": satisfied_count,
+        "markers": checked_markers,
+        "missing_markers": missing_markers,
+    }
+
+
+def derive_runtime_realization_status(
+    *,
+    posture: str,
+    runtime_markers: dict[str, Any],
+    runtime_surfaces: list[str],
+) -> str:
+    if posture == "document_only":
+        return "not_required"
+    if posture == "deferred_until_canonicalized":
+        return "deferred"
+    if runtime_markers["required_count"] == 0:
+        return "untracked" if runtime_surfaces else "missing"
+    if runtime_markers["status"] == "covered":
+        return "implemented"
+    if runtime_markers["status"] == "partial":
+        return "partial"
+    return "missing"
+
+
+def derive_reflective_followup_status(
+    *,
+    posture: str,
+    runtime_status: str,
+    marker_report: dict[str, Any],
+) -> str:
+    if posture == "document_only":
+        return "not_required"
+    if posture == "deferred_until_canonicalized":
+        return "deferred"
+    if (
+        runtime_status in {"missing", "partial", "untracked"}
+        and marker_report["required_count"] == 0
+    ):
+        return "pending_runtime"
+    if marker_report["required_count"] == 0:
+        return "untracked"
+    if marker_report["status"] == "covered":
+        return "covered"
+    if marker_report["status"] == "partial":
+        return "partial"
+    return "missing"
+
+
+def reflective_next_gap(
+    *,
+    posture: str,
+    runtime_status: str,
+    validation_status: str,
+    observation_status: str,
+) -> str:
+    if posture == "document_only":
+        return "none"
+    if posture == "deferred_until_canonicalized":
+        return "canonicalization"
+    if runtime_status in {"missing", "partial", "untracked"}:
+        return "runtime_realization"
+    if validation_status in {"missing", "partial", "untracked", "pending_runtime"}:
+        return "validation_closure"
+    if observation_status in {"missing", "partial", "untracked", "pending_runtime"}:
+        return "reobservation"
+    return "none"
+
+
+def build_reflective_backlog(entries: list[dict[str, Any]]) -> dict[str, Any]:
+    backlog_items: list[dict[str, Any]] = []
+    for entry in entries:
+        chain = entry["reflective_chain"]
+        next_gap = str(chain.get("next_gap", "none"))
+        if next_gap == "none":
+            continue
+        backlog_items.append(
+            {
+                "proposal_id": entry["proposal_id"],
+                "title": entry["title"],
+                "posture": entry["posture"],
+                "next_gap": next_gap,
+                "runtime_realization_status": entry["runtime_realization"]["status"],
+                "validation_closure_status": entry["validation_closure"]["status"],
+                "observation_coverage_status": entry["observation_coverage"]["status"],
+            }
+        )
+
+    grouped: dict[str, list[str]] = {}
+    for item in backlog_items:
+        grouped.setdefault(str(item["next_gap"]), []).append(str(item["proposal_id"]))
+
+    return {
+        "entry_count": len(backlog_items),
+        "items": backlog_items,
+        "grouped_by_next_gap": {key: sorted(value) for key, value in sorted(grouped.items())},
+    }
+
+
+def build_proposal_runtime_index() -> dict[str, Any]:
+    registry = load_proposal_runtime_registry()
+    task_status_index = load_task_status_index()
+    entries: list[dict[str, Any]] = []
+
+    for proposal in iter_proposal_documents():
+        proposal_id = str(proposal["proposal_id"])
+        registry_entry = registry.get(proposal_id, {})
+        inferred_runtime_surfaces = infer_proposal_runtime_surfaces(str(proposal["text"]))
+        runtime_surfaces = list(
+            registry_entry.get("runtime_surfaces", inferred_runtime_surfaces)
+            or inferred_runtime_surfaces
+        )
+        posture = str(
+            registry_entry.get(
+                "posture",
+                infer_proposal_posture(
+                    text=str(proposal["text"]),
+                    runtime_surfaces=runtime_surfaces,
+                ),
+            )
+        ).strip()
+        if posture not in PROPOSAL_PROCESSING_POSTURES:
+            posture = "document_only"
+
+        runtime_markers = evaluate_path_markers(
+            [
+                marker
+                for marker in registry_entry.get("runtime_markers", [])
+                if isinstance(marker, dict)
+            ]
+        )
+        validation_markers = evaluate_path_markers(
+            [
+                marker
+                for marker in registry_entry.get("validation_markers", [])
+                if isinstance(marker, dict)
+            ]
+        )
+        observation_markers = evaluate_path_markers(
+            [
+                marker
+                for marker in registry_entry.get("observation_markers", [])
+                if isinstance(marker, dict)
+            ]
+        )
+
+        runtime_status = derive_runtime_realization_status(
+            posture=posture,
+            runtime_markers=runtime_markers,
+            runtime_surfaces=runtime_surfaces,
+        )
+        validation_status = derive_reflective_followup_status(
+            posture=posture,
+            runtime_status=runtime_status,
+            marker_report=validation_markers,
+        )
+        observation_status = derive_reflective_followup_status(
+            posture=posture,
+            runtime_status=runtime_status,
+            marker_report=observation_markers,
+        )
+        next_gap = reflective_next_gap(
+            posture=posture,
+            runtime_status=runtime_status,
+            validation_status=validation_status,
+            observation_status=observation_status,
+        )
+
+        task_ids = [
+            int(task_id)
+            for task_id in registry_entry.get("task_ids", [])
+            if isinstance(task_id, int) or (isinstance(task_id, str) and str(task_id).isdigit())
+        ]
+        related_tasks = [
+            {
+                "task_id": task_id,
+                "status": str(task_status_index.get(task_id, {}).get("status", "untracked")),
+                "body": str(task_status_index.get(task_id, {}).get("body", "")),
+            }
+            for task_id in task_ids
+        ]
+
+        entries.append(
+            {
+                "proposal_id": proposal_id,
+                "title": str(proposal["title"]),
+                "status": str(proposal["status"]),
+                "path": str(proposal["path"]),
+                "posture": posture,
+                "posture_description": PROPOSAL_PROCESSING_POSTURES[posture],
+                "posture_source": "registry" if proposal_id in registry else "heuristic",
+                "runtime_surfaces": runtime_surfaces,
+                "runtime_realization": {
+                    **runtime_markers,
+                    "status": runtime_status,
+                },
+                "validation_closure": {
+                    **validation_markers,
+                    "status": validation_status,
+                },
+                "observation_coverage": {
+                    **observation_markers,
+                    "status": observation_status,
+                },
+                "related_tasks": related_tasks,
+                "reflective_chain": {
+                    "proposal_normalization": "present",
+                    "runtime_realization": runtime_status,
+                    "validation_closure": validation_status,
+                    "observation_coverage": observation_status,
+                    "next_gap": next_gap,
+                },
+            }
+        )
+
+    backlog = build_reflective_backlog(entries)
+    return {
+        "generated_at": utc_now_iso(),
+        "posture_vocabulary": copy.deepcopy(PROPOSAL_PROCESSING_POSTURES),
+        "entry_count": len(entries),
+        "entries": entries,
+        "reflective_backlog": backlog,
+    }
+
+
+def write_proposal_runtime_index(index: dict[str, Any]) -> Path:
+    RUNS_DIR.mkdir(parents=True, exist_ok=True)
+    path = proposal_runtime_index_path()
+    path.write_text(json.dumps(index, ensure_ascii=False, indent=2), encoding="utf-8")
+    return path
+
+
 def acceptance_reference_indexes(
     references: Any,
     *,
@@ -7533,6 +7993,7 @@ def main(
     observe_graph_health_mode: bool = False,
     validate_transition_packet_path: str | None = None,
     build_spec_trace_index_mode: bool = False,
+    build_proposal_runtime_index_mode: bool = False,
 ) -> int:
     """Entry point for CLI and tests.
 
@@ -7580,6 +8041,7 @@ def main(
                 clean_stale_runtime,
                 observe_graph_health_mode,
                 build_spec_trace_index_mode,
+                build_proposal_runtime_index_mode,
             )
         ):
             print(
@@ -7622,6 +8084,7 @@ def main(
                 list_stale_runtime,
                 clean_stale_runtime,
                 observe_graph_health_mode,
+                build_proposal_runtime_index_mode,
             )
         ):
             print(
@@ -7631,6 +8094,40 @@ def main(
             return 1
         index = build_spec_trace_index(specs)
         write_spec_trace_index(index)
+        print(json.dumps(index, ensure_ascii=False, indent=2))
+        return 0
+
+    if build_proposal_runtime_index_mode:
+        if any(
+            (
+                dry_run,
+                auto_approve,
+                loop,
+                resolve_gate,
+                decision,
+                note,
+                target_spec,
+                split_proposal,
+                apply_split_proposal,
+                operator_note,
+                mutation_budget,
+                run_authority,
+                execution_profile,
+                child_model,
+                child_timeout_seconds,
+                verbose,
+                list_stale_runtime,
+                clean_stale_runtime,
+                observe_graph_health_mode,
+            )
+        ):
+            print(
+                "--build-proposal-runtime-index must be used as a standalone command",
+                file=sys.stderr,
+            )
+            return 1
+        index = build_proposal_runtime_index()
+        write_proposal_runtime_index(index)
         print(json.dumps(index, ensure_ascii=False, indent=2))
         return 0
 
@@ -8121,6 +8618,14 @@ if __name__ == "__main__":
             "in tools/ and tests/"
         ),
     )
+    parser.add_argument(
+        "--build-proposal-runtime-index",
+        action="store_true",
+        help=(
+            "Build a derived proposal runtime index showing posture, realization, "
+            "validation closure, and observation coverage"
+        ),
+    )
     parser.add_argument("--resolve-gate", metavar="SPEC_ID", help="Resolve gate for a spec id")
     parser.add_argument(
         "--decision",
@@ -8237,5 +8742,6 @@ if __name__ == "__main__":
             observe_graph_health_mode=args.observe_graph_health,
             validate_transition_packet_path=args.validate_transition_packet,
             build_spec_trace_index_mode=args.build_spec_trace_index,
+            build_proposal_runtime_index_mode=args.build_proposal_runtime_index,
         )
     )
