@@ -332,7 +332,10 @@ class TestMainWithRealWorktree:
         data["acceptance_evidence"] = []
         node_path.write_text(json.dumps(data), encoding="utf-8")
         return subprocess.CompletedProcess(
-            args=[], returncode=0, stdout="RUN_OUTCOME: done", stderr=""
+            args=[],
+            returncode=0,
+            stdout="RUN_OUTCOME: done\nBLOCKER: none\n",
+            stderr="",
         )
 
     def test_main_creates_real_git_worktree(
