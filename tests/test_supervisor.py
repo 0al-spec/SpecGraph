@@ -2448,6 +2448,68 @@ def test_observe_graph_health_reports_role_legibility_signals(
     assert "merge_bookkeeping_slice" in graph_health["recommended_actions"]
 
 
+def test_observe_graph_health_reports_refinement_fan_out_pressure(
+    supervisor_module: object,
+) -> None:
+    spec_node = supervisor_module.SpecNode
+    source = spec_node(
+        path=Path("/tmp/source.yaml"),
+        data={
+            "id": "SG-SPEC-9250",
+            "title": "Execution Coordination Surface",
+            "kind": "spec",
+            "status": "linked",
+            "maturity": 0.4,
+            "depends_on": [],
+            "acceptance": ["Coordinates direct child surfaces."],
+            "prompt": "Review direct child breadth before adding more leaf slices.",
+            "last_outcome": "split_required",
+        },
+    )
+    children = [
+        spec_node(
+            path=Path(f"/tmp/child{i}.yaml"),
+            data={
+                "id": f"SG-SPEC-925{i}",
+                "title": title,
+                "kind": "spec",
+                "status": "linked",
+                "maturity": 0.3,
+                "depends_on": [],
+                "refines": ["SG-SPEC-9250"],
+                "acceptance": [f"Owns {title.lower()}."],
+                "prompt": f"Define the {title.lower()} boundary.",
+            },
+        )
+        for i, title in enumerate(
+            [
+                "Input Parsing",
+                "Expression Routing",
+                "Execution Policy",
+                "Runtime Queue",
+            ],
+            start=1,
+        )
+    ]
+
+    graph_health = supervisor_module.observe_graph_health(
+        source_node=source,
+        worktree_specs=[source, *children],
+        reconciliation={"semantic_dependencies_resolved": True},
+        atomicity_errors=[],
+        outcome="split_required",
+    )
+
+    assert "refinement_fan_out_pressure" in graph_health["signals"]
+    assert "review_direct_child_grouping" in graph_health["recommended_actions"]
+    observation = next(
+        item
+        for item in graph_health["observations"]
+        if item["kind"] == "refinement_fan_out_pressure"
+    )
+    assert observation["details"]["direct_child_count"] == 4
+
+
 def test_text_marker_hits_uses_token_boundaries(
     supervisor_module: object,
 ) -> None:

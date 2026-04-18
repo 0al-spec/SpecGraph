@@ -26,7 +26,8 @@ Supervisor modes:
 - Default: pick the next eligible bounded refinement run.
 - `--loop --auto-approve`: keep processing eligible work until the queue is empty.
 - `--target-spec SPEC_ID --observe-graph-health`: inspect subtree signals and
-  historical-versus-active descendants without mutating canonical specs.
+  historical-versus-active descendants without mutating canonical specs. This
+  now includes breadth pressure such as `refinement_fan_out_pressure`.
 - `--resolve-gate SPEC_ID --decision ...`: apply a human review decision.
 - `--target-spec SPEC_ID --split-proposal`: run the explicit proposal-first split pass for one
   oversized non-seed spec and emit a structured artifact under `runs/proposals/` without editing

@@ -191,6 +191,9 @@ LOWER_BOUNDARY_HANDOFF_SIGNALS = set(policy_lookup("queue_policy.lower_boundary_
 SUBTREE_SHAPE_ONE_CHILD_CHAIN_THRESHOLD = int(
     policy_lookup("thresholds.subtree_shape_one_child_chain")
 )
+REFINEMENT_FAN_OUT_DIRECT_CHILDREN_THRESHOLD = int(
+    policy_lookup("thresholds.refinement_fan_out_direct_children")
+)
 GRAPH_LAYER_EXHAUSTED_CHAIN_THRESHOLD = int(policy_lookup("thresholds.graph_layer_exhausted_chain"))
 SUBTREE_SHAPE_MIN_SINGLE_CHILD_RATIO = float(
     policy_lookup("thresholds.subtree_shape_min_single_child_ratio")
@@ -1165,6 +1168,7 @@ def subtree_shape_metrics(node: SpecNode, specs: list[SpecNode]) -> dict[str, An
     return {
         "subtree_node_count": len(descendants),
         "descendant_count": max(0, len(descendants) - 1),
+        "direct_child_count": len(children_map.get(node.id, [])),
         "max_depth": max_depth,
         "max_width": max_width,
         "longest_one_child_chain": longest_chain,
@@ -4011,9 +4015,28 @@ def observe_graph_health(
                 "median_acceptance_count": metrics["median_acceptance_count"],
                 "delegation_marker_ratio": round(float(metrics["delegation_marker_ratio"]), 3),
                 "execution_marker_ratio": round(float(metrics["execution_marker_ratio"]), 3),
+                "direct_child_count": metrics["direct_child_count"],
                 "subtree_node_count": metrics["subtree_node_count"],
             }
             shape_pressure = False
+            if metrics["direct_child_count"] >= REFINEMENT_FAN_OUT_DIRECT_CHILDREN_THRESHOLD:
+                observations.append(
+                    {
+                        "kind": "refinement_fan_out_pressure",
+                        "spec_id": source_node.id,
+                        "details": {
+                            **shape_details,
+                            "summary": (
+                                "The node is accumulating enough direct child breadth that "
+                                "intermediate grouping should be reviewed."
+                            ),
+                        },
+                    }
+                )
+                signals.append("refinement_fan_out_pressure")
+                recommended_actions.append("review_direct_child_grouping")
+                shape_pressure = True
+
             if metrics["longest_one_child_chain"] >= SUBTREE_SHAPE_ONE_CHILD_CHAIN_THRESHOLD:
                 observations.append(
                     {

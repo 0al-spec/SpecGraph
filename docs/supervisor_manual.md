@@ -121,6 +121,7 @@ python3 tools/supervisor.py --target-spec SG-SPEC-0003 --observe-graph-health
 Non-mutating subtree inspection. Use this when you want to understand:
 
 - shape pressure such as `depth_without_breadth`
+- breadth pressure such as `refinement_fan_out_pressure`
 - role-legibility signals such as `role_obscured_node`
 - whether a subtree still contains active versus historical descendants
 - what rewrite/merge action the current graph health recommends
