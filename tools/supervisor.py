@@ -4099,7 +4099,7 @@ def observe_graph_health(
                 "subtree_node_count": metrics["subtree_node_count"],
             }
             shape_pressure = False
-            fan_out_profile = fan_out_legibility_profile(source_node, worktree_specs)
+            fan_out_profile = fan_out_legibility_profile(reconciled_node, worktree_specs)
             shape_details.update(fan_out_profile)
             if (
                 fan_out_profile["classification"] == "healthy_multi_child_aggregate"

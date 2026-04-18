@@ -2576,6 +2576,82 @@ def test_observe_graph_health_distinguishes_healthy_multi_child_aggregate(
     assert observation["details"]["parent_reads_as_aggregate"] is True
 
 
+def test_observe_graph_health_uses_reconciled_node_for_fan_out_legibility(
+    supervisor_module: object,
+) -> None:
+    spec_node = supervisor_module.SpecNode
+    source = spec_node(
+        path=Path("/tmp/source.yaml"),
+        data={
+            "id": "SG-SPEC-9260",
+            "title": "Execution Coordination Surface",
+            "kind": "spec",
+            "status": "linked",
+            "maturity": 0.4,
+            "depends_on": [],
+            "acceptance": ["Coordinates direct child surfaces."],
+            "prompt": "Review direct child breadth before adding more leaf slices.",
+            "last_outcome": "done",
+        },
+    )
+    reconciled = spec_node(
+        path=Path("/tmp/source.yaml"),
+        data={
+            "id": "SG-SPEC-9260",
+            "title": "Gateway Capability Cluster",
+            "kind": "spec",
+            "status": "linked",
+            "maturity": 0.4,
+            "depends_on": [],
+            "acceptance": ["Owns one coherent gateway capability family."],
+            "prompt": "Coordinate one grouped gateway cluster without flattening its children.",
+            "last_outcome": "done",
+        },
+    )
+    children = [
+        spec_node(
+            path=Path(f"/tmp/gateway-child-r{i}.yaml"),
+            data={
+                "id": f"SG-SPEC-927{i}",
+                "title": title,
+                "kind": "spec",
+                "status": "linked",
+                "maturity": 0.3,
+                "depends_on": [],
+                "refines": ["SG-SPEC-9260"],
+                "acceptance": [f"Owns {title.lower()}."],
+                "prompt": f"Define the {title.lower()} boundary.",
+            },
+        )
+        for i, title in enumerate(
+            [
+                "Gateway Input",
+                "Gateway Output",
+                "Gateway Policy",
+                "Gateway Routing",
+            ],
+            start=1,
+        )
+    ]
+
+    graph_health = supervisor_module.observe_graph_health(
+        source_node=source,
+        worktree_specs=[reconciled, *children],
+        reconciliation={"semantic_dependencies_resolved": True},
+        atomicity_errors=[],
+        outcome="done",
+    )
+
+    assert "refinement_fan_out_pressure" not in graph_health["signals"]
+    observation = next(
+        item
+        for item in graph_health["observations"]
+        if item["kind"] == "healthy_multi_child_aggregate"
+    )
+    assert observation["details"]["classification"] == "healthy_multi_child_aggregate"
+    assert observation["details"]["parent_reads_as_aggregate"] is True
+
+
 def test_text_marker_hits_uses_token_boundaries(
     supervisor_module: object,
 ) -> None:
