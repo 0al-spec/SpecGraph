@@ -6752,6 +6752,45 @@ def test_build_proposal_promotion_index_reports_traceability_gaps(
     assert index["promotion_backlog"]["grouped_by_next_gap"]["attach_promotion_trace"] == ["0022"]
 
 
+def test_build_proposal_promotion_index_rejects_source_refs_outside_repo_root(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    seed_proposal_promotion_fixture(repo_fixture)
+    (repo_fixture.parent / "outside.md").write_text("# outside\n", encoding="utf-8")
+    registry_path = repo_fixture / "tools" / "proposal_promotion_registry.json"
+    registry = json.loads(registry_path.read_text(encoding="utf-8"))
+    registry[0]["source_refs"] = ["../outside.md"]
+    registry_path.write_text(json.dumps(registry), encoding="utf-8")
+
+    index = supervisor_module.build_proposal_promotion_index()
+
+    entry = {item["proposal_id"]: item for item in index["entries"]}["0018"]
+    assert entry["promotion_traceability"]["status"] == "invalid"
+    assert entry["promotion_traceability"]["next_gap"] == "repair_source_refs"
+    assert entry["promotion_traceability"]["outside_repo_source_refs"] == ["../outside.md"]
+    assert "source_ref_outside_repo_root" in entry["promotion_traceability"]["missing_fields"]
+
+
+def test_build_proposal_promotion_index_requires_registry_normalized_title(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    seed_proposal_promotion_fixture(repo_fixture)
+    registry_path = repo_fixture / "tools" / "proposal_promotion_registry.json"
+    registry = json.loads(registry_path.read_text(encoding="utf-8"))
+    registry[0].pop("normalized_title")
+    registry_path.write_text(json.dumps(registry), encoding="utf-8")
+
+    index = supervisor_module.build_proposal_promotion_index()
+
+    entry = {item["proposal_id"]: item for item in index["entries"]}["0018"]
+    assert entry["promotion_traceability"]["status"] == "incomplete"
+    assert entry["promotion_traceability"]["next_gap"] == "record_normalized_title"
+    assert entry["promotion_traceability"]["normalized_title"] == ""
+    assert "normalized_title" in entry["promotion_traceability"]["missing_fields"]
+
+
 def test_main_builds_proposal_promotion_index_as_standalone_command(
     supervisor_module: object,
     repo_fixture: Path,

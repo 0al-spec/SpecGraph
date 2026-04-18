@@ -7822,18 +7822,25 @@ def proposal_source_ref_records(
     policy: dict[str, Any] | None,
 ) -> list[dict[str, Any]]:
     records: list[dict[str, Any]] = []
+    root_resolved = ROOT.resolve()
     for ref in source_refs:
         if _looks_like_repo_path(ref):
             normalized = _normalize_transition_repo_path(ref)
-            candidate = ROOT / normalized
+            candidate = (ROOT / normalized).resolve(strict=False)
+            within_repo_root = candidate == root_resolved or root_resolved in candidate.parents
             records.append(
                 {
                     "ref": normalized,
                     "ref_kind": "repo_path",
-                    "exists": candidate.exists(),
-                    "repository_projection": classify_proposal_repository_projection(
-                        candidate,
-                        policy=policy,
+                    "within_repo_root": within_repo_root,
+                    "exists": candidate.exists() if within_repo_root else False,
+                    "repository_projection": (
+                        classify_proposal_repository_projection(
+                            candidate,
+                            policy=policy,
+                        )
+                        if within_repo_root
+                        else {}
                     ),
                 }
             )
@@ -7842,6 +7849,7 @@ def proposal_source_ref_records(
                 {
                     "ref": ref,
                     "ref_kind": "external_reference",
+                    "within_repo_root": None,
                     "exists": None,
                     "repository_projection": {},
                 }
@@ -7861,16 +7869,20 @@ def derive_promotion_traceability(
         registry_entry.get("required_provenance_links", [])
     )
     motivating_concern = str(registry_entry.get("motivating_concern", "")).strip()
-    normalized_title = (
-        str(registry_entry.get("normalized_title", "")).strip()
-        or str(proposal.get("title", "")).strip()
-    )
+    normalized_title = str(registry_entry.get("normalized_title", "")).strip()
     bounded_scope = str(registry_entry.get("bounded_scope", "")).strip()
     source_ref_records = proposal_source_ref_records(source_refs, policy=policy)
+    outside_repo_source_refs = sorted(
+        record["ref"]
+        for record in source_ref_records
+        if record["ref_kind"] == "repo_path" and not record["within_repo_root"]
+    )
     missing_source_artifacts = sorted(
         record["ref"]
         for record in source_ref_records
-        if record["ref_kind"] == "repo_path" and record["exists"] is False
+        if record["ref_kind"] == "repo_path"
+        and record["within_repo_root"]
+        and record["exists"] is False
     )
 
     missing_fields: list[str] = []
@@ -7882,6 +7894,8 @@ def derive_promotion_traceability(
             missing_fields.append("source_artifact_class")
         if not source_refs:
             missing_fields.append("source_refs")
+        if outside_repo_source_refs:
+            missing_fields.append("source_ref_outside_repo_root")
         if not motivating_concern:
             missing_fields.append("motivating_concern")
         if not normalized_title:
@@ -7899,6 +7913,9 @@ def derive_promotion_traceability(
         elif "source_artifact_class" in missing_fields:
             status = "invalid"
             next_gap = "repair_source_artifact_class"
+        elif "source_ref_outside_repo_root" in missing_fields:
+            status = "invalid"
+            next_gap = "repair_source_refs"
         elif "source_refs" in missing_fields:
             status = "incomplete"
             next_gap = "record_source_refs"
@@ -7908,6 +7925,9 @@ def derive_promotion_traceability(
         elif "motivating_concern" in missing_fields:
             status = "incomplete"
             next_gap = "record_motivating_concern"
+        elif "normalized_title" in missing_fields:
+            status = "incomplete"
+            next_gap = "record_normalized_title"
         elif "bounded_scope" in missing_fields:
             status = "incomplete"
             next_gap = "record_bounded_scope"
@@ -7924,6 +7944,7 @@ def derive_promotion_traceability(
         "source_artifact_class": source_artifact_class,
         "source_refs": source_refs,
         "source_ref_records": source_ref_records,
+        "outside_repo_source_refs": outside_repo_source_refs,
         "motivating_concern": motivating_concern,
         "normalized_title": normalized_title,
         "bounded_scope": bounded_scope,
