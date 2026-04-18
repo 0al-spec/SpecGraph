@@ -2448,6 +2448,210 @@ def test_observe_graph_health_reports_role_legibility_signals(
     assert "merge_bookkeeping_slice" in graph_health["recommended_actions"]
 
 
+def test_observe_graph_health_reports_refinement_fan_out_pressure(
+    supervisor_module: object,
+) -> None:
+    spec_node = supervisor_module.SpecNode
+    source = spec_node(
+        path=Path("/tmp/source.yaml"),
+        data={
+            "id": "SG-SPEC-9250",
+            "title": "Execution Coordination Surface",
+            "kind": "spec",
+            "status": "linked",
+            "maturity": 0.4,
+            "depends_on": [],
+            "acceptance": ["Coordinates direct child surfaces."],
+            "prompt": "Review direct child breadth before adding more leaf slices.",
+            "last_outcome": "split_required",
+        },
+    )
+    children = [
+        spec_node(
+            path=Path(f"/tmp/child{i}.yaml"),
+            data={
+                "id": f"SG-SPEC-925{i}",
+                "title": title,
+                "kind": "spec",
+                "status": "linked",
+                "maturity": 0.3,
+                "depends_on": [],
+                "refines": ["SG-SPEC-9250"],
+                "acceptance": [f"Owns {title.lower()}."],
+                "prompt": f"Define the {title.lower()} boundary.",
+            },
+        )
+        for i, title in enumerate(
+            [
+                "Input Parsing",
+                "Expression Routing",
+                "Execution Policy",
+                "Runtime Queue",
+            ],
+            start=1,
+        )
+    ]
+
+    graph_health = supervisor_module.observe_graph_health(
+        source_node=source,
+        worktree_specs=[source, *children],
+        reconciliation={"semantic_dependencies_resolved": True},
+        atomicity_errors=[],
+        outcome="split_required",
+    )
+
+    assert "refinement_fan_out_pressure" in graph_health["signals"]
+    assert "regroup_under_intermediate_cluster" in graph_health["recommended_actions"]
+    assert "introduce_semantic_cluster_parent" in graph_health["recommended_actions"]
+    observation = next(
+        item
+        for item in graph_health["observations"]
+        if item["kind"] == "refinement_fan_out_pressure"
+    )
+    assert observation["details"]["classification"] == "broad_hub_missing_cluster"
+    assert observation["details"]["direct_child_count"] == 4
+
+
+def test_observe_graph_health_distinguishes_healthy_multi_child_aggregate(
+    supervisor_module: object,
+) -> None:
+    spec_node = supervisor_module.SpecNode
+    source = spec_node(
+        path=Path("/tmp/source.yaml"),
+        data={
+            "id": "SG-SPEC-9259",
+            "title": "Gateway Capability Cluster",
+            "kind": "spec",
+            "status": "linked",
+            "maturity": 0.4,
+            "depends_on": [],
+            "acceptance": ["Owns one coherent gateway capability family."],
+            "prompt": "Coordinate one grouped gateway cluster without flattening its children.",
+            "last_outcome": "done",
+        },
+    )
+    children = [
+        spec_node(
+            path=Path(f"/tmp/gateway-child{i}.yaml"),
+            data={
+                "id": f"SG-SPEC-926{i}",
+                "title": title,
+                "kind": "spec",
+                "status": "linked",
+                "maturity": 0.3,
+                "depends_on": [],
+                "refines": ["SG-SPEC-9259"],
+                "acceptance": [f"Owns {title.lower()}."],
+                "prompt": f"Define the {title.lower()} boundary.",
+            },
+        )
+        for i, title in enumerate(
+            [
+                "Gateway Input",
+                "Gateway Output",
+                "Gateway Policy",
+                "Gateway Routing",
+            ],
+            start=1,
+        )
+    ]
+
+    graph_health = supervisor_module.observe_graph_health(
+        source_node=source,
+        worktree_specs=[source, *children],
+        reconciliation={"semantic_dependencies_resolved": True},
+        atomicity_errors=[],
+        outcome="done",
+    )
+
+    assert "refinement_fan_out_pressure" not in graph_health["signals"]
+    assert "regroup_under_intermediate_cluster" not in graph_health["recommended_actions"]
+    observation = next(
+        item
+        for item in graph_health["observations"]
+        if item["kind"] == "healthy_multi_child_aggregate"
+    )
+    assert observation["details"]["classification"] == "healthy_multi_child_aggregate"
+    assert observation["details"]["dominant_child_token"] == "gateway"
+    assert observation["details"]["parent_reads_as_aggregate"] is True
+
+
+def test_observe_graph_health_uses_reconciled_node_for_fan_out_legibility(
+    supervisor_module: object,
+) -> None:
+    spec_node = supervisor_module.SpecNode
+    source = spec_node(
+        path=Path("/tmp/source.yaml"),
+        data={
+            "id": "SG-SPEC-9260",
+            "title": "Execution Coordination Surface",
+            "kind": "spec",
+            "status": "linked",
+            "maturity": 0.4,
+            "depends_on": [],
+            "acceptance": ["Coordinates direct child surfaces."],
+            "prompt": "Review direct child breadth before adding more leaf slices.",
+            "last_outcome": "done",
+        },
+    )
+    reconciled = spec_node(
+        path=Path("/tmp/source.yaml"),
+        data={
+            "id": "SG-SPEC-9260",
+            "title": "Gateway Capability Cluster",
+            "kind": "spec",
+            "status": "linked",
+            "maturity": 0.4,
+            "depends_on": [],
+            "acceptance": ["Owns one coherent gateway capability family."],
+            "prompt": "Coordinate one grouped gateway cluster without flattening its children.",
+            "last_outcome": "done",
+        },
+    )
+    children = [
+        spec_node(
+            path=Path(f"/tmp/gateway-child-r{i}.yaml"),
+            data={
+                "id": f"SG-SPEC-927{i}",
+                "title": title,
+                "kind": "spec",
+                "status": "linked",
+                "maturity": 0.3,
+                "depends_on": [],
+                "refines": ["SG-SPEC-9260"],
+                "acceptance": [f"Owns {title.lower()}."],
+                "prompt": f"Define the {title.lower()} boundary.",
+            },
+        )
+        for i, title in enumerate(
+            [
+                "Gateway Input",
+                "Gateway Output",
+                "Gateway Policy",
+                "Gateway Routing",
+            ],
+            start=1,
+        )
+    ]
+
+    graph_health = supervisor_module.observe_graph_health(
+        source_node=source,
+        worktree_specs=[reconciled, *children],
+        reconciliation={"semantic_dependencies_resolved": True},
+        atomicity_errors=[],
+        outcome="done",
+    )
+
+    assert "refinement_fan_out_pressure" not in graph_health["signals"]
+    observation = next(
+        item
+        for item in graph_health["observations"]
+        if item["kind"] == "healthy_multi_child_aggregate"
+    )
+    assert observation["details"]["classification"] == "healthy_multi_child_aggregate"
+    assert observation["details"]["parent_reads_as_aggregate"] is True
+
+
 def test_text_marker_hits_uses_token_boundaries(
     supervisor_module: object,
 ) -> None:
@@ -2932,6 +3136,38 @@ def test_update_refactor_queue_routes_role_legibility_signals_to_proposal_first(
     assert bookkeeping_item["work_item_type"] == "graph_refactor"
     assert bookkeeping_item["execution_policy"] == "emit_proposal"
     assert bookkeeping_item["recommended_action"] == "merge_bookkeeping_slice"
+
+
+def test_update_refactor_queue_prefers_regrouping_for_fan_out_pressure(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    graph_health = {
+        "source_spec_id": "SG-SPEC-9999",
+        "observations": [
+            {
+                "kind": "refinement_fan_out_pressure",
+                "details": {
+                    "direct_child_count": 4,
+                    "classification": "broad_hub_missing_cluster",
+                },
+            }
+        ],
+        "signals": ["refinement_fan_out_pressure"],
+        "recommended_actions": [
+            "regroup_under_intermediate_cluster",
+            "introduce_semantic_cluster_parent",
+        ],
+    }
+
+    path = supervisor_module.update_refactor_queue(graph_health=graph_health, run_id="RUN-1")
+    items = json.loads(path.read_text(encoding="utf-8"))
+
+    assert len(items) == 1
+    item = items[0]
+    assert item["work_item_type"] == "graph_refactor"
+    assert item["execution_policy"] == "emit_proposal"
+    assert item["recommended_action"] == "regroup_under_intermediate_cluster"
 
 
 def test_update_refactor_queue_rejects_malformed_existing_queue_file(

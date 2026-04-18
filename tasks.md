@@ -92,9 +92,9 @@ Task numbers are preserved for traceability across commits and PRs.
 
 ## Broadness and Clustering
 
-78. [todo] Add a non-blocking refinement fan-out pressure signal that detects when a node is becoming too broad through excessive direct-child spread.
-79. [todo] Teach graph-health and proposal flows to distinguish healthy multi-child aggregate roles from broad hubs that are missing intermediate semantic clustering.
-80. [todo] Prefer regrouping or intermediate-cluster recommendations over further flat child splitting when fan-out pressure is high.
+78. [done] Add a non-blocking refinement fan-out pressure signal that detects when a node is becoming too broad through excessive direct-child spread.
+79. [done] Teach graph-health and proposal flows to distinguish healthy multi-child aggregate roles from broad hubs that are missing intermediate semantic clustering.
+80. [done] Prefer regrouping or intermediate-cluster recommendations over further flat child splitting when fan-out pressure is high.
 
 ## Reflective Co-Evolution
 
