@@ -3321,6 +3321,68 @@ def test_main_creates_review_gate_and_provenance_metadata(
     assert (repo_fixture / "runs" / "latest-summary.md").exists()
 
 
+def test_main_review_pending_graph_health_keeps_canonical_outcome_basis(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    original_data = supervisor_module.get_yaml_module().safe_load(
+        node_path.read_text(encoding="utf-8")
+    )
+    original_data["last_outcome"] = "split_required"
+    node_path.write_text(json.dumps(original_data), encoding="utf-8")
+
+    worktree = make_fake_worktree(repo_fixture)
+    monkeypatch.setattr(
+        supervisor_module,
+        "create_isolated_worktree",
+        lambda _node_id: (worktree, "codex/sg-spec-0001/test"),
+    )
+
+    changed_snapshots = [
+        [],
+        ["specs/nodes/SG-SPEC-0001.yaml"],
+        ["specs/nodes/SG-SPEC-0001.yaml"],
+    ]
+    monkeypatch.setattr(
+        supervisor_module,
+        "git_changed_files",
+        lambda _cwd=None: changed_snapshots.pop(0),
+    )
+
+    def fake_executor(_node: object, worktree_path: Path) -> subprocess.CompletedProcess[str]:
+        worktree_node_path = worktree_path / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+        data = supervisor_module.get_yaml_module().safe_load(
+            worktree_node_path.read_text(encoding="utf-8")
+        )
+        data["acceptance_evidence"] = grounded_acceptance_evidence(data["acceptance"])
+        data["prompt"] = "Updated by Codex"
+        worktree_node_path.write_text(
+            supervisor_module.dump_yaml_text(data) + "RUN_OUTCOME: done\nBLOCKER: none\n",
+            encoding="utf-8",
+        )
+        return subprocess.CompletedProcess(
+            args=["codex"],
+            returncode=0,
+            stdout="RUN_OUTCOME: done\nBLOCKER: none\n",
+            stderr="",
+        )
+
+    exit_code = supervisor_module.main(executor=fake_executor)
+    assert exit_code == 0
+
+    run_logs = sorted((repo_fixture / "runs").glob("*-SG-SPEC-*.json"))
+    assert len(run_logs) == 1
+    payload = json.loads(run_logs[0].read_text(encoding="utf-8"))
+
+    assert payload["outcome"] == "done"
+    assert payload["graph_health_truth_basis"] == "accepted_canonical"
+    assert "repeated_split_required_candidate" in payload["graph_health"]["signals"]
+    assert payload["candidate_graph_health_truth_basis"] == "review_candidate"
+    assert "repeated_split_required_candidate" not in payload["candidate_graph_health"]["signals"]
+
+
 def test_main_dry_run_supports_explicit_targeted_refinement_for_review_pending_node(
     supervisor_module: object,
     repo_fixture: Path,

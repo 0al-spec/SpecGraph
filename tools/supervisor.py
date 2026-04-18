@@ -3751,12 +3751,13 @@ def derive_accepted_graph_health(
     *,
     source_node: SpecNode,
     current_specs: list[SpecNode],
-    outcome: str,
+    outcome: str | None = None,
 ) -> dict[str, Any]:
     index = index_specs(current_specs)
     reconciled_node = index.get(source_node.id)
     if reconciled_node is None:
         return empty_graph_health(source_node.id)
+    accepted_outcome = outcome or graph_health_outcome_basis(reconciled_node)
     return observe_graph_health(
         source_node=source_node,
         worktree_specs=current_specs,
@@ -3767,7 +3768,7 @@ def derive_accepted_graph_health(
             "work_dependencies_ready": work_dependencies_ready(reconciled_node, index),
         },
         atomicity_errors=validate_atomicity(reconciled_node),
-        outcome=outcome,
+        outcome=accepted_outcome,
     )
 
 
@@ -6874,10 +6875,13 @@ def _process_one_spec(
 
     graph_health = empty_graph_health(node.id)
     if not primary_executor_failure and not worktree_load_errors:
+        accepted_graph_health_outcome = None
+        if split_sync_allowed or (success and node.gate_state == "none"):
+            accepted_graph_health_outcome = outcome
         graph_health = derive_accepted_graph_health(
             source_node=node,
             current_specs=load_specs(),
-            outcome=outcome,
+            outcome=accepted_graph_health_outcome,
         )
         proposal_queue_artifact, proposal_items = update_proposal_queue(
             graph_health=graph_health,
