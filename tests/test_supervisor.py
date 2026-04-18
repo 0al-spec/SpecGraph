@@ -3317,6 +3317,10 @@ def test_main_creates_review_gate_and_provenance_metadata(
         "lower_maturity",
         "stable_id",
     ]
+    assert payload["decision_inspector"]["selection"]["mode"] == "default_refine"
+    assert payload["decision_inspector"]["gate"]["gate_state"] == "review_pending"
+    assert payload["decision_inspector"]["diff_classification"]["refinement_decision"] == "approve"
+    assert payload["decision_inspector"]["queue_effects"]["proposal_queue"]["after_ids"] == []
     assert updated["pending_run_id"] == payload["run_id"]
     assert (repo_fixture / "runs" / "latest-summary.md").exists()
 
@@ -3878,6 +3882,10 @@ def test_main_explicit_targeted_refinement_reruns_review_pending_spec(
         == "Refine only one bounded concern for targeted rerun."
     )
     assert payload["outcome"] == "done"
+    assert payload["decision_inspector"]["selection"]["mode"] == "explicit_target_refine"
+    assert payload["decision_inspector"]["gate"]["required_human_action"] == (
+        "approve or retry refinement"
+    )
 
 
 def test_main_blocks_executor_environment_failures_without_graph_health_side_effects(
@@ -4961,6 +4969,40 @@ def test_main_split_proposal_emits_structured_artifact_and_queue_entry(
     assert payload["proposal_artifact_path"].endswith(work_item["proposal_artifact_relpath"])
     assert payload["proposed_status"] is None
     assert payload["final_status"] == "outlined"
+    assert payload["decision_inspector"]["selection"]["mode"] == "split_refactor_proposal"
+    assert payload["decision_inspector"]["queue_effects"]["proposal_queue"]["emitted_ids"] == [
+        "refactor_proposal::SG-SPEC-0001::oversized_spec"
+    ]
+
+
+def test_summarize_queue_transition_tracks_emitted_cleared_and_updated_ids(
+    supervisor_module: object,
+) -> None:
+    before_items = [
+        {"id": "proposal::keep", "spec_id": "SG-SPEC-0001", "status": "proposed"},
+        {"id": "proposal::drop", "spec_id": "SG-SPEC-0001", "status": "proposed"},
+        {"id": "proposal::other", "spec_id": "SG-SPEC-9999", "status": "proposed"},
+    ]
+    after_items = [
+        {"id": "proposal::keep", "spec_id": "SG-SPEC-0001", "status": "review_pending"},
+        {"id": "proposal::new", "spec_id": "SG-SPEC-0001", "status": "proposed"},
+        {"id": "proposal::other", "spec_id": "SG-SPEC-9999", "status": "applied"},
+    ]
+
+    summary = supervisor_module.summarize_queue_transition(
+        source_spec_id="SG-SPEC-0001",
+        before_items=before_items,
+        after_items=after_items,
+    )
+
+    assert summary == {
+        "before_ids": ["proposal::drop", "proposal::keep"],
+        "after_ids": ["proposal::keep", "proposal::new"],
+        "emitted_ids": ["proposal::new"],
+        "cleared_ids": ["proposal::drop"],
+        "retained_ids": ["proposal::keep"],
+        "updated_ids": ["proposal::keep"],
+    }
 
 
 def test_main_split_proposal_accepts_untracked_parent_directory_change(

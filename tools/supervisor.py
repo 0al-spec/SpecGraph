@@ -4356,6 +4356,116 @@ def update_proposal_queue(
     return path, updated
 
 
+def summarize_queue_transition(
+    *,
+    source_spec_id: str,
+    before_items: list[dict[str, Any]] | None,
+    after_items: list[dict[str, Any]] | None,
+) -> dict[str, Any]:
+    """Summarize how one source spec's queue items changed across a run."""
+
+    def scoped_by_id(items: list[dict[str, Any]] | None) -> dict[str, dict[str, Any]]:
+        scoped: dict[str, dict[str, Any]] = {}
+        for item in items or []:
+            if not isinstance(item, dict):
+                continue
+            if str(item.get("spec_id", "")).strip() != source_spec_id:
+                continue
+            item_id = str(item.get("id", "")).strip()
+            if not item_id:
+                continue
+            scoped[item_id] = item
+        return scoped
+
+    before_by_id = scoped_by_id(before_items)
+    after_by_id = scoped_by_id(after_items)
+    before_ids = set(before_by_id)
+    after_ids = set(after_by_id)
+    retained_ids = before_ids & after_ids
+    updated_ids = sorted(
+        item_id for item_id in retained_ids if before_by_id[item_id] != after_by_id[item_id]
+    )
+    return {
+        "before_ids": sorted(before_ids),
+        "after_ids": sorted(after_ids),
+        "emitted_ids": sorted(after_ids - before_ids),
+        "cleared_ids": sorted(before_ids - after_ids),
+        "retained_ids": sorted(retained_ids),
+        "updated_ids": updated_ids,
+    }
+
+
+def build_decision_inspector(
+    *,
+    spec_id: str,
+    selected_by_rule: dict[str, Any],
+    outcome: str,
+    gate_state: str,
+    required_human_action: str,
+    blocker: str,
+    changed_files: list[str],
+    validation_errors: list[str],
+    validator_results: dict[str, bool] | None,
+    graph_health: dict[str, Any],
+    graph_health_truth_basis: str,
+    proposal_queue_before: list[dict[str, Any]] | None,
+    proposal_queue_after: list[dict[str, Any]] | None,
+    refactor_queue_before: list[dict[str, Any]] | None,
+    refactor_queue_after: list[dict[str, Any]] | None,
+    refinement_acceptance: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    failing_validators = sorted(
+        name for name, ok in (validator_results or {}).items() if not bool(ok)
+    )
+    diff_classification = {
+        "changed_files": list(changed_files),
+        "changed_spec_files": [path for path in changed_files if is_spec_node_path(path)],
+        "validation_error_count": len(validation_errors),
+        "graph_health_truth_basis": graph_health_truth_basis,
+    }
+    if refinement_acceptance is not None:
+        diff_classification.update(
+            {
+                "refinement_decision": str(refinement_acceptance.get("decision", "")).strip(),
+                "change_class": str(refinement_acceptance.get("change_class", "")).strip(),
+                "mutation_classes": list(refinement_acceptance.get("mutation_classes", [])),
+                "review_reasons": list(refinement_acceptance.get("review_reasons", [])),
+                "budget_exceeded_classes": list(
+                    refinement_acceptance.get("budget_exceeded_classes", [])
+                ),
+            }
+        )
+    return {
+        "selection": {
+            "spec_id": spec_id,
+            "mode": str(selected_by_rule.get("selection_mode", "")).strip(),
+            "rule_inputs": copy.deepcopy(selected_by_rule),
+        },
+        "gate": {
+            "outcome": outcome,
+            "gate_state": gate_state,
+            "required_human_action": required_human_action,
+            "blocker": blocker,
+            "failing_validators": failing_validators,
+        },
+        "diff_classification": diff_classification,
+        "queue_effects": {
+            "signals": list(graph_health.get("signals", [])),
+            "recommended_actions": list(graph_health.get("recommended_actions", [])),
+            "proposal_queue": summarize_queue_transition(
+                source_spec_id=spec_id,
+                before_items=proposal_queue_before,
+                after_items=proposal_queue_after,
+            ),
+            "refactor_queue": summarize_queue_transition(
+                source_spec_id=spec_id,
+                before_items=refactor_queue_before,
+                after_items=refactor_queue_after,
+            ),
+        },
+    }
+
+
 def load_json_object(path: Path) -> dict[str, Any] | None:
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
@@ -5974,6 +6084,8 @@ def _apply_split_proposal(
 
     run_timestamp = dt.datetime.now(dt.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     run_id = f"{run_timestamp}-{node.id}"
+    proposal_queue_before = load_proposal_queue()
+    refactor_queue_before = load_refactor_queue()
     selected_by_rule = {
         "selection_mode": "apply_split_proposal",
         "operator_target": node.id,
@@ -6092,6 +6204,8 @@ def _apply_split_proposal(
         refactor_queue_artifact = refactor_queue_path()
 
     success = not validation_errors
+    proposal_queue_after = load_proposal_queue()
+    refactor_queue_after = load_refactor_queue()
     payload = {
         "run_id": run_id,
         "timestamp_utc": utc_now_iso(),
@@ -6120,6 +6234,26 @@ def _apply_split_proposal(
         "reconciliation": {},
         "graph_health": graph_health,
         "graph_health_truth_basis": "accepted_canonical",
+        "decision_inspector": build_decision_inspector(
+            spec_id=node.id,
+            selected_by_rule=selected_by_rule,
+            outcome="done" if success else "blocked",
+            gate_state="none",
+            required_human_action="-" if success else "repair proposal before retry",
+            blocker="none" if success else "split proposal application failed",
+            changed_files=changed,
+            validation_errors=validation_errors,
+            validator_results={
+                "proposal_artifact": not validation_errors,
+                "canonical_writeback": success,
+            },
+            graph_health=graph_health,
+            graph_health_truth_basis="accepted_canonical",
+            proposal_queue_before=proposal_queue_before,
+            proposal_queue_after=proposal_queue_after,
+            refactor_queue_before=refactor_queue_before,
+            refactor_queue_after=refactor_queue_after,
+        ),
         "refactor_queue_artifact": refactor_queue_artifact.as_posix(),
         "proposal_queue_artifact": proposal_queue_artifact.as_posix(),
         "proposal_artifact_path": proposal_artifact_path.as_posix(),
@@ -6159,6 +6293,8 @@ def _process_split_refactor_proposal(
     """
     run_timestamp = dt.datetime.now(dt.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     run_id = f"{run_timestamp}-{node.id}"
+    proposal_queue_before = load_proposal_queue()
+    refactor_queue_before = load_refactor_queue()
     refactor_work_item = build_split_refactor_work_item(node)
     refactor_work_item["planned_run_id"] = run_id
     selected_by_rule = {
@@ -6360,6 +6496,8 @@ def _process_split_refactor_proposal(
         if success
         else "fix split proposal or rerun with a different operator target"
     )
+    proposal_queue_after = load_proposal_queue()
+    refactor_queue_after = load_refactor_queue()
     payload = {
         "run_id": run_id,
         "timestamp_utc": utc_now_iso(),
@@ -6394,6 +6532,29 @@ def _process_split_refactor_proposal(
         },
         "graph_health": graph_health,
         "graph_health_truth_basis": "review_candidate",
+        "decision_inspector": build_decision_inspector(
+            spec_id=node.id,
+            selected_by_rule=selected_by_rule,
+            outcome=outcome,
+            gate_state="none",
+            required_human_action=required_human_action,
+            blocker=blocker,
+            changed_files=changed,
+            validation_errors=validation_errors,
+            validator_results={
+                "target_eligibility": True,
+                "proposal_artifact": success,
+                "canonical_writeback": not changed_spec_files,
+                "artifact_scope": not extra_changed_files,
+                "executor_environment": not primary_executor_failure,
+            },
+            graph_health=graph_health,
+            graph_health_truth_basis="review_candidate",
+            proposal_queue_before=proposal_queue_before,
+            proposal_queue_after=proposal_queue_after,
+            refactor_queue_before=refactor_queue_before,
+            refactor_queue_after=refactor_queue_after,
+        ),
         "executor_environment": executor_environment,
         "refactor_queue_artifact": refactor_queue_artifact.as_posix(),
         "proposal_queue_artifact": proposal_queue_artifact.as_posix(),
@@ -6496,6 +6657,8 @@ def _process_one_spec(
         }
 
     before_status = node.status
+    proposal_queue_before = load_proposal_queue()
+    refactor_queue_before = load_refactor_queue()
     before_source_text = node.path.read_text(encoding="utf-8")
     before_node_data = copy.deepcopy(node.data)
     before_canonical = canonical_spec_snapshot(node.data)
@@ -6895,6 +7058,8 @@ def _process_one_spec(
     else:
         proposal_queue_artifact = proposal_queue_path()
         refactor_queue_artifact = refactor_queue_path()
+    proposal_queue_after = load_proposal_queue()
+    refactor_queue_after = load_refactor_queue()
 
     cleanup_failed_child_materialization = (
         child_materialization_requested
@@ -6976,6 +7141,24 @@ def _process_one_spec(
         "reconciliation": reconciliation,
         "graph_health": graph_health,
         "graph_health_truth_basis": "accepted_canonical",
+        "decision_inspector": build_decision_inspector(
+            spec_id=node.id,
+            selected_by_rule=selected_by_rule,
+            outcome=outcome,
+            gate_state=str(node.data.get("gate_state", "none")),
+            required_human_action=required_human_action,
+            blocker=blocker,
+            changed_files=changed,
+            validation_errors=validation_errors,
+            validator_results=validator_results,
+            graph_health=graph_health,
+            graph_health_truth_basis="accepted_canonical",
+            proposal_queue_before=proposal_queue_before,
+            proposal_queue_after=proposal_queue_after,
+            refactor_queue_before=refactor_queue_before,
+            refactor_queue_after=refactor_queue_after,
+            refinement_acceptance=refinement_acceptance,
+        ),
         "executor_environment": executor_environment,
         "refinement_acceptance": refinement_acceptance,
         "refactor_queue_artifact": refactor_queue_artifact.as_posix(),
