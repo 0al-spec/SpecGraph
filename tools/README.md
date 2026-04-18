@@ -40,7 +40,10 @@ Supervisor modes:
   mentions in `tools/` and `tests/`, then enrich that graph-bound index with weak
   `commit_refs`, `pr_refs`, `verification_basis`, and `acceptance_coverage`.
   `implementation_state` is derived conservatively from explicit contracts in
-  `tools/spec_trace_registry.json`, not from weak mentions alone.
+  `tools/spec_trace_registry.json`, not from weak mentions alone, and `freshness`
+  now distinguishes fresh, stale-spec, and drifted verified regions.
+- `--build-spec-trace-projection`: build `runs/spec_trace_projection.json` from the
+  trace plane, grouped for viewer-style filters and implementation backlog queries.
 - `--build-proposal-runtime-index`: build `runs/proposal_runtime_index.json` from proposal docs,
   the proposal runtime registry, `tasks.md`, and repository markers in `tools/` and `tests/`.
 - `--list-stale-runtime` / `--clean-stale-runtime`: inspect or clean stale gate/worktree residue.
@@ -54,11 +57,13 @@ Key derived artifacts:
 - `runs/refactor_queue.json`: derived refactor-oriented next moves
 - `runs/proposals/*.json`: structured split proposal artifacts
 - `runs/spec_trace_index.json`: first graph-bound trace artifact with `code_refs`,
-  `test_refs`, `commit_refs`, `pr_refs`, `verification_basis`, and weak
-  `acceptance_coverage`
+  `test_refs`, `commit_refs`, `pr_refs`, `verification_basis`,
+  `acceptance_coverage`, `implementation_state`, and `freshness`
+- `runs/spec_trace_projection.json`: viewer/backlog projection grouped by
+  `implementation_state`, `freshness`, `acceptance_coverage`, and next-gap categories
 - `tools/spec_trace_registry.json`: explicit strong trace contracts used to
   derive conservative `implementation_state` overlays such as `planned`,
-  `implemented`, `verified`, and `blocked`
+  `implemented`, `verified`, `drifted`, and `blocked`
 - `runs/proposal_runtime_index.json`: proposal posture and reflective runtime-closure index
 - `runs/spec_id_reservations.json`: temporary active child-materialization spec-id reservations
 - `tools/supervisor_policy.json`: declarative supervisor policy artifact for thresholds, priorities,

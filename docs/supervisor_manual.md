@@ -182,10 +182,43 @@ an implementation-state oracle.
 - declared contract with local changes on tracked surfaces: `in_progress`
 - declared contract with implementation anchors only: `implemented`
 - declared contract with both implementation and verification anchors: `verified`
+- declared contract whose code moved beyond the last trusted verification anchor: `drifted`
 - declared contract blocked by review or unresolved dependencies: `blocked`
 
-The `drifted` state is reserved for freshness-aware derivation and is not yet
-emitted by this command.
+`freshness` is derived separately from trusted verification timestamps:
+
+- no explicit trace contract: `not_tracked`
+- embodiment not yet meaningful: `not_applicable`
+- tracked surfaces currently dirty: `dirty_worktree`
+- verification anchors not yet matched: `pending_verification`
+- verification anchors exist but timestamps are unavailable: `verification_time_unknown`
+- implementation and spec are aligned with the latest trusted verification: `fresh`
+- the governing spec moved after the latest trusted verification: `stale_spec`
+- implementation changed after the latest trusted verification: `drifted_after_verification`
+
+### Spec trace projection
+
+```bash
+python3 tools/supervisor.py --build-spec-trace-projection
+```
+
+Builds `runs/spec_trace_projection.json` from a freshly generated
+`runs/spec_trace_index.json`.
+
+Use it when you want an operator-facing projection instead of raw trace entries.
+The projection groups nodes by:
+
+- `implementation_state`
+- `freshness`
+- `acceptance_coverage`
+
+and exposes:
+
+- named viewer filters such as `verified_stale_spec`, `drifted`, and
+  `implemented_without_verification`
+- an `implementation_backlog` grouped by next reflective gap such as
+  `attach_trace_contract`, `add_verification_anchors`, `refresh_after_spec_update`,
+  or `reverify_after_drift`
 
 ### Proposal runtime index
 
@@ -338,10 +371,14 @@ path.
 
 - `runs/spec_trace_index.json`
   - first graph-bound spec trace artifact with `code_refs`, `test_refs`,
-    `commit_refs`, `pr_refs`, `verification_basis`, weak
-    `acceptance_coverage`, and a conservative `implementation_state`
+    `commit_refs`, `pr_refs`, `verification_basis`, `acceptance_coverage`,
+    conservative `implementation_state`, and `freshness`
+- `runs/spec_trace_projection.json`
+  - derived viewer/backlog projection grouped by `implementation_state`,
+    `freshness`, `acceptance_coverage`, and reflective next-gap categories
 - `tools/spec_trace_registry.json`
-  - explicit strong trace contracts for deriving `implementation_state`
+  - explicit strong trace contracts for deriving `implementation_state` and
+    freshness-aware drift detection
 - `runs/proposal_runtime_index.json`
   - derived proposal runtime index with posture, realization, validation, and
     re-observation status

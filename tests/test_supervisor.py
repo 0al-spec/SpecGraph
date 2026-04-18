@@ -5691,7 +5691,7 @@ def test_build_spec_trace_index_collects_tool_and_test_refs(
     index = supervisor_module.build_spec_trace_index(supervisor_module.load_specs())
 
     assert index["artifact_kind"] == "spec_trace_index"
-    assert index["schema_version"] == 3
+    assert index["schema_version"] == 4
     assert index["implementation_state_model"]["derivation_mode"] == (
         "registry_backed_conservative_overlay"
     )
@@ -5718,6 +5718,7 @@ def test_build_spec_trace_index_collects_tool_and_test_refs(
     assert entry["pr_refs"] == [{"number": 96, "source": "commit_subject", "commit": "aaaaaaa"}]
     assert entry["trace_contract"] is None
     assert entry["implementation_state"]["status"] == "unclaimed"
+    assert entry["freshness"]["status"] == "not_tracked"
     assert entry["verification_basis"]["status"] == "test_linked"
     assert entry["acceptance_coverage"] == {
         "status": "evidence_linked_unmapped",
@@ -5756,10 +5757,11 @@ def test_main_builds_spec_trace_index_as_standalone_command(
     assert exit_code == 0
     report = json.loads(capsys.readouterr().out)
     assert report["artifact_kind"] == "spec_trace_index"
-    assert report["schema_version"] == 3
+    assert report["schema_version"] == 4
     assert report["entry_count"] == 1
     assert report["entries"][0]["trace_summary"]["trace_strength"] == "code_and_tests"
     assert report["entries"][0]["implementation_state"]["status"] == "unclaimed"
+    assert report["entries"][0]["freshness"]["status"] == "not_tracked"
     assert report["entries"][0]["acceptance_coverage"]["status"] == "evidence_linked_unmapped"
     artifact = json.loads(
         (repo_fixture / "runs" / "spec_trace_index.json").read_text(encoding="utf-8")
@@ -5791,16 +5793,57 @@ def test_build_spec_trace_index_derives_registry_backed_implementation_states(
         encoding="utf-8",
     )
 
+    def fake_trace_commits(
+        ref_paths: list[str],
+        repo_root: Path | None = None,
+        limit: int = 5,
+    ) -> list[dict[str, str]]:
+        del repo_root
+        key = tuple(sorted(set(ref_paths)))
+        if key == ("tests/test_impl.py",):
+            return [
+                {
+                    "sha": "b" * 40,
+                    "short_sha": "bbbbbbb",
+                    "committed_at": "2026-04-18T00:00:00Z",
+                    "subject": "Refresh tests",
+                }
+            ][:limit]
+        if key == ("tools/impl.py",):
+            return [
+                {
+                    "sha": "a" * 40,
+                    "short_sha": "aaaaaaa",
+                    "committed_at": "2026-04-17T00:00:00Z",
+                    "subject": "Add implementation",
+                }
+            ][:limit]
+        if key == ("tests/test_impl.py", "tools/impl.py"):
+            return [
+                {
+                    "sha": "c" * 40,
+                    "short_sha": "ccccccc",
+                    "committed_at": "2026-04-18T00:00:00Z",
+                    "subject": "Land trace pair (#97)",
+                }
+            ][:limit]
+        return []
+
+    monkeypatch.setattr(supervisor_module, "collect_trace_commit_refs", fake_trace_commits)
+
     index = supervisor_module.build_spec_trace_index(supervisor_module.load_specs())
     entry = index["entries"][0]
     assert entry["trace_contract"] == {
         "source": "registry",
         "declared_code_surfaces": ["tools/impl.py"],
         "declared_test_surfaces": ["tests/test_impl.py"],
+        "matched_code_paths": ["tools/impl.py"],
+        "matched_test_paths": ["tests/test_impl.py"],
         "matched_code_ref_count": 1,
         "matched_test_ref_count": 1,
     }
     assert entry["implementation_state"]["status"] == "verified"
+    assert entry["freshness"]["status"] == "fresh"
 
     monkeypatch.setattr(
         supervisor_module,
@@ -5809,6 +5852,7 @@ def test_build_spec_trace_index_derives_registry_backed_implementation_states(
     )
     index = supervisor_module.build_spec_trace_index(supervisor_module.load_specs())
     assert index["entries"][0]["implementation_state"]["status"] == "in_progress"
+    assert index["entries"][0]["freshness"]["status"] == "dirty_worktree"
 
     (tools_dir / "spec_trace_registry.json").write_text(
         json.dumps(
@@ -5829,6 +5873,7 @@ def test_build_spec_trace_index_derives_registry_backed_implementation_states(
     )
     index = supervisor_module.build_spec_trace_index(supervisor_module.load_specs())
     assert index["entries"][0]["implementation_state"]["status"] == "planned"
+    assert index["entries"][0]["freshness"]["status"] == "not_applicable"
 
     node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0002.yaml"
     node_path.write_text(
@@ -5861,6 +5906,212 @@ def test_build_spec_trace_index_derives_registry_backed_implementation_states(
     )
     index = supervisor_module.build_spec_trace_index(supervisor_module.load_specs())
     assert index["entries"][0]["implementation_state"]["status"] == "blocked"
+    assert index["entries"][0]["freshness"]["status"] == "not_applicable"
+
+
+def test_build_spec_trace_index_derives_stale_and_drifted_verified_states(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    tools_dir = repo_fixture / "tools"
+    tests_dir = repo_fixture / "tests"
+    tools_dir.mkdir()
+    tests_dir.mkdir()
+    (tools_dir / "impl.py").write_text("SPEC_ID = 'SG-SPEC-0001'\n", encoding="utf-8")
+    (tests_dir / "test_impl.py").write_text("SPEC_ID = 'SG-SPEC-0001'\n", encoding="utf-8")
+    (tools_dir / "spec_trace_registry.json").write_text(
+        json.dumps(
+            [
+                {
+                    "spec_id": "SG-SPEC-0001",
+                    "code_surfaces": ["tools/impl.py"],
+                    "test_surfaces": ["tests/test_impl.py"],
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    def stale_commits(
+        ref_paths: list[str],
+        repo_root: Path | None = None,
+        limit: int = 5,
+    ) -> list[dict[str, str]]:
+        del repo_root
+        key = tuple(sorted(set(ref_paths)))
+        payloads = {
+            ("tests/test_impl.py",): [
+                {
+                    "sha": "d" * 40,
+                    "short_sha": "ddddddd",
+                    "committed_at": "2026-04-17T00:00:00Z",
+                    "subject": "Refresh tests",
+                }
+            ],
+            ("tools/impl.py",): [
+                {
+                    "sha": "c" * 40,
+                    "short_sha": "ccccccc",
+                    "committed_at": "2026-04-16T00:00:00Z",
+                    "subject": "Add implementation",
+                }
+            ],
+            ("tests/test_impl.py", "tools/impl.py"): [
+                {
+                    "sha": "e" * 40,
+                    "short_sha": "eeeeeee",
+                    "committed_at": "2026-04-17T00:00:00Z",
+                    "subject": "Land pair (#97)",
+                }
+            ],
+        }
+        return payloads.get(key, [])[:limit]
+
+    monkeypatch.setattr(supervisor_module, "collect_trace_commit_refs", stale_commits)
+    monkeypatch.setattr(supervisor_module, "git_status_changed_files", lambda cwd: [])
+
+    spec_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    spec_data = json.loads(spec_path.read_text(encoding="utf-8"))
+    spec_data["updated_at"] = "2026-04-18T00:00:00Z"
+    spec_path.write_text(json.dumps(spec_data), encoding="utf-8")
+
+    stale_index = supervisor_module.build_spec_trace_index(supervisor_module.load_specs())
+    stale_entry = stale_index["entries"][0]
+    assert stale_entry["implementation_state"]["status"] == "verified"
+    assert stale_entry["freshness"]["status"] == "stale_spec"
+
+    def drifted_commits(
+        ref_paths: list[str],
+        repo_root: Path | None = None,
+        limit: int = 5,
+    ) -> list[dict[str, str]]:
+        del repo_root
+        key = tuple(sorted(set(ref_paths)))
+        payloads = {
+            ("tests/test_impl.py",): [
+                {
+                    "sha": "f" * 40,
+                    "short_sha": "fffffff",
+                    "committed_at": "2026-04-17T00:00:00Z",
+                    "subject": "Refresh tests",
+                }
+            ],
+            ("tools/impl.py",): [
+                {
+                    "sha": "g" * 40,
+                    "short_sha": "ggggggg",
+                    "committed_at": "2026-04-18T00:00:00Z",
+                    "subject": "Refine implementation",
+                }
+            ],
+            ("tests/test_impl.py", "tools/impl.py"): [
+                {
+                    "sha": "h" * 40,
+                    "short_sha": "hhhhhhh",
+                    "committed_at": "2026-04-18T00:00:00Z",
+                    "subject": "Land follow-up (#98)",
+                }
+            ],
+        }
+        return payloads.get(key, [])[:limit]
+
+    spec_data["updated_at"] = "2026-04-16T00:00:00Z"
+    spec_path.write_text(json.dumps(spec_data), encoding="utf-8")
+    monkeypatch.setattr(supervisor_module, "collect_trace_commit_refs", drifted_commits)
+
+    drifted_index = supervisor_module.build_spec_trace_index(supervisor_module.load_specs())
+    drifted_entry = drifted_index["entries"][0]
+    assert drifted_entry["implementation_state"]["status"] == "drifted"
+    assert drifted_entry["implementation_state"]["freshness_status"] == (
+        "drifted_after_verification"
+    )
+    assert drifted_entry["freshness"]["status"] == "drifted_after_verification"
+
+
+def test_build_spec_trace_projection_groups_backlog_and_viewer_filters(
+    supervisor_module: object,
+) -> None:
+    projection = supervisor_module.build_spec_trace_projection(
+        {
+            "generated_at": "2026-04-18T00:00:00Z",
+            "entries": [
+                {
+                    "spec_id": "SG-SPEC-0001",
+                    "title": "Missing Trace",
+                    "implementation_state": {"status": "unclaimed"},
+                    "freshness": {"status": "not_tracked"},
+                    "acceptance_coverage": {"status": "not_defined"},
+                },
+                {
+                    "spec_id": "SG-SPEC-0002",
+                    "title": "Implemented",
+                    "implementation_state": {"status": "implemented"},
+                    "freshness": {"status": "pending_verification"},
+                    "acceptance_coverage": {"status": "no_linked_evidence"},
+                },
+                {
+                    "spec_id": "SG-SPEC-0003",
+                    "title": "Stale Spec",
+                    "implementation_state": {"status": "verified"},
+                    "freshness": {"status": "stale_spec"},
+                    "acceptance_coverage": {"status": "evidence_linked_unmapped"},
+                },
+                {
+                    "spec_id": "SG-SPEC-0004",
+                    "title": "Drifted",
+                    "implementation_state": {"status": "drifted"},
+                    "freshness": {"status": "drifted_after_verification"},
+                    "acceptance_coverage": {"status": "evidence_linked_unmapped"},
+                },
+            ],
+        }
+    )
+
+    assert projection["artifact_kind"] == "spec_trace_projection"
+    assert projection["viewer_projection"]["implementation_state"]["unclaimed"] == ["SG-SPEC-0001"]
+    assert projection["viewer_projection"]["named_filters"]["verified_stale_spec"] == [
+        "SG-SPEC-0003"
+    ]
+    assert projection["viewer_projection"]["named_filters"]["drifted"] == ["SG-SPEC-0004"]
+    assert projection["implementation_backlog"]["grouped_by_next_gap"] == {
+        "add_verification_anchors": ["SG-SPEC-0002"],
+        "attach_trace_contract": ["SG-SPEC-0001"],
+        "refresh_after_spec_update": ["SG-SPEC-0003"],
+        "reverify_after_drift": ["SG-SPEC-0004"],
+    }
+
+
+def test_main_builds_spec_trace_projection_as_standalone_command(
+    supervisor_module: object,
+    repo_fixture: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    tools_dir = repo_fixture / "tools"
+    tests_dir = repo_fixture / "tests"
+    tools_dir.mkdir()
+    tests_dir.mkdir()
+    (tools_dir / "impl.py").write_text("SPEC = 'SG-SPEC-0001'\n", encoding="utf-8")
+    (tests_dir / "test_impl.py").write_text("SPEC = 'SG-SPEC-0001'\n", encoding="utf-8")
+
+    exit_code = supervisor_module.main(build_spec_trace_projection_mode=True)
+
+    assert exit_code == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["artifact_kind"] == "spec_trace_projection"
+    assert report["viewer_projection"]["implementation_state"]["unclaimed"] == ["SG-SPEC-0001"]
+    assert (
+        json.loads((repo_fixture / "runs" / "spec_trace_index.json").read_text(encoding="utf-8"))[
+            "artifact_kind"
+        ]
+        == "spec_trace_index"
+    )
+    assert (
+        json.loads(
+            (repo_fixture / "runs" / "spec_trace_projection.json").read_text(encoding="utf-8")
+        )["artifact_kind"]
+        == "spec_trace_projection"
+    )
 
 
 def test_collect_trace_pr_refs_parses_merge_commit_subjects(
