@@ -57,7 +57,7 @@ Task numbers are preserved for traceability across commits and PRs.
 
 ## Semantic Shape and Handoff
 
-60. [todo] Define the SpecGraph-to-TechSpec handoff boundary so decomposition can stop at semantic saturation and emit downstream handoff artifacts instead of deeper graph slicing.
+60. [done] Define the SpecGraph-to-TechSpec handoff boundary so decomposition can stop at semantic saturation and emit downstream handoff artifacts instead of deeper graph slicing.
 61. [todo] Teach supervisor and proposal flows to recommend handoff, not further refinement, when a subtree becomes implementation-facing or loses semantic novelty.
 
 ## Evidence Plane

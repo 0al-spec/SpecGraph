@@ -81,3 +81,4 @@ Task numbers are preserved for traceability across commits, PRs, and review thre
 
 58. [done] Add refinement-shape signals for serial ladders, one-child delegation chains, and over-atomized subtrees so malformed shape becomes first-class graph health.
 59. [done] Extend graph-health guidance with role-first semantic legibility checks so rewrite/merge is preferred when nodes stop reading as meaningful system roles.
+60. [done] Define the SpecGraph-to-TechSpec handoff boundary so decomposition can stop at semantic saturation and emit downstream handoff artifacts instead of deeper graph slicing.
