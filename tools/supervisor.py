@@ -100,6 +100,7 @@ BOOKKEEPING_ONLY_RATIO_THRESHOLD = 5.0
 BOOKKEEPING_ONLY_CONTEXT_RATIO_THRESHOLD = 6.0
 ROLE_OBSCURED_SPEC_REFERENCE_THRESHOLD = 4
 SPEC_ID_TEXT_RE = re.compile(r"\bsg-spec-\d{4}\b")
+SPEC_ID_CANONICAL_RE = re.compile(r"\bSG-SPEC-\d{4}\b")
 ROLE_OBSCURED_TITLE_MARKERS = ("edge", "segment", "slice", "topology")
 BOOKKEEPING_TEXT_MARKERS = (
     "owns",
@@ -142,6 +143,14 @@ ROLE_LEGIBILITY_MARKERS = (
     "explains why",
     "governs",
 )
+VALID_TRANSITION_PACKET_TYPES = {"promotion", "proposal", "apply", "handoff"}
+TRANSITION_PACKET_TYPE_REQUIRED_FIELDS = {
+    "promotion": {"target_artifact_class"},
+    "proposal": {"target_artifact_class"},
+    "apply": {"target_scope"},
+    "handoff": {"target_artifact_class"},
+}
+SPEC_TRACE_INDEX_FILENAME = "spec_trace_index.json"
 ROLE_OBSCURED_CONTEXT_PHRASES = (
     "materialize one bounded",
     "materialize a single bounded",
@@ -4356,6 +4365,116 @@ def update_proposal_queue(
     return path, updated
 
 
+def summarize_queue_transition(
+    *,
+    source_spec_id: str,
+    before_items: list[dict[str, Any]] | None,
+    after_items: list[dict[str, Any]] | None,
+) -> dict[str, Any]:
+    """Summarize how one source spec's queue items changed across a run."""
+
+    def scoped_by_id(items: list[dict[str, Any]] | None) -> dict[str, dict[str, Any]]:
+        scoped: dict[str, dict[str, Any]] = {}
+        for item in items or []:
+            if not isinstance(item, dict):
+                continue
+            if str(item.get("spec_id", "")).strip() != source_spec_id:
+                continue
+            item_id = str(item.get("id", "")).strip()
+            if not item_id:
+                continue
+            scoped[item_id] = item
+        return scoped
+
+    before_by_id = scoped_by_id(before_items)
+    after_by_id = scoped_by_id(after_items)
+    before_ids = set(before_by_id)
+    after_ids = set(after_by_id)
+    retained_ids = before_ids & after_ids
+    updated_ids = sorted(
+        item_id for item_id in retained_ids if before_by_id[item_id] != after_by_id[item_id]
+    )
+    return {
+        "before_ids": sorted(before_ids),
+        "after_ids": sorted(after_ids),
+        "emitted_ids": sorted(after_ids - before_ids),
+        "cleared_ids": sorted(before_ids - after_ids),
+        "retained_ids": sorted(retained_ids),
+        "updated_ids": updated_ids,
+    }
+
+
+def build_decision_inspector(
+    *,
+    spec_id: str,
+    selected_by_rule: dict[str, Any],
+    outcome: str,
+    gate_state: str,
+    required_human_action: str,
+    blocker: str,
+    changed_files: list[str],
+    validation_errors: list[str],
+    validator_results: dict[str, bool] | None,
+    graph_health: dict[str, Any],
+    graph_health_truth_basis: str,
+    proposal_queue_before: list[dict[str, Any]] | None,
+    proposal_queue_after: list[dict[str, Any]] | None,
+    refactor_queue_before: list[dict[str, Any]] | None,
+    refactor_queue_after: list[dict[str, Any]] | None,
+    refinement_acceptance: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    failing_validators = sorted(
+        name for name, ok in (validator_results or {}).items() if not bool(ok)
+    )
+    diff_classification = {
+        "changed_files": list(changed_files),
+        "changed_spec_files": [path for path in changed_files if is_spec_node_path(path)],
+        "validation_error_count": len(validation_errors),
+        "graph_health_truth_basis": graph_health_truth_basis,
+    }
+    if refinement_acceptance is not None:
+        diff_classification.update(
+            {
+                "refinement_decision": str(refinement_acceptance.get("decision", "")).strip(),
+                "change_class": str(refinement_acceptance.get("change_class", "")).strip(),
+                "mutation_classes": list(refinement_acceptance.get("mutation_classes", [])),
+                "review_reasons": list(refinement_acceptance.get("review_reasons", [])),
+                "budget_exceeded_classes": list(
+                    refinement_acceptance.get("budget_exceeded_classes", [])
+                ),
+            }
+        )
+    return {
+        "selection": {
+            "spec_id": spec_id,
+            "mode": str(selected_by_rule.get("selection_mode", "")).strip(),
+            "rule_inputs": copy.deepcopy(selected_by_rule),
+        },
+        "gate": {
+            "outcome": outcome,
+            "gate_state": gate_state,
+            "required_human_action": required_human_action,
+            "blocker": blocker,
+            "failing_validators": failing_validators,
+        },
+        "diff_classification": diff_classification,
+        "queue_effects": {
+            "signals": list(graph_health.get("signals", [])),
+            "recommended_actions": list(graph_health.get("recommended_actions", [])),
+            "proposal_queue": summarize_queue_transition(
+                source_spec_id=spec_id,
+                before_items=proposal_queue_before,
+                after_items=proposal_queue_after,
+            ),
+            "refactor_queue": summarize_queue_transition(
+                source_spec_id=spec_id,
+                before_items=refactor_queue_before,
+                after_items=refactor_queue_after,
+            ),
+        },
+    }
+
+
 def load_json_object(path: Path) -> dict[str, Any] | None:
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
@@ -4364,6 +4483,313 @@ def load_json_object(path: Path) -> dict[str, Any] | None:
     if not isinstance(data, dict):
         return None
     return data
+
+
+def transition_packet_finding(
+    *,
+    code: str,
+    message: str,
+    field: str = "",
+    severity: str = "error",
+) -> dict[str, str]:
+    finding = {
+        "code": code,
+        "message": message,
+        "severity": severity,
+    }
+    if field:
+        finding["field"] = field
+    return finding
+
+
+def _transition_packet_string_list(
+    *,
+    field_name: str,
+    value: Any,
+) -> tuple[list[str], list[dict[str, str]]]:
+    if not isinstance(value, list):
+        return [], [
+            transition_packet_finding(
+                code="invalid_string_list",
+                field=field_name,
+                message=f"{field_name} must be a list of non-empty strings",
+            )
+        ]
+
+    normalized: list[str] = []
+    findings: list[dict[str, str]] = []
+    for index, item in enumerate(value, start=1):
+        if not isinstance(item, str):
+            findings.append(
+                transition_packet_finding(
+                    code="invalid_string_list_item",
+                    field=field_name,
+                    message=f"{field_name}[{index}] must be a non-empty string",
+                )
+            )
+            continue
+        normalized_item = item.strip()
+        if not normalized_item:
+            findings.append(
+                transition_packet_finding(
+                    code="invalid_string_list_item",
+                    field=field_name,
+                    message=f"{field_name}[{index}] must be a non-empty string",
+                )
+            )
+            continue
+        normalized.append(normalized_item)
+    return normalized, findings
+
+
+def validate_transition_packet(packet: Any) -> list[dict[str, str]]:
+    """Validate one normalized transition packet skeleton.
+
+    This validator is intentionally structural. It checks bounded packet
+    legality and does not attempt to judge semantic quality.
+    """
+
+    if not isinstance(packet, dict):
+        return [
+            transition_packet_finding(
+                code="packet_not_object",
+                field="packet",
+                message="transition packet must be a JSON object",
+            )
+        ]
+
+    findings: list[dict[str, str]] = []
+    packet_type = str(packet.get("packet_type", "")).strip()
+    if packet_type not in VALID_TRANSITION_PACKET_TYPES:
+        findings.append(
+            transition_packet_finding(
+                code="invalid_packet_type",
+                field="packet_type",
+                message=(
+                    "packet_type must be one of: "
+                    + ", ".join(sorted(VALID_TRANSITION_PACKET_TYPES))
+                ),
+            )
+        )
+
+    transition_intent = str(packet.get("transition_intent", "")).strip()
+    if not transition_intent:
+        findings.append(
+            transition_packet_finding(
+                code="missing_transition_intent",
+                field="transition_intent",
+                message="transition_intent must be a non-empty string",
+            )
+        )
+
+    source_refs, source_ref_findings = _transition_packet_string_list(
+        field_name="source_refs",
+        value=packet.get("source_refs"),
+    )
+    findings.extend(source_ref_findings)
+    if not source_refs:
+        findings.append(
+            transition_packet_finding(
+                code="missing_source_refs",
+                field="source_refs",
+                message="source_refs must be a non-empty list of source artifact references",
+            )
+        )
+
+    declared_change_surface, declared_change_findings = _transition_packet_string_list(
+        field_name="declared_change_surface",
+        value=packet.get("declared_change_surface"),
+    )
+    findings.extend(declared_change_findings)
+    if not declared_change_surface:
+        findings.append(
+            transition_packet_finding(
+                code="missing_declared_change_surface",
+                field="declared_change_surface",
+                message=(
+                    "declared_change_surface must be a non-empty list describing the intended "
+                    "mutation surface"
+                ),
+            )
+        )
+
+    required_provenance_links, provenance_link_findings = _transition_packet_string_list(
+        field_name="required_provenance_links",
+        value=packet.get("required_provenance_links"),
+    )
+    findings.extend(provenance_link_findings)
+    if not required_provenance_links:
+        findings.append(
+            transition_packet_finding(
+                code="missing_required_provenance_links",
+                field="required_provenance_links",
+                message=(
+                    "required_provenance_links must be a non-empty list of provenance link "
+                    "requirements"
+                ),
+            )
+        )
+
+    actor_class = str(packet.get("actor_class", "")).strip()
+    authority_class = str(packet.get("authority_class", "")).strip()
+    if not (actor_class or authority_class):
+        findings.append(
+            transition_packet_finding(
+                code="missing_actor_or_authority_class",
+                message="packet must declare actor_class or authority_class",
+            )
+        )
+
+    target_artifact_class = str(packet.get("target_artifact_class", "")).strip()
+    target_scope = str(packet.get("target_scope", "")).strip()
+    if not (target_artifact_class or target_scope):
+        findings.append(
+            transition_packet_finding(
+                code="missing_target_binding",
+                message="packet must declare target_artifact_class or target_scope",
+            )
+        )
+
+    motivating_concern = str(packet.get("motivating_concern", "")).strip()
+    lineage_root = str(packet.get("lineage_root", "")).strip()
+    if not (motivating_concern or lineage_root):
+        findings.append(
+            transition_packet_finding(
+                code="missing_motivating_concern_or_lineage_root",
+                message="packet must declare motivating_concern or lineage_root",
+            )
+        )
+
+    if packet_type in TRANSITION_PACKET_TYPE_REQUIRED_FIELDS:
+        for field_name in sorted(TRANSITION_PACKET_TYPE_REQUIRED_FIELDS[packet_type]):
+            if not str(packet.get(field_name, "")).strip():
+                findings.append(
+                    transition_packet_finding(
+                        code="missing_packet_type_required_field",
+                        field=field_name,
+                        message=(f"{field_name} is required for packet_type={packet_type}"),
+                    )
+                )
+
+    return findings
+
+
+def validate_transition_packet_file(path: Path) -> dict[str, Any]:
+    packet = load_json_object(path)
+    if packet is None:
+        findings = [
+            transition_packet_finding(
+                code="invalid_packet_file",
+                field="path",
+                message="packet file must exist and contain a JSON object",
+            )
+        ]
+        return {
+            "ok": False,
+            "path": path.as_posix(),
+            "packet_type": "",
+            "finding_count": len(findings),
+            "findings": findings,
+        }
+    findings = validate_transition_packet(packet)
+    return {
+        "ok": not findings,
+        "path": path.as_posix(),
+        "packet_type": str(packet.get("packet_type", "")).strip(),
+        "finding_count": len(findings),
+        "findings": findings,
+    }
+
+
+def spec_trace_index_path() -> Path:
+    return RUNS_DIR / SPEC_TRACE_INDEX_FILENAME
+
+
+def collect_spec_trace_mentions(
+    base_dirs: tuple[Path, ...] | None = None,
+) -> dict[str, dict[str, list[dict[str, Any]]]]:
+    if base_dirs is None:
+        base_dirs = (ROOT / "tools", ROOT / "tests")
+    field_by_dir = {
+        "tools": "tool_refs",
+        "tests": "test_refs",
+    }
+    mentions: dict[str, dict[str, list[dict[str, Any]]]] = {}
+    for base_dir in base_dirs:
+        if not base_dir.exists():
+            continue
+        field_name = field_by_dir.get(base_dir.name, f"{base_dir.name}_refs")
+        for path in sorted(base_dir.rglob("*.py")):
+            if "__pycache__" in path.parts:
+                continue
+            try:
+                lines = path.read_text(encoding="utf-8").splitlines()
+            except OSError:
+                continue
+            relpath = path.relative_to(ROOT).as_posix()
+            for lineno, line in enumerate(lines, start=1):
+                for spec_id in sorted(set(SPEC_ID_CANONICAL_RE.findall(line))):
+                    bucket = mentions.setdefault(spec_id, {"tool_refs": [], "test_refs": []})
+                    bucket.setdefault(field_name, []).append(
+                        {
+                            "path": relpath,
+                            "line": lineno,
+                        }
+                    )
+    return mentions
+
+
+def build_spec_trace_index(specs: list[SpecNode]) -> dict[str, Any]:
+    mentions = collect_spec_trace_mentions()
+    known_ids = {spec.id for spec in specs}
+    entries: list[dict[str, Any]] = []
+    for spec in sorted(specs, key=lambda item: item.id):
+        bucket = mentions.get(spec.id, {})
+        tool_refs = list(bucket.get("tool_refs", []))
+        test_refs = list(bucket.get("test_refs", []))
+        if tool_refs and test_refs:
+            coverage_kind = "tools_and_tests"
+        elif tool_refs:
+            coverage_kind = "tools_only"
+        elif test_refs:
+            coverage_kind = "tests_only"
+        else:
+            coverage_kind = "unobserved"
+        entries.append(
+            {
+                "spec_id": spec.id,
+                "title": spec.title,
+                "tool_refs": tool_refs,
+                "test_refs": test_refs,
+                "coverage_summary": {
+                    "tool_ref_count": len(tool_refs),
+                    "test_ref_count": len(test_refs),
+                    "coverage_kind": coverage_kind,
+                },
+            }
+        )
+    unknown_spec_mentions = [
+        {
+            "spec_id": spec_id,
+            "tool_refs": list(mentions[spec_id].get("tool_refs", [])),
+            "test_refs": list(mentions[spec_id].get("test_refs", [])),
+        }
+        for spec_id in sorted(set(mentions) - known_ids)
+    ]
+    return {
+        "generated_at": utc_now_iso(),
+        "source_dirs": ["tools", "tests"],
+        "entries": entries,
+        "entry_count": len(entries),
+        "unknown_spec_mentions": unknown_spec_mentions,
+    }
+
+
+def write_spec_trace_index(index: dict[str, Any]) -> Path:
+    RUNS_DIR.mkdir(parents=True, exist_ok=True)
+    path = spec_trace_index_path()
+    path.write_text(json.dumps(index, ensure_ascii=False, indent=2), encoding="utf-8")
+    return path
 
 
 def acceptance_reference_indexes(
@@ -5974,6 +6400,8 @@ def _apply_split_proposal(
 
     run_timestamp = dt.datetime.now(dt.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     run_id = f"{run_timestamp}-{node.id}"
+    proposal_queue_before = load_proposal_queue()
+    refactor_queue_before = load_refactor_queue()
     selected_by_rule = {
         "selection_mode": "apply_split_proposal",
         "operator_target": node.id,
@@ -6092,6 +6520,8 @@ def _apply_split_proposal(
         refactor_queue_artifact = refactor_queue_path()
 
     success = not validation_errors
+    proposal_queue_after = load_proposal_queue()
+    refactor_queue_after = load_refactor_queue()
     payload = {
         "run_id": run_id,
         "timestamp_utc": utc_now_iso(),
@@ -6120,6 +6550,26 @@ def _apply_split_proposal(
         "reconciliation": {},
         "graph_health": graph_health,
         "graph_health_truth_basis": "accepted_canonical",
+        "decision_inspector": build_decision_inspector(
+            spec_id=node.id,
+            selected_by_rule=selected_by_rule,
+            outcome="done" if success else "blocked",
+            gate_state="none",
+            required_human_action="-" if success else "repair proposal before retry",
+            blocker="none" if success else "split proposal application failed",
+            changed_files=changed,
+            validation_errors=validation_errors,
+            validator_results={
+                "proposal_artifact": not validation_errors,
+                "canonical_writeback": success,
+            },
+            graph_health=graph_health,
+            graph_health_truth_basis="accepted_canonical",
+            proposal_queue_before=proposal_queue_before,
+            proposal_queue_after=proposal_queue_after,
+            refactor_queue_before=refactor_queue_before,
+            refactor_queue_after=refactor_queue_after,
+        ),
         "refactor_queue_artifact": refactor_queue_artifact.as_posix(),
         "proposal_queue_artifact": proposal_queue_artifact.as_posix(),
         "proposal_artifact_path": proposal_artifact_path.as_posix(),
@@ -6159,6 +6609,8 @@ def _process_split_refactor_proposal(
     """
     run_timestamp = dt.datetime.now(dt.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     run_id = f"{run_timestamp}-{node.id}"
+    proposal_queue_before = load_proposal_queue()
+    refactor_queue_before = load_refactor_queue()
     refactor_work_item = build_split_refactor_work_item(node)
     refactor_work_item["planned_run_id"] = run_id
     selected_by_rule = {
@@ -6360,6 +6812,8 @@ def _process_split_refactor_proposal(
         if success
         else "fix split proposal or rerun with a different operator target"
     )
+    proposal_queue_after = load_proposal_queue()
+    refactor_queue_after = load_refactor_queue()
     payload = {
         "run_id": run_id,
         "timestamp_utc": utc_now_iso(),
@@ -6394,6 +6848,29 @@ def _process_split_refactor_proposal(
         },
         "graph_health": graph_health,
         "graph_health_truth_basis": "review_candidate",
+        "decision_inspector": build_decision_inspector(
+            spec_id=node.id,
+            selected_by_rule=selected_by_rule,
+            outcome=outcome,
+            gate_state="none",
+            required_human_action=required_human_action,
+            blocker=blocker,
+            changed_files=changed,
+            validation_errors=validation_errors,
+            validator_results={
+                "target_eligibility": True,
+                "proposal_artifact": success,
+                "canonical_writeback": not changed_spec_files,
+                "artifact_scope": not extra_changed_files,
+                "executor_environment": not primary_executor_failure,
+            },
+            graph_health=graph_health,
+            graph_health_truth_basis="review_candidate",
+            proposal_queue_before=proposal_queue_before,
+            proposal_queue_after=proposal_queue_after,
+            refactor_queue_before=refactor_queue_before,
+            refactor_queue_after=refactor_queue_after,
+        ),
         "executor_environment": executor_environment,
         "refactor_queue_artifact": refactor_queue_artifact.as_posix(),
         "proposal_queue_artifact": proposal_queue_artifact.as_posix(),
@@ -6496,6 +6973,8 @@ def _process_one_spec(
         }
 
     before_status = node.status
+    proposal_queue_before = load_proposal_queue()
+    refactor_queue_before = load_refactor_queue()
     before_source_text = node.path.read_text(encoding="utf-8")
     before_node_data = copy.deepcopy(node.data)
     before_canonical = canonical_spec_snapshot(node.data)
@@ -6895,6 +7374,8 @@ def _process_one_spec(
     else:
         proposal_queue_artifact = proposal_queue_path()
         refactor_queue_artifact = refactor_queue_path()
+    proposal_queue_after = load_proposal_queue()
+    refactor_queue_after = load_refactor_queue()
 
     cleanup_failed_child_materialization = (
         child_materialization_requested
@@ -6976,6 +7457,24 @@ def _process_one_spec(
         "reconciliation": reconciliation,
         "graph_health": graph_health,
         "graph_health_truth_basis": "accepted_canonical",
+        "decision_inspector": build_decision_inspector(
+            spec_id=node.id,
+            selected_by_rule=selected_by_rule,
+            outcome=outcome,
+            gate_state=str(node.data.get("gate_state", "none")),
+            required_human_action=required_human_action,
+            blocker=blocker,
+            changed_files=changed,
+            validation_errors=validation_errors,
+            validator_results=validator_results,
+            graph_health=graph_health,
+            graph_health_truth_basis="accepted_canonical",
+            proposal_queue_before=proposal_queue_before,
+            proposal_queue_after=proposal_queue_after,
+            refactor_queue_before=refactor_queue_before,
+            refactor_queue_after=refactor_queue_after,
+            refinement_acceptance=refinement_acceptance,
+        ),
         "executor_environment": executor_environment,
         "refinement_acceptance": refinement_acceptance,
         "refactor_queue_artifact": refactor_queue_artifact.as_posix(),
@@ -7032,6 +7531,8 @@ def main(
     list_stale_runtime: bool = False,
     clean_stale_runtime: bool = False,
     observe_graph_health_mode: bool = False,
+    validate_transition_packet_path: str | None = None,
+    build_spec_trace_index_mode: bool = False,
 ) -> int:
     """Entry point for CLI and tests.
 
@@ -7056,6 +7557,40 @@ def main(
         print(str(exc), file=sys.stderr)
         return 1
 
+    if validate_transition_packet_path:
+        if any(
+            (
+                dry_run,
+                auto_approve,
+                loop,
+                resolve_gate,
+                decision,
+                note,
+                target_spec,
+                split_proposal,
+                apply_split_proposal,
+                operator_note,
+                mutation_budget,
+                run_authority,
+                execution_profile,
+                child_model,
+                child_timeout_seconds,
+                verbose,
+                list_stale_runtime,
+                clean_stale_runtime,
+                observe_graph_health_mode,
+                build_spec_trace_index_mode,
+            )
+        ):
+            print(
+                "--validate-transition-packet must be used as a standalone command",
+                file=sys.stderr,
+            )
+            return 1
+        report = validate_transition_packet_file(Path(validate_transition_packet_path))
+        print(json.dumps(report, ensure_ascii=False, indent=2))
+        return 0 if report["ok"] else 1
+
     try:
         specs = load_specs()
     except RuntimeError as exc:
@@ -7063,6 +7598,40 @@ def main(
         return 1
     if not specs:
         print("No spec nodes found in specs/nodes")
+        return 0
+
+    if build_spec_trace_index_mode:
+        if any(
+            (
+                dry_run,
+                auto_approve,
+                loop,
+                resolve_gate,
+                decision,
+                note,
+                target_spec,
+                split_proposal,
+                apply_split_proposal,
+                operator_note,
+                mutation_budget,
+                run_authority,
+                execution_profile,
+                child_model,
+                child_timeout_seconds,
+                verbose,
+                list_stale_runtime,
+                clean_stale_runtime,
+                observe_graph_health_mode,
+            )
+        ):
+            print(
+                "--build-spec-trace-index must be used as a standalone command",
+                file=sys.stderr,
+            )
+            return 1
+        index = build_spec_trace_index(specs)
+        write_spec_trace_index(index)
+        print(json.dumps(index, ensure_ascii=False, indent=2))
         return 0
 
     if list_stale_runtime and clean_stale_runtime:
@@ -7539,6 +8108,19 @@ if __name__ == "__main__":
         action="store_true",
         help="Print non-mutating graph-health diagnostics for --target-spec and its subtree",
     )
+    parser.add_argument(
+        "--validate-transition-packet",
+        metavar="PATH",
+        help="Validate one normalized transition packet JSON file and print structured findings",
+    )
+    parser.add_argument(
+        "--build-spec-trace-index",
+        action="store_true",
+        help=(
+            "Build a derived spec-to-code trace index from literal spec-id mentions "
+            "in tools/ and tests/"
+        ),
+    )
     parser.add_argument("--resolve-gate", metavar="SPEC_ID", help="Resolve gate for a spec id")
     parser.add_argument(
         "--decision",
@@ -7653,5 +8235,7 @@ if __name__ == "__main__":
             list_stale_runtime=args.list_stale_runtime,
             clean_stale_runtime=args.clean_stale_runtime,
             observe_graph_health_mode=args.observe_graph_health,
+            validate_transition_packet_path=args.validate_transition_packet,
+            build_spec_trace_index_mode=args.build_spec_trace_index,
         )
     )

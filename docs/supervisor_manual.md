@@ -57,7 +57,32 @@ The supervisor is intentionally narrow:
 - no silent scope expansion
 - no broad opportunistic cleanup
 
-## 3. Main Modes
+## 3. Capability Map
+
+Use this map first when you need to decide what the supervisor is for a
+particular task.
+
+- refine one bounded spec: `--target-spec SG-SPEC-XXXX`
+- inspect what default selection would do: `--dry-run`
+- batch bounded work aggressively: `--loop --auto-approve`
+- inspect subtree shape and reflective signals without mutation:
+  `--target-spec SG-SPEC-XXXX --observe-graph-health`
+- emit one structured split proposal without canonical mutation:
+  `--target-spec SG-SPEC-XXXX --split-proposal`
+- apply one approved split proposal into canonical parent/child specs:
+  `--target-spec SG-SPEC-XXXX --apply-split-proposal`
+- resolve a human review gate:
+  `--resolve-gate SG-SPEC-XXXX --decision approve`
+- validate one normalized transition packet JSON file:
+  `--validate-transition-packet path/to/packet.json`
+- build a derived spec-to-code trace index:
+  `--build-spec-trace-index`
+- inspect stale review/runtime residue without refinement:
+  `--list-stale-runtime`
+- clean stale review/runtime residue:
+  `--clean-stale-runtime`
+
+## 4. Main Modes
 
 ### Default selection
 
@@ -83,6 +108,19 @@ python3 tools/supervisor.py --loop --auto-approve
 
 Use only when you want an aggressive autonomous batch. It is effective, but it can stall on repeated no-op or structural blockers if the graph still has unresolved decomposition points.
 
+### Graph-health observation
+
+```bash
+python3 tools/supervisor.py --target-spec SG-SPEC-0003 --observe-graph-health
+```
+
+Non-mutating subtree inspection. Use this when you want to understand:
+
+- shape pressure such as `depth_without_breadth`
+- role-legibility signals such as `role_obscured_node`
+- whether a subtree still contains active versus historical descendants
+- what rewrite/merge action the current graph health recommends
+
 ### Split proposal mode
 
 ```bash
@@ -99,6 +137,25 @@ python3 tools/supervisor.py --target-spec SG-SPEC-0003 --apply-split-proposal
 
 Materializes an approved split proposal into canonical parent/child specs.
 
+### Transition-packet validation
+
+```bash
+python3 tools/supervisor.py --validate-transition-packet transition-packet.json
+```
+
+Validates one normalized transition packet JSON file and prints structured
+findings. This is a deterministic legality check, not a semantic-quality judge.
+
+### Spec trace index
+
+```bash
+python3 tools/supervisor.py --build-spec-trace-index
+```
+
+Builds `runs/spec_trace_index.json` from literal `SG-SPEC-XXXX` mentions in
+`tools/` and `tests/`. Use it as the first weak derived view of spec-to-code
+coverage.
+
 ### Gate resolution
 
 ```bash
@@ -107,7 +164,17 @@ python3 tools/supervisor.py --resolve-gate SG-SPEC-0003 --decision approve
 
 Use this after human review of a gated spec.
 
-## 4. Important Targeted-Run Controls
+### Runtime residue inspection
+
+```bash
+python3 tools/supervisor.py --list-stale-runtime
+python3 tools/supervisor.py --clean-stale-runtime
+```
+
+Use these when gates or worktrees look stale after interrupted runs. Inspect
+first; clean second.
+
+## 5. Important Targeted-Run Controls
 
 ### Operator note
 
@@ -125,6 +192,18 @@ Use it to:
 - request a narrower interpretation
 - direct explicit child materialization
 - bias a run toward a specific already-known concern
+
+### Mutation budget
+
+```bash
+python3 tools/supervisor.py \
+  --target-spec SG-SPEC-0027 \
+  --mutation-budget policy_text,schema_required_addition
+```
+
+Use `--mutation-budget` when an explicit targeted run should stay inside a
+declared change surface. This is especially useful when you want a bounded pass
+to tighten a node without allowing broad opportunistic edits.
 
 ### Run authority
 
@@ -171,7 +250,47 @@ Useful when:
 - a root or near-root node needs longer bounded reasoning
 - you want to compare model speed/quality tradeoffs
 
-## 5. How To Read Outcomes
+## 6. Derived Artifacts And Diagnostic Surfaces
+
+The supervisor writes several different surfaces. They are not all equally
+authoritative.
+
+### Fast operator surfaces
+
+- `runs/latest-summary.md`
+  - quickest human snapshot of the last run
+- `runs/<RUN_ID>.json`
+  - full authoritative run payload for that run
+
+### Queue and proposal surfaces
+
+- `runs/proposal_queue.json`
+  - derived queue of proposal-oriented next moves
+- `runs/refactor_queue.json`
+  - derived queue of refactor-oriented next moves
+- `runs/proposals/*.json`
+  - structured proposal artifacts emitted by split-proposal mode
+
+### Trace and inspection surfaces
+
+- `runs/spec_trace_index.json`
+  - derived spec-to-code trace index from literal spec-id mentions in
+    `tools/` and `tests/`
+- `graph_health` payload in run logs
+  - reflective signals, subtree-shape pressure, and recommended actions
+- `decision_inspector` payload in run logs
+  - compact explanation of how the supervisor classified one run
+
+Use `runs/<RUN_ID>.json` when you need to answer:
+
+- why this spec was selected
+- why the gate state ended where it did
+- which validators failed
+- what queue items were emitted, cleared, or updated
+- whether graph-health signals came from accepted canonical state or only from a
+  candidate view
+
+## 7. How To Read Outcomes
 
 The supervisor writes authoritative run data to:
 
@@ -188,6 +307,9 @@ Important fields:
 - `executor_environment`
 - `refinement_acceptance`
 - `reconciliation`
+- `graph_health`
+- `graph_health_truth_basis`
+- `decision_inspector`
 
 ### `done`
 
@@ -224,7 +346,35 @@ There is a real blocker. Read `required_human_action`.
 
 The supervisor has reached a case that should move to a higher-authority review path.
 
-## 6. Completion Status
+## 8. Reading `decision_inspector`
+
+`decision_inspector` is the compact operator-facing explanation layer in each
+run log.
+
+It has four slices:
+
+- `selection`
+  - which mode selected the spec, and with what rule inputs
+- `gate`
+  - final `outcome`, `gate_state`, `required_human_action`, `blocker`, and
+    failing validators
+- `diff_classification`
+  - changed files, changed spec files, validation pressure, refinement
+    acceptance, and the truth basis used for graph health
+- `queue_effects`
+  - signals, recommended actions, and queue transitions for proposal/refactor
+    items
+
+When queue state changed, look at:
+
+- `emitted_ids`
+- `cleared_ids`
+- `updated_ids`
+
+`updated_ids` matters because a queue item can stay present while its payload or
+status changes.
+
+## 9. Completion Status
 
 The most important distinction is:
 
@@ -246,7 +396,7 @@ Typical examples:
 - executor environment failure
 - validation failure that blocks sync
 
-## 7. Runtime Failure Versus Spec Failure
+## 10. Runtime Failure Versus Spec Failure
 
 This distinction is critical.
 
@@ -270,7 +420,7 @@ In practice:
 - invalid YAML is usually a runtime repair problem
 - repeated clean `split_required` is usually a graph decomposition problem
 
-## 8. Current Best-Practice Workflow
+## 11. Current Best-Practice Workflow
 
 For one branch of the graph:
 
@@ -300,7 +450,7 @@ ruff check tools/supervisor.py tests/test_supervisor.py
 python3 -m compileall tools/supervisor.py
 ```
 
-## 9. Practical Heuristics
+## 12. Practical Heuristics
 
 ### When to continue ordinary refinement
 
@@ -331,7 +481,7 @@ You are likely at plateau when:
 
 That usually means the next move is structural, not textual.
 
-## 10. Current Known Patterns
+## 13. Current Known Patterns
 
 These patterns have appeared repeatedly during bootstrap:
 
@@ -365,7 +515,7 @@ Loop mode can waste time when it keeps selecting:
 - repeated no-op refinements
 - nodes that really need explicit split/materialization rather than more ordinary tightening
 
-## 11. Recommended Document Map
+## 14. Recommended Document Map
 
 Use the documents in this order:
 

@@ -3317,6 +3317,10 @@ def test_main_creates_review_gate_and_provenance_metadata(
         "lower_maturity",
         "stable_id",
     ]
+    assert payload["decision_inspector"]["selection"]["mode"] == "default_refine"
+    assert payload["decision_inspector"]["gate"]["gate_state"] == "review_pending"
+    assert payload["decision_inspector"]["diff_classification"]["refinement_decision"] == "approve"
+    assert payload["decision_inspector"]["queue_effects"]["proposal_queue"]["after_ids"] == []
     assert updated["pending_run_id"] == payload["run_id"]
     assert (repo_fixture / "runs" / "latest-summary.md").exists()
 
@@ -3878,6 +3882,10 @@ def test_main_explicit_targeted_refinement_reruns_review_pending_spec(
         == "Refine only one bounded concern for targeted rerun."
     )
     assert payload["outcome"] == "done"
+    assert payload["decision_inspector"]["selection"]["mode"] == "explicit_target_refine"
+    assert payload["decision_inspector"]["gate"]["required_human_action"] == (
+        "approve or retry refinement"
+    )
 
 
 def test_main_blocks_executor_environment_failures_without_graph_health_side_effects(
@@ -4961,6 +4969,205 @@ def test_main_split_proposal_emits_structured_artifact_and_queue_entry(
     assert payload["proposal_artifact_path"].endswith(work_item["proposal_artifact_relpath"])
     assert payload["proposed_status"] is None
     assert payload["final_status"] == "outlined"
+    assert payload["decision_inspector"]["selection"]["mode"] == "split_refactor_proposal"
+    assert payload["decision_inspector"]["queue_effects"]["proposal_queue"]["emitted_ids"] == [
+        "refactor_proposal::SG-SPEC-0001::oversized_spec"
+    ]
+
+
+def test_summarize_queue_transition_tracks_emitted_cleared_and_updated_ids(
+    supervisor_module: object,
+) -> None:
+    before_items = [
+        {"id": "proposal::keep", "spec_id": "SG-SPEC-0001", "status": "proposed"},
+        {"id": "proposal::drop", "spec_id": "SG-SPEC-0001", "status": "proposed"},
+        {"id": "proposal::other", "spec_id": "SG-SPEC-9999", "status": "proposed"},
+    ]
+    after_items = [
+        {"id": "proposal::keep", "spec_id": "SG-SPEC-0001", "status": "review_pending"},
+        {"id": "proposal::new", "spec_id": "SG-SPEC-0001", "status": "proposed"},
+        {"id": "proposal::other", "spec_id": "SG-SPEC-9999", "status": "applied"},
+    ]
+
+    summary = supervisor_module.summarize_queue_transition(
+        source_spec_id="SG-SPEC-0001",
+        before_items=before_items,
+        after_items=after_items,
+    )
+
+    assert summary == {
+        "before_ids": ["proposal::drop", "proposal::keep"],
+        "after_ids": ["proposal::keep", "proposal::new"],
+        "emitted_ids": ["proposal::new"],
+        "cleared_ids": ["proposal::drop"],
+        "retained_ids": ["proposal::keep"],
+        "updated_ids": ["proposal::keep"],
+    }
+
+
+def test_validate_transition_packet_accepts_minimal_apply_packet(
+    supervisor_module: object,
+) -> None:
+    packet = {
+        "packet_type": "apply",
+        "transition_intent": "apply reviewed proposal into canonical spec mutation",
+        "source_refs": ["runs/proposals/refactor_proposal--sg-spec-0001--oversized_spec.json"],
+        "authority_class": "human_reviewed_apply",
+        "target_scope": "specs/nodes/SG-SPEC-0001.yaml",
+        "motivating_concern": "approved split proposal",
+        "declared_change_surface": [
+            "specs/nodes/SG-SPEC-0001.yaml",
+            "specs/nodes/SG-SPEC-0002.yaml",
+        ],
+        "required_provenance_links": ["proposal_artifact", "source_run_id"],
+    }
+
+    assert supervisor_module.validate_transition_packet(packet) == []
+
+
+def test_validate_transition_packet_reports_structured_findings_for_missing_fields(
+    supervisor_module: object,
+) -> None:
+    findings = supervisor_module.validate_transition_packet(
+        {
+            "packet_type": "mystery",
+            "transition_intent": "",
+            "source_refs": [],
+            "declared_change_surface": [],
+        }
+    )
+
+    assert {finding["code"] for finding in findings} >= {
+        "invalid_packet_type",
+        "missing_transition_intent",
+        "missing_source_refs",
+        "missing_declared_change_surface",
+        "missing_required_provenance_links",
+        "missing_actor_or_authority_class",
+        "missing_target_binding",
+        "missing_motivating_concern_or_lineage_root",
+    }
+
+
+def test_validate_transition_packet_rejects_non_string_list_items(
+    supervisor_module: object,
+) -> None:
+    findings = supervisor_module.validate_transition_packet(
+        {
+            "packet_type": "apply",
+            "transition_intent": "apply reviewed proposal into canonical spec mutation",
+            "source_refs": [{}],
+            "authority_class": "human_reviewed_apply",
+            "target_scope": "specs/nodes/SG-SPEC-0001.yaml",
+            "motivating_concern": "approved split proposal",
+            "declared_change_surface": ["specs/nodes/SG-SPEC-0001.yaml"],
+            "required_provenance_links": [0],
+        }
+    )
+
+    assert {finding["code"] for finding in findings} >= {
+        "invalid_string_list_item",
+        "missing_source_refs",
+        "missing_required_provenance_links",
+    }
+    assert {finding["field"] for finding in findings if "field" in finding} >= {
+        "source_refs",
+        "required_provenance_links",
+    }
+
+
+def test_main_validates_transition_packet_as_standalone_command(
+    supervisor_module: object,
+    repo_fixture: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    packet_path = repo_fixture / "transition-packet.json"
+    packet_path.write_text(
+        json.dumps(
+            {
+                "packet_type": "proposal",
+                "transition_intent": "promote one bounded design concern into a proposal",
+                "source_refs": ["docs/proposals_drafts/0005_telemetry.md"],
+                "actor_class": "operator",
+                "target_artifact_class": "proposal_document",
+                "lineage_root": "telemetry evidence plane",
+                "declared_change_surface": ["docs/proposals/0018_telemetry_evidence_plane.md"],
+                "required_provenance_links": ["source_draft_ref"],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    exit_code = supervisor_module.main(
+        validate_transition_packet_path=packet_path.as_posix(),
+    )
+
+    assert exit_code == 0
+    out = json.loads(capsys.readouterr().out)
+    assert out["ok"] is True
+    assert out["packet_type"] == "proposal"
+
+
+def test_build_spec_trace_index_collects_tool_and_test_refs(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    tools_dir = repo_fixture / "tools"
+    tests_dir = repo_fixture / "tests"
+    tools_dir.mkdir()
+    tests_dir.mkdir()
+    (tools_dir / "impl.py").write_text(
+        "SPEC_ID = 'SG-SPEC-0001'\nOTHER = 'SG-SPEC-9999'\n",
+        encoding="utf-8",
+    )
+    (tests_dir / "test_impl.py").write_text(
+        "def test_trace():\n    assert 'SG-SPEC-0001'\n",
+        encoding="utf-8",
+    )
+
+    index = supervisor_module.build_spec_trace_index(supervisor_module.load_specs())
+
+    assert index["entry_count"] == 1
+    entry = index["entries"][0]
+    assert entry["spec_id"] == "SG-SPEC-0001"
+    assert entry["coverage_summary"] == {
+        "tool_ref_count": 1,
+        "test_ref_count": 1,
+        "coverage_kind": "tools_and_tests",
+    }
+    assert entry["tool_refs"] == [{"path": "tools/impl.py", "line": 1}]
+    assert entry["test_refs"] == [{"path": "tests/test_impl.py", "line": 2}]
+    assert index["unknown_spec_mentions"] == [
+        {
+            "spec_id": "SG-SPEC-9999",
+            "tool_refs": [{"path": "tools/impl.py", "line": 2}],
+            "test_refs": [],
+        }
+    ]
+
+
+def test_main_builds_spec_trace_index_as_standalone_command(
+    supervisor_module: object,
+    repo_fixture: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    tools_dir = repo_fixture / "tools"
+    tests_dir = repo_fixture / "tests"
+    tools_dir.mkdir()
+    tests_dir.mkdir()
+    (tools_dir / "impl.py").write_text("SPEC = 'SG-SPEC-0001'\n", encoding="utf-8")
+    (tests_dir / "test_impl.py").write_text("SPEC = 'SG-SPEC-0001'\n", encoding="utf-8")
+
+    exit_code = supervisor_module.main(build_spec_trace_index_mode=True)
+
+    assert exit_code == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["entry_count"] == 1
+    assert report["entries"][0]["coverage_summary"]["coverage_kind"] == "tools_and_tests"
+    artifact = json.loads(
+        (repo_fixture / "runs" / "spec_trace_index.json").read_text(encoding="utf-8")
+    )
+    assert artifact["entries"][0]["spec_id"] == "SG-SPEC-0001"
 
 
 def test_main_split_proposal_accepts_untracked_parent_directory_change(
