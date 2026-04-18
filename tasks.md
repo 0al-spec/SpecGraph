@@ -66,3 +66,19 @@ Task numbers are preserved for traceability across commits and PRs.
 
 62. [todo] Define telemetry evidence artifacts that link canonical nodes to runtime entities, observations, outcomes, and adoption without leaking raw telemetry into canonical specs.
 63. [todo] Add viewer and inspection overlays for the evidence plane so operators can inspect runtime-backed evidence chains separately from canonical graph truth.
+
+## Proposal Promotion
+
+64. [todo] Define the semantic boundary between informal working drafts and reviewable proposal artifacts so proposal promotion becomes a governed transition rather than a folder move.
+65. [todo] Define the minimal promotion packet and provenance contract for draft-to-proposal promotion, including source draft references, motivating concern, normalized title, and bounded scope.
+66. [todo] Clarify how repository projections such as `docs/proposals_drafts/` and `docs/proposals/` relate to graph-owned pre-spec and proposal semantics without making file layout the sole source of meaning.
+67. [todo] Add viewer or tooling support to inspect proposal promotion provenance and identify promoted proposals that still lack bounded source traceability.
+
+## Deterministic Transitions
+
+68. [todo] Define normalized transition packet families such as promotion, proposal, apply, and handoff packets so validators stop inferring transition intent from free-form prose alone.
+69. [todo] Define deterministic transition check families for schema, legality, provenance, boundedness, authority, reconciliation, and diff-scope validation.
+70. [todo] Introduce a core transition validator that enforces graph-family-independent invariants for governed artifact movement.
+71. [todo] Define validator profiles so SpecGraph self-specs, product specs, tech specs, and later trace artifacts can share one transition engine while adding profile-specific rules.
+72. [todo] Add structured failure reporting for transition checks so denied promotions and applies can be explained by typed findings rather than ad hoc strings.
+73. [todo] Define how product-spec graphs inherit the deterministic transition framework instead of re-implementing promotion and apply semantics per product domain.
