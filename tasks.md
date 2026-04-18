@@ -27,13 +27,58 @@ Task numbers are preserved for traceability across commits and PRs.
 
 ## Supervisor Trust and Governance
 
-37. [todo] Turn `review_pending` into a true pre-merge truth barrier so unapproved candidate content does not enter canonical root before approval.
-38. [todo] Rebuild canonical graph-health and queue derivation from accepted canonical state or first-class proposal artifacts, not from unapproved candidate worktrees.
-39. [todo] Make supervisor write authority default-deny so empty `allowed_paths` collapses to source-node-only scope instead of unrestricted sync authority.
-40. [todo] Require explicit structural authority for new spec creation so child materialization cannot occur from permissive path defaults alone.
-41. [todo] Ensure fallback isolation never expands child executor privileges beyond the normal execution path.
+37. [done] Turn `review_pending` into a true pre-merge truth barrier so unapproved candidate content does not enter canonical root before approval.
+38. [done] Rebuild canonical graph-health and queue derivation from accepted canonical state or first-class proposal artifacts, not from unapproved candidate worktrees.
+39. [done] Make supervisor write authority default-deny so empty `allowed_paths` collapses to source-node-only scope instead of unrestricted sync authority.
+40. [done] Require explicit structural authority for new spec creation so child materialization cannot occur from permissive path defaults alone.
+41. [done] Ensure fallback isolation never expands child executor privileges beyond the normal execution path.
 42. [todo] Add atomic write and lock discipline for run logs, summaries, queues, and proposal artifacts.
 43. [todo] Add collision-safe run, branch, and worktree identifiers plus reserved spec-ID allocation for parallel child materialization safety.
 44. [todo] Harden malformed-artifact loading and executor machine protocol so missing structured outcomes or corrupted queue files fail safely.
 45. [todo] Move supervisor thresholds, selection priorities, mutation classes, and execution profiles into a declarative policy layer instead of Python constants.
 46. [todo] Add a Decision Inspector artifact that explains selection, gate, diff-classification, and queue-emission decisions from applied rules.
+
+## Vocabulary and Pre-Spec Semantics
+
+47. [todo] Materialize a machine-readable vocabulary layer for canonical terms, aliases, and deprecations so specs, supervisor outputs, and viewers share one ontology surface.
+48. [todo] Add vocabulary drift checks that detect undefined terms, alias collisions, and meaning divergence across canonical specs and derived artifacts.
+49. [todo] Materialize first-class pre-spec semantic artifacts so observable user meaning can persist before proposal-lane or canonical promotion.
+50. [todo] Normalize `OperatorRequest` into a typed artifact with explicit authority, mutation budget, and stop conditions so supervisor steering stops depending on ad hoc CLI flag combinations.
+51. [todo] Preserve provenance from pre-spec artifacts and operator requests through proposal-lane nodes into canonical specs so proposals no longer appear "sky-born".
+
+## Evaluator, Validation, and Benchmarking
+
+52. [todo] Define an evaluator-loop control artifact that records chosen intervention, improvement basis, stop conditions, and escalation reasons for each reflective cycle.
+53. [todo] Let evaluator choose among refine/propose/rewrite/merge/handoff actions from derived graph-health and authority constraints instead of fixed operator heuristics alone.
+54. [todo] Introduce typed validation findings and error classes so YAML, relation, acceptance, authority, and artifact failures stop flowing as ad hoc strings.
+55. [todo] Add a safe repair contract that lets supervisor or helper tools propose bounded fixes from structured findings without silently mutating canonical truth.
+56. [todo] Record supervisor performance and yield metrics as derived run artifacts so throughput, intervention cost, and graph impact can be inspected over time.
+57. [todo] Add a cheap LLM bootstrap smoke benchmark that measures structural yield from a minimal seed without treating exact node text as the oracle.
+
+## Semantic Shape and Handoff
+
+58. [todo] Add refinement-shape signals for serial ladders, one-child delegation chains, and over-atomized subtrees so malformed shape becomes first-class graph health.
+59. [todo] Extend graph-health guidance with role-first semantic legibility checks so rewrite/merge is preferred when nodes stop reading as meaningful system roles.
+60. [todo] Define the SpecGraph-to-TechSpec handoff boundary so decomposition can stop at semantic saturation and emit downstream handoff artifacts instead of deeper graph slicing.
+61. [todo] Teach supervisor and proposal flows to recommend handoff, not further refinement, when a subtree becomes implementation-facing or loses semantic novelty.
+
+## Evidence Plane
+
+62. [todo] Define telemetry evidence artifacts that link canonical nodes to runtime entities, observations, outcomes, and adoption without leaking raw telemetry into canonical specs.
+63. [todo] Add viewer and inspection overlays for the evidence plane so operators can inspect runtime-backed evidence chains separately from canonical graph truth.
+
+## Proposal Promotion
+
+64. [todo] Define the semantic boundary between informal working drafts and reviewable proposal artifacts so proposal promotion becomes a governed transition rather than a folder move.
+65. [todo] Define the minimal promotion packet and provenance contract for draft-to-proposal promotion, including source draft references, motivating concern, normalized title, and bounded scope.
+66. [todo] Clarify how repository projections such as `docs/proposals_drafts/` and `docs/proposals/` relate to graph-owned pre-spec and proposal semantics without making file layout the sole source of meaning.
+67. [todo] Add viewer or tooling support to inspect proposal promotion provenance and identify promoted proposals that still lack bounded source traceability.
+
+## Deterministic Transitions
+
+68. [todo] Define normalized transition packet families such as promotion, proposal, apply, and handoff packets so validators stop inferring transition intent from free-form prose alone.
+69. [todo] Define deterministic transition check families for schema, legality, provenance, boundedness, authority, reconciliation, and diff-scope validation.
+70. [todo] Introduce a core transition validator that enforces graph-family-independent invariants for governed artifact movement.
+71. [todo] Define validator profiles so SpecGraph self-specs, product specs, tech specs, and later trace artifacts can share one transition engine while adding profile-specific rules.
+72. [todo] Add structured failure reporting for transition checks so denied promotions and applies can be explained by typed findings rather than ad hoc strings.
+73. [todo] Define how product-spec graphs inherit the deterministic transition framework instead of re-implementing promotion and apply semantics per product domain.

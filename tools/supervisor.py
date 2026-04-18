@@ -402,6 +402,10 @@ SYNC_STRIPPED_SPEC_KEYS = {
     "last_gate_decision",
     "last_gate_note",
     "last_gate_at",
+    "pending_sync_paths",
+    "pending_base_digests",
+    "pending_candidate_digests",
+    "pending_run_id",
 }
 DEFAULT_CODEX_HOME = Path(os.environ.get("CODEX_HOME", "~/.codex")).expanduser()
 
@@ -1342,6 +1346,21 @@ def snapshot_file_digests(paths: list[str], base_dir: Path) -> dict[str, str | N
     return digests
 
 
+def snapshot_sync_digests(paths: list[str], base_dir: Path) -> dict[str, str | None]:
+    digests: dict[str, str | None] = {}
+    for rel_path in paths:
+        file_path = base_dir / rel_path
+        if not file_path.exists() or not file_path.is_file():
+            digests[rel_path] = None
+            continue
+        if is_spec_node_path(rel_path):
+            sync_text = sanitize_spec_sync_text(file_path.read_text(encoding="utf-8"))
+            digests[rel_path] = hashlib.sha256(sync_text.encode("utf-8")).hexdigest()
+            continue
+        digests[rel_path] = hashlib.sha256(file_path.read_bytes()).hexdigest()
+    return digests
+
+
 def next_sequential_spec_id(specs: list[SpecNode]) -> str:
     max_number = 0
     for spec in specs:
@@ -1351,10 +1370,17 @@ def next_sequential_spec_id(specs: list[SpecNode]) -> str:
     return f"SG-SPEC-{max_number + 1:04d}"
 
 
-def can_create_new_spec_files(node: SpecNode) -> bool:
+def implicit_source_allowed_paths(node: SpecNode) -> list[str]:
+    try:
+        return [node.path.relative_to(ROOT).as_posix()]
+    except ValueError:
+        return [node.path.as_posix()]
+
+
+def can_create_new_spec_files(node: SpecNode, rel_path: str | None = None) -> bool:
     if not node.allowed_paths:
-        return True
-    sample_path = PurePosixPath("specs/nodes/SG-SPEC-9999.yaml")
+        return False
+    sample_path = PurePosixPath(rel_path or "specs/nodes/SG-SPEC-9999.yaml")
     return any(sample_path.match(pattern) for pattern in node.allowed_paths)
 
 
@@ -1937,8 +1963,6 @@ def capture_nested_executor_progress(
 
 
 def bootstrap_child_hint(node: SpecNode, specs: list[SpecNode]) -> dict[str, str] | None:
-    if not can_create_new_spec_files(node):
-        return None
     if not is_seed_like_spec(node.data):
         return None
 
@@ -1955,6 +1979,8 @@ def bootstrap_child_hint(node: SpecNode, specs: list[SpecNode]) -> dict[str, str
 
     child_id = next_sequential_spec_id(specs)
     child_path = f"specs/nodes/{child_id}.yaml"
+    if not can_create_new_spec_files(node, child_path):
+        return None
     return {
         "id": child_id,
         "path": child_path,
@@ -2002,6 +2028,8 @@ def targeted_child_materialization_hint(
 
     child_id = next_sequential_spec_id(specs)
     child_path = f"specs/nodes/{child_id}.yaml"
+    if not can_create_new_spec_files(node, child_path):
+        return None
     return {
         "id": child_id,
         "path": child_path,
@@ -2028,15 +2056,8 @@ def effective_allowed_paths_for_run(
     *,
     child_materialization_hint: dict[str, str] | None = None,
 ) -> list[str]:
-    if not node.allowed_paths:
-        return []
-    allowed_paths = list(node.allowed_paths)
-    if child_materialization_hint is None:
-        return allowed_paths
-    child_path = str(child_materialization_hint.get("path", "")).strip()
-    if child_path and child_path not in allowed_paths:
-        allowed_paths.append(child_path)
-    return allowed_paths
+    _ = child_materialization_hint
+    return list(node.allowed_paths) or implicit_source_allowed_paths(node)
 
 
 def effective_outputs_for_run(
@@ -2056,6 +2077,7 @@ def effective_outputs_for_run(
 def child_materialization_preflight_errors(
     *,
     node: SpecNode,
+    specs: list[SpecNode],
     operator_target: bool = False,
     operator_note: str = "",
     run_authority: tuple[str, ...] = (),
@@ -2073,6 +2095,13 @@ def child_materialization_preflight_errors(
         errors.append(
             "Child materialization was requested, but the selected node does not expose "
             "semantic delegation constraints compatible with creating a bounded child."
+        )
+    child_id = next_sequential_spec_id(specs)
+    child_path = f"specs/nodes/{child_id}.yaml"
+    if not can_create_new_spec_files(node, child_path):
+        errors.append(
+            "Child materialization was requested, but allowed_paths do not explicitly "
+            f"authorize the proposed child spec path: {child_path}"
         )
     return errors
 
@@ -2552,7 +2581,7 @@ def validate_changed_files_against_allowed_paths(
     changed_files: list[str],
 ) -> list[str]:
     if not allowed_paths:
-        return []
+        return [f"Changed file outside allowed_paths: {changed}" for changed in changed_files]
 
     errors: list[str] = []
     for changed in changed_files:
@@ -2563,21 +2592,83 @@ def validate_changed_files_against_allowed_paths(
 
 
 def validate_allowed_paths(node: SpecNode, changed_files: list[str]) -> list[str]:
-    return validate_changed_files_against_allowed_paths(node.allowed_paths, changed_files)
+    return validate_changed_files_against_allowed_paths(
+        effective_allowed_paths_for_run(node),
+        changed_files,
+    )
 
 
 def select_sync_paths(allowed_paths: list[str], changed_files: list[str]) -> list[str]:
     """Return changed paths eligible for sync back to root.
 
-    Empty allowed_paths means unrestricted sync.
+    Callers should pass effective allowed paths after applying default-deny
+    fallback semantics for the selected source node.
     """
     if not allowed_paths:
-        return list(changed_files)
+        return []
     return [
         path
         for path in changed_files
         if any(PurePosixPath(path).match(pattern) for pattern in allowed_paths)
     ]
+
+
+def coerce_pending_digest_map(value: Any) -> dict[str, str | None]:
+    if not isinstance(value, dict):
+        return {}
+    coerced: dict[str, str | None] = {}
+    for key, digest in value.items():
+        rel_path = str(key).strip()
+        if not rel_path:
+            continue
+        if digest is None:
+            coerced[rel_path] = None
+            continue
+        digest_text = str(digest).strip()
+        coerced[rel_path] = digest_text or None
+    return coerced
+
+
+def pending_review_sync_paths(node: SpecNode) -> list[str]:
+    raw_paths = node.data.get("pending_sync_paths")
+    if isinstance(raw_paths, list):
+        paths = [str(path).strip() for path in raw_paths if str(path).strip()]
+        return sorted(dict.fromkeys(paths))
+    changed_files = list(node.data.get("last_changed_files", []))
+    return select_sync_paths(effective_allowed_paths_for_run(node), changed_files)
+
+
+def pending_review_base_divergence_paths(node: SpecNode, rel_paths: list[str]) -> list[str]:
+    recorded = coerce_pending_digest_map(node.data.get("pending_base_digests"))
+    if not recorded:
+        return []
+    current = snapshot_sync_digests(rel_paths, base_dir=ROOT)
+    return [
+        f"{rel_path}:<canonical-base-mismatch>"
+        for rel_path in rel_paths
+        if current.get(rel_path) != recorded.get(rel_path)
+    ]
+
+
+def pending_review_candidate_divergence_paths(
+    node: SpecNode, worktree_path: Path, rel_paths: list[str]
+) -> list[str]:
+    recorded = coerce_pending_digest_map(node.data.get("pending_candidate_digests"))
+    if not recorded:
+        return []
+    current = snapshot_sync_digests(rel_paths, base_dir=worktree_path)
+    return [
+        f"{rel_path}:<staged-candidate-mismatch>"
+        for rel_path in rel_paths
+        if current.get(rel_path) != recorded.get(rel_path)
+    ]
+
+
+def clear_pending_review_state(node: SpecNode) -> None:
+    node.data.pop("pending_sync_paths", None)
+    node.data.pop("pending_base_digests", None)
+    node.data.pop("pending_candidate_digests", None)
+    node.data.pop("pending_run_id", None)
 
 
 def validate_status_format(node_data: dict[str, Any]) -> list[str]:
@@ -3656,6 +3747,31 @@ def observe_graph_health(
     }
 
 
+def derive_accepted_graph_health(
+    *,
+    source_node: SpecNode,
+    current_specs: list[SpecNode],
+    outcome: str | None = None,
+) -> dict[str, Any]:
+    index = index_specs(current_specs)
+    reconciled_node = index.get(source_node.id)
+    if reconciled_node is None:
+        return empty_graph_health(source_node.id)
+    accepted_outcome = outcome or graph_health_outcome_basis(reconciled_node)
+    return observe_graph_health(
+        source_node=source_node,
+        worktree_specs=current_specs,
+        reconciliation={
+            "semantic_dependencies_resolved": semantic_dependencies_resolved(
+                reconciled_node, index
+            ),
+            "work_dependencies_ready": work_dependencies_ready(reconciled_node, index),
+        },
+        atomicity_errors=validate_atomicity(reconciled_node),
+        outcome=accepted_outcome,
+    )
+
+
 def empty_graph_health(source_spec_id: str) -> dict[str, Any]:
     return {
         "source_spec_id": source_spec_id,
@@ -4071,6 +4187,8 @@ def signal_supporting_run_ids(spec_id: str, signal: str) -> list[str]:
         except (OSError, json.JSONDecodeError):
             continue
         if not isinstance(payload, dict):
+            continue
+        if str(payload.get("graph_health_truth_basis", "")).strip() != "accepted_canonical":
             continue
         graph_health = payload.get("graph_health")
         if not isinstance(graph_health, dict):
@@ -5394,7 +5512,14 @@ def invoke_executor(
 
 
 def child_executor_should_bypass_inner_sandbox(*, branch: str) -> bool:
-    return branch.startswith("sandbox/")
+    _ = branch
+    return False
+
+
+def isolation_mode_for_branch(branch: str) -> str:
+    if branch.startswith("sandbox/"):
+        return "copied_fallback"
+    return "git_worktree"
 
 
 def codex_cli_reasoning_effort(reasoning_effort: str) -> str:
@@ -5428,10 +5553,8 @@ def build_codex_exec_command(
         "-c",
         f'model_reasoning_effort="{codex_cli_reasoning_effort(profile.reasoning_effort)}"',
     ]
-    if bypass_inner_sandbox:
-        cmd.append("--dangerously-bypass-approvals-and-sandbox")
-    else:
-        cmd.extend(["--sandbox", profile.sandbox])
+    _ = bypass_inner_sandbox
+    cmd.extend(["--sandbox", profile.sandbox])
     cmd.append(prompt)
     return cmd
 
@@ -5445,7 +5568,8 @@ def render_child_codex_config(
     if profile is None:
         profile = EXECUTION_PROFILES[DEFAULT_EXECUTION_PROFILE_NAME]
     disabled = "\n".join(f"{feature} = false" for feature in profile.disabled_features)
-    sandbox_line = "" if bypass_inner_sandbox else f'sandbox_mode = "{profile.sandbox}"\n'
+    _ = bypass_inner_sandbox
+    sandbox_line = f'sandbox_mode = "{profile.sandbox}"\n'
     return (
         f'model = "{profile.model}"\n'
         f'model_reasoning_effort = "{codex_cli_reasoning_effort(profile.reasoning_effort)}"\n'
@@ -5726,11 +5850,29 @@ def resolve_gate_decision(
             return 1
 
         worktree_path = Path(str(node.data.get("last_worktree_path", ""))).expanduser()
+        pending_sync_paths = pending_review_sync_paths(node)
         changed_files = list(node.data.get("last_changed_files", []))
         materialized_child_paths = list(node.data.get("last_materialized_child_paths", []))
         if worktree_path.as_posix() and worktree_path.exists():
-            allowed_changes = select_sync_paths(node.allowed_paths, changed_files)
-            divergence_paths = gate_worktree_divergence_paths(node, worktree_path, allowed_changes)
+            allowed_changes = pending_sync_paths or select_sync_paths(
+                node.allowed_paths, changed_files
+            )
+            has_pending_candidate_digests = bool(
+                coerce_pending_digest_map(node.data.get("pending_candidate_digests"))
+            )
+            has_pending_base_digests = bool(
+                coerce_pending_digest_map(node.data.get("pending_base_digests"))
+            )
+            candidate_divergence_paths = pending_review_candidate_divergence_paths(
+                node, worktree_path, allowed_changes
+            )
+            base_divergence_paths = pending_review_base_divergence_paths(node, allowed_changes)
+            if has_pending_candidate_digests or has_pending_base_digests:
+                divergence_paths = candidate_divergence_paths + base_divergence_paths
+            else:
+                divergence_paths = gate_worktree_divergence_paths(
+                    node, worktree_path, allowed_changes
+                )
             if divergence_paths:
                 print(
                     (
@@ -5761,6 +5903,7 @@ def resolve_gate_decision(
         node.data["proposed_status"] = None
         node.data["proposed_maturity"] = None
         node.data["required_human_action"] = "-"
+        clear_pending_review_state(node)
     else:
         gate_map = {
             "retry": ("retry_pending", "rerun supervisor"),
@@ -5774,6 +5917,7 @@ def resolve_gate_decision(
         node.data["required_human_action"] = required_action
         node.data["proposed_status"] = None
         node.data["proposed_maturity"] = None
+        clear_pending_review_state(node)
 
     node.data["last_worktree_path"] = ""
     node.data["last_branch"] = ""
@@ -5965,6 +6109,7 @@ def _apply_split_proposal(
         "exit_code": 0 if success else 1,
         "auto_approved": False,
         "worktree_path": worktree_path.as_posix(),
+        "isolation_mode": isolation_mode_for_branch(branch),
         "branch": branch,
         "changed_files": changed,
         "validation_errors": validation_errors,
@@ -5974,6 +6119,7 @@ def _apply_split_proposal(
         },
         "reconciliation": {},
         "graph_health": graph_health,
+        "graph_health_truth_basis": "accepted_canonical",
         "refactor_queue_artifact": refactor_queue_artifact.as_posix(),
         "proposal_queue_artifact": proposal_queue_artifact.as_posix(),
         "proposal_artifact_path": proposal_artifact_path.as_posix(),
@@ -6231,6 +6377,7 @@ def _process_split_refactor_proposal(
         "exit_code": result.returncode,
         "auto_approved": False,
         "worktree_path": worktree_path.as_posix(),
+        "isolation_mode": isolation_mode_for_branch(branch),
         "branch": branch,
         "changed_files": changed,
         "validation_errors": validation_errors,
@@ -6246,6 +6393,7 @@ def _process_split_refactor_proposal(
             "work_dependencies_ready": False,
         },
         "graph_health": graph_health,
+        "graph_health_truth_basis": "review_candidate",
         "executor_environment": executor_environment,
         "refactor_queue_artifact": refactor_queue_artifact.as_posix(),
         "proposal_queue_artifact": proposal_queue_artifact.as_posix(),
@@ -6354,6 +6502,7 @@ def _process_one_spec(
     source_spec_relpath = node.path.relative_to(ROOT).as_posix()
     child_materialization_preflight = child_materialization_preflight_errors(
         node=node,
+        specs=specs,
         operator_target=operator_target,
         operator_note=operator_note,
         run_authority=run_authority,
@@ -6517,9 +6666,8 @@ def _process_one_spec(
         proposed_status = None if is_graph_refactor_run else STATUS_PROGRESSION.get(node.status)
         transition_errors = []
         validation_errors = executor_environment_validation_errors(executor_environment)
-        graph_health = empty_graph_health(node.id)
+        candidate_graph_health = empty_graph_health(node.id)
         proposal_queue_artifact = proposal_queue_path()
-        proposal_items: list[dict[str, Any]] = load_proposal_queue()
         refactor_queue_artifact = refactor_queue_path()
         candidate_after_data = before_canonical
     else:
@@ -6584,21 +6732,12 @@ def _process_one_spec(
             if not blocker:
                 blocker = "spec exceeds atomicity quality gate"
 
-        graph_health = observe_graph_health(
+        candidate_graph_health = observe_graph_health(
             source_node=node,
             worktree_specs=worktree_specs,
             reconciliation=reconciliation,
             atomicity_errors=atomicity_errors,
             outcome=outcome,
-        )
-        proposal_queue_artifact, proposal_items = update_proposal_queue(
-            graph_health=graph_health,
-            run_id=run_id,
-        )
-        refactor_queue_artifact = update_refactor_queue(
-            graph_health=graph_health,
-            run_id=run_id,
-            proposal_items=proposal_items,
         )
         candidate_after_node = next((spec for spec in worktree_specs if spec.id == node.id), None)
         candidate_after_data = sanitize_source_after_child_materialization(
@@ -6649,6 +6788,7 @@ def _process_one_spec(
         and accepted_refinement
         and bool(changed)
     )
+    allowed_changes = select_sync_paths(effective_allowed_paths, changed)
     split_sync_allowed = productive_split_required and (
         not atomicity_errors
         or executor_requested_split_required
@@ -6657,7 +6797,6 @@ def _process_one_spec(
         or any(path != source_spec_relpath for path in changed)
     )
     if split_sync_allowed:
-        allowed_changes = select_sync_paths(effective_allowed_paths, changed)
         sync_files_from_worktree(worktree_path, allowed_changes)
         normalize_materialized_child_specs(materialized_child_paths)
         node.reload()
@@ -6670,17 +6809,9 @@ def _process_one_spec(
             before_data=before_node_data,
             requested=child_materialization_requested,
         )
+        clear_pending_review_state(node)
 
     if success:
-        allowed_changes = select_sync_paths(effective_allowed_paths, changed)
-        sync_files_from_worktree(worktree_path, allowed_changes)
-        normalize_materialized_child_specs(materialized_child_paths)
-        node.reload()
-        restore_ephemeral_child_authority_fields(
-            node=node,
-            before_data=before_node_data,
-            requested=child_materialization_requested,
-        )
         proposed_maturity = (
             None if is_graph_refactor_run else min(1.0, round(node.maturity + 0.2, 2))
         )
@@ -6688,6 +6819,14 @@ def _process_one_spec(
         node.data["proposed_maturity"] = proposed_maturity
         acceptance_decision = refinement_acceptance["decision"]
         if auto_approve and acceptance_decision == REFINEMENT_ACCEPT_DECISION_APPROVE:
+            sync_files_from_worktree(worktree_path, allowed_changes)
+            normalize_materialized_child_specs(materialized_child_paths)
+            node.reload()
+            restore_ephemeral_child_authority_fields(
+                node=node,
+                before_data=before_node_data,
+                requested=child_materialization_requested,
+            )
             if proposed_status:
                 node.data["status"] = proposed_status
             node.data["maturity"] = proposed_maturity
@@ -6695,12 +6834,21 @@ def _process_one_spec(
             node.data["proposed_status"] = None
             node.data["proposed_maturity"] = None
             required_human_action = "-"
+            clear_pending_review_state(node)
         else:
             node.data["gate_state"] = "review_pending"
             if acceptance_decision == REFINEMENT_ACCEPT_DECISION_APPROVE:
                 required_human_action = "approve or retry refinement"
             else:
                 required_human_action = "review refinement impact before approval"
+            node.data["pending_sync_paths"] = allowed_changes
+            node.data["pending_base_digests"] = snapshot_sync_digests(
+                allowed_changes, base_dir=ROOT
+            )
+            node.data["pending_candidate_digests"] = snapshot_sync_digests(
+                allowed_changes, base_dir=worktree_path
+            )
+            node.data["pending_run_id"] = run_id
     else:
         if primary_executor_failure:
             node.data["gate_state"] = "blocked"
@@ -6723,6 +6871,30 @@ def _process_one_spec(
         else:
             node.data["gate_state"] = "retry_pending"
             required_human_action = "rerun supervisor"
+        clear_pending_review_state(node)
+
+    graph_health = empty_graph_health(node.id)
+    if not primary_executor_failure and not worktree_load_errors:
+        accepted_graph_health_outcome = None
+        if split_sync_allowed or (success and node.gate_state == "none"):
+            accepted_graph_health_outcome = outcome
+        graph_health = derive_accepted_graph_health(
+            source_node=node,
+            current_specs=load_specs(),
+            outcome=accepted_graph_health_outcome,
+        )
+        proposal_queue_artifact, proposal_items = update_proposal_queue(
+            graph_health=graph_health,
+            run_id=run_id,
+        )
+        refactor_queue_artifact = update_refactor_queue(
+            graph_health=graph_health,
+            run_id=run_id,
+            proposal_items=proposal_items,
+        )
+    else:
+        proposal_queue_artifact = proposal_queue_path()
+        refactor_queue_artifact = refactor_queue_path()
 
     cleanup_failed_child_materialization = (
         child_materialization_requested
@@ -6795,6 +6967,7 @@ def _process_one_spec(
             and refinement_acceptance["decision"] == REFINEMENT_ACCEPT_DECISION_APPROVE
         ),
         "worktree_path": worktree_path.as_posix(),
+        "isolation_mode": isolation_mode_for_branch(branch),
         "yaml_repair_paths": yaml_repair_paths,
         "branch": branch,
         "changed_files": changed,
@@ -6802,6 +6975,7 @@ def _process_one_spec(
         "validator_results": validator_results,
         "reconciliation": reconciliation,
         "graph_health": graph_health,
+        "graph_health_truth_basis": "accepted_canonical",
         "executor_environment": executor_environment,
         "refinement_acceptance": refinement_acceptance,
         "refactor_queue_artifact": refactor_queue_artifact.as_posix(),
@@ -6809,6 +6983,9 @@ def _process_one_spec(
         "stdout": result.stdout,
         "stderr": result.stderr,
     }
+    if candidate_graph_health != graph_health:
+        payload["candidate_graph_health"] = candidate_graph_health
+        payload["candidate_graph_health_truth_basis"] = "review_candidate"
     log_path = write_run_log(run_id, payload)
     write_latest_summary(payload)
 
@@ -7146,6 +7323,7 @@ def main(
         print(f"Selected spec node: {node.id} — {node.title}")
         preflight_errors = child_materialization_preflight_errors(
             node=node,
+            specs=specs,
             operator_target=True,
             operator_note=operator_note,
             run_authority=run_authority,

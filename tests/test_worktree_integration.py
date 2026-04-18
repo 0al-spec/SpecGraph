@@ -473,7 +473,10 @@ class TestMainWithRealWorktree:
                     "refines": ["SG-SPEC-0001"],
                     "inputs": ["specs/nodes/SG-SPEC-0001.yaml"],
                     "outputs": ["specs/nodes/SG-SPEC-0002.yaml"],
-                    "allowed_paths": ["specs/nodes/SG-SPEC-0002.yaml"],
+                    "allowed_paths": [
+                        "specs/nodes/SG-SPEC-0002.yaml",
+                        "specs/nodes/SG-SPEC-0003.yaml",
+                    ],
                     "acceptance": ["Delegate one bounded child vocabulary slice."],
                     "acceptance_evidence": ["Parent evidence."],
                     "prompt": "Materialize one bounded child from this parent delegation boundary.",
@@ -539,20 +542,38 @@ class TestMainWithRealWorktree:
 
             yaml_module = supervisor_module.get_yaml_module()
             parent = yaml_module.safe_load(parent_file.read_text(encoding="utf-8"))
-            child = yaml_module.safe_load(
-                (git_repo / "specs" / "nodes" / "SG-SPEC-0003.yaml").read_text(encoding="utf-8")
-            )
-            assert parent["depends_on"] == ["SG-SPEC-0003"]
+            assert parent["gate_state"] == "review_pending"
+            assert parent["depends_on"] == []
             assert parent["outputs"] == ["specs/nodes/SG-SPEC-0002.yaml"]
-            assert parent["allowed_paths"] == ["specs/nodes/SG-SPEC-0002.yaml"]
-            assert child["refines"] == ["SG-SPEC-0002"]
-            assert child["outputs"] == ["specs/nodes/SG-SPEC-0003.yaml"]
-            assert child["allowed_paths"] == ["specs/nodes/SG-SPEC-0003.yaml"]
+            assert parent["allowed_paths"] == [
+                "specs/nodes/SG-SPEC-0002.yaml",
+                "specs/nodes/SG-SPEC-0003.yaml",
+            ]
+            assert parent["pending_sync_paths"] == [
+                "specs/nodes/SG-SPEC-0002.yaml",
+                "specs/nodes/SG-SPEC-0003.yaml",
+            ]
+            assert parent["last_materialized_child_paths"] == ["specs/nodes/SG-SPEC-0003.yaml"]
+            assert not (git_repo / "specs" / "nodes" / "SG-SPEC-0003.yaml").exists()
 
             specs = supervisor_module.load_specs()
             node = next(spec for spec in specs if spec.id == "SG-SPEC-0002")
             wt_path = Path(node.data.get("last_worktree_path", ""))
             branch = node.data.get("last_branch", "")
+            assert wt_path.is_dir()
+
+            child = yaml_module.safe_load(
+                (wt_path / "specs" / "nodes" / "SG-SPEC-0003.yaml").read_text(encoding="utf-8")
+            )
+            assert child["refines"] == ["SG-SPEC-0002"]
+            assert child["outputs"] == [
+                "specs/nodes/SG-SPEC-0002.yaml",
+                "specs/nodes/SG-SPEC-0003.yaml",
+            ]
+            assert child["allowed_paths"] == [
+                "specs/nodes/SG-SPEC-0002.yaml",
+                "specs/nodes/SG-SPEC-0003.yaml",
+            ]
         finally:
             specs = supervisor_module.load_specs()
             node = next((spec for spec in specs if spec.id == "SG-SPEC-0002"), None)

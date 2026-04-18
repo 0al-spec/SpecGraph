@@ -273,7 +273,7 @@ def test_build_codex_exec_command_uses_named_execution_profile(
     assert profile.sandbox in cmd
 
 
-def test_build_codex_exec_command_bypasses_inner_sandbox_for_sandbox_branch(
+def test_build_codex_exec_command_keeps_inner_sandbox_when_bypass_requested(
     supervisor_module: object,
 ) -> None:
     cmd = supervisor_module.build_codex_exec_command(
@@ -282,9 +282,21 @@ def test_build_codex_exec_command_bypasses_inner_sandbox_for_sandbox_branch(
     )
 
     assert cmd[:2] == ["codex", "exec"]
-    assert "--dangerously-bypass-approvals-and-sandbox" in cmd
-    assert "--sandbox" not in cmd
+    assert "--dangerously-bypass-approvals-and-sandbox" not in cmd
+    assert "--sandbox" in cmd
+    assert supervisor_module.CHILD_EXECUTOR_SANDBOX in cmd
     assert cmd[-1] == "Refine one bounded spec."
+
+
+def test_isolation_mode_for_branch_marks_copied_fallback(
+    supervisor_module: object,
+) -> None:
+    assert supervisor_module.isolation_mode_for_branch("sandbox/sg-spec-0001/test") == (
+        "copied_fallback"
+    )
+    assert supervisor_module.isolation_mode_for_branch("codex/sg-spec-0001/test") == (
+        "git_worktree"
+    )
 
 
 def test_effective_child_executor_timeout_seconds_uses_longer_budget_for_child_materialization(
@@ -489,7 +501,7 @@ def test_create_child_codex_home_writes_minimal_config_and_copies_auth(
         shutil.rmtree(child_home, ignore_errors=True)
 
 
-def test_create_child_codex_home_omits_inner_sandbox_in_bypass_mode(
+def test_create_child_codex_home_keeps_inner_sandbox_in_bypass_mode(
     supervisor_module: object,
     tmp_path: Path,
 ) -> None:
@@ -504,7 +516,7 @@ def test_create_child_codex_home_omits_inner_sandbox_in_bypass_mode(
     try:
         config_text = (child_home / "config.toml").read_text(encoding="utf-8")
         assert 'approval_policy = "never"' in config_text
-        assert 'sandbox_mode = "workspace-write"' not in config_text
+        assert 'sandbox_mode = "workspace-write"' in config_text
         assert (child_home / "auth.json").read_text(encoding="utf-8") == '{"token":"secret"}'
     finally:
         shutil.rmtree(child_home, ignore_errors=True)
@@ -580,7 +592,7 @@ def test_run_codex_uses_isolated_codex_home(
     )
 
 
-def test_run_codex_bypasses_inner_sandbox_for_sandbox_branch(
+def test_run_codex_keeps_inner_sandbox_for_sandbox_branch(
     supervisor_module: object,
     repo_fixture: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -640,10 +652,11 @@ def test_run_codex_bypasses_inner_sandbox_for_sandbox_branch(
     assert result.returncode == 0
     assert captured["cwd"] == repo_fixture
     assert captured["env"]["CODEX_HOME"] == str(repo_fixture / ".fake-codex-home")
-    assert captured["bypass_inner_sandbox"] is True
+    assert captured["bypass_inner_sandbox"] is False
     assert captured["profile"].name == supervisor_module.AUTO_HEURISTIC_PROFILE_NAME
-    assert "--dangerously-bypass-approvals-and-sandbox" in captured["cmd"]
-    assert "--sandbox" not in captured["cmd"]
+    assert "--dangerously-bypass-approvals-and-sandbox" not in captured["cmd"]
+    assert "--sandbox" in captured["cmd"]
+    assert supervisor_module.CHILD_EXECUTOR_SANDBOX in captured["cmd"]
     assert captured["process"].wait_timeout == min(
         supervisor_module.EXECUTOR_PROGRESS_POLL_SECONDS,
         supervisor_module.FAST_EXECUTION_PROFILE_TIMEOUT_SECONDS,
@@ -1447,6 +1460,55 @@ def test_parse_run_authority_rejects_unknown_grant(
 ) -> None:
     with pytest.raises(ValueError, match="Unknown run authority grant"):
         supervisor_module.parse_run_authority("materialize_one_child,unknown_grant")
+
+
+def test_effective_allowed_paths_defaults_to_source_spec_when_empty(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    node_data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    node_data["allowed_paths"] = []
+    node_path.write_text(json.dumps(node_data), encoding="utf-8")
+
+    node = supervisor_module.load_specs()[0]
+
+    assert supervisor_module.effective_allowed_paths_for_run(node) == [
+        "specs/nodes/SG-SPEC-0001.yaml"
+    ]
+
+
+def test_can_create_new_spec_files_requires_explicit_allowed_paths(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    node_data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    node_data["allowed_paths"] = []
+    node_path.write_text(json.dumps(node_data), encoding="utf-8")
+
+    node = supervisor_module.load_specs()[0]
+
+    assert supervisor_module.can_create_new_spec_files(node) is False
+
+
+def test_can_create_new_spec_files_matches_explicit_child_path(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    node_data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    node_data["allowed_paths"] = ["specs/nodes/SG-SPEC-0002.yaml"]
+    node_path.write_text(json.dumps(node_data), encoding="utf-8")
+
+    node = supervisor_module.load_specs()[0]
+
+    assert (
+        supervisor_module.can_create_new_spec_files(node, "specs/nodes/SG-SPEC-0002.yaml") is True
+    )
+    assert (
+        supervisor_module.can_create_new_spec_files(node, "specs/nodes/SG-SPEC-9999.yaml") is False
+    )
 
 
 def test_validate_refinement_acceptance_tracks_schema_required_addition_and_budget(
@@ -2774,6 +2836,7 @@ def test_update_proposal_queue_requires_recurrence_for_refactor_proposal(
 ) -> None:
     historical_run = {
         "run_id": "RUN-1",
+        "graph_health_truth_basis": "accepted_canonical",
         "graph_health": {
             "source_spec_id": "SG-SPEC-9999",
             "signals": ["oversized_spec"],
@@ -2848,6 +2911,7 @@ def test_update_proposal_queue_counts_current_occurrence_when_run_id_collides(
 ) -> None:
     historical_run = {
         "run_id": "RUN-1",
+        "graph_health_truth_basis": "accepted_canonical",
         "graph_health": {
             "source_spec_id": "SG-SPEC-9999",
             "signals": ["oversized_spec"],
@@ -2877,6 +2941,26 @@ def test_update_proposal_queue_counts_current_occurrence_when_run_id_collides(
     assert proposal["proposal_type"] == "refactor_proposal"
     assert proposal["occurrence_count"] == 2
     assert proposal["supporting_run_ids"] == ["RUN-1"]
+
+
+def test_signal_supporting_run_ids_ignores_review_candidate_runs(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    historical_run = {
+        "run_id": "RUN-1",
+        "graph_health_truth_basis": "review_candidate",
+        "graph_health": {
+            "source_spec_id": "SG-SPEC-9999",
+            "signals": ["oversized_spec"],
+        },
+    }
+    (repo_fixture / "runs" / "20260405T000000Z-SG-SPEC-9999.json").write_text(
+        json.dumps(historical_run),
+        encoding="utf-8",
+    )
+
+    assert supervisor_module.signal_supporting_run_ids("SG-SPEC-9999", "oversized_spec") == []
 
 
 def test_build_prompt_includes_bootstrap_child_guidance_for_seed_spec(
@@ -2956,7 +3040,10 @@ def test_build_prompt_includes_child_materialization_guidance_for_targeted_non_r
                 "refines": ["SG-SPEC-0001"],
                 "inputs": ["specs/nodes/SG-SPEC-0001.yaml"],
                 "outputs": ["specs/nodes/SG-SPEC-0002.yaml"],
-                "allowed_paths": ["specs/nodes/SG-SPEC-0002.yaml"],
+                "allowed_paths": [
+                    "specs/nodes/SG-SPEC-0002.yaml",
+                    "specs/nodes/SG-SPEC-0003.yaml",
+                ],
                 "acceptance": ["Delegate one bounded child vocabulary slice."],
                 "acceptance_evidence": ["Existing evidence."],
                 "prompt": "Materialize one bounded child from this parent delegation boundary.",
@@ -3154,6 +3241,11 @@ def test_main_creates_review_gate_and_provenance_metadata(
     repo_fixture: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    original_data = supervisor_module.get_yaml_module().safe_load(
+        node_path.read_text(encoding="utf-8")
+    )
+    original_prompt = original_data["prompt"]
     worktree = make_fake_worktree(repo_fixture)
     monkeypatch.setattr(
         supervisor_module,
@@ -3191,13 +3283,13 @@ def test_main_creates_review_gate_and_provenance_metadata(
     exit_code = supervisor_module.main(executor=fake_executor)
     assert exit_code == 0
 
-    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
     updated = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
     assert updated["status"] == "outlined"
     assert updated["gate_state"] == "review_pending"
     assert updated["proposed_status"] == "specified"
-    assert updated["prompt"] == "Updated by Codex"
-    assert updated["acceptance_evidence"] == grounded_acceptance_evidence(updated["acceptance"])
+    assert updated["prompt"] == original_prompt
+    assert updated.get("acceptance_evidence") == original_data.get("acceptance_evidence")
+    assert updated["pending_sync_paths"] == ["specs/nodes/SG-SPEC-0001.yaml"]
     assert "RUN_OUTCOME" not in updated
     assert "BLOCKER" not in updated
     assert "RUN_OUTCOME:" not in node_path.read_text(encoding="utf-8")
@@ -3211,7 +3303,9 @@ def test_main_creates_review_gate_and_provenance_metadata(
     assert payload["spec_id"] == "SG-SPEC-0001"
     assert payload["outcome"] == "done"
     assert payload["worktree_path"] == worktree.as_posix()
+    assert payload["isolation_mode"] == "git_worktree"
     assert payload["graph_health"]["source_spec_id"] == "SG-SPEC-0001"
+    assert payload["graph_health_truth_basis"] == "accepted_canonical"
     assert payload["refactor_queue_artifact"].endswith("runs/refactor_queue.json")
     assert payload["proposal_queue_artifact"].endswith("runs/proposal_queue.json")
     assert payload["selected_by_rule"]["selection_mode"] == "default_refine"
@@ -3223,7 +3317,70 @@ def test_main_creates_review_gate_and_provenance_metadata(
         "lower_maturity",
         "stable_id",
     ]
+    assert updated["pending_run_id"] == payload["run_id"]
     assert (repo_fixture / "runs" / "latest-summary.md").exists()
+
+
+def test_main_review_pending_graph_health_keeps_canonical_outcome_basis(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    original_data = supervisor_module.get_yaml_module().safe_load(
+        node_path.read_text(encoding="utf-8")
+    )
+    original_data["last_outcome"] = "split_required"
+    node_path.write_text(json.dumps(original_data), encoding="utf-8")
+
+    worktree = make_fake_worktree(repo_fixture)
+    monkeypatch.setattr(
+        supervisor_module,
+        "create_isolated_worktree",
+        lambda _node_id: (worktree, "codex/sg-spec-0001/test"),
+    )
+
+    changed_snapshots = [
+        [],
+        ["specs/nodes/SG-SPEC-0001.yaml"],
+        ["specs/nodes/SG-SPEC-0001.yaml"],
+    ]
+    monkeypatch.setattr(
+        supervisor_module,
+        "git_changed_files",
+        lambda _cwd=None: changed_snapshots.pop(0),
+    )
+
+    def fake_executor(_node: object, worktree_path: Path) -> subprocess.CompletedProcess[str]:
+        worktree_node_path = worktree_path / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+        data = supervisor_module.get_yaml_module().safe_load(
+            worktree_node_path.read_text(encoding="utf-8")
+        )
+        data["acceptance_evidence"] = grounded_acceptance_evidence(data["acceptance"])
+        data["prompt"] = "Updated by Codex"
+        worktree_node_path.write_text(
+            supervisor_module.dump_yaml_text(data) + "RUN_OUTCOME: done\nBLOCKER: none\n",
+            encoding="utf-8",
+        )
+        return subprocess.CompletedProcess(
+            args=["codex"],
+            returncode=0,
+            stdout="RUN_OUTCOME: done\nBLOCKER: none\n",
+            stderr="",
+        )
+
+    exit_code = supervisor_module.main(executor=fake_executor)
+    assert exit_code == 0
+
+    run_logs = sorted((repo_fixture / "runs").glob("*-SG-SPEC-*.json"))
+    assert len(run_logs) == 1
+    payload = json.loads(run_logs[0].read_text(encoding="utf-8"))
+
+    assert payload["outcome"] == "done"
+    assert payload["graph_health_truth_basis"] == "accepted_canonical"
+    assert "repeated_split_required_candidate" in payload["graph_health"]["signals"]
+    assert payload["candidate_graph_health_truth_basis"] == "review_candidate"
+    assert "repeated_split_required_candidate" not in payload["candidate_graph_health"]["signals"]
 
 
 def test_main_dry_run_supports_explicit_targeted_refinement_for_review_pending_node(
@@ -3707,8 +3864,9 @@ def test_main_explicit_targeted_refinement_reruns_review_pending_spec(
     updated = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
     assert updated["gate_state"] == "review_pending"
     assert updated["proposed_status"] == "linked"
-    assert updated["prompt"] == "Proposal lane policy now distinguishes tracked handles."
-    assert updated["acceptance_evidence"] == grounded_acceptance_evidence(updated["acceptance"])
+    assert updated["prompt"] == "Proposal lane policy needs tightening."
+    assert updated["pending_sync_paths"] == ["specs/nodes/SG-SPEC-0001.yaml"]
+    assert updated.get("acceptance_evidence") == node_data.get("acceptance_evidence")
 
     run_logs = sorted((repo_fixture / "runs").glob("*-SG-SPEC-*.json"))
     assert len(run_logs) == 1
@@ -6172,7 +6330,7 @@ def test_main_auto_approve_syncs_when_allowed_paths_empty(
             worktree_node.read_text(encoding="utf-8")
         )
         data["acceptance_evidence"] = grounded_acceptance_evidence(data["acceptance"])
-        data["prompt"] = "Synced with unrestricted allowed_paths"
+        data["prompt"] = "Synced with implicit source scope"
         worktree_node.write_text(json.dumps(data), encoding="utf-8")
         return subprocess.CompletedProcess(
             args=["codex"],
@@ -6185,7 +6343,80 @@ def test_main_auto_approve_syncs_when_allowed_paths_empty(
     assert exit_code == 0
 
     updated = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
-    assert updated["prompt"] == "Synced with unrestricted allowed_paths"
+    assert updated["prompt"] == "Synced with implicit source scope"
+
+
+def test_main_rejects_cross_file_change_when_allowed_paths_empty(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    node_data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    node_data["allowed_paths"] = []
+    node_path.write_text(json.dumps(node_data), encoding="utf-8")
+
+    worktree = make_fake_worktree(repo_fixture)
+    monkeypatch.setattr(
+        supervisor_module,
+        "create_isolated_worktree",
+        lambda _node_id: (worktree, "codex/sg-spec-0001/test"),
+    )
+    changed_snapshots = [[], ["specs/nodes/SG-SPEC-0001.yaml", "specs/nodes/SG-SPEC-0002.yaml"]]
+    monkeypatch.setattr(
+        supervisor_module, "git_changed_files", lambda _cwd=None: changed_snapshots.pop(0)
+    )
+
+    def fake_executor(_node: object, worktree_path: Path) -> subprocess.CompletedProcess[str]:
+        source_node = worktree_path / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+        source_data = supervisor_module.get_yaml_module().safe_load(
+            source_node.read_text(encoding="utf-8")
+        )
+        source_data["acceptance_evidence"] = grounded_acceptance_evidence(source_data["acceptance"])
+        source_node.write_text(json.dumps(source_data), encoding="utf-8")
+
+        sibling_node = worktree_path / "specs" / "nodes" / "SG-SPEC-0002.yaml"
+        sibling_node.parent.mkdir(parents=True, exist_ok=True)
+        sibling_node.write_text(
+            json.dumps(
+                {
+                    "id": "SG-SPEC-0002",
+                    "kind": "spec",
+                    "title": "Sibling Node",
+                    "status": "stub",
+                    "maturity": 0.0,
+                    "depends_on": [],
+                    "relates_to": [],
+                    "refines": [],
+                    "inputs": ["specs/nodes/SG-SPEC-0002.yaml"],
+                    "outputs": ["specs/nodes/SG-SPEC-0002.yaml"],
+                    "allowed_paths": ["specs/nodes/SG-SPEC-0002.yaml"],
+                    "acceptance": ["Keep sibling node isolated."],
+                    "prompt": "Sibling node prompt.",
+                }
+            ),
+            encoding="utf-8",
+        )
+        sibling_data = supervisor_module.get_yaml_module().safe_load(
+            sibling_node.read_text(encoding="utf-8")
+        )
+        sibling_data["prompt"] = "Out-of-scope sibling mutation"
+        sibling_node.write_text(json.dumps(sibling_data), encoding="utf-8")
+        return subprocess.CompletedProcess(
+            args=["codex"],
+            returncode=0,
+            stdout="RUN_OUTCOME: done\nBLOCKER: none\n",
+            stderr="",
+        )
+
+    exit_code = supervisor_module.main(executor=fake_executor, auto_approve=True)
+    assert exit_code == 1
+
+    updated = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    assert any(
+        error == "Changed file outside allowed_paths: specs/nodes/SG-SPEC-0002.yaml"
+        for error in updated["last_errors"]
+    )
 
 
 def test_main_outcome_blocked_sets_gate(
@@ -6526,7 +6757,10 @@ def test_main_targeted_non_root_run_materializes_one_child_spec(
         "refines": ["SG-SPEC-0001"],
         "inputs": ["specs/nodes/SG-SPEC-0001.yaml"],
         "outputs": ["specs/nodes/SG-SPEC-0002.yaml"],
-        "allowed_paths": ["specs/nodes/SG-SPEC-0002.yaml"],
+        "allowed_paths": [
+            "specs/nodes/SG-SPEC-0002.yaml",
+            "specs/nodes/SG-SPEC-0003.yaml",
+        ],
         "acceptance": ["Delegate one bounded child vocabulary slice."],
         "acceptance_evidence": grounded_acceptance_evidence(
             ["Delegate one bounded child vocabulary slice."]
@@ -6606,17 +6840,20 @@ def test_main_targeted_non_root_run_materializes_one_child_spec(
     updated_parent = supervisor_module.get_yaml_module().safe_load(
         parent_path.read_text(encoding="utf-8")
     )
-    child = supervisor_module.get_yaml_module().safe_load(
-        (specs_dir / "SG-SPEC-0003.yaml").read_text(encoding="utf-8")
-    )
 
-    assert updated_parent["depends_on"] == ["SG-SPEC-0003"]
+    assert updated_parent["gate_state"] == "review_pending"
+    assert updated_parent["depends_on"] == []
     assert updated_parent["outputs"] == ["specs/nodes/SG-SPEC-0002.yaml"]
-    assert updated_parent["allowed_paths"] == ["specs/nodes/SG-SPEC-0002.yaml"]
-    assert child["refines"] == ["SG-SPEC-0002"]
-    assert child["title"] == "Bootstrap Relation Vocabulary"
-    assert child["outputs"] == ["specs/nodes/SG-SPEC-0003.yaml"]
-    assert child["allowed_paths"] == ["specs/nodes/SG-SPEC-0003.yaml"]
+    assert updated_parent["allowed_paths"] == [
+        "specs/nodes/SG-SPEC-0002.yaml",
+        "specs/nodes/SG-SPEC-0003.yaml",
+    ]
+    assert updated_parent["pending_sync_paths"] == [
+        "specs/nodes/SG-SPEC-0002.yaml",
+        "specs/nodes/SG-SPEC-0003.yaml",
+    ]
+    assert updated_parent["last_materialized_child_paths"] == ["specs/nodes/SG-SPEC-0003.yaml"]
+    assert not (specs_dir / "SG-SPEC-0003.yaml").exists()
 
 
 def test_main_targeted_child_materialization_run_blocks_when_no_child_is_produced(
@@ -6639,7 +6876,10 @@ def test_main_targeted_child_materialization_run_blocks_when_no_child_is_produce
                 "refines": ["SG-SPEC-0001"],
                 "inputs": ["specs/nodes/SG-SPEC-0001.yaml"],
                 "outputs": ["specs/nodes/SG-SPEC-0002.yaml"],
-                "allowed_paths": ["specs/nodes/SG-SPEC-0002.yaml"],
+                "allowed_paths": [
+                    "specs/nodes/SG-SPEC-0002.yaml",
+                    "specs/nodes/SG-SPEC-0003.yaml",
+                ],
                 "acceptance": ["Delegate one bounded child vocabulary slice."],
                 "acceptance_evidence": grounded_acceptance_evidence(
                     ["Delegate one bounded child vocabulary slice."]
@@ -6718,7 +6958,10 @@ def test_main_targeted_child_materialization_split_required_does_not_count_as_pr
                 "refines": ["SG-SPEC-0001"],
                 "inputs": ["specs/nodes/SG-SPEC-0001.yaml"],
                 "outputs": ["specs/nodes/SG-SPEC-0002.yaml"],
-                "allowed_paths": ["specs/nodes/SG-SPEC-0002.yaml"],
+                "allowed_paths": [
+                    "specs/nodes/SG-SPEC-0002.yaml",
+                    "specs/nodes/SG-SPEC-0003.yaml",
+                ],
                 "acceptance": ["Delegate one bounded child vocabulary slice."],
                 "acceptance_evidence": grounded_acceptance_evidence(
                     ["Delegate one bounded child vocabulary slice."]
@@ -6817,6 +7060,54 @@ def test_main_targeted_child_materialization_blocks_without_run_authority(
         executor=fake_executor,
         target_spec="SG-SPEC-0002",
         operator_note="Create one new child spec for the delegated bootstrap relation vocabulary.",
+    )
+
+    assert exit_code == 1
+    updated_parent = supervisor_module.get_yaml_module().safe_load(
+        parent_path.read_text(encoding="utf-8")
+    )
+    assert "gate_state" not in updated_parent
+    assert "last_run_id" not in updated_parent
+
+
+def test_main_targeted_child_materialization_blocks_without_child_path_authority(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    specs_dir = repo_fixture / "specs" / "nodes"
+    parent_path = specs_dir / "SG-SPEC-0002.yaml"
+    parent_path.write_text(
+        supervisor_module.dump_yaml_text(
+            {
+                "id": "SG-SPEC-0002",
+                "title": "Vocabulary Parent",
+                "kind": "spec",
+                "status": "specified",
+                "maturity": 0.4,
+                "depends_on": [],
+                "relates_to": [],
+                "refines": ["SG-SPEC-0001"],
+                "inputs": ["specs/nodes/SG-SPEC-0001.yaml"],
+                "outputs": ["specs/nodes/SG-SPEC-0002.yaml"],
+                "allowed_paths": ["specs/nodes/SG-SPEC-0002.yaml"],
+                "acceptance": ["Delegate one bounded child vocabulary slice."],
+                "acceptance_evidence": grounded_acceptance_evidence(
+                    ["Delegate one bounded child vocabulary slice."]
+                ),
+                "prompt": "Materialize one bounded child from this parent delegation boundary.",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    def fake_executor(_node: object, _worktree_path: Path) -> subprocess.CompletedProcess[str]:
+        raise AssertionError("executor should not run without explicit child path authority")
+
+    exit_code = supervisor_module.main(
+        executor=fake_executor,
+        target_spec="SG-SPEC-0002",
+        operator_note="Create one new child spec for the delegated bootstrap relation vocabulary.",
+        run_authority=(supervisor_module.RUN_AUTHORITY_MATERIALIZE_ONE_CHILD,),
     )
 
     assert exit_code == 1
@@ -6963,6 +7254,7 @@ def test_resolve_gate_approve_accepts_staged_worktree_changes(
     worktree = make_fake_worktree(repo_fixture)
     node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
     worktree_node_path = worktree / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    rel_path = "specs/nodes/SG-SPEC-0001.yaml"
 
     worktree_data = supervisor_module.get_yaml_module().safe_load(
         worktree_node_path.read_text(encoding="utf-8")
@@ -6974,9 +7266,14 @@ def test_resolve_gate_approve_accepts_staged_worktree_changes(
     data["gate_state"] = "review_pending"
     data["proposed_status"] = "specified"
     data["proposed_maturity"] = 0.4
-    data["prompt"] = "Approved from worktree"
     data["last_worktree_path"] = worktree.as_posix()
-    data["last_changed_files"] = ["specs/nodes/SG-SPEC-0001.yaml"]
+    data["last_changed_files"] = [rel_path]
+    data["pending_sync_paths"] = [rel_path]
+    data["pending_base_digests"] = supervisor_module.snapshot_sync_digests([rel_path], repo_fixture)
+    data["pending_candidate_digests"] = supervisor_module.snapshot_sync_digests(
+        [rel_path], worktree
+    )
+    data["pending_run_id"] = "RUN-1"
     node_path.write_text(json.dumps(data), encoding="utf-8")
 
     exit_code = supervisor_module.main(
@@ -7005,6 +7302,7 @@ def test_resolve_gate_approve_cleans_real_git_worktree_and_branch(
     worktree_path, branch = supervisor_module.create_isolated_worktree("SG-SPEC-0001")
     node_path = git_repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
     worktree_node_path = worktree_path / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    rel_path = "specs/nodes/SG-SPEC-0001.yaml"
 
     approved_prompt = "Approved from retained git worktree"
     worktree_data = supervisor_module.get_yaml_module().safe_load(
@@ -7017,10 +7315,17 @@ def test_resolve_gate_approve_cleans_real_git_worktree_and_branch(
     data["gate_state"] = "review_pending"
     data["proposed_status"] = "specified"
     data["proposed_maturity"] = 0.4
-    data["prompt"] = approved_prompt
     data["last_worktree_path"] = worktree_path.as_posix()
     data["last_branch"] = branch
-    data["last_changed_files"] = ["specs/nodes/SG-SPEC-0001.yaml"]
+    data["last_changed_files"] = [rel_path]
+    data["pending_sync_paths"] = [rel_path]
+    data["pending_base_digests"] = supervisor_module.snapshot_sync_digests(
+        [rel_path], git_repo_fixture
+    )
+    data["pending_candidate_digests"] = supervisor_module.snapshot_sync_digests(
+        [rel_path], worktree_path
+    )
+    data["pending_run_id"] = "RUN-1"
     node_path.write_text(json.dumps(data), encoding="utf-8")
 
     exit_code = supervisor_module.main(
@@ -7048,20 +7353,22 @@ def test_resolve_gate_approve_rejects_stale_worktree_candidate(
 ) -> None:
     worktree = make_fake_worktree(repo_fixture)
     node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
-    worktree_node_path = worktree / "specs" / "nodes" / "SG-SPEC-0001.yaml"
-
-    worktree_data = supervisor_module.get_yaml_module().safe_load(
-        worktree_node_path.read_text(encoding="utf-8")
-    )
-    worktree_data["prompt"] = "Stale candidate"
-    worktree_node_path.write_text(json.dumps(worktree_data), encoding="utf-8")
+    rel_path = "specs/nodes/SG-SPEC-0001.yaml"
+    base_digests = supervisor_module.snapshot_sync_digests([rel_path], repo_fixture)
 
     data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
     data["gate_state"] = "review_pending"
     data["proposed_status"] = "specified"
     data["proposed_maturity"] = 0.4
     data["last_worktree_path"] = worktree.as_posix()
-    data["last_changed_files"] = ["specs/nodes/SG-SPEC-0001.yaml"]
+    data["last_changed_files"] = [rel_path]
+    data["pending_sync_paths"] = [rel_path]
+    data["pending_base_digests"] = base_digests
+    data["pending_candidate_digests"] = supervisor_module.snapshot_sync_digests(
+        [rel_path], worktree
+    )
+    data["pending_run_id"] = "RUN-1"
+    data["prompt"] = "Canonical advanced"
     node_path.write_text(json.dumps(data), encoding="utf-8")
 
     exit_code = supervisor_module.main(
@@ -7073,12 +7380,12 @@ def test_resolve_gate_approve_rejects_stale_worktree_candidate(
 
     err = capsys.readouterr().err
     assert "review gate is stale" in err
-    assert "prompt" in err
+    assert "canonical-base-mismatch" in err
 
     updated = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
     assert updated["status"] == "outlined"
     assert updated["gate_state"] == "review_pending"
-    assert updated["prompt"] == "Refine this node."
+    assert updated["prompt"] == "Canonical advanced"
     assert "last_gate_decision" not in updated
 
 
@@ -7259,6 +7566,7 @@ def test_resolve_gate_approve_syncs_when_allowed_paths_empty(
     repo_fixture: Path,
 ) -> None:
     node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    rel_path = "specs/nodes/SG-SPEC-0001.yaml"
     node_data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
     node_data["allowed_paths"] = []
     node_data["gate_state"] = "review_pending"
@@ -7276,8 +7584,15 @@ def test_resolve_gate_approve_syncs_when_allowed_paths_empty(
 
     node_data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
     node_data["last_worktree_path"] = worktree.as_posix()
-    node_data["last_changed_files"] = ["specs/nodes/SG-SPEC-0001.yaml"]
-    node_data["prompt"] = "Gate approved unrestricted sync"
+    node_data["last_changed_files"] = [rel_path]
+    node_data["pending_sync_paths"] = [rel_path]
+    node_data["pending_base_digests"] = supervisor_module.snapshot_sync_digests(
+        [rel_path], repo_fixture
+    )
+    node_data["pending_candidate_digests"] = supervisor_module.snapshot_sync_digests(
+        [rel_path], worktree
+    )
+    node_data["pending_run_id"] = "RUN-1"
     node_path.write_text(json.dumps(node_data), encoding="utf-8")
 
     exit_code = supervisor_module.main(
@@ -7762,8 +8077,9 @@ def test_main_repairs_recoverable_worktree_yaml_indentation(
     assert exit_code == 0
     node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
     updated = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
-    assert updated["prompt"] == "Updated by recoverable YAML repair path."
+    assert updated["prompt"] == "Initial prompt."
     assert updated["gate_state"] == "review_pending"
+    assert updated["pending_sync_paths"] == ["specs/nodes/SG-SPEC-0001.yaml"]
     run_logs = sorted((repo_fixture / "runs").glob("*-SG-SPEC-*.json"))
     payload = json.loads(run_logs[0].read_text(encoding="utf-8"))
     assert payload["completion_status"] == "ok"

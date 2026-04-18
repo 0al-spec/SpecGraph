@@ -25,27 +25,40 @@ allowed_paths:
 - specs/nodes/SG-SPEC-0003.yaml
 acceptance:
 - Defines the boundary between canonical SpecGraph governance, supervisor execution, bounded autonomous
-  continuation, and changes that always require human approval
+  continuation, review_pending staging of successful refinement candidates, default-deny write scope,
+  explicit structural authority for new spec creation, non-escalating fallback isolation, and changes
+  that always require human approval
 - Defines observation, signal, and proposal as a derived reflective loop, including linked-spec continuation
   after explicit blocked or gated work clears, that does not mutate canonical specs by itself
 - Defines the first graph-health signals for oversized specs, missing canonical dependencies, repeated
   split_required, and stalled or weak refinement progression, while treating low-maturity linked specs
   only as derived follow-up hints rather than normative scores
 - Defines that graph-health observations, signals, latent continuation candidates, and proposal artifacts
-  are first persisted in run artifacts plus derived queues, not written back into canonical spec nodes
+  are first persisted in run artifacts plus derived queues, that canonical-state graph health and queues
+  derive only from accepted canonical content or explicit proposal artifacts, and that review candidates
+  remain non-canonical inspection context until approval
 - Remains implementation-agnostic about exact formulas, thresholds, queue algorithms, and future metric
   systems such as SIB or Specification Verifiability, while delegating concrete continuation selection
   and reflective execution mechanics to SG-SPEC-0026 and its descendants, concrete proposal/queue control
   details to SG-SPEC-0034, and detailed subtree-shape and lower-boundary handoff signal contracts to SG-SPEC-0049
 acceptance_evidence:
 - criterion: Defines the boundary between canonical SpecGraph governance, supervisor execution, bounded
-    autonomous continuation, and changes that always require human approval
+    autonomous continuation, review_pending staging of successful refinement candidates, default-deny
+    write scope, explicit structural authority for new spec creation, non-escalating fallback isolation,
+    and changes that always require human approval
   evidence: 'specification.boundary_policy separates canonical_governance, supervisor_execution, and human_approval.
     It states that specs govern ontology and policy, the supervisor executes bounded refinement and emits
     derived observations, and constitutional changes require explicit human approval. Direct-update authorization
     and continuation execution mechanics are delegated through SG-SPEC-0026 and its bounded descendant
-    mechanics specs, while SG-SPEC-0003 retains the boundary contract. The same section allows bounded
-    autonomous continuation only after blocked/gated work is clear and only within current authority,
+    mechanics specs, while SG-SPEC-0003 retains the boundary contract. specification.boundary_policy.human_approval
+    now restores review_pending as a pre-merge barrier by requiring successful refinement candidates to
+    remain staged until explicit approve, forbidding sync of staged candidate paths into the canonical
+    root before approval, and requiring approval-time freshness revalidation before sync. specification.boundary_policy.supervisor_execution
+    now also makes missing or empty write policy collapse to implicit source-spec-only scope rather than
+    unrestricted sync authority, requires new spec creation to satisfy both explicit path authorization
+    and explicit structural run authority, and requires degraded copied-worktree fallback isolation to
+    preserve or narrow nested sandbox and approval authority rather than bypass it. The same section allows
+    bounded autonomous continuation only after blocked/gated work is clear and only within current authority,
     without authorizing new metrics, cross-branch restructuring, or review bypass.
 
     '
@@ -70,13 +83,18 @@ acceptance_evidence:
 
     '
 - criterion: Defines that graph-health observations, signals, latent continuation candidates, and proposal
-    artifacts are first persisted in run artifacts plus derived queues, not written back into canonical
-    spec nodes
+    artifacts are first persisted in run artifacts plus derived queues, that canonical-state graph health
+    and queues derive only from accepted canonical content or explicit proposal artifacts, and that review
+    candidates remain non-canonical inspection context until approval
   evidence: 'specification.derived_artifact_policy.first_persistence lists run payloads, summaries, latent
     continuation candidate records in run payloads and summaries, refactor_queue artifacts, proposal_queue
     artifacts, and full proposal payload artifacts as the first persistence targets, while specification.derived_artifact_policy.canonical_writeback
     forbids direct writeback of observations, signals, continuation candidates, or proposals into canonical
-    spec nodes without an explicit proposal and approval step.
+    spec nodes without an explicit proposal and approval step. specification.derived_artifact_policy.refactor_queue
+    and proposal_queue now require canonical-state queue derivation to use only accepted canonical content
+    or explicit proposal artifacts, and specification.derived_artifact_policy.first_persistence allows
+    review-candidate inspection in run payloads only when it is explicitly marked as non-canonical review
+    context rather than current graph truth.
 
     '
 - criterion: Remains implementation-agnostic about exact formulas, thresholds, queue algorithms, and future
@@ -107,6 +125,7 @@ specification:
   scope:
     in:
     - Boundary between canonical specs, supervisor execution, and human approval
+    - review_pending staging boundary for successful refinement candidates before canonical sync
     - Bounded autonomous continuation selection among linked specs after explicit blocked or gated work
       clears
     - Reflective loop stages from observation to proposal
@@ -240,6 +259,14 @@ specification:
       explicitly authorized in current canonical policy; concrete authorization matrices, proposal-lane
       execution semantics, split mechanics, and continuation-selection rules are delegated through SG-SPEC-0026
       and its bounded descendant mechanics specs, while SG-SPEC-0003 retains only the boundary contract.
+    - Missing or empty write policy MUST collapse to implicit source-spec-only scope for bounded refinement;
+      it MUST NOT expand to unrestricted canonical sync authority.
+    - New spec creation MUST require both explicit path authorization for the proposed new file and explicit
+      structural run authority; structural mutation MUST NOT arise from permissive fallback path handling
+      alone.
+    - Degraded copied-worktree fallback MAY change the isolation implementation, but it MUST preserve
+      or narrow nested sandbox and approval authority relative to the normal git-worktree path; it MUST
+      NOT bypass those controls.
     - When the current bounded target has no remaining explicit blocked or gated work, the supervisor
       may inspect already linked specs for latent_graph_improvement_candidate follow-up work using current
       canonical links, current status and maturity, and already-defined graph-health signals.
@@ -253,6 +280,13 @@ specification:
     - Human approval is required for constitutional_change, including ontology changes, policy changes,
       threshold changes that alter governance meaning, and supervisor behavior changes that expand autonomous
       authority.
+    - review_pending is a pre-merge barrier for successful refinement candidates that would change canonical
+      content.
+    - Successful refinement candidates MUST remain staged in review_pending until an explicit approve
+      decision authorizes sync of the staged candidate paths into the canonical root.
+    - Approval to sync staged candidate paths MUST revalidate candidate freshness against the current
+      canonical root before sync; stale staged candidates MUST remain non-canonical until refreshed or
+      rerun.
   reflective_loop:
     stages:
     - Observe graph and run state
@@ -329,9 +363,13 @@ specification:
     - Refactor queue artifacts
     - Proposal queue artifacts
     - Full proposal payload artifacts
+    - review_pending candidate-state inspection MAY appear in run payloads only when it is explicitly
+      marked as non-canonical review context rather than current graph truth
     refactor_queue:
     - The first refactor queue is a derived artifact built from graph_health signals and their current
       classification.
+    - Canonical-state refactor_queue derivation MUST use accepted canonical content or explicit proposal
+      artifacts, and MUST NOT treat review_pending candidate worktree content as current graph truth.
     - A refactor queue item may classify work as graph_refactor or governance_proposal, but that classification
       remains derived until acted on under the current governance rules.
     - Refactor queue items SHOULD expose whether their current execution_policy is direct_graph_update
@@ -339,6 +377,9 @@ specification:
     proposal_queue:
     - The first proposal queue is a derived artifact built from recurring graph-health signals and governance-class
       signals that should no longer remain implicit.
+    - Canonical-state proposal_queue derivation MUST use accepted canonical content or explicit proposal
+      artifacts, and MUST NOT count review_pending candidate worktree content as current graph truth or
+      recurrence-supporting evidence.
     - A proposal queue item may classify work as refactor_proposal or governance_proposal, and it records
       recurrence and source-run lineage without becoming canonical graph data by itself.
     - proposal_queue acts as an index and summary surface for proposal artifacts; it MUST NOT be the only
@@ -351,6 +392,11 @@ specification:
       rules.
     - Derived latent_graph_improvement_candidate records MUST NOT be written into canonical spec nodes
       as backlog labels, maturity overrides, or implied work ownership.
+    - Staged candidate content produced by a successful refinement candidate MUST NOT be synced into canonical
+      root paths while the candidate remains in review_pending.
+    - review_pending candidate graph-health inspection MAY inform human review context, but it MUST remain
+      explicitly non-canonical until accepted into canonical content or materialized as an explicit proposal
+      artifact.
   split_refactor_policy:
     boundary_contract:
     - SG-SPEC-0003 only constrains split_refactor behavior at governance boundary level.
@@ -369,6 +415,8 @@ gate_state: none
 proposed_status: null
 proposed_maturity: null
 required_human_action: '-'
+last_worktree_path: ''
+last_branch: ''
 last_gate_decision: approve
 last_gate_note: ''
-last_gate_at: '2026-04-14T22:19:52.661153+00:00'
+last_gate_at: '2026-04-17T21:54:35.668921+00:00'
