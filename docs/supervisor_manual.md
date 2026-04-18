@@ -168,8 +168,24 @@ python3 tools/supervisor.py --build-spec-trace-index
 ```
 
 Builds `runs/spec_trace_index.json` from literal `SG-SPEC-XXXX` mentions in
-`tools/` and `tests/`. Use it as the first weak derived view of spec-to-code
-coverage.
+`tools/` and `tests/`, then enriches that graph-bound index with weak
+`commit_refs`, `pr_refs`, `verification_basis`, and `acceptance_coverage`.
+
+Use it as the first weak derived view of spec-to-code coverage. It is still not
+an implementation-state oracle.
+
+`implementation_state` is now derived conservatively from
+`tools/spec_trace_registry.json`:
+
+- no explicit trace contract: `unclaimed`
+- declared contract with no matched anchors yet: `planned`
+- declared contract with local changes on tracked surfaces: `in_progress`
+- declared contract with implementation anchors only: `implemented`
+- declared contract with both implementation and verification anchors: `verified`
+- declared contract blocked by review or unresolved dependencies: `blocked`
+
+The `drifted` state is reserved for freshness-aware derivation and is not yet
+emitted by this command.
 
 ### Proposal runtime index
 
@@ -321,8 +337,11 @@ path.
 ### Trace and inspection surfaces
 
 - `runs/spec_trace_index.json`
-  - derived spec-to-code trace index from literal spec-id mentions in
-    `tools/` and `tests/`
+  - first graph-bound spec trace artifact with `code_refs`, `test_refs`,
+    `commit_refs`, `pr_refs`, `verification_basis`, weak
+    `acceptance_coverage`, and a conservative `implementation_state`
+- `tools/spec_trace_registry.json`
+  - explicit strong trace contracts for deriving `implementation_state`
 - `runs/proposal_runtime_index.json`
   - derived proposal runtime index with posture, realization, validation, and
     re-observation status

@@ -37,7 +37,10 @@ Supervisor modes:
   print structured findings. Add `--transition-profile PROFILE` to validate the same packet under
   `specgraph_core`, `product_spec`, `techspec`, or `implementation_trace`.
 - `--build-spec-trace-index`: build `runs/spec_trace_index.json` from literal `SG-SPEC-XXXX`
-  mentions in `tools/` and `tests/`.
+  mentions in `tools/` and `tests/`, then enrich that graph-bound index with weak
+  `commit_refs`, `pr_refs`, `verification_basis`, and `acceptance_coverage`.
+  `implementation_state` is derived conservatively from explicit contracts in
+  `tools/spec_trace_registry.json`, not from weak mentions alone.
 - `--build-proposal-runtime-index`: build `runs/proposal_runtime_index.json` from proposal docs,
   the proposal runtime registry, `tasks.md`, and repository markers in `tools/` and `tests/`.
 - `--list-stale-runtime` / `--clean-stale-runtime`: inspect or clean stale gate/worktree residue.
@@ -50,7 +53,12 @@ Key derived artifacts:
 - `runs/proposal_queue.json`: derived proposal-oriented next moves
 - `runs/refactor_queue.json`: derived refactor-oriented next moves
 - `runs/proposals/*.json`: structured split proposal artifacts
-- `runs/spec_trace_index.json`: weak spec-to-code coverage index from code/test mentions
+- `runs/spec_trace_index.json`: first graph-bound trace artifact with `code_refs`,
+  `test_refs`, `commit_refs`, `pr_refs`, `verification_basis`, and weak
+  `acceptance_coverage`
+- `tools/spec_trace_registry.json`: explicit strong trace contracts used to
+  derive conservative `implementation_state` overlays such as `planned`,
+  `implemented`, `verified`, and `blocked`
 - `runs/proposal_runtime_index.json`: proposal posture and reflective runtime-closure index
 - `runs/spec_id_reservations.json`: temporary active child-materialization spec-id reservations
 - `tools/supervisor_policy.json`: declarative supervisor policy artifact for thresholds, priorities,

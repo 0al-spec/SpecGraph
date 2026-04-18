@@ -5661,6 +5661,7 @@ def test_main_validates_transition_packet_with_profile_override(
 def test_build_spec_trace_index_collects_tool_and_test_refs(
     supervisor_module: object,
     repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     tools_dir = repo_fixture / "tools"
     tests_dir = repo_fixture / "tests"
@@ -5674,23 +5675,65 @@ def test_build_spec_trace_index_collects_tool_and_test_refs(
         "def test_trace():\n    assert 'SG-SPEC-0001'\n",
         encoding="utf-8",
     )
+    monkeypatch.setattr(
+        supervisor_module,
+        "collect_trace_commit_refs",
+        lambda ref_paths, repo_root=None, limit=5: [
+            {
+                "sha": "a" * 40,
+                "short_sha": "aaaaaaa",
+                "committed_at": "2026-04-18T00:00:00Z",
+                "subject": "Add trace plane (#96)",
+            }
+        ],
+    )
 
     index = supervisor_module.build_spec_trace_index(supervisor_module.load_specs())
 
+    assert index["artifact_kind"] == "spec_trace_index"
+    assert index["schema_version"] == 3
+    assert index["implementation_state_model"]["derivation_mode"] == (
+        "registry_backed_conservative_overlay"
+    )
     assert index["entry_count"] == 1
     entry = index["entries"][0]
     assert entry["spec_id"] == "SG-SPEC-0001"
-    assert entry["coverage_summary"] == {
-        "tool_ref_count": 1,
+    assert entry["trace_summary"] == {
+        "code_ref_count": 1,
         "test_ref_count": 1,
-        "coverage_kind": "tools_and_tests",
+        "commit_ref_count": 1,
+        "pr_ref_count": 1,
+        "trace_strength": "code_and_tests",
     }
-    assert entry["tool_refs"] == [{"path": "tools/impl.py", "line": 1}]
+    assert entry["code_refs"] == [{"path": "tools/impl.py", "line": 1}]
     assert entry["test_refs"] == [{"path": "tests/test_impl.py", "line": 2}]
+    assert entry["commit_refs"] == [
+        {
+            "sha": "a" * 40,
+            "short_sha": "aaaaaaa",
+            "committed_at": "2026-04-18T00:00:00Z",
+            "subject": "Add trace plane (#96)",
+        }
+    ]
+    assert entry["pr_refs"] == [{"number": 96, "source": "commit_subject", "commit": "aaaaaaa"}]
+    assert entry["trace_contract"] is None
+    assert entry["implementation_state"]["status"] == "unclaimed"
+    assert entry["verification_basis"]["status"] == "test_linked"
+    assert entry["acceptance_coverage"] == {
+        "status": "evidence_linked_unmapped",
+        "criterion_count": 1,
+        "mapped_criterion_count": 0,
+        "evidence_ref_count": 1,
+        "confidence": "weak",
+        "basis": (
+            "Linked tests mention the spec id, but the first trace index does not yet map "
+            "individual acceptance criteria to verification evidence."
+        ),
+    }
     assert index["unknown_spec_mentions"] == [
         {
             "spec_id": "SG-SPEC-9999",
-            "tool_refs": [{"path": "tools/impl.py", "line": 2}],
+            "code_refs": [{"path": "tools/impl.py", "line": 2}],
             "test_refs": [],
         }
     ]
@@ -5712,12 +5755,112 @@ def test_main_builds_spec_trace_index_as_standalone_command(
 
     assert exit_code == 0
     report = json.loads(capsys.readouterr().out)
+    assert report["artifact_kind"] == "spec_trace_index"
+    assert report["schema_version"] == 3
     assert report["entry_count"] == 1
-    assert report["entries"][0]["coverage_summary"]["coverage_kind"] == "tools_and_tests"
+    assert report["entries"][0]["trace_summary"]["trace_strength"] == "code_and_tests"
+    assert report["entries"][0]["implementation_state"]["status"] == "unclaimed"
+    assert report["entries"][0]["acceptance_coverage"]["status"] == "evidence_linked_unmapped"
     artifact = json.loads(
         (repo_fixture / "runs" / "spec_trace_index.json").read_text(encoding="utf-8")
     )
     assert artifact["entries"][0]["spec_id"] == "SG-SPEC-0001"
+
+
+def test_build_spec_trace_index_derives_registry_backed_implementation_states(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    tools_dir = repo_fixture / "tools"
+    tests_dir = repo_fixture / "tests"
+    tools_dir.mkdir()
+    tests_dir.mkdir()
+    (tools_dir / "impl.py").write_text("SPEC_ID = 'SG-SPEC-0001'\n", encoding="utf-8")
+    (tests_dir / "test_impl.py").write_text("SPEC_ID = 'SG-SPEC-0001'\n", encoding="utf-8")
+    (tools_dir / "spec_trace_registry.json").write_text(
+        json.dumps(
+            [
+                {
+                    "spec_id": "SG-SPEC-0001",
+                    "code_surfaces": ["tools/impl.py"],
+                    "test_surfaces": ["tests/test_impl.py"],
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    index = supervisor_module.build_spec_trace_index(supervisor_module.load_specs())
+    entry = index["entries"][0]
+    assert entry["trace_contract"] == {
+        "source": "registry",
+        "declared_code_surfaces": ["tools/impl.py"],
+        "declared_test_surfaces": ["tests/test_impl.py"],
+        "matched_code_ref_count": 1,
+        "matched_test_ref_count": 1,
+    }
+    assert entry["implementation_state"]["status"] == "verified"
+
+    monkeypatch.setattr(
+        supervisor_module,
+        "git_status_changed_files",
+        lambda cwd: ["tools/impl.py"],
+    )
+    index = supervisor_module.build_spec_trace_index(supervisor_module.load_specs())
+    assert index["entries"][0]["implementation_state"]["status"] == "in_progress"
+
+    (tools_dir / "spec_trace_registry.json").write_text(
+        json.dumps(
+            [
+                {
+                    "spec_id": "SG-SPEC-0001",
+                    "code_surfaces": ["tools/missing_impl.py"],
+                    "test_surfaces": ["tests/missing_test_impl.py"],
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "git_status_changed_files",
+        lambda cwd: [],
+    )
+    index = supervisor_module.build_spec_trace_index(supervisor_module.load_specs())
+    assert index["entries"][0]["implementation_state"]["status"] == "planned"
+
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0002.yaml"
+    node_path.write_text(
+        json.dumps(
+            {
+                "id": "SG-SPEC-0002",
+                "title": "Blocked Dependency",
+                "kind": "spec",
+                "created_at": "2026-04-18T00:00:00Z",
+                "updated_at": "2026-04-18T00:00:00Z",
+                "status": "outlined",
+                "maturity": 0.2,
+                "depends_on": [],
+                "relates_to": [],
+                "inputs": [],
+                "outputs": ["specs/nodes/SG-SPEC-0002.yaml"],
+                "allowed_paths": ["specs/nodes/SG-SPEC-0002.yaml"],
+                "acceptance": ["blocked"],
+                "prompt": "Blocked dependency.",
+                "gate_state": "review_pending",
+            }
+        ),
+        encoding="utf-8",
+    )
+    spec_data = json.loads((repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml").read_text())
+    spec_data["depends_on"] = ["SG-SPEC-0002"]
+    (repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml").write_text(
+        json.dumps(spec_data),
+        encoding="utf-8",
+    )
+    index = supervisor_module.build_spec_trace_index(supervisor_module.load_specs())
+    assert index["entries"][0]["implementation_state"]["status"] == "blocked"
 
 
 def seed_proposal_runtime_fixture(root: Path, *, include_heuristic_proposal: bool) -> None:
