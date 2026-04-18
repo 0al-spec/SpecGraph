@@ -332,6 +332,7 @@ SPECGRAPH_CANONICAL_SURFACE_PREFIXES = ("specs/nodes/", "specs/history/")
 SPEC_TRACE_INDEX_FILENAME = "spec_trace_index.json"
 SPEC_TRACE_PROJECTION_FILENAME = "spec_trace_projection.json"
 PROPOSAL_RUNTIME_INDEX_FILENAME = "proposal_runtime_index.json"
+PROPOSAL_PROMOTION_INDEX_FILENAME = "proposal_promotion_index.json"
 PROPOSAL_DOC_FILENAME_RE = re.compile(r"^(?P<proposal_id>\d{4})_(?P<slug>.+)\.md$")
 TASK_LINE_RE = re.compile(r"^(?P<task_id>\d+)\.\s+\[(?P<status>[a-z_]+)\]\s+(?P<body>.+)$")
 PR_NUMBER_FROM_SUBJECT_RE = re.compile(
@@ -7336,8 +7337,16 @@ def proposal_runtime_registry_path() -> Path:
     return ROOT / "tools" / "proposal_runtime_registry.json"
 
 
+def proposal_promotion_registry_path() -> Path:
+    return ROOT / "tools" / "proposal_promotion_registry.json"
+
+
 def proposal_runtime_index_path() -> Path:
     return RUNS_DIR / PROPOSAL_RUNTIME_INDEX_FILENAME
+
+
+def proposal_promotion_index_path() -> Path:
+    return RUNS_DIR / PROPOSAL_PROMOTION_INDEX_FILENAME
 
 
 def proposal_docs_dir() -> Path:
@@ -7365,6 +7374,16 @@ def load_json_list(path: Path) -> list[dict[str, Any]]:
 def load_proposal_runtime_registry() -> dict[str, dict[str, Any]]:
     registry: dict[str, dict[str, Any]] = {}
     for item in load_json_list(proposal_runtime_registry_path()):
+        proposal_id = str(item.get("proposal_id", "")).strip()
+        if not proposal_id:
+            continue
+        registry[proposal_id] = item
+    return registry
+
+
+def load_proposal_promotion_registry() -> dict[str, dict[str, Any]]:
+    registry: dict[str, dict[str, Any]] = {}
+    for item in load_json_list(proposal_promotion_registry_path()):
         proposal_id = str(item.get("proposal_id", "")).strip()
         if not proposal_id:
             continue
@@ -7786,6 +7805,192 @@ def build_proposal_runtime_index() -> dict[str, Any]:
 def write_proposal_runtime_index(index: dict[str, Any]) -> Path:
     RUNS_DIR.mkdir(parents=True, exist_ok=True)
     path = proposal_runtime_index_path()
+    with artifact_lock(path):
+        atomic_write_json(path, index)
+    return path
+
+
+def proposal_promotion_string_list(value: Any) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    return [str(item).strip() for item in value if str(item).strip()]
+
+
+def proposal_source_ref_records(
+    source_refs: list[str],
+    *,
+    policy: dict[str, Any] | None,
+) -> list[dict[str, Any]]:
+    records: list[dict[str, Any]] = []
+    for ref in source_refs:
+        if _looks_like_repo_path(ref):
+            normalized = _normalize_transition_repo_path(ref)
+            candidate = ROOT / normalized
+            records.append(
+                {
+                    "ref": normalized,
+                    "ref_kind": "repo_path",
+                    "exists": candidate.exists(),
+                    "repository_projection": classify_proposal_repository_projection(
+                        candidate,
+                        policy=policy,
+                    ),
+                }
+            )
+        else:
+            records.append(
+                {
+                    "ref": ref,
+                    "ref_kind": "external_reference",
+                    "exists": None,
+                    "repository_projection": {},
+                }
+            )
+    return records
+
+
+def derive_promotion_traceability(
+    *,
+    registry_entry: dict[str, Any],
+    proposal: dict[str, Any],
+    policy: dict[str, Any] | None,
+) -> dict[str, Any]:
+    source_artifact_class = str(registry_entry.get("source_artifact_class", "")).strip()
+    source_refs = proposal_promotion_string_list(registry_entry.get("source_refs", []))
+    required_provenance_links = proposal_promotion_string_list(
+        registry_entry.get("required_provenance_links", [])
+    )
+    motivating_concern = str(registry_entry.get("motivating_concern", "")).strip()
+    normalized_title = (
+        str(registry_entry.get("normalized_title", "")).strip()
+        or str(proposal.get("title", "")).strip()
+    )
+    bounded_scope = str(registry_entry.get("bounded_scope", "")).strip()
+    source_ref_records = proposal_source_ref_records(source_refs, policy=policy)
+    missing_source_artifacts = sorted(
+        record["ref"]
+        for record in source_ref_records
+        if record["ref_kind"] == "repo_path" and record["exists"] is False
+    )
+
+    missing_fields: list[str] = []
+    if not registry_entry:
+        status = "missing_trace"
+        next_gap = "attach_promotion_trace"
+    else:
+        if source_artifact_class != "working_draft":
+            missing_fields.append("source_artifact_class")
+        if not source_refs:
+            missing_fields.append("source_refs")
+        if not motivating_concern:
+            missing_fields.append("motivating_concern")
+        if not normalized_title:
+            missing_fields.append("normalized_title")
+        if not bounded_scope:
+            missing_fields.append("bounded_scope")
+        if "source_draft_ref" not in required_provenance_links:
+            missing_fields.append("source_draft_ref")
+        if missing_source_artifacts:
+            missing_fields.append("missing_source_artifact")
+
+        if not missing_fields:
+            status = "bounded"
+            next_gap = "none"
+        elif "source_artifact_class" in missing_fields:
+            status = "invalid"
+            next_gap = "repair_source_artifact_class"
+        elif "source_refs" in missing_fields:
+            status = "incomplete"
+            next_gap = "record_source_refs"
+        elif "missing_source_artifact" in missing_fields:
+            status = "incomplete"
+            next_gap = "restore_source_artifact"
+        elif "motivating_concern" in missing_fields:
+            status = "incomplete"
+            next_gap = "record_motivating_concern"
+        elif "bounded_scope" in missing_fields:
+            status = "incomplete"
+            next_gap = "record_bounded_scope"
+        elif "source_draft_ref" in missing_fields:
+            status = "incomplete"
+            next_gap = "preserve_source_draft_ref"
+        else:
+            status = "incomplete"
+            next_gap = "complete_promotion_trace"
+
+    return {
+        "status": status,
+        "next_gap": next_gap,
+        "source_artifact_class": source_artifact_class,
+        "source_refs": source_refs,
+        "source_ref_records": source_ref_records,
+        "motivating_concern": motivating_concern,
+        "normalized_title": normalized_title,
+        "bounded_scope": bounded_scope,
+        "required_provenance_links": required_provenance_links,
+        "missing_fields": missing_fields,
+    }
+
+
+def build_proposal_promotion_index() -> dict[str, Any]:
+    promotion_policy, policy_findings = load_proposal_promotion_policy_report()
+    registry = load_proposal_promotion_registry()
+    entries: list[dict[str, Any]] = []
+    grouped_by_status: dict[str, list[str]] = {}
+    grouped_by_next_gap: dict[str, list[str]] = {}
+
+    for proposal in iter_proposal_documents():
+        proposal_id = str(proposal["proposal_id"])
+        traceability = derive_promotion_traceability(
+            registry_entry=registry.get(proposal_id, {}),
+            proposal=proposal,
+            policy=promotion_policy,
+        )
+        grouped_by_status.setdefault(str(traceability["status"]), []).append(proposal_id)
+        grouped_by_next_gap.setdefault(str(traceability["next_gap"]), []).append(proposal_id)
+        entries.append(
+            {
+                "proposal_id": proposal_id,
+                "title": str(proposal["title"]),
+                "path": str(proposal["path"]),
+                "status": str(proposal["status"]),
+                "repository_projection": copy.deepcopy(proposal["repository_projection"]),
+                "semantic_artifact_class": str(proposal["semantic_artifact_class"]),
+                "promotion_traceability": traceability,
+            }
+        )
+
+    return {
+        "artifact_kind": "proposal_promotion_index",
+        "generated_at": utc_now_iso(),
+        "semantic_boundary_principle": str(
+            (promotion_policy or {}).get("semantic_boundary_principle", "")
+        ),
+        "policy_findings": policy_findings,
+        "entry_count": len(entries),
+        "entries": entries,
+        "viewer_projection": {
+            "traceability_status": {
+                key: sorted(value) for key, value in sorted(grouped_by_status.items())
+            },
+            "next_gap": {key: sorted(value) for key, value in sorted(grouped_by_next_gap.items())},
+        },
+        "promotion_backlog": {
+            "entry_count": sum(
+                1 for entry in entries if entry["promotion_traceability"]["next_gap"] != "none"
+            ),
+            "grouped_by_next_gap": {
+                key: sorted(value)
+                for key, value in sorted(grouped_by_next_gap.items())
+                if key != "none"
+            },
+        },
+    }
+
+
+def write_proposal_promotion_index(index: dict[str, Any]) -> Path:
+    RUNS_DIR.mkdir(parents=True, exist_ok=True)
+    path = proposal_promotion_index_path()
     with artifact_lock(path):
         atomic_write_json(path, index)
     return path
@@ -10670,6 +10875,7 @@ def main(
     build_spec_trace_index_mode: bool = False,
     build_spec_trace_projection_mode: bool = False,
     build_proposal_runtime_index_mode: bool = False,
+    build_proposal_promotion_index_mode: bool = False,
 ) -> int:
     """Entry point for CLI and tests.
 
@@ -10723,6 +10929,7 @@ def main(
                 build_spec_trace_index_mode,
                 build_spec_trace_projection_mode,
                 build_proposal_runtime_index_mode,
+                build_proposal_promotion_index_mode,
             )
         ):
             print(
@@ -10770,6 +10977,7 @@ def main(
                 observe_graph_health_mode,
                 build_spec_trace_projection_mode,
                 build_proposal_runtime_index_mode,
+                build_proposal_promotion_index_mode,
             )
         ):
             print(
@@ -10841,6 +11049,7 @@ def main(
                 list_stale_runtime,
                 clean_stale_runtime,
                 observe_graph_health_mode,
+                build_proposal_promotion_index_mode,
             )
         ):
             print(
@@ -10850,6 +11059,40 @@ def main(
             return 1
         index = build_proposal_runtime_index()
         write_proposal_runtime_index(index)
+        print(json.dumps(index, ensure_ascii=False, indent=2))
+        return 0
+
+    if build_proposal_promotion_index_mode:
+        if any(
+            (
+                dry_run,
+                auto_approve,
+                loop,
+                resolve_gate,
+                decision,
+                note,
+                target_spec,
+                split_proposal,
+                apply_split_proposal,
+                operator_note,
+                mutation_budget,
+                run_authority,
+                execution_profile,
+                child_model,
+                child_timeout_seconds,
+                verbose,
+                list_stale_runtime,
+                clean_stale_runtime,
+                observe_graph_health_mode,
+            )
+        ):
+            print(
+                "--build-proposal-promotion-index must be used as a standalone command",
+                file=sys.stderr,
+            )
+            return 1
+        index = build_proposal_promotion_index()
+        write_proposal_promotion_index(index)
         print(json.dumps(index, ensure_ascii=False, indent=2))
         return 0
 
@@ -11363,6 +11606,14 @@ if __name__ == "__main__":
             "validation closure, and observation coverage"
         ),
     )
+    parser.add_argument(
+        "--build-proposal-promotion-index",
+        action="store_true",
+        help=(
+            "Build a derived proposal promotion index showing source traceability "
+            "and promotion provenance gaps"
+        ),
+    )
     parser.add_argument("--resolve-gate", metavar="SPEC_ID", help="Resolve gate for a spec id")
     parser.add_argument(
         "--decision",
@@ -11482,5 +11733,6 @@ if __name__ == "__main__":
             build_spec_trace_index_mode=args.build_spec_trace_index,
             build_spec_trace_projection_mode=args.build_spec_trace_projection,
             build_proposal_runtime_index_mode=args.build_proposal_runtime_index,
+            build_proposal_promotion_index_mode=args.build_proposal_promotion_index,
         )
     )

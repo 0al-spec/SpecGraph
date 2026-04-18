@@ -6617,6 +6617,62 @@ def seed_proposal_runtime_fixture(root: Path, *, include_heuristic_proposal: boo
         )
 
 
+def seed_proposal_promotion_fixture(root: Path) -> None:
+    proposals_dir = root / "docs" / "proposals"
+    drafts_dir = root / "docs" / "proposals_drafts"
+    tools_dir = root / "tools"
+    proposals_dir.mkdir(parents=True)
+    drafts_dir.mkdir(parents=True)
+    tools_dir.mkdir(exist_ok=True)
+    (drafts_dir / "0005_telemetry.md").write_text(
+        "# Telemetry draft\n",
+        encoding="utf-8",
+    )
+    (proposals_dir / "0018_telemetry_evidence_plane.md").write_text(
+        "\n".join(
+            [
+                "# Telemetry Evidence Plane",
+                "",
+                "## Status",
+                "",
+                "Draft proposal",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    (proposals_dir / "0022_refinement_fan_out_pressure.md").write_text(
+        "\n".join(
+            [
+                "# Refinement Fan-Out Pressure",
+                "",
+                "## Status",
+                "",
+                "Draft proposal",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    (tools_dir / "proposal_promotion_registry.json").write_text(
+        json.dumps(
+            [
+                {
+                    "proposal_id": "0018",
+                    "source_artifact_class": "working_draft",
+                    "source_refs": ["docs/proposals_drafts/0005_telemetry.md"],
+                    "motivating_concern": "telemetry evidence plane",
+                    "normalized_title": "Telemetry Evidence Plane",
+                    "bounded_scope": (
+                        "Define telemetry-derived evidence artifacts without canonical payload "
+                        "leakage."
+                    ),
+                    "required_provenance_links": ["source_draft_ref"],
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+
 def test_parse_proposal_document_includes_repository_projection(
     supervisor_module: object,
     repo_fixture: Path,
@@ -6675,6 +6731,43 @@ def test_build_proposal_runtime_index_reports_reflective_chain(
     assert by_id["0017"]["runtime_realization"]["status"] == "untracked"
     assert by_id["0017"]["reflective_chain"]["next_gap"] == "runtime_realization"
     assert index["reflective_backlog"]["grouped_by_next_gap"]["runtime_realization"] == ["0017"]
+
+
+def test_build_proposal_promotion_index_reports_traceability_gaps(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    seed_proposal_promotion_fixture(repo_fixture)
+
+    index = supervisor_module.build_proposal_promotion_index()
+
+    assert index["artifact_kind"] == "proposal_promotion_index"
+    assert index["entry_count"] == 2
+    by_id = {entry["proposal_id"]: entry for entry in index["entries"]}
+    assert by_id["0018"]["promotion_traceability"]["status"] == "bounded"
+    assert by_id["0018"]["promotion_traceability"]["next_gap"] == "none"
+    assert by_id["0022"]["promotion_traceability"]["status"] == "missing_trace"
+    assert by_id["0022"]["promotion_traceability"]["next_gap"] == "attach_promotion_trace"
+    assert index["viewer_projection"]["traceability_status"]["bounded"] == ["0018"]
+    assert index["promotion_backlog"]["grouped_by_next_gap"]["attach_promotion_trace"] == ["0022"]
+
+
+def test_main_builds_proposal_promotion_index_as_standalone_command(
+    supervisor_module: object,
+    repo_fixture: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    seed_proposal_promotion_fixture(repo_fixture)
+
+    exit_code = supervisor_module.main(build_proposal_promotion_index_mode=True)
+
+    assert exit_code == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["artifact_kind"] == "proposal_promotion_index"
+    artifact = json.loads(
+        (repo_fixture / "runs" / "proposal_promotion_index.json").read_text(encoding="utf-8")
+    )
+    assert artifact["viewer_projection"]["traceability_status"]["bounded"] == ["0018"]
 
 
 def test_main_builds_proposal_runtime_index_as_standalone_command(

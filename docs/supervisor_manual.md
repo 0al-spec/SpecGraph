@@ -274,6 +274,24 @@ Those fields come from `tools/proposal_promotion_policy.json`. The repository
 path is treated as a projection default such as `reviewable_proposal_surface`,
 not as the sole source of semantic meaning.
 
+### Proposal promotion index
+
+```bash
+python3 tools/supervisor.py --build-proposal-promotion-index
+```
+
+Builds `runs/proposal_promotion_index.json` from `docs/proposals/`,
+`tools/proposal_promotion_registry.json`, and the semantic boundary in
+`tools/proposal_promotion_policy.json`.
+
+Use it when you want to inspect, for each promoted proposal:
+
+- bounded vs missing promotion traceability
+- source draft references and whether they still resolve
+- motivating concern, normalized title, and bounded scope coverage
+- next promotion-provenance gap such as `attach_promotion_trace`,
+  `record_source_refs`, or `record_bounded_scope`
+
 ### Gate resolution
 
 ```bash
