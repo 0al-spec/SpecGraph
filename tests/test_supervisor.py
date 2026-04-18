@@ -2927,6 +2927,27 @@ def test_update_refactor_queue_rejects_malformed_existing_queue_file(
     assert queue_path.read_text(encoding="utf-8") == "{broken"
 
 
+def test_update_refactor_queue_rejects_non_object_list_entries(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    queue_path = repo_fixture / "runs" / "refactor_queue.json"
+    queue_path.write_text(json.dumps([{"ok": True}, "bad-entry"]), encoding="utf-8")
+
+    with pytest.raises(RuntimeError, match="must contain only JSON objects"):
+        supervisor_module.update_refactor_queue(
+            graph_health={
+                "source_spec_id": "SG-SPEC-0001",
+                "observations": [],
+                "signals": ["oversized_spec"],
+                "recommended_actions": [],
+            },
+            run_id="RUN-1",
+        )
+
+    assert queue_path.read_text(encoding="utf-8") == json.dumps([{"ok": True}, "bad-entry"])
+
+
 def test_update_refactor_queue_defers_direct_execution_when_active_proposal_exists(
     supervisor_module: object,
     repo_fixture: Path,
@@ -3013,6 +3034,27 @@ def test_update_proposal_queue_rejects_malformed_existing_queue_file(
         )
 
     assert queue_path.read_text(encoding="utf-8") == "{broken"
+
+
+def test_update_proposal_queue_rejects_non_object_list_entries(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    queue_path = repo_fixture / "runs" / "proposal_queue.json"
+    queue_path.write_text(json.dumps([{"ok": True}, 1]), encoding="utf-8")
+
+    with pytest.raises(RuntimeError, match="must contain only JSON objects"):
+        supervisor_module.update_proposal_queue(
+            graph_health={
+                "source_spec_id": "SG-SPEC-0001",
+                "observations": [],
+                "signals": ["oversized_spec"],
+                "recommended_actions": [],
+            },
+            run_id="RUN-1",
+        )
+
+    assert queue_path.read_text(encoding="utf-8") == json.dumps([{"ok": True}, 1])
 
 
 def test_update_proposal_queue_requires_recurrence_for_refactor_proposal(

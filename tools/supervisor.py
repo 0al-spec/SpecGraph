@@ -4904,7 +4904,6 @@ def load_json_list_report(
     if not all(isinstance(item, dict) for item in data):
         return (
             None,
-            None,
             (
                 f"Malformed {artifact_kind}: {display_artifact_path(path)} must contain only "
                 "JSON objects"
