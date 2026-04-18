@@ -5049,6 +5049,33 @@ def test_validate_transition_packet_reports_structured_findings_for_missing_fiel
     }
 
 
+def test_validate_transition_packet_rejects_non_string_list_items(
+    supervisor_module: object,
+) -> None:
+    findings = supervisor_module.validate_transition_packet(
+        {
+            "packet_type": "apply",
+            "transition_intent": "apply reviewed proposal into canonical spec mutation",
+            "source_refs": [{}],
+            "authority_class": "human_reviewed_apply",
+            "target_scope": "specs/nodes/SG-SPEC-0001.yaml",
+            "motivating_concern": "approved split proposal",
+            "declared_change_surface": ["specs/nodes/SG-SPEC-0001.yaml"],
+            "required_provenance_links": [0],
+        }
+    )
+
+    assert {finding["code"] for finding in findings} >= {
+        "invalid_string_list_item",
+        "missing_source_refs",
+        "missing_required_provenance_links",
+    }
+    assert {finding["field"] for finding in findings if "field" in finding} >= {
+        "source_refs",
+        "required_provenance_links",
+    }
+
+
 def test_main_validates_transition_packet_as_standalone_command(
     supervisor_module: object,
     repo_fixture: Path,

@@ -4502,11 +4502,44 @@ def transition_packet_finding(
     return finding
 
 
-def _transition_packet_string_list(value: Any) -> list[str]:
+def _transition_packet_string_list(
+    *,
+    field_name: str,
+    value: Any,
+) -> tuple[list[str], list[dict[str, str]]]:
     if not isinstance(value, list):
-        return []
-    normalized = [str(item).strip() for item in value if str(item).strip()]
-    return normalized
+        return [], [
+            transition_packet_finding(
+                code="invalid_string_list",
+                field=field_name,
+                message=f"{field_name} must be a list of non-empty strings",
+            )
+        ]
+
+    normalized: list[str] = []
+    findings: list[dict[str, str]] = []
+    for index, item in enumerate(value, start=1):
+        if not isinstance(item, str):
+            findings.append(
+                transition_packet_finding(
+                    code="invalid_string_list_item",
+                    field=field_name,
+                    message=f"{field_name}[{index}] must be a non-empty string",
+                )
+            )
+            continue
+        normalized_item = item.strip()
+        if not normalized_item:
+            findings.append(
+                transition_packet_finding(
+                    code="invalid_string_list_item",
+                    field=field_name,
+                    message=f"{field_name}[{index}] must be a non-empty string",
+                )
+            )
+            continue
+        normalized.append(normalized_item)
+    return normalized, findings
 
 
 def validate_transition_packet(packet: Any) -> list[dict[str, str]]:
@@ -4549,7 +4582,12 @@ def validate_transition_packet(packet: Any) -> list[dict[str, str]]:
             )
         )
 
-    if not _transition_packet_string_list(packet.get("source_refs")):
+    source_refs, source_ref_findings = _transition_packet_string_list(
+        field_name="source_refs",
+        value=packet.get("source_refs"),
+    )
+    findings.extend(source_ref_findings)
+    if not source_refs:
         findings.append(
             transition_packet_finding(
                 code="missing_source_refs",
@@ -4558,7 +4596,12 @@ def validate_transition_packet(packet: Any) -> list[dict[str, str]]:
             )
         )
 
-    if not _transition_packet_string_list(packet.get("declared_change_surface")):
+    declared_change_surface, declared_change_findings = _transition_packet_string_list(
+        field_name="declared_change_surface",
+        value=packet.get("declared_change_surface"),
+    )
+    findings.extend(declared_change_findings)
+    if not declared_change_surface:
         findings.append(
             transition_packet_finding(
                 code="missing_declared_change_surface",
@@ -4570,7 +4613,12 @@ def validate_transition_packet(packet: Any) -> list[dict[str, str]]:
             )
         )
 
-    if not _transition_packet_string_list(packet.get("required_provenance_links")):
+    required_provenance_links, provenance_link_findings = _transition_packet_string_list(
+        field_name="required_provenance_links",
+        value=packet.get("required_provenance_links"),
+    )
+    findings.extend(provenance_link_findings)
+    if not required_provenance_links:
         findings.append(
             transition_packet_finding(
                 code="missing_required_provenance_links",
