@@ -254,6 +254,7 @@ ROLE_LEGIBILITY_MARKERS = (
 VALID_TRANSITION_PACKET_TYPES = {"promotion", "proposal", "apply", "handoff"}
 DEFAULT_TRANSITION_VALIDATOR_PROFILE = "specgraph_core"
 PRODUCT_SPEC_TRANSITION_POLICY_RELATIVE_PATH = "tools/product_spec_transition_policy.json"
+PROPOSAL_PROMOTION_POLICY_RELATIVE_PATH = "tools/proposal_promotion_policy.json"
 VALID_TRANSITION_VALIDATOR_PROFILES = {
     "specgraph_core",
     "product_spec",
@@ -5471,6 +5472,10 @@ def product_spec_transition_policy_path() -> Path:
     return TOOLS_DIR / "product_spec_transition_policy.json"
 
 
+def proposal_promotion_policy_path() -> Path:
+    return TOOLS_DIR / "proposal_promotion_policy.json"
+
+
 def load_product_spec_transition_policy_report() -> tuple[
     dict[str, Any] | None, list[dict[str, str]]
 ]:
@@ -5531,6 +5536,92 @@ def load_product_spec_transition_policy_report() -> tuple[
                 message=(
                     "malformed product_spec transition policy artifact: missing top-level "
                     f"section(s): {', '.join(missing)}"
+                ),
+            )
+        ]
+
+    return payload, []
+
+
+def load_proposal_promotion_policy_report() -> tuple[dict[str, Any] | None, list[dict[str, str]]]:
+    path = proposal_promotion_policy_path()
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except OSError as exc:
+        return None, [
+            transition_packet_finding(
+                code="proposal_promotion_policy_unavailable",
+                family="profile",
+                profile="specgraph_core",
+                message=(
+                    f"failed to read proposal promotion policy artifact: {path.as_posix()} ({exc})"
+                ),
+            )
+        ]
+    except json.JSONDecodeError as exc:
+        return None, [
+            transition_packet_finding(
+                code="malformed_proposal_promotion_policy",
+                family="profile",
+                profile="specgraph_core",
+                message=(
+                    f"malformed proposal promotion policy artifact: {path.as_posix()} ({exc})"
+                ),
+            )
+        ]
+    if not isinstance(payload, dict):
+        return None, [
+            transition_packet_finding(
+                code="malformed_proposal_promotion_policy",
+                family="profile",
+                profile="specgraph_core",
+                message=(
+                    "malformed proposal promotion policy artifact: "
+                    f"{path.as_posix()} must contain a JSON object"
+                ),
+            )
+        ]
+
+    required_sections = (
+        "semantic_boundary_principle",
+        "semantic_artifact_classes",
+        "repository_projection_defaults",
+    )
+    missing = [section for section in required_sections if section not in payload]
+    if missing:
+        return None, [
+            transition_packet_finding(
+                code="malformed_proposal_promotion_policy",
+                family="profile",
+                profile="specgraph_core",
+                message=(
+                    "malformed proposal promotion policy artifact: missing top-level "
+                    f"section(s): {', '.join(missing)}"
+                ),
+            )
+        ]
+
+    if not isinstance(payload.get("semantic_artifact_classes"), dict):
+        return None, [
+            transition_packet_finding(
+                code="malformed_proposal_promotion_policy",
+                family="profile",
+                profile="specgraph_core",
+                message=(
+                    "malformed proposal promotion policy artifact: "
+                    "semantic_artifact_classes must be an object"
+                ),
+            )
+        ]
+    if not isinstance(payload.get("repository_projection_defaults"), list):
+        return None, [
+            transition_packet_finding(
+                code="malformed_proposal_promotion_policy",
+                family="profile",
+                profile="specgraph_core",
+                message=(
+                    "malformed proposal promotion policy artifact: "
+                    "repository_projection_defaults must be a list"
                 ),
             )
         ]
@@ -6225,6 +6316,7 @@ def validate_transition_packet_report(
             "packet_family_definition": {},
             "transition_profile": validator_profile or DEFAULT_TRANSITION_VALIDATOR_PROFILE,
             "validator_profile_definition": {},
+            "proposal_promotion_policy_definition": {},
             "families_checked": list(TRANSITION_CHECK_FAMILIES),
             "finding_count": len(findings),
             "findings_by_family": {"schema": len(findings)},
@@ -6252,10 +6344,15 @@ def validate_transition_packet_report(
     packet_type = str(context.get("packet_type", "")).strip()
     transition_profile = str(context.get("transition_profile", "")).strip()
     product_spec_policy_definition = {}
+    proposal_promotion_policy_definition = {}
     if transition_profile == "product_spec":
         policy, _findings = load_product_spec_transition_policy_report()
         if policy is not None:
             product_spec_policy_definition = policy
+    if packet_type == "promotion":
+        policy, _findings = load_proposal_promotion_policy_report()
+        if policy is not None:
+            proposal_promotion_policy_definition = policy
     return {
         "ok": not findings,
         "packet_type": packet_type,
@@ -6266,6 +6363,7 @@ def validate_transition_packet_report(
             transition_profile, {}
         ),
         "product_spec_policy_definition": product_spec_policy_definition,
+        "proposal_promotion_policy_definition": proposal_promotion_policy_definition,
         "families_checked": list(TRANSITION_CHECK_FAMILIES),
         "finding_count": len(findings),
         "findings_by_family": findings_by_family,

@@ -39,6 +39,10 @@ Supervisor modes:
   `product_spec` inherits the shared engine through one `product_graph_root`
   binding and the declarative rules in `tools/product_spec_transition_policy.json`
   instead of re-implementing packet semantics per product domain.
+  `promotion` packets also expose the semantic boundary from
+  `tools/proposal_promotion_policy.json`, which distinguishes exploratory
+  `working_draft` material from normalized `reviewable_proposal` artifacts
+  without making folder layout the only source of meaning.
 - `--build-spec-trace-index`: build `runs/spec_trace_index.json` from literal `SG-SPEC-XXXX`
   mentions in `tools/` and `tests/`, then enrich that graph-bound index with weak
   `commit_refs`, `pr_refs`, `verification_basis`, and `acceptance_coverage`.
@@ -74,6 +78,9 @@ Key derived artifacts:
 - `tools/product_spec_transition_policy.json`: declarative inheritance contract for
   `product_spec` transition packets, including `product_graph_root`,
   reviewable source prefixes, and apply-scope rules
+- `tools/proposal_promotion_policy.json`: declarative semantic boundary between
+  `working_draft` and `reviewable_proposal` artifacts for governed
+  draft-to-proposal promotion
 
 Runtime artifact safety:
 

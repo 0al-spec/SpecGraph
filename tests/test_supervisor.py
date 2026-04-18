@@ -5457,6 +5457,32 @@ def test_validate_transition_packet_report_includes_profile_and_family_metadata(
     assert report["packet_family_definition"]["required_fields"] == ["target_scope"]
 
 
+def test_validate_transition_packet_report_includes_promotion_policy_metadata(
+    supervisor_module: object,
+) -> None:
+    packet = {
+        "packet_type": "promotion",
+        "transition_intent": "promote one bounded draft into a reviewable proposal",
+        "source_refs": ["docs/proposals_drafts/0005_telemetry.md"],
+        "actor_class": "operator",
+        "target_artifact_class": "reviewable_proposal",
+        "motivating_concern": "telemetry evidence plane",
+        "declared_change_surface": ["docs/proposals/0018_telemetry_evidence_plane.md"],
+        "required_provenance_links": ["source_draft_ref"],
+    }
+
+    report = supervisor_module.validate_transition_packet_report(packet)
+
+    assert report["ok"] is True
+    assert (
+        report["proposal_promotion_policy_definition"]["semantic_boundary_principle"]
+        == "Promotion is normalization into a reviewable proposal contract, not a folder move."
+    )
+    assert set(
+        report["proposal_promotion_policy_definition"]["semantic_artifact_classes"].keys()
+    ) == {"working_draft", "reviewable_proposal"}
+
+
 def test_validate_transition_packet_reports_structured_findings_for_missing_fields(
     supervisor_module: object,
 ) -> None:

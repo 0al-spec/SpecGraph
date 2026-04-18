@@ -171,6 +171,13 @@ product domain. The inherited rules live in
 - `apply` packets must source from reviewable proposal/run artifacts
 - `apply` mutation surfaces must stay inside `product_graph_root`
 
+`promotion` packets now also expose the governed draft-to-proposal semantic
+boundary from `tools/proposal_promotion_policy.json`. That artifact defines:
+
+- `working_draft` as exploratory material
+- `reviewable_proposal` as normalized proposal contract
+- the rule that promotion is normalization, not a bare repository-folder move
+
 ### Spec trace index
 
 ```bash

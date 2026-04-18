@@ -1,0 +1,26 @@
+{
+  "semantic_boundary_principle": "Promotion is normalization into a reviewable proposal contract, not a folder move.",
+  "semantic_artifact_classes": {
+    "working_draft": {
+      "reviewability": "exploratory",
+      "description": "Exploratory, uneven, or implementation-heavy material that has not yet been normalized into a graph-facing review surface."
+    },
+    "reviewable_proposal": {
+      "reviewability": "review_ready",
+      "description": "A normalized proposal artifact with one bounded concern, a clear problem statement, explicit goals and non-goals, and reviewable provenance."
+    }
+  },
+  "repository_projection_defaults": [
+    {
+      "path_prefix": "docs/proposals_drafts/",
+      "default_semantic_artifact_class": "working_draft",
+      "projection_role": "working_notes_surface"
+    },
+    {
+      "path_prefix": "docs/proposals/",
+      "default_semantic_artifact_class": "reviewable_proposal",
+      "projection_role": "reviewable_proposal_surface"
+    }
+  ],
+  "notes": "Repository paths may project draft versus proposal state, but file layout is not the sole source of semantic meaning. Transition packets and promotion provenance own the governed distinction."
+}
