@@ -25,12 +25,28 @@ Supervisor modes:
 
 - Default: pick the next eligible bounded refinement run.
 - `--loop --auto-approve`: keep processing eligible work until the queue is empty.
+- `--target-spec SPEC_ID --observe-graph-health`: inspect subtree signals and
+  historical-versus-active descendants without mutating canonical specs.
 - `--resolve-gate SPEC_ID --decision ...`: apply a human review decision.
 - `--target-spec SPEC_ID --split-proposal`: run the explicit proposal-first split pass for one
   oversized non-seed spec and emit a structured artifact under `runs/proposals/` without editing
   canonical spec files.
 - `--target-spec SPEC_ID --apply-split-proposal`: deterministically materialize one reviewed split
   proposal into canonical parent/child spec files and mark the proposal artifact as applied.
+- `--validate-transition-packet PATH`: validate one normalized transition packet JSON file and
+  print structured findings.
+- `--build-spec-trace-index`: build `runs/spec_trace_index.json` from literal `SG-SPEC-XXXX`
+  mentions in `tools/` and `tests/`.
+- `--list-stale-runtime` / `--clean-stale-runtime`: inspect or clean stale gate/worktree residue.
+
+Key derived artifacts:
+
+- `runs/latest-summary.md`: fastest operator-facing run snapshot
+- `runs/<RUN_ID>.json`: full run payload including `graph_health` and `decision_inspector`
+- `runs/proposal_queue.json`: derived proposal-oriented next moves
+- `runs/refactor_queue.json`: derived refactor-oriented next moves
+- `runs/proposals/*.json`: structured split proposal artifacts
+- `runs/spec_trace_index.json`: weak spec-to-code coverage index from code/test mentions
 
 ## Supervisor Bootstrap Runtime Troubleshooting
 
