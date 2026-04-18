@@ -1,0 +1,32 @@
+[
+  {
+    "spec_id": "SG-SPEC-0019",
+    "code_surfaces": [
+      "tools/supervisor.py"
+    ],
+    "test_surfaces": [
+      "tests/test_supervisor.py"
+    ],
+    "notes": "Canonical revision and supersession lineage semantics are embodied in supervisor lineage reconciliation and regression tests."
+  },
+  {
+    "spec_id": "SG-SPEC-0049",
+    "code_surfaces": [
+      "tools/supervisor.py"
+    ],
+    "test_surfaces": [
+      "tests/test_supervisor.py"
+    ],
+    "notes": "Subtree-shape and lower-boundary handoff signals are currently embodied in supervisor graph-health derivation and tests."
+  },
+  {
+    "spec_id": "SG-SPEC-0054",
+    "code_surfaces": [
+      "tools/supervisor.py"
+    ],
+    "test_surfaces": [
+      "tests/test_supervisor.py"
+    ],
+    "notes": "Canonical presence-state handling is embodied in supervisor active-vs-historical topology logic and tests."
+  }
+]

@@ -323,6 +323,10 @@ SPEC_TRACE_INDEX_FILENAME = "spec_trace_index.json"
 PROPOSAL_RUNTIME_INDEX_FILENAME = "proposal_runtime_index.json"
 PROPOSAL_DOC_FILENAME_RE = re.compile(r"^(?P<proposal_id>\d{4})_(?P<slug>.+)\.md$")
 TASK_LINE_RE = re.compile(r"^(?P<task_id>\d+)\.\s+\[(?P<status>[a-z_]+)\]\s+(?P<body>.+)$")
+PR_NUMBER_FROM_SUBJECT_RE = re.compile(
+    r"(?:\(#|PR\s+#|pull request\s+#)(?P<number>\d+)\b",
+    re.IGNORECASE,
+)
 PROPOSAL_PROCESSING_POSTURES = {
     "document_only": (
         "Proposal is reviewable as design material, but no immediate bounded runtime slice is "
@@ -6076,13 +6080,187 @@ def spec_trace_index_path() -> Path:
     return RUNS_DIR / SPEC_TRACE_INDEX_FILENAME
 
 
+def spec_trace_registry_path() -> Path:
+    return ROOT / "tools" / "spec_trace_registry.json"
+
+
+def load_spec_trace_registry() -> dict[str, dict[str, Any]]:
+    path = spec_trace_registry_path()
+    if not path.exists():
+        return {}
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except OSError as exc:
+        raise RuntimeError(
+            f"failed to read spec trace registry: {path.as_posix()} ({exc})"
+        ) from exc
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(f"malformed spec trace registry: {path.as_posix()} ({exc})") from exc
+    if not isinstance(payload, list):
+        raise RuntimeError(
+            f"malformed spec trace registry: {path.as_posix()} must contain a JSON list"
+        )
+
+    registry: dict[str, dict[str, Any]] = {}
+    for index, item in enumerate(payload, start=1):
+        if not isinstance(item, dict):
+            raise RuntimeError(
+                "malformed spec trace registry: "
+                f"entry {index} in {path.as_posix()} must be an object"
+            )
+        spec_id = str(item.get("spec_id", "")).strip()
+        if not spec_id:
+            raise RuntimeError(
+                f"malformed spec trace registry: entry {index} in {path.as_posix()} missing spec_id"
+            )
+        registry[spec_id] = item
+    return registry
+
+
+def trace_surface_matches(path_text: str, surface: str) -> bool:
+    normalized_path = PurePosixPath(path_text)
+    normalized_surface = surface.strip()
+    if not normalized_surface:
+        return False
+    if normalized_surface == path_text:
+        return True
+    if any(marker in normalized_surface for marker in ("*", "?", "[")):
+        return normalized_path.match(normalized_surface)
+    return path_text.startswith(normalized_surface.rstrip("/") + "/")
+
+
+def declared_trace_surfaces(entry: dict[str, Any], field: str) -> list[str]:
+    raw_value = entry.get(field, [])
+    if not isinstance(raw_value, list):
+        return []
+    return [str(item).strip() for item in raw_value if str(item).strip()]
+
+
+def matching_trace_refs(
+    refs: list[dict[str, Any]],
+    declared_surfaces: list[str],
+) -> list[dict[str, Any]]:
+    if not declared_surfaces:
+        return []
+    matched: list[dict[str, Any]] = []
+    for ref in refs:
+        path_text = str(ref.get("path", "")).strip()
+        if not path_text:
+            continue
+        if any(trace_surface_matches(path_text, surface) for surface in declared_surfaces):
+            matched.append(ref)
+    return matched
+
+
+def blocked_trace_dependencies(spec: SpecNode, index: dict[str, SpecNode]) -> list[str]:
+    blocked: list[str] = []
+    for dep_id in spec.depends_on:
+        dep = index.get(dep_id)
+        if (
+            dep is None
+            or dep.status not in READY_DEP_STATUSES
+            or dep.gate_state in BLOCKING_GATE_STATES
+        ):
+            blocked.append(dep_id)
+    return blocked
+
+
+def derive_implementation_state(
+    spec: SpecNode,
+    *,
+    trace_contract: dict[str, Any] | None,
+    matched_code_refs: list[dict[str, Any]],
+    matched_test_refs: list[dict[str, Any]],
+    changed_paths: set[str],
+    spec_index: dict[str, SpecNode],
+) -> dict[str, Any]:
+    available_statuses = [
+        "unclaimed",
+        "planned",
+        "in_progress",
+        "implemented",
+        "verified",
+        "blocked",
+        "drifted",
+    ]
+    if trace_contract is None:
+        return {
+            "status": "unclaimed",
+            "confidence": "weak",
+            "available_statuses": available_statuses,
+            "basis": (
+                "No explicit trace contract is registered for this spec. Weak mentions alone do "
+                "not claim embodiment."
+            ),
+        }
+
+    blocked_dependencies = blocked_trace_dependencies(spec, spec_index)
+    if spec.gate_state in BLOCKING_GATE_STATES or blocked_dependencies:
+        return {
+            "status": "blocked",
+            "confidence": "strong",
+            "available_statuses": available_statuses,
+            "basis": (
+                "Trace contract exists, but implementation is blocked by review or dependency "
+                "state."
+            ),
+            "blocked_dependencies": blocked_dependencies,
+            "blocking_gate_state": (
+                spec.gate_state if spec.gate_state in BLOCKING_GATE_STATES else "none"
+            ),
+        }
+
+    tracked_surfaces = [
+        *trace_contract["declared_code_surfaces"],
+        *trace_contract["declared_test_surfaces"],
+    ]
+    if changed_paths and any(
+        any(trace_surface_matches(path_text, surface) for surface in tracked_surfaces)
+        for path_text in changed_paths
+    ):
+        return {
+            "status": "in_progress",
+            "confidence": "strong",
+            "available_statuses": available_statuses,
+            "basis": "Tracked implementation surfaces currently have local changes.",
+        }
+
+    if not matched_code_refs and not matched_test_refs:
+        return {
+            "status": "planned",
+            "confidence": "strong",
+            "available_statuses": available_statuses,
+            "basis": (
+                "Trace contract is declared, but no matching implementation anchors are observed "
+                "yet."
+            ),
+        }
+
+    if matched_code_refs and matched_test_refs:
+        return {
+            "status": "verified",
+            "confidence": "strong",
+            "available_statuses": available_statuses,
+            "basis": "Declared code and test surfaces are both observed for this spec.",
+        }
+
+    return {
+        "status": "implemented",
+        "confidence": "strong",
+        "available_statuses": available_statuses,
+        "basis": (
+            "Declared implementation anchors are observed, but verification anchors are incomplete."
+        ),
+    }
+
+
 def collect_spec_trace_mentions(
     base_dirs: tuple[Path, ...] | None = None,
 ) -> dict[str, dict[str, list[dict[str, Any]]]]:
     if base_dirs is None:
         base_dirs = (ROOT / "tools", ROOT / "tests")
     field_by_dir = {
-        "tools": "tool_refs",
+        "tools": "code_refs",
         "tests": "test_refs",
     }
     mentions: dict[str, dict[str, list[dict[str, Any]]]] = {}
@@ -6100,7 +6278,7 @@ def collect_spec_trace_mentions(
             relpath = path.relative_to(ROOT).as_posix()
             for lineno, line in enumerate(lines, start=1):
                 for spec_id in sorted(set(SPEC_ID_CANONICAL_RE.findall(line))):
-                    bucket = mentions.setdefault(spec_id, {"tool_refs": [], "test_refs": []})
+                    bucket = mentions.setdefault(spec_id, {"code_refs": [], "test_refs": []})
                     bucket.setdefault(field_name, []).append(
                         {
                             "path": relpath,
@@ -6110,46 +6288,269 @@ def collect_spec_trace_mentions(
     return mentions
 
 
+def collect_trace_commit_refs(
+    ref_paths: list[str],
+    *,
+    repo_root: Path | None = None,
+    limit: int = 5,
+) -> list[dict[str, str]]:
+    local_root = repo_root or ROOT
+    unique_paths = [path for path in sorted(set(ref_paths)) if str(path).strip()]
+    if limit <= 0 or not unique_paths or shutil.which("git") is None:
+        return []
+
+    probe = subprocess.run(
+        ["git", "rev-parse", "--is-inside-work-tree"],
+        cwd=local_root,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if probe.returncode != 0 or probe.stdout.strip() != "true":
+        return []
+
+    result = subprocess.run(
+        ["git", "log", f"--max-count={limit}", "--format=%H%x09%cI%x09%s", "--", *unique_paths],
+        cwd=local_root,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if result.returncode != 0:
+        return []
+
+    commit_refs: list[dict[str, str]] = []
+    seen_shas: set[str] = set()
+    for line in result.stdout.splitlines():
+        sha, separator, remainder = line.partition("\t")
+        if not separator or not sha or sha in seen_shas:
+            continue
+        committed_at, separator, subject = remainder.partition("\t")
+        if not separator:
+            continue
+        seen_shas.add(sha)
+        commit_refs.append(
+            {
+                "sha": sha,
+                "short_sha": sha[:7],
+                "committed_at": committed_at.strip(),
+                "subject": subject.strip(),
+            }
+        )
+        if len(commit_refs) >= limit:
+            break
+    return commit_refs
+
+
+def collect_trace_pr_refs(commit_refs: list[dict[str, str]]) -> list[dict[str, Any]]:
+    pr_refs: list[dict[str, Any]] = []
+    seen_numbers: set[int] = set()
+    for commit_ref in commit_refs:
+        subject = str(commit_ref.get("subject", "")).strip()
+        for match in PR_NUMBER_FROM_SUBJECT_RE.finditer(subject):
+            number = int(match.group("number"))
+            if number in seen_numbers:
+                continue
+            seen_numbers.add(number)
+            pr_refs.append(
+                {
+                    "number": number,
+                    "source": "commit_subject",
+                    "commit": str(commit_ref.get("short_sha", "")).strip(),
+                }
+            )
+    return pr_refs
+
+
+def acceptance_criteria_count(spec: SpecNode) -> int:
+    acceptance = spec.data.get("acceptance", [])
+    if not isinstance(acceptance, list):
+        return 0
+    return len([item for item in acceptance if str(item).strip()])
+
+
+def derive_trace_verification_basis(
+    code_refs: list[dict[str, Any]],
+    test_refs: list[dict[str, Any]],
+    commit_refs: list[dict[str, str]],
+) -> dict[str, Any]:
+    if test_refs:
+        return {
+            "status": "test_linked",
+            "basis_kinds": ["test_refs", "commit_history"] if commit_refs else ["test_refs"],
+            "basis_ref_count": len(test_refs) + len(commit_refs),
+            "notes": [
+                (
+                    "Verification is weakly grounded by linked tests that mention the spec id. "
+                    "Criterion-level mapping is not yet encoded in the trace plane."
+                )
+            ],
+        }
+    if code_refs:
+        return {
+            "status": "code_linked_without_tests",
+            "basis_kinds": ["code_refs", "commit_history"] if commit_refs else ["code_refs"],
+            "basis_ref_count": len(code_refs) + len(commit_refs),
+            "notes": [
+                "Implementation anchors exist, but no linked tests currently mention the spec id."
+            ],
+        }
+    return {
+        "status": "unlinked",
+        "basis_kinds": [],
+        "basis_ref_count": 0,
+        "notes": ["No code or test references currently mention this spec id."],
+    }
+
+
+def derive_acceptance_coverage(
+    spec: SpecNode,
+    *,
+    test_refs: list[dict[str, Any]],
+) -> dict[str, Any]:
+    criterion_count = acceptance_criteria_count(spec)
+    if criterion_count <= 0:
+        return {
+            "status": "not_defined",
+            "criterion_count": 0,
+            "mapped_criterion_count": 0,
+            "evidence_ref_count": len(test_refs),
+            "confidence": "none",
+            "basis": "The spec does not define acceptance criteria to map.",
+        }
+    if test_refs:
+        return {
+            "status": "evidence_linked_unmapped",
+            "criterion_count": criterion_count,
+            "mapped_criterion_count": 0,
+            "evidence_ref_count": len(test_refs),
+            "confidence": "weak",
+            "basis": (
+                "Linked tests mention the spec id, but the first trace index does not yet map "
+                "individual acceptance criteria to verification evidence."
+            ),
+        }
+    return {
+        "status": "no_linked_evidence",
+        "criterion_count": criterion_count,
+        "mapped_criterion_count": 0,
+        "evidence_ref_count": 0,
+        "confidence": "none",
+        "basis": "No linked tests currently mention the spec id.",
+    }
+
+
+def trace_strength_for_refs(
+    code_refs: list[dict[str, Any]],
+    test_refs: list[dict[str, Any]],
+) -> str:
+    if code_refs and test_refs:
+        return "code_and_tests"
+    if code_refs:
+        return "code_only"
+    if test_refs:
+        return "tests_only"
+    return "unobserved"
+
+
 def build_spec_trace_index(specs: list[SpecNode]) -> dict[str, Any]:
     mentions = collect_spec_trace_mentions()
+    registry = load_spec_trace_registry()
+    changed_paths = set(git_status_changed_files(ROOT))
     known_ids = {spec.id for spec in specs}
+    spec_index = index_specs(specs)
     entries: list[dict[str, Any]] = []
     for spec in sorted(specs, key=lambda item: item.id):
         bucket = mentions.get(spec.id, {})
-        tool_refs = list(bucket.get("tool_refs", []))
+        code_refs = list(bucket.get("code_refs", []))
         test_refs = list(bucket.get("test_refs", []))
-        if tool_refs and test_refs:
-            coverage_kind = "tools_and_tests"
-        elif tool_refs:
-            coverage_kind = "tools_only"
-        elif test_refs:
-            coverage_kind = "tests_only"
-        else:
-            coverage_kind = "unobserved"
+        registry_entry = registry.get(spec.id)
+        declared_code_surfaces = (
+            declared_trace_surfaces(registry_entry, "code_surfaces") if registry_entry else []
+        )
+        declared_test_surfaces = (
+            declared_trace_surfaces(registry_entry, "test_surfaces") if registry_entry else []
+        )
+        matched_code_refs = matching_trace_refs(code_refs, declared_code_surfaces)
+        matched_test_refs = matching_trace_refs(test_refs, declared_test_surfaces)
+        commit_refs = collect_trace_commit_refs(
+            [str(ref.get("path", "")).strip() for ref in [*code_refs, *test_refs]]
+        )
+        pr_refs = collect_trace_pr_refs(commit_refs)
+        verification_basis = derive_trace_verification_basis(code_refs, test_refs, commit_refs)
+        acceptance_coverage = derive_acceptance_coverage(spec, test_refs=test_refs)
+        trace_strength = trace_strength_for_refs(code_refs, test_refs)
+        trace_contract = None
+        if registry_entry is not None:
+            trace_contract = {
+                "source": "registry",
+                "declared_code_surfaces": declared_code_surfaces,
+                "declared_test_surfaces": declared_test_surfaces,
+                "matched_code_ref_count": len(matched_code_refs),
+                "matched_test_ref_count": len(matched_test_refs),
+            }
+        implementation_state = derive_implementation_state(
+            spec,
+            trace_contract=trace_contract,
+            matched_code_refs=matched_code_refs,
+            matched_test_refs=matched_test_refs,
+            changed_paths=changed_paths,
+            spec_index=spec_index,
+        )
         entries.append(
             {
                 "spec_id": spec.id,
                 "title": spec.title,
-                "tool_refs": tool_refs,
+                "code_refs": code_refs,
                 "test_refs": test_refs,
-                "coverage_summary": {
-                    "tool_ref_count": len(tool_refs),
+                "commit_refs": commit_refs,
+                "pr_refs": pr_refs,
+                "trace_contract": trace_contract,
+                "implementation_state": implementation_state,
+                "verification_basis": verification_basis,
+                "acceptance_coverage": acceptance_coverage,
+                "trace_summary": {
+                    "code_ref_count": len(code_refs),
                     "test_ref_count": len(test_refs),
-                    "coverage_kind": coverage_kind,
+                    "commit_ref_count": len(commit_refs),
+                    "pr_ref_count": len(pr_refs),
+                    "trace_strength": trace_strength,
                 },
             }
         )
     unknown_spec_mentions = [
         {
             "spec_id": spec_id,
-            "tool_refs": list(mentions[spec_id].get("tool_refs", [])),
+            "code_refs": list(mentions[spec_id].get("code_refs", [])),
             "test_refs": list(mentions[spec_id].get("test_refs", [])),
         }
         for spec_id in sorted(set(mentions) - known_ids)
     ]
     return {
+        "artifact_kind": "spec_trace_index",
+        "schema_version": 3,
+        "implementation_state_model": {
+            "derivation_mode": "registry_backed_conservative_overlay",
+            "available_statuses": [
+                "unclaimed",
+                "planned",
+                "in_progress",
+                "implemented",
+                "verified",
+                "blocked",
+                "drifted",
+            ],
+            "notes": [
+                (
+                    "Only explicit registry-backed trace contracts may promote a spec beyond "
+                    "unclaimed. Weak mentions remain observational context."
+                ),
+                "The drifted state is reserved for freshness-aware derivation in the next slice.",
+            ],
+        },
         "generated_at": utc_now_iso(),
         "source_dirs": ["tools", "tests"],
+        "registry_path": spec_trace_registry_path().relative_to(ROOT).as_posix(),
         "entries": entries,
         "entry_count": len(entries),
         "unknown_spec_mentions": unknown_spec_mentions,
@@ -10073,8 +10474,8 @@ if __name__ == "__main__":
         "--build-spec-trace-index",
         action="store_true",
         help=(
-            "Build a derived spec-to-code trace index from literal spec-id mentions "
-            "in tools/ and tests/"
+            "Build a graph-bound spec trace index from literal spec-id mentions "
+            "in tools/ and tests/, enriched with weak commit/pr and verification linkage"
         ),
     )
     parser.add_argument(
