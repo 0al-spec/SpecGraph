@@ -5084,6 +5084,25 @@ def test_validate_transition_packet_reports_structured_findings_for_missing_fiel
     }
 
 
+def test_validate_transition_packet_rejects_missing_packet_type(
+    supervisor_module: object,
+) -> None:
+    report = supervisor_module.validate_transition_packet_report(
+        {
+            "transition_intent": "apply reviewed proposal into canonical spec mutation",
+            "source_refs": ["runs/proposals/refactor_proposal--sg-spec-0001--oversized_spec.json"],
+            "authority_class": "human_reviewed_apply",
+            "target_scope": "specs/nodes/SG-SPEC-0001.yaml",
+            "motivating_concern": "approved split proposal",
+            "declared_change_surface": ["specs/nodes/SG-SPEC-0001.yaml"],
+            "required_provenance_links": ["proposal_artifact", "source_run_id"],
+        }
+    )
+
+    assert report["ok"] is False
+    assert {finding["code"] for finding in report["findings"]} >= {"missing_packet_type"}
+
+
 def test_validate_transition_packet_rejects_non_string_list_items(
     supervisor_module: object,
 ) -> None:
@@ -5132,6 +5151,48 @@ def test_validate_transition_packet_profile_blocks_canonical_mutation_for_propos
         "profile_forbidden_canonical_mutation_surface",
     }
     assert report["findings_by_family"]["profile"] >= 1
+
+
+def test_validate_transition_packet_profile_normalizes_declared_change_surface_paths(
+    supervisor_module: object,
+) -> None:
+    report = supervisor_module.validate_transition_packet_report(
+        {
+            "packet_type": "proposal",
+            "transition_intent": "normalize one bounded proposal packet",
+            "source_refs": ["docs/proposals_drafts/0005_telemetry.md"],
+            "actor_class": "operator",
+            "target_artifact_class": "proposal_document",
+            "lineage_root": "telemetry evidence plane",
+            "declared_change_surface": ["./specs/nodes/SG-SPEC-0001.yaml"],
+            "required_provenance_links": ["source_draft_ref"],
+        }
+    )
+
+    assert {finding["code"] for finding in report["findings"]} >= {
+        "profile_forbidden_canonical_mutation_surface",
+    }
+
+
+def test_validate_transition_packet_profile_normalizes_apply_source_refs(
+    supervisor_module: object,
+) -> None:
+    report = supervisor_module.validate_transition_packet_report(
+        {
+            "packet_type": "apply",
+            "transition_intent": "apply one bounded canonical change",
+            "source_refs": ["./docs/proposals_drafts/0005_telemetry.md"],
+            "authority_class": "human_reviewed_apply",
+            "target_scope": "./specs/nodes/SG-SPEC-0001.yaml",
+            "motivating_concern": "approved split proposal",
+            "declared_change_surface": ["./specs/nodes/SG-SPEC-0001.yaml"],
+            "required_provenance_links": ["source_draft_ref"],
+        }
+    )
+
+    assert {finding["code"] for finding in report["findings"]} >= {
+        "profile_apply_requires_reviewable_source",
+    }
 
 
 def test_main_validates_transition_packet_as_standalone_command(

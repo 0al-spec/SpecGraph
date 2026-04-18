@@ -4731,6 +4731,12 @@ def _looks_like_repo_path(value: str) -> bool:
     return "/" in value or value.endswith((".md", ".yaml", ".yml", ".json", ".toml"))
 
 
+def _normalize_transition_repo_path(value: str) -> str:
+    if not _looks_like_repo_path(value):
+        return value
+    return PurePosixPath(value).as_posix()
+
+
 def _validate_transition_surface_path(
     *,
     field_name: str,
@@ -4870,19 +4876,25 @@ def _normalize_transition_packet_context(
     )
     findings.extend(provenance_link_findings)
 
+    normalized_source_refs = [_normalize_transition_repo_path(item) for item in source_refs]
+    normalized_declared_change_surface = [
+        _normalize_transition_repo_path(item) for item in declared_change_surface
+    ]
+    normalized_target_scope = _normalize_transition_repo_path(target_scope)
+
     return {
         "packet": packet,
         "packet_type": packet_type,
         "transition_profile": transition_profile,
         "transition_intent": transition_intent,
-        "source_refs": source_refs,
+        "source_refs": normalized_source_refs,
         "actor_class": actor_class,
         "authority_class": authority_class,
         "target_artifact_class": target_artifact_class,
-        "target_scope": target_scope,
+        "target_scope": normalized_target_scope,
         "motivating_concern": motivating_concern,
         "lineage_root": lineage_root,
-        "declared_change_surface": declared_change_surface,
+        "declared_change_surface": normalized_declared_change_surface,
         "required_provenance_links": required_provenance_links,
     }, findings
 
@@ -4891,6 +4903,15 @@ def _validate_transition_packet_schema(context: dict[str, Any]) -> list[dict[str
     findings: list[dict[str, str]] = []
     packet_type = str(context.get("packet_type", "")).strip()
     transition_intent = str(context.get("transition_intent", "")).strip()
+    if not packet_type:
+        findings.append(
+            transition_packet_finding(
+                code="missing_packet_type",
+                field="packet_type",
+                family="schema",
+                message="packet_type must be declared",
+            )
+        )
     if not transition_intent:
         findings.append(
             transition_packet_finding(
