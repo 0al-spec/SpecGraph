@@ -37,3 +37,32 @@ Task numbers are preserved for traceability across commits and PRs.
 44. [todo] Harden malformed-artifact loading and executor machine protocol so missing structured outcomes or corrupted queue files fail safely.
 45. [todo] Move supervisor thresholds, selection priorities, mutation classes, and execution profiles into a declarative policy layer instead of Python constants.
 46. [todo] Add a Decision Inspector artifact that explains selection, gate, diff-classification, and queue-emission decisions from applied rules.
+
+## Vocabulary and Pre-Spec Semantics
+
+47. [todo] Materialize a machine-readable vocabulary layer for canonical terms, aliases, and deprecations so specs, supervisor outputs, and viewers share one ontology surface.
+48. [todo] Add vocabulary drift checks that detect undefined terms, alias collisions, and meaning divergence across canonical specs and derived artifacts.
+49. [todo] Materialize first-class pre-spec semantic artifacts so observable user meaning can persist before proposal-lane or canonical promotion.
+50. [todo] Normalize `OperatorRequest` into a typed artifact with explicit authority, mutation budget, and stop conditions so supervisor steering stops depending on ad hoc CLI flag combinations.
+51. [todo] Preserve provenance from pre-spec artifacts and operator requests through proposal-lane nodes into canonical specs so proposals no longer appear "sky-born".
+
+## Evaluator, Validation, and Benchmarking
+
+52. [todo] Define an evaluator-loop control artifact that records chosen intervention, improvement basis, stop conditions, and escalation reasons for each reflective cycle.
+53. [todo] Let evaluator choose among refine/propose/rewrite/merge/handoff actions from derived graph-health and authority constraints instead of fixed operator heuristics alone.
+54. [todo] Introduce typed validation findings and error classes so YAML, relation, acceptance, authority, and artifact failures stop flowing as ad hoc strings.
+55. [todo] Add a safe repair contract that lets supervisor or helper tools propose bounded fixes from structured findings without silently mutating canonical truth.
+56. [todo] Record supervisor performance and yield metrics as derived run artifacts so throughput, intervention cost, and graph impact can be inspected over time.
+57. [todo] Add a cheap LLM bootstrap smoke benchmark that measures structural yield from a minimal seed without treating exact node text as the oracle.
+
+## Semantic Shape and Handoff
+
+58. [todo] Add refinement-shape signals for serial ladders, one-child delegation chains, and over-atomized subtrees so malformed shape becomes first-class graph health.
+59. [todo] Extend graph-health guidance with role-first semantic legibility checks so rewrite/merge is preferred when nodes stop reading as meaningful system roles.
+60. [todo] Define the SpecGraph-to-TechSpec handoff boundary so decomposition can stop at semantic saturation and emit downstream handoff artifacts instead of deeper graph slicing.
+61. [todo] Teach supervisor and proposal flows to recommend handoff, not further refinement, when a subtree becomes implementation-facing or loses semantic novelty.
+
+## Evidence Plane
+
+62. [todo] Define telemetry evidence artifacts that link canonical nodes to runtime entities, observations, outcomes, and adoption without leaking raw telemetry into canonical specs.
+63. [todo] Add viewer and inspection overlays for the evidence plane so operators can inspect runtime-backed evidence chains separately from canonical graph truth.
