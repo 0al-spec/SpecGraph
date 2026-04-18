@@ -75,6 +75,8 @@ particular task.
   `--resolve-gate SG-SPEC-XXXX --decision approve`
 - validate one normalized transition packet JSON file:
   `--validate-transition-packet path/to/packet.json`
+  with optional profile override:
+  `--validate-transition-packet path/to/packet.json --transition-profile specgraph_core`
 - build a derived spec-to-code trace index:
   `--build-spec-trace-index`
 - build a derived proposal runtime index:
@@ -147,6 +149,17 @@ python3 tools/supervisor.py --validate-transition-packet transition-packet.json
 
 Validates one normalized transition packet JSON file and prints structured
 findings. This is a deterministic legality check, not a semantic-quality judge.
+
+The validator now exposes:
+
+- packet families: `promotion`, `proposal`, `apply`, `handoff`
+- check families: `schema`, `legality`, `provenance`, `boundedness`,
+  `authority`, `reconciliation`, `diff_scope`, `profile`
+- validator profiles: `specgraph_core`, `product_spec`, `techspec`,
+  `implementation_trace`
+
+Use `--transition-profile ...` when you want to validate the same packet under
+another governed artifact family without changing the packet file itself.
 
 ### Spec trace index
 

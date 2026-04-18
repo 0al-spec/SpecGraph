@@ -34,7 +34,8 @@ Supervisor modes:
 - `--target-spec SPEC_ID --apply-split-proposal`: deterministically materialize one reviewed split
   proposal into canonical parent/child spec files and mark the proposal artifact as applied.
 - `--validate-transition-packet PATH`: validate one normalized transition packet JSON file and
-  print structured findings.
+  print structured findings. Add `--transition-profile PROFILE` to validate the same packet under
+  `specgraph_core`, `product_spec`, `techspec`, or `implementation_trace`.
 - `--build-spec-trace-index`: build `runs/spec_trace_index.json` from literal `SG-SPEC-XXXX`
   mentions in `tools/` and `tests/`.
 - `--build-proposal-runtime-index`: build `runs/proposal_runtime_index.json` from proposal docs,
@@ -50,6 +51,13 @@ Key derived artifacts:
 - `runs/proposals/*.json`: structured split proposal artifacts
 - `runs/spec_trace_index.json`: weak spec-to-code coverage index from code/test mentions
 - `runs/proposal_runtime_index.json`: proposal posture and reflective runtime-closure index
+
+Transition-packet validation now reports:
+
+- packet family metadata for `promotion`, `proposal`, `apply`, and `handoff`
+- finding families such as `schema`, `provenance`, `authority`, and `diff_scope`
+- profile-aware rules for `specgraph_core`, `product_spec`, `techspec`, and
+  `implementation_trace`
 
 ## Supervisor Bootstrap Runtime Troubleshooting
 

@@ -76,11 +76,11 @@ Task numbers are preserved for traceability across commits and PRs.
 
 ## Deterministic Transitions
 
-68. [todo] Define normalized transition packet families such as promotion, proposal, apply, and handoff packets so validators stop inferring transition intent from free-form prose alone.
-69. [todo] Define deterministic transition check families for schema, legality, provenance, boundedness, authority, reconciliation, and diff-scope validation.
-70. [todo] Introduce a core transition validator that enforces graph-family-independent invariants for governed artifact movement.
-71. [todo] Define validator profiles so SpecGraph self-specs, product specs, tech specs, and later trace artifacts can share one transition engine while adding profile-specific rules.
-72. [todo] Add structured failure reporting for transition checks so denied promotions and applies can be explained by typed findings rather than ad hoc strings.
+68. [done] Define normalized transition packet families such as promotion, proposal, apply, and handoff packets so validators stop inferring transition intent from free-form prose alone.
+69. [done] Define deterministic transition check families for schema, legality, provenance, boundedness, authority, reconciliation, and diff-scope validation.
+70. [done] Introduce a core transition validator that enforces graph-family-independent invariants for governed artifact movement.
+71. [done] Define validator profiles so SpecGraph self-specs, product specs, tech specs, and later trace artifacts can share one transition engine while adding profile-specific rules.
+72. [done] Add structured failure reporting for transition checks so denied promotions and applies can be explained by typed findings rather than ad hoc strings.
 73. [todo] Define how product-spec graphs inherit the deterministic transition framework instead of re-implementing promotion and apply semantics per product domain.
 
 ## Implementation Trace Plane
