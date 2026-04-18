@@ -95,3 +95,10 @@ Task numbers are preserved for traceability across commits and PRs.
 78. [todo] Add a non-blocking refinement fan-out pressure signal that detects when a node is becoming too broad through excessive direct-child spread.
 79. [todo] Teach graph-health and proposal flows to distinguish healthy multi-child aggregate roles from broad hubs that are missing intermediate semantic clustering.
 80. [todo] Prefer regrouping or intermediate-cluster recommendations over further flat child splitting when fan-out pressure is high.
+
+## Reflective Co-Evolution
+
+81. [todo] Define a proposal-processing posture that distinguishes `document_only`, `bounded_runtime_followup`, `synchronous_runtime_slice`, and `deferred_until_canonicalized` for implementation-relevant proposals.
+82. [todo] Make backlog generation treat proposal normalization, runtime realization, validation, and re-observation as one connected reflective chain instead of separate planning layers.
+83. [todo] Pair implementation-relevant proposal work with bounded `tools/` or `tests/` slices by default where the affected runtime surface already exists.
+84. [todo] Add inspection or trace artifacts that show, for each proposal, its runtime realization status, validation closure, and observation coverage.
