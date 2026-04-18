@@ -37,6 +37,8 @@ Supervisor modes:
   print structured findings.
 - `--build-spec-trace-index`: build `runs/spec_trace_index.json` from literal `SG-SPEC-XXXX`
   mentions in `tools/` and `tests/`.
+- `--build-proposal-runtime-index`: build `runs/proposal_runtime_index.json` from proposal docs,
+  the proposal runtime registry, `tasks.md`, and repository markers in `tools/` and `tests/`.
 - `--list-stale-runtime` / `--clean-stale-runtime`: inspect or clean stale gate/worktree residue.
 
 Key derived artifacts:
@@ -47,6 +49,7 @@ Key derived artifacts:
 - `runs/refactor_queue.json`: derived refactor-oriented next moves
 - `runs/proposals/*.json`: structured split proposal artifacts
 - `runs/spec_trace_index.json`: weak spec-to-code coverage index from code/test mentions
+- `runs/proposal_runtime_index.json`: proposal posture and reflective runtime-closure index
 
 ## Supervisor Bootstrap Runtime Troubleshooting
 
