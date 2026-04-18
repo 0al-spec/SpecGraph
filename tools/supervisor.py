@@ -142,6 +142,13 @@ ROLE_LEGIBILITY_MARKERS = (
     "explains why",
     "governs",
 )
+VALID_TRANSITION_PACKET_TYPES = {"promotion", "proposal", "apply", "handoff"}
+TRANSITION_PACKET_TYPE_REQUIRED_FIELDS = {
+    "promotion": {"target_artifact_class"},
+    "proposal": {"target_artifact_class"},
+    "apply": {"target_scope"},
+    "handoff": {"target_artifact_class"},
+}
 ROLE_OBSCURED_CONTEXT_PHRASES = (
     "materialize one bounded",
     "materialize a single bounded",
@@ -4476,6 +4483,174 @@ def load_json_object(path: Path) -> dict[str, Any] | None:
     return data
 
 
+def transition_packet_finding(
+    *,
+    code: str,
+    message: str,
+    field: str = "",
+    severity: str = "error",
+) -> dict[str, str]:
+    finding = {
+        "code": code,
+        "message": message,
+        "severity": severity,
+    }
+    if field:
+        finding["field"] = field
+    return finding
+
+
+def _transition_packet_string_list(value: Any) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    normalized = [str(item).strip() for item in value if str(item).strip()]
+    return normalized
+
+
+def validate_transition_packet(packet: Any) -> list[dict[str, str]]:
+    """Validate one normalized transition packet skeleton.
+
+    This validator is intentionally structural. It checks bounded packet
+    legality and does not attempt to judge semantic quality.
+    """
+
+    if not isinstance(packet, dict):
+        return [
+            transition_packet_finding(
+                code="packet_not_object",
+                field="packet",
+                message="transition packet must be a JSON object",
+            )
+        ]
+
+    findings: list[dict[str, str]] = []
+    packet_type = str(packet.get("packet_type", "")).strip()
+    if packet_type not in VALID_TRANSITION_PACKET_TYPES:
+        findings.append(
+            transition_packet_finding(
+                code="invalid_packet_type",
+                field="packet_type",
+                message=(
+                    "packet_type must be one of: "
+                    + ", ".join(sorted(VALID_TRANSITION_PACKET_TYPES))
+                ),
+            )
+        )
+
+    transition_intent = str(packet.get("transition_intent", "")).strip()
+    if not transition_intent:
+        findings.append(
+            transition_packet_finding(
+                code="missing_transition_intent",
+                field="transition_intent",
+                message="transition_intent must be a non-empty string",
+            )
+        )
+
+    if not _transition_packet_string_list(packet.get("source_refs")):
+        findings.append(
+            transition_packet_finding(
+                code="missing_source_refs",
+                field="source_refs",
+                message="source_refs must be a non-empty list of source artifact references",
+            )
+        )
+
+    if not _transition_packet_string_list(packet.get("declared_change_surface")):
+        findings.append(
+            transition_packet_finding(
+                code="missing_declared_change_surface",
+                field="declared_change_surface",
+                message=(
+                    "declared_change_surface must be a non-empty list describing the intended "
+                    "mutation surface"
+                ),
+            )
+        )
+
+    if not _transition_packet_string_list(packet.get("required_provenance_links")):
+        findings.append(
+            transition_packet_finding(
+                code="missing_required_provenance_links",
+                field="required_provenance_links",
+                message=(
+                    "required_provenance_links must be a non-empty list of provenance link "
+                    "requirements"
+                ),
+            )
+        )
+
+    actor_class = str(packet.get("actor_class", "")).strip()
+    authority_class = str(packet.get("authority_class", "")).strip()
+    if not (actor_class or authority_class):
+        findings.append(
+            transition_packet_finding(
+                code="missing_actor_or_authority_class",
+                message="packet must declare actor_class or authority_class",
+            )
+        )
+
+    target_artifact_class = str(packet.get("target_artifact_class", "")).strip()
+    target_scope = str(packet.get("target_scope", "")).strip()
+    if not (target_artifact_class or target_scope):
+        findings.append(
+            transition_packet_finding(
+                code="missing_target_binding",
+                message="packet must declare target_artifact_class or target_scope",
+            )
+        )
+
+    motivating_concern = str(packet.get("motivating_concern", "")).strip()
+    lineage_root = str(packet.get("lineage_root", "")).strip()
+    if not (motivating_concern or lineage_root):
+        findings.append(
+            transition_packet_finding(
+                code="missing_motivating_concern_or_lineage_root",
+                message="packet must declare motivating_concern or lineage_root",
+            )
+        )
+
+    if packet_type in TRANSITION_PACKET_TYPE_REQUIRED_FIELDS:
+        for field_name in sorted(TRANSITION_PACKET_TYPE_REQUIRED_FIELDS[packet_type]):
+            if not str(packet.get(field_name, "")).strip():
+                findings.append(
+                    transition_packet_finding(
+                        code="missing_packet_type_required_field",
+                        field=field_name,
+                        message=(f"{field_name} is required for packet_type={packet_type}"),
+                    )
+                )
+
+    return findings
+
+
+def validate_transition_packet_file(path: Path) -> dict[str, Any]:
+    packet = load_json_object(path)
+    if packet is None:
+        findings = [
+            transition_packet_finding(
+                code="invalid_packet_file",
+                field="path",
+                message="packet file must exist and contain a JSON object",
+            )
+        ]
+        return {
+            "ok": False,
+            "path": path.as_posix(),
+            "packet_type": "",
+            "finding_count": len(findings),
+            "findings": findings,
+        }
+    findings = validate_transition_packet(packet)
+    return {
+        "ok": not findings,
+        "path": path.as_posix(),
+        "packet_type": str(packet.get("packet_type", "")).strip(),
+        "finding_count": len(findings),
+        "findings": findings,
+    }
+
+
 def acceptance_reference_indexes(
     references: Any,
     *,
@@ -7215,6 +7390,7 @@ def main(
     list_stale_runtime: bool = False,
     clean_stale_runtime: bool = False,
     observe_graph_health_mode: bool = False,
+    validate_transition_packet_path: str | None = None,
 ) -> int:
     """Entry point for CLI and tests.
 
@@ -7238,6 +7414,39 @@ def main(
     except ValueError as exc:
         print(str(exc), file=sys.stderr)
         return 1
+
+    if validate_transition_packet_path:
+        if any(
+            (
+                dry_run,
+                auto_approve,
+                loop,
+                resolve_gate,
+                decision,
+                note,
+                target_spec,
+                split_proposal,
+                apply_split_proposal,
+                operator_note,
+                mutation_budget,
+                run_authority,
+                execution_profile,
+                child_model,
+                child_timeout_seconds,
+                verbose,
+                list_stale_runtime,
+                clean_stale_runtime,
+                observe_graph_health_mode,
+            )
+        ):
+            print(
+                "--validate-transition-packet must be used as a standalone command",
+                file=sys.stderr,
+            )
+            return 1
+        report = validate_transition_packet_file(Path(validate_transition_packet_path))
+        print(json.dumps(report, ensure_ascii=False, indent=2))
+        return 0 if report["ok"] else 1
 
     try:
         specs = load_specs()
@@ -7722,6 +7931,11 @@ if __name__ == "__main__":
         action="store_true",
         help="Print non-mutating graph-health diagnostics for --target-spec and its subtree",
     )
+    parser.add_argument(
+        "--validate-transition-packet",
+        metavar="PATH",
+        help="Validate one normalized transition packet JSON file and print structured findings",
+    )
     parser.add_argument("--resolve-gate", metavar="SPEC_ID", help="Resolve gate for a spec id")
     parser.add_argument(
         "--decision",
@@ -7836,5 +8050,6 @@ if __name__ == "__main__":
             list_stale_runtime=args.list_stale_runtime,
             clean_stale_runtime=args.clean_stale_runtime,
             observe_graph_health_mode=args.observe_graph_health,
+            validate_transition_packet_path=args.validate_transition_packet,
         )
     )

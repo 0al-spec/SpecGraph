@@ -5005,6 +5005,82 @@ def test_summarize_queue_transition_tracks_emitted_cleared_and_updated_ids(
     }
 
 
+def test_validate_transition_packet_accepts_minimal_apply_packet(
+    supervisor_module: object,
+) -> None:
+    packet = {
+        "packet_type": "apply",
+        "transition_intent": "apply reviewed proposal into canonical spec mutation",
+        "source_refs": ["runs/proposals/refactor_proposal--sg-spec-0001--oversized_spec.json"],
+        "authority_class": "human_reviewed_apply",
+        "target_scope": "specs/nodes/SG-SPEC-0001.yaml",
+        "motivating_concern": "approved split proposal",
+        "declared_change_surface": [
+            "specs/nodes/SG-SPEC-0001.yaml",
+            "specs/nodes/SG-SPEC-0002.yaml",
+        ],
+        "required_provenance_links": ["proposal_artifact", "source_run_id"],
+    }
+
+    assert supervisor_module.validate_transition_packet(packet) == []
+
+
+def test_validate_transition_packet_reports_structured_findings_for_missing_fields(
+    supervisor_module: object,
+) -> None:
+    findings = supervisor_module.validate_transition_packet(
+        {
+            "packet_type": "mystery",
+            "transition_intent": "",
+            "source_refs": [],
+            "declared_change_surface": [],
+        }
+    )
+
+    assert {finding["code"] for finding in findings} >= {
+        "invalid_packet_type",
+        "missing_transition_intent",
+        "missing_source_refs",
+        "missing_declared_change_surface",
+        "missing_required_provenance_links",
+        "missing_actor_or_authority_class",
+        "missing_target_binding",
+        "missing_motivating_concern_or_lineage_root",
+    }
+
+
+def test_main_validates_transition_packet_as_standalone_command(
+    supervisor_module: object,
+    repo_fixture: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    packet_path = repo_fixture / "transition-packet.json"
+    packet_path.write_text(
+        json.dumps(
+            {
+                "packet_type": "proposal",
+                "transition_intent": "promote one bounded design concern into a proposal",
+                "source_refs": ["docs/proposals_drafts/0005_telemetry.md"],
+                "actor_class": "operator",
+                "target_artifact_class": "proposal_document",
+                "lineage_root": "telemetry evidence plane",
+                "declared_change_surface": ["docs/proposals/0018_telemetry_evidence_plane.md"],
+                "required_provenance_links": ["source_draft_ref"],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    exit_code = supervisor_module.main(
+        validate_transition_packet_path=packet_path.as_posix(),
+    )
+
+    assert exit_code == 0
+    out = json.loads(capsys.readouterr().out)
+    assert out["ok"] is True
+    assert out["packet_type"] == "proposal"
+
+
 def test_main_split_proposal_accepts_untracked_parent_directory_change(
     supervisor_module: object,
     repo_fixture: Path,
