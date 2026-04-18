@@ -57,6 +57,10 @@ Supervisor modes:
   trace plane, grouped for viewer-style filters and implementation backlog queries.
 - `--build-proposal-runtime-index`: build `runs/proposal_runtime_index.json` from proposal docs,
   the proposal runtime registry, `tasks.md`, and repository markers in `tools/` and `tests/`.
+  Entries now also expose `repository_projection` and `semantic_artifact_class`
+  from `tools/proposal_promotion_policy.json`, so `docs/proposals/` is treated
+  as a repository projection of proposal semantics rather than the sole source
+  of lifecycle meaning.
 - `--list-stale-runtime` / `--clean-stale-runtime`: inspect or clean stale gate/worktree residue.
 
 Key derived artifacts:

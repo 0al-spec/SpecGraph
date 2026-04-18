@@ -265,6 +265,15 @@ Use it when you want to inspect, for each proposal:
 - observation coverage
 - next reflective backlog gap
 
+Each entry now also carries:
+
+- `repository_projection`
+- `semantic_artifact_class`
+
+Those fields come from `tools/proposal_promotion_policy.json`. The repository
+path is treated as a projection default such as `reviewable_proposal_surface`,
+not as the sole source of semantic meaning.
+
 ### Gate resolution
 
 ```bash

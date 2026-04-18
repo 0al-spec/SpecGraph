@@ -6617,6 +6617,33 @@ def seed_proposal_runtime_fixture(root: Path, *, include_heuristic_proposal: boo
         )
 
 
+def test_parse_proposal_document_includes_repository_projection(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    proposal_path = repo_fixture / "docs" / "proposals" / "0020_draft_to_proposal_promotion.md"
+    proposal_path.parent.mkdir(parents=True)
+    proposal_path.write_text(
+        "\n".join(
+            [
+                "# Draft-to-Proposal Promotion",
+                "",
+                "## Status",
+                "",
+                "Draft proposal",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    parsed = supervisor_module.parse_proposal_document(proposal_path)
+
+    assert parsed is not None
+    assert parsed["semantic_artifact_class"] == "reviewable_proposal"
+    assert parsed["repository_projection"]["projection_role"] == "reviewable_proposal_surface"
+    assert parsed["repository_projection"]["layout_is_sole_source_of_meaning"] is False
+
+
 def test_build_proposal_runtime_index_reports_reflective_chain(
     supervisor_module: object,
     repo_fixture: Path,
@@ -6628,6 +6655,10 @@ def test_build_proposal_runtime_index_reports_reflective_chain(
     assert index["entry_count"] == 2
     by_id = {entry["proposal_id"]: entry for entry in index["entries"]}
     assert by_id["0023"]["posture"] == "synchronous_runtime_slice"
+    assert by_id["0023"]["semantic_artifact_class"] == "reviewable_proposal"
+    assert by_id["0023"]["repository_projection"]["semantic_source"] == (
+        "repository_projection_default"
+    )
     assert by_id["0023"]["runtime_realization"]["status"] == "implemented"
     assert by_id["0023"]["validation_closure"]["status"] == "covered"
     assert by_id["0023"]["observation_coverage"]["status"] == "covered"

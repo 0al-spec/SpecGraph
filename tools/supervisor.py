@@ -7344,6 +7344,10 @@ def proposal_docs_dir() -> Path:
     return ROOT / "docs" / "proposals"
 
 
+def proposal_drafts_dir() -> Path:
+    return ROOT / "docs" / "proposals_drafts"
+
+
 def tasks_file_path() -> Path:
     return ROOT / "tasks.md"
 
@@ -7416,12 +7420,22 @@ def parse_proposal_document(path: Path) -> dict[str, Any] | None:
                 break
         break
 
+    promotion_policy, _findings = load_proposal_promotion_policy_report()
+    repository_projection = classify_proposal_repository_projection(
+        path,
+        policy=promotion_policy,
+    )
+
     return {
         "proposal_id": match.group("proposal_id"),
         "slug": match.group("slug"),
         "path": path.relative_to(ROOT).as_posix(),
         "title": title or path.stem,
         "status": status,
+        "repository_projection": repository_projection,
+        "semantic_artifact_class": str(
+            repository_projection.get("default_semantic_artifact_class", "reviewable_proposal")
+        ),
         "text": text,
     }
 
@@ -7436,6 +7450,52 @@ def iter_proposal_documents() -> list[dict[str, Any]]:
         if parsed is not None:
             documents.append(parsed)
     return documents
+
+
+def classify_proposal_repository_projection(
+    path: Path,
+    *,
+    policy: dict[str, Any] | None,
+) -> dict[str, Any]:
+    try:
+        relpath = path.relative_to(ROOT).as_posix()
+    except ValueError:
+        relpath = path.as_posix()
+
+    defaults = []
+    if isinstance(policy, dict):
+        defaults = [
+            item
+            for item in policy.get("repository_projection_defaults", [])
+            if isinstance(item, dict)
+        ]
+
+    for item in defaults:
+        prefix = str(item.get("path_prefix", "")).strip().rstrip("/")
+        if not prefix:
+            continue
+        if relpath == prefix or relpath.startswith(prefix + "/"):
+            return {
+                "path": relpath,
+                "path_prefix": prefix,
+                "projection_role": str(item.get("projection_role", "")).strip()
+                or "repository_projection",
+                "default_semantic_artifact_class": str(
+                    item.get("default_semantic_artifact_class", "")
+                ).strip()
+                or "unclassified",
+                "semantic_source": "repository_projection_default",
+                "layout_is_sole_source_of_meaning": False,
+            }
+
+    return {
+        "path": relpath,
+        "path_prefix": "",
+        "projection_role": "unclassified",
+        "default_semantic_artifact_class": "unclassified",
+        "semantic_source": "unknown",
+        "layout_is_sole_source_of_meaning": False,
+    }
 
 
 def infer_proposal_runtime_surfaces(text: str) -> list[str]:
@@ -7684,6 +7744,8 @@ def build_proposal_runtime_index() -> dict[str, Any]:
                 "title": str(proposal["title"]),
                 "status": str(proposal["status"]),
                 "path": str(proposal["path"]),
+                "repository_projection": copy.deepcopy(proposal["repository_projection"]),
+                "semantic_artifact_class": str(proposal["semantic_artifact_class"]),
                 "posture": posture,
                 "posture_description": PROPOSAL_PROCESSING_POSTURES[posture],
                 "posture_source": "registry" if proposal_id in registry else "heuristic",
