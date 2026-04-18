@@ -5863,6 +5863,85 @@ def test_build_spec_trace_index_derives_registry_backed_implementation_states(
     assert index["entries"][0]["implementation_state"]["status"] == "blocked"
 
 
+def test_collect_trace_pr_refs_parses_merge_commit_subjects(
+    supervisor_module: object,
+) -> None:
+    commit_refs = [
+        {
+            "sha": "a" * 40,
+            "short_sha": "aaaaaaa",
+            "committed_at": "2026-04-18T00:00:00Z",
+            "subject": "Merge pull request #96 from codex/spec-trace-plane",
+        },
+        {
+            "sha": "b" * 40,
+            "short_sha": "bbbbbbb",
+            "committed_at": "2026-04-18T00:00:01Z",
+            "subject": "Add trace plane (#97)",
+        },
+        {
+            "sha": "c" * 40,
+            "short_sha": "ccccccc",
+            "committed_at": "2026-04-18T00:00:02Z",
+            "subject": "Follow-up for PR #98",
+        },
+    ]
+
+    assert supervisor_module.collect_trace_pr_refs(commit_refs) == [
+        {"number": 96, "source": "commit_subject", "commit": "aaaaaaa"},
+        {"number": 97, "source": "commit_subject", "commit": "bbbbbbb"},
+        {"number": 98, "source": "commit_subject", "commit": "ccccccc"},
+    ]
+
+
+def test_collect_trace_commit_refs_passes_max_count_to_git_log(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[list[str]] = []
+
+    monkeypatch.setattr(supervisor_module.shutil, "which", lambda binary: "/usr/bin/git")
+
+    def fake_run(
+        args: list[str],
+        cwd: Path,
+        capture_output: bool,
+        text: bool,
+        check: bool,
+    ) -> subprocess.CompletedProcess[str]:
+        _ = (cwd, capture_output, text, check)
+        calls.append(args)
+        if args[1] == "rev-parse":
+            return subprocess.CompletedProcess(args=args, returncode=0, stdout="true\n", stderr="")
+        if args[1] == "log":
+            return subprocess.CompletedProcess(
+                args=args,
+                returncode=0,
+                stdout="a" * 40 + "\t2026-04-18T00:00:00Z\tMerge pull request #96\n",
+                stderr="",
+            )
+        raise AssertionError(f"unexpected git args: {args}")
+
+    monkeypatch.setattr(supervisor_module.subprocess, "run", fake_run)
+
+    refs = supervisor_module.collect_trace_commit_refs(
+        ["tools/supervisor.py"],
+        repo_root=repo_fixture,
+        limit=3,
+    )
+
+    assert refs == [
+        {
+            "sha": "a" * 40,
+            "short_sha": "aaaaaaa",
+            "committed_at": "2026-04-18T00:00:00Z",
+            "subject": "Merge pull request #96",
+        }
+    ]
+    assert calls[1][:3] == ["git", "log", "--max-count=3"]
+
+
 def seed_proposal_runtime_fixture(root: Path, *, include_heuristic_proposal: bool) -> None:
     proposals_dir = root / "docs" / "proposals"
     tools_dir = root / "tools"

@@ -323,7 +323,10 @@ SPEC_TRACE_INDEX_FILENAME = "spec_trace_index.json"
 PROPOSAL_RUNTIME_INDEX_FILENAME = "proposal_runtime_index.json"
 PROPOSAL_DOC_FILENAME_RE = re.compile(r"^(?P<proposal_id>\d{4})_(?P<slug>.+)\.md$")
 TASK_LINE_RE = re.compile(r"^(?P<task_id>\d+)\.\s+\[(?P<status>[a-z_]+)\]\s+(?P<body>.+)$")
-PR_NUMBER_FROM_SUBJECT_RE = re.compile(r"(?:\(#|PR\s+#)(?P<number>\d+)\)")
+PR_NUMBER_FROM_SUBJECT_RE = re.compile(
+    r"(?:\(#|PR\s+#|pull request\s+#)(?P<number>\d+)\b",
+    re.IGNORECASE,
+)
 PROPOSAL_PROCESSING_POSTURES = {
     "document_only": (
         "Proposal is reviewable as design material, but no immediate bounded runtime slice is "
@@ -6293,7 +6296,7 @@ def collect_trace_commit_refs(
 ) -> list[dict[str, str]]:
     local_root = repo_root or ROOT
     unique_paths = [path for path in sorted(set(ref_paths)) if str(path).strip()]
-    if not unique_paths or shutil.which("git") is None:
+    if limit <= 0 or not unique_paths or shutil.which("git") is None:
         return []
 
     probe = subprocess.run(
@@ -6307,7 +6310,7 @@ def collect_trace_commit_refs(
         return []
 
     result = subprocess.run(
-        ["git", "log", "--format=%H%x09%cI%x09%s", "--", *unique_paths],
+        ["git", "log", f"--max-count={limit}", "--format=%H%x09%cI%x09%s", "--", *unique_paths],
         cwd=local_root,
         capture_output=True,
         text=True,
