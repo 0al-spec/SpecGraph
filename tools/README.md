@@ -46,12 +46,15 @@ Key derived artifacts:
 
 - `runs/latest-summary.md`: fastest operator-facing run snapshot
 - `runs/<RUN_ID>.json`: full run payload including `graph_health` and `decision_inspector`
+- `runs/decision_inspector/<RUN_ID>.json`: standalone decision explanation artifact for one run
 - `runs/proposal_queue.json`: derived proposal-oriented next moves
 - `runs/refactor_queue.json`: derived refactor-oriented next moves
 - `runs/proposals/*.json`: structured split proposal artifacts
 - `runs/spec_trace_index.json`: weak spec-to-code coverage index from code/test mentions
 - `runs/proposal_runtime_index.json`: proposal posture and reflective runtime-closure index
 - `runs/spec_id_reservations.json`: temporary active child-materialization spec-id reservations
+- `tools/supervisor_policy.json`: declarative supervisor policy artifact for thresholds, priorities,
+  mutation classes, queue defaults, and execution profiles
 
 Runtime artifact safety:
 
@@ -72,6 +75,13 @@ Transition-packet validation now reports:
 - finding families such as `schema`, `provenance`, `authority`, and `diff_scope`
 - profile-aware rules for `specgraph_core`, `product_spec`, `techspec`, and
   `implementation_trace`
+
+Decision inspection now reports applied rules from:
+
+- `tools/supervisor_policy.json` for thresholds, selection priorities, queue defaults,
+  mutation classes, and execution profiles
+- runtime guards when a decision depends on validator failure, mutation-budget overflow,
+  or another non-policy blocker
 
 ## Supervisor Bootstrap Runtime Troubleshooting
 
@@ -238,7 +248,14 @@ python tools/python_quality.py
 
 Both commands default to `specs/nodes/*.yaml`. The formatter rewrites files into the
 repository's canonical YAML style; the linter enforces syntax, rejects duplicate keys,
-and fails when a file has drifted from canonical formatting.
+and fails when a file has drifted from canonical formatting. Canonical spec nodes now
+require top-level `created_at` and `updated_at` timestamps immediately after `kind`.
+
+To backfill those fields onto existing specs from git history with filesystem fallback:
+
+```bash
+python tools/spec_backfill_timestamps.py
+```
 
 `python_quality.py` mirrors the blocking `python-quality` CI job by running:
 

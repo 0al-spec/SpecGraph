@@ -18,13 +18,28 @@ def spec_yaml_module() -> object:
     return module
 
 
+@pytest.fixture()
+def spec_backfill_module() -> object:
+    module_path = Path(__file__).resolve().parents[1] / "tools" / "spec_backfill_timestamps.py"
+    spec = importlib.util.spec_from_file_location("test_spec_backfill_module", module_path)
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
 def test_format_file_rewrites_to_canonical_yaml(
     tmp_path: Path,
     spec_yaml_module: object,
 ) -> None:
     target = tmp_path / "spec.yaml"
     target.write_text(
-        '{"id":"SG-SPEC-0099","status":"outlined","acceptance":["x"]}', encoding="utf-8"
+        (
+            '{"id":"SG-SPEC-0099","created_at":"2026-04-18T00:00:00Z",'
+            '"updated_at":"2026-04-18T00:00:00Z","status":"outlined","acceptance":["x"]}'
+        ),
+        encoding="utf-8",
     )
 
     changed = spec_yaml_module.format_file(target)
@@ -42,7 +57,11 @@ def test_lint_file_reports_noncanonical_format(
 ) -> None:
     target = tmp_path / "spec.yaml"
     target.write_text(
-        '{"id":"SG-SPEC-0099","status":"outlined","acceptance":["x"]}', encoding="utf-8"
+        (
+            '{"id":"SG-SPEC-0099","created_at":"2026-04-18T00:00:00Z",'
+            '"updated_at":"2026-04-18T00:00:00Z","status":"outlined","acceptance":["x"]}'
+        ),
+        encoding="utf-8",
     )
 
     issues = spec_yaml_module.lint_file(target)
@@ -74,6 +93,8 @@ def test_lint_file_rejects_mapping_acceptance_item(
     target = tmp_path / "spec.yaml"
     target.write_text(
         "id: SG-SPEC-0099\n"
+        "created_at: 2026-04-18T00:00:00Z\n"
+        "updated_at: 2026-04-18T00:00:00Z\n"
         "status: outlined\n"
         "acceptance:\n"
         "- Defines seeds: Foo, Bar\n"
@@ -94,10 +115,74 @@ def test_lint_file_passes_for_canonical_yaml(
 ) -> None:
     target = tmp_path / "spec.yaml"
     target.write_text(
-        "id: SG-SPEC-0099\nstatus: outlined\nacceptance:\n- x\n",
+        "id: SG-SPEC-0099\n"
+        "created_at: '2026-04-18T00:00:00Z'\n"
+        "updated_at: '2026-04-18T00:00:00Z'\n"
+        "status: outlined\n"
+        "acceptance:\n"
+        "- x\n",
         encoding="utf-8",
     )
 
     issues = spec_yaml_module.lint_file(target)
 
     assert issues == []
+
+
+def test_lint_file_requires_timestamp_fields(
+    tmp_path: Path,
+    spec_yaml_module: object,
+) -> None:
+    target = tmp_path / "spec.yaml"
+    target.write_text(
+        "id: SG-SPEC-0099\nstatus: outlined\nacceptance:\n- x\n",
+        encoding="utf-8",
+    )
+
+    issues = spec_yaml_module.lint_file(target)
+
+    assert any(
+        "created_at must be a non-empty ISO 8601 timestamp string" in issue.message
+        for issue in issues
+    )
+    assert any(
+        "updated_at must be a non-empty ISO 8601 timestamp string" in issue.message
+        for issue in issues
+    )
+
+
+def test_with_spec_timestamps_inserts_fields_after_kind(
+    spec_yaml_module: object,
+) -> None:
+    updated = spec_yaml_module.with_spec_timestamps(
+        {
+            "id": "SG-SPEC-0099",
+            "title": "Timestamped Node",
+            "kind": "spec",
+            "status": "outlined",
+        },
+        created_at="2026-04-18T03:00:00+03:00",
+        updated_at="2026-04-18T04:00:00+03:00",
+    )
+
+    assert list(updated) == ["id", "title", "kind", "created_at", "updated_at", "status"]
+    assert updated["created_at"] == "2026-04-18T00:00:00Z"
+    assert updated["updated_at"] == "2026-04-18T01:00:00Z"
+
+
+def test_backfill_file_uses_filesystem_timestamps(
+    tmp_path: Path,
+    spec_backfill_module: object,
+) -> None:
+    target = tmp_path / "SG-SPEC-0099.yaml"
+    target.write_text(
+        "id: SG-SPEC-0099\nkind: spec\nstatus: outlined\nacceptance:\n- x\n",
+        encoding="utf-8",
+    )
+
+    changed = spec_backfill_module.backfill_file(target, prefer_filesystem=True)
+
+    assert changed is True
+    rendered = target.read_text(encoding="utf-8")
+    assert "created_at:" in rendered
+    assert "updated_at:" in rendered

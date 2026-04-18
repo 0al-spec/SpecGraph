@@ -1,0 +1,173 @@
+{
+  "artifact_kind": "supervisor_policy",
+  "version": 1,
+  "thresholds": {
+    "atomicity_max_acceptance": 5,
+    "atomicity_max_blocking_children": 3,
+    "recurring_refactor_proposal": 2,
+    "subtree_shape_one_child_chain": 4,
+    "graph_layer_exhausted_chain": 5,
+    "subtree_shape_min_single_child_ratio": 0.75,
+    "over_atomized_acceptance_max": 3,
+    "text_marker_ratio": 0.5,
+    "role_obscured_bookkeeping_ratio": 4.0,
+    "bookkeeping_only_ratio": 5.0,
+    "bookkeeping_only_context_ratio": 6.0,
+    "role_obscured_spec_reference_count": 4,
+    "linked_continuation_maturity": 0.85
+  },
+  "selection_priorities": {
+    "ordinary_sort_order": [
+      "refactor_queue_first",
+      "ancestor_reconcile_first",
+      "nearest_unlocked_ancestor",
+      "leaf_first",
+      "lower_maturity",
+      "stable_id"
+    ],
+    "explicit_target_sort_order": [
+      "explicit_operator_target"
+    ],
+    "gate_action_priority": {
+      "review_pending": 0,
+      "split_required": 1,
+      "blocked": 2,
+      "redirected": 3,
+      "escalated": 4
+    },
+    "refactor_signal_priority": {
+      "missing_dependency_target": 0,
+      "weak_structural_linkage_candidate": 1,
+      "oversized_spec": 2,
+      "retrospective_refactor_candidate": 2,
+      "serial_refinement_ladder": 2,
+      "missing_aggregate_node": 2,
+      "depth_without_breadth": 3,
+      "over_atomized_subtree": 3,
+      "delegation_only_chain": 3
+    }
+  },
+  "change_classification": {
+    "change_classes": {
+      "local_refinement": {
+        "description": "Bounded single-spec refinement without structural or governance-sensitive drift."
+      },
+      "graph_refactor": {
+        "description": "Accepted change alters graph structure, spec contract paths, or still carries decomposition pressure.",
+        "diff_prefixes": [
+          "depends_on",
+          "refines",
+          "relates_to",
+          "inputs",
+          "outputs",
+          "allowed_paths"
+        ]
+      },
+      "constitutional_change": {
+        "description": "Accepted change touches governance-sensitive canonical sections or immutable identity.",
+        "diff_prefixes": [
+          "specification.boundary_policy",
+          "specification.terminology",
+          "specification.proposal_lane_policy"
+        ]
+      }
+    },
+    "immutable_diff_prefixes": [
+      "id",
+      "kind"
+    ]
+  },
+  "mutation_classes": {
+    "policy_text": {
+      "description": "Policy or prose surface changed within the canonical spec snapshot."
+    },
+    "schema_required_addition": {
+      "description": "A new required schema component or required term component was introduced."
+    },
+    "schema_optional_addition": {
+      "description": "A new optional schema component or optional term component was introduced."
+    }
+  },
+  "queue_policy": {
+    "subtree_shape_signals": [
+      "serial_refinement_ladder",
+      "over_atomized_subtree",
+      "missing_aggregate_node",
+      "depth_without_breadth",
+      "delegation_only_chain",
+      "role_obscured_node",
+      "bookkeeping_only_node"
+    ],
+    "lower_boundary_handoff_signals": [
+      "lower_boundary_handoff_candidate",
+      "graph_layer_exhausted_for_subtree"
+    ],
+    "governance_proposal_signals": [
+      "repeated_split_required_candidate",
+      "stalled_maturity_candidate",
+      "lower_boundary_handoff_candidate",
+      "graph_layer_exhausted_for_subtree"
+    ],
+    "default_actions": {
+      "oversized_spec": "split_or_narrow_spec",
+      "retrospective_refactor_candidate": "propose_retrospective_refactor",
+      "missing_dependency_target": "repair_canonical_dependencies",
+      "repeated_split_required_candidate": "review_decomposition_policy",
+      "stalled_maturity_candidate": "review_refinement_strategy",
+      "weak_structural_linkage_candidate": "repair_refinement_chain",
+      "serial_refinement_ladder": "rebalance_subtree_shape",
+      "over_atomized_subtree": "rebalance_subtree_shape",
+      "missing_aggregate_node": "materialize_aggregate_node",
+      "depth_without_breadth": "rebalance_subtree_shape",
+      "delegation_only_chain": "compress_delegation_chain",
+      "role_obscured_node": "rewrite_node_role_boundary",
+      "bookkeeping_only_node": "merge_bookkeeping_slice",
+      "lower_boundary_handoff_candidate": "review_lower_boundary_handoff",
+      "graph_layer_exhausted_for_subtree": "review_lower_boundary_handoff"
+    },
+    "proposal_thresholds": {
+      "default_graph_refactor": 2,
+      "governance_proposal": 1,
+      "retrospective_refactor_candidate": 1
+    }
+  },
+  "execution_profiles": {
+    "default_profile": "standard",
+    "auto_heuristic_profile": "fast",
+    "auto_child_materialization_profile": "materialize",
+    "shared": {
+      "model": "gpt-5.4",
+      "approval_policy": "never",
+      "sandbox": "workspace-write",
+      "disabled_features": [
+        "shell_snapshot",
+        "multi_agent",
+        "plugins",
+        "general_analytics"
+      ]
+    },
+    "profiles": {
+      "fast": {
+        "reasoning_effort": "xhigh",
+        "timeout_seconds": 420
+      },
+      "standard": {
+        "reasoning_effort": "xhigh",
+        "timeout_seconds": 420
+      },
+      "materialize": {
+        "reasoning_effort": "xhigh",
+        "timeout_seconds": 720
+      }
+    },
+    "reasoning_timeout_floors": {
+      "low": 420,
+      "medium": 420,
+      "high": 300,
+      "xhigh": 420
+    },
+    "special_timeouts": {
+      "root_refactor_timeout_seconds": 1200
+    }
+  }
+}

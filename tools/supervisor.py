@@ -56,7 +56,7 @@ import threading
 import time
 from collections.abc import Callable
 from contextlib import contextmanager
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from pathlib import Path, PurePosixPath
 from types import ModuleType
 from typing import Any
@@ -67,6 +67,7 @@ except ImportError:
     yaml = None
 
 ROOT = Path.cwd()
+TOOLS_DIR = Path(__file__).resolve().parent
 SPECS_DIR = ROOT / "specs" / "nodes"
 RUNS_DIR = ROOT / "runs"
 WORKTREES_DIR = ROOT / ".worktrees"
@@ -74,39 +75,137 @@ AGENTS_FILE = ROOT / "AGENTS.md"
 ARTIFACT_LOCK_TIMEOUT_SECONDS = 5.0
 ARTIFACT_LOCK_POLL_SECONDS = 0.05
 RUNTIME_ID_COLLISION_RETRY_LIMIT = 8
+SUPERVISOR_POLICY_RELATIVE_PATH = "tools/supervisor_policy.json"
+
+
+def supervisor_policy_path() -> Path:
+    return TOOLS_DIR / "supervisor_policy.json"
+
+
+def load_supervisor_policy() -> tuple[dict[str, Any], str]:
+    path = supervisor_policy_path()
+    try:
+        raw_text = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise RuntimeError(
+            f"failed to read supervisor policy artifact: {path.as_posix()} ({exc})"
+        ) from exc
+    try:
+        payload = json.loads(raw_text)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(
+            f"malformed supervisor policy artifact: {path.as_posix()} ({exc})"
+        ) from exc
+    if not isinstance(payload, dict):
+        raise RuntimeError(
+            f"malformed supervisor policy artifact: {path.as_posix()} must contain a JSON object"
+        )
+    required_sections = (
+        "thresholds",
+        "selection_priorities",
+        "change_classification",
+        "mutation_classes",
+        "queue_policy",
+        "execution_profiles",
+    )
+    missing = [section for section in required_sections if section not in payload]
+    if missing:
+        raise RuntimeError(
+            "malformed supervisor policy artifact: missing top-level section(s): "
+            + ", ".join(missing)
+        )
+    return payload, hashlib.sha256(raw_text.encode("utf-8")).hexdigest()
+
+
+SUPERVISOR_POLICY, SUPERVISOR_POLICY_SHA256 = load_supervisor_policy()
+
+
+def policy_lookup(policy_path: str) -> Any:
+    current: Any = SUPERVISOR_POLICY
+    for part in policy_path.split("."):
+        if not isinstance(current, dict) or part not in current:
+            raise KeyError(policy_path)
+        current = current[part]
+    return copy.deepcopy(current)
+
+
+def policy_rule(
+    policy_path: str,
+    *,
+    reason: str,
+    matched_value: Any | None = None,
+    inputs: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    if matched_value is None:
+        try:
+            matched_value = policy_lookup(policy_path)
+        except KeyError:
+            matched_value = None
+    return {
+        "rule_source": "supervisor_policy",
+        "rule_id": policy_path,
+        "policy_path": policy_path,
+        "reason": reason,
+        "matched_value": matched_value,
+        "inputs": copy.deepcopy(inputs or {}),
+    }
+
+
+def runtime_rule(
+    rule_id: str,
+    *,
+    reason: str,
+    matched_value: Any | None = None,
+    inputs: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    return {
+        "rule_source": "runtime_guard",
+        "rule_id": rule_id,
+        "reason": reason,
+        "matched_value": copy.deepcopy(matched_value),
+        "inputs": copy.deepcopy(inputs or {}),
+    }
+
+
+def supervisor_policy_reference() -> dict[str, Any]:
+    return {
+        "artifact_path": SUPERVISOR_POLICY_RELATIVE_PATH,
+        "artifact_sha256": SUPERVISOR_POLICY_SHA256,
+        "version": SUPERVISOR_POLICY.get("version"),
+    }
+
 
 READY_DEP_STATUSES = {"reviewed", "frozen"}
 WORKABLE_STATUSES = {"outlined", "specified"}
 CONTINUATION_STATUSES = {"linked"}
 VALID_STATUSES = {"idea", "stub", "outlined", "specified", "linked", "reviewed", "frozen"}
-ATOMICITY_MAX_ACCEPTANCE = 5
-ATOMICITY_MAX_BLOCKING_CHILDREN = 3
-RECURRING_REFACTOR_PROPOSAL_THRESHOLD = 2
+ATOMICITY_MAX_ACCEPTANCE = int(policy_lookup("thresholds.atomicity_max_acceptance"))
+ATOMICITY_MAX_BLOCKING_CHILDREN = int(policy_lookup("thresholds.atomicity_max_blocking_children"))
+RECURRING_REFACTOR_PROPOSAL_THRESHOLD = int(policy_lookup("thresholds.recurring_refactor_proposal"))
 SPLIT_REFACTOR_SIGNAL = "oversized_spec"
 SPLIT_REFACTOR_KIND = "split_oversized_spec"
 RETROSPECTIVE_REFACTOR_SIGNAL = "retrospective_refactor_candidate"
-SUBTREE_SHAPE_SIGNALS = {
-    "serial_refinement_ladder",
-    "over_atomized_subtree",
-    "missing_aggregate_node",
-    "depth_without_breadth",
-    "delegation_only_chain",
-    "role_obscured_node",
-    "bookkeeping_only_node",
-}
-LOWER_BOUNDARY_HANDOFF_SIGNALS = {
-    "lower_boundary_handoff_candidate",
-    "graph_layer_exhausted_for_subtree",
-}
-SUBTREE_SHAPE_ONE_CHILD_CHAIN_THRESHOLD = 4
-GRAPH_LAYER_EXHAUSTED_CHAIN_THRESHOLD = 5
-SUBTREE_SHAPE_MIN_SINGLE_CHILD_RATIO = 0.75
-OVER_ATOMIZED_ACCEPTANCE_MAX = 3
-TEXT_MARKER_RATIO_THRESHOLD = 0.5
-ROLE_OBSCURED_BOOKKEEPING_RATIO_THRESHOLD = 4.0
-BOOKKEEPING_ONLY_RATIO_THRESHOLD = 5.0
-BOOKKEEPING_ONLY_CONTEXT_RATIO_THRESHOLD = 6.0
-ROLE_OBSCURED_SPEC_REFERENCE_THRESHOLD = 4
+SUBTREE_SHAPE_SIGNALS = set(policy_lookup("queue_policy.subtree_shape_signals"))
+LOWER_BOUNDARY_HANDOFF_SIGNALS = set(policy_lookup("queue_policy.lower_boundary_handoff_signals"))
+SUBTREE_SHAPE_ONE_CHILD_CHAIN_THRESHOLD = int(
+    policy_lookup("thresholds.subtree_shape_one_child_chain")
+)
+GRAPH_LAYER_EXHAUSTED_CHAIN_THRESHOLD = int(policy_lookup("thresholds.graph_layer_exhausted_chain"))
+SUBTREE_SHAPE_MIN_SINGLE_CHILD_RATIO = float(
+    policy_lookup("thresholds.subtree_shape_min_single_child_ratio")
+)
+OVER_ATOMIZED_ACCEPTANCE_MAX = int(policy_lookup("thresholds.over_atomized_acceptance_max"))
+TEXT_MARKER_RATIO_THRESHOLD = float(policy_lookup("thresholds.text_marker_ratio"))
+ROLE_OBSCURED_BOOKKEEPING_RATIO_THRESHOLD = float(
+    policy_lookup("thresholds.role_obscured_bookkeeping_ratio")
+)
+BOOKKEEPING_ONLY_RATIO_THRESHOLD = float(policy_lookup("thresholds.bookkeeping_only_ratio"))
+BOOKKEEPING_ONLY_CONTEXT_RATIO_THRESHOLD = float(
+    policy_lookup("thresholds.bookkeeping_only_context_ratio")
+)
+ROLE_OBSCURED_SPEC_REFERENCE_THRESHOLD = int(
+    policy_lookup("thresholds.role_obscured_spec_reference_count")
+)
 SPEC_ID_TEXT_RE = re.compile(r"\bsg-spec-\d{4}\b")
 SPEC_ID_CANONICAL_RE = re.compile(r"\bSG-SPEC-\d{4}\b")
 ROLE_OBSCURED_TITLE_MARKERS = ("edge", "segment", "slice", "topology")
@@ -370,11 +469,8 @@ BLOCKING_GATE_STATES = {
     "escalated",
 }
 GATE_ACTION_PRIORITY = {
-    "review_pending": 0,
-    "split_required": 1,
-    "blocked": 2,
-    "redirected": 3,
-    "escalated": 4,
+    str(key): int(value)
+    for key, value in policy_lookup("selection_priorities.gate_action_priority").items()
 }
 ALLOWED_OUTCOMES = {"done", "retry", "split_required", "blocked", "escalate"}
 COMPLETION_STATUS_OK = "ok"
@@ -384,28 +480,28 @@ SPEC_ID_PATTERN = re.compile(r"^SG-SPEC-(\d+)$")
 SEMANTIC_WORD_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9_-]*")
 BACKTICK_TOKEN_RE = re.compile(r"`([^`]+)`")
 UPPER_IDENTIFIER_RE = re.compile(r"\b[A-Z]{2,}(?:-[A-Z0-9]+)+\b")
-CHILD_EXECUTOR_MODEL = "gpt-5.4"
-CHILD_EXECUTOR_REASONING_EFFORT = "xhigh"
-CHILD_EXECUTOR_APPROVAL_POLICY = "never"
-CHILD_EXECUTOR_SANDBOX = "workspace-write"
-CHILD_EXECUTOR_DISABLED_FEATURES = (
-    "shell_snapshot",
-    "multi_agent",
-    "plugins",
-    "general_analytics",
+CHILD_EXECUTOR_MODEL = str(policy_lookup("execution_profiles.shared.model"))
+CHILD_EXECUTOR_APPROVAL_POLICY = str(policy_lookup("execution_profiles.shared.approval_policy"))
+CHILD_EXECUTOR_SANDBOX = str(policy_lookup("execution_profiles.shared.sandbox"))
+CHILD_EXECUTOR_DISABLED_FEATURES = tuple(
+    policy_lookup("execution_profiles.shared.disabled_features")
 )
-CHILD_EXECUTOR_TIMEOUT_SECONDS = 420
-CHILD_MATERIALIZATION_TIMEOUT_SECONDS = 720
-ROOT_REFACTOR_TIMEOUT_SECONDS = 1200
-FAST_EXECUTION_PROFILE_TIMEOUT_SECONDS = 420
-HIGH_REASONING_TIMEOUT_FLOOR_SECONDS = 300
-XHIGH_REASONING_TIMEOUT_FLOOR_SECONDS = 420
+DEFAULT_EXECUTION_PROFILE_NAME = str(policy_lookup("execution_profiles.default_profile"))
+AUTO_HEURISTIC_PROFILE_NAME = str(policy_lookup("execution_profiles.auto_heuristic_profile"))
+AUTO_CHILD_MATERIALIZATION_PROFILE_NAME = str(
+    policy_lookup("execution_profiles.auto_child_materialization_profile")
+)
+CHILD_EXECUTOR_REASONING_EFFORT = str(
+    policy_lookup(f"execution_profiles.profiles.{DEFAULT_EXECUTION_PROFILE_NAME}.reasoning_effort")
+)
+ROOT_REFACTOR_TIMEOUT_SECONDS = int(
+    policy_lookup("execution_profiles.special_timeouts.root_refactor_timeout_seconds")
+)
 EXECUTOR_PROGRESS_POLL_SECONDS = 30
 XHIGH_QUIET_PROGRESS_WINDOWS = 3
-LINKED_CONTINUATION_MATURITY_THRESHOLD = 0.85
-DEFAULT_EXECUTION_PROFILE_NAME = "standard"
-AUTO_HEURISTIC_PROFILE_NAME = "fast"
-AUTO_CHILD_MATERIALIZATION_PROFILE_NAME = "materialize"
+LINKED_CONTINUATION_MATURITY_THRESHOLD = float(
+    policy_lookup("thresholds.linked_continuation_maturity")
+)
 REFINEMENT_ACCEPT_DECISION_APPROVE = "approve"
 REFINEMENT_ACCEPT_DECISION_REJECT = "reject"
 REFINEMENT_ACCEPT_DECISION_REVIEW_REQUIRED = "review_required"
@@ -454,11 +550,7 @@ MUTATION_CLASS_POLICY_TEXT = "policy_text"
 MUTATION_CLASS_SCHEMA_REQUIRED_ADDITION = "schema_required_addition"
 MUTATION_CLASS_SCHEMA_OPTIONAL_ADDITION = "schema_optional_addition"
 RUN_AUTHORITY_MATERIALIZE_ONE_CHILD = "materialize_one_child"
-KNOWN_MUTATION_CLASSES = {
-    MUTATION_CLASS_POLICY_TEXT,
-    MUTATION_CLASS_SCHEMA_REQUIRED_ADDITION,
-    MUTATION_CLASS_SCHEMA_OPTIONAL_ADDITION,
-}
+KNOWN_MUTATION_CLASSES = set(policy_lookup("mutation_classes").keys())
 KNOWN_RUN_AUTHORITIES = {
     RUN_AUTHORITY_MATERIALIZE_ONE_CHILD,
 }
@@ -476,49 +568,39 @@ class ExecutionProfile:
 
 
 EXECUTION_PROFILES: dict[str, ExecutionProfile] = {
-    "fast": ExecutionProfile(
-        name="fast",
-        model=CHILD_EXECUTOR_MODEL,
-        reasoning_effort=CHILD_EXECUTOR_REASONING_EFFORT,
-        timeout_seconds=FAST_EXECUTION_PROFILE_TIMEOUT_SECONDS,
-        disabled_features=CHILD_EXECUTOR_DISABLED_FEATURES,
-    ),
-    "standard": ExecutionProfile(
-        name="standard",
-        model=CHILD_EXECUTOR_MODEL,
-        reasoning_effort=CHILD_EXECUTOR_REASONING_EFFORT,
-        timeout_seconds=CHILD_EXECUTOR_TIMEOUT_SECONDS,
-        disabled_features=CHILD_EXECUTOR_DISABLED_FEATURES,
-    ),
-    "materialize": ExecutionProfile(
-        name="materialize",
-        model=CHILD_EXECUTOR_MODEL,
-        reasoning_effort=CHILD_EXECUTOR_REASONING_EFFORT,
-        timeout_seconds=CHILD_MATERIALIZATION_TIMEOUT_SECONDS,
-        disabled_features=CHILD_EXECUTOR_DISABLED_FEATURES,
-    ),
+    name: ExecutionProfile(
+        name=name,
+        model=str(definition.get("model", CHILD_EXECUTOR_MODEL)),
+        reasoning_effort=str(definition["reasoning_effort"]),
+        timeout_seconds=int(definition["timeout_seconds"]),
+        disabled_features=tuple(
+            definition.get("disabled_features", CHILD_EXECUTOR_DISABLED_FEATURES)
+        ),
+        approval_policy=str(definition.get("approval_policy", CHILD_EXECUTOR_APPROVAL_POLICY)),
+        sandbox=str(definition.get("sandbox", CHILD_EXECUTOR_SANDBOX)),
+    )
+    for name, definition in policy_lookup("execution_profiles.profiles").items()
 }
-
+FAST_EXECUTION_PROFILE_TIMEOUT_SECONDS = EXECUTION_PROFILES["fast"].timeout_seconds
+CHILD_EXECUTOR_TIMEOUT_SECONDS = EXECUTION_PROFILES["standard"].timeout_seconds
+CHILD_MATERIALIZATION_TIMEOUT_SECONDS = EXECUTION_PROFILES["materialize"].timeout_seconds
 REASONING_TIMEOUT_FLOORS: dict[str, int] = {
-    "low": FAST_EXECUTION_PROFILE_TIMEOUT_SECONDS,
-    "medium": FAST_EXECUTION_PROFILE_TIMEOUT_SECONDS,
-    "high": HIGH_REASONING_TIMEOUT_FLOOR_SECONDS,
-    "xhigh": XHIGH_REASONING_TIMEOUT_FLOOR_SECONDS,
+    str(key): int(value)
+    for key, value in policy_lookup("execution_profiles.reasoning_timeout_floors").items()
 }
-GRAPH_REFACTOR_DIFF_PREFIXES = (
-    "depends_on",
-    "refines",
-    "relates_to",
-    "inputs",
-    "outputs",
-    "allowed_paths",
+HIGH_REASONING_TIMEOUT_FLOOR_SECONDS = REASONING_TIMEOUT_FLOORS["high"]
+XHIGH_REASONING_TIMEOUT_FLOOR_SECONDS = REASONING_TIMEOUT_FLOORS["xhigh"]
+GRAPH_REFACTOR_DIFF_PREFIXES = tuple(
+    policy_lookup(
+        f"change_classification.change_classes.{REFINEMENT_CLASS_GRAPH_REFACTOR}.diff_prefixes"
+    )
 )
-CONSTITUTIONAL_DIFF_PREFIXES = (
-    "specification.boundary_policy",
-    "specification.terminology",
-    "specification.proposal_lane_policy",
+CONSTITUTIONAL_DIFF_PREFIXES = tuple(
+    policy_lookup(
+        f"change_classification.change_classes.{REFINEMENT_CLASS_CONSTITUTIONAL}.diff_prefixes"
+    )
 )
-IMMUTABLE_DIFF_PREFIXES = ("id", "kind")
+IMMUTABLE_DIFF_PREFIXES = tuple(policy_lookup("change_classification.immutable_diff_prefixes"))
 SYNC_STRIPPED_SPEC_KEYS = {
     "RUN_OUTCOME",
     "BLOCKER",
@@ -548,6 +630,7 @@ SYNC_STRIPPED_SPEC_KEYS = {
     "pending_candidate_digests",
     "pending_run_id",
 }
+DERIVED_SPEC_TRACKING_KEYS = {"created_at", "updated_at"}
 DEFAULT_CODEX_HOME = Path(os.environ.get("CODEX_HOME", "~/.codex")).expanduser()
 
 STATUS_PROGRESSION: dict[str, str] = {
@@ -586,16 +669,102 @@ def dump_yaml_text(data: dict[str, Any]) -> str:
     return str(get_spec_yaml_module().dump_canonical_yaml(data))
 
 
+def canonical_spec_timestamp_now() -> str:
+    return str(get_spec_yaml_module().canonical_timestamp_text(utc_now_iso()))
+
+
+def prepare_spec_data_for_write(
+    *,
+    path: Path,
+    data: dict[str, Any],
+    touch_updated_at: bool = True,
+) -> dict[str, Any]:
+    spec_yaml = get_spec_yaml_module()
+    existing_created_at = ""
+    existing_updated_at = ""
+    existing_data: dict[str, Any] = {}
+    if path.exists():
+        try:
+            existing_data = spec_yaml.load_yaml_text(path.read_text(encoding="utf-8"))
+        except Exception:
+            existing_data = {}
+        if isinstance(existing_data, dict):
+            existing_created_at = str(existing_data.get("created_at", "")).strip()
+            existing_updated_at = str(existing_data.get("updated_at", "")).strip()
+
+    should_touch_updated_at = touch_updated_at
+    if should_touch_updated_at and existing_data:
+        should_touch_updated_at = canonical_spec_snapshot(existing_data) != canonical_spec_snapshot(
+            data
+        )
+
+    now = canonical_spec_timestamp_now()
+    created_at = str(data.get("created_at", "")).strip() or existing_created_at or now
+    updated_at = (
+        now
+        if should_touch_updated_at
+        else str(data.get("updated_at", "")).strip() or existing_updated_at or created_at
+    )
+    return spec_yaml.with_spec_timestamps(
+        dict(data),
+        created_at=created_at,
+        updated_at=updated_at,
+    )
+
+
+def write_spec_yaml(
+    path: Path,
+    data: dict[str, Any],
+    *,
+    touch_updated_at: bool = True,
+) -> dict[str, Any]:
+    prepared = prepare_spec_data_for_write(
+        path=path,
+        data=data,
+        touch_updated_at=touch_updated_at,
+    )
+    path.write_text(dump_yaml_text(prepared), encoding="utf-8")
+    return prepared
+
+
+def atomic_write_spec_yaml(
+    path: Path,
+    data: dict[str, Any],
+    *,
+    touch_updated_at: bool = True,
+) -> dict[str, Any]:
+    prepared = prepare_spec_data_for_write(
+        path=path,
+        data=data,
+        touch_updated_at=touch_updated_at,
+    )
+    atomic_write_text(path, dump_yaml_text(prepared))
+    return prepared
+
+
 def strip_runtime_spec_data(value: Any) -> Any:
-    """Return spec data with runtime-only metadata removed recursively."""
+    """Return spec data with derived runtime/tracking metadata removed recursively."""
     if isinstance(value, dict):
         return {
             key: strip_runtime_spec_data(item)
             for key, item in value.items()
-            if key not in SYNC_STRIPPED_SPEC_KEYS
+            if key not in SYNC_STRIPPED_SPEC_KEYS and key not in DERIVED_SPEC_TRACKING_KEYS
         }
     if isinstance(value, list):
         return [strip_runtime_spec_data(item) for item in value]
+    return value
+
+
+def strip_runtime_sync_data(value: Any) -> Any:
+    """Return spec data with runtime-only metadata removed recursively."""
+    if isinstance(value, dict):
+        return {
+            key: strip_runtime_sync_data(item)
+            for key, item in value.items()
+            if key not in SYNC_STRIPPED_SPEC_KEYS
+        }
+    if isinstance(value, list):
+        return [strip_runtime_sync_data(item) for item in value]
     return value
 
 
@@ -656,7 +825,7 @@ class SpecNode:
         return list(self.data.get("allowed_paths", []))
 
     def save(self) -> None:
-        self.path.write_text(dump_yaml_text(self.data), encoding="utf-8")
+        self.data = write_spec_yaml(self.path, self.data)
 
     def reload(self) -> None:
         yaml_module = get_yaml_module()
@@ -1282,17 +1451,8 @@ def runtime_artifact_integrity_errors() -> list[str]:
 
 
 def refactor_signal_priority(signal: str) -> int:
-    return {
-        "missing_dependency_target": 0,
-        "weak_structural_linkage_candidate": 1,
-        "oversized_spec": 2,
-        RETROSPECTIVE_REFACTOR_SIGNAL: 2,
-        "serial_refinement_ladder": 2,
-        "missing_aggregate_node": 2,
-        "depth_without_breadth": 3,
-        "over_atomized_subtree": 3,
-        "delegation_only_chain": 3,
-    }.get(signal, 9)
+    priorities = policy_lookup("selection_priorities.refactor_signal_priority")
+    return int(priorities.get(signal, 9))
 
 
 def pick_next_refactor_work_item(
@@ -2448,7 +2608,7 @@ def normalize_materialized_child_specs(child_relpaths: list[str]) -> None:
         normalized = canonical_spec_snapshot(child_data)
         normalized["outputs"] = [child_relpath]
         normalized["allowed_paths"] = [child_relpath]
-        child_path.write_text(dump_yaml_text(normalized), encoding="utf-8")
+        write_spec_yaml(child_path, normalized)
 
 
 def build_prompt(
@@ -4335,6 +4495,22 @@ def write_run_log(run_id: str, payload: dict[str, Any]) -> Path:
     return path
 
 
+def decision_inspector_dir_path() -> Path:
+    return RUNS_DIR / "decision_inspector"
+
+
+def decision_inspector_artifact_path(run_id: str) -> Path:
+    return decision_inspector_dir_path() / f"{run_id}.json"
+
+
+def write_decision_inspector_artifact(run_id: str, payload: dict[str, Any]) -> Path:
+    path = decision_inspector_artifact_path(run_id)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with artifact_lock(path):
+        atomic_write_json(path, payload)
+    return path
+
+
 def refactor_queue_path() -> Path:
     return RUNS_DIR / "refactor_queue.json"
 
@@ -4412,33 +4588,15 @@ def run_log_paths() -> list[Path]:
 
 
 def classify_refactor_work_item(signal: str) -> str:
-    if signal in {
-        "repeated_split_required_candidate",
-        "stalled_maturity_candidate",
-        *LOWER_BOUNDARY_HANDOFF_SIGNALS,
-    }:
+    governance_signals = set(policy_lookup("queue_policy.governance_proposal_signals"))
+    if signal in governance_signals:
         return "governance_proposal"
     return "graph_refactor"
 
 
 def default_action_for_signal(signal: str) -> str:
-    return {
-        "oversized_spec": "split_or_narrow_spec",
-        RETROSPECTIVE_REFACTOR_SIGNAL: "propose_retrospective_refactor",
-        "missing_dependency_target": "repair_canonical_dependencies",
-        "repeated_split_required_candidate": "review_decomposition_policy",
-        "stalled_maturity_candidate": "review_refinement_strategy",
-        "weak_structural_linkage_candidate": "repair_refinement_chain",
-        "serial_refinement_ladder": "rebalance_subtree_shape",
-        "over_atomized_subtree": "rebalance_subtree_shape",
-        "missing_aggregate_node": "materialize_aggregate_node",
-        "depth_without_breadth": "rebalance_subtree_shape",
-        "delegation_only_chain": "compress_delegation_chain",
-        "role_obscured_node": "rewrite_node_role_boundary",
-        "bookkeeping_only_node": "merge_bookkeeping_slice",
-        "lower_boundary_handoff_candidate": "review_lower_boundary_handoff",
-        "graph_layer_exhausted_for_subtree": "review_lower_boundary_handoff",
-    }.get(signal, "review_graph_health_signal")
+    default_actions = policy_lookup("queue_policy.default_actions")
+    return str(default_actions.get(signal, "review_graph_health_signal"))
 
 
 def proposal_is_active(item: dict[str, Any]) -> bool:
@@ -4500,11 +4658,12 @@ def classify_proposal_type(work_item_type: str) -> str:
 
 
 def proposal_threshold_for_signal(*, signal: str, work_item_type: str) -> int:
+    threshold_policy = policy_lookup("queue_policy.proposal_thresholds")
     if signal == RETROSPECTIVE_REFACTOR_SIGNAL:
-        return 1
+        return int(threshold_policy["retrospective_refactor_candidate"])
     if work_item_type == "governance_proposal":
-        return 1
-    return RECURRING_REFACTOR_PROPOSAL_THRESHOLD
+        return int(threshold_policy["governance_proposal"])
+    return int(threshold_policy["default_graph_refactor"])
 
 
 def signal_supporting_run_ids(spec_id: str, signal: str) -> list[str]:
@@ -4725,8 +4884,343 @@ def summarize_queue_transition(
     }
 
 
+def dedupe_decision_rules(rules: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    unique: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for rule in rules:
+        token = json.dumps(rule, ensure_ascii=False, sort_keys=True)
+        if token in seen:
+            continue
+        seen.add(token)
+        unique.append(rule)
+    return unique
+
+
+def build_selection_decision_rules(selected_by_rule: dict[str, Any]) -> list[dict[str, Any]]:
+    rules: list[dict[str, Any]] = []
+    sort_order = list(selected_by_rule.get("sort_order", []))
+    if sort_order == policy_lookup("selection_priorities.explicit_target_sort_order"):
+        rules.append(
+            policy_rule(
+                "selection_priorities.explicit_target_sort_order",
+                reason="explicit operator targeting bypassed heuristic selector ordering",
+                inputs={"selection_mode": selected_by_rule.get("selection_mode")},
+            )
+        )
+    elif sort_order == policy_lookup("selection_priorities.ordinary_sort_order"):
+        rules.append(
+            policy_rule(
+                "selection_priorities.ordinary_sort_order",
+                reason="ordinary selector ordering determined the candidate ranking for this run",
+                inputs={"selection_mode": selected_by_rule.get("selection_mode")},
+            )
+        )
+
+    signal = str(selected_by_rule.get("refactor_work_item", {}).get("signal", "")).strip()
+    if signal:
+        rules.append(
+            policy_rule(
+                f"selection_priorities.refactor_signal_priority.{signal}",
+                reason=(
+                    "queued graph-refactor candidates were ranked by declarative signal priority"
+                ),
+                matched_value=refactor_signal_priority(signal),
+                inputs={"signal": signal},
+            )
+        )
+
+    profile_name = str(selected_by_rule.get("execution_profile", "")).strip()
+    if profile_name in EXECUTION_PROFILES:
+        rules.append(
+            policy_rule(
+                f"execution_profiles.profiles.{profile_name}",
+                reason="selected execution profile provided the nested executor configuration",
+                matched_value=asdict(EXECUTION_PROFILES[profile_name]),
+                inputs={"profile_name": profile_name},
+            )
+        )
+        run_authorities = {str(value) for value in selected_by_rule.get("run_authority", [])}
+        if (
+            profile_name == AUTO_CHILD_MATERIALIZATION_PROFILE_NAME
+            and RUN_AUTHORITY_MATERIALIZE_ONE_CHILD in run_authorities
+        ):
+            rules.append(
+                policy_rule(
+                    "execution_profiles.auto_child_materialization_profile",
+                    reason=(
+                        "explicit child-materialization authority promoted the materialize profile"
+                    ),
+                    inputs={"run_authority": selected_by_rule.get("run_authority", [])},
+                )
+            )
+        elif profile_name == AUTO_HEURISTIC_PROFILE_NAME and not selected_by_rule.get(
+            "operator_target"
+        ):
+            rules.append(
+                policy_rule(
+                    "execution_profiles.auto_heuristic_profile",
+                    reason="ordinary heuristic runs default to the fast execution profile",
+                    inputs={"selection_mode": selected_by_rule.get("selection_mode")},
+                )
+            )
+        elif profile_name == DEFAULT_EXECUTION_PROFILE_NAME and selected_by_rule.get(
+            "operator_target"
+        ):
+            rules.append(
+                policy_rule(
+                    "execution_profiles.default_profile",
+                    reason="explicit operator-targeted runs default to the standard profile",
+                    inputs={"selection_mode": selected_by_rule.get("selection_mode")},
+                )
+            )
+
+    if str(selected_by_rule.get("selection_mode", "")).strip() == "linked_continuation":
+        rules.append(
+            policy_rule(
+                "thresholds.linked_continuation_maturity",
+                reason="linked-continuation eligibility consults the declarative maturity floor",
+                inputs={"continuation_reasons": selected_by_rule.get("continuation_reasons", [])},
+            )
+        )
+    return dedupe_decision_rules(rules)
+
+
+def build_gate_decision_rules(
+    *,
+    gate_state: str,
+    blocker: str,
+    failing_validators: list[str],
+    refinement_acceptance: dict[str, Any] | None,
+) -> list[dict[str, Any]]:
+    rules: list[dict[str, Any]] = []
+    if gate_state in GATE_ACTION_PRIORITY:
+        rules.append(
+            policy_rule(
+                f"selection_priorities.gate_action_priority.{gate_state}",
+                reason="pending gate ordering uses the declarative gate-state priority map",
+                matched_value=GATE_ACTION_PRIORITY.get(gate_state),
+                inputs={"gate_state": gate_state},
+            )
+        )
+    if refinement_acceptance is not None:
+        change_class = str(refinement_acceptance.get("change_class", "")).strip()
+        decision = str(refinement_acceptance.get("decision", "")).strip()
+        if change_class:
+            rules.append(
+                policy_rule(
+                    f"change_classification.change_classes.{change_class}",
+                    reason="gate outcome used the classified semantic change scope",
+                    inputs={"decision": decision, "change_class": change_class},
+                )
+            )
+        for mutation_class in refinement_acceptance.get("mutation_classes", []):
+            if mutation_class in KNOWN_MUTATION_CLASSES:
+                rules.append(
+                    policy_rule(
+                        f"mutation_classes.{mutation_class}",
+                        reason="detected mutation classes contributed to gate evaluation",
+                        inputs={"decision": decision},
+                    )
+                )
+        budget_exceeded = list(refinement_acceptance.get("budget_exceeded_classes", []))
+        if budget_exceeded:
+            rules.append(
+                runtime_rule(
+                    "gate.review_required_due_to_mutation_budget",
+                    reason=(
+                        "manual review was required because the requested mutation "
+                        "budget was exceeded"
+                    ),
+                    matched_value=budget_exceeded,
+                    inputs={"decision": decision},
+                )
+            )
+        elif decision == REFINEMENT_ACCEPT_DECISION_REVIEW_REQUIRED:
+            rules.append(
+                runtime_rule(
+                    "gate.review_required_due_to_non_local_change",
+                    reason=(
+                        "manual review was required because the change was not a local refinement"
+                    ),
+                    matched_value=change_class,
+                )
+            )
+        elif decision == REFINEMENT_ACCEPT_DECISION_REJECT:
+            rules.append(
+                runtime_rule(
+                    "gate.reject_due_to_refinement_acceptance",
+                    reason=(
+                        "refinement acceptance rejected the candidate change before gate promotion"
+                    ),
+                    matched_value=list(refinement_acceptance.get("errors", [])),
+                )
+            )
+    if failing_validators:
+        rules.append(
+            runtime_rule(
+                "gate.failing_validators",
+                reason="failing validators contributed to the final gate state or blocker",
+                matched_value=failing_validators,
+            )
+        )
+    if blocker and blocker != "none":
+        rules.append(
+            runtime_rule(
+                "gate.blocker",
+                reason="a concrete runtime or validation blocker propagated into the gate result",
+                matched_value=blocker,
+            )
+        )
+    return dedupe_decision_rules(rules)
+
+
+def build_diff_classification_rules(
+    *,
+    refinement_acceptance: dict[str, Any] | None,
+) -> list[dict[str, Any]]:
+    if refinement_acceptance is None:
+        return []
+    rules: list[dict[str, Any]] = []
+    change_class = str(refinement_acceptance.get("change_class", "")).strip()
+    if change_class:
+        rules.append(
+            policy_rule(
+                f"change_classification.change_classes.{change_class}",
+                reason="canonical diff paths were classified under this semantic change class",
+                inputs={"diff_paths": refinement_acceptance.get("diff_paths", [])},
+            )
+        )
+        if change_class in {REFINEMENT_CLASS_GRAPH_REFACTOR, REFINEMENT_CLASS_CONSTITUTIONAL}:
+            rules.append(
+                policy_rule(
+                    f"change_classification.change_classes.{change_class}.diff_prefixes",
+                    reason=(
+                        "named diff-prefix families were consulted when classifying "
+                        "the accepted change"
+                    ),
+                )
+            )
+    for mutation_class in refinement_acceptance.get("mutation_classes", []):
+        if mutation_class in KNOWN_MUTATION_CLASSES:
+            rules.append(
+                policy_rule(
+                    f"mutation_classes.{mutation_class}",
+                    reason=(
+                        "detected mutation classes summarize the accepted canonical change surface"
+                    ),
+                )
+            )
+    if any(
+        path_matches_prefix(path, IMMUTABLE_DIFF_PREFIXES)
+        for path in refinement_acceptance.get("diff_paths", [])
+    ):
+        rules.append(
+            policy_rule(
+                "change_classification.immutable_diff_prefixes",
+                reason=(
+                    "immutable identity prefixes were checked while classifying the canonical diff"
+                ),
+            )
+        )
+    return dedupe_decision_rules(rules)
+
+
+def build_queue_effect_rules(
+    *,
+    graph_health: dict[str, Any],
+    proposal_queue_transition: dict[str, Any],
+    refactor_queue_transition: dict[str, Any],
+) -> list[dict[str, Any]]:
+    rules: list[dict[str, Any]] = []
+    governance_signals = set(policy_lookup("queue_policy.governance_proposal_signals"))
+    subtree_shape_signals = set(policy_lookup("queue_policy.subtree_shape_signals"))
+    lower_boundary_signals = set(policy_lookup("queue_policy.lower_boundary_handoff_signals"))
+    for signal_value in graph_health.get("signals", []):
+        signal = str(signal_value).strip()
+        if not signal:
+            continue
+        rules.append(
+            policy_rule(
+                f"queue_policy.default_actions.{signal}",
+                reason=(
+                    "each graph-health signal emits its default recommended action "
+                    "from the policy layer"
+                ),
+                inputs={"signal": signal},
+            )
+        )
+        if signal in governance_signals:
+            rules.append(
+                policy_rule(
+                    "queue_policy.governance_proposal_signals",
+                    reason="this signal is handled proposal-first as a governance concern",
+                    matched_value=signal,
+                )
+            )
+        if signal in subtree_shape_signals:
+            rules.append(
+                policy_rule(
+                    "queue_policy.subtree_shape_signals",
+                    reason=(
+                        "this signal belongs to the subtree-shape family that prefers "
+                        "rewrite/merge proposals"
+                    ),
+                    matched_value=signal,
+                )
+            )
+        if signal in lower_boundary_signals:
+            rules.append(
+                policy_rule(
+                    "queue_policy.lower_boundary_handoff_signals",
+                    reason="this signal belongs to the lower-boundary handoff family",
+                    matched_value=signal,
+                )
+            )
+        work_item_type = classify_refactor_work_item(signal)
+        threshold_policy_path = "queue_policy.proposal_thresholds.default_graph_refactor"
+        if signal == RETROSPECTIVE_REFACTOR_SIGNAL:
+            threshold_policy_path = (
+                "queue_policy.proposal_thresholds.retrospective_refactor_candidate"
+            )
+        elif work_item_type == "governance_proposal":
+            threshold_policy_path = "queue_policy.proposal_thresholds.governance_proposal"
+        rules.append(
+            policy_rule(
+                threshold_policy_path,
+                reason=(
+                    "proposal emission consulted the declarative supporting-run "
+                    "threshold for this signal family"
+                ),
+                matched_value=proposal_threshold_for_signal(
+                    signal=signal,
+                    work_item_type=work_item_type,
+                ),
+                inputs={"signal": signal, "work_item_type": work_item_type},
+            )
+        )
+
+    if proposal_queue_transition["emitted_ids"] or proposal_queue_transition["updated_ids"]:
+        rules.append(
+            runtime_rule(
+                "queue.proposal_queue_transition",
+                reason="proposal queue changed after applying graph-health signal rules",
+                matched_value=proposal_queue_transition,
+            )
+        )
+    if refactor_queue_transition["emitted_ids"] or refactor_queue_transition["updated_ids"]:
+        rules.append(
+            runtime_rule(
+                "queue.refactor_queue_transition",
+                reason="refactor queue changed after applying graph-health signal rules",
+                matched_value=refactor_queue_transition,
+            )
+        )
+    return dedupe_decision_rules(rules)
+
+
 def build_decision_inspector(
     *,
+    run_id: str,
     spec_id: str,
     selected_by_rule: dict[str, Any],
     outcome: str,
@@ -4747,6 +5241,16 @@ def build_decision_inspector(
     failing_validators = sorted(
         name for name, ok in (validator_results or {}).items() if not bool(ok)
     )
+    proposal_queue_transition = summarize_queue_transition(
+        source_spec_id=spec_id,
+        before_items=proposal_queue_before,
+        after_items=proposal_queue_after,
+    )
+    refactor_queue_transition = summarize_queue_transition(
+        source_spec_id=spec_id,
+        before_items=refactor_queue_before,
+        after_items=refactor_queue_after,
+    )
     diff_classification = {
         "changed_files": list(changed_files),
         "changed_spec_files": [path for path in changed_files if is_spec_node_path(path)],
@@ -4765,11 +5269,18 @@ def build_decision_inspector(
                 ),
             }
         )
+    diff_classification["applied_rules"] = build_diff_classification_rules(
+        refinement_acceptance=refinement_acceptance,
+    )
     return {
+        "artifact_kind": "decision_inspector",
+        "run_id": run_id,
+        "policy_reference": supervisor_policy_reference(),
         "selection": {
             "spec_id": spec_id,
             "mode": str(selected_by_rule.get("selection_mode", "")).strip(),
             "rule_inputs": copy.deepcopy(selected_by_rule),
+            "applied_rules": build_selection_decision_rules(selected_by_rule),
         },
         "gate": {
             "outcome": outcome,
@@ -4777,20 +5288,23 @@ def build_decision_inspector(
             "required_human_action": required_human_action,
             "blocker": blocker,
             "failing_validators": failing_validators,
+            "applied_rules": build_gate_decision_rules(
+                gate_state=gate_state,
+                blocker=blocker,
+                failing_validators=failing_validators,
+                refinement_acceptance=refinement_acceptance,
+            ),
         },
         "diff_classification": diff_classification,
         "queue_effects": {
             "signals": list(graph_health.get("signals", [])),
             "recommended_actions": list(graph_health.get("recommended_actions", [])),
-            "proposal_queue": summarize_queue_transition(
-                source_spec_id=spec_id,
-                before_items=proposal_queue_before,
-                after_items=proposal_queue_after,
-            ),
-            "refactor_queue": summarize_queue_transition(
-                source_spec_id=spec_id,
-                before_items=refactor_queue_before,
-                after_items=refactor_queue_after,
+            "proposal_queue": proposal_queue_transition,
+            "refactor_queue": refactor_queue_transition,
+            "applied_rules": build_queue_effect_rules(
+                graph_health=graph_health,
+                proposal_queue_transition=proposal_queue_transition,
+                refactor_queue_transition=refactor_queue_transition,
             ),
         },
     }
@@ -6476,7 +6990,7 @@ def apply_split_proposal_to_worktree(
     node.data["acceptance"] = retained_texts
     node.data["acceptance_evidence"] = retained_evidence
     worktree_parent_path = worktree_path / parent_relpath
-    atomic_write_text(worktree_parent_path, dump_yaml_text(node.data))
+    node.data = atomic_write_spec_yaml(worktree_parent_path, node.data)
 
     for child, child_id, child_path, existing_data in zip(
         child_specs, child_ids, child_paths, child_existing_data, strict=True
@@ -6515,7 +7029,7 @@ def apply_split_proposal_to_worktree(
             child_data["acceptance"] = child_acceptance
             child_data["acceptance_evidence"] = child_evidence
         absolute_child_path.parent.mkdir(parents=True, exist_ok=True)
-        atomic_write_text(absolute_child_path, dump_yaml_text(child_data))
+        child_data = atomic_write_spec_yaml(absolute_child_path, child_data)
 
     return [parent_relpath, *child_paths]
 
@@ -6862,7 +7376,7 @@ def sanitize_spec_sync_text(text: str) -> str:
     data = yaml_module.safe_load(text) or {}
     if not isinstance(data, dict):
         raise ValueError("top-level YAML document must be a mapping")
-    cleaned = canonical_spec_snapshot(data)
+    cleaned = strip_runtime_sync_data(data)
     return dump_yaml_text(cleaned)
 
 
@@ -7702,7 +8216,7 @@ def _apply_split_proposal(
     selected_by_rule = {
         "selection_mode": "apply_split_proposal",
         "operator_target": node.id,
-        "sort_order": ["explicit_operator_target"],
+        "sort_order": policy_lookup("selection_priorities.explicit_target_sort_order"),
         "proposal_item": {
             "id": str(proposal_item.get("id", "")),
             "proposal_type": str(proposal_item.get("proposal_type", "")),
@@ -7832,6 +8346,29 @@ def _apply_split_proposal(
     success = not validation_errors
     proposal_queue_after = load_proposal_queue()
     refactor_queue_after = load_refactor_queue()
+    decision_inspector = build_decision_inspector(
+        run_id=run_id,
+        spec_id=node.id,
+        selected_by_rule=selected_by_rule,
+        outcome="done" if success else "blocked",
+        gate_state="none",
+        required_human_action="-" if success else "repair proposal before retry",
+        blocker="none" if success else "split proposal application failed",
+        changed_files=changed,
+        validation_errors=validation_errors,
+        validator_results={
+            "proposal_artifact": not validation_errors,
+            "canonical_writeback": success,
+            "runtime_artifacts": not artifact_io_errors,
+        },
+        graph_health=graph_health,
+        graph_health_truth_basis="accepted_canonical",
+        proposal_queue_before=proposal_queue_before,
+        proposal_queue_after=proposal_queue_after,
+        refactor_queue_before=refactor_queue_before,
+        refactor_queue_after=refactor_queue_after,
+    )
+    decision_inspector_artifact = write_decision_inspector_artifact(run_id, decision_inspector)
     payload = {
         "run_id": run_id,
         "timestamp_utc": utc_now_iso(),
@@ -7861,27 +8398,8 @@ def _apply_split_proposal(
         "reconciliation": {},
         "graph_health": graph_health,
         "graph_health_truth_basis": "accepted_canonical",
-        "decision_inspector": build_decision_inspector(
-            spec_id=node.id,
-            selected_by_rule=selected_by_rule,
-            outcome="done" if success else "blocked",
-            gate_state="none",
-            required_human_action="-" if success else "repair proposal before retry",
-            blocker="none" if success else "split proposal application failed",
-            changed_files=changed,
-            validation_errors=validation_errors,
-            validator_results={
-                "proposal_artifact": not validation_errors,
-                "canonical_writeback": success,
-                "runtime_artifacts": not artifact_io_errors,
-            },
-            graph_health=graph_health,
-            graph_health_truth_basis="accepted_canonical",
-            proposal_queue_before=proposal_queue_before,
-            proposal_queue_after=proposal_queue_after,
-            refactor_queue_before=refactor_queue_before,
-            refactor_queue_after=refactor_queue_after,
-        ),
+        "decision_inspector": decision_inspector,
+        "decision_inspector_artifact": decision_inspector_artifact.as_posix(),
         "refactor_queue_artifact": refactor_queue_artifact.as_posix(),
         "proposal_queue_artifact": proposal_queue_artifact.as_posix(),
         "proposal_artifact_path": proposal_artifact_path.as_posix(),
@@ -7927,7 +8445,7 @@ def _process_split_refactor_proposal(
     selected_by_rule = {
         "selection_mode": "split_refactor_proposal",
         "operator_target": node.id,
-        "sort_order": ["explicit_operator_target"],
+        "sort_order": policy_lookup("selection_priorities.explicit_target_sort_order"),
         "refactor_work_item": {
             "id": str(refactor_work_item.get("id", "")),
             "proposal_type": str(refactor_work_item.get("proposal_type", "")),
@@ -8139,6 +8657,32 @@ def _process_split_refactor_proposal(
     )
     proposal_queue_after = load_proposal_queue()
     refactor_queue_after = load_refactor_queue()
+    decision_inspector = build_decision_inspector(
+        run_id=run_id,
+        spec_id=node.id,
+        selected_by_rule=selected_by_rule,
+        outcome=outcome,
+        gate_state="none",
+        required_human_action=required_human_action,
+        blocker=blocker,
+        changed_files=changed,
+        validation_errors=validation_errors,
+        validator_results={
+            "target_eligibility": True,
+            "proposal_artifact": success,
+            "canonical_writeback": not changed_spec_files,
+            "artifact_scope": not extra_changed_files,
+            "executor_environment": not primary_executor_failure,
+            "runtime_artifacts": not artifact_io_errors,
+        },
+        graph_health=graph_health,
+        graph_health_truth_basis="review_candidate",
+        proposal_queue_before=proposal_queue_before,
+        proposal_queue_after=proposal_queue_after,
+        refactor_queue_before=refactor_queue_before,
+        refactor_queue_after=refactor_queue_after,
+    )
+    decision_inspector_artifact = write_decision_inspector_artifact(run_id, decision_inspector)
     payload = {
         "run_id": run_id,
         "timestamp_utc": utc_now_iso(),
@@ -8174,30 +8718,8 @@ def _process_split_refactor_proposal(
         },
         "graph_health": graph_health,
         "graph_health_truth_basis": "review_candidate",
-        "decision_inspector": build_decision_inspector(
-            spec_id=node.id,
-            selected_by_rule=selected_by_rule,
-            outcome=outcome,
-            gate_state="none",
-            required_human_action=required_human_action,
-            blocker=blocker,
-            changed_files=changed,
-            validation_errors=validation_errors,
-            validator_results={
-                "target_eligibility": True,
-                "proposal_artifact": success,
-                "canonical_writeback": not changed_spec_files,
-                "artifact_scope": not extra_changed_files,
-                "executor_environment": not primary_executor_failure,
-                "runtime_artifacts": not artifact_io_errors,
-            },
-            graph_health=graph_health,
-            graph_health_truth_basis="review_candidate",
-            proposal_queue_before=proposal_queue_before,
-            proposal_queue_after=proposal_queue_after,
-            refactor_queue_before=refactor_queue_before,
-            refactor_queue_after=refactor_queue_after,
-        ),
+        "decision_inspector": decision_inspector,
+        "decision_inspector_artifact": decision_inspector_artifact.as_posix(),
         "executor_environment": executor_environment,
         "refactor_queue_artifact": refactor_queue_artifact.as_posix(),
         "proposal_queue_artifact": proposal_queue_artifact.as_posix(),
@@ -8270,19 +8792,14 @@ def _process_one_spec(
         "status_filter": sorted(WORKABLE_STATUSES),
         "dependency_required_statuses": sorted(READY_DEP_STATUSES),
         "selection_mode": selection_mode,
-        "sort_order": [
-            "refactor_queue_first",
-            "ancestor_reconcile_first",
-            "nearest_unlocked_ancestor",
-            "leaf_first",
-            "lower_maturity",
-            "stable_id",
-        ],
+        "sort_order": policy_lookup("selection_priorities.ordinary_sort_order"),
         "dependents_count": dependents.get(node.id, 0),
     }
     if operator_target:
         selected_by_rule["operator_target"] = node.id
-        selected_by_rule["sort_order"] = ["explicit_operator_target"]
+        selected_by_rule["sort_order"] = policy_lookup(
+            "selection_priorities.explicit_target_sort_order"
+        )
     if operator_note.strip():
         selected_by_rule["operator_note"] = operator_note.strip()
     if mutation_budget:
@@ -8810,6 +9327,26 @@ def _process_one_spec(
             run_id=run_id,
         )
 
+    decision_inspector = build_decision_inspector(
+        run_id=run_id,
+        spec_id=node.id,
+        selected_by_rule=selected_by_rule,
+        outcome=outcome,
+        gate_state=str(node.data.get("gate_state", "none")),
+        required_human_action=required_human_action,
+        blocker=blocker,
+        changed_files=changed,
+        validation_errors=validation_errors,
+        validator_results=validator_results,
+        graph_health=graph_health,
+        graph_health_truth_basis="accepted_canonical",
+        proposal_queue_before=proposal_queue_before,
+        proposal_queue_after=proposal_queue_after,
+        refactor_queue_before=refactor_queue_before,
+        refactor_queue_after=refactor_queue_after,
+        refinement_acceptance=refinement_acceptance,
+    )
+    decision_inspector_artifact = write_decision_inspector_artifact(run_id, decision_inspector)
     payload = {
         "run_id": run_id,
         "timestamp_utc": utc_now_iso(),
@@ -8840,24 +9377,8 @@ def _process_one_spec(
         "reconciliation": reconciliation,
         "graph_health": graph_health,
         "graph_health_truth_basis": "accepted_canonical",
-        "decision_inspector": build_decision_inspector(
-            spec_id=node.id,
-            selected_by_rule=selected_by_rule,
-            outcome=outcome,
-            gate_state=str(node.data.get("gate_state", "none")),
-            required_human_action=required_human_action,
-            blocker=blocker,
-            changed_files=changed,
-            validation_errors=validation_errors,
-            validator_results=validator_results,
-            graph_health=graph_health,
-            graph_health_truth_basis="accepted_canonical",
-            proposal_queue_before=proposal_queue_before,
-            proposal_queue_after=proposal_queue_after,
-            refactor_queue_before=refactor_queue_before,
-            refactor_queue_after=refactor_queue_after,
-            refinement_acceptance=refinement_acceptance,
-        ),
+        "decision_inspector": decision_inspector,
+        "decision_inspector_artifact": decision_inspector_artifact.as_posix(),
         "executor_environment": executor_environment,
         "refinement_acceptance": refinement_acceptance,
         "refactor_queue_artifact": refactor_queue_artifact.as_posix(),
@@ -9226,7 +9747,7 @@ def main(
         selected_by_rule = {
             "selection_mode": "split_refactor_proposal",
             "operator_target": node.id,
-            "sort_order": ["explicit_operator_target"],
+            "sort_order": policy_lookup("selection_priorities.explicit_target_sort_order"),
             "refactor_work_item": {
                 "id": str(refactor_work_item.get("id", "")),
                 "proposal_type": str(refactor_work_item.get("proposal_type", "")),
@@ -9308,7 +9829,7 @@ def main(
         selected_by_rule = {
             "selection_mode": "explicit_target_refine",
             "operator_target": node.id,
-            "sort_order": ["explicit_operator_target"],
+            "sort_order": policy_lookup("selection_priorities.explicit_target_sort_order"),
             "status_filter": sorted(WORKABLE_STATUSES),
             "dependency_required_statuses": sorted(READY_DEP_STATUSES),
         }
@@ -9460,14 +9981,7 @@ def main(
         ),
         "dependency_required_statuses": sorted(READY_DEP_STATUSES),
         "selection_mode": selection_mode,
-        "sort_order": [
-            "refactor_queue_first",
-            "ancestor_reconcile_first",
-            "nearest_unlocked_ancestor",
-            "leaf_first",
-            "lower_maturity",
-            "stable_id",
-        ],
+        "sort_order": policy_lookup("selection_priorities.ordinary_sort_order"),
         "dependents_count": dependents.get(node.id, 0),
     }
     if selection_mode == "linked_continuation":
