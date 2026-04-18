@@ -100,6 +100,7 @@ BOOKKEEPING_ONLY_RATIO_THRESHOLD = 5.0
 BOOKKEEPING_ONLY_CONTEXT_RATIO_THRESHOLD = 6.0
 ROLE_OBSCURED_SPEC_REFERENCE_THRESHOLD = 4
 SPEC_ID_TEXT_RE = re.compile(r"\bsg-spec-\d{4}\b")
+SPEC_ID_CANONICAL_RE = re.compile(r"\bSG-SPEC-\d{4}\b")
 ROLE_OBSCURED_TITLE_MARKERS = ("edge", "segment", "slice", "topology")
 BOOKKEEPING_TEXT_MARKERS = (
     "owns",
@@ -149,6 +150,7 @@ TRANSITION_PACKET_TYPE_REQUIRED_FIELDS = {
     "apply": {"target_scope"},
     "handoff": {"target_artifact_class"},
 }
+SPEC_TRACE_INDEX_FILENAME = "spec_trace_index.json"
 ROLE_OBSCURED_CONTEXT_PHRASES = (
     "materialize one bounded",
     "materialize a single bounded",
@@ -4651,6 +4653,97 @@ def validate_transition_packet_file(path: Path) -> dict[str, Any]:
     }
 
 
+def spec_trace_index_path() -> Path:
+    return RUNS_DIR / SPEC_TRACE_INDEX_FILENAME
+
+
+def collect_spec_trace_mentions(
+    base_dirs: tuple[Path, ...] | None = None,
+) -> dict[str, dict[str, list[dict[str, Any]]]]:
+    if base_dirs is None:
+        base_dirs = (ROOT / "tools", ROOT / "tests")
+    field_by_dir = {
+        "tools": "tool_refs",
+        "tests": "test_refs",
+    }
+    mentions: dict[str, dict[str, list[dict[str, Any]]]] = {}
+    for base_dir in base_dirs:
+        if not base_dir.exists():
+            continue
+        field_name = field_by_dir.get(base_dir.name, f"{base_dir.name}_refs")
+        for path in sorted(base_dir.rglob("*.py")):
+            if "__pycache__" in path.parts:
+                continue
+            try:
+                lines = path.read_text(encoding="utf-8").splitlines()
+            except OSError:
+                continue
+            relpath = path.relative_to(ROOT).as_posix()
+            for lineno, line in enumerate(lines, start=1):
+                for spec_id in sorted(set(SPEC_ID_CANONICAL_RE.findall(line))):
+                    bucket = mentions.setdefault(spec_id, {"tool_refs": [], "test_refs": []})
+                    bucket.setdefault(field_name, []).append(
+                        {
+                            "path": relpath,
+                            "line": lineno,
+                        }
+                    )
+    return mentions
+
+
+def build_spec_trace_index(specs: list[SpecNode]) -> dict[str, Any]:
+    mentions = collect_spec_trace_mentions()
+    known_ids = {spec.id for spec in specs}
+    entries: list[dict[str, Any]] = []
+    for spec in sorted(specs, key=lambda item: item.id):
+        bucket = mentions.get(spec.id, {})
+        tool_refs = list(bucket.get("tool_refs", []))
+        test_refs = list(bucket.get("test_refs", []))
+        if tool_refs and test_refs:
+            coverage_kind = "tools_and_tests"
+        elif tool_refs:
+            coverage_kind = "tools_only"
+        elif test_refs:
+            coverage_kind = "tests_only"
+        else:
+            coverage_kind = "unobserved"
+        entries.append(
+            {
+                "spec_id": spec.id,
+                "title": spec.title,
+                "tool_refs": tool_refs,
+                "test_refs": test_refs,
+                "coverage_summary": {
+                    "tool_ref_count": len(tool_refs),
+                    "test_ref_count": len(test_refs),
+                    "coverage_kind": coverage_kind,
+                },
+            }
+        )
+    unknown_spec_mentions = [
+        {
+            "spec_id": spec_id,
+            "tool_refs": list(mentions[spec_id].get("tool_refs", [])),
+            "test_refs": list(mentions[spec_id].get("test_refs", [])),
+        }
+        for spec_id in sorted(set(mentions) - known_ids)
+    ]
+    return {
+        "generated_at": utc_now_iso(),
+        "source_dirs": ["tools", "tests"],
+        "entries": entries,
+        "entry_count": len(entries),
+        "unknown_spec_mentions": unknown_spec_mentions,
+    }
+
+
+def write_spec_trace_index(index: dict[str, Any]) -> Path:
+    RUNS_DIR.mkdir(parents=True, exist_ok=True)
+    path = spec_trace_index_path()
+    path.write_text(json.dumps(index, ensure_ascii=False, indent=2), encoding="utf-8")
+    return path
+
+
 def acceptance_reference_indexes(
     references: Any,
     *,
@@ -7391,6 +7484,7 @@ def main(
     clean_stale_runtime: bool = False,
     observe_graph_health_mode: bool = False,
     validate_transition_packet_path: str | None = None,
+    build_spec_trace_index_mode: bool = False,
 ) -> int:
     """Entry point for CLI and tests.
 
@@ -7437,6 +7531,7 @@ def main(
                 list_stale_runtime,
                 clean_stale_runtime,
                 observe_graph_health_mode,
+                build_spec_trace_index_mode,
             )
         ):
             print(
@@ -7455,6 +7550,40 @@ def main(
         return 1
     if not specs:
         print("No spec nodes found in specs/nodes")
+        return 0
+
+    if build_spec_trace_index_mode:
+        if any(
+            (
+                dry_run,
+                auto_approve,
+                loop,
+                resolve_gate,
+                decision,
+                note,
+                target_spec,
+                split_proposal,
+                apply_split_proposal,
+                operator_note,
+                mutation_budget,
+                run_authority,
+                execution_profile,
+                child_model,
+                child_timeout_seconds,
+                verbose,
+                list_stale_runtime,
+                clean_stale_runtime,
+                observe_graph_health_mode,
+            )
+        ):
+            print(
+                "--build-spec-trace-index must be used as a standalone command",
+                file=sys.stderr,
+            )
+            return 1
+        index = build_spec_trace_index(specs)
+        write_spec_trace_index(index)
+        print(json.dumps(index, ensure_ascii=False, indent=2))
         return 0
 
     if list_stale_runtime and clean_stale_runtime:
@@ -7936,6 +8065,14 @@ if __name__ == "__main__":
         metavar="PATH",
         help="Validate one normalized transition packet JSON file and print structured findings",
     )
+    parser.add_argument(
+        "--build-spec-trace-index",
+        action="store_true",
+        help=(
+            "Build a derived spec-to-code trace index from literal spec-id mentions "
+            "in tools/ and tests/"
+        ),
+    )
     parser.add_argument("--resolve-gate", metavar="SPEC_ID", help="Resolve gate for a spec id")
     parser.add_argument(
         "--decision",
@@ -8051,5 +8188,6 @@ if __name__ == "__main__":
             clean_stale_runtime=args.clean_stale_runtime,
             observe_graph_health_mode=args.observe_graph_health,
             validate_transition_packet_path=args.validate_transition_packet,
+            build_spec_trace_index_mode=args.build_spec_trace_index,
         )
     )

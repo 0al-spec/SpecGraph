@@ -5081,6 +5081,68 @@ def test_main_validates_transition_packet_as_standalone_command(
     assert out["packet_type"] == "proposal"
 
 
+def test_build_spec_trace_index_collects_tool_and_test_refs(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    tools_dir = repo_fixture / "tools"
+    tests_dir = repo_fixture / "tests"
+    tools_dir.mkdir()
+    tests_dir.mkdir()
+    (tools_dir / "impl.py").write_text(
+        "SPEC_ID = 'SG-SPEC-0001'\nOTHER = 'SG-SPEC-9999'\n",
+        encoding="utf-8",
+    )
+    (tests_dir / "test_impl.py").write_text(
+        "def test_trace():\n    assert 'SG-SPEC-0001'\n",
+        encoding="utf-8",
+    )
+
+    index = supervisor_module.build_spec_trace_index(supervisor_module.load_specs())
+
+    assert index["entry_count"] == 1
+    entry = index["entries"][0]
+    assert entry["spec_id"] == "SG-SPEC-0001"
+    assert entry["coverage_summary"] == {
+        "tool_ref_count": 1,
+        "test_ref_count": 1,
+        "coverage_kind": "tools_and_tests",
+    }
+    assert entry["tool_refs"] == [{"path": "tools/impl.py", "line": 1}]
+    assert entry["test_refs"] == [{"path": "tests/test_impl.py", "line": 2}]
+    assert index["unknown_spec_mentions"] == [
+        {
+            "spec_id": "SG-SPEC-9999",
+            "tool_refs": [{"path": "tools/impl.py", "line": 2}],
+            "test_refs": [],
+        }
+    ]
+
+
+def test_main_builds_spec_trace_index_as_standalone_command(
+    supervisor_module: object,
+    repo_fixture: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    tools_dir = repo_fixture / "tools"
+    tests_dir = repo_fixture / "tests"
+    tools_dir.mkdir()
+    tests_dir.mkdir()
+    (tools_dir / "impl.py").write_text("SPEC = 'SG-SPEC-0001'\n", encoding="utf-8")
+    (tests_dir / "test_impl.py").write_text("SPEC = 'SG-SPEC-0001'\n", encoding="utf-8")
+
+    exit_code = supervisor_module.main(build_spec_trace_index_mode=True)
+
+    assert exit_code == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["entry_count"] == 1
+    assert report["entries"][0]["coverage_summary"]["coverage_kind"] == "tools_and_tests"
+    artifact = json.loads(
+        (repo_fixture / "runs" / "spec_trace_index.json").read_text(encoding="utf-8")
+    )
+    assert artifact["entries"][0]["spec_id"] == "SG-SPEC-0001"
+
+
 def test_main_split_proposal_accepts_untracked_parent_directory_change(
     supervisor_module: object,
     repo_fixture: Path,
