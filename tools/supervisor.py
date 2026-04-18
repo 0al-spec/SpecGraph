@@ -4933,6 +4933,18 @@ def classify_proposal_type(work_item_type: str) -> str:
     return "refactor_proposal"
 
 
+def handoff_metadata_for_signal(signal: str) -> dict[str, Any]:
+    if str(signal).strip() != TECHSPEC_HANDOFF_PRIMARY_SIGNAL:
+        return {}
+    return {
+        "target_layer": TECHSPEC_HANDOFF_TARGET_LAYER,
+        "transition_profile": TECHSPEC_HANDOFF_TARGET_TRANSITION_PROFILE,
+        "packet_type": TECHSPEC_HANDOFF_TARGET_PACKET_TYPE,
+        "target_artifact_class": TECHSPEC_HANDOFF_TARGET_ARTIFACT_CLASS,
+        "handoff_policy_reference": techspec_handoff_policy_reference(),
+    }
+
+
 def proposal_threshold_for_signal(*, signal: str, work_item_type: str) -> int:
     threshold_policy = policy_lookup("queue_policy.proposal_thresholds")
     if signal == RETROSPECTIVE_REFACTOR_SIGNAL:
@@ -4997,6 +5009,7 @@ def build_refactor_queue_items(
         items.append(
             {
                 **base_item,
+                **handoff_metadata_for_signal(signal),
                 "execution_policy": refactor_execution_policy(base_item, proposal_items),
             }
         )
@@ -5063,8 +5076,13 @@ def build_proposal_queue_items(
         if occurrence_count < threshold:
             continue
 
-        proposal_type = classify_proposal_type(work_item_type)
-        if work_item_type == "governance_proposal":
+        if signal_name == TECHSPEC_HANDOFF_PRIMARY_SIGNAL:
+            proposal_type = "handoff_proposal"
+        else:
+            proposal_type = classify_proposal_type(work_item_type)
+        if signal_name == TECHSPEC_HANDOFF_PRIMARY_SIGNAL:
+            trigger = "handoff_boundary_signal"
+        elif work_item_type == "governance_proposal":
             trigger = "governance_class_signal"
         elif signal_name == RETROSPECTIVE_REFACTOR_SIGNAL:
             trigger = "retrospective_signal"
@@ -5085,6 +5103,7 @@ def build_proposal_queue_items(
                 "source_work_item_type": work_item_type,
                 "execution_policy": "emit_proposal",
                 "details": observation_by_kind.get(signal_name, {}).get("details"),
+                **handoff_metadata_for_signal(signal_name),
             }
         )
     return items

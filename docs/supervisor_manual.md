@@ -130,6 +130,13 @@ Non-mutating subtree inspection. Use this when you want to understand:
 - whether a subtree still contains active versus historical descendants
 - what rewrite/merge action the current graph health recommends
 
+When `techspec_handoff_candidate` is present, proposal-oriented flows now
+prefer explicit handoff over deeper canonical slicing:
+
+- queue items carry `transition_profile: techspec`
+- downstream packet family is `handoff`
+- proposal queue emits `handoff_proposal` rather than another generic refactor
+
 ### Split proposal mode
 
 ```bash

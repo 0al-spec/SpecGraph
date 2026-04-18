@@ -3378,6 +3378,72 @@ def test_update_proposal_queue_emits_governance_proposal_immediately(
     assert proposal["execution_policy"] == "emit_proposal"
 
 
+def test_update_refactor_queue_routes_techspec_handoff_to_handoff_metadata(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    graph_health = {
+        "source_spec_id": "SG-SPEC-9999",
+        "observations": [
+            {
+                "kind": supervisor_module.TECHSPEC_HANDOFF_PRIMARY_SIGNAL,
+                "details": {
+                    "target_transition_profile": "techspec",
+                    "target_packet_type": "handoff",
+                },
+            }
+        ],
+        "signals": [supervisor_module.TECHSPEC_HANDOFF_PRIMARY_SIGNAL],
+        "recommended_actions": [supervisor_module.TECHSPEC_HANDOFF_RECOMMENDED_ACTION],
+    }
+
+    path = supervisor_module.update_refactor_queue(graph_health=graph_health, run_id="RUN-9")
+    items = json.loads(path.read_text(encoding="utf-8"))
+
+    assert len(items) == 1
+    item = items[0]
+    assert item["work_item_type"] == "governance_proposal"
+    assert item["execution_policy"] == "emit_proposal"
+    assert item["recommended_action"] == "emit_techspec_handoff_proposal"
+    assert item["transition_profile"] == "techspec"
+    assert item["packet_type"] == "handoff"
+    assert item["target_artifact_class"] == "techspec_handoff_packet"
+
+
+def test_update_proposal_queue_emits_handoff_proposal_for_techspec_boundary_signal(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    graph_health = {
+        "source_spec_id": "SG-SPEC-9999",
+        "observations": [
+            {
+                "kind": supervisor_module.TECHSPEC_HANDOFF_PRIMARY_SIGNAL,
+                "details": {
+                    "target_transition_profile": "techspec",
+                    "target_packet_type": "handoff",
+                },
+            }
+        ],
+        "signals": [supervisor_module.TECHSPEC_HANDOFF_PRIMARY_SIGNAL],
+        "recommended_actions": [supervisor_module.TECHSPEC_HANDOFF_RECOMMENDED_ACTION],
+    }
+
+    path, items = supervisor_module.update_proposal_queue(graph_health=graph_health, run_id="RUN-3")
+    assert path == repo_fixture / "runs" / "proposal_queue.json"
+
+    assert len(items) == 1
+    proposal = items[0]
+    assert proposal["proposal_type"] == "handoff_proposal"
+    assert proposal["trigger"] == "handoff_boundary_signal"
+    assert proposal["signal"] == supervisor_module.TECHSPEC_HANDOFF_PRIMARY_SIGNAL
+    assert proposal["recommended_action"] == "emit_techspec_handoff_proposal"
+    assert proposal["transition_profile"] == "techspec"
+    assert proposal["packet_type"] == "handoff"
+    assert proposal["target_artifact_class"] == "techspec_handoff_packet"
+    assert proposal["execution_policy"] == "emit_proposal"
+
+
 def test_update_proposal_queue_rejects_malformed_existing_queue_file(
     supervisor_module: object,
     repo_fixture: Path,

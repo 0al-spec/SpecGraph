@@ -34,6 +34,8 @@ Supervisor modes:
   an explicit `techspec_handoff_candidate`, backed by
   `tools/techspec_handoff_policy.json`, when the subtree looks semantically
   saturated for canonical SpecGraph and increasingly implementation-facing.
+  Queue and proposal flows now carry that signal forward as an explicit
+  `handoff_proposal` with `transition_profile: techspec` and `packet_type: handoff`.
 - `--resolve-gate SPEC_ID --decision ...`: apply a human review decision.
 - `--target-spec SPEC_ID --split-proposal`: run the explicit proposal-first split pass for one
   oversized non-seed spec and emit a structured artifact under `runs/proposals/` without editing
