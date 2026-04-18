@@ -87,8 +87,8 @@ Task numbers are preserved for traceability across commits and PRs.
 
 74. [done] Define graph-bound trace artifacts that link `spec_id` to code refs, test refs, PRs, commits, verification basis, and acceptance coverage without polluting canonical spec YAML.
 75. [done] Define an implementation-state overlay vocabulary and derivation rules such as `unclaimed`, `planned`, `in_progress`, `implemented`, `verified`, `drifted`, and `blocked`.
-76. [todo] Add freshness and drift detection for implementation traces so later code changes can mark a previously verified spec as stale or drifting.
-77. [todo] Add viewer or report projections that derive implementation backlog and coverage views from the trace plane instead of relying only on a flat manual `tasks.md`.
+76. [done] Add freshness and drift detection for implementation traces so later code changes can mark a previously verified spec as stale or drifting.
+77. [done] Add viewer or report projections that derive implementation backlog and coverage views from the trace plane instead of relying only on a flat manual `tasks.md`.
 
 ## Broadness and Clustering
 

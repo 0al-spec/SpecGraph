@@ -33,6 +33,7 @@ Derived artifacts:
 - proposal queue index: `runs/proposal_queue.json`
 - structured proposal artifacts: `runs/proposals/*.json`
 - spec trace index: `runs/spec_trace_index.json`
+- spec trace projection: `runs/spec_trace_projection.json`
 - proposal runtime index: `runs/proposal_runtime_index.json`
 """
 
@@ -320,6 +321,7 @@ TRANSITION_PACKET_TYPE_REQUIRED_FIELDS = {
 }
 SPECGRAPH_CANONICAL_SURFACE_PREFIXES = ("specs/nodes/", "specs/history/")
 SPEC_TRACE_INDEX_FILENAME = "spec_trace_index.json"
+SPEC_TRACE_PROJECTION_FILENAME = "spec_trace_projection.json"
 PROPOSAL_RUNTIME_INDEX_FILENAME = "proposal_runtime_index.json"
 PROPOSAL_DOC_FILENAME_RE = re.compile(r"^(?P<proposal_id>\d{4})_(?P<slug>.+)\.md$")
 TASK_LINE_RE = re.compile(r"^(?P<task_id>\d+)\.\s+\[(?P<status>[a-z_]+)\]\s+(?P<body>.+)$")
@@ -1290,10 +1292,15 @@ def parse_iso_datetime(value: object) -> dt.datetime | None:
     text = str(value).strip()
     if not text:
         return None
+    if text.endswith("Z"):
+        text = text[:-1] + "+00:00"
     try:
-        return dt.datetime.fromisoformat(text)
+        parsed = dt.datetime.fromisoformat(text)
     except ValueError:
         return None
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=dt.timezone.utc)
+    return parsed
 
 
 def has_fresh_gate_approval_without_new_run(spec: SpecNode) -> bool:
@@ -6080,6 +6087,10 @@ def spec_trace_index_path() -> Path:
     return RUNS_DIR / SPEC_TRACE_INDEX_FILENAME
 
 
+def spec_trace_projection_path() -> Path:
+    return RUNS_DIR / SPEC_TRACE_PROJECTION_FILENAME
+
+
 def spec_trace_registry_path() -> Path:
     return ROOT / "tools" / "spec_trace_registry.json"
 
@@ -6152,6 +6163,33 @@ def matching_trace_refs(
     return matched
 
 
+def trace_ref_paths(refs: list[dict[str, Any]]) -> list[str]:
+    return sorted(
+        {str(ref.get("path", "")).strip() for ref in refs if str(ref.get("path", "")).strip()}
+    )
+
+
+def trace_surface_commit_paths(declared_surfaces: list[str]) -> list[str]:
+    paths: set[str] = set()
+    for surface in declared_surfaces:
+        normalized = str(surface).strip()
+        if not normalized:
+            continue
+        if any(marker in normalized for marker in ("*", "?", "[")):
+            matches = list(ROOT.glob(normalized))
+            if not matches:
+                paths.add(normalized)
+                continue
+            for match in matches:
+                if match.is_file():
+                    paths.add(match.relative_to(ROOT).as_posix())
+                elif match.is_dir():
+                    paths.add(match.relative_to(ROOT).as_posix())
+            continue
+        paths.add(normalized)
+    return sorted(paths)
+
+
 def blocked_trace_dependencies(spec: SpecNode, index: dict[str, SpecNode]) -> list[str]:
     blocked: list[str] = []
     for dep_id in spec.depends_on:
@@ -6163,6 +6201,25 @@ def blocked_trace_dependencies(spec: SpecNode, index: dict[str, SpecNode]) -> li
         ):
             blocked.append(dep_id)
     return blocked
+
+
+def latest_trace_commit_ref(
+    ref_paths: list[str],
+    *,
+    repo_root: Path | None = None,
+) -> dict[str, str] | None:
+    latest_refs = collect_trace_commit_refs(ref_paths, repo_root=repo_root, limit=1)
+    if not latest_refs:
+        return None
+    return latest_refs[0]
+
+
+def iso_datetime_text(value: dt.datetime | None) -> str | None:
+    if value is None:
+        return None
+    if value.tzinfo is None:
+        value = value.replace(tzinfo=dt.timezone.utc)
+    return value.isoformat().replace("+00:00", "Z")
 
 
 def derive_implementation_state(
@@ -6252,6 +6309,144 @@ def derive_implementation_state(
             "Declared implementation anchors are observed, but verification anchors are incomplete."
         ),
     }
+
+
+def derive_trace_freshness(
+    spec: SpecNode,
+    *,
+    preliminary_state: dict[str, Any],
+    trace_contract: dict[str, Any] | None,
+    matched_test_refs: list[dict[str, Any]],
+    latest_code_commit_ref: dict[str, str] | None,
+    latest_test_commit_ref: dict[str, str] | None,
+) -> dict[str, Any]:
+    available_statuses = [
+        "not_tracked",
+        "not_applicable",
+        "dirty_worktree",
+        "pending_verification",
+        "verification_time_unknown",
+        "fresh",
+        "stale_spec",
+        "drifted_after_verification",
+    ]
+    preliminary_status = str(preliminary_state.get("status", "")).strip()
+    spec_updated_at = parse_iso_datetime(spec.data.get("updated_at", ""))
+    latest_code_change_at = parse_iso_datetime(
+        latest_code_commit_ref.get("committed_at", "") if latest_code_commit_ref else ""
+    )
+    latest_test_change_at = parse_iso_datetime(
+        latest_test_commit_ref.get("committed_at", "") if latest_test_commit_ref else ""
+    )
+
+    common = {
+        "available_statuses": available_statuses,
+        "spec_updated_at": iso_datetime_text(spec_updated_at),
+        "latest_code_change_at": iso_datetime_text(latest_code_change_at),
+        "latest_test_change_at": iso_datetime_text(latest_test_change_at),
+        "trusted_verification_at": iso_datetime_text(latest_test_change_at),
+    }
+
+    if trace_contract is None:
+        return {
+            "status": "not_tracked",
+            "confidence": "weak",
+            "basis": "No explicit trace contract is registered for this spec.",
+            **common,
+        }
+
+    if preliminary_status in {"unclaimed", "planned", "blocked"}:
+        return {
+            "status": "not_applicable",
+            "confidence": "strong",
+            "basis": (
+                "Freshness is not yet meaningful because implementation embodiment is not "
+                "currently in a verified or active state."
+            ),
+            **common,
+        }
+
+    if preliminary_status == "in_progress":
+        return {
+            "status": "dirty_worktree",
+            "confidence": "strong",
+            "basis": (
+                "Tracked implementation surfaces currently have local changes, so any previous "
+                "verification snapshot is stale until the worktree settles."
+            ),
+            **common,
+        }
+
+    if not matched_test_refs:
+        return {
+            "status": "pending_verification",
+            "confidence": "strong",
+            "basis": (
+                "No matched verification anchors are observed for the declared trace contract."
+            ),
+            **common,
+        }
+
+    if latest_test_change_at is None:
+        return {
+            "status": "verification_time_unknown",
+            "confidence": "weak",
+            "basis": (
+                "Matched verification anchors exist, but commit history did not yield a trusted "
+                "verification timestamp."
+            ),
+            **common,
+        }
+
+    if spec_updated_at is not None and spec_updated_at > latest_test_change_at:
+        return {
+            "status": "stale_spec",
+            "confidence": "strong",
+            "basis": (
+                "The governing spec was updated after the latest trusted verification anchor."
+            ),
+            **common,
+        }
+
+    if latest_code_change_at is not None and latest_code_change_at > latest_test_change_at:
+        return {
+            "status": "drifted_after_verification",
+            "confidence": "strong",
+            "basis": (
+                "Declared implementation surfaces changed after the latest trusted verification "
+                "anchor."
+            ),
+            **common,
+        }
+
+    return {
+        "status": "fresh",
+        "confidence": "strong",
+        "basis": (
+            "Declared verification anchors are at least as recent as traced implementation "
+            "surfaces and the spec itself."
+        ),
+        **common,
+    }
+
+
+def apply_trace_freshness_to_implementation_state(
+    implementation_state: dict[str, Any],
+    freshness: dict[str, Any],
+) -> dict[str, Any]:
+    adjusted = copy.deepcopy(implementation_state)
+    freshness_status = str(freshness.get("status", "")).strip()
+    adjusted["freshness_status"] = freshness_status
+    if (
+        str(adjusted.get("status", "")).strip() == "verified"
+        and freshness_status == "drifted_after_verification"
+    ):
+        adjusted["status"] = "drifted"
+        adjusted["basis"] = (
+            "Declared code and verification anchors were observed, but implementation changed "
+            "after the last trusted verification."
+        )
+    return adjusted
 
 
 def collect_spec_trace_mentions(
@@ -6473,6 +6668,12 @@ def build_spec_trace_index(specs: list[SpecNode]) -> dict[str, Any]:
         )
         matched_code_refs = matching_trace_refs(code_refs, declared_code_surfaces)
         matched_test_refs = matching_trace_refs(test_refs, declared_test_surfaces)
+        latest_code_commit_ref = latest_trace_commit_ref(
+            trace_surface_commit_paths(declared_code_surfaces)
+        )
+        latest_test_commit_ref = latest_trace_commit_ref(
+            trace_surface_commit_paths(declared_test_surfaces)
+        )
         commit_refs = collect_trace_commit_refs(
             [str(ref.get("path", "")).strip() for ref in [*code_refs, *test_refs]]
         )
@@ -6486,16 +6687,30 @@ def build_spec_trace_index(specs: list[SpecNode]) -> dict[str, Any]:
                 "source": "registry",
                 "declared_code_surfaces": declared_code_surfaces,
                 "declared_test_surfaces": declared_test_surfaces,
+                "matched_code_paths": trace_ref_paths(matched_code_refs),
+                "matched_test_paths": trace_ref_paths(matched_test_refs),
                 "matched_code_ref_count": len(matched_code_refs),
                 "matched_test_ref_count": len(matched_test_refs),
             }
-        implementation_state = derive_implementation_state(
+        preliminary_implementation_state = derive_implementation_state(
             spec,
             trace_contract=trace_contract,
             matched_code_refs=matched_code_refs,
             matched_test_refs=matched_test_refs,
             changed_paths=changed_paths,
             spec_index=spec_index,
+        )
+        freshness = derive_trace_freshness(
+            spec,
+            preliminary_state=preliminary_implementation_state,
+            trace_contract=trace_contract,
+            matched_test_refs=matched_test_refs,
+            latest_code_commit_ref=latest_code_commit_ref,
+            latest_test_commit_ref=latest_test_commit_ref,
+        )
+        implementation_state = apply_trace_freshness_to_implementation_state(
+            preliminary_implementation_state,
+            freshness,
         )
         entries.append(
             {
@@ -6507,6 +6722,7 @@ def build_spec_trace_index(specs: list[SpecNode]) -> dict[str, Any]:
                 "pr_refs": pr_refs,
                 "trace_contract": trace_contract,
                 "implementation_state": implementation_state,
+                "freshness": freshness,
                 "verification_basis": verification_basis,
                 "acceptance_coverage": acceptance_coverage,
                 "trace_summary": {
@@ -6528,7 +6744,7 @@ def build_spec_trace_index(specs: list[SpecNode]) -> dict[str, Any]:
     ]
     return {
         "artifact_kind": "spec_trace_index",
-        "schema_version": 3,
+        "schema_version": 4,
         "implementation_state_model": {
             "derivation_mode": "registry_backed_conservative_overlay",
             "available_statuses": [
@@ -6545,7 +6761,29 @@ def build_spec_trace_index(specs: list[SpecNode]) -> dict[str, Any]:
                     "Only explicit registry-backed trace contracts may promote a spec beyond "
                     "unclaimed. Weak mentions remain observational context."
                 ),
-                "The drifted state is reserved for freshness-aware derivation in the next slice.",
+                (
+                    "Freshness-aware derivation may keep a node verified but stale when the spec "
+                    "moves beyond the latest trusted verification, or mark it drifted when code "
+                    "moves beyond that verification."
+                ),
+            ],
+        },
+        "freshness_model": {
+            "available_statuses": [
+                "not_tracked",
+                "not_applicable",
+                "dirty_worktree",
+                "pending_verification",
+                "verification_time_unknown",
+                "fresh",
+                "stale_spec",
+                "drifted_after_verification",
+            ],
+            "notes": [
+                (
+                    "Freshness is derived only from registry-backed surfaces plus weak git "
+                    "timestamps; it does not yet provide criterion-level verification mapping."
+                )
             ],
         },
         "generated_at": utc_now_iso(),
@@ -6562,6 +6800,126 @@ def write_spec_trace_index(index: dict[str, Any]) -> Path:
     path = spec_trace_index_path()
     with artifact_lock(path):
         atomic_write_json(path, index)
+    return path
+
+
+def build_spec_trace_projection(index: dict[str, Any]) -> dict[str, Any]:
+    entries = list(index.get("entries", []))
+
+    implementation_groups: dict[str, list[str]] = {}
+    freshness_groups: dict[str, list[str]] = {}
+    acceptance_groups: dict[str, list[str]] = {}
+    named_filters = {
+        "missing_trace_contract": [],
+        "planned_without_anchors": [],
+        "implementation_in_progress": [],
+        "implemented_without_verification": [],
+        "verified_fresh": [],
+        "verified_stale_spec": [],
+        "drifted": [],
+        "blocked": [],
+        "acceptance_gap": [],
+    }
+    backlog_items: list[dict[str, Any]] = []
+
+    for entry in entries:
+        spec_id = str(entry.get("spec_id", "")).strip()
+        title = str(entry.get("title", "")).strip()
+        implementation_state = entry.get("implementation_state", {})
+        freshness = entry.get("freshness", {})
+        acceptance_coverage = entry.get("acceptance_coverage", {})
+        impl_status = str(implementation_state.get("status", "unknown")).strip() or "unknown"
+        freshness_status = str(freshness.get("status", "unknown")).strip() or "unknown"
+        acceptance_status = str(acceptance_coverage.get("status", "unknown")).strip() or "unknown"
+
+        implementation_groups.setdefault(impl_status, []).append(spec_id)
+        freshness_groups.setdefault(freshness_status, []).append(spec_id)
+        acceptance_groups.setdefault(acceptance_status, []).append(spec_id)
+
+        next_gap = "none"
+        if impl_status == "unclaimed":
+            named_filters["missing_trace_contract"].append(spec_id)
+            next_gap = "attach_trace_contract"
+        elif impl_status == "planned":
+            named_filters["planned_without_anchors"].append(spec_id)
+            next_gap = "materialize_declared_surfaces"
+        elif impl_status == "in_progress":
+            named_filters["implementation_in_progress"].append(spec_id)
+        elif impl_status == "implemented":
+            named_filters["implemented_without_verification"].append(spec_id)
+            next_gap = "add_verification_anchors"
+        elif impl_status == "verified" and freshness_status == "fresh":
+            named_filters["verified_fresh"].append(spec_id)
+        elif impl_status == "verified" and freshness_status == "stale_spec":
+            named_filters["verified_stale_spec"].append(spec_id)
+            next_gap = "refresh_after_spec_update"
+        elif impl_status == "drifted":
+            named_filters["drifted"].append(spec_id)
+            next_gap = "reverify_after_drift"
+        elif impl_status == "blocked":
+            named_filters["blocked"].append(spec_id)
+            next_gap = "clear_blocking_dependency"
+
+        if (
+            next_gap == "none"
+            and impl_status in {"implemented", "verified", "drifted"}
+            and acceptance_status != "not_defined"
+            and acceptance_status != "covered"
+        ):
+            named_filters["acceptance_gap"].append(spec_id)
+            if acceptance_status == "no_linked_evidence":
+                next_gap = "link_acceptance_evidence"
+            elif acceptance_status == "evidence_linked_unmapped":
+                next_gap = "map_acceptance_evidence"
+
+        if next_gap != "none":
+            backlog_items.append(
+                {
+                    "spec_id": spec_id,
+                    "title": title,
+                    "implementation_state": impl_status,
+                    "freshness_status": freshness_status,
+                    "acceptance_coverage_status": acceptance_status,
+                    "next_gap": next_gap,
+                }
+            )
+
+    grouped_backlog: dict[str, list[str]] = {}
+    for item in backlog_items:
+        grouped_backlog.setdefault(str(item["next_gap"]), []).append(str(item["spec_id"]))
+
+    return {
+        "artifact_kind": "spec_trace_projection",
+        "schema_version": 1,
+        "generated_at": utc_now_iso(),
+        "source_trace_index": spec_trace_index_path().relative_to(ROOT).as_posix(),
+        "source_trace_generated_at": index.get("generated_at"),
+        "entry_count": len(entries),
+        "viewer_projection": {
+            "implementation_state": {
+                key: sorted(value) for key, value in sorted(implementation_groups.items())
+            },
+            "freshness": {key: sorted(value) for key, value in sorted(freshness_groups.items())},
+            "acceptance_coverage": {
+                key: sorted(value) for key, value in sorted(acceptance_groups.items())
+            },
+            "named_filters": {key: sorted(value) for key, value in sorted(named_filters.items())},
+        },
+        "implementation_backlog": {
+            "entry_count": len(backlog_items),
+            "items": backlog_items,
+            "grouped_by_next_gap": {
+                key: sorted(value) for key, value in sorted(grouped_backlog.items())
+            },
+        },
+    }
+
+
+def write_spec_trace_projection(projection: dict[str, Any]) -> Path:
+    RUNS_DIR.mkdir(parents=True, exist_ok=True)
+    path = spec_trace_projection_path()
+    with artifact_lock(path):
+        atomic_write_json(path, projection)
     return path
 
 
@@ -9839,6 +10197,7 @@ def main(
     validate_transition_packet_path: str | None = None,
     transition_profile: str | None = None,
     build_spec_trace_index_mode: bool = False,
+    build_spec_trace_projection_mode: bool = False,
     build_proposal_runtime_index_mode: bool = False,
 ) -> int:
     """Entry point for CLI and tests.
@@ -9891,6 +10250,7 @@ def main(
                 clean_stale_runtime,
                 observe_graph_health_mode,
                 build_spec_trace_index_mode,
+                build_spec_trace_projection_mode,
                 build_proposal_runtime_index_mode,
             )
         ):
@@ -9937,6 +10297,7 @@ def main(
                 list_stale_runtime,
                 clean_stale_runtime,
                 observe_graph_health_mode,
+                build_spec_trace_projection_mode,
                 build_proposal_runtime_index_mode,
             )
         ):
@@ -9948,6 +10309,43 @@ def main(
         index = build_spec_trace_index(specs)
         write_spec_trace_index(index)
         print(json.dumps(index, ensure_ascii=False, indent=2))
+        return 0
+
+    if build_spec_trace_projection_mode:
+        if any(
+            (
+                dry_run,
+                auto_approve,
+                loop,
+                resolve_gate,
+                decision,
+                note,
+                target_spec,
+                split_proposal,
+                apply_split_proposal,
+                operator_note,
+                mutation_budget,
+                run_authority,
+                execution_profile,
+                child_model,
+                child_timeout_seconds,
+                verbose,
+                list_stale_runtime,
+                clean_stale_runtime,
+                observe_graph_health_mode,
+                build_proposal_runtime_index_mode,
+            )
+        ):
+            print(
+                "--build-spec-trace-projection must be used as a standalone command",
+                file=sys.stderr,
+            )
+            return 1
+        index = build_spec_trace_index(specs)
+        write_spec_trace_index(index)
+        projection = build_spec_trace_projection(index)
+        write_spec_trace_projection(projection)
+        print(json.dumps(projection, ensure_ascii=False, indent=2))
         return 0
 
     if build_proposal_runtime_index_mode:
@@ -10479,6 +10877,14 @@ if __name__ == "__main__":
         ),
     )
     parser.add_argument(
+        "--build-spec-trace-projection",
+        action="store_true",
+        help=(
+            "Build a viewer/backlog projection from the spec trace plane, including freshness "
+            "and drift groupings"
+        ),
+    )
+    parser.add_argument(
         "--build-proposal-runtime-index",
         action="store_true",
         help=(
@@ -10603,6 +11009,7 @@ if __name__ == "__main__":
             validate_transition_packet_path=args.validate_transition_packet,
             transition_profile=args.transition_profile,
             build_spec_trace_index_mode=args.build_spec_trace_index,
+            build_spec_trace_projection_mode=args.build_spec_trace_projection,
             build_proposal_runtime_index_mode=args.build_proposal_runtime_index,
         )
     )
