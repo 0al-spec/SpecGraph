@@ -1,0 +1,18 @@
+{
+  "inherits_transition_profile": "product_spec",
+  "required_binding_fields": [
+    "product_graph_root"
+  ],
+  "required_provenance_links": [
+    "product_graph_root"
+  ],
+  "reviewable_source_prefixes": [
+    "docs/proposals/",
+    "runs/"
+  ],
+  "forbidden_source_prefixes": [
+    "docs/proposals_drafts/"
+  ],
+  "apply_scope_rule": "inside_product_graph_root",
+  "notes": "Product-spec graphs inherit the shared deterministic transition engine by binding one product_graph_root and adding product-specific rules around that root instead of redefining promotion/apply semantics."
+}

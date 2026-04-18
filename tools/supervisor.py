@@ -253,6 +253,7 @@ ROLE_LEGIBILITY_MARKERS = (
 )
 VALID_TRANSITION_PACKET_TYPES = {"promotion", "proposal", "apply", "handoff"}
 DEFAULT_TRANSITION_VALIDATOR_PROFILE = "specgraph_core"
+PRODUCT_SPEC_TRANSITION_POLICY_RELATIVE_PATH = "tools/product_spec_transition_policy.json"
 VALID_TRANSITION_VALIDATOR_PROFILES = {
     "specgraph_core",
     "product_spec",
@@ -301,6 +302,8 @@ TRANSITION_VALIDATOR_PROFILE_DEFINITIONS = {
             "Reusable transition profile for future product-spec graphs governed inside SpecGraph."
         ),
         "allowed_packet_types": ["promotion", "proposal", "apply", "handoff"],
+        "inheritance_mode": "root_bound_shared_engine",
+        "required_binding_fields": ["product_graph_root"],
     },
     "techspec": {
         "description": (
@@ -5464,6 +5467,77 @@ def transition_packet_finding(
     return finding
 
 
+def product_spec_transition_policy_path() -> Path:
+    return TOOLS_DIR / "product_spec_transition_policy.json"
+
+
+def load_product_spec_transition_policy_report() -> tuple[
+    dict[str, Any] | None, list[dict[str, str]]
+]:
+    path = product_spec_transition_policy_path()
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except OSError as exc:
+        return None, [
+            transition_packet_finding(
+                code="product_spec_transition_policy_unavailable",
+                family="profile",
+                profile="product_spec",
+                message=(
+                    "failed to read product_spec transition policy artifact: "
+                    f"{path.as_posix()} ({exc})"
+                ),
+            )
+        ]
+    except json.JSONDecodeError as exc:
+        return None, [
+            transition_packet_finding(
+                code="malformed_product_spec_transition_policy",
+                family="profile",
+                profile="product_spec",
+                message=(
+                    f"malformed product_spec transition policy artifact: {path.as_posix()} ({exc})"
+                ),
+            )
+        ]
+    if not isinstance(payload, dict):
+        return None, [
+            transition_packet_finding(
+                code="malformed_product_spec_transition_policy",
+                family="profile",
+                profile="product_spec",
+                message=(
+                    "malformed product_spec transition policy artifact: "
+                    f"{path.as_posix()} must contain a JSON object"
+                ),
+            )
+        ]
+
+    required_sections = (
+        "inherits_transition_profile",
+        "required_binding_fields",
+        "required_provenance_links",
+        "reviewable_source_prefixes",
+        "forbidden_source_prefixes",
+        "apply_scope_rule",
+    )
+    missing = [section for section in required_sections if section not in payload]
+    if missing:
+        return None, [
+            transition_packet_finding(
+                code="malformed_product_spec_transition_policy",
+                family="profile",
+                profile="product_spec",
+                message=(
+                    "malformed product_spec transition policy artifact: missing top-level "
+                    f"section(s): {', '.join(missing)}"
+                ),
+            )
+        ]
+
+    return payload, []
+
+
 def _transition_packet_string_list(
     *,
     field_name: str,
@@ -5690,6 +5764,11 @@ def _normalize_transition_packet_context(
         value=packet.get("lineage_root"),
     )
     findings.extend(lineage_root_findings)
+    product_graph_root, product_graph_root_findings = _transition_packet_optional_string(
+        field_name="product_graph_root",
+        value=packet.get("product_graph_root"),
+    )
+    findings.extend(product_graph_root_findings)
 
     source_refs, source_ref_findings = _transition_packet_string_list(
         field_name="source_refs",
@@ -5712,6 +5791,7 @@ def _normalize_transition_packet_context(
         _normalize_transition_repo_path(item) for item in declared_change_surface
     ]
     normalized_target_scope = _normalize_transition_repo_path(target_scope)
+    normalized_product_graph_root = _normalize_transition_repo_path(product_graph_root)
 
     return {
         "packet": packet,
@@ -5725,6 +5805,7 @@ def _normalize_transition_packet_context(
         "target_scope": normalized_target_scope,
         "motivating_concern": motivating_concern,
         "lineage_root": lineage_root,
+        "product_graph_root": normalized_product_graph_root,
         "declared_change_surface": normalized_declared_change_surface,
         "required_provenance_links": required_provenance_links,
     }, findings
@@ -5923,7 +6004,34 @@ def _validate_transition_packet_diff_scope(context: dict[str, Any]) -> list[dict
             value=str(context.get("target_scope", "")).strip(),
         )
     )
+    findings.extend(
+        _validate_transition_surface_path(
+            field_name="product_graph_root",
+            value=str(context.get("product_graph_root", "")).strip(),
+        )
+    )
     return findings
+
+
+def _transition_path_within_root(path_text: str, root_text: str) -> bool:
+    normalized_path = _normalize_transition_repo_path(path_text).rstrip("/")
+    normalized_root = _normalize_transition_repo_path(root_text).rstrip("/")
+    if not normalized_path or not normalized_root:
+        return False
+    return normalized_path == normalized_root or normalized_path.startswith(normalized_root + "/")
+
+
+def _transition_path_matches_any_prefix(path_text: str, prefixes: list[str]) -> bool:
+    normalized_path = _normalize_transition_repo_path(path_text).rstrip("/")
+    for prefix in prefixes:
+        normalized_prefix = _normalize_transition_repo_path(prefix).rstrip("/")
+        if not normalized_prefix:
+            continue
+        if normalized_path == normalized_prefix or normalized_path.startswith(
+            normalized_prefix + "/"
+        ):
+            return True
+    return False
 
 
 def _validate_transition_packet_profile(context: dict[str, Any]) -> list[dict[str, str]]:
@@ -5966,6 +6074,132 @@ def _validate_transition_packet_profile(context: dict[str, Any]) -> list[dict[st
                     ),
                 )
             )
+    if transition_profile == "product_spec":
+        policy, policy_findings = load_product_spec_transition_policy_report()
+        findings.extend(policy_findings)
+        if policy is None:
+            return findings
+
+        product_graph_root = str(context.get("product_graph_root", "")).strip()
+        required_binding_fields = [
+            str(item).strip()
+            for item in policy.get("required_binding_fields", [])
+            if str(item).strip()
+        ]
+        if "product_graph_root" in required_binding_fields and not product_graph_root:
+            findings.append(
+                transition_packet_finding(
+                    code="profile_missing_product_graph_root",
+                    field="product_graph_root",
+                    family="profile",
+                    profile=transition_profile,
+                    message=(
+                        "product_spec packets must declare product_graph_root so product graphs "
+                        "inherit one shared transition engine without redefining packet semantics"
+                    ),
+                )
+            )
+            return findings
+
+        if product_graph_root:
+            forbidden_source_prefixes = [
+                str(item).strip()
+                for item in policy.get("forbidden_source_prefixes", [])
+                if str(item).strip()
+            ]
+            if any(
+                _looks_like_repo_path(path)
+                and _transition_path_matches_any_prefix(path, forbidden_source_prefixes)
+                for path in context.get("source_refs", [])
+            ):
+                findings.append(
+                    transition_packet_finding(
+                        code="profile_apply_requires_reviewable_source",
+                        field="source_refs",
+                        family="profile",
+                        profile=transition_profile,
+                        message=(
+                            "product_spec packets must source from reviewable proposal or run "
+                            "artifacts, not raw drafts"
+                        ),
+                    )
+                )
+
+            required_provenance_links = {
+                str(item).strip()
+                for item in context.get("required_provenance_links", [])
+                if str(item).strip()
+            }
+            for required_link in (
+                str(item).strip()
+                for item in policy.get("required_provenance_links", [])
+                if str(item).strip()
+            ):
+                if required_link not in required_provenance_links:
+                    findings.append(
+                        transition_packet_finding(
+                            code="profile_missing_required_product_provenance_link",
+                            field="required_provenance_links",
+                            family="profile",
+                            profile=transition_profile,
+                            message=(
+                                "product_spec packets must preserve inherited provenance link: "
+                                f"{required_link}"
+                            ),
+                        )
+                    )
+
+            reviewable_source_prefixes = [
+                str(item).strip()
+                for item in policy.get("reviewable_source_prefixes", [])
+                if str(item).strip()
+            ]
+            if packet_type == "apply" and not any(
+                _looks_like_repo_path(path)
+                and _transition_path_matches_any_prefix(path, reviewable_source_prefixes)
+                for path in context.get("source_refs", [])
+            ):
+                findings.append(
+                    transition_packet_finding(
+                        code="profile_apply_requires_reviewable_source",
+                        field="source_refs",
+                        family="profile",
+                        profile=transition_profile,
+                        message=(
+                            "product_spec apply packets must inherit from reviewable proposal or "
+                            "run artifacts before mutating a product graph"
+                        ),
+                    )
+                )
+
+            if str(policy.get("apply_scope_rule", "")).strip() == "inside_product_graph_root":
+                scoped_paths = [
+                    path
+                    for path in [
+                        *context.get("declared_change_surface", []),
+                        str(context.get("target_scope", "")).strip(),
+                    ]
+                    if str(path).strip() and _looks_like_repo_path(str(path).strip())
+                ]
+                outside_root = [
+                    path
+                    for path in scoped_paths
+                    if not _transition_path_within_root(str(path), product_graph_root)
+                ]
+                if outside_root:
+                    findings.append(
+                        transition_packet_finding(
+                            code="profile_apply_scope_outside_product_graph_root",
+                            field="declared_change_surface",
+                            family="profile",
+                            profile=transition_profile,
+                            message=(
+                                "product_spec apply surfaces must remain inside "
+                                "product_graph_root; "
+                                f"outside paths: {', '.join(sorted(set(outside_root)))}"
+                            ),
+                        )
+                    )
     return findings
 
 
@@ -6014,6 +6248,11 @@ def validate_transition_packet_report(
 
     packet_type = str(context.get("packet_type", "")).strip()
     transition_profile = str(context.get("transition_profile", "")).strip()
+    product_spec_policy_definition = {}
+    if transition_profile == "product_spec":
+        policy, _findings = load_product_spec_transition_policy_report()
+        if policy is not None:
+            product_spec_policy_definition = policy
     return {
         "ok": not findings,
         "packet_type": packet_type,
@@ -6023,6 +6262,7 @@ def validate_transition_packet_report(
         "validator_profile_definition": TRANSITION_VALIDATOR_PROFILE_DEFINITIONS.get(
             transition_profile, {}
         ),
+        "product_spec_policy_definition": product_spec_policy_definition,
         "families_checked": list(TRANSITION_CHECK_FAMILIES),
         "finding_count": len(findings),
         "findings_by_family": findings_by_family,

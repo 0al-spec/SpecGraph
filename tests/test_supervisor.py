@@ -5592,6 +5592,106 @@ def test_validate_transition_packet_profile_normalizes_apply_source_refs(
     }
 
 
+def test_validate_transition_packet_product_spec_accepts_inherited_apply_packet(
+    supervisor_module: object,
+) -> None:
+    report = supervisor_module.validate_transition_packet_report(
+        {
+            "packet_type": "apply",
+            "transition_profile": "product_spec",
+            "transition_intent": "apply one reviewed product-spec change",
+            "source_refs": ["docs/proposals/0019_spec_to_code_trace_plane.md"],
+            "authority_class": "human_reviewed_apply",
+            "target_scope": "products/calculator/specs/CALC-SPEC-0001.yaml",
+            "target_artifact_class": "product_spec",
+            "product_graph_root": "products/calculator",
+            "motivating_concern": "approved calculator proposal",
+            "declared_change_surface": ["products/calculator/specs/CALC-SPEC-0001.yaml"],
+            "required_provenance_links": ["product_graph_root", "proposal_artifact"],
+        }
+    )
+
+    assert report["ok"] is True
+    assert report["transition_profile"] == "product_spec"
+    assert report["validator_profile_definition"]["required_binding_fields"] == [
+        "product_graph_root"
+    ]
+    assert report["product_spec_policy_definition"]["apply_scope_rule"] == (
+        "inside_product_graph_root"
+    )
+
+
+def test_validate_transition_packet_product_spec_requires_graph_root(
+    supervisor_module: object,
+) -> None:
+    report = supervisor_module.validate_transition_packet_report(
+        {
+            "packet_type": "apply",
+            "transition_profile": "product_spec",
+            "transition_intent": "apply one reviewed product-spec change",
+            "source_refs": ["docs/proposals/0019_spec_to_code_trace_plane.md"],
+            "authority_class": "human_reviewed_apply",
+            "target_scope": "products/calculator/specs/CALC-SPEC-0001.yaml",
+            "target_artifact_class": "product_spec",
+            "motivating_concern": "approved calculator proposal",
+            "declared_change_surface": ["products/calculator/specs/CALC-SPEC-0001.yaml"],
+            "required_provenance_links": ["proposal_artifact"],
+        }
+    )
+
+    assert {finding["code"] for finding in report["findings"]} >= {
+        "profile_missing_product_graph_root",
+    }
+
+
+def test_validate_transition_packet_product_spec_apply_scope_stays_under_root(
+    supervisor_module: object,
+) -> None:
+    report = supervisor_module.validate_transition_packet_report(
+        {
+            "packet_type": "apply",
+            "transition_profile": "product_spec",
+            "transition_intent": "apply one reviewed product-spec change",
+            "source_refs": ["docs/proposals/0019_spec_to_code_trace_plane.md"],
+            "authority_class": "human_reviewed_apply",
+            "target_scope": "products/other/specs/OTHER-SPEC-0001.yaml",
+            "target_artifact_class": "product_spec",
+            "product_graph_root": "products/calculator",
+            "motivating_concern": "approved calculator proposal",
+            "declared_change_surface": ["products/calculator/specs/CALC-SPEC-0001.yaml"],
+            "required_provenance_links": ["product_graph_root", "proposal_artifact"],
+        }
+    )
+
+    assert {finding["code"] for finding in report["findings"]} >= {
+        "profile_apply_scope_outside_product_graph_root",
+    }
+
+
+def test_validate_transition_packet_product_spec_rejects_draft_sources(
+    supervisor_module: object,
+) -> None:
+    report = supervisor_module.validate_transition_packet_report(
+        {
+            "packet_type": "apply",
+            "transition_profile": "product_spec",
+            "transition_intent": "apply one reviewed product-spec change",
+            "source_refs": ["docs/proposals_drafts/0005_telemetry.md"],
+            "authority_class": "human_reviewed_apply",
+            "target_scope": "products/calculator/specs/CALC-SPEC-0001.yaml",
+            "target_artifact_class": "product_spec",
+            "product_graph_root": "products/calculator",
+            "motivating_concern": "approved calculator proposal",
+            "declared_change_surface": ["products/calculator/specs/CALC-SPEC-0001.yaml"],
+            "required_provenance_links": ["product_graph_root", "proposal_artifact"],
+        }
+    )
+
+    assert {finding["code"] for finding in report["findings"]} >= {
+        "profile_apply_requires_reviewable_source",
+    }
+
+
 def test_main_validates_transition_packet_as_standalone_command(
     supervisor_module: object,
     repo_fixture: Path,
