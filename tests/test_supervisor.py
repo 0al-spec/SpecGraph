@@ -5692,6 +5692,54 @@ def test_validate_transition_packet_product_spec_rejects_draft_sources(
     }
 
 
+def test_validate_transition_packet_product_spec_allows_draft_sources_for_proposal(
+    supervisor_module: object,
+) -> None:
+    report = supervisor_module.validate_transition_packet_report(
+        {
+            "packet_type": "proposal",
+            "transition_profile": "product_spec",
+            "transition_intent": "promote one bounded product-spec concern",
+            "source_refs": ["docs/proposals_drafts/0005_telemetry.md"],
+            "authority_class": "operator_authored",
+            "target_scope": "docs/proposals/0100_calculator.md",
+            "target_artifact_class": "proposal",
+            "product_graph_root": "products/calculator",
+            "motivating_concern": "shape one calculator proposal",
+            "declared_change_surface": ["docs/proposals/0100_calculator.md"],
+            "required_provenance_links": ["product_graph_root", "source_draft_ref"],
+        }
+    )
+
+    assert {finding["code"] for finding in report["findings"]}.isdisjoint(
+        {"profile_apply_requires_reviewable_source"}
+    )
+
+
+def test_validate_transition_packet_product_spec_skips_apply_scope_for_proposal(
+    supervisor_module: object,
+) -> None:
+    report = supervisor_module.validate_transition_packet_report(
+        {
+            "packet_type": "proposal",
+            "transition_profile": "product_spec",
+            "transition_intent": "promote one bounded product-spec concern",
+            "source_refs": ["docs/proposals/0019_spec_to_code_trace_plane.md"],
+            "authority_class": "operator_authored",
+            "target_scope": "docs/proposals/0100_calculator.md",
+            "target_artifact_class": "proposal",
+            "product_graph_root": "products/calculator",
+            "motivating_concern": "shape one calculator proposal",
+            "declared_change_surface": ["docs/proposals/0100_calculator.md"],
+            "required_provenance_links": ["product_graph_root", "source_draft_ref"],
+        }
+    )
+
+    assert {finding["code"] for finding in report["findings"]}.isdisjoint(
+        {"profile_apply_scope_outside_product_graph_root"}
+    )
+
+
 def test_main_validates_transition_packet_as_standalone_command(
     supervisor_module: object,
     repo_fixture: Path,

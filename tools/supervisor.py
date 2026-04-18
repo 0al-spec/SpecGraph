@@ -6107,7 +6107,7 @@ def _validate_transition_packet_profile(context: dict[str, Any]) -> list[dict[st
                 for item in policy.get("forbidden_source_prefixes", [])
                 if str(item).strip()
             ]
-            if any(
+            if packet_type == "apply" and any(
                 _looks_like_repo_path(path)
                 and _transition_path_matches_any_prefix(path, forbidden_source_prefixes)
                 for path in context.get("source_refs", [])
@@ -6119,8 +6119,8 @@ def _validate_transition_packet_profile(context: dict[str, Any]) -> list[dict[st
                         family="profile",
                         profile=transition_profile,
                         message=(
-                            "product_spec packets must source from reviewable proposal or run "
-                            "artifacts, not raw drafts"
+                            "product_spec apply packets must source from reviewable proposal or "
+                            "run artifacts, not raw drafts"
                         ),
                     )
                 )
@@ -6172,7 +6172,10 @@ def _validate_transition_packet_profile(context: dict[str, Any]) -> list[dict[st
                     )
                 )
 
-            if str(policy.get("apply_scope_rule", "")).strip() == "inside_product_graph_root":
+            if (
+                packet_type == "apply"
+                and str(policy.get("apply_scope_rule", "")).strip() == "inside_product_graph_root"
+            ):
                 scoped_paths = [
                     path
                     for path in [
