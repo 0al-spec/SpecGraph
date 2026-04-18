@@ -178,6 +178,16 @@ boundary from `tools/proposal_promotion_policy.json`. That artifact defines:
 - `reviewable_proposal` as normalized proposal contract
 - the rule that promotion is normalization, not a bare repository-folder move
 
+The minimal promotion packet contract is now explicit:
+
+- `source_artifact_class: working_draft`
+- `target_artifact_class: reviewable_proposal`
+- `source_refs`
+- `motivating_concern`
+- `normalized_title`
+- `bounded_scope`
+- `required_provenance_links` including `source_draft_ref`
+
 ### Spec trace index
 
 ```bash

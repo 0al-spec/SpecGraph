@@ -274,7 +274,12 @@ TRANSITION_CHECK_FAMILIES = (
 TRANSITION_PACKET_FAMILY_DEFINITIONS = {
     "promotion": {
         "description": "Promote one bounded pre-canonical artifact into a reviewable proposal.",
-        "required_fields": ["target_artifact_class"],
+        "required_fields": [
+            "bounded_scope",
+            "normalized_title",
+            "source_artifact_class",
+            "target_artifact_class",
+        ],
     },
     "proposal": {
         "description": "Normalize a governed proposal artifact without mutating canonical truth.",
@@ -5840,6 +5845,11 @@ def _normalize_transition_packet_context(
         value=packet.get("target_artifact_class"),
     )
     findings.extend(target_artifact_class_findings)
+    source_artifact_class, source_artifact_class_findings = _transition_packet_optional_string(
+        field_name="source_artifact_class",
+        value=packet.get("source_artifact_class"),
+    )
+    findings.extend(source_artifact_class_findings)
     target_scope, target_scope_findings = _transition_packet_optional_string(
         field_name="target_scope",
         value=packet.get("target_scope"),
@@ -5860,6 +5870,16 @@ def _normalize_transition_packet_context(
         value=packet.get("product_graph_root"),
     )
     findings.extend(product_graph_root_findings)
+    normalized_title, normalized_title_findings = _transition_packet_optional_string(
+        field_name="normalized_title",
+        value=packet.get("normalized_title"),
+    )
+    findings.extend(normalized_title_findings)
+    bounded_scope, bounded_scope_findings = _transition_packet_optional_string(
+        field_name="bounded_scope",
+        value=packet.get("bounded_scope"),
+    )
+    findings.extend(bounded_scope_findings)
 
     source_refs, source_ref_findings = _transition_packet_string_list(
         field_name="source_refs",
@@ -5893,10 +5913,13 @@ def _normalize_transition_packet_context(
         "actor_class": actor_class,
         "authority_class": authority_class,
         "target_artifact_class": target_artifact_class,
+        "source_artifact_class": source_artifact_class,
         "target_scope": normalized_target_scope,
         "motivating_concern": motivating_concern,
         "lineage_root": lineage_root,
         "product_graph_root": normalized_product_graph_root,
+        "normalized_title": normalized_title,
+        "bounded_scope": bounded_scope,
         "declared_change_surface": normalized_declared_change_surface,
         "required_provenance_links": required_provenance_links,
     }, findings
@@ -5941,28 +5964,55 @@ def _validate_transition_packet_schema(context: dict[str, Any]) -> list[dict[str
 def _validate_transition_packet_legality(context: dict[str, Any]) -> list[dict[str, str]]:
     packet_type = str(context.get("packet_type", "")).strip()
     transition_profile = str(context.get("transition_profile", "")).strip()
+    findings: list[dict[str, str]] = []
     if (
         not packet_type
         or transition_profile not in TRANSITION_VALIDATOR_PROFILE_DEFINITIONS
         or packet_type not in VALID_TRANSITION_PACKET_TYPES
     ):
-        return []
+        return findings
     allowed_packet_types = TRANSITION_VALIDATOR_PROFILE_DEFINITIONS[transition_profile][
         "allowed_packet_types"
     ]
-    if packet_type in allowed_packet_types:
-        return []
-    return [
-        transition_packet_finding(
-            code="packet_type_not_allowed_for_profile",
-            field="packet_type",
-            family="legality",
-            message=(
-                f"packet_type={packet_type} is not allowed for "
-                f"transition_profile={transition_profile}"
-            ),
+    if packet_type not in allowed_packet_types:
+        findings.append(
+            transition_packet_finding(
+                code="packet_type_not_allowed_for_profile",
+                field="packet_type",
+                family="legality",
+                message=(
+                    f"packet_type={packet_type} is not allowed for "
+                    f"transition_profile={transition_profile}"
+                ),
+            )
         )
-    ]
+        return findings
+
+    if packet_type == "promotion":
+        if str(context.get("source_artifact_class", "")).strip() != "working_draft":
+            findings.append(
+                transition_packet_finding(
+                    code="promotion_source_must_be_working_draft",
+                    field="source_artifact_class",
+                    family="legality",
+                    message=(
+                        "promotion packets must declare source_artifact_class=working_draft "
+                        "for draft-to-proposal promotion"
+                    ),
+                )
+            )
+        if str(context.get("target_artifact_class", "")).strip() != "reviewable_proposal":
+            findings.append(
+                transition_packet_finding(
+                    code="promotion_target_must_be_reviewable_proposal",
+                    field="target_artifact_class",
+                    family="legality",
+                    message=(
+                        "promotion packets must target target_artifact_class=reviewable_proposal"
+                    ),
+                )
+            )
+    return findings
 
 
 def _validate_transition_packet_provenance(context: dict[str, Any]) -> list[dict[str, str]]:
@@ -5996,6 +6046,24 @@ def _validate_transition_packet_provenance(context: dict[str, Any]) -> list[dict
                 message="packet must declare motivating_concern or lineage_root",
             )
         )
+    if str(context.get("packet_type", "")).strip() == "promotion":
+        required_links = {
+            str(item).strip()
+            for item in context.get("required_provenance_links", [])
+            if str(item).strip()
+        }
+        if "source_draft_ref" not in required_links:
+            findings.append(
+                transition_packet_finding(
+                    code="promotion_requires_source_draft_ref",
+                    field="required_provenance_links",
+                    family="provenance",
+                    message=(
+                        "promotion packets must preserve source_draft_ref in "
+                        "required_provenance_links"
+                    ),
+                )
+            )
     return findings
 
 

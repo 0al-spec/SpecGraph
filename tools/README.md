@@ -43,6 +43,10 @@ Supervisor modes:
   `tools/proposal_promotion_policy.json`, which distinguishes exploratory
   `working_draft` material from normalized `reviewable_proposal` artifacts
   without making folder layout the only source of meaning.
+  Promotion packets now carry an explicit minimal contract: `source_artifact_class`,
+  `target_artifact_class`, `source_refs`, `motivating_concern`,
+  `normalized_title`, `bounded_scope`, and `required_provenance_links`
+  including `source_draft_ref`.
 - `--build-spec-trace-index`: build `runs/spec_trace_index.json` from literal `SG-SPEC-XXXX`
   mentions in `tools/` and `tests/`, then enrich that graph-bound index with weak
   `commit_refs`, `pr_refs`, `verification_basis`, and `acceptance_coverage`.
