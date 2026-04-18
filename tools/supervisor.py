@@ -755,6 +755,19 @@ def strip_runtime_spec_data(value: Any) -> Any:
     return value
 
 
+def strip_runtime_sync_data(value: Any) -> Any:
+    """Return spec data with runtime-only metadata removed recursively."""
+    if isinstance(value, dict):
+        return {
+            key: strip_runtime_sync_data(item)
+            for key, item in value.items()
+            if key not in SYNC_STRIPPED_SPEC_KEYS
+        }
+    if isinstance(value, list):
+        return [strip_runtime_sync_data(item) for item in value]
+    return value
+
+
 def canonical_spec_snapshot(data: dict[str, Any]) -> dict[str, Any]:
     """Normalize spec data for deterministic before/after refinement checks."""
     normalized = strip_runtime_spec_data(data)
@@ -7363,7 +7376,7 @@ def sanitize_spec_sync_text(text: str) -> str:
     data = yaml_module.safe_load(text) or {}
     if not isinstance(data, dict):
         raise ValueError("top-level YAML document must be a mapping")
-    cleaned = canonical_spec_snapshot(data)
+    cleaned = strip_runtime_sync_data(data)
     return dump_yaml_text(cleaned)
 
 

@@ -1401,6 +1401,8 @@ def test_sanitize_spec_sync_text_removes_runtime_only_keys(supervisor_module: ob
     source = """id: SG-SPEC-9999
 title: Draft
 kind: spec
+created_at: '2026-04-18T10:00:00Z'
+updated_at: '2026-04-18T12:00:00Z'
 status: outlined
 maturity: 0.1
 prompt: Keep this change.
@@ -1415,6 +1417,8 @@ last_run_id: old-run
 
     assert data["id"] == "SG-SPEC-9999"
     assert data["prompt"] == "Keep this change."
+    assert data["created_at"] == "2026-04-18T10:00:00Z"
+    assert data["updated_at"] == "2026-04-18T12:00:00Z"
     assert "RUN_OUTCOME" not in data
     assert "BLOCKER" not in data
     assert "gate_state" not in data
