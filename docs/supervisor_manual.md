@@ -303,10 +303,18 @@ authoritative.
   - derived queue of refactor-oriented next moves
 - `runs/proposals/*.json`
   - structured proposal artifacts emitted by split-proposal mode
+- `runs/spec_id_reservations.json`
+  - temporary in-flight reservations for explicit child-materialization IDs
 
 These runtime artifacts are now written with atomic replace plus a short-lived
 sidecar lock. If a queue file is malformed, ordinary supervisor runs stop
 instead of silently treating it as an empty queue.
+Run logs and isolated worktree identities also carry a nonce so concurrent
+runs do not collide on timestamp-only names.
+
+Explicit child-materialization runs now reserve one child `SG-SPEC-XXXX` ID
+for the active run and require the produced child file to use that reserved
+path.
 
 ### Trace and inspection surfaces
 

@@ -47,6 +47,7 @@ import inspect
 import json
 import os
 import re
+import secrets
 import shutil
 import subprocess
 import sys
@@ -72,6 +73,7 @@ WORKTREES_DIR = ROOT / ".worktrees"
 AGENTS_FILE = ROOT / "AGENTS.md"
 ARTIFACT_LOCK_TIMEOUT_SECONDS = 5.0
 ARTIFACT_LOCK_POLL_SECONDS = 0.05
+RUNTIME_ID_COLLISION_RETRY_LIMIT = 8
 
 READY_DEP_STATUSES = {"reviewed", "frozen"}
 WORKABLE_STATUSES = {"outlined", "specified"}
@@ -1513,6 +1515,134 @@ def next_sequential_spec_id(specs: list[SpecNode]) -> str:
     return f"SG-SPEC-{max_number + 1:04d}"
 
 
+def spec_id_from_relpath(rel_path: str) -> str:
+    path_text = rel_path.strip()
+    if not path_text:
+        return ""
+    stem = Path(path_text).stem
+    return stem if SPEC_ID_PATTERN.match(stem) else ""
+
+
+def pending_review_reserved_spec_ids(specs: list[SpecNode]) -> set[str]:
+    reserved: set[str] = set()
+    for spec in specs:
+        if spec.gate_state != "review_pending":
+            continue
+        raw_paths = spec.data.get("last_materialized_child_paths", [])
+        if not isinstance(raw_paths, list):
+            continue
+        for rel_path in raw_paths:
+            spec_id = spec_id_from_relpath(str(rel_path).strip())
+            if spec_id:
+                reserved.add(spec_id)
+    return reserved
+
+
+def spec_id_reservations_path() -> Path:
+    return RUNS_DIR / "spec_id_reservations.json"
+
+
+def load_spec_id_reservations() -> list[dict[str, str]]:
+    path = spec_id_reservations_path()
+    if not path.exists():
+        return []
+    payload, error = load_json_object_report(path, artifact_kind="spec-id reservation registry")
+    if payload is None:
+        raise RuntimeError(error or "Malformed spec-id reservation registry")
+    raw_items = payload.get("reservations", [])
+    if not isinstance(raw_items, list):
+        raise RuntimeError("Malformed spec-id reservation registry: reservations must be a list")
+    reservations: list[dict[str, str]] = []
+    for raw in raw_items:
+        if not isinstance(raw, dict):
+            raise RuntimeError(
+                "Malformed spec-id reservation registry: reservation entries must be objects"
+            )
+        spec_id = str(raw.get("spec_id", "")).strip()
+        spec_path = str(raw.get("spec_path", "")).strip()
+        run_id = str(raw.get("run_id", "")).strip()
+        source_spec_id = str(raw.get("source_spec_id", "")).strip()
+        reserved_at = str(raw.get("reserved_at", "")).strip()
+        if not spec_id or not SPEC_ID_PATTERN.match(spec_id):
+            raise RuntimeError(
+                "Malformed spec-id reservation registry: reservation spec_id must be SG-SPEC-XXXX"
+            )
+        if spec_path != f"specs/nodes/{spec_id}.yaml":
+            raise RuntimeError(
+                "Malformed spec-id reservation registry: reservation spec_path must match spec_id"
+            )
+        if not run_id or not source_spec_id or not reserved_at:
+            raise RuntimeError(
+                "Malformed spec-id reservation registry: reservation entries require "
+                "run_id, source_spec_id, and reserved_at"
+            )
+        reservations.append(
+            {
+                "spec_id": spec_id,
+                "spec_path": spec_path,
+                "run_id": run_id,
+                "source_spec_id": source_spec_id,
+                "reserved_at": reserved_at,
+            }
+        )
+    return reservations
+
+
+def reserve_child_materialization_spec_id(
+    *,
+    specs: list[SpecNode],
+    source_spec_id: str,
+    run_id: str,
+) -> dict[str, str]:
+    path = spec_id_reservations_path()
+    RUNS_DIR.mkdir(parents=True, exist_ok=True)
+    with artifact_lock(path):
+        reservations = load_spec_id_reservations()
+        canonical_ids = {spec.id for spec in specs if SPEC_ID_PATTERN.match(spec.id)}
+        pending_ids = pending_review_reserved_spec_ids(specs)
+        active_ids = {
+            str(item.get("spec_id", "")).strip()
+            for item in reservations
+            if str(item.get("spec_id", "")).strip()
+        }
+        used_numbers = {
+            int(match.group(1))
+            for spec_id in canonical_ids | pending_ids | active_ids
+            if (match := SPEC_ID_PATTERN.match(spec_id))
+        }
+        next_number = max(used_numbers, default=0) + 1
+        child_id = f"SG-SPEC-{next_number:04d}"
+        child_path = f"specs/nodes/{child_id}.yaml"
+        reservations.append(
+            {
+                "spec_id": child_id,
+                "spec_path": child_path,
+                "run_id": run_id,
+                "source_spec_id": source_spec_id,
+                "reserved_at": utc_now_iso(),
+            }
+        )
+        atomic_write_json(path, {"reservations": reservations})
+    return {"id": child_id, "path": child_path}
+
+
+def release_child_materialization_spec_id(*, spec_id: str, run_id: str) -> None:
+    path = spec_id_reservations_path()
+    if not path.exists():
+        return
+    with artifact_lock(path):
+        reservations = load_spec_id_reservations()
+        retained = [
+            item
+            for item in reservations
+            if not (
+                str(item.get("spec_id", "")).strip() == spec_id
+                and str(item.get("run_id", "")).strip() == run_id
+            )
+        ]
+        atomic_write_json(path, {"reservations": retained})
+
+
 def implicit_source_allowed_paths(node: SpecNode) -> list[str]:
     try:
         return [node.path.relative_to(ROOT).as_posix()]
@@ -2160,6 +2290,7 @@ def targeted_child_materialization_hint(
     operator_target: bool = False,
     operator_note: str = "",
     run_authority: tuple[str, ...] = (),
+    reserved_hint: dict[str, str] | None = None,
 ) -> dict[str, str] | None:
     """Suggest one new child spec for explicit targeted child-creation runs."""
     if not operator_target or not operator_requests_child_materialization(operator_note):
@@ -2169,8 +2300,13 @@ def targeted_child_materialization_hint(
     if not node_supports_child_delegation(node):
         return None
 
-    child_id = next_sequential_spec_id(specs)
-    child_path = f"specs/nodes/{child_id}.yaml"
+    hint = reserved_hint
+    if hint is None:
+        child_id = next_sequential_spec_id(specs)
+        child_path = f"specs/nodes/{child_id}.yaml"
+        hint = {"id": child_id, "path": child_path}
+    child_id = str(hint.get("id", "")).strip()
+    child_path = str(hint.get("path", "")).strip()
     if not can_create_new_spec_files(node, child_path):
         return None
     return {
@@ -2224,6 +2360,7 @@ def child_materialization_preflight_errors(
     operator_target: bool = False,
     operator_note: str = "",
     run_authority: tuple[str, ...] = (),
+    child_materialization_hint: dict[str, str] | None = None,
 ) -> list[str]:
     if not operator_target or not operator_requests_child_materialization(operator_note):
         return []
@@ -2239,8 +2376,9 @@ def child_materialization_preflight_errors(
             "Child materialization was requested, but the selected node does not expose "
             "semantic delegation constraints compatible with creating a bounded child."
         )
-    child_id = next_sequential_spec_id(specs)
-    child_path = f"specs/nodes/{child_id}.yaml"
+    hint = child_materialization_hint or {"id": next_sequential_spec_id(specs)}
+    child_id = str(hint.get("id", "")).strip()
+    child_path = str(hint.get("path", "")).strip() or f"specs/nodes/{child_id}.yaml"
     if not can_create_new_spec_files(node, child_path):
         errors.append(
             "Child materialization was requested, but allowed_paths do not explicitly "
@@ -2321,6 +2459,7 @@ def build_prompt(
     operator_note: str = "",
     mutation_budget: tuple[str, ...] = (),
     run_authority: tuple[str, ...] = (),
+    child_materialization_hint: dict[str, str] | None = None,
 ) -> str:
     """Build the operator/agent prompt for one bounded run.
 
@@ -2340,20 +2479,21 @@ def build_prompt(
 
     all_specs = load_specs()
     bootstrap_hint = bootstrap_child_hint(node, all_specs)
-    child_materialization_hint = targeted_child_materialization_hint(
+    effective_child_materialization_hint = targeted_child_materialization_hint(
         node,
         all_specs,
         operator_target=operator_target,
         operator_note=operator_note,
         run_authority=run_authority,
+        reserved_hint=child_materialization_hint,
     )
     effective_allowed_paths = effective_allowed_paths_for_run(
         node,
-        child_materialization_hint=child_materialization_hint,
+        child_materialization_hint=effective_child_materialization_hint,
     )
     effective_outputs = effective_outputs_for_run(
         node,
-        child_materialization_hint=child_materialization_hint,
+        child_materialization_hint=effective_child_materialization_hint,
     )
     allowed_paths = (
         "\n".join(f"- {path}" for path in effective_allowed_paths) or "- (not specified)"
@@ -2637,14 +2777,14 @@ Bootstrap guidance:
   chain is explicit.
 """.rstrip()
     child_materialization_section = ""
-    if child_materialization_hint is not None:
+    if effective_child_materialization_hint is not None:
         child_materialization_section = f"""
 
 Child materialization guidance:
 - This operator-targeted run may materialize exactly one new child spec
   if the current node already implies a delegated bounded concern.
-- Suggested child spec ID: {child_materialization_hint["id"]}
-- Suggested child spec path: {child_materialization_hint["path"]}
+- Suggested child spec ID: {effective_child_materialization_hint["id"]}
+- Suggested child spec path: {effective_child_materialization_hint["path"]}
 - Keep the parent update minimal and reviewable.
 - Make the child explicit in the parent refinement/dependency chain only if
   the delegated concern is concrete enough to become a standalone spec now.
@@ -4104,6 +4244,7 @@ def validate_requested_child_materialization(
     requested: bool,
     source_spec_relpath: str,
     changed_files: list[str],
+    reserved_child_path: str = "",
 ) -> list[str]:
     """Require one additional spec node file when child materialization was requested."""
     if not requested:
@@ -4111,9 +4252,16 @@ def validate_requested_child_materialization(
     child_spec_changes = [
         path for path in changed_files if is_spec_node_path(path) and path != source_spec_relpath
     ]
-    if child_spec_changes:
-        return []
-    return ["Explicit child materialization was requested but no new child spec file was produced"]
+    if not child_spec_changes:
+        return [
+            "Explicit child materialization was requested but no new child spec file was produced"
+        ]
+    if reserved_child_path and reserved_child_path not in child_spec_changes:
+        return [
+            "Explicit child materialization must use the reserved child spec path: "
+            f"{reserved_child_path}"
+        ]
+    return []
 
 
 def parse_executor_protocol(stdout: str, returncode: int) -> tuple[str, str, list[str]]:
@@ -4160,10 +4308,29 @@ def utc_now_iso() -> str:
     return dt.datetime.now(dt.timezone.utc).isoformat()
 
 
+def utc_compact_timestamp() -> str:
+    return dt.datetime.now(dt.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+
+
+def runtime_nonce() -> str:
+    return secrets.token_hex(4)
+
+
+def make_run_id(spec_id: str) -> str:
+    RUNS_DIR.mkdir(parents=True, exist_ok=True)
+    for _attempt in range(RUNTIME_ID_COLLISION_RETRY_LIMIT):
+        run_id = f"{utc_compact_timestamp()}-{spec_id}-{runtime_nonce()}"
+        if not (RUNS_DIR / f"{run_id}.json").exists():
+            return run_id
+    raise RuntimeError(f"failed to allocate unique run_id for {spec_id}")
+
+
 def write_run_log(run_id: str, payload: dict[str, Any]) -> Path:
     RUNS_DIR.mkdir(parents=True, exist_ok=True)
     path = RUNS_DIR / f"{run_id}.json"
     with artifact_lock(path):
+        if path.exists():
+            raise RuntimeError(f"run log already exists for run_id: {run_id}")
         atomic_write_json(path, payload)
     return path
 
@@ -6560,25 +6727,35 @@ def create_sandbox_worktree_copy(*, safe_id: str, timestamp: str) -> tuple[Path,
 
 
 def create_isolated_worktree(node_id: str) -> tuple[Path, str]:
-    timestamp = dt.datetime.now(dt.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     safe_id = sanitize_for_git(node_id)
-    branch = f"codex/{safe_id}/{timestamp}"
-    worktree_path = WORKTREES_DIR / f"{safe_id}-{timestamp}"
-
     WORKTREES_DIR.mkdir(parents=True, exist_ok=True)
-    result = subprocess.run(
-        ["git", "worktree", "add", "-b", branch, worktree_path.as_posix(), "HEAD"],
-        cwd=ROOT,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    if result.returncode != 0:
+    for _attempt in range(RUNTIME_ID_COLLISION_RETRY_LIMIT):
+        suffix = f"{utc_compact_timestamp()}-{runtime_nonce()}"
+        branch = f"codex/{safe_id}/{suffix}"
+        worktree_path = WORKTREES_DIR / f"{safe_id}-{suffix}"
+        if worktree_path.exists():
+            continue
+        result = subprocess.run(
+            ["git", "worktree", "add", "-b", branch, worktree_path.as_posix(), "HEAD"],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if result.returncode == 0:
+            return worktree_path, branch
         if should_fallback_to_copied_worktree(result.stderr):
-            return create_sandbox_worktree_copy(safe_id=safe_id, timestamp=timestamp)
+            return create_sandbox_worktree_copy(safe_id=safe_id, timestamp=suffix)
+        low = result.stderr.lower()
+        if (
+            "already exists" in low
+            or "already checked out" in low
+            or "already used by worktree" in low
+            or "a branch named" in low
+        ):
+            continue
         raise RuntimeError(result.stderr.strip() or "failed to create worktree")
-
-    return worktree_path, branch
+    raise RuntimeError(f"failed to allocate unique worktree for {node_id}")
 
 
 def is_supervisor_managed_worktree_path(worktree_path: Path) -> bool:
@@ -7019,6 +7196,7 @@ def invoke_executor(
     child_model: str | None = None,
     child_timeout_seconds: int | None = None,
     worktree_branch: str = "",
+    child_materialization_hint: dict[str, str] | None = None,
     verbose: bool = False,
 ) -> subprocess.CompletedProcess[str]:
     """Call the executor with optional work-item context when supported.
@@ -7040,6 +7218,7 @@ def invoke_executor(
             child_model=child_model,
             child_timeout_seconds=child_timeout_seconds,
             worktree_branch=worktree_branch,
+            child_materialization_hint=child_materialization_hint,
             verbose=verbose,
         )
     if refactor_work_item is not None and (
@@ -7161,6 +7340,7 @@ def run_codex(
     child_model: str | None = None,
     child_timeout_seconds: int | None = None,
     worktree_branch: str = "",
+    child_materialization_hint: dict[str, str] | None = None,
     verbose: bool = False,
 ) -> subprocess.CompletedProcess[str]:
     """Run the Codex executor in the isolated worktree and stream logs live."""
@@ -7194,6 +7374,7 @@ def run_codex(
             operator_note=operator_note,
             mutation_budget=mutation_budget,
             run_authority=run_authority,
+            child_materialization_hint=child_materialization_hint,
         ),
         profile=profile,
         bypass_inner_sandbox=bypass_inner_sandbox,
@@ -7516,8 +7697,7 @@ def _apply_split_proposal(
             print(error, file=sys.stderr)
         return 1
 
-    run_timestamp = dt.datetime.now(dt.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-    run_id = f"{run_timestamp}-{node.id}"
+    run_id = make_run_id(node.id)
     proposal_queue_before = load_proposal_queue()
     refactor_queue_before = load_refactor_queue()
     selected_by_rule = {
@@ -7740,8 +7920,7 @@ def _process_split_refactor_proposal(
     - exactly one structured proposal artifact written under `runs/proposals/`
     - proposal queue refreshed as an index, not as the full payload store
     """
-    run_timestamp = dt.datetime.now(dt.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-    run_id = f"{run_timestamp}-{node.id}"
+    run_id = make_run_id(node.id)
     proposal_queue_before = load_proposal_queue()
     refactor_queue_before = load_refactor_queue()
     refactor_work_item = build_split_refactor_work_item(node)
@@ -8128,14 +8307,38 @@ def _process_one_spec(
     before_node_data = copy.deepcopy(node.data)
     before_canonical = canonical_spec_snapshot(node.data)
     source_spec_relpath = node.path.relative_to(ROOT).as_posix()
+    run_id = make_run_id(node.id)
+    child_materialization_requested = targeted_child_materialization_requested(
+        node=node,
+        operator_target=operator_target,
+        operator_note=operator_note,
+        run_authority=run_authority,
+    )
+    reserved_child_materialization_hint: dict[str, str] | None = None
+    if child_materialization_requested:
+        try:
+            reserved_child_materialization_hint = reserve_child_materialization_spec_id(
+                specs=specs,
+                source_spec_id=node.id,
+                run_id=run_id,
+            )
+        except RuntimeError as exc:
+            print(str(exc), file=sys.stderr)
+            return 1, "blocked"
     child_materialization_preflight = child_materialization_preflight_errors(
         node=node,
         specs=specs,
         operator_target=operator_target,
         operator_note=operator_note,
         run_authority=run_authority,
+        child_materialization_hint=reserved_child_materialization_hint,
     )
     if child_materialization_preflight:
+        if reserved_child_materialization_hint is not None:
+            release_child_materialization_spec_id(
+                spec_id=reserved_child_materialization_hint["id"],
+                run_id=run_id,
+            )
         for error in child_materialization_preflight:
             print(error, file=sys.stderr)
         return 1, "blocked"
@@ -8145,21 +8348,23 @@ def _process_one_spec(
         operator_target=operator_target,
         operator_note=operator_note,
         run_authority=run_authority,
+        reserved_hint=reserved_child_materialization_hint,
     )
     effective_allowed_paths = effective_allowed_paths_for_run(
         node,
         child_materialization_hint=child_materialization_hint,
     )
-    child_materialization_requested = targeted_child_materialization_requested(
-        node=node,
-        operator_target=operator_target,
-        operator_note=operator_note,
-        run_authority=run_authority,
-    )
+    if child_materialization_hint is not None:
+        selected_by_rule["reserved_child_spec"] = dict(child_materialization_hint)
 
     try:
         worktree_path, branch = create_isolated_worktree(node.id)
     except RuntimeError as exc:
+        if child_materialization_hint is not None:
+            release_child_materialization_spec_id(
+                spec_id=child_materialization_hint["id"],
+                run_id=run_id,
+            )
         print(f"Failed to create worktree: {exc}", file=sys.stderr)
         return 1, "escalate"
     emit(f"Created worktree: {worktree_path}", enabled=verbose)
@@ -8188,6 +8393,8 @@ def _process_one_spec(
         "child_timeout_seconds": child_timeout_seconds,
         "worktree_branch": branch,
     }
+    if callable_supports_keyword(invoke_executor, "child_materialization_hint"):
+        invoke_kwargs["child_materialization_hint"] = child_materialization_hint
     if callable_supports_keyword(invoke_executor, "verbose"):
         invoke_kwargs["verbose"] = verbose
     result = invoke_executor(
@@ -8242,8 +8449,6 @@ def _process_one_spec(
         else []
     )
 
-    run_timestamp = dt.datetime.now(dt.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-    run_id = f"{run_timestamp}-{node.id}"
     executor_environment = classify_executor_environment(result.stderr)
     primary_executor_failure = is_primary_executor_environment_failure(
         executor_environment=executor_environment,
@@ -8319,6 +8524,11 @@ def _process_one_spec(
             requested=child_materialization_requested,
             source_spec_relpath=source_spec_relpath,
             changed_files=changed,
+            reserved_child_path=(
+                str(child_materialization_hint.get("path", "")).strip()
+                if child_materialization_hint is not None
+                else ""
+            ),
         )
         reconciliation, reconciliation_errors = reconcile_graph(
             source_node=node,
@@ -8595,6 +8805,11 @@ def _process_one_spec(
     if validation_errors:
         node.data["last_errors"] = validation_errors
     node.save()
+    if child_materialization_hint is not None:
+        release_child_materialization_spec_id(
+            spec_id=str(child_materialization_hint.get("id", "")).strip(),
+            run_id=run_id,
+        )
 
     payload = {
         "run_id": run_id,

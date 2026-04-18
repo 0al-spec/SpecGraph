@@ -33,7 +33,7 @@ Task numbers are preserved for traceability across commits and PRs.
 40. [done] Require explicit structural authority for new spec creation so child materialization cannot occur from permissive path defaults alone.
 41. [done] Ensure fallback isolation never expands child executor privileges beyond the normal execution path.
 42. [done] Add atomic write and lock discipline for run logs, summaries, queues, and proposal artifacts.
-43. [todo] Add collision-safe run, branch, and worktree identifiers plus reserved spec-ID allocation for parallel child materialization safety.
+43. [done] Add collision-safe run, branch, and worktree identifiers plus reserved spec-ID allocation for parallel child materialization safety.
 44. [done] Harden malformed-artifact loading and executor machine protocol so missing structured outcomes or corrupted queue files fail safely.
 45. [todo] Move supervisor thresholds, selection priorities, mutation classes, and execution profiles into a declarative policy layer instead of Python constants.
 46. [todo] Add a Decision Inspector artifact that explains selection, gate, diff-classification, and queue-emission decisions from applied rules.

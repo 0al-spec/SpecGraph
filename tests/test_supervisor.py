@@ -229,6 +229,43 @@ def test_create_and_cleanup_isolated_worktree_with_real_git(
     assert run_git(git_repo_fixture, "branch", "--list", branch).stdout.strip() == ""
 
 
+def test_create_isolated_worktree_retries_branch_collision(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    nonces = iter(["aaaabbbb", "ccccdddd"])
+    monkeypatch.setattr(supervisor_module, "utc_compact_timestamp", lambda: "20260418T000000Z")
+    monkeypatch.setattr(supervisor_module, "runtime_nonce", lambda: next(nonces))
+
+    attempts = {"count": 0}
+
+    def fake_run(args: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
+        attempts["count"] += 1
+        if attempts["count"] == 1:
+            return subprocess.CompletedProcess(
+                args=args,
+                returncode=128,
+                stdout="",
+                stderr=(
+                    "fatal: a branch named "
+                    "'codex/sg-spec-0001/20260418T000000Z-aaaabbbb' already exists"
+                ),
+            )
+        worktree_path = Path(args[5])
+        worktree_path.mkdir(parents=True, exist_ok=True)
+        return subprocess.CompletedProcess(args=args, returncode=0, stdout="", stderr="")
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+
+    worktree_path, branch = supervisor_module.create_isolated_worktree("SG-SPEC-0001")
+
+    assert attempts["count"] == 2
+    assert branch == "codex/sg-spec-0001/20260418T000000Z-ccccdddd"
+    assert worktree_path == repo_fixture / ".worktrees" / "sg-spec-0001-20260418T000000Z-ccccdddd"
+    assert worktree_path.exists()
+
+
 def test_build_codex_exec_command_uses_explicit_child_runtime_profile(
     supervisor_module: object,
 ) -> None:
@@ -1256,6 +1293,84 @@ def test_artifact_writers_leave_no_temp_or_lock_residue(
     assert not (repo_fixture / "runs" / "latest-summary.md.lock").exists()
     assert list((repo_fixture / "runs").glob(".RUN-1.json.*.tmp")) == []
     assert list((repo_fixture / "runs").glob(".latest-summary.md.*.tmp")) == []
+
+
+def test_make_run_id_uses_nonce_and_write_run_log_rejects_duplicate(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    nonces = iter(["aaaabbbb", "ccccdddd"])
+    monkeypatch.setattr(supervisor_module, "utc_compact_timestamp", lambda: "20260418T000000Z")
+    monkeypatch.setattr(supervisor_module, "runtime_nonce", lambda: next(nonces))
+
+    run_id_1 = supervisor_module.make_run_id("SG-SPEC-0001")
+    run_id_2 = supervisor_module.make_run_id("SG-SPEC-0001")
+
+    assert run_id_1 == "20260418T000000Z-SG-SPEC-0001-aaaabbbb"
+    assert run_id_2 == "20260418T000000Z-SG-SPEC-0001-ccccdddd"
+
+    supervisor_module.write_run_log(run_id_1, {"run_id": run_id_1})
+
+    with pytest.raises(RuntimeError, match="run log already exists"):
+        supervisor_module.write_run_log(run_id_1, {"run_id": run_id_1})
+
+
+def test_child_spec_id_reservations_skip_pending_review_and_active_reservations(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    specs_dir = repo_fixture / "specs" / "nodes"
+    specs_dir.joinpath("SG-SPEC-0002.yaml").write_text(
+        supervisor_module.dump_yaml_text(
+            {
+                "id": "SG-SPEC-0002",
+                "title": "Pending Parent",
+                "kind": "spec",
+                "status": "specified",
+                "gate_state": "review_pending",
+                "maturity": 0.4,
+                "depends_on": [],
+                "relates_to": [],
+                "outputs": ["specs/nodes/SG-SPEC-0002.yaml"],
+                "allowed_paths": [
+                    "specs/nodes/SG-SPEC-0002.yaml",
+                    "specs/nodes/SG-SPEC-0003.yaml",
+                ],
+                "acceptance": ["keep pending child"],
+                "prompt": "Pending child materialization",
+                "last_materialized_child_paths": ["specs/nodes/SG-SPEC-0003.yaml"],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    specs = supervisor_module.load_specs()
+
+    reservation_1 = supervisor_module.reserve_child_materialization_spec_id(
+        specs=specs,
+        source_spec_id="SG-SPEC-0001",
+        run_id="RUN-1",
+    )
+    reservation_2 = supervisor_module.reserve_child_materialization_spec_id(
+        specs=specs,
+        source_spec_id="SG-SPEC-0001",
+        run_id="RUN-2",
+    )
+
+    assert reservation_1 == {"id": "SG-SPEC-0004", "path": "specs/nodes/SG-SPEC-0004.yaml"}
+    assert reservation_2 == {"id": "SG-SPEC-0005", "path": "specs/nodes/SG-SPEC-0005.yaml"}
+
+    reservations_path = repo_fixture / "runs" / "spec_id_reservations.json"
+    payload = json.loads(reservations_path.read_text(encoding="utf-8"))
+    assert [item["spec_id"] for item in payload["reservations"]] == ["SG-SPEC-0004", "SG-SPEC-0005"]
+
+    supervisor_module.release_child_materialization_spec_id(
+        spec_id="SG-SPEC-0004",
+        run_id="RUN-1",
+    )
+    payload = json.loads(reservations_path.read_text(encoding="utf-8"))
+    assert [item["spec_id"] for item in payload["reservations"]] == ["SG-SPEC-0005"]
 
 
 def test_sanitize_spec_sync_text_removes_runtime_only_keys(supervisor_module: object) -> None:
