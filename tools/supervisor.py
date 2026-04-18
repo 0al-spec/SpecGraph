@@ -1295,9 +1295,12 @@ def parse_iso_datetime(value: object) -> dt.datetime | None:
     if text.endswith("Z"):
         text = text[:-1] + "+00:00"
     try:
-        return dt.datetime.fromisoformat(text)
+        parsed = dt.datetime.fromisoformat(text)
     except ValueError:
         return None
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=dt.timezone.utc)
+    return parsed
 
 
 def has_fresh_gate_approval_without_new_run(spec: SpecNode) -> bool:
@@ -6166,6 +6169,27 @@ def trace_ref_paths(refs: list[dict[str, Any]]) -> list[str]:
     )
 
 
+def trace_surface_commit_paths(declared_surfaces: list[str]) -> list[str]:
+    paths: set[str] = set()
+    for surface in declared_surfaces:
+        normalized = str(surface).strip()
+        if not normalized:
+            continue
+        if any(marker in normalized for marker in ("*", "?", "[")):
+            matches = list(ROOT.glob(normalized))
+            if not matches:
+                paths.add(normalized)
+                continue
+            for match in matches:
+                if match.is_file():
+                    paths.add(match.relative_to(ROOT).as_posix())
+                elif match.is_dir():
+                    paths.add(match.relative_to(ROOT).as_posix())
+            continue
+        paths.add(normalized)
+    return sorted(paths)
+
+
 def blocked_trace_dependencies(spec: SpecNode, index: dict[str, SpecNode]) -> list[str]:
     blocked: list[str] = []
     for dep_id in spec.depends_on:
@@ -6180,11 +6204,11 @@ def blocked_trace_dependencies(spec: SpecNode, index: dict[str, SpecNode]) -> li
 
 
 def latest_trace_commit_ref(
-    refs: list[dict[str, Any]],
+    ref_paths: list[str],
     *,
     repo_root: Path | None = None,
 ) -> dict[str, str] | None:
-    latest_refs = collect_trace_commit_refs(trace_ref_paths(refs), repo_root=repo_root, limit=1)
+    latest_refs = collect_trace_commit_refs(ref_paths, repo_root=repo_root, limit=1)
     if not latest_refs:
         return None
     return latest_refs[0]
@@ -6644,8 +6668,12 @@ def build_spec_trace_index(specs: list[SpecNode]) -> dict[str, Any]:
         )
         matched_code_refs = matching_trace_refs(code_refs, declared_code_surfaces)
         matched_test_refs = matching_trace_refs(test_refs, declared_test_surfaces)
-        latest_code_commit_ref = latest_trace_commit_ref(matched_code_refs)
-        latest_test_commit_ref = latest_trace_commit_ref(matched_test_refs)
+        latest_code_commit_ref = latest_trace_commit_ref(
+            trace_surface_commit_paths(declared_code_surfaces)
+        )
+        latest_test_commit_ref = latest_trace_commit_ref(
+            trace_surface_commit_paths(declared_test_surfaces)
+        )
         commit_refs = collect_trace_commit_refs(
             [str(ref.get("path", "")).strip() for ref in [*code_refs, *test_refs]]
         )

@@ -5973,7 +5973,7 @@ def test_build_spec_trace_index_derives_stale_and_drifted_verified_states(
 
     spec_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
     spec_data = json.loads(spec_path.read_text(encoding="utf-8"))
-    spec_data["updated_at"] = "2026-04-18T00:00:00Z"
+    spec_data["updated_at"] = "2026-04-18T00:00:00"
     spec_path.write_text(json.dumps(spec_data), encoding="utf-8")
 
     stale_index = supervisor_module.build_spec_trace_index(supervisor_module.load_specs())
@@ -6027,6 +6027,81 @@ def test_build_spec_trace_index_derives_stale_and_drifted_verified_states(
         "drifted_after_verification"
     )
     assert drifted_entry["freshness"]["status"] == "drifted_after_verification"
+
+
+def test_build_spec_trace_index_detects_drift_on_unmentioned_declared_surface(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    tools_dir = repo_fixture / "tools"
+    tests_dir = repo_fixture / "tests"
+    tools_dir.mkdir()
+    tests_dir.mkdir()
+    (tools_dir / "impl.py").write_text("SPEC_ID = 'SG-SPEC-0001'\n", encoding="utf-8")
+    (tools_dir / "helper.py").write_text("HELPER = True\n", encoding="utf-8")
+    (tests_dir / "test_impl.py").write_text("SPEC_ID = 'SG-SPEC-0001'\n", encoding="utf-8")
+    (tools_dir / "spec_trace_registry.json").write_text(
+        json.dumps(
+            [
+                {
+                    "spec_id": "SG-SPEC-0001",
+                    "code_surfaces": ["tools/impl.py", "tools/helper.py"],
+                    "test_surfaces": ["tests/test_impl.py"],
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    def fake_trace_commits(
+        ref_paths: list[str],
+        repo_root: Path | None = None,
+        limit: int = 5,
+    ) -> list[dict[str, str]]:
+        del repo_root
+        key = tuple(sorted(set(ref_paths)))
+        payloads = {
+            ("tests/test_impl.py",): [
+                {
+                    "sha": "a" * 40,
+                    "short_sha": "aaaaaaa",
+                    "committed_at": "2026-04-17T00:00:00Z",
+                    "subject": "Refresh tests",
+                }
+            ],
+            ("tools/helper.py", "tools/impl.py"): [
+                {
+                    "sha": "b" * 40,
+                    "short_sha": "bbbbbbb",
+                    "committed_at": "2026-04-18T00:00:00Z",
+                    "subject": "Adjust helper implementation",
+                }
+            ],
+            ("tests/test_impl.py", "tools/helper.py", "tools/impl.py"): [
+                {
+                    "sha": "c" * 40,
+                    "short_sha": "ccccccc",
+                    "committed_at": "2026-04-18T00:00:00Z",
+                    "subject": "Land trace pair (#98)",
+                }
+            ],
+        }
+        return payloads.get(key, [])[:limit]
+
+    monkeypatch.setattr(supervisor_module, "collect_trace_commit_refs", fake_trace_commits)
+    monkeypatch.setattr(supervisor_module, "git_status_changed_files", lambda cwd: [])
+
+    spec_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    spec_data = json.loads(spec_path.read_text(encoding="utf-8"))
+    spec_data["updated_at"] = "2026-04-16T00:00:00Z"
+    spec_path.write_text(json.dumps(spec_data), encoding="utf-8")
+
+    index = supervisor_module.build_spec_trace_index(supervisor_module.load_specs())
+    entry = index["entries"][0]
+    assert entry["trace_contract"]["matched_code_paths"] == ["tools/impl.py"]
+    assert entry["implementation_state"]["status"] == "drifted"
+    assert entry["freshness"]["status"] == "drifted_after_verification"
 
 
 def test_build_spec_trace_projection_groups_backlog_and_viewer_filters(
