@@ -1230,6 +1230,34 @@ def test_write_latest_summary_includes_executor_environment_fields(
     assert "- required_human_action: repair executor environment and rerun supervisor" in summary
 
 
+def test_artifact_writers_leave_no_temp_or_lock_residue(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    run_path = supervisor_module.write_run_log("RUN-1", {"run_id": "RUN-1"})
+    supervisor_module.write_latest_summary(
+        {
+            "run_id": "RUN-1",
+            "spec_id": "SG-SPEC-0001",
+            "title": "Example",
+            "completion_status": "ok",
+            "outcome": "done",
+            "gate_state": "none",
+            "before_status": "specified",
+            "final_status": "reviewed",
+            "validation_errors": [],
+            "required_human_action": "-",
+            "executor_environment": {"issues": [], "primary_failure": False},
+        }
+    )
+
+    assert run_path.exists()
+    assert not (repo_fixture / "runs" / "RUN-1.json.lock").exists()
+    assert not (repo_fixture / "runs" / "latest-summary.md.lock").exists()
+    assert list((repo_fixture / "runs").glob(".RUN-1.json.*.tmp")) == []
+    assert list((repo_fixture / "runs").glob(".latest-summary.md.*.tmp")) == []
+
+
 def test_sanitize_spec_sync_text_removes_runtime_only_keys(supervisor_module: object) -> None:
     source = """id: SG-SPEC-9999
 title: Draft
@@ -2763,6 +2791,27 @@ def test_update_refactor_queue_routes_role_legibility_signals_to_proposal_first(
     assert bookkeeping_item["recommended_action"] == "merge_bookkeeping_slice"
 
 
+def test_update_refactor_queue_rejects_malformed_existing_queue_file(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    queue_path = repo_fixture / "runs" / "refactor_queue.json"
+    queue_path.write_text("{broken", encoding="utf-8")
+
+    with pytest.raises(RuntimeError, match="Malformed refactor queue artifact"):
+        supervisor_module.update_refactor_queue(
+            graph_health={
+                "source_spec_id": "SG-SPEC-0001",
+                "observations": [],
+                "signals": ["oversized_spec"],
+                "recommended_actions": [],
+            },
+            run_id="RUN-1",
+        )
+
+    assert queue_path.read_text(encoding="utf-8") == "{broken"
+
+
 def test_update_refactor_queue_defers_direct_execution_when_active_proposal_exists(
     supervisor_module: object,
     repo_fixture: Path,
@@ -2828,6 +2877,27 @@ def test_update_proposal_queue_emits_governance_proposal_immediately(
     assert proposal["threshold"] == 1
     assert proposal["supporting_run_ids"] == ["RUN-2"]
     assert proposal["execution_policy"] == "emit_proposal"
+
+
+def test_update_proposal_queue_rejects_malformed_existing_queue_file(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    queue_path = repo_fixture / "runs" / "proposal_queue.json"
+    queue_path.write_text("{broken", encoding="utf-8")
+
+    with pytest.raises(RuntimeError, match="Malformed proposal queue artifact"):
+        supervisor_module.update_proposal_queue(
+            graph_health={
+                "source_spec_id": "SG-SPEC-0001",
+                "observations": [],
+                "signals": ["oversized_spec"],
+                "recommended_actions": [],
+            },
+            run_id="RUN-1",
+        )
+
+    assert queue_path.read_text(encoding="utf-8") == "{broken"
 
 
 def test_update_proposal_queue_requires_recurrence_for_refactor_proposal(
@@ -4017,6 +4087,65 @@ def test_main_usage_limit_failure_reports_quota_recovery_action(
         == "wait for usage reset or add credits and rerun supervisor"
     )
     assert payload["executor_environment"]["issue_kinds"] == ["usage_limit_failure"]
+
+
+def test_main_blocks_successful_executor_without_machine_protocol_markers(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    worktree = make_fake_worktree(repo_fixture)
+    monkeypatch.setattr(
+        supervisor_module,
+        "create_isolated_worktree",
+        lambda _node_id: (worktree, "codex/sg-spec-0001/test"),
+    )
+    changed_snapshots = [[], []]
+    monkeypatch.setattr(
+        supervisor_module,
+        "git_changed_files",
+        lambda _cwd=None: changed_snapshots.pop(0),
+    )
+
+    def fake_executor(_node: object, _worktree_path: Path) -> subprocess.CompletedProcess[str]:
+        return subprocess.CompletedProcess(
+            args=["codex"],
+            returncode=0,
+            stdout="executor detail line\n",
+            stderr="",
+        )
+
+    exit_code = supervisor_module.main(executor=fake_executor, target_spec="SG-SPEC-0001")
+    assert exit_code == 1
+
+    run_logs = sorted((repo_fixture / "runs").glob("*-SG-SPEC-*.json"))
+    payload = json.loads(run_logs[0].read_text(encoding="utf-8"))
+    assert payload["outcome"] == "blocked"
+    assert payload["blocker"] == "executor machine protocol failure"
+    assert any(
+        "Missing executor machine protocol marker RUN_OUTCOME" in error
+        for error in payload["validation_errors"]
+    )
+    assert any(
+        "Missing executor machine protocol marker BLOCKER" in error
+        for error in payload["validation_errors"]
+    )
+    assert payload["validator_results"]["runtime_artifacts"] is True
+
+
+def test_main_rejects_malformed_runtime_queue_before_selection(
+    supervisor_module: object,
+    repo_fixture: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    queue_path = repo_fixture / "runs" / "proposal_queue.json"
+    queue_path.write_text("{broken", encoding="utf-8")
+
+    exit_code = supervisor_module.main(dry_run=True)
+
+    assert exit_code == 1
+    assert "Malformed proposal queue artifact" in capsys.readouterr().err
+    assert sorted((repo_fixture / "runs").glob("*-SG-SPEC-*.json")) == []
 
 
 def test_main_interrupted_source_refinement_cleans_runtime_tail_when_only_source_changed(

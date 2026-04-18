@@ -52,6 +52,15 @@ Key derived artifacts:
 - `runs/spec_trace_index.json`: weak spec-to-code coverage index from code/test mentions
 - `runs/proposal_runtime_index.json`: proposal posture and reflective runtime-closure index
 
+Runtime artifact safety:
+
+- run logs, summaries, queue files, proposal artifacts, and derived indexes are
+  now written through atomic replace with short-lived sidecar locks
+- malformed `runs/proposal_queue.json` or `runs/refactor_queue.json` now block
+  normal supervisor runs instead of being silently treated as empty queues
+- a child executor success path must emit both `RUN_OUTCOME:` and `BLOCKER:`
+  markers; missing markers are treated as protocol failure
+
 Transition-packet validation now reports:
 
 - packet family metadata for `promotion`, `proposal`, `apply`, and `handoff`

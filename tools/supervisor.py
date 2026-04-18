@@ -52,7 +52,9 @@ import subprocess
 import sys
 import tempfile
 import threading
+import time
 from collections.abc import Callable
+from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from types import ModuleType
@@ -68,6 +70,8 @@ SPECS_DIR = ROOT / "specs" / "nodes"
 RUNS_DIR = ROOT / "runs"
 WORKTREES_DIR = ROOT / ".worktrees"
 AGENTS_FILE = ROOT / "AGENTS.md"
+ARTIFACT_LOCK_TIMEOUT_SECONDS = 5.0
+ARTIFACT_LOCK_POLL_SECONDS = 0.05
 
 READY_DEP_STATUSES = {"reviewed", "frozen"}
 WORKABLE_STATUSES = {"outlined", "specified"}
@@ -1249,26 +1253,30 @@ def load_refactor_queue() -> list[dict[str, Any]]:
     path = refactor_queue_path()
     if not path.exists():
         return []
-    try:
-        data = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
-        return []
-    if not isinstance(data, list):
-        return []
-    return [item for item in data if isinstance(item, dict)]
+    data, _error = load_json_list_report(path, artifact_kind="refactor queue artifact")
+    return data or []
 
 
 def load_proposal_queue() -> list[dict[str, Any]]:
     path = proposal_queue_path()
     if not path.exists():
         return []
-    try:
-        data = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
-        return []
-    if not isinstance(data, list):
-        return []
-    return [item for item in data if isinstance(item, dict)]
+    data, _error = load_json_list_report(path, artifact_kind="proposal queue artifact")
+    return data or []
+
+
+def runtime_artifact_integrity_errors() -> list[str]:
+    errors: list[str] = []
+    for path, artifact_kind in (
+        (proposal_queue_path(), "proposal queue artifact"),
+        (refactor_queue_path(), "refactor queue artifact"),
+    ):
+        if not path.exists():
+            continue
+        _data, error = load_json_list_report(path, artifact_kind=artifact_kind)
+        if error:
+            errors.append(error)
+    return errors
 
 
 def refactor_signal_priority(signal: str) -> int:
@@ -4108,10 +4116,11 @@ def validate_requested_child_materialization(
     return ["Explicit child materialization was requested but no new child spec file was produced"]
 
 
-def parse_outcome(stdout: str, returncode: int) -> tuple[str, str]:
+def parse_executor_protocol(stdout: str, returncode: int) -> tuple[str, str, list[str]]:
     default_outcome = "done" if returncode == 0 else "escalate"
 
     outcome = default_outcome
+    protocol_errors: list[str] = []
     outcome_match = re.search(r"^RUN_OUTCOME:\s*([a-z_]+)\s*$", stdout, flags=re.MULTILINE)
     if outcome_match:
         candidate = outcome_match.group(1).strip().lower()
@@ -4119,6 +4128,11 @@ def parse_outcome(stdout: str, returncode: int) -> tuple[str, str]:
             outcome = candidate
         else:
             outcome = "escalate"
+            protocol_errors.append(
+                f"Invalid executor machine protocol marker RUN_OUTCOME: {candidate}"
+            )
+    else:
+        protocol_errors.append("Missing executor machine protocol marker RUN_OUTCOME")
 
     blocker = ""
     blocker_match = re.search(r"^BLOCKER:\s*(.+)\s*$", stdout, flags=re.MULTILINE)
@@ -4126,7 +4140,19 @@ def parse_outcome(stdout: str, returncode: int) -> tuple[str, str]:
         blocker = blocker_match.group(1).strip()
         if blocker.lower() == "none":
             blocker = ""
+    else:
+        protocol_errors.append("Missing executor machine protocol marker BLOCKER")
 
+    if protocol_errors and returncode == 0:
+        outcome = "blocked"
+        if not blocker:
+            blocker = "executor machine protocol failure"
+
+    return outcome, blocker, protocol_errors
+
+
+def parse_outcome(stdout: str, returncode: int) -> tuple[str, str]:
+    outcome, blocker, _protocol_errors = parse_executor_protocol(stdout, returncode)
     return outcome, blocker
 
 
@@ -4137,8 +4163,8 @@ def utc_now_iso() -> str:
 def write_run_log(run_id: str, payload: dict[str, Any]) -> Path:
     RUNS_DIR.mkdir(parents=True, exist_ok=True)
     path = RUNS_DIR / f"{run_id}.json"
-    with path.open("w", encoding="utf-8") as file:
-        json.dump(payload, file, ensure_ascii=False, indent=2)
+    with artifact_lock(path):
+        atomic_write_json(path, payload)
     return path
 
 
@@ -4388,25 +4414,26 @@ def update_refactor_queue(
     """
     RUNS_DIR.mkdir(parents=True, exist_ok=True)
     path = refactor_queue_path()
-    if path.exists():
-        existing = json.loads(path.read_text(encoding="utf-8"))
-        if not isinstance(existing, list):
+    with artifact_lock(path):
+        if path.exists():
+            existing, error = load_json_list_report(path, artifact_kind="refactor queue artifact")
+            if error:
+                raise RuntimeError(error)
+        else:
             existing = []
-    else:
-        existing = []
 
-    source_spec_id = str(graph_health.get("source_spec_id", "")).strip()
-    preserved = [
-        item
-        for item in existing
-        if isinstance(item, dict) and str(item.get("spec_id", "")).strip() != source_spec_id
-    ]
-    updated = preserved + build_refactor_queue_items(
-        graph_health=graph_health,
-        run_id=run_id,
-        proposal_items=proposal_items,
-    )
-    path.write_text(json.dumps(updated, ensure_ascii=False, indent=2), encoding="utf-8")
+        source_spec_id = str(graph_health.get("source_spec_id", "")).strip()
+        preserved = [
+            item
+            for item in (existing or [])
+            if isinstance(item, dict) and str(item.get("spec_id", "")).strip() != source_spec_id
+        ]
+        updated = preserved + build_refactor_queue_items(
+            graph_health=graph_health,
+            run_id=run_id,
+            proposal_items=proposal_items,
+        )
+        atomic_write_json(path, updated)
     return path
 
 
@@ -4473,21 +4500,22 @@ def update_proposal_queue(
     """
     RUNS_DIR.mkdir(parents=True, exist_ok=True)
     path = proposal_queue_path()
-    if path.exists():
-        existing = json.loads(path.read_text(encoding="utf-8"))
-        if not isinstance(existing, list):
+    with artifact_lock(path):
+        if path.exists():
+            existing, error = load_json_list_report(path, artifact_kind="proposal queue artifact")
+            if error:
+                raise RuntimeError(error)
+        else:
             existing = []
-    else:
-        existing = []
 
-    source_spec_id = str(graph_health.get("source_spec_id", "")).strip()
-    preserved = [
-        item
-        for item in existing
-        if isinstance(item, dict) and str(item.get("spec_id", "")).strip() != source_spec_id
-    ]
-    updated = preserved + build_proposal_queue_items(graph_health=graph_health, run_id=run_id)
-    path.write_text(json.dumps(updated, ensure_ascii=False, indent=2), encoding="utf-8")
+        source_spec_id = str(graph_health.get("source_spec_id", "")).strip()
+        preserved = [
+            item
+            for item in (existing or [])
+            if isinstance(item, dict) and str(item.get("spec_id", "")).strip() != source_spec_id
+        ]
+        updated = preserved + build_proposal_queue_items(graph_health=graph_health, run_id=run_id)
+        atomic_write_json(path, updated)
     return path, updated
 
 
@@ -4601,13 +4629,125 @@ def build_decision_inspector(
     }
 
 
-def load_json_object(path: Path) -> dict[str, Any] | None:
+def artifact_lock_path(path: Path) -> Path:
+    return path.with_name(f"{path.name}.lock")
+
+
+@contextmanager
+def artifact_lock(path: Path):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    lock_path = artifact_lock_path(path)
+    deadline = time.monotonic() + ARTIFACT_LOCK_TIMEOUT_SECONDS
+    acquired = False
+    while not acquired:
+        try:
+            fd = os.open(lock_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+        except FileExistsError as exc:
+            if time.monotonic() >= deadline:
+                raise RuntimeError(
+                    f"Timed out waiting for artifact lock: {lock_path.relative_to(ROOT).as_posix()}"
+                ) from exc
+            time.sleep(ARTIFACT_LOCK_POLL_SECONDS)
+            continue
+        with os.fdopen(fd, "w", encoding="utf-8") as lock_file:
+            lock_file.write(
+                json.dumps(
+                    {
+                        "pid": os.getpid(),
+                        "thread": threading.get_ident(),
+                        "locked_at": utc_now_iso(),
+                    },
+                    ensure_ascii=False,
+                )
+            )
+        acquired = True
     try:
-        data = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
-        return None
+        yield
+    finally:
+        try:
+            lock_path.unlink()
+        except FileNotFoundError:
+            pass
+
+
+def atomic_write_text(path: Path, text: str) -> Path:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp_path = path.with_name(f".{path.name}.{os.getpid()}.{threading.get_ident()}.tmp")
+    try:
+        tmp_path.write_text(text, encoding="utf-8")
+        os.replace(tmp_path, path)
+    finally:
+        if tmp_path.exists():
+            tmp_path.unlink()
+    return path
+
+
+def atomic_write_json(path: Path, payload: Any) -> Path:
+    return atomic_write_text(path, json.dumps(payload, ensure_ascii=False, indent=2))
+
+
+def display_artifact_path(path: Path) -> str:
+    try:
+        return path.relative_to(ROOT).as_posix()
+    except ValueError:
+        return path.as_posix()
+
+
+def load_json_object_report(path: Path, *, artifact_kind: str) -> tuple[dict[str, Any] | None, str]:
+    try:
+        raw_text = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        return None, f"Failed to read {artifact_kind}: {display_artifact_path(path)} ({exc})"
+    try:
+        data = json.loads(raw_text)
+    except json.JSONDecodeError as exc:
+        return (
+            None,
+            f"Malformed {artifact_kind}: {display_artifact_path(path)} ({exc})",
+        )
     if not isinstance(data, dict):
-        return None
+        return (
+            None,
+            f"Malformed {artifact_kind}: {display_artifact_path(path)} must contain a JSON object",
+        )
+    return data, ""
+
+
+def load_json_list_report(
+    path: Path,
+    *,
+    artifact_kind: str,
+) -> tuple[list[dict[str, Any]] | None, str]:
+    try:
+        raw_text = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        return None, f"Failed to read {artifact_kind}: {display_artifact_path(path)} ({exc})"
+    try:
+        data = json.loads(raw_text)
+    except json.JSONDecodeError as exc:
+        return (
+            None,
+            f"Malformed {artifact_kind}: {display_artifact_path(path)} ({exc})",
+        )
+    if not isinstance(data, list):
+        return (
+            None,
+            f"Malformed {artifact_kind}: {display_artifact_path(path)} must contain a JSON list",
+        )
+    if not all(isinstance(item, dict) for item in data):
+        return (
+            None,
+            None,
+            (
+                f"Malformed {artifact_kind}: {display_artifact_path(path)} must contain only "
+                "JSON objects"
+            ),
+        )
+    return list(data), ""
+
+
+def load_json_object(path: Path) -> dict[str, Any] | None:
+    data, _error = load_json_object_report(path, artifact_kind="JSON artifact")
     return data
 
 
@@ -5221,14 +5361,14 @@ def validate_transition_packet_file(
     *,
     validator_profile: str | None = None,
 ) -> dict[str, Any]:
-    packet = load_json_object(path)
+    packet, packet_error = load_json_object_report(path, artifact_kind="transition packet")
     if packet is None:
         findings = [
             transition_packet_finding(
                 code="invalid_packet_file",
                 field="path",
                 family="schema",
-                message="packet file must exist and contain a JSON object",
+                message=packet_error or "packet file must exist and contain a JSON object",
             )
         ]
         return {
@@ -5339,7 +5479,8 @@ def build_spec_trace_index(specs: list[SpecNode]) -> dict[str, Any]:
 def write_spec_trace_index(index: dict[str, Any]) -> Path:
     RUNS_DIR.mkdir(parents=True, exist_ok=True)
     path = spec_trace_index_path()
-    path.write_text(json.dumps(index, ensure_ascii=False, indent=2), encoding="utf-8")
+    with artifact_lock(path):
+        atomic_write_json(path, index)
     return path
 
 
@@ -5735,7 +5876,8 @@ def build_proposal_runtime_index() -> dict[str, Any]:
 def write_proposal_runtime_index(index: dict[str, Any]) -> Path:
     RUNS_DIR.mkdir(parents=True, exist_ok=True)
     path = proposal_runtime_index_path()
-    path.write_text(json.dumps(index, ensure_ascii=False, indent=2), encoding="utf-8")
+    with artifact_lock(path):
+        atomic_write_json(path, index)
     return path
 
 
@@ -6168,7 +6310,7 @@ def apply_split_proposal_to_worktree(
     node.data["acceptance"] = retained_texts
     node.data["acceptance_evidence"] = retained_evidence
     worktree_parent_path = worktree_path / parent_relpath
-    worktree_parent_path.write_text(dump_yaml_text(node.data), encoding="utf-8")
+    atomic_write_text(worktree_parent_path, dump_yaml_text(node.data))
 
     for child, child_id, child_path, existing_data in zip(
         child_specs, child_ids, child_paths, child_existing_data, strict=True
@@ -6207,7 +6349,7 @@ def apply_split_proposal_to_worktree(
             child_data["acceptance"] = child_acceptance
             child_data["acceptance_evidence"] = child_evidence
         absolute_child_path.parent.mkdir(parents=True, exist_ok=True)
-        absolute_child_path.write_text(dump_yaml_text(child_data), encoding="utf-8")
+        atomic_write_text(absolute_child_path, dump_yaml_text(child_data))
 
     return [parent_relpath, *child_paths]
 
@@ -6223,23 +6365,31 @@ def mark_split_proposal_applied(
     proposal_artifact["applied_run_id"] = run_id
     proposal_artifact["applied_at"] = utc_now_iso()
     proposal_artifact_path.parent.mkdir(parents=True, exist_ok=True)
-    proposal_artifact_path.write_text(
-        json.dumps(proposal_artifact, ensure_ascii=False, indent=2),
-        encoding="utf-8",
-    )
+    with artifact_lock(proposal_artifact_path):
+        atomic_write_json(proposal_artifact_path, proposal_artifact)
 
     queue_path = proposal_queue_path()
-    updated_items: list[dict[str, Any]] = []
-    for item in load_proposal_queue():
-        if str(item.get("id", "")).strip() == str(proposal_item.get("id", "")).strip():
-            updated_item = dict(item)
-            updated_item["status"] = "applied"
-            updated_item["applied_run_id"] = run_id
-            updated_item["applied_at"] = proposal_artifact["applied_at"]
-            updated_items.append(updated_item)
-            continue
-        updated_items.append(item)
-    queue_path.write_text(json.dumps(updated_items, ensure_ascii=False, indent=2), encoding="utf-8")
+    with artifact_lock(queue_path):
+        updated_items: list[dict[str, Any]] = []
+        if queue_path.exists():
+            existing_items, error = load_json_list_report(
+                queue_path,
+                artifact_kind="proposal queue artifact",
+            )
+            if error:
+                raise RuntimeError(error)
+        else:
+            existing_items = []
+        for item in existing_items or []:
+            if str(item.get("id", "")).strip() == str(proposal_item.get("id", "")).strip():
+                updated_item = dict(item)
+                updated_item["status"] = "applied"
+                updated_item["applied_run_id"] = run_id
+                updated_item["applied_at"] = proposal_artifact["applied_at"]
+                updated_items.append(updated_item)
+                continue
+            updated_items.append(item)
+        atomic_write_json(queue_path, updated_items)
     return proposal_artifact_path, queue_path
 
 
@@ -6252,49 +6402,62 @@ def upsert_split_proposal_queue(
 ) -> tuple[Path, list[dict[str, Any]]]:
     RUNS_DIR.mkdir(parents=True, exist_ok=True)
     path = proposal_queue_path()
-    existing_items = load_proposal_queue()
-    proposal_id = f"refactor_proposal::{node.id}::{SPLIT_REFACTOR_SIGNAL}"
-    existing_item = next(
-        (item for item in existing_items if str(item.get("id", "")).strip() == proposal_id),
-        None,
-    )
-    source_run_ids = merge_unique_strings(
-        signal_supporting_run_ids(node.id, SPLIT_REFACTOR_SIGNAL),
-        list(existing_item.get("supporting_run_ids", [])) if existing_item else [],
-        [run_id],
-        list(artifact.get("source_run_ids", [])),
-    )
+    with artifact_lock(path):
+        if path.exists():
+            existing_items, error = load_json_list_report(
+                path,
+                artifact_kind="proposal queue artifact",
+            )
+            if error:
+                raise RuntimeError(error)
+        else:
+            existing_items = []
+        proposal_id = f"refactor_proposal::{node.id}::{SPLIT_REFACTOR_SIGNAL}"
+        existing_item = next(
+            (
+                item
+                for item in (existing_items or [])
+                if str(item.get("id", "")).strip() == proposal_id
+            ),
+            None,
+        )
+        source_run_ids = merge_unique_strings(
+            signal_supporting_run_ids(node.id, SPLIT_REFACTOR_SIGNAL),
+            list(existing_item.get("supporting_run_ids", [])) if existing_item else [],
+            [run_id],
+            list(artifact.get("source_run_ids", [])),
+        )
 
-    updated_item = {
-        "id": proposal_id,
-        "proposal_type": "refactor_proposal",
-        "spec_id": node.id,
-        "target_spec_id": node.id,
-        "signal": SPLIT_REFACTOR_SIGNAL,
-        "source_signal": SPLIT_REFACTOR_SIGNAL,
-        "refactor_kind": SPLIT_REFACTOR_KIND,
-        "recommended_action": "emit_split_proposal",
-        "status": (
-            str(existing_item.get("status", "")).strip()
-            if existing_item and str(existing_item.get("status", "")).strip()
-            else str(artifact.get("status", "")).strip() or "proposed"
-        ),
-        "trigger": "explicit_operator_target",
-        "occurrence_count": len(source_run_ids),
-        "threshold": 1,
-        "supporting_run_ids": source_run_ids,
-        "source_work_item_type": "graph_refactor",
-        "execution_policy": "emit_proposal",
-        "proposal_artifact_path": artifact_path.relative_to(ROOT).as_posix(),
-    }
+        updated_item = {
+            "id": proposal_id,
+            "proposal_type": "refactor_proposal",
+            "spec_id": node.id,
+            "target_spec_id": node.id,
+            "signal": SPLIT_REFACTOR_SIGNAL,
+            "source_signal": SPLIT_REFACTOR_SIGNAL,
+            "refactor_kind": SPLIT_REFACTOR_KIND,
+            "recommended_action": "emit_split_proposal",
+            "status": (
+                str(existing_item.get("status", "")).strip()
+                if existing_item and str(existing_item.get("status", "")).strip()
+                else str(artifact.get("status", "")).strip() or "proposed"
+            ),
+            "trigger": "explicit_operator_target",
+            "occurrence_count": len(source_run_ids),
+            "threshold": 1,
+            "supporting_run_ids": source_run_ids,
+            "source_work_item_type": "graph_refactor",
+            "execution_policy": "emit_proposal",
+            "proposal_artifact_path": artifact_path.relative_to(ROOT).as_posix(),
+        }
 
-    preserved = [
-        item
-        for item in existing_items
-        if isinstance(item, dict) and str(item.get("id", "")).strip() != proposal_id
-    ]
-    updated = preserved + [updated_item]
-    path.write_text(json.dumps(updated, ensure_ascii=False, indent=2), encoding="utf-8")
+        preserved = [
+            item
+            for item in (existing_items or [])
+            if isinstance(item, dict) and str(item.get("id", "")).strip() != proposal_id
+        ]
+        updated = preserved + [updated_item]
+        atomic_write_json(path, updated)
     return path, updated
 
 
@@ -6329,7 +6492,9 @@ def write_latest_summary(payload: dict[str, Any]) -> None:
         f"- executor_environment_primary_failure: {'yes' if primary_failure else 'no'}\n"
         f"- required_human_action: {payload.get('required_human_action', '-')}\n"
     )
-    (RUNS_DIR / "latest-summary.md").write_text(summary, encoding="utf-8")
+    summary_path = RUNS_DIR / "latest-summary.md"
+    with artifact_lock(summary_path):
+        atomic_write_text(summary_path, summary)
 
 
 def refresh_latest_summary_for_gate_resolution(node: SpecNode) -> None:
@@ -7326,10 +7491,16 @@ def _apply_split_proposal(
         return 1
 
     proposal_artifact_path = proposal_item_path(proposal_item)
-    proposal_artifact = load_json_object(proposal_artifact_path)
+    proposal_artifact, artifact_error = load_json_object_report(
+        proposal_artifact_path,
+        artifact_kind="split proposal artifact",
+    )
     if proposal_artifact is None:
         print(
-            f"Missing or invalid proposal artifact: {proposal_artifact_path.as_posix()}",
+            (
+                artifact_error
+                or f"Missing or invalid proposal artifact: {proposal_artifact_path.as_posix()}"
+            ),
             file=sys.stderr,
         )
         return 1
@@ -7381,6 +7552,7 @@ def _apply_split_proposal(
 
     before_status = node.status
     validation_errors: list[str] = []
+    artifact_io_errors: list[str] = []
     try:
         changed = apply_split_proposal_to_worktree(
             node=node,
@@ -7416,12 +7588,16 @@ def _apply_split_proposal(
         if not validation_errors:
             sync_files_from_worktree(worktree_path, changed)
             node.reload()
-            mark_split_proposal_applied(
-                proposal_item=proposal_item,
-                proposal_artifact_path=proposal_artifact_path,
-                proposal_artifact=proposal_artifact,
-                run_id=run_id,
-            )
+            try:
+                mark_split_proposal_applied(
+                    proposal_item=proposal_item,
+                    proposal_artifact_path=proposal_artifact_path,
+                    proposal_artifact=proposal_artifact,
+                    run_id=run_id,
+                )
+            except RuntimeError as exc:
+                artifact_io_errors.append(str(exc))
+                validation_errors.append(str(exc))
             current_specs = load_specs()
             current_index = index_specs(current_specs)
             reconciled_node = current_index.get(node.id) or node
@@ -7441,11 +7617,19 @@ def _apply_split_proposal(
             )
             proposal_queue_artifact = proposal_queue_path()
             proposal_items = load_proposal_queue()
-            refactor_queue_artifact = update_refactor_queue(
-                graph_health=graph_health,
-                run_id=run_id,
-                proposal_items=proposal_items,
-            )
+            if not validation_errors:
+                try:
+                    refactor_queue_artifact = update_refactor_queue(
+                        graph_health=graph_health,
+                        run_id=run_id,
+                        proposal_items=proposal_items,
+                    )
+                except RuntimeError as exc:
+                    artifact_io_errors.append(str(exc))
+                    validation_errors.append(str(exc))
+                    refactor_queue_artifact = refactor_queue_path()
+            else:
+                refactor_queue_artifact = refactor_queue_path()
         else:
             graph_health = {
                 "source_spec_id": node.id,
@@ -7493,6 +7677,7 @@ def _apply_split_proposal(
         "validator_results": {
             "proposal_artifact": not validation_errors,
             "canonical_writeback": success,
+            "runtime_artifacts": not artifact_io_errors,
         },
         "reconciliation": {},
         "graph_health": graph_health,
@@ -7509,6 +7694,7 @@ def _apply_split_proposal(
             validator_results={
                 "proposal_artifact": not validation_errors,
                 "canonical_writeback": success,
+                "runtime_artifacts": not artifact_io_errors,
             },
             graph_health=graph_health,
             graph_health_truth_basis="accepted_canonical",
@@ -7641,7 +7827,10 @@ def _process_split_refactor_proposal(
         or (path in (after_set - before_set) and not is_spec_node_path(path))
     )
     emit(f"Detected changed files: {changed or ['(none)']}", enabled=verbose)
-    outcome, blocker = parse_outcome(result.stdout, result.returncode)
+    outcome, blocker, executor_protocol_errors = parse_executor_protocol(
+        result.stdout,
+        result.returncode,
+    )
     executor_environment = classify_executor_environment(result.stderr)
     primary_executor_failure = is_primary_executor_environment_failure(
         executor_environment=executor_environment,
@@ -7684,6 +7873,7 @@ def _process_split_refactor_proposal(
                 outcome=outcome,
             )
             validation_errors: list[str] = []
+    validation_errors.extend(executor_protocol_errors)
 
     artifact_relpath = str(refactor_work_item["proposal_artifact_relpath"])
     artifact_worktree_path = worktree_path / artifact_relpath
@@ -7702,12 +7892,17 @@ def _process_split_refactor_proposal(
             + ", ".join(extra_changed_files)
         )
 
+    artifact_io_errors: list[str] = []
     proposal_artifact_data: dict[str, Any] | None = None
     if outcome == "done":
-        proposal_artifact_data = load_json_object(artifact_worktree_path)
+        proposal_artifact_data, artifact_error = load_json_object_report(
+            artifact_worktree_path,
+            artifact_kind="structured split proposal artifact",
+        )
         if proposal_artifact_data is None:
             validation_errors.append(
-                f"Missing or invalid structured split proposal artifact: {artifact_relpath}"
+                artifact_error
+                or f"Missing or invalid structured split proposal artifact: {artifact_relpath}"
             )
         else:
             existing_queue_item = next(
@@ -7743,16 +7938,21 @@ def _process_split_refactor_proposal(
 
     if success and proposal_artifact_data is not None:
         sync_files_from_worktree(worktree_path, [artifact_relpath])
-        proposal_artifact_root_path.write_text(
-            json.dumps(proposal_artifact_data, ensure_ascii=False, indent=2),
-            encoding="utf-8",
-        )
-        proposal_queue_artifact, _proposal_items = upsert_split_proposal_queue(
-            node=node,
-            run_id=run_id,
-            artifact=proposal_artifact_data,
-            artifact_path=proposal_artifact_root_path,
-        )
+        with artifact_lock(proposal_artifact_root_path):
+            atomic_write_json(proposal_artifact_root_path, proposal_artifact_data)
+        try:
+            proposal_queue_artifact, _proposal_items = upsert_split_proposal_queue(
+                node=node,
+                run_id=run_id,
+                artifact=proposal_artifact_data,
+                artifact_path=proposal_artifact_root_path,
+            )
+        except RuntimeError as exc:
+            artifact_io_errors.append(str(exc))
+            validation_errors.append(str(exc))
+            success = False
+            outcome = "blocked"
+            blocker = blocker or "runtime artifact failure"
 
     required_human_action = (
         "review structured split proposal"
@@ -7788,6 +7988,7 @@ def _process_split_refactor_proposal(
             "canonical_writeback": not changed_spec_files,
             "artifact_scope": not extra_changed_files,
             "executor_environment": not primary_executor_failure,
+            "runtime_artifacts": not artifact_io_errors,
         },
         "reconciliation": {
             "semantic_dependencies_resolved": graph_health["source_spec_id"] == node.id,
@@ -7810,6 +8011,7 @@ def _process_split_refactor_proposal(
                 "canonical_writeback": not changed_spec_files,
                 "artifact_scope": not extra_changed_files,
                 "executor_environment": not primary_executor_failure,
+                "runtime_artifacts": not artifact_io_errors,
             },
             graph_health=graph_health,
             graph_health_truth_basis="review_candidate",
@@ -8007,7 +8209,10 @@ def _process_one_spec(
         if before_digests.get(path) != after_digests.get(path)
         or (path in (after_set - before_set) and not is_spec_node_path(path))
     )
-    outcome, blocker = parse_outcome(result.stdout, result.returncode)
+    outcome, blocker, executor_protocol_errors = parse_executor_protocol(
+        result.stdout,
+        result.returncode,
+    )
     yaml_repair_paths: list[str] = []
     if result.returncode == 0 and outcome in {"done", "split_required"} and changed:
         yaml_repair_paths = repair_worktree_changed_spec_yaml(
@@ -8092,6 +8297,7 @@ def _process_one_spec(
         proposed_status = None if is_graph_refactor_run else STATUS_PROGRESSION.get(node.status)
         transition_errors = []
         validation_errors = executor_environment_validation_errors(executor_environment)
+        validation_errors.extend(executor_protocol_errors)
         candidate_graph_health = empty_graph_health(node.id)
         proposal_queue_artifact = proposal_queue_path()
         refactor_queue_artifact = refactor_queue_path()
@@ -8145,6 +8351,7 @@ def _process_one_spec(
         validation_errors.extend(reconciliation_errors)
         validation_errors.extend(atomicity_errors)
         validation_errors.extend(transition_errors)
+        validation_errors.extend(executor_protocol_errors)
 
         executor_requested_split_required = outcome == "split_required"
 
@@ -8300,6 +8507,7 @@ def _process_one_spec(
         clear_pending_review_state(node)
 
     graph_health = empty_graph_health(node.id)
+    artifact_io_errors: list[str] = []
     if not primary_executor_failure and not worktree_load_errors:
         accepted_graph_health_outcome = None
         if split_sync_allowed or (success and node.gate_state == "none"):
@@ -8309,18 +8517,31 @@ def _process_one_spec(
             current_specs=load_specs(),
             outcome=accepted_graph_health_outcome,
         )
-        proposal_queue_artifact, proposal_items = update_proposal_queue(
-            graph_health=graph_health,
-            run_id=run_id,
-        )
-        refactor_queue_artifact = update_refactor_queue(
-            graph_health=graph_health,
-            run_id=run_id,
-            proposal_items=proposal_items,
-        )
+        try:
+            proposal_queue_artifact, proposal_items = update_proposal_queue(
+                graph_health=graph_health,
+                run_id=run_id,
+            )
+            refactor_queue_artifact = update_refactor_queue(
+                graph_health=graph_health,
+                run_id=run_id,
+                proposal_items=proposal_items,
+            )
+        except RuntimeError as exc:
+            artifact_io_errors.append(str(exc))
+            validation_errors.append(str(exc))
+            proposal_queue_artifact = proposal_queue_path()
+            refactor_queue_artifact = refactor_queue_path()
     else:
         proposal_queue_artifact = proposal_queue_path()
         refactor_queue_artifact = refactor_queue_path()
+    if artifact_io_errors:
+        success = False
+        outcome = "blocked"
+        blocker = blocker or "runtime artifact failure"
+        node.data["gate_state"] = "blocked"
+        clear_pending_review_state(node)
+        required_human_action = "repair malformed runtime artifact and rerun supervisor"
     proposal_queue_after = load_proposal_queue()
     refactor_queue_after = load_refactor_queue()
 
@@ -8348,6 +8569,7 @@ def _process_one_spec(
         "atomicity": not atomicity_errors,
         "transition": not transition_errors,
         "executor_environment": not primary_executor_failure,
+        "runtime_artifacts": not artifact_io_errors,
         "refinement_acceptance": accepted_refinement,
     }
     completion_status = classify_completion_status(
@@ -8659,6 +8881,12 @@ def main(
             )
             return 1
         return handle_stale_runtime(specs=specs, clean=clean_stale_runtime)
+
+    artifact_integrity_errors = runtime_artifact_integrity_errors()
+    if artifact_integrity_errors:
+        for error in artifact_integrity_errors:
+            print(error, file=sys.stderr)
+        return 1
 
     if observe_graph_health_mode:
         if not target_spec:

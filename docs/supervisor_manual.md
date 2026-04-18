@@ -304,6 +304,10 @@ authoritative.
 - `runs/proposals/*.json`
   - structured proposal artifacts emitted by split-proposal mode
 
+These runtime artifacts are now written with atomic replace plus a short-lived
+sidecar lock. If a queue file is malformed, ordinary supervisor runs stop
+instead of silently treating it as an empty queue.
+
 ### Trace and inspection surfaces
 
 - `runs/spec_trace_index.json`
@@ -346,6 +350,13 @@ Important fields:
 - `graph_health`
 - `graph_health_truth_basis`
 - `decision_inspector`
+
+Machine-protocol invariant:
+
+- a successful child executor run must emit both `RUN_OUTCOME:` and `BLOCKER:`
+  markers on stdout
+- missing markers are treated as executor protocol failure, not as an implicit
+  `done`
 
 ### `done`
 
