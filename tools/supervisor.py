@@ -254,6 +254,7 @@ ROLE_LEGIBILITY_MARKERS = (
 VALID_TRANSITION_PACKET_TYPES = {"promotion", "proposal", "apply", "handoff"}
 DEFAULT_TRANSITION_VALIDATOR_PROFILE = "specgraph_core"
 PRODUCT_SPEC_TRANSITION_POLICY_RELATIVE_PATH = "tools/product_spec_transition_policy.json"
+PROPOSAL_PROMOTION_POLICY_RELATIVE_PATH = "tools/proposal_promotion_policy.json"
 VALID_TRANSITION_VALIDATOR_PROFILES = {
     "specgraph_core",
     "product_spec",
@@ -273,7 +274,12 @@ TRANSITION_CHECK_FAMILIES = (
 TRANSITION_PACKET_FAMILY_DEFINITIONS = {
     "promotion": {
         "description": "Promote one bounded pre-canonical artifact into a reviewable proposal.",
-        "required_fields": ["target_artifact_class"],
+        "required_fields": [
+            "bounded_scope",
+            "normalized_title",
+            "source_artifact_class",
+            "target_artifact_class",
+        ],
     },
     "proposal": {
         "description": "Normalize a governed proposal artifact without mutating canonical truth.",
@@ -326,6 +332,7 @@ SPECGRAPH_CANONICAL_SURFACE_PREFIXES = ("specs/nodes/", "specs/history/")
 SPEC_TRACE_INDEX_FILENAME = "spec_trace_index.json"
 SPEC_TRACE_PROJECTION_FILENAME = "spec_trace_projection.json"
 PROPOSAL_RUNTIME_INDEX_FILENAME = "proposal_runtime_index.json"
+PROPOSAL_PROMOTION_INDEX_FILENAME = "proposal_promotion_index.json"
 PROPOSAL_DOC_FILENAME_RE = re.compile(r"^(?P<proposal_id>\d{4})_(?P<slug>.+)\.md$")
 TASK_LINE_RE = re.compile(r"^(?P<task_id>\d+)\.\s+\[(?P<status>[a-z_]+)\]\s+(?P<body>.+)$")
 PR_NUMBER_FROM_SUBJECT_RE = re.compile(
@@ -5471,6 +5478,10 @@ def product_spec_transition_policy_path() -> Path:
     return TOOLS_DIR / "product_spec_transition_policy.json"
 
 
+def proposal_promotion_policy_path() -> Path:
+    return TOOLS_DIR / "proposal_promotion_policy.json"
+
+
 def load_product_spec_transition_policy_report() -> tuple[
     dict[str, Any] | None, list[dict[str, str]]
 ]:
@@ -5531,6 +5542,92 @@ def load_product_spec_transition_policy_report() -> tuple[
                 message=(
                     "malformed product_spec transition policy artifact: missing top-level "
                     f"section(s): {', '.join(missing)}"
+                ),
+            )
+        ]
+
+    return payload, []
+
+
+def load_proposal_promotion_policy_report() -> tuple[dict[str, Any] | None, list[dict[str, str]]]:
+    path = proposal_promotion_policy_path()
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except OSError as exc:
+        return None, [
+            transition_packet_finding(
+                code="proposal_promotion_policy_unavailable",
+                family="profile",
+                profile="specgraph_core",
+                message=(
+                    f"failed to read proposal promotion policy artifact: {path.as_posix()} ({exc})"
+                ),
+            )
+        ]
+    except json.JSONDecodeError as exc:
+        return None, [
+            transition_packet_finding(
+                code="malformed_proposal_promotion_policy",
+                family="profile",
+                profile="specgraph_core",
+                message=(
+                    f"malformed proposal promotion policy artifact: {path.as_posix()} ({exc})"
+                ),
+            )
+        ]
+    if not isinstance(payload, dict):
+        return None, [
+            transition_packet_finding(
+                code="malformed_proposal_promotion_policy",
+                family="profile",
+                profile="specgraph_core",
+                message=(
+                    "malformed proposal promotion policy artifact: "
+                    f"{path.as_posix()} must contain a JSON object"
+                ),
+            )
+        ]
+
+    required_sections = (
+        "semantic_boundary_principle",
+        "semantic_artifact_classes",
+        "repository_projection_defaults",
+    )
+    missing = [section for section in required_sections if section not in payload]
+    if missing:
+        return None, [
+            transition_packet_finding(
+                code="malformed_proposal_promotion_policy",
+                family="profile",
+                profile="specgraph_core",
+                message=(
+                    "malformed proposal promotion policy artifact: missing top-level "
+                    f"section(s): {', '.join(missing)}"
+                ),
+            )
+        ]
+
+    if not isinstance(payload.get("semantic_artifact_classes"), dict):
+        return None, [
+            transition_packet_finding(
+                code="malformed_proposal_promotion_policy",
+                family="profile",
+                profile="specgraph_core",
+                message=(
+                    "malformed proposal promotion policy artifact: "
+                    "semantic_artifact_classes must be an object"
+                ),
+            )
+        ]
+    if not isinstance(payload.get("repository_projection_defaults"), list):
+        return None, [
+            transition_packet_finding(
+                code="malformed_proposal_promotion_policy",
+                family="profile",
+                profile="specgraph_core",
+                message=(
+                    "malformed proposal promotion policy artifact: "
+                    "repository_projection_defaults must be a list"
                 ),
             )
         ]
@@ -5749,6 +5846,11 @@ def _normalize_transition_packet_context(
         value=packet.get("target_artifact_class"),
     )
     findings.extend(target_artifact_class_findings)
+    source_artifact_class, source_artifact_class_findings = _transition_packet_optional_string(
+        field_name="source_artifact_class",
+        value=packet.get("source_artifact_class"),
+    )
+    findings.extend(source_artifact_class_findings)
     target_scope, target_scope_findings = _transition_packet_optional_string(
         field_name="target_scope",
         value=packet.get("target_scope"),
@@ -5769,6 +5871,16 @@ def _normalize_transition_packet_context(
         value=packet.get("product_graph_root"),
     )
     findings.extend(product_graph_root_findings)
+    normalized_title, normalized_title_findings = _transition_packet_optional_string(
+        field_name="normalized_title",
+        value=packet.get("normalized_title"),
+    )
+    findings.extend(normalized_title_findings)
+    bounded_scope, bounded_scope_findings = _transition_packet_optional_string(
+        field_name="bounded_scope",
+        value=packet.get("bounded_scope"),
+    )
+    findings.extend(bounded_scope_findings)
 
     source_refs, source_ref_findings = _transition_packet_string_list(
         field_name="source_refs",
@@ -5802,10 +5914,13 @@ def _normalize_transition_packet_context(
         "actor_class": actor_class,
         "authority_class": authority_class,
         "target_artifact_class": target_artifact_class,
+        "source_artifact_class": source_artifact_class,
         "target_scope": normalized_target_scope,
         "motivating_concern": motivating_concern,
         "lineage_root": lineage_root,
         "product_graph_root": normalized_product_graph_root,
+        "normalized_title": normalized_title,
+        "bounded_scope": bounded_scope,
         "declared_change_surface": normalized_declared_change_surface,
         "required_provenance_links": required_provenance_links,
     }, findings
@@ -5850,28 +5965,55 @@ def _validate_transition_packet_schema(context: dict[str, Any]) -> list[dict[str
 def _validate_transition_packet_legality(context: dict[str, Any]) -> list[dict[str, str]]:
     packet_type = str(context.get("packet_type", "")).strip()
     transition_profile = str(context.get("transition_profile", "")).strip()
+    findings: list[dict[str, str]] = []
     if (
         not packet_type
         or transition_profile not in TRANSITION_VALIDATOR_PROFILE_DEFINITIONS
         or packet_type not in VALID_TRANSITION_PACKET_TYPES
     ):
-        return []
+        return findings
     allowed_packet_types = TRANSITION_VALIDATOR_PROFILE_DEFINITIONS[transition_profile][
         "allowed_packet_types"
     ]
-    if packet_type in allowed_packet_types:
-        return []
-    return [
-        transition_packet_finding(
-            code="packet_type_not_allowed_for_profile",
-            field="packet_type",
-            family="legality",
-            message=(
-                f"packet_type={packet_type} is not allowed for "
-                f"transition_profile={transition_profile}"
-            ),
+    if packet_type not in allowed_packet_types:
+        findings.append(
+            transition_packet_finding(
+                code="packet_type_not_allowed_for_profile",
+                field="packet_type",
+                family="legality",
+                message=(
+                    f"packet_type={packet_type} is not allowed for "
+                    f"transition_profile={transition_profile}"
+                ),
+            )
         )
-    ]
+        return findings
+
+    if packet_type == "promotion":
+        if str(context.get("source_artifact_class", "")).strip() != "working_draft":
+            findings.append(
+                transition_packet_finding(
+                    code="promotion_source_must_be_working_draft",
+                    field="source_artifact_class",
+                    family="legality",
+                    message=(
+                        "promotion packets must declare source_artifact_class=working_draft "
+                        "for draft-to-proposal promotion"
+                    ),
+                )
+            )
+        if str(context.get("target_artifact_class", "")).strip() != "reviewable_proposal":
+            findings.append(
+                transition_packet_finding(
+                    code="promotion_target_must_be_reviewable_proposal",
+                    field="target_artifact_class",
+                    family="legality",
+                    message=(
+                        "promotion packets must target target_artifact_class=reviewable_proposal"
+                    ),
+                )
+            )
+    return findings
 
 
 def _validate_transition_packet_provenance(context: dict[str, Any]) -> list[dict[str, str]]:
@@ -5905,6 +6047,24 @@ def _validate_transition_packet_provenance(context: dict[str, Any]) -> list[dict
                 message="packet must declare motivating_concern or lineage_root",
             )
         )
+    if str(context.get("packet_type", "")).strip() == "promotion":
+        required_links = {
+            str(item).strip()
+            for item in context.get("required_provenance_links", [])
+            if str(item).strip()
+        }
+        if "source_draft_ref" not in required_links:
+            findings.append(
+                transition_packet_finding(
+                    code="promotion_requires_source_draft_ref",
+                    field="required_provenance_links",
+                    family="provenance",
+                    message=(
+                        "promotion packets must preserve source_draft_ref in "
+                        "required_provenance_links"
+                    ),
+                )
+            )
     return findings
 
 
@@ -6225,6 +6385,7 @@ def validate_transition_packet_report(
             "packet_family_definition": {},
             "transition_profile": validator_profile or DEFAULT_TRANSITION_VALIDATOR_PROFILE,
             "validator_profile_definition": {},
+            "proposal_promotion_policy_definition": {},
             "families_checked": list(TRANSITION_CHECK_FAMILIES),
             "finding_count": len(findings),
             "findings_by_family": {"schema": len(findings)},
@@ -6252,10 +6413,15 @@ def validate_transition_packet_report(
     packet_type = str(context.get("packet_type", "")).strip()
     transition_profile = str(context.get("transition_profile", "")).strip()
     product_spec_policy_definition = {}
+    proposal_promotion_policy_definition = {}
     if transition_profile == "product_spec":
         policy, _findings = load_product_spec_transition_policy_report()
         if policy is not None:
             product_spec_policy_definition = policy
+    if packet_type == "promotion":
+        policy, _findings = load_proposal_promotion_policy_report()
+        if policy is not None:
+            proposal_promotion_policy_definition = policy
     return {
         "ok": not findings,
         "packet_type": packet_type,
@@ -6266,6 +6432,7 @@ def validate_transition_packet_report(
             transition_profile, {}
         ),
         "product_spec_policy_definition": product_spec_policy_definition,
+        "proposal_promotion_policy_definition": proposal_promotion_policy_definition,
         "families_checked": list(TRANSITION_CHECK_FAMILIES),
         "finding_count": len(findings),
         "findings_by_family": findings_by_family,
@@ -7170,12 +7337,24 @@ def proposal_runtime_registry_path() -> Path:
     return ROOT / "tools" / "proposal_runtime_registry.json"
 
 
+def proposal_promotion_registry_path() -> Path:
+    return ROOT / "tools" / "proposal_promotion_registry.json"
+
+
 def proposal_runtime_index_path() -> Path:
     return RUNS_DIR / PROPOSAL_RUNTIME_INDEX_FILENAME
 
 
+def proposal_promotion_index_path() -> Path:
+    return RUNS_DIR / PROPOSAL_PROMOTION_INDEX_FILENAME
+
+
 def proposal_docs_dir() -> Path:
     return ROOT / "docs" / "proposals"
+
+
+def proposal_drafts_dir() -> Path:
+    return ROOT / "docs" / "proposals_drafts"
 
 
 def tasks_file_path() -> Path:
@@ -7195,6 +7374,16 @@ def load_json_list(path: Path) -> list[dict[str, Any]]:
 def load_proposal_runtime_registry() -> dict[str, dict[str, Any]]:
     registry: dict[str, dict[str, Any]] = {}
     for item in load_json_list(proposal_runtime_registry_path()):
+        proposal_id = str(item.get("proposal_id", "")).strip()
+        if not proposal_id:
+            continue
+        registry[proposal_id] = item
+    return registry
+
+
+def load_proposal_promotion_registry() -> dict[str, dict[str, Any]]:
+    registry: dict[str, dict[str, Any]] = {}
+    for item in load_json_list(proposal_promotion_registry_path()):
         proposal_id = str(item.get("proposal_id", "")).strip()
         if not proposal_id:
             continue
@@ -7250,12 +7439,22 @@ def parse_proposal_document(path: Path) -> dict[str, Any] | None:
                 break
         break
 
+    promotion_policy, _findings = load_proposal_promotion_policy_report()
+    repository_projection = classify_proposal_repository_projection(
+        path,
+        policy=promotion_policy,
+    )
+
     return {
         "proposal_id": match.group("proposal_id"),
         "slug": match.group("slug"),
         "path": path.relative_to(ROOT).as_posix(),
         "title": title or path.stem,
         "status": status,
+        "repository_projection": repository_projection,
+        "semantic_artifact_class": str(
+            repository_projection.get("default_semantic_artifact_class", "reviewable_proposal")
+        ),
         "text": text,
     }
 
@@ -7270,6 +7469,52 @@ def iter_proposal_documents() -> list[dict[str, Any]]:
         if parsed is not None:
             documents.append(parsed)
     return documents
+
+
+def classify_proposal_repository_projection(
+    path: Path,
+    *,
+    policy: dict[str, Any] | None,
+) -> dict[str, Any]:
+    try:
+        relpath = path.relative_to(ROOT).as_posix()
+    except ValueError:
+        relpath = path.as_posix()
+
+    defaults = []
+    if isinstance(policy, dict):
+        defaults = [
+            item
+            for item in policy.get("repository_projection_defaults", [])
+            if isinstance(item, dict)
+        ]
+
+    for item in defaults:
+        prefix = str(item.get("path_prefix", "")).strip().rstrip("/")
+        if not prefix:
+            continue
+        if relpath == prefix or relpath.startswith(prefix + "/"):
+            return {
+                "path": relpath,
+                "path_prefix": prefix,
+                "projection_role": str(item.get("projection_role", "")).strip()
+                or "repository_projection",
+                "default_semantic_artifact_class": str(
+                    item.get("default_semantic_artifact_class", "")
+                ).strip()
+                or "unclassified",
+                "semantic_source": "repository_projection_default",
+                "layout_is_sole_source_of_meaning": False,
+            }
+
+    return {
+        "path": relpath,
+        "path_prefix": "",
+        "projection_role": "unclassified",
+        "default_semantic_artifact_class": "unclassified",
+        "semantic_source": "unknown",
+        "layout_is_sole_source_of_meaning": False,
+    }
 
 
 def infer_proposal_runtime_surfaces(text: str) -> list[str]:
@@ -7518,6 +7763,8 @@ def build_proposal_runtime_index() -> dict[str, Any]:
                 "title": str(proposal["title"]),
                 "status": str(proposal["status"]),
                 "path": str(proposal["path"]),
+                "repository_projection": copy.deepcopy(proposal["repository_projection"]),
+                "semantic_artifact_class": str(proposal["semantic_artifact_class"]),
                 "posture": posture,
                 "posture_description": PROPOSAL_PROCESSING_POSTURES[posture],
                 "posture_source": "registry" if proposal_id in registry else "heuristic",
@@ -7558,6 +7805,213 @@ def build_proposal_runtime_index() -> dict[str, Any]:
 def write_proposal_runtime_index(index: dict[str, Any]) -> Path:
     RUNS_DIR.mkdir(parents=True, exist_ok=True)
     path = proposal_runtime_index_path()
+    with artifact_lock(path):
+        atomic_write_json(path, index)
+    return path
+
+
+def proposal_promotion_string_list(value: Any) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    return [str(item).strip() for item in value if str(item).strip()]
+
+
+def proposal_source_ref_records(
+    source_refs: list[str],
+    *,
+    policy: dict[str, Any] | None,
+) -> list[dict[str, Any]]:
+    records: list[dict[str, Any]] = []
+    root_resolved = ROOT.resolve()
+    for ref in source_refs:
+        if _looks_like_repo_path(ref):
+            normalized = _normalize_transition_repo_path(ref)
+            candidate = (ROOT / normalized).resolve(strict=False)
+            within_repo_root = candidate == root_resolved or root_resolved in candidate.parents
+            records.append(
+                {
+                    "ref": normalized,
+                    "ref_kind": "repo_path",
+                    "within_repo_root": within_repo_root,
+                    "exists": candidate.exists() if within_repo_root else False,
+                    "repository_projection": (
+                        classify_proposal_repository_projection(
+                            candidate,
+                            policy=policy,
+                        )
+                        if within_repo_root
+                        else {}
+                    ),
+                }
+            )
+        else:
+            records.append(
+                {
+                    "ref": ref,
+                    "ref_kind": "external_reference",
+                    "within_repo_root": None,
+                    "exists": None,
+                    "repository_projection": {},
+                }
+            )
+    return records
+
+
+def derive_promotion_traceability(
+    *,
+    registry_entry: dict[str, Any],
+    proposal: dict[str, Any],
+    policy: dict[str, Any] | None,
+) -> dict[str, Any]:
+    source_artifact_class = str(registry_entry.get("source_artifact_class", "")).strip()
+    source_refs = proposal_promotion_string_list(registry_entry.get("source_refs", []))
+    required_provenance_links = proposal_promotion_string_list(
+        registry_entry.get("required_provenance_links", [])
+    )
+    motivating_concern = str(registry_entry.get("motivating_concern", "")).strip()
+    normalized_title = str(registry_entry.get("normalized_title", "")).strip()
+    bounded_scope = str(registry_entry.get("bounded_scope", "")).strip()
+    source_ref_records = proposal_source_ref_records(source_refs, policy=policy)
+    outside_repo_source_refs = sorted(
+        record["ref"]
+        for record in source_ref_records
+        if record["ref_kind"] == "repo_path" and not record["within_repo_root"]
+    )
+    missing_source_artifacts = sorted(
+        record["ref"]
+        for record in source_ref_records
+        if record["ref_kind"] == "repo_path"
+        and record["within_repo_root"]
+        and record["exists"] is False
+    )
+
+    missing_fields: list[str] = []
+    if not registry_entry:
+        status = "missing_trace"
+        next_gap = "attach_promotion_trace"
+    else:
+        if source_artifact_class != "working_draft":
+            missing_fields.append("source_artifact_class")
+        if not source_refs:
+            missing_fields.append("source_refs")
+        if outside_repo_source_refs:
+            missing_fields.append("source_ref_outside_repo_root")
+        if not motivating_concern:
+            missing_fields.append("motivating_concern")
+        if not normalized_title:
+            missing_fields.append("normalized_title")
+        if not bounded_scope:
+            missing_fields.append("bounded_scope")
+        if "source_draft_ref" not in required_provenance_links:
+            missing_fields.append("source_draft_ref")
+        if missing_source_artifacts:
+            missing_fields.append("missing_source_artifact")
+
+        if not missing_fields:
+            status = "bounded"
+            next_gap = "none"
+        elif "source_artifact_class" in missing_fields:
+            status = "invalid"
+            next_gap = "repair_source_artifact_class"
+        elif "source_ref_outside_repo_root" in missing_fields:
+            status = "invalid"
+            next_gap = "repair_source_refs"
+        elif "source_refs" in missing_fields:
+            status = "incomplete"
+            next_gap = "record_source_refs"
+        elif "missing_source_artifact" in missing_fields:
+            status = "incomplete"
+            next_gap = "restore_source_artifact"
+        elif "motivating_concern" in missing_fields:
+            status = "incomplete"
+            next_gap = "record_motivating_concern"
+        elif "normalized_title" in missing_fields:
+            status = "incomplete"
+            next_gap = "record_normalized_title"
+        elif "bounded_scope" in missing_fields:
+            status = "incomplete"
+            next_gap = "record_bounded_scope"
+        elif "source_draft_ref" in missing_fields:
+            status = "incomplete"
+            next_gap = "preserve_source_draft_ref"
+        else:
+            status = "incomplete"
+            next_gap = "complete_promotion_trace"
+
+    return {
+        "status": status,
+        "next_gap": next_gap,
+        "source_artifact_class": source_artifact_class,
+        "source_refs": source_refs,
+        "source_ref_records": source_ref_records,
+        "outside_repo_source_refs": outside_repo_source_refs,
+        "motivating_concern": motivating_concern,
+        "normalized_title": normalized_title,
+        "bounded_scope": bounded_scope,
+        "required_provenance_links": required_provenance_links,
+        "missing_fields": missing_fields,
+    }
+
+
+def build_proposal_promotion_index() -> dict[str, Any]:
+    promotion_policy, policy_findings = load_proposal_promotion_policy_report()
+    registry = load_proposal_promotion_registry()
+    entries: list[dict[str, Any]] = []
+    grouped_by_status: dict[str, list[str]] = {}
+    grouped_by_next_gap: dict[str, list[str]] = {}
+
+    for proposal in iter_proposal_documents():
+        proposal_id = str(proposal["proposal_id"])
+        traceability = derive_promotion_traceability(
+            registry_entry=registry.get(proposal_id, {}),
+            proposal=proposal,
+            policy=promotion_policy,
+        )
+        grouped_by_status.setdefault(str(traceability["status"]), []).append(proposal_id)
+        grouped_by_next_gap.setdefault(str(traceability["next_gap"]), []).append(proposal_id)
+        entries.append(
+            {
+                "proposal_id": proposal_id,
+                "title": str(proposal["title"]),
+                "path": str(proposal["path"]),
+                "status": str(proposal["status"]),
+                "repository_projection": copy.deepcopy(proposal["repository_projection"]),
+                "semantic_artifact_class": str(proposal["semantic_artifact_class"]),
+                "promotion_traceability": traceability,
+            }
+        )
+
+    return {
+        "artifact_kind": "proposal_promotion_index",
+        "generated_at": utc_now_iso(),
+        "semantic_boundary_principle": str(
+            (promotion_policy or {}).get("semantic_boundary_principle", "")
+        ),
+        "policy_findings": policy_findings,
+        "entry_count": len(entries),
+        "entries": entries,
+        "viewer_projection": {
+            "traceability_status": {
+                key: sorted(value) for key, value in sorted(grouped_by_status.items())
+            },
+            "next_gap": {key: sorted(value) for key, value in sorted(grouped_by_next_gap.items())},
+        },
+        "promotion_backlog": {
+            "entry_count": sum(
+                1 for entry in entries if entry["promotion_traceability"]["next_gap"] != "none"
+            ),
+            "grouped_by_next_gap": {
+                key: sorted(value)
+                for key, value in sorted(grouped_by_next_gap.items())
+                if key != "none"
+            },
+        },
+    }
+
+
+def write_proposal_promotion_index(index: dict[str, Any]) -> Path:
+    RUNS_DIR.mkdir(parents=True, exist_ok=True)
+    path = proposal_promotion_index_path()
     with artifact_lock(path):
         atomic_write_json(path, index)
     return path
@@ -10442,6 +10896,7 @@ def main(
     build_spec_trace_index_mode: bool = False,
     build_spec_trace_projection_mode: bool = False,
     build_proposal_runtime_index_mode: bool = False,
+    build_proposal_promotion_index_mode: bool = False,
 ) -> int:
     """Entry point for CLI and tests.
 
@@ -10495,6 +10950,7 @@ def main(
                 build_spec_trace_index_mode,
                 build_spec_trace_projection_mode,
                 build_proposal_runtime_index_mode,
+                build_proposal_promotion_index_mode,
             )
         ):
             print(
@@ -10542,6 +10998,7 @@ def main(
                 observe_graph_health_mode,
                 build_spec_trace_projection_mode,
                 build_proposal_runtime_index_mode,
+                build_proposal_promotion_index_mode,
             )
         ):
             print(
@@ -10613,6 +11070,7 @@ def main(
                 list_stale_runtime,
                 clean_stale_runtime,
                 observe_graph_health_mode,
+                build_proposal_promotion_index_mode,
             )
         ):
             print(
@@ -10622,6 +11080,40 @@ def main(
             return 1
         index = build_proposal_runtime_index()
         write_proposal_runtime_index(index)
+        print(json.dumps(index, ensure_ascii=False, indent=2))
+        return 0
+
+    if build_proposal_promotion_index_mode:
+        if any(
+            (
+                dry_run,
+                auto_approve,
+                loop,
+                resolve_gate,
+                decision,
+                note,
+                target_spec,
+                split_proposal,
+                apply_split_proposal,
+                operator_note,
+                mutation_budget,
+                run_authority,
+                execution_profile,
+                child_model,
+                child_timeout_seconds,
+                verbose,
+                list_stale_runtime,
+                clean_stale_runtime,
+                observe_graph_health_mode,
+            )
+        ):
+            print(
+                "--build-proposal-promotion-index must be used as a standalone command",
+                file=sys.stderr,
+            )
+            return 1
+        index = build_proposal_promotion_index()
+        write_proposal_promotion_index(index)
         print(json.dumps(index, ensure_ascii=False, indent=2))
         return 0
 
@@ -11135,6 +11627,14 @@ if __name__ == "__main__":
             "validation closure, and observation coverage"
         ),
     )
+    parser.add_argument(
+        "--build-proposal-promotion-index",
+        action="store_true",
+        help=(
+            "Build a derived proposal promotion index showing source traceability "
+            "and promotion provenance gaps"
+        ),
+    )
     parser.add_argument("--resolve-gate", metavar="SPEC_ID", help="Resolve gate for a spec id")
     parser.add_argument(
         "--decision",
@@ -11254,5 +11754,6 @@ if __name__ == "__main__":
             build_spec_trace_index_mode=args.build_spec_trace_index,
             build_spec_trace_projection_mode=args.build_spec_trace_projection,
             build_proposal_runtime_index_mode=args.build_proposal_runtime_index,
+            build_proposal_promotion_index_mode=args.build_proposal_promotion_index,
         )
     )

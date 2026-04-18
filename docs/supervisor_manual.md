@@ -171,6 +171,23 @@ product domain. The inherited rules live in
 - `apply` packets must source from reviewable proposal/run artifacts
 - `apply` mutation surfaces must stay inside `product_graph_root`
 
+`promotion` packets now also expose the governed draft-to-proposal semantic
+boundary from `tools/proposal_promotion_policy.json`. That artifact defines:
+
+- `working_draft` as exploratory material
+- `reviewable_proposal` as normalized proposal contract
+- the rule that promotion is normalization, not a bare repository-folder move
+
+The minimal promotion packet contract is now explicit:
+
+- `source_artifact_class: working_draft`
+- `target_artifact_class: reviewable_proposal`
+- `source_refs`
+- `motivating_concern`
+- `normalized_title`
+- `bounded_scope`
+- `required_provenance_links` including `source_draft_ref`
+
 ### Spec trace index
 
 ```bash
@@ -247,6 +264,33 @@ Use it when you want to inspect, for each proposal:
 - validation closure
 - observation coverage
 - next reflective backlog gap
+
+Each entry now also carries:
+
+- `repository_projection`
+- `semantic_artifact_class`
+
+Those fields come from `tools/proposal_promotion_policy.json`. The repository
+path is treated as a projection default such as `reviewable_proposal_surface`,
+not as the sole source of semantic meaning.
+
+### Proposal promotion index
+
+```bash
+python3 tools/supervisor.py --build-proposal-promotion-index
+```
+
+Builds `runs/proposal_promotion_index.json` from `docs/proposals/`,
+`tools/proposal_promotion_registry.json`, and the semantic boundary in
+`tools/proposal_promotion_policy.json`.
+
+Use it when you want to inspect, for each promoted proposal:
+
+- bounded vs missing promotion traceability
+- source draft references and whether they still resolve
+- motivating concern, normalized title, and bounded scope coverage
+- next promotion-provenance gap such as `attach_promotion_trace`,
+  `record_source_refs`, or `record_bounded_scope`
 
 ### Gate resolution
 

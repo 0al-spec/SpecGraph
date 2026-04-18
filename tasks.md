@@ -69,10 +69,10 @@ Task numbers are preserved for traceability across commits and PRs.
 
 ## Proposal Promotion
 
-64. [todo] Define the semantic boundary between informal working drafts and reviewable proposal artifacts so proposal promotion becomes a governed transition rather than a folder move.
-65. [todo] Define the minimal promotion packet and provenance contract for draft-to-proposal promotion, including source draft references, motivating concern, normalized title, and bounded scope.
-66. [todo] Clarify how repository projections such as `docs/proposals_drafts/` and `docs/proposals/` relate to graph-owned pre-spec and proposal semantics without making file layout the sole source of meaning.
-67. [todo] Add viewer or tooling support to inspect proposal promotion provenance and identify promoted proposals that still lack bounded source traceability.
+64. [done] Define the semantic boundary between informal working drafts and reviewable proposal artifacts so proposal promotion becomes a governed transition rather than a folder move.
+65. [done] Define the minimal promotion packet and provenance contract for draft-to-proposal promotion, including source draft references, motivating concern, normalized title, and bounded scope.
+66. [done] Clarify how repository projections such as `docs/proposals_drafts/` and `docs/proposals/` relate to graph-owned pre-spec and proposal semantics without making file layout the sole source of meaning.
+67. [done] Add viewer or tooling support to inspect proposal promotion provenance and identify promoted proposals that still lack bounded source traceability.
 
 ## Deterministic Transitions
 

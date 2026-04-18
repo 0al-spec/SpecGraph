@@ -5457,6 +5457,83 @@ def test_validate_transition_packet_report_includes_profile_and_family_metadata(
     assert report["packet_family_definition"]["required_fields"] == ["target_scope"]
 
 
+def test_validate_transition_packet_report_includes_promotion_policy_metadata(
+    supervisor_module: object,
+) -> None:
+    packet = {
+        "packet_type": "promotion",
+        "transition_intent": "promote one bounded draft into a reviewable proposal",
+        "source_refs": ["docs/proposals_drafts/0005_telemetry.md"],
+        "actor_class": "operator",
+        "source_artifact_class": "working_draft",
+        "target_artifact_class": "reviewable_proposal",
+        "motivating_concern": "telemetry evidence plane",
+        "normalized_title": "Telemetry Evidence Plane",
+        "bounded_scope": (
+            "Define the telemetry evidence plane without canonical telemetry payloads."
+        ),
+        "declared_change_surface": ["docs/proposals/0018_telemetry_evidence_plane.md"],
+        "required_provenance_links": ["source_draft_ref"],
+    }
+
+    report = supervisor_module.validate_transition_packet_report(packet)
+
+    assert report["ok"] is True
+    assert (
+        report["proposal_promotion_policy_definition"]["semantic_boundary_principle"]
+        == "Promotion is normalization into a reviewable proposal contract, not a folder move."
+    )
+    assert set(
+        report["proposal_promotion_policy_definition"]["semantic_artifact_classes"].keys()
+    ) == {"working_draft", "reviewable_proposal"}
+
+
+def test_validate_transition_packet_accepts_minimal_promotion_packet(
+    supervisor_module: object,
+) -> None:
+    packet = {
+        "packet_type": "promotion",
+        "transition_intent": "promote one bounded draft into a reviewable proposal",
+        "source_refs": ["docs/proposals_drafts/0005_telemetry.md"],
+        "actor_class": "operator",
+        "source_artifact_class": "working_draft",
+        "target_artifact_class": "reviewable_proposal",
+        "motivating_concern": "telemetry evidence plane",
+        "normalized_title": "Telemetry Evidence Plane",
+        "bounded_scope": (
+            "Define the telemetry evidence plane without canonical telemetry payloads."
+        ),
+        "declared_change_surface": ["docs/proposals/0018_telemetry_evidence_plane.md"],
+        "required_provenance_links": ["source_draft_ref"],
+    }
+
+    assert supervisor_module.validate_transition_packet(packet) == []
+
+
+def test_validate_transition_packet_promotion_requires_packet_contract(
+    supervisor_module: object,
+) -> None:
+    report = supervisor_module.validate_transition_packet_report(
+        {
+            "packet_type": "promotion",
+            "transition_intent": "promote one bounded draft into a reviewable proposal",
+            "source_refs": ["docs/proposals_drafts/0005_telemetry.md"],
+            "actor_class": "operator",
+            "target_artifact_class": "proposal_document",
+            "motivating_concern": "telemetry evidence plane",
+            "declared_change_surface": ["docs/proposals/0018_telemetry_evidence_plane.md"],
+            "required_provenance_links": [],
+        }
+    )
+
+    assert {finding["code"] for finding in report["findings"]} >= {
+        "missing_packet_type_required_field",
+        "promotion_requires_source_draft_ref",
+        "promotion_source_must_be_working_draft",
+        "promotion_target_must_be_reviewable_proposal",
+    }
+
+
 def test_validate_transition_packet_reports_structured_findings_for_missing_fields(
     supervisor_module: object,
 ) -> None:
@@ -6540,6 +6617,89 @@ def seed_proposal_runtime_fixture(root: Path, *, include_heuristic_proposal: boo
         )
 
 
+def seed_proposal_promotion_fixture(root: Path) -> None:
+    proposals_dir = root / "docs" / "proposals"
+    drafts_dir = root / "docs" / "proposals_drafts"
+    tools_dir = root / "tools"
+    proposals_dir.mkdir(parents=True)
+    drafts_dir.mkdir(parents=True)
+    tools_dir.mkdir(exist_ok=True)
+    (drafts_dir / "0005_telemetry.md").write_text(
+        "# Telemetry draft\n",
+        encoding="utf-8",
+    )
+    (proposals_dir / "0018_telemetry_evidence_plane.md").write_text(
+        "\n".join(
+            [
+                "# Telemetry Evidence Plane",
+                "",
+                "## Status",
+                "",
+                "Draft proposal",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    (proposals_dir / "0022_refinement_fan_out_pressure.md").write_text(
+        "\n".join(
+            [
+                "# Refinement Fan-Out Pressure",
+                "",
+                "## Status",
+                "",
+                "Draft proposal",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    (tools_dir / "proposal_promotion_registry.json").write_text(
+        json.dumps(
+            [
+                {
+                    "proposal_id": "0018",
+                    "source_artifact_class": "working_draft",
+                    "source_refs": ["docs/proposals_drafts/0005_telemetry.md"],
+                    "motivating_concern": "telemetry evidence plane",
+                    "normalized_title": "Telemetry Evidence Plane",
+                    "bounded_scope": (
+                        "Define telemetry-derived evidence artifacts without canonical payload "
+                        "leakage."
+                    ),
+                    "required_provenance_links": ["source_draft_ref"],
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+
+def test_parse_proposal_document_includes_repository_projection(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    proposal_path = repo_fixture / "docs" / "proposals" / "0020_draft_to_proposal_promotion.md"
+    proposal_path.parent.mkdir(parents=True)
+    proposal_path.write_text(
+        "\n".join(
+            [
+                "# Draft-to-Proposal Promotion",
+                "",
+                "## Status",
+                "",
+                "Draft proposal",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    parsed = supervisor_module.parse_proposal_document(proposal_path)
+
+    assert parsed is not None
+    assert parsed["semantic_artifact_class"] == "reviewable_proposal"
+    assert parsed["repository_projection"]["projection_role"] == "reviewable_proposal_surface"
+    assert parsed["repository_projection"]["layout_is_sole_source_of_meaning"] is False
+
+
 def test_build_proposal_runtime_index_reports_reflective_chain(
     supervisor_module: object,
     repo_fixture: Path,
@@ -6551,6 +6711,10 @@ def test_build_proposal_runtime_index_reports_reflective_chain(
     assert index["entry_count"] == 2
     by_id = {entry["proposal_id"]: entry for entry in index["entries"]}
     assert by_id["0023"]["posture"] == "synchronous_runtime_slice"
+    assert by_id["0023"]["semantic_artifact_class"] == "reviewable_proposal"
+    assert by_id["0023"]["repository_projection"]["semantic_source"] == (
+        "repository_projection_default"
+    )
     assert by_id["0023"]["runtime_realization"]["status"] == "implemented"
     assert by_id["0023"]["validation_closure"]["status"] == "covered"
     assert by_id["0023"]["observation_coverage"]["status"] == "covered"
@@ -6567,6 +6731,82 @@ def test_build_proposal_runtime_index_reports_reflective_chain(
     assert by_id["0017"]["runtime_realization"]["status"] == "untracked"
     assert by_id["0017"]["reflective_chain"]["next_gap"] == "runtime_realization"
     assert index["reflective_backlog"]["grouped_by_next_gap"]["runtime_realization"] == ["0017"]
+
+
+def test_build_proposal_promotion_index_reports_traceability_gaps(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    seed_proposal_promotion_fixture(repo_fixture)
+
+    index = supervisor_module.build_proposal_promotion_index()
+
+    assert index["artifact_kind"] == "proposal_promotion_index"
+    assert index["entry_count"] == 2
+    by_id = {entry["proposal_id"]: entry for entry in index["entries"]}
+    assert by_id["0018"]["promotion_traceability"]["status"] == "bounded"
+    assert by_id["0018"]["promotion_traceability"]["next_gap"] == "none"
+    assert by_id["0022"]["promotion_traceability"]["status"] == "missing_trace"
+    assert by_id["0022"]["promotion_traceability"]["next_gap"] == "attach_promotion_trace"
+    assert index["viewer_projection"]["traceability_status"]["bounded"] == ["0018"]
+    assert index["promotion_backlog"]["grouped_by_next_gap"]["attach_promotion_trace"] == ["0022"]
+
+
+def test_build_proposal_promotion_index_rejects_source_refs_outside_repo_root(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    seed_proposal_promotion_fixture(repo_fixture)
+    (repo_fixture.parent / "outside.md").write_text("# outside\n", encoding="utf-8")
+    registry_path = repo_fixture / "tools" / "proposal_promotion_registry.json"
+    registry = json.loads(registry_path.read_text(encoding="utf-8"))
+    registry[0]["source_refs"] = ["../outside.md"]
+    registry_path.write_text(json.dumps(registry), encoding="utf-8")
+
+    index = supervisor_module.build_proposal_promotion_index()
+
+    entry = {item["proposal_id"]: item for item in index["entries"]}["0018"]
+    assert entry["promotion_traceability"]["status"] == "invalid"
+    assert entry["promotion_traceability"]["next_gap"] == "repair_source_refs"
+    assert entry["promotion_traceability"]["outside_repo_source_refs"] == ["../outside.md"]
+    assert "source_ref_outside_repo_root" in entry["promotion_traceability"]["missing_fields"]
+
+
+def test_build_proposal_promotion_index_requires_registry_normalized_title(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    seed_proposal_promotion_fixture(repo_fixture)
+    registry_path = repo_fixture / "tools" / "proposal_promotion_registry.json"
+    registry = json.loads(registry_path.read_text(encoding="utf-8"))
+    registry[0].pop("normalized_title")
+    registry_path.write_text(json.dumps(registry), encoding="utf-8")
+
+    index = supervisor_module.build_proposal_promotion_index()
+
+    entry = {item["proposal_id"]: item for item in index["entries"]}["0018"]
+    assert entry["promotion_traceability"]["status"] == "incomplete"
+    assert entry["promotion_traceability"]["next_gap"] == "record_normalized_title"
+    assert entry["promotion_traceability"]["normalized_title"] == ""
+    assert "normalized_title" in entry["promotion_traceability"]["missing_fields"]
+
+
+def test_main_builds_proposal_promotion_index_as_standalone_command(
+    supervisor_module: object,
+    repo_fixture: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    seed_proposal_promotion_fixture(repo_fixture)
+
+    exit_code = supervisor_module.main(build_proposal_promotion_index_mode=True)
+
+    assert exit_code == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["artifact_kind"] == "proposal_promotion_index"
+    artifact = json.loads(
+        (repo_fixture / "runs" / "proposal_promotion_index.json").read_text(encoding="utf-8")
+    )
+    assert artifact["viewer_projection"]["traceability_status"]["bounded"] == ["0018"]
 
 
 def test_main_builds_proposal_runtime_index_as_standalone_command(

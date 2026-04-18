@@ -39,6 +39,14 @@ Supervisor modes:
   `product_spec` inherits the shared engine through one `product_graph_root`
   binding and the declarative rules in `tools/product_spec_transition_policy.json`
   instead of re-implementing packet semantics per product domain.
+  `promotion` packets also expose the semantic boundary from
+  `tools/proposal_promotion_policy.json`, which distinguishes exploratory
+  `working_draft` material from normalized `reviewable_proposal` artifacts
+  without making folder layout the only source of meaning.
+  Promotion packets now carry an explicit minimal contract: `source_artifact_class`,
+  `target_artifact_class`, `source_refs`, `motivating_concern`,
+  `normalized_title`, `bounded_scope`, and `required_provenance_links`
+  including `source_draft_ref`.
 - `--build-spec-trace-index`: build `runs/spec_trace_index.json` from literal `SG-SPEC-XXXX`
   mentions in `tools/` and `tests/`, then enrich that graph-bound index with weak
   `commit_refs`, `pr_refs`, `verification_basis`, and `acceptance_coverage`.
@@ -49,6 +57,14 @@ Supervisor modes:
   trace plane, grouped for viewer-style filters and implementation backlog queries.
 - `--build-proposal-runtime-index`: build `runs/proposal_runtime_index.json` from proposal docs,
   the proposal runtime registry, `tasks.md`, and repository markers in `tools/` and `tests/`.
+  Entries now also expose `repository_projection` and `semantic_artifact_class`
+  from `tools/proposal_promotion_policy.json`, so `docs/proposals/` is treated
+  as a repository projection of proposal semantics rather than the sole source
+  of lifecycle meaning.
+- `--build-proposal-promotion-index`: build `runs/proposal_promotion_index.json` from
+  `docs/proposals/`, `tools/proposal_promotion_registry.json`, and
+  `tools/proposal_promotion_policy.json` to inspect bounded promotion
+  traceability and next provenance gaps for promoted proposals.
 - `--list-stale-runtime` / `--clean-stale-runtime`: inspect or clean stale gate/worktree residue.
 
 Key derived artifacts:
@@ -68,12 +84,20 @@ Key derived artifacts:
   derive conservative `implementation_state` overlays such as `planned`,
   `implemented`, `verified`, `drifted`, and `blocked`
 - `runs/proposal_runtime_index.json`: proposal posture and reflective runtime-closure index
+- `runs/proposal_promotion_index.json`: proposal-promotion provenance and
+  traceability inspection artifact grouped by status and next gap
 - `runs/spec_id_reservations.json`: temporary active child-materialization spec-id reservations
 - `tools/supervisor_policy.json`: declarative supervisor policy artifact for thresholds, priorities,
   mutation classes, queue defaults, and execution profiles
 - `tools/product_spec_transition_policy.json`: declarative inheritance contract for
   `product_spec` transition packets, including `product_graph_root`,
   reviewable source prefixes, and apply-scope rules
+- `tools/proposal_promotion_policy.json`: declarative semantic boundary between
+  `working_draft` and `reviewable_proposal` artifacts for governed
+  draft-to-proposal promotion
+- `tools/proposal_promotion_registry.json`: explicit promotion provenance
+  registry keyed by `proposal_id`, used to backfill source draft refs,
+  motivating concern, bounded scope, and related promotion-trace fields
 
 Runtime artifact safety:
 
