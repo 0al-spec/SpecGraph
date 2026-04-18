@@ -36,6 +36,9 @@ Supervisor modes:
 - `--validate-transition-packet PATH`: validate one normalized transition packet JSON file and
   print structured findings. Add `--transition-profile PROFILE` to validate the same packet under
   `specgraph_core`, `product_spec`, `techspec`, or `implementation_trace`.
+  `product_spec` inherits the shared engine through one `product_graph_root`
+  binding and the declarative rules in `tools/product_spec_transition_policy.json`
+  instead of re-implementing packet semantics per product domain.
 - `--build-spec-trace-index`: build `runs/spec_trace_index.json` from literal `SG-SPEC-XXXX`
   mentions in `tools/` and `tests/`, then enrich that graph-bound index with weak
   `commit_refs`, `pr_refs`, `verification_basis`, and `acceptance_coverage`.
@@ -68,6 +71,9 @@ Key derived artifacts:
 - `runs/spec_id_reservations.json`: temporary active child-materialization spec-id reservations
 - `tools/supervisor_policy.json`: declarative supervisor policy artifact for thresholds, priorities,
   mutation classes, queue defaults, and execution profiles
+- `tools/product_spec_transition_policy.json`: declarative inheritance contract for
+  `product_spec` transition packets, including `product_graph_root`,
+  reviewable source prefixes, and apply-scope rules
 
 Runtime artifact safety:
 

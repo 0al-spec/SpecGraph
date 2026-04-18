@@ -161,6 +161,16 @@ The validator now exposes:
 Use `--transition-profile ...` when you want to validate the same packet under
 another governed artifact family without changing the packet file itself.
 
+`product_spec` now inherits the same deterministic transition engine by binding
+one `product_graph_root` rather than redefining promotion/apply semantics per
+product domain. The inherited rules live in
+`tools/product_spec_transition_policy.json`:
+
+- packets must declare `product_graph_root`
+- product-specific provenance must preserve `product_graph_root`
+- `apply` packets must source from reviewable proposal/run artifacts
+- `apply` mutation surfaces must stay inside `product_graph_root`
+
 ### Spec trace index
 
 ```bash

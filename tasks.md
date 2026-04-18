@@ -81,7 +81,7 @@ Task numbers are preserved for traceability across commits and PRs.
 70. [done] Introduce a core transition validator that enforces graph-family-independent invariants for governed artifact movement.
 71. [done] Define validator profiles so SpecGraph self-specs, product specs, tech specs, and later trace artifacts can share one transition engine while adding profile-specific rules.
 72. [done] Add structured failure reporting for transition checks so denied promotions and applies can be explained by typed findings rather than ad hoc strings.
-73. [todo] Define how product-spec graphs inherit the deterministic transition framework instead of re-implementing promotion and apply semantics per product domain.
+73. [done] Define how product-spec graphs inherit the deterministic transition framework instead of re-implementing promotion and apply semantics per product domain.
 
 ## Implementation Trace Plane
 
