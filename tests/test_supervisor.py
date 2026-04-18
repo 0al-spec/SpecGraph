@@ -2501,7 +2501,8 @@ def test_observe_graph_health_reports_refinement_fan_out_pressure(
     )
 
     assert "refinement_fan_out_pressure" in graph_health["signals"]
-    assert "review_direct_child_grouping" in graph_health["recommended_actions"]
+    assert "regroup_under_intermediate_cluster" in graph_health["recommended_actions"]
+    assert "introduce_semantic_cluster_parent" in graph_health["recommended_actions"]
     observation = next(
         item
         for item in graph_health["observations"]
@@ -2564,7 +2565,7 @@ def test_observe_graph_health_distinguishes_healthy_multi_child_aggregate(
     )
 
     assert "refinement_fan_out_pressure" not in graph_health["signals"]
-    assert "review_direct_child_grouping" not in graph_health["recommended_actions"]
+    assert "regroup_under_intermediate_cluster" not in graph_health["recommended_actions"]
     observation = next(
         item
         for item in graph_health["observations"]
@@ -3059,6 +3060,38 @@ def test_update_refactor_queue_routes_role_legibility_signals_to_proposal_first(
     assert bookkeeping_item["work_item_type"] == "graph_refactor"
     assert bookkeeping_item["execution_policy"] == "emit_proposal"
     assert bookkeeping_item["recommended_action"] == "merge_bookkeeping_slice"
+
+
+def test_update_refactor_queue_prefers_regrouping_for_fan_out_pressure(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    graph_health = {
+        "source_spec_id": "SG-SPEC-9999",
+        "observations": [
+            {
+                "kind": "refinement_fan_out_pressure",
+                "details": {
+                    "direct_child_count": 4,
+                    "classification": "broad_hub_missing_cluster",
+                },
+            }
+        ],
+        "signals": ["refinement_fan_out_pressure"],
+        "recommended_actions": [
+            "regroup_under_intermediate_cluster",
+            "introduce_semantic_cluster_parent",
+        ],
+    }
+
+    path = supervisor_module.update_refactor_queue(graph_health=graph_health, run_id="RUN-1")
+    items = json.loads(path.read_text(encoding="utf-8"))
+
+    assert len(items) == 1
+    item = items[0]
+    assert item["work_item_type"] == "graph_refactor"
+    assert item["execution_policy"] == "emit_proposal"
+    assert item["recommended_action"] == "regroup_under_intermediate_cluster"
 
 
 def test_update_refactor_queue_rejects_malformed_existing_queue_file(

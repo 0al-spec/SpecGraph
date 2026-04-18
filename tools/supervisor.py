@@ -4133,7 +4133,8 @@ def observe_graph_health(
                     }
                 )
                 signals.append("refinement_fan_out_pressure")
-                recommended_actions.append("review_direct_child_grouping")
+                recommended_actions.append("regroup_under_intermediate_cluster")
+                recommended_actions.append("introduce_semantic_cluster_parent")
                 shape_pressure = True
 
             if metrics["longest_one_child_chain"] >= SUBTREE_SHAPE_ONE_CHILD_CHAIN_THRESHOLD:

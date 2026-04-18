@@ -125,7 +125,7 @@
       "missing_aggregate_node": "materialize_aggregate_node",
       "depth_without_breadth": "rebalance_subtree_shape",
       "delegation_only_chain": "compress_delegation_chain",
-      "refinement_fan_out_pressure": "review_direct_child_grouping",
+      "refinement_fan_out_pressure": "regroup_under_intermediate_cluster",
       "role_obscured_node": "rewrite_node_role_boundary",
       "bookkeeping_only_node": "merge_bookkeeping_slice",
       "lower_boundary_handoff_candidate": "review_lower_boundary_handoff",

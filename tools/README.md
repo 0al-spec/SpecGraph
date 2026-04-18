@@ -28,7 +28,8 @@ Supervisor modes:
 - `--target-spec SPEC_ID --observe-graph-health`: inspect subtree signals and
   historical-versus-active descendants without mutating canonical specs. This
   now includes breadth pressure such as `refinement_fan_out_pressure` and a
-  distinction between healthy multi-child aggregates and broad hubs.
+  distinction between healthy multi-child aggregates and broad hubs, with
+  regrouping-oriented recommendations when breadth pressure is real.
 - `--resolve-gate SPEC_ID --decision ...`: apply a human review decision.
 - `--target-spec SPEC_ID --split-proposal`: run the explicit proposal-first split pass for one
   oversized non-seed spec and emit a structured artifact under `runs/proposals/` without editing
