@@ -194,6 +194,12 @@ SUBTREE_SHAPE_ONE_CHILD_CHAIN_THRESHOLD = int(
 REFINEMENT_FAN_OUT_DIRECT_CHILDREN_THRESHOLD = int(
     policy_lookup("thresholds.refinement_fan_out_direct_children")
 )
+REFINEMENT_FAN_OUT_GROUPED_CHILD_COVERAGE_THRESHOLD = float(
+    policy_lookup("thresholds.refinement_fan_out_grouped_child_coverage")
+)
+REFINEMENT_FAN_OUT_PARENT_AGGREGATE_FLOOR = float(
+    policy_lookup("thresholds.refinement_fan_out_parent_aggregate_floor")
+)
 GRAPH_LAYER_EXHAUSTED_CHAIN_THRESHOLD = int(policy_lookup("thresholds.graph_layer_exhausted_chain"))
 SUBTREE_SHAPE_MIN_SINGLE_CHILD_RATIO = float(
     policy_lookup("thresholds.subtree_shape_min_single_child_ratio")
@@ -254,6 +260,32 @@ ROLE_LEGIBILITY_MARKERS = (
     "explains why",
     "governs",
 )
+AGGREGATE_ROLE_MARKERS = (
+    "aggregate",
+    "cluster",
+    "group",
+    "family",
+    "suite",
+    "coordination",
+    "coordinator",
+)
+CHILD_CONCERN_TOKEN_RE = re.compile(r"[a-z][a-z0-9_]*")
+CHILD_CONCERN_STOPWORDS = {
+    "a",
+    "an",
+    "and",
+    "for",
+    "in",
+    "of",
+    "on",
+    "the",
+    "to",
+    "with",
+    "without",
+    "under",
+    "specgraph",
+    "spec",
+}
 VALID_TRANSITION_PACKET_TYPES = {"promotion", "proposal", "apply", "handoff"}
 DEFAULT_TRANSITION_VALIDATOR_PROFILE = "specgraph_core"
 PRODUCT_SPEC_TRANSITION_POLICY_RELATIVE_PATH = "tools/product_spec_transition_policy.json"
@@ -1086,6 +1118,54 @@ def node_role_legibility_profile(node: SpecNode) -> dict[str, Any]:
 
 def subtree_role_legibility_profiles(node: SpecNode, specs: list[SpecNode]) -> list[dict[str, Any]]:
     return [node_role_legibility_profile(spec) for spec in active_subtree_nodes(node, specs)]
+
+
+def child_concern_tokens(node: SpecNode) -> set[str]:
+    title = str(node.title).lower()
+    return {
+        token
+        for token in CHILD_CONCERN_TOKEN_RE.findall(title)
+        if token not in CHILD_CONCERN_STOPWORDS and not token.startswith("sg")
+    }
+
+
+def fan_out_legibility_profile(node: SpecNode, specs: list[SpecNode]) -> dict[str, Any]:
+    children = active_refining_child_specs(node, specs)
+    direct_child_count = len(children)
+    child_token_sets = [child_concern_tokens(child) for child in children]
+    token_frequency: dict[str, int] = {}
+    for token_set in child_token_sets:
+        for token in token_set:
+            token_frequency[token] = token_frequency.get(token, 0) + 1
+    dominant_token = ""
+    dominant_token_count = 0
+    for token, count in token_frequency.items():
+        if count > dominant_token_count or (
+            count == dominant_token_count and token and token < dominant_token
+        ):
+            dominant_token = token
+            dominant_token_count = count
+    dominant_token_coverage = (
+        dominant_token_count / direct_child_count if direct_child_count else 0.0
+    )
+    aggregate_text = f"{node.title} {node.prompt}".lower()
+    parent_reads_as_aggregate = any(marker in aggregate_text for marker in AGGREGATE_ROLE_MARKERS)
+    classification = "not_applicable"
+    if direct_child_count >= REFINEMENT_FAN_OUT_DIRECT_CHILDREN_THRESHOLD:
+        if dominant_token_coverage >= REFINEMENT_FAN_OUT_GROUPED_CHILD_COVERAGE_THRESHOLD or (
+            parent_reads_as_aggregate
+            and dominant_token_coverage >= REFINEMENT_FAN_OUT_PARENT_AGGREGATE_FLOOR
+        ):
+            classification = "healthy_multi_child_aggregate"
+        else:
+            classification = "broad_hub_missing_cluster"
+    return {
+        "direct_child_count": direct_child_count,
+        "dominant_child_token": dominant_token,
+        "dominant_child_token_coverage": round(float(dominant_token_coverage), 3),
+        "parent_reads_as_aggregate": parent_reads_as_aggregate,
+        "classification": classification,
+    }
 
 
 def subtree_shape_metrics(node: SpecNode, specs: list[SpecNode]) -> dict[str, Any]:
@@ -4019,7 +4099,26 @@ def observe_graph_health(
                 "subtree_node_count": metrics["subtree_node_count"],
             }
             shape_pressure = False
-            if metrics["direct_child_count"] >= REFINEMENT_FAN_OUT_DIRECT_CHILDREN_THRESHOLD:
+            fan_out_profile = fan_out_legibility_profile(source_node, worktree_specs)
+            shape_details.update(fan_out_profile)
+            if (
+                fan_out_profile["classification"] == "healthy_multi_child_aggregate"
+                and metrics["direct_child_count"] >= REFINEMENT_FAN_OUT_DIRECT_CHILDREN_THRESHOLD
+            ):
+                observations.append(
+                    {
+                        "kind": "healthy_multi_child_aggregate",
+                        "spec_id": source_node.id,
+                        "details": {
+                            **shape_details,
+                            "summary": (
+                                "The node has many direct children, but they still read as a "
+                                "coherent aggregate rather than as a broad hub."
+                            ),
+                        },
+                    }
+                )
+            elif fan_out_profile["classification"] == "broad_hub_missing_cluster":
                 observations.append(
                     {
                         "kind": "refinement_fan_out_pressure",

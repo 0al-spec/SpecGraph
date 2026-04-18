@@ -2507,7 +2507,72 @@ def test_observe_graph_health_reports_refinement_fan_out_pressure(
         for item in graph_health["observations"]
         if item["kind"] == "refinement_fan_out_pressure"
     )
+    assert observation["details"]["classification"] == "broad_hub_missing_cluster"
     assert observation["details"]["direct_child_count"] == 4
+
+
+def test_observe_graph_health_distinguishes_healthy_multi_child_aggregate(
+    supervisor_module: object,
+) -> None:
+    spec_node = supervisor_module.SpecNode
+    source = spec_node(
+        path=Path("/tmp/source.yaml"),
+        data={
+            "id": "SG-SPEC-9259",
+            "title": "Gateway Capability Cluster",
+            "kind": "spec",
+            "status": "linked",
+            "maturity": 0.4,
+            "depends_on": [],
+            "acceptance": ["Owns one coherent gateway capability family."],
+            "prompt": "Coordinate one grouped gateway cluster without flattening its children.",
+            "last_outcome": "done",
+        },
+    )
+    children = [
+        spec_node(
+            path=Path(f"/tmp/gateway-child{i}.yaml"),
+            data={
+                "id": f"SG-SPEC-926{i}",
+                "title": title,
+                "kind": "spec",
+                "status": "linked",
+                "maturity": 0.3,
+                "depends_on": [],
+                "refines": ["SG-SPEC-9259"],
+                "acceptance": [f"Owns {title.lower()}."],
+                "prompt": f"Define the {title.lower()} boundary.",
+            },
+        )
+        for i, title in enumerate(
+            [
+                "Gateway Input",
+                "Gateway Output",
+                "Gateway Policy",
+                "Gateway Routing",
+            ],
+            start=1,
+        )
+    ]
+
+    graph_health = supervisor_module.observe_graph_health(
+        source_node=source,
+        worktree_specs=[source, *children],
+        reconciliation={"semantic_dependencies_resolved": True},
+        atomicity_errors=[],
+        outcome="done",
+    )
+
+    assert "refinement_fan_out_pressure" not in graph_health["signals"]
+    assert "review_direct_child_grouping" not in graph_health["recommended_actions"]
+    observation = next(
+        item
+        for item in graph_health["observations"]
+        if item["kind"] == "healthy_multi_child_aggregate"
+    )
+    assert observation["details"]["classification"] == "healthy_multi_child_aggregate"
+    assert observation["details"]["dominant_child_token"] == "gateway"
+    assert observation["details"]["parent_reads_as_aggregate"] is True
 
 
 def test_text_marker_hits_uses_token_boundaries(

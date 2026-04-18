@@ -122,6 +122,7 @@ Non-mutating subtree inspection. Use this when you want to understand:
 
 - shape pressure such as `depth_without_breadth`
 - breadth pressure such as `refinement_fan_out_pressure`
+- broad-hub classification versus `healthy_multi_child_aggregate`
 - role-legibility signals such as `role_obscured_node`
 - whether a subtree still contains active versus historical descendants
 - what rewrite/merge action the current graph health recommends
