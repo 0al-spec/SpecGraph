@@ -1,6 +1,8 @@
 id: SG-SPEC-0005
 title: SpecGraph - Retrospective Spec Refactoring Passes
 kind: spec
+created_at: '2026-04-06T06:59:56Z'
+updated_at: '2026-04-13T07:49:44Z'
 status: reviewed
 maturity: 1.0
 depends_on:

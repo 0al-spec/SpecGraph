@@ -1,6 +1,8 @@
 id: SG-SPEC-0018
 title: SpecGraph - Adoption-Layer Entity Boundary
 kind: spec
+created_at: '2026-04-12T06:56:15Z'
+updated_at: '2026-04-13T05:38:08Z'
 status: reviewed
 maturity: 0.92
 depends_on: []

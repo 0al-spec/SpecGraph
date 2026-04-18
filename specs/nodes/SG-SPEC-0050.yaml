@@ -1,6 +1,8 @@
 id: SG-SPEC-0050
 title: SpecGraph - Pre-Spec Semantic Layer for Observable Intent
 kind: spec
+created_at: '2026-04-15T21:59:18Z'
+updated_at: '2026-04-16T19:12:11Z'
 status: linked
 maturity: 0.8
 depends_on:

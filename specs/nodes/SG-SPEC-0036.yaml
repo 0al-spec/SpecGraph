@@ -1,6 +1,8 @@
 id: SG-SPEC-0036
 title: SpecGraph - Active Item Precedence Contract for Queue Control
 kind: spec
+created_at: '2026-04-14T19:05:59Z'
+updated_at: '2026-04-14T19:05:59Z'
 status: reviewed
 maturity: 0.4
 depends_on:

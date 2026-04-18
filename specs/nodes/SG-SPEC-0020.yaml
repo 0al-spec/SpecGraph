@@ -1,6 +1,8 @@
 id: SG-SPEC-0020
 title: SpecGraph - Executable Layer Traceability Boundary
 kind: spec
+created_at: '2026-04-12T07:18:53Z'
+updated_at: '2026-04-13T05:38:08Z'
 status: frozen
 maturity: 1.0
 depends_on: []

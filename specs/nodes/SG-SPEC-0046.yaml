@@ -1,6 +1,8 @@
 id: SG-SPEC-0046
 title: SpecGraph - Historical Upstream Parent-Path Slice
 kind: spec
+created_at: '2026-04-14T20:59:56Z'
+updated_at: '2026-04-17T21:18:34Z'
 status: reviewed
 maturity: 0.2
 presence:

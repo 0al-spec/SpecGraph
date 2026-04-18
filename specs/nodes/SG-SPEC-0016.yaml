@@ -1,6 +1,8 @@
 id: SG-SPEC-0016
 title: SpecGraph - Linked Readiness and Evidence Policy
 kind: spec
+created_at: '2026-04-11T13:14:21Z'
+updated_at: '2026-04-13T05:38:08Z'
 status: linked
 maturity: 1.0
 depends_on: []

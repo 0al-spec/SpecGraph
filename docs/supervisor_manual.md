@@ -294,6 +294,8 @@ authoritative.
   - quickest human snapshot of the last run
 - `runs/<RUN_ID>.json`
   - full authoritative run payload for that run
+- `runs/decision_inspector/<RUN_ID>.json`
+  - standalone decision explanation artifact for that run
 
 ### Queue and proposal surfaces
 
@@ -324,6 +326,9 @@ path.
 - `runs/proposal_runtime_index.json`
   - derived proposal runtime index with posture, realization, validation, and
     re-observation status
+- `tools/supervisor_policy.json`
+  - declarative policy layer for thresholds, priorities, queue defaults,
+    mutation classes, and execution profiles
 - `graph_health` payload in run logs
   - reflective signals, subtree-shape pressure, and recommended actions
 - `decision_inspector` payload in run logs
@@ -404,7 +409,8 @@ The supervisor has reached a case that should move to a higher-authority review 
 ## 8. Reading `decision_inspector`
 
 `decision_inspector` is the compact operator-facing explanation layer in each
-run log.
+run log, and the same content is also written to
+`runs/decision_inspector/<RUN_ID>.json`.
 
 It has four slices:
 
@@ -419,6 +425,15 @@ It has four slices:
 - `queue_effects`
   - signals, recommended actions, and queue transitions for proposal/refactor
     items
+
+Each slice now includes `applied_rules`:
+
+- `supervisor_policy` rules point back into `tools/supervisor_policy.json`
+- `runtime_guard` rules explain procedural decisions such as validator failure,
+  mutation-budget overflow, or blocker propagation
+
+At top level, `policy_reference` records the policy artifact path and SHA-256
+used for the run.
 
 When queue state changed, look at:
 

@@ -1,6 +1,8 @@
 id: SG-SPEC-0044
 title: SpecGraph - Proposal/Split Readiness Non-Bypass Path
 kind: spec
+created_at: '2026-04-14T20:59:56Z'
+updated_at: '2026-04-17T07:30:37Z'
 status: reviewed
 maturity: 0.72
 depends_on: []

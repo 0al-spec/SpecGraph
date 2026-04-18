@@ -65,6 +65,8 @@ def repo_fixture(
                 "id": "SG-SPEC-0001",
                 "title": "Golden Path Node",
                 "kind": "spec",
+                "created_at": "2026-04-18T00:00:00Z",
+                "updated_at": "2026-04-18T00:00:00Z",
                 "status": "outlined",
                 "maturity": 0.2,
                 "depends_on": [],
@@ -115,6 +117,8 @@ def git_repo_fixture(
                 "id": "SG-SPEC-0001",
                 "title": "Golden Path Node",
                 "kind": "spec",
+                "created_at": "2026-04-18T00:00:00Z",
+                "updated_at": "2026-04-18T00:00:00Z",
                 "status": "outlined",
                 "maturity": 0.2,
                 "depends_on": [],
@@ -418,6 +422,26 @@ def test_resolve_execution_profile_keeps_standard_for_explicit_target(
 
     assert profile.name == supervisor_module.DEFAULT_EXECUTION_PROFILE_NAME
     assert profile.reasoning_effort == supervisor_module.CHILD_EXECUTOR_REASONING_EFFORT
+
+
+def test_supervisor_policy_artifact_drives_execution_profiles_and_thresholds(
+    supervisor_module: object,
+) -> None:
+    policy = supervisor_module.SUPERVISOR_POLICY
+
+    assert supervisor_module.supervisor_policy_path().name == "supervisor_policy.json"
+    assert policy["artifact_kind"] == "supervisor_policy"
+    assert (
+        supervisor_module.EXECUTION_PROFILES["fast"].timeout_seconds
+        == policy["execution_profiles"]["profiles"]["fast"]["timeout_seconds"]
+    )
+    assert (
+        supervisor_module.GATE_ACTION_PRIORITY["review_pending"]
+        == policy["selection_priorities"]["gate_action_priority"]["review_pending"]
+    )
+    assert supervisor_module.LINKED_CONTINUATION_MATURITY_THRESHOLD == pytest.approx(
+        policy["thresholds"]["linked_continuation_maturity"]
+    )
 
 
 def test_infer_ordinary_execution_profile_uses_materialize_for_root_seed_like_node(
@@ -3548,6 +3572,12 @@ def test_main_creates_review_gate_and_provenance_metadata(
     assert payload["decision_inspector"]["gate"]["gate_state"] == "review_pending"
     assert payload["decision_inspector"]["diff_classification"]["refinement_decision"] == "approve"
     assert payload["decision_inspector"]["queue_effects"]["proposal_queue"]["after_ids"] == []
+    decision_inspector_artifact = Path(payload["decision_inspector_artifact"])
+    assert decision_inspector_artifact.exists()
+    inspector_payload = json.loads(decision_inspector_artifact.read_text(encoding="utf-8"))
+    assert inspector_payload["run_id"] == payload["run_id"]
+    assert inspector_payload["policy_reference"]["artifact_path"] == "tools/supervisor_policy.json"
+    assert inspector_payload["selection"]["applied_rules"]
     assert updated["pending_run_id"] == payload["run_id"]
     assert (repo_fixture / "runs" / "latest-summary.md").exists()
 
@@ -5289,6 +5319,83 @@ def test_summarize_queue_transition_tracks_emitted_cleared_and_updated_ids(
         "retained_ids": ["proposal::keep"],
         "updated_ids": ["proposal::keep"],
     }
+
+
+def test_build_decision_inspector_reports_policy_backed_applied_rules(
+    supervisor_module: object,
+) -> None:
+    inspector = supervisor_module.build_decision_inspector(
+        run_id="20260418T120000Z-SG-SPEC-0001-abcd1234",
+        spec_id="SG-SPEC-0001",
+        selected_by_rule={
+            "selection_mode": "explicit_target_refine",
+            "operator_target": "SG-SPEC-0001",
+            "sort_order": supervisor_module.policy_lookup(
+                "selection_priorities.explicit_target_sort_order"
+            ),
+            "execution_profile": supervisor_module.DEFAULT_EXECUTION_PROFILE_NAME,
+        },
+        outcome="done",
+        gate_state="review_pending",
+        required_human_action="review refinement impact before approval",
+        blocker="none",
+        changed_files=["specs/nodes/SG-SPEC-0001.yaml"],
+        validation_errors=[],
+        validator_results={"canonical_writeback": True},
+        graph_health={
+            "source_spec_id": "SG-SPEC-0001",
+            "observations": [],
+            "signals": ["role_obscured_node", "lower_boundary_handoff_candidate"],
+            "recommended_actions": [
+                "rewrite_node_role_boundary",
+                "review_lower_boundary_handoff",
+            ],
+        },
+        graph_health_truth_basis="accepted_canonical",
+        proposal_queue_before=[],
+        proposal_queue_after=[
+            {"id": "proposal::new", "spec_id": "SG-SPEC-0001", "status": "proposed"}
+        ],
+        refactor_queue_before=[],
+        refactor_queue_after=[
+            {"id": "refactor::new", "spec_id": "SG-SPEC-0001", "status": "proposed"}
+        ],
+        refinement_acceptance={
+            "decision": supervisor_module.REFINEMENT_ACCEPT_DECISION_REVIEW_REQUIRED,
+            "change_class": supervisor_module.REFINEMENT_CLASS_GRAPH_REFACTOR,
+            "diff_paths": ["depends_on"],
+            "mutation_classes": [
+                supervisor_module.MUTATION_CLASS_POLICY_TEXT,
+                supervisor_module.MUTATION_CLASS_SCHEMA_REQUIRED_ADDITION,
+            ],
+            "budget_exceeded_classes": [supervisor_module.MUTATION_CLASS_SCHEMA_REQUIRED_ADDITION],
+            "errors": [],
+            "review_reasons": ["run exceeded requested mutation budget"],
+        },
+    )
+
+    assert inspector["policy_reference"]["artifact_path"] == "tools/supervisor_policy.json"
+    selection_rule_ids = {rule["rule_id"] for rule in inspector["selection"]["applied_rules"]}
+    assert "selection_priorities.explicit_target_sort_order" in selection_rule_ids
+    assert "execution_profiles.default_profile" in selection_rule_ids
+    assert f"execution_profiles.profiles.{supervisor_module.DEFAULT_EXECUTION_PROFILE_NAME}" in (
+        selection_rule_ids
+    )
+
+    gate_rule_ids = {rule["rule_id"] for rule in inspector["gate"]["applied_rules"]}
+    assert "selection_priorities.gate_action_priority.review_pending" in gate_rule_ids
+    assert "gate.review_required_due_to_mutation_budget" in gate_rule_ids
+
+    diff_rule_ids = {rule["rule_id"] for rule in inspector["diff_classification"]["applied_rules"]}
+    assert (
+        f"change_classification.change_classes.{supervisor_module.REFINEMENT_CLASS_GRAPH_REFACTOR}"
+        in diff_rule_ids
+    )
+    assert f"mutation_classes.{supervisor_module.MUTATION_CLASS_POLICY_TEXT}" in diff_rule_ids
+
+    queue_rule_ids = {rule["rule_id"] for rule in inspector["queue_effects"]["applied_rules"]}
+    assert "queue_policy.default_actions.role_obscured_node" in queue_rule_ids
+    assert "queue_policy.governance_proposal_signals" in queue_rule_ids
 
 
 def test_validate_transition_packet_accepts_minimal_apply_packet(
