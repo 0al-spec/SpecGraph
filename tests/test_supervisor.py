@@ -7103,6 +7103,22 @@ def test_main_builds_graph_health_trends_as_standalone_command(
     )
 
 
+def test_main_rejects_combined_graph_health_overlay_and_trends_modes(
+    supervisor_module: object,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    exit_code = supervisor_module.main(
+        build_graph_health_overlay_mode=True,
+        build_graph_health_trends_mode=True,
+    )
+
+    assert exit_code == 1
+    assert (
+        "--build-graph-health-overlay must be used as a standalone command"
+        in capsys.readouterr().err
+    )
+
+
 def test_main_builds_spec_trace_projection_as_standalone_command(
     supervisor_module: object,
     repo_fixture: Path,
