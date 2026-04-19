@@ -91,6 +91,7 @@ SAFE_REPAIR_POLICY_RELATIVE_PATH = "tools/safe_repair_policy.json"
 EVALUATOR_LOOP_POLICY_RELATIVE_PATH = "tools/evaluator_loop_policy.json"
 EVALUATOR_INTERVENTION_POLICY_RELATIVE_PATH = "tools/evaluator_intervention_policy.json"
 EVIDENCE_PLANE_POLICY_RELATIVE_PATH = "tools/evidence_plane_policy.json"
+METRIC_SIGNAL_POLICY_RELATIVE_PATH = "tools/metric_signal_policy.json"
 
 
 def supervisor_policy_path() -> Path:
@@ -139,6 +140,10 @@ def evaluator_intervention_policy_path() -> Path:
 
 def evidence_plane_policy_path() -> Path:
     return TOOLS_DIR / "evidence_plane_policy.json"
+
+
+def metric_signal_policy_path() -> Path:
+    return TOOLS_DIR / "metric_signal_policy.json"
 
 
 def load_supervisor_policy() -> tuple[dict[str, Any], str]:
@@ -561,6 +566,45 @@ def load_evidence_plane_policy() -> tuple[dict[str, Any], str]:
 EVIDENCE_PLANE_POLICY, EVIDENCE_PLANE_POLICY_SHA256 = load_evidence_plane_policy()
 
 
+def load_metric_signal_policy() -> tuple[dict[str, Any], str]:
+    path = metric_signal_policy_path()
+    try:
+        raw_text = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise RuntimeError(
+            f"failed to read metric signal policy artifact: {path.as_posix()} ({exc})"
+        ) from exc
+    try:
+        payload = json.loads(raw_text)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(
+            f"malformed metric signal policy artifact: {path.as_posix()} ({exc})"
+        ) from exc
+    if not isinstance(payload, dict):
+        raise RuntimeError(
+            f"malformed metric signal policy artifact: {path.as_posix()} must contain a JSON object"
+        )
+    required_sections = (
+        "repository_layout",
+        "signal_contract",
+        "status_scoring",
+        "metric_thresholds",
+        "metric_composition",
+        "proposal_contract",
+        "proposal_mapping",
+    )
+    missing = [section for section in required_sections if section not in payload]
+    if missing:
+        raise RuntimeError(
+            "malformed metric signal policy artifact: missing top-level section(s): "
+            + ", ".join(missing)
+        )
+    return payload, hashlib.sha256(raw_text.encode("utf-8")).hexdigest()
+
+
+METRIC_SIGNAL_POLICY, METRIC_SIGNAL_POLICY_SHA256 = load_metric_signal_policy()
+
+
 def policy_lookup(policy_path: str) -> Any:
     current: Any = SUPERVISOR_POLICY
     for part in policy_path.split("."):
@@ -626,6 +670,15 @@ def pre_spec_semantics_policy_lookup(policy_path: str) -> Any:
 
 def evidence_plane_policy_lookup(policy_path: str) -> Any:
     current: Any = EVIDENCE_PLANE_POLICY
+    for part in policy_path.split("."):
+        if not isinstance(current, dict) or part not in current:
+            raise KeyError(policy_path)
+        current = current[part]
+    return copy.deepcopy(current)
+
+
+def metric_signal_policy_lookup(policy_path: str) -> Any:
+    current: Any = METRIC_SIGNAL_POLICY
     for part in policy_path.split("."):
         if not isinstance(current, dict) or part not in current:
             raise KeyError(policy_path)
@@ -763,6 +816,14 @@ def evidence_plane_policy_reference() -> dict[str, Any]:
         "artifact_path": EVIDENCE_PLANE_POLICY_RELATIVE_PATH,
         "artifact_sha256": EVIDENCE_PLANE_POLICY_SHA256,
         "version": EVIDENCE_PLANE_POLICY.get("version"),
+    }
+
+
+def metric_signal_policy_reference() -> dict[str, Any]:
+    return {
+        "artifact_path": METRIC_SIGNAL_POLICY_RELATIVE_PATH,
+        "artifact_sha256": METRIC_SIGNAL_POLICY_SHA256,
+        "version": METRIC_SIGNAL_POLICY.get("version"),
     }
 
 
@@ -910,6 +971,33 @@ EVIDENCE_PLANE_OVERLAY_SCHEMA_VERSION = int(
     evidence_plane_policy_lookup("overlay_contract.schema_version")
 )
 EVIDENCE_PLANE_NAMED_FILTERS = list(evidence_plane_policy_lookup("overlay_contract.named_filters"))
+METRIC_SIGNAL_INDEX_FILENAME = Path(
+    str(metric_signal_policy_lookup("repository_layout.signal_artifact"))
+).name
+METRIC_THRESHOLD_PROPOSALS_FILENAME = Path(
+    str(metric_signal_policy_lookup("repository_layout.proposal_artifact"))
+).name
+METRIC_SIGNAL_INDEX_ARTIFACT_KIND = str(
+    metric_signal_policy_lookup("signal_contract.artifact_kind")
+)
+METRIC_SIGNAL_INDEX_SCHEMA_VERSION = int(
+    metric_signal_policy_lookup("signal_contract.schema_version")
+)
+METRIC_SIGNAL_METRIC_IDS = list(metric_signal_policy_lookup("signal_contract.metric_ids"))
+METRIC_SIGNAL_STATUSES = list(metric_signal_policy_lookup("signal_contract.metric_statuses"))
+METRIC_SIGNAL_NAMED_FILTERS = list(metric_signal_policy_lookup("signal_contract.named_filters"))
+METRIC_THRESHOLD_PROPOSALS_ARTIFACT_KIND = str(
+    metric_signal_policy_lookup("proposal_contract.artifact_kind")
+)
+METRIC_THRESHOLD_PROPOSALS_SCHEMA_VERSION = int(
+    metric_signal_policy_lookup("proposal_contract.schema_version")
+)
+METRIC_THRESHOLD_PROPOSAL_KINDS = list(
+    metric_signal_policy_lookup("proposal_contract.proposal_kinds")
+)
+METRIC_THRESHOLD_PROPOSAL_NAMED_FILTERS = list(
+    metric_signal_policy_lookup("proposal_contract.named_filters")
+)
 OPERATOR_REQUEST_PACKET_ARTIFACT_KIND = str(
     operator_request_bridge_policy_lookup("packet_contract.artifact_kind")
 )
@@ -10304,6 +10392,14 @@ def evidence_plane_overlay_path() -> Path:
     return RUNS_DIR / EVIDENCE_PLANE_OVERLAY_FILENAME
 
 
+def metric_signal_index_path() -> Path:
+    return RUNS_DIR / METRIC_SIGNAL_INDEX_FILENAME
+
+
+def metric_threshold_proposals_path() -> Path:
+    return RUNS_DIR / METRIC_THRESHOLD_PROPOSALS_FILENAME
+
+
 def load_spec_trace_registry() -> dict[str, dict[str, Any]]:
     path = spec_trace_registry_path()
     if not path.exists():
@@ -11444,6 +11540,510 @@ def write_evidence_plane_overlay(overlay: dict[str, Any]) -> Path:
     path = evidence_plane_overlay_path()
     with artifact_lock(path):
         atomic_write_json(path, overlay)
+    return path
+
+
+def metric_status_score(mapping: dict[str, Any], status: str) -> float | None:
+    raw_value = mapping.get(status)
+    if raw_value is None:
+        return None
+    try:
+        return float(raw_value)
+    except (TypeError, ValueError):
+        return None
+
+
+def average_metric_scores(values: list[float]) -> float | None:
+    if not values:
+        return None
+    return round(sum(values) / len(values), 3)
+
+
+def weighted_metric_average(
+    component_scores: dict[str, float | None],
+    weights: dict[str, Any],
+) -> float | None:
+    weighted_total = 0.0
+    weight_total = 0.0
+    for metric_id, raw_weight in weights.items():
+        score = component_scores.get(metric_id)
+        if score is None:
+            continue
+        try:
+            weight = float(raw_weight)
+        except (TypeError, ValueError):
+            continue
+        if weight <= 0:
+            continue
+        weighted_total += score * weight
+        weight_total += weight
+    if weight_total <= 0:
+        return None
+    return round(weighted_total / weight_total, 3)
+
+
+def metric_status_from_score(score: float | None, threshold: float) -> str:
+    if score is None:
+        return "not_applicable"
+    return "healthy" if score >= threshold else "below_threshold"
+
+
+def metric_gap_from_threshold(score: float | None, threshold: float) -> float | None:
+    if score is None:
+        return None
+    return round(threshold - score, 3)
+
+
+def metric_threshold_definition(metric_id: str) -> dict[str, Any]:
+    return copy.deepcopy(metric_signal_policy_lookup(f"metric_thresholds.{metric_id}"))
+
+
+def metric_signal_mapping(signal_name: str) -> dict[str, Any]:
+    return copy.deepcopy(metric_signal_policy_lookup(f"proposal_mapping.{signal_name}"))
+
+
+def build_metric_signal_index(specs: list[SpecNode]) -> dict[str, Any]:
+    trace_index = build_spec_trace_index(specs)
+    trace_projection = build_spec_trace_projection(trace_index)
+    evidence_index = build_evidence_plane_index(specs)
+    evidence_overlay = build_evidence_plane_overlay(evidence_index)
+    graph_overlay = build_graph_health_overlay(specs)
+    graph_trends = build_graph_health_trends(specs, overlay=graph_overlay)
+    proposal_runtime_index = build_proposal_runtime_index()
+
+    acceptance_score_map = copy.deepcopy(
+        metric_signal_policy_lookup("status_scoring.acceptance_coverage")
+    )
+    proposal_observation_score_map = copy.deepcopy(
+        metric_signal_policy_lookup("status_scoring.proposal_observation")
+    )
+    evidence_chain_score_map = copy.deepcopy(
+        metric_signal_policy_lookup("status_scoring.evidence_chain")
+    )
+    sib_weights = copy.deepcopy(metric_signal_policy_lookup("metric_composition.sib_proxy_weights"))
+
+    metrics_by_id: dict[str, dict[str, Any]] = {}
+
+    acceptance_status_counts: dict[str, int] = {}
+    acceptance_scores: list[float] = []
+    acceptance_relevant_count = 0
+    for entry in trace_index.get("entries", []):
+        if not isinstance(entry, dict):
+            continue
+        coverage = entry.get("acceptance_coverage", {})
+        if not isinstance(coverage, dict):
+            continue
+        status = str(coverage.get("status", "")).strip()
+        if not status or status == "not_defined":
+            continue
+        acceptance_relevant_count += 1
+        acceptance_status_counts[status] = acceptance_status_counts.get(status, 0) + 1
+        score = metric_status_score(acceptance_score_map, status)
+        if score is not None:
+            acceptance_scores.append(score)
+
+    spec_verifiability_threshold = float(
+        metric_threshold_definition("specification_verifiability")["minimum_score"]
+    )
+    spec_verifiability_score = average_metric_scores(acceptance_scores)
+    spec_verifiability_status = metric_status_from_score(
+        spec_verifiability_score,
+        spec_verifiability_threshold,
+    )
+    spec_verifiability_signal = str(
+        metric_threshold_definition("specification_verifiability")["trigger_signal"]
+    )
+    metrics_by_id["specification_verifiability"] = {
+        "metric_id": "specification_verifiability",
+        "title": "Specification Verifiability",
+        "score": spec_verifiability_score,
+        "minimum_score": spec_verifiability_threshold,
+        "threshold_gap": metric_gap_from_threshold(
+            spec_verifiability_score,
+            spec_verifiability_threshold,
+        ),
+        "status": spec_verifiability_status,
+        "trigger_signal": spec_verifiability_signal,
+        "signal_emitted": spec_verifiability_status == "below_threshold",
+        "basis": (
+            "Derived from acceptance coverage in the trace plane. This remains a weak bootstrap "
+            "measure until criterion-level evidence mapping exists."
+        ),
+        "input_summary": {
+            "relevant_spec_count": acceptance_relevant_count,
+            "acceptance_status_counts": {
+                key: acceptance_status_counts[key] for key in sorted(acceptance_status_counts)
+            },
+        },
+    }
+
+    proposal_status_counts: dict[str, int] = {}
+    proposal_scores: list[float] = []
+    proposal_relevant_count = 0
+    for entry in proposal_runtime_index.get("entries", []):
+        if not isinstance(entry, dict):
+            continue
+        posture = str(entry.get("posture", "")).strip()
+        if posture in {"document_only", "deferred_until_canonicalized"}:
+            continue
+        observation = entry.get("observation_coverage", {})
+        if not isinstance(observation, dict):
+            continue
+        status = str(observation.get("status", "")).strip()
+        if not status:
+            continue
+        proposal_relevant_count += 1
+        proposal_status_counts[status] = proposal_status_counts.get(status, 0) + 1
+        score = metric_status_score(proposal_observation_score_map, status)
+        if score is not None:
+            proposal_scores.append(score)
+
+    evidence_chain_counts: dict[str, int] = {}
+    evidence_scores: list[float] = []
+    evidence_relevant_count = 0
+    for entry in evidence_index.get("entries", []):
+        if not isinstance(entry, dict):
+            continue
+        chain_status = str(entry.get("chain_status", "")).strip()
+        if not chain_status or chain_status == "untracked":
+            continue
+        evidence_relevant_count += 1
+        evidence_chain_counts[chain_status] = evidence_chain_counts.get(chain_status, 0) + 1
+        score = metric_status_score(evidence_chain_score_map, chain_status)
+        if score is not None:
+            evidence_scores.append(score)
+
+    process_observability_components = {
+        "proposal_observation": average_metric_scores(proposal_scores),
+        "evidence_chain": average_metric_scores(evidence_scores),
+    }
+    process_observability_score = average_metric_scores(
+        [score for score in process_observability_components.values() if score is not None]
+    )
+    process_observability_threshold = float(
+        metric_threshold_definition("process_observability")["minimum_score"]
+    )
+    process_observability_status = metric_status_from_score(
+        process_observability_score,
+        process_observability_threshold,
+    )
+    process_observability_signal = str(
+        metric_threshold_definition("process_observability")["trigger_signal"]
+    )
+    metrics_by_id["process_observability"] = {
+        "metric_id": "process_observability",
+        "title": "Process Observability",
+        "score": process_observability_score,
+        "minimum_score": process_observability_threshold,
+        "threshold_gap": metric_gap_from_threshold(
+            process_observability_score,
+            process_observability_threshold,
+        ),
+        "status": process_observability_status,
+        "trigger_signal": process_observability_signal,
+        "signal_emitted": process_observability_status == "below_threshold",
+        "basis": (
+            "Derived from proposal observation coverage and runtime evidence chain completion. "
+            "This measures how reviewable the observe->propose->improve loop currently is."
+        ),
+        "input_summary": {
+            "proposal_relevant_count": proposal_relevant_count,
+            "proposal_observation_status_counts": {
+                key: proposal_status_counts[key] for key in sorted(proposal_status_counts)
+            },
+            "evidence_relevant_count": evidence_relevant_count,
+            "evidence_chain_status_counts": {
+                key: evidence_chain_counts[key] for key in sorted(evidence_chain_counts)
+            },
+            "component_scores": copy.deepcopy(process_observability_components),
+        },
+    }
+
+    total_specs = len(specs)
+    active_pressure_specs = {
+        str(entry.get("spec_id", "")).strip()
+        for entry in graph_overlay.get("entries", [])
+        if isinstance(entry, dict)
+        and str(entry.get("spec_id", "")).strip()
+        and any(str(item).strip() for item in entry.get("signals", []) if str(item).strip())
+    }
+    persistent_pressure_specs = {
+        str(entry.get("spec_id", "")).strip()
+        for entry in graph_trends.get("entries", [])
+        if isinstance(entry, dict)
+        and str(entry.get("spec_id", "")).strip()
+        and str(entry.get("trend_status", "")).strip() == "persistent"
+        and bool(entry.get("currently_active"))
+    }
+    active_pressure_ratio = (
+        round(len(active_pressure_specs) / total_specs, 3) if total_specs > 0 else None
+    )
+    persistent_pressure_ratio = (
+        round(len(persistent_pressure_specs) / total_specs, 3) if total_specs > 0 else None
+    )
+    structural_observability_score = None
+    if total_specs > 0:
+        structural_observability_score = round(
+            max(
+                0.0,
+                1.0
+                - (
+                    (float(active_pressure_ratio or 0.0) * 0.6)
+                    + (float(persistent_pressure_ratio or 0.0) * 0.4)
+                ),
+            ),
+            3,
+        )
+    structural_observability_threshold = float(
+        metric_threshold_definition("structural_observability")["minimum_score"]
+    )
+    structural_observability_status = metric_status_from_score(
+        structural_observability_score,
+        structural_observability_threshold,
+    )
+    structural_observability_signal = str(
+        metric_threshold_definition("structural_observability")["trigger_signal"]
+    )
+    metrics_by_id["structural_observability"] = {
+        "metric_id": "structural_observability",
+        "title": "Structural Observability",
+        "score": structural_observability_score,
+        "minimum_score": structural_observability_threshold,
+        "threshold_gap": metric_gap_from_threshold(
+            structural_observability_score,
+            structural_observability_threshold,
+        ),
+        "status": structural_observability_status,
+        "trigger_signal": structural_observability_signal,
+        "signal_emitted": structural_observability_status == "below_threshold",
+        "basis": (
+            "Derived from current graph-health pressure and persistent recurring structural "
+            "signals. This is advisory and should not be treated as a canonical graph fact."
+        ),
+        "input_summary": {
+            "spec_count": total_specs,
+            "active_pressure_spec_count": len(active_pressure_specs),
+            "persistent_pressure_spec_count": len(persistent_pressure_specs),
+            "active_pressure_ratio": active_pressure_ratio,
+            "persistent_pressure_ratio": persistent_pressure_ratio,
+            "active_named_filters": copy.deepcopy(
+                graph_overlay.get("viewer_projection", {}).get("named_filters", {})
+            ),
+            "recurring_named_filters": copy.deepcopy(
+                graph_trends.get("viewer_projection", {}).get("named_filters", {})
+            ),
+        },
+    }
+
+    sib_component_scores = {
+        "specification_verifiability": metrics_by_id["specification_verifiability"]["score"],
+        "process_observability": metrics_by_id["process_observability"]["score"],
+        "structural_observability": metrics_by_id["structural_observability"]["score"],
+    }
+    sib_proxy_score = weighted_metric_average(sib_component_scores, sib_weights)
+    sib_proxy_threshold = float(metric_threshold_definition("sib_proxy")["minimum_score"])
+    sib_proxy_status = metric_status_from_score(sib_proxy_score, sib_proxy_threshold)
+    sib_proxy_signal = str(metric_threshold_definition("sib_proxy")["trigger_signal"])
+    metrics_by_id["sib_proxy"] = {
+        "metric_id": "sib_proxy",
+        "title": "SIB Proxy",
+        "score": sib_proxy_score,
+        "minimum_score": sib_proxy_threshold,
+        "threshold_gap": metric_gap_from_threshold(sib_proxy_score, sib_proxy_threshold),
+        "status": sib_proxy_status,
+        "trigger_signal": sib_proxy_signal,
+        "signal_emitted": sib_proxy_status == "below_threshold",
+        "basis": (
+            "Bootstrap composite from specification verifiability, process observability, and "
+            "structural observability. This is not the final canonical SIB formula."
+        ),
+        "input_summary": {
+            "component_scores": copy.deepcopy(sib_component_scores),
+            "component_weights": copy.deepcopy(sib_weights),
+        },
+    }
+
+    metrics = [copy.deepcopy(metrics_by_id[metric_id]) for metric_id in METRIC_SIGNAL_METRIC_IDS]
+    status_groups: dict[str, list[str]] = {}
+    active_signals: list[str] = []
+    named_filters = {name: [] for name in METRIC_SIGNAL_NAMED_FILTERS}
+    for entry in metrics:
+        metric_id = str(entry["metric_id"])
+        status = str(entry["status"])
+        status_groups.setdefault(status, []).append(metric_id)
+        if entry["signal_emitted"]:
+            signal_name = str(entry["trigger_signal"])
+            if signal_name:
+                active_signals.append(signal_name)
+            named_filters["metrics_below_threshold"].append(metric_id)
+            if metric_id == "specification_verifiability":
+                named_filters["specification_attention"].append(metric_id)
+            elif metric_id == "process_observability":
+                named_filters["process_attention"].append(metric_id)
+            elif metric_id == "structural_observability":
+                named_filters["structural_attention"].append(metric_id)
+            elif metric_id == "sib_proxy":
+                named_filters["sib_attention"].append(metric_id)
+        elif status == "healthy":
+            named_filters["healthy_metrics"].append(metric_id)
+
+    return {
+        "artifact_kind": METRIC_SIGNAL_INDEX_ARTIFACT_KIND,
+        "schema_version": METRIC_SIGNAL_INDEX_SCHEMA_VERSION,
+        "generated_at": utc_now_iso(),
+        "policy_reference": metric_signal_policy_reference(),
+        "source_artifacts": {
+            "spec_trace_index": {
+                "artifact_path": spec_trace_index_path().relative_to(ROOT).as_posix(),
+                "generated_at": trace_index.get("generated_at"),
+            },
+            "spec_trace_projection": {
+                "artifact_path": spec_trace_projection_path().relative_to(ROOT).as_posix(),
+                "generated_at": trace_projection.get("generated_at"),
+            },
+            "evidence_plane_index": {
+                "artifact_path": evidence_plane_index_path().relative_to(ROOT).as_posix(),
+                "generated_at": evidence_index.get("generated_at"),
+            },
+            "evidence_plane_overlay": {
+                "artifact_path": evidence_plane_overlay_path().relative_to(ROOT).as_posix(),
+                "generated_at": evidence_overlay.get("generated_at"),
+            },
+            "graph_health_overlay": {
+                "artifact_path": graph_health_overlay_path().relative_to(ROOT).as_posix(),
+                "generated_at": graph_overlay.get("generated_at"),
+            },
+            "graph_health_trends": {
+                "artifact_path": graph_health_trends_path().relative_to(ROOT).as_posix(),
+                "generated_at": graph_trends.get("generated_at"),
+            },
+            "proposal_runtime_index": {
+                "artifact_path": proposal_runtime_index_path().relative_to(ROOT).as_posix(),
+                "generated_at": proposal_runtime_index.get("generated_at"),
+            },
+        },
+        "entry_count": len(metrics),
+        "metrics": metrics,
+        "active_signals": sorted(set(active_signals)),
+        "viewer_projection": {
+            "metric_status": {key: sorted(value) for key, value in sorted(status_groups.items())},
+            "active_signals": sorted(set(active_signals)),
+            "named_filters": {key: sorted(value) for key, value in sorted(named_filters.items())},
+        },
+    }
+
+
+def write_metric_signal_index(index: dict[str, Any]) -> Path:
+    RUNS_DIR.mkdir(parents=True, exist_ok=True)
+    path = metric_signal_index_path()
+    with artifact_lock(path):
+        atomic_write_json(path, index)
+    return path
+
+
+def metric_threshold_proposal_severity(score: float | None, threshold: float) -> str:
+    gap = metric_gap_from_threshold(score, threshold)
+    if gap is None:
+        return "low"
+    if gap >= 0.25:
+        return "high"
+    if gap >= 0.1:
+        return "medium"
+    return "low"
+
+
+def build_metric_threshold_proposals(signal_index: dict[str, Any]) -> dict[str, Any]:
+    entries: list[dict[str, Any]] = []
+    by_kind: dict[str, list[str]] = {}
+    by_severity: dict[str, list[str]] = {}
+    by_metric: dict[str, list[str]] = {}
+    named_filters = {name: [] for name in METRIC_THRESHOLD_PROPOSAL_NAMED_FILTERS}
+
+    for metric in signal_index.get("metrics", []):
+        if not isinstance(metric, dict):
+            continue
+        if str(metric.get("status", "")).strip() != "below_threshold":
+            continue
+
+        metric_id = str(metric.get("metric_id", "")).strip()
+        trigger_signal = str(metric.get("trigger_signal", "")).strip()
+        if not metric_id or not trigger_signal:
+            continue
+        mapping = metric_signal_mapping(trigger_signal)
+        proposal_kind = (
+            str(mapping.get("proposal_kind", "")).strip() or "metric_remediation_proposal"
+        )
+        severity = metric_threshold_proposal_severity(
+            metric.get("score"),
+            float(metric.get("minimum_score", 0.0)),
+        )
+        proposal_id = f"metric-{metric_id}-followup"
+        threshold = float(metric.get("minimum_score", 0.0))
+        score = metric.get("score")
+        entries.append(
+            {
+                "proposal_id": proposal_id,
+                "proposal_kind": proposal_kind,
+                "title": f"Review {metric.get('title', metric_id)} below threshold",
+                "metric_id": metric_id,
+                "trigger_signal": trigger_signal,
+                "severity": severity,
+                "score": score,
+                "minimum_score": threshold,
+                "threshold_gap": metric_gap_from_threshold(score, threshold),
+                "policy_mutation_state": "proposal_only",
+                "review_intent": "proposal_first_metric_followup",
+                "recommended_actions": list(mapping.get("recommended_actions", [])),
+                "target_surfaces": list(mapping.get("target_surfaces", [])),
+                "proposed_transition": {
+                    "transition_profile": "specgraph_core",
+                    "packet_type": "proposal",
+                    "target_artifact_class": "metric_threshold_followup",
+                },
+                "basis": (
+                    f"{metric.get('title', metric_id)} scored {score} against minimum "
+                    f"{threshold}, so the threshold crossing is surfaced as a reviewable "
+                    "proposal instead of a direct policy mutation."
+                ),
+                "metric_summary": {
+                    "status": str(metric.get("status", "")).strip(),
+                    "input_summary": copy.deepcopy(metric.get("input_summary", {})),
+                },
+            }
+        )
+        by_kind.setdefault(proposal_kind, []).append(proposal_id)
+        by_severity.setdefault(severity, []).append(proposal_id)
+        by_metric.setdefault(metric_id, []).append(proposal_id)
+        if proposal_kind == "metric_remediation_proposal":
+            named_filters["remediation_proposals"].append(proposal_id)
+        else:
+            named_filters["threshold_review_proposals"].append(proposal_id)
+        if severity in {"high", "medium", "low"}:
+            named_filters[f"{severity}_severity"].append(proposal_id)
+
+    return {
+        "artifact_kind": METRIC_THRESHOLD_PROPOSALS_ARTIFACT_KIND,
+        "schema_version": METRIC_THRESHOLD_PROPOSALS_SCHEMA_VERSION,
+        "generated_at": utc_now_iso(),
+        "policy_reference": metric_signal_policy_reference(),
+        "source_signal_index_path": metric_signal_index_path().relative_to(ROOT).as_posix(),
+        "source_signal_generated_at": signal_index.get("generated_at"),
+        "entry_count": len(entries),
+        "entries": entries,
+        "viewer_projection": {
+            "proposal_kind": {key: sorted(value) for key, value in sorted(by_kind.items())},
+            "severity": {key: sorted(value) for key, value in sorted(by_severity.items())},
+            "metric_id": {key: sorted(value) for key, value in sorted(by_metric.items())},
+            "named_filters": {key: sorted(value) for key, value in sorted(named_filters.items())},
+        },
+    }
+
+
+def write_metric_threshold_proposals(report: dict[str, Any]) -> Path:
+    RUNS_DIR.mkdir(parents=True, exist_ok=True)
+    path = metric_threshold_proposals_path()
+    with artifact_lock(path):
+        atomic_write_json(path, report)
     return path
 
 
@@ -15589,6 +16189,8 @@ def main(
     build_spec_trace_projection_mode: bool = False,
     build_evidence_plane_index_mode: bool = False,
     build_evidence_plane_overlay_mode: bool = False,
+    build_metric_signal_index_mode: bool = False,
+    build_metric_threshold_proposals_mode: bool = False,
     build_proposal_lane_overlay_mode: bool = False,
     build_proposal_runtime_index_mode: bool = False,
     build_proposal_promotion_index_mode: bool = False,
@@ -15618,6 +16220,32 @@ def main(
 
     if transition_profile and not validate_transition_packet_path:
         print("--transition-profile requires --validate-transition-packet", file=sys.stderr)
+        return 1
+
+    standalone_modes = {
+        "--validate-transition-packet": bool(validate_transition_packet_path),
+        "--build-intent-layer-overlay": build_intent_layer_overlay_mode,
+        "--build-vocabulary-index": build_vocabulary_index_mode,
+        "--build-vocabulary-drift-report": build_vocabulary_drift_report_mode,
+        "--build-pre-spec-semantics-index": build_pre_spec_semantics_index_mode,
+        "--build-graph-health-overlay": build_graph_health_overlay_mode,
+        "--build-graph-health-trends": build_graph_health_trends_mode,
+        "--build-spec-trace-index": build_spec_trace_index_mode,
+        "--build-spec-trace-projection": build_spec_trace_projection_mode,
+        "--build-evidence-plane-index": build_evidence_plane_index_mode,
+        "--build-evidence-plane-overlay": build_evidence_plane_overlay_mode,
+        "--build-metric-signal-index": build_metric_signal_index_mode,
+        "--build-metric-threshold-proposals": build_metric_threshold_proposals_mode,
+        "--build-proposal-lane-overlay": build_proposal_lane_overlay_mode,
+        "--build-proposal-runtime-index": build_proposal_runtime_index_mode,
+        "--build-proposal-promotion-index": build_proposal_promotion_index_mode,
+    }
+    enabled_standalone_modes = [name for name, enabled in standalone_modes.items() if enabled]
+    if len(enabled_standalone_modes) > 1:
+        print(
+            "standalone commands cannot be combined: " + ", ".join(enabled_standalone_modes),
+            file=sys.stderr,
+        )
         return 1
 
     if validate_transition_packet_path:
@@ -16179,6 +16807,78 @@ def main(
         overlay = build_evidence_plane_overlay(index)
         write_evidence_plane_overlay(overlay)
         print(json.dumps(overlay, ensure_ascii=False, indent=2))
+        return 0
+
+    if build_metric_signal_index_mode:
+        if any(
+            (
+                dry_run,
+                auto_approve,
+                loop,
+                resolve_gate,
+                decision,
+                note,
+                target_spec,
+                split_proposal,
+                apply_split_proposal,
+                operator_note,
+                mutation_budget,
+                run_authority,
+                execution_profile,
+                child_model,
+                child_timeout_seconds,
+                verbose,
+                list_stale_runtime,
+                clean_stale_runtime,
+                observe_graph_health_mode,
+                operator_request_packet_path,
+            )
+        ):
+            print(
+                "--build-metric-signal-index must be used as a standalone command",
+                file=sys.stderr,
+            )
+            return 1
+        index = build_metric_signal_index(specs)
+        write_metric_signal_index(index)
+        print(json.dumps(index, ensure_ascii=False, indent=2))
+        return 0
+
+    if build_metric_threshold_proposals_mode:
+        if any(
+            (
+                dry_run,
+                auto_approve,
+                loop,
+                resolve_gate,
+                decision,
+                note,
+                target_spec,
+                split_proposal,
+                apply_split_proposal,
+                operator_note,
+                mutation_budget,
+                run_authority,
+                execution_profile,
+                child_model,
+                child_timeout_seconds,
+                verbose,
+                list_stale_runtime,
+                clean_stale_runtime,
+                observe_graph_health_mode,
+                operator_request_packet_path,
+            )
+        ):
+            print(
+                "--build-metric-threshold-proposals must be used as a standalone command",
+                file=sys.stderr,
+            )
+            return 1
+        index = build_metric_signal_index(specs)
+        write_metric_signal_index(index)
+        report = build_metric_threshold_proposals(index)
+        write_metric_threshold_proposals(report)
+        print(json.dumps(report, ensure_ascii=False, indent=2))
         return 0
 
     if build_proposal_runtime_index_mode:
@@ -16911,6 +17611,22 @@ if __name__ == "__main__":
         ),
     )
     parser.add_argument(
+        "--build-metric-signal-index",
+        action="store_true",
+        help=(
+            "Build a derived metric signal index from trace, evidence, graph-health, and "
+            "proposal-runtime surfaces without turning metrics into canonical facts"
+        ),
+    )
+    parser.add_argument(
+        "--build-metric-threshold-proposals",
+        action="store_true",
+        help=(
+            "Build reviewable proposal artifacts from metric-threshold breaches so thresholds "
+            "pressure proposal flow before any policy mutation"
+        ),
+    )
+    parser.add_argument(
         "--build-proposal-lane-overlay",
         action="store_true",
         help=(
@@ -17061,6 +17777,8 @@ if __name__ == "__main__":
             build_spec_trace_projection_mode=args.build_spec_trace_projection,
             build_evidence_plane_index_mode=args.build_evidence_plane_index,
             build_evidence_plane_overlay_mode=args.build_evidence_plane_overlay,
+            build_metric_signal_index_mode=args.build_metric_signal_index,
+            build_metric_threshold_proposals_mode=args.build_metric_threshold_proposals,
             build_proposal_lane_overlay_mode=args.build_proposal_lane_overlay,
             build_proposal_runtime_index_mode=args.build_proposal_runtime_index,
             build_proposal_promotion_index_mode=args.build_proposal_promotion_index,

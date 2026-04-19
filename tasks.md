@@ -6,8 +6,6 @@ Task numbers are preserved for traceability across commits and PRs.
 ## Reflective Evolution Loop
 
 17. [inprogress] Add support for retrospective spec refactoring after a graph has already grown suboptimally, not only at creation time.
-20. [todo] Introduce metric-driven signals later, using SIB, Specification Verifiability, Process Observability, Structural Observability, and related measures as derived inputs rather than canonical facts.
-21. [todo] Define how metric thresholds become proposals first, and only later become normative policy in SpecGraph after human approval.
 
 ## Intent Layer
 

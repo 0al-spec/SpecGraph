@@ -7697,6 +7697,395 @@ def test_main_builds_evidence_plane_overlay_as_standalone_command(
     )
 
 
+def test_build_metric_signal_index_reports_threshold_breaches(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    specs_dir = repo_fixture / "specs" / "nodes"
+    specs_dir.joinpath("SG-SPEC-0002.yaml").write_text(
+        json.dumps(
+            {
+                "id": "SG-SPEC-0002",
+                "title": "Second Spec",
+                "kind": "spec",
+                "created_at": "2026-04-19T00:00:00Z",
+                "updated_at": "2026-04-19T00:00:00Z",
+                "status": "outlined",
+                "maturity": 0.2,
+                "depends_on": [],
+                "outputs": ["specs/nodes/SG-SPEC-0002.yaml"],
+                "allowed_paths": ["specs/nodes/SG-SPEC-0002.yaml"],
+                "acceptance": ["criterion"],
+                "prompt": "Second spec.",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_spec_trace_index",
+        lambda specs: {
+            "generated_at": "2026-04-19T00:00:00Z",
+            "entries": [
+                {
+                    "spec_id": "SG-SPEC-0001",
+                    "acceptance_coverage": {"status": "no_linked_evidence"},
+                },
+                {
+                    "spec_id": "SG-SPEC-0002",
+                    "acceptance_coverage": {"status": "evidence_linked_unmapped"},
+                },
+            ],
+        },
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_spec_trace_projection",
+        lambda index: {
+            "generated_at": "2026-04-19T00:00:01Z",
+            "viewer_projection": {"named_filters": {}},
+        },
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_evidence_plane_index",
+        lambda specs: {
+            "generated_at": "2026-04-19T00:00:02Z",
+            "entries": [
+                {"spec_id": "SG-SPEC-0001", "chain_status": "chain_complete"},
+                {"spec_id": "SG-SPEC-0002", "chain_status": "observation_backed"},
+            ],
+        },
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_evidence_plane_overlay",
+        lambda index: {
+            "generated_at": "2026-04-19T00:00:03Z",
+            "viewer_projection": {"named_filters": {}},
+        },
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_graph_health_overlay",
+        lambda specs: {
+            "generated_at": "2026-04-19T00:00:04Z",
+            "entries": [
+                {"spec_id": "SG-SPEC-0001", "signals": ["depth_without_breadth"]},
+                {"spec_id": "SG-SPEC-0002", "signals": ["refinement_fan_out_pressure"]},
+            ],
+            "viewer_projection": {
+                "named_filters": {"affected_spec_ids": ["SG-SPEC-0001", "SG-SPEC-0002"]}
+            },
+        },
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_graph_health_trends",
+        lambda specs, overlay=None: {
+            "generated_at": "2026-04-19T00:00:05Z",
+            "entries": [
+                {
+                    "spec_id": "SG-SPEC-0001",
+                    "trend_status": "persistent",
+                    "currently_active": True,
+                }
+            ],
+            "viewer_projection": {"named_filters": {"persistent_recurrence": ["SG-SPEC-0001"]}},
+        },
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_proposal_runtime_index",
+        lambda: {
+            "generated_at": "2026-04-19T00:00:06Z",
+            "entries": [
+                {
+                    "proposal_id": "0023",
+                    "posture": "synchronous_runtime_slice",
+                    "observation_coverage": {"status": "covered"},
+                }
+            ],
+        },
+    )
+
+    index = supervisor_module.build_metric_signal_index(supervisor_module.load_specs())
+
+    assert index["artifact_kind"] == supervisor_module.METRIC_SIGNAL_INDEX_ARTIFACT_KIND
+    by_id = {entry["metric_id"]: entry for entry in index["metrics"]}
+    assert by_id["specification_verifiability"]["status"] == "below_threshold"
+    assert by_id["process_observability"]["status"] == "healthy"
+    assert by_id["structural_observability"]["status"] == "below_threshold"
+    assert by_id["sib_proxy"]["status"] == "below_threshold"
+    assert sorted(index["active_signals"]) == [
+        "low_sib_proxy",
+        "low_specification_verifiability",
+        "low_structural_observability",
+    ]
+    assert index["viewer_projection"]["named_filters"]["metrics_below_threshold"] == [
+        "sib_proxy",
+        "specification_verifiability",
+        "structural_observability",
+    ]
+
+
+def test_build_metric_signal_index_ignores_gate_only_overlay_entries(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    specs_dir = repo_fixture / "specs" / "nodes"
+    specs_dir.joinpath("SG-SPEC-0002.yaml").write_text(
+        json.dumps(
+            {
+                "id": "SG-SPEC-0002",
+                "title": "Second Spec",
+                "kind": "spec",
+                "created_at": "2026-04-19T00:00:00Z",
+                "updated_at": "2026-04-19T00:00:00Z",
+                "status": "outlined",
+                "maturity": 0.2,
+                "depends_on": [],
+                "outputs": ["specs/nodes/SG-SPEC-0002.yaml"],
+                "allowed_paths": ["specs/nodes/SG-SPEC-0002.yaml"],
+                "acceptance": ["criterion"],
+                "prompt": "Second spec.",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_spec_trace_index",
+        lambda specs: {"generated_at": "2026-04-19T00:00:00Z", "entries": []},
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_spec_trace_projection",
+        lambda index: {"generated_at": "2026-04-19T00:00:01Z", "viewer_projection": {}},
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_evidence_plane_index",
+        lambda specs: {"generated_at": "2026-04-19T00:00:02Z", "entries": []},
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_evidence_plane_overlay",
+        lambda index: {"generated_at": "2026-04-19T00:00:03Z", "viewer_projection": {}},
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_graph_health_overlay",
+        lambda specs: {
+            "generated_at": "2026-04-19T00:00:04Z",
+            "entries": [
+                {
+                    "spec_id": "SG-SPEC-0001",
+                    "gate_state": "review_pending",
+                    "signals": [],
+                },
+                {
+                    "spec_id": "SG-SPEC-0002",
+                    "gate_state": "none",
+                    "signals": ["depth_without_breadth"],
+                },
+            ],
+            "viewer_projection": {"named_filters": {"gated_specs": ["SG-SPEC-0001"]}},
+        },
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_graph_health_trends",
+        lambda specs, overlay=None: {
+            "generated_at": "2026-04-19T00:00:05Z",
+            "entries": [],
+            "viewer_projection": {"named_filters": {}},
+        },
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_proposal_runtime_index",
+        lambda: {"generated_at": "2026-04-19T00:00:06Z", "entries": []},
+    )
+
+    index = supervisor_module.build_metric_signal_index(supervisor_module.load_specs())
+
+    by_id = {entry["metric_id"]: entry for entry in index["metrics"]}
+    structural = by_id["structural_observability"]
+    assert structural["input_summary"]["active_pressure_spec_count"] == 1
+    assert structural["input_summary"]["active_pressure_ratio"] == 0.5
+    assert structural["score"] == 0.7
+    assert structural["status"] == "healthy"
+
+
+def test_main_builds_metric_signal_index_as_standalone_command(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    def fake_index(specs: list[object]) -> dict[str, object]:
+        assert len(specs) == 1
+        return {
+            "artifact_kind": supervisor_module.METRIC_SIGNAL_INDEX_ARTIFACT_KIND,
+            "schema_version": supervisor_module.METRIC_SIGNAL_INDEX_SCHEMA_VERSION,
+            "generated_at": "2026-04-19T00:00:00Z",
+            "policy_reference": {"artifact_path": "tools/metric_signal_policy.json"},
+            "source_artifacts": {},
+            "entry_count": 1,
+            "metrics": [
+                {
+                    "metric_id": "specification_verifiability",
+                    "status": "below_threshold",
+                    "trigger_signal": "low_specification_verifiability",
+                }
+            ],
+            "active_signals": ["low_specification_verifiability"],
+            "viewer_projection": {
+                "metric_status": {"below_threshold": ["specification_verifiability"]},
+                "active_signals": ["low_specification_verifiability"],
+                "named_filters": {"metrics_below_threshold": ["specification_verifiability"]},
+            },
+        }
+
+    monkeypatch.setattr(supervisor_module, "build_metric_signal_index", fake_index)
+
+    exit_code = supervisor_module.main(build_metric_signal_index_mode=True)
+
+    assert exit_code == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["artifact_kind"] == supervisor_module.METRIC_SIGNAL_INDEX_ARTIFACT_KIND
+    artifact = json.loads(
+        (repo_fixture / "runs" / "metric_signal_index.json").read_text(encoding="utf-8")
+    )
+    assert artifact["viewer_projection"]["metric_status"]["below_threshold"] == [
+        "specification_verifiability"
+    ]
+
+
+def test_build_metric_threshold_proposals_emits_reviewable_followups(
+    supervisor_module: object,
+) -> None:
+    report = supervisor_module.build_metric_threshold_proposals(
+        {
+            "generated_at": "2026-04-19T00:00:00Z",
+            "metrics": [
+                {
+                    "metric_id": "specification_verifiability",
+                    "title": "Specification Verifiability",
+                    "score": 0.2,
+                    "minimum_score": 0.45,
+                    "status": "below_threshold",
+                    "trigger_signal": "low_specification_verifiability",
+                    "input_summary": {"relevant_spec_count": 3},
+                },
+                {
+                    "metric_id": "sib_proxy",
+                    "title": "SIB Proxy",
+                    "score": 0.52,
+                    "minimum_score": 0.6,
+                    "status": "below_threshold",
+                    "trigger_signal": "low_sib_proxy",
+                    "input_summary": {"component_scores": {}},
+                },
+                {
+                    "metric_id": "structural_observability",
+                    "title": "Structural Observability",
+                    "score": 0.9,
+                    "minimum_score": 0.7,
+                    "status": "healthy",
+                    "trigger_signal": "low_structural_observability",
+                    "input_summary": {},
+                },
+            ],
+        }
+    )
+
+    assert report["artifact_kind"] == supervisor_module.METRIC_THRESHOLD_PROPOSALS_ARTIFACT_KIND
+    assert report["entry_count"] == 2
+    by_id = {entry["metric_id"]: entry for entry in report["entries"]}
+    assert by_id["specification_verifiability"]["proposal_kind"] == "metric_remediation_proposal"
+    assert by_id["specification_verifiability"]["policy_mutation_state"] == "proposal_only"
+    assert by_id["sib_proxy"]["proposal_kind"] == "metric_threshold_review_proposal"
+    assert report["viewer_projection"]["named_filters"]["remediation_proposals"] == [
+        "metric-specification_verifiability-followup"
+    ]
+
+
+def test_main_builds_metric_threshold_proposals_as_standalone_command(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    def fake_signal_index(specs: list[object]) -> dict[str, object]:
+        assert len(specs) == 1
+        return {
+            "artifact_kind": supervisor_module.METRIC_SIGNAL_INDEX_ARTIFACT_KIND,
+            "schema_version": supervisor_module.METRIC_SIGNAL_INDEX_SCHEMA_VERSION,
+            "generated_at": "2026-04-19T00:00:00Z",
+            "metrics": [],
+            "active_signals": [],
+            "viewer_projection": {"metric_status": {}, "active_signals": [], "named_filters": {}},
+        }
+
+    def fake_report(index: dict[str, object]) -> dict[str, object]:
+        assert index["artifact_kind"] == supervisor_module.METRIC_SIGNAL_INDEX_ARTIFACT_KIND
+        return {
+            "artifact_kind": supervisor_module.METRIC_THRESHOLD_PROPOSALS_ARTIFACT_KIND,
+            "schema_version": supervisor_module.METRIC_THRESHOLD_PROPOSALS_SCHEMA_VERSION,
+            "generated_at": "2026-04-19T00:01:00Z",
+            "policy_reference": {"artifact_path": "tools/metric_signal_policy.json"},
+            "source_signal_index_path": "runs/metric_signal_index.json",
+            "source_signal_generated_at": "2026-04-19T00:00:00Z",
+            "entry_count": 1,
+            "entries": [
+                {
+                    "proposal_id": "metric-specification_verifiability-followup",
+                    "metric_id": "specification_verifiability",
+                    "proposal_kind": "metric_remediation_proposal",
+                }
+            ],
+            "viewer_projection": {
+                "proposal_kind": {
+                    "metric_remediation_proposal": ["metric-specification_verifiability-followup"]
+                },
+                "severity": {"high": ["metric-specification_verifiability-followup"]},
+                "metric_id": {
+                    "specification_verifiability": ["metric-specification_verifiability-followup"]
+                },
+                "named_filters": {
+                    "remediation_proposals": ["metric-specification_verifiability-followup"]
+                },
+            },
+        }
+
+    monkeypatch.setattr(supervisor_module, "build_metric_signal_index", fake_signal_index)
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_metric_threshold_proposals",
+        fake_report,
+    )
+
+    exit_code = supervisor_module.main(build_metric_threshold_proposals_mode=True)
+
+    assert exit_code == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["artifact_kind"] == supervisor_module.METRIC_THRESHOLD_PROPOSALS_ARTIFACT_KIND
+    signal_artifact = json.loads(
+        (repo_fixture / "runs" / "metric_signal_index.json").read_text(encoding="utf-8")
+    )
+    assert signal_artifact["artifact_kind"] == supervisor_module.METRIC_SIGNAL_INDEX_ARTIFACT_KIND
+    proposal_artifact = json.loads(
+        (repo_fixture / "runs" / "metric_threshold_proposals.json").read_text(encoding="utf-8")
+    )
+    assert proposal_artifact["entry_count"] == 1
+
+
 def test_build_graph_health_overlay_groups_viewer_filters(
     supervisor_module: object,
     repo_fixture: Path,
@@ -8361,10 +8750,7 @@ def test_main_rejects_combined_proposal_lane_overlay_and_runtime_index_modes(
     )
 
     assert exit_code == 1
-    assert (
-        "--build-proposal-lane-overlay must be used as a standalone command"
-        in capsys.readouterr().err
-    )
+    assert "standalone commands cannot be combined" in capsys.readouterr().err
 
 
 def test_main_builds_graph_health_overlay_as_standalone_command(
@@ -8604,10 +8990,7 @@ def test_main_rejects_combined_graph_health_overlay_and_trends_modes(
     )
 
     assert exit_code == 1
-    assert (
-        "--build-graph-health-overlay must be used as a standalone command"
-        in capsys.readouterr().err
-    )
+    assert "standalone commands cannot be combined" in capsys.readouterr().err
 
 
 def test_main_builds_spec_trace_projection_as_standalone_command(
