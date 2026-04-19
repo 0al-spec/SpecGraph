@@ -1,0 +1,37 @@
+{
+  "artifact_kind": "evaluator_loop_policy",
+  "schema_version": 1,
+  "intervention_kinds": [
+    "refine",
+    "propose",
+    "rewrite",
+    "merge",
+    "handoff",
+    "apply"
+  ],
+  "stop_conditions": [
+    "canonical_change_synced",
+    "review_gate_created",
+    "split_required",
+    "proposal_emitted",
+    "handoff_emitted",
+    "blocked_by_runtime_failure",
+    "blocked_by_validation_failure",
+    "no_eligible_work"
+  ],
+  "escalation_reasons": [
+    "executor_environment_failure",
+    "runtime_artifact_failure",
+    "authority_constraint",
+    "human_review_required",
+    "unknown"
+  ],
+  "artifact_contract": {
+    "required_fields": [
+      "chosen_intervention",
+      "improvement_basis",
+      "stop_conditions",
+      "escalation_reasons"
+    ]
+  }
+}

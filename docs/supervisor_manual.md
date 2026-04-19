@@ -687,7 +687,11 @@ Important fields:
 - `completion_status`
 - `gate_state`
 - `required_human_action`
+- `validation_findings`
+- `validation_summary`
 - `validation_errors`
+- `safe_repair_contract`
+- `evaluator_loop_control`
 - `executor_environment`
 - `refinement_acceptance`
 - `reconciliation`
@@ -742,6 +746,48 @@ The supervisor has reached a case that should move to a higher-authority review 
 `decision_inspector` is the compact operator-facing explanation layer in each
 run log, and the same content is also written to
 `runs/decision_inspector/<RUN_ID>.json`.
+
+Validation is now dual-surfaced:
+
+- `validation_findings`
+  typed findings with `family`, `error_class`, `code`, `severity`, and
+  `message`
+- `validation_errors`
+  backward-compatible rendered strings derived from those findings
+
+Current typed findings cover runtime paths such as YAML/load failures,
+relation/reconciliation failures, acceptance or atomicity failures,
+authority/scope violations, runtime artifact integrity failures, executor
+machine-protocol failures, and executor-environment failures.
+
+Recoverable repairs are explicit too:
+
+- `safe_repair_contract`
+  bounded repair metadata attached to the run payload
+- `runs/safe_repairs/<RUN_ID>.json`
+  standalone repair artifact when a repair was actually applied
+
+The current built-in safe repair kind is intentionally narrow:
+
+- `yaml_candidate_repair`
+- scope: `worktree_candidate_only`
+- canonical write: always `false`
+- every repair still requires normal post-repair validation before any later sync
+
+Reflective cycles are explicit too:
+
+- `evaluator_loop_control`
+  compact control record attached to the run payload
+- `runs/evaluator_control/<RUN_ID>.json`
+  standalone artifact for the same cycle record
+
+Each control artifact records:
+
+- `chosen_intervention`
+- `applied_rules`
+- `improvement_basis`
+- `stop_conditions`
+- `escalation_reasons`
 
 It has four slices:
 

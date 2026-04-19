@@ -115,7 +115,8 @@ Supervisor modes:
 Key derived artifacts:
 
 - `runs/latest-summary.md`: fastest operator-facing run snapshot
-- `runs/<RUN_ID>.json`: full run payload including `graph_health` and `decision_inspector`
+- `runs/<RUN_ID>.json`: full run payload including `graph_health`,
+  `decision_inspector`, `validation_findings`, and `validation_summary`
 - `runs/decision_inspector/<RUN_ID>.json`: standalone decision explanation artifact for one run
 - `runs/graph_health_overlay.json`: canonical graph-health viewer/report overlay grouped by
   signal, recommended action, and named pressure filters
@@ -155,6 +156,14 @@ Key derived artifacts:
 - `runs/proposal_runtime_index.json`: proposal posture and reflective runtime-closure index
 - `runs/proposal_promotion_index.json`: proposal-promotion provenance and
   traceability inspection artifact grouped by status and next gap
+- `runs/safe_repairs/<RUN_ID>.json`: standalone safe-repair artifact for
+  bounded worktree-candidate repairs
+- `runs/evaluator_control/<RUN_ID>.json`: standalone reflective-cycle control
+  artifact with chosen intervention, applied rules, improvement basis, stop
+  conditions, and escalation reasons
+- `tools/evaluator_intervention_policy.json`: declarative evaluator-choice
+  policy that maps selection modes, graph-health pressure, and authority
+  constraints into `refine/propose/rewrite/merge/handoff/apply`
 - `runs/spec_id_reservations.json`: temporary active child-materialization spec-id reservations
 - `tools/supervisor_policy.json`: declarative supervisor policy artifact for thresholds, priorities,
   mutation classes, queue defaults, and execution profiles
@@ -197,6 +206,9 @@ Runtime artifact safety:
   run is active and require the produced child file to use that reserved path
 - malformed `runs/proposal_queue.json` or `runs/refactor_queue.json` now block
   normal supervisor runs instead of being silently treated as empty queues
+- recoverable repairs are now recorded as `safe_repair_contract`; the current
+  built-in repair kind `yaml_candidate_repair` is restricted to
+  `worktree_candidate_only` with `canonical_write: false`
 - a child executor success path must emit both `RUN_OUTCOME:` and `BLOCKER:`
   markers; missing markers are treated as protocol failure
 
@@ -222,12 +234,15 @@ When a `supervisor` run behaves unexpectedly, debug it in this order:
    It is the fastest operator-facing snapshot and shows:
    - `outcome`
    - `gate_state`
+   - `validation_findings`
    - `validation_errors`
    - `executor_environment_issues`
    - `executor_environment_primary_failure`
    - `required_human_action`
 2. If the summary suggests an environment problem, open the full run log in `runs/<RUN_ID>.json`.
    The run payload preserves:
+   - typed `validation_findings`
+   - aggregated `validation_summary`
    - raw `stdout`
    - raw `stderr`
    - structured `executor_environment`

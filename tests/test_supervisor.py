@@ -4843,6 +4843,11 @@ def test_main_blocks_successful_executor_without_machine_protocol_markers(
     payload = json.loads(run_logs[0].read_text(encoding="utf-8"))
     assert payload["outcome"] == "blocked"
     assert payload["blocker"] == "executor machine protocol failure"
+    assert {finding["code"] for finding in payload["validation_findings"]} >= {
+        "missing_executor_protocol_run_outcome",
+        "missing_executor_protocol_blocker",
+    }
+    assert payload["validation_summary"]["families"]["runtime_protocol"] == 2
     assert any(
         "Missing executor machine protocol marker RUN_OUTCOME" in error
         for error in payload["validation_errors"]
@@ -11722,6 +11727,10 @@ def test_main_records_yaml_validation_error(
     assert payload["outcome"] == "split_required"
     assert payload["gate_state"] == "split_required"
     assert payload["changed_files"] == ["specs/nodes/SG-SPEC-0001.yaml"]
+    assert {finding["code"] for finding in payload["validation_findings"]} >= {
+        "worktree_spec_load_failure",
+    }
+    assert payload["validation_summary"]["families"]["yaml"] >= 1
     assert any(
         "Failed to load worktree specs for validation:" in error
         for error in payload["validation_errors"]
@@ -11806,6 +11815,250 @@ def test_main_repairs_recoverable_worktree_yaml_indentation(
     payload = json.loads(run_logs[0].read_text(encoding="utf-8"))
     assert payload["completion_status"] == "ok"
     assert payload["yaml_repair_paths"] == ["specs/nodes/SG-SPEC-0001.yaml"]
+    assert payload["safe_repair_contract"]["artifact_kind"] == "safe_repair_contract"
+    assert payload["safe_repair_contract"]["repair_count"] == 1
+    repair = payload["safe_repair_contract"]["repairs"][0]
+    assert repair["repair_kind"] == "yaml_candidate_repair"
+    assert repair["application_scope"] == "worktree_candidate_only"
+    assert repair["target_path"] == "specs/nodes/SG-SPEC-0001.yaml"
+    assert repair["canonical_write"] is False
+    assert payload["safe_repair_artifact"].endswith(".json")
+    assert payload["evaluator_loop_control"]["chosen_intervention"] == "refine"
+    assert payload["evaluator_loop_control"]["applied_rules"][0]["rule_id"].startswith(
+        "selection_mode_defaults."
+    )
+    assert "review_gate_created" in payload["evaluator_loop_control"]["stop_conditions"]
+
+
+def test_main_blocks_when_evaluator_control_artifact_write_fails(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    node_data = {
+        "id": "SG-SPEC-0001",
+        "kind": "spec",
+        "title": "Recoverable YAML Node",
+        "status": "linked",
+        "maturity": 0.4,
+        "depends_on": [],
+        "relates_to": [],
+        "refines": [],
+        "inputs": ["specs/nodes/SG-SPEC-0001.yaml"],
+        "outputs": ["specs/nodes/SG-SPEC-0001.yaml"],
+        "allowed_paths": ["specs/nodes/SG-SPEC-0001.yaml"],
+        "acceptance": ["Criterion 1"],
+        "acceptance_evidence": grounded_acceptance_evidence(["Criterion 1"]),
+        "prompt": "Initial prompt.",
+        "specification": {
+            "graph_health_signal_policy": {
+                "initial_signals": ["oversized_spec"],
+                "semantics": ["Signal presence is diagnostic only."],
+            }
+        },
+    }
+    node_path.write_text(supervisor_module.dump_yaml_text(node_data), encoding="utf-8")
+
+    worktree = make_fake_worktree(repo_fixture)
+    monkeypatch.setattr(
+        supervisor_module,
+        "create_isolated_worktree",
+        lambda _node_id: (worktree, "codex/sg-spec-0001/test"),
+    )
+    changed_snapshots = [
+        [],
+        ["specs/nodes/SG-SPEC-0001.yaml"],
+        ["specs/nodes/SG-SPEC-0001.yaml"],
+    ]
+    monkeypatch.setattr(
+        supervisor_module, "git_changed_files", lambda _cwd=None: changed_snapshots.pop(0)
+    )
+
+    def fake_executor(_node: object, worktree_path: Path) -> subprocess.CompletedProcess[str]:
+        worktree_node_path = worktree_path / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+        data = supervisor_module.get_yaml_module().safe_load(
+            worktree_node_path.read_text(encoding="utf-8")
+        )
+        data["prompt"] = "Updated by recoverable YAML repair path."
+        broken_text = supervisor_module.dump_yaml_text(data).replace(
+            "\n    initial_signals:",
+            "\n  initial_signals:",
+            1,
+        )
+        worktree_node_path.write_text(broken_text, encoding="utf-8")
+        return subprocess.CompletedProcess(
+            args=["codex"],
+            returncode=0,
+            stdout="RUN_OUTCOME: done\nBLOCKER: none\n",
+            stderr="",
+        )
+
+    monkeypatch.setattr(
+        supervisor_module,
+        "write_evaluator_control_artifact",
+        lambda _payload: (_ for _ in ()).throw(RuntimeError("evaluator control lock failed")),
+    )
+
+    exit_code = supervisor_module.main(
+        executor=fake_executor,
+        target_spec="SG-SPEC-0001",
+    )
+
+    assert exit_code == 1
+    updated = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    assert updated["gate_state"] == "blocked"
+    assert (
+        updated["required_human_action"] == "repair malformed runtime artifact and rerun supervisor"
+    )
+    assert any("evaluator control lock failed" in error for error in updated["last_errors"])
+
+    run_logs = sorted((repo_fixture / "runs").glob("*-SG-SPEC-*.json"))
+    payload = json.loads(run_logs[0].read_text(encoding="utf-8"))
+    assert payload["completion_status"] == "failed"
+    assert payload["outcome"] == "blocked"
+    assert payload["gate_state"] == "blocked"
+    assert payload["decision_inspector_artifact"] == ""
+    assert payload["evaluator_control_artifact"] == ""
+    assert payload["safe_repair_artifact"] == ""
+    assert payload["validator_results"]["runtime_artifacts"] is False
+    assert {finding["code"] for finding in payload["validation_findings"]} >= {
+        "runtime_artifact_write_failure"
+    }
+
+
+def test_build_safe_repair_contract_is_bounded_to_worktree_candidate(
+    supervisor_module: object,
+) -> None:
+    contract = supervisor_module.build_safe_repair_contract(
+        run_id="20260419T140000Z-SG-SPEC-0001-abcd1234",
+        spec_id="SG-SPEC-0001",
+        repair_paths=["specs/nodes/SG-SPEC-0001.yaml"],
+    )
+
+    assert contract["repair_count"] == 1
+    assert contract["policy_reference"]["path"] == "tools/safe_repair_policy.json"
+    repair = contract["repairs"][0]
+    assert repair["repair_kind"] == "yaml_candidate_repair"
+    assert repair["bounded_write_surface"] == ["specs/nodes/SG-SPEC-0001.yaml"]
+    assert repair["canonical_write"] is False
+    assert repair["trigger_findings"][0]["code"] == "candidate_yaml_requires_safe_repair"
+
+
+def test_build_evaluator_loop_control_records_intervention_and_stop_conditions(
+    supervisor_module: object,
+) -> None:
+    control = supervisor_module.build_evaluator_loop_control(
+        run_id="20260419T141500Z-SG-SPEC-0001-abcd1234",
+        spec_id="SG-SPEC-0001",
+        selected_by_rule={
+            "selection_mode": "split_refactor_proposal",
+            "refactor_work_item": {
+                "signal": supervisor_module.SPLIT_REFACTOR_SIGNAL,
+                "recommended_action": "split_or_narrow_spec",
+            },
+        },
+        outcome="split_required",
+        gate_state="split_required",
+        blocker="spec exceeds atomicity quality gate",
+        required_human_action="split spec scope before rerun",
+        graph_health={
+            "signals": ["oversized_spec"],
+            "recommended_actions": ["split_or_narrow_spec"],
+        },
+        validation_findings=[
+            supervisor_module.validation_finding(
+                code="atomicity_violation",
+                family="acceptance",
+                error_class="semantic_rejection",
+                message="Atomicity gate exceeded",
+            )
+        ],
+        safe_repair_contract={"repair_count": 0},
+    )
+
+    assert control["artifact_kind"] == "evaluator_loop_control"
+    assert control["intervention_policy_reference"]["path"] == (
+        "tools/evaluator_intervention_policy.json"
+    )
+    assert control["chosen_intervention"] == "propose"
+    assert set(control["stop_conditions"]) >= {"proposal_emitted", "split_required"}
+    assert control["improvement_basis"]["validation_summary"]["finding_count"] == 1
+    assert any(
+        rule["rule_id"] == "graph_health_signal_overrides.oversized_spec"
+        for rule in control["applied_rules"]
+    )
+
+
+def test_choose_evaluator_intervention_prefers_handoff_over_authority_constraint(
+    supervisor_module: object,
+) -> None:
+    chosen, applied_rules = supervisor_module.choose_evaluator_intervention(
+        selected_by_rule={
+            "selection_mode": "graph_refactor",
+            "refactor_work_item": {
+                "signal": supervisor_module.TECHSPEC_HANDOFF_PRIMARY_SIGNAL,
+                "recommended_action": supervisor_module.TECHSPEC_HANDOFF_RECOMMENDED_ACTION,
+            },
+        },
+        graph_health={
+            "signals": [supervisor_module.TECHSPEC_HANDOFF_PRIMARY_SIGNAL],
+            "recommended_actions": [supervisor_module.TECHSPEC_HANDOFF_RECOMMENDED_ACTION],
+        },
+        validation_findings=[
+            supervisor_module.validation_finding(
+                code="write_scope_blocked",
+                family="authority",
+                error_class="scope_violation",
+                message="Write scope exceeded",
+            )
+        ],
+        safe_repair_contract={"repair_count": 0},
+    )
+
+    assert chosen == "handoff"
+    assert any(
+        rule["rule_id"]
+        == f"graph_health_signal_overrides.{supervisor_module.TECHSPEC_HANDOFF_PRIMARY_SIGNAL}"
+        for rule in applied_rules
+    )
+    assert not any(
+        rule["rule_id"] == "validation_family_overrides.authority" for rule in applied_rules
+    )
+
+
+def test_choose_evaluator_intervention_converts_authority_bound_graph_update_to_propose(
+    supervisor_module: object,
+) -> None:
+    chosen, applied_rules = supervisor_module.choose_evaluator_intervention(
+        selected_by_rule={
+            "selection_mode": "graph_refactor",
+            "refactor_work_item": {
+                "signal": "role_obscured_node",
+                "recommended_action": "rewrite_node_role_boundary",
+            },
+        },
+        graph_health={
+            "signals": ["role_obscured_node"],
+            "recommended_actions": ["rewrite_node_role_boundary"],
+        },
+        validation_findings=[
+            supervisor_module.validation_finding(
+                code="write_scope_blocked",
+                family="authority",
+                error_class="scope_violation",
+                message="Write scope exceeded",
+            )
+        ],
+        safe_repair_contract={"repair_count": 0},
+    )
+
+    assert chosen == "propose"
+    assert any(
+        rule["rule_id"] == "recommended_action_overrides.rewrite_node_role_boundary"
+        for rule in applied_rules
+    )
+    assert any(rule["rule_id"] == "validation_family_overrides.authority" for rule in applied_rules)
 
 
 def test_main_aborts_on_cycle(
