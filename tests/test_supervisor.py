@@ -6483,6 +6483,25 @@ def test_build_vocabulary_drift_report_flags_collisions_and_pre_spec_drift(
     assert "meaning_divergence" in finding_codes
 
 
+def test_build_vocabulary_drift_report_flags_undefined_canonical_terminology(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    spec_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    spec_data = json.loads(spec_path.read_text(encoding="utf-8"))
+    spec_data["specification"] = {"terminology": {"undefined_term_name": "Not in vocabulary."}}
+    spec_path.write_text(json.dumps(spec_data), encoding="utf-8")
+
+    report = supervisor_module.build_vocabulary_drift_report(supervisor_module.load_specs())
+
+    assert {
+        (finding["code"], finding["surface_kind"], finding["term"])
+        for finding in report["findings"]
+    } >= {
+        ("undefined_term", "canonical_spec_terminology", "undefined_term_name"),
+    }
+
+
 def test_normalize_operator_request_packet_builds_typed_execution_contract(
     supervisor_module: object,
     repo_fixture: Path,
@@ -6642,6 +6661,56 @@ def test_build_pre_spec_semantics_index_links_intent_proposals_and_canonical_spe
             "pre_spec::proposal_lane",
         ),
         (operator_request_handle, "SG-SPEC-0001", "pre_spec::canonical_spec"),
+    }
+
+
+def test_build_pre_spec_semantics_index_tolerates_non_object_sections(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    node_path = repo_fixture / "intent_layer" / "nodes" / "invalid-pre-spec.json"
+    node_path.parent.mkdir(parents=True, exist_ok=True)
+    node_path.write_text(
+        json.dumps(
+            {
+                "artifact_kind": supervisor_module.INTENT_LAYER_NODE_ARTIFACT_KIND,
+                "schema_version": 1,
+                "title": "Malformed pre-spec node",
+                "intent_repository_presence": {
+                    **supervisor_module.INTENT_LAYER_PRESENCE_CONTRACT,
+                    "tracked_path": "intent_layer/nodes/invalid-pre-spec.json",
+                },
+                "intent_handle": {
+                    "handle_value": "operator_request::SG-SPEC-0001::targeted_refine::malformed",
+                    "handle_status": "active",
+                },
+                "intent_layer_kind": "operator_request",
+                "mediation_state": "ready_for_execution",
+                "intent_lineage_link": [
+                    {
+                        "lineage_role": "normalized_from",
+                        "source_kind": "runtime_artifact",
+                        "source_reference": "operator-request.json",
+                    }
+                ],
+                "runtime_bridge": "not-an-object",
+                "pre_spec_semantics": "not-an-object",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    index = supervisor_module.build_pre_spec_semantics_index(supervisor_module.load_specs())
+    entry = next(
+        item
+        for item in index["entries"]
+        if item["intent_handle"] == "operator_request::SG-SPEC-0001::targeted_refine::malformed"
+    )
+
+    assert entry["query_contract"]["status"] == "invalid_pre_spec_state"
+    assert set(entry["query_contract"]["findings"]) >= {
+        "invalid_runtime_bridge_section",
+        "invalid_pre_spec_semantics_section",
     }
 
 

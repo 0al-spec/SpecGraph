@@ -5912,14 +5912,12 @@ def _vocabulary_surface_contracts(specs: list[SpecNode]) -> list[dict[str, Any]]
             continue
         for term in sorted(str(key).strip() for key in terminology.keys() if str(key).strip()):
             resolution = vocabulary_term_resolution(term)
-            if resolution is None:
-                continue
             surfaces.append(
                 {
                     "surface_kind": "canonical_spec_terminology",
                     "surface_id": display_artifact_path(spec.path),
                     "spec_id": spec.id,
-                    "family": resolution["family"],
+                    "family": str((resolution or {}).get("family", "")).strip(),
                     "terms": [term],
                 }
             )
@@ -8299,6 +8297,9 @@ def build_pre_spec_semantics_index(specs: list[SpecNode]) -> dict[str, Any]:
         ):
             query_findings.append("invalid_presence_contract")
         handle = node.get("intent_handle", {})
+        if not isinstance(handle, dict):
+            query_findings.append("invalid_intent_handle_section")
+            handle = {}
         handle_value = str(handle.get("handle_value", "")).strip()
         intent_kind = str(node.get("intent_layer_kind", "")).strip()
         mediation_state = str(node.get("mediation_state", "")).strip()
@@ -8312,7 +8313,13 @@ def build_pre_spec_semantics_index(specs: list[SpecNode]) -> dict[str, Any]:
             query_findings.append("missing_provenance")
 
         runtime_bridge = node.get("runtime_bridge", {})
+        if not isinstance(runtime_bridge, dict):
+            query_findings.append("invalid_runtime_bridge_section")
+            runtime_bridge = {}
         pre_spec_semantics = node.get("pre_spec_semantics", {})
+        if not isinstance(pre_spec_semantics, dict):
+            query_findings.append("invalid_pre_spec_semantics_section")
+            pre_spec_semantics = {}
         linked_proposals = sorted(
             set(
                 list(proposal_links_by_handle.get(handle_value, set()))
