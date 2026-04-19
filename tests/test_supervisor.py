@@ -7168,6 +7168,61 @@ def test_main_builds_intent_layer_overlay_without_loading_specs(
     assert report["artifact_kind"] == supervisor_module.INTENT_LAYER_OVERLAY_ARTIFACT_KIND
 
 
+def test_build_intent_layer_overlay_flags_cross_layer_masquerade(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    node_path = repo_fixture / "intent_layer" / "nodes" / "masquerading-intent.json"
+    node_path.parent.mkdir(parents=True, exist_ok=True)
+    node_path.write_text(
+        json.dumps(
+            {
+                "artifact_kind": supervisor_module.INTENT_LAYER_NODE_ARTIFACT_KIND,
+                "schema_version": 1,
+                "title": "Masquerading intent layer node",
+                "intent_repository_presence": {
+                    "tracked_presence": "repository_tracked",
+                    "path_class": "intent_layer_node_path",
+                    "persistence_boundary": "pre_canonical_repository_separate_from_runtime",
+                    "tracked_path": "intent_layer/nodes/masquerading-intent.json",
+                },
+                "intent_handle": {
+                    "handle_value": "user_intent::calculator-bootstrap",
+                    "handle_status": "active",
+                },
+                "intent_layer_kind": "user_intent",
+                "mediation_state": "captured",
+                "intent_capture": {
+                    "source_kind": "chat_instruction",
+                    "source_summary": "We are building a calculator.",
+                },
+                "intent_lineage_link": [
+                    {
+                        "lineage_role": "captured_from",
+                        "source_kind": "runtime_artifact",
+                        "source_reference": "chat://thread/current",
+                    }
+                ],
+                "status": "outlined",
+                "proposal_handle": {
+                    "handle_value": "governance_proposal::SG-SPEC-0001::calculator",
+                    "handle_status": "active",
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    overlay = supervisor_module.build_intent_layer_overlay()
+
+    assert overlay["entries"][0]["distinction_contract"]["canonical_equivalence"] is False
+    assert overlay["entries"][0]["distinction_contract"]["proposal_lane_equivalence"] is False
+    assert overlay["entries"][0]["query_contract"]["findings"] == [
+        "masquerades_as_canonical_spec",
+        "masquerades_as_proposal_lane",
+    ]
+
+
 def test_main_builds_proposal_lane_overlay_as_standalone_command(
     supervisor_module: object,
     repo_fixture: Path,

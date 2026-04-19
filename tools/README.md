@@ -106,7 +106,8 @@ Key derived artifacts:
   `user_intent` and `operator_request`, kept pre-canonical and separate from
   proposal-lane and canonical graph truth
 - `runs/intent_layer_overlay.json`: intent-layer viewer/report surface grouped
-  by artifact kind, mediation state, and invalid query-contract findings
+  by artifact kind, mediation state, explicit distinction contracts, and
+  invalid query-contract findings
 - `proposal_lane/nodes/*.json`: repository-tracked proposal-lane nodes with
   stable provisional handles, authority state, target region, lineage, and
   runtime bridge metadata

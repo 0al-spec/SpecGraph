@@ -11,7 +11,6 @@ Task numbers are preserved for traceability across commits and PRs.
 
 ## Intent Layer
 
-34. [todo] Distinguish `UserIntent` and `OperatorRequest` from canonical `spec` and proposal-lane nodes.
 35. [todo] Add a bounded operator-request bridge so GUI selections and chat instructions can steer one supervisor run without mutating canonical specs directly.
 36. [todo] Define how mediator outputs become canonical specs or proposals through reviewable supervisor-driven refinement instead of raw chat-to-spec mutation.
 

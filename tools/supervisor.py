@@ -416,6 +416,16 @@ INTENT_LAYER_ALLOWED_KINDS = set(
 INTENT_LAYER_REQUIRED_SECTIONS_BY_KIND = intent_layer_policy_lookup(
     "node_contract.kind_contract.required_sections_by_kind"
 )
+INTENT_LAYER_CANONICAL_SPEC_FORBIDDEN_FIELDS = set(
+    intent_layer_policy_lookup(
+        "node_contract.cross_layer_distinction.canonical_spec_forbidden_fields"
+    )
+)
+INTENT_LAYER_PROPOSAL_LANE_FORBIDDEN_FIELDS = set(
+    intent_layer_policy_lookup(
+        "node_contract.cross_layer_distinction.proposal_lane_forbidden_fields"
+    )
+)
 INTENT_LAYER_ALLOWED_STATES = set(
     intent_layer_policy_lookup("node_contract.state_contract.allowed_states")
 )
@@ -6409,12 +6419,22 @@ def build_intent_layer_overlay() -> dict[str, Any]:
                 and str(request_bridge.get("target_spec_id", "")).strip()
             ):
                 query_findings.append("missing_request_bridge_target")
+        if any(field in node for field in INTENT_LAYER_CANONICAL_SPEC_FORBIDDEN_FIELDS):
+            query_findings.append("masquerades_as_canonical_spec")
+        if any(field in node for field in INTENT_LAYER_PROPOSAL_LANE_FORBIDDEN_FIELDS):
+            query_findings.append("masquerades_as_proposal_lane")
         entry = {
             "tracked_path": tracked_path,
             "title": str(node.get("title", "")).strip(),
             "intent_handle": handle_value,
             "intent_layer_kind": intent_kind,
             "mediation_state": mediation_state,
+            "distinction_contract": {
+                "semantic_artifact_class": intent_kind or "unknown",
+                "canonical_equivalence": False,
+                "proposal_lane_equivalence": False,
+                "pre_canonical_runtime_mediation": True,
+            },
             "query_contract": {
                 "status": "invalid_review_state" if query_findings else "ok",
                 "findings": sorted(set(query_findings)),

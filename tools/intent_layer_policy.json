@@ -34,6 +34,22 @@
         ]
       }
     },
+    "cross_layer_distinction": {
+      "canonical_spec_forbidden_fields": [
+        "id",
+        "status",
+        "maturity",
+        "acceptance",
+        "acceptance_evidence",
+        "depends_on"
+      ],
+      "proposal_lane_forbidden_fields": [
+        "proposal_handle",
+        "proposal_authority_state",
+        "proposal_target_region",
+        "proposal_lineage_link"
+      ]
+    },
     "state_contract": {
       "allowed_states": [
         "captured",

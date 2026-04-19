@@ -346,6 +346,8 @@ truth. The overlay exposes:
 
 - `intent_layer_kind` separation between `user_intent` and `operator_request`
 - `mediation_state` such as `captured`, `mediated`, or `ready_for_execution`
+- explicit distinction contracts showing that these artifacts are neither
+  canonical specs nor proposal-lane nodes
 - lineage edges back to raw-supporting artifacts or forward to bridge outputs
 - invalid query-contract nodes whose tracked presence exists but whose kind
   contract or lineage is incomplete
