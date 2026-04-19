@@ -4843,6 +4843,11 @@ def test_main_blocks_successful_executor_without_machine_protocol_markers(
     payload = json.loads(run_logs[0].read_text(encoding="utf-8"))
     assert payload["outcome"] == "blocked"
     assert payload["blocker"] == "executor machine protocol failure"
+    assert {finding["code"] for finding in payload["validation_findings"]} >= {
+        "missing_executor_protocol_run_outcome",
+        "missing_executor_protocol_blocker",
+    }
+    assert payload["validation_summary"]["families"]["runtime_protocol"] == 2
     assert any(
         "Missing executor machine protocol marker RUN_OUTCOME" in error
         for error in payload["validation_errors"]
@@ -11722,6 +11727,10 @@ def test_main_records_yaml_validation_error(
     assert payload["outcome"] == "split_required"
     assert payload["gate_state"] == "split_required"
     assert payload["changed_files"] == ["specs/nodes/SG-SPEC-0001.yaml"]
+    assert {finding["code"] for finding in payload["validation_findings"]} >= {
+        "worktree_spec_load_failure",
+    }
+    assert payload["validation_summary"]["families"]["yaml"] >= 1
     assert any(
         "Failed to load worktree specs for validation:" in error
         for error in payload["validation_errors"]

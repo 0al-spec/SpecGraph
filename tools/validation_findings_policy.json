@@ -1,0 +1,41 @@
+{
+  "artifact_kind": "validation_findings_policy",
+  "schema_version": 1,
+  "finding_families": {
+    "yaml": "YAML parse, load, and candidate-structure failures.",
+    "relation": "Dependency, reconciliation, and graph-relation failures.",
+    "acceptance": "Atomicity, refinement-acceptance, and semantic quality failures.",
+    "authority": "Allowed-path, scope, and mutation-authority violations.",
+    "artifact": "Runtime artifact integrity, queue, and proposal artifact failures.",
+    "runtime_protocol": "Nested executor machine protocol failures.",
+    "executor_environment": "Transport, timeout, MCP startup, and provider runtime failures.",
+    "transition": "Lifecycle and transition validation failures.",
+    "output": "Declared output contract failures."
+  },
+  "error_classes": {
+    "parse_failure": "Malformed or unreadable structured content.",
+    "relation_failure": "Graph relation or dependency consistency failure.",
+    "semantic_rejection": "Refinement was structurally produced but semantically rejected.",
+    "scope_violation": "Write scope or requested authority was exceeded.",
+    "artifact_integrity_failure": "Derived artifact or proposal artifact is malformed or unsafe.",
+    "protocol_failure": "Executor machine protocol markers are missing or invalid.",
+    "runtime_failure": "Executor runtime failed before a trustworthy bounded result.",
+    "transition_failure": "Lifecycle transition or status progression is invalid.",
+    "contract_failure": "Declared contract or required surface was violated."
+  },
+  "severity_levels": [
+    "info",
+    "warning",
+    "error"
+  ],
+  "run_payload_contract": {
+    "summary_fields": [
+      "finding_count",
+      "families",
+      "error_classes",
+      "severity_counts",
+      "codes"
+    ],
+    "compatibility_projection": "validation_errors remains a rendered string projection of validation_findings for backward compatibility only."
+  }
+}

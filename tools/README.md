@@ -115,7 +115,8 @@ Supervisor modes:
 Key derived artifacts:
 
 - `runs/latest-summary.md`: fastest operator-facing run snapshot
-- `runs/<RUN_ID>.json`: full run payload including `graph_health` and `decision_inspector`
+- `runs/<RUN_ID>.json`: full run payload including `graph_health`,
+  `decision_inspector`, `validation_findings`, and `validation_summary`
 - `runs/decision_inspector/<RUN_ID>.json`: standalone decision explanation artifact for one run
 - `runs/graph_health_overlay.json`: canonical graph-health viewer/report overlay grouped by
   signal, recommended action, and named pressure filters
@@ -222,12 +223,15 @@ When a `supervisor` run behaves unexpectedly, debug it in this order:
    It is the fastest operator-facing snapshot and shows:
    - `outcome`
    - `gate_state`
+   - `validation_findings`
    - `validation_errors`
    - `executor_environment_issues`
    - `executor_environment_primary_failure`
    - `required_human_action`
 2. If the summary suggests an environment problem, open the full run log in `runs/<RUN_ID>.json`.
    The run payload preserves:
+   - typed `validation_findings`
+   - aggregated `validation_summary`
    - raw `stdout`
    - raw `stderr`
    - structured `executor_environment`

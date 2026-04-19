@@ -687,6 +687,8 @@ Important fields:
 - `completion_status`
 - `gate_state`
 - `required_human_action`
+- `validation_findings`
+- `validation_summary`
 - `validation_errors`
 - `executor_environment`
 - `refinement_acceptance`
@@ -742,6 +744,19 @@ The supervisor has reached a case that should move to a higher-authority review 
 `decision_inspector` is the compact operator-facing explanation layer in each
 run log, and the same content is also written to
 `runs/decision_inspector/<RUN_ID>.json`.
+
+Validation is now dual-surfaced:
+
+- `validation_findings`
+  typed findings with `family`, `error_class`, `code`, `severity`, and
+  `message`
+- `validation_errors`
+  backward-compatible rendered strings derived from those findings
+
+Current typed findings cover runtime paths such as YAML/load failures,
+relation/reconciliation failures, acceptance or atomicity failures,
+authority/scope violations, runtime artifact integrity failures, executor
+machine-protocol failures, and executor-environment failures.
 
 It has four slices:
 
