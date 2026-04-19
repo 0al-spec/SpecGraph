@@ -111,3 +111,8 @@ Task numbers are preserved for traceability across commits, PRs, and review thre
 53. [done] Let evaluator choose among refine/propose/rewrite/merge/handoff actions from derived graph-health and authority constraints instead of fixed operator heuristics alone.
 60. [done] Define the SpecGraph-to-TechSpec handoff boundary so decomposition can stop at semantic saturation and emit downstream handoff artifacts instead of deeper graph slicing.
 61. [done] Teach supervisor and proposal flows to recommend handoff, not further refinement, when a subtree becomes implementation-facing or loses semantic novelty.
+
+## Evidence Plane
+
+62. [done] Define telemetry evidence artifacts that link canonical nodes to runtime entities, observations, outcomes, and adoption without leaking raw telemetry into canonical specs.
+63. [done] Add viewer and inspection overlays for the evidence plane so operators can inspect runtime-backed evidence chains separately from canonical graph truth.

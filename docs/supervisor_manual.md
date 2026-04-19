@@ -87,6 +87,10 @@ particular task.
   `--build-pre-spec-semantics-index`
 - build a derived spec-to-code trace index:
   `--build-spec-trace-index`
+- build a derived evidence-plane index:
+  `--build-evidence-plane-index`
+- build a viewer/inspection overlay from the evidence plane:
+  `--build-evidence-plane-overlay`
 - build a repository-tracked intent-layer overlay:
   `--build-intent-layer-overlay`
 - build a repository-tracked proposal-lane overlay:
@@ -396,6 +400,60 @@ and exposes:
 - an `implementation_backlog` grouped by next reflective gap such as
   `attach_trace_contract`, `add_verification_anchors`, `refresh_after_spec_update`,
   or `reverify_after_drift`
+
+### Evidence-plane index
+
+```bash
+python3 tools/supervisor.py --build-evidence-plane-index
+```
+
+Builds `runs/evidence_plane_index.json` from canonical specs, the explicit
+registry in `tools/runtime_evidence_registry.json`, and already-derived runtime
+artifacts under `runs/`.
+
+This is intentionally conservative:
+
+- canonical specs remain the truth source
+- evidence stays derived
+- raw telemetry payloads are still out of scope
+
+Each entry links one canonical `spec_id` to:
+
+- declared artifact refs
+- declared runtime entities
+- observation markers
+- outcome markers
+- adoption markers
+- one conservative `chain_status`
+
+Use it when you need to answer “does this spec have any runtime-backed evidence
+chain yet, and where is that chain still incomplete?”.
+
+### Evidence-plane overlay
+
+```bash
+python3 tools/supervisor.py --build-evidence-plane-overlay
+```
+
+Builds `runs/evidence_plane_overlay.json` from a freshly generated
+`runs/evidence_plane_index.json`.
+
+Use it when you want the operator/report projection instead of raw evidence
+entries. The overlay groups nodes by:
+
+- `chain_status`
+- artifact-stage status
+- observation coverage
+- outcome coverage
+- adoption coverage
+
+and exposes:
+
+- named filters such as `missing_evidence_contract`, `artifact_gap`,
+  `outcome_gap`, and `complete_chain`
+- an `evidence_backlog` grouped by next bounded gap such as
+  `attach_evidence_contract`, `collect_outcome_evidence`, or
+  `collect_adoption_evidence`
 
 ### Proposal-lane overlay
 

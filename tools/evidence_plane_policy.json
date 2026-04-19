@@ -1,0 +1,63 @@
+{
+  "artifact_kind": "evidence_plane_policy",
+  "version": 1,
+  "repository_layout": {
+    "registry_path": "tools/runtime_evidence_registry.json",
+    "index_artifact": "runs/evidence_plane_index.json",
+    "overlay_artifact": "runs/evidence_plane_overlay.json"
+  },
+  "semantic_boundary": {
+    "layer_name": "evidence_plane",
+    "truth_boundary": "derived_runtime_backed_evidence",
+    "canonical_boundary": "no_raw_telemetry_in_spec_yaml",
+    "semantic_chain": [
+      "intent",
+      "spec_node",
+      "artifact",
+      "runtime_entity",
+      "observation",
+      "outcome",
+      "adoption"
+    ],
+    "notes": [
+      "The evidence plane is a derived inspection layer adjacent to canonical graph truth.",
+      "Current bootstrap evidence is surface-level and registry-backed; it does not claim criterion-level telemetry attribution or raw telemetry ingestion."
+    ]
+  },
+  "index_contract": {
+    "artifact_kind": "evidence_plane_index",
+    "schema_version": 1,
+    "chain_statuses": [
+      "untracked",
+      "contract_only",
+      "partial",
+      "observation_backed",
+      "outcome_backed",
+      "chain_complete"
+    ],
+    "coverage_statuses": [
+      "not_declared",
+      "missing",
+      "partial",
+      "covered"
+    ],
+    "stage_statuses": [
+      "untracked",
+      "missing",
+      "partial",
+      "linked"
+    ]
+  },
+  "overlay_contract": {
+    "artifact_kind": "evidence_plane_overlay",
+    "schema_version": 1,
+    "named_filters": [
+      "missing_evidence_contract",
+      "artifact_gap",
+      "observation_gap",
+      "outcome_gap",
+      "adoption_gap",
+      "complete_chain"
+    ]
+  }
+}

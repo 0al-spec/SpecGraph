@@ -73,6 +73,13 @@ Supervisor modes:
   now distinguishes fresh, stale-spec, and drifted verified regions.
 - `--build-spec-trace-projection`: build `runs/spec_trace_projection.json` from the
   trace plane, grouped for viewer-style filters and implementation backlog queries.
+- `--build-evidence-plane-index`: build `runs/evidence_plane_index.json` from
+  canonical specs, `tools/runtime_evidence_registry.json`, and current derived
+  runtime artifacts so evidence contracts stay derived instead of leaking raw
+  telemetry into canonical YAML.
+- `--build-evidence-plane-overlay`: build `runs/evidence_plane_overlay.json`
+  from the evidence plane, grouped for viewer-style filters and next evidence
+  gaps across observation, outcome, and adoption coverage.
 - `--build-intent-layer-overlay`: build `runs/intent_layer_overlay.json` from
   repository-tracked intent-layer nodes under `intent_layer/nodes/`, so
   pre-canonical user intent and operator-request artifacts can be inspected as
@@ -150,9 +157,19 @@ Key derived artifacts:
   `acceptance_coverage`, `implementation_state`, and `freshness`
 - `runs/spec_trace_projection.json`: viewer/backlog projection grouped by
   `implementation_state`, `freshness`, `acceptance_coverage`, and next-gap categories
+- `runs/evidence_plane_index.json`: derived evidence-plane index that links
+  registry-backed canonical specs to artifact surfaces, runtime entities,
+  observations, outcomes, and adoption markers
+- `runs/evidence_plane_overlay.json`: viewer/inspection overlay for the
+  evidence plane grouped by chain status, stage coverage, and next evidence gap
 - `tools/spec_trace_registry.json`: explicit strong trace contracts used to
   derive conservative `implementation_state` overlays such as `planned`,
   `implemented`, `verified`, `drifted`, and `blocked`
+- `tools/evidence_plane_policy.json`: declarative boundary for the derived
+  evidence plane, including its semantic chain and overlay/index contracts
+- `tools/runtime_evidence_registry.json`: explicit evidence contracts that bind
+  selected canonical specs to artifact refs, runtime entities, and observation,
+  outcome, and adoption markers
 - `runs/proposal_runtime_index.json`: proposal posture and reflective runtime-closure index
 - `runs/proposal_promotion_index.json`: proposal-promotion provenance and
   traceability inspection artifact grouped by status and next gap
