@@ -70,6 +70,10 @@ Supervisor modes:
   now distinguishes fresh, stale-spec, and drifted verified regions.
 - `--build-spec-trace-projection`: build `runs/spec_trace_projection.json` from the
   trace plane, grouped for viewer-style filters and implementation backlog queries.
+- `--build-proposal-lane-overlay`: build `runs/proposal_lane_overlay.json` from
+  repository-tracked proposal-lane nodes under `proposal_lane/nodes/`, so
+  draft proposal structure can be inspected as a secondary graph layer without
+  confusing it with canonical truth.
 - `--build-proposal-runtime-index`: build `runs/proposal_runtime_index.json` from proposal docs,
   the proposal runtime registry, `tasks.md`, and repository markers in `tools/` and `tests/`.
   Entries now also expose `repository_projection` and `semantic_artifact_class`
@@ -94,6 +98,12 @@ Key derived artifacts:
 - `runs/proposal_queue.json`: derived proposal-oriented next moves
 - `runs/refactor_queue.json`: derived refactor-oriented next moves
 - `runs/proposals/*.json`: structured split proposal artifacts
+- `proposal_lane/nodes/*.json`: repository-tracked proposal-lane nodes with
+  stable provisional handles, authority state, target region, lineage, and
+  runtime bridge metadata
+- `runs/proposal_lane_overlay.json`: proposal-lane viewer/report surface built
+  from repository-tracked proposal nodes, grouped by authority state, query
+  contract validity, and canonical or runtime lineage edges
 - `runs/spec_trace_index.json`: first graph-bound trace artifact with `code_refs`,
   `test_refs`, `commit_refs`, `pr_refs`, `verification_basis`,
   `acceptance_coverage`, `implementation_state`, and `freshness`
@@ -114,6 +124,9 @@ Key derived artifacts:
 - `tools/proposal_promotion_policy.json`: declarative semantic boundary between
   `working_draft` and `reviewable_proposal` artifacts for governed
   draft-to-proposal promotion
+- `tools/proposal_lane_policy.json`: declarative repository contract for the
+  tracked proposal lane, including proposal-node presence, authority-state
+  mapping, and overlay semantics
 - `tools/proposal_promotion_registry.json`: explicit promotion provenance
   registry keyed by `proposal_id`, used to backfill source draft refs,
   motivating concern, bounded scope, and related promotion-trace fields

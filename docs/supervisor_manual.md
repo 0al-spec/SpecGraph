@@ -79,6 +79,8 @@ particular task.
   `--validate-transition-packet path/to/packet.json --transition-profile specgraph_core`
 - build a derived spec-to-code trace index:
   `--build-spec-trace-index`
+- build a repository-tracked proposal-lane overlay:
+  `--build-proposal-lane-overlay`
 - build a derived proposal runtime index:
   `--build-proposal-runtime-index`
 - inspect stale review/runtime residue without refinement:
@@ -301,6 +303,32 @@ and exposes:
   `attach_trace_contract`, `add_verification_anchors`, `refresh_after_spec_update`,
   or `reverify_after_drift`
 
+### Proposal-lane overlay
+
+```bash
+python3 tools/supervisor.py --build-proposal-lane-overlay
+```
+
+Builds `runs/proposal_lane_overlay.json` from repository-tracked proposal-lane
+nodes under `proposal_lane/nodes/`.
+
+Use it when you want to inspect tracked proposal structure as a secondary graph
+layer without confusing it with canonical truth. The overlay exposes:
+
+- stable provisional `proposal_handle` values
+- `proposal_authority_state` such as `under_review` or
+  `approved_for_application`
+- `proposal_target_region` ownership against canonical nodes
+- lineage edges to canonical nodes or runtime artifacts
+- invalid review-visible nodes whose repository presence exists but whose query
+  contract is incomplete or colliding
+
+This layer is intentionally separate from runtime-only proposal artifacts:
+
+- `proposal_lane/nodes/*.json` is repository-tracked review state
+- `runs/proposals/*.json` remains runtime-scoped structured support state
+- canonical specs remain the accepted graph of record
+
 ### Proposal runtime index
 
 ```bash
@@ -468,6 +496,12 @@ authoritative.
   - derived queue of refactor-oriented next moves
 - `runs/proposals/*.json`
   - structured proposal artifacts emitted by split-proposal mode
+- `proposal_lane/nodes/*.json`
+  - repository-tracked proposal-lane nodes with stable provisional handles,
+    authority state, target region, lineage, and runtime bridge metadata
+- `runs/proposal_lane_overlay.json`
+  - viewer/report overlay built from tracked proposal nodes and their
+    canonical/runtime edges
 - `runs/spec_id_reservations.json`
   - temporary in-flight reservations for explicit child-materialization IDs
 
@@ -496,6 +530,9 @@ path.
 - `runs/proposal_runtime_index.json`
   - derived proposal runtime index with posture, realization, validation, and
     re-observation status
+- `tools/proposal_lane_policy.json`
+  - declarative proposal-lane contract for repository presence, authority-state
+    mapping, and overlay/query semantics
 - `tools/supervisor_policy.json`
   - declarative policy layer for thresholds, priorities, queue defaults,
     mutation classes, and execution profiles
