@@ -6919,6 +6919,190 @@ def test_main_builds_graph_health_overlay_as_standalone_command(
     )
 
 
+def test_build_graph_health_trends_reports_recurring_and_currently_active_signals(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    specs_dir = repo_fixture / "specs" / "nodes"
+    (specs_dir / "SG-SPEC-0002.yaml").write_text(
+        json.dumps(
+            {
+                "id": "SG-SPEC-0002",
+                "title": "Historical Shape Region",
+                "kind": "spec",
+                "created_at": "2026-04-18T00:00:00Z",
+                "updated_at": "2026-04-18T00:00:00Z",
+                "status": "linked",
+                "maturity": 0.4,
+                "depends_on": [],
+                "relates_to": [],
+                "inputs": [],
+                "outputs": [],
+                "allowed_paths": ["specs/nodes/SG-SPEC-0002.yaml"],
+                "acceptance": ["kept"],
+                "prompt": "Refine this node.",
+            }
+        ),
+        encoding="utf-8",
+    )
+    specs = supervisor_module.load_specs()
+
+    (repo_fixture / "runs" / "20260419T000001Z-SG-SPEC-0001-a1b2c3d4.json").write_text(
+        json.dumps(
+            {
+                "run_id": "20260419T000001Z-SG-SPEC-0001-a1b2c3d4",
+                "timestamp_utc": "2026-04-19T00:00:01Z",
+                "graph_health_truth_basis": "accepted_canonical",
+                "graph_health": {
+                    "source_spec_id": "SG-SPEC-0001",
+                    "signals": ["weak_structural_linkage_candidate"],
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    (repo_fixture / "runs" / "20260419T000101Z-SG-SPEC-0001-e5f6a7b8.json").write_text(
+        json.dumps(
+            {
+                "run_id": "20260419T000101Z-SG-SPEC-0001-e5f6a7b8",
+                "timestamp_utc": "2026-04-19T00:01:01Z",
+                "graph_health_truth_basis": "accepted_canonical",
+                "graph_health": {
+                    "source_spec_id": "SG-SPEC-0001",
+                    "signals": ["weak_structural_linkage_candidate"],
+                },
+                "candidate_graph_health_truth_basis": "review_candidate",
+                "candidate_graph_health": {
+                    "source_spec_id": "SG-SPEC-0001",
+                    "signals": ["weak_structural_linkage_candidate"],
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    (repo_fixture / "runs" / "20260419T000201Z-SG-SPEC-0002-11223344.json").write_text(
+        json.dumps(
+            {
+                "run_id": "20260419T000201Z-SG-SPEC-0002-11223344",
+                "timestamp_utc": "2026-04-19T00:02:01Z",
+                "graph_health_truth_basis": "accepted_canonical",
+                "graph_health": {
+                    "source_spec_id": "SG-SPEC-0002",
+                    "signals": ["serial_refinement_ladder"],
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    (repo_fixture / "runs" / "20260419T000301Z-SG-SPEC-0002-55667788.json").write_text(
+        json.dumps(
+            {
+                "run_id": "20260419T000301Z-SG-SPEC-0002-55667788",
+                "timestamp_utc": "2026-04-19T00:03:01Z",
+                "graph_health_truth_basis": "accepted_canonical",
+                "graph_health": {
+                    "source_spec_id": "SG-SPEC-0002",
+                    "signals": ["serial_refinement_ladder"],
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    overlay = {
+        "generated_at": "2026-04-19T00:10:00Z",
+        "entries": [
+            {
+                "spec_id": "SG-SPEC-0001",
+                "signals": ["weak_structural_linkage_candidate"],
+            }
+        ],
+    }
+
+    trends = supervisor_module.build_graph_health_trends(specs, overlay=overlay)
+
+    assert trends["artifact_kind"] == "graph_health_trends"
+    weak_entry = next(
+        item
+        for item in trends["entries"]
+        if item["spec_id"] == "SG-SPEC-0001"
+        and item["signal"] == "weak_structural_linkage_candidate"
+    )
+    assert weak_entry["occurrence_count"] == 2
+    assert weak_entry["trend_status"] == "persistent"
+    assert weak_entry["currently_active"] is True
+    shape_entry = next(
+        item
+        for item in trends["entries"]
+        if item["spec_id"] == "SG-SPEC-0002" and item["signal"] == "serial_refinement_ladder"
+    )
+    assert shape_entry["trend_status"] == "historical_recurrence"
+    assert trends["viewer_projection"]["named_filters"]["persistent_recurrence"] == ["SG-SPEC-0001"]
+    assert trends["viewer_projection"]["named_filters"]["repeated_weak_linkage"] == ["SG-SPEC-0001"]
+    assert trends["viewer_projection"]["named_filters"]["repeated_shape_pressure"] == [
+        "SG-SPEC-0002"
+    ]
+
+
+def test_main_builds_graph_health_trends_as_standalone_command(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    def fake_overlay(specs: list[object]) -> dict[str, object]:
+        assert len(specs) == 1
+        return {
+            "artifact_kind": "graph_health_overlay",
+            "generated_at": "2026-04-19T00:00:00Z",
+            "entries": [{"spec_id": "SG-SPEC-0001", "signals": ["oversized_spec"]}],
+        }
+
+    def fake_trends(
+        specs: list[object], *, overlay: dict[str, object] | None = None
+    ) -> dict[str, object]:
+        assert len(specs) == 1
+        assert overlay is not None
+        return {
+            "artifact_kind": "graph_health_trends",
+            "schema_version": 1,
+            "generated_at": "2026-04-19T00:01:00Z",
+            "source_overlay_path": "runs/graph_health_overlay.json",
+            "source_overlay_generated_at": overlay["generated_at"],
+            "history_window": {"observed_run_count": 2},
+            "signal_summary": {
+                "oversized_spec": {"occurrence_count": 2, "spec_ids": ["SG-SPEC-0001"]}
+            },
+            "entries": [],
+            "viewer_projection": {
+                "recurring_signal_groups": {"oversized_spec": ["SG-SPEC-0001"]},
+                "named_filters": {"persistent_recurrence": ["SG-SPEC-0001"]},
+            },
+        }
+
+    monkeypatch.setattr(supervisor_module, "build_graph_health_overlay", fake_overlay)
+    monkeypatch.setattr(supervisor_module, "build_graph_health_trends", fake_trends)
+
+    exit_code = supervisor_module.main(build_graph_health_trends_mode=True)
+
+    assert exit_code == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["artifact_kind"] == "graph_health_trends"
+    assert report["viewer_projection"]["named_filters"]["persistent_recurrence"] == ["SG-SPEC-0001"]
+    assert (
+        json.loads(
+            (repo_fixture / "runs" / "graph_health_overlay.json").read_text(encoding="utf-8")
+        )["artifact_kind"]
+        == "graph_health_overlay"
+    )
+    assert (
+        json.loads(
+            (repo_fixture / "runs" / "graph_health_trends.json").read_text(encoding="utf-8")
+        )["artifact_kind"]
+        == "graph_health_trends"
+    )
+
+
 def test_main_builds_spec_trace_projection_as_standalone_command(
     supervisor_module: object,
     repo_fixture: Path,

@@ -25,6 +25,7 @@ Task numbers are preserved for traceability across commits, PRs, and review thre
 18. [done] Specify how `supervisor` may update graph structure directly versus when it must emit a proposal for a human-reviewed spec change.
 19. [done] Add an explicit application path for approved split proposals so reviewed `split_oversized_spec` artifacts can be deterministically materialized into canonical parent/child spec files.
 22. [done] Add viewer-facing overlays or reports for graph health so oversized or weakly linked regions are visible without reading raw run logs.
+23. [done] Add longitudinal graph-health reporting so repeated structural problems can be seen as trends rather than isolated failures.
 
 ## Supervisor Runtime Hardening
 
