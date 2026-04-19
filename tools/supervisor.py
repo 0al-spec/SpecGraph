@@ -11763,7 +11763,9 @@ def build_metric_signal_index(specs: list[SpecNode]) -> dict[str, Any]:
     active_pressure_specs = {
         str(entry.get("spec_id", "")).strip()
         for entry in graph_overlay.get("entries", [])
-        if isinstance(entry, dict) and str(entry.get("spec_id", "")).strip()
+        if isinstance(entry, dict)
+        and str(entry.get("spec_id", "")).strip()
+        and any(str(item).strip() for item in entry.get("signals", []) if str(item).strip())
     }
     persistent_pressure_specs = {
         str(entry.get("spec_id", "")).strip()

@@ -7831,6 +7831,97 @@ def test_build_metric_signal_index_reports_threshold_breaches(
     ]
 
 
+def test_build_metric_signal_index_ignores_gate_only_overlay_entries(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    specs_dir = repo_fixture / "specs" / "nodes"
+    specs_dir.joinpath("SG-SPEC-0002.yaml").write_text(
+        json.dumps(
+            {
+                "id": "SG-SPEC-0002",
+                "title": "Second Spec",
+                "kind": "spec",
+                "created_at": "2026-04-19T00:00:00Z",
+                "updated_at": "2026-04-19T00:00:00Z",
+                "status": "outlined",
+                "maturity": 0.2,
+                "depends_on": [],
+                "outputs": ["specs/nodes/SG-SPEC-0002.yaml"],
+                "allowed_paths": ["specs/nodes/SG-SPEC-0002.yaml"],
+                "acceptance": ["criterion"],
+                "prompt": "Second spec.",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_spec_trace_index",
+        lambda specs: {"generated_at": "2026-04-19T00:00:00Z", "entries": []},
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_spec_trace_projection",
+        lambda index: {"generated_at": "2026-04-19T00:00:01Z", "viewer_projection": {}},
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_evidence_plane_index",
+        lambda specs: {"generated_at": "2026-04-19T00:00:02Z", "entries": []},
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_evidence_plane_overlay",
+        lambda index: {"generated_at": "2026-04-19T00:00:03Z", "viewer_projection": {}},
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_graph_health_overlay",
+        lambda specs: {
+            "generated_at": "2026-04-19T00:00:04Z",
+            "entries": [
+                {
+                    "spec_id": "SG-SPEC-0001",
+                    "gate_state": "review_pending",
+                    "signals": [],
+                },
+                {
+                    "spec_id": "SG-SPEC-0002",
+                    "gate_state": "none",
+                    "signals": ["depth_without_breadth"],
+                },
+            ],
+            "viewer_projection": {"named_filters": {"gated_specs": ["SG-SPEC-0001"]}},
+        },
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_graph_health_trends",
+        lambda specs, overlay=None: {
+            "generated_at": "2026-04-19T00:00:05Z",
+            "entries": [],
+            "viewer_projection": {"named_filters": {}},
+        },
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_proposal_runtime_index",
+        lambda: {"generated_at": "2026-04-19T00:00:06Z", "entries": []},
+    )
+
+    index = supervisor_module.build_metric_signal_index(supervisor_module.load_specs())
+
+    by_id = {entry["metric_id"]: entry for entry in index["metrics"]}
+    structural = by_id["structural_observability"]
+    assert structural["input_summary"]["active_pressure_spec_count"] == 1
+    assert structural["input_summary"]["active_pressure_ratio"] == 0.5
+    assert structural["score"] == 0.7
+    assert structural["status"] == "healthy"
+
+
 def test_main_builds_metric_signal_index_as_standalone_command(
     supervisor_module: object,
     repo_fixture: Path,
