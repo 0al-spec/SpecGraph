@@ -784,6 +784,7 @@ Reflective cycles are explicit too:
 Each control artifact records:
 
 - `chosen_intervention`
+- `applied_rules`
 - `improvement_basis`
 - `stop_conditions`
 - `escalation_reasons`

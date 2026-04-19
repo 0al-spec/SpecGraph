@@ -108,5 +108,6 @@ Task numbers are preserved for traceability across commits, PRs, and review thre
 54. [done] Introduce typed validation findings and error classes so YAML, relation, acceptance, authority, and artifact failures stop flowing as ad hoc strings.
 55. [done] Add a safe repair contract that lets supervisor or helper tools propose bounded fixes from structured findings without silently mutating canonical truth.
 52. [done] Define an evaluator-loop control artifact that records chosen intervention, improvement basis, stop conditions, and escalation reasons for each reflective cycle.
+53. [done] Let evaluator choose among refine/propose/rewrite/merge/handoff actions from derived graph-health and authority constraints instead of fixed operator heuristics alone.
 60. [done] Define the SpecGraph-to-TechSpec handoff boundary so decomposition can stop at semantic saturation and emit downstream handoff artifacts instead of deeper graph slicing.
 61. [done] Teach supervisor and proposal flows to recommend handoff, not further refinement, when a subtree becomes implementation-facing or loses semantic novelty.

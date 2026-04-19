@@ -89,6 +89,7 @@ PRE_SPEC_SEMANTICS_POLICY_RELATIVE_PATH = "tools/pre_spec_semantics_policy.json"
 VALIDATION_FINDINGS_POLICY_RELATIVE_PATH = "tools/validation_findings_policy.json"
 SAFE_REPAIR_POLICY_RELATIVE_PATH = "tools/safe_repair_policy.json"
 EVALUATOR_LOOP_POLICY_RELATIVE_PATH = "tools/evaluator_loop_policy.json"
+EVALUATOR_INTERVENTION_POLICY_RELATIVE_PATH = "tools/evaluator_intervention_policy.json"
 
 
 def supervisor_policy_path() -> Path:
@@ -129,6 +130,10 @@ def safe_repair_policy_path() -> Path:
 
 def evaluator_loop_policy_path() -> Path:
     return TOOLS_DIR / "evaluator_loop_policy.json"
+
+
+def evaluator_intervention_policy_path() -> Path:
+    return TOOLS_DIR / "evaluator_intervention_policy.json"
 
 
 def load_supervisor_policy() -> tuple[dict[str, Any], str]:
@@ -471,6 +476,49 @@ def load_evaluator_loop_policy() -> tuple[dict[str, Any], str]:
 EVALUATOR_LOOP_POLICY, EVALUATOR_LOOP_POLICY_SHA256 = load_evaluator_loop_policy()
 
 
+def load_evaluator_intervention_policy() -> tuple[dict[str, Any], str]:
+    path = evaluator_intervention_policy_path()
+    try:
+        raw_text = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise RuntimeError(
+            f"failed to read evaluator intervention policy artifact: {path.as_posix()} ({exc})"
+        ) from exc
+    try:
+        payload = json.loads(raw_text)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(
+            f"malformed evaluator intervention policy artifact: {path.as_posix()} ({exc})"
+        ) from exc
+    if not isinstance(payload, dict):
+        raise RuntimeError(
+            "malformed evaluator intervention policy artifact: "
+            f"{path.as_posix()} must contain a JSON object"
+        )
+    required_sections = (
+        "selection_mode_defaults",
+        "signal_override_order",
+        "graph_health_signal_overrides",
+        "recommended_action_override_order",
+        "recommended_action_overrides",
+        "validation_family_override_order",
+        "validation_family_overrides",
+        "safe_repair_override",
+    )
+    missing = [section for section in required_sections if section not in payload]
+    if missing:
+        raise RuntimeError(
+            "malformed evaluator intervention policy artifact: missing top-level section(s): "
+            + ", ".join(missing)
+        )
+    return payload, hashlib.sha256(raw_text.encode("utf-8")).hexdigest()
+
+
+EVALUATOR_INTERVENTION_POLICY, EVALUATOR_INTERVENTION_POLICY_SHA256 = (
+    load_evaluator_intervention_policy()
+)
+
+
 def policy_lookup(policy_path: str) -> Any:
     current: Any = SUPERVISOR_POLICY
     for part in policy_path.split("."):
@@ -534,6 +582,15 @@ def pre_spec_semantics_policy_lookup(policy_path: str) -> Any:
     return copy.deepcopy(current)
 
 
+def evaluator_intervention_policy_lookup(policy_path: str) -> Any:
+    current: Any = EVALUATOR_INTERVENTION_POLICY
+    for part in policy_path.split("."):
+        if not isinstance(current, dict) or part not in current:
+            raise KeyError(policy_path)
+        current = current[part]
+    return copy.deepcopy(current)
+
+
 def policy_rule(
     policy_path: str,
     *,
@@ -566,6 +623,28 @@ def runtime_rule(
     return {
         "rule_source": "runtime_guard",
         "rule_id": rule_id,
+        "reason": reason,
+        "matched_value": copy.deepcopy(matched_value),
+        "inputs": copy.deepcopy(inputs or {}),
+    }
+
+
+def evaluator_intervention_rule(
+    policy_path: str,
+    *,
+    reason: str,
+    matched_value: Any | None = None,
+    inputs: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    if matched_value is None:
+        try:
+            matched_value = evaluator_intervention_policy_lookup(policy_path)
+        except KeyError:
+            matched_value = None
+    return {
+        "rule_source": "evaluator_intervention_policy",
+        "rule_id": policy_path,
+        "policy_path": policy_path,
         "reason": reason,
         "matched_value": copy.deepcopy(matched_value),
         "inputs": copy.deepcopy(inputs or {}),
@@ -1343,6 +1422,13 @@ def evaluator_loop_policy_reference() -> dict[str, Any]:
     }
 
 
+def evaluator_intervention_policy_reference() -> dict[str, Any]:
+    return {
+        "path": EVALUATOR_INTERVENTION_POLICY_RELATIVE_PATH,
+        "sha256": EVALUATOR_INTERVENTION_POLICY_SHA256,
+    }
+
+
 def evaluator_control_dir_path() -> Path:
     return RUNS_DIR / "evaluator_control"
 
@@ -1359,27 +1445,134 @@ def write_evaluator_control_artifact(payload: dict[str, Any]) -> Path:
     return path
 
 
-def baseline_intervention_for_selection(
+def choose_evaluator_intervention(
     *,
-    selection_mode: str,
-    refactor_work_item: dict[str, Any] | None = None,
-) -> str:
-    if selection_mode == "split_refactor_proposal":
-        signal = str((refactor_work_item or {}).get("signal", "")).strip()
-        if signal == TECHSPEC_HANDOFF_PRIMARY_SIGNAL:
-            return "handoff"
-        return "propose"
-    if selection_mode == "graph_refactor":
-        action = str((refactor_work_item or {}).get("recommended_action", "")).strip()
-        if "merge" in action:
-            return "merge"
-        if "rewrite" in action:
-            return "rewrite"
-        if "handoff" in action:
-            return "handoff"
-    if selection_mode == "apply_split_proposal":
-        return "apply"
-    return "refine"
+    selected_by_rule: dict[str, Any],
+    graph_health: dict[str, Any],
+    validation_findings: list[dict[str, Any]],
+    safe_repair_contract: dict[str, Any] | None = None,
+) -> tuple[str, list[dict[str, Any]]]:
+    selection_mode = str(selected_by_rule.get("selection_mode", "")).strip()
+    refactor_work_item = (
+        selected_by_rule.get("refactor_work_item")
+        if isinstance(selected_by_rule.get("refactor_work_item"), dict)
+        else None
+    )
+    selection_defaults = evaluator_intervention_policy_lookup("selection_mode_defaults")
+    chosen_intervention = str(selection_defaults.get(selection_mode, "refine")).strip() or "refine"
+    applied_rules: list[dict[str, Any]] = [
+        evaluator_intervention_rule(
+            f"selection_mode_defaults.{selection_mode}",
+            reason="selection mode established the baseline evaluator intervention",
+            matched_value=chosen_intervention,
+            inputs={"selection_mode": selection_mode},
+        )
+    ]
+
+    signals = {str(item).strip() for item in graph_health.get("signals", []) if str(item).strip()}
+    signal_overrides = evaluator_intervention_policy_lookup("graph_health_signal_overrides")
+    for signal_name in evaluator_intervention_policy_lookup("signal_override_order"):
+        signal_text = str(signal_name).strip()
+        if not signal_text or signal_text not in signals:
+            continue
+        override = str(signal_overrides.get(signal_text, "")).strip()
+        if not override:
+            continue
+        chosen_intervention = override
+        applied_rules.append(
+            evaluator_intervention_rule(
+                f"graph_health_signal_overrides.{signal_text}",
+                reason="derived graph-health signal promoted a more specific intervention",
+                matched_value=override,
+                inputs={"signal": signal_text, "signals": sorted(signals)},
+            )
+        )
+        break
+
+    recommended_actions = {
+        str(item).strip()
+        for item in graph_health.get("recommended_actions", [])
+        if str(item).strip()
+    }
+    action_overrides = evaluator_intervention_policy_lookup("recommended_action_overrides")
+    for action_name in evaluator_intervention_policy_lookup("recommended_action_override_order"):
+        action_text = str(action_name).strip()
+        if not action_text or action_text not in recommended_actions:
+            continue
+        override = str(action_overrides.get(action_text, "")).strip()
+        if not override:
+            continue
+        chosen_intervention = override
+        applied_rules.append(
+            evaluator_intervention_rule(
+                f"recommended_action_overrides.{action_text}",
+                reason="derived recommended action refined the intervention choice",
+                matched_value=override,
+                inputs={
+                    "recommended_action": action_text,
+                    "recommended_actions": sorted(recommended_actions),
+                },
+            )
+        )
+        break
+
+    validation_families = set(validation_summary(validation_findings).get("families", {}))
+    family_overrides = evaluator_intervention_policy_lookup("validation_family_overrides")
+    for family_name in evaluator_intervention_policy_lookup("validation_family_override_order"):
+        family_text = str(family_name).strip()
+        if not family_text or family_text not in validation_families:
+            continue
+        override = str(family_overrides.get(family_text, "")).strip()
+        if not override:
+            continue
+        if chosen_intervention in {"handoff", "apply"}:
+            continue
+        if family_text == "authority" and chosen_intervention in {"refine", "rewrite", "merge"}:
+            chosen_intervention = override
+            applied_rules.append(
+                evaluator_intervention_rule(
+                    f"validation_family_overrides.{family_text}",
+                    reason=(
+                        "authority constraints require a reviewable mediated intervention "
+                        "instead of direct local mutation"
+                    ),
+                    matched_value=override,
+                    inputs={"validation_families": sorted(validation_families)},
+                )
+            )
+            break
+
+    safe_repair_count = int((safe_repair_contract or {}).get("repair_count") or 0)
+    if safe_repair_count and chosen_intervention == "refine":
+        applied_rules.append(
+            evaluator_intervention_rule(
+                "safe_repair_override",
+                reason=(
+                    "bounded safe-repair activity kept the evaluator intervention in the "
+                    "local refinement lane"
+                ),
+                matched_value=evaluator_intervention_policy_lookup("safe_repair_override"),
+                inputs={"repair_count": safe_repair_count},
+            )
+        )
+
+    if (
+        selection_mode == "split_refactor_proposal"
+        and str((refactor_work_item or {}).get("signal", "")).strip()
+        == TECHSPEC_HANDOFF_PRIMARY_SIGNAL
+        and chosen_intervention == "propose"
+    ):
+        chosen_intervention = "handoff"
+        applied_rules.append(
+            evaluator_intervention_rule(
+                f"graph_health_signal_overrides.{TECHSPEC_HANDOFF_PRIMARY_SIGNAL}",
+                reason="TechSpec handoff split proposals should surface as handoff interventions",
+                matched_value="handoff",
+                inputs={"selection_mode": selection_mode},
+            )
+        )
+
+    return chosen_intervention, dedupe_decision_rules(applied_rules)
 
 
 def build_evaluator_loop_control(
@@ -1401,9 +1594,11 @@ def build_evaluator_loop_control(
         if isinstance(selected_by_rule.get("refactor_work_item"), dict)
         else None
     )
-    chosen_intervention = baseline_intervention_for_selection(
-        selection_mode=selection_mode,
-        refactor_work_item=refactor_work_item,
+    chosen_intervention, applied_rules = choose_evaluator_intervention(
+        selected_by_rule=selected_by_rule,
+        graph_health=graph_health,
+        validation_findings=validation_findings,
+        safe_repair_contract=safe_repair_contract,
     )
     stop_conditions: list[str] = []
     if gate_state == "review_pending":
@@ -1453,8 +1648,10 @@ def build_evaluator_loop_control(
         "spec_id": spec_id,
         "generated_at": utc_now_iso(),
         "policy_reference": evaluator_loop_policy_reference(),
+        "intervention_policy_reference": evaluator_intervention_policy_reference(),
         "chosen_intervention": chosen_intervention,
         "selection_mode": selection_mode,
+        "applied_rules": applied_rules,
         "improvement_basis": {
             "graph_health_signals": list(graph_health.get("signals", [])),
             "graph_health_recommended_actions": list(graph_health.get("recommended_actions", [])),

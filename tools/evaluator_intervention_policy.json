@@ -1,0 +1,56 @@
+{
+  "artifact_kind": "evaluator_intervention_policy",
+  "schema_version": 1,
+  "selection_mode_defaults": {
+    "default_refine": "refine",
+    "linked_continuation": "refine",
+    "ancestor_reconcile": "refine",
+    "explicit_target_refine": "refine",
+    "graph_refactor": "refine",
+    "split_refactor_proposal": "propose",
+    "apply_split_proposal": "apply"
+  },
+  "signal_override_order": [
+    "techspec_handoff_candidate",
+    "bookkeeping_only_node",
+    "role_obscured_node",
+    "repeated_split_required_candidate",
+    "stalled_maturity_candidate",
+    "retrospective_refactor_candidate",
+    "oversized_spec"
+  ],
+  "graph_health_signal_overrides": {
+    "techspec_handoff_candidate": "handoff",
+    "bookkeeping_only_node": "merge",
+    "role_obscured_node": "rewrite",
+    "repeated_split_required_candidate": "propose",
+    "stalled_maturity_candidate": "propose",
+    "retrospective_refactor_candidate": "propose",
+    "oversized_spec": "propose"
+  },
+  "recommended_action_override_order": [
+    "emit_techspec_handoff_proposal",
+    "merge_bookkeeping_slice",
+    "rewrite_node_role_boundary",
+    "propose_retrospective_refactor",
+    "split_or_narrow_spec",
+    "review_decomposition_policy",
+    "review_refinement_strategy"
+  ],
+  "recommended_action_overrides": {
+    "emit_techspec_handoff_proposal": "handoff",
+    "merge_bookkeeping_slice": "merge",
+    "rewrite_node_role_boundary": "rewrite",
+    "propose_retrospective_refactor": "propose",
+    "split_or_narrow_spec": "propose",
+    "review_decomposition_policy": "propose",
+    "review_refinement_strategy": "propose"
+  },
+  "validation_family_override_order": [
+    "authority"
+  ],
+  "validation_family_overrides": {
+    "authority": "propose"
+  },
+  "safe_repair_override": "refine"
+}

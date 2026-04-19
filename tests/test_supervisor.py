@@ -11824,6 +11824,9 @@ def test_main_repairs_recoverable_worktree_yaml_indentation(
     assert repair["canonical_write"] is False
     assert payload["safe_repair_artifact"].endswith(".json")
     assert payload["evaluator_loop_control"]["chosen_intervention"] == "refine"
+    assert payload["evaluator_loop_control"]["applied_rules"][0]["rule_id"].startswith(
+        "selection_mode_defaults."
+    )
     assert "review_gate_created" in payload["evaluator_loop_control"]["stop_conditions"]
 
 
@@ -11878,9 +11881,87 @@ def test_build_evaluator_loop_control_records_intervention_and_stop_conditions(
     )
 
     assert control["artifact_kind"] == "evaluator_loop_control"
+    assert control["intervention_policy_reference"]["path"] == (
+        "tools/evaluator_intervention_policy.json"
+    )
     assert control["chosen_intervention"] == "propose"
     assert set(control["stop_conditions"]) >= {"proposal_emitted", "split_required"}
     assert control["improvement_basis"]["validation_summary"]["finding_count"] == 1
+    assert any(
+        rule["rule_id"] == "graph_health_signal_overrides.oversized_spec"
+        for rule in control["applied_rules"]
+    )
+
+
+def test_choose_evaluator_intervention_prefers_handoff_over_authority_constraint(
+    supervisor_module: object,
+) -> None:
+    chosen, applied_rules = supervisor_module.choose_evaluator_intervention(
+        selected_by_rule={
+            "selection_mode": "graph_refactor",
+            "refactor_work_item": {
+                "signal": supervisor_module.TECHSPEC_HANDOFF_PRIMARY_SIGNAL,
+                "recommended_action": supervisor_module.TECHSPEC_HANDOFF_RECOMMENDED_ACTION,
+            },
+        },
+        graph_health={
+            "signals": [supervisor_module.TECHSPEC_HANDOFF_PRIMARY_SIGNAL],
+            "recommended_actions": [supervisor_module.TECHSPEC_HANDOFF_RECOMMENDED_ACTION],
+        },
+        validation_findings=[
+            supervisor_module.validation_finding(
+                code="write_scope_blocked",
+                family="authority",
+                error_class="scope_violation",
+                message="Write scope exceeded",
+            )
+        ],
+        safe_repair_contract={"repair_count": 0},
+    )
+
+    assert chosen == "handoff"
+    assert any(
+        rule["rule_id"]
+        == f"graph_health_signal_overrides.{supervisor_module.TECHSPEC_HANDOFF_PRIMARY_SIGNAL}"
+        for rule in applied_rules
+    )
+    assert not any(
+        rule["rule_id"] == "validation_family_overrides.authority" for rule in applied_rules
+    )
+
+
+def test_choose_evaluator_intervention_converts_authority_bound_graph_update_to_propose(
+    supervisor_module: object,
+) -> None:
+    chosen, applied_rules = supervisor_module.choose_evaluator_intervention(
+        selected_by_rule={
+            "selection_mode": "graph_refactor",
+            "refactor_work_item": {
+                "signal": "role_obscured_node",
+                "recommended_action": "rewrite_node_role_boundary",
+            },
+        },
+        graph_health={
+            "signals": ["role_obscured_node"],
+            "recommended_actions": ["rewrite_node_role_boundary"],
+        },
+        validation_findings=[
+            supervisor_module.validation_finding(
+                code="write_scope_blocked",
+                family="authority",
+                error_class="scope_violation",
+                message="Write scope exceeded",
+            )
+        ],
+        safe_repair_contract={"repair_count": 0},
+    )
+
+    assert chosen == "propose"
+    assert any(
+        rule["rule_id"] == "recommended_action_overrides.rewrite_node_role_boundary"
+        for rule in applied_rules
+    )
+    assert any(rule["rule_id"] == "validation_family_overrides.authority" for rule in applied_rules)
 
 
 def test_main_aborts_on_cycle(
