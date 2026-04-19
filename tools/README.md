@@ -80,6 +80,9 @@ Supervisor modes:
 - `--build-evidence-plane-overlay`: build `runs/evidence_plane_overlay.json`
   from the evidence plane, grouped for viewer-style filters and next evidence
   gaps across observation, outcome, and adoption coverage.
+- `--build-metric-signal-index`: build `runs/metric_signal_index.json` from
+  trace, evidence, graph-health, and proposal-runtime surfaces so metric-driven
+  advisory signals remain derived rather than canonical facts.
 - `--build-intent-layer-overlay`: build `runs/intent_layer_overlay.json` from
   repository-tracked intent-layer nodes under `intent_layer/nodes/`, so
   pre-canonical user intent and operator-request artifacts can be inspected as
@@ -162,11 +165,18 @@ Key derived artifacts:
   observations, outcomes, and adoption markers
 - `runs/evidence_plane_overlay.json`: viewer/inspection overlay for the
   evidence plane grouped by chain status, stage coverage, and next evidence gap
+- `runs/metric_signal_index.json`: derived metric surface for
+  `Specification Verifiability`, `Process Observability`,
+  `Structural Observability`, and a bootstrap `SIB` proxy, plus threshold-based
+  advisory signals
 - `tools/spec_trace_registry.json`: explicit strong trace contracts used to
   derive conservative `implementation_state` overlays such as `planned`,
   `implemented`, `verified`, `drifted`, and `blocked`
 - `tools/evidence_plane_policy.json`: declarative boundary for the derived
   evidence plane, including its semantic chain and overlay/index contracts
+- `tools/metric_signal_policy.json`: declarative thresholds, score mappings,
+  metric identities, and proposal-first threshold semantics for the derived
+  metric signal layer
 - `tools/runtime_evidence_registry.json`: explicit evidence contracts that bind
   selected canonical specs to artifact refs, runtime entities, and observation,
   outcome, and adoption markers

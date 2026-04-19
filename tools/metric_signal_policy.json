@@ -1,0 +1,145 @@
+{
+  "artifact_kind": "metric_signal_policy",
+  "version": 1,
+  "repository_layout": {
+    "signal_artifact": "runs/metric_signal_index.json",
+    "proposal_artifact": "runs/metric_threshold_proposals.json"
+  },
+  "signal_contract": {
+    "artifact_kind": "metric_signal_index",
+    "schema_version": 1,
+    "metric_ids": [
+      "specification_verifiability",
+      "process_observability",
+      "structural_observability",
+      "sib_proxy"
+    ],
+    "metric_statuses": [
+      "healthy",
+      "below_threshold",
+      "not_applicable"
+    ],
+    "named_filters": [
+      "metrics_below_threshold",
+      "healthy_metrics",
+      "specification_attention",
+      "process_attention",
+      "structural_attention",
+      "sib_attention"
+    ]
+  },
+  "status_scoring": {
+    "acceptance_coverage": {
+      "covered": 1.0,
+      "evidence_linked_unmapped": 0.5,
+      "no_linked_evidence": 0.0
+    },
+    "evidence_chain": {
+      "chain_complete": 1.0,
+      "outcome_backed": 0.8,
+      "observation_backed": 0.6,
+      "partial": 0.4,
+      "contract_only": 0.2,
+      "untracked": 0.0
+    },
+    "proposal_observation": {
+      "covered": 1.0,
+      "partial": 0.5,
+      "missing": 0.0,
+      "pending_runtime": 0.0,
+      "untracked": 0.0
+    }
+  },
+  "metric_thresholds": {
+    "specification_verifiability": {
+      "minimum_score": 0.45,
+      "trigger_signal": "low_specification_verifiability"
+    },
+    "process_observability": {
+      "minimum_score": 0.55,
+      "trigger_signal": "low_process_observability"
+    },
+    "structural_observability": {
+      "minimum_score": 0.7,
+      "trigger_signal": "low_structural_observability"
+    },
+    "sib_proxy": {
+      "minimum_score": 0.6,
+      "trigger_signal": "low_sib_proxy"
+    }
+  },
+  "metric_composition": {
+    "sib_proxy_weights": {
+      "specification_verifiability": 0.4,
+      "process_observability": 0.35,
+      "structural_observability": 0.25
+    }
+  },
+  "proposal_contract": {
+    "artifact_kind": "metric_threshold_proposals",
+    "schema_version": 1,
+    "proposal_kinds": [
+      "metric_remediation_proposal",
+      "metric_threshold_review_proposal"
+    ],
+    "named_filters": [
+      "remediation_proposals",
+      "threshold_review_proposals",
+      "high_severity",
+      "medium_severity",
+      "low_severity"
+    ]
+  },
+  "proposal_mapping": {
+    "low_specification_verifiability": {
+      "proposal_kind": "metric_remediation_proposal",
+      "recommended_actions": [
+        "attach_trace_contract",
+        "add_verification_anchors",
+        "link_acceptance_evidence",
+        "map_acceptance_evidence"
+      ],
+      "target_surfaces": [
+        "tools/spec_trace_registry.json",
+        "tools/runtime_evidence_registry.json"
+      ]
+    },
+    "low_process_observability": {
+      "proposal_kind": "metric_remediation_proposal",
+      "recommended_actions": [
+        "collect_observation_evidence",
+        "collect_outcome_evidence",
+        "collect_adoption_evidence",
+        "complete_reflective_observation_chain"
+      ],
+      "target_surfaces": [
+        "tools/runtime_evidence_registry.json",
+        "tools/proposal_runtime_registry.json"
+      ]
+    },
+    "low_structural_observability": {
+      "proposal_kind": "metric_remediation_proposal",
+      "recommended_actions": [
+        "review_structural_hotspots",
+        "rebalance_subtree_shape",
+        "regroup_under_intermediate_cluster",
+        "emit_techspec_handoff_proposal"
+      ],
+      "target_surfaces": [
+        "runs/graph_health_overlay.json",
+        "runs/graph_health_trends.json"
+      ]
+    },
+    "low_sib_proxy": {
+      "proposal_kind": "metric_threshold_review_proposal",
+      "recommended_actions": [
+        "review_metric_inputs",
+        "review_metric_threshold_tuning",
+        "review_metric_remediation_mix"
+      ],
+      "target_surfaces": [
+        "tools/metric_signal_policy.json"
+      ]
+    }
+  }
+}

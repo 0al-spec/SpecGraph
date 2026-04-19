@@ -91,6 +91,8 @@ particular task.
   `--build-evidence-plane-index`
 - build a viewer/inspection overlay from the evidence plane:
   `--build-evidence-plane-overlay`
+- build metric-driven derived signals from trace, evidence, graph health, and proposal runtime:
+  `--build-metric-signal-index`
 - build a repository-tracked intent-layer overlay:
   `--build-intent-layer-overlay`
 - build a repository-tracked proposal-lane overlay:
@@ -454,6 +456,40 @@ and exposes:
 - an `evidence_backlog` grouped by next bounded gap such as
   `attach_evidence_contract`, `collect_outcome_evidence`, or
   `collect_adoption_evidence`
+
+### Metric signal index
+
+```bash
+python3 tools/supervisor.py --build-metric-signal-index
+```
+
+Builds `runs/metric_signal_index.json` from a fresh in-memory pass over the
+current trace plane, evidence plane, graph-health overlays/trends, and proposal
+runtime index.
+
+This layer stays explicitly derived:
+
+- metric scores are advisory
+- thresholds are review inputs
+- canonical specs do not store these values
+
+Current bootstrap metric families are:
+
+- `specification_verifiability`
+- `process_observability`
+- `structural_observability`
+- `sib_proxy`
+
+Each metric entry records:
+
+- current score
+- minimum healthy threshold
+- threshold gap
+- emitted advisory signal when below threshold
+- input summary explaining which derived surfaces contributed
+
+Use it when you want metric-driven pressure to be machine-readable without
+turning those metrics into canonical facts or policy by default.
 
 ### Proposal-lane overlay
 
