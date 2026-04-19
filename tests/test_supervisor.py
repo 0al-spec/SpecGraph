@@ -3527,6 +3527,52 @@ def test_sync_tracked_proposal_lane_node_records_canonical_application_event(
     assert node["runtime_bridge"]["proposal_queue_status"] == "applied"
 
 
+def test_update_proposal_queue_retires_stale_tracked_nodes_for_same_spec(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    graph_health = {
+        "source_spec_id": "SG-SPEC-9999",
+        "observations": [
+            {
+                "kind": "repeated_split_required_candidate",
+                "details": "proposal lane should persist this for review",
+            }
+        ],
+        "signals": ["repeated_split_required_candidate"],
+        "recommended_actions": ["review_decomposition_policy"],
+    }
+    _path, items = supervisor_module.update_proposal_queue(
+        graph_health=graph_health,
+        run_id="RUN-2",
+    )
+    proposal_id = items[0]["id"]
+    node_path = supervisor_module.proposal_lane_node_path(proposal_id)
+    original = json.loads(node_path.read_text(encoding="utf-8"))
+    assert original["proposal_authority_state"] == "under_review"
+
+    cleared_graph_health = {
+        "source_spec_id": "SG-SPEC-9999",
+        "observations": [],
+        "signals": [],
+        "recommended_actions": [],
+    }
+    supervisor_module.update_proposal_queue(
+        graph_health=cleared_graph_health,
+        run_id="RUN-3",
+    )
+
+    retired = json.loads(node_path.read_text(encoding="utf-8"))
+    assert retired["proposal_authority_state"] == "superseded"
+    assert retired["runtime_bridge"]["proposal_queue_status"] == "superseded"
+    assert retired["runtime_bridge"]["queue_presence"] == "retired_after_queue_refresh"
+    overlay = json.loads(
+        (repo_fixture / "runs" / "proposal_lane_overlay.json").read_text(encoding="utf-8")
+    )
+    assert overlay["named_filters"]["under_review"] == []
+    assert overlay["named_filters"]["rejected_or_superseded"] == [proposal_id]
+
+
 def test_update_proposal_queue_rejects_malformed_existing_queue_file(
     supervisor_module: object,
     repo_fixture: Path,
@@ -7039,6 +7085,46 @@ def test_main_builds_proposal_lane_overlay_as_standalone_command(
         )["artifact_kind"]
         == supervisor_module.PROPOSAL_LANE_OVERLAY_ARTIFACT_KIND
     )
+
+
+def test_main_builds_proposal_lane_overlay_without_loading_specs(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    (repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml").write_text(
+        "id: SG-SPEC-0001\n: broken\n",
+        encoding="utf-8",
+    )
+
+    def fail_load_specs() -> list[object]:
+        raise AssertionError("load_specs() must not run for proposal-lane overlay mode")
+
+    def fake_overlay() -> dict[str, object]:
+        return {
+            "artifact_kind": supervisor_module.PROPOSAL_LANE_OVERLAY_ARTIFACT_KIND,
+            "schema_version": 1,
+            "layer_name": "proposal_lane",
+            "generated_at": "2026-04-19T00:00:00Z",
+            "policy_reference": {"artifact_path": "tools/proposal_lane_policy.json"},
+            "source_dir": "proposal_lane/nodes",
+            "entry_count": 0,
+            "entries": [],
+            "edges": [],
+            "by_authority_state": {},
+            "named_filters": {},
+            "artifact_warnings": [],
+        }
+
+    monkeypatch.setattr(supervisor_module, "load_specs", fail_load_specs)
+    monkeypatch.setattr(supervisor_module, "build_proposal_lane_overlay", fake_overlay)
+
+    exit_code = supervisor_module.main(build_proposal_lane_overlay_mode=True)
+
+    assert exit_code == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["artifact_kind"] == supervisor_module.PROPOSAL_LANE_OVERLAY_ARTIFACT_KIND
 
 
 def test_main_rejects_combined_proposal_lane_overlay_and_runtime_index_modes(

@@ -6354,6 +6354,55 @@ def sync_tracked_proposal_lane_node(
     return path, node
 
 
+def retire_stale_tracked_proposal_lane_nodes(
+    *,
+    spec_id: str,
+    active_item_ids: set[str],
+) -> list[Path]:
+    nodes_dir = proposal_lane_nodes_dir_path()
+    if not nodes_dir.exists():
+        return []
+
+    retired_paths: list[Path] = []
+    for path in sorted(nodes_dir.glob("*.json")):
+        node = load_json_object(path)
+        if not isinstance(node, dict):
+            continue
+        handle = node.get("proposal_handle")
+        handle_value = (
+            str(handle.get("handle_value", "")).strip() if isinstance(handle, dict) else ""
+        )
+        if not handle_value or handle_value in active_item_ids:
+            continue
+        target_region = node.get("proposal_target_region")
+        target_reference = (
+            str(target_region.get("target_reference", "")).strip()
+            if isinstance(target_region, dict)
+            else ""
+        )
+        if target_reference != spec_id:
+            continue
+        runtime_bridge = node.get("runtime_bridge")
+        if not isinstance(runtime_bridge, dict):
+            continue
+        if not str(runtime_bridge.get("proposal_queue_status", "")).strip():
+            continue
+        if str(node.get("proposal_authority_state", "")).strip() in {"rejected", "superseded"}:
+            continue
+
+        updated_runtime_bridge = dict(runtime_bridge)
+        updated_runtime_bridge["proposal_queue_status"] = "superseded"
+        updated_runtime_bridge["queue_presence"] = "retired_after_queue_refresh"
+        updated_runtime_bridge["last_queue_sync_at"] = utc_now_iso()
+        node["proposal_authority_state"] = "superseded"
+        node["runtime_bridge"] = updated_runtime_bridge
+        node["updated_at"] = utc_now_iso()
+        with artifact_lock(path):
+            atomic_write_json(path, node)
+        retired_paths.append(path)
+    return retired_paths
+
+
 def sync_tracked_proposal_lane_from_queue(
     queue_items: list[dict[str, Any]],
     *,
@@ -6361,6 +6410,7 @@ def sync_tracked_proposal_lane_from_queue(
     item_ids: set[str] | None = None,
 ) -> list[Path]:
     written_paths: list[Path] = []
+    active_item_ids: set[str] = set()
     for item in queue_items:
         if not isinstance(item, dict):
             continue
@@ -6369,14 +6419,22 @@ def sync_tracked_proposal_lane_from_queue(
             continue
         if spec_id is not None and str(item.get("spec_id", "")).strip() != spec_id:
             continue
+        if item_id:
+            active_item_ids.add(item_id)
         synced = sync_tracked_proposal_lane_node(item)
         if synced is None:
             continue
         path, _node = synced
         written_paths.append(path)
-    if written_paths:
+    retired_paths: list[Path] = []
+    if spec_id is not None:
+        retired_paths = retire_stale_tracked_proposal_lane_nodes(
+            spec_id=spec_id,
+            active_item_ids=active_item_ids,
+        )
+    if written_paths or retired_paths:
         write_proposal_lane_overlay(build_proposal_lane_overlay())
-    return written_paths
+    return written_paths + retired_paths
 
 
 def build_proposal_lane_overlay() -> dict[str, Any]:
@@ -12070,6 +12128,42 @@ def main(
         print(json.dumps(report, ensure_ascii=False, indent=2))
         return 0 if report["ok"] else 1
 
+    if build_proposal_lane_overlay_mode:
+        if any(
+            (
+                dry_run,
+                auto_approve,
+                loop,
+                resolve_gate,
+                decision,
+                note,
+                target_spec,
+                split_proposal,
+                apply_split_proposal,
+                operator_note,
+                mutation_budget,
+                run_authority,
+                execution_profile,
+                child_model,
+                child_timeout_seconds,
+                verbose,
+                list_stale_runtime,
+                clean_stale_runtime,
+                observe_graph_health_mode,
+                build_proposal_runtime_index_mode,
+                build_proposal_promotion_index_mode,
+            )
+        ):
+            print(
+                "--build-proposal-lane-overlay must be used as a standalone command",
+                file=sys.stderr,
+            )
+            return 1
+        overlay = build_proposal_lane_overlay()
+        write_proposal_lane_overlay(overlay)
+        print(json.dumps(overlay, ensure_ascii=False, indent=2))
+        return 0
+
     try:
         specs = load_specs()
     except RuntimeError as exc:
@@ -12235,42 +12329,6 @@ def main(
         projection = build_spec_trace_projection(index)
         write_spec_trace_projection(projection)
         print(json.dumps(projection, ensure_ascii=False, indent=2))
-        return 0
-
-    if build_proposal_lane_overlay_mode:
-        if any(
-            (
-                dry_run,
-                auto_approve,
-                loop,
-                resolve_gate,
-                decision,
-                note,
-                target_spec,
-                split_proposal,
-                apply_split_proposal,
-                operator_note,
-                mutation_budget,
-                run_authority,
-                execution_profile,
-                child_model,
-                child_timeout_seconds,
-                verbose,
-                list_stale_runtime,
-                clean_stale_runtime,
-                observe_graph_health_mode,
-                build_proposal_runtime_index_mode,
-                build_proposal_promotion_index_mode,
-            )
-        ):
-            print(
-                "--build-proposal-lane-overlay must be used as a standalone command",
-                file=sys.stderr,
-            )
-            return 1
-        overlay = build_proposal_lane_overlay()
-        write_proposal_lane_overlay(overlay)
-        print(json.dumps(overlay, ensure_ascii=False, indent=2))
         return 0
 
     if build_proposal_runtime_index_mode:
