@@ -83,6 +83,9 @@ Supervisor modes:
 - `--build-metric-signal-index`: build `runs/metric_signal_index.json` from
   trace, evidence, graph-health, and proposal-runtime surfaces so metric-driven
   advisory signals remain derived rather than canonical facts.
+- `--build-metric-threshold-proposals`: build
+  `runs/metric_threshold_proposals.json` from metric-threshold breaches so the
+  next step is a reviewable proposal artifact, not a direct policy mutation.
 - `--build-intent-layer-overlay`: build `runs/intent_layer_overlay.json` from
   repository-tracked intent-layer nodes under `intent_layer/nodes/`, so
   pre-canonical user intent and operator-request artifacts can be inspected as
@@ -169,6 +172,9 @@ Key derived artifacts:
   `Specification Verifiability`, `Process Observability`,
   `Structural Observability`, and a bootstrap `SIB` proxy, plus threshold-based
   advisory signals
+- `runs/metric_threshold_proposals.json`: reviewable proposal artifact emitted
+  from metric-threshold breaches, grouped by proposal kind, severity, and
+  target metric
 - `tools/spec_trace_registry.json`: explicit strong trace contracts used to
   derive conservative `implementation_state` overlays such as `planned`,
   `implemented`, `verified`, `drifted`, and `blocked`

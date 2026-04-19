@@ -7876,6 +7876,125 @@ def test_main_builds_metric_signal_index_as_standalone_command(
     ]
 
 
+def test_build_metric_threshold_proposals_emits_reviewable_followups(
+    supervisor_module: object,
+) -> None:
+    report = supervisor_module.build_metric_threshold_proposals(
+        {
+            "generated_at": "2026-04-19T00:00:00Z",
+            "metrics": [
+                {
+                    "metric_id": "specification_verifiability",
+                    "title": "Specification Verifiability",
+                    "score": 0.2,
+                    "minimum_score": 0.45,
+                    "status": "below_threshold",
+                    "trigger_signal": "low_specification_verifiability",
+                    "input_summary": {"relevant_spec_count": 3},
+                },
+                {
+                    "metric_id": "sib_proxy",
+                    "title": "SIB Proxy",
+                    "score": 0.52,
+                    "minimum_score": 0.6,
+                    "status": "below_threshold",
+                    "trigger_signal": "low_sib_proxy",
+                    "input_summary": {"component_scores": {}},
+                },
+                {
+                    "metric_id": "structural_observability",
+                    "title": "Structural Observability",
+                    "score": 0.9,
+                    "minimum_score": 0.7,
+                    "status": "healthy",
+                    "trigger_signal": "low_structural_observability",
+                    "input_summary": {},
+                },
+            ],
+        }
+    )
+
+    assert report["artifact_kind"] == supervisor_module.METRIC_THRESHOLD_PROPOSALS_ARTIFACT_KIND
+    assert report["entry_count"] == 2
+    by_id = {entry["metric_id"]: entry for entry in report["entries"]}
+    assert by_id["specification_verifiability"]["proposal_kind"] == "metric_remediation_proposal"
+    assert by_id["specification_verifiability"]["policy_mutation_state"] == "proposal_only"
+    assert by_id["sib_proxy"]["proposal_kind"] == "metric_threshold_review_proposal"
+    assert report["viewer_projection"]["named_filters"]["remediation_proposals"] == [
+        "metric-specification_verifiability-followup"
+    ]
+
+
+def test_main_builds_metric_threshold_proposals_as_standalone_command(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    def fake_signal_index(specs: list[object]) -> dict[str, object]:
+        assert len(specs) == 1
+        return {
+            "artifact_kind": supervisor_module.METRIC_SIGNAL_INDEX_ARTIFACT_KIND,
+            "schema_version": supervisor_module.METRIC_SIGNAL_INDEX_SCHEMA_VERSION,
+            "generated_at": "2026-04-19T00:00:00Z",
+            "metrics": [],
+            "active_signals": [],
+            "viewer_projection": {"metric_status": {}, "active_signals": [], "named_filters": {}},
+        }
+
+    def fake_report(index: dict[str, object]) -> dict[str, object]:
+        assert index["artifact_kind"] == supervisor_module.METRIC_SIGNAL_INDEX_ARTIFACT_KIND
+        return {
+            "artifact_kind": supervisor_module.METRIC_THRESHOLD_PROPOSALS_ARTIFACT_KIND,
+            "schema_version": supervisor_module.METRIC_THRESHOLD_PROPOSALS_SCHEMA_VERSION,
+            "generated_at": "2026-04-19T00:01:00Z",
+            "policy_reference": {"artifact_path": "tools/metric_signal_policy.json"},
+            "source_signal_index_path": "runs/metric_signal_index.json",
+            "source_signal_generated_at": "2026-04-19T00:00:00Z",
+            "entry_count": 1,
+            "entries": [
+                {
+                    "proposal_id": "metric-specification_verifiability-followup",
+                    "metric_id": "specification_verifiability",
+                    "proposal_kind": "metric_remediation_proposal",
+                }
+            ],
+            "viewer_projection": {
+                "proposal_kind": {
+                    "metric_remediation_proposal": ["metric-specification_verifiability-followup"]
+                },
+                "severity": {"high": ["metric-specification_verifiability-followup"]},
+                "metric_id": {
+                    "specification_verifiability": ["metric-specification_verifiability-followup"]
+                },
+                "named_filters": {
+                    "remediation_proposals": ["metric-specification_verifiability-followup"]
+                },
+            },
+        }
+
+    monkeypatch.setattr(supervisor_module, "build_metric_signal_index", fake_signal_index)
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_metric_threshold_proposals",
+        fake_report,
+    )
+
+    exit_code = supervisor_module.main(build_metric_threshold_proposals_mode=True)
+
+    assert exit_code == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["artifact_kind"] == supervisor_module.METRIC_THRESHOLD_PROPOSALS_ARTIFACT_KIND
+    signal_artifact = json.loads(
+        (repo_fixture / "runs" / "metric_signal_index.json").read_text(encoding="utf-8")
+    )
+    assert signal_artifact["artifact_kind"] == supervisor_module.METRIC_SIGNAL_INDEX_ARTIFACT_KIND
+    proposal_artifact = json.loads(
+        (repo_fixture / "runs" / "metric_threshold_proposals.json").read_text(encoding="utf-8")
+    )
+    assert proposal_artifact["entry_count"] == 1
+
+
 def test_build_graph_health_overlay_groups_viewer_filters(
     supervisor_module: object,
     repo_fixture: Path,
@@ -8540,10 +8659,7 @@ def test_main_rejects_combined_proposal_lane_overlay_and_runtime_index_modes(
     )
 
     assert exit_code == 1
-    assert (
-        "--build-proposal-lane-overlay must be used as a standalone command"
-        in capsys.readouterr().err
-    )
+    assert "standalone commands cannot be combined" in capsys.readouterr().err
 
 
 def test_main_builds_graph_health_overlay_as_standalone_command(
@@ -8783,10 +8899,7 @@ def test_main_rejects_combined_graph_health_overlay_and_trends_modes(
     )
 
     assert exit_code == 1
-    assert (
-        "--build-graph-health-overlay must be used as a standalone command"
-        in capsys.readouterr().err
-    )
+    assert "standalone commands cannot be combined" in capsys.readouterr().err
 
 
 def test_main_builds_spec_trace_projection_as_standalone_command(

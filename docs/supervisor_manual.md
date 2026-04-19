@@ -93,6 +93,8 @@ particular task.
   `--build-evidence-plane-overlay`
 - build metric-driven derived signals from trace, evidence, graph health, and proposal runtime:
   `--build-metric-signal-index`
+- turn metric-threshold breaches into reviewable proposal artifacts:
+  `--build-metric-threshold-proposals`
 - build a repository-tracked intent-layer overlay:
   `--build-intent-layer-overlay`
 - build a repository-tracked proposal-lane overlay:
@@ -490,6 +492,36 @@ Each metric entry records:
 
 Use it when you want metric-driven pressure to be machine-readable without
 turning those metrics into canonical facts or policy by default.
+
+### Metric-threshold proposals
+
+```bash
+python3 tools/supervisor.py --build-metric-threshold-proposals
+```
+
+Builds `runs/metric_threshold_proposals.json` from a fresh
+`runs/metric_signal_index.json`.
+
+This command is the governance boundary for metric thresholds:
+
+- threshold crossings stay derived
+- the next step becomes a reviewable proposal artifact
+- no supervisor policy file is mutated automatically
+
+Current output groups breaches by:
+
+- proposal kind
+- severity
+- target metric
+
+Entries carry:
+
+- breached metric and score
+- minimum threshold and threshold gap
+- recommended actions
+- target surfaces
+- a proposal-first transition envelope showing that the result is reviewable
+  follow-up, not silent policy tuning
 
 ### Proposal-lane overlay
 

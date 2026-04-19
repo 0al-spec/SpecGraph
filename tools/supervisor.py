@@ -11939,6 +11939,112 @@ def write_metric_signal_index(index: dict[str, Any]) -> Path:
     return path
 
 
+def metric_threshold_proposal_severity(score: float | None, threshold: float) -> str:
+    gap = metric_gap_from_threshold(score, threshold)
+    if gap is None:
+        return "low"
+    if gap >= 0.25:
+        return "high"
+    if gap >= 0.1:
+        return "medium"
+    return "low"
+
+
+def build_metric_threshold_proposals(signal_index: dict[str, Any]) -> dict[str, Any]:
+    entries: list[dict[str, Any]] = []
+    by_kind: dict[str, list[str]] = {}
+    by_severity: dict[str, list[str]] = {}
+    by_metric: dict[str, list[str]] = {}
+    named_filters = {name: [] for name in METRIC_THRESHOLD_PROPOSAL_NAMED_FILTERS}
+
+    for metric in signal_index.get("metrics", []):
+        if not isinstance(metric, dict):
+            continue
+        if str(metric.get("status", "")).strip() != "below_threshold":
+            continue
+
+        metric_id = str(metric.get("metric_id", "")).strip()
+        trigger_signal = str(metric.get("trigger_signal", "")).strip()
+        if not metric_id or not trigger_signal:
+            continue
+        mapping = metric_signal_mapping(trigger_signal)
+        proposal_kind = (
+            str(mapping.get("proposal_kind", "")).strip() or "metric_remediation_proposal"
+        )
+        severity = metric_threshold_proposal_severity(
+            metric.get("score"),
+            float(metric.get("minimum_score", 0.0)),
+        )
+        proposal_id = f"metric-{metric_id}-followup"
+        threshold = float(metric.get("minimum_score", 0.0))
+        score = metric.get("score")
+        entries.append(
+            {
+                "proposal_id": proposal_id,
+                "proposal_kind": proposal_kind,
+                "title": f"Review {metric.get('title', metric_id)} below threshold",
+                "metric_id": metric_id,
+                "trigger_signal": trigger_signal,
+                "severity": severity,
+                "score": score,
+                "minimum_score": threshold,
+                "threshold_gap": metric_gap_from_threshold(score, threshold),
+                "policy_mutation_state": "proposal_only",
+                "review_intent": "proposal_first_metric_followup",
+                "recommended_actions": list(mapping.get("recommended_actions", [])),
+                "target_surfaces": list(mapping.get("target_surfaces", [])),
+                "proposed_transition": {
+                    "transition_profile": "specgraph_core",
+                    "packet_type": "proposal",
+                    "target_artifact_class": "metric_threshold_followup",
+                },
+                "basis": (
+                    f"{metric.get('title', metric_id)} scored {score} against minimum "
+                    f"{threshold}, so the threshold crossing is surfaced as a reviewable "
+                    "proposal instead of a direct policy mutation."
+                ),
+                "metric_summary": {
+                    "status": str(metric.get("status", "")).strip(),
+                    "input_summary": copy.deepcopy(metric.get("input_summary", {})),
+                },
+            }
+        )
+        by_kind.setdefault(proposal_kind, []).append(proposal_id)
+        by_severity.setdefault(severity, []).append(proposal_id)
+        by_metric.setdefault(metric_id, []).append(proposal_id)
+        if proposal_kind == "metric_remediation_proposal":
+            named_filters["remediation_proposals"].append(proposal_id)
+        else:
+            named_filters["threshold_review_proposals"].append(proposal_id)
+        if severity in {"high", "medium", "low"}:
+            named_filters[f"{severity}_severity"].append(proposal_id)
+
+    return {
+        "artifact_kind": METRIC_THRESHOLD_PROPOSALS_ARTIFACT_KIND,
+        "schema_version": METRIC_THRESHOLD_PROPOSALS_SCHEMA_VERSION,
+        "generated_at": utc_now_iso(),
+        "policy_reference": metric_signal_policy_reference(),
+        "source_signal_index_path": metric_signal_index_path().relative_to(ROOT).as_posix(),
+        "source_signal_generated_at": signal_index.get("generated_at"),
+        "entry_count": len(entries),
+        "entries": entries,
+        "viewer_projection": {
+            "proposal_kind": {key: sorted(value) for key, value in sorted(by_kind.items())},
+            "severity": {key: sorted(value) for key, value in sorted(by_severity.items())},
+            "metric_id": {key: sorted(value) for key, value in sorted(by_metric.items())},
+            "named_filters": {key: sorted(value) for key, value in sorted(named_filters.items())},
+        },
+    }
+
+
+def write_metric_threshold_proposals(report: dict[str, Any]) -> Path:
+    RUNS_DIR.mkdir(parents=True, exist_ok=True)
+    path = metric_threshold_proposals_path()
+    with artifact_lock(path):
+        atomic_write_json(path, report)
+    return path
+
+
 def proposal_runtime_registry_path() -> Path:
     return ROOT / "tools" / "proposal_runtime_registry.json"
 
@@ -16082,6 +16188,7 @@ def main(
     build_evidence_plane_index_mode: bool = False,
     build_evidence_plane_overlay_mode: bool = False,
     build_metric_signal_index_mode: bool = False,
+    build_metric_threshold_proposals_mode: bool = False,
     build_proposal_lane_overlay_mode: bool = False,
     build_proposal_runtime_index_mode: bool = False,
     build_proposal_promotion_index_mode: bool = False,
@@ -16126,6 +16233,7 @@ def main(
         "--build-evidence-plane-index": build_evidence_plane_index_mode,
         "--build-evidence-plane-overlay": build_evidence_plane_overlay_mode,
         "--build-metric-signal-index": build_metric_signal_index_mode,
+        "--build-metric-threshold-proposals": build_metric_threshold_proposals_mode,
         "--build-proposal-lane-overlay": build_proposal_lane_overlay_mode,
         "--build-proposal-runtime-index": build_proposal_runtime_index_mode,
         "--build-proposal-promotion-index": build_proposal_promotion_index_mode,
@@ -16732,6 +16840,43 @@ def main(
         index = build_metric_signal_index(specs)
         write_metric_signal_index(index)
         print(json.dumps(index, ensure_ascii=False, indent=2))
+        return 0
+
+    if build_metric_threshold_proposals_mode:
+        if any(
+            (
+                dry_run,
+                auto_approve,
+                loop,
+                resolve_gate,
+                decision,
+                note,
+                target_spec,
+                split_proposal,
+                apply_split_proposal,
+                operator_note,
+                mutation_budget,
+                run_authority,
+                execution_profile,
+                child_model,
+                child_timeout_seconds,
+                verbose,
+                list_stale_runtime,
+                clean_stale_runtime,
+                observe_graph_health_mode,
+                operator_request_packet_path,
+            )
+        ):
+            print(
+                "--build-metric-threshold-proposals must be used as a standalone command",
+                file=sys.stderr,
+            )
+            return 1
+        index = build_metric_signal_index(specs)
+        write_metric_signal_index(index)
+        report = build_metric_threshold_proposals(index)
+        write_metric_threshold_proposals(report)
+        print(json.dumps(report, ensure_ascii=False, indent=2))
         return 0
 
     if build_proposal_runtime_index_mode:
@@ -17472,6 +17617,14 @@ if __name__ == "__main__":
         ),
     )
     parser.add_argument(
+        "--build-metric-threshold-proposals",
+        action="store_true",
+        help=(
+            "Build reviewable proposal artifacts from metric-threshold breaches so thresholds "
+            "pressure proposal flow before any policy mutation"
+        ),
+    )
+    parser.add_argument(
         "--build-proposal-lane-overlay",
         action="store_true",
         help=(
@@ -17623,6 +17776,7 @@ if __name__ == "__main__":
             build_evidence_plane_index_mode=args.build_evidence_plane_index,
             build_evidence_plane_overlay_mode=args.build_evidence_plane_overlay,
             build_metric_signal_index_mode=args.build_metric_signal_index,
+            build_metric_threshold_proposals_mode=args.build_metric_threshold_proposals,
             build_proposal_lane_overlay_mode=args.build_proposal_lane_overlay,
             build_proposal_runtime_index_mode=args.build_proposal_runtime_index,
             build_proposal_promotion_index_mode=args.build_proposal_promotion_index,
