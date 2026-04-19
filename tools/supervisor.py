@@ -87,6 +87,7 @@ OPERATOR_REQUEST_BRIDGE_POLICY_RELATIVE_PATH = "tools/operator_request_bridge_po
 SPECGRAPH_VOCABULARY_RELATIVE_PATH = "tools/specgraph_vocabulary.json"
 PRE_SPEC_SEMANTICS_POLICY_RELATIVE_PATH = "tools/pre_spec_semantics_policy.json"
 VALIDATION_FINDINGS_POLICY_RELATIVE_PATH = "tools/validation_findings_policy.json"
+SAFE_REPAIR_POLICY_RELATIVE_PATH = "tools/safe_repair_policy.json"
 
 
 def supervisor_policy_path() -> Path:
@@ -119,6 +120,10 @@ def pre_spec_semantics_policy_path() -> Path:
 
 def validation_findings_policy_path() -> Path:
     return TOOLS_DIR / "validation_findings_policy.json"
+
+
+def safe_repair_policy_path() -> Path:
+    return TOOLS_DIR / "safe_repair_policy.json"
 
 
 def load_supervisor_policy() -> tuple[dict[str, Any], str]:
@@ -396,6 +401,37 @@ def load_validation_findings_policy() -> tuple[dict[str, Any], str]:
 
 
 VALIDATION_FINDINGS_POLICY, VALIDATION_FINDINGS_POLICY_SHA256 = load_validation_findings_policy()
+
+
+def load_safe_repair_policy() -> tuple[dict[str, Any], str]:
+    path = safe_repair_policy_path()
+    try:
+        raw_text = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise RuntimeError(
+            f"failed to read safe repair policy artifact: {path.as_posix()} ({exc})"
+        ) from exc
+    try:
+        payload = json.loads(raw_text)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(
+            f"malformed safe repair policy artifact: {path.as_posix()} ({exc})"
+        ) from exc
+    if not isinstance(payload, dict):
+        raise RuntimeError(
+            f"malformed safe repair policy artifact: {path.as_posix()} must contain a JSON object"
+        )
+    required_sections = ("trust_boundary", "repair_kinds", "contract_fields")
+    missing = [section for section in required_sections if section not in payload]
+    if missing:
+        raise RuntimeError(
+            "malformed safe repair policy artifact: missing top-level section(s): "
+            + ", ".join(missing)
+        )
+    return payload, hashlib.sha256(raw_text.encode("utf-8")).hexdigest()
+
+
+SAFE_REPAIR_POLICY, SAFE_REPAIR_POLICY_SHA256 = load_safe_repair_policy()
 
 
 def policy_lookup(policy_path: str) -> Any:
@@ -1238,6 +1274,29 @@ def string_errors_to_validation_findings(
             )
         )
     return findings
+
+
+def safe_repair_policy_reference() -> dict[str, Any]:
+    return {
+        "path": SAFE_REPAIR_POLICY_RELATIVE_PATH,
+        "sha256": SAFE_REPAIR_POLICY_SHA256,
+    }
+
+
+def safe_repair_dir_path() -> Path:
+    return RUNS_DIR / "safe_repairs"
+
+
+def safe_repair_artifact_path(run_id: str) -> Path:
+    return safe_repair_dir_path() / f"{run_id}.json"
+
+
+def write_safe_repair_artifact(payload: dict[str, Any]) -> Path:
+    path = safe_repair_artifact_path(str(payload.get("run_id", "")).strip())
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with artifact_lock(path):
+        atomic_write_json(path, payload)
+    return path
 
 
 def emit(
@@ -3168,6 +3227,56 @@ def repair_worktree_changed_spec_yaml(
         repair_notes.append(rel_path)
 
     return repair_notes
+
+
+def build_safe_repair_contract(
+    *,
+    run_id: str,
+    spec_id: str,
+    repair_paths: list[str],
+) -> dict[str, Any]:
+    repairs: list[dict[str, Any]] = []
+    repair_definition = SAFE_REPAIR_POLICY.get("repair_kinds", {}).get("yaml_candidate_repair", {})
+    application_scope = str(repair_definition.get("application_scope", "")).strip()
+    bounded_by = [
+        str(item).strip() for item in repair_definition.get("bounded_by", []) if str(item).strip()
+    ]
+    for path in sorted({str(item).strip() for item in repair_paths if str(item).strip()}):
+        repairs.append(
+            {
+                "repair_id": f"yaml_candidate_repair::{path}",
+                "repair_kind": "yaml_candidate_repair",
+                "application_scope": application_scope,
+                "status": "applied",
+                "target_path": path,
+                "bounded_write_surface": [path],
+                "bounded_by": bounded_by,
+                "canonical_write": False,
+                "requires_followup_validation": True,
+                "trigger_findings": [
+                    validation_finding(
+                        code="candidate_yaml_requires_safe_repair",
+                        family="yaml",
+                        error_class="parse_failure",
+                        message=(
+                            "Recoverable YAML candidate repair was required before bounded "
+                            "validation could continue."
+                        ),
+                        path=path,
+                    )
+                ],
+            }
+        )
+    return {
+        "artifact_kind": "safe_repair_contract",
+        "schema_version": 1,
+        "run_id": run_id,
+        "spec_id": spec_id,
+        "generated_at": utc_now_iso(),
+        "policy_reference": safe_repair_policy_reference(),
+        "repair_count": len(repairs),
+        "repairs": repairs,
+    }
 
 
 def effective_child_executor_timeout_seconds(
@@ -14253,6 +14362,11 @@ def _process_one_spec(
             )
         )
     validation_errors = validation_messages(validation_findings)
+    safe_repair_contract = build_safe_repair_contract(
+        run_id=run_id,
+        spec_id=node.id,
+        repair_paths=yaml_repair_paths,
+    )
     completion_status = classify_completion_status(
         success=success,
         productive_split_required=productive_split_required,
@@ -14311,6 +14425,11 @@ def _process_one_spec(
         refinement_acceptance=refinement_acceptance,
     )
     decision_inspector_artifact = write_decision_inspector_artifact(run_id, decision_inspector)
+    safe_repair_artifact = (
+        write_safe_repair_artifact(safe_repair_contract).as_posix()
+        if safe_repair_contract["repair_count"]
+        else ""
+    )
     payload = {
         "run_id": run_id,
         "timestamp_utc": utc_now_iso(),
@@ -14334,6 +14453,8 @@ def _process_one_spec(
         "worktree_path": worktree_path.as_posix(),
         "isolation_mode": isolation_mode_for_branch(branch),
         "yaml_repair_paths": yaml_repair_paths,
+        "safe_repair_contract": safe_repair_contract,
+        "safe_repair_artifact": safe_repair_artifact,
         "branch": branch,
         "changed_files": changed,
         "validation_findings_policy": validation_findings_policy_reference(),

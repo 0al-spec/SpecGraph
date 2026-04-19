@@ -11815,6 +11815,32 @@ def test_main_repairs_recoverable_worktree_yaml_indentation(
     payload = json.loads(run_logs[0].read_text(encoding="utf-8"))
     assert payload["completion_status"] == "ok"
     assert payload["yaml_repair_paths"] == ["specs/nodes/SG-SPEC-0001.yaml"]
+    assert payload["safe_repair_contract"]["artifact_kind"] == "safe_repair_contract"
+    assert payload["safe_repair_contract"]["repair_count"] == 1
+    repair = payload["safe_repair_contract"]["repairs"][0]
+    assert repair["repair_kind"] == "yaml_candidate_repair"
+    assert repair["application_scope"] == "worktree_candidate_only"
+    assert repair["target_path"] == "specs/nodes/SG-SPEC-0001.yaml"
+    assert repair["canonical_write"] is False
+    assert payload["safe_repair_artifact"].endswith(".json")
+
+
+def test_build_safe_repair_contract_is_bounded_to_worktree_candidate(
+    supervisor_module: object,
+) -> None:
+    contract = supervisor_module.build_safe_repair_contract(
+        run_id="20260419T140000Z-SG-SPEC-0001-abcd1234",
+        spec_id="SG-SPEC-0001",
+        repair_paths=["specs/nodes/SG-SPEC-0001.yaml"],
+    )
+
+    assert contract["repair_count"] == 1
+    assert contract["policy_reference"]["path"] == "tools/safe_repair_policy.json"
+    repair = contract["repairs"][0]
+    assert repair["repair_kind"] == "yaml_candidate_repair"
+    assert repair["bounded_write_surface"] == ["specs/nodes/SG-SPEC-0001.yaml"]
+    assert repair["canonical_write"] is False
+    assert repair["trigger_findings"][0]["code"] == "candidate_yaml_requires_safe_repair"
 
 
 def test_main_aborts_on_cycle(

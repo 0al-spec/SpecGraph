@@ -690,6 +690,7 @@ Important fields:
 - `validation_findings`
 - `validation_summary`
 - `validation_errors`
+- `safe_repair_contract`
 - `executor_environment`
 - `refinement_acceptance`
 - `reconciliation`
@@ -757,6 +758,20 @@ Current typed findings cover runtime paths such as YAML/load failures,
 relation/reconciliation failures, acceptance or atomicity failures,
 authority/scope violations, runtime artifact integrity failures, executor
 machine-protocol failures, and executor-environment failures.
+
+Recoverable repairs are explicit too:
+
+- `safe_repair_contract`
+  bounded repair metadata attached to the run payload
+- `runs/safe_repairs/<RUN_ID>.json`
+  standalone repair artifact when a repair was actually applied
+
+The current built-in safe repair kind is intentionally narrow:
+
+- `yaml_candidate_repair`
+- scope: `worktree_candidate_only`
+- canonical write: always `false`
+- every repair still requires normal post-repair validation before any later sync
 
 It has four slices:
 

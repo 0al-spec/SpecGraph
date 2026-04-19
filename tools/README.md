@@ -156,6 +156,8 @@ Key derived artifacts:
 - `runs/proposal_runtime_index.json`: proposal posture and reflective runtime-closure index
 - `runs/proposal_promotion_index.json`: proposal-promotion provenance and
   traceability inspection artifact grouped by status and next gap
+- `runs/safe_repairs/<RUN_ID>.json`: standalone safe-repair artifact for
+  bounded worktree-candidate repairs
 - `runs/spec_id_reservations.json`: temporary active child-materialization spec-id reservations
 - `tools/supervisor_policy.json`: declarative supervisor policy artifact for thresholds, priorities,
   mutation classes, queue defaults, and execution profiles
@@ -198,6 +200,9 @@ Runtime artifact safety:
   run is active and require the produced child file to use that reserved path
 - malformed `runs/proposal_queue.json` or `runs/refactor_queue.json` now block
   normal supervisor runs instead of being silently treated as empty queues
+- recoverable repairs are now recorded as `safe_repair_contract`; the current
+  built-in repair kind `yaml_candidate_repair` is restricted to
+  `worktree_candidate_only` with `canonical_write: false`
 - a child executor success path must emit both `RUN_OUTCOME:` and `BLOCKER:`
   markers; missing markers are treated as protocol failure
 

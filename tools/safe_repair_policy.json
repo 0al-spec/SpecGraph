@@ -1,0 +1,28 @@
+{
+  "artifact_kind": "safe_repair_policy",
+  "schema_version": 1,
+  "trust_boundary": {
+    "principle": "Safe repair may only mutate bounded worktree candidates or helper-owned derived artifacts; it must never silently mutate canonical truth.",
+    "canonical_write_allowed": false
+  },
+  "repair_kinds": {
+    "yaml_candidate_repair": {
+      "application_scope": "worktree_candidate_only",
+      "bounded_by": [
+        "changed_file_only",
+        "spec_node_only",
+        "post_repair_yaml_parse_required",
+        "requires_followup_validation"
+      ]
+    }
+  },
+  "contract_fields": [
+    "repair_kind",
+    "application_scope",
+    "target_path",
+    "status",
+    "trigger_findings",
+    "bounded_write_surface",
+    "canonical_write"
+  ]
+}
