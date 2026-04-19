@@ -80,9 +80,15 @@ Supervisor modes:
 - `--build-evidence-plane-overlay`: build `runs/evidence_plane_overlay.json`
   from the evidence plane, grouped for viewer-style filters and next evidence
   gaps across observation, outcome, and adoption coverage.
+- `--build-external-consumer-index`: build `runs/external_consumer_index.json`
+  from `tools/external_consumers.json` and optional local sibling checkouts so
+  stable-vs-draft external references such as `Metrics/SIB` can be inspected
+  without using a Git submodule.
 - `--build-metric-signal-index`: build `runs/metric_signal_index.json` from
   trace, evidence, graph-health, and proposal-runtime surfaces so metric-driven
-  advisory signals remain derived rather than canonical facts.
+  advisory signals remain derived rather than canonical facts. `sib_proxy` now
+  reports `bridge_backed` vs `bootstrap_fallback` derivation depending on
+  whether a stable external consumer bridge is locally available.
 - `--build-metric-threshold-proposals`: build
   `runs/metric_threshold_proposals.json` from metric-threshold breaches so the
   next step is a reviewable proposal artifact, not a direct policy mutation.
@@ -171,10 +177,13 @@ Key derived artifacts:
   observations, outcomes, and adoption markers
 - `runs/evidence_plane_overlay.json`: viewer/inspection overlay for the
   evidence plane grouped by chain status, stage coverage, and next evidence gap
+- `runs/external_consumer_index.json`: derived bridge artifact for declared
+  external consumers, including reference state, checkout availability,
+  contract status, and metric bindings
 - `runs/metric_signal_index.json`: derived metric surface for
   `Specification Verifiability`, `Process Observability`,
-  `Structural Observability`, and a bootstrap `SIB` proxy, plus threshold-based
-  advisory signals
+  `Structural Observability`, and a bridge-aware `SIB` proxy, plus
+  threshold-based advisory signals
 - `runs/metric_threshold_proposals.json`: reviewable proposal artifact emitted
   from metric-threshold breaches, grouped by proposal kind, severity, and
   target metric
@@ -189,6 +198,9 @@ Key derived artifacts:
 - `tools/metric_signal_policy.json`: declarative thresholds, score mappings,
   metric identities, and proposal-first threshold semantics for the derived
   metric signal layer
+- `tools/external_consumers.json`: tracked registry of stable and draft
+  external consumers, such as `Metrics/SIB` and `Metrics/SIB_FULL`, used by
+  the bridge index and bridge-backed metric derivation
 - `tools/runtime_evidence_registry.json`: explicit evidence contracts that bind
   selected canonical specs to artifact refs, runtime entities, and observation,
   outcome, and adoption markers

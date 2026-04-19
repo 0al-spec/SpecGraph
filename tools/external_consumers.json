@@ -1,0 +1,119 @@
+{
+  "artifact_kind": "external_consumer_registry",
+  "version": 1,
+  "repository_layout": {
+    "index_artifact": "runs/external_consumer_index.json"
+  },
+  "reference_states": [
+    "stable_reference",
+    "draft_reference"
+  ],
+  "consumer_profiles": [
+    "sibling_metric_consumer"
+  ],
+  "contract_statuses": [
+    "ready",
+    "partial",
+    "unavailable"
+  ],
+  "checkout_statuses": [
+    "available",
+    "missing"
+  ],
+  "artifact_statuses": [
+    "verified",
+    "marker_mismatch",
+    "missing",
+    "unavailable"
+  ],
+  "consumers": [
+    {
+      "consumer_id": "metrics_sib",
+      "title": "Metrics / SIB",
+      "reference_state": "stable_reference",
+      "profile": "sibling_metric_consumer",
+      "repo_url": "https://github.com/0al-spec/Metrics",
+      "local_checkout_hint": "/Users/egor/Development/GitHub/0AL/Metrics",
+      "metric_bindings": [
+        {
+          "metric_id": "sib_proxy",
+          "binding_role": "stable_bridge_reference"
+        }
+      ],
+      "declared_artifacts": [
+        {
+          "artifact_id": "sib_readme",
+          "path": "SIB/README.md",
+          "kind": "consumer_readme",
+          "required": true,
+          "markers": [
+            "## The SIB Framework",
+            "**SIB** (Specification-Implementation Balance)"
+          ]
+        },
+        {
+          "artifact_id": "sib_metrics_tex",
+          "path": "SIB/metrics.tex",
+          "kind": "source_document",
+          "required": true,
+          "markers": [
+            "\\section{Derived Metrics}",
+            "\\mathrm{SIB} \\equiv \\frac{N_{\\mathrm{spec}}}{S_{\\mathrm{impl}}}."
+          ]
+        },
+        {
+          "artifact_id": "sib_metrics_pdf",
+          "path": "SIB/metrics.pdf",
+          "kind": "compiled_document",
+          "required": false,
+          "markers": []
+        }
+      ],
+      "notes": "Stable sibling consumer contract used for the first bridge-backed replacement of bootstrap sib_proxy semantics."
+    },
+    {
+      "consumer_id": "metrics_sib_full",
+      "title": "Metrics / SIB Full",
+      "reference_state": "draft_reference",
+      "profile": "sibling_metric_consumer",
+      "repo_url": "https://github.com/0al-spec/Metrics",
+      "local_checkout_hint": "/Users/egor/Development/GitHub/0AL/Metrics",
+      "metric_bindings": [
+        {
+          "metric_id": "sib_proxy",
+          "binding_role": "draft_extended_reference"
+        }
+      ],
+      "declared_artifacts": [
+        {
+          "artifact_id": "sib_full_readme",
+          "path": "SIB_FULL/README.md",
+          "kind": "consumer_readme",
+          "required": true,
+          "markers": [
+            "# SIB Full Metrics",
+            "extended LaTeX paper"
+          ]
+        },
+        {
+          "artifact_id": "sib_full_metrics_tex",
+          "path": "SIB_FULL/sib_full_metrics.tex",
+          "kind": "source_document",
+          "required": true,
+          "markers": [
+            "We further extend the base Specification--Implementation Balance (SIB)",
+            "\\section{Pre-Implementation Extension}"
+          ]
+        },
+        {
+          "artifact_id": "sib_full_metrics_pdf",
+          "path": "SIB_FULL/sib_full_metrics.pdf",
+          "kind": "compiled_document",
+          "required": false,
+          "markers": []
+        }
+      ],
+      "notes": "Draft extended reference. Visible to the bridge index, but not threshold-driving authority for sib_proxy yet."
+    }
+  ]
+}

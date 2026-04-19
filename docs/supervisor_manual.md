@@ -91,6 +91,8 @@ particular task.
   `--build-evidence-plane-index`
 - build a viewer/inspection overlay from the evidence plane:
   `--build-evidence-plane-overlay`
+- build a bridge index for declared external consumers such as `Metrics/SIB`:
+  `--build-external-consumer-index`
 - build metric-driven derived signals from trace, evidence, graph health, and proposal runtime:
   `--build-metric-signal-index`
 - turn metric-threshold breaches into reviewable proposal artifacts:
@@ -484,6 +486,13 @@ Current bootstrap metric families are:
 - `structural_observability`
 - `sib_proxy`
 
+`sib_proxy` is now bridge-aware:
+
+- `bridge_backed` when a stable external consumer such as `Metrics/SIB` is
+  locally available through the declared bridge registry
+- `bootstrap_fallback` when no stable bridge is locally available and the
+  metric must fall back to internal SpecGraph-derived surfaces only
+
 Each metric entry records:
 
 - current score
@@ -491,6 +500,29 @@ Each metric entry records:
 - threshold gap
 - emitted advisory signal when below threshold
 - input summary explaining which derived surfaces contributed
+
+### External consumer index
+
+```bash
+python3 tools/supervisor.py --build-external-consumer-index
+```
+
+Builds `runs/external_consumer_index.json` from
+`tools/external_consumers.json`.
+
+This is the first governed bridge surface for sibling repositories such as
+`Metrics`.
+
+The index reports:
+
+- declared consumer identity and reference state
+- local checkout availability
+- declared artifact verification status
+- contract readiness
+- metric bindings such as the stable `Metrics/SIB` bridge for `sib_proxy`
+
+This layer is still derived-only. It does not import external repositories into
+canonical truth and does not require Git submodules.
 
 Use it when you want metric-driven pressure to be machine-readable without
 turning those metrics into canonical facts or policy by default.
@@ -810,6 +842,10 @@ path.
 - `runs/proposal_runtime_index.json`
   - derived proposal runtime index with posture, realization, validation, and
     re-observation status
+- `runs/external_consumer_index.json`
+  - derived bridge surface for declared external consumers, including
+    stable-vs-draft references, checkout availability, contract readiness, and
+    metric bindings
 - `runs/graph_dashboard.json`
   - aggregated dashboard surface with headline cards and numeric section
     summaries for graph, health, proposals, implementation, evidence, and

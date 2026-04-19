@@ -7697,6 +7697,222 @@ def test_main_builds_evidence_plane_overlay_as_standalone_command(
     )
 
 
+def test_build_external_consumer_index_reports_stable_and_draft_metrics_consumers(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    metrics_root = repo_fixture.parent / "Metrics"
+    (metrics_root / "SIB").mkdir(parents=True, exist_ok=True)
+    (metrics_root / "SIB_FULL").mkdir(parents=True, exist_ok=True)
+    (metrics_root / "SIB" / "README.md").write_text(
+        "\n".join(
+            [
+                "# Metrics / SIB",
+                "## The SIB Framework",
+                "**SIB** (Specification-Implementation Balance)",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    (metrics_root / "SIB" / "metrics.tex").write_text(
+        "\n".join(
+            [
+                "\\section{Derived Metrics}",
+                "\\mathrm{SIB} \\equiv \\frac{N_{\\mathrm{spec}}}{S_{\\mathrm{impl}}}.",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    (metrics_root / "SIB_FULL" / "README.md").write_text(
+        "\n".join(
+            [
+                "# SIB Full Metrics",
+                "extended LaTeX paper",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    (metrics_root / "SIB_FULL" / "sib_full_metrics.tex").write_text(
+        "\n".join(
+            [
+                "We further extend the base Specification--Implementation Balance (SIB)",
+                "\\section{Pre-Implementation Extension}",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    tools_dir = repo_fixture / "tools"
+    tools_dir.mkdir(exist_ok=True)
+    (tools_dir / "external_consumers.json").write_text(
+        json.dumps(
+            {
+                "artifact_kind": "external_consumer_registry",
+                "version": 1,
+                "reference_states": ["stable_reference", "draft_reference"],
+                "consumer_profiles": ["sibling_metric_consumer"],
+                "artifact_statuses": [
+                    "verified",
+                    "marker_mismatch",
+                    "missing",
+                    "unavailable",
+                ],
+                "consumers": [
+                    {
+                        "consumer_id": "metrics_sib",
+                        "title": "Metrics / SIB",
+                        "reference_state": "stable_reference",
+                        "profile": "sibling_metric_consumer",
+                        "repo_url": "https://github.com/0al-spec/Metrics",
+                        "local_checkout_hint": metrics_root.as_posix(),
+                        "metric_bindings": [
+                            {"metric_id": "sib_proxy", "binding_role": "stable_bridge_reference"}
+                        ],
+                        "declared_artifacts": [
+                            {
+                                "artifact_id": "sib_readme",
+                                "path": "SIB/README.md",
+                                "kind": "consumer_readme",
+                                "required": True,
+                                "markers": [
+                                    "## The SIB Framework",
+                                    "**SIB** (Specification-Implementation Balance)",
+                                ],
+                            },
+                            {
+                                "artifact_id": "sib_metrics_tex",
+                                "path": "SIB/metrics.tex",
+                                "kind": "source_document",
+                                "required": True,
+                                "markers": [
+                                    "\\section{Derived Metrics}",
+                                    (
+                                        "\\mathrm{SIB} \\equiv "
+                                        "\\frac{N_{\\mathrm{spec}}}{S_{\\mathrm{impl}}}."
+                                    ),
+                                ],
+                            },
+                        ],
+                    },
+                    {
+                        "consumer_id": "metrics_sib_full",
+                        "title": "Metrics / SIB Full",
+                        "reference_state": "draft_reference",
+                        "profile": "sibling_metric_consumer",
+                        "repo_url": "https://github.com/0al-spec/Metrics",
+                        "local_checkout_hint": metrics_root.as_posix(),
+                        "metric_bindings": [
+                            {"metric_id": "sib_proxy", "binding_role": "draft_extended_reference"}
+                        ],
+                        "declared_artifacts": [
+                            {
+                                "artifact_id": "sib_full_readme",
+                                "path": "SIB_FULL/README.md",
+                                "kind": "consumer_readme",
+                                "required": True,
+                                "markers": [
+                                    "# SIB Full Metrics",
+                                    "extended LaTeX paper",
+                                ],
+                            },
+                            {
+                                "artifact_id": "sib_full_tex",
+                                "path": "SIB_FULL/sib_full_metrics.tex",
+                                "kind": "source_document",
+                                "required": True,
+                                "markers": [
+                                    (
+                                        "We further extend the base "
+                                        "Specification--Implementation Balance (SIB)"
+                                    ),
+                                    "\\section{Pre-Implementation Extension}",
+                                ],
+                            },
+                        ],
+                    },
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    index = supervisor_module.build_external_consumer_index()
+
+    assert index["artifact_kind"] == supervisor_module.EXTERNAL_CONSUMER_INDEX_ARTIFACT_KIND
+    assert index["entry_count"] == 2
+    by_id = {entry["consumer_id"]: entry for entry in index["entries"]}
+    assert by_id["metrics_sib"]["reference_state"] == "stable_reference"
+    assert by_id["metrics_sib"]["contract_status"] == "ready"
+    assert by_id["metrics_sib"]["artifact_status_counts"]["verified"] == 2
+    assert by_id["metrics_sib_full"]["reference_state"] == "draft_reference"
+    assert by_id["metrics_sib_full"]["contract_status"] == "ready"
+    assert index["viewer_projection"]["named_filters"]["stable_ready"] == ["metrics_sib"]
+    assert index["viewer_projection"]["named_filters"]["draft_visible"] == ["metrics_sib_full"]
+    assert index["viewer_projection"]["metric_id"]["sib_proxy"] == [
+        "metrics_sib",
+        "metrics_sib_full",
+    ]
+
+
+def test_normalize_repo_url_equates_https_and_ssh_github_forms(
+    supervisor_module: object,
+) -> None:
+    assert (
+        supervisor_module.normalize_repo_url("https://github.com/0al-spec/Metrics")
+        == "github.com/0al-spec/Metrics"
+    )
+    assert (
+        supervisor_module.normalize_repo_url("git@github.com:0al-spec/Metrics.git")
+        == "github.com/0al-spec/Metrics"
+    )
+
+
+def test_main_builds_external_consumer_index_as_standalone_command(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    def fake_index() -> dict[str, object]:
+        return {
+            "artifact_kind": supervisor_module.EXTERNAL_CONSUMER_INDEX_ARTIFACT_KIND,
+            "schema_version": supervisor_module.EXTERNAL_CONSUMER_INDEX_SCHEMA_VERSION,
+            "generated_at": "2026-04-20T00:00:00Z",
+            "registry_reference": {"artifact_path": "tools/external_consumers.json"},
+            "entry_count": 1,
+            "available_entry_count": 1,
+            "entries": [
+                {
+                    "consumer_id": "metrics_sib",
+                    "reference_state": "stable_reference",
+                    "contract_status": "ready",
+                }
+            ],
+            "viewer_projection": {
+                "reference_state": {"stable_reference": ["metrics_sib"]},
+                "contract_status": {"ready": ["metrics_sib"]},
+                "metric_id": {"sib_proxy": ["metrics_sib"]},
+                "named_filters": {"stable_ready": ["metrics_sib"]},
+            },
+        }
+
+    monkeypatch.setattr(supervisor_module, "build_external_consumer_index", fake_index)
+
+    exit_code = supervisor_module.main(build_external_consumer_index_mode=True)
+
+    assert exit_code == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["artifact_kind"] == supervisor_module.EXTERNAL_CONSUMER_INDEX_ARTIFACT_KIND
+    artifact = json.loads(
+        (repo_fixture / "runs" / "external_consumer_index.json").read_text(encoding="utf-8")
+    )
+    assert artifact["entry_count"] == 1
+
+
 def test_build_metric_signal_index_reports_threshold_breaches(
     supervisor_module: object,
     repo_fixture: Path,
@@ -7819,6 +8035,7 @@ def test_build_metric_signal_index_reports_threshold_breaches(
     assert by_id["process_observability"]["status"] == "healthy"
     assert by_id["structural_observability"]["status"] == "below_threshold"
     assert by_id["sib_proxy"]["status"] == "below_threshold"
+    assert by_id["sib_proxy"]["derivation_mode"] == "bootstrap_fallback"
     assert sorted(index["active_signals"]) == [
         "low_sib_proxy",
         "low_specification_verifiability",
@@ -7920,6 +8137,137 @@ def test_build_metric_signal_index_ignores_gate_only_overlay_entries(
     assert structural["input_summary"]["active_pressure_ratio"] == 0.5
     assert structural["score"] == 0.7
     assert structural["status"] == "healthy"
+
+
+def test_build_metric_signal_index_uses_bridge_backed_sib_proxy_when_stable_consumer_ready(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    specs_dir = repo_fixture / "specs" / "nodes"
+    specs_dir.joinpath("SG-SPEC-0002.yaml").write_text(
+        json.dumps(
+            {
+                "id": "SG-SPEC-0002",
+                "title": "Second Spec",
+                "kind": "spec",
+                "created_at": "2026-04-19T00:00:00Z",
+                "updated_at": "2026-04-19T00:00:00Z",
+                "status": "outlined",
+                "maturity": 0.2,
+                "depends_on": [],
+                "outputs": ["specs/nodes/SG-SPEC-0002.yaml"],
+                "allowed_paths": ["specs/nodes/SG-SPEC-0002.yaml"],
+                "acceptance": ["criterion"],
+                "prompt": "Second spec.",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_spec_trace_index",
+        lambda specs: {
+            "generated_at": "2026-04-19T00:00:00Z",
+            "entries": [
+                {"spec_id": "SG-SPEC-0001", "acceptance_coverage": {"status": "covered"}},
+                {"spec_id": "SG-SPEC-0002", "acceptance_coverage": {"status": "covered"}},
+            ],
+        },
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_spec_trace_projection",
+        lambda index: {"generated_at": "2026-04-19T00:00:01Z", "viewer_projection": {}},
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_evidence_plane_index",
+        lambda specs: {
+            "generated_at": "2026-04-19T00:00:02Z",
+            "entries": [{"spec_id": "SG-SPEC-0001", "chain_status": "chain_complete"}],
+        },
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_evidence_plane_overlay",
+        lambda index: {"generated_at": "2026-04-19T00:00:03Z", "viewer_projection": {}},
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_graph_health_overlay",
+        lambda specs: {
+            "generated_at": "2026-04-19T00:00:04Z",
+            "entries": [{"spec_id": "SG-SPEC-0001", "signals": []}],
+            "viewer_projection": {"named_filters": {}},
+        },
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_graph_health_trends",
+        lambda specs, overlay=None: {
+            "generated_at": "2026-04-19T00:00:05Z",
+            "entries": [],
+            "viewer_projection": {"named_filters": {}},
+        },
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_proposal_runtime_index",
+        lambda: {
+            "generated_at": "2026-04-19T00:00:06Z",
+            "entries": [
+                {
+                    "proposal_id": "0024",
+                    "posture": "synchronous_runtime_slice",
+                    "observation_coverage": {"status": "covered"},
+                }
+            ],
+        },
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_external_consumer_index",
+        lambda: {
+            "generated_at": "2026-04-20T00:00:00Z",
+            "entries": [
+                {
+                    "consumer_id": "metrics_sib",
+                    "reference_state": "stable_reference",
+                    "contract_status": "ready",
+                    "local_checkout": {"status": "available"},
+                    "metric_bindings": [
+                        {
+                            "metric_id": "sib_proxy",
+                            "binding_role": "stable_bridge_reference",
+                        }
+                    ],
+                },
+                {
+                    "consumer_id": "metrics_sib_full",
+                    "reference_state": "draft_reference",
+                    "contract_status": "ready",
+                    "local_checkout": {"status": "available"},
+                    "metric_bindings": [
+                        {
+                            "metric_id": "sib_proxy",
+                            "binding_role": "draft_extended_reference",
+                        }
+                    ],
+                },
+            ],
+        },
+    )
+
+    index = supervisor_module.build_metric_signal_index(supervisor_module.load_specs())
+
+    by_id = {entry["metric_id"]: entry for entry in index["metrics"]}
+    sib = by_id["sib_proxy"]
+    assert sib["derivation_mode"] == "bridge_backed"
+    assert sib["input_summary"]["component_scores"]["external_consumer_alignment"] == 1.0
+    assert sib["input_summary"]["stable_bridge_consumer_ids"] == ["metrics_sib"]
+    assert sib["input_summary"]["draft_bridge_consumer_ids"] == ["metrics_sib_full"]
 
 
 def test_main_builds_metric_signal_index_as_standalone_command(
