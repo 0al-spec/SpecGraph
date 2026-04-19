@@ -32,6 +32,7 @@ Derived artifacts:
 - graph refactor queue: `runs/refactor_queue.json`
 - proposal queue index: `runs/proposal_queue.json`
 - structured proposal artifacts: `runs/proposals/*.json`
+- proposal-lane overlay: `runs/proposal_lane_overlay.json`
 - graph health overlay: `runs/graph_health_overlay.json`
 - spec trace index: `runs/spec_trace_index.json`
 - spec trace projection: `runs/spec_trace_projection.json`
@@ -79,6 +80,7 @@ ARTIFACT_LOCK_POLL_SECONDS = 0.05
 RUNTIME_ID_COLLISION_RETRY_LIMIT = 8
 SUPERVISOR_POLICY_RELATIVE_PATH = "tools/supervisor_policy.json"
 TECHSPEC_HANDOFF_POLICY_RELATIVE_PATH = "tools/techspec_handoff_policy.json"
+PROPOSAL_LANE_POLICY_RELATIVE_PATH = "tools/proposal_lane_policy.json"
 
 
 def supervisor_policy_path() -> Path:
@@ -87,6 +89,10 @@ def supervisor_policy_path() -> Path:
 
 def techspec_handoff_policy_path() -> Path:
     return TOOLS_DIR / "techspec_handoff_policy.json"
+
+
+def proposal_lane_policy_path() -> Path:
+    return TOOLS_DIR / "proposal_lane_policy.json"
 
 
 def load_supervisor_policy() -> tuple[dict[str, Any], str]:
@@ -159,6 +165,42 @@ def load_techspec_handoff_policy() -> tuple[dict[str, Any], str]:
 TECHSPEC_HANDOFF_POLICY, TECHSPEC_HANDOFF_POLICY_SHA256 = load_techspec_handoff_policy()
 
 
+def load_proposal_lane_policy() -> tuple[dict[str, Any], str]:
+    path = proposal_lane_policy_path()
+    try:
+        raw_text = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise RuntimeError(
+            f"failed to read proposal lane policy artifact: {path.as_posix()} ({exc})"
+        ) from exc
+    try:
+        payload = json.loads(raw_text)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(
+            f"malformed proposal lane policy artifact: {path.as_posix()} ({exc})"
+        ) from exc
+    if not isinstance(payload, dict):
+        raise RuntimeError(
+            f"malformed proposal lane policy artifact: {path.as_posix()} must contain a JSON object"
+        )
+    required_sections = (
+        "repository_layout",
+        "node_contract",
+        "authority_state_mapping",
+        "overlay_contract",
+    )
+    missing = [section for section in required_sections if section not in payload]
+    if missing:
+        raise RuntimeError(
+            "malformed proposal lane policy artifact: missing top-level section(s): "
+            + ", ".join(missing)
+        )
+    return payload, hashlib.sha256(raw_text.encode("utf-8")).hexdigest()
+
+
+PROPOSAL_LANE_POLICY, PROPOSAL_LANE_POLICY_SHA256 = load_proposal_lane_policy()
+
+
 def policy_lookup(policy_path: str) -> Any:
     current: Any = SUPERVISOR_POLICY
     for part in policy_path.split("."):
@@ -170,6 +212,15 @@ def policy_lookup(policy_path: str) -> Any:
 
 def techspec_handoff_policy_lookup(policy_path: str) -> Any:
     current: Any = TECHSPEC_HANDOFF_POLICY
+    for part in policy_path.split("."):
+        if not isinstance(current, dict) or part not in current:
+            raise KeyError(policy_path)
+        current = current[part]
+    return copy.deepcopy(current)
+
+
+def proposal_lane_policy_lookup(policy_path: str) -> Any:
+    current: Any = PROPOSAL_LANE_POLICY
     for part in policy_path.split("."):
         if not isinstance(current, dict) or part not in current:
             raise KeyError(policy_path)
@@ -231,6 +282,14 @@ def techspec_handoff_policy_reference() -> dict[str, Any]:
     }
 
 
+def proposal_lane_policy_reference() -> dict[str, Any]:
+    return {
+        "artifact_path": PROPOSAL_LANE_POLICY_RELATIVE_PATH,
+        "artifact_sha256": PROPOSAL_LANE_POLICY_SHA256,
+        "version": PROPOSAL_LANE_POLICY.get("version"),
+    }
+
+
 READY_DEP_STATUSES = {"reviewed", "frozen"}
 WORKABLE_STATUSES = {"outlined", "specified"}
 CONTINUATION_STATUSES = {"linked"}
@@ -268,6 +327,25 @@ TECHSPEC_HANDOFF_TARGET_PACKET_TYPE = str(
 TECHSPEC_HANDOFF_TARGET_ARTIFACT_CLASS = str(
     techspec_handoff_policy_lookup("handoff_packet.target_artifact_class")
 )
+PROPOSAL_LANE_NODES_RELATIVE_DIR = str(proposal_lane_policy_lookup("repository_layout.nodes_dir"))
+PROPOSAL_LANE_OVERLAY_FILENAME = Path(
+    str(proposal_lane_policy_lookup("repository_layout.overlay_artifact"))
+).name
+PROPOSAL_LANE_NODE_ARTIFACT_KIND = str(proposal_lane_policy_lookup("node_contract.artifact_kind"))
+PROPOSAL_LANE_NODE_SCHEMA_VERSION = int(proposal_lane_policy_lookup("node_contract.schema_version"))
+PROPOSAL_LANE_PRESENCE_CONTRACT = proposal_lane_policy_lookup("node_contract.presence_contract")
+PROPOSAL_LANE_REQUIRED_QUERY_FIELDS = list(
+    proposal_lane_policy_lookup("node_contract.required_query_fields")
+)
+PROPOSAL_LANE_AUTHORITY_STATE_MAPPING = proposal_lane_policy_lookup("authority_state_mapping")
+PROPOSAL_LANE_OVERLAY_ARTIFACT_KIND = str(
+    proposal_lane_policy_lookup("overlay_contract.artifact_kind")
+)
+PROPOSAL_LANE_OVERLAY_SCHEMA_VERSION = int(
+    proposal_lane_policy_lookup("overlay_contract.schema_version")
+)
+PROPOSAL_LANE_LAYER_NAME = str(proposal_lane_policy_lookup("overlay_contract.layer_name"))
+PROPOSAL_LANE_NAMED_FILTERS = list(proposal_lane_policy_lookup("overlay_contract.named_filters"))
 SUBTREE_SHAPE_ONE_CHILD_CHAIN_THRESHOLD = int(
     policy_lookup("thresholds.subtree_shape_one_child_chain")
 )
@@ -5173,6 +5251,26 @@ def proposals_dir_path() -> Path:
     return RUNS_DIR / "proposals"
 
 
+def proposal_lane_nodes_dir_path() -> Path:
+    return ROOT / PROPOSAL_LANE_NODES_RELATIVE_DIR
+
+
+def proposal_lane_overlay_path() -> Path:
+    return RUNS_DIR / PROPOSAL_LANE_OVERLAY_FILENAME
+
+
+def proposal_lane_node_filename(handle_value: str) -> str:
+    normalized = sanitize_for_git(handle_value).replace("/", "-").strip("-")
+    if not normalized:
+        normalized = "proposal"
+    digest = hashlib.sha256(handle_value.encode("utf-8")).hexdigest()[:8]
+    return f"{normalized}--{digest}.json"
+
+
+def proposal_lane_node_path(handle_value: str) -> Path:
+    return proposal_lane_nodes_dir_path() / proposal_lane_node_filename(handle_value)
+
+
 def proposal_artifact_filename(*, proposal_type: str, spec_id: str, signal: str) -> str:
     safe_spec_id = sanitize_for_git(spec_id).replace("/", "-")
     safe_signal = sanitize_for_git(signal).replace("/", "-")
@@ -5511,6 +5609,7 @@ def update_proposal_queue(
         ]
         updated = preserved + build_proposal_queue_items(graph_health=graph_health, run_id=run_id)
         atomic_write_json(path, updated)
+    sync_tracked_proposal_lane_from_queue(updated, spec_id=source_spec_id)
     return path, updated
 
 
@@ -6098,6 +6197,353 @@ def load_json_list_report(
 def load_json_object(path: Path) -> dict[str, Any] | None:
     data, _error = load_json_object_report(path, artifact_kind="JSON artifact")
     return data
+
+
+def proposal_lane_valid_authority_states() -> set[str]:
+    return {str(value).strip() for value in PROPOSAL_LANE_AUTHORITY_STATE_MAPPING.values()}
+
+
+def proposal_lane_authority_state_for_status(status: str) -> str:
+    normalized = str(status).strip()
+    return str(PROPOSAL_LANE_AUTHORITY_STATE_MAPPING.get(normalized, "draft"))
+
+
+def proposal_lane_target_reference(proposal_item: dict[str, Any]) -> str:
+    return str(
+        proposal_item.get("target_spec_id")
+        or proposal_item.get("spec_id")
+        or proposal_item.get("target_reference")
+        or ""
+    ).strip()
+
+
+def proposal_lane_target_region(proposal_item: dict[str, Any]) -> dict[str, str]:
+    target_reference = proposal_lane_target_reference(proposal_item)
+    target_kind = "canonical_node" if target_reference else "draft_target_area"
+    change_scope = str(
+        proposal_item.get("signal") or proposal_item.get("proposal_type") or ""
+    ).strip()
+    if not change_scope:
+        change_scope = str(proposal_item.get("id", "")).strip()
+    return {
+        "target_kind": target_kind,
+        "target_reference": target_reference or str(proposal_item.get("id", "")).strip(),
+        "change_scope": change_scope,
+    }
+
+
+def proposal_lane_lineage_links(proposal_item: dict[str, Any]) -> list[dict[str, str]]:
+    lineage_links: list[dict[str, str]] = []
+    target_reference = proposal_lane_target_reference(proposal_item)
+    if target_reference:
+        lineage_links.append(
+            {
+                "lineage_role": "motivated_by",
+                "source_kind": "canonical_node",
+                "source_reference": target_reference,
+            }
+        )
+    proposal_artifact_path_value = str(proposal_item.get("proposal_artifact_path", "")).strip()
+    if proposal_artifact_path_value:
+        lineage_links.append(
+            {
+                "lineage_role": "derived_from",
+                "source_kind": "runtime_artifact",
+                "source_reference": proposal_artifact_path_value,
+            }
+        )
+    return lineage_links
+
+
+def proposal_lane_artifact_links(proposal_item: dict[str, Any]) -> list[dict[str, str]]:
+    proposal_artifact_path_value = str(proposal_item.get("proposal_artifact_path", "")).strip()
+    if not proposal_artifact_path_value:
+        return []
+    return [
+        {
+            "artifact_role": "supporting_runtime_artifact",
+            "reference_kind": "runtime_artifact",
+            "reference_value": proposal_artifact_path_value,
+        }
+    ]
+
+
+def proposal_lane_node_title(proposal_item: dict[str, Any]) -> str:
+    proposal_type = str(proposal_item.get("proposal_type", "proposal")).strip().replace("_", " ")
+    target_reference = proposal_lane_target_reference(proposal_item) or "unscoped target"
+    signal = str(proposal_item.get("signal", "")).strip()
+    suffix = f" ({signal})" if signal else ""
+    return f"{proposal_type.title()} for {target_reference}{suffix}"
+
+
+def sync_tracked_proposal_lane_node(
+    proposal_item: dict[str, Any],
+) -> tuple[Path, dict[str, Any]] | None:
+    handle_value = str(proposal_item.get("id", "")).strip()
+    if not handle_value:
+        return None
+
+    path = proposal_lane_node_path(handle_value)
+    tracked_path = path.relative_to(ROOT).as_posix()
+    existing = load_json_object(path) if path.exists() else None
+    created_at = str((existing or {}).get("created_at", "")).strip() or utc_now_iso()
+    authority_state = proposal_lane_authority_state_for_status(
+        str(proposal_item.get("status", "")).strip() or "proposed"
+    )
+    node = dict(existing or {})
+    node.update(
+        {
+            "artifact_kind": PROPOSAL_LANE_NODE_ARTIFACT_KIND,
+            "schema_version": PROPOSAL_LANE_NODE_SCHEMA_VERSION,
+            "title": proposal_lane_node_title(proposal_item),
+            "created_at": created_at,
+            "updated_at": utc_now_iso(),
+            "policy_reference": proposal_lane_policy_reference(),
+            "proposal_repository_presence": {
+                **copy.deepcopy(PROPOSAL_LANE_PRESENCE_CONTRACT),
+                "tracked_path": tracked_path,
+            },
+            "proposal_handle": {
+                "handle_value": handle_value,
+                "handle_status": "active",
+            },
+            "proposal_authority_state": authority_state,
+            "proposal_target_region": proposal_lane_target_region(proposal_item),
+            "proposal_lineage_link": proposal_lane_lineage_links(proposal_item),
+            "proposal_artifact_link": proposal_lane_artifact_links(proposal_item),
+            "proposal_payload": {
+                "proposal_type": str(proposal_item.get("proposal_type", "")).strip(),
+                "trigger": str(proposal_item.get("trigger", "")).strip(),
+                "recommended_action": str(proposal_item.get("recommended_action", "")).strip(),
+                "signal": str(proposal_item.get("signal", "")).strip(),
+                "source_work_item_type": str(
+                    proposal_item.get("source_work_item_type", "")
+                ).strip(),
+                "execution_policy": str(proposal_item.get("execution_policy", "")).strip(),
+                "transition_profile": str(proposal_item.get("transition_profile", "")).strip(),
+                "packet_type": str(proposal_item.get("packet_type", "")).strip(),
+                "target_artifact_class": str(
+                    proposal_item.get("target_artifact_class", "")
+                ).strip(),
+            },
+            "runtime_bridge": {
+                "proposal_queue_status": str(proposal_item.get("status", "")).strip(),
+                "supporting_run_ids": list(proposal_item.get("supporting_run_ids", [])),
+                "occurrence_count": proposal_item.get("occurrence_count"),
+                "threshold": proposal_item.get("threshold"),
+                "proposal_artifact_path": str(
+                    proposal_item.get("proposal_artifact_path", "")
+                ).strip(),
+                "applied_run_id": str(proposal_item.get("applied_run_id", "")).strip(),
+                "applied_at": str(proposal_item.get("applied_at", "")).strip(),
+            },
+        }
+    )
+    if str(proposal_item.get("status", "")).strip() == "applied":
+        node["canonical_application_event"] = {
+            "event_status": "canonical_materialization_recorded",
+            "applied_run_id": str(proposal_item.get("applied_run_id", "")).strip(),
+            "applied_at": str(proposal_item.get("applied_at", "")).strip(),
+        }
+    else:
+        node.pop("canonical_application_event", None)
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with artifact_lock(path):
+        atomic_write_json(path, node)
+    return path, node
+
+
+def sync_tracked_proposal_lane_from_queue(
+    queue_items: list[dict[str, Any]],
+    *,
+    spec_id: str | None = None,
+    item_ids: set[str] | None = None,
+) -> list[Path]:
+    written_paths: list[Path] = []
+    for item in queue_items:
+        if not isinstance(item, dict):
+            continue
+        item_id = str(item.get("id", "")).strip()
+        if item_ids is not None and item_id not in item_ids:
+            continue
+        if spec_id is not None and str(item.get("spec_id", "")).strip() != spec_id:
+            continue
+        synced = sync_tracked_proposal_lane_node(item)
+        if synced is None:
+            continue
+        path, _node = synced
+        written_paths.append(path)
+    if written_paths:
+        write_proposal_lane_overlay(build_proposal_lane_overlay())
+    return written_paths
+
+
+def build_proposal_lane_overlay() -> dict[str, Any]:
+    nodes_dir = proposal_lane_nodes_dir_path()
+    entries: list[dict[str, Any]] = []
+    artifact_warnings: list[dict[str, str]] = []
+    raw_nodes: list[dict[str, Any]] = []
+
+    if nodes_dir.exists():
+        for path in sorted(nodes_dir.glob("*.json")):
+            data, error = load_json_object_report(path, artifact_kind="proposal lane node artifact")
+            if data is None:
+                artifact_warnings.append(
+                    {
+                        "tracked_path": display_artifact_path(path),
+                        "error": error,
+                    }
+                )
+                continue
+            raw_nodes.append({"tracked_path": display_artifact_path(path), "node": data})
+
+    handle_counts: dict[str, int] = {}
+    for raw in raw_nodes:
+        node = raw["node"]
+        presence = node.get("proposal_repository_presence")
+        handle = node.get("proposal_handle")
+        if (
+            isinstance(presence, dict)
+            and all(
+                str(presence.get(key, "")).strip() == str(value)
+                for key, value in PROPOSAL_LANE_PRESENCE_CONTRACT.items()
+            )
+            and isinstance(handle, dict)
+            and str(handle.get("handle_status", "")).strip() == "active"
+        ):
+            handle_value = str(handle.get("handle_value", "")).strip()
+            if handle_value:
+                handle_counts[handle_value] = handle_counts.get(handle_value, 0) + 1
+
+    by_authority: dict[str, list[str]] = {}
+    named_filters = {name: [] for name in PROPOSAL_LANE_NAMED_FILTERS}
+    edges: list[dict[str, str]] = []
+
+    for raw in raw_nodes:
+        tracked_path = str(raw["tracked_path"])
+        node = raw["node"]
+        presence = node.get("proposal_repository_presence")
+        if not (
+            isinstance(presence, dict)
+            and all(
+                str(presence.get(key, "")).strip() == str(value)
+                for key, value in PROPOSAL_LANE_PRESENCE_CONTRACT.items()
+            )
+        ):
+            continue
+
+        handle = node.get("proposal_handle", {})
+        handle_value = str(handle.get("handle_value", "")).strip()
+        authority_state = str(node.get("proposal_authority_state", "")).strip()
+        target_region = node.get("proposal_target_region", {})
+        lineage_links = node.get("proposal_lineage_link", [])
+        query_findings: list[str] = []
+        if not handle_value or str(handle.get("handle_status", "")).strip() != "active":
+            query_findings.append("missing_active_handle")
+        if authority_state not in proposal_lane_valid_authority_states():
+            query_findings.append("invalid_authority_state")
+        if not (
+            isinstance(target_region, dict)
+            and str(target_region.get("target_kind", "")).strip()
+            and str(target_region.get("target_reference", "")).strip()
+            and str(target_region.get("change_scope", "")).strip()
+        ):
+            query_findings.append("missing_target_region")
+        if not (
+            isinstance(lineage_links, list)
+            and any(
+                isinstance(link, dict)
+                and str(link.get("lineage_role", "")).strip()
+                and str(link.get("source_kind", "")).strip()
+                and str(link.get("source_reference", "")).strip()
+                for link in lineage_links
+            )
+        ):
+            query_findings.append("missing_lineage_link")
+        if handle_value and handle_counts.get(handle_value, 0) > 1:
+            query_findings.append("colliding_active_handle")
+
+        entry = {
+            "tracked_path": tracked_path,
+            "title": str(node.get("title", "")).strip(),
+            "proposal_handle": handle_value,
+            "proposal_authority_state": authority_state,
+            "proposal_type": str(node.get("proposal_payload", {}).get("proposal_type", "")).strip(),
+            "target_region": (
+                copy.deepcopy(target_region) if isinstance(target_region, dict) else {}
+            ),
+            "lineage_links": (
+                copy.deepcopy(lineage_links) if isinstance(lineage_links, list) else []
+            ),
+            "query_contract": {
+                "required_fields": list(PROPOSAL_LANE_REQUIRED_QUERY_FIELDS),
+                "status": "queryable" if not query_findings else "invalid_review_state",
+                "findings": query_findings,
+            },
+        }
+        entries.append(entry)
+
+        by_authority.setdefault(authority_state or "unknown", []).append(
+            handle_value or tracked_path
+        )
+        if authority_state == "under_review":
+            named_filters["under_review"].append(handle_value or tracked_path)
+        if authority_state == "approved_for_application":
+            named_filters["approved_for_application"].append(handle_value or tracked_path)
+        if authority_state in {"rejected", "superseded"}:
+            named_filters["rejected_or_superseded"].append(handle_value or tracked_path)
+        if query_findings:
+            named_filters["invalid_query_contract"].append(handle_value or tracked_path)
+        if str(target_region.get("target_kind", "")).strip() == "canonical_node":
+            named_filters["canonical_node_targets"].append(handle_value or tracked_path)
+            edges.append(
+                {
+                    "source": handle_value or tracked_path,
+                    "target": str(target_region.get("target_reference", "")).strip(),
+                    "edge_kind": "proposal_targets_canonical_node",
+                }
+            )
+        for link in lineage_links if isinstance(lineage_links, list) else []:
+            if not isinstance(link, dict):
+                continue
+            source_kind = str(link.get("source_kind", "")).strip()
+            source_reference = str(link.get("source_reference", "")).strip()
+            if source_kind == "runtime_artifact":
+                named_filters["runtime_artifact_lineage"].append(handle_value or tracked_path)
+            if source_reference:
+                edges.append(
+                    {
+                        "source": handle_value or tracked_path,
+                        "target": source_reference,
+                        "edge_kind": (
+                            f"lineage::{str(link.get('lineage_role', '')).strip()}::{source_kind}"
+                        ),
+                    }
+                )
+
+    return {
+        "artifact_kind": PROPOSAL_LANE_OVERLAY_ARTIFACT_KIND,
+        "schema_version": PROPOSAL_LANE_OVERLAY_SCHEMA_VERSION,
+        "layer_name": PROPOSAL_LANE_LAYER_NAME,
+        "generated_at": utc_now_iso(),
+        "policy_reference": proposal_lane_policy_reference(),
+        "source_dir": PROPOSAL_LANE_NODES_RELATIVE_DIR,
+        "entry_count": len(entries),
+        "entries": entries,
+        "edges": edges,
+        "by_authority_state": {key: sorted(value) for key, value in sorted(by_authority.items())},
+        "named_filters": {key: sorted(set(value)) for key, value in sorted(named_filters.items())},
+        "artifact_warnings": artifact_warnings,
+    }
+
+
+def write_proposal_lane_overlay(overlay: dict[str, Any]) -> Path:
+    RUNS_DIR.mkdir(parents=True, exist_ok=True)
+    path = proposal_lane_overlay_path()
+    with artifact_lock(path):
+        atomic_write_json(path, overlay)
+    return path
 
 
 def transition_packet_finding(
@@ -9242,6 +9688,7 @@ def upsert_split_proposal_queue(
         ]
         updated = preserved + [updated_item]
         atomic_write_json(path, updated)
+    sync_tracked_proposal_lane_from_queue(updated, item_ids={proposal_id})
     return path, updated
 
 
@@ -10414,6 +10861,10 @@ def _apply_split_proposal(
             )
             proposal_queue_artifact = proposal_queue_path()
             proposal_items = load_proposal_queue()
+            sync_tracked_proposal_lane_from_queue(
+                proposal_items,
+                item_ids={str(proposal_item.get("id", "")).strip()},
+            )
             if not validation_errors:
                 try:
                     refactor_queue_artifact = update_refactor_queue(
@@ -11545,6 +11996,7 @@ def main(
     build_graph_health_trends_mode: bool = False,
     build_spec_trace_index_mode: bool = False,
     build_spec_trace_projection_mode: bool = False,
+    build_proposal_lane_overlay_mode: bool = False,
     build_proposal_runtime_index_mode: bool = False,
     build_proposal_promotion_index_mode: bool = False,
 ) -> int:
@@ -11601,6 +12053,7 @@ def main(
                 build_graph_health_trends_mode,
                 build_spec_trace_index_mode,
                 build_spec_trace_projection_mode,
+                build_proposal_lane_overlay_mode,
                 build_proposal_runtime_index_mode,
                 build_proposal_promotion_index_mode,
             )
@@ -11651,6 +12104,7 @@ def main(
                 build_graph_health_trends_mode,
                 build_spec_trace_index_mode,
                 build_spec_trace_projection_mode,
+                build_proposal_lane_overlay_mode,
                 build_proposal_runtime_index_mode,
                 build_proposal_promotion_index_mode,
             )
@@ -11690,6 +12144,7 @@ def main(
                 build_graph_health_overlay_mode,
                 build_spec_trace_index_mode,
                 build_spec_trace_projection_mode,
+                build_proposal_lane_overlay_mode,
                 build_proposal_runtime_index_mode,
                 build_proposal_promotion_index_mode,
             )
@@ -11728,6 +12183,7 @@ def main(
                 list_stale_runtime,
                 clean_stale_runtime,
                 observe_graph_health_mode,
+                build_proposal_lane_overlay_mode,
                 build_spec_trace_projection_mode,
                 build_proposal_runtime_index_mode,
                 build_proposal_promotion_index_mode,
@@ -11765,6 +12221,7 @@ def main(
                 list_stale_runtime,
                 clean_stale_runtime,
                 observe_graph_health_mode,
+                build_proposal_lane_overlay_mode,
                 build_proposal_runtime_index_mode,
             )
         ):
@@ -11778,6 +12235,42 @@ def main(
         projection = build_spec_trace_projection(index)
         write_spec_trace_projection(projection)
         print(json.dumps(projection, ensure_ascii=False, indent=2))
+        return 0
+
+    if build_proposal_lane_overlay_mode:
+        if any(
+            (
+                dry_run,
+                auto_approve,
+                loop,
+                resolve_gate,
+                decision,
+                note,
+                target_spec,
+                split_proposal,
+                apply_split_proposal,
+                operator_note,
+                mutation_budget,
+                run_authority,
+                execution_profile,
+                child_model,
+                child_timeout_seconds,
+                verbose,
+                list_stale_runtime,
+                clean_stale_runtime,
+                observe_graph_health_mode,
+                build_proposal_runtime_index_mode,
+                build_proposal_promotion_index_mode,
+            )
+        ):
+            print(
+                "--build-proposal-lane-overlay must be used as a standalone command",
+                file=sys.stderr,
+            )
+            return 1
+        overlay = build_proposal_lane_overlay()
+        write_proposal_lane_overlay(overlay)
+        print(json.dumps(overlay, ensure_ascii=False, indent=2))
         return 0
 
     if build_proposal_runtime_index_mode:
@@ -11802,6 +12295,7 @@ def main(
                 list_stale_runtime,
                 clean_stale_runtime,
                 observe_graph_health_mode,
+                build_proposal_lane_overlay_mode,
                 build_proposal_promotion_index_mode,
             )
         ):
@@ -11837,6 +12331,7 @@ def main(
                 list_stale_runtime,
                 clean_stale_runtime,
                 observe_graph_health_mode,
+                build_proposal_lane_overlay_mode,
             )
         ):
             print(
@@ -12368,6 +12863,14 @@ if __name__ == "__main__":
         ),
     )
     parser.add_argument(
+        "--build-proposal-lane-overlay",
+        action="store_true",
+        help=(
+            "Build a viewer-facing proposal-lane overlay from repository-tracked proposal nodes "
+            "without mutating canonical specs"
+        ),
+    )
+    parser.add_argument(
         "--build-proposal-runtime-index",
         action="store_true",
         help=(
@@ -12503,6 +13006,7 @@ if __name__ == "__main__":
             build_graph_health_trends_mode=args.build_graph_health_trends,
             build_spec_trace_index_mode=args.build_spec_trace_index,
             build_spec_trace_projection_mode=args.build_spec_trace_projection,
+            build_proposal_lane_overlay_mode=args.build_proposal_lane_overlay,
             build_proposal_runtime_index_mode=args.build_proposal_runtime_index,
             build_proposal_promotion_index_mode=args.build_proposal_promotion_index,
         )

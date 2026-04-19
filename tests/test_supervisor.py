@@ -3447,6 +3447,86 @@ def test_update_proposal_queue_emits_handoff_proposal_for_techspec_boundary_sign
     assert proposal["execution_policy"] == "emit_proposal"
 
 
+def test_update_proposal_queue_syncs_tracked_proposal_lane_node(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    graph_health = {
+        "source_spec_id": "SG-SPEC-9999",
+        "observations": [
+            {
+                "kind": "repeated_split_required_candidate",
+                "details": "proposal lane should persist this for review",
+            }
+        ],
+        "signals": ["repeated_split_required_candidate"],
+        "recommended_actions": ["review_decomposition_policy"],
+    }
+
+    _path, items = supervisor_module.update_proposal_queue(
+        graph_health=graph_health,
+        run_id="RUN-2",
+    )
+
+    proposal = items[0]
+    node_path = supervisor_module.proposal_lane_node_path(proposal["id"])
+    node = json.loads(node_path.read_text(encoding="utf-8"))
+
+    assert node["artifact_kind"] == supervisor_module.PROPOSAL_LANE_NODE_ARTIFACT_KIND
+    assert node["proposal_handle"]["handle_value"] == proposal["id"]
+    assert node["proposal_handle"]["handle_status"] == "active"
+    assert node["proposal_authority_state"] == "under_review"
+    assert node["proposal_target_region"]["target_kind"] == "canonical_node"
+    assert node["proposal_target_region"]["target_reference"] == "SG-SPEC-9999"
+    assert node["proposal_repository_presence"]["tracked_presence"] == "repository_tracked"
+    assert node["proposal_repository_presence"]["path_class"] == "proposal_node_path"
+    assert node["proposal_lineage_link"] == [
+        {
+            "lineage_role": "motivated_by",
+            "source_kind": "canonical_node",
+            "source_reference": "SG-SPEC-9999",
+        }
+    ]
+    overlay = json.loads(
+        (repo_fixture / "runs" / "proposal_lane_overlay.json").read_text(encoding="utf-8")
+    )
+    assert overlay["artifact_kind"] == supervisor_module.PROPOSAL_LANE_OVERLAY_ARTIFACT_KIND
+    assert overlay["entry_count"] == 1
+    assert overlay["entries"][0]["proposal_handle"] == proposal["id"]
+    assert overlay["named_filters"]["under_review"] == [proposal["id"]]
+
+
+def test_sync_tracked_proposal_lane_node_records_canonical_application_event(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    synced = supervisor_module.sync_tracked_proposal_lane_node(
+        {
+            "id": "handoff_proposal::SG-SPEC-0001::techspec_handoff_candidate",
+            "proposal_type": "handoff_proposal",
+            "spec_id": "SG-SPEC-0001",
+            "signal": "techspec_handoff_candidate",
+            "status": "applied",
+            "trigger": "handoff_boundary_signal",
+            "execution_policy": "emit_proposal",
+            "applied_run_id": "RUN-9",
+            "applied_at": "2026-04-19T00:00:00Z",
+        }
+    )
+
+    assert synced is not None
+    node_path, _node = synced
+    node = json.loads(node_path.read_text(encoding="utf-8"))
+
+    assert node["proposal_authority_state"] == "approved_for_application"
+    assert node["canonical_application_event"] == {
+        "event_status": "canonical_materialization_recorded",
+        "applied_run_id": "RUN-9",
+        "applied_at": "2026-04-19T00:00:00Z",
+    }
+    assert node["runtime_bridge"]["proposal_queue_status"] == "applied"
+
+
 def test_update_proposal_queue_rejects_malformed_existing_queue_file(
     supervisor_module: object,
     repo_fixture: Path,
@@ -6874,6 +6954,107 @@ def test_build_graph_health_overlay_groups_viewer_filters(
         "SG-SPEC-0002"
     ]
     assert overlay["hotspot_regions"][0]["spec_id"] == "SG-SPEC-0001"
+
+
+def test_build_proposal_lane_overlay_marks_invalid_query_contract(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    node_path = repo_fixture / "proposal_lane" / "nodes" / "invalid-proposal.json"
+    node_path.parent.mkdir(parents=True, exist_ok=True)
+    node_path.write_text(
+        json.dumps(
+            {
+                "artifact_kind": supervisor_module.PROPOSAL_LANE_NODE_ARTIFACT_KIND,
+                "schema_version": 1,
+                "title": "Incomplete proposal lane node",
+                "proposal_repository_presence": {
+                    "tracked_presence": "repository_tracked",
+                    "path_class": "proposal_node_path",
+                    "persistence_boundary": "review_visible_repository_separate_from_runtime",
+                    "tracked_path": "proposal_lane/nodes/invalid-proposal.json",
+                },
+                "proposal_handle": {
+                    "handle_value": "governance_proposal::SG-SPEC-0001::oversized_spec",
+                    "handle_status": "active",
+                },
+                "proposal_authority_state": "under_review",
+                "proposal_lineage_link": [],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    overlay = supervisor_module.build_proposal_lane_overlay()
+
+    assert overlay["artifact_kind"] == supervisor_module.PROPOSAL_LANE_OVERLAY_ARTIFACT_KIND
+    assert overlay["entry_count"] == 1
+    assert overlay["entries"][0]["query_contract"]["status"] == "invalid_review_state"
+    assert overlay["entries"][0]["query_contract"]["findings"] == [
+        "missing_target_region",
+        "missing_lineage_link",
+    ]
+    assert overlay["named_filters"]["invalid_query_contract"] == [
+        "governance_proposal::SG-SPEC-0001::oversized_spec"
+    ]
+
+
+def test_main_builds_proposal_lane_overlay_as_standalone_command(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    def fake_overlay() -> dict[str, object]:
+        return {
+            "artifact_kind": supervisor_module.PROPOSAL_LANE_OVERLAY_ARTIFACT_KIND,
+            "schema_version": 1,
+            "layer_name": "proposal_lane",
+            "generated_at": "2026-04-19T00:00:00Z",
+            "policy_reference": {"artifact_path": "tools/proposal_lane_policy.json"},
+            "source_dir": "proposal_lane/nodes",
+            "entry_count": 1,
+            "entries": [{"proposal_handle": "governance_proposal::SG-SPEC-0001::oversized_spec"}],
+            "edges": [],
+            "by_authority_state": {
+                "under_review": ["governance_proposal::SG-SPEC-0001::oversized_spec"]
+            },
+            "named_filters": {
+                "under_review": ["governance_proposal::SG-SPEC-0001::oversized_spec"]
+            },
+            "artifact_warnings": [],
+        }
+
+    monkeypatch.setattr(supervisor_module, "build_proposal_lane_overlay", fake_overlay)
+
+    exit_code = supervisor_module.main(build_proposal_lane_overlay_mode=True)
+
+    assert exit_code == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["artifact_kind"] == supervisor_module.PROPOSAL_LANE_OVERLAY_ARTIFACT_KIND
+    assert report["entry_count"] == 1
+    assert (
+        json.loads(
+            (repo_fixture / "runs" / "proposal_lane_overlay.json").read_text(encoding="utf-8")
+        )["artifact_kind"]
+        == supervisor_module.PROPOSAL_LANE_OVERLAY_ARTIFACT_KIND
+    )
+
+
+def test_main_rejects_combined_proposal_lane_overlay_and_runtime_index_modes(
+    supervisor_module: object,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    exit_code = supervisor_module.main(
+        build_proposal_lane_overlay_mode=True,
+        build_proposal_runtime_index_mode=True,
+    )
+
+    assert exit_code == 1
+    assert (
+        "--build-proposal-lane-overlay must be used as a standalone command"
+        in capsys.readouterr().err
+    )
 
 
 def test_main_builds_graph_health_overlay_as_standalone_command(

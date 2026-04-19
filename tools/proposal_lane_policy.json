@@ -1,0 +1,47 @@
+{
+  "artifact_kind": "proposal_lane_policy",
+  "version": 1,
+  "repository_layout": {
+    "nodes_dir": "proposal_lane/nodes",
+    "overlay_artifact": "runs/proposal_lane_overlay.json"
+  },
+  "node_contract": {
+    "artifact_kind": "proposal_lane_node",
+    "schema_version": 1,
+    "presence_contract": {
+      "tracked_presence": "repository_tracked",
+      "path_class": "proposal_node_path",
+      "persistence_boundary": "review_visible_repository_separate_from_runtime"
+    },
+    "required_query_fields": [
+      "proposal_repository_presence",
+      "proposal_handle",
+      "proposal_authority_state",
+      "proposal_target_region",
+      "proposal_lineage_link"
+    ]
+  },
+  "authority_state_mapping": {
+    "proposed": "under_review",
+    "review_pending": "under_review",
+    "pending_review": "under_review",
+    "approved": "approved_for_application",
+    "approved_for_application": "approved_for_application",
+    "applied": "approved_for_application",
+    "rejected": "rejected",
+    "superseded": "superseded"
+  },
+  "overlay_contract": {
+    "artifact_kind": "proposal_lane_overlay",
+    "schema_version": 1,
+    "layer_name": "proposal_lane",
+    "named_filters": [
+      "under_review",
+      "approved_for_application",
+      "rejected_or_superseded",
+      "invalid_query_contract",
+      "canonical_node_targets",
+      "runtime_artifact_lineage"
+    ]
+  }
+}

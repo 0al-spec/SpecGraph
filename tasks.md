@@ -9,13 +9,6 @@ Task numbers are preserved for traceability across commits and PRs.
 20. [todo] Introduce metric-driven signals later, using SIB, Specification Verifiability, Process Observability, Structural Observability, and related measures as derived inputs rather than canonical facts.
 21. [todo] Define how metric thresholds become proposals first, and only later become normative policy in SpecGraph after human approval.
 
-## Proposal Lane
-
-29. [todo] Add a tracked proposal lane between canonical spec nodes and ephemeral runtime artifacts so `supervisor` can grow proposal subgraphs without mutating canonical truth.
-30. [todo] Define proposal-lane node semantics, including stable provisional IDs, authority or approval state, and lineage between proposal nodes and canonical nodes.
-31. [todo] Let `supervisor` autonomously create and refresh tracked proposal nodes while keeping canonical writeback behind explicit review/apply flow.
-32. [todo] Extend graph and viewer projections so proposal-lane nodes can be shown as an overlay or secondary layer on top of the canonical graph.
-
 ## Intent Layer
 
 33. [todo] Define an intent-facing layer and mediated discovery path between raw user goals and canonical SpecGraph specs.
