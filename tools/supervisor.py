@@ -12948,7 +12948,8 @@ def build_graph_dashboard(specs: list[SpecNode]) -> dict[str, Any]:
     intent_kind_counts = grouped_identifier_counts(intent_overlay.get("by_kind", {}))
     intent_state_counts = grouped_identifier_counts(intent_overlay.get("by_mediation_state", {}))
     proposal_lane_authority_counts = grouped_identifier_counts(
-        proposal_lane_overlay.get("by_authority", {})
+        proposal_lane_overlay.get("by_authority_state", {})
+        or proposal_lane_overlay.get("by_authority", {})
     )
     proposal_lane_active_count = sum(
         count

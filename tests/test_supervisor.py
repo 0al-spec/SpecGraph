@@ -8160,7 +8160,7 @@ def test_build_graph_dashboard_aggregates_runtime_surfaces(
         lambda: {
             "generated_at": "2026-04-19T00:00:03Z",
             "entry_count": 2,
-            "by_authority": {
+            "by_authority_state": {
                 "under_review": ["proposal-1"],
                 "superseded": ["proposal-2"],
             },
