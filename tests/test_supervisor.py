@@ -11823,6 +11823,8 @@ def test_main_repairs_recoverable_worktree_yaml_indentation(
     assert repair["target_path"] == "specs/nodes/SG-SPEC-0001.yaml"
     assert repair["canonical_write"] is False
     assert payload["safe_repair_artifact"].endswith(".json")
+    assert payload["evaluator_loop_control"]["chosen_intervention"] == "refine"
+    assert "review_gate_created" in payload["evaluator_loop_control"]["stop_conditions"]
 
 
 def test_build_safe_repair_contract_is_bounded_to_worktree_candidate(
@@ -11841,6 +11843,44 @@ def test_build_safe_repair_contract_is_bounded_to_worktree_candidate(
     assert repair["bounded_write_surface"] == ["specs/nodes/SG-SPEC-0001.yaml"]
     assert repair["canonical_write"] is False
     assert repair["trigger_findings"][0]["code"] == "candidate_yaml_requires_safe_repair"
+
+
+def test_build_evaluator_loop_control_records_intervention_and_stop_conditions(
+    supervisor_module: object,
+) -> None:
+    control = supervisor_module.build_evaluator_loop_control(
+        run_id="20260419T141500Z-SG-SPEC-0001-abcd1234",
+        spec_id="SG-SPEC-0001",
+        selected_by_rule={
+            "selection_mode": "split_refactor_proposal",
+            "refactor_work_item": {
+                "signal": supervisor_module.SPLIT_REFACTOR_SIGNAL,
+                "recommended_action": "split_or_narrow_spec",
+            },
+        },
+        outcome="split_required",
+        gate_state="split_required",
+        blocker="spec exceeds atomicity quality gate",
+        required_human_action="split spec scope before rerun",
+        graph_health={
+            "signals": ["oversized_spec"],
+            "recommended_actions": ["split_or_narrow_spec"],
+        },
+        validation_findings=[
+            supervisor_module.validation_finding(
+                code="atomicity_violation",
+                family="acceptance",
+                error_class="semantic_rejection",
+                message="Atomicity gate exceeded",
+            )
+        ],
+        safe_repair_contract={"repair_count": 0},
+    )
+
+    assert control["artifact_kind"] == "evaluator_loop_control"
+    assert control["chosen_intervention"] == "propose"
+    assert set(control["stop_conditions"]) >= {"proposal_emitted", "split_required"}
+    assert control["improvement_basis"]["validation_summary"]["finding_count"] == 1
 
 
 def test_main_aborts_on_cycle(

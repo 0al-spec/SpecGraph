@@ -691,6 +691,7 @@ Important fields:
 - `validation_summary`
 - `validation_errors`
 - `safe_repair_contract`
+- `evaluator_loop_control`
 - `executor_environment`
 - `refinement_acceptance`
 - `reconciliation`
@@ -772,6 +773,20 @@ The current built-in safe repair kind is intentionally narrow:
 - scope: `worktree_candidate_only`
 - canonical write: always `false`
 - every repair still requires normal post-repair validation before any later sync
+
+Reflective cycles are explicit too:
+
+- `evaluator_loop_control`
+  compact control record attached to the run payload
+- `runs/evaluator_control/<RUN_ID>.json`
+  standalone artifact for the same cycle record
+
+Each control artifact records:
+
+- `chosen_intervention`
+- `improvement_basis`
+- `stop_conditions`
+- `escalation_reasons`
 
 It has four slices:
 

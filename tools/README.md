@@ -158,6 +158,9 @@ Key derived artifacts:
   traceability inspection artifact grouped by status and next gap
 - `runs/safe_repairs/<RUN_ID>.json`: standalone safe-repair artifact for
   bounded worktree-candidate repairs
+- `runs/evaluator_control/<RUN_ID>.json`: standalone reflective-cycle control
+  artifact with chosen intervention, improvement basis, stop conditions, and
+  escalation reasons
 - `runs/spec_id_reservations.json`: temporary active child-materialization spec-id reservations
 - `tools/supervisor_policy.json`: declarative supervisor policy artifact for thresholds, priorities,
   mutation classes, queue defaults, and execution profiles

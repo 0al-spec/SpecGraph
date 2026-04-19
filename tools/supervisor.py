@@ -88,6 +88,7 @@ SPECGRAPH_VOCABULARY_RELATIVE_PATH = "tools/specgraph_vocabulary.json"
 PRE_SPEC_SEMANTICS_POLICY_RELATIVE_PATH = "tools/pre_spec_semantics_policy.json"
 VALIDATION_FINDINGS_POLICY_RELATIVE_PATH = "tools/validation_findings_policy.json"
 SAFE_REPAIR_POLICY_RELATIVE_PATH = "tools/safe_repair_policy.json"
+EVALUATOR_LOOP_POLICY_RELATIVE_PATH = "tools/evaluator_loop_policy.json"
 
 
 def supervisor_policy_path() -> Path:
@@ -124,6 +125,10 @@ def validation_findings_policy_path() -> Path:
 
 def safe_repair_policy_path() -> Path:
     return TOOLS_DIR / "safe_repair_policy.json"
+
+
+def evaluator_loop_policy_path() -> Path:
+    return TOOLS_DIR / "evaluator_loop_policy.json"
 
 
 def load_supervisor_policy() -> tuple[dict[str, Any], str]:
@@ -432,6 +437,38 @@ def load_safe_repair_policy() -> tuple[dict[str, Any], str]:
 
 
 SAFE_REPAIR_POLICY, SAFE_REPAIR_POLICY_SHA256 = load_safe_repair_policy()
+
+
+def load_evaluator_loop_policy() -> tuple[dict[str, Any], str]:
+    path = evaluator_loop_policy_path()
+    try:
+        raw_text = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise RuntimeError(
+            f"failed to read evaluator loop policy artifact: {path.as_posix()} ({exc})"
+        ) from exc
+    try:
+        payload = json.loads(raw_text)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(
+            f"malformed evaluator loop policy artifact: {path.as_posix()} ({exc})"
+        ) from exc
+    if not isinstance(payload, dict):
+        raise RuntimeError(
+            "malformed evaluator loop policy artifact: "
+            f"{path.as_posix()} must contain a JSON object"
+        )
+    required_sections = ("intervention_kinds", "stop_conditions", "escalation_reasons")
+    missing = [section for section in required_sections if section not in payload]
+    if missing:
+        raise RuntimeError(
+            "malformed evaluator loop policy artifact: missing top-level section(s): "
+            + ", ".join(missing)
+        )
+    return payload, hashlib.sha256(raw_text.encode("utf-8")).hexdigest()
+
+
+EVALUATOR_LOOP_POLICY, EVALUATOR_LOOP_POLICY_SHA256 = load_evaluator_loop_policy()
 
 
 def policy_lookup(policy_path: str) -> Any:
@@ -1297,6 +1334,138 @@ def write_safe_repair_artifact(payload: dict[str, Any]) -> Path:
     with artifact_lock(path):
         atomic_write_json(path, payload)
     return path
+
+
+def evaluator_loop_policy_reference() -> dict[str, Any]:
+    return {
+        "path": EVALUATOR_LOOP_POLICY_RELATIVE_PATH,
+        "sha256": EVALUATOR_LOOP_POLICY_SHA256,
+    }
+
+
+def evaluator_control_dir_path() -> Path:
+    return RUNS_DIR / "evaluator_control"
+
+
+def evaluator_control_artifact_path(run_id: str) -> Path:
+    return evaluator_control_dir_path() / f"{run_id}.json"
+
+
+def write_evaluator_control_artifact(payload: dict[str, Any]) -> Path:
+    path = evaluator_control_artifact_path(str(payload.get("run_id", "")).strip())
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with artifact_lock(path):
+        atomic_write_json(path, payload)
+    return path
+
+
+def baseline_intervention_for_selection(
+    *,
+    selection_mode: str,
+    refactor_work_item: dict[str, Any] | None = None,
+) -> str:
+    if selection_mode == "split_refactor_proposal":
+        signal = str((refactor_work_item or {}).get("signal", "")).strip()
+        if signal == TECHSPEC_HANDOFF_PRIMARY_SIGNAL:
+            return "handoff"
+        return "propose"
+    if selection_mode == "graph_refactor":
+        action = str((refactor_work_item or {}).get("recommended_action", "")).strip()
+        if "merge" in action:
+            return "merge"
+        if "rewrite" in action:
+            return "rewrite"
+        if "handoff" in action:
+            return "handoff"
+    if selection_mode == "apply_split_proposal":
+        return "apply"
+    return "refine"
+
+
+def build_evaluator_loop_control(
+    *,
+    run_id: str,
+    spec_id: str,
+    selected_by_rule: dict[str, Any],
+    outcome: str,
+    gate_state: str,
+    blocker: str,
+    required_human_action: str,
+    graph_health: dict[str, Any],
+    validation_findings: list[dict[str, Any]],
+    safe_repair_contract: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    selection_mode = str(selected_by_rule.get("selection_mode", "")).strip()
+    refactor_work_item = (
+        selected_by_rule.get("refactor_work_item")
+        if isinstance(selected_by_rule.get("refactor_work_item"), dict)
+        else None
+    )
+    chosen_intervention = baseline_intervention_for_selection(
+        selection_mode=selection_mode,
+        refactor_work_item=refactor_work_item,
+    )
+    stop_conditions: list[str] = []
+    if gate_state == "review_pending":
+        stop_conditions.append("review_gate_created")
+    elif outcome == "split_required":
+        stop_conditions.append("split_required")
+    elif outcome == "done" and gate_state == "none":
+        stop_conditions.append("canonical_change_synced")
+    elif outcome == "blocked":
+        if any(
+            str(finding.get("family", "")).strip() == "executor_environment"
+            for finding in validation_findings
+        ):
+            stop_conditions.append("blocked_by_runtime_failure")
+        else:
+            stop_conditions.append("blocked_by_validation_failure")
+    if chosen_intervention == "propose":
+        stop_conditions.append("proposal_emitted")
+    if chosen_intervention == "handoff":
+        stop_conditions.append("handoff_emitted")
+
+    escalation_reasons: list[str] = []
+    if any(
+        str(finding.get("family", "")).strip() == "executor_environment"
+        for finding in validation_findings
+    ):
+        escalation_reasons.append("executor_environment_failure")
+    if any(
+        str(finding.get("family", "")).strip() == "artifact"
+        and str(finding.get("error_class", "")).strip() == "artifact_integrity_failure"
+        for finding in validation_findings
+    ):
+        escalation_reasons.append("runtime_artifact_failure")
+    if any(
+        str(finding.get("family", "")).strip() == "authority" for finding in validation_findings
+    ):
+        escalation_reasons.append("authority_constraint")
+    if gate_state == "review_pending":
+        escalation_reasons.append("human_review_required")
+    if not escalation_reasons and blocker and blocker != "none":
+        escalation_reasons.append("unknown")
+
+    return {
+        "artifact_kind": "evaluator_loop_control",
+        "schema_version": 1,
+        "run_id": run_id,
+        "spec_id": spec_id,
+        "generated_at": utc_now_iso(),
+        "policy_reference": evaluator_loop_policy_reference(),
+        "chosen_intervention": chosen_intervention,
+        "selection_mode": selection_mode,
+        "improvement_basis": {
+            "graph_health_signals": list(graph_health.get("signals", [])),
+            "graph_health_recommended_actions": list(graph_health.get("recommended_actions", [])),
+            "validation_summary": validation_summary(validation_findings),
+            "required_human_action": required_human_action,
+            "safe_repair_applied": bool((safe_repair_contract or {}).get("repair_count")),
+            "refactor_work_item": copy.deepcopy(refactor_work_item) if refactor_work_item else {},
+        },
+        "stop_conditions": sorted(set(stop_conditions)),
+        "escalation_reasons": sorted(set(escalation_reasons)),
+    }
 
 
 def emit(
@@ -13221,6 +13390,18 @@ def _apply_split_proposal(
         refactor_queue_after=refactor_queue_after,
     )
     decision_inspector_artifact = write_decision_inspector_artifact(run_id, decision_inspector)
+    evaluator_loop_control = build_evaluator_loop_control(
+        run_id=run_id,
+        spec_id=node.id,
+        selected_by_rule=selected_by_rule,
+        outcome="done" if success else "blocked",
+        gate_state="none",
+        blocker="none" if success else "split proposal application failed",
+        required_human_action="-" if success else "repair proposal before retry",
+        graph_health=graph_health,
+        validation_findings=validation_findings,
+    )
+    evaluator_control_artifact = write_evaluator_control_artifact(evaluator_loop_control)
     payload = {
         "run_id": run_id,
         "timestamp_utc": utc_now_iso(),
@@ -13255,6 +13436,8 @@ def _apply_split_proposal(
         "graph_health_truth_basis": "accepted_canonical",
         "decision_inspector": decision_inspector,
         "decision_inspector_artifact": decision_inspector_artifact.as_posix(),
+        "evaluator_loop_control": evaluator_loop_control,
+        "evaluator_control_artifact": evaluator_control_artifact.as_posix(),
         "refactor_queue_artifact": refactor_queue_artifact.as_posix(),
         "proposal_queue_artifact": proposal_queue_artifact.as_posix(),
         "proposal_artifact_path": proposal_artifact_path.as_posix(),
@@ -13610,6 +13793,18 @@ def _process_split_refactor_proposal(
         refactor_queue_after=refactor_queue_after,
     )
     decision_inspector_artifact = write_decision_inspector_artifact(run_id, decision_inspector)
+    evaluator_loop_control = build_evaluator_loop_control(
+        run_id=run_id,
+        spec_id=node.id,
+        selected_by_rule=selected_by_rule,
+        outcome=outcome,
+        gate_state="none",
+        blocker=blocker,
+        required_human_action=required_human_action,
+        graph_health=graph_health,
+        validation_findings=validation_findings,
+    )
+    evaluator_control_artifact = write_evaluator_control_artifact(evaluator_loop_control)
     payload = {
         "run_id": run_id,
         "timestamp_utc": utc_now_iso(),
@@ -13650,6 +13845,8 @@ def _process_split_refactor_proposal(
         "graph_health_truth_basis": "review_candidate",
         "decision_inspector": decision_inspector,
         "decision_inspector_artifact": decision_inspector_artifact.as_posix(),
+        "evaluator_loop_control": evaluator_loop_control,
+        "evaluator_control_artifact": evaluator_control_artifact.as_posix(),
         "executor_environment": executor_environment,
         "refactor_queue_artifact": refactor_queue_artifact.as_posix(),
         "proposal_queue_artifact": proposal_queue_artifact.as_posix(),
@@ -14425,6 +14622,19 @@ def _process_one_spec(
         refinement_acceptance=refinement_acceptance,
     )
     decision_inspector_artifact = write_decision_inspector_artifact(run_id, decision_inspector)
+    evaluator_loop_control = build_evaluator_loop_control(
+        run_id=run_id,
+        spec_id=node.id,
+        selected_by_rule=selected_by_rule,
+        outcome=outcome,
+        gate_state=str(node.data.get("gate_state", "none")),
+        blocker=blocker,
+        required_human_action=required_human_action,
+        graph_health=graph_health,
+        validation_findings=validation_findings,
+        safe_repair_contract=safe_repair_contract,
+    )
+    evaluator_control_artifact = write_evaluator_control_artifact(evaluator_loop_control)
     safe_repair_artifact = (
         write_safe_repair_artifact(safe_repair_contract).as_posix()
         if safe_repair_contract["repair_count"]
@@ -14467,6 +14677,8 @@ def _process_one_spec(
         "graph_health_truth_basis": "accepted_canonical",
         "decision_inspector": decision_inspector,
         "decision_inspector_artifact": decision_inspector_artifact.as_posix(),
+        "evaluator_loop_control": evaluator_loop_control,
+        "evaluator_control_artifact": evaluator_control_artifact.as_posix(),
         "executor_environment": executor_environment,
         "refinement_acceptance": refinement_acceptance,
         "refactor_queue_artifact": refactor_queue_artifact.as_posix(),
