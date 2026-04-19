@@ -25,14 +25,6 @@ Task numbers are preserved for traceability across commits and PRs.
 45. [done] Move supervisor thresholds, selection priorities, mutation classes, and execution profiles into a declarative policy layer instead of Python constants.
 46. [done] Add a Decision Inspector artifact that explains selection, gate, diff-classification, and queue-emission decisions from applied rules.
 
-## Vocabulary and Pre-Spec Semantics
-
-47. [todo] Materialize a machine-readable vocabulary layer for canonical terms, aliases, and deprecations so specs, supervisor outputs, and viewers share one ontology surface.
-48. [todo] Add vocabulary drift checks that detect undefined terms, alias collisions, and meaning divergence across canonical specs and derived artifacts.
-49. [todo] Materialize first-class pre-spec semantic artifacts so observable user meaning can persist before proposal-lane or canonical promotion.
-50. [todo] Normalize `OperatorRequest` into a typed artifact with explicit authority, mutation budget, and stop conditions so supervisor steering stops depending on ad hoc CLI flag combinations.
-51. [todo] Preserve provenance from pre-spec artifacts and operator requests through proposal-lane nodes into canonical specs so proposals no longer appear "sky-born".
-
 ## Evaluator, Validation, and Benchmarking
 
 52. [todo] Define an evaluator-loop control artifact that records chosen intervention, improvement basis, stop conditions, and escalation reasons for each reflective cycle.

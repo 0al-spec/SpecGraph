@@ -1,0 +1,86 @@
+{
+  "artifact_kind": "pre_spec_semantics_policy",
+  "version": 1,
+  "repository_layout": {
+    "source_dir": "intent_layer/nodes",
+    "index_artifact": "runs/pre_spec_semantics_index.json"
+  },
+  "semantic_boundary": {
+    "layer_name": "pre_spec_semantics",
+    "phase": "pre_spec",
+    "tracked_surface": "intent_layer",
+    "canonical_boundary": "proposal_lane_or_reviewed_supervisor_candidate_required",
+    "notes": "Pre-spec semantic artifacts remain reviewable, tracked artifacts that preserve observable meaning before proposal-lane or canonical promotion."
+  },
+  "artifact_classes": {
+    "implemented_tracked_classes": {
+      "user_intent": {
+        "adjacent_primary_kinds": [
+          "intent_fragment",
+          "intent_draft",
+          "intent"
+        ],
+        "default_authority": "external_actor",
+        "default_status": "captured",
+        "downstream_routes": [
+          "operator_request",
+          "proposal_lane",
+          "canonical_candidate"
+        ]
+      },
+      "operator_request": {
+        "adjacent_primary_kinds": [
+          "proposal",
+          "spec_draft"
+        ],
+        "default_authority": "operator",
+        "default_status": "ready_for_execution",
+        "downstream_routes": [
+          "proposal_lane",
+          "canonical_candidate"
+        ]
+      }
+    },
+    "reserved_primary_kinds": [
+      "intent_fragment",
+      "intent_draft",
+      "intent",
+      "hypothesis",
+      "proposal",
+      "spec_draft"
+    ]
+  },
+  "axes_contract": {
+    "required_axes": [
+      "phase",
+      "status",
+      "authority",
+      "confidence",
+      "provenance",
+      "context_tags",
+      "supersedes"
+    ],
+    "implemented_axes": {
+      "phase": "explicit",
+      "status": "mapped_from_mediation_state",
+      "authority": "explicit",
+      "confidence": "not_yet_materialized",
+      "provenance": "explicit",
+      "context_tags": "not_yet_materialized",
+      "supersedes": "not_yet_materialized"
+    }
+  },
+  "index_contract": {
+    "artifact_kind": "pre_spec_semantics_index",
+    "schema_version": 1,
+    "named_filters": [
+      "user_intent",
+      "operator_request",
+      "proposal_linked",
+      "canonical_candidate",
+      "canonical_materialized",
+      "blocked",
+      "missing_provenance"
+    ]
+  }
+}

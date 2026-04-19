@@ -55,6 +55,14 @@ Task numbers are preserved for traceability across commits, PRs, and review thre
 35. [done] Add a bounded operator-request bridge so GUI selections and chat instructions can steer one supervisor run without mutating canonical specs directly.
 36. [done] Define how mediator outputs become canonical specs or proposals through reviewable supervisor-driven refinement instead of raw chat-to-spec mutation.
 
+## Vocabulary and Pre-Spec Semantics
+
+47. [done] Materialize a machine-readable vocabulary layer for canonical terms, aliases, and deprecations so specs, supervisor outputs, and viewers share one ontology surface.
+48. [done] Add vocabulary drift checks that detect undefined terms, alias collisions, and meaning divergence across canonical specs and derived artifacts.
+49. [done] Materialize first-class pre-spec semantic artifacts so observable user meaning can persist before proposal-lane or canonical promotion.
+50. [done] Normalize `OperatorRequest` into a typed artifact with explicit authority, mutation budget, and stop conditions so supervisor steering stops depending on ad hoc CLI flag combinations.
+51. [done] Preserve provenance from pre-spec artifacts and operator requests through proposal-lane nodes into canonical specs so proposals no longer appear "sky-born".
+
 ## Child Spec Materialization Path
 
 40. [done] Fix the `supervisor` path for creating one new child spec during explicit targeted refinement so a bounded child can be materialized from an existing parent delegation boundary instead of stalling with no canonical diff.

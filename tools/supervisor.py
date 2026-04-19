@@ -84,6 +84,8 @@ TECHSPEC_HANDOFF_POLICY_RELATIVE_PATH = "tools/techspec_handoff_policy.json"
 PROPOSAL_LANE_POLICY_RELATIVE_PATH = "tools/proposal_lane_policy.json"
 INTENT_LAYER_POLICY_RELATIVE_PATH = "tools/intent_layer_policy.json"
 OPERATOR_REQUEST_BRIDGE_POLICY_RELATIVE_PATH = "tools/operator_request_bridge_policy.json"
+SPECGRAPH_VOCABULARY_RELATIVE_PATH = "tools/specgraph_vocabulary.json"
+PRE_SPEC_SEMANTICS_POLICY_RELATIVE_PATH = "tools/pre_spec_semantics_policy.json"
 
 
 def supervisor_policy_path() -> Path:
@@ -104,6 +106,14 @@ def intent_layer_policy_path() -> Path:
 
 def operator_request_bridge_policy_path() -> Path:
     return TOOLS_DIR / "operator_request_bridge_policy.json"
+
+
+def specgraph_vocabulary_path() -> Path:
+    return TOOLS_DIR / "specgraph_vocabulary.json"
+
+
+def pre_spec_semantics_policy_path() -> Path:
+    return TOOLS_DIR / "pre_spec_semantics_policy.json"
 
 
 def load_supervisor_policy() -> tuple[dict[str, Any], str]:
@@ -262,7 +272,7 @@ def load_operator_request_bridge_policy() -> tuple[dict[str, Any], str]:
             "malformed operator request bridge policy artifact: "
             f"{path.as_posix()} must contain a JSON object"
         )
-    required_sections = ("packet_contract", "bridge_boundary")
+    required_sections = ("packet_contract", "typed_request_contract", "bridge_boundary")
     missing = [section for section in required_sections if section not in payload]
     if missing:
         raise RuntimeError(
@@ -276,6 +286,79 @@ def load_operator_request_bridge_policy() -> tuple[dict[str, Any], str]:
     OPERATOR_REQUEST_BRIDGE_POLICY,
     OPERATOR_REQUEST_BRIDGE_POLICY_SHA256,
 ) = load_operator_request_bridge_policy()
+
+
+def load_specgraph_vocabulary() -> tuple[dict[str, Any], str]:
+    path = specgraph_vocabulary_path()
+    try:
+        raw_text = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise RuntimeError(
+            f"failed to read SpecGraph vocabulary artifact: {path.as_posix()} ({exc})"
+        ) from exc
+    try:
+        payload = json.loads(raw_text)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(
+            f"malformed SpecGraph vocabulary artifact: {path.as_posix()} ({exc})"
+        ) from exc
+    if not isinstance(payload, dict):
+        raise RuntimeError(
+            f"malformed SpecGraph vocabulary artifact: {path.as_posix()} must contain a JSON object"
+        )
+    required_sections = ("contexts", "term_families")
+    missing = [section for section in required_sections if section not in payload]
+    if missing:
+        raise RuntimeError(
+            "malformed SpecGraph vocabulary artifact: missing top-level section(s): "
+            + ", ".join(missing)
+        )
+    if not isinstance(payload.get("term_families"), dict):
+        raise RuntimeError(
+            "malformed SpecGraph vocabulary artifact: term_families must be an object"
+        )
+    return payload, hashlib.sha256(raw_text.encode("utf-8")).hexdigest()
+
+
+SPECGRAPH_VOCABULARY, SPECGRAPH_VOCABULARY_SHA256 = load_specgraph_vocabulary()
+
+
+def load_pre_spec_semantics_policy() -> tuple[dict[str, Any], str]:
+    path = pre_spec_semantics_policy_path()
+    try:
+        raw_text = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise RuntimeError(
+            f"failed to read pre-spec semantics policy artifact: {path.as_posix()} ({exc})"
+        ) from exc
+    try:
+        payload = json.loads(raw_text)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(
+            f"malformed pre-spec semantics policy artifact: {path.as_posix()} ({exc})"
+        ) from exc
+    if not isinstance(payload, dict):
+        raise RuntimeError(
+            "malformed pre-spec semantics policy artifact: "
+            f"{path.as_posix()} must contain a JSON object"
+        )
+    required_sections = (
+        "repository_layout",
+        "semantic_boundary",
+        "artifact_classes",
+        "axes_contract",
+        "index_contract",
+    )
+    missing = [section for section in required_sections if section not in payload]
+    if missing:
+        raise RuntimeError(
+            "malformed pre-spec semantics policy artifact: missing top-level section(s): "
+            + ", ".join(missing)
+        )
+    return payload, hashlib.sha256(raw_text.encode("utf-8")).hexdigest()
+
+
+PRE_SPEC_SEMANTICS_POLICY, PRE_SPEC_SEMANTICS_POLICY_SHA256 = load_pre_spec_semantics_policy()
 
 
 def policy_lookup(policy_path: str) -> Any:
@@ -316,6 +399,24 @@ def intent_layer_policy_lookup(policy_path: str) -> Any:
 
 def operator_request_bridge_policy_lookup(policy_path: str) -> Any:
     current: Any = OPERATOR_REQUEST_BRIDGE_POLICY
+    for part in policy_path.split("."):
+        if not isinstance(current, dict) or part not in current:
+            raise KeyError(policy_path)
+        current = current[part]
+    return copy.deepcopy(current)
+
+
+def specgraph_vocabulary_lookup(policy_path: str) -> Any:
+    current: Any = SPECGRAPH_VOCABULARY
+    for part in policy_path.split("."):
+        if not isinstance(current, dict) or part not in current:
+            raise KeyError(policy_path)
+        current = current[part]
+    return copy.deepcopy(current)
+
+
+def pre_spec_semantics_policy_lookup(policy_path: str) -> Any:
+    current: Any = PRE_SPEC_SEMANTICS_POLICY
     for part in policy_path.split("."):
         if not isinstance(current, dict) or part not in current:
             raise KeyError(policy_path)
@@ -398,6 +499,22 @@ def operator_request_bridge_policy_reference() -> dict[str, Any]:
         "artifact_path": OPERATOR_REQUEST_BRIDGE_POLICY_RELATIVE_PATH,
         "artifact_sha256": OPERATOR_REQUEST_BRIDGE_POLICY_SHA256,
         "version": OPERATOR_REQUEST_BRIDGE_POLICY.get("version"),
+    }
+
+
+def specgraph_vocabulary_reference() -> dict[str, Any]:
+    return {
+        "artifact_path": SPECGRAPH_VOCABULARY_RELATIVE_PATH,
+        "artifact_sha256": SPECGRAPH_VOCABULARY_SHA256,
+        "version": SPECGRAPH_VOCABULARY.get("version"),
+    }
+
+
+def pre_spec_semantics_policy_reference() -> dict[str, Any]:
+    return {
+        "artifact_path": PRE_SPEC_SEMANTICS_POLICY_RELATIVE_PATH,
+        "artifact_sha256": PRE_SPEC_SEMANTICS_POLICY_SHA256,
+        "version": PRE_SPEC_SEMANTICS_POLICY.get("version"),
     }
 
 
@@ -494,6 +611,29 @@ INTENT_LAYER_OVERLAY_SCHEMA_VERSION = int(
 )
 INTENT_LAYER_LAYER_NAME = str(intent_layer_policy_lookup("overlay_contract.layer_name"))
 INTENT_LAYER_NAMED_FILTERS = list(intent_layer_policy_lookup("overlay_contract.named_filters"))
+PRE_SPEC_SEMANTICS_INDEX_FILENAME = Path(
+    str(pre_spec_semantics_policy_lookup("repository_layout.index_artifact"))
+).name
+PRE_SPEC_SEMANTICS_INDEX_ARTIFACT_KIND = str(
+    pre_spec_semantics_policy_lookup("index_contract.artifact_kind")
+)
+PRE_SPEC_SEMANTICS_INDEX_SCHEMA_VERSION = int(
+    pre_spec_semantics_policy_lookup("index_contract.schema_version")
+)
+PRE_SPEC_SEMANTICS_LAYER_NAME = str(
+    pre_spec_semantics_policy_lookup("semantic_boundary.layer_name")
+)
+PRE_SPEC_SEMANTICS_PHASE = str(pre_spec_semantics_policy_lookup("semantic_boundary.phase"))
+PRE_SPEC_SEMANTICS_NAMED_FILTERS = list(
+    pre_spec_semantics_policy_lookup("index_contract.named_filters")
+)
+PRE_SPEC_IMPLEMENTED_ARTIFACT_CLASSES = pre_spec_semantics_policy_lookup(
+    "artifact_classes.implemented_tracked_classes"
+)
+PRE_SPEC_RESERVED_PRIMARY_KINDS = list(
+    pre_spec_semantics_policy_lookup("artifact_classes.reserved_primary_kinds")
+)
+PRE_SPEC_REQUIRED_AXES = list(pre_spec_semantics_policy_lookup("axes_contract.required_axes"))
 OPERATOR_REQUEST_PACKET_ARTIFACT_KIND = str(
     operator_request_bridge_policy_lookup("packet_contract.artifact_kind")
 )
@@ -513,6 +653,32 @@ OPERATOR_REQUEST_REQUIRED_USER_INTENT_FIELDS = tuple(
 OPERATOR_REQUEST_REQUIRED_REQUEST_FIELDS = tuple(
     operator_request_bridge_policy_lookup("packet_contract.required_operator_request_fields")
 )
+OPERATOR_REQUEST_OPTIONAL_REQUEST_FIELDS = tuple(
+    operator_request_bridge_policy_lookup("packet_contract.optional_operator_request_fields")
+)
+OPERATOR_REQUEST_EXECUTION_CONTRACT_REQUIRED_FIELDS = tuple(
+    operator_request_bridge_policy_lookup(
+        "typed_request_contract.execution_contract.required_fields"
+    )
+)
+OPERATOR_REQUEST_ALLOWED_STOP_CONDITIONS = tuple(
+    operator_request_bridge_policy_lookup(
+        "typed_request_contract.execution_contract.allowed_stop_conditions"
+    )
+)
+OPERATOR_REQUEST_DEFAULT_STOP_CONDITIONS = tuple(
+    operator_request_bridge_policy_lookup(
+        "typed_request_contract.execution_contract.default_stop_conditions"
+    )
+)
+OPERATOR_REQUEST_AUTHORITY_REQUIRED_FIELDS = tuple(
+    operator_request_bridge_policy_lookup(
+        "typed_request_contract.execution_contract.authority_shape.required_fields"
+    )
+)
+SPECGRAPH_VOCABULARY_ARTIFACT_KIND = str(specgraph_vocabulary_lookup("artifact_kind"))
+SPECGRAPH_VOCABULARY_VERSION = int(specgraph_vocabulary_lookup("version"))
+SPECGRAPH_VOCABULARY_FAMILIES = specgraph_vocabulary_lookup("term_families")
 SUBTREE_SHAPE_ONE_CHILD_CHAIN_THRESHOLD = int(
     policy_lookup("thresholds.subtree_shape_one_child_chain")
 )
@@ -1003,12 +1169,13 @@ SYNC_STRIPPED_SPEC_KEYS = {
     "last_gate_decision",
     "last_gate_note",
     "last_gate_at",
+    "last_pre_spec_provenance",
     "pending_sync_paths",
     "pending_base_digests",
     "pending_candidate_digests",
     "pending_run_id",
 }
-DERIVED_SPEC_TRACKING_KEYS = {"created_at", "updated_at"}
+DERIVED_SPEC_TRACKING_KEYS = {"created_at", "updated_at", "last_pre_spec_provenance"}
 DEFAULT_CODEX_HOME = Path(os.environ.get("CODEX_HOME", "~/.codex")).expanduser()
 
 STATUS_PROGRESSION: dict[str, str] = {
@@ -5426,6 +5593,18 @@ def intent_layer_overlay_path() -> Path:
     return RUNS_DIR / INTENT_LAYER_OVERLAY_FILENAME
 
 
+def pre_spec_semantics_index_path() -> Path:
+    return RUNS_DIR / PRE_SPEC_SEMANTICS_INDEX_FILENAME
+
+
+def vocabulary_index_path() -> Path:
+    return RUNS_DIR / "vocabulary_index.json"
+
+
+def vocabulary_drift_report_path() -> Path:
+    return RUNS_DIR / "vocabulary_drift_report.json"
+
+
 def intent_layer_node_filename(handle_value: str) -> str:
     normalized = sanitize_for_git(handle_value).replace("/", "-").strip("-")
     if not normalized:
@@ -5456,6 +5635,446 @@ def proposal_lane_node_filename(handle_value: str) -> str:
 
 def proposal_lane_node_path(handle_value: str) -> Path:
     return proposal_lane_nodes_dir_path() / proposal_lane_node_filename(handle_value)
+
+
+def iter_vocabulary_entries() -> list[dict[str, Any]]:
+    entries: list[dict[str, Any]] = []
+    contexts = SPECGRAPH_VOCABULARY.get("contexts", {})
+    for family_name, family in sorted(SPECGRAPH_VOCABULARY_FAMILIES.items()):
+        if not isinstance(family, dict):
+            continue
+        description = str(family.get("description", "")).strip()
+        owner_specs = sorted(
+            {
+                str(spec_id).strip()
+                for spec_id in family.get("owner_specs", [])
+                if str(spec_id).strip()
+            }
+        )
+        owner_artifacts = sorted(
+            {str(path).strip() for path in family.get("owner_artifacts", []) if str(path).strip()}
+        )
+        family_contexts = sorted(
+            {
+                context_name
+                for context_name, context in contexts.items()
+                if isinstance(context, dict)
+                and any(
+                    spec_id in owner_specs
+                    for spec_id in (str(item).strip() for item in context.get("owner_specs", []))
+                    if spec_id
+                )
+            }
+        )
+        canonical_terms = family.get("canonical_terms", {})
+        if not isinstance(canonical_terms, dict):
+            continue
+        for canonical_term, definition in sorted(canonical_terms.items()):
+            if not isinstance(definition, dict):
+                continue
+            entries.append(
+                {
+                    "family": family_name,
+                    "canonical_term": str(canonical_term).strip(),
+                    "definition": str(definition.get("definition", "")).strip(),
+                    "aliases": sorted(
+                        {
+                            str(alias).strip()
+                            for alias in definition.get("aliases", [])
+                            if str(alias).strip()
+                        }
+                    ),
+                    "deprecated_aliases": sorted(
+                        {
+                            str(alias).strip()
+                            for alias in definition.get("deprecated_aliases", [])
+                            if str(alias).strip()
+                        }
+                    ),
+                    "family_description": description,
+                    "owner_specs": owner_specs,
+                    "owner_artifacts": owner_artifacts,
+                    "contexts": family_contexts,
+                }
+            )
+    return entries
+
+
+def vocabulary_term_resolution(
+    term: str,
+    *,
+    family: str | None = None,
+) -> dict[str, str] | None:
+    normalized = str(term).strip()
+    if not normalized:
+        return None
+    for entry in iter_vocabulary_entries():
+        if family is not None and entry["family"] != family:
+            continue
+        canonical_term = str(entry["canonical_term"]).strip()
+        if normalized == canonical_term:
+            return {
+                "family": str(entry["family"]),
+                "canonical_term": canonical_term,
+                "resolution_kind": "canonical",
+            }
+        if normalized in entry["aliases"]:
+            return {
+                "family": str(entry["family"]),
+                "canonical_term": canonical_term,
+                "resolution_kind": "alias",
+            }
+        if normalized in entry["deprecated_aliases"]:
+            return {
+                "family": str(entry["family"]),
+                "canonical_term": canonical_term,
+                "resolution_kind": "deprecated_alias",
+            }
+    return None
+
+
+def build_vocabulary_index() -> dict[str, Any]:
+    entries = iter_vocabulary_entries()
+    alias_index: dict[str, list[str]] = {}
+    deprecated_alias_index: dict[str, list[str]] = {}
+    family_index: dict[str, list[str]] = {}
+    for entry in entries:
+        family = str(entry["family"]).strip()
+        canonical_term = str(entry["canonical_term"]).strip()
+        family_index.setdefault(family, []).append(canonical_term)
+        for alias in entry["aliases"]:
+            alias_index.setdefault(alias, []).append(f"{family}:{canonical_term}")
+        for alias in entry["deprecated_aliases"]:
+            deprecated_alias_index.setdefault(alias, []).append(f"{family}:{canonical_term}")
+
+    contexts = SPECGRAPH_VOCABULARY.get("contexts", {})
+    context_entries = []
+    for context_name, context in sorted(contexts.items()):
+        if not isinstance(context, dict):
+            continue
+        context_entries.append(
+            {
+                "context": context_name,
+                "description": str(context.get("description", "")).strip(),
+                "owner_specs": sorted(
+                    {
+                        str(spec_id).strip()
+                        for spec_id in context.get("owner_specs", [])
+                        if str(spec_id).strip()
+                    }
+                ),
+                "owner_artifacts": sorted(
+                    {
+                        str(path).strip()
+                        for path in context.get("owner_artifacts", [])
+                        if str(path).strip()
+                    }
+                ),
+            }
+        )
+
+    return {
+        "artifact_kind": "specgraph_vocabulary_index",
+        "schema_version": 1,
+        "generated_at": utc_now_iso(),
+        "vocabulary_reference": specgraph_vocabulary_reference(),
+        "context_count": len(context_entries),
+        "contexts": context_entries,
+        "family_count": len(family_index),
+        "term_count": len(entries),
+        "entries": entries,
+        "family_index": {family: sorted(values) for family, values in sorted(family_index.items())},
+        "alias_index": {alias: sorted(values) for alias, values in sorted(alias_index.items())},
+        "deprecated_alias_index": {
+            alias: sorted(values) for alias, values in sorted(deprecated_alias_index.items())
+        },
+    }
+
+
+def write_vocabulary_index(index: dict[str, Any]) -> Path:
+    RUNS_DIR.mkdir(parents=True, exist_ok=True)
+    path = vocabulary_index_path()
+    with artifact_lock(path):
+        atomic_write_json(path, index)
+    return path
+
+
+def _vocabulary_surface_contracts(specs: list[SpecNode]) -> list[dict[str, Any]]:
+    surfaces: list[dict[str, Any]] = [
+        {
+            "surface_kind": "policy_contract",
+            "surface_id": INTENT_LAYER_POLICY_RELATIVE_PATH,
+            "family": "runtime_artifact_kind",
+            "terms": [
+                INTENT_LAYER_NODE_ARTIFACT_KIND,
+                INTENT_LAYER_OVERLAY_ARTIFACT_KIND,
+            ],
+        },
+        {
+            "surface_kind": "policy_contract",
+            "surface_id": INTENT_LAYER_POLICY_RELATIVE_PATH,
+            "family": "pre_spec_artifact_class",
+            "terms": sorted(INTENT_LAYER_ALLOWED_KINDS),
+        },
+        {
+            "surface_kind": "policy_contract",
+            "surface_id": INTENT_LAYER_POLICY_RELATIVE_PATH,
+            "family": "pre_spec_lifecycle_state",
+            "terms": sorted(INTENT_LAYER_ALLOWED_STATES),
+        },
+        {
+            "surface_kind": "policy_contract",
+            "surface_id": OPERATOR_REQUEST_BRIDGE_POLICY_RELATIVE_PATH,
+            "family": "runtime_artifact_kind",
+            "terms": [OPERATOR_REQUEST_PACKET_ARTIFACT_KIND],
+        },
+        {
+            "surface_kind": "policy_contract",
+            "surface_id": OPERATOR_REQUEST_BRIDGE_POLICY_RELATIVE_PATH,
+            "family": "operator_request_source_kind",
+            "terms": sorted(OPERATOR_REQUEST_SOURCE_KINDS),
+        },
+        {
+            "surface_kind": "policy_contract",
+            "surface_id": OPERATOR_REQUEST_BRIDGE_POLICY_RELATIVE_PATH,
+            "family": "operator_request_run_mode",
+            "terms": sorted(OPERATOR_REQUEST_RUN_MODES),
+        },
+        {
+            "surface_kind": "policy_contract",
+            "surface_id": OPERATOR_REQUEST_BRIDGE_POLICY_RELATIVE_PATH,
+            "family": "operator_request_stop_condition",
+            "terms": sorted(set(OPERATOR_REQUEST_ALLOWED_STOP_CONDITIONS)),
+        },
+        {
+            "surface_kind": "policy_contract",
+            "surface_id": PROPOSAL_LANE_POLICY_RELATIVE_PATH,
+            "family": "runtime_artifact_kind",
+            "terms": [
+                PROPOSAL_LANE_NODE_ARTIFACT_KIND,
+                PROPOSAL_LANE_OVERLAY_ARTIFACT_KIND,
+            ],
+        },
+        {
+            "surface_kind": "policy_contract",
+            "surface_id": PROPOSAL_LANE_POLICY_RELATIVE_PATH,
+            "family": "proposal_authority_state",
+            "allow_deprecated_aliases": True,
+            "terms": sorted(
+                {
+                    str(term).strip()
+                    for term in (
+                        list(PROPOSAL_LANE_AUTHORITY_STATE_MAPPING.keys())
+                        + list(PROPOSAL_LANE_AUTHORITY_STATE_MAPPING.values())
+                    )
+                    if str(term).strip()
+                }
+            ),
+        },
+        {
+            "surface_kind": "policy_contract",
+            "surface_id": PROPOSAL_PROMOTION_POLICY_RELATIVE_PATH,
+            "family": "proposal_artifact_class",
+            "terms": sorted(
+                {
+                    str(term).strip()
+                    for term in load_proposal_promotion_policy_report()[0]
+                    .get("semantic_artifact_classes", {})
+                    .keys()
+                    if str(term).strip()
+                }
+            )
+            if load_proposal_promotion_policy_report()[0]
+            else [],
+        },
+        {
+            "surface_kind": "policy_contract",
+            "surface_id": PRE_SPEC_SEMANTICS_POLICY_RELATIVE_PATH,
+            "family": "runtime_artifact_kind",
+            "terms": [PRE_SPEC_SEMANTICS_INDEX_ARTIFACT_KIND],
+        },
+        {
+            "surface_kind": "policy_contract",
+            "surface_id": PRE_SPEC_SEMANTICS_POLICY_RELATIVE_PATH,
+            "family": "pre_spec_artifact_class",
+            "terms": sorted(PRE_SPEC_IMPLEMENTED_ARTIFACT_CLASSES.keys()),
+        },
+        {
+            "surface_kind": "canonical_spec_terminology",
+            "surface_id": "canonical_spec_terminology",
+            "family": "",
+            "terms": [],
+        },
+    ]
+    for spec in specs:
+        terminology = spec.data.get("specification", {}).get("terminology", {})
+        if not isinstance(terminology, dict):
+            continue
+        for term in sorted(str(key).strip() for key in terminology.keys() if str(key).strip()):
+            resolution = vocabulary_term_resolution(term)
+            if resolution is None:
+                continue
+            surfaces.append(
+                {
+                    "surface_kind": "canonical_spec_terminology",
+                    "surface_id": display_artifact_path(spec.path),
+                    "spec_id": spec.id,
+                    "family": resolution["family"],
+                    "terms": [term],
+                }
+            )
+    return surfaces
+
+
+def build_vocabulary_drift_report(specs: list[SpecNode]) -> dict[str, Any]:
+    index = build_vocabulary_index()
+    alias_index = index.get("alias_index", {})
+    deprecated_alias_index = index.get("deprecated_alias_index", {})
+    findings: list[dict[str, str]] = []
+
+    for alias, resolutions in alias_index.items():
+        if len(resolutions) > 1:
+            findings.append(
+                {
+                    "code": "alias_collision",
+                    "severity": "error",
+                    "surface_kind": "vocabulary_artifact",
+                    "surface_id": SPECGRAPH_VOCABULARY_RELATIVE_PATH,
+                    "term": alias,
+                    "message": (
+                        "Alias resolves to multiple canonical terms: "
+                        + ", ".join(sorted(resolutions))
+                    ),
+                }
+            )
+    for alias, resolutions in deprecated_alias_index.items():
+        if len(resolutions) > 1:
+            findings.append(
+                {
+                    "code": "deprecated_alias_collision",
+                    "severity": "error",
+                    "surface_kind": "vocabulary_artifact",
+                    "surface_id": SPECGRAPH_VOCABULARY_RELATIVE_PATH,
+                    "term": alias,
+                    "message": (
+                        "Deprecated alias resolves to multiple canonical terms: "
+                        + ", ".join(sorted(resolutions))
+                    ),
+                }
+            )
+
+    for surface in _vocabulary_surface_contracts(specs):
+        family = str(surface.get("family", "")).strip()
+        surface_kind = str(surface.get("surface_kind", "")).strip()
+        surface_id = str(surface.get("surface_id", "")).strip()
+        spec_id = str(surface.get("spec_id", "")).strip()
+        allow_deprecated_aliases = bool(surface.get("allow_deprecated_aliases"))
+        for term in surface.get("terms", []):
+            normalized_term = str(term).strip()
+            if not normalized_term:
+                continue
+            resolution = vocabulary_term_resolution(normalized_term, family=family or None)
+            if resolution is None:
+                findings.append(
+                    {
+                        "code": "undefined_term",
+                        "severity": "error",
+                        "surface_kind": surface_kind,
+                        "surface_id": surface_id,
+                        "term": normalized_term,
+                        "family": family,
+                        "message": (
+                            f"Term `{normalized_term}` is not defined in the shared vocabulary"
+                            + (f" for family `{family}`." if family else ".")
+                        ),
+                    }
+                )
+                continue
+            if resolution["resolution_kind"] == "deprecated_alias" and not allow_deprecated_aliases:
+                findings.append(
+                    {
+                        "code": "deprecated_alias_usage",
+                        "severity": "warning",
+                        "surface_kind": surface_kind,
+                        "surface_id": surface_id,
+                        "term": normalized_term,
+                        "family": resolution["family"],
+                        "message": (
+                            f"Surface still uses deprecated alias `{normalized_term}` for "
+                            f"`{resolution['canonical_term']}`."
+                        ),
+                    }
+                )
+            if surface_kind == "canonical_spec_terminology":
+                matching_entries = [
+                    entry
+                    for entry in index["entries"]
+                    if entry["family"] == resolution["family"]
+                    and entry["canonical_term"] == resolution["canonical_term"]
+                ]
+                owner_specs = set()
+                for entry in matching_entries:
+                    owner_specs.update(str(item).strip() for item in entry.get("owner_specs", []))
+                if owner_specs and spec_id and spec_id not in owner_specs:
+                    findings.append(
+                        {
+                            "code": "meaning_divergence",
+                            "severity": "warning",
+                            "surface_kind": surface_kind,
+                            "surface_id": surface_id,
+                            "term": normalized_term,
+                            "family": resolution["family"],
+                            "message": (
+                                f"Canonical spec {spec_id} defines shared term `{normalized_term}` "
+                                f"outside its owning spec set: {', '.join(sorted(owner_specs))}."
+                            ),
+                        }
+                    )
+
+    findings_by_code: dict[str, list[str]] = {}
+    for finding in findings:
+        findings_by_code.setdefault(str(finding["code"]), []).append(
+            str(finding.get("surface_id", "")).strip() or str(finding.get("term", "")).strip()
+        )
+
+    return {
+        "artifact_kind": "vocabulary_drift_report",
+        "schema_version": 1,
+        "generated_at": utc_now_iso(),
+        "vocabulary_reference": specgraph_vocabulary_reference(),
+        "source_spec_count": len(specs),
+        "finding_count": len(findings),
+        "findings": findings,
+        "findings_by_code": {
+            code: sorted(set(values)) for code, values in sorted(findings_by_code.items())
+        },
+    }
+
+
+def write_vocabulary_drift_report(report: dict[str, Any]) -> Path:
+    RUNS_DIR.mkdir(parents=True, exist_ok=True)
+    path = vocabulary_drift_report_path()
+    with artifact_lock(path):
+        atomic_write_json(path, report)
+    return path
+
+
+def refresh_vocabulary_artifacts(specs: list[SpecNode]) -> dict[str, Path]:
+    index_path = write_vocabulary_index(build_vocabulary_index())
+    drift_path = write_vocabulary_drift_report(build_vocabulary_drift_report(specs))
+    return {
+        "vocabulary_index": index_path,
+        "vocabulary_drift_report": drift_path,
+    }
+
+
+def refresh_pre_spec_semantics_artifacts(specs: list[SpecNode]) -> dict[str, Path]:
+    overlay_path = write_intent_layer_overlay(build_intent_layer_overlay())
+    pre_spec_index = write_pre_spec_semantics_index(build_pre_spec_semantics_index(specs))
+    return {
+        "intent_layer_overlay": overlay_path,
+        "pre_spec_semantics_index": pre_spec_index,
+    }
 
 
 def proposal_artifact_filename(*, proposal_type: str, spec_id: str, signal: str) -> str:
@@ -6624,6 +7243,49 @@ def _normalize_packet_string_list(
     return normalized, errors
 
 
+def _normalize_vocabulary_term(
+    *,
+    field_name: str,
+    value: Any,
+    family: str,
+) -> tuple[str, list[str]]:
+    normalized = str(value).strip()
+    if not normalized:
+        return "", []
+    resolution = vocabulary_term_resolution(normalized, family=family)
+    if resolution is None:
+        return "", [f"{field_name} must use a defined {family} term"]
+    return str(resolution["canonical_term"]).strip(), []
+
+
+def _normalize_vocabulary_term_list(
+    *,
+    field_name: str,
+    value: Any,
+    family: str,
+    default_terms: tuple[str, ...] = (),
+) -> tuple[list[str], list[str]]:
+    normalized_items, errors = _normalize_packet_string_list(field_name=field_name, value=value)
+    if errors:
+        return [], errors
+    if not normalized_items:
+        normalized_items = list(default_terms)
+
+    normalized_terms: list[str] = []
+    for idx, item in enumerate(normalized_items):
+        canonical_term, term_errors = _normalize_vocabulary_term(
+            field_name=f"{field_name}[{idx}]",
+            value=item,
+            family=family,
+        )
+        errors.extend(term_errors)
+        if canonical_term:
+            normalized_terms.append(canonical_term)
+    if errors:
+        return [], errors
+    return list(dict.fromkeys(normalized_terms)), []
+
+
 def default_user_intent_handle(source_summary: str) -> str:
     slug = sanitize_for_git(source_summary)[:48]
     return f"user_intent::{slug or 'intent'}"
@@ -6684,12 +7346,12 @@ def normalize_operator_request_packet(
         if not str(operator_request.get(field_name, "")).strip():
             errors.append(f"operator_request.{field_name} must be a non-empty string")
 
-    source_kind = str(user_intent.get("source_kind", "")).strip()
-    if source_kind and source_kind not in OPERATOR_REQUEST_SOURCE_KINDS:
-        errors.append(
-            "user_intent.source_kind must be one of: "
-            + ", ".join(sorted(OPERATOR_REQUEST_SOURCE_KINDS))
-        )
+    source_kind, source_kind_errors = _normalize_vocabulary_term(
+        field_name="user_intent.source_kind",
+        value=user_intent.get("source_kind"),
+        family="operator_request_source_kind",
+    )
+    errors.extend(source_kind_errors)
     source_summary = str(user_intent.get("source_summary", "")).strip()
     selected_node_ref = str(user_intent.get("selected_node_ref", "")).strip()
     unresolved_questions, unresolved_question_errors = _normalize_packet_string_list(
@@ -6698,12 +7360,12 @@ def normalize_operator_request_packet(
     )
     errors.extend(unresolved_question_errors)
 
-    run_mode = str(operator_request.get("run_mode", "")).strip()
-    if run_mode and run_mode not in OPERATOR_REQUEST_RUN_MODES:
-        errors.append(
-            "operator_request.run_mode must be one of: "
-            + ", ".join(sorted(OPERATOR_REQUEST_RUN_MODES))
-        )
+    run_mode, run_mode_errors = _normalize_vocabulary_term(
+        field_name="operator_request.run_mode",
+        value=operator_request.get("run_mode"),
+        family="operator_request_run_mode",
+    )
+    errors.extend(run_mode_errors)
     target_spec_id = str(operator_request.get("target_spec_id", "")).strip()
     if target_spec_id and target_spec_id not in {spec.id for spec in specs}:
         errors.append(f"operator_request.target_spec_id not found: {target_spec_id}")
@@ -6719,6 +7381,13 @@ def normalize_operator_request_packet(
     )
     errors.extend(mutation_budget_errors)
     errors.extend(run_authority_errors)
+    stop_conditions, stop_condition_errors = _normalize_vocabulary_term_list(
+        field_name="operator_request.stop_conditions",
+        value=operator_request.get("stop_conditions"),
+        family="operator_request_stop_condition",
+        default_terms=OPERATOR_REQUEST_DEFAULT_STOP_CONDITIONS,
+    )
+    errors.extend(stop_condition_errors)
 
     mutation_budget: tuple[str, ...] = ()
     run_authority: tuple[str, ...] = ()
@@ -6759,6 +7428,18 @@ def normalize_operator_request_packet(
         source_summary=source_summary,
     )
     packet_reference = display_artifact_path(path)
+    execution_contract = {
+        "authority": {
+            "requested_run_authority": list(run_authority),
+            "canonical_write_boundary": "forbidden",
+            "allowed_downstream_routes": list(
+                operator_request_bridge_policy_lookup("bridge_boundary.allowed_downstream_routes")
+            ),
+        },
+        "mutation_budget": list(mutation_budget),
+        "stop_conditions": list(stop_conditions),
+        "execution_profile": execution_profile or "",
+    }
     return (
         {
             "packet_reference": packet_reference,
@@ -6777,7 +7458,9 @@ def normalize_operator_request_packet(
                 "operator_note": operator_note,
                 "mutation_budget": mutation_budget,
                 "run_authority": run_authority,
+                "stop_conditions": tuple(stop_conditions),
                 "execution_profile": execution_profile,
+                "execution_contract": execution_contract,
             },
         },
         [],
@@ -6793,6 +7476,16 @@ def sync_user_intent_node(context: dict[str, Any]) -> tuple[Path, dict[str, Any]
     created_at = str((existing or {}).get("created_at", "")).strip() or utc_now_iso()
     packet_reference = str(context.get("packet_reference", "")).strip()
     node = dict(existing or {})
+    user_intent_status = (
+        "mediated"
+        if str(user_intent.get("source_kind", "")).strip() == "mediated_artifact"
+        else "captured"
+    )
+    user_intent_authority = (
+        "mediator"
+        if str(user_intent.get("source_kind", "")).strip() == "mediated_artifact"
+        else "external_actor"
+    )
     node.update(
         {
             "artifact_kind": INTENT_LAYER_NODE_ARTIFACT_KIND,
@@ -6801,6 +7494,7 @@ def sync_user_intent_node(context: dict[str, Any]) -> tuple[Path, dict[str, Any]
             "created_at": created_at,
             "updated_at": utc_now_iso(),
             "policy_reference": intent_layer_policy_reference(),
+            "vocabulary_reference": specgraph_vocabulary_reference(),
             "intent_repository_presence": {
                 **copy.deepcopy(INTENT_LAYER_PRESENCE_CONTRACT),
                 "tracked_path": tracked_path,
@@ -6810,11 +7504,24 @@ def sync_user_intent_node(context: dict[str, Any]) -> tuple[Path, dict[str, Any]
                 "handle_status": "active",
             },
             "intent_layer_kind": "user_intent",
-            "mediation_state": (
-                "mediated"
-                if str(user_intent.get("source_kind", "")).strip() == "mediated_artifact"
-                else "captured"
-            ),
+            "mediation_state": user_intent_status,
+            "pre_spec_semantics": {
+                "policy_reference": pre_spec_semantics_policy_reference(),
+                "phase": PRE_SPEC_SEMANTICS_PHASE,
+                "semantic_artifact_class": "user_intent",
+                "status": user_intent_status,
+                "authority": user_intent_authority,
+                "required_axes": list(PRE_SPEC_REQUIRED_AXES),
+                "implemented_axes": pre_spec_semantics_policy_lookup(
+                    "axes_contract.implemented_axes"
+                ),
+                "adjacent_primary_kinds": list(
+                    PRE_SPEC_IMPLEMENTED_ARTIFACT_CLASSES["user_intent"]["adjacent_primary_kinds"]
+                ),
+                "canonical_boundary": str(
+                    pre_spec_semantics_policy_lookup("semantic_boundary.canonical_boundary")
+                ),
+            },
             "intent_capture": {
                 "source_kind": str(user_intent.get("source_kind", "")).strip(),
                 "source_summary": str(user_intent.get("source_summary", "")).strip(),
@@ -6867,6 +7574,7 @@ def sync_operator_request_node(
             "updated_at": utc_now_iso(),
             "policy_reference": intent_layer_policy_reference(),
             "bridge_policy_reference": operator_request_bridge_policy_reference(),
+            "vocabulary_reference": specgraph_vocabulary_reference(),
             "intent_repository_presence": {
                 **copy.deepcopy(INTENT_LAYER_PRESENCE_CONTRACT),
                 "tracked_path": tracked_path,
@@ -6877,13 +7585,34 @@ def sync_operator_request_node(
             },
             "intent_layer_kind": "operator_request",
             "mediation_state": "ready_for_execution",
+            "pre_spec_semantics": {
+                "policy_reference": pre_spec_semantics_policy_reference(),
+                "phase": PRE_SPEC_SEMANTICS_PHASE,
+                "semantic_artifact_class": "operator_request",
+                "status": "ready_for_execution",
+                "authority": "operator",
+                "required_axes": list(PRE_SPEC_REQUIRED_AXES),
+                "implemented_axes": pre_spec_semantics_policy_lookup(
+                    "axes_contract.implemented_axes"
+                ),
+                "adjacent_primary_kinds": list(
+                    PRE_SPEC_IMPLEMENTED_ARTIFACT_CLASSES["operator_request"][
+                        "adjacent_primary_kinds"
+                    ]
+                ),
+                "canonical_boundary": str(
+                    pre_spec_semantics_policy_lookup("semantic_boundary.canonical_boundary")
+                ),
+            },
             "request_bridge": {
                 "target_spec_id": str(request.get("target_spec_id", "")).strip(),
                 "run_mode": str(request.get("run_mode", "")).strip(),
                 "operator_note": str(request.get("operator_note", "")).strip(),
                 "mutation_budget": list(request.get("mutation_budget", ())),
                 "run_authority": list(request.get("run_authority", ())),
+                "stop_conditions": list(request.get("stop_conditions", ())),
                 "execution_profile": str(request.get("execution_profile", "") or "").strip(),
+                "execution_contract": copy.deepcopy(request.get("execution_contract", {})),
             },
             "intent_lineage_link": [
                 {
@@ -6918,8 +7647,9 @@ def sync_intent_layer_from_operator_request(context: dict[str, Any]) -> dict[str
         context,
         user_intent_handle=user_intent_handle,
     )
-    overlay = build_intent_layer_overlay()
-    write_intent_layer_overlay(overlay)
+    specs = load_specs()
+    refresh_vocabulary_artifacts(specs)
+    refresh_pre_spec_semantics_artifacts(specs)
     return {
         "user_intent_path": user_intent_path.relative_to(ROOT).as_posix(),
         "user_intent_handle": str(
@@ -6929,6 +7659,33 @@ def sync_intent_layer_from_operator_request(context: dict[str, Any]) -> dict[str
         "operator_request_handle": str(
             operator_request_node.get("intent_handle", {}).get("handle_value", "")
         ).strip(),
+    }
+
+
+def build_last_pre_spec_provenance(
+    *,
+    operator_request_context: dict[str, Any] | None,
+    proposal_ids: list[str] | None = None,
+) -> dict[str, Any] | None:
+    if not operator_request_context:
+        return None
+    user_intent_handle = str(operator_request_context.get("user_intent_handle", "")).strip()
+    operator_request_handle = str(
+        operator_request_context.get("operator_request_handle", "")
+    ).strip()
+    packet_reference = str(operator_request_context.get("packet_reference", "")).strip()
+    if not any((user_intent_handle, operator_request_handle, packet_reference)):
+        return None
+    return {
+        "policy_reference": pre_spec_semantics_policy_reference(),
+        "vocabulary_reference": specgraph_vocabulary_reference(),
+        "packet_reference": packet_reference,
+        "user_intent_handle": user_intent_handle,
+        "operator_request_handle": operator_request_handle,
+        "proposal_ids": sorted(
+            {str(item).strip() for item in (proposal_ids or []) if str(item).strip()}
+        ),
+        "recorded_at": utc_now_iso(),
     }
 
 
@@ -6964,12 +7721,15 @@ def record_operator_request_execution(
     if proposal_ids:
         mediation_state = "proposal_linked"
         downstream_route = "proposal_lane_emission"
+        canonical_spec_ids: list[str] = []
     elif str(gate_state).strip() == "blocked" or str(outcome).strip() == "blocked":
         mediation_state = "blocked"
         downstream_route = "execution_blocked"
+        canonical_spec_ids = []
     else:
         mediation_state = "canonical_candidate"
         downstream_route = "supervisor_refinement_candidate"
+        canonical_spec_ids = [spec_id]
 
     operator_request_path = intent_layer_node_path(operator_request_handle)
     operator_request_node = load_json_object(operator_request_path)
@@ -6983,10 +7743,13 @@ def record_operator_request_execution(
                 "last_outcome": outcome,
                 "last_gate_state": gate_state,
                 "proposal_ids": proposal_ids,
+                "canonical_spec_ids": canonical_spec_ids,
                 "downstream_route": downstream_route,
             }
         )
         operator_request_node["mediation_state"] = mediation_state
+        if isinstance(operator_request_node.get("pre_spec_semantics"), dict):
+            operator_request_node["pre_spec_semantics"]["status"] = mediation_state
         operator_request_node["runtime_bridge"] = runtime_bridge
         operator_request_node["updated_at"] = utc_now_iso()
         with artifact_lock(operator_request_path):
@@ -7004,6 +7767,7 @@ def record_operator_request_execution(
                     "latest_outcome": outcome,
                     "latest_gate_state": gate_state,
                     "latest_proposal_ids": proposal_ids,
+                    "latest_canonical_spec_ids": canonical_spec_ids,
                     "latest_downstream_route": downstream_route,
                 }
             )
@@ -7012,7 +7776,9 @@ def record_operator_request_execution(
             with artifact_lock(user_intent_path):
                 atomic_write_json(user_intent_path, user_intent_node)
 
-    write_intent_layer_overlay(build_intent_layer_overlay())
+    specs = load_specs()
+    refresh_vocabulary_artifacts(specs)
+    refresh_pre_spec_semantics_artifacts(specs)
 
 
 def proposal_lane_valid_authority_states() -> set[str]:
@@ -7442,6 +8208,226 @@ def write_proposal_lane_overlay(overlay: dict[str, Any]) -> Path:
     path = proposal_lane_overlay_path()
     with artifact_lock(path):
         atomic_write_json(path, overlay)
+    return path
+
+
+def load_intent_layer_nodes_report() -> tuple[list[dict[str, Any]], list[dict[str, str]]]:
+    nodes_dir = intent_layer_nodes_dir_path()
+    raw_nodes: list[dict[str, Any]] = []
+    artifact_warnings: list[dict[str, str]] = []
+    if not nodes_dir.exists():
+        return raw_nodes, artifact_warnings
+    for path in sorted(nodes_dir.glob("*.json")):
+        data, error = load_json_object_report(path, artifact_kind="intent layer node artifact")
+        if data is None:
+            artifact_warnings.append(
+                {
+                    "tracked_path": display_artifact_path(path),
+                    "error": error,
+                }
+            )
+            continue
+        raw_nodes.append({"tracked_path": display_artifact_path(path), "node": data})
+    return raw_nodes, artifact_warnings
+
+
+def load_proposal_lane_nodes_report() -> tuple[list[dict[str, Any]], list[dict[str, str]]]:
+    nodes_dir = proposal_lane_nodes_dir_path()
+    raw_nodes: list[dict[str, Any]] = []
+    artifact_warnings: list[dict[str, str]] = []
+    if not nodes_dir.exists():
+        return raw_nodes, artifact_warnings
+    for path in sorted(nodes_dir.glob("*.json")):
+        data, error = load_json_object_report(path, artifact_kind="proposal lane node artifact")
+        if data is None:
+            artifact_warnings.append(
+                {
+                    "tracked_path": display_artifact_path(path),
+                    "error": error,
+                }
+            )
+            continue
+        raw_nodes.append({"tracked_path": display_artifact_path(path), "node": data})
+    return raw_nodes, artifact_warnings
+
+
+def build_pre_spec_semantics_index(specs: list[SpecNode]) -> dict[str, Any]:
+    raw_intent_nodes, intent_warnings = load_intent_layer_nodes_report()
+    raw_proposal_nodes, proposal_warnings = load_proposal_lane_nodes_report()
+    entries: list[dict[str, Any]] = []
+    edges: list[dict[str, str]] = []
+    named_filters = {name: [] for name in PRE_SPEC_SEMANTICS_NAMED_FILTERS}
+
+    proposal_links_by_handle: dict[str, set[str]] = {}
+    for raw in raw_proposal_nodes:
+        node = raw["node"]
+        proposal_handle = str(node.get("proposal_handle", {}).get("handle_value", "")).strip()
+        for link in (
+            node.get("proposal_lineage_link", [])
+            if isinstance(node.get("proposal_lineage_link", []), list)
+            else []
+        ):
+            if not isinstance(link, dict):
+                continue
+            if str(link.get("source_kind", "")).strip() != "intent_layer_node":
+                continue
+            handle = str(link.get("source_reference", "")).strip()
+            if handle and proposal_handle:
+                proposal_links_by_handle.setdefault(handle, set()).add(proposal_handle)
+
+    canonical_links_by_handle: dict[str, set[str]] = {}
+    for spec in specs:
+        provenance = spec.data.get("last_pre_spec_provenance", {})
+        if not isinstance(provenance, dict):
+            continue
+        for handle_field in ("user_intent_handle", "operator_request_handle"):
+            handle = str(provenance.get(handle_field, "")).strip()
+            if handle:
+                canonical_links_by_handle.setdefault(handle, set()).add(spec.id)
+
+    for raw in raw_intent_nodes:
+        tracked_path = str(raw["tracked_path"])
+        node = raw["node"]
+        presence = node.get("intent_repository_presence")
+        query_findings: list[str] = []
+        if not (
+            isinstance(presence, dict)
+            and all(
+                str(presence.get(key, "")).strip() == str(value)
+                for key, value in INTENT_LAYER_PRESENCE_CONTRACT.items()
+            )
+        ):
+            query_findings.append("invalid_presence_contract")
+        handle = node.get("intent_handle", {})
+        handle_value = str(handle.get("handle_value", "")).strip()
+        intent_kind = str(node.get("intent_layer_kind", "")).strip()
+        mediation_state = str(node.get("mediation_state", "")).strip()
+        if not handle_value:
+            query_findings.append("missing_handle")
+        if intent_kind not in PRE_SPEC_IMPLEMENTED_ARTIFACT_CLASSES:
+            query_findings.append("unknown_pre_spec_artifact_class")
+        if not isinstance(node.get("intent_lineage_link"), list) or not node.get(
+            "intent_lineage_link"
+        ):
+            query_findings.append("missing_provenance")
+
+        runtime_bridge = node.get("runtime_bridge", {})
+        pre_spec_semantics = node.get("pre_spec_semantics", {})
+        linked_proposals = sorted(
+            set(
+                list(proposal_links_by_handle.get(handle_value, set()))
+                + list(
+                    str(item).strip()
+                    for item in (
+                        runtime_bridge.get("proposal_ids", [])
+                        if isinstance(runtime_bridge, dict)
+                        else []
+                    )
+                    if str(item).strip()
+                )
+                + list(
+                    str(item).strip()
+                    for item in (
+                        runtime_bridge.get("latest_proposal_ids", [])
+                        if isinstance(runtime_bridge, dict)
+                        else []
+                    )
+                    if str(item).strip()
+                )
+            )
+        )
+        linked_specs = sorted(
+            set(
+                list(canonical_links_by_handle.get(handle_value, set()))
+                + list(
+                    str(item).strip()
+                    for item in (
+                        runtime_bridge.get("canonical_spec_ids", [])
+                        if isinstance(runtime_bridge, dict)
+                        else []
+                    )
+                    if str(item).strip()
+                )
+                + list(
+                    str(item).strip()
+                    for item in (
+                        runtime_bridge.get("latest_canonical_spec_ids", [])
+                        if isinstance(runtime_bridge, dict)
+                        else []
+                    )
+                    if str(item).strip()
+                )
+            )
+        )
+        entry = {
+            "tracked_path": tracked_path,
+            "title": str(node.get("title", "")).strip(),
+            "intent_handle": handle_value,
+            "semantic_artifact_class": intent_kind,
+            "phase": str(pre_spec_semantics.get("phase", PRE_SPEC_SEMANTICS_PHASE)).strip(),
+            "status": str(pre_spec_semantics.get("status", mediation_state)).strip(),
+            "authority": str(pre_spec_semantics.get("authority", "")).strip(),
+            "mediation_state": mediation_state,
+            "required_axes": list(pre_spec_semantics.get("required_axes", PRE_SPEC_REQUIRED_AXES)),
+            "downstream_proposal_ids": linked_proposals,
+            "downstream_canonical_spec_ids": linked_specs,
+            "query_contract": {
+                "status": "queryable" if not query_findings else "invalid_pre_spec_state",
+                "findings": query_findings,
+            },
+        }
+        entries.append(entry)
+        if intent_kind in named_filters:
+            named_filters[intent_kind].append(handle_value or tracked_path)
+        if mediation_state == "proposal_linked" or linked_proposals:
+            named_filters["proposal_linked"].append(handle_value or tracked_path)
+        if mediation_state == "canonical_candidate":
+            named_filters["canonical_candidate"].append(handle_value or tracked_path)
+        if linked_specs:
+            named_filters["canonical_materialized"].append(handle_value or tracked_path)
+        if mediation_state == "blocked":
+            named_filters["blocked"].append(handle_value or tracked_path)
+        if "missing_provenance" in query_findings:
+            named_filters["missing_provenance"].append(handle_value or tracked_path)
+        for proposal_id in linked_proposals:
+            edges.append(
+                {
+                    "source": handle_value or tracked_path,
+                    "target": proposal_id,
+                    "edge_kind": "pre_spec::proposal_lane",
+                }
+            )
+        for spec_id in linked_specs:
+            edges.append(
+                {
+                    "source": handle_value or tracked_path,
+                    "target": spec_id,
+                    "edge_kind": "pre_spec::canonical_spec",
+                }
+            )
+
+    return {
+        "artifact_kind": PRE_SPEC_SEMANTICS_INDEX_ARTIFACT_KIND,
+        "schema_version": PRE_SPEC_SEMANTICS_INDEX_SCHEMA_VERSION,
+        "generated_at": utc_now_iso(),
+        "policy_reference": pre_spec_semantics_policy_reference(),
+        "vocabulary_reference": specgraph_vocabulary_reference(),
+        "layer_name": PRE_SPEC_SEMANTICS_LAYER_NAME,
+        "source_dir": INTENT_LAYER_NODES_RELATIVE_DIR,
+        "entry_count": len(entries),
+        "entries": entries,
+        "edges": edges,
+        "named_filters": {key: sorted(set(value)) for key, value in sorted(named_filters.items())},
+        "artifact_warnings": intent_warnings + proposal_warnings,
+        "reserved_primary_kinds": PRE_SPEC_RESERVED_PRIMARY_KINDS,
+    }
+
+
+def write_pre_spec_semantics_index(index: dict[str, Any]) -> Path:
+    RUNS_DIR.mkdir(parents=True, exist_ok=True)
+    path = pre_spec_semantics_index_path()
+    with artifact_lock(path):
+        atomic_write_json(path, index)
     return path
 
 
@@ -12130,6 +13116,17 @@ def _process_split_refactor_proposal(
     )
     proposal_queue_after = load_proposal_queue()
     refactor_queue_after = load_refactor_queue()
+    proposal_ids_for_pre_spec = sorted(
+        {
+            str(item.get("id", "")).strip()
+            for item in proposal_queue_after
+            if isinstance(item, dict)
+            and str(item.get("spec_id", "")).strip() == node.id
+            and str(item.get("operator_request_handle", "")).strip()
+            == str((operator_request_context or {}).get("operator_request_handle", "")).strip()
+            and str(item.get("id", "")).strip()
+        }
+    )
     decision_inspector = build_decision_inspector(
         run_id=run_id,
         spec_id=node.id,
@@ -12211,6 +13208,12 @@ def _process_split_refactor_proposal(
                 operator_request_context.get("operator_request_handle", "")
             ).strip(),
         }
+        pre_spec_provenance = build_last_pre_spec_provenance(
+            operator_request_context=operator_request_context,
+            proposal_ids=proposal_ids_for_pre_spec,
+        )
+        if pre_spec_provenance is not None:
+            payload["pre_spec_provenance"] = pre_spec_provenance
     log_path = write_run_log(run_id, payload)
     write_latest_summary(payload)
     record_operator_request_execution(
@@ -12774,6 +13777,17 @@ def _process_one_spec(
         required_human_action = "repair malformed runtime artifact and rerun supervisor"
     proposal_queue_after = load_proposal_queue()
     refactor_queue_after = load_refactor_queue()
+    proposal_ids_for_pre_spec = sorted(
+        {
+            str(item.get("id", "")).strip()
+            for item in proposal_queue_after
+            if isinstance(item, dict)
+            and str(item.get("spec_id", "")).strip() == node.id
+            and str(item.get("operator_request_handle", "")).strip()
+            == str((operator_request_context or {}).get("operator_request_handle", "")).strip()
+            and str(item.get("id", "")).strip()
+        }
+    )
 
     cleanup_failed_child_materialization = (
         child_materialization_requested
@@ -12822,6 +13836,13 @@ def _process_one_spec(
     node.data["last_reconciliation"] = reconciliation
     node.data["last_requested_child_materialization"] = child_materialization_requested
     node.data["last_materialized_child_paths"] = materialized_child_paths
+    if operator_request_context:
+        pre_spec_provenance = build_last_pre_spec_provenance(
+            operator_request_context=operator_request_context,
+            proposal_ids=proposal_ids_for_pre_spec,
+        )
+        if pre_spec_provenance is not None:
+            node.data["last_pre_spec_provenance"] = pre_spec_provenance
     if validation_errors:
         node.data["last_errors"] = validation_errors
     node.save()
@@ -12901,6 +13922,12 @@ def _process_one_spec(
                 operator_request_context.get("operator_request_handle", "")
             ).strip(),
         }
+        pre_spec_provenance = build_last_pre_spec_provenance(
+            operator_request_context=operator_request_context,
+            proposal_ids=proposal_ids_for_pre_spec,
+        )
+        if pre_spec_provenance is not None:
+            payload["pre_spec_provenance"] = pre_spec_provenance
     if candidate_graph_health != graph_health:
         payload["candidate_graph_health"] = candidate_graph_health
         payload["candidate_graph_health_truth_basis"] = "review_candidate"
@@ -12962,6 +13989,9 @@ def main(
     transition_profile: str | None = None,
     operator_request_packet_path: str | None = None,
     build_intent_layer_overlay_mode: bool = False,
+    build_vocabulary_index_mode: bool = False,
+    build_vocabulary_drift_report_mode: bool = False,
+    build_pre_spec_semantics_index_mode: bool = False,
     build_graph_health_overlay_mode: bool = False,
     build_graph_health_trends_mode: bool = False,
     build_spec_trace_index_mode: bool = False,
@@ -13020,6 +14050,9 @@ def main(
                 clean_stale_runtime,
                 observe_graph_health_mode,
                 build_intent_layer_overlay_mode,
+                build_vocabulary_index_mode,
+                build_vocabulary_drift_report_mode,
+                build_pre_spec_semantics_index_mode,
                 build_graph_health_overlay_mode,
                 build_graph_health_trends_mode,
                 build_spec_trace_index_mode,
@@ -13041,6 +14074,51 @@ def main(
         )
         print(json.dumps(report, ensure_ascii=False, indent=2))
         return 0 if report["ok"] else 1
+
+    if build_vocabulary_index_mode:
+        if any(
+            (
+                dry_run,
+                auto_approve,
+                loop,
+                resolve_gate,
+                decision,
+                note,
+                target_spec,
+                split_proposal,
+                apply_split_proposal,
+                operator_note,
+                mutation_budget,
+                run_authority,
+                execution_profile,
+                child_model,
+                child_timeout_seconds,
+                verbose,
+                list_stale_runtime,
+                clean_stale_runtime,
+                observe_graph_health_mode,
+                operator_request_packet_path,
+                build_intent_layer_overlay_mode,
+                build_vocabulary_drift_report_mode,
+                build_pre_spec_semantics_index_mode,
+                build_graph_health_overlay_mode,
+                build_graph_health_trends_mode,
+                build_spec_trace_index_mode,
+                build_spec_trace_projection_mode,
+                build_proposal_lane_overlay_mode,
+                build_proposal_runtime_index_mode,
+                build_proposal_promotion_index_mode,
+            )
+        ):
+            print(
+                "--build-vocabulary-index must be used as a standalone command",
+                file=sys.stderr,
+            )
+            return 1
+        index = build_vocabulary_index()
+        write_vocabulary_index(index)
+        print(json.dumps(index, ensure_ascii=False, indent=2))
+        return 0
 
     if build_intent_layer_overlay_mode:
         if any(
@@ -13064,6 +14142,9 @@ def main(
                 list_stale_runtime,
                 clean_stale_runtime,
                 observe_graph_health_mode,
+                build_vocabulary_index_mode,
+                build_vocabulary_drift_report_mode,
+                build_pre_spec_semantics_index_mode,
                 build_graph_health_overlay_mode,
                 build_graph_health_trends_mode,
                 build_spec_trace_index_mode,
@@ -13107,6 +14188,9 @@ def main(
                 clean_stale_runtime,
                 observe_graph_health_mode,
                 operator_request_packet_path,
+                build_vocabulary_index_mode,
+                build_vocabulary_drift_report_mode,
+                build_pre_spec_semantics_index_mode,
                 build_proposal_runtime_index_mode,
                 build_proposal_promotion_index_mode,
             )
@@ -13128,6 +14212,97 @@ def main(
         return 1
     if not specs:
         print("No spec nodes found in specs/nodes")
+        return 0
+
+    if build_vocabulary_drift_report_mode:
+        if any(
+            (
+                dry_run,
+                auto_approve,
+                loop,
+                resolve_gate,
+                decision,
+                note,
+                target_spec,
+                split_proposal,
+                apply_split_proposal,
+                operator_note,
+                mutation_budget,
+                run_authority,
+                execution_profile,
+                child_model,
+                child_timeout_seconds,
+                verbose,
+                list_stale_runtime,
+                clean_stale_runtime,
+                observe_graph_health_mode,
+                operator_request_packet_path,
+                build_intent_layer_overlay_mode,
+                build_vocabulary_index_mode,
+                build_pre_spec_semantics_index_mode,
+                build_graph_health_overlay_mode,
+                build_graph_health_trends_mode,
+                build_spec_trace_index_mode,
+                build_spec_trace_projection_mode,
+                build_proposal_lane_overlay_mode,
+                build_proposal_runtime_index_mode,
+                build_proposal_promotion_index_mode,
+            )
+        ):
+            print(
+                "--build-vocabulary-drift-report must be used as a standalone command",
+                file=sys.stderr,
+            )
+            return 1
+        report = build_vocabulary_drift_report(specs)
+        write_vocabulary_drift_report(report)
+        print(json.dumps(report, ensure_ascii=False, indent=2))
+        return 0
+
+    if build_pre_spec_semantics_index_mode:
+        if any(
+            (
+                dry_run,
+                auto_approve,
+                loop,
+                resolve_gate,
+                decision,
+                note,
+                target_spec,
+                split_proposal,
+                apply_split_proposal,
+                operator_note,
+                mutation_budget,
+                run_authority,
+                execution_profile,
+                child_model,
+                child_timeout_seconds,
+                verbose,
+                list_stale_runtime,
+                clean_stale_runtime,
+                observe_graph_health_mode,
+                operator_request_packet_path,
+                build_intent_layer_overlay_mode,
+                build_vocabulary_index_mode,
+                build_vocabulary_drift_report_mode,
+                build_graph_health_overlay_mode,
+                build_graph_health_trends_mode,
+                build_spec_trace_index_mode,
+                build_spec_trace_projection_mode,
+                build_proposal_lane_overlay_mode,
+                build_proposal_runtime_index_mode,
+                build_proposal_promotion_index_mode,
+            )
+        ):
+            print(
+                "--build-pre-spec-semantics-index must be used as a standalone command",
+                file=sys.stderr,
+            )
+            return 1
+        refresh_vocabulary_artifacts(specs)
+        index = build_pre_spec_semantics_index(specs)
+        write_pre_spec_semantics_index(index)
+        print(json.dumps(index, ensure_ascii=False, indent=2))
         return 0
 
     if build_graph_health_overlay_mode:
@@ -13153,6 +14328,9 @@ def main(
                 clean_stale_runtime,
                 observe_graph_health_mode,
                 operator_request_packet_path,
+                build_vocabulary_index_mode,
+                build_vocabulary_drift_report_mode,
+                build_pre_spec_semantics_index_mode,
                 build_graph_health_trends_mode,
                 build_spec_trace_index_mode,
                 build_spec_trace_projection_mode,
@@ -13194,6 +14372,9 @@ def main(
                 clean_stale_runtime,
                 observe_graph_health_mode,
                 operator_request_packet_path,
+                build_vocabulary_index_mode,
+                build_vocabulary_drift_report_mode,
+                build_pre_spec_semantics_index_mode,
                 build_graph_health_overlay_mode,
                 build_spec_trace_index_mode,
                 build_spec_trace_projection_mode,
@@ -13237,6 +14418,9 @@ def main(
                 clean_stale_runtime,
                 observe_graph_health_mode,
                 operator_request_packet_path,
+                build_vocabulary_index_mode,
+                build_vocabulary_drift_report_mode,
+                build_pre_spec_semantics_index_mode,
                 build_proposal_lane_overlay_mode,
                 build_spec_trace_projection_mode,
                 build_proposal_runtime_index_mode,
@@ -13275,6 +14459,9 @@ def main(
                 list_stale_runtime,
                 clean_stale_runtime,
                 observe_graph_health_mode,
+                build_vocabulary_index_mode,
+                build_vocabulary_drift_report_mode,
+                build_pre_spec_semantics_index_mode,
                 build_proposal_lane_overlay_mode,
                 build_proposal_runtime_index_mode,
             )
@@ -13314,6 +14501,9 @@ def main(
                 clean_stale_runtime,
                 observe_graph_health_mode,
                 operator_request_packet_path,
+                build_vocabulary_index_mode,
+                build_vocabulary_drift_report_mode,
+                build_pre_spec_semantics_index_mode,
                 build_proposal_lane_overlay_mode,
                 build_proposal_promotion_index_mode,
             )
@@ -13351,6 +14541,9 @@ def main(
                 clean_stale_runtime,
                 observe_graph_health_mode,
                 operator_request_packet_path,
+                build_vocabulary_index_mode,
+                build_vocabulary_drift_report_mode,
+                build_pre_spec_semantics_index_mode,
                 build_proposal_lane_overlay_mode,
             )
         ):
@@ -13939,6 +15132,30 @@ if __name__ == "__main__":
         ),
     )
     parser.add_argument(
+        "--build-vocabulary-index",
+        action="store_true",
+        help=(
+            "Build a flattened shared vocabulary index for canonical terms, aliases, "
+            "deprecated aliases, families, and contexts"
+        ),
+    )
+    parser.add_argument(
+        "--build-vocabulary-drift-report",
+        action="store_true",
+        help=(
+            "Build a derived vocabulary drift report that flags undefined terms, "
+            "alias collisions, deprecated alias usage, and meaning divergence"
+        ),
+    )
+    parser.add_argument(
+        "--build-pre-spec-semantics-index",
+        action="store_true",
+        help=(
+            "Build a derived pre-spec semantics index that links tracked intent-layer "
+            "artifacts to downstream proposal-lane and canonical lineage"
+        ),
+    )
+    parser.add_argument(
         "--build-graph-health-overlay",
         action="store_true",
         help=(
@@ -14112,6 +15329,9 @@ if __name__ == "__main__":
             transition_profile=args.transition_profile,
             operator_request_packet_path=args.operator_request_packet,
             build_intent_layer_overlay_mode=args.build_intent_layer_overlay,
+            build_vocabulary_index_mode=args.build_vocabulary_index,
+            build_vocabulary_drift_report_mode=args.build_vocabulary_drift_report,
+            build_pre_spec_semantics_index_mode=args.build_pre_spec_semantics_index,
             build_graph_health_overlay_mode=args.build_graph_health_overlay,
             build_graph_health_trends_mode=args.build_graph_health_trends,
             build_spec_trace_index_mode=args.build_spec_trace_index,

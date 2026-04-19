@@ -79,6 +79,12 @@ particular task.
   `--validate-transition-packet path/to/packet.json --transition-profile specgraph_core`
 - drive one bounded run from a mediated request packet:
   `--operator-request-packet path/to/request.json`
+- build the flattened shared vocabulary layer:
+  `--build-vocabulary-index`
+- inspect vocabulary drift across specs and governed policy artifacts:
+  `--build-vocabulary-drift-report`
+- inspect tracked pre-spec semantics and downstream lineage:
+  `--build-pre-spec-semantics-index`
 - build a derived spec-to-code trace index:
   `--build-spec-trace-index`
 - build a repository-tracked intent-layer overlay:
@@ -257,6 +263,8 @@ Current bridge behavior:
 
 - validates one `operator_request_packet` against
   `tools/operator_request_bridge_policy.json`
+- normalizes the request into a typed `OperatorRequest` with explicit
+  `authority`, `mutation_budget`, `stop_conditions`, and `execution_contract`
 - mirrors `user_intent` and `operator_request` into tracked
   `intent_layer/nodes/*.json`
 - routes the request into one ordinary targeted refinement or explicit
@@ -277,6 +285,58 @@ Lower-boundary handoff is now also governed by
   handoff should begin
 - `bounded_scope`
 - `required_provenance_links` including `source_draft_ref`
+
+### Vocabulary index
+
+```bash
+python3 tools/supervisor.py --build-vocabulary-index
+```
+
+Builds `runs/vocabulary_index.json` from `tools/specgraph_vocabulary.json`.
+
+Use it when you need one shared ontology surface for:
+
+- canonical terms
+- aliases
+- deprecated aliases
+- term families
+- vocabulary contexts and ownership
+
+This is the flattened machine-readable vocabulary layer that specs, policy
+artifacts, and viewer/report surfaces should converge on.
+
+### Vocabulary drift report
+
+```bash
+python3 tools/supervisor.py --build-vocabulary-drift-report
+```
+
+Builds `runs/vocabulary_drift_report.json` from the shared vocabulary,
+governed policy artifacts, and canonical spec terminology.
+
+It currently flags:
+
+- undefined terms
+- alias collisions
+- deprecated alias usage outside sanctioned mapping surfaces
+- meaning divergence when a canonical spec defines a shared term outside its
+  owning vocabulary boundary
+
+### Pre-spec semantics index
+
+```bash
+python3 tools/supervisor.py --build-pre-spec-semantics-index
+```
+
+Builds `runs/pre_spec_semantics_index.json` from:
+
+- tracked `intent_layer/nodes/*.json`
+- proposal-lane lineage
+- canonical `last_pre_spec_provenance` metadata
+
+Use it when you want to inspect the pre-spec semantic layer as its own governed
+surface instead of treating user intent, operator requests, proposals, and
+canonical candidates as disconnected artifacts.
 
 ### Spec trace index
 
@@ -388,7 +448,9 @@ This layer is intentionally narrower than the later first-class pre-spec
 semantic work:
 
 - `intent_layer/nodes/*.json` records bounded mediation and run-bridge state
-- it does not yet replace full pre-spec semantic artifacts
+- `runs/pre_spec_semantics_index.json` is the first derived pre-spec semantic
+  surface that links those tracked artifacts to downstream proposal-lane and
+  canonical lineage
 - proposal-lane and canonical specs remain downstream layers, not peers
 
 ### Proposal runtime index
