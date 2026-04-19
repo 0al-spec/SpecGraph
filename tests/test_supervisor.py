@@ -7045,6 +7045,129 @@ def test_build_proposal_lane_overlay_marks_invalid_query_contract(
     ]
 
 
+def test_build_intent_layer_overlay_marks_invalid_query_contract(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    node_path = repo_fixture / "intent_layer" / "nodes" / "invalid-intent.json"
+    node_path.parent.mkdir(parents=True, exist_ok=True)
+    node_path.write_text(
+        json.dumps(
+            {
+                "artifact_kind": supervisor_module.INTENT_LAYER_NODE_ARTIFACT_KIND,
+                "schema_version": 1,
+                "title": "Incomplete intent layer node",
+                "intent_repository_presence": {
+                    "tracked_presence": "repository_tracked",
+                    "path_class": "intent_layer_node_path",
+                    "persistence_boundary": "pre_canonical_repository_separate_from_runtime",
+                    "tracked_path": "intent_layer/nodes/invalid-intent.json",
+                },
+                "intent_handle": {
+                    "handle_value": "operator_request::SG-SPEC-0001::tighten-ownership",
+                    "handle_status": "active",
+                },
+                "intent_layer_kind": "operator_request",
+                "mediation_state": "ready_for_execution",
+                "intent_lineage_link": [],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    overlay = supervisor_module.build_intent_layer_overlay()
+
+    assert overlay["artifact_kind"] == supervisor_module.INTENT_LAYER_OVERLAY_ARTIFACT_KIND
+    assert overlay["entry_count"] == 1
+    assert overlay["entries"][0]["query_contract"]["status"] == "invalid_review_state"
+    assert overlay["entries"][0]["query_contract"]["findings"] == [
+        "missing_kind_section::request_bridge",
+        "missing_lineage_link",
+        "missing_request_bridge_target",
+    ]
+    assert overlay["named_filters"]["invalid_query_contract"] == [
+        "operator_request::SG-SPEC-0001::tighten-ownership"
+    ]
+
+
+def test_main_builds_intent_layer_overlay_as_standalone_command(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    def fake_overlay() -> dict[str, object]:
+        return {
+            "artifact_kind": supervisor_module.INTENT_LAYER_OVERLAY_ARTIFACT_KIND,
+            "schema_version": 1,
+            "layer_name": "intent_layer",
+            "generated_at": "2026-04-19T00:00:00Z",
+            "policy_reference": {"artifact_path": "tools/intent_layer_policy.json"},
+            "source_dir": "intent_layer/nodes",
+            "entry_count": 1,
+            "entries": [{"intent_handle": "user_intent::calculator-bootstrap"}],
+            "edges": [],
+            "by_kind": {"user_intent": ["user_intent::calculator-bootstrap"]},
+            "by_mediation_state": {"captured": ["user_intent::calculator-bootstrap"]},
+            "named_filters": {"user_intent": ["user_intent::calculator-bootstrap"]},
+            "artifact_warnings": [],
+        }
+
+    monkeypatch.setattr(supervisor_module, "build_intent_layer_overlay", fake_overlay)
+
+    exit_code = supervisor_module.main(build_intent_layer_overlay_mode=True)
+
+    assert exit_code == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["artifact_kind"] == supervisor_module.INTENT_LAYER_OVERLAY_ARTIFACT_KIND
+    assert report["entry_count"] == 1
+    persisted = json.loads(
+        (repo_fixture / "runs" / "intent_layer_overlay.json").read_text(encoding="utf-8")
+    )
+    assert persisted["artifact_kind"] == supervisor_module.INTENT_LAYER_OVERLAY_ARTIFACT_KIND
+
+
+def test_main_builds_intent_layer_overlay_without_loading_specs(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    (repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml").write_text(
+        "id: SG-SPEC-0001\n: broken\n",
+        encoding="utf-8",
+    )
+
+    def fail_load_specs() -> list[object]:
+        raise AssertionError("load_specs() must not run for intent-layer overlay mode")
+
+    def fake_overlay() -> dict[str, object]:
+        return {
+            "artifact_kind": supervisor_module.INTENT_LAYER_OVERLAY_ARTIFACT_KIND,
+            "schema_version": 1,
+            "layer_name": "intent_layer",
+            "generated_at": "2026-04-19T00:00:00Z",
+            "policy_reference": {"artifact_path": "tools/intent_layer_policy.json"},
+            "source_dir": "intent_layer/nodes",
+            "entry_count": 0,
+            "entries": [],
+            "edges": [],
+            "by_kind": {},
+            "by_mediation_state": {},
+            "named_filters": {},
+            "artifact_warnings": [],
+        }
+
+    monkeypatch.setattr(supervisor_module, "load_specs", fail_load_specs)
+    monkeypatch.setattr(supervisor_module, "build_intent_layer_overlay", fake_overlay)
+
+    exit_code = supervisor_module.main(build_intent_layer_overlay_mode=True)
+
+    assert exit_code == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["artifact_kind"] == supervisor_module.INTENT_LAYER_OVERLAY_ARTIFACT_KIND
+
+
 def test_main_builds_proposal_lane_overlay_as_standalone_command(
     supervisor_module: object,
     repo_fixture: Path,

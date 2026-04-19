@@ -79,6 +79,8 @@ particular task.
   `--validate-transition-packet path/to/packet.json --transition-profile specgraph_core`
 - build a derived spec-to-code trace index:
   `--build-spec-trace-index`
+- build a repository-tracked intent-layer overlay:
+  `--build-intent-layer-overlay`
 - build a repository-tracked proposal-lane overlay:
   `--build-proposal-lane-overlay`
 - build a derived proposal runtime index:
@@ -328,6 +330,32 @@ This layer is intentionally separate from runtime-only proposal artifacts:
 - `proposal_lane/nodes/*.json` is repository-tracked review state
 - `runs/proposals/*.json` remains runtime-scoped structured support state
 - canonical specs remain the accepted graph of record
+
+### Intent-layer overlay
+
+```bash
+python3 tools/supervisor.py --build-intent-layer-overlay
+```
+
+Builds `runs/intent_layer_overlay.json` from repository-tracked intent-layer
+nodes under `intent_layer/nodes/`.
+
+Use it when you want to inspect the pre-canonical mediation surface without
+confusing it with either proposal-lane review structure or canonical graph
+truth. The overlay exposes:
+
+- `intent_layer_kind` separation between `user_intent` and `operator_request`
+- `mediation_state` such as `captured`, `mediated`, or `ready_for_execution`
+- lineage edges back to raw-supporting artifacts or forward to bridge outputs
+- invalid query-contract nodes whose tracked presence exists but whose kind
+  contract or lineage is incomplete
+
+This layer is intentionally narrower than the later first-class pre-spec
+semantic work:
+
+- `intent_layer/nodes/*.json` records bounded mediation and run-bridge state
+- it does not yet replace full pre-spec semantic artifacts
+- proposal-lane and canonical specs remain downstream layers, not peers
 
 ### Proposal runtime index
 

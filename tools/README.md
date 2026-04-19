@@ -70,6 +70,10 @@ Supervisor modes:
   now distinguishes fresh, stale-spec, and drifted verified regions.
 - `--build-spec-trace-projection`: build `runs/spec_trace_projection.json` from the
   trace plane, grouped for viewer-style filters and implementation backlog queries.
+- `--build-intent-layer-overlay`: build `runs/intent_layer_overlay.json` from
+  repository-tracked intent-layer nodes under `intent_layer/nodes/`, so
+  pre-canonical user intent and operator-request artifacts can be inspected as
+  a separate mediation layer.
 - `--build-proposal-lane-overlay`: build `runs/proposal_lane_overlay.json` from
   repository-tracked proposal-lane nodes under `proposal_lane/nodes/`, so
   draft proposal structure can be inspected as a secondary graph layer without
@@ -98,6 +102,11 @@ Key derived artifacts:
 - `runs/proposal_queue.json`: derived proposal-oriented next moves
 - `runs/refactor_queue.json`: derived refactor-oriented next moves
 - `runs/proposals/*.json`: structured split proposal artifacts
+- `intent_layer/nodes/*.json`: repository-tracked intent-layer nodes for
+  `user_intent` and `operator_request`, kept pre-canonical and separate from
+  proposal-lane and canonical graph truth
+- `runs/intent_layer_overlay.json`: intent-layer viewer/report surface grouped
+  by artifact kind, mediation state, and invalid query-contract findings
 - `proposal_lane/nodes/*.json`: repository-tracked proposal-lane nodes with
   stable provisional handles, authority state, target region, lineage, and
   runtime bridge metadata
@@ -127,6 +136,9 @@ Key derived artifacts:
 - `tools/proposal_lane_policy.json`: declarative repository contract for the
   tracked proposal lane, including proposal-node presence, authority-state
   mapping, and overlay semantics
+- `tools/intent_layer_policy.json`: declarative repository contract for the
+  tracked intent layer, including kind separation, mediation-state vocabulary,
+  and overlay semantics
 - `tools/proposal_promotion_registry.json`: explicit promotion provenance
   registry keyed by `proposal_id`, used to backfill source draft refs,
   motivating concern, bounded scope, and related promotion-trace fields

@@ -1,0 +1,64 @@
+{
+  "artifact_kind": "intent_layer_policy",
+  "version": 1,
+  "repository_layout": {
+    "nodes_dir": "intent_layer/nodes",
+    "overlay_artifact": "runs/intent_layer_overlay.json"
+  },
+  "node_contract": {
+    "artifact_kind": "intent_layer_node",
+    "schema_version": 1,
+    "presence_contract": {
+      "tracked_presence": "repository_tracked",
+      "path_class": "intent_layer_node_path",
+      "persistence_boundary": "pre_canonical_repository_separate_from_runtime"
+    },
+    "required_query_fields": [
+      "intent_repository_presence",
+      "intent_handle",
+      "intent_layer_kind",
+      "mediation_state",
+      "intent_lineage_link"
+    ],
+    "kind_contract": {
+      "allowed_kinds": [
+        "user_intent",
+        "operator_request"
+      ],
+      "required_sections_by_kind": {
+        "user_intent": [
+          "intent_capture"
+        ],
+        "operator_request": [
+          "request_bridge"
+        ]
+      }
+    },
+    "state_contract": {
+      "allowed_states": [
+        "captured",
+        "mediated",
+        "ready_for_execution",
+        "executed",
+        "proposal_linked",
+        "canonical_candidate",
+        "blocked",
+        "superseded"
+      ]
+    }
+  },
+  "overlay_contract": {
+    "artifact_kind": "intent_layer_overlay",
+    "schema_version": 1,
+    "layer_name": "intent_layer",
+    "named_filters": [
+      "user_intent",
+      "operator_request",
+      "ready_for_execution",
+      "proposal_linked",
+      "canonical_candidate",
+      "blocked",
+      "invalid_query_contract"
+    ]
+  }
+}
