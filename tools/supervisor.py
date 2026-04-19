@@ -4457,6 +4457,7 @@ def observe_graph_health(
                     }
                 )
                 signals.append(TECHSPEC_HANDOFF_PRIMARY_SIGNAL)
+                recommended_actions.append(TECHSPEC_HANDOFF_RECOMMENDED_ACTION)
 
     return {
         "source_spec_id": source_node.id,

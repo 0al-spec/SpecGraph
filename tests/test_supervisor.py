@@ -2545,6 +2545,9 @@ def test_observe_graph_health_reports_techspec_handoff_candidate(
     assert handoff["details"]["boundary_reference"]["artifact_path"] == (
         "tools/techspec_handoff_policy.json"
     )
+    assert (
+        supervisor_module.TECHSPEC_HANDOFF_RECOMMENDED_ACTION in graph_health["recommended_actions"]
+    )
 
 
 def test_observe_graph_health_reports_refinement_fan_out_pressure(
