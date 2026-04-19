@@ -32,6 +32,7 @@ Derived artifacts:
 - graph refactor queue: `runs/refactor_queue.json`
 - proposal queue index: `runs/proposal_queue.json`
 - structured proposal artifacts: `runs/proposals/*.json`
+- graph health overlay: `runs/graph_health_overlay.json`
 - spec trace index: `runs/spec_trace_index.json`
 - spec trace projection: `runs/spec_trace_projection.json`
 - proposal runtime index: `runs/proposal_runtime_index.json`
@@ -443,6 +444,8 @@ TRANSITION_PACKET_TYPE_REQUIRED_FIELDS = {
     for packet_type, definition in TRANSITION_PACKET_FAMILY_DEFINITIONS.items()
 }
 SPECGRAPH_CANONICAL_SURFACE_PREFIXES = ("specs/nodes/", "specs/history/")
+GRAPH_HEALTH_OVERLAY_FILENAME = "graph_health_overlay.json"
+GRAPH_HEALTH_TRENDS_FILENAME = "graph_health_trends.json"
 SPEC_TRACE_INDEX_FILENAME = "spec_trace_index.json"
 SPEC_TRACE_PROJECTION_FILENAME = "spec_trace_projection.json"
 PROPOSAL_RUNTIME_INDEX_FILENAME = "proposal_runtime_index.json"
@@ -4540,6 +4543,133 @@ def inspect_canonical_graph_health(*, node: SpecNode, specs: list[SpecNode]) -> 
         "historical_descendant_ids": historical_descendant_ids,
         "graph_health": graph_health,
     }
+
+
+def graph_health_overlay_path() -> Path:
+    return RUNS_DIR / GRAPH_HEALTH_OVERLAY_FILENAME
+
+
+def build_graph_health_overlay(specs: list[SpecNode]) -> dict[str, Any]:
+    signal_groups: dict[str, list[str]] = {}
+    action_groups: dict[str, list[str]] = {}
+    named_filters = {
+        "oversized_or_atomicity_pressure": [],
+        "weakly_linked_regions": [],
+        "shape_pressure": [],
+        "role_legibility_pressure": [],
+        "clustering_pressure": [],
+        "handoff_boundary_pressure": [],
+        "techspec_ready_regions": [],
+        "gated_specs": [],
+    }
+    entries: list[dict[str, Any]] = []
+    affected_spec_ids: list[str] = []
+
+    for spec in specs:
+        snapshot = inspect_canonical_graph_health(node=spec, specs=specs)
+        graph_health = snapshot.get("graph_health", {})
+        if not isinstance(graph_health, dict):
+            continue
+        signals = sorted(
+            {str(item).strip() for item in graph_health.get("signals", []) if str(item).strip()}
+        )
+        recommended_actions = sorted(
+            {
+                str(item).strip()
+                for item in graph_health.get("recommended_actions", [])
+                if str(item).strip()
+            }
+        )
+        gate_state = str(spec.gate_state or "none").strip() or "none"
+        if not signals and gate_state == "none":
+            continue
+
+        affected_spec_ids.append(spec.id)
+        for signal in signals:
+            signal_groups.setdefault(signal, []).append(spec.id)
+        for action in recommended_actions:
+            action_groups.setdefault(action, []).append(spec.id)
+
+        if any(
+            signal in {"oversized_spec", "repeated_split_required_candidate"} for signal in signals
+        ):
+            named_filters["oversized_or_atomicity_pressure"].append(spec.id)
+        if any(
+            signal in {"weak_structural_linkage_candidate", "missing_dependency_target"}
+            for signal in signals
+        ):
+            named_filters["weakly_linked_regions"].append(spec.id)
+        if any(signal in SUBTREE_SHAPE_SIGNALS for signal in signals):
+            named_filters["shape_pressure"].append(spec.id)
+        if any(signal in {"role_obscured_node", "bookkeeping_only_node"} for signal in signals):
+            named_filters["role_legibility_pressure"].append(spec.id)
+        if any(
+            signal in {"refinement_fan_out_pressure", "missing_aggregate_node"}
+            for signal in signals
+        ):
+            named_filters["clustering_pressure"].append(spec.id)
+        if any(signal in LOWER_BOUNDARY_HANDOFF_SIGNALS for signal in signals):
+            named_filters["handoff_boundary_pressure"].append(spec.id)
+        if TECHSPEC_HANDOFF_PRIMARY_SIGNAL in signals:
+            named_filters["techspec_ready_regions"].append(spec.id)
+        if gate_state != "none":
+            named_filters["gated_specs"].append(spec.id)
+
+        subtree_spec_ids = list(snapshot.get("subtree_spec_ids", []))
+        historical_descendant_ids = list(snapshot.get("historical_descendant_ids", []))
+        entries.append(
+            {
+                "spec_id": spec.id,
+                "title": spec.title,
+                "gate_state": gate_state,
+                "diagnostic_outcome": str(snapshot.get("diagnostic_outcome", "")).strip(),
+                "subtree_spec_ids": subtree_spec_ids,
+                "historical_descendant_ids": historical_descendant_ids,
+                "signals": signals,
+                "recommended_actions": recommended_actions,
+                "problem_score": len(signals) + (1 if gate_state != "none" else 0),
+                "active_subtree_size": len(subtree_spec_ids),
+                "historical_descendant_count": len(historical_descendant_ids),
+            }
+        )
+
+    hotspot_regions = sorted(
+        entries,
+        key=lambda item: (
+            -int(item.get("problem_score", 0)),
+            -int(item.get("active_subtree_size", 0)),
+            str(item.get("spec_id", "")),
+        ),
+    )
+
+    return {
+        "artifact_kind": "graph_health_overlay",
+        "schema_version": 1,
+        "generated_at": utc_now_iso(),
+        "source": {
+            "truth_basis": "accepted_canonical",
+            "spec_count": len(specs),
+            "affected_spec_count": len(entries),
+        },
+        "entries": entries,
+        "viewer_projection": {
+            "signals": {key: sorted(value) for key, value in sorted(signal_groups.items())},
+            "recommended_actions": {
+                key: sorted(value) for key, value in sorted(action_groups.items())
+            },
+            "named_filters": {key: sorted(value) for key, value in sorted(named_filters.items())},
+            "affected_spec_ids": sorted(affected_spec_ids),
+        },
+        "hotspot_regions": hotspot_regions,
+    }
+
+
+def write_graph_health_overlay(overlay: dict[str, Any]) -> Path:
+    RUNS_DIR.mkdir(parents=True, exist_ok=True)
+    path = graph_health_overlay_path()
+    with artifact_lock(path):
+        atomic_write_json(path, overlay)
+    return path
 
 
 def classify_executor_environment(stderr: str) -> dict[str, Any]:
@@ -11168,6 +11298,7 @@ def main(
     observe_graph_health_mode: bool = False,
     validate_transition_packet_path: str | None = None,
     transition_profile: str | None = None,
+    build_graph_health_overlay_mode: bool = False,
     build_spec_trace_index_mode: bool = False,
     build_spec_trace_projection_mode: bool = False,
     build_proposal_runtime_index_mode: bool = False,
@@ -11222,6 +11353,7 @@ def main(
                 list_stale_runtime,
                 clean_stale_runtime,
                 observe_graph_health_mode,
+                build_graph_health_overlay_mode,
                 build_spec_trace_index_mode,
                 build_spec_trace_projection_mode,
                 build_proposal_runtime_index_mode,
@@ -11247,6 +11379,44 @@ def main(
         return 1
     if not specs:
         print("No spec nodes found in specs/nodes")
+        return 0
+
+    if build_graph_health_overlay_mode:
+        if any(
+            (
+                dry_run,
+                auto_approve,
+                loop,
+                resolve_gate,
+                decision,
+                note,
+                target_spec,
+                split_proposal,
+                apply_split_proposal,
+                operator_note,
+                mutation_budget,
+                run_authority,
+                execution_profile,
+                child_model,
+                child_timeout_seconds,
+                verbose,
+                list_stale_runtime,
+                clean_stale_runtime,
+                observe_graph_health_mode,
+                build_spec_trace_index_mode,
+                build_spec_trace_projection_mode,
+                build_proposal_runtime_index_mode,
+                build_proposal_promotion_index_mode,
+            )
+        ):
+            print(
+                "--build-graph-health-overlay must be used as a standalone command",
+                file=sys.stderr,
+            )
+            return 1
+        overlay = build_graph_health_overlay(specs)
+        write_graph_health_overlay(overlay)
+        print(json.dumps(overlay, ensure_ascii=False, indent=2))
         return 0
 
     if build_spec_trace_index_mode:
@@ -11879,6 +12049,14 @@ if __name__ == "__main__":
         ),
     )
     parser.add_argument(
+        "--build-graph-health-overlay",
+        action="store_true",
+        help=(
+            "Build a viewer-facing graph-health overlay from the accepted canonical graph "
+            "without reading raw run logs"
+        ),
+    )
+    parser.add_argument(
         "--build-spec-trace-index",
         action="store_true",
         help=(
@@ -12026,6 +12204,7 @@ if __name__ == "__main__":
             observe_graph_health_mode=args.observe_graph_health,
             validate_transition_packet_path=args.validate_transition_packet,
             transition_profile=args.transition_profile,
+            build_graph_health_overlay_mode=args.build_graph_health_overlay,
             build_spec_trace_index_mode=args.build_spec_trace_index,
             build_spec_trace_projection_mode=args.build_spec_trace_projection,
             build_proposal_runtime_index_mode=args.build_proposal_runtime_index,

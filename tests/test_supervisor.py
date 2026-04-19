@@ -6786,6 +6786,139 @@ def test_build_spec_trace_projection_groups_backlog_and_viewer_filters(
     }
 
 
+def test_build_graph_health_overlay_groups_viewer_filters(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    specs_dir = repo_fixture / "specs" / "nodes"
+    (specs_dir / "SG-SPEC-0002.yaml").write_text(
+        json.dumps(
+            {
+                "id": "SG-SPEC-0002",
+                "title": "Weak Link Region",
+                "kind": "spec",
+                "created_at": "2026-04-18T00:00:00Z",
+                "updated_at": "2026-04-18T00:00:00Z",
+                "status": "linked",
+                "maturity": 0.4,
+                "depends_on": [],
+                "relates_to": [],
+                "inputs": [],
+                "outputs": [],
+                "allowed_paths": ["specs/nodes/SG-SPEC-0002.yaml"],
+                "acceptance": ["kept"],
+                "prompt": "Refine this node.",
+            }
+        ),
+        encoding="utf-8",
+    )
+    specs = supervisor_module.load_specs()
+
+    def fake_snapshot(*, node: object, specs: list[object]) -> dict[str, object]:
+        _ = specs
+        if node.id == "SG-SPEC-0001":
+            return {
+                "source_spec_id": "SG-SPEC-0001",
+                "source_title": "Golden Path Node",
+                "diagnostic_outcome": "done",
+                "subtree_spec_ids": ["SG-SPEC-0001", "SG-SPEC-0002"],
+                "historical_descendant_ids": [],
+                "graph_health": {
+                    "signals": [
+                        "oversized_spec",
+                        "refinement_fan_out_pressure",
+                        supervisor_module.TECHSPEC_HANDOFF_PRIMARY_SIGNAL,
+                    ],
+                    "recommended_actions": [
+                        "split_or_narrow_spec",
+                        "regroup_under_intermediate_cluster",
+                        supervisor_module.TECHSPEC_HANDOFF_RECOMMENDED_ACTION,
+                    ],
+                },
+            }
+        return {
+            "source_spec_id": "SG-SPEC-0002",
+            "source_title": "Weak Link Region",
+            "diagnostic_outcome": "split_required",
+            "subtree_spec_ids": ["SG-SPEC-0002"],
+            "historical_descendant_ids": ["SG-SPEC-0099"],
+            "graph_health": {
+                "signals": [
+                    "weak_structural_linkage_candidate",
+                    "role_obscured_node",
+                ],
+                "recommended_actions": [
+                    "repair_refinement_chain",
+                    "rewrite_node_role_boundary",
+                ],
+            },
+        }
+
+    monkeypatch.setattr(supervisor_module, "inspect_canonical_graph_health", fake_snapshot)
+    overlay = supervisor_module.build_graph_health_overlay(specs)
+
+    assert overlay["artifact_kind"] == "graph_health_overlay"
+    assert overlay["source"]["affected_spec_count"] == 2
+    assert overlay["viewer_projection"]["signals"]["oversized_spec"] == ["SG-SPEC-0001"]
+    assert overlay["viewer_projection"]["signals"]["weak_structural_linkage_candidate"] == [
+        "SG-SPEC-0002"
+    ]
+    assert overlay["viewer_projection"]["named_filters"]["techspec_ready_regions"] == [
+        "SG-SPEC-0001"
+    ]
+    assert overlay["viewer_projection"]["named_filters"]["weakly_linked_regions"] == [
+        "SG-SPEC-0002"
+    ]
+    assert overlay["viewer_projection"]["named_filters"]["role_legibility_pressure"] == [
+        "SG-SPEC-0002"
+    ]
+    assert overlay["hotspot_regions"][0]["spec_id"] == "SG-SPEC-0001"
+
+
+def test_main_builds_graph_health_overlay_as_standalone_command(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    def fake_overlay(specs: list[object]) -> dict[str, object]:
+        assert len(specs) == 1
+        return {
+            "artifact_kind": "graph_health_overlay",
+            "schema_version": 1,
+            "generated_at": "2026-04-19T00:00:00Z",
+            "source": {
+                "truth_basis": "accepted_canonical",
+                "spec_count": 1,
+                "affected_spec_count": 1,
+            },
+            "entries": [{"spec_id": "SG-SPEC-0001", "signals": ["oversized_spec"]}],
+            "viewer_projection": {
+                "signals": {"oversized_spec": ["SG-SPEC-0001"]},
+                "recommended_actions": {},
+                "named_filters": {"oversized_or_atomicity_pressure": ["SG-SPEC-0001"]},
+                "affected_spec_ids": ["SG-SPEC-0001"],
+            },
+            "hotspot_regions": [{"spec_id": "SG-SPEC-0001", "problem_score": 1}],
+        }
+
+    monkeypatch.setattr(supervisor_module, "build_graph_health_overlay", fake_overlay)
+
+    exit_code = supervisor_module.main(build_graph_health_overlay_mode=True)
+
+    assert exit_code == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["artifact_kind"] == "graph_health_overlay"
+    assert report["viewer_projection"]["affected_spec_ids"] == ["SG-SPEC-0001"]
+    assert (
+        json.loads(
+            (repo_fixture / "runs" / "graph_health_overlay.json").read_text(encoding="utf-8")
+        )["artifact_kind"]
+        == "graph_health_overlay"
+    )
+
+
 def test_main_builds_spec_trace_projection_as_standalone_command(
     supervisor_module: object,
     repo_fixture: Path,

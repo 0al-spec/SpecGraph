@@ -153,6 +153,23 @@ python3 tools/supervisor.py --target-spec SG-SPEC-0003 --apply-split-proposal
 
 Materializes an approved split proposal into canonical parent/child specs.
 
+### `--build-graph-health-overlay`
+
+```bash
+python3 tools/supervisor.py --build-graph-health-overlay
+```
+
+Builds `runs/graph_health_overlay.json` from the accepted canonical graph. This
+is the compact viewer/report layer for current graph-health pressure, grouped by:
+
+- active signals
+- recommended actions
+- named filters such as oversized or atomicity pressure, weak linkage, shape
+  pressure, role-legibility pressure, clustering pressure, and handoff pressure
+
+Use it when you want to see which regions currently need attention without
+opening raw `runs/*.json` one by one.
+
 ### Transition-packet validation
 
 ```bash
@@ -420,6 +437,9 @@ authoritative.
   - full authoritative run payload for that run
 - `runs/decision_inspector/<RUN_ID>.json`
   - standalone decision explanation artifact for that run
+- `runs/graph_health_overlay.json`
+  - current canonical graph-health overlay grouped by signal, recommended
+    action, and named pressure filters
 
 ### Queue and proposal surfaces
 
