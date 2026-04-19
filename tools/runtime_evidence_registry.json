@@ -38,7 +38,7 @@
       },
       {
         "path": "runs/graph_health_trends.json",
-        "pattern": "\"recurring_signals\""
+        "pattern": "\"recurring_signal_groups\""
       }
     ],
     "adoption_markers": [

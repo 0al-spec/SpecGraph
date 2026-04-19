@@ -12032,6 +12032,8 @@ def build_proposal_runtime_index() -> dict[str, Any]:
 
     backlog = build_reflective_backlog(entries)
     return {
+        "artifact_kind": "proposal_runtime_index",
+        "schema_version": 1,
         "generated_at": utc_now_iso(),
         "posture_vocabulary": copy.deepcopy(PROPOSAL_PROCESSING_POSTURES),
         "entry_count": len(entries),

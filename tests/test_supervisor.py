@@ -7339,6 +7339,7 @@ def test_build_evidence_plane_index_reports_registry_backed_chain_statuses(
     for spec_id, title in (
         ("SG-SPEC-0049", "Graph Health Runtime Evidence"),
         ("SG-SPEC-0050", "Pre-Spec Semantic Runtime Evidence"),
+        ("SG-SPEC-0051", "Proposal Promotion Runtime Evidence"),
     ):
         (specs_dir / f"{spec_id}.yaml").write_text(
             json.dumps(
@@ -7423,13 +7424,44 @@ def test_build_evidence_plane_index_reports_registry_backed_chain_statuses(
                     "outcome_markers": [
                         {
                             "path": "runs/graph_health_trends.json",
-                            "pattern": '"recurring_signals"',
+                            "pattern": '"recurring_signal_groups"',
                         }
                     ],
                     "adoption_markers": [
                         {
                             "path": "runs/graph_health_trends.json",
                             "pattern": '"currently_active"',
+                        }
+                    ],
+                },
+                {
+                    "spec_id": "SG-SPEC-0051",
+                    "evidence_scope": "surface_level",
+                    "artifact_refs": [
+                        "tools/supervisor.py",
+                    ],
+                    "runtime_entities": [
+                        {
+                            "entity_id": "supervisor.proposal_runtime_index",
+                            "entity_kind": "inspection_overlay",
+                        }
+                    ],
+                    "observation_markers": [
+                        {
+                            "path": "runs/proposal_promotion_index.json",
+                            "pattern": '"artifact_kind": "proposal_promotion_index"',
+                        }
+                    ],
+                    "outcome_markers": [
+                        {
+                            "path": "runs/proposal_promotion_index.json",
+                            "pattern": '"viewer_projection"',
+                        }
+                    ],
+                    "adoption_markers": [
+                        {
+                            "path": "runs/proposal_runtime_index.json",
+                            "pattern": '"artifact_kind": "proposal_runtime_index"',
                         }
                     ],
                 },
@@ -7479,7 +7511,7 @@ def test_build_evidence_plane_index_reports_registry_backed_chain_statuses(
         json.dumps(
             {
                 "artifact_kind": "graph_health_trends",
-                "recurring_signals": [],
+                "viewer_projection": {"recurring_signal_groups": {}},
                 "currently_active": True,
             }
         ),
@@ -7487,6 +7519,14 @@ def test_build_evidence_plane_index_reports_registry_backed_chain_statuses(
     )
     (repo_fixture / "runs" / "intent_layer_overlay.json").write_text(
         json.dumps({"artifact_kind": "intent_layer_overlay", "by_mediation_state": {}}),
+        encoding="utf-8",
+    )
+    (repo_fixture / "runs" / "proposal_promotion_index.json").write_text(
+        json.dumps({"artifact_kind": "proposal_promotion_index", "viewer_projection": {}}),
+        encoding="utf-8",
+    )
+    (repo_fixture / "runs" / "proposal_runtime_index.json").write_text(
+        json.dumps({"artifact_kind": "proposal_runtime_index", "entries": []}),
         encoding="utf-8",
     )
 
@@ -7501,6 +7541,8 @@ def test_build_evidence_plane_index_reports_registry_backed_chain_statuses(
     assert by_id["SG-SPEC-0050"]["observation_coverage"]["status"] == "covered"
     assert by_id["SG-SPEC-0050"]["outcome_coverage"]["status"] == "missing"
     assert by_id["SG-SPEC-0050"]["chain_status"] == "observation_backed"
+    assert by_id["SG-SPEC-0051"]["adoption_coverage"]["status"] == "covered"
+    assert by_id["SG-SPEC-0051"]["chain_status"] == "chain_complete"
     assert by_id["SG-SPEC-0001"]["chain_status"] == "untracked"
     assert index["unknown_registry_specs"] == []
 
@@ -8894,6 +8936,8 @@ def test_build_proposal_runtime_index_reports_reflective_chain(
 
     index = supervisor_module.build_proposal_runtime_index()
 
+    assert index["artifact_kind"] == "proposal_runtime_index"
+    assert index["schema_version"] == 1
     assert index["entry_count"] == 2
     by_id = {entry["proposal_id"]: entry for entry in index["entries"]}
     assert by_id["0023"]["posture"] == "synchronous_runtime_slice"
@@ -9006,11 +9050,13 @@ def test_main_builds_proposal_runtime_index_as_standalone_command(
 
     assert exit_code == 0
     report = json.loads(capsys.readouterr().out)
+    assert report["artifact_kind"] == "proposal_runtime_index"
     assert report["entry_count"] == 1
     assert report["entries"][0]["proposal_id"] == "0023"
     artifact = json.loads(
         (repo_fixture / "runs" / "proposal_runtime_index.json").read_text(encoding="utf-8")
     )
+    assert artifact["artifact_kind"] == "proposal_runtime_index"
     assert artifact["entries"][0]["runtime_realization"]["status"] == "implemented"
 
 
