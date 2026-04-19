@@ -8086,6 +8086,258 @@ def test_main_builds_metric_threshold_proposals_as_standalone_command(
     assert proposal_artifact["entry_count"] == 1
 
 
+def test_build_graph_dashboard_aggregates_runtime_surfaces(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    specs_dir = repo_fixture / "specs" / "nodes"
+    specs_dir.joinpath("SG-SPEC-0002.yaml").write_text(
+        json.dumps(
+            {
+                "id": "SG-SPEC-0002",
+                "title": "Historical Spec",
+                "kind": "spec",
+                "created_at": "2026-04-19T00:00:00Z",
+                "updated_at": "2026-04-19T00:00:00Z",
+                "status": "reviewed",
+                "maturity": 0.2,
+                "depends_on": [],
+                "outputs": ["specs/nodes/SG-SPEC-0002.yaml"],
+                "allowed_paths": ["specs/nodes/SG-SPEC-0002.yaml"],
+                "acceptance": ["criterion"],
+                "prompt": "Historical spec.",
+                "presence": {"state": "historical"},
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_graph_health_overlay",
+        lambda specs: {
+            "generated_at": "2026-04-19T00:00:00Z",
+            "entries": [
+                {"spec_id": "SG-SPEC-0001", "signals": ["depth_without_breadth"]},
+                {"spec_id": "SG-SPEC-0002", "signals": []},
+            ],
+            "hotspot_regions": [{"spec_id": "SG-SPEC-0001"}],
+            "viewer_projection": {
+                "signals": {"depth_without_breadth": ["SG-SPEC-0001"]},
+                "recommended_actions": {"rewrite_node_role_boundary": ["SG-SPEC-0001"]},
+                "named_filters": {
+                    "gated_specs": ["SG-SPEC-0001"],
+                    "techspec_ready_regions": ["SG-SPEC-0001"],
+                },
+            },
+        },
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_graph_health_trends",
+        lambda specs, overlay=None: {
+            "generated_at": "2026-04-19T00:00:01Z",
+            "viewer_projection": {
+                "trend_status": {"persistent": ["SG-SPEC-0001"]},
+                "named_filters": {"persistent_recurrence": ["SG-SPEC-0001"]},
+            },
+        },
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_intent_layer_overlay",
+        lambda: {
+            "generated_at": "2026-04-19T00:00:02Z",
+            "entry_count": 1,
+            "by_kind": {"user_intent": ["intent-1"]},
+            "by_mediation_state": {"queued_for_mediation": ["intent-1"]},
+        },
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_proposal_lane_overlay",
+        lambda: {
+            "generated_at": "2026-04-19T00:00:03Z",
+            "entry_count": 2,
+            "by_authority_state": {
+                "under_review": ["proposal-1"],
+                "superseded": ["proposal-2"],
+            },
+        },
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_proposal_runtime_index",
+        lambda: {
+            "generated_at": "2026-04-19T00:00:04Z",
+            "entry_count": 1,
+            "entries": [{"proposal_id": "0019", "posture": "synchronous_runtime_slice"}],
+            "reflective_backlog": {
+                "entry_count": 1,
+                "grouped_by_next_gap": {"add_runtime_slice": ["0019"]},
+            },
+        },
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_proposal_promotion_index",
+        lambda: {
+            "generated_at": "2026-04-19T00:00:05Z",
+            "entry_count": 1,
+            "viewer_projection": {"traceability_status": {"bounded": ["0019"]}},
+        },
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_spec_trace_index",
+        lambda specs: {"generated_at": "2026-04-19T00:00:06Z", "entries": []},
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_spec_trace_projection",
+        lambda index: {
+            "generated_at": "2026-04-19T00:00:07Z",
+            "entry_count": 2,
+            "viewer_projection": {
+                "implementation_state": {
+                    "verified": ["SG-SPEC-0001"],
+                    "drifted": ["SG-SPEC-0002"],
+                },
+                "freshness": {"fresh": ["SG-SPEC-0001"], "drifted": ["SG-SPEC-0002"]},
+                "acceptance_coverage": {
+                    "covered": ["SG-SPEC-0001"],
+                    "no_linked_evidence": ["SG-SPEC-0002"],
+                },
+                "named_filters": {"drifted": ["SG-SPEC-0002"]},
+            },
+            "implementation_backlog": {"entry_count": 1},
+        },
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_evidence_plane_index",
+        lambda specs: {"generated_at": "2026-04-19T00:00:08Z", "entries": []},
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_evidence_plane_overlay",
+        lambda index: {
+            "generated_at": "2026-04-19T00:00:09Z",
+            "entry_count": 2,
+            "viewer_projection": {
+                "chain_status": {
+                    "chain_complete": ["SG-SPEC-0001"],
+                    "observation_backed": ["SG-SPEC-0002"],
+                },
+                "artifact_stage": {"covered": ["SG-SPEC-0001"], "partial": ["SG-SPEC-0002"]},
+                "named_filters": {
+                    "complete_chain": ["SG-SPEC-0001"],
+                    "observation_gap": ["SG-SPEC-0002"],
+                },
+            },
+            "evidence_backlog": {"entry_count": 1},
+        },
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_metric_signal_index",
+        lambda specs: {
+            "generated_at": "2026-04-19T00:00:10Z",
+            "metrics": [
+                {
+                    "metric_id": "specification_verifiability",
+                    "score": 0.9,
+                    "minimum_score": 0.45,
+                    "status": "healthy",
+                    "threshold_gap": -0.45,
+                },
+                {
+                    "metric_id": "process_observability",
+                    "score": 0.3,
+                    "minimum_score": 0.55,
+                    "status": "below_threshold",
+                    "threshold_gap": 0.25,
+                },
+            ],
+        },
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_metric_threshold_proposals",
+        lambda index: {
+            "generated_at": "2026-04-19T00:00:11Z",
+            "entry_count": 1,
+            "viewer_projection": {
+                "proposal_kind": {
+                    "metric_remediation_proposal": ["metric-process_observability-followup"]
+                },
+                "severity": {"high": ["metric-process_observability-followup"]},
+            },
+        },
+    )
+
+    report = supervisor_module.build_graph_dashboard(supervisor_module.load_specs())
+
+    assert report["artifact_kind"] == "graph_dashboard"
+    assert report["sections"]["graph"]["total_spec_count"] == 2
+    assert report["sections"]["graph"]["active_spec_count"] == 1
+    assert report["sections"]["proposals"]["proposal_lane_active_count"] == 1
+    assert report["sections"]["implementation"]["implementation_state_counts"] == {
+        "drifted": 1,
+        "verified": 1,
+    }
+    assert report["sections"]["evidence"]["chain_status_counts"] == {
+        "chain_complete": 1,
+        "observation_backed": 1,
+    }
+    assert report["sections"]["metrics"]["below_threshold_metric_ids"] == ["process_observability"]
+    by_card_id = {entry["card_id"]: entry for entry in report["headline_cards"]}
+    assert by_card_id["metrics_below_threshold"]["value"] == 1
+    assert by_card_id["structural_pressure_specs"]["value"] == 1
+
+
+def test_main_builds_graph_dashboard_as_standalone_command(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    def fake_report(specs: list[object]) -> dict[str, object]:
+        assert len(specs) == 1
+        return {
+            "artifact_kind": "graph_dashboard",
+            "schema_version": 1,
+            "generated_at": "2026-04-19T00:00:00Z",
+            "source_artifacts": {},
+            "headline_cards": [
+                {
+                    "card_id": "total_specs",
+                    "title": "Total Specs",
+                    "value": 1,
+                    "value_kind": "count",
+                    "section": "graph",
+                    "status": "info",
+                    "basis": "test",
+                }
+            ],
+            "sections": {"graph": {"total_spec_count": 1}},
+            "viewer_projection": {"headline_card_ids": ["total_specs"], "section_ids": ["graph"]},
+        }
+
+    monkeypatch.setattr(supervisor_module, "build_graph_dashboard", fake_report)
+
+    exit_code = supervisor_module.main(build_graph_dashboard_mode=True)
+
+    assert exit_code == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["artifact_kind"] == "graph_dashboard"
+    artifact = json.loads(
+        (repo_fixture / "runs" / "graph_dashboard.json").read_text(encoding="utf-8")
+    )
+    assert artifact["viewer_projection"]["headline_card_ids"] == ["total_specs"]
+
+
 def test_build_graph_health_overlay_groups_viewer_filters(
     supervisor_module: object,
     repo_fixture: Path,
