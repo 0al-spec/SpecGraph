@@ -1,0 +1,37 @@
+{
+  "artifact_kind": "operator_request_bridge_policy",
+  "version": 1,
+  "packet_contract": {
+    "artifact_kind": "operator_request_packet",
+    "schema_version": 1,
+    "source_kinds": [
+      "chat_instruction",
+      "gui_selection",
+      "mediated_artifact"
+    ],
+    "run_modes": [
+      "targeted_refine",
+      "split_proposal"
+    ],
+    "required_top_level_sections": [
+      "user_intent",
+      "operator_request"
+    ],
+    "required_user_intent_fields": [
+      "source_kind",
+      "source_summary"
+    ],
+    "required_operator_request_fields": [
+      "target_spec_id",
+      "run_mode"
+    ]
+  },
+  "bridge_boundary": {
+    "one_run_only": true,
+    "direct_canonical_mutation": "forbidden",
+    "allowed_downstream_routes": [
+      "supervisor_refinement_candidate",
+      "proposal_lane_emission"
+    ]
+  }
+}

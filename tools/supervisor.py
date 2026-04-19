@@ -32,6 +32,7 @@ Derived artifacts:
 - graph refactor queue: `runs/refactor_queue.json`
 - proposal queue index: `runs/proposal_queue.json`
 - structured proposal artifacts: `runs/proposals/*.json`
+- intent-layer overlay: `runs/intent_layer_overlay.json`
 - proposal-lane overlay: `runs/proposal_lane_overlay.json`
 - graph health overlay: `runs/graph_health_overlay.json`
 - spec trace index: `runs/spec_trace_index.json`
@@ -81,6 +82,8 @@ RUNTIME_ID_COLLISION_RETRY_LIMIT = 8
 SUPERVISOR_POLICY_RELATIVE_PATH = "tools/supervisor_policy.json"
 TECHSPEC_HANDOFF_POLICY_RELATIVE_PATH = "tools/techspec_handoff_policy.json"
 PROPOSAL_LANE_POLICY_RELATIVE_PATH = "tools/proposal_lane_policy.json"
+INTENT_LAYER_POLICY_RELATIVE_PATH = "tools/intent_layer_policy.json"
+OPERATOR_REQUEST_BRIDGE_POLICY_RELATIVE_PATH = "tools/operator_request_bridge_policy.json"
 
 
 def supervisor_policy_path() -> Path:
@@ -93,6 +96,14 @@ def techspec_handoff_policy_path() -> Path:
 
 def proposal_lane_policy_path() -> Path:
     return TOOLS_DIR / "proposal_lane_policy.json"
+
+
+def intent_layer_policy_path() -> Path:
+    return TOOLS_DIR / "intent_layer_policy.json"
+
+
+def operator_request_bridge_policy_path() -> Path:
+    return TOOLS_DIR / "operator_request_bridge_policy.json"
 
 
 def load_supervisor_policy() -> tuple[dict[str, Any], str]:
@@ -201,6 +212,72 @@ def load_proposal_lane_policy() -> tuple[dict[str, Any], str]:
 PROPOSAL_LANE_POLICY, PROPOSAL_LANE_POLICY_SHA256 = load_proposal_lane_policy()
 
 
+def load_intent_layer_policy() -> tuple[dict[str, Any], str]:
+    path = intent_layer_policy_path()
+    try:
+        raw_text = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise RuntimeError(
+            f"failed to read intent layer policy artifact: {path.as_posix()} ({exc})"
+        ) from exc
+    try:
+        payload = json.loads(raw_text)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(
+            f"malformed intent layer policy artifact: {path.as_posix()} ({exc})"
+        ) from exc
+    if not isinstance(payload, dict):
+        raise RuntimeError(
+            f"malformed intent layer policy artifact: {path.as_posix()} must contain a JSON object"
+        )
+    required_sections = ("repository_layout", "node_contract", "overlay_contract")
+    missing = [section for section in required_sections if section not in payload]
+    if missing:
+        raise RuntimeError(
+            "malformed intent layer policy artifact: missing top-level section(s): "
+            + ", ".join(missing)
+        )
+    return payload, hashlib.sha256(raw_text.encode("utf-8")).hexdigest()
+
+
+INTENT_LAYER_POLICY, INTENT_LAYER_POLICY_SHA256 = load_intent_layer_policy()
+
+
+def load_operator_request_bridge_policy() -> tuple[dict[str, Any], str]:
+    path = operator_request_bridge_policy_path()
+    try:
+        raw_text = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise RuntimeError(
+            f"failed to read operator request bridge policy artifact: {path.as_posix()} ({exc})"
+        ) from exc
+    try:
+        payload = json.loads(raw_text)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(
+            f"malformed operator request bridge policy artifact: {path.as_posix()} ({exc})"
+        ) from exc
+    if not isinstance(payload, dict):
+        raise RuntimeError(
+            "malformed operator request bridge policy artifact: "
+            f"{path.as_posix()} must contain a JSON object"
+        )
+    required_sections = ("packet_contract", "bridge_boundary")
+    missing = [section for section in required_sections if section not in payload]
+    if missing:
+        raise RuntimeError(
+            "malformed operator request bridge policy artifact: missing top-level section(s): "
+            + ", ".join(missing)
+        )
+    return payload, hashlib.sha256(raw_text.encode("utf-8")).hexdigest()
+
+
+(
+    OPERATOR_REQUEST_BRIDGE_POLICY,
+    OPERATOR_REQUEST_BRIDGE_POLICY_SHA256,
+) = load_operator_request_bridge_policy()
+
+
 def policy_lookup(policy_path: str) -> Any:
     current: Any = SUPERVISOR_POLICY
     for part in policy_path.split("."):
@@ -221,6 +298,24 @@ def techspec_handoff_policy_lookup(policy_path: str) -> Any:
 
 def proposal_lane_policy_lookup(policy_path: str) -> Any:
     current: Any = PROPOSAL_LANE_POLICY
+    for part in policy_path.split("."):
+        if not isinstance(current, dict) or part not in current:
+            raise KeyError(policy_path)
+        current = current[part]
+    return copy.deepcopy(current)
+
+
+def intent_layer_policy_lookup(policy_path: str) -> Any:
+    current: Any = INTENT_LAYER_POLICY
+    for part in policy_path.split("."):
+        if not isinstance(current, dict) or part not in current:
+            raise KeyError(policy_path)
+        current = current[part]
+    return copy.deepcopy(current)
+
+
+def operator_request_bridge_policy_lookup(policy_path: str) -> Any:
+    current: Any = OPERATOR_REQUEST_BRIDGE_POLICY
     for part in policy_path.split("."):
         if not isinstance(current, dict) or part not in current:
             raise KeyError(policy_path)
@@ -290,6 +385,22 @@ def proposal_lane_policy_reference() -> dict[str, Any]:
     }
 
 
+def intent_layer_policy_reference() -> dict[str, Any]:
+    return {
+        "artifact_path": INTENT_LAYER_POLICY_RELATIVE_PATH,
+        "artifact_sha256": INTENT_LAYER_POLICY_SHA256,
+        "version": INTENT_LAYER_POLICY.get("version"),
+    }
+
+
+def operator_request_bridge_policy_reference() -> dict[str, Any]:
+    return {
+        "artifact_path": OPERATOR_REQUEST_BRIDGE_POLICY_RELATIVE_PATH,
+        "artifact_sha256": OPERATOR_REQUEST_BRIDGE_POLICY_SHA256,
+        "version": OPERATOR_REQUEST_BRIDGE_POLICY.get("version"),
+    }
+
+
 READY_DEP_STATUSES = {"reviewed", "frozen"}
 WORKABLE_STATUSES = {"outlined", "specified"}
 CONTINUATION_STATUSES = {"linked"}
@@ -346,6 +457,62 @@ PROPOSAL_LANE_OVERLAY_SCHEMA_VERSION = int(
 )
 PROPOSAL_LANE_LAYER_NAME = str(proposal_lane_policy_lookup("overlay_contract.layer_name"))
 PROPOSAL_LANE_NAMED_FILTERS = list(proposal_lane_policy_lookup("overlay_contract.named_filters"))
+INTENT_LAYER_NODES_RELATIVE_DIR = str(intent_layer_policy_lookup("repository_layout.nodes_dir"))
+INTENT_LAYER_OVERLAY_FILENAME = Path(
+    str(intent_layer_policy_lookup("repository_layout.overlay_artifact"))
+).name
+INTENT_LAYER_NODE_ARTIFACT_KIND = str(intent_layer_policy_lookup("node_contract.artifact_kind"))
+INTENT_LAYER_NODE_SCHEMA_VERSION = int(intent_layer_policy_lookup("node_contract.schema_version"))
+INTENT_LAYER_PRESENCE_CONTRACT = intent_layer_policy_lookup("node_contract.presence_contract")
+INTENT_LAYER_REQUIRED_QUERY_FIELDS = list(
+    intent_layer_policy_lookup("node_contract.required_query_fields")
+)
+INTENT_LAYER_ALLOWED_KINDS = set(
+    intent_layer_policy_lookup("node_contract.kind_contract.allowed_kinds")
+)
+INTENT_LAYER_REQUIRED_SECTIONS_BY_KIND = intent_layer_policy_lookup(
+    "node_contract.kind_contract.required_sections_by_kind"
+)
+INTENT_LAYER_CANONICAL_SPEC_FORBIDDEN_FIELDS = set(
+    intent_layer_policy_lookup(
+        "node_contract.cross_layer_distinction.canonical_spec_forbidden_fields"
+    )
+)
+INTENT_LAYER_PROPOSAL_LANE_FORBIDDEN_FIELDS = set(
+    intent_layer_policy_lookup(
+        "node_contract.cross_layer_distinction.proposal_lane_forbidden_fields"
+    )
+)
+INTENT_LAYER_ALLOWED_STATES = set(
+    intent_layer_policy_lookup("node_contract.state_contract.allowed_states")
+)
+INTENT_LAYER_OVERLAY_ARTIFACT_KIND = str(
+    intent_layer_policy_lookup("overlay_contract.artifact_kind")
+)
+INTENT_LAYER_OVERLAY_SCHEMA_VERSION = int(
+    intent_layer_policy_lookup("overlay_contract.schema_version")
+)
+INTENT_LAYER_LAYER_NAME = str(intent_layer_policy_lookup("overlay_contract.layer_name"))
+INTENT_LAYER_NAMED_FILTERS = list(intent_layer_policy_lookup("overlay_contract.named_filters"))
+OPERATOR_REQUEST_PACKET_ARTIFACT_KIND = str(
+    operator_request_bridge_policy_lookup("packet_contract.artifact_kind")
+)
+OPERATOR_REQUEST_PACKET_SCHEMA_VERSION = int(
+    operator_request_bridge_policy_lookup("packet_contract.schema_version")
+)
+OPERATOR_REQUEST_SOURCE_KINDS = set(
+    operator_request_bridge_policy_lookup("packet_contract.source_kinds")
+)
+OPERATOR_REQUEST_RUN_MODES = set(operator_request_bridge_policy_lookup("packet_contract.run_modes"))
+OPERATOR_REQUEST_REQUIRED_TOP_LEVEL_SECTIONS = tuple(
+    operator_request_bridge_policy_lookup("packet_contract.required_top_level_sections")
+)
+OPERATOR_REQUEST_REQUIRED_USER_INTENT_FIELDS = tuple(
+    operator_request_bridge_policy_lookup("packet_contract.required_user_intent_fields")
+)
+OPERATOR_REQUEST_REQUIRED_REQUEST_FIELDS = tuple(
+    operator_request_bridge_policy_lookup("packet_contract.required_operator_request_fields")
+)
 SUBTREE_SHAPE_ONE_CHILD_CHAIN_THRESHOLD = int(
     policy_lookup("thresholds.subtree_shape_one_child_chain")
 )
@@ -5251,6 +5418,26 @@ def proposals_dir_path() -> Path:
     return RUNS_DIR / "proposals"
 
 
+def intent_layer_nodes_dir_path() -> Path:
+    return ROOT / INTENT_LAYER_NODES_RELATIVE_DIR
+
+
+def intent_layer_overlay_path() -> Path:
+    return RUNS_DIR / INTENT_LAYER_OVERLAY_FILENAME
+
+
+def intent_layer_node_filename(handle_value: str) -> str:
+    normalized = sanitize_for_git(handle_value).replace("/", "-").strip("-")
+    if not normalized:
+        normalized = "intent"
+    digest = hashlib.sha256(handle_value.encode("utf-8")).hexdigest()[:8]
+    return f"{normalized}--{digest}.json"
+
+
+def intent_layer_node_path(handle_value: str) -> Path:
+    return intent_layer_nodes_dir_path() / intent_layer_node_filename(handle_value)
+
+
 def proposal_lane_nodes_dir_path() -> Path:
     return ROOT / PROPOSAL_LANE_NODES_RELATIVE_DIR
 
@@ -5528,6 +5715,7 @@ def build_proposal_queue_items(
     *,
     graph_health: dict[str, Any],
     run_id: str,
+    operator_request_context: dict[str, Any] | None = None,
 ) -> list[dict[str, Any]]:
     observation_by_kind = {
         str(observation.get("kind", "")): observation
@@ -5575,6 +5763,12 @@ def build_proposal_queue_items(
                 "source_work_item_type": work_item_type,
                 "execution_policy": "emit_proposal",
                 "details": observation_by_kind.get(signal_name, {}).get("details"),
+                "user_intent_handle": str(
+                    (operator_request_context or {}).get("user_intent_handle", "")
+                ).strip(),
+                "operator_request_handle": str(
+                    (operator_request_context or {}).get("operator_request_handle", "")
+                ).strip(),
                 **handoff_metadata_for_signal(signal_name),
             }
         )
@@ -5585,6 +5779,7 @@ def update_proposal_queue(
     *,
     graph_health: dict[str, Any],
     run_id: str,
+    operator_request_context: dict[str, Any] | None = None,
 ) -> tuple[Path, list[dict[str, Any]]]:
     """Refresh the derived proposal queue index for one source spec.
 
@@ -5607,7 +5802,11 @@ def update_proposal_queue(
             for item in (existing or [])
             if isinstance(item, dict) and str(item.get("spec_id", "")).strip() != source_spec_id
         ]
-        updated = preserved + build_proposal_queue_items(graph_health=graph_health, run_id=run_id)
+        updated = preserved + build_proposal_queue_items(
+            graph_health=graph_health,
+            run_id=run_id,
+            operator_request_context=operator_request_context,
+        )
         atomic_write_json(path, updated)
     sync_tracked_proposal_lane_from_queue(updated, spec_id=source_spec_id)
     return path, updated
@@ -6199,6 +6398,623 @@ def load_json_object(path: Path) -> dict[str, Any] | None:
     return data
 
 
+def intent_layer_valid_kinds() -> set[str]:
+    return set(INTENT_LAYER_ALLOWED_KINDS)
+
+
+def intent_layer_valid_states() -> set[str]:
+    return set(INTENT_LAYER_ALLOWED_STATES)
+
+
+def intent_layer_kind_required_sections(kind: str) -> tuple[str, ...]:
+    raw_sections = INTENT_LAYER_REQUIRED_SECTIONS_BY_KIND.get(str(kind).strip(), [])
+    return tuple(str(section).strip() for section in raw_sections if str(section).strip())
+
+
+def build_intent_layer_overlay() -> dict[str, Any]:
+    nodes_dir = intent_layer_nodes_dir_path()
+    entries: list[dict[str, Any]] = []
+    artifact_warnings: list[dict[str, str]] = []
+    raw_nodes: list[dict[str, Any]] = []
+
+    if nodes_dir.exists():
+        for path in sorted(nodes_dir.glob("*.json")):
+            data, error = load_json_object_report(path, artifact_kind="intent layer node artifact")
+            if data is None:
+                artifact_warnings.append(
+                    {
+                        "tracked_path": display_artifact_path(path),
+                        "error": error,
+                    }
+                )
+                continue
+            raw_nodes.append({"tracked_path": display_artifact_path(path), "node": data})
+
+    handle_counts: dict[str, int] = {}
+    for raw in raw_nodes:
+        node = raw["node"]
+        presence = node.get("intent_repository_presence")
+        handle = node.get("intent_handle")
+        if (
+            isinstance(presence, dict)
+            and all(
+                str(presence.get(key, "")).strip() == str(value)
+                for key, value in INTENT_LAYER_PRESENCE_CONTRACT.items()
+            )
+            and isinstance(handle, dict)
+            and str(handle.get("handle_status", "")).strip() == "active"
+        ):
+            handle_value = str(handle.get("handle_value", "")).strip()
+            if handle_value:
+                handle_counts[handle_value] = handle_counts.get(handle_value, 0) + 1
+
+    by_kind: dict[str, list[str]] = {}
+    by_state: dict[str, list[str]] = {}
+    named_filters = {name: [] for name in INTENT_LAYER_NAMED_FILTERS}
+    edges: list[dict[str, str]] = []
+
+    for raw in raw_nodes:
+        tracked_path = str(raw["tracked_path"])
+        node = raw["node"]
+        presence = node.get("intent_repository_presence")
+        if not (
+            isinstance(presence, dict)
+            and all(
+                str(presence.get(key, "")).strip() == str(value)
+                for key, value in INTENT_LAYER_PRESENCE_CONTRACT.items()
+            )
+        ):
+            continue
+
+        handle = node.get("intent_handle", {})
+        handle_value = str(handle.get("handle_value", "")).strip()
+        intent_kind = str(node.get("intent_layer_kind", "")).strip()
+        mediation_state = str(node.get("mediation_state", "")).strip()
+        lineage_links = node.get("intent_lineage_link", [])
+        runtime_bridge = node.get("runtime_bridge", {})
+        request_bridge = node.get("request_bridge", {})
+        query_findings: list[str] = []
+        if not handle_value or str(handle.get("handle_status", "")).strip() != "active":
+            query_findings.append("missing_active_handle")
+        if intent_kind not in intent_layer_valid_kinds():
+            query_findings.append("invalid_intent_layer_kind")
+        if mediation_state not in intent_layer_valid_states():
+            query_findings.append("invalid_mediation_state")
+        if not (
+            isinstance(lineage_links, list)
+            and any(
+                isinstance(link, dict)
+                and str(link.get("lineage_role", "")).strip()
+                and str(link.get("source_kind", "")).strip()
+                and str(link.get("source_reference", "")).strip()
+                for link in lineage_links
+            )
+        ):
+            query_findings.append("missing_lineage_link")
+        if handle_value and handle_counts.get(handle_value, 0) > 1:
+            query_findings.append("colliding_active_handle")
+
+        required_sections = intent_layer_kind_required_sections(intent_kind)
+        for section_name in required_sections:
+            if not isinstance(node.get(section_name), dict):
+                query_findings.append(f"missing_kind_section::{section_name}")
+        if intent_kind == "user_intent" and isinstance(request_bridge, dict) and request_bridge:
+            query_findings.append("kind_contract_mismatch::user_intent_has_request_bridge")
+        if intent_kind == "operator_request":
+            if not (
+                isinstance(request_bridge, dict)
+                and str(request_bridge.get("run_mode", "")).strip()
+                and str(request_bridge.get("target_spec_id", "")).strip()
+            ):
+                query_findings.append("missing_request_bridge_target")
+        if any(field in node for field in INTENT_LAYER_CANONICAL_SPEC_FORBIDDEN_FIELDS):
+            query_findings.append("masquerades_as_canonical_spec")
+        if any(field in node for field in INTENT_LAYER_PROPOSAL_LANE_FORBIDDEN_FIELDS):
+            query_findings.append("masquerades_as_proposal_lane")
+        entry = {
+            "tracked_path": tracked_path,
+            "title": str(node.get("title", "")).strip(),
+            "intent_handle": handle_value,
+            "intent_layer_kind": intent_kind,
+            "mediation_state": mediation_state,
+            "distinction_contract": {
+                "semantic_artifact_class": intent_kind or "unknown",
+                "canonical_equivalence": False,
+                "proposal_lane_equivalence": False,
+                "pre_canonical_runtime_mediation": True,
+            },
+            "query_contract": {
+                "status": "invalid_review_state" if query_findings else "ok",
+                "findings": sorted(set(query_findings)),
+            },
+            "lineage_links": (
+                copy.deepcopy(lineage_links) if isinstance(lineage_links, list) else []
+            ),
+            "runtime_bridge": (
+                copy.deepcopy(runtime_bridge) if isinstance(runtime_bridge, dict) else {}
+            ),
+        }
+        if isinstance(request_bridge, dict) and request_bridge:
+            entry["request_bridge"] = copy.deepcopy(request_bridge)
+        entries.append(entry)
+
+        by_kind.setdefault(intent_kind or "unknown", []).append(handle_value or tracked_path)
+        by_state.setdefault(mediation_state or "unknown", []).append(handle_value or tracked_path)
+        if intent_kind in named_filters:
+            named_filters[intent_kind].append(handle_value or tracked_path)
+        if mediation_state in named_filters:
+            named_filters[mediation_state].append(handle_value or tracked_path)
+        if query_findings:
+            named_filters["invalid_query_contract"].append(handle_value or tracked_path)
+
+        for link in lineage_links if isinstance(lineage_links, list) else []:
+            if not isinstance(link, dict):
+                continue
+            source_reference = str(link.get("source_reference", "")).strip()
+            if not source_reference:
+                continue
+            edges.append(
+                {
+                    "source": handle_value or tracked_path,
+                    "target": source_reference,
+                    "edge_kind": (
+                        f"lineage::{str(link.get('lineage_role', '')).strip()}::"
+                        f"{str(link.get('source_kind', '')).strip()}"
+                    ),
+                }
+            )
+
+    for key, values in list(named_filters.items()):
+        named_filters[key] = sorted(set(values))
+    entries.sort(
+        key=lambda item: (
+            item["intent_layer_kind"],
+            item["intent_handle"],
+            item["tracked_path"],
+        )
+    )
+    return {
+        "artifact_kind": INTENT_LAYER_OVERLAY_ARTIFACT_KIND,
+        "schema_version": INTENT_LAYER_OVERLAY_SCHEMA_VERSION,
+        "layer_name": INTENT_LAYER_LAYER_NAME,
+        "generated_at": utc_now_iso(),
+        "policy_reference": intent_layer_policy_reference(),
+        "source_dir": INTENT_LAYER_NODES_RELATIVE_DIR,
+        "entry_count": len(entries),
+        "entries": entries,
+        "by_kind": {key: sorted(set(values)) for key, values in sorted(by_kind.items())},
+        "by_mediation_state": {
+            key: sorted(set(values)) for key, values in sorted(by_state.items())
+        },
+        "named_filters": named_filters,
+        "edges": edges,
+        "artifact_warnings": artifact_warnings,
+    }
+
+
+def write_intent_layer_overlay(overlay: dict[str, Any]) -> Path:
+    path = intent_layer_overlay_path()
+    with artifact_lock(path):
+        atomic_write_json(path, overlay)
+    return path
+
+
+def _normalize_packet_string_list(
+    *,
+    field_name: str,
+    value: Any,
+) -> tuple[list[str], list[str]]:
+    if value in (None, ""):
+        return [], []
+    raw_items: list[Any]
+    if isinstance(value, str):
+        raw_items = [item.strip() for item in value.split(",") if item.strip()]
+    elif isinstance(value, list):
+        raw_items = value
+    else:
+        return [], [f"{field_name} must be a string or list of strings"]
+
+    normalized: list[str] = []
+    errors: list[str] = []
+    for idx, item in enumerate(raw_items):
+        if not isinstance(item, str) or not item.strip():
+            errors.append(f"{field_name}[{idx}] must be a non-empty string")
+            continue
+        normalized.append(item.strip())
+    return normalized, errors
+
+
+def default_user_intent_handle(source_summary: str) -> str:
+    slug = sanitize_for_git(source_summary)[:48]
+    return f"user_intent::{slug or 'intent'}"
+
+
+def default_operator_request_handle(
+    *,
+    target_spec_id: str,
+    run_mode: str,
+    source_summary: str,
+) -> str:
+    target = sanitize_for_git(target_spec_id).upper() if target_spec_id else "UNSCOPED"
+    mode = sanitize_for_git(run_mode) or "request"
+    summary = sanitize_for_git(source_summary)[:32] or "intent"
+    return f"operator_request::{target}::{mode}::{summary}"
+
+
+def normalize_operator_request_packet(
+    path: Path,
+    *,
+    specs: list[SpecNode],
+) -> tuple[dict[str, Any] | None, list[str]]:
+    packet, error = load_json_object_report(path, artifact_kind="operator request packet")
+    if packet is None:
+        return None, [error]
+
+    errors: list[str] = []
+    if str(packet.get("artifact_kind", "")).strip() != OPERATOR_REQUEST_PACKET_ARTIFACT_KIND:
+        errors.append(
+            "operator request packet must declare "
+            f"artifact_kind: {OPERATOR_REQUEST_PACKET_ARTIFACT_KIND}"
+        )
+    raw_schema_version = packet.get("schema_version", 0)
+    try:
+        schema_version = int(raw_schema_version or 0)
+    except (TypeError, ValueError):
+        errors.append("operator request packet schema_version must be an integer")
+        schema_version = None
+    if schema_version is not None and schema_version != OPERATOR_REQUEST_PACKET_SCHEMA_VERSION:
+        errors.append(
+            "operator request packet must declare "
+            f"schema_version: {OPERATOR_REQUEST_PACKET_SCHEMA_VERSION}"
+        )
+
+    for section_name in OPERATOR_REQUEST_REQUIRED_TOP_LEVEL_SECTIONS:
+        if not isinstance(packet.get(section_name), dict):
+            errors.append(f"operator request packet must contain object section: {section_name}")
+
+    user_intent = packet.get("user_intent") if isinstance(packet.get("user_intent"), dict) else {}
+    operator_request = (
+        packet.get("operator_request") if isinstance(packet.get("operator_request"), dict) else {}
+    )
+
+    for field_name in OPERATOR_REQUEST_REQUIRED_USER_INTENT_FIELDS:
+        if not str(user_intent.get(field_name, "")).strip():
+            errors.append(f"user_intent.{field_name} must be a non-empty string")
+    for field_name in OPERATOR_REQUEST_REQUIRED_REQUEST_FIELDS:
+        if not str(operator_request.get(field_name, "")).strip():
+            errors.append(f"operator_request.{field_name} must be a non-empty string")
+
+    source_kind = str(user_intent.get("source_kind", "")).strip()
+    if source_kind and source_kind not in OPERATOR_REQUEST_SOURCE_KINDS:
+        errors.append(
+            "user_intent.source_kind must be one of: "
+            + ", ".join(sorted(OPERATOR_REQUEST_SOURCE_KINDS))
+        )
+    source_summary = str(user_intent.get("source_summary", "")).strip()
+    selected_node_ref = str(user_intent.get("selected_node_ref", "")).strip()
+    unresolved_questions, unresolved_question_errors = _normalize_packet_string_list(
+        field_name="user_intent.unresolved_questions",
+        value=user_intent.get("unresolved_questions"),
+    )
+    errors.extend(unresolved_question_errors)
+
+    run_mode = str(operator_request.get("run_mode", "")).strip()
+    if run_mode and run_mode not in OPERATOR_REQUEST_RUN_MODES:
+        errors.append(
+            "operator_request.run_mode must be one of: "
+            + ", ".join(sorted(OPERATOR_REQUEST_RUN_MODES))
+        )
+    target_spec_id = str(operator_request.get("target_spec_id", "")).strip()
+    if target_spec_id and target_spec_id not in {spec.id for spec in specs}:
+        errors.append(f"operator_request.target_spec_id not found: {target_spec_id}")
+
+    operator_note = str(operator_request.get("operator_note", "")).strip()
+    mutation_budget_list, mutation_budget_errors = _normalize_packet_string_list(
+        field_name="operator_request.mutation_budget",
+        value=operator_request.get("mutation_budget"),
+    )
+    run_authority_list, run_authority_errors = _normalize_packet_string_list(
+        field_name="operator_request.run_authority",
+        value=operator_request.get("run_authority"),
+    )
+    errors.extend(mutation_budget_errors)
+    errors.extend(run_authority_errors)
+
+    mutation_budget: tuple[str, ...] = ()
+    run_authority: tuple[str, ...] = ()
+    if not mutation_budget_errors:
+        try:
+            mutation_budget = parse_mutation_budget(",".join(mutation_budget_list))
+        except ValueError as exc:
+            errors.append(str(exc))
+    if not run_authority_errors:
+        try:
+            run_authority = parse_run_authority(",".join(run_authority_list))
+        except ValueError as exc:
+            errors.append(str(exc))
+
+    execution_profile_value = str(operator_request.get("execution_profile", "")).strip()
+    execution_profile: str | None = execution_profile_value or None
+    if execution_profile is not None:
+        try:
+            execution_profile = resolve_execution_profile_name(
+                requested_profile=execution_profile,
+                run_authority=run_authority,
+                operator_target=True,
+            )
+        except ValueError as exc:
+            errors.append(str(exc))
+
+    if errors:
+        return None, errors
+
+    user_intent_handle = str(user_intent.get("intent_handle", "")).strip() or (
+        default_user_intent_handle(source_summary)
+    )
+    operator_request_handle = str(
+        operator_request.get("request_handle", "")
+    ).strip() or default_operator_request_handle(
+        target_spec_id=target_spec_id,
+        run_mode=run_mode,
+        source_summary=source_summary,
+    )
+    packet_reference = display_artifact_path(path)
+    return (
+        {
+            "packet_reference": packet_reference,
+            "policy_reference": operator_request_bridge_policy_reference(),
+            "user_intent": {
+                "handle": user_intent_handle,
+                "source_kind": source_kind,
+                "source_summary": source_summary,
+                "selected_node_ref": selected_node_ref,
+                "unresolved_questions": unresolved_questions,
+            },
+            "operator_request": {
+                "handle": operator_request_handle,
+                "target_spec_id": target_spec_id,
+                "run_mode": run_mode,
+                "operator_note": operator_note,
+                "mutation_budget": mutation_budget,
+                "run_authority": run_authority,
+                "execution_profile": execution_profile,
+            },
+        },
+        [],
+    )
+
+
+def sync_user_intent_node(context: dict[str, Any]) -> tuple[Path, dict[str, Any]]:
+    user_intent = context["user_intent"]
+    handle_value = str(user_intent["handle"]).strip()
+    path = intent_layer_node_path(handle_value)
+    tracked_path = path.relative_to(ROOT).as_posix()
+    existing = load_json_object(path) if path.exists() else None
+    created_at = str((existing or {}).get("created_at", "")).strip() or utc_now_iso()
+    packet_reference = str(context.get("packet_reference", "")).strip()
+    node = dict(existing or {})
+    node.update(
+        {
+            "artifact_kind": INTENT_LAYER_NODE_ARTIFACT_KIND,
+            "schema_version": INTENT_LAYER_NODE_SCHEMA_VERSION,
+            "title": f"User intent: {str(user_intent.get('source_summary', '')).strip()}",
+            "created_at": created_at,
+            "updated_at": utc_now_iso(),
+            "policy_reference": intent_layer_policy_reference(),
+            "intent_repository_presence": {
+                **copy.deepcopy(INTENT_LAYER_PRESENCE_CONTRACT),
+                "tracked_path": tracked_path,
+            },
+            "intent_handle": {
+                "handle_value": handle_value,
+                "handle_status": "active",
+            },
+            "intent_layer_kind": "user_intent",
+            "mediation_state": (
+                "mediated"
+                if str(user_intent.get("source_kind", "")).strip() == "mediated_artifact"
+                else "captured"
+            ),
+            "intent_capture": {
+                "source_kind": str(user_intent.get("source_kind", "")).strip(),
+                "source_summary": str(user_intent.get("source_summary", "")).strip(),
+                "selected_node_ref": str(user_intent.get("selected_node_ref", "")).strip(),
+                "unresolved_questions": list(user_intent.get("unresolved_questions", [])),
+            },
+            "intent_lineage_link": [
+                {
+                    "lineage_role": "captured_from",
+                    "source_kind": "runtime_artifact",
+                    "source_reference": packet_reference,
+                }
+            ],
+            "runtime_bridge": {
+                "latest_operator_request_handle": str(
+                    context.get("operator_request", {}).get("handle", "")
+                ).strip(),
+                "latest_packet_reference": packet_reference,
+            },
+        }
+    )
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with artifact_lock(path):
+        atomic_write_json(path, node)
+    return path, node
+
+
+def sync_operator_request_node(
+    context: dict[str, Any],
+    *,
+    user_intent_handle: str,
+) -> tuple[Path, dict[str, Any]]:
+    request = context["operator_request"]
+    handle_value = str(request["handle"]).strip()
+    path = intent_layer_node_path(handle_value)
+    tracked_path = path.relative_to(ROOT).as_posix()
+    existing = load_json_object(path) if path.exists() else None
+    created_at = str((existing or {}).get("created_at", "")).strip() or utc_now_iso()
+    packet_reference = str(context.get("packet_reference", "")).strip()
+    node = dict(existing or {})
+    node.update(
+        {
+            "artifact_kind": INTENT_LAYER_NODE_ARTIFACT_KIND,
+            "schema_version": INTENT_LAYER_NODE_SCHEMA_VERSION,
+            "title": (
+                "Operator request for "
+                f"{str(request.get('target_spec_id', '')).strip() or 'unscoped target'}"
+            ),
+            "created_at": created_at,
+            "updated_at": utc_now_iso(),
+            "policy_reference": intent_layer_policy_reference(),
+            "bridge_policy_reference": operator_request_bridge_policy_reference(),
+            "intent_repository_presence": {
+                **copy.deepcopy(INTENT_LAYER_PRESENCE_CONTRACT),
+                "tracked_path": tracked_path,
+            },
+            "intent_handle": {
+                "handle_value": handle_value,
+                "handle_status": "active",
+            },
+            "intent_layer_kind": "operator_request",
+            "mediation_state": "ready_for_execution",
+            "request_bridge": {
+                "target_spec_id": str(request.get("target_spec_id", "")).strip(),
+                "run_mode": str(request.get("run_mode", "")).strip(),
+                "operator_note": str(request.get("operator_note", "")).strip(),
+                "mutation_budget": list(request.get("mutation_budget", ())),
+                "run_authority": list(request.get("run_authority", ())),
+                "execution_profile": str(request.get("execution_profile", "") or "").strip(),
+            },
+            "intent_lineage_link": [
+                {
+                    "lineage_role": "derived_from",
+                    "source_kind": "intent_layer_node",
+                    "source_reference": user_intent_handle,
+                },
+                {
+                    "lineage_role": "normalized_from",
+                    "source_kind": "runtime_artifact",
+                    "source_reference": packet_reference,
+                },
+            ],
+            "runtime_bridge": {
+                "latest_packet_reference": packet_reference,
+                "bridge_state": "ready_for_execution",
+            },
+        }
+    )
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with artifact_lock(path):
+        atomic_write_json(path, node)
+    return path, node
+
+
+def sync_intent_layer_from_operator_request(context: dict[str, Any]) -> dict[str, Any]:
+    user_intent_path, user_intent_node = sync_user_intent_node(context)
+    user_intent_handle = str(
+        user_intent_node.get("intent_handle", {}).get("handle_value", "")
+    ).strip()
+    operator_request_path, operator_request_node = sync_operator_request_node(
+        context,
+        user_intent_handle=user_intent_handle,
+    )
+    overlay = build_intent_layer_overlay()
+    write_intent_layer_overlay(overlay)
+    return {
+        "user_intent_path": user_intent_path.relative_to(ROOT).as_posix(),
+        "user_intent_handle": str(
+            user_intent_node.get("intent_handle", {}).get("handle_value", "")
+        ).strip(),
+        "operator_request_path": operator_request_path.relative_to(ROOT).as_posix(),
+        "operator_request_handle": str(
+            operator_request_node.get("intent_handle", {}).get("handle_value", "")
+        ).strip(),
+    }
+
+
+def record_operator_request_execution(
+    *,
+    operator_request_context: dict[str, Any] | None,
+    run_id: str,
+    spec_id: str,
+    outcome: str,
+    gate_state: str,
+    proposal_items: list[dict[str, Any]] | None = None,
+) -> None:
+    if not operator_request_context:
+        return
+
+    operator_request_handle = str(
+        operator_request_context.get("operator_request_handle", "")
+    ).strip()
+    user_intent_handle = str(operator_request_context.get("user_intent_handle", "")).strip()
+    if not operator_request_handle:
+        return
+
+    proposal_ids = sorted(
+        {
+            str(item.get("id", "")).strip()
+            for item in (proposal_items or [])
+            if isinstance(item, dict)
+            and str(item.get("spec_id", "")).strip() == spec_id
+            and str(item.get("operator_request_handle", "")).strip() == operator_request_handle
+            and str(item.get("id", "")).strip()
+        }
+    )
+    if proposal_ids:
+        mediation_state = "proposal_linked"
+        downstream_route = "proposal_lane_emission"
+    elif str(gate_state).strip() == "blocked" or str(outcome).strip() == "blocked":
+        mediation_state = "blocked"
+        downstream_route = "execution_blocked"
+    else:
+        mediation_state = "canonical_candidate"
+        downstream_route = "supervisor_refinement_candidate"
+
+    operator_request_path = intent_layer_node_path(operator_request_handle)
+    operator_request_node = load_json_object(operator_request_path)
+    if isinstance(operator_request_node, dict):
+        runtime_bridge = dict(operator_request_node.get("runtime_bridge", {}))
+        runtime_bridge.update(
+            {
+                "bridge_state": mediation_state,
+                "last_executed_run_id": run_id,
+                "last_executed_at": utc_now_iso(),
+                "last_outcome": outcome,
+                "last_gate_state": gate_state,
+                "proposal_ids": proposal_ids,
+                "downstream_route": downstream_route,
+            }
+        )
+        operator_request_node["mediation_state"] = mediation_state
+        operator_request_node["runtime_bridge"] = runtime_bridge
+        operator_request_node["updated_at"] = utc_now_iso()
+        with artifact_lock(operator_request_path):
+            atomic_write_json(operator_request_path, operator_request_node)
+
+    if user_intent_handle:
+        user_intent_path = intent_layer_node_path(user_intent_handle)
+        user_intent_node = load_json_object(user_intent_path)
+        if isinstance(user_intent_node, dict):
+            runtime_bridge = dict(user_intent_node.get("runtime_bridge", {}))
+            runtime_bridge.update(
+                {
+                    "latest_operator_request_handle": operator_request_handle,
+                    "latest_run_id": run_id,
+                    "latest_outcome": outcome,
+                    "latest_gate_state": gate_state,
+                    "latest_proposal_ids": proposal_ids,
+                    "latest_downstream_route": downstream_route,
+                }
+            )
+            user_intent_node["runtime_bridge"] = runtime_bridge
+            user_intent_node["updated_at"] = utc_now_iso()
+            with artifact_lock(user_intent_path):
+                atomic_write_json(user_intent_path, user_intent_node)
+
+    write_intent_layer_overlay(build_intent_layer_overlay())
+
+
 def proposal_lane_valid_authority_states() -> set[str]:
     return {str(value).strip() for value in PROPOSAL_LANE_AUTHORITY_STATE_MAPPING.values()}
 
@@ -6250,6 +7066,24 @@ def proposal_lane_lineage_links(proposal_item: dict[str, Any]) -> list[dict[str,
                 "lineage_role": "derived_from",
                 "source_kind": "runtime_artifact",
                 "source_reference": proposal_artifact_path_value,
+            }
+        )
+    user_intent_handle = str(proposal_item.get("user_intent_handle", "")).strip()
+    if user_intent_handle:
+        lineage_links.append(
+            {
+                "lineage_role": "motivated_by",
+                "source_kind": "intent_layer_node",
+                "source_reference": user_intent_handle,
+            }
+        )
+    operator_request_handle = str(proposal_item.get("operator_request_handle", "")).strip()
+    if operator_request_handle:
+        lineage_links.append(
+            {
+                "lineage_role": "derived_from",
+                "source_kind": "intent_layer_node",
+                "source_reference": operator_request_handle,
             }
         )
     return lineage_links
@@ -6325,6 +7159,10 @@ def sync_tracked_proposal_lane_node(
                 "target_artifact_class": str(
                     proposal_item.get("target_artifact_class", "")
                 ).strip(),
+                "user_intent_handle": str(proposal_item.get("user_intent_handle", "")).strip(),
+                "operator_request_handle": str(
+                    proposal_item.get("operator_request_handle", "")
+                ).strip(),
             },
             "runtime_bridge": {
                 "proposal_queue_status": str(proposal_item.get("status", "")).strip(),
@@ -6336,6 +7174,9 @@ def sync_tracked_proposal_lane_node(
                 ).strip(),
                 "applied_run_id": str(proposal_item.get("applied_run_id", "")).strip(),
                 "applied_at": str(proposal_item.get("applied_at", "")).strip(),
+                "operator_request_handle": str(
+                    proposal_item.get("operator_request_handle", "")
+                ).strip(),
             },
         }
     )
@@ -9687,6 +10528,7 @@ def upsert_split_proposal_queue(
     run_id: str,
     artifact: dict[str, Any],
     artifact_path: Path,
+    operator_request_context: dict[str, Any] | None = None,
 ) -> tuple[Path, list[dict[str, Any]]]:
     RUNS_DIR.mkdir(parents=True, exist_ok=True)
     path = proposal_queue_path()
@@ -9737,6 +10579,12 @@ def upsert_split_proposal_queue(
             "source_work_item_type": "graph_refactor",
             "execution_policy": "emit_proposal",
             "proposal_artifact_path": artifact_path.relative_to(ROOT).as_posix(),
+            "user_intent_handle": str(
+                (operator_request_context or {}).get("user_intent_handle", "")
+            ).strip(),
+            "operator_request_handle": str(
+                (operator_request_context or {}).get("operator_request_handle", "")
+            ).strip(),
         }
 
         preserved = [
@@ -11035,6 +11883,7 @@ def _process_split_refactor_proposal(
     *,
     node: SpecNode,
     executor: Callable[[SpecNode, Path], subprocess.CompletedProcess[str]],
+    operator_request_context: dict[str, Any] | None = None,
     operator_note: str = "",
     execution_profile: str | None = None,
     child_model: str | None = None,
@@ -11072,6 +11921,16 @@ def _process_split_refactor_proposal(
     }
     if operator_note.strip():
         selected_by_rule["operator_note"] = operator_note.strip()
+    if operator_request_context:
+        selected_by_rule["user_intent_handle"] = str(
+            operator_request_context.get("user_intent_handle", "")
+        ).strip()
+        selected_by_rule["operator_request_handle"] = str(
+            operator_request_context.get("operator_request_handle", "")
+        ).strip()
+        selected_by_rule["operator_request_packet"] = str(
+            operator_request_context.get("packet_reference", "")
+        ).strip()
     selected_by_rule["execution_profile"] = resolve_execution_profile_name(
         requested_profile=execution_profile,
         run_authority=(),
@@ -11255,6 +12114,7 @@ def _process_split_refactor_proposal(
                 run_id=run_id,
                 artifact=proposal_artifact_data,
                 artifact_path=proposal_artifact_root_path,
+                operator_request_context=operator_request_context,
             )
         except RuntimeError as exc:
             artifact_io_errors.append(str(exc))
@@ -11340,8 +12200,27 @@ def _process_split_refactor_proposal(
         "stdout": result.stdout,
         "stderr": result.stderr,
     }
+    if operator_request_context:
+        payload["operator_request_bridge"] = {
+            "policy_reference": operator_request_bridge_policy_reference(),
+            "packet_reference": str(operator_request_context.get("packet_reference", "")).strip(),
+            "user_intent_handle": str(
+                operator_request_context.get("user_intent_handle", "")
+            ).strip(),
+            "operator_request_handle": str(
+                operator_request_context.get("operator_request_handle", "")
+            ).strip(),
+        }
     log_path = write_run_log(run_id, payload)
     write_latest_summary(payload)
+    record_operator_request_execution(
+        operator_request_context=operator_request_context,
+        run_id=run_id,
+        spec_id=node.id,
+        outcome=payload["outcome"],
+        gate_state=str(payload.get("gate_state", "")),
+        proposal_items=proposal_queue_after,
+    )
 
     cleanup_isolated_worktree(worktree_path, branch)
     emit_run_footer(
@@ -11363,6 +12242,7 @@ def _process_one_spec(
     executor: Callable[[SpecNode, Path], subprocess.CompletedProcess[str]],
     auto_approve: bool,
     refactor_work_item: dict[str, Any] | None = None,
+    operator_request_context: dict[str, Any] | None = None,
     operator_target: bool = False,
     operator_note: str = "",
     mutation_budget: tuple[str, ...] = (),
@@ -11415,6 +12295,16 @@ def _process_one_spec(
         )
     if operator_note.strip():
         selected_by_rule["operator_note"] = operator_note.strip()
+    if operator_request_context:
+        selected_by_rule["user_intent_handle"] = str(
+            operator_request_context.get("user_intent_handle", "")
+        ).strip()
+        selected_by_rule["operator_request_handle"] = str(
+            operator_request_context.get("operator_request_handle", "")
+        ).strip()
+        selected_by_rule["operator_request_packet"] = str(
+            operator_request_context.get("packet_reference", "")
+        ).strip()
     if mutation_budget:
         selected_by_rule["mutation_budget"] = list(mutation_budget)
     if run_authority:
@@ -11860,6 +12750,7 @@ def _process_one_spec(
             proposal_queue_artifact, proposal_items = update_proposal_queue(
                 graph_health=graph_health,
                 run_id=run_id,
+                operator_request_context=operator_request_context,
             )
             refactor_queue_artifact = update_refactor_queue(
                 graph_health=graph_health,
@@ -11999,11 +12890,30 @@ def _process_one_spec(
         "stdout": result.stdout,
         "stderr": result.stderr,
     }
+    if operator_request_context:
+        payload["operator_request_bridge"] = {
+            "policy_reference": operator_request_bridge_policy_reference(),
+            "packet_reference": str(operator_request_context.get("packet_reference", "")).strip(),
+            "user_intent_handle": str(
+                operator_request_context.get("user_intent_handle", "")
+            ).strip(),
+            "operator_request_handle": str(
+                operator_request_context.get("operator_request_handle", "")
+            ).strip(),
+        }
     if candidate_graph_health != graph_health:
         payload["candidate_graph_health"] = candidate_graph_health
         payload["candidate_graph_health_truth_basis"] = "review_candidate"
     log_path = write_run_log(run_id, payload)
     write_latest_summary(payload)
+    record_operator_request_execution(
+        operator_request_context=operator_request_context,
+        run_id=run_id,
+        spec_id=node.id,
+        outcome=payload["outcome"],
+        gate_state=str(payload.get("gate_state", "")),
+        proposal_items=proposal_queue_after,
+    )
 
     if cleanup_failed_child_materialization or cleanup_failed_source_refinement:
         node.path.write_text(before_source_text, encoding="utf-8")
@@ -12050,6 +12960,8 @@ def main(
     observe_graph_health_mode: bool = False,
     validate_transition_packet_path: str | None = None,
     transition_profile: str | None = None,
+    operator_request_packet_path: str | None = None,
+    build_intent_layer_overlay_mode: bool = False,
     build_graph_health_overlay_mode: bool = False,
     build_graph_health_trends_mode: bool = False,
     build_spec_trace_index_mode: bool = False,
@@ -12107,6 +13019,7 @@ def main(
                 list_stale_runtime,
                 clean_stale_runtime,
                 observe_graph_health_mode,
+                build_intent_layer_overlay_mode,
                 build_graph_health_overlay_mode,
                 build_graph_health_trends_mode,
                 build_spec_trace_index_mode,
@@ -12114,6 +13027,7 @@ def main(
                 build_proposal_lane_overlay_mode,
                 build_proposal_runtime_index_mode,
                 build_proposal_promotion_index_mode,
+                operator_request_packet_path,
             )
         ):
             print(
@@ -12127,6 +13041,48 @@ def main(
         )
         print(json.dumps(report, ensure_ascii=False, indent=2))
         return 0 if report["ok"] else 1
+
+    if build_intent_layer_overlay_mode:
+        if any(
+            (
+                dry_run,
+                auto_approve,
+                loop,
+                resolve_gate,
+                decision,
+                note,
+                target_spec,
+                split_proposal,
+                apply_split_proposal,
+                operator_note,
+                mutation_budget,
+                run_authority,
+                execution_profile,
+                child_model,
+                child_timeout_seconds,
+                verbose,
+                list_stale_runtime,
+                clean_stale_runtime,
+                observe_graph_health_mode,
+                build_graph_health_overlay_mode,
+                build_graph_health_trends_mode,
+                build_spec_trace_index_mode,
+                build_spec_trace_projection_mode,
+                build_proposal_lane_overlay_mode,
+                build_proposal_runtime_index_mode,
+                build_proposal_promotion_index_mode,
+                operator_request_packet_path,
+            )
+        ):
+            print(
+                "--build-intent-layer-overlay must be used as a standalone command",
+                file=sys.stderr,
+            )
+            return 1
+        overlay = build_intent_layer_overlay()
+        write_intent_layer_overlay(overlay)
+        print(json.dumps(overlay, ensure_ascii=False, indent=2))
+        return 0
 
     if build_proposal_lane_overlay_mode:
         if any(
@@ -12150,6 +13106,7 @@ def main(
                 list_stale_runtime,
                 clean_stale_runtime,
                 observe_graph_health_mode,
+                operator_request_packet_path,
                 build_proposal_runtime_index_mode,
                 build_proposal_promotion_index_mode,
             )
@@ -12195,6 +13152,7 @@ def main(
                 list_stale_runtime,
                 clean_stale_runtime,
                 observe_graph_health_mode,
+                operator_request_packet_path,
                 build_graph_health_trends_mode,
                 build_spec_trace_index_mode,
                 build_spec_trace_projection_mode,
@@ -12235,6 +13193,7 @@ def main(
                 list_stale_runtime,
                 clean_stale_runtime,
                 observe_graph_health_mode,
+                operator_request_packet_path,
                 build_graph_health_overlay_mode,
                 build_spec_trace_index_mode,
                 build_spec_trace_projection_mode,
@@ -12277,6 +13236,7 @@ def main(
                 list_stale_runtime,
                 clean_stale_runtime,
                 observe_graph_health_mode,
+                operator_request_packet_path,
                 build_proposal_lane_overlay_mode,
                 build_spec_trace_projection_mode,
                 build_proposal_runtime_index_mode,
@@ -12353,6 +13313,7 @@ def main(
                 list_stale_runtime,
                 clean_stale_runtime,
                 observe_graph_health_mode,
+                operator_request_packet_path,
                 build_proposal_lane_overlay_mode,
                 build_proposal_promotion_index_mode,
             )
@@ -12389,6 +13350,7 @@ def main(
                 list_stale_runtime,
                 clean_stale_runtime,
                 observe_graph_health_mode,
+                operator_request_packet_path,
                 build_proposal_lane_overlay_mode,
             )
         ):
@@ -12427,6 +13389,7 @@ def main(
                 operator_note,
                 mutation_budget,
                 run_authority,
+                operator_request_packet_path,
             )
         ):
             print(
@@ -12441,6 +13404,59 @@ def main(
         for error in artifact_integrity_errors:
             print(error, file=sys.stderr)
         return 1
+
+    operator_request_context: dict[str, Any] | None = None
+    if operator_request_packet_path:
+        if any(
+            (
+                resolve_gate,
+                decision,
+                apply_split_proposal,
+                loop,
+                observe_graph_health_mode,
+                list_stale_runtime,
+                clean_stale_runtime,
+            )
+        ):
+            print(
+                "--operator-request-packet cannot be combined with gate, loop, observation, "
+                "or runtime-cleanup modes",
+                file=sys.stderr,
+            )
+            return 1
+        if any(
+            (
+                target_spec,
+                split_proposal,
+                operator_note,
+                mutation_budget,
+                run_authority,
+                execution_profile,
+            )
+        ):
+            print(
+                "--operator-request-packet must be the sole steering surface for the run",
+                file=sys.stderr,
+            )
+            return 1
+        operator_request_context, request_errors = normalize_operator_request_packet(
+            Path(operator_request_packet_path),
+            specs=specs,
+        )
+        if request_errors:
+            for error in request_errors:
+                print(error, file=sys.stderr)
+            return 1
+        if not dry_run:
+            bridge_record = sync_intent_layer_from_operator_request(operator_request_context)
+            operator_request_context = {**operator_request_context, **bridge_record}
+        request = operator_request_context["operator_request"]
+        target_spec = str(request.get("target_spec_id", "")).strip()
+        operator_note = str(request.get("operator_note", "")).strip()
+        mutation_budget = tuple(request.get("mutation_budget", ()))
+        run_authority = tuple(request.get("run_authority", ()))
+        execution_profile = request.get("execution_profile")
+        split_proposal = str(request.get("run_mode", "")).strip() == "split_proposal"
 
     if observe_graph_health_mode:
         if not target_spec:
@@ -12580,6 +13596,13 @@ def main(
         }
         if operator_note.strip():
             selected_by_rule["operator_note"] = operator_note.strip()
+        if operator_request_context:
+            selected_by_rule["user_intent_handle"] = str(
+                operator_request_context.get("user_intent_handle", "")
+            ).strip()
+            selected_by_rule["operator_request_handle"] = str(
+                operator_request_context.get("operator_request_handle", "")
+            ).strip()
         if mutation_budget:
             selected_by_rule["mutation_budget"] = list(mutation_budget)
         if run_authority:
@@ -12620,6 +13643,8 @@ def main(
             "child_model": child_model,
             "child_timeout_seconds": proposal_timeout,
         }
+        if callable_supports_keyword(_process_split_refactor_proposal, "operator_request_context"):
+            proposal_kwargs["operator_request_context"] = operator_request_context
         if callable_supports_keyword(_process_split_refactor_proposal, "verbose"):
             proposal_kwargs["verbose"] = verbose
         exit_code, _outcome = _process_split_refactor_proposal(**proposal_kwargs)
@@ -12654,6 +13679,13 @@ def main(
         }
         if operator_note.strip():
             selected_by_rule["operator_note"] = operator_note.strip()
+        if operator_request_context:
+            selected_by_rule["user_intent_handle"] = str(
+                operator_request_context.get("user_intent_handle", "")
+            ).strip()
+            selected_by_rule["operator_request_handle"] = str(
+                operator_request_context.get("operator_request_handle", "")
+            ).strip()
         if mutation_budget:
             selected_by_rule["mutation_budget"] = list(mutation_budget)
         if run_authority:
@@ -12710,6 +13742,8 @@ def main(
             "child_model": child_model,
             "child_timeout_seconds": target_timeout,
         }
+        if callable_supports_keyword(_process_one_spec, "operator_request_context"):
+            process_kwargs["operator_request_context"] = operator_request_context
         if callable_supports_keyword(_process_one_spec, "verbose"):
             process_kwargs["verbose"] = verbose
         exit_code, _outcome, _completion_status, _gate_state = _process_one_spec(**process_kwargs)
@@ -12889,6 +13923,22 @@ if __name__ == "__main__":
         ),
     )
     parser.add_argument(
+        "--operator-request-packet",
+        metavar="PATH",
+        help=(
+            "Normalize one bounded operator-request packet into a targeted supervisor run "
+            "without using ad hoc target/operator/mutation flags directly"
+        ),
+    )
+    parser.add_argument(
+        "--build-intent-layer-overlay",
+        action="store_true",
+        help=(
+            "Build a viewer-facing intent-layer overlay from repository-tracked "
+            "pre-canonical intent and operator-request nodes"
+        ),
+    )
+    parser.add_argument(
         "--build-graph-health-overlay",
         action="store_true",
         help=(
@@ -13060,6 +14110,8 @@ if __name__ == "__main__":
             observe_graph_health_mode=args.observe_graph_health,
             validate_transition_packet_path=args.validate_transition_packet,
             transition_profile=args.transition_profile,
+            operator_request_packet_path=args.operator_request_packet,
+            build_intent_layer_overlay_mode=args.build_intent_layer_overlay,
             build_graph_health_overlay_mode=args.build_graph_health_overlay,
             build_graph_health_trends_mode=args.build_graph_health_trends,
             build_spec_trace_index_mode=args.build_spec_trace_index,

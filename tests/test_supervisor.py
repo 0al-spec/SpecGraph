@@ -7045,6 +7045,442 @@ def test_build_proposal_lane_overlay_marks_invalid_query_contract(
     ]
 
 
+def test_build_intent_layer_overlay_marks_invalid_query_contract(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    node_path = repo_fixture / "intent_layer" / "nodes" / "invalid-intent.json"
+    node_path.parent.mkdir(parents=True, exist_ok=True)
+    node_path.write_text(
+        json.dumps(
+            {
+                "artifact_kind": supervisor_module.INTENT_LAYER_NODE_ARTIFACT_KIND,
+                "schema_version": 1,
+                "title": "Incomplete intent layer node",
+                "intent_repository_presence": {
+                    "tracked_presence": "repository_tracked",
+                    "path_class": "intent_layer_node_path",
+                    "persistence_boundary": "pre_canonical_repository_separate_from_runtime",
+                    "tracked_path": "intent_layer/nodes/invalid-intent.json",
+                },
+                "intent_handle": {
+                    "handle_value": "operator_request::SG-SPEC-0001::tighten-ownership",
+                    "handle_status": "active",
+                },
+                "intent_layer_kind": "operator_request",
+                "mediation_state": "ready_for_execution",
+                "intent_lineage_link": [],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    overlay = supervisor_module.build_intent_layer_overlay()
+
+    assert overlay["artifact_kind"] == supervisor_module.INTENT_LAYER_OVERLAY_ARTIFACT_KIND
+    assert overlay["entry_count"] == 1
+    assert overlay["entries"][0]["query_contract"]["status"] == "invalid_review_state"
+    assert overlay["entries"][0]["query_contract"]["findings"] == [
+        "missing_kind_section::request_bridge",
+        "missing_lineage_link",
+        "missing_request_bridge_target",
+    ]
+    assert overlay["named_filters"]["invalid_query_contract"] == [
+        "operator_request::SG-SPEC-0001::tighten-ownership"
+    ]
+
+
+def test_main_builds_intent_layer_overlay_as_standalone_command(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    def fake_overlay() -> dict[str, object]:
+        return {
+            "artifact_kind": supervisor_module.INTENT_LAYER_OVERLAY_ARTIFACT_KIND,
+            "schema_version": 1,
+            "layer_name": "intent_layer",
+            "generated_at": "2026-04-19T00:00:00Z",
+            "policy_reference": {"artifact_path": "tools/intent_layer_policy.json"},
+            "source_dir": "intent_layer/nodes",
+            "entry_count": 1,
+            "entries": [{"intent_handle": "user_intent::calculator-bootstrap"}],
+            "edges": [],
+            "by_kind": {"user_intent": ["user_intent::calculator-bootstrap"]},
+            "by_mediation_state": {"captured": ["user_intent::calculator-bootstrap"]},
+            "named_filters": {"user_intent": ["user_intent::calculator-bootstrap"]},
+            "artifact_warnings": [],
+        }
+
+    monkeypatch.setattr(supervisor_module, "build_intent_layer_overlay", fake_overlay)
+
+    exit_code = supervisor_module.main(build_intent_layer_overlay_mode=True)
+
+    assert exit_code == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["artifact_kind"] == supervisor_module.INTENT_LAYER_OVERLAY_ARTIFACT_KIND
+    assert report["entry_count"] == 1
+    persisted = json.loads(
+        (repo_fixture / "runs" / "intent_layer_overlay.json").read_text(encoding="utf-8")
+    )
+    assert persisted["artifact_kind"] == supervisor_module.INTENT_LAYER_OVERLAY_ARTIFACT_KIND
+
+
+def test_main_builds_intent_layer_overlay_without_loading_specs(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    (repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml").write_text(
+        "id: SG-SPEC-0001\n: broken\n",
+        encoding="utf-8",
+    )
+
+    def fail_load_specs() -> list[object]:
+        raise AssertionError("load_specs() must not run for intent-layer overlay mode")
+
+    def fake_overlay() -> dict[str, object]:
+        return {
+            "artifact_kind": supervisor_module.INTENT_LAYER_OVERLAY_ARTIFACT_KIND,
+            "schema_version": 1,
+            "layer_name": "intent_layer",
+            "generated_at": "2026-04-19T00:00:00Z",
+            "policy_reference": {"artifact_path": "tools/intent_layer_policy.json"},
+            "source_dir": "intent_layer/nodes",
+            "entry_count": 0,
+            "entries": [],
+            "edges": [],
+            "by_kind": {},
+            "by_mediation_state": {},
+            "named_filters": {},
+            "artifact_warnings": [],
+        }
+
+    monkeypatch.setattr(supervisor_module, "load_specs", fail_load_specs)
+    monkeypatch.setattr(supervisor_module, "build_intent_layer_overlay", fake_overlay)
+
+    exit_code = supervisor_module.main(build_intent_layer_overlay_mode=True)
+
+    assert exit_code == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["artifact_kind"] == supervisor_module.INTENT_LAYER_OVERLAY_ARTIFACT_KIND
+
+
+def test_build_intent_layer_overlay_flags_cross_layer_masquerade(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    node_path = repo_fixture / "intent_layer" / "nodes" / "masquerading-intent.json"
+    node_path.parent.mkdir(parents=True, exist_ok=True)
+    node_path.write_text(
+        json.dumps(
+            {
+                "artifact_kind": supervisor_module.INTENT_LAYER_NODE_ARTIFACT_KIND,
+                "schema_version": 1,
+                "title": "Masquerading intent layer node",
+                "intent_repository_presence": {
+                    "tracked_presence": "repository_tracked",
+                    "path_class": "intent_layer_node_path",
+                    "persistence_boundary": "pre_canonical_repository_separate_from_runtime",
+                    "tracked_path": "intent_layer/nodes/masquerading-intent.json",
+                },
+                "intent_handle": {
+                    "handle_value": "user_intent::calculator-bootstrap",
+                    "handle_status": "active",
+                },
+                "intent_layer_kind": "user_intent",
+                "mediation_state": "captured",
+                "intent_capture": {
+                    "source_kind": "chat_instruction",
+                    "source_summary": "We are building a calculator.",
+                },
+                "intent_lineage_link": [
+                    {
+                        "lineage_role": "captured_from",
+                        "source_kind": "runtime_artifact",
+                        "source_reference": "chat://thread/current",
+                    }
+                ],
+                "status": "outlined",
+                "proposal_handle": {
+                    "handle_value": "governance_proposal::SG-SPEC-0001::calculator",
+                    "handle_status": "active",
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    overlay = supervisor_module.build_intent_layer_overlay()
+
+    assert overlay["entries"][0]["distinction_contract"]["canonical_equivalence"] is False
+    assert overlay["entries"][0]["distinction_contract"]["proposal_lane_equivalence"] is False
+    assert overlay["entries"][0]["query_contract"]["findings"] == [
+        "masquerades_as_canonical_spec",
+        "masquerades_as_proposal_lane",
+    ]
+
+
+def test_main_routes_operator_request_packet_to_targeted_refinement(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    packet_path = repo_fixture / "operator-request.json"
+    packet_path.write_text(
+        json.dumps(
+            {
+                "artifact_kind": supervisor_module.OPERATOR_REQUEST_PACKET_ARTIFACT_KIND,
+                "schema_version": supervisor_module.OPERATOR_REQUEST_PACKET_SCHEMA_VERSION,
+                "user_intent": {
+                    "source_kind": "gui_selection",
+                    "source_summary": "Tighten the Golden Path Node.",
+                    "selected_node_ref": "SG-SPEC-0001",
+                },
+                "operator_request": {
+                    "target_spec_id": "SG-SPEC-0001",
+                    "run_mode": "targeted_refine",
+                    "operator_note": "Tighten only one bounded concern.",
+                    "mutation_budget": ["policy_text"],
+                    "execution_profile": "standard",
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    captured: dict[str, object] = {}
+
+    def fake_process_one_spec(**kwargs: object) -> tuple[int, str, str, str]:
+        captured.update(kwargs)
+        return 0, "done", "ok", "none"
+
+    supervisor_module._process_one_spec = fake_process_one_spec
+
+    exit_code = supervisor_module.main(operator_request_packet_path=packet_path.as_posix())
+
+    assert exit_code == 0
+    assert captured["node"].id == "SG-SPEC-0001"
+    assert captured["operator_target"] is True
+    assert captured["operator_note"] == "Tighten only one bounded concern."
+    assert captured["mutation_budget"] == (supervisor_module.MUTATION_CLASS_POLICY_TEXT,)
+    assert captured["execution_profile"] == "standard"
+    assert captured["operator_request_context"]["operator_request_handle"].startswith(
+        "operator_request::SG-SPEC-0001::targeted_refine::"
+    )
+    overlay = json.loads((repo_fixture / "runs" / "intent_layer_overlay.json").read_text())
+    assert overlay["named_filters"]["ready_for_execution"] == [
+        "operator_request::SG-SPEC-0001::targeted_refine::tighten-the-golden-path-node"
+    ]
+
+
+def test_main_dry_run_with_operator_request_packet_does_not_sync_intent_layer(
+    supervisor_module: object,
+    repo_fixture: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    packet_path = repo_fixture / "operator-request-dry-run.json"
+    packet_path.write_text(
+        json.dumps(
+            {
+                "artifact_kind": supervisor_module.OPERATOR_REQUEST_PACKET_ARTIFACT_KIND,
+                "schema_version": supervisor_module.OPERATOR_REQUEST_PACKET_SCHEMA_VERSION,
+                "user_intent": {
+                    "source_kind": "chat_instruction",
+                    "source_summary": "Preview the bounded change.",
+                },
+                "operator_request": {
+                    "target_spec_id": "SG-SPEC-0001",
+                    "run_mode": "targeted_refine",
+                    "operator_note": "Preview only.",
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    exit_code = supervisor_module.main(
+        operator_request_packet_path=packet_path.as_posix(),
+        dry_run=True,
+    )
+
+    assert exit_code == 0
+    assert "=== dry-run mode ===" in capsys.readouterr().out
+    assert not (repo_fixture / "intent_layer" / "nodes").exists()
+    assert not (repo_fixture / "runs" / "intent_layer_overlay.json").exists()
+
+
+def test_main_routes_operator_request_packet_to_split_proposal(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    packet_path = repo_fixture / "operator-request-split.json"
+    packet_path.write_text(
+        json.dumps(
+            {
+                "artifact_kind": supervisor_module.OPERATOR_REQUEST_PACKET_ARTIFACT_KIND,
+                "schema_version": supervisor_module.OPERATOR_REQUEST_PACKET_SCHEMA_VERSION,
+                "user_intent": {
+                    "source_kind": "chat_instruction",
+                    "source_summary": "Split the Golden Path Node.",
+                },
+                "operator_request": {
+                    "target_spec_id": "SG-SPEC-0001",
+                    "run_mode": "split_proposal",
+                    "operator_note": "Emit a bounded split proposal only.",
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    captured: dict[str, object] = {}
+
+    supervisor_module.validate_split_refactor_target = lambda _node: []
+    supervisor_module.build_split_refactor_work_item = lambda _node: {
+        "id": "refactor::SG-SPEC-0001::oversized_spec",
+        "proposal_type": "refactor_proposal",
+        "signal": supervisor_module.SPLIT_REFACTOR_SIGNAL,
+        "refactor_kind": supervisor_module.SPLIT_REFACTOR_KIND,
+        "execution_policy": "emit_proposal",
+        "proposal_artifact_relpath": "runs/proposals/refactor.json",
+    }
+
+    def fake_process_split_refactor_proposal(**kwargs: object) -> tuple[int, str]:
+        captured.update(kwargs)
+        return 0, "done"
+
+    supervisor_module._process_split_refactor_proposal = fake_process_split_refactor_proposal
+
+    exit_code = supervisor_module.main(operator_request_packet_path=packet_path.as_posix())
+
+    assert exit_code == 0
+    assert captured["node"].id == "SG-SPEC-0001"
+    assert captured["operator_note"] == "Emit a bounded split proposal only."
+    assert captured["operator_request_context"]["operator_request_handle"].startswith(
+        "operator_request::SG-SPEC-0001::split_proposal::"
+    )
+
+
+def test_proposal_lane_lineage_links_include_intent_handles(supervisor_module: object) -> None:
+    links = supervisor_module.proposal_lane_lineage_links(
+        {
+            "target_spec_id": "SG-SPEC-0001",
+            "proposal_artifact_path": "runs/proposals/example.json",
+            "user_intent_handle": "user_intent::calculator-bootstrap",
+            "operator_request_handle": "operator_request::SG-SPEC-0001::split_proposal::calculator",
+        }
+    )
+
+    assert links == [
+        {
+            "lineage_role": "motivated_by",
+            "source_kind": "canonical_node",
+            "source_reference": "SG-SPEC-0001",
+        },
+        {
+            "lineage_role": "derived_from",
+            "source_kind": "runtime_artifact",
+            "source_reference": "runs/proposals/example.json",
+        },
+        {
+            "lineage_role": "motivated_by",
+            "source_kind": "intent_layer_node",
+            "source_reference": "user_intent::calculator-bootstrap",
+        },
+        {
+            "lineage_role": "derived_from",
+            "source_kind": "intent_layer_node",
+            "source_reference": "operator_request::SG-SPEC-0001::split_proposal::calculator",
+        },
+    ]
+
+
+def test_record_operator_request_execution_marks_proposal_linked(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    context = {
+        "packet_reference": "operator-request.json",
+        "user_intent": {
+            "handle": "user_intent::calculator-bootstrap",
+            "source_kind": "chat_instruction",
+            "source_summary": "Build a calculator.",
+            "selected_node_ref": "",
+            "unresolved_questions": [],
+        },
+        "operator_request": {
+            "handle": "operator_request::SG-SPEC-0001::split_proposal::calculator",
+            "target_spec_id": "SG-SPEC-0001",
+            "run_mode": "split_proposal",
+            "operator_note": "Emit one split proposal.",
+            "mutation_budget": (),
+            "run_authority": (),
+            "execution_profile": None,
+        },
+    }
+    sync_result = supervisor_module.sync_intent_layer_from_operator_request(context)
+    merged_context = {**context, **sync_result}
+
+    supervisor_module.record_operator_request_execution(
+        operator_request_context=merged_context,
+        run_id="20260419T000000Z-SG-SPEC-0001-deadbeef",
+        spec_id="SG-SPEC-0001",
+        outcome="done",
+        gate_state="none",
+        proposal_items=[
+            {
+                "id": "refactor_proposal::SG-SPEC-0001::oversized_spec",
+                "spec_id": "SG-SPEC-0001",
+                "operator_request_handle": merged_context["operator_request_handle"],
+            }
+        ],
+    )
+
+    operator_request_node = json.loads(
+        supervisor_module.intent_layer_node_path(
+            merged_context["operator_request_handle"]
+        ).read_text(encoding="utf-8")
+    )
+    assert operator_request_node["mediation_state"] == "proposal_linked"
+    assert operator_request_node["runtime_bridge"]["proposal_ids"] == [
+        "refactor_proposal::SG-SPEC-0001::oversized_spec"
+    ]
+    assert operator_request_node["runtime_bridge"]["downstream_route"] == "proposal_lane_emission"
+
+
+def test_main_reports_invalid_operator_request_schema_version(
+    supervisor_module: object,
+    repo_fixture: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    packet_path = repo_fixture / "operator-request-invalid.json"
+    packet_path.write_text(
+        json.dumps(
+            {
+                "artifact_kind": supervisor_module.OPERATOR_REQUEST_PACKET_ARTIFACT_KIND,
+                "schema_version": "x",
+                "user_intent": {
+                    "source_kind": "chat_instruction",
+                    "source_summary": "Build a calculator.",
+                },
+                "operator_request": {
+                    "target_spec_id": "SG-SPEC-0001",
+                    "run_mode": "targeted_refine",
+                    "operator_note": "Keep the change bounded.",
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    exit_code = supervisor_module.main(operator_request_packet_path=packet_path.as_posix())
+
+    assert exit_code == 1
+    assert "operator request packet schema_version must be an integer" in capsys.readouterr().err
+
+
 def test_main_builds_proposal_lane_overlay_as_standalone_command(
     supervisor_module: object,
     repo_fixture: Path,

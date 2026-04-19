@@ -48,6 +48,13 @@ Task numbers are preserved for traceability across commits, PRs, and review thre
 31. [done] Let `supervisor` autonomously create and refresh tracked proposal nodes while keeping canonical writeback behind explicit review/apply flow.
 32. [done] Extend graph and viewer projections so proposal-lane nodes can be shown as an overlay or secondary layer on top of the canonical graph.
 
+## Intent Layer
+
+33. [done] Define an intent-facing layer and mediated discovery path between raw user goals and canonical SpecGraph specs.
+34. [done] Distinguish `UserIntent` and `OperatorRequest` from canonical `spec` and proposal-lane nodes.
+35. [done] Add a bounded operator-request bridge so GUI selections and chat instructions can steer one supervisor run without mutating canonical specs directly.
+36. [done] Define how mediator outputs become canonical specs or proposals through reviewable supervisor-driven refinement instead of raw chat-to-spec mutation.
+
 ## Child Spec Materialization Path
 
 40. [done] Fix the `supervisor` path for creating one new child spec during explicit targeted refinement so a bounded child can be materialized from an existing parent delegation boundary instead of stalling with no canonical diff.
