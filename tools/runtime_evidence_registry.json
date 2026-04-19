@@ -1,0 +1,164 @@
+[
+  {
+    "spec_id": "SG-SPEC-0049",
+    "evidence_scope": "surface_level",
+    "artifact_refs": [
+      "tools/supervisor.py",
+      "tools/supervisor_policy.json",
+      "tools/techspec_handoff_policy.json"
+    ],
+    "runtime_entities": [
+      {
+        "entity_id": "supervisor.graph_health_observer",
+        "entity_kind": "inspection_engine"
+      },
+      {
+        "entity_id": "supervisor.graph_health_overlay",
+        "entity_kind": "viewer_overlay"
+      },
+      {
+        "entity_id": "supervisor.graph_health_trends",
+        "entity_kind": "trend_report"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "runs/graph_health_overlay.json",
+        "pattern": "\"artifact_kind\": \"graph_health_overlay\""
+      },
+      {
+        "path": "runs/graph_health_overlay.json",
+        "pattern": "\"viewer_projection\""
+      }
+    ],
+    "outcome_markers": [
+      {
+        "path": "runs/graph_health_trends.json",
+        "pattern": "\"artifact_kind\": \"graph_health_trends\""
+      },
+      {
+        "path": "runs/graph_health_trends.json",
+        "pattern": "\"recurring_signal_groups\""
+      }
+    ],
+    "adoption_markers": [
+      {
+        "path": "runs/graph_health_trends.json",
+        "pattern": "\"currently_active\""
+      },
+      {
+        "path": "runs/graph_health_overlay.json",
+        "pattern": "\"techspec_ready_regions\""
+      }
+    ],
+    "notes": "Graph-health evidence is currently surfaced through derived overlay and trend artifacts rather than external telemetry ingestion."
+  },
+  {
+    "spec_id": "SG-SPEC-0050",
+    "evidence_scope": "surface_level",
+    "artifact_refs": [
+      "tools/intent_layer_policy.json",
+      "tools/pre_spec_semantics_policy.json",
+      "tools/operator_request_bridge_policy.json"
+    ],
+    "runtime_entities": [
+      {
+        "entity_id": "supervisor.intent_layer_overlay",
+        "entity_kind": "viewer_overlay"
+      },
+      {
+        "entity_id": "supervisor.pre_spec_semantics_index",
+        "entity_kind": "derived_index"
+      },
+      {
+        "entity_id": "supervisor.operator_request_bridge",
+        "entity_kind": "runtime_bridge"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "runs/intent_layer_overlay.json",
+        "pattern": "\"artifact_kind\": \"intent_layer_overlay\""
+      },
+      {
+        "path": "runs/pre_spec_semantics_index.json",
+        "pattern": "\"artifact_kind\": \"pre_spec_semantics_index\""
+      }
+    ],
+    "outcome_markers": [
+      {
+        "path": "runs/pre_spec_semantics_index.json",
+        "pattern": "\"proposal_linked\""
+      },
+      {
+        "path": "runs/pre_spec_semantics_index.json",
+        "pattern": "\"canonical_materialized\""
+      }
+    ],
+    "adoption_markers": [
+      {
+        "path": "runs/proposal_lane_overlay.json",
+        "pattern": "\"artifact_kind\": \"proposal_lane_overlay\""
+      },
+      {
+        "path": "runs/proposal_lane_overlay.json",
+        "pattern": "\"canonical_node_targets\""
+      }
+    ],
+    "notes": "Pre-spec semantic evidence is currently expressed through tracked mediation overlays and downstream proposal-lane visibility."
+  },
+  {
+    "spec_id": "SG-SPEC-0051",
+    "evidence_scope": "surface_level",
+    "artifact_refs": [
+      "tools/supervisor.py",
+      "tools/proposal_promotion_policy.json",
+      "tools/product_spec_transition_policy.json"
+    ],
+    "runtime_entities": [
+      {
+        "entity_id": "supervisor.transition_validator",
+        "entity_kind": "validation_engine"
+      },
+      {
+        "entity_id": "supervisor.proposal_promotion_index",
+        "entity_kind": "derived_index"
+      },
+      {
+        "entity_id": "supervisor.proposal_runtime_index",
+        "entity_kind": "inspection_overlay"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "runs/proposal_promotion_index.json",
+        "pattern": "\"artifact_kind\": \"proposal_promotion_index\""
+      },
+      {
+        "path": "runs/proposal_promotion_index.json",
+        "pattern": "\"promotion_traceability\""
+      }
+    ],
+    "outcome_markers": [
+      {
+        "path": "runs/proposal_promotion_index.json",
+        "pattern": "\"bounded\""
+      },
+      {
+        "path": "runs/proposal_promotion_index.json",
+        "pattern": "\"viewer_projection\""
+      }
+    ],
+    "adoption_markers": [
+      {
+        "path": "runs/proposal_runtime_index.json",
+        "pattern": "\"artifact_kind\": \"proposal_runtime_index\""
+      },
+      {
+        "path": "runs/proposal_runtime_index.json",
+        "pattern": "\"reflective_chain\""
+      }
+    ],
+    "notes": "Promotion-boundary evidence is currently derived from promotion/runtime indexes and structured transition validation artifacts."
+  }
+]

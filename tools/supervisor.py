@@ -90,6 +90,7 @@ VALIDATION_FINDINGS_POLICY_RELATIVE_PATH = "tools/validation_findings_policy.jso
 SAFE_REPAIR_POLICY_RELATIVE_PATH = "tools/safe_repair_policy.json"
 EVALUATOR_LOOP_POLICY_RELATIVE_PATH = "tools/evaluator_loop_policy.json"
 EVALUATOR_INTERVENTION_POLICY_RELATIVE_PATH = "tools/evaluator_intervention_policy.json"
+EVIDENCE_PLANE_POLICY_RELATIVE_PATH = "tools/evidence_plane_policy.json"
 
 
 def supervisor_policy_path() -> Path:
@@ -134,6 +135,10 @@ def evaluator_loop_policy_path() -> Path:
 
 def evaluator_intervention_policy_path() -> Path:
     return TOOLS_DIR / "evaluator_intervention_policy.json"
+
+
+def evidence_plane_policy_path() -> Path:
+    return TOOLS_DIR / "evidence_plane_policy.json"
 
 
 def load_supervisor_policy() -> tuple[dict[str, Any], str]:
@@ -519,6 +524,43 @@ EVALUATOR_INTERVENTION_POLICY, EVALUATOR_INTERVENTION_POLICY_SHA256 = (
 )
 
 
+def load_evidence_plane_policy() -> tuple[dict[str, Any], str]:
+    path = evidence_plane_policy_path()
+    try:
+        raw_text = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise RuntimeError(
+            f"failed to read evidence plane policy artifact: {path.as_posix()} ({exc})"
+        ) from exc
+    try:
+        payload = json.loads(raw_text)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(
+            f"malformed evidence plane policy artifact: {path.as_posix()} ({exc})"
+        ) from exc
+    if not isinstance(payload, dict):
+        raise RuntimeError(
+            "malformed evidence plane policy artifact: "
+            f"{path.as_posix()} must contain a JSON object"
+        )
+    required_sections = (
+        "repository_layout",
+        "semantic_boundary",
+        "index_contract",
+        "overlay_contract",
+    )
+    missing = [section for section in required_sections if section not in payload]
+    if missing:
+        raise RuntimeError(
+            "malformed evidence plane policy artifact: missing top-level section(s): "
+            + ", ".join(missing)
+        )
+    return payload, hashlib.sha256(raw_text.encode("utf-8")).hexdigest()
+
+
+EVIDENCE_PLANE_POLICY, EVIDENCE_PLANE_POLICY_SHA256 = load_evidence_plane_policy()
+
+
 def policy_lookup(policy_path: str) -> Any:
     current: Any = SUPERVISOR_POLICY
     for part in policy_path.split("."):
@@ -575,6 +617,15 @@ def specgraph_vocabulary_lookup(policy_path: str) -> Any:
 
 def pre_spec_semantics_policy_lookup(policy_path: str) -> Any:
     current: Any = PRE_SPEC_SEMANTICS_POLICY
+    for part in policy_path.split("."):
+        if not isinstance(current, dict) or part not in current:
+            raise KeyError(policy_path)
+        current = current[part]
+    return copy.deepcopy(current)
+
+
+def evidence_plane_policy_lookup(policy_path: str) -> Any:
+    current: Any = EVIDENCE_PLANE_POLICY
     for part in policy_path.split("."):
         if not isinstance(current, dict) or part not in current:
             raise KeyError(policy_path)
@@ -707,6 +758,14 @@ def pre_spec_semantics_policy_reference() -> dict[str, Any]:
     }
 
 
+def evidence_plane_policy_reference() -> dict[str, Any]:
+    return {
+        "artifact_path": EVIDENCE_PLANE_POLICY_RELATIVE_PATH,
+        "artifact_sha256": EVIDENCE_PLANE_POLICY_SHA256,
+        "version": EVIDENCE_PLANE_POLICY.get("version"),
+    }
+
+
 READY_DEP_STATUSES = {"reviewed", "frozen"}
 WORKABLE_STATUSES = {"outlined", "specified"}
 CONTINUATION_STATUSES = {"linked"}
@@ -823,6 +882,34 @@ PRE_SPEC_RESERVED_PRIMARY_KINDS = list(
     pre_spec_semantics_policy_lookup("artifact_classes.reserved_primary_kinds")
 )
 PRE_SPEC_REQUIRED_AXES = list(pre_spec_semantics_policy_lookup("axes_contract.required_axes"))
+EVIDENCE_PLANE_INDEX_FILENAME = Path(
+    str(evidence_plane_policy_lookup("repository_layout.index_artifact"))
+).name
+EVIDENCE_PLANE_OVERLAY_FILENAME = Path(
+    str(evidence_plane_policy_lookup("repository_layout.overlay_artifact"))
+).name
+EVIDENCE_PLANE_LAYER_NAME = str(evidence_plane_policy_lookup("semantic_boundary.layer_name"))
+EVIDENCE_PLANE_SEMANTIC_CHAIN = list(
+    evidence_plane_policy_lookup("semantic_boundary.semantic_chain")
+)
+EVIDENCE_PLANE_INDEX_ARTIFACT_KIND = str(
+    evidence_plane_policy_lookup("index_contract.artifact_kind")
+)
+EVIDENCE_PLANE_INDEX_SCHEMA_VERSION = int(
+    evidence_plane_policy_lookup("index_contract.schema_version")
+)
+EVIDENCE_PLANE_CHAIN_STATUSES = list(evidence_plane_policy_lookup("index_contract.chain_statuses"))
+EVIDENCE_PLANE_COVERAGE_STATUSES = list(
+    evidence_plane_policy_lookup("index_contract.coverage_statuses")
+)
+EVIDENCE_PLANE_STAGE_STATUSES = list(evidence_plane_policy_lookup("index_contract.stage_statuses"))
+EVIDENCE_PLANE_OVERLAY_ARTIFACT_KIND = str(
+    evidence_plane_policy_lookup("overlay_contract.artifact_kind")
+)
+EVIDENCE_PLANE_OVERLAY_SCHEMA_VERSION = int(
+    evidence_plane_policy_lookup("overlay_contract.schema_version")
+)
+EVIDENCE_PLANE_NAMED_FILTERS = list(evidence_plane_policy_lookup("overlay_contract.named_filters"))
 OPERATOR_REQUEST_PACKET_ARTIFACT_KIND = str(
     operator_request_bridge_policy_lookup("packet_contract.artifact_kind")
 )
@@ -10205,6 +10292,18 @@ def spec_trace_registry_path() -> Path:
     return ROOT / "tools" / "spec_trace_registry.json"
 
 
+def runtime_evidence_registry_path() -> Path:
+    return ROOT / "tools" / "runtime_evidence_registry.json"
+
+
+def evidence_plane_index_path() -> Path:
+    return RUNS_DIR / EVIDENCE_PLANE_INDEX_FILENAME
+
+
+def evidence_plane_overlay_path() -> Path:
+    return RUNS_DIR / EVIDENCE_PLANE_OVERLAY_FILENAME
+
+
 def load_spec_trace_registry() -> dict[str, dict[str, Any]]:
     path = spec_trace_registry_path()
     if not path.exists():
@@ -10233,6 +10332,42 @@ def load_spec_trace_registry() -> dict[str, dict[str, Any]]:
         if not spec_id:
             raise RuntimeError(
                 f"malformed spec trace registry: entry {index} in {path.as_posix()} missing spec_id"
+            )
+        registry[spec_id] = item
+    return registry
+
+
+def load_runtime_evidence_registry() -> dict[str, dict[str, Any]]:
+    path = runtime_evidence_registry_path()
+    if not path.exists():
+        return {}
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except OSError as exc:
+        raise RuntimeError(
+            f"failed to read runtime evidence registry: {path.as_posix()} ({exc})"
+        ) from exc
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(
+            f"malformed runtime evidence registry: {path.as_posix()} ({exc})"
+        ) from exc
+    if not isinstance(payload, list):
+        raise RuntimeError(
+            f"malformed runtime evidence registry: {path.as_posix()} must contain a JSON list"
+        )
+
+    registry: dict[str, dict[str, Any]] = {}
+    for index, item in enumerate(payload, start=1):
+        if not isinstance(item, dict):
+            raise RuntimeError(
+                "malformed runtime evidence registry: "
+                f"entry {index} in {path.as_posix()} must be an object"
+            )
+        spec_id = str(item.get("spec_id", "")).strip()
+        if not spec_id:
+            raise RuntimeError(
+                "malformed runtime evidence registry: "
+                f"entry {index} in {path.as_posix()} missing spec_id"
             )
         registry[spec_id] = item
     return registry
@@ -11033,6 +11168,285 @@ def write_spec_trace_projection(projection: dict[str, Any]) -> Path:
     return path
 
 
+def declared_evidence_marker_list(entry: dict[str, Any], field: str) -> list[dict[str, Any]]:
+    raw_value = entry.get(field, [])
+    if not isinstance(raw_value, list):
+        return []
+    markers: list[dict[str, Any]] = []
+    for item in raw_value:
+        if not isinstance(item, dict):
+            continue
+        path = str(item.get("path", "")).strip()
+        pattern = str(item.get("pattern", "")).strip()
+        if not path or not pattern:
+            continue
+        markers.append({"path": path, "pattern": pattern})
+    return markers
+
+
+def declared_runtime_entities(entry: dict[str, Any]) -> list[dict[str, Any]]:
+    raw_value = entry.get("runtime_entities", [])
+    if not isinstance(raw_value, list):
+        return []
+    entities: list[dict[str, Any]] = []
+    for item in raw_value:
+        if not isinstance(item, dict):
+            continue
+        entity_id = str(item.get("entity_id", "")).strip()
+        entity_kind = str(item.get("entity_kind", "")).strip()
+        if not entity_id or not entity_kind:
+            continue
+        normalized = {"entity_id": entity_id, "entity_kind": entity_kind}
+        label = str(item.get("label", "")).strip()
+        if label:
+            normalized["label"] = label
+        entities.append(normalized)
+    return entities
+
+
+def build_evidence_plane_index(specs: list[SpecNode]) -> dict[str, Any]:
+    registry = load_runtime_evidence_registry()
+    trace_index = build_spec_trace_index(specs)
+    trace_entries = {
+        str(entry.get("spec_id", "")).strip(): entry
+        for entry in trace_index.get("entries", [])
+        if isinstance(entry, dict) and str(entry.get("spec_id", "")).strip()
+    }
+    known_spec_ids = {spec.id for spec in specs if spec.id}
+    entries: list[dict[str, Any]] = []
+    for spec in sorted(specs, key=lambda item: item.id):
+        registry_entry = registry.get(spec.id)
+        artifact_refs = (
+            [
+                str(item).strip()
+                for item in registry_entry.get("artifact_refs", [])
+                if str(item).strip()
+            ]
+            if isinstance(registry_entry, dict)
+            else []
+        )
+        runtime_entities = declared_runtime_entities(registry_entry or {})
+        observation_markers = declared_evidence_marker_list(
+            registry_entry or {}, "observation_markers"
+        )
+        outcome_markers = declared_evidence_marker_list(registry_entry or {}, "outcome_markers")
+        adoption_markers = declared_evidence_marker_list(registry_entry or {}, "adoption_markers")
+        artifact_surface_report = evaluate_declared_paths(artifact_refs)
+        trace_entry = trace_entries.get(spec.id)
+        artifact_stage = derive_evidence_artifact_stage(
+            registry_entry=registry_entry,
+            artifact_refs=artifact_refs,
+            artifact_surface_report=artifact_surface_report,
+            trace_entry=trace_entry,
+        )
+        observation_coverage = evaluate_evidence_markers(observation_markers)
+        outcome_coverage = evaluate_evidence_markers(outcome_markers)
+        adoption_coverage = evaluate_evidence_markers(adoption_markers)
+        chain_status = derive_evidence_chain_status(
+            registry_entry=registry_entry,
+            observation_coverage=observation_coverage,
+            outcome_coverage=outcome_coverage,
+            adoption_coverage=adoption_coverage,
+        )
+        entries.append(
+            {
+                "spec_id": spec.id,
+                "title": spec.title,
+                "evidence_scope": (
+                    str(registry_entry.get("evidence_scope", "")).strip()
+                    if isinstance(registry_entry, dict)
+                    else "untracked"
+                ),
+                "evidence_contract": {
+                    "source": "runtime_evidence_registry" if registry_entry is not None else "none",
+                    "policy_reference": evidence_plane_policy_reference(),
+                    "registry_path": runtime_evidence_registry_path().relative_to(ROOT).as_posix(),
+                    "notes": (
+                        str(registry_entry.get("notes", "")).strip()
+                        if isinstance(registry_entry, dict)
+                        else ""
+                    ),
+                },
+                "artifact_stage": artifact_stage,
+                "artifact_refs": artifact_refs,
+                "runtime_entities": runtime_entities,
+                "observation_coverage": observation_coverage,
+                "outcome_coverage": outcome_coverage,
+                "adoption_coverage": adoption_coverage,
+                "chain_status": chain_status,
+                "trace_binding": (
+                    {
+                        "implementation_state": copy.deepcopy(
+                            trace_entry.get("implementation_state", {})
+                        ),
+                        "freshness": copy.deepcopy(trace_entry.get("freshness", {})),
+                        "verification_basis": copy.deepcopy(
+                            trace_entry.get("verification_basis", {})
+                        ),
+                    }
+                    if isinstance(trace_entry, dict)
+                    else {}
+                ),
+                "evidence_summary": {
+                    "artifact_ref_count": len(artifact_refs),
+                    "runtime_entity_count": len(runtime_entities),
+                    "observation_source_count": len(observation_markers),
+                    "outcome_source_count": len(outcome_markers),
+                    "adoption_source_count": len(adoption_markers),
+                    "chain_status": chain_status,
+                },
+            }
+        )
+
+    unknown_registry_specs = sorted(set(registry) - known_spec_ids)
+    return {
+        "artifact_kind": EVIDENCE_PLANE_INDEX_ARTIFACT_KIND,
+        "schema_version": EVIDENCE_PLANE_INDEX_SCHEMA_VERSION,
+        "generated_at": utc_now_iso(),
+        "layer_name": EVIDENCE_PLANE_LAYER_NAME,
+        "policy_reference": evidence_plane_policy_reference(),
+        "trace_reference": {
+            "artifact_path": spec_trace_index_path().relative_to(ROOT).as_posix(),
+            "generated_at": trace_index.get("generated_at"),
+        },
+        "registry_path": runtime_evidence_registry_path().relative_to(ROOT).as_posix(),
+        "semantic_chain": list(EVIDENCE_PLANE_SEMANTIC_CHAIN),
+        "entry_count": len(entries),
+        "tracked_entry_count": len(registry),
+        "entries": entries,
+        "unknown_registry_specs": unknown_registry_specs,
+        "available_chain_statuses": list(EVIDENCE_PLANE_CHAIN_STATUSES),
+    }
+
+
+def write_evidence_plane_index(index: dict[str, Any]) -> Path:
+    RUNS_DIR.mkdir(parents=True, exist_ok=True)
+    path = evidence_plane_index_path()
+    with artifact_lock(path):
+        atomic_write_json(path, index)
+    return path
+
+
+def build_evidence_plane_overlay(index: dict[str, Any]) -> dict[str, Any]:
+    entries = list(index.get("entries", []))
+    chain_status_groups: dict[str, list[str]] = {}
+    artifact_stage_groups: dict[str, list[str]] = {}
+    observation_groups: dict[str, list[str]] = {}
+    outcome_groups: dict[str, list[str]] = {}
+    adoption_groups: dict[str, list[str]] = {}
+    named_filters = {name: [] for name in EVIDENCE_PLANE_NAMED_FILTERS}
+    backlog_items: list[dict[str, Any]] = []
+
+    for entry in entries:
+        spec_id = str(entry.get("spec_id", "")).strip()
+        title = str(entry.get("title", "")).strip()
+        chain_status = str(entry.get("chain_status", "untracked")).strip() or "untracked"
+        artifact_status = (
+            str(entry.get("artifact_stage", {}).get("status", "untracked")).strip() or "untracked"
+        )
+        observation_status = (
+            str(entry.get("observation_coverage", {}).get("status", "not_declared")).strip()
+            or "not_declared"
+        )
+        outcome_status = (
+            str(entry.get("outcome_coverage", {}).get("status", "not_declared")).strip()
+            or "not_declared"
+        )
+        adoption_status = (
+            str(entry.get("adoption_coverage", {}).get("status", "not_declared")).strip()
+            or "not_declared"
+        )
+
+        chain_status_groups.setdefault(chain_status, []).append(spec_id)
+        artifact_stage_groups.setdefault(artifact_status, []).append(spec_id)
+        observation_groups.setdefault(observation_status, []).append(spec_id)
+        outcome_groups.setdefault(outcome_status, []).append(spec_id)
+        adoption_groups.setdefault(adoption_status, []).append(spec_id)
+
+        next_gap = "none"
+        if chain_status == "untracked":
+            named_filters["missing_evidence_contract"].append(spec_id)
+            next_gap = "attach_evidence_contract"
+        elif artifact_status in {"missing", "partial"}:
+            named_filters["artifact_gap"].append(spec_id)
+            next_gap = "align_artifact_surfaces"
+        elif observation_status != "covered":
+            named_filters["observation_gap"].append(spec_id)
+            next_gap = "collect_observation_evidence"
+        elif outcome_status != "covered":
+            named_filters["outcome_gap"].append(spec_id)
+            next_gap = "collect_outcome_evidence"
+        elif adoption_status != "covered":
+            named_filters["adoption_gap"].append(spec_id)
+            next_gap = "collect_adoption_evidence"
+        else:
+            named_filters["complete_chain"].append(spec_id)
+
+        if next_gap != "none":
+            backlog_items.append(
+                {
+                    "spec_id": spec_id,
+                    "title": title,
+                    "chain_status": chain_status,
+                    "artifact_stage_status": artifact_status,
+                    "observation_status": observation_status,
+                    "outcome_status": outcome_status,
+                    "adoption_status": adoption_status,
+                    "next_gap": next_gap,
+                }
+            )
+
+    grouped_backlog: dict[str, list[str]] = {}
+    for item in backlog_items:
+        grouped_backlog.setdefault(str(item["next_gap"]), []).append(str(item["spec_id"]))
+
+    return {
+        "artifact_kind": EVIDENCE_PLANE_OVERLAY_ARTIFACT_KIND,
+        "schema_version": EVIDENCE_PLANE_OVERLAY_SCHEMA_VERSION,
+        "generated_at": utc_now_iso(),
+        "layer_name": EVIDENCE_PLANE_LAYER_NAME,
+        "policy_reference": evidence_plane_policy_reference(),
+        "source_index_path": evidence_plane_index_path().relative_to(ROOT).as_posix(),
+        "source_index_generated_at": index.get("generated_at"),
+        "entry_count": len(entries),
+        "viewer_projection": {
+            "chain_status": {
+                key: sorted(value) for key, value in sorted(chain_status_groups.items())
+            },
+            "artifact_stage": {
+                key: sorted(value) for key, value in sorted(artifact_stage_groups.items())
+            },
+            "observation_coverage": {
+                key: sorted(value) for key, value in sorted(observation_groups.items())
+            },
+            "outcome_coverage": {
+                key: sorted(value) for key, value in sorted(outcome_groups.items())
+            },
+            "adoption_coverage": {
+                key: sorted(value) for key, value in sorted(adoption_groups.items())
+            },
+            "named_filters": {
+                key: sorted(set(value)) for key, value in sorted(named_filters.items())
+            },
+        },
+        "evidence_backlog": {
+            "entry_count": len(backlog_items),
+            "items": backlog_items,
+            "grouped_by_next_gap": {
+                key: sorted(value) for key, value in sorted(grouped_backlog.items())
+            },
+        },
+    }
+
+
+def write_evidence_plane_overlay(overlay: dict[str, Any]) -> Path:
+    RUNS_DIR.mkdir(parents=True, exist_ok=True)
+    path = evidence_plane_overlay_path()
+    with artifact_lock(path):
+        atomic_write_json(path, overlay)
+    return path
+
+
 def proposal_runtime_registry_path() -> Path:
     return ROOT / "tools" / "proposal_runtime_registry.json"
 
@@ -11281,6 +11695,130 @@ def evaluate_path_markers(markers: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
+def evaluate_declared_paths(paths: list[str]) -> dict[str, Any]:
+    checked_paths: list[dict[str, Any]] = []
+    existing_count = 0
+    for path_text in paths:
+        normalized = str(path_text).strip()
+        if not normalized:
+            continue
+        path = ROOT / normalized
+        exists = path.exists()
+        if exists:
+            existing_count += 1
+        checked_paths.append(
+            {
+                "path": normalized,
+                "exists": exists,
+            }
+        )
+    status = "not_declared"
+    if checked_paths:
+        if existing_count == len(checked_paths):
+            status = "covered"
+        elif existing_count == 0:
+            status = "missing"
+        else:
+            status = "partial"
+    return {
+        "status": status,
+        "required_count": len(checked_paths),
+        "existing_count": existing_count,
+        "paths": checked_paths,
+        "missing_paths": [item for item in checked_paths if not item["exists"]],
+    }
+
+
+def evaluate_evidence_markers(markers: list[dict[str, Any]]) -> dict[str, Any]:
+    report = evaluate_path_markers(markers)
+    normalized = copy.deepcopy(report)
+    if normalized["status"] == "not_configured":
+        normalized["status"] = "not_declared"
+    normalized["available_statuses"] = list(EVIDENCE_PLANE_COVERAGE_STATUSES)
+    return normalized
+
+
+def derive_evidence_artifact_stage(
+    *,
+    registry_entry: dict[str, Any] | None,
+    artifact_refs: list[str],
+    artifact_surface_report: dict[str, Any],
+    trace_entry: dict[str, Any] | None,
+) -> dict[str, Any]:
+    if registry_entry is None:
+        return {
+            "status": "untracked",
+            "available_statuses": list(EVIDENCE_PLANE_STAGE_STATUSES),
+            "basis": "No explicit evidence contract is registered for this spec.",
+            "artifact_ref_count": 0,
+            "trace_linked": False,
+        }
+
+    trace_linked = bool(
+        isinstance(trace_entry, dict)
+        and (
+            trace_entry.get("trace_contract")
+            or trace_entry.get("code_refs")
+            or trace_entry.get("test_refs")
+        )
+    )
+    if artifact_surface_report["status"] == "covered" and trace_linked:
+        status = "linked"
+        basis = "Declared artifact refs exist and the spec already has a graph-bound trace entry."
+    elif artifact_surface_report["status"] in {"covered", "partial"} or trace_linked:
+        status = "partial"
+        basis = (
+            "Evidence contract exists, but artifact refs and graph-bound trace anchors are only "
+            "partially aligned."
+        )
+    else:
+        status = "missing"
+        basis = "Evidence contract exists, but declared artifact refs are not currently present."
+    return {
+        "status": status,
+        "available_statuses": list(EVIDENCE_PLANE_STAGE_STATUSES),
+        "basis": basis,
+        "artifact_ref_count": len(artifact_refs),
+        "trace_linked": trace_linked,
+        "implementation_state": (
+            copy.deepcopy(trace_entry.get("implementation_state", {}))
+            if isinstance(trace_entry, dict)
+            else {}
+        ),
+        "freshness": (
+            copy.deepcopy(trace_entry.get("freshness", {})) if isinstance(trace_entry, dict) else {}
+        ),
+        "artifact_surfaces": artifact_surface_report,
+    }
+
+
+def derive_evidence_chain_status(
+    *,
+    registry_entry: dict[str, Any] | None,
+    observation_coverage: dict[str, Any],
+    outcome_coverage: dict[str, Any],
+    adoption_coverage: dict[str, Any],
+) -> str:
+    if registry_entry is None:
+        return "untracked"
+    observation_status = str(observation_coverage.get("status", "")).strip()
+    outcome_status = str(outcome_coverage.get("status", "")).strip()
+    adoption_status = str(adoption_coverage.get("status", "")).strip()
+    if (
+        observation_status == "covered"
+        and outcome_status == "covered"
+        and adoption_status == "covered"
+    ):
+        return "chain_complete"
+    if observation_status == "covered" and outcome_status == "covered":
+        return "outcome_backed"
+    if observation_status == "covered":
+        return "observation_backed"
+    if any(status == "partial" for status in (observation_status, outcome_status, adoption_status)):
+        return "partial"
+    return "contract_only"
+
+
 def derive_runtime_realization_status(
     *,
     posture: str,
@@ -11494,6 +12032,8 @@ def build_proposal_runtime_index() -> dict[str, Any]:
 
     backlog = build_reflective_backlog(entries)
     return {
+        "artifact_kind": "proposal_runtime_index",
+        "schema_version": 1,
         "generated_at": utc_now_iso(),
         "posture_vocabulary": copy.deepcopy(PROPOSAL_PROCESSING_POSTURES),
         "entry_count": len(entries),
@@ -15047,6 +15587,8 @@ def main(
     build_graph_health_trends_mode: bool = False,
     build_spec_trace_index_mode: bool = False,
     build_spec_trace_projection_mode: bool = False,
+    build_evidence_plane_index_mode: bool = False,
+    build_evidence_plane_overlay_mode: bool = False,
     build_proposal_lane_overlay_mode: bool = False,
     build_proposal_runtime_index_mode: bool = False,
     build_proposal_promotion_index_mode: bool = False,
@@ -15108,6 +15650,8 @@ def main(
                 build_graph_health_trends_mode,
                 build_spec_trace_index_mode,
                 build_spec_trace_projection_mode,
+                build_evidence_plane_index_mode,
+                build_evidence_plane_overlay_mode,
                 build_proposal_lane_overlay_mode,
                 build_proposal_runtime_index_mode,
                 build_proposal_promotion_index_mode,
@@ -15156,6 +15700,8 @@ def main(
                 build_graph_health_trends_mode,
                 build_spec_trace_index_mode,
                 build_spec_trace_projection_mode,
+                build_evidence_plane_index_mode,
+                build_evidence_plane_overlay_mode,
                 build_proposal_lane_overlay_mode,
                 build_proposal_runtime_index_mode,
                 build_proposal_promotion_index_mode,
@@ -15200,6 +15746,8 @@ def main(
                 build_graph_health_trends_mode,
                 build_spec_trace_index_mode,
                 build_spec_trace_projection_mode,
+                build_evidence_plane_index_mode,
+                build_evidence_plane_overlay_mode,
                 build_proposal_lane_overlay_mode,
                 build_proposal_runtime_index_mode,
                 build_proposal_promotion_index_mode,
@@ -15242,6 +15790,8 @@ def main(
                 build_vocabulary_index_mode,
                 build_vocabulary_drift_report_mode,
                 build_pre_spec_semantics_index_mode,
+                build_evidence_plane_index_mode,
+                build_evidence_plane_overlay_mode,
                 build_proposal_runtime_index_mode,
                 build_proposal_promotion_index_mode,
             )
@@ -15295,6 +15845,8 @@ def main(
                 build_graph_health_trends_mode,
                 build_spec_trace_index_mode,
                 build_spec_trace_projection_mode,
+                build_evidence_plane_index_mode,
+                build_evidence_plane_overlay_mode,
                 build_proposal_lane_overlay_mode,
                 build_proposal_runtime_index_mode,
                 build_proposal_promotion_index_mode,
@@ -15340,6 +15892,8 @@ def main(
                 build_graph_health_trends_mode,
                 build_spec_trace_index_mode,
                 build_spec_trace_projection_mode,
+                build_evidence_plane_index_mode,
+                build_evidence_plane_overlay_mode,
                 build_proposal_lane_overlay_mode,
                 build_proposal_runtime_index_mode,
                 build_proposal_promotion_index_mode,
@@ -15385,6 +15939,8 @@ def main(
                 build_graph_health_trends_mode,
                 build_spec_trace_index_mode,
                 build_spec_trace_projection_mode,
+                build_evidence_plane_index_mode,
+                build_evidence_plane_overlay_mode,
                 build_proposal_lane_overlay_mode,
                 build_proposal_runtime_index_mode,
                 build_proposal_promotion_index_mode,
@@ -15429,6 +15985,8 @@ def main(
                 build_graph_health_overlay_mode,
                 build_spec_trace_index_mode,
                 build_spec_trace_projection_mode,
+                build_evidence_plane_index_mode,
+                build_evidence_plane_overlay_mode,
                 build_proposal_lane_overlay_mode,
                 build_proposal_runtime_index_mode,
                 build_proposal_promotion_index_mode,
@@ -15474,6 +16032,8 @@ def main(
                 build_pre_spec_semantics_index_mode,
                 build_proposal_lane_overlay_mode,
                 build_spec_trace_projection_mode,
+                build_evidence_plane_index_mode,
+                build_evidence_plane_overlay_mode,
                 build_proposal_runtime_index_mode,
                 build_proposal_promotion_index_mode,
             )
@@ -15513,6 +16073,8 @@ def main(
                 build_vocabulary_index_mode,
                 build_vocabulary_drift_report_mode,
                 build_pre_spec_semantics_index_mode,
+                build_evidence_plane_index_mode,
+                build_evidence_plane_overlay_mode,
                 build_proposal_lane_overlay_mode,
                 build_proposal_runtime_index_mode,
             )
@@ -15527,6 +16089,96 @@ def main(
         projection = build_spec_trace_projection(index)
         write_spec_trace_projection(projection)
         print(json.dumps(projection, ensure_ascii=False, indent=2))
+        return 0
+
+    if build_evidence_plane_index_mode:
+        if any(
+            (
+                dry_run,
+                auto_approve,
+                loop,
+                resolve_gate,
+                decision,
+                note,
+                target_spec,
+                split_proposal,
+                apply_split_proposal,
+                operator_note,
+                mutation_budget,
+                run_authority,
+                execution_profile,
+                child_model,
+                child_timeout_seconds,
+                verbose,
+                list_stale_runtime,
+                clean_stale_runtime,
+                observe_graph_health_mode,
+                operator_request_packet_path,
+                build_vocabulary_index_mode,
+                build_vocabulary_drift_report_mode,
+                build_pre_spec_semantics_index_mode,
+                build_proposal_lane_overlay_mode,
+                build_spec_trace_index_mode,
+                build_spec_trace_projection_mode,
+                build_evidence_plane_overlay_mode,
+                build_proposal_runtime_index_mode,
+                build_proposal_promotion_index_mode,
+            )
+        ):
+            print(
+                "--build-evidence-plane-index must be used as a standalone command",
+                file=sys.stderr,
+            )
+            return 1
+        index = build_evidence_plane_index(specs)
+        write_evidence_plane_index(index)
+        print(json.dumps(index, ensure_ascii=False, indent=2))
+        return 0
+
+    if build_evidence_plane_overlay_mode:
+        if any(
+            (
+                dry_run,
+                auto_approve,
+                loop,
+                resolve_gate,
+                decision,
+                note,
+                target_spec,
+                split_proposal,
+                apply_split_proposal,
+                operator_note,
+                mutation_budget,
+                run_authority,
+                execution_profile,
+                child_model,
+                child_timeout_seconds,
+                verbose,
+                list_stale_runtime,
+                clean_stale_runtime,
+                observe_graph_health_mode,
+                operator_request_packet_path,
+                build_vocabulary_index_mode,
+                build_vocabulary_drift_report_mode,
+                build_pre_spec_semantics_index_mode,
+                build_proposal_lane_overlay_mode,
+                build_spec_trace_index_mode,
+                build_spec_trace_projection_mode,
+                build_evidence_plane_index_mode,
+                build_proposal_runtime_index_mode,
+                build_proposal_promotion_index_mode,
+            )
+        ):
+            print(
+                "--build-evidence-plane-overlay must be used as a standalone command",
+                file=sys.stderr,
+            )
+            return 1
+        index = build_evidence_plane_index(specs)
+        write_evidence_plane_index(index)
+        overlay = build_evidence_plane_overlay(index)
+        write_evidence_plane_overlay(overlay)
+        print(json.dumps(overlay, ensure_ascii=False, indent=2))
         return 0
 
     if build_proposal_runtime_index_mode:
@@ -15556,6 +16208,8 @@ def main(
                 build_vocabulary_drift_report_mode,
                 build_pre_spec_semantics_index_mode,
                 build_proposal_lane_overlay_mode,
+                build_evidence_plane_index_mode,
+                build_evidence_plane_overlay_mode,
                 build_proposal_promotion_index_mode,
             )
         ):
@@ -15596,6 +16250,8 @@ def main(
                 build_vocabulary_drift_report_mode,
                 build_pre_spec_semantics_index_mode,
                 build_proposal_lane_overlay_mode,
+                build_evidence_plane_index_mode,
+                build_evidence_plane_overlay_mode,
             )
         ):
             print(
@@ -16239,6 +16895,22 @@ if __name__ == "__main__":
         ),
     )
     parser.add_argument(
+        "--build-evidence-plane-index",
+        action="store_true",
+        help=(
+            "Build a derived evidence-plane index that links canonical specs to declared "
+            "artifact surfaces, runtime entities, and observation/outcome/adoption evidence"
+        ),
+    )
+    parser.add_argument(
+        "--build-evidence-plane-overlay",
+        action="store_true",
+        help=(
+            "Build a viewer/inspection overlay from the evidence plane, grouped by chain "
+            "status and next evidence gap"
+        ),
+    )
+    parser.add_argument(
         "--build-proposal-lane-overlay",
         action="store_true",
         help=(
@@ -16387,6 +17059,8 @@ if __name__ == "__main__":
             build_graph_health_trends_mode=args.build_graph_health_trends,
             build_spec_trace_index_mode=args.build_spec_trace_index,
             build_spec_trace_projection_mode=args.build_spec_trace_projection,
+            build_evidence_plane_index_mode=args.build_evidence_plane_index,
+            build_evidence_plane_overlay_mode=args.build_evidence_plane_overlay,
             build_proposal_lane_overlay_mode=args.build_proposal_lane_overlay,
             build_proposal_runtime_index_mode=args.build_proposal_runtime_index,
             build_proposal_promotion_index_mode=args.build_proposal_promotion_index,

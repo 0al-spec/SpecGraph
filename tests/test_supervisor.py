@@ -7331,6 +7331,372 @@ def test_build_spec_trace_projection_groups_backlog_and_viewer_filters(
     }
 
 
+def test_build_evidence_plane_index_reports_registry_backed_chain_statuses(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    specs_dir = repo_fixture / "specs" / "nodes"
+    for spec_id, title in (
+        ("SG-SPEC-0049", "Graph Health Runtime Evidence"),
+        ("SG-SPEC-0050", "Pre-Spec Semantic Runtime Evidence"),
+        ("SG-SPEC-0051", "Proposal Promotion Runtime Evidence"),
+    ):
+        (specs_dir / f"{spec_id}.yaml").write_text(
+            json.dumps(
+                {
+                    "id": spec_id,
+                    "title": title,
+                    "kind": "spec",
+                    "created_at": "2026-04-19T00:00:00Z",
+                    "updated_at": "2026-04-19T00:00:00Z",
+                    "status": "linked",
+                    "maturity": 0.4,
+                    "depends_on": [],
+                    "relates_to": [],
+                    "inputs": [],
+                    "outputs": [f"specs/nodes/{spec_id}.yaml"],
+                    "allowed_paths": [f"specs/nodes/{spec_id}.yaml"],
+                    "acceptance": ["kept"],
+                    "prompt": "Inspect evidence surfaces.",
+                }
+            ),
+            encoding="utf-8",
+        )
+
+    tools_dir = repo_fixture / "tools"
+    tests_dir = repo_fixture / "tests"
+    tools_dir.mkdir()
+    tests_dir.mkdir()
+    (tools_dir / "impl.py").write_text(
+        "\n".join(
+            [
+                "PRIMARY = 'SG-SPEC-0049'",
+                "SECONDARY = 'SG-SPEC-0050'",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    (tests_dir / "test_impl.py").write_text(
+        "\n".join(
+            [
+                "def test_runtime_surfaces():",
+                "    assert 'SG-SPEC-0049'",
+                "    assert 'SG-SPEC-0050'",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    for relpath in (
+        "tools/supervisor_policy.json",
+        "tools/techspec_handoff_policy.json",
+        "tools/intent_layer_policy.json",
+        "tools/pre_spec_semantics_policy.json",
+        "tools/operator_request_bridge_policy.json",
+    ):
+        path = repo_fixture / relpath
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("{}", encoding="utf-8")
+
+    (tools_dir / "runtime_evidence_registry.json").write_text(
+        json.dumps(
+            [
+                {
+                    "spec_id": "SG-SPEC-0049",
+                    "evidence_scope": "surface_level",
+                    "artifact_refs": [
+                        "tools/supervisor_policy.json",
+                        "tools/techspec_handoff_policy.json",
+                    ],
+                    "runtime_entities": [
+                        {
+                            "entity_id": "supervisor.graph_health_overlay",
+                            "entity_kind": "viewer_overlay",
+                        }
+                    ],
+                    "observation_markers": [
+                        {
+                            "path": "runs/graph_health_overlay.json",
+                            "pattern": '"artifact_kind": "graph_health_overlay"',
+                        }
+                    ],
+                    "outcome_markers": [
+                        {
+                            "path": "runs/graph_health_trends.json",
+                            "pattern": '"recurring_signal_groups"',
+                        }
+                    ],
+                    "adoption_markers": [
+                        {
+                            "path": "runs/graph_health_trends.json",
+                            "pattern": '"currently_active"',
+                        }
+                    ],
+                },
+                {
+                    "spec_id": "SG-SPEC-0051",
+                    "evidence_scope": "surface_level",
+                    "artifact_refs": [
+                        "tools/supervisor.py",
+                    ],
+                    "runtime_entities": [
+                        {
+                            "entity_id": "supervisor.proposal_runtime_index",
+                            "entity_kind": "inspection_overlay",
+                        }
+                    ],
+                    "observation_markers": [
+                        {
+                            "path": "runs/proposal_promotion_index.json",
+                            "pattern": '"artifact_kind": "proposal_promotion_index"',
+                        }
+                    ],
+                    "outcome_markers": [
+                        {
+                            "path": "runs/proposal_promotion_index.json",
+                            "pattern": '"viewer_projection"',
+                        }
+                    ],
+                    "adoption_markers": [
+                        {
+                            "path": "runs/proposal_runtime_index.json",
+                            "pattern": '"artifact_kind": "proposal_runtime_index"',
+                        }
+                    ],
+                },
+                {
+                    "spec_id": "SG-SPEC-0050",
+                    "evidence_scope": "surface_level",
+                    "artifact_refs": [
+                        "tools/intent_layer_policy.json",
+                        "tools/pre_spec_semantics_policy.json",
+                        "tools/operator_request_bridge_policy.json",
+                    ],
+                    "runtime_entities": [
+                        {
+                            "entity_id": "supervisor.intent_layer_overlay",
+                            "entity_kind": "viewer_overlay",
+                        }
+                    ],
+                    "observation_markers": [
+                        {
+                            "path": "runs/intent_layer_overlay.json",
+                            "pattern": '"artifact_kind": "intent_layer_overlay"',
+                        }
+                    ],
+                    "outcome_markers": [
+                        {
+                            "path": "runs/pre_spec_semantics_index.json",
+                            "pattern": '"canonical_materialized"',
+                        }
+                    ],
+                    "adoption_markers": [
+                        {
+                            "path": "runs/proposal_lane_overlay.json",
+                            "pattern": '"canonical_node_targets"',
+                        }
+                    ],
+                },
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    (repo_fixture / "runs" / "graph_health_overlay.json").write_text(
+        json.dumps({"artifact_kind": "graph_health_overlay", "viewer_projection": {}}),
+        encoding="utf-8",
+    )
+    (repo_fixture / "runs" / "graph_health_trends.json").write_text(
+        json.dumps(
+            {
+                "artifact_kind": "graph_health_trends",
+                "viewer_projection": {"recurring_signal_groups": {}},
+                "currently_active": True,
+            }
+        ),
+        encoding="utf-8",
+    )
+    (repo_fixture / "runs" / "intent_layer_overlay.json").write_text(
+        json.dumps({"artifact_kind": "intent_layer_overlay", "by_mediation_state": {}}),
+        encoding="utf-8",
+    )
+    (repo_fixture / "runs" / "proposal_promotion_index.json").write_text(
+        json.dumps({"artifact_kind": "proposal_promotion_index", "viewer_projection": {}}),
+        encoding="utf-8",
+    )
+    (repo_fixture / "runs" / "proposal_runtime_index.json").write_text(
+        json.dumps({"artifact_kind": "proposal_runtime_index", "entries": []}),
+        encoding="utf-8",
+    )
+
+    index = supervisor_module.build_evidence_plane_index(supervisor_module.load_specs())
+
+    assert index["artifact_kind"] == supervisor_module.EVIDENCE_PLANE_INDEX_ARTIFACT_KIND
+    assert index["layer_name"] == supervisor_module.EVIDENCE_PLANE_LAYER_NAME
+    by_id = {entry["spec_id"]: entry for entry in index["entries"]}
+    assert by_id["SG-SPEC-0049"]["artifact_stage"]["status"] == "linked"
+    assert by_id["SG-SPEC-0049"]["chain_status"] == "chain_complete"
+    assert by_id["SG-SPEC-0050"]["artifact_stage"]["status"] == "linked"
+    assert by_id["SG-SPEC-0050"]["observation_coverage"]["status"] == "covered"
+    assert by_id["SG-SPEC-0050"]["outcome_coverage"]["status"] == "missing"
+    assert by_id["SG-SPEC-0050"]["chain_status"] == "observation_backed"
+    assert by_id["SG-SPEC-0051"]["adoption_coverage"]["status"] == "covered"
+    assert by_id["SG-SPEC-0051"]["chain_status"] == "chain_complete"
+    assert by_id["SG-SPEC-0001"]["chain_status"] == "untracked"
+    assert index["unknown_registry_specs"] == []
+
+
+def test_build_evidence_plane_overlay_groups_chain_gaps(
+    supervisor_module: object,
+) -> None:
+    overlay = supervisor_module.build_evidence_plane_overlay(
+        {
+            "generated_at": "2026-04-19T00:00:00Z",
+            "entries": [
+                {
+                    "spec_id": "SG-SPEC-0001",
+                    "title": "Missing Contract",
+                    "chain_status": "untracked",
+                    "artifact_stage": {"status": "untracked"},
+                    "observation_coverage": {"status": "not_declared"},
+                    "outcome_coverage": {"status": "not_declared"},
+                    "adoption_coverage": {"status": "not_declared"},
+                },
+                {
+                    "spec_id": "SG-SPEC-0002",
+                    "title": "Artifact Gap",
+                    "chain_status": "partial",
+                    "artifact_stage": {"status": "partial"},
+                    "observation_coverage": {"status": "covered"},
+                    "outcome_coverage": {"status": "partial"},
+                    "adoption_coverage": {"status": "not_declared"},
+                },
+                {
+                    "spec_id": "SG-SPEC-0003",
+                    "title": "Complete Chain",
+                    "chain_status": "chain_complete",
+                    "artifact_stage": {"status": "linked"},
+                    "observation_coverage": {"status": "covered"},
+                    "outcome_coverage": {"status": "covered"},
+                    "adoption_coverage": {"status": "covered"},
+                },
+            ],
+        }
+    )
+
+    assert overlay["artifact_kind"] == supervisor_module.EVIDENCE_PLANE_OVERLAY_ARTIFACT_KIND
+    assert overlay["viewer_projection"]["chain_status"]["untracked"] == ["SG-SPEC-0001"]
+    assert overlay["viewer_projection"]["named_filters"]["artifact_gap"] == ["SG-SPEC-0002"]
+    assert overlay["viewer_projection"]["named_filters"]["complete_chain"] == ["SG-SPEC-0003"]
+    assert overlay["evidence_backlog"]["grouped_by_next_gap"] == {
+        "align_artifact_surfaces": ["SG-SPEC-0002"],
+        "attach_evidence_contract": ["SG-SPEC-0001"],
+    }
+
+
+def test_main_builds_evidence_plane_index_as_standalone_command(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    def fake_index(specs: list[object]) -> dict[str, object]:
+        assert len(specs) == 1
+        return {
+            "artifact_kind": supervisor_module.EVIDENCE_PLANE_INDEX_ARTIFACT_KIND,
+            "schema_version": supervisor_module.EVIDENCE_PLANE_INDEX_SCHEMA_VERSION,
+            "generated_at": "2026-04-19T00:00:00Z",
+            "layer_name": supervisor_module.EVIDENCE_PLANE_LAYER_NAME,
+            "policy_reference": {"artifact_path": "tools/evidence_plane_policy.json"},
+            "trace_reference": {"artifact_path": "runs/spec_trace_index.json"},
+            "registry_path": "tools/runtime_evidence_registry.json",
+            "semantic_chain": list(supervisor_module.EVIDENCE_PLANE_SEMANTIC_CHAIN),
+            "entry_count": 1,
+            "tracked_entry_count": 1,
+            "entries": [{"spec_id": "SG-SPEC-0001", "chain_status": "contract_only"}],
+            "unknown_registry_specs": [],
+            "available_chain_statuses": list(supervisor_module.EVIDENCE_PLANE_CHAIN_STATUSES),
+        }
+
+    monkeypatch.setattr(supervisor_module, "build_evidence_plane_index", fake_index)
+
+    exit_code = supervisor_module.main(build_evidence_plane_index_mode=True)
+
+    assert exit_code == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["artifact_kind"] == supervisor_module.EVIDENCE_PLANE_INDEX_ARTIFACT_KIND
+    assert (
+        json.loads(
+            (repo_fixture / "runs" / "evidence_plane_index.json").read_text(encoding="utf-8")
+        )["artifact_kind"]
+        == supervisor_module.EVIDENCE_PLANE_INDEX_ARTIFACT_KIND
+    )
+
+
+def test_main_builds_evidence_plane_overlay_as_standalone_command(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    def fake_index(specs: list[object]) -> dict[str, object]:
+        assert len(specs) == 1
+        return {
+            "artifact_kind": supervisor_module.EVIDENCE_PLANE_INDEX_ARTIFACT_KIND,
+            "schema_version": supervisor_module.EVIDENCE_PLANE_INDEX_SCHEMA_VERSION,
+            "generated_at": "2026-04-19T00:00:00Z",
+            "entries": [{"spec_id": "SG-SPEC-0001", "chain_status": "contract_only"}],
+        }
+
+    def fake_overlay(index: dict[str, object]) -> dict[str, object]:
+        assert index["artifact_kind"] == supervisor_module.EVIDENCE_PLANE_INDEX_ARTIFACT_KIND
+        return {
+            "artifact_kind": supervisor_module.EVIDENCE_PLANE_OVERLAY_ARTIFACT_KIND,
+            "schema_version": supervisor_module.EVIDENCE_PLANE_OVERLAY_SCHEMA_VERSION,
+            "generated_at": "2026-04-19T00:01:00Z",
+            "layer_name": supervisor_module.EVIDENCE_PLANE_LAYER_NAME,
+            "policy_reference": {"artifact_path": "tools/evidence_plane_policy.json"},
+            "source_index_path": "runs/evidence_plane_index.json",
+            "source_index_generated_at": "2026-04-19T00:00:00Z",
+            "entry_count": 1,
+            "viewer_projection": {
+                "chain_status": {"contract_only": ["SG-SPEC-0001"]},
+                "artifact_stage": {"linked": ["SG-SPEC-0001"]},
+                "observation_coverage": {"missing": ["SG-SPEC-0001"]},
+                "outcome_coverage": {"missing": ["SG-SPEC-0001"]},
+                "adoption_coverage": {"missing": ["SG-SPEC-0001"]},
+                "named_filters": {"observation_gap": ["SG-SPEC-0001"]},
+            },
+            "evidence_backlog": {
+                "entry_count": 1,
+                "items": [{"spec_id": "SG-SPEC-0001", "next_gap": "collect_observation_evidence"}],
+                "grouped_by_next_gap": {"collect_observation_evidence": ["SG-SPEC-0001"]},
+            },
+        }
+
+    monkeypatch.setattr(supervisor_module, "build_evidence_plane_index", fake_index)
+    monkeypatch.setattr(supervisor_module, "build_evidence_plane_overlay", fake_overlay)
+
+    exit_code = supervisor_module.main(build_evidence_plane_overlay_mode=True)
+
+    assert exit_code == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["artifact_kind"] == supervisor_module.EVIDENCE_PLANE_OVERLAY_ARTIFACT_KIND
+    assert (
+        json.loads(
+            (repo_fixture / "runs" / "evidence_plane_index.json").read_text(encoding="utf-8")
+        )["artifact_kind"]
+        == supervisor_module.EVIDENCE_PLANE_INDEX_ARTIFACT_KIND
+    )
+    assert (
+        json.loads(
+            (repo_fixture / "runs" / "evidence_plane_overlay.json").read_text(encoding="utf-8")
+        )["artifact_kind"]
+        == supervisor_module.EVIDENCE_PLANE_OVERLAY_ARTIFACT_KIND
+    )
+
+
 def test_build_graph_health_overlay_groups_viewer_filters(
     supervisor_module: object,
     repo_fixture: Path,
@@ -8570,6 +8936,8 @@ def test_build_proposal_runtime_index_reports_reflective_chain(
 
     index = supervisor_module.build_proposal_runtime_index()
 
+    assert index["artifact_kind"] == "proposal_runtime_index"
+    assert index["schema_version"] == 1
     assert index["entry_count"] == 2
     by_id = {entry["proposal_id"]: entry for entry in index["entries"]}
     assert by_id["0023"]["posture"] == "synchronous_runtime_slice"
@@ -8682,11 +9050,13 @@ def test_main_builds_proposal_runtime_index_as_standalone_command(
 
     assert exit_code == 0
     report = json.loads(capsys.readouterr().out)
+    assert report["artifact_kind"] == "proposal_runtime_index"
     assert report["entry_count"] == 1
     assert report["entries"][0]["proposal_id"] == "0023"
     artifact = json.loads(
         (repo_fixture / "runs" / "proposal_runtime_index.json").read_text(encoding="utf-8")
     )
+    assert artifact["artifact_kind"] == "proposal_runtime_index"
     assert artifact["entries"][0]["runtime_realization"]["status"] == "implemented"
 
 
