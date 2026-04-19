@@ -95,6 +95,8 @@ particular task.
   `--build-metric-signal-index`
 - turn metric-threshold breaches into reviewable proposal artifacts:
   `--build-metric-threshold-proposals`
+- build one aggregated graph dashboard for a viewer or visualizer:
+  `--build-graph-dashboard`
 - build a repository-tracked intent-layer overlay:
   `--build-intent-layer-overlay`
 - build a repository-tracked proposal-lane overlay:
@@ -523,6 +525,34 @@ Entries carry:
 - a proposal-first transition envelope showing that the result is reviewable
   follow-up, not silent policy tuning
 
+### Graph dashboard
+
+```bash
+python3 tools/supervisor.py --build-graph-dashboard
+```
+
+Builds `runs/graph_dashboard.json` as one aggregated dashboard artifact for a
+viewer or visualizer.
+
+The dashboard is explicitly derived-only. It pulls fresh counts from:
+
+- graph health overlay and trends
+- intent and proposal-lane overlays
+- proposal runtime and promotion indexes
+- implementation trace projection
+- evidence-plane overlay
+- metric signal and threshold-proposal artifacts
+
+The output includes:
+
+- headline cards for quick counts such as total specs, gated specs, structural
+  pressure regions, verified specs, complete evidence chains, and metrics below
+  threshold
+- section-level counts for graph, health, proposals, implementation, evidence,
+  and metrics
+- source artifact references with generated timestamps so a visualizer can show
+  provenance for each number
+
 ### Proposal-lane overlay
 
 ```bash
@@ -780,6 +810,10 @@ path.
 - `runs/proposal_runtime_index.json`
   - derived proposal runtime index with posture, realization, validation, and
     re-observation status
+- `runs/graph_dashboard.json`
+  - aggregated dashboard surface with headline cards and numeric section
+    summaries for graph, health, proposals, implementation, evidence, and
+    metrics
 - `tools/proposal_lane_policy.json`
   - declarative proposal-lane contract for repository presence, authority-state
     mapping, and overlay/query semantics

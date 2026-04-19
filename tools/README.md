@@ -86,6 +86,9 @@ Supervisor modes:
 - `--build-metric-threshold-proposals`: build
   `runs/metric_threshold_proposals.json` from metric-threshold breaches so the
   next step is a reviewable proposal artifact, not a direct policy mutation.
+- `--build-graph-dashboard`: build `runs/graph_dashboard.json` as one
+  aggregated viewer-facing dashboard with headline counts from graph health,
+  proposal, implementation, evidence, and metric surfaces.
 - `--build-intent-layer-overlay`: build `runs/intent_layer_overlay.json` from
   repository-tracked intent-layer nodes under `intent_layer/nodes/`, so
   pre-canonical user intent and operator-request artifacts can be inspected as
@@ -175,6 +178,9 @@ Key derived artifacts:
 - `runs/metric_threshold_proposals.json`: reviewable proposal artifact emitted
   from metric-threshold breaches, grouped by proposal kind, severity, and
   target metric
+- `runs/graph_dashboard.json`: aggregated dashboard artifact with headline
+  cards and section counts for graph, health, proposals, implementation,
+  evidence, and metric surfaces
 - `tools/spec_trace_registry.json`: explicit strong trace contracts used to
   derive conservative `implementation_state` overlays such as `planned`,
   `implemented`, `verified`, `drifted`, and `blocked`

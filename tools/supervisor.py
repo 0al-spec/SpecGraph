@@ -32,6 +32,7 @@ Derived artifacts:
 - graph refactor queue: `runs/refactor_queue.json`
 - proposal queue index: `runs/proposal_queue.json`
 - structured proposal artifacts: `runs/proposals/*.json`
+- graph dashboard: `runs/graph_dashboard.json`
 - intent-layer overlay: `runs/intent_layer_overlay.json`
 - proposal-lane overlay: `runs/proposal_lane_overlay.json`
 - graph health overlay: `runs/graph_health_overlay.json`
@@ -1221,6 +1222,7 @@ TRANSITION_PACKET_TYPE_REQUIRED_FIELDS = {
 SPECGRAPH_CANONICAL_SURFACE_PREFIXES = ("specs/nodes/", "specs/history/")
 GRAPH_HEALTH_OVERLAY_FILENAME = "graph_health_overlay.json"
 GRAPH_HEALTH_TRENDS_FILENAME = "graph_health_trends.json"
+GRAPH_DASHBOARD_FILENAME = "graph_dashboard.json"
 SPEC_TRACE_INDEX_FILENAME = "spec_trace_index.json"
 SPEC_TRACE_PROJECTION_FILENAME = "spec_trace_projection.json"
 PROPOSAL_RUNTIME_INDEX_FILENAME = "proposal_runtime_index.json"
@@ -12063,6 +12065,10 @@ def proposal_promotion_index_path() -> Path:
     return RUNS_DIR / PROPOSAL_PROMOTION_INDEX_FILENAME
 
 
+def graph_dashboard_path() -> Path:
+    return RUNS_DIR / GRAPH_DASHBOARD_FILENAME
+
+
 def proposal_docs_dir() -> Path:
     return ROOT / "docs" / "proposals"
 
@@ -12854,6 +12860,388 @@ def write_proposal_promotion_index(index: dict[str, Any]) -> Path:
     path = proposal_promotion_index_path()
     with artifact_lock(path):
         atomic_write_json(path, index)
+    return path
+
+
+def grouped_identifier_counts(value: Any) -> dict[str, int]:
+    if not isinstance(value, dict):
+        return {}
+    counts: dict[str, int] = {}
+    for key, items in value.items():
+        normalized_key = str(key).strip()
+        if not normalized_key or not isinstance(items, list):
+            continue
+        normalized_items = {str(item).strip() for item in items if str(item).strip()}
+        counts[normalized_key] = len(normalized_items)
+    return counts
+
+
+def dashboard_card(
+    *,
+    card_id: str,
+    title: str,
+    value: int,
+    section: str,
+    status: str,
+    basis: str,
+) -> dict[str, Any]:
+    return {
+        "card_id": card_id,
+        "title": title,
+        "value": value,
+        "value_kind": "count",
+        "section": section,
+        "status": status,
+        "basis": basis,
+    }
+
+
+def build_graph_dashboard(specs: list[SpecNode]) -> dict[str, Any]:
+    graph_overlay = build_graph_health_overlay(specs)
+    graph_trends = build_graph_health_trends(specs, overlay=graph_overlay)
+    intent_overlay = build_intent_layer_overlay()
+    proposal_lane_overlay = build_proposal_lane_overlay()
+    proposal_runtime_index = build_proposal_runtime_index()
+    proposal_promotion_index = build_proposal_promotion_index()
+    spec_trace_index = build_spec_trace_index(specs)
+    spec_trace_projection = build_spec_trace_projection(spec_trace_index)
+    evidence_index = build_evidence_plane_index(specs)
+    evidence_overlay = build_evidence_plane_overlay(evidence_index)
+    metric_signal_index = build_metric_signal_index(specs)
+    metric_threshold_proposals = build_metric_threshold_proposals(metric_signal_index)
+
+    total_spec_count = len(specs)
+    active_spec_count = sum(1 for spec in specs if not is_historical_spec(spec.data))
+    historical_spec_count = total_spec_count - active_spec_count
+    gate_state_counts: dict[str, int] = {}
+    for spec in specs:
+        gate_state = str(spec.gate_state or "none").strip() or "none"
+        gate_state_counts[gate_state] = gate_state_counts.get(gate_state, 0) + 1
+
+    graph_overlay_entries = [
+        entry for entry in graph_overlay.get("entries", []) if isinstance(entry, dict)
+    ]
+    structural_pressure_spec_ids = sorted(
+        {
+            str(entry.get("spec_id", "")).strip()
+            for entry in graph_overlay_entries
+            if str(entry.get("spec_id", "")).strip()
+            and any(str(item).strip() for item in entry.get("signals", []) if str(item).strip())
+        }
+    )
+    graph_signal_counts = grouped_identifier_counts(
+        graph_overlay.get("viewer_projection", {}).get("signals", {})
+    )
+    graph_action_counts = grouped_identifier_counts(
+        graph_overlay.get("viewer_projection", {}).get("recommended_actions", {})
+    )
+    graph_named_filter_counts = grouped_identifier_counts(
+        graph_overlay.get("viewer_projection", {}).get("named_filters", {})
+    )
+    graph_trend_status_counts = grouped_identifier_counts(
+        graph_trends.get("viewer_projection", {}).get("trend_status", {})
+    )
+    graph_trend_named_filter_counts = grouped_identifier_counts(
+        graph_trends.get("viewer_projection", {}).get("named_filters", {})
+    )
+
+    intent_kind_counts = grouped_identifier_counts(intent_overlay.get("by_kind", {}))
+    intent_state_counts = grouped_identifier_counts(intent_overlay.get("by_mediation_state", {}))
+    proposal_lane_authority_counts = grouped_identifier_counts(
+        proposal_lane_overlay.get("by_authority", {})
+    )
+    proposal_lane_active_count = sum(
+        count
+        for state, count in proposal_lane_authority_counts.items()
+        if state not in {"rejected", "superseded"}
+    )
+
+    proposal_runtime_posture_counts: dict[str, int] = {}
+    for entry in proposal_runtime_index.get("entries", []):
+        if not isinstance(entry, dict):
+            continue
+        posture = str(entry.get("posture", "")).strip() or "unknown"
+        proposal_runtime_posture_counts[posture] = (
+            proposal_runtime_posture_counts.get(posture, 0) + 1
+        )
+    proposal_runtime_backlog_counts = grouped_identifier_counts(
+        proposal_runtime_index.get("reflective_backlog", {}).get("grouped_by_next_gap", {})
+    )
+    proposal_promotion_traceability_counts = grouped_identifier_counts(
+        proposal_promotion_index.get("viewer_projection", {}).get("traceability_status", {})
+    )
+
+    trace_impl_counts = grouped_identifier_counts(
+        spec_trace_projection.get("viewer_projection", {}).get("implementation_state", {})
+    )
+    trace_freshness_counts = grouped_identifier_counts(
+        spec_trace_projection.get("viewer_projection", {}).get("freshness", {})
+    )
+    trace_acceptance_counts = grouped_identifier_counts(
+        spec_trace_projection.get("viewer_projection", {}).get("acceptance_coverage", {})
+    )
+    trace_named_filter_counts = grouped_identifier_counts(
+        spec_trace_projection.get("viewer_projection", {}).get("named_filters", {})
+    )
+
+    evidence_chain_counts = grouped_identifier_counts(
+        evidence_overlay.get("viewer_projection", {}).get("chain_status", {})
+    )
+    evidence_artifact_stage_counts = grouped_identifier_counts(
+        evidence_overlay.get("viewer_projection", {}).get("artifact_stage", {})
+    )
+    evidence_named_filter_counts = grouped_identifier_counts(
+        evidence_overlay.get("viewer_projection", {}).get("named_filters", {})
+    )
+
+    metric_entries = [
+        entry for entry in metric_signal_index.get("metrics", []) if isinstance(entry, dict)
+    ]
+    metric_status_counts: dict[str, int] = {}
+    metric_scores: dict[str, dict[str, Any]] = {}
+    below_threshold_metric_ids: list[str] = []
+    for entry in metric_entries:
+        metric_id = str(entry.get("metric_id", "")).strip()
+        if not metric_id:
+            continue
+        status = str(entry.get("status", "")).strip() or "unknown"
+        metric_status_counts[status] = metric_status_counts.get(status, 0) + 1
+        metric_scores[metric_id] = {
+            "score": entry.get("score"),
+            "minimum_score": entry.get("minimum_score"),
+            "status": status,
+            "threshold_gap": entry.get("threshold_gap"),
+        }
+        if status == "below_threshold":
+            below_threshold_metric_ids.append(metric_id)
+    metric_threshold_kind_counts = grouped_identifier_counts(
+        metric_threshold_proposals.get("viewer_projection", {}).get("proposal_kind", {})
+    )
+    metric_threshold_severity_counts = grouped_identifier_counts(
+        metric_threshold_proposals.get("viewer_projection", {}).get("severity", {})
+    )
+
+    headline_cards = [
+        dashboard_card(
+            card_id="total_specs",
+            title="Total Specs",
+            value=total_spec_count,
+            section="graph",
+            status="info",
+            basis="All canonical spec nodes currently loaded by the supervisor.",
+        ),
+        dashboard_card(
+            card_id="active_specs",
+            title="Active Specs",
+            value=active_spec_count,
+            section="graph",
+            status="info",
+            basis="Canonical specs that are not marked historical/superseded lineage only.",
+        ),
+        dashboard_card(
+            card_id="gated_specs",
+            title="Gated Specs",
+            value=graph_named_filter_counts.get("gated_specs", 0),
+            section="health",
+            status=(
+                "attention" if graph_named_filter_counts.get("gated_specs", 0) > 0 else "healthy"
+            ),
+            basis="Specs currently carrying a non-none gate state in the graph-health overlay.",
+        ),
+        dashboard_card(
+            card_id="structural_pressure_specs",
+            title="Structural Pressure Specs",
+            value=len(structural_pressure_spec_ids),
+            section="health",
+            status="attention" if structural_pressure_spec_ids else "healthy",
+            basis="Specs with active graph-health signals, excluding gate-only entries.",
+        ),
+        dashboard_card(
+            card_id="proposal_lane_active",
+            title="Active Proposal Lane Nodes",
+            value=proposal_lane_active_count,
+            section="proposals",
+            status="attention" if proposal_lane_active_count > 0 else "healthy",
+            basis="Tracked proposal-lane nodes not yet rejected or superseded.",
+        ),
+        dashboard_card(
+            card_id="verified_specs",
+            title="Verified Specs",
+            value=trace_impl_counts.get("verified", 0),
+            section="implementation",
+            status="info",
+            basis="Specs whose trace plane currently observes both declared code and test anchors.",
+        ),
+        dashboard_card(
+            card_id="complete_evidence_chains",
+            title="Complete Evidence Chains",
+            value=evidence_named_filter_counts.get("complete_chain", 0),
+            section="evidence",
+            status="info",
+            basis=(
+                "Specs whose evidence plane currently covers artifact, observation, "
+                "outcome, and adoption."
+            ),
+        ),
+        dashboard_card(
+            card_id="metrics_below_threshold",
+            title="Metrics Below Threshold",
+            value=len(below_threshold_metric_ids),
+            section="metrics",
+            status="attention" if below_threshold_metric_ids else "healthy",
+            basis="Derived metrics currently below configured minimum scores.",
+        ),
+    ]
+
+    return {
+        "artifact_kind": "graph_dashboard",
+        "schema_version": 1,
+        "generated_at": utc_now_iso(),
+        "source_artifacts": {
+            "graph_health_overlay": {
+                "artifact_path": graph_health_overlay_path().relative_to(ROOT).as_posix(),
+                "generated_at": graph_overlay.get("generated_at"),
+            },
+            "graph_health_trends": {
+                "artifact_path": graph_health_trends_path().relative_to(ROOT).as_posix(),
+                "generated_at": graph_trends.get("generated_at"),
+            },
+            "intent_layer_overlay": {
+                "artifact_path": intent_layer_overlay_path().relative_to(ROOT).as_posix(),
+                "generated_at": intent_overlay.get("generated_at"),
+            },
+            "proposal_lane_overlay": {
+                "artifact_path": proposal_lane_overlay_path().relative_to(ROOT).as_posix(),
+                "generated_at": proposal_lane_overlay.get("generated_at"),
+            },
+            "proposal_runtime_index": {
+                "artifact_path": proposal_runtime_index_path().relative_to(ROOT).as_posix(),
+                "generated_at": proposal_runtime_index.get("generated_at"),
+            },
+            "proposal_promotion_index": {
+                "artifact_path": proposal_promotion_index_path().relative_to(ROOT).as_posix(),
+                "generated_at": proposal_promotion_index.get("generated_at"),
+            },
+            "spec_trace_projection": {
+                "artifact_path": spec_trace_projection_path().relative_to(ROOT).as_posix(),
+                "generated_at": spec_trace_projection.get("generated_at"),
+            },
+            "evidence_plane_overlay": {
+                "artifact_path": evidence_plane_overlay_path().relative_to(ROOT).as_posix(),
+                "generated_at": evidence_overlay.get("generated_at"),
+            },
+            "metric_signal_index": {
+                "artifact_path": metric_signal_index_path().relative_to(ROOT).as_posix(),
+                "generated_at": metric_signal_index.get("generated_at"),
+            },
+            "metric_threshold_proposals": {
+                "artifact_path": metric_threshold_proposals_path().relative_to(ROOT).as_posix(),
+                "generated_at": metric_threshold_proposals.get("generated_at"),
+            },
+        },
+        "headline_cards": headline_cards,
+        "sections": {
+            "graph": {
+                "total_spec_count": total_spec_count,
+                "active_spec_count": active_spec_count,
+                "historical_spec_count": historical_spec_count,
+                "gate_state_counts": gate_state_counts,
+            },
+            "health": {
+                "signal_counts": graph_signal_counts,
+                "recommended_action_counts": graph_action_counts,
+                "named_filter_counts": graph_named_filter_counts,
+                "trend_status_counts": graph_trend_status_counts,
+                "trend_named_filter_counts": graph_trend_named_filter_counts,
+                "structural_pressure_spec_ids": structural_pressure_spec_ids,
+                "hotspot_region_count": len(graph_overlay.get("hotspot_regions", [])),
+            },
+            "proposals": {
+                "intent_entry_count": int(intent_overlay.get("entry_count", 0) or 0),
+                "intent_kind_counts": intent_kind_counts,
+                "intent_state_counts": intent_state_counts,
+                "proposal_lane_entry_count": int(proposal_lane_overlay.get("entry_count", 0) or 0),
+                "proposal_lane_active_count": proposal_lane_active_count,
+                "proposal_lane_authority_counts": proposal_lane_authority_counts,
+                "proposal_runtime_entry_count": int(
+                    proposal_runtime_index.get("entry_count", 0) or 0
+                ),
+                "proposal_runtime_posture_counts": proposal_runtime_posture_counts,
+                "proposal_runtime_backlog_count": int(
+                    proposal_runtime_index.get("reflective_backlog", {}).get("entry_count", 0) or 0
+                ),
+                "proposal_runtime_next_gap_counts": proposal_runtime_backlog_counts,
+                "proposal_promotion_entry_count": int(
+                    proposal_promotion_index.get("entry_count", 0) or 0
+                ),
+                "proposal_promotion_traceability_counts": proposal_promotion_traceability_counts,
+            },
+            "implementation": {
+                "trace_entry_count": int(spec_trace_projection.get("entry_count", 0) or 0),
+                "implementation_state_counts": trace_impl_counts,
+                "freshness_counts": trace_freshness_counts,
+                "acceptance_coverage_counts": trace_acceptance_counts,
+                "named_filter_counts": trace_named_filter_counts,
+                "implementation_backlog_count": int(
+                    spec_trace_projection.get("implementation_backlog", {}).get("entry_count", 0)
+                    or 0
+                ),
+            },
+            "evidence": {
+                "evidence_entry_count": int(evidence_overlay.get("entry_count", 0) or 0),
+                "chain_status_counts": evidence_chain_counts,
+                "artifact_stage_counts": evidence_artifact_stage_counts,
+                "named_filter_counts": evidence_named_filter_counts,
+                "evidence_backlog_count": int(
+                    evidence_overlay.get("evidence_backlog", {}).get("entry_count", 0) or 0
+                ),
+            },
+            "metrics": {
+                "metric_count": len(metric_entries),
+                "metric_status_counts": metric_status_counts,
+                "metric_scores": metric_scores,
+                "below_threshold_metric_ids": sorted(below_threshold_metric_ids),
+                "threshold_proposal_entry_count": int(
+                    metric_threshold_proposals.get("entry_count", 0) or 0
+                ),
+                "threshold_proposal_kind_counts": metric_threshold_kind_counts,
+                "threshold_proposal_severity_counts": metric_threshold_severity_counts,
+            },
+        },
+        "viewer_projection": {
+            "headline_card_ids": [card["card_id"] for card in headline_cards],
+            "section_ids": [
+                "graph",
+                "health",
+                "proposals",
+                "implementation",
+                "evidence",
+                "metrics",
+            ],
+            "named_filters": {
+                "gated_specs": graph_named_filter_counts.get("gated_specs", 0),
+                "techspec_ready_regions": graph_named_filter_counts.get(
+                    "techspec_ready_regions", 0
+                ),
+                "proposal_lane_under_review": proposal_lane_authority_counts.get("under_review", 0),
+                "proposal_promotion_missing_trace": proposal_promotion_traceability_counts.get(
+                    "missing_trace", 0
+                ),
+                "drifted_specs": trace_impl_counts.get("drifted", 0),
+                "complete_evidence_chain_specs": evidence_named_filter_counts.get(
+                    "complete_chain", 0
+                ),
+                "metrics_below_threshold": len(below_threshold_metric_ids),
+            },
+        },
+    }
+
+
+def write_graph_dashboard(report: dict[str, Any]) -> Path:
+    RUNS_DIR.mkdir(parents=True, exist_ok=True)
+    path = graph_dashboard_path()
+    with artifact_lock(path):
+        atomic_write_json(path, report)
     return path
 
 
@@ -16191,6 +16579,7 @@ def main(
     build_evidence_plane_overlay_mode: bool = False,
     build_metric_signal_index_mode: bool = False,
     build_metric_threshold_proposals_mode: bool = False,
+    build_graph_dashboard_mode: bool = False,
     build_proposal_lane_overlay_mode: bool = False,
     build_proposal_runtime_index_mode: bool = False,
     build_proposal_promotion_index_mode: bool = False,
@@ -16236,6 +16625,7 @@ def main(
         "--build-evidence-plane-overlay": build_evidence_plane_overlay_mode,
         "--build-metric-signal-index": build_metric_signal_index_mode,
         "--build-metric-threshold-proposals": build_metric_threshold_proposals_mode,
+        "--build-graph-dashboard": build_graph_dashboard_mode,
         "--build-proposal-lane-overlay": build_proposal_lane_overlay_mode,
         "--build-proposal-runtime-index": build_proposal_runtime_index_mode,
         "--build-proposal-promotion-index": build_proposal_promotion_index_mode,
@@ -16878,6 +17268,41 @@ def main(
         write_metric_signal_index(index)
         report = build_metric_threshold_proposals(index)
         write_metric_threshold_proposals(report)
+        print(json.dumps(report, ensure_ascii=False, indent=2))
+        return 0
+
+    if build_graph_dashboard_mode:
+        if any(
+            (
+                dry_run,
+                auto_approve,
+                loop,
+                resolve_gate,
+                decision,
+                note,
+                target_spec,
+                split_proposal,
+                apply_split_proposal,
+                operator_note,
+                mutation_budget,
+                run_authority,
+                execution_profile,
+                child_model,
+                child_timeout_seconds,
+                verbose,
+                list_stale_runtime,
+                clean_stale_runtime,
+                observe_graph_health_mode,
+                operator_request_packet_path,
+            )
+        ):
+            print(
+                "--build-graph-dashboard must be used as a standalone command",
+                file=sys.stderr,
+            )
+            return 1
+        report = build_graph_dashboard(specs)
+        write_graph_dashboard(report)
         print(json.dumps(report, ensure_ascii=False, indent=2))
         return 0
 
@@ -17627,6 +18052,14 @@ if __name__ == "__main__":
         ),
     )
     parser.add_argument(
+        "--build-graph-dashboard",
+        action="store_true",
+        help=(
+            "Build an aggregated graph dashboard with headline counts from graph health, "
+            "proposal, implementation, evidence, and metric surfaces"
+        ),
+    )
+    parser.add_argument(
         "--build-proposal-lane-overlay",
         action="store_true",
         help=(
@@ -17779,6 +18212,7 @@ if __name__ == "__main__":
             build_evidence_plane_overlay_mode=args.build_evidence_plane_overlay,
             build_metric_signal_index_mode=args.build_metric_signal_index,
             build_metric_threshold_proposals_mode=args.build_metric_threshold_proposals,
+            build_graph_dashboard_mode=args.build_graph_dashboard,
             build_proposal_lane_overlay_mode=args.build_proposal_lane_overlay,
             build_proposal_runtime_index_mode=args.build_proposal_runtime_index,
             build_proposal_promotion_index_mode=args.build_proposal_promotion_index,
