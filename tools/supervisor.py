@@ -32,6 +32,7 @@ Derived artifacts:
 - graph refactor queue: `runs/refactor_queue.json`
 - proposal queue index: `runs/proposal_queue.json`
 - structured proposal artifacts: `runs/proposals/*.json`
+- graph health overlay: `runs/graph_health_overlay.json`
 - spec trace index: `runs/spec_trace_index.json`
 - spec trace projection: `runs/spec_trace_projection.json`
 - proposal runtime index: `runs/proposal_runtime_index.json`
@@ -443,6 +444,8 @@ TRANSITION_PACKET_TYPE_REQUIRED_FIELDS = {
     for packet_type, definition in TRANSITION_PACKET_FAMILY_DEFINITIONS.items()
 }
 SPECGRAPH_CANONICAL_SURFACE_PREFIXES = ("specs/nodes/", "specs/history/")
+GRAPH_HEALTH_OVERLAY_FILENAME = "graph_health_overlay.json"
+GRAPH_HEALTH_TRENDS_FILENAME = "graph_health_trends.json"
 SPEC_TRACE_INDEX_FILENAME = "spec_trace_index.json"
 SPEC_TRACE_PROJECTION_FILENAME = "spec_trace_projection.json"
 PROPOSAL_RUNTIME_INDEX_FILENAME = "proposal_runtime_index.json"
@@ -4540,6 +4543,376 @@ def inspect_canonical_graph_health(*, node: SpecNode, specs: list[SpecNode]) -> 
         "historical_descendant_ids": historical_descendant_ids,
         "graph_health": graph_health,
     }
+
+
+def graph_health_overlay_path() -> Path:
+    return RUNS_DIR / GRAPH_HEALTH_OVERLAY_FILENAME
+
+
+def graph_health_trends_path() -> Path:
+    return RUNS_DIR / GRAPH_HEALTH_TRENDS_FILENAME
+
+
+def build_graph_health_overlay(specs: list[SpecNode]) -> dict[str, Any]:
+    signal_groups: dict[str, list[str]] = {}
+    action_groups: dict[str, list[str]] = {}
+    named_filters = {
+        "oversized_or_atomicity_pressure": [],
+        "weakly_linked_regions": [],
+        "shape_pressure": [],
+        "role_legibility_pressure": [],
+        "clustering_pressure": [],
+        "handoff_boundary_pressure": [],
+        "techspec_ready_regions": [],
+        "gated_specs": [],
+    }
+    entries: list[dict[str, Any]] = []
+    affected_spec_ids: list[str] = []
+
+    for spec in specs:
+        snapshot = inspect_canonical_graph_health(node=spec, specs=specs)
+        graph_health = snapshot.get("graph_health", {})
+        if not isinstance(graph_health, dict):
+            continue
+        signals = sorted(
+            {str(item).strip() for item in graph_health.get("signals", []) if str(item).strip()}
+        )
+        recommended_actions = sorted(
+            {
+                str(item).strip()
+                for item in graph_health.get("recommended_actions", [])
+                if str(item).strip()
+            }
+        )
+        gate_state = str(spec.gate_state or "none").strip() or "none"
+        if not signals and gate_state == "none":
+            continue
+
+        affected_spec_ids.append(spec.id)
+        for signal in signals:
+            signal_groups.setdefault(signal, []).append(spec.id)
+        for action in recommended_actions:
+            action_groups.setdefault(action, []).append(spec.id)
+
+        if any(
+            signal in {"oversized_spec", "repeated_split_required_candidate"} for signal in signals
+        ):
+            named_filters["oversized_or_atomicity_pressure"].append(spec.id)
+        if any(
+            signal in {"weak_structural_linkage_candidate", "missing_dependency_target"}
+            for signal in signals
+        ):
+            named_filters["weakly_linked_regions"].append(spec.id)
+        if any(signal in SUBTREE_SHAPE_SIGNALS for signal in signals):
+            named_filters["shape_pressure"].append(spec.id)
+        if any(signal in {"role_obscured_node", "bookkeeping_only_node"} for signal in signals):
+            named_filters["role_legibility_pressure"].append(spec.id)
+        if any(
+            signal in {"refinement_fan_out_pressure", "missing_aggregate_node"}
+            for signal in signals
+        ):
+            named_filters["clustering_pressure"].append(spec.id)
+        if any(signal in LOWER_BOUNDARY_HANDOFF_SIGNALS for signal in signals):
+            named_filters["handoff_boundary_pressure"].append(spec.id)
+        if TECHSPEC_HANDOFF_PRIMARY_SIGNAL in signals:
+            named_filters["techspec_ready_regions"].append(spec.id)
+        if gate_state != "none":
+            named_filters["gated_specs"].append(spec.id)
+
+        subtree_spec_ids = list(snapshot.get("subtree_spec_ids", []))
+        historical_descendant_ids = list(snapshot.get("historical_descendant_ids", []))
+        entries.append(
+            {
+                "spec_id": spec.id,
+                "title": spec.title,
+                "gate_state": gate_state,
+                "diagnostic_outcome": str(snapshot.get("diagnostic_outcome", "")).strip(),
+                "subtree_spec_ids": subtree_spec_ids,
+                "historical_descendant_ids": historical_descendant_ids,
+                "signals": signals,
+                "recommended_actions": recommended_actions,
+                "problem_score": len(signals) + (1 if gate_state != "none" else 0),
+                "active_subtree_size": len(subtree_spec_ids),
+                "historical_descendant_count": len(historical_descendant_ids),
+            }
+        )
+
+    hotspot_regions = sorted(
+        entries,
+        key=lambda item: (
+            -int(item.get("problem_score", 0)),
+            -int(item.get("active_subtree_size", 0)),
+            str(item.get("spec_id", "")),
+        ),
+    )
+
+    return {
+        "artifact_kind": "graph_health_overlay",
+        "schema_version": 1,
+        "generated_at": utc_now_iso(),
+        "source": {
+            "truth_basis": "accepted_canonical",
+            "spec_count": len(specs),
+            "affected_spec_count": len(entries),
+        },
+        "entries": entries,
+        "viewer_projection": {
+            "signals": {key: sorted(value) for key, value in sorted(signal_groups.items())},
+            "recommended_actions": {
+                key: sorted(value) for key, value in sorted(action_groups.items())
+            },
+            "named_filters": {key: sorted(value) for key, value in sorted(named_filters.items())},
+            "affected_spec_ids": sorted(affected_spec_ids),
+        },
+        "hotspot_regions": hotspot_regions,
+    }
+
+
+def write_graph_health_overlay(overlay: dict[str, Any]) -> Path:
+    RUNS_DIR.mkdir(parents=True, exist_ok=True)
+    path = graph_health_overlay_path()
+    with artifact_lock(path):
+        atomic_write_json(path, overlay)
+    return path
+
+
+def graph_health_event_timestamp(payload: dict[str, Any], path: Path) -> dt.datetime | None:
+    timestamp = parse_iso_datetime(payload.get("timestamp_utc", ""))
+    if timestamp is not None:
+        return timestamp
+    run_id = str(payload.get("run_id", "")).strip() or path.stem
+    prefix = run_id.split("-", 1)[0]
+    try:
+        return dt.datetime.strptime(prefix, "%Y%m%dT%H%M%SZ").replace(tzinfo=dt.timezone.utc)
+    except ValueError:
+        pass
+    try:
+        return dt.datetime.fromtimestamp(path.stat().st_mtime, tz=dt.timezone.utc)
+    except OSError:
+        return None
+
+
+def graph_health_surfaces_from_payload(payload: dict[str, Any]) -> list[tuple[str, dict[str, Any]]]:
+    surfaces: list[tuple[str, dict[str, Any]]] = []
+    primary = payload.get("graph_health")
+    primary_basis = str(payload.get("graph_health_truth_basis", "")).strip() or "unknown"
+    if isinstance(primary, dict):
+        surfaces.append((primary_basis, primary))
+    candidate = payload.get("candidate_graph_health")
+    candidate_basis = str(payload.get("candidate_graph_health_truth_basis", "")).strip()
+    if isinstance(candidate, dict):
+        surfaces.append((candidate_basis or "review_candidate", candidate))
+    return surfaces
+
+
+def build_graph_health_trends(
+    specs: list[SpecNode],
+    *,
+    overlay: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    if overlay is None:
+        overlay = build_graph_health_overlay(specs)
+
+    current_signal_map = {
+        str(entry.get("spec_id", "")).strip(): {
+            str(signal).strip() for signal in entry.get("signals", []) if str(signal).strip()
+        }
+        for entry in overlay.get("entries", [])
+        if isinstance(entry, dict)
+    }
+    spec_titles = {spec.id: spec.title for spec in specs if spec.id}
+    spec_signal_runs: dict[tuple[str, str], dict[str, Any]] = {}
+    signal_history: dict[str, dict[str, Any]] = {}
+    observed_run_ids: set[str] = set()
+    observed_timestamps: list[dt.datetime] = []
+
+    for path in run_log_paths():
+        payload = load_json_object(path)
+        if not isinstance(payload, dict):
+            continue
+        run_id = str(payload.get("run_id", "")).strip() or path.stem
+        timestamp = graph_health_event_timestamp(payload, path)
+        surfaces = graph_health_surfaces_from_payload(payload)
+        if not surfaces:
+            continue
+
+        for truth_basis, graph_health in surfaces:
+            spec_id = str(graph_health.get("source_spec_id", "")).strip()
+            if not spec_id:
+                continue
+            raw_signals = graph_health.get("signals", [])
+            if not isinstance(raw_signals, list):
+                continue
+            signals = {str(item).strip() for item in raw_signals if str(item).strip()}
+            if not signals:
+                continue
+
+            observed_run_ids.add(run_id)
+            if timestamp is not None:
+                observed_timestamps.append(timestamp)
+
+            for signal in signals:
+                spec_key = (spec_id, signal)
+                bucket = spec_signal_runs.setdefault(
+                    spec_key,
+                    {
+                        "spec_id": spec_id,
+                        "title": spec_titles.get(spec_id, str(payload.get("title", "")).strip()),
+                        "signal": signal,
+                        "runs": {},
+                    },
+                )
+                run_bucket = bucket["runs"].setdefault(
+                    run_id,
+                    {
+                        "timestamp": timestamp,
+                        "truth_bases": set(),
+                    },
+                )
+                if timestamp is not None and (
+                    run_bucket["timestamp"] is None or timestamp > run_bucket["timestamp"]
+                ):
+                    run_bucket["timestamp"] = timestamp
+                run_bucket["truth_bases"].add(truth_basis)
+
+                signal_bucket = signal_history.setdefault(
+                    signal,
+                    {
+                        "signal": signal,
+                        "runs": set(),
+                        "spec_ids": set(),
+                    },
+                )
+                signal_bucket["runs"].add(run_id)
+                signal_bucket["spec_ids"].add(spec_id)
+
+    def _iso_or_empty(value: dt.datetime | None) -> str:
+        if value is None:
+            return ""
+        return value.astimezone(dt.timezone.utc).isoformat().replace("+00:00", "Z")
+
+    entries: list[dict[str, Any]] = []
+    recurring_signal_groups: dict[str, list[str]] = {}
+    named_filters = {
+        "persistent_recurrence": [],
+        "historical_recurrence": [],
+        "repeated_split_pressure": [],
+        "repeated_weak_linkage": [],
+        "repeated_shape_pressure": [],
+        "repeated_handoff_pressure": [],
+    }
+
+    for (_spec_id, _signal), bucket in spec_signal_runs.items():
+        runs = bucket["runs"]
+        sorted_runs = sorted(
+            runs.items(),
+            key=lambda item: (
+                item[1]["timestamp"] is None,
+                item[1]["timestamp"] or dt.datetime.min.replace(tzinfo=dt.timezone.utc),
+                item[0],
+            ),
+        )
+        occurrence_count = len(sorted_runs)
+        current_signals = current_signal_map.get(bucket["spec_id"], set())
+        currently_active = bucket["signal"] in current_signals
+        if currently_active and occurrence_count >= 2:
+            trend_status = "persistent"
+            named_filters["persistent_recurrence"].append(bucket["spec_id"])
+        elif occurrence_count >= 2:
+            trend_status = "historical_recurrence"
+            named_filters["historical_recurrence"].append(bucket["spec_id"])
+        else:
+            trend_status = "isolated"
+
+        if occurrence_count >= 2:
+            recurring_signal_groups.setdefault(bucket["signal"], []).append(bucket["spec_id"])
+            if bucket["signal"] in {"oversized_spec", "repeated_split_required_candidate"}:
+                named_filters["repeated_split_pressure"].append(bucket["spec_id"])
+            if bucket["signal"] in {
+                "weak_structural_linkage_candidate",
+                "missing_dependency_target",
+            }:
+                named_filters["repeated_weak_linkage"].append(bucket["spec_id"])
+            if bucket["signal"] in SUBTREE_SHAPE_SIGNALS:
+                named_filters["repeated_shape_pressure"].append(bucket["spec_id"])
+            if bucket["signal"] in LOWER_BOUNDARY_HANDOFF_SIGNALS:
+                named_filters["repeated_handoff_pressure"].append(bucket["spec_id"])
+
+        first_seen = sorted_runs[0][1]["timestamp"] if sorted_runs else None
+        last_seen = sorted_runs[-1][1]["timestamp"] if sorted_runs else None
+        truth_bases = sorted(
+            {
+                basis
+                for _run_id, run_data in sorted_runs
+                for basis in run_data["truth_bases"]
+                if str(basis).strip()
+            }
+        )
+        entries.append(
+            {
+                "spec_id": bucket["spec_id"],
+                "title": bucket["title"],
+                "signal": bucket["signal"],
+                "occurrence_count": occurrence_count,
+                "trend_status": trend_status,
+                "currently_active": currently_active,
+                "first_seen_at": _iso_or_empty(first_seen),
+                "last_seen_at": _iso_or_empty(last_seen),
+                "run_ids": [run_id for run_id, _run_data in sorted_runs],
+                "truth_bases": truth_bases,
+            }
+        )
+
+    entries.sort(
+        key=lambda item: (
+            -int(item.get("occurrence_count", 0)),
+            str(item.get("spec_id", "")),
+            str(item.get("signal", "")),
+        )
+    )
+    signal_summary = {
+        signal: {
+            "occurrence_count": len(data["runs"]),
+            "spec_ids": sorted(data["spec_ids"]),
+        }
+        for signal, data in sorted(signal_history.items())
+    }
+    observed_timestamps = sorted(observed_timestamps)
+
+    return {
+        "artifact_kind": "graph_health_trends",
+        "schema_version": 1,
+        "generated_at": utc_now_iso(),
+        "source_overlay_path": graph_health_overlay_path().relative_to(ROOT).as_posix(),
+        "source_overlay_generated_at": overlay.get("generated_at"),
+        "history_window": {
+            "observed_run_count": len(observed_run_ids),
+            "first_observed_at": _iso_or_empty(
+                observed_timestamps[0] if observed_timestamps else None
+            ),
+            "last_observed_at": _iso_or_empty(
+                observed_timestamps[-1] if observed_timestamps else None
+            ),
+        },
+        "signal_summary": signal_summary,
+        "entries": entries,
+        "viewer_projection": {
+            "recurring_signal_groups": {
+                key: sorted(set(value)) for key, value in sorted(recurring_signal_groups.items())
+            },
+            "named_filters": {
+                key: sorted(set(value)) for key, value in sorted(named_filters.items())
+            },
+        },
+    }
+
+
+def write_graph_health_trends(trends: dict[str, Any]) -> Path:
+    RUNS_DIR.mkdir(parents=True, exist_ok=True)
+    path = graph_health_trends_path()
+    with artifact_lock(path):
+        atomic_write_json(path, trends)
+    return path
 
 
 def classify_executor_environment(stderr: str) -> dict[str, Any]:
@@ -11168,6 +11541,8 @@ def main(
     observe_graph_health_mode: bool = False,
     validate_transition_packet_path: str | None = None,
     transition_profile: str | None = None,
+    build_graph_health_overlay_mode: bool = False,
+    build_graph_health_trends_mode: bool = False,
     build_spec_trace_index_mode: bool = False,
     build_spec_trace_projection_mode: bool = False,
     build_proposal_runtime_index_mode: bool = False,
@@ -11222,6 +11597,8 @@ def main(
                 list_stale_runtime,
                 clean_stale_runtime,
                 observe_graph_health_mode,
+                build_graph_health_overlay_mode,
+                build_graph_health_trends_mode,
                 build_spec_trace_index_mode,
                 build_spec_trace_projection_mode,
                 build_proposal_runtime_index_mode,
@@ -11247,6 +11624,86 @@ def main(
         return 1
     if not specs:
         print("No spec nodes found in specs/nodes")
+        return 0
+
+    if build_graph_health_overlay_mode:
+        if any(
+            (
+                dry_run,
+                auto_approve,
+                loop,
+                resolve_gate,
+                decision,
+                note,
+                target_spec,
+                split_proposal,
+                apply_split_proposal,
+                operator_note,
+                mutation_budget,
+                run_authority,
+                execution_profile,
+                child_model,
+                child_timeout_seconds,
+                verbose,
+                list_stale_runtime,
+                clean_stale_runtime,
+                observe_graph_health_mode,
+                build_graph_health_trends_mode,
+                build_spec_trace_index_mode,
+                build_spec_trace_projection_mode,
+                build_proposal_runtime_index_mode,
+                build_proposal_promotion_index_mode,
+            )
+        ):
+            print(
+                "--build-graph-health-overlay must be used as a standalone command",
+                file=sys.stderr,
+            )
+            return 1
+        overlay = build_graph_health_overlay(specs)
+        write_graph_health_overlay(overlay)
+        print(json.dumps(overlay, ensure_ascii=False, indent=2))
+        return 0
+
+    if build_graph_health_trends_mode:
+        if any(
+            (
+                dry_run,
+                auto_approve,
+                loop,
+                resolve_gate,
+                decision,
+                note,
+                target_spec,
+                split_proposal,
+                apply_split_proposal,
+                operator_note,
+                mutation_budget,
+                run_authority,
+                execution_profile,
+                child_model,
+                child_timeout_seconds,
+                verbose,
+                list_stale_runtime,
+                clean_stale_runtime,
+                observe_graph_health_mode,
+                build_graph_health_overlay_mode,
+                build_spec_trace_index_mode,
+                build_spec_trace_projection_mode,
+                build_proposal_runtime_index_mode,
+                build_proposal_promotion_index_mode,
+            )
+        ):
+            print(
+                "--build-graph-health-trends must be used as a standalone command",
+                file=sys.stderr,
+            )
+            return 1
+        overlay = build_graph_health_overlay(specs)
+        write_graph_health_overlay(overlay)
+        trends = build_graph_health_trends(specs, overlay=overlay)
+        write_graph_health_trends(trends)
+        print(json.dumps(trends, ensure_ascii=False, indent=2))
         return 0
 
     if build_spec_trace_index_mode:
@@ -11879,6 +12336,22 @@ if __name__ == "__main__":
         ),
     )
     parser.add_argument(
+        "--build-graph-health-overlay",
+        action="store_true",
+        help=(
+            "Build a viewer-facing graph-health overlay from the accepted canonical graph "
+            "without reading raw run logs"
+        ),
+    )
+    parser.add_argument(
+        "--build-graph-health-trends",
+        action="store_true",
+        help=(
+            "Build longitudinal graph-health trends from run history so repeated structural "
+            "problems are visible as trends"
+        ),
+    )
+    parser.add_argument(
         "--build-spec-trace-index",
         action="store_true",
         help=(
@@ -12026,6 +12499,8 @@ if __name__ == "__main__":
             observe_graph_health_mode=args.observe_graph_health,
             validate_transition_packet_path=args.validate_transition_packet,
             transition_profile=args.transition_profile,
+            build_graph_health_overlay_mode=args.build_graph_health_overlay,
+            build_graph_health_trends_mode=args.build_graph_health_trends,
             build_spec_trace_index_mode=args.build_spec_trace_index,
             build_spec_trace_projection_mode=args.build_spec_trace_projection,
             build_proposal_runtime_index_mode=args.build_proposal_runtime_index,

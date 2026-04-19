@@ -42,6 +42,12 @@ Supervisor modes:
   canonical spec files.
 - `--target-spec SPEC_ID --apply-split-proposal`: deterministically materialize one reviewed split
   proposal into canonical parent/child spec files and mark the proposal artifact as applied.
+- `--build-graph-health-overlay`: build `runs/graph_health_overlay.json` so current
+  oversized, weakly linked, shape-heavy, or handoff-ready regions are visible as
+  one derived viewer/report surface without scanning raw run logs.
+- `--build-graph-health-trends`: build `runs/graph_health_trends.json` from run
+  history plus the current overlay so repeated structural problems show up as
+  trends instead of isolated events.
 - `--validate-transition-packet PATH`: validate one normalized transition packet JSON file and
   print structured findings. Add `--transition-profile PROFILE` to validate the same packet under
   `specgraph_core`, `product_spec`, `techspec`, or `implementation_trace`.
@@ -81,6 +87,10 @@ Key derived artifacts:
 - `runs/latest-summary.md`: fastest operator-facing run snapshot
 - `runs/<RUN_ID>.json`: full run payload including `graph_health` and `decision_inspector`
 - `runs/decision_inspector/<RUN_ID>.json`: standalone decision explanation artifact for one run
+- `runs/graph_health_overlay.json`: canonical graph-health viewer/report overlay grouped by
+  signal, recommended action, and named pressure filters
+- `runs/graph_health_trends.json`: longitudinal graph-health report grouped by
+  recurring signals, current-vs-historical recurrence, and repeated pressure filters
 - `runs/proposal_queue.json`: derived proposal-oriented next moves
 - `runs/refactor_queue.json`: derived refactor-oriented next moves
 - `runs/proposals/*.json`: structured split proposal artifacts

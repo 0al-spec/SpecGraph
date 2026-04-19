@@ -153,6 +153,39 @@ python3 tools/supervisor.py --target-spec SG-SPEC-0003 --apply-split-proposal
 
 Materializes an approved split proposal into canonical parent/child specs.
 
+### `--build-graph-health-overlay`
+
+```bash
+python3 tools/supervisor.py --build-graph-health-overlay
+```
+
+Builds `runs/graph_health_overlay.json` from the accepted canonical graph. This
+is the compact viewer/report layer for current graph-health pressure, grouped by:
+
+- active signals
+- recommended actions
+- named filters such as oversized or atomicity pressure, weak linkage, shape
+  pressure, role-legibility pressure, clustering pressure, and handoff pressure
+
+Use it when you want to see which regions currently need attention without
+opening raw `runs/*.json` one by one.
+
+### `--build-graph-health-trends`
+
+```bash
+python3 tools/supervisor.py --build-graph-health-trends
+```
+
+Builds `runs/graph_health_trends.json` from historical run logs plus a fresh
+`runs/graph_health_overlay.json`. This is the longitudinal reporting layer for:
+
+- recurring structural problems
+- signals that are still active now versus only historically recurrent
+- repeated split pressure, weak linkage, shape pressure, and handoff pressure
+
+Use it when one bad run is not the question anymore and you need to see whether
+the same graph pathology keeps returning over time.
+
 ### Transition-packet validation
 
 ```bash
@@ -420,6 +453,12 @@ authoritative.
   - full authoritative run payload for that run
 - `runs/decision_inspector/<RUN_ID>.json`
   - standalone decision explanation artifact for that run
+- `runs/graph_health_overlay.json`
+  - current canonical graph-health overlay grouped by signal, recommended
+    action, and named pressure filters
+- `runs/graph_health_trends.json`
+  - longitudinal graph-health report grouped by recurring signals and
+    current-vs-historical recurrence
 
 ### Queue and proposal surfaces
 
