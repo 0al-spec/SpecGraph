@@ -1,0 +1,30 @@
+{
+  "artifact_kind": "techspec_handoff_policy",
+  "version": 1,
+  "boundary_model": {
+    "source_layer": "canonical_specgraph",
+    "target_layer": "techspec",
+    "definition": "Stop canonical graph decomposition once the remaining unresolved detail is implementation-facing and the subtree no longer adds meaningful graph-native semantic novelty."
+  },
+  "signal_contract": {
+    "primary_signal": "techspec_handoff_candidate",
+    "required_lower_boundary_signals": [
+      "lower_boundary_handoff_candidate",
+      "graph_layer_exhausted_for_subtree"
+    ],
+    "semantic_saturation_signals": [
+      "serial_refinement_ladder",
+      "over_atomized_subtree",
+      "delegation_only_chain",
+      "role_obscured_node",
+      "bookkeeping_only_node"
+    ],
+    "minimum_semantic_saturation_signal_count": 1
+  },
+  "handoff_packet": {
+    "transition_profile": "techspec",
+    "packet_type": "handoff",
+    "target_artifact_class": "techspec_handoff_packet",
+    "recommended_action": "emit_techspec_handoff_proposal"
+  }
+}

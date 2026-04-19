@@ -124,9 +124,18 @@ Non-mutating subtree inspection. Use this when you want to understand:
 - breadth pressure such as `refinement_fan_out_pressure`
 - broad-hub classification versus `healthy_multi_child_aggregate`
 - role-legibility signals such as `role_obscured_node`
+- whether shape pressure has crossed the explicit `SpecGraph -> TechSpec`
+  boundary as `techspec_handoff_candidate`
 - cluster-first recommendations such as `regroup_under_intermediate_cluster`
 - whether a subtree still contains active versus historical descendants
 - what rewrite/merge action the current graph health recommends
+
+When `techspec_handoff_candidate` is present, proposal-oriented flows now
+prefer explicit handoff over deeper canonical slicing:
+
+- queue items carry `transition_profile: techspec`
+- downstream packet family is `handoff`
+- proposal queue emits `handoff_proposal` rather than another generic refactor
 
 ### Split proposal mode
 
@@ -188,6 +197,15 @@ The minimal promotion packet contract is now explicit:
 - `source_refs`
 - `motivating_concern`
 - `normalized_title`
+
+Lower-boundary handoff is now also governed by
+`tools/techspec_handoff_policy.json`. That artifact defines:
+
+- the canonical `SpecGraph -> TechSpec` boundary
+- the primary signal `techspec_handoff_candidate`
+- the downstream handoff target as `techspec` + `handoff`
+- the point where canonical decomposition should stop and proposal-first
+  handoff should begin
 - `bounded_scope`
 - `required_provenance_links` including `source_draft_ref`
 

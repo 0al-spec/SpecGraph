@@ -76,3 +76,10 @@ Task numbers are preserved for traceability across commits, PRs, and review thre
 
 67. [done] Add a graph-health signal and evaluator penalty for excessive one-child refinement ladders, so supervisor can prefer bounded aggregate nodes or sibling groupings over deep serial `refines` chains like the emerging `SG-SPEC-0043` -> `SG-SPEC-0048` subtree.
 68. [done] Surface `SG-SPEC-0049` subtree-shape and lower-boundary handoff signals in `supervisor` run artifacts and derived queues as advisory runtime diagnostics, and suppress ordinary linked-continuation selection when active shape/handoff items already indicate rebalance-or-redirect pressure.
+
+## Semantic Shape and Handoff
+
+58. [done] Add refinement-shape signals for serial ladders, one-child delegation chains, and over-atomized subtrees so malformed shape becomes first-class graph health.
+59. [done] Extend graph-health guidance with role-first semantic legibility checks so rewrite/merge is preferred when nodes stop reading as meaningful system roles.
+60. [done] Define the SpecGraph-to-TechSpec handoff boundary so decomposition can stop at semantic saturation and emit downstream handoff artifacts instead of deeper graph slicing.
+61. [done] Teach supervisor and proposal flows to recommend handoff, not further refinement, when a subtree becomes implementation-facing or loses semantic novelty.

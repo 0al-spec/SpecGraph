@@ -30,6 +30,12 @@ Supervisor modes:
   now includes breadth pressure such as `refinement_fan_out_pressure` and a
   distinction between healthy multi-child aggregates and broad hubs, with
   regrouping-oriented recommendations when breadth pressure is real.
+  Lower-boundary shape and role-legibility pressure can now also collapse into
+  an explicit `techspec_handoff_candidate`, backed by
+  `tools/techspec_handoff_policy.json`, when the subtree looks semantically
+  saturated for canonical SpecGraph and increasingly implementation-facing.
+  Queue and proposal flows now carry that signal forward as an explicit
+  `handoff_proposal` with `transition_profile: techspec` and `packet_type: handoff`.
 - `--resolve-gate SPEC_ID --decision ...`: apply a human review decision.
 - `--target-spec SPEC_ID --split-proposal`: run the explicit proposal-first split pass for one
   oversized non-seed spec and emit a structured artifact under `runs/proposals/` without editing
@@ -101,6 +107,9 @@ Key derived artifacts:
 - `tools/proposal_promotion_registry.json`: explicit promotion provenance
   registry keyed by `proposal_id`, used to backfill source draft refs,
   motivating concern, bounded scope, and related promotion-trace fields
+- `tools/techspec_handoff_policy.json`: declarative lower-boundary contract for
+  `SpecGraph -> TechSpec` handoff, including the primary
+  `techspec_handoff_candidate` signal and downstream handoff packet target
 
 Runtime artifact safety:
 

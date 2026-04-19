@@ -105,13 +105,15 @@
     ],
     "lower_boundary_handoff_signals": [
       "lower_boundary_handoff_candidate",
-      "graph_layer_exhausted_for_subtree"
+      "graph_layer_exhausted_for_subtree",
+      "techspec_handoff_candidate"
     ],
     "governance_proposal_signals": [
       "repeated_split_required_candidate",
       "stalled_maturity_candidate",
       "lower_boundary_handoff_candidate",
-      "graph_layer_exhausted_for_subtree"
+      "graph_layer_exhausted_for_subtree",
+      "techspec_handoff_candidate"
     ],
     "default_actions": {
       "oversized_spec": "split_or_narrow_spec",
@@ -129,7 +131,8 @@
       "role_obscured_node": "rewrite_node_role_boundary",
       "bookkeeping_only_node": "merge_bookkeeping_slice",
       "lower_boundary_handoff_candidate": "review_lower_boundary_handoff",
-      "graph_layer_exhausted_for_subtree": "review_lower_boundary_handoff"
+      "graph_layer_exhausted_for_subtree": "review_lower_boundary_handoff",
+      "techspec_handoff_candidate": "emit_techspec_handoff_proposal"
     },
     "proposal_thresholds": {
       "default_graph_refactor": 2,

@@ -77,10 +77,15 @@ ARTIFACT_LOCK_TIMEOUT_SECONDS = 5.0
 ARTIFACT_LOCK_POLL_SECONDS = 0.05
 RUNTIME_ID_COLLISION_RETRY_LIMIT = 8
 SUPERVISOR_POLICY_RELATIVE_PATH = "tools/supervisor_policy.json"
+TECHSPEC_HANDOFF_POLICY_RELATIVE_PATH = "tools/techspec_handoff_policy.json"
 
 
 def supervisor_policy_path() -> Path:
     return TOOLS_DIR / "supervisor_policy.json"
+
+
+def techspec_handoff_policy_path() -> Path:
+    return TOOLS_DIR / "techspec_handoff_policy.json"
 
 
 def load_supervisor_policy() -> tuple[dict[str, Any], str]:
@@ -121,8 +126,49 @@ def load_supervisor_policy() -> tuple[dict[str, Any], str]:
 SUPERVISOR_POLICY, SUPERVISOR_POLICY_SHA256 = load_supervisor_policy()
 
 
+def load_techspec_handoff_policy() -> tuple[dict[str, Any], str]:
+    path = techspec_handoff_policy_path()
+    try:
+        raw_text = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise RuntimeError(
+            f"failed to read techspec handoff policy artifact: {path.as_posix()} ({exc})"
+        ) from exc
+    try:
+        payload = json.loads(raw_text)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(
+            f"malformed techspec handoff policy artifact: {path.as_posix()} ({exc})"
+        ) from exc
+    if not isinstance(payload, dict):
+        raise RuntimeError(
+            "malformed techspec handoff policy artifact: "
+            f"{path.as_posix()} must contain a JSON object"
+        )
+    required_sections = ("boundary_model", "signal_contract", "handoff_packet")
+    missing = [section for section in required_sections if section not in payload]
+    if missing:
+        raise RuntimeError(
+            "malformed techspec handoff policy artifact: missing top-level section(s): "
+            + ", ".join(missing)
+        )
+    return payload, hashlib.sha256(raw_text.encode("utf-8")).hexdigest()
+
+
+TECHSPEC_HANDOFF_POLICY, TECHSPEC_HANDOFF_POLICY_SHA256 = load_techspec_handoff_policy()
+
+
 def policy_lookup(policy_path: str) -> Any:
     current: Any = SUPERVISOR_POLICY
+    for part in policy_path.split("."):
+        if not isinstance(current, dict) or part not in current:
+            raise KeyError(policy_path)
+        current = current[part]
+    return copy.deepcopy(current)
+
+
+def techspec_handoff_policy_lookup(policy_path: str) -> Any:
+    current: Any = TECHSPEC_HANDOFF_POLICY
     for part in policy_path.split("."):
         if not isinstance(current, dict) or part not in current:
             raise KeyError(policy_path)
@@ -176,6 +222,14 @@ def supervisor_policy_reference() -> dict[str, Any]:
     }
 
 
+def techspec_handoff_policy_reference() -> dict[str, Any]:
+    return {
+        "artifact_path": TECHSPEC_HANDOFF_POLICY_RELATIVE_PATH,
+        "artifact_sha256": TECHSPEC_HANDOFF_POLICY_SHA256,
+        "version": TECHSPEC_HANDOFF_POLICY.get("version"),
+    }
+
+
 READY_DEP_STATUSES = {"reviewed", "frozen"}
 WORKABLE_STATUSES = {"outlined", "specified"}
 CONTINUATION_STATUSES = {"linked"}
@@ -188,6 +242,31 @@ SPLIT_REFACTOR_KIND = "split_oversized_spec"
 RETROSPECTIVE_REFACTOR_SIGNAL = "retrospective_refactor_candidate"
 SUBTREE_SHAPE_SIGNALS = set(policy_lookup("queue_policy.subtree_shape_signals"))
 LOWER_BOUNDARY_HANDOFF_SIGNALS = set(policy_lookup("queue_policy.lower_boundary_handoff_signals"))
+TECHSPEC_HANDOFF_PRIMARY_SIGNAL = str(
+    techspec_handoff_policy_lookup("signal_contract.primary_signal")
+)
+TECHSPEC_HANDOFF_REQUIRED_LOWER_BOUNDARY_SIGNALS = set(
+    techspec_handoff_policy_lookup("signal_contract.required_lower_boundary_signals")
+)
+TECHSPEC_HANDOFF_SEMANTIC_SATURATION_SIGNALS = set(
+    techspec_handoff_policy_lookup("signal_contract.semantic_saturation_signals")
+)
+TECHSPEC_HANDOFF_MIN_SEMANTIC_SATURATION_SIGNAL_COUNT = int(
+    techspec_handoff_policy_lookup("signal_contract.minimum_semantic_saturation_signal_count")
+)
+TECHSPEC_HANDOFF_TARGET_LAYER = str(techspec_handoff_policy_lookup("boundary_model.target_layer"))
+TECHSPEC_HANDOFF_RECOMMENDED_ACTION = str(
+    techspec_handoff_policy_lookup("handoff_packet.recommended_action")
+)
+TECHSPEC_HANDOFF_TARGET_TRANSITION_PROFILE = str(
+    techspec_handoff_policy_lookup("handoff_packet.transition_profile")
+)
+TECHSPEC_HANDOFF_TARGET_PACKET_TYPE = str(
+    techspec_handoff_policy_lookup("handoff_packet.packet_type")
+)
+TECHSPEC_HANDOFF_TARGET_ARTIFACT_CLASS = str(
+    techspec_handoff_policy_lookup("handoff_packet.target_artifact_class")
+)
 SUBTREE_SHAPE_ONE_CHILD_CHAIN_THRESHOLD = int(
     policy_lookup("thresholds.subtree_shape_one_child_chain")
 )
@@ -1259,6 +1338,41 @@ def subtree_shape_metrics(node: SpecNode, specs: list[SpecNode]) -> dict[str, An
         "median_acceptance_count": acceptance_median,
         "delegation_marker_ratio": delegation_ratio,
         "execution_marker_ratio": execution_ratio,
+    }
+
+
+def techspec_handoff_profile(*, metrics: dict[str, Any], signals: list[str]) -> dict[str, Any]:
+    present_signals = {str(signal).strip() for signal in signals if str(signal).strip()}
+    lower_boundary_signals = sorted(
+        signal
+        for signal in present_signals
+        if signal in TECHSPEC_HANDOFF_REQUIRED_LOWER_BOUNDARY_SIGNALS
+    )
+    semantic_saturation_signals = sorted(
+        signal
+        for signal in present_signals
+        if signal in TECHSPEC_HANDOFF_SEMANTIC_SATURATION_SIGNALS
+    )
+    execution_marker_ratio = round(float(metrics.get("execution_marker_ratio", 0.0)), 3)
+    candidate = (
+        bool(lower_boundary_signals)
+        and execution_marker_ratio >= TEXT_MARKER_RATIO_THRESHOLD
+        and len(semantic_saturation_signals)
+        >= TECHSPEC_HANDOFF_MIN_SEMANTIC_SATURATION_SIGNAL_COUNT
+    )
+    return {
+        "candidate": candidate,
+        "source_layer": str(
+            TECHSPEC_HANDOFF_POLICY.get("boundary_model", {}).get("source_layer", "")
+        ),
+        "target_layer": TECHSPEC_HANDOFF_TARGET_LAYER,
+        "lower_boundary_signals": lower_boundary_signals,
+        "semantic_saturation_signals": semantic_saturation_signals,
+        "execution_marker_ratio": execution_marker_ratio,
+        "target_transition_profile": TECHSPEC_HANDOFF_TARGET_TRANSITION_PROFILE,
+        "target_packet_type": TECHSPEC_HANDOFF_TARGET_PACKET_TYPE,
+        "target_artifact_class": TECHSPEC_HANDOFF_TARGET_ARTIFACT_CLASS,
+        "boundary_reference": techspec_handoff_policy_reference(),
     }
 
 
@@ -4326,6 +4440,25 @@ def observe_graph_health(
                 signals.append("graph_layer_exhausted_for_subtree")
                 recommended_actions.append("review_lower_boundary_handoff")
 
+            handoff_profile = techspec_handoff_profile(metrics=metrics, signals=signals)
+            if handoff_profile["candidate"]:
+                observations.append(
+                    {
+                        "kind": TECHSPEC_HANDOFF_PRIMARY_SIGNAL,
+                        "spec_id": source_node.id,
+                        "details": {
+                            **shape_details,
+                            **handoff_profile,
+                            "summary": (
+                                "The subtree appears semantically saturated for canonical "
+                                "SpecGraph and is ready for TechSpec-oriented handoff."
+                            ),
+                        },
+                    }
+                )
+                signals.append(TECHSPEC_HANDOFF_PRIMARY_SIGNAL)
+                recommended_actions.append(TECHSPEC_HANDOFF_RECOMMENDED_ACTION)
+
     return {
         "source_spec_id": source_node.id,
         "observations": observations,
@@ -4801,6 +4934,18 @@ def classify_proposal_type(work_item_type: str) -> str:
     return "refactor_proposal"
 
 
+def handoff_metadata_for_signal(signal: str) -> dict[str, Any]:
+    if str(signal).strip() != TECHSPEC_HANDOFF_PRIMARY_SIGNAL:
+        return {}
+    return {
+        "target_layer": TECHSPEC_HANDOFF_TARGET_LAYER,
+        "transition_profile": TECHSPEC_HANDOFF_TARGET_TRANSITION_PROFILE,
+        "packet_type": TECHSPEC_HANDOFF_TARGET_PACKET_TYPE,
+        "target_artifact_class": TECHSPEC_HANDOFF_TARGET_ARTIFACT_CLASS,
+        "handoff_policy_reference": techspec_handoff_policy_reference(),
+    }
+
+
 def proposal_threshold_for_signal(*, signal: str, work_item_type: str) -> int:
     threshold_policy = policy_lookup("queue_policy.proposal_thresholds")
     if signal == RETROSPECTIVE_REFACTOR_SIGNAL:
@@ -4865,6 +5010,7 @@ def build_refactor_queue_items(
         items.append(
             {
                 **base_item,
+                **handoff_metadata_for_signal(signal),
                 "execution_policy": refactor_execution_policy(base_item, proposal_items),
             }
         )
@@ -4931,8 +5077,13 @@ def build_proposal_queue_items(
         if occurrence_count < threshold:
             continue
 
-        proposal_type = classify_proposal_type(work_item_type)
-        if work_item_type == "governance_proposal":
+        if signal_name == TECHSPEC_HANDOFF_PRIMARY_SIGNAL:
+            proposal_type = "handoff_proposal"
+        else:
+            proposal_type = classify_proposal_type(work_item_type)
+        if signal_name == TECHSPEC_HANDOFF_PRIMARY_SIGNAL:
+            trigger = "handoff_boundary_signal"
+        elif work_item_type == "governance_proposal":
             trigger = "governance_class_signal"
         elif signal_name == RETROSPECTIVE_REFACTOR_SIGNAL:
             trigger = "retrospective_signal"
@@ -4953,6 +5104,7 @@ def build_proposal_queue_items(
                 "source_work_item_type": work_item_type,
                 "execution_policy": "emit_proposal",
                 "details": observation_by_kind.get(signal_name, {}).get("details"),
+                **handoff_metadata_for_signal(signal_name),
             }
         )
     return items

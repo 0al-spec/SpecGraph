@@ -2448,6 +2448,108 @@ def test_observe_graph_health_reports_role_legibility_signals(
     assert "merge_bookkeeping_slice" in graph_health["recommended_actions"]
 
 
+def test_observe_graph_health_reports_techspec_handoff_candidate(
+    supervisor_module: object,
+) -> None:
+    spec_node = supervisor_module.SpecNode
+    source = spec_node(
+        path=Path("/tmp/source.yaml"),
+        data={
+            "id": "SG-SPEC-9240",
+            "title": "Reflective Runtime Boundary",
+            "kind": "spec",
+            "status": "linked",
+            "maturity": 0.4,
+            "depends_on": [],
+            "acceptance": ["root criterion"],
+            "prompt": "Delegate runtime-facing queue payload detail.",
+            "last_outcome": "split_required",
+        },
+    )
+    child1 = spec_node(
+        path=Path("/tmp/child1.yaml"),
+        data={
+            "id": "SG-SPEC-9241",
+            "title": "Execution Gateway Segment",
+            "kind": "spec",
+            "status": "linked",
+            "maturity": 0.3,
+            "depends_on": [],
+            "refines": ["SG-SPEC-9240"],
+            "acceptance": ["delegate queue consumer detail"],
+            "prompt": "Delegate execution-facing queue routing detail.",
+        },
+    )
+    child2 = spec_node(
+        path=Path("/tmp/child2.yaml"),
+        data={
+            "id": "SG-SPEC-9242",
+            "title": "Payload Routing Surface",
+            "kind": "spec",
+            "status": "linked",
+            "maturity": 0.3,
+            "depends_on": [],
+            "refines": ["SG-SPEC-9241"],
+            "acceptance": ["payload routing field contract"],
+            "prompt": "Own payload field routing and runtime contract detail.",
+        },
+    )
+    child3 = spec_node(
+        path=Path("/tmp/child3.yaml"),
+        data={
+            "id": "SG-SPEC-9243",
+            "title": "Queue Consumer Gateway",
+            "kind": "spec",
+            "status": "linked",
+            "maturity": 0.3,
+            "depends_on": [],
+            "refines": ["SG-SPEC-9242"],
+            "acceptance": ["consumer sequencing detail"],
+            "prompt": "Delegate queue consumer sequencing detail.",
+        },
+    )
+    child4 = spec_node(
+        path=Path("/tmp/child4.yaml"),
+        data={
+            "id": "SG-SPEC-9244",
+            "title": "Runtime Payload Contract",
+            "kind": "spec",
+            "status": "linked",
+            "maturity": 0.3,
+            "depends_on": [],
+            "refines": ["SG-SPEC-9243"],
+            "acceptance": ["runtime payload field contract"],
+            "prompt": "Specify runtime payload field contract detail.",
+        },
+    )
+
+    graph_health = supervisor_module.observe_graph_health(
+        source_node=source,
+        worktree_specs=[source, child1, child2, child3, child4],
+        reconciliation={"semantic_dependencies_resolved": True},
+        atomicity_errors=[],
+        outcome="split_required",
+    )
+
+    assert supervisor_module.TECHSPEC_HANDOFF_PRIMARY_SIGNAL in graph_health["signals"]
+    handoff = next(
+        item
+        for item in graph_health["observations"]
+        if item["kind"] == supervisor_module.TECHSPEC_HANDOFF_PRIMARY_SIGNAL
+    )
+    assert handoff["details"]["target_transition_profile"] == "techspec"
+    assert handoff["details"]["target_packet_type"] == "handoff"
+    assert handoff["details"]["target_artifact_class"] == "techspec_handoff_packet"
+    assert "lower_boundary_handoff_candidate" in handoff["details"]["lower_boundary_signals"]
+    assert "serial_refinement_ladder" in handoff["details"]["semantic_saturation_signals"]
+    assert handoff["details"]["boundary_reference"]["artifact_path"] == (
+        "tools/techspec_handoff_policy.json"
+    )
+    assert (
+        supervisor_module.TECHSPEC_HANDOFF_RECOMMENDED_ACTION in graph_health["recommended_actions"]
+    )
+
+
 def test_observe_graph_health_reports_refinement_fan_out_pressure(
     supervisor_module: object,
 ) -> None:
@@ -3276,6 +3378,72 @@ def test_update_proposal_queue_emits_governance_proposal_immediately(
     assert proposal["occurrence_count"] == 1
     assert proposal["threshold"] == 1
     assert proposal["supporting_run_ids"] == ["RUN-2"]
+    assert proposal["execution_policy"] == "emit_proposal"
+
+
+def test_update_refactor_queue_routes_techspec_handoff_to_handoff_metadata(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    graph_health = {
+        "source_spec_id": "SG-SPEC-9999",
+        "observations": [
+            {
+                "kind": supervisor_module.TECHSPEC_HANDOFF_PRIMARY_SIGNAL,
+                "details": {
+                    "target_transition_profile": "techspec",
+                    "target_packet_type": "handoff",
+                },
+            }
+        ],
+        "signals": [supervisor_module.TECHSPEC_HANDOFF_PRIMARY_SIGNAL],
+        "recommended_actions": [supervisor_module.TECHSPEC_HANDOFF_RECOMMENDED_ACTION],
+    }
+
+    path = supervisor_module.update_refactor_queue(graph_health=graph_health, run_id="RUN-9")
+    items = json.loads(path.read_text(encoding="utf-8"))
+
+    assert len(items) == 1
+    item = items[0]
+    assert item["work_item_type"] == "governance_proposal"
+    assert item["execution_policy"] == "emit_proposal"
+    assert item["recommended_action"] == "emit_techspec_handoff_proposal"
+    assert item["transition_profile"] == "techspec"
+    assert item["packet_type"] == "handoff"
+    assert item["target_artifact_class"] == "techspec_handoff_packet"
+
+
+def test_update_proposal_queue_emits_handoff_proposal_for_techspec_boundary_signal(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    graph_health = {
+        "source_spec_id": "SG-SPEC-9999",
+        "observations": [
+            {
+                "kind": supervisor_module.TECHSPEC_HANDOFF_PRIMARY_SIGNAL,
+                "details": {
+                    "target_transition_profile": "techspec",
+                    "target_packet_type": "handoff",
+                },
+            }
+        ],
+        "signals": [supervisor_module.TECHSPEC_HANDOFF_PRIMARY_SIGNAL],
+        "recommended_actions": [supervisor_module.TECHSPEC_HANDOFF_RECOMMENDED_ACTION],
+    }
+
+    path, items = supervisor_module.update_proposal_queue(graph_health=graph_health, run_id="RUN-3")
+    assert path == repo_fixture / "runs" / "proposal_queue.json"
+
+    assert len(items) == 1
+    proposal = items[0]
+    assert proposal["proposal_type"] == "handoff_proposal"
+    assert proposal["trigger"] == "handoff_boundary_signal"
+    assert proposal["signal"] == supervisor_module.TECHSPEC_HANDOFF_PRIMARY_SIGNAL
+    assert proposal["recommended_action"] == "emit_techspec_handoff_proposal"
+    assert proposal["transition_profile"] == "techspec"
+    assert proposal["packet_type"] == "handoff"
+    assert proposal["target_artifact_class"] == "techspec_handoff_packet"
     assert proposal["execution_policy"] == "emit_proposal"
 
 
