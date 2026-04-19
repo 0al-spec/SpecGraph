@@ -261,6 +261,8 @@ Current bridge behavior:
   `intent_layer/nodes/*.json`
 - routes the request into one ordinary targeted refinement or explicit
   split-proposal pass
+- records the request lineage in run payloads and, when proposals are emitted,
+  carries that lineage forward into proposal-lane nodes
 - keeps the packet as the sole steering envelope for that run, so
   `--target-spec`, `--operator-note`, `--mutation-budget`, `--run-authority`,
   and `--execution-profile` are not mixed in separately

@@ -11,7 +11,6 @@ Task numbers are preserved for traceability across commits and PRs.
 
 ## Intent Layer
 
-36. [todo] Define how mediator outputs become canonical specs or proposals through reviewable supervisor-driven refinement instead of raw chat-to-spec mutation.
 
 ## Supervisor Trust and Governance
 

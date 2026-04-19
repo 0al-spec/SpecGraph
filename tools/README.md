@@ -80,7 +80,9 @@ Supervisor modes:
 - `--operator-request-packet PATH`: normalize one bounded `operator_request_packet`
   into a targeted refinement or split-proposal run. The packet is the sole
   steering envelope for that run and is mirrored into repository-tracked
-  `intent_layer/nodes/*.json` before execution.
+  `intent_layer/nodes/*.json` before execution. Resulting proposal-lane nodes
+  or canonical review candidates then carry that request lineage forward
+  instead of appearing sky-born.
 - `--build-proposal-lane-overlay`: build `runs/proposal_lane_overlay.json` from
   repository-tracked proposal-lane nodes under `proposal_lane/nodes/`, so
   draft proposal structure can be inspected as a secondary graph layer without

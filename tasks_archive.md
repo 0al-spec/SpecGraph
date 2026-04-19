@@ -53,6 +53,7 @@ Task numbers are preserved for traceability across commits, PRs, and review thre
 33. [done] Define an intent-facing layer and mediated discovery path between raw user goals and canonical SpecGraph specs.
 34. [done] Distinguish `UserIntent` and `OperatorRequest` from canonical `spec` and proposal-lane nodes.
 35. [done] Add a bounded operator-request bridge so GUI selections and chat instructions can steer one supervisor run without mutating canonical specs directly.
+36. [done] Define how mediator outputs become canonical specs or proposals through reviewable supervisor-driven refinement instead of raw chat-to-spec mutation.
 
 ## Child Spec Materialization Path
 

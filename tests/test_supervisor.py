@@ -7266,6 +7266,9 @@ def test_main_routes_operator_request_packet_to_targeted_refinement(
     assert captured["operator_note"] == "Tighten only one bounded concern."
     assert captured["mutation_budget"] == (supervisor_module.MUTATION_CLASS_POLICY_TEXT,)
     assert captured["execution_profile"] == "standard"
+    assert captured["operator_request_context"]["operator_request_handle"].startswith(
+        "operator_request::SG-SPEC-0001::targeted_refine::"
+    )
     overlay = json.loads((repo_fixture / "runs" / "intent_layer_overlay.json").read_text())
     assert overlay["named_filters"]["ready_for_execution"] == [
         "operator_request::SG-SPEC-0001::targeted_refine::tighten-the-golden-path-node"
@@ -7319,6 +7322,96 @@ def test_main_routes_operator_request_packet_to_split_proposal(
     assert exit_code == 0
     assert captured["node"].id == "SG-SPEC-0001"
     assert captured["operator_note"] == "Emit a bounded split proposal only."
+    assert captured["operator_request_context"]["operator_request_handle"].startswith(
+        "operator_request::SG-SPEC-0001::split_proposal::"
+    )
+
+
+def test_proposal_lane_lineage_links_include_intent_handles(supervisor_module: object) -> None:
+    links = supervisor_module.proposal_lane_lineage_links(
+        {
+            "target_spec_id": "SG-SPEC-0001",
+            "proposal_artifact_path": "runs/proposals/example.json",
+            "user_intent_handle": "user_intent::calculator-bootstrap",
+            "operator_request_handle": "operator_request::SG-SPEC-0001::split_proposal::calculator",
+        }
+    )
+
+    assert links == [
+        {
+            "lineage_role": "motivated_by",
+            "source_kind": "canonical_node",
+            "source_reference": "SG-SPEC-0001",
+        },
+        {
+            "lineage_role": "derived_from",
+            "source_kind": "runtime_artifact",
+            "source_reference": "runs/proposals/example.json",
+        },
+        {
+            "lineage_role": "motivated_by",
+            "source_kind": "intent_layer_node",
+            "source_reference": "user_intent::calculator-bootstrap",
+        },
+        {
+            "lineage_role": "derived_from",
+            "source_kind": "intent_layer_node",
+            "source_reference": "operator_request::SG-SPEC-0001::split_proposal::calculator",
+        },
+    ]
+
+
+def test_record_operator_request_execution_marks_proposal_linked(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    context = {
+        "packet_reference": "operator-request.json",
+        "user_intent": {
+            "handle": "user_intent::calculator-bootstrap",
+            "source_kind": "chat_instruction",
+            "source_summary": "Build a calculator.",
+            "selected_node_ref": "",
+            "unresolved_questions": [],
+        },
+        "operator_request": {
+            "handle": "operator_request::SG-SPEC-0001::split_proposal::calculator",
+            "target_spec_id": "SG-SPEC-0001",
+            "run_mode": "split_proposal",
+            "operator_note": "Emit one split proposal.",
+            "mutation_budget": (),
+            "run_authority": (),
+            "execution_profile": None,
+        },
+    }
+    sync_result = supervisor_module.sync_intent_layer_from_operator_request(context)
+    merged_context = {**context, **sync_result}
+
+    supervisor_module.record_operator_request_execution(
+        operator_request_context=merged_context,
+        run_id="20260419T000000Z-SG-SPEC-0001-deadbeef",
+        spec_id="SG-SPEC-0001",
+        outcome="done",
+        gate_state="none",
+        proposal_items=[
+            {
+                "id": "refactor_proposal::SG-SPEC-0001::oversized_spec",
+                "spec_id": "SG-SPEC-0001",
+                "operator_request_handle": merged_context["operator_request_handle"],
+            }
+        ],
+    )
+
+    operator_request_node = json.loads(
+        supervisor_module.intent_layer_node_path(
+            merged_context["operator_request_handle"]
+        ).read_text(encoding="utf-8")
+    )
+    assert operator_request_node["mediation_state"] == "proposal_linked"
+    assert operator_request_node["runtime_bridge"]["proposal_ids"] == [
+        "refactor_proposal::SG-SPEC-0001::oversized_spec"
+    ]
+    assert operator_request_node["runtime_bridge"]["downstream_route"] == "proposal_lane_emission"
 
 
 def test_main_builds_proposal_lane_overlay_as_standalone_command(

@@ -5715,6 +5715,7 @@ def build_proposal_queue_items(
     *,
     graph_health: dict[str, Any],
     run_id: str,
+    operator_request_context: dict[str, Any] | None = None,
 ) -> list[dict[str, Any]]:
     observation_by_kind = {
         str(observation.get("kind", "")): observation
@@ -5762,6 +5763,12 @@ def build_proposal_queue_items(
                 "source_work_item_type": work_item_type,
                 "execution_policy": "emit_proposal",
                 "details": observation_by_kind.get(signal_name, {}).get("details"),
+                "user_intent_handle": str(
+                    (operator_request_context or {}).get("user_intent_handle", "")
+                ).strip(),
+                "operator_request_handle": str(
+                    (operator_request_context or {}).get("operator_request_handle", "")
+                ).strip(),
                 **handoff_metadata_for_signal(signal_name),
             }
         )
@@ -5772,6 +5779,7 @@ def update_proposal_queue(
     *,
     graph_health: dict[str, Any],
     run_id: str,
+    operator_request_context: dict[str, Any] | None = None,
 ) -> tuple[Path, list[dict[str, Any]]]:
     """Refresh the derived proposal queue index for one source spec.
 
@@ -5794,7 +5802,11 @@ def update_proposal_queue(
             for item in (existing or [])
             if isinstance(item, dict) and str(item.get("spec_id", "")).strip() != source_spec_id
         ]
-        updated = preserved + build_proposal_queue_items(graph_health=graph_health, run_id=run_id)
+        updated = preserved + build_proposal_queue_items(
+            graph_health=graph_health,
+            run_id=run_id,
+            operator_request_context=operator_request_context,
+        )
         atomic_write_json(path, updated)
     sync_tracked_proposal_lane_from_queue(updated, spec_id=source_spec_id)
     return path, updated
@@ -6914,6 +6926,89 @@ def sync_intent_layer_from_operator_request(context: dict[str, Any]) -> dict[str
     }
 
 
+def record_operator_request_execution(
+    *,
+    operator_request_context: dict[str, Any] | None,
+    run_id: str,
+    spec_id: str,
+    outcome: str,
+    gate_state: str,
+    proposal_items: list[dict[str, Any]] | None = None,
+) -> None:
+    if not operator_request_context:
+        return
+
+    operator_request_handle = str(
+        operator_request_context.get("operator_request_handle", "")
+    ).strip()
+    user_intent_handle = str(operator_request_context.get("user_intent_handle", "")).strip()
+    if not operator_request_handle:
+        return
+
+    proposal_ids = sorted(
+        {
+            str(item.get("id", "")).strip()
+            for item in (proposal_items or [])
+            if isinstance(item, dict)
+            and str(item.get("spec_id", "")).strip() == spec_id
+            and str(item.get("operator_request_handle", "")).strip() == operator_request_handle
+            and str(item.get("id", "")).strip()
+        }
+    )
+    if proposal_ids:
+        mediation_state = "proposal_linked"
+        downstream_route = "proposal_lane_emission"
+    elif str(gate_state).strip() == "blocked" or str(outcome).strip() == "blocked":
+        mediation_state = "blocked"
+        downstream_route = "execution_blocked"
+    else:
+        mediation_state = "canonical_candidate"
+        downstream_route = "supervisor_refinement_candidate"
+
+    operator_request_path = intent_layer_node_path(operator_request_handle)
+    operator_request_node = load_json_object(operator_request_path)
+    if isinstance(operator_request_node, dict):
+        runtime_bridge = dict(operator_request_node.get("runtime_bridge", {}))
+        runtime_bridge.update(
+            {
+                "bridge_state": mediation_state,
+                "last_executed_run_id": run_id,
+                "last_executed_at": utc_now_iso(),
+                "last_outcome": outcome,
+                "last_gate_state": gate_state,
+                "proposal_ids": proposal_ids,
+                "downstream_route": downstream_route,
+            }
+        )
+        operator_request_node["mediation_state"] = mediation_state
+        operator_request_node["runtime_bridge"] = runtime_bridge
+        operator_request_node["updated_at"] = utc_now_iso()
+        with artifact_lock(operator_request_path):
+            atomic_write_json(operator_request_path, operator_request_node)
+
+    if user_intent_handle:
+        user_intent_path = intent_layer_node_path(user_intent_handle)
+        user_intent_node = load_json_object(user_intent_path)
+        if isinstance(user_intent_node, dict):
+            runtime_bridge = dict(user_intent_node.get("runtime_bridge", {}))
+            runtime_bridge.update(
+                {
+                    "latest_operator_request_handle": operator_request_handle,
+                    "latest_run_id": run_id,
+                    "latest_outcome": outcome,
+                    "latest_gate_state": gate_state,
+                    "latest_proposal_ids": proposal_ids,
+                    "latest_downstream_route": downstream_route,
+                }
+            )
+            user_intent_node["runtime_bridge"] = runtime_bridge
+            user_intent_node["updated_at"] = utc_now_iso()
+            with artifact_lock(user_intent_path):
+                atomic_write_json(user_intent_path, user_intent_node)
+
+    write_intent_layer_overlay(build_intent_layer_overlay())
+
+
 def proposal_lane_valid_authority_states() -> set[str]:
     return {str(value).strip() for value in PROPOSAL_LANE_AUTHORITY_STATE_MAPPING.values()}
 
@@ -6965,6 +7060,24 @@ def proposal_lane_lineage_links(proposal_item: dict[str, Any]) -> list[dict[str,
                 "lineage_role": "derived_from",
                 "source_kind": "runtime_artifact",
                 "source_reference": proposal_artifact_path_value,
+            }
+        )
+    user_intent_handle = str(proposal_item.get("user_intent_handle", "")).strip()
+    if user_intent_handle:
+        lineage_links.append(
+            {
+                "lineage_role": "motivated_by",
+                "source_kind": "intent_layer_node",
+                "source_reference": user_intent_handle,
+            }
+        )
+    operator_request_handle = str(proposal_item.get("operator_request_handle", "")).strip()
+    if operator_request_handle:
+        lineage_links.append(
+            {
+                "lineage_role": "derived_from",
+                "source_kind": "intent_layer_node",
+                "source_reference": operator_request_handle,
             }
         )
     return lineage_links
@@ -7040,6 +7153,10 @@ def sync_tracked_proposal_lane_node(
                 "target_artifact_class": str(
                     proposal_item.get("target_artifact_class", "")
                 ).strip(),
+                "user_intent_handle": str(proposal_item.get("user_intent_handle", "")).strip(),
+                "operator_request_handle": str(
+                    proposal_item.get("operator_request_handle", "")
+                ).strip(),
             },
             "runtime_bridge": {
                 "proposal_queue_status": str(proposal_item.get("status", "")).strip(),
@@ -7051,6 +7168,9 @@ def sync_tracked_proposal_lane_node(
                 ).strip(),
                 "applied_run_id": str(proposal_item.get("applied_run_id", "")).strip(),
                 "applied_at": str(proposal_item.get("applied_at", "")).strip(),
+                "operator_request_handle": str(
+                    proposal_item.get("operator_request_handle", "")
+                ).strip(),
             },
         }
     )
@@ -10402,6 +10522,7 @@ def upsert_split_proposal_queue(
     run_id: str,
     artifact: dict[str, Any],
     artifact_path: Path,
+    operator_request_context: dict[str, Any] | None = None,
 ) -> tuple[Path, list[dict[str, Any]]]:
     RUNS_DIR.mkdir(parents=True, exist_ok=True)
     path = proposal_queue_path()
@@ -10452,6 +10573,12 @@ def upsert_split_proposal_queue(
             "source_work_item_type": "graph_refactor",
             "execution_policy": "emit_proposal",
             "proposal_artifact_path": artifact_path.relative_to(ROOT).as_posix(),
+            "user_intent_handle": str(
+                (operator_request_context or {}).get("user_intent_handle", "")
+            ).strip(),
+            "operator_request_handle": str(
+                (operator_request_context or {}).get("operator_request_handle", "")
+            ).strip(),
         }
 
         preserved = [
@@ -11750,6 +11877,7 @@ def _process_split_refactor_proposal(
     *,
     node: SpecNode,
     executor: Callable[[SpecNode, Path], subprocess.CompletedProcess[str]],
+    operator_request_context: dict[str, Any] | None = None,
     operator_note: str = "",
     execution_profile: str | None = None,
     child_model: str | None = None,
@@ -11787,6 +11915,16 @@ def _process_split_refactor_proposal(
     }
     if operator_note.strip():
         selected_by_rule["operator_note"] = operator_note.strip()
+    if operator_request_context:
+        selected_by_rule["user_intent_handle"] = str(
+            operator_request_context.get("user_intent_handle", "")
+        ).strip()
+        selected_by_rule["operator_request_handle"] = str(
+            operator_request_context.get("operator_request_handle", "")
+        ).strip()
+        selected_by_rule["operator_request_packet"] = str(
+            operator_request_context.get("packet_reference", "")
+        ).strip()
     selected_by_rule["execution_profile"] = resolve_execution_profile_name(
         requested_profile=execution_profile,
         run_authority=(),
@@ -11970,6 +12108,7 @@ def _process_split_refactor_proposal(
                 run_id=run_id,
                 artifact=proposal_artifact_data,
                 artifact_path=proposal_artifact_root_path,
+                operator_request_context=operator_request_context,
             )
         except RuntimeError as exc:
             artifact_io_errors.append(str(exc))
@@ -12055,8 +12194,27 @@ def _process_split_refactor_proposal(
         "stdout": result.stdout,
         "stderr": result.stderr,
     }
+    if operator_request_context:
+        payload["operator_request_bridge"] = {
+            "policy_reference": operator_request_bridge_policy_reference(),
+            "packet_reference": str(operator_request_context.get("packet_reference", "")).strip(),
+            "user_intent_handle": str(
+                operator_request_context.get("user_intent_handle", "")
+            ).strip(),
+            "operator_request_handle": str(
+                operator_request_context.get("operator_request_handle", "")
+            ).strip(),
+        }
     log_path = write_run_log(run_id, payload)
     write_latest_summary(payload)
+    record_operator_request_execution(
+        operator_request_context=operator_request_context,
+        run_id=run_id,
+        spec_id=node.id,
+        outcome=payload["outcome"],
+        gate_state=str(payload.get("gate_state", "")),
+        proposal_items=proposal_queue_after,
+    )
 
     cleanup_isolated_worktree(worktree_path, branch)
     emit_run_footer(
@@ -12078,6 +12236,7 @@ def _process_one_spec(
     executor: Callable[[SpecNode, Path], subprocess.CompletedProcess[str]],
     auto_approve: bool,
     refactor_work_item: dict[str, Any] | None = None,
+    operator_request_context: dict[str, Any] | None = None,
     operator_target: bool = False,
     operator_note: str = "",
     mutation_budget: tuple[str, ...] = (),
@@ -12130,6 +12289,16 @@ def _process_one_spec(
         )
     if operator_note.strip():
         selected_by_rule["operator_note"] = operator_note.strip()
+    if operator_request_context:
+        selected_by_rule["user_intent_handle"] = str(
+            operator_request_context.get("user_intent_handle", "")
+        ).strip()
+        selected_by_rule["operator_request_handle"] = str(
+            operator_request_context.get("operator_request_handle", "")
+        ).strip()
+        selected_by_rule["operator_request_packet"] = str(
+            operator_request_context.get("packet_reference", "")
+        ).strip()
     if mutation_budget:
         selected_by_rule["mutation_budget"] = list(mutation_budget)
     if run_authority:
@@ -12575,6 +12744,7 @@ def _process_one_spec(
             proposal_queue_artifact, proposal_items = update_proposal_queue(
                 graph_health=graph_health,
                 run_id=run_id,
+                operator_request_context=operator_request_context,
             )
             refactor_queue_artifact = update_refactor_queue(
                 graph_health=graph_health,
@@ -12714,11 +12884,30 @@ def _process_one_spec(
         "stdout": result.stdout,
         "stderr": result.stderr,
     }
+    if operator_request_context:
+        payload["operator_request_bridge"] = {
+            "policy_reference": operator_request_bridge_policy_reference(),
+            "packet_reference": str(operator_request_context.get("packet_reference", "")).strip(),
+            "user_intent_handle": str(
+                operator_request_context.get("user_intent_handle", "")
+            ).strip(),
+            "operator_request_handle": str(
+                operator_request_context.get("operator_request_handle", "")
+            ).strip(),
+        }
     if candidate_graph_health != graph_health:
         payload["candidate_graph_health"] = candidate_graph_health
         payload["candidate_graph_health_truth_basis"] = "review_candidate"
     log_path = write_run_log(run_id, payload)
     write_latest_summary(payload)
+    record_operator_request_execution(
+        operator_request_context=operator_request_context,
+        run_id=run_id,
+        spec_id=node.id,
+        outcome=payload["outcome"],
+        gate_state=str(payload.get("gate_state", "")),
+        proposal_items=proposal_queue_after,
+    )
 
     if cleanup_failed_child_materialization or cleanup_failed_source_refinement:
         node.path.write_text(before_source_text, encoding="utf-8")
@@ -13400,6 +13589,13 @@ def main(
         }
         if operator_note.strip():
             selected_by_rule["operator_note"] = operator_note.strip()
+        if operator_request_context:
+            selected_by_rule["user_intent_handle"] = str(
+                operator_request_context.get("user_intent_handle", "")
+            ).strip()
+            selected_by_rule["operator_request_handle"] = str(
+                operator_request_context.get("operator_request_handle", "")
+            ).strip()
         if mutation_budget:
             selected_by_rule["mutation_budget"] = list(mutation_budget)
         if run_authority:
@@ -13440,6 +13636,8 @@ def main(
             "child_model": child_model,
             "child_timeout_seconds": proposal_timeout,
         }
+        if callable_supports_keyword(_process_split_refactor_proposal, "operator_request_context"):
+            proposal_kwargs["operator_request_context"] = operator_request_context
         if callable_supports_keyword(_process_split_refactor_proposal, "verbose"):
             proposal_kwargs["verbose"] = verbose
         exit_code, _outcome = _process_split_refactor_proposal(**proposal_kwargs)
@@ -13474,6 +13672,13 @@ def main(
         }
         if operator_note.strip():
             selected_by_rule["operator_note"] = operator_note.strip()
+        if operator_request_context:
+            selected_by_rule["user_intent_handle"] = str(
+                operator_request_context.get("user_intent_handle", "")
+            ).strip()
+            selected_by_rule["operator_request_handle"] = str(
+                operator_request_context.get("operator_request_handle", "")
+            ).strip()
         if mutation_budget:
             selected_by_rule["mutation_budget"] = list(mutation_budget)
         if run_authority:
@@ -13530,6 +13735,8 @@ def main(
             "child_model": child_model,
             "child_timeout_seconds": target_timeout,
         }
+        if callable_supports_keyword(_process_one_spec, "operator_request_context"):
+            process_kwargs["operator_request_context"] = operator_request_context
         if callable_supports_keyword(_process_one_spec, "verbose"):
             process_kwargs["verbose"] = verbose
         exit_code, _outcome, _completion_status, _gate_state = _process_one_spec(**process_kwargs)
