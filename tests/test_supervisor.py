@@ -11830,6 +11830,103 @@ def test_main_repairs_recoverable_worktree_yaml_indentation(
     assert "review_gate_created" in payload["evaluator_loop_control"]["stop_conditions"]
 
 
+def test_main_blocks_when_evaluator_control_artifact_write_fails(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    node_data = {
+        "id": "SG-SPEC-0001",
+        "kind": "spec",
+        "title": "Recoverable YAML Node",
+        "status": "linked",
+        "maturity": 0.4,
+        "depends_on": [],
+        "relates_to": [],
+        "refines": [],
+        "inputs": ["specs/nodes/SG-SPEC-0001.yaml"],
+        "outputs": ["specs/nodes/SG-SPEC-0001.yaml"],
+        "allowed_paths": ["specs/nodes/SG-SPEC-0001.yaml"],
+        "acceptance": ["Criterion 1"],
+        "acceptance_evidence": grounded_acceptance_evidence(["Criterion 1"]),
+        "prompt": "Initial prompt.",
+        "specification": {
+            "graph_health_signal_policy": {
+                "initial_signals": ["oversized_spec"],
+                "semantics": ["Signal presence is diagnostic only."],
+            }
+        },
+    }
+    node_path.write_text(supervisor_module.dump_yaml_text(node_data), encoding="utf-8")
+
+    worktree = make_fake_worktree(repo_fixture)
+    monkeypatch.setattr(
+        supervisor_module,
+        "create_isolated_worktree",
+        lambda _node_id: (worktree, "codex/sg-spec-0001/test"),
+    )
+    changed_snapshots = [
+        [],
+        ["specs/nodes/SG-SPEC-0001.yaml"],
+        ["specs/nodes/SG-SPEC-0001.yaml"],
+    ]
+    monkeypatch.setattr(
+        supervisor_module, "git_changed_files", lambda _cwd=None: changed_snapshots.pop(0)
+    )
+
+    def fake_executor(_node: object, worktree_path: Path) -> subprocess.CompletedProcess[str]:
+        worktree_node_path = worktree_path / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+        data = supervisor_module.get_yaml_module().safe_load(
+            worktree_node_path.read_text(encoding="utf-8")
+        )
+        data["prompt"] = "Updated by recoverable YAML repair path."
+        broken_text = supervisor_module.dump_yaml_text(data).replace(
+            "\n    initial_signals:",
+            "\n  initial_signals:",
+            1,
+        )
+        worktree_node_path.write_text(broken_text, encoding="utf-8")
+        return subprocess.CompletedProcess(
+            args=["codex"],
+            returncode=0,
+            stdout="RUN_OUTCOME: done\nBLOCKER: none\n",
+            stderr="",
+        )
+
+    monkeypatch.setattr(
+        supervisor_module,
+        "write_evaluator_control_artifact",
+        lambda _payload: (_ for _ in ()).throw(RuntimeError("evaluator control lock failed")),
+    )
+
+    exit_code = supervisor_module.main(
+        executor=fake_executor,
+        target_spec="SG-SPEC-0001",
+    )
+
+    assert exit_code == 1
+    updated = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    assert updated["gate_state"] == "blocked"
+    assert (
+        updated["required_human_action"] == "repair malformed runtime artifact and rerun supervisor"
+    )
+    assert any("evaluator control lock failed" in error for error in updated["last_errors"])
+
+    run_logs = sorted((repo_fixture / "runs").glob("*-SG-SPEC-*.json"))
+    payload = json.loads(run_logs[0].read_text(encoding="utf-8"))
+    assert payload["completion_status"] == "failed"
+    assert payload["outcome"] == "blocked"
+    assert payload["gate_state"] == "blocked"
+    assert payload["decision_inspector_artifact"] == ""
+    assert payload["evaluator_control_artifact"] == ""
+    assert payload["safe_repair_artifact"] == ""
+    assert payload["validator_results"]["runtime_artifacts"] is False
+    assert {finding["code"] for finding in payload["validation_findings"]} >= {
+        "runtime_artifact_write_failure"
+    }
+
+
 def test_build_safe_repair_contract_is_bounded_to_worktree_candidate(
     supervisor_module: object,
 ) -> None:

@@ -14792,12 +14792,6 @@ def _process_one_spec(
         node.data["last_errors"] = validation_errors
     else:
         node.data.pop("last_errors", None)
-    node.save()
-    if child_materialization_hint is not None:
-        release_child_materialization_spec_id(
-            spec_id=str(child_materialization_hint.get("id", "")).strip(),
-            run_id=run_id,
-        )
 
     decision_inspector = build_decision_inspector(
         run_id=run_id,
@@ -14818,7 +14812,6 @@ def _process_one_spec(
         refactor_queue_after=refactor_queue_after,
         refinement_acceptance=refinement_acceptance,
     )
-    decision_inspector_artifact = write_decision_inspector_artifact(run_id, decision_inspector)
     evaluator_loop_control = build_evaluator_loop_control(
         run_id=run_id,
         spec_id=node.id,
@@ -14831,12 +14824,98 @@ def _process_one_spec(
         validation_findings=validation_findings,
         safe_repair_contract=safe_repair_contract,
     )
-    evaluator_control_artifact = write_evaluator_control_artifact(evaluator_loop_control)
-    safe_repair_artifact = (
-        write_safe_repair_artifact(safe_repair_contract).as_posix()
-        if safe_repair_contract["repair_count"]
-        else ""
-    )
+    artifact_write_errors: list[str] = []
+    decision_inspector_artifact = ""
+    evaluator_control_artifact = ""
+    safe_repair_artifact = ""
+    try:
+        decision_inspector_artifact = write_decision_inspector_artifact(
+            run_id,
+            decision_inspector,
+        ).as_posix()
+    except (OSError, RuntimeError) as exc:
+        artifact_write_errors.append(str(exc))
+    try:
+        evaluator_control_artifact = write_evaluator_control_artifact(
+            evaluator_loop_control
+        ).as_posix()
+    except (OSError, RuntimeError) as exc:
+        artifact_write_errors.append(str(exc))
+    if safe_repair_contract["repair_count"]:
+        try:
+            safe_repair_artifact = write_safe_repair_artifact(safe_repair_contract).as_posix()
+        except (OSError, RuntimeError) as exc:
+            artifact_write_errors.append(str(exc))
+
+    if artifact_write_errors:
+        artifact_io_errors.extend(artifact_write_errors)
+        validation_findings.extend(
+            string_errors_to_validation_findings(
+                artifact_write_errors,
+                family="artifact",
+                error_class="artifact_integrity_failure",
+                code="runtime_artifact_write_failure",
+                spec_id=node.id,
+            )
+        )
+        validation_errors = validation_messages(validation_findings)
+        validator_results["runtime_artifacts"] = False
+        success = False
+        outcome = "blocked"
+        blocker = blocker or "runtime artifact failure"
+        node.data["gate_state"] = "blocked"
+        clear_pending_review_state(node)
+        required_human_action = "repair malformed runtime artifact and rerun supervisor"
+        node.data["required_human_action"] = required_human_action
+        node.data["last_outcome"] = outcome
+        node.data["last_blocker"] = blocker
+        node.data["last_validator_results"] = validator_results
+        node.data["last_errors"] = validation_errors
+        completion_status = classify_completion_status(
+            success=success,
+            productive_split_required=productive_split_required,
+        )
+        decision_inspector = build_decision_inspector(
+            run_id=run_id,
+            spec_id=node.id,
+            selected_by_rule=selected_by_rule,
+            outcome=outcome,
+            gate_state=str(node.data.get("gate_state", "none")),
+            required_human_action=required_human_action,
+            blocker=blocker,
+            changed_files=changed,
+            validation_findings=validation_findings,
+            validator_results=validator_results,
+            graph_health=graph_health,
+            graph_health_truth_basis="accepted_canonical",
+            proposal_queue_before=proposal_queue_before,
+            proposal_queue_after=proposal_queue_after,
+            refactor_queue_before=refactor_queue_before,
+            refactor_queue_after=refactor_queue_after,
+            refinement_acceptance=refinement_acceptance,
+        )
+        evaluator_loop_control = build_evaluator_loop_control(
+            run_id=run_id,
+            spec_id=node.id,
+            selected_by_rule=selected_by_rule,
+            outcome=outcome,
+            gate_state=str(node.data.get("gate_state", "none")),
+            blocker=blocker,
+            required_human_action=required_human_action,
+            graph_health=graph_health,
+            validation_findings=validation_findings,
+            safe_repair_contract=safe_repair_contract,
+        )
+        decision_inspector_artifact = ""
+        evaluator_control_artifact = ""
+        safe_repair_artifact = ""
+
+    node.save()
+    if child_materialization_hint is not None:
+        release_child_materialization_spec_id(
+            spec_id=str(child_materialization_hint.get("id", "")).strip(),
+            run_id=run_id,
+        )
     payload = {
         "run_id": run_id,
         "timestamp_utc": utc_now_iso(),
@@ -14873,9 +14952,9 @@ def _process_one_spec(
         "graph_health": graph_health,
         "graph_health_truth_basis": "accepted_canonical",
         "decision_inspector": decision_inspector,
-        "decision_inspector_artifact": decision_inspector_artifact.as_posix(),
+        "decision_inspector_artifact": decision_inspector_artifact,
         "evaluator_loop_control": evaluator_loop_control,
-        "evaluator_control_artifact": evaluator_control_artifact.as_posix(),
+        "evaluator_control_artifact": evaluator_control_artifact,
         "executor_environment": executor_environment,
         "refinement_acceptance": refinement_acceptance,
         "refactor_queue_artifact": refactor_queue_artifact.as_posix(),
