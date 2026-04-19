@@ -6656,7 +6656,13 @@ def normalize_operator_request_packet(
             "operator request packet must declare "
             f"artifact_kind: {OPERATOR_REQUEST_PACKET_ARTIFACT_KIND}"
         )
-    if int(packet.get("schema_version", 0) or 0) != OPERATOR_REQUEST_PACKET_SCHEMA_VERSION:
+    raw_schema_version = packet.get("schema_version", 0)
+    try:
+        schema_version = int(raw_schema_version or 0)
+    except (TypeError, ValueError):
+        errors.append("operator request packet schema_version must be an integer")
+        schema_version = None
+    if schema_version is not None and schema_version != OPERATOR_REQUEST_PACKET_SCHEMA_VERSION:
         errors.append(
             "operator request packet must declare "
             f"schema_version: {OPERATOR_REQUEST_PACKET_SCHEMA_VERSION}"
@@ -13441,8 +13447,9 @@ def main(
             for error in request_errors:
                 print(error, file=sys.stderr)
             return 1
-        bridge_record = sync_intent_layer_from_operator_request(operator_request_context)
-        operator_request_context = {**operator_request_context, **bridge_record}
+        if not dry_run:
+            bridge_record = sync_intent_layer_from_operator_request(operator_request_context)
+            operator_request_context = {**operator_request_context, **bridge_record}
         request = operator_request_context["operator_request"]
         target_spec = str(request.get("target_spec_id", "")).strip()
         operator_note = str(request.get("operator_note", "")).strip()

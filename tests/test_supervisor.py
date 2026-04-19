@@ -7275,6 +7275,42 @@ def test_main_routes_operator_request_packet_to_targeted_refinement(
     ]
 
 
+def test_main_dry_run_with_operator_request_packet_does_not_sync_intent_layer(
+    supervisor_module: object,
+    repo_fixture: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    packet_path = repo_fixture / "operator-request-dry-run.json"
+    packet_path.write_text(
+        json.dumps(
+            {
+                "artifact_kind": supervisor_module.OPERATOR_REQUEST_PACKET_ARTIFACT_KIND,
+                "schema_version": supervisor_module.OPERATOR_REQUEST_PACKET_SCHEMA_VERSION,
+                "user_intent": {
+                    "source_kind": "chat_instruction",
+                    "source_summary": "Preview the bounded change.",
+                },
+                "operator_request": {
+                    "target_spec_id": "SG-SPEC-0001",
+                    "run_mode": "targeted_refine",
+                    "operator_note": "Preview only.",
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    exit_code = supervisor_module.main(
+        operator_request_packet_path=packet_path.as_posix(),
+        dry_run=True,
+    )
+
+    assert exit_code == 0
+    assert "=== dry-run mode ===" in capsys.readouterr().out
+    assert not (repo_fixture / "intent_layer" / "nodes").exists()
+    assert not (repo_fixture / "runs" / "intent_layer_overlay.json").exists()
+
+
 def test_main_routes_operator_request_packet_to_split_proposal(
     supervisor_module: object,
     repo_fixture: Path,
@@ -7412,6 +7448,37 @@ def test_record_operator_request_execution_marks_proposal_linked(
         "refactor_proposal::SG-SPEC-0001::oversized_spec"
     ]
     assert operator_request_node["runtime_bridge"]["downstream_route"] == "proposal_lane_emission"
+
+
+def test_main_reports_invalid_operator_request_schema_version(
+    supervisor_module: object,
+    repo_fixture: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    packet_path = repo_fixture / "operator-request-invalid.json"
+    packet_path.write_text(
+        json.dumps(
+            {
+                "artifact_kind": supervisor_module.OPERATOR_REQUEST_PACKET_ARTIFACT_KIND,
+                "schema_version": "x",
+                "user_intent": {
+                    "source_kind": "chat_instruction",
+                    "source_summary": "Build a calculator.",
+                },
+                "operator_request": {
+                    "target_spec_id": "SG-SPEC-0001",
+                    "run_mode": "targeted_refine",
+                    "operator_note": "Keep the change bounded.",
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    exit_code = supervisor_module.main(operator_request_packet_path=packet_path.as_posix())
+
+    assert exit_code == 1
+    assert "operator request packet schema_version must be an integer" in capsys.readouterr().err
 
 
 def test_main_builds_proposal_lane_overlay_as_standalone_command(
