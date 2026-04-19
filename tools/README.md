@@ -77,12 +77,25 @@ Supervisor modes:
   repository-tracked intent-layer nodes under `intent_layer/nodes/`, so
   pre-canonical user intent and operator-request artifacts can be inspected as
   a separate mediation layer.
+- `--build-vocabulary-index`: build `runs/vocabulary_index.json` from
+  `tools/specgraph_vocabulary.json`, flattening canonical terms, aliases,
+  deprecated aliases, families, and contexts into one shared machine-readable
+  ontology surface for specs, policy artifacts, and viewers.
+- `--build-vocabulary-drift-report`: build `runs/vocabulary_drift_report.json`
+  from canonical specs and governed policy artifacts to flag undefined terms,
+  alias collisions, deprecated alias usage outside sanctioned mappings, and
+  meaning divergence.
+- `--build-pre-spec-semantics-index`: build
+  `runs/pre_spec_semantics_index.json` from tracked `intent_layer/nodes/*.json`,
+  proposal-lane lineage, and canonical `last_pre_spec_provenance` links.
 - `--operator-request-packet PATH`: normalize one bounded `operator_request_packet`
   into a targeted refinement or split-proposal run. The packet is the sole
   steering envelope for that run and is mirrored into repository-tracked
   `intent_layer/nodes/*.json` before execution. Resulting proposal-lane nodes
   or canonical review candidates then carry that request lineage forward
-  instead of appearing sky-born.
+  instead of appearing sky-born. The normalized `OperatorRequest` is now typed:
+  it carries explicit authority, mutation budget, stop conditions, and a
+  machine-readable execution contract rather than relying on ad hoc CLI flags.
 - `--build-proposal-lane-overlay`: build `runs/proposal_lane_overlay.json` from
   repository-tracked proposal-lane nodes under `proposal_lane/nodes/`, so
   draft proposal structure can be inspected as a secondary graph layer without
@@ -117,6 +130,14 @@ Key derived artifacts:
 - `runs/intent_layer_overlay.json`: intent-layer viewer/report surface grouped
   by artifact kind, mediation state, explicit distinction contracts, and
   invalid query-contract findings
+- `runs/pre_spec_semantics_index.json`: derived pre-spec semantic index linking
+  tracked intent-layer artifacts to downstream proposal-lane nodes and
+  canonical specs, with queryability and provenance findings
+- `runs/vocabulary_index.json`: flattened shared vocabulary index for canonical
+  terms, aliases, deprecated aliases, families, and contexts
+- `runs/vocabulary_drift_report.json`: drift report over canonical specs and
+  governed policy artifacts, including undefined terms, alias collisions, and
+  meaning divergence
 - `proposal_lane/nodes/*.json`: repository-tracked proposal-lane nodes with
   stable provisional handles, authority state, target region, lineage, and
   runtime bridge metadata
@@ -149,9 +170,16 @@ Key derived artifacts:
 - `tools/intent_layer_policy.json`: declarative repository contract for the
   tracked intent layer, including kind separation, mediation-state vocabulary,
   and overlay semantics
+- `tools/specgraph_vocabulary.json`: shared machine-readable vocabulary layer
+  for canonical terms, aliases, deprecated aliases, and cross-artifact
+  ontology families
+- `tools/pre_spec_semantics_policy.json`: declarative contract for pre-spec
+  semantic artifacts, their axes, repository layout, and downstream lineage
+  into proposal-lane or canonical review candidates
 - `tools/operator_request_bridge_policy.json`: declarative contract for
   `operator_request_packet`, including admissible source kinds, bounded run
-  modes, and the rule that one request may only steer one supervisor run
+  modes, typed execution-contract fields, and the rule that one request may
+  only steer one supervisor run
 - `tools/proposal_promotion_registry.json`: explicit promotion provenance
   registry keyed by `proposal_id`, used to backfill source draft refs,
   motivating concern, bounded scope, and related promotion-trace fields

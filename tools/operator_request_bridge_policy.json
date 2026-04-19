@@ -24,7 +24,42 @@
     "required_operator_request_fields": [
       "target_spec_id",
       "run_mode"
+    ],
+    "optional_operator_request_fields": [
+      "request_handle",
+      "operator_note",
+      "mutation_budget",
+      "run_authority",
+      "execution_profile",
+      "stop_conditions"
     ]
+  },
+  "typed_request_contract": {
+    "execution_contract": {
+      "required_fields": [
+        "authority",
+        "mutation_budget",
+        "stop_conditions"
+      ],
+      "allowed_stop_conditions": [
+        "first_structured_outcome",
+        "review_boundary_reached",
+        "blocked_by_gate",
+        "proposal_emitted",
+        "child_materialized"
+      ],
+      "default_stop_conditions": [
+        "first_structured_outcome",
+        "review_boundary_reached"
+      ],
+      "authority_shape": {
+        "required_fields": [
+          "requested_run_authority",
+          "canonical_write_boundary",
+          "allowed_downstream_routes"
+        ]
+      }
+    }
   },
   "bridge_boundary": {
     "one_run_only": true,

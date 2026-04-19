@@ -6413,6 +6413,420 @@ def test_main_validates_transition_packet_with_profile_override(
     assert out["transition_profile"] == "implementation_trace"
 
 
+def test_build_vocabulary_index_flattens_terms_aliases_and_contexts(
+    supervisor_module: object,
+) -> None:
+    index = supervisor_module.build_vocabulary_index()
+
+    assert index["artifact_kind"] == "specgraph_vocabulary_index"
+    assert "pre_spec_semantics" in {entry["context"] for entry in index["contexts"]}
+    operator_request_entry = next(
+        entry
+        for entry in index["entries"]
+        if entry["family"] == "pre_spec_artifact_class"
+        and entry["canonical_term"] == "operator_request"
+    )
+    assert operator_request_entry["deprecated_aliases"] == ["run_request"]
+    assert index["deprecated_alias_index"]["run_request"] == [
+        "pre_spec_artifact_class:operator_request"
+    ]
+
+
+def test_build_vocabulary_drift_report_flags_collisions_and_pre_spec_drift(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    actual_entries = supervisor_module.iter_vocabulary_entries()
+    collision_entries = actual_entries + [
+        {
+            "family": "runtime_artifact_kind",
+            "canonical_term": "intent_layer_node",
+            "definition": "duplicate for collision test",
+            "aliases": ["shared-runtime-alias"],
+            "deprecated_aliases": [],
+            "family_description": "test",
+            "owner_specs": [],
+            "owner_artifacts": [],
+            "contexts": [],
+        },
+        {
+            "family": "proposal_artifact_class",
+            "canonical_term": "working_draft",
+            "definition": "duplicate for collision test",
+            "aliases": ["shared-runtime-alias"],
+            "deprecated_aliases": [],
+            "family_description": "test",
+            "owner_specs": [],
+            "owner_artifacts": [],
+            "contexts": [],
+        },
+    ]
+    monkeypatch.setattr(supervisor_module, "iter_vocabulary_entries", lambda: collision_entries)
+    monkeypatch.setattr(
+        supervisor_module,
+        "INTENT_LAYER_ALLOWED_KINDS",
+        {"user_intent", "undefined_pre_spec_kind"},
+    )
+
+    spec_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    spec_data = json.loads(spec_path.read_text(encoding="utf-8"))
+    spec_data["specification"] = {"terminology": {"run_request": "Legacy request term."}}
+    spec_path.write_text(json.dumps(spec_data), encoding="utf-8")
+
+    report = supervisor_module.build_vocabulary_drift_report(supervisor_module.load_specs())
+    finding_codes = {finding["code"] for finding in report["findings"]}
+
+    assert "alias_collision" in finding_codes
+    assert "undefined_term" in finding_codes
+    assert "deprecated_alias_usage" in finding_codes
+    assert "meaning_divergence" in finding_codes
+
+
+def test_build_vocabulary_drift_report_flags_undefined_canonical_terminology(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    spec_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    spec_data = json.loads(spec_path.read_text(encoding="utf-8"))
+    spec_data["specification"] = {"terminology": {"undefined_term_name": "Not in vocabulary."}}
+    spec_path.write_text(json.dumps(spec_data), encoding="utf-8")
+
+    report = supervisor_module.build_vocabulary_drift_report(supervisor_module.load_specs())
+
+    assert {
+        (finding["code"], finding["surface_kind"], finding["term"])
+        for finding in report["findings"]
+    } >= {
+        ("undefined_term", "canonical_spec_terminology", "undefined_term_name"),
+    }
+
+
+def test_normalize_operator_request_packet_builds_typed_execution_contract(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    packet_path = repo_fixture / "operator-request-typed.json"
+    packet_path.write_text(
+        json.dumps(
+            {
+                "artifact_kind": supervisor_module.OPERATOR_REQUEST_PACKET_ARTIFACT_KIND,
+                "schema_version": supervisor_module.OPERATOR_REQUEST_PACKET_SCHEMA_VERSION,
+                "user_intent": {
+                    "source_kind": "gui_selection",
+                    "source_summary": "Tighten the Golden Path Node.",
+                    "selected_node_ref": "SG-SPEC-0001",
+                },
+                "operator_request": {
+                    "target_spec_id": "SG-SPEC-0001",
+                    "run_mode": "targeted_refinement",
+                    "mutation_budget": ["policy_text"],
+                    "run_authority": ["materialize_one_child"],
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    normalized, errors = supervisor_module.normalize_operator_request_packet(
+        packet_path,
+        specs=supervisor_module.load_specs(),
+    )
+
+    assert errors == []
+    assert normalized["operator_request"]["run_mode"] == "targeted_refine"
+    assert normalized["operator_request"]["stop_conditions"] == (
+        "first_structured_outcome",
+        "review_boundary_reached",
+    )
+    assert normalized["operator_request"]["execution_contract"] == {
+        "authority": {
+            "requested_run_authority": ["materialize_one_child"],
+            "canonical_write_boundary": "forbidden",
+            "allowed_downstream_routes": [
+                "supervisor_refinement_candidate",
+                "proposal_lane_emission",
+            ],
+        },
+        "mutation_budget": ["policy_text"],
+        "stop_conditions": [
+            "first_structured_outcome",
+            "review_boundary_reached",
+        ],
+        "execution_profile": "",
+    }
+
+
+def test_build_pre_spec_semantics_index_links_intent_proposals_and_canonical_specs(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    packet_path = repo_fixture / "operator-request-pre-spec.json"
+    packet_path.write_text(
+        json.dumps(
+            {
+                "artifact_kind": supervisor_module.OPERATOR_REQUEST_PACKET_ARTIFACT_KIND,
+                "schema_version": supervisor_module.OPERATOR_REQUEST_PACKET_SCHEMA_VERSION,
+                "user_intent": {
+                    "source_kind": "chat_instruction",
+                    "source_summary": "Tighten calculator semantics.",
+                },
+                "operator_request": {
+                    "target_spec_id": "SG-SPEC-0001",
+                    "run_mode": "targeted_refine",
+                    "operator_note": "Keep the refinement bounded.",
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    context, errors = supervisor_module.normalize_operator_request_packet(
+        packet_path,
+        specs=supervisor_module.load_specs(),
+    )
+    assert errors == []
+
+    sync_result = supervisor_module.sync_intent_layer_from_operator_request(context)
+    operator_request_handle = sync_result["operator_request_handle"]
+    user_intent_handle = sync_result["user_intent_handle"]
+
+    proposal_node_path = repo_fixture / "proposal_lane" / "nodes" / "proposal.json"
+    proposal_node_path.parent.mkdir(parents=True, exist_ok=True)
+    proposal_node_path.write_text(
+        json.dumps(
+            {
+                "artifact_kind": supervisor_module.PROPOSAL_LANE_NODE_ARTIFACT_KIND,
+                "schema_version": 1,
+                "title": "Tighten Golden Path proposal",
+                "proposal_repository_presence": {
+                    **supervisor_module.PROPOSAL_LANE_PRESENCE_CONTRACT,
+                    "tracked_path": "proposal_lane/nodes/proposal.json",
+                },
+                "proposal_handle": {
+                    "handle_value": "governance_proposal::SG-SPEC-0001::tighten",
+                    "handle_status": "active",
+                },
+                "proposal_authority_state": "under_review",
+                "proposal_target_region": {
+                    "target_kind": "canonical_node",
+                    "target_reference": "SG-SPEC-0001",
+                    "change_scope": "tighten",
+                },
+                "proposal_lineage_link": [
+                    {
+                        "lineage_role": "motivated_by",
+                        "source_kind": "intent_layer_node",
+                        "source_reference": user_intent_handle,
+                    },
+                    {
+                        "lineage_role": "derived_from",
+                        "source_kind": "intent_layer_node",
+                        "source_reference": operator_request_handle,
+                    },
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    spec_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    spec_data = json.loads(spec_path.read_text(encoding="utf-8"))
+    spec_data["last_pre_spec_provenance"] = {
+        "policy_reference": supervisor_module.pre_spec_semantics_policy_reference(),
+        "vocabulary_reference": supervisor_module.specgraph_vocabulary_reference(),
+        "packet_reference": "operator-request-pre-spec.json",
+        "user_intent_handle": user_intent_handle,
+        "operator_request_handle": operator_request_handle,
+        "proposal_ids": ["governance_proposal::SG-SPEC-0001::tighten"],
+        "recorded_at": "2026-04-19T00:00:00Z",
+    }
+    spec_path.write_text(json.dumps(spec_data), encoding="utf-8")
+
+    index = supervisor_module.build_pre_spec_semantics_index(supervisor_module.load_specs())
+    entries_by_handle = {
+        entry["intent_handle"]: entry for entry in index["entries"] if entry["intent_handle"]
+    }
+
+    operator_entry = entries_by_handle[operator_request_handle]
+    assert operator_entry["semantic_artifact_class"] == "operator_request"
+    assert operator_entry["downstream_proposal_ids"] == [
+        "governance_proposal::SG-SPEC-0001::tighten"
+    ]
+    assert operator_entry["downstream_canonical_spec_ids"] == ["SG-SPEC-0001"]
+    assert operator_request_handle in index["named_filters"]["canonical_materialized"]
+    assert {(edge["source"], edge["target"], edge["edge_kind"]) for edge in index["edges"]} >= {
+        (
+            operator_request_handle,
+            "governance_proposal::SG-SPEC-0001::tighten",
+            "pre_spec::proposal_lane",
+        ),
+        (operator_request_handle, "SG-SPEC-0001", "pre_spec::canonical_spec"),
+    }
+
+
+def test_build_pre_spec_semantics_index_tolerates_non_object_sections(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    node_path = repo_fixture / "intent_layer" / "nodes" / "invalid-pre-spec.json"
+    node_path.parent.mkdir(parents=True, exist_ok=True)
+    node_path.write_text(
+        json.dumps(
+            {
+                "artifact_kind": supervisor_module.INTENT_LAYER_NODE_ARTIFACT_KIND,
+                "schema_version": 1,
+                "title": "Malformed pre-spec node",
+                "intent_repository_presence": {
+                    **supervisor_module.INTENT_LAYER_PRESENCE_CONTRACT,
+                    "tracked_path": "intent_layer/nodes/invalid-pre-spec.json",
+                },
+                "intent_handle": {
+                    "handle_value": "operator_request::SG-SPEC-0001::targeted_refine::malformed",
+                    "handle_status": "active",
+                },
+                "intent_layer_kind": "operator_request",
+                "mediation_state": "ready_for_execution",
+                "intent_lineage_link": [
+                    {
+                        "lineage_role": "normalized_from",
+                        "source_kind": "runtime_artifact",
+                        "source_reference": "operator-request.json",
+                    }
+                ],
+                "runtime_bridge": "not-an-object",
+                "pre_spec_semantics": "not-an-object",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    index = supervisor_module.build_pre_spec_semantics_index(supervisor_module.load_specs())
+    entry = next(
+        item
+        for item in index["entries"]
+        if item["intent_handle"] == "operator_request::SG-SPEC-0001::targeted_refine::malformed"
+    )
+
+    assert entry["query_contract"]["status"] == "invalid_pre_spec_state"
+    assert set(entry["query_contract"]["findings"]) >= {
+        "invalid_runtime_bridge_section",
+        "invalid_pre_spec_semantics_section",
+    }
+
+
+def test_main_builds_vocabulary_index_without_loading_specs(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    (repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml").write_text(
+        "id: SG-SPEC-0001\n: broken\n",
+        encoding="utf-8",
+    )
+
+    def fail_load_specs() -> list[object]:
+        raise AssertionError("load_specs() must not run for vocabulary index mode")
+
+    def fake_index() -> dict[str, object]:
+        return {
+            "artifact_kind": "specgraph_vocabulary_index",
+            "schema_version": 1,
+            "generated_at": "2026-04-19T00:00:00Z",
+            "vocabulary_reference": {"artifact_path": "tools/specgraph_vocabulary.json"},
+            "context_count": 0,
+            "contexts": [],
+            "family_count": 0,
+            "term_count": 0,
+            "entries": [],
+            "family_index": {},
+            "alias_index": {},
+            "deprecated_alias_index": {},
+        }
+
+    monkeypatch.setattr(supervisor_module, "load_specs", fail_load_specs)
+    monkeypatch.setattr(supervisor_module, "build_vocabulary_index", fake_index)
+
+    exit_code = supervisor_module.main(build_vocabulary_index_mode=True)
+
+    assert exit_code == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["artifact_kind"] == "specgraph_vocabulary_index"
+    persisted = json.loads((repo_fixture / "runs" / "vocabulary_index.json").read_text())
+    assert persisted["artifact_kind"] == "specgraph_vocabulary_index"
+
+
+def test_main_builds_vocabulary_drift_report_as_standalone_command(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    def fake_report(_specs: list[object]) -> dict[str, object]:
+        return {
+            "artifact_kind": "vocabulary_drift_report",
+            "schema_version": 1,
+            "generated_at": "2026-04-19T00:00:00Z",
+            "vocabulary_reference": {"artifact_path": "tools/specgraph_vocabulary.json"},
+            "source_spec_count": 1,
+            "finding_count": 1,
+            "findings": [{"code": "undefined_term"}],
+            "findings_by_code": {"undefined_term": ["intent_layer_policy"]},
+        }
+
+    monkeypatch.setattr(supervisor_module, "build_vocabulary_drift_report", fake_report)
+
+    exit_code = supervisor_module.main(build_vocabulary_drift_report_mode=True)
+
+    assert exit_code == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["artifact_kind"] == "vocabulary_drift_report"
+    persisted = json.loads(
+        (repo_fixture / "runs" / "vocabulary_drift_report.json").read_text(encoding="utf-8")
+    )
+    assert persisted["artifact_kind"] == "vocabulary_drift_report"
+
+
+def test_main_builds_pre_spec_semantics_index_as_standalone_command(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    def fake_refresh(_specs: list[object]) -> dict[str, Path]:
+        return {}
+
+    def fake_index(_specs: list[object]) -> dict[str, object]:
+        return {
+            "artifact_kind": supervisor_module.PRE_SPEC_SEMANTICS_INDEX_ARTIFACT_KIND,
+            "schema_version": supervisor_module.PRE_SPEC_SEMANTICS_INDEX_SCHEMA_VERSION,
+            "generated_at": "2026-04-19T00:00:00Z",
+            "policy_reference": {"artifact_path": "tools/pre_spec_semantics_policy.json"},
+            "vocabulary_reference": {"artifact_path": "tools/specgraph_vocabulary.json"},
+            "layer_name": "pre_spec_semantics",
+            "source_dir": "intent_layer/nodes",
+            "entry_count": 0,
+            "entries": [],
+            "edges": [],
+            "named_filters": {},
+            "artifact_warnings": [],
+            "reserved_primary_kinds": [],
+        }
+
+    monkeypatch.setattr(supervisor_module, "refresh_vocabulary_artifacts", fake_refresh)
+    monkeypatch.setattr(supervisor_module, "build_pre_spec_semantics_index", fake_index)
+
+    exit_code = supervisor_module.main(build_pre_spec_semantics_index_mode=True)
+
+    assert exit_code == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["artifact_kind"] == supervisor_module.PRE_SPEC_SEMANTICS_INDEX_ARTIFACT_KIND
+    persisted = json.loads(
+        (repo_fixture / "runs" / "pre_spec_semantics_index.json").read_text(encoding="utf-8")
+    )
+    assert persisted["artifact_kind"] == supervisor_module.PRE_SPEC_SEMANTICS_INDEX_ARTIFACT_KIND
+
+
 def test_build_spec_trace_index_collects_tool_and_test_refs(
     supervisor_module: object,
     repo_fixture: Path,
@@ -7273,6 +7687,9 @@ def test_main_routes_operator_request_packet_to_targeted_refinement(
     assert overlay["named_filters"]["ready_for_execution"] == [
         "operator_request::SG-SPEC-0001::targeted_refine::tighten-the-golden-path-node"
     ]
+    assert (repo_fixture / "runs" / "pre_spec_semantics_index.json").exists()
+    assert (repo_fixture / "runs" / "vocabulary_index.json").exists()
+    assert (repo_fixture / "runs" / "vocabulary_drift_report.json").exists()
 
 
 def test_main_dry_run_with_operator_request_packet_does_not_sync_intent_layer(

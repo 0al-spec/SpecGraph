@@ -1,0 +1,346 @@
+{
+  "artifact_kind": "specgraph_vocabulary",
+  "version": 1,
+  "contexts": {
+    "pre_spec_semantics": {
+      "description": "Shared vocabulary for intent-layer, pre-spec semantics, and operator-request mediation.",
+      "owner_specs": [
+        "SG-SPEC-0007",
+        "SG-SPEC-0009",
+        "SG-SPEC-0050",
+        "SG-SPEC-0052"
+      ]
+    },
+    "proposal_governance": {
+      "description": "Shared vocabulary for proposal promotion and proposal-lane authority states.",
+      "owner_specs": [
+        "SG-SPEC-0051"
+      ],
+      "owner_artifacts": [
+        "tools/proposal_lane_policy.json",
+        "tools/proposal_promotion_policy.json"
+      ]
+    }
+  },
+  "term_families": {
+    "runtime_artifact_kind": {
+      "description": "Machine-readable artifact kinds used by supervisor-owned derived or tracked surfaces.",
+      "owner_artifacts": [
+        "tools/intent_layer_policy.json",
+        "tools/operator_request_bridge_policy.json",
+        "tools/pre_spec_semantics_policy.json",
+        "tools/proposal_lane_policy.json"
+      ],
+      "canonical_terms": {
+        "intent_layer_node": {
+          "definition": "Repository-tracked intent-layer node artifact.",
+          "aliases": [],
+          "deprecated_aliases": []
+        },
+        "intent_layer_overlay": {
+          "definition": "Viewer-facing overlay rebuilt from tracked intent-layer nodes.",
+          "aliases": [],
+          "deprecated_aliases": []
+        },
+        "operator_request_packet": {
+          "definition": "One bounded external steering packet normalized into an OperatorRequest.",
+          "aliases": [],
+          "deprecated_aliases": []
+        },
+        "pre_spec_semantics_index": {
+          "definition": "Derived index over tracked pre-spec semantic artifacts and their downstream lineage.",
+          "aliases": [],
+          "deprecated_aliases": []
+        },
+        "proposal_lane_node": {
+          "definition": "Repository-tracked proposal-lane node artifact.",
+          "aliases": [],
+          "deprecated_aliases": []
+        },
+        "proposal_lane_overlay": {
+          "definition": "Viewer-facing overlay rebuilt from tracked proposal-lane nodes.",
+          "aliases": [],
+          "deprecated_aliases": []
+        },
+        "proposal_promotion_index": {
+          "definition": "Derived index for proposal-promotion provenance and boundedness.",
+          "aliases": [],
+          "deprecated_aliases": []
+        },
+        "specgraph_vocabulary_index": {
+          "definition": "Derived index that flattens the shared vocabulary layer for viewers and tooling.",
+          "aliases": [],
+          "deprecated_aliases": []
+        },
+        "vocabulary_drift_report": {
+          "definition": "Derived report that flags vocabulary drift across canonical specs and runtime artifacts.",
+          "aliases": [],
+          "deprecated_aliases": []
+        }
+      }
+    },
+    "pre_spec_artifact_class": {
+      "description": "First-class tracked artifact classes that persist observable meaning before proposal-lane or canonical promotion.",
+      "owner_specs": [
+        "SG-SPEC-0007",
+        "SG-SPEC-0009",
+        "SG-SPEC-0050",
+        "SG-SPEC-0052"
+      ],
+      "canonical_terms": {
+        "user_intent": {
+          "definition": "Captured pre-spec artifact that preserves observable user meaning before bounded execution.",
+          "aliases": [],
+          "deprecated_aliases": []
+        },
+        "operator_request": {
+          "definition": "Typed, one-run execution request normalized from pre-spec meaning into a supervisor steering artifact.",
+          "aliases": [],
+          "deprecated_aliases": [
+            "run_request"
+          ]
+        }
+      }
+    },
+    "pre_spec_primary_kind": {
+      "description": "Primary semantic kinds for the pre-spec layer coordinated by SG-SPEC-0050.",
+      "owner_specs": [
+        "SG-SPEC-0050",
+        "SG-SPEC-0052",
+        "SG-SPEC-0053"
+      ],
+      "canonical_terms": {
+        "intent": {
+          "definition": "Normative declaration of what should become true, remain possible, or be preserved.",
+          "aliases": [],
+          "deprecated_aliases": []
+        },
+        "hypothesis": {
+          "definition": "Epistemic declaration of what may be true in the problem space.",
+          "aliases": [],
+          "deprecated_aliases": []
+        },
+        "proposal": {
+          "definition": "Candidate design move that operationalizes one or more intents under constraints and assumptions.",
+          "aliases": [],
+          "deprecated_aliases": []
+        },
+        "intent_fragment": {
+          "definition": "Minimal extracted semantic unit that appears to express part of an intent.",
+          "aliases": [],
+          "deprecated_aliases": [
+            "intent-fragment"
+          ]
+        },
+        "intent_draft": {
+          "definition": "Synthesized pre-spec node assembled from one or more intent fragments plus supporting context.",
+          "aliases": [],
+          "deprecated_aliases": [
+            "intent-draft"
+          ]
+        },
+        "spec_draft": {
+          "definition": "Reviewable pre-canonical draft of later specification shape.",
+          "aliases": [],
+          "deprecated_aliases": [
+            "spec-draft"
+          ]
+        }
+      }
+    },
+    "pre_spec_lifecycle_state": {
+      "description": "Review-visible lifecycle states used by tracked pre-spec surfaces.",
+      "owner_specs": [
+        "SG-SPEC-0007",
+        "SG-SPEC-0009"
+      ],
+      "owner_artifacts": [
+        "tools/intent_layer_policy.json",
+        "tools/pre_spec_semantics_policy.json"
+      ],
+      "canonical_terms": {
+        "captured": {
+          "definition": "Observable user meaning has been captured but not yet normalized into executable steering.",
+          "aliases": [],
+          "deprecated_aliases": []
+        },
+        "mediated": {
+          "definition": "The captured meaning has been reduced into a bounded pre-spec artifact.",
+          "aliases": [],
+          "deprecated_aliases": []
+        },
+        "ready_for_execution": {
+          "definition": "The pre-spec artifact is bounded enough to steer one supervisor run.",
+          "aliases": [],
+          "deprecated_aliases": []
+        },
+        "executed": {
+          "definition": "The bounded execution request has been run without yet classifying downstream effect.",
+          "aliases": [],
+          "deprecated_aliases": []
+        },
+        "proposal_linked": {
+          "definition": "The pre-spec artifact has emitted or linked into proposal-lane material.",
+          "aliases": [],
+          "deprecated_aliases": []
+        },
+        "canonical_candidate": {
+          "definition": "The pre-spec artifact has reached a canonical-spec candidate or accepted refinement surface.",
+          "aliases": [],
+          "deprecated_aliases": []
+        },
+        "blocked": {
+          "definition": "Execution or promotion is presently blocked.",
+          "aliases": [],
+          "deprecated_aliases": []
+        },
+        "superseded": {
+          "definition": "The tracked pre-spec artifact remains inspectable history but is no longer current.",
+          "aliases": [],
+          "deprecated_aliases": []
+        }
+      }
+    },
+    "operator_request_source_kind": {
+      "description": "Admissible upstream sources for OperatorRequest normalization.",
+      "owner_specs": [
+        "SG-SPEC-0007",
+        "SG-SPEC-0009"
+      ],
+      "owner_artifacts": [
+        "tools/operator_request_bridge_policy.json"
+      ],
+      "canonical_terms": {
+        "chat_instruction": {
+          "definition": "Direct bounded steering from chat or textual operator input.",
+          "aliases": [],
+          "deprecated_aliases": []
+        },
+        "gui_selection": {
+          "definition": "Bounded steering supplied by a viewer or GUI selection surface.",
+          "aliases": [],
+          "deprecated_aliases": []
+        },
+        "mediated_artifact": {
+          "definition": "Bounded steering derived from a prior mediated pre-spec artifact.",
+          "aliases": [],
+          "deprecated_aliases": []
+        }
+      }
+    },
+    "operator_request_run_mode": {
+      "description": "Execution modes permitted for one bounded OperatorRequest.",
+      "owner_specs": [
+        "SG-SPEC-0009"
+      ],
+      "owner_artifacts": [
+        "tools/operator_request_bridge_policy.json"
+      ],
+      "canonical_terms": {
+        "targeted_refine": {
+          "definition": "Run one bounded supervisor refinement pass for an explicit target spec.",
+          "aliases": [],
+          "deprecated_aliases": [
+            "targeted_refinement"
+          ]
+        },
+        "split_proposal": {
+          "definition": "Emit one bounded split proposal for an explicit target spec.",
+          "aliases": [],
+          "deprecated_aliases": [
+            "emit_split_proposal"
+          ]
+        }
+      }
+    },
+    "operator_request_stop_condition": {
+      "description": "Explicit stop conditions carried by typed OperatorRequest execution contracts.",
+      "owner_specs": [
+        "SG-SPEC-0009"
+      ],
+      "owner_artifacts": [
+        "tools/operator_request_bridge_policy.json"
+      ],
+      "canonical_terms": {
+        "first_structured_outcome": {
+          "definition": "Stop once the run yields one structured supervisor outcome.",
+          "aliases": [],
+          "deprecated_aliases": []
+        },
+        "review_boundary_reached": {
+          "definition": "Stop once the run reaches a review boundary or review-pending candidate.",
+          "aliases": [],
+          "deprecated_aliases": []
+        },
+        "blocked_by_gate": {
+          "definition": "Stop once a blocking gate or blocker is reached.",
+          "aliases": [],
+          "deprecated_aliases": []
+        },
+        "proposal_emitted": {
+          "definition": "Stop once one bounded proposal artifact has been emitted.",
+          "aliases": [],
+          "deprecated_aliases": []
+        },
+        "child_materialized": {
+          "definition": "Stop once one bounded child materialization has completed.",
+          "aliases": [],
+          "deprecated_aliases": []
+        }
+      }
+    },
+    "proposal_artifact_class": {
+      "description": "Governed artifact classes for promotion and proposal readiness.",
+      "owner_artifacts": [
+        "tools/proposal_promotion_policy.json"
+      ],
+      "canonical_terms": {
+        "working_draft": {
+          "definition": "Exploratory, uneven, or implementation-heavy material not yet normalized into reviewable proposal form.",
+          "aliases": [],
+          "deprecated_aliases": []
+        },
+        "reviewable_proposal": {
+          "definition": "Normalized, bounded proposal artifact suitable for review and deterministic promotion checks.",
+          "aliases": [],
+          "deprecated_aliases": []
+        }
+      }
+    },
+    "proposal_authority_state": {
+      "description": "Review-visible authority states for tracked proposal-lane nodes.",
+      "owner_artifacts": [
+        "tools/proposal_lane_policy.json"
+      ],
+      "canonical_terms": {
+        "under_review": {
+          "definition": "Proposal exists and is awaiting bounded human or governed review.",
+          "aliases": [],
+          "deprecated_aliases": [
+            "proposed",
+            "review_pending",
+            "pending_review"
+          ]
+        },
+        "approved_for_application": {
+          "definition": "Proposal has passed review and may be applied to canonical truth.",
+          "aliases": [],
+          "deprecated_aliases": [
+            "approved",
+            "applied"
+          ]
+        },
+        "rejected": {
+          "definition": "Proposal was explicitly denied for application.",
+          "aliases": [],
+          "deprecated_aliases": []
+        },
+        "superseded": {
+          "definition": "Proposal remains inspectable history but has been replaced by a newer proposal or queue state.",
+          "aliases": [],
+          "deprecated_aliases": []
+        }
+      }
+    }
+  }
+}
