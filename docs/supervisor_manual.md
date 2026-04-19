@@ -77,6 +77,8 @@ particular task.
   `--validate-transition-packet path/to/packet.json`
   with optional profile override:
   `--validate-transition-packet path/to/packet.json --transition-profile specgraph_core`
+- drive one bounded run from a mediated request packet:
+  `--operator-request-packet path/to/request.json`
 - build a derived spec-to-code trace index:
   `--build-spec-trace-index`
 - build a repository-tracked intent-layer overlay:
@@ -234,6 +236,34 @@ The minimal promotion packet contract is now explicit:
 - `source_refs`
 - `motivating_concern`
 - `normalized_title`
+
+### Operator-request bridge
+
+```bash
+python3 tools/supervisor.py --operator-request-packet operator-request.json
+```
+
+Use this when the upstream input is already a bounded mediated request and you
+want that request, not ad hoc CLI flags, to steer one supervisor run.
+
+The packet is intentionally narrower than the transition engine:
+
+- it is pre-canonical run steering, not artifact promotion/apply
+- it may target only one bounded run mode such as `targeted_refine` or
+  `split_proposal`
+- it may not silently mutate canonical specs by itself
+
+Current bridge behavior:
+
+- validates one `operator_request_packet` against
+  `tools/operator_request_bridge_policy.json`
+- mirrors `user_intent` and `operator_request` into tracked
+  `intent_layer/nodes/*.json`
+- routes the request into one ordinary targeted refinement or explicit
+  split-proposal pass
+- keeps the packet as the sole steering envelope for that run, so
+  `--target-spec`, `--operator-note`, `--mutation-budget`, `--run-authority`,
+  and `--execution-profile` are not mixed in separately
 
 Lower-boundary handoff is now also governed by
 `tools/techspec_handoff_policy.json`. That artifact defines:

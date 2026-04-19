@@ -51,6 +51,9 @@ Supervisor modes:
 - `--validate-transition-packet PATH`: validate one normalized transition packet JSON file and
   print structured findings. Add `--transition-profile PROFILE` to validate the same packet under
   `specgraph_core`, `product_spec`, `techspec`, or `implementation_trace`.
+  Use `--operator-request-packet PATH` when the concern is not artifact movement
+  but one bounded mediated execution request that should steer a single
+  supervisor run.
   `product_spec` inherits the shared engine through one `product_graph_root`
   binding and the declarative rules in `tools/product_spec_transition_policy.json`
   instead of re-implementing packet semantics per product domain.
@@ -74,6 +77,10 @@ Supervisor modes:
   repository-tracked intent-layer nodes under `intent_layer/nodes/`, so
   pre-canonical user intent and operator-request artifacts can be inspected as
   a separate mediation layer.
+- `--operator-request-packet PATH`: normalize one bounded `operator_request_packet`
+  into a targeted refinement or split-proposal run. The packet is the sole
+  steering envelope for that run and is mirrored into repository-tracked
+  `intent_layer/nodes/*.json` before execution.
 - `--build-proposal-lane-overlay`: build `runs/proposal_lane_overlay.json` from
   repository-tracked proposal-lane nodes under `proposal_lane/nodes/`, so
   draft proposal structure can be inspected as a secondary graph layer without
@@ -140,6 +147,9 @@ Key derived artifacts:
 - `tools/intent_layer_policy.json`: declarative repository contract for the
   tracked intent layer, including kind separation, mediation-state vocabulary,
   and overlay semantics
+- `tools/operator_request_bridge_policy.json`: declarative contract for
+  `operator_request_packet`, including admissible source kinds, bounded run
+  modes, and the rule that one request may only steer one supervisor run
 - `tools/proposal_promotion_registry.json`: explicit promotion provenance
   registry keyed by `proposal_id`, used to backfill source draft refs,
   motivating concern, bounded scope, and related promotion-trace fields

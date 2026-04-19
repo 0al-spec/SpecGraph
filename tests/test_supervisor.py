@@ -7223,6 +7223,104 @@ def test_build_intent_layer_overlay_flags_cross_layer_masquerade(
     ]
 
 
+def test_main_routes_operator_request_packet_to_targeted_refinement(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    packet_path = repo_fixture / "operator-request.json"
+    packet_path.write_text(
+        json.dumps(
+            {
+                "artifact_kind": supervisor_module.OPERATOR_REQUEST_PACKET_ARTIFACT_KIND,
+                "schema_version": supervisor_module.OPERATOR_REQUEST_PACKET_SCHEMA_VERSION,
+                "user_intent": {
+                    "source_kind": "gui_selection",
+                    "source_summary": "Tighten the Golden Path Node.",
+                    "selected_node_ref": "SG-SPEC-0001",
+                },
+                "operator_request": {
+                    "target_spec_id": "SG-SPEC-0001",
+                    "run_mode": "targeted_refine",
+                    "operator_note": "Tighten only one bounded concern.",
+                    "mutation_budget": ["policy_text"],
+                    "execution_profile": "standard",
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    captured: dict[str, object] = {}
+
+    def fake_process_one_spec(**kwargs: object) -> tuple[int, str, str, str]:
+        captured.update(kwargs)
+        return 0, "done", "ok", "none"
+
+    supervisor_module._process_one_spec = fake_process_one_spec
+
+    exit_code = supervisor_module.main(operator_request_packet_path=packet_path.as_posix())
+
+    assert exit_code == 0
+    assert captured["node"].id == "SG-SPEC-0001"
+    assert captured["operator_target"] is True
+    assert captured["operator_note"] == "Tighten only one bounded concern."
+    assert captured["mutation_budget"] == (supervisor_module.MUTATION_CLASS_POLICY_TEXT,)
+    assert captured["execution_profile"] == "standard"
+    overlay = json.loads((repo_fixture / "runs" / "intent_layer_overlay.json").read_text())
+    assert overlay["named_filters"]["ready_for_execution"] == [
+        "operator_request::SG-SPEC-0001::targeted_refine::tighten-the-golden-path-node"
+    ]
+
+
+def test_main_routes_operator_request_packet_to_split_proposal(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    packet_path = repo_fixture / "operator-request-split.json"
+    packet_path.write_text(
+        json.dumps(
+            {
+                "artifact_kind": supervisor_module.OPERATOR_REQUEST_PACKET_ARTIFACT_KIND,
+                "schema_version": supervisor_module.OPERATOR_REQUEST_PACKET_SCHEMA_VERSION,
+                "user_intent": {
+                    "source_kind": "chat_instruction",
+                    "source_summary": "Split the Golden Path Node.",
+                },
+                "operator_request": {
+                    "target_spec_id": "SG-SPEC-0001",
+                    "run_mode": "split_proposal",
+                    "operator_note": "Emit a bounded split proposal only.",
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    captured: dict[str, object] = {}
+
+    supervisor_module.validate_split_refactor_target = lambda _node: []
+    supervisor_module.build_split_refactor_work_item = lambda _node: {
+        "id": "refactor::SG-SPEC-0001::oversized_spec",
+        "proposal_type": "refactor_proposal",
+        "signal": supervisor_module.SPLIT_REFACTOR_SIGNAL,
+        "refactor_kind": supervisor_module.SPLIT_REFACTOR_KIND,
+        "execution_policy": "emit_proposal",
+        "proposal_artifact_relpath": "runs/proposals/refactor.json",
+    }
+
+    def fake_process_split_refactor_proposal(**kwargs: object) -> tuple[int, str]:
+        captured.update(kwargs)
+        return 0, "done"
+
+    supervisor_module._process_split_refactor_proposal = fake_process_split_refactor_proposal
+
+    exit_code = supervisor_module.main(operator_request_packet_path=packet_path.as_posix())
+
+    assert exit_code == 0
+    assert captured["node"].id == "SG-SPEC-0001"
+    assert captured["operator_note"] == "Emit a bounded split proposal only."
+
+
 def test_main_builds_proposal_lane_overlay_as_standalone_command(
     supervisor_module: object,
     repo_fixture: Path,
