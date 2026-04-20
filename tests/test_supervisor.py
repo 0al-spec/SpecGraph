@@ -8051,7 +8051,9 @@ def test_build_external_consumer_handoff_packets_emits_ready_and_draft_entries(
                 "reference_state": "stable_reference",
                 "profile": "sibling_metric_consumer",
                 "repo_url": "https://github.com/0al-spec/Metrics",
-                "local_checkout_hint": "/Users/egor/Development/GitHub/0AL/Metrics",
+                "local_checkout": {
+                    "checkout_path": "/Users/egor/Development/GitHub/0AL/Metrics",
+                },
                 "metric_bindings": [
                     {"metric_id": "sib_proxy", "binding_role": "stable_bridge_reference"}
                 ],
@@ -8063,7 +8065,9 @@ def test_build_external_consumer_handoff_packets_emits_ready_and_draft_entries(
                 "reference_state": "draft_reference",
                 "profile": "sibling_metric_consumer",
                 "repo_url": "https://github.com/0al-spec/Metrics",
-                "local_checkout_hint": "/Users/egor/Development/GitHub/0AL/Metrics",
+                "local_checkout": {
+                    "checkout_path": "/Users/egor/Development/GitHub/0AL/Metrics",
+                },
                 "metric_bindings": [
                     {"metric_id": "sib_proxy", "binding_role": "draft_extended_reference"}
                 ],
@@ -8130,6 +8134,10 @@ def test_build_external_consumer_handoff_packets_emits_ready_and_draft_entries(
     assert ready["transition_packet"]["transition_profile"] == "implementation_trace"
     assert ready["transition_packet"]["packet_type"] == "handoff"
     assert ready["transition_packet_validation"]["ok"] is True
+    assert (
+        ready["target_consumer"]["local_checkout_hint"]
+        == "/Users/egor/Development/GitHub/0AL/Metrics"
+    )
     draft = next(entry for entry in report["entries"] if entry["consumer_id"] == "metrics_sib_full")
     assert draft["review_state"] == "not_emitted"
     assert draft["next_gap"] == "review_draft_reference"

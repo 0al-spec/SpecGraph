@@ -12380,6 +12380,12 @@ def build_external_consumer_handoff_packets(
         consumer_id = str(raw_entry.get("consumer_id", "")).strip()
         if not consumer_id:
             continue
+        local_checkout = raw_entry.get("local_checkout", {})
+        local_checkout_hint = ""
+        if isinstance(local_checkout, dict):
+            local_checkout_hint = str(local_checkout.get("checkout_path", "")).strip()
+        if not local_checkout_hint:
+            local_checkout_hint = str(raw_entry.get("local_checkout_hint", "")).strip()
         overlay_entry = overlay_entries.get(consumer_id, {})
         reference_state = str(raw_entry.get("reference_state", "")).strip()
         bridge_state = str(overlay_entry.get("bridge_state", "")).strip()
@@ -12460,7 +12466,7 @@ def build_external_consumer_handoff_packets(
                 "consumer_id": consumer_id,
                 "profile": str(raw_entry.get("profile", "")).strip(),
                 "repo_url": str(raw_entry.get("repo_url", "")).strip(),
-                "local_checkout_hint": str(raw_entry.get("local_checkout_hint", "")).strip(),
+                "local_checkout_hint": local_checkout_hint,
             },
             "transition_packet": transition_packet,
             "transition_packet_validation": validation_report,
