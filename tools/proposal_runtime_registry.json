@@ -230,5 +230,44 @@
         "pattern": "\"external_consumer_backlog\": {"
       }
     ]
+  },
+  {
+    "proposal_id": "0026",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "tools/supervisor.py",
+      "tests/test_supervisor.py",
+      "tools/external_consumer_handoff_policy.json"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def build_external_consumer_handoff_packets("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "EXTERNAL_CONSUMER_HANDOFF_FILENAME"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_external_consumer_handoff_packets_emits_ready_and_draft_entries("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_main_builds_external_consumer_handoffs_as_standalone_command("
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "\"handoff_backlog\": {"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "\"ready_external_handoffs\""
+      }
+    ]
   }
 ]

@@ -8039,6 +8039,180 @@ def test_main_builds_external_consumer_overlay_as_standalone_command(
     assert artifact["artifact_kind"] == supervisor_module.EXTERNAL_CONSUMER_OVERLAY_ARTIFACT_KIND
 
 
+def test_build_external_consumer_handoff_packets_emits_ready_and_draft_entries(
+    supervisor_module: object,
+) -> None:
+    consumer_index = {
+        "generated_at": "2026-04-20T00:00:00Z",
+        "entries": [
+            {
+                "consumer_id": "metrics_sib",
+                "title": "Metrics / SIB",
+                "reference_state": "stable_reference",
+                "profile": "sibling_metric_consumer",
+                "repo_url": "https://github.com/0al-spec/Metrics",
+                "local_checkout_hint": "/Users/egor/Development/GitHub/0AL/Metrics",
+                "metric_bindings": [
+                    {"metric_id": "sib_proxy", "binding_role": "stable_bridge_reference"}
+                ],
+                "notes": "stable",
+            },
+            {
+                "consumer_id": "metrics_sib_full",
+                "title": "Metrics / SIB Full",
+                "reference_state": "draft_reference",
+                "profile": "sibling_metric_consumer",
+                "repo_url": "https://github.com/0al-spec/Metrics",
+                "local_checkout_hint": "/Users/egor/Development/GitHub/0AL/Metrics",
+                "metric_bindings": [
+                    {"metric_id": "sib_proxy", "binding_role": "draft_extended_reference"}
+                ],
+                "notes": "draft",
+            },
+        ],
+    }
+    overlay = {
+        "generated_at": "2026-04-20T00:00:01Z",
+        "entries": [
+            {
+                "consumer_id": "metrics_sib",
+                "bridge_state": "stable_ready",
+                "next_gap": "none",
+            },
+            {
+                "consumer_id": "metrics_sib_full",
+                "bridge_state": "draft_visible",
+                "next_gap": "review_draft_reference",
+            },
+        ],
+    }
+    metric_signal_index = {
+        "generated_at": "2026-04-20T00:00:02Z",
+        "metrics": [
+            {
+                "metric_id": "sib_proxy",
+                "status": "below_threshold",
+                "score": 0.41,
+                "minimum_score": 0.6,
+                "threshold_gap": 0.19,
+            }
+        ],
+    }
+    threshold_proposals = {
+        "generated_at": "2026-04-20T00:00:03Z",
+        "entries": [
+            {
+                "proposal_id": "metric-sib_proxy-followup",
+                "metric_id": "sib_proxy",
+            }
+        ],
+    }
+
+    report = supervisor_module.build_external_consumer_handoff_packets(
+        consumer_index,
+        overlay,
+        metric_signal_index,
+        threshold_proposals,
+    )
+
+    assert report["artifact_kind"] == supervisor_module.EXTERNAL_CONSUMER_HANDOFF_ARTIFACT_KIND
+    assert report["viewer_projection"]["handoff_status"]["ready_for_handoff"] == ["metrics_sib"]
+    assert report["viewer_projection"]["handoff_status"]["draft_reference_only"] == [
+        "metrics_sib_full"
+    ]
+    assert report["viewer_projection"]["named_filters"]["threshold_driven"] == [
+        "metrics_sib",
+        "metrics_sib_full",
+    ]
+    ready = next(entry for entry in report["entries"] if entry["consumer_id"] == "metrics_sib")
+    assert ready["review_state"] == "ready_for_review"
+    assert ready["next_gap"] == "review_handoff_packet"
+    assert ready["transition_packet"]["transition_profile"] == "implementation_trace"
+    assert ready["transition_packet"]["packet_type"] == "handoff"
+    assert ready["transition_packet_validation"]["ok"] is True
+    draft = next(entry for entry in report["entries"] if entry["consumer_id"] == "metrics_sib_full")
+    assert draft["review_state"] == "not_emitted"
+    assert draft["next_gap"] == "review_draft_reference"
+    assert draft["transition_packet"] is None
+
+
+def test_main_builds_external_consumer_handoffs_as_standalone_command(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    consumer_index = {
+        "artifact_kind": supervisor_module.EXTERNAL_CONSUMER_INDEX_ARTIFACT_KIND,
+        "generated_at": "2026-04-20T00:00:00Z",
+        "entries": [],
+    }
+    metric_signal_index = {
+        "artifact_kind": supervisor_module.METRIC_SIGNAL_INDEX_ARTIFACT_KIND,
+        "generated_at": "2026-04-20T00:00:01Z",
+        "metrics": [],
+    }
+    overlay = {
+        "artifact_kind": supervisor_module.EXTERNAL_CONSUMER_OVERLAY_ARTIFACT_KIND,
+        "schema_version": supervisor_module.EXTERNAL_CONSUMER_OVERLAY_SCHEMA_VERSION,
+        "generated_at": "2026-04-20T00:00:02Z",
+        "entry_count": 0,
+        "entries": [],
+        "viewer_projection": {"bridge_state": {}, "named_filters": {}},
+        "external_consumer_backlog": {"entry_count": 0, "grouped_by_next_gap": {}},
+    }
+    threshold_proposals = {
+        "artifact_kind": supervisor_module.METRIC_THRESHOLD_PROPOSALS_ARTIFACT_KIND,
+        "schema_version": supervisor_module.METRIC_THRESHOLD_PROPOSALS_SCHEMA_VERSION,
+        "generated_at": "2026-04-20T00:00:03Z",
+        "entry_count": 0,
+        "entries": [],
+        "viewer_projection": {"proposal_kind": {}, "severity": {}},
+    }
+
+    monkeypatch.setattr(supervisor_module, "build_external_consumer_index", lambda: consumer_index)
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_metric_signal_index",
+        lambda specs: metric_signal_index,
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_external_consumer_overlay",
+        lambda index, signal_index: overlay,
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_metric_threshold_proposals",
+        lambda signal_index: threshold_proposals,
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_external_consumer_handoff_packets",
+        lambda index, overlay_value, metric_index, proposals: {
+            "artifact_kind": supervisor_module.EXTERNAL_CONSUMER_HANDOFF_ARTIFACT_KIND,
+            "schema_version": supervisor_module.EXTERNAL_CONSUMER_HANDOFF_SCHEMA_VERSION,
+            "generated_at": "2026-04-20T00:00:04Z",
+            "entry_count": 0,
+            "entries": [],
+            "viewer_projection": {"handoff_status": {}, "review_state": {}, "named_filters": {}},
+            "handoff_backlog": {"entry_count": 0, "grouped_by_next_gap": {}},
+        },
+    )
+
+    exit_code = supervisor_module.main(build_external_consumer_handoffs_mode=True)
+
+    assert exit_code == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["artifact_kind"] == supervisor_module.EXTERNAL_CONSUMER_HANDOFF_ARTIFACT_KIND
+    artifact = json.loads(
+        (repo_fixture / "runs" / supervisor_module.EXTERNAL_CONSUMER_HANDOFF_FILENAME).read_text(
+            encoding="utf-8"
+        )
+    )
+    assert artifact["artifact_kind"] == supervisor_module.EXTERNAL_CONSUMER_HANDOFF_ARTIFACT_KIND
+
+
 def test_build_metric_signal_index_reports_threshold_breaches(
     supervisor_module: object,
     repo_fixture: Path,
@@ -8891,6 +9065,20 @@ def test_build_graph_dashboard_aggregates_runtime_surfaces(
     )
     monkeypatch.setattr(
         supervisor_module,
+        "build_external_consumer_handoff_packets",
+        lambda index, overlay, signal_index, proposals: {
+            "generated_at": "2026-04-19T00:00:10Z",
+            "entry_count": 1,
+            "viewer_projection": {
+                "handoff_status": {"ready_for_handoff": ["metrics_sib"]},
+                "review_state": {"ready_for_review": ["metrics_sib"]},
+                "named_filters": {"ready_for_handoff": ["metrics_sib"]},
+            },
+            "handoff_backlog": {"entry_count": 1},
+        },
+    )
+    monkeypatch.setattr(
+        supervisor_module,
         "build_metric_threshold_proposals",
         lambda index: {
             "generated_at": "2026-04-19T00:00:11Z",
@@ -8922,11 +9110,15 @@ def test_build_graph_dashboard_aggregates_runtime_surfaces(
         "draft_visible": 1,
         "stable_ready": 1,
     }
+    assert report["sections"]["external_consumers"]["handoff_status_counts"] == {
+        "ready_for_handoff": 1
+    }
     assert report["sections"]["metrics"]["below_threshold_metric_ids"] == ["process_observability"]
     by_card_id = {entry["card_id"]: entry for entry in report["headline_cards"]}
     assert by_card_id["metrics_below_threshold"]["value"] == 1
     assert by_card_id["structural_pressure_specs"]["value"] == 1
     assert by_card_id["stable_bridges_ready"]["value"] == 1
+    assert by_card_id["ready_external_handoffs"]["value"] == 1
 
 
 def test_main_builds_graph_dashboard_as_standalone_command(

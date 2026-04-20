@@ -95,6 +95,8 @@ particular task.
   `--build-external-consumer-index`
 - build a viewer/backlog overlay for sibling-consumer bridges:
   `--build-external-consumer-overlay`
+- build reviewable downstream packets for stable sibling consumers:
+  `--build-external-consumer-handoffs`
 - build metric-driven derived signals from trace, evidence, graph health, and proposal runtime:
   `--build-metric-signal-index`
 - turn metric-threshold breaches into reviewable proposal artifacts:
@@ -555,6 +557,31 @@ The overlay adds:
 
 This is the preferred visualizer surface for sibling-consumer bridge state.
 
+### External consumer handoffs
+
+```bash
+python3 tools/supervisor.py --build-external-consumer-handoffs
+```
+
+Builds `runs/external_consumer_handoff_packets.json` from:
+
+- `runs/external_consumer_index.json`
+- `runs/external_consumer_overlay.json`
+- `runs/metric_signal_index.json`
+- `runs/metric_threshold_proposals.json`
+
+This is the first explicit `SpecGraph -> Metrics` handoff surface.
+
+Each declared external consumer is classified into:
+
+- `ready_for_handoff`
+- `blocked_by_bridge_gap`
+- `draft_reference_only`
+
+Only stable-ready consumers receive a normalized downstream `handoff` packet.
+Today that means `Metrics/SIB` can become reviewable handoff material, while
+`Metrics/SIB_FULL` remains visible as draft-only context and next-gap pressure.
+
 ### Metric-threshold proposals
 
 ```bash
@@ -877,10 +904,13 @@ path.
 - `runs/external_consumer_overlay.json`
   - viewer/backlog surface for sibling-consumer bridges, including bridge
     state, metric pressure, and explicit next-gap remediation pressure
+- `runs/external_consumer_handoff_packets.json`
+  - reviewable downstream handoff packets for sibling consumers, including
+    handoff readiness, packet validation, and next-gap backlog
 - `runs/graph_dashboard.json`
   - aggregated dashboard surface with headline cards and numeric section
     summaries for graph, health, proposals, implementation, evidence, external
-    consumers, and metrics
+    consumers, external handoffs, and metrics
 - `tools/proposal_lane_policy.json`
   - declarative proposal-lane contract for repository presence, authority-state
     mapping, and overlay/query semantics

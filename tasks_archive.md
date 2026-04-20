@@ -123,3 +123,5 @@ Task numbers are preserved for traceability across commits, PRs, and review thre
 
 85. [done] Add a viewer-facing external consumer bridge overlay so sibling repositories such as Metrics expose stable-vs-draft readiness, identity state, and bound metric pressure separately from canonical graph truth.
 86. [done] Derive explicit backlog pressure from external consumer bridge state so missing checkout, repo-identity mismatch, partial declared contracts, and draft-reference follow-up surface as named next gaps instead of remaining implicit inside `sib_proxy`.
+87. [done] Add explicit SpecGraph-to-Metrics handoff packets for stable sibling consumers so downstream reviewable delivery stops being implicit inside bridge state and metric pressure.
+88. [done] Surface external-consumer handoff readiness in dashboard/report views so visualizers can distinguish stable bridge readiness from emitted sibling-consumer handoff packets.

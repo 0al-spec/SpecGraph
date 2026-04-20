@@ -1,0 +1,61 @@
+{
+  "artifact_kind": "external_consumer_handoff_policy",
+  "version": 1,
+  "repository_layout": {
+    "artifact": "runs/external_consumer_handoff_packets.json"
+  },
+  "handoff_contract": {
+    "artifact_kind": "external_consumer_handoff_packets",
+    "schema_version": 1,
+    "transition_profile": "implementation_trace",
+    "packet_type": "handoff",
+    "target_artifact_class": "external_consumer_handoff_packet",
+    "handoff_statuses": [
+      "ready_for_handoff",
+      "blocked_by_bridge_gap",
+      "draft_reference_only"
+    ],
+    "review_states": [
+      "ready_for_review",
+      "not_emitted"
+    ],
+    "named_filters": [
+      "ready_for_handoff",
+      "blocked_by_bridge_gap",
+      "draft_reference_only",
+      "threshold_driven",
+      "packet_validation_failed"
+    ]
+  },
+  "eligibility_rules": {
+    "stable_reference_state": "stable_reference",
+    "draft_reference_state": "draft_reference",
+    "ready_bridge_states": [
+      "stable_ready"
+    ],
+    "blocked_bridge_states": [
+      "stable_partial",
+      "stable_identity_unverified",
+      "stable_checkout_missing"
+    ]
+  },
+  "packet_provenance": {
+    "source_refs": [
+      "tools/external_consumers.json",
+      "runs/external_consumer_index.json",
+      "runs/external_consumer_overlay.json",
+      "runs/metric_signal_index.json",
+      "runs/metric_threshold_proposals.json"
+    ],
+    "required_provenance_links": [
+      "external_consumer_registry",
+      "metric_signal_index",
+      "metric_threshold_proposals"
+    ]
+  },
+  "next_gap_defaults": {
+    "ready_for_handoff": "review_handoff_packet",
+    "blocked_by_bridge_gap": "inherit_external_consumer_next_gap",
+    "draft_reference_only": "review_draft_reference"
+  }
+}

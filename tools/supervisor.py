@@ -38,6 +38,7 @@ Derived artifacts:
 - graph health overlay: `runs/graph_health_overlay.json`
 - external consumer index: `runs/external_consumer_index.json`
 - external consumer overlay: `runs/external_consumer_overlay.json`
+- external consumer handoff packets: `runs/external_consumer_handoff_packets.json`
 - spec trace index: `runs/spec_trace_index.json`
 - spec trace projection: `runs/spec_trace_projection.json`
 - proposal runtime index: `runs/proposal_runtime_index.json`
@@ -97,6 +98,7 @@ EVIDENCE_PLANE_POLICY_RELATIVE_PATH = "tools/evidence_plane_policy.json"
 METRIC_SIGNAL_POLICY_RELATIVE_PATH = "tools/metric_signal_policy.json"
 EXTERNAL_CONSUMER_REGISTRY_RELATIVE_PATH = "tools/external_consumers.json"
 EXTERNAL_CONSUMER_OVERLAY_POLICY_RELATIVE_PATH = "tools/external_consumer_overlay_policy.json"
+EXTERNAL_CONSUMER_HANDOFF_POLICY_RELATIVE_PATH = "tools/external_consumer_handoff_policy.json"
 
 
 def supervisor_policy_path() -> Path:
@@ -157,6 +159,10 @@ def metric_signal_policy_path() -> Path:
 
 def external_consumer_overlay_policy_path() -> Path:
     return TOOLS_DIR / "external_consumer_overlay_policy.json"
+
+
+def external_consumer_handoff_policy_path() -> Path:
+    return TOOLS_DIR / "external_consumer_handoff_policy.json"
 
 
 def load_supervisor_policy() -> tuple[dict[str, Any], str]:
@@ -657,6 +663,46 @@ EXTERNAL_CONSUMER_OVERLAY_POLICY, EXTERNAL_CONSUMER_OVERLAY_POLICY_SHA256 = (
 )
 
 
+def load_external_consumer_handoff_policy() -> tuple[dict[str, Any], str]:
+    path = external_consumer_handoff_policy_path()
+    try:
+        raw_text = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise RuntimeError(
+            f"failed to read external consumer handoff policy artifact: {path.as_posix()} ({exc})"
+        ) from exc
+    try:
+        payload = json.loads(raw_text)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(
+            f"malformed external consumer handoff policy artifact: {path.as_posix()} ({exc})"
+        ) from exc
+    if not isinstance(payload, dict):
+        raise RuntimeError(
+            "malformed external consumer handoff policy artifact: "
+            f"{path.as_posix()} must contain a JSON object"
+        )
+    required_sections = (
+        "repository_layout",
+        "handoff_contract",
+        "eligibility_rules",
+        "packet_provenance",
+        "next_gap_defaults",
+    )
+    missing = [section for section in required_sections if section not in payload]
+    if missing:
+        raise RuntimeError(
+            "malformed external consumer handoff policy artifact: missing top-level section(s): "
+            + ", ".join(missing)
+        )
+    return payload, hashlib.sha256(raw_text.encode("utf-8")).hexdigest()
+
+
+EXTERNAL_CONSUMER_HANDOFF_POLICY, EXTERNAL_CONSUMER_HANDOFF_POLICY_SHA256 = (
+    load_external_consumer_handoff_policy()
+)
+
+
 def policy_lookup(policy_path: str) -> Any:
     current: Any = SUPERVISOR_POLICY
     for part in policy_path.split("."):
@@ -704,6 +750,15 @@ def operator_request_bridge_policy_lookup(policy_path: str) -> Any:
 
 def external_consumer_overlay_policy_lookup(policy_path: str) -> Any:
     current: Any = EXTERNAL_CONSUMER_OVERLAY_POLICY
+    for part in policy_path.split("."):
+        if not isinstance(current, dict) or part not in current:
+            raise KeyError(policy_path)
+        current = current[part]
+    return copy.deepcopy(current)
+
+
+def external_consumer_handoff_policy_lookup(policy_path: str) -> Any:
+    current: Any = EXTERNAL_CONSUMER_HANDOFF_POLICY
     for part in policy_path.split("."):
         if not isinstance(current, dict) or part not in current:
             raise KeyError(policy_path)
@@ -896,6 +951,14 @@ def external_consumer_overlay_policy_reference() -> dict[str, Any]:
     }
 
 
+def external_consumer_handoff_policy_reference() -> dict[str, Any]:
+    return {
+        "artifact_path": EXTERNAL_CONSUMER_HANDOFF_POLICY_RELATIVE_PATH,
+        "artifact_sha256": EXTERNAL_CONSUMER_HANDOFF_POLICY_SHA256,
+        "version": EXTERNAL_CONSUMER_HANDOFF_POLICY.get("version"),
+    }
+
+
 READY_DEP_STATUSES = {"reviewed", "frozen"}
 WORKABLE_STATUSES = {"outlined", "specified"}
 CONTINUATION_STATUSES = {"linked"}
@@ -1058,6 +1121,33 @@ EXTERNAL_CONSUMER_LAYER_NAME = str(
 EXTERNAL_CONSUMER_BRIDGE_STATUSES = list(external_consumer_overlay_policy_lookup("bridge_statuses"))
 EXTERNAL_CONSUMER_NAMED_FILTERS = list(
     external_consumer_overlay_policy_lookup("overlay_contract.named_filters")
+)
+EXTERNAL_CONSUMER_HANDOFF_FILENAME = Path(
+    str(external_consumer_handoff_policy_lookup("repository_layout.artifact"))
+).name
+EXTERNAL_CONSUMER_HANDOFF_ARTIFACT_KIND = str(
+    external_consumer_handoff_policy_lookup("handoff_contract.artifact_kind")
+)
+EXTERNAL_CONSUMER_HANDOFF_SCHEMA_VERSION = int(
+    external_consumer_handoff_policy_lookup("handoff_contract.schema_version")
+)
+EXTERNAL_CONSUMER_HANDOFF_TRANSITION_PROFILE = str(
+    external_consumer_handoff_policy_lookup("handoff_contract.transition_profile")
+)
+EXTERNAL_CONSUMER_HANDOFF_PACKET_TYPE = str(
+    external_consumer_handoff_policy_lookup("handoff_contract.packet_type")
+)
+EXTERNAL_CONSUMER_HANDOFF_TARGET_ARTIFACT_CLASS = str(
+    external_consumer_handoff_policy_lookup("handoff_contract.target_artifact_class")
+)
+EXTERNAL_CONSUMER_HANDOFF_STATUSES = list(
+    external_consumer_handoff_policy_lookup("handoff_contract.handoff_statuses")
+)
+EXTERNAL_CONSUMER_HANDOFF_REVIEW_STATES = list(
+    external_consumer_handoff_policy_lookup("handoff_contract.review_states")
+)
+EXTERNAL_CONSUMER_HANDOFF_NAMED_FILTERS = list(
+    external_consumer_handoff_policy_lookup("handoff_contract.named_filters")
 )
 METRIC_SIGNAL_INDEX_FILENAME = Path(
     str(metric_signal_policy_lookup("repository_layout.signal_artifact"))
@@ -10481,6 +10571,10 @@ def external_consumer_overlay_path() -> Path:
     return RUNS_DIR / EXTERNAL_CONSUMER_OVERLAY_FILENAME
 
 
+def external_consumer_handoff_packets_path() -> Path:
+    return RUNS_DIR / EXTERNAL_CONSUMER_HANDOFF_FILENAME
+
+
 def evidence_plane_index_path() -> Path:
     return RUNS_DIR / EVIDENCE_PLANE_INDEX_FILENAME
 
@@ -12189,6 +12283,269 @@ def write_external_consumer_overlay(overlay: dict[str, Any]) -> Path:
     return path
 
 
+def derive_external_consumer_handoff_status(
+    *,
+    reference_state: str,
+    bridge_state: str,
+) -> str:
+    stable_reference_state = str(
+        external_consumer_handoff_policy_lookup("eligibility_rules.stable_reference_state")
+    ).strip()
+    draft_reference_state = str(
+        external_consumer_handoff_policy_lookup("eligibility_rules.draft_reference_state")
+    ).strip()
+    ready_bridge_states = {
+        str(item).strip()
+        for item in external_consumer_handoff_policy_lookup("eligibility_rules.ready_bridge_states")
+        if str(item).strip()
+    }
+    blocked_bridge_states = {
+        str(item).strip()
+        for item in external_consumer_handoff_policy_lookup(
+            "eligibility_rules.blocked_bridge_states"
+        )
+        if str(item).strip()
+    }
+
+    if reference_state == draft_reference_state:
+        return "draft_reference_only"
+    if reference_state == stable_reference_state and bridge_state in ready_bridge_states:
+        return "ready_for_handoff"
+    if reference_state == stable_reference_state and bridge_state in blocked_bridge_states:
+        return "blocked_by_bridge_gap"
+    return "blocked_by_bridge_gap"
+
+
+def derive_external_consumer_handoff_next_gap(
+    *,
+    handoff_status: str,
+    overlay_entry: dict[str, Any],
+) -> str:
+    default_gap = str(
+        external_consumer_handoff_policy_lookup(f"next_gap_defaults.{handoff_status}")
+    ).strip()
+    if default_gap == "inherit_external_consumer_next_gap":
+        inherited = str(overlay_entry.get("next_gap", "")).strip()
+        return inherited or "review_bridge_gap"
+    return default_gap or "none"
+
+
+def build_external_consumer_handoff_packets(
+    external_consumer_index: dict[str, Any],
+    external_consumer_overlay: dict[str, Any],
+    metric_signal_index: dict[str, Any],
+    metric_threshold_proposals: dict[str, Any],
+) -> dict[str, Any]:
+    overlay_entries = {
+        str(entry.get("consumer_id", "")).strip(): entry
+        for entry in external_consumer_overlay.get("entries", [])
+        if isinstance(entry, dict) and str(entry.get("consumer_id", "")).strip()
+    }
+    metrics_by_id = {
+        str(entry.get("metric_id", "")).strip(): entry
+        for entry in metric_signal_index.get("metrics", [])
+        if isinstance(entry, dict) and str(entry.get("metric_id", "")).strip()
+    }
+    threshold_entries_by_metric: dict[str, list[dict[str, Any]]] = {}
+    for entry in metric_threshold_proposals.get("entries", []):
+        if not isinstance(entry, dict):
+            continue
+        metric_id = str(entry.get("metric_id", "")).strip()
+        if not metric_id:
+            continue
+        threshold_entries_by_metric.setdefault(metric_id, []).append(entry)
+
+    entries: list[dict[str, Any]] = []
+    handoff_status_groups: dict[str, list[str]] = {}
+    review_state_groups: dict[str, list[str]] = {}
+    named_filters = {name: [] for name in EXTERNAL_CONSUMER_HANDOFF_NAMED_FILTERS}
+    backlog_items: list[dict[str, Any]] = []
+    grouped_backlog: dict[str, list[str]] = {}
+    source_refs = [
+        str(path).strip()
+        for path in external_consumer_handoff_policy_lookup("packet_provenance.source_refs")
+        if str(path).strip()
+    ]
+    required_provenance_links = [
+        str(item).strip()
+        for item in external_consumer_handoff_policy_lookup(
+            "packet_provenance.required_provenance_links"
+        )
+        if str(item).strip()
+    ]
+
+    for raw_entry in external_consumer_index.get("entries", []):
+        if not isinstance(raw_entry, dict):
+            continue
+        consumer_id = str(raw_entry.get("consumer_id", "")).strip()
+        if not consumer_id:
+            continue
+        overlay_entry = overlay_entries.get(consumer_id, {})
+        reference_state = str(raw_entry.get("reference_state", "")).strip()
+        bridge_state = str(overlay_entry.get("bridge_state", "")).strip()
+        handoff_status = derive_external_consumer_handoff_status(
+            reference_state=reference_state,
+            bridge_state=bridge_state,
+        )
+        next_gap = derive_external_consumer_handoff_next_gap(
+            handoff_status=handoff_status,
+            overlay_entry=overlay_entry if isinstance(overlay_entry, dict) else {},
+        )
+        metric_ids = sorted(
+            {
+                str(binding.get("metric_id", "")).strip()
+                for binding in raw_entry.get("metric_bindings", [])
+                if isinstance(binding, dict) and str(binding.get("metric_id", "")).strip()
+            }
+        )
+        bound_metrics = [
+            copy.deepcopy(metrics_by_id[metric_id])
+            for metric_id in metric_ids
+            if metric_id in metrics_by_id
+        ]
+        threshold_proposals = []
+        for metric_id in metric_ids:
+            threshold_proposals.extend(
+                copy.deepcopy(item) for item in threshold_entries_by_metric.get(metric_id, [])
+            )
+        threshold_proposal_ids = sorted(
+            {
+                str(item.get("proposal_id", "")).strip()
+                for item in threshold_proposals
+                if str(item.get("proposal_id", "")).strip()
+            }
+        )
+        review_state = (
+            "ready_for_review" if handoff_status == "ready_for_handoff" else "not_emitted"
+        )
+        transition_packet = None
+        validation_report = None
+        if handoff_status == "ready_for_handoff":
+            transition_packet = {
+                "packet_type": EXTERNAL_CONSUMER_HANDOFF_PACKET_TYPE,
+                "transition_profile": EXTERNAL_CONSUMER_HANDOFF_TRANSITION_PROFILE,
+                "transition_intent": (
+                    "handoff bounded SpecGraph metric and bridge surfaces to external consumer "
+                    f"{str(raw_entry.get('title', consumer_id)).strip()}"
+                ),
+                "source_refs": copy.deepcopy(source_refs),
+                "actor_class": "supervisor_derived",
+                "target_artifact_class": EXTERNAL_CONSUMER_HANDOFF_TARGET_ARTIFACT_CLASS,
+                "lineage_root": f"external-consumer::{consumer_id}",
+                "declared_change_surface": [
+                    external_consumer_handoff_packets_path().relative_to(ROOT).as_posix()
+                ],
+                "required_provenance_links": copy.deepcopy(required_provenance_links),
+            }
+            validation_report = validate_transition_packet_report(
+                transition_packet,
+                validator_profile=EXTERNAL_CONSUMER_HANDOFF_TRANSITION_PROFILE,
+            )
+
+        entry = {
+            "handoff_id": f"external_consumer_handoff::{consumer_id}",
+            "consumer_id": consumer_id,
+            "title": str(raw_entry.get("title", "")).strip(),
+            "reference_state": reference_state,
+            "bridge_state": bridge_state,
+            "handoff_status": handoff_status,
+            "review_state": review_state,
+            "next_gap": next_gap,
+            "policy_reference": external_consumer_handoff_policy_reference(),
+            "bound_metric_ids": metric_ids,
+            "bound_metrics": bound_metrics,
+            "threshold_proposal_ids": threshold_proposal_ids,
+            "threshold_proposal_count": len(threshold_proposal_ids),
+            "target_consumer": {
+                "consumer_id": consumer_id,
+                "profile": str(raw_entry.get("profile", "")).strip(),
+                "repo_url": str(raw_entry.get("repo_url", "")).strip(),
+                "local_checkout_hint": str(raw_entry.get("local_checkout_hint", "")).strip(),
+            },
+            "transition_packet": transition_packet,
+            "transition_packet_validation": validation_report,
+            "notes": str(raw_entry.get("notes", "")).strip(),
+        }
+        entries.append(entry)
+        handoff_status_groups.setdefault(handoff_status, []).append(consumer_id)
+        review_state_groups.setdefault(review_state, []).append(consumer_id)
+        if handoff_status == "ready_for_handoff":
+            named_filters["ready_for_handoff"].append(consumer_id)
+        if handoff_status == "blocked_by_bridge_gap":
+            named_filters["blocked_by_bridge_gap"].append(consumer_id)
+        if handoff_status == "draft_reference_only":
+            named_filters["draft_reference_only"].append(consumer_id)
+        if threshold_proposal_ids:
+            named_filters["threshold_driven"].append(consumer_id)
+        if validation_report and not validation_report.get("ok"):
+            named_filters["packet_validation_failed"].append(consumer_id)
+        if next_gap != "none":
+            backlog_items.append(
+                {
+                    "consumer_id": consumer_id,
+                    "handoff_status": handoff_status,
+                    "review_state": review_state,
+                    "next_gap": next_gap,
+                }
+            )
+            grouped_backlog.setdefault(next_gap, []).append(consumer_id)
+
+    for bucket in (handoff_status_groups, review_state_groups, named_filters, grouped_backlog):
+        for key in list(bucket):
+            bucket[key] = sorted(set(bucket[key]))
+
+    return {
+        "artifact_kind": EXTERNAL_CONSUMER_HANDOFF_ARTIFACT_KIND,
+        "schema_version": EXTERNAL_CONSUMER_HANDOFF_SCHEMA_VERSION,
+        "generated_at": utc_now_iso(),
+        "policy_reference": external_consumer_handoff_policy_reference(),
+        "source_artifacts": {
+            "external_consumer_index": {
+                "artifact_path": external_consumer_index_path().relative_to(ROOT).as_posix(),
+                "generated_at": external_consumer_index.get("generated_at"),
+            },
+            "external_consumer_overlay": {
+                "artifact_path": external_consumer_overlay_path().relative_to(ROOT).as_posix(),
+                "generated_at": external_consumer_overlay.get("generated_at"),
+            },
+            "metric_signal_index": {
+                "artifact_path": metric_signal_index_path().relative_to(ROOT).as_posix(),
+                "generated_at": metric_signal_index.get("generated_at"),
+            },
+            "metric_threshold_proposals": {
+                "artifact_path": metric_threshold_proposals_path().relative_to(ROOT).as_posix(),
+                "generated_at": metric_threshold_proposals.get("generated_at"),
+            },
+        },
+        "entry_count": len(entries),
+        "entries": entries,
+        "viewer_projection": {
+            "handoff_status": {
+                key: sorted(value) for key, value in sorted(handoff_status_groups.items())
+            },
+            "review_state": {
+                key: sorted(value) for key, value in sorted(review_state_groups.items())
+            },
+            "named_filters": {key: sorted(value) for key, value in sorted(named_filters.items())},
+        },
+        "handoff_backlog": {
+            "entry_count": len(backlog_items),
+            "items": backlog_items,
+            "grouped_by_next_gap": {
+                key: sorted(value) for key, value in sorted(grouped_backlog.items())
+            },
+        },
+    }
+
+
+def write_external_consumer_handoff_packets(report: dict[str, Any]) -> Path:
+    RUNS_DIR.mkdir(parents=True, exist_ok=True)
+    path = external_consumer_handoff_packets_path()
+    with artifact_lock(path):
+        atomic_write_json(path, report)
+    return path
+
+
 def metric_status_score(mapping: dict[str, Any], status: str) -> float | None:
     raw_value = mapping.get(status)
     if raw_value is None:
@@ -13637,6 +13994,12 @@ def build_graph_dashboard(specs: list[SpecNode]) -> dict[str, Any]:
         metric_signal_index,
     )
     metric_threshold_proposals = build_metric_threshold_proposals(metric_signal_index)
+    external_consumer_handoffs = build_external_consumer_handoff_packets(
+        external_consumer_index,
+        external_consumer_overlay,
+        metric_signal_index,
+        metric_threshold_proposals,
+    )
 
     total_spec_count = len(specs)
     active_spec_count = sum(1 for spec in specs if not is_historical_spec(spec.data))
@@ -13730,6 +14093,12 @@ def build_graph_dashboard(specs: list[SpecNode]) -> dict[str, Any]:
     )
     external_consumer_named_filter_counts = grouped_identifier_counts(
         external_consumer_overlay.get("viewer_projection", {}).get("named_filters", {})
+    )
+    external_consumer_handoff_status_counts = grouped_identifier_counts(
+        external_consumer_handoffs.get("viewer_projection", {}).get("handoff_status", {})
+    )
+    external_consumer_handoff_review_state_counts = grouped_identifier_counts(
+        external_consumer_handoffs.get("viewer_projection", {}).get("review_state", {})
     )
 
     metric_entries = [
@@ -13837,6 +14206,21 @@ def build_graph_dashboard(specs: list[SpecNode]) -> dict[str, Any]:
             ),
         ),
         dashboard_card(
+            card_id="ready_external_handoffs",
+            title="Ready External Handoffs",
+            value=external_consumer_handoff_status_counts.get("ready_for_handoff", 0),
+            section="external_consumers",
+            status=(
+                "attention"
+                if external_consumer_handoff_status_counts.get("ready_for_handoff", 0) > 0
+                else "healthy"
+            ),
+            basis=(
+                "Stable sibling consumers that now have a reviewable downstream handoff "
+                "packet emitted from SpecGraph surfaces."
+            ),
+        ),
+        dashboard_card(
             card_id="metrics_below_threshold",
             title="Metrics Below Threshold",
             value=len(below_threshold_metric_ids),
@@ -13890,6 +14274,12 @@ def build_graph_dashboard(specs: list[SpecNode]) -> dict[str, Any]:
             "external_consumer_overlay": {
                 "artifact_path": external_consumer_overlay_path().relative_to(ROOT).as_posix(),
                 "generated_at": external_consumer_overlay.get("generated_at"),
+            },
+            "external_consumer_handoffs": {
+                "artifact_path": external_consumer_handoff_packets_path()
+                .relative_to(ROOT)
+                .as_posix(),
+                "generated_at": external_consumer_handoffs.get("generated_at"),
             },
             "metric_signal_index": {
                 "artifact_path": metric_signal_index_path().relative_to(ROOT).as_posix(),
@@ -13965,11 +14355,16 @@ def build_graph_dashboard(specs: list[SpecNode]) -> dict[str, Any]:
                 "bridge_state_counts": external_consumer_bridge_state_counts,
                 "metric_pressure_counts": external_consumer_metric_pressure_counts,
                 "named_filter_counts": external_consumer_named_filter_counts,
+                "handoff_status_counts": external_consumer_handoff_status_counts,
+                "handoff_review_state_counts": external_consumer_handoff_review_state_counts,
                 "external_consumer_backlog_count": int(
                     external_consumer_overlay.get("external_consumer_backlog", {}).get(
                         "entry_count", 0
                     )
                     or 0
+                ),
+                "handoff_backlog_count": int(
+                    external_consumer_handoffs.get("handoff_backlog", {}).get("entry_count", 0) or 0
                 ),
             },
             "metrics": {
@@ -14010,6 +14405,9 @@ def build_graph_dashboard(specs: list[SpecNode]) -> dict[str, Any]:
                 ),
                 "external_consumer_metric_pressure": external_consumer_named_filter_counts.get(
                     "metric_pressure", 0
+                ),
+                "ready_external_handoffs": external_consumer_handoff_status_counts.get(
+                    "ready_for_handoff", 0
                 ),
                 "metrics_below_threshold": len(below_threshold_metric_ids),
             },
@@ -17359,6 +17757,7 @@ def main(
     build_evidence_plane_overlay_mode: bool = False,
     build_external_consumer_index_mode: bool = False,
     build_external_consumer_overlay_mode: bool = False,
+    build_external_consumer_handoffs_mode: bool = False,
     build_metric_signal_index_mode: bool = False,
     build_metric_threshold_proposals_mode: bool = False,
     build_graph_dashboard_mode: bool = False,
@@ -17407,6 +17806,7 @@ def main(
         "--build-evidence-plane-overlay": build_evidence_plane_overlay_mode,
         "--build-external-consumer-index": build_external_consumer_index_mode,
         "--build-external-consumer-overlay": build_external_consumer_overlay_mode,
+        "--build-external-consumer-handoffs": build_external_consumer_handoffs_mode,
         "--build-metric-signal-index": build_metric_signal_index_mode,
         "--build-metric-threshold-proposals": build_metric_threshold_proposals_mode,
         "--build-graph-dashboard": build_graph_dashboard_mode,
@@ -18080,6 +18480,67 @@ def main(
         overlay = build_external_consumer_overlay(consumer_index, metric_index)
         write_external_consumer_overlay(overlay)
         print(json.dumps(overlay, ensure_ascii=False, indent=2))
+        return 0
+
+    if build_external_consumer_handoffs_mode:
+        if any(
+            (
+                dry_run,
+                auto_approve,
+                loop,
+                resolve_gate,
+                decision,
+                note,
+                target_spec,
+                split_proposal,
+                apply_split_proposal,
+                operator_note,
+                mutation_budget,
+                run_authority,
+                execution_profile,
+                child_model,
+                child_timeout_seconds,
+                verbose,
+                list_stale_runtime,
+                clean_stale_runtime,
+                observe_graph_health_mode,
+                operator_request_packet_path,
+                build_vocabulary_index_mode,
+                build_vocabulary_drift_report_mode,
+                build_pre_spec_semantics_index_mode,
+                build_intent_layer_overlay_mode,
+                build_graph_health_overlay_mode,
+                build_graph_health_trends_mode,
+                build_spec_trace_index_mode,
+                build_spec_trace_projection_mode,
+                build_evidence_plane_index_mode,
+                build_evidence_plane_overlay_mode,
+                build_proposal_lane_overlay_mode,
+                build_proposal_runtime_index_mode,
+                build_proposal_promotion_index_mode,
+            )
+        ):
+            print(
+                "--build-external-consumer-handoffs must be used as a standalone command",
+                file=sys.stderr,
+            )
+            return 1
+        consumer_index = build_external_consumer_index()
+        write_external_consumer_index(consumer_index)
+        metric_index = build_metric_signal_index(specs)
+        write_metric_signal_index(metric_index)
+        overlay = build_external_consumer_overlay(consumer_index, metric_index)
+        write_external_consumer_overlay(overlay)
+        threshold_proposals = build_metric_threshold_proposals(metric_index)
+        write_metric_threshold_proposals(threshold_proposals)
+        handoff_packets = build_external_consumer_handoff_packets(
+            consumer_index,
+            overlay,
+            metric_index,
+            threshold_proposals,
+        )
+        write_external_consumer_handoff_packets(handoff_packets)
+        print(json.dumps(handoff_packets, ensure_ascii=False, indent=2))
         return 0
 
     if build_metric_signal_index_mode:
@@ -18935,6 +19396,14 @@ if __name__ == "__main__":
         ),
     )
     parser.add_argument(
+        "--build-external-consumer-handoffs",
+        action="store_true",
+        help=(
+            "Build reviewable sibling-consumer handoff packets from stable bridge readiness "
+            "and current metric-threshold pressure"
+        ),
+    )
+    parser.add_argument(
         "--build-metric-signal-index",
         action="store_true",
         help=(
@@ -19111,6 +19580,7 @@ if __name__ == "__main__":
             build_evidence_plane_overlay_mode=args.build_evidence_plane_overlay,
             build_external_consumer_index_mode=args.build_external_consumer_index,
             build_external_consumer_overlay_mode=args.build_external_consumer_overlay,
+            build_external_consumer_handoffs_mode=args.build_external_consumer_handoffs,
             build_metric_signal_index_mode=args.build_metric_signal_index,
             build_metric_threshold_proposals_mode=args.build_metric_threshold_proposals,
             build_graph_dashboard_mode=args.build_graph_dashboard,
