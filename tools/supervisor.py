@@ -36,6 +36,7 @@ Derived artifacts:
 - intent-layer overlay: `runs/intent_layer_overlay.json`
 - proposal-lane overlay: `runs/proposal_lane_overlay.json`
 - graph health overlay: `runs/graph_health_overlay.json`
+- external consumer index: `runs/external_consumer_index.json`
 - spec trace index: `runs/spec_trace_index.json`
 - spec trace projection: `runs/spec_trace_projection.json`
 - proposal runtime index: `runs/proposal_runtime_index.json`
@@ -93,6 +94,7 @@ EVALUATOR_LOOP_POLICY_RELATIVE_PATH = "tools/evaluator_loop_policy.json"
 EVALUATOR_INTERVENTION_POLICY_RELATIVE_PATH = "tools/evaluator_intervention_policy.json"
 EVIDENCE_PLANE_POLICY_RELATIVE_PATH = "tools/evidence_plane_policy.json"
 METRIC_SIGNAL_POLICY_RELATIVE_PATH = "tools/metric_signal_policy.json"
+EXTERNAL_CONSUMER_REGISTRY_RELATIVE_PATH = "tools/external_consumers.json"
 
 
 def supervisor_policy_path() -> Path:
@@ -117,6 +119,10 @@ def operator_request_bridge_policy_path() -> Path:
 
 def specgraph_vocabulary_path() -> Path:
     return TOOLS_DIR / "specgraph_vocabulary.json"
+
+
+def external_consumers_registry_path() -> Path:
+    return ROOT / "tools" / "external_consumers.json"
 
 
 def pre_spec_semantics_policy_path() -> Path:
@@ -972,6 +978,9 @@ EVIDENCE_PLANE_OVERLAY_SCHEMA_VERSION = int(
     evidence_plane_policy_lookup("overlay_contract.schema_version")
 )
 EVIDENCE_PLANE_NAMED_FILTERS = list(evidence_plane_policy_lookup("overlay_contract.named_filters"))
+EXTERNAL_CONSUMER_INDEX_FILENAME = "external_consumer_index.json"
+EXTERNAL_CONSUMER_INDEX_ARTIFACT_KIND = "external_consumer_index"
+EXTERNAL_CONSUMER_INDEX_SCHEMA_VERSION = 1
 METRIC_SIGNAL_INDEX_FILENAME = Path(
     str(metric_signal_policy_lookup("repository_layout.signal_artifact"))
 ).name
@@ -10386,6 +10395,10 @@ def runtime_evidence_registry_path() -> Path:
     return ROOT / "tools" / "runtime_evidence_registry.json"
 
 
+def external_consumer_index_path() -> Path:
+    return RUNS_DIR / EXTERNAL_CONSUMER_INDEX_FILENAME
+
+
 def evidence_plane_index_path() -> Path:
     return RUNS_DIR / EVIDENCE_PLANE_INDEX_FILENAME
 
@@ -10469,6 +10482,190 @@ def load_runtime_evidence_registry() -> dict[str, dict[str, Any]]:
             )
         registry[spec_id] = item
     return registry
+
+
+def load_external_consumers_registry() -> dict[str, Any]:
+    path = external_consumers_registry_path()
+    if not path.exists():
+        return {
+            "artifact_kind": "external_consumer_registry",
+            "version": 1,
+            "consumers": [],
+        }
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except OSError as exc:
+        raise RuntimeError(
+            f"failed to read external consumer registry: {path.as_posix()} ({exc})"
+        ) from exc
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(
+            f"malformed external consumer registry: {path.as_posix()} ({exc})"
+        ) from exc
+    if not isinstance(payload, dict):
+        raise RuntimeError(
+            f"malformed external consumer registry: {path.as_posix()} must contain a JSON object"
+        )
+    raw_consumers = payload.get("consumers", [])
+    if not isinstance(raw_consumers, list):
+        raise RuntimeError(
+            f"malformed external consumer registry: {path.as_posix()} consumers must be a JSON list"
+        )
+    for index, item in enumerate(raw_consumers, start=1):
+        if not isinstance(item, dict):
+            raise RuntimeError(
+                "malformed external consumer registry: "
+                f"entry {index} in {path.as_posix()} must be an object"
+            )
+        consumer_id = str(item.get("consumer_id", "")).strip()
+        if not consumer_id:
+            raise RuntimeError(
+                "malformed external consumer registry: "
+                f"entry {index} in {path.as_posix()} missing consumer_id"
+            )
+    return payload
+
+
+def normalize_repo_url(url: str) -> str:
+    normalized = str(url).strip().rstrip("/")
+    if normalized.startswith("git@") and ":" in normalized:
+        host_part, repo_part = normalized.split(":", 1)
+        normalized = f"{host_part[4:]}/{repo_part}"
+    normalized = re.sub(r"^https?://", "", normalized)
+    normalized = re.sub(r"^ssh://", "", normalized)
+    if normalized.endswith(".git"):
+        normalized = normalized[:-4]
+    return normalized
+
+
+def inspect_external_consumer_checkout(checkout_hint: str, repo_url: str) -> dict[str, Any]:
+    checkout_text = str(checkout_hint).strip()
+    if not checkout_text:
+        return {
+            "status": "missing",
+            "checkout_path": "",
+            "is_git_checkout": False,
+            "repo_revision": "",
+            "remote_url": "",
+            "remote_matches": None,
+        }
+    checkout_path = Path(checkout_text).expanduser()
+    if not checkout_path.exists() or not checkout_path.is_dir():
+        return {
+            "status": "missing",
+            "checkout_path": checkout_path.as_posix(),
+            "is_git_checkout": False,
+            "repo_revision": "",
+            "remote_url": "",
+            "remote_matches": None,
+        }
+
+    is_git_checkout = False
+    repo_revision = ""
+    remote_url = ""
+    remote_matches = None
+    if shutil.which("git") is not None:
+        probe = subprocess.run(
+            ["git", "rev-parse", "--is-inside-work-tree"],
+            cwd=checkout_path,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        is_git_checkout = probe.returncode == 0 and probe.stdout.strip() == "true"
+        if is_git_checkout:
+            revision_result = subprocess.run(
+                ["git", "rev-parse", "HEAD"],
+                cwd=checkout_path,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            if revision_result.returncode == 0:
+                repo_revision = revision_result.stdout.strip()
+            remote_result = subprocess.run(
+                ["git", "remote", "get-url", "origin"],
+                cwd=checkout_path,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            if remote_result.returncode == 0:
+                remote_url = remote_result.stdout.strip()
+            if remote_url and repo_url:
+                remote_matches = normalize_repo_url(remote_url) == normalize_repo_url(repo_url)
+
+    return {
+        "status": "available",
+        "checkout_path": checkout_path.as_posix(),
+        "is_git_checkout": is_git_checkout,
+        "repo_revision": repo_revision,
+        "remote_url": remote_url,
+        "remote_matches": remote_matches,
+    }
+
+
+def inspect_external_consumer_artifact(
+    checkout_path: Path | None,
+    artifact_definition: dict[str, Any],
+) -> dict[str, Any]:
+    artifact_id = str(artifact_definition.get("artifact_id", "")).strip()
+    rel_path = str(artifact_definition.get("path", "")).strip()
+    required = bool(artifact_definition.get("required", False))
+    markers = [
+        str(item).strip() for item in artifact_definition.get("markers", []) if str(item).strip()
+    ]
+    if checkout_path is None:
+        return {
+            "artifact_id": artifact_id,
+            "kind": str(artifact_definition.get("kind", "")).strip(),
+            "path": rel_path,
+            "required": required,
+            "status": "unavailable",
+            "expected_marker_count": len(markers),
+            "matched_marker_count": 0,
+            "matched_markers": [],
+            "missing_markers": copy.deepcopy(markers),
+        }
+
+    abs_path = checkout_path / rel_path
+    if not abs_path.exists():
+        return {
+            "artifact_id": artifact_id,
+            "kind": str(artifact_definition.get("kind", "")).strip(),
+            "path": rel_path,
+            "required": required,
+            "status": "missing",
+            "expected_marker_count": len(markers),
+            "matched_marker_count": 0,
+            "matched_markers": [],
+            "missing_markers": copy.deepcopy(markers),
+        }
+
+    matched_markers: list[str] = []
+    missing_markers: list[str] = []
+    if markers:
+        try:
+            text = abs_path.read_text(encoding="utf-8", errors="ignore")
+        except OSError:
+            text = ""
+        for marker in markers:
+            if marker in text:
+                matched_markers.append(marker)
+            else:
+                missing_markers.append(marker)
+    status = "verified" if not missing_markers else "marker_mismatch"
+    return {
+        "artifact_id": artifact_id,
+        "kind": str(artifact_definition.get("kind", "")).strip(),
+        "path": rel_path,
+        "required": required,
+        "status": status,
+        "expected_marker_count": len(markers),
+        "matched_marker_count": len(matched_markers),
+        "matched_markers": matched_markers,
+        "missing_markers": missing_markers,
+    }
 
 
 def trace_surface_matches(path_text: str, surface: str) -> bool:
@@ -11545,6 +11742,152 @@ def write_evidence_plane_overlay(overlay: dict[str, Any]) -> Path:
     return path
 
 
+def build_external_consumer_index() -> dict[str, Any]:
+    registry = load_external_consumers_registry()
+    consumers = list(registry.get("consumers", []))
+    entries: list[dict[str, Any]] = []
+    reference_state_groups: dict[str, list[str]] = {}
+    contract_status_groups: dict[str, list[str]] = {}
+    metric_groups: dict[str, list[str]] = {}
+    named_filters = {
+        "stable_ready": [],
+        "stable_partial": [],
+        "draft_visible": [],
+        "missing_checkout": [],
+        "bridge_bound": [],
+    }
+
+    for consumer in consumers:
+        if not isinstance(consumer, dict):
+            continue
+        consumer_id = str(consumer.get("consumer_id", "")).strip()
+        if not consumer_id:
+            continue
+        reference_state = str(consumer.get("reference_state", "")).strip() or "draft_reference"
+        repo_url = str(consumer.get("repo_url", "")).strip()
+        checkout = inspect_external_consumer_checkout(
+            str(consumer.get("local_checkout_hint", "")).strip(),
+            repo_url,
+        )
+        checkout_path_text = str(checkout.get("checkout_path", "")).strip()
+        checkout_path = Path(checkout_path_text) if checkout_path_text else None
+        if str(checkout.get("status", "")).strip() != "available":
+            checkout_path = None
+
+        artifact_reports: list[dict[str, Any]] = []
+        artifact_status_counts = {key: 0 for key in registry.get("artifact_statuses", [])}
+        for artifact_definition in consumer.get("declared_artifacts", []):
+            if not isinstance(artifact_definition, dict):
+                continue
+            artifact_report = inspect_external_consumer_artifact(checkout_path, artifact_definition)
+            artifact_reports.append(artifact_report)
+            status = str(artifact_report.get("status", "")).strip()
+            artifact_status_counts[status] = artifact_status_counts.get(status, 0) + 1
+
+        if str(checkout.get("status", "")).strip() != "available":
+            contract_status = "unavailable"
+        else:
+            required_reports = [item for item in artifact_reports if item.get("required")]
+            if not required_reports:
+                contract_status = "ready"
+            elif all(
+                str(item.get("status", "")).strip() == "verified" for item in required_reports
+            ):
+                contract_status = "ready"
+            else:
+                contract_status = "partial"
+
+        metric_bindings = [
+            {
+                "metric_id": str(item.get("metric_id", "")).strip(),
+                "binding_role": str(item.get("binding_role", "")).strip(),
+            }
+            for item in consumer.get("metric_bindings", [])
+            if isinstance(item, dict) and str(item.get("metric_id", "")).strip()
+        ]
+
+        entry = {
+            "consumer_id": consumer_id,
+            "title": str(consumer.get("title", "")).strip(),
+            "profile": str(consumer.get("profile", "")).strip(),
+            "reference_state": reference_state,
+            "repo_url": repo_url,
+            "local_checkout": checkout,
+            "contract_status": contract_status,
+            "declared_artifact_count": len(artifact_reports),
+            "artifact_status_counts": {
+                key: value
+                for key, value in artifact_status_counts.items()
+                if value or key in {"verified", "missing", "marker_mismatch", "unavailable"}
+            },
+            "artifacts": artifact_reports,
+            "metric_bindings": metric_bindings,
+            "notes": str(consumer.get("notes", "")).strip(),
+        }
+        entries.append(entry)
+
+        reference_state_groups.setdefault(reference_state, []).append(consumer_id)
+        contract_status_groups.setdefault(contract_status, []).append(consumer_id)
+        if reference_state == "stable_reference" and contract_status == "ready":
+            named_filters["stable_ready"].append(consumer_id)
+        if reference_state == "stable_reference" and contract_status == "partial":
+            named_filters["stable_partial"].append(consumer_id)
+        if (
+            reference_state == "draft_reference"
+            and str(checkout.get("status", "")).strip() == "available"
+        ):
+            named_filters["draft_visible"].append(consumer_id)
+        if str(checkout.get("status", "")).strip() != "available":
+            named_filters["missing_checkout"].append(consumer_id)
+        if metric_bindings:
+            named_filters["bridge_bound"].append(consumer_id)
+        for binding in metric_bindings:
+            metric_id = str(binding.get("metric_id", "")).strip()
+            if metric_id:
+                metric_groups.setdefault(metric_id, []).append(consumer_id)
+
+    for bucket in (reference_state_groups, contract_status_groups, metric_groups, named_filters):
+        for key in list(bucket):
+            bucket[key] = sorted(set(bucket[key]))
+
+    available_entry_count = sum(
+        1
+        for entry in entries
+        if str(entry.get("local_checkout", {}).get("status", "")).strip() == "available"
+    )
+    return {
+        "artifact_kind": EXTERNAL_CONSUMER_INDEX_ARTIFACT_KIND,
+        "schema_version": EXTERNAL_CONSUMER_INDEX_SCHEMA_VERSION,
+        "generated_at": utc_now_iso(),
+        "registry_reference": {
+            "artifact_path": external_consumers_registry_path().relative_to(ROOT).as_posix(),
+            "artifact_kind": (
+                str(registry.get("artifact_kind", "")).strip() or "external_consumer_registry"
+            ),
+            "version": int(registry.get("version", 1) or 1),
+        },
+        "entry_count": len(entries),
+        "available_entry_count": available_entry_count,
+        "entries": entries,
+        "available_reference_states": list(registry.get("reference_states", [])),
+        "available_profiles": list(registry.get("consumer_profiles", [])),
+        "viewer_projection": {
+            "reference_state": reference_state_groups,
+            "contract_status": contract_status_groups,
+            "metric_id": metric_groups,
+            "named_filters": named_filters,
+        },
+    }
+
+
+def write_external_consumer_index(index: dict[str, Any]) -> Path:
+    RUNS_DIR.mkdir(parents=True, exist_ok=True)
+    path = external_consumer_index_path()
+    with artifact_lock(path):
+        atomic_write_json(path, index)
+    return path
+
+
 def metric_status_score(mapping: dict[str, Any], status: str) -> float | None:
     raw_value = mapping.get(status)
     if raw_value is None:
@@ -11609,6 +11952,7 @@ def build_metric_signal_index(specs: list[SpecNode]) -> dict[str, Any]:
     trace_projection = build_spec_trace_projection(trace_index)
     evidence_index = build_evidence_plane_index(specs)
     evidence_overlay = build_evidence_plane_overlay(evidence_index)
+    external_consumer_index = build_external_consumer_index()
     graph_overlay = build_graph_health_overlay(specs)
     graph_trends = build_graph_health_trends(specs, overlay=graph_overlay)
     proposal_runtime_index = build_proposal_runtime_index()
@@ -11621,6 +11965,9 @@ def build_metric_signal_index(specs: list[SpecNode]) -> dict[str, Any]:
     )
     evidence_chain_score_map = copy.deepcopy(
         metric_signal_policy_lookup("status_scoring.evidence_chain")
+    )
+    external_consumer_score_map = copy.deepcopy(
+        metric_signal_policy_lookup("status_scoring.external_consumer_contract")
     )
     sib_weights = copy.deepcopy(metric_signal_policy_lookup("metric_composition.sib_proxy_weights"))
 
@@ -11837,11 +12184,51 @@ def build_metric_signal_index(specs: list[SpecNode]) -> dict[str, Any]:
         },
     }
 
+    stable_bridge_entries = [
+        entry
+        for entry in external_consumer_index.get("entries", [])
+        if isinstance(entry, dict)
+        and str(entry.get("reference_state", "")).strip() == "stable_reference"
+        and any(
+            isinstance(binding, dict) and str(binding.get("metric_id", "")).strip() == "sib_proxy"
+            for binding in entry.get("metric_bindings", [])
+        )
+    ]
+    draft_bridge_entries = [
+        entry
+        for entry in external_consumer_index.get("entries", [])
+        if isinstance(entry, dict)
+        and str(entry.get("reference_state", "")).strip() == "draft_reference"
+        and any(
+            isinstance(binding, dict) and str(binding.get("metric_id", "")).strip() == "sib_proxy"
+            for binding in entry.get("metric_bindings", [])
+        )
+    ]
+    bridge_ready_entries = [
+        entry
+        for entry in stable_bridge_entries
+        if str(entry.get("local_checkout", {}).get("status", "")).strip() == "available"
+        and entry.get("local_checkout", {}).get("remote_matches") is True
+        and str(entry.get("contract_status", "")).strip() in {"ready", "partial"}
+    ]
+    bridge_alignment_scores: list[float] = []
+    for entry in bridge_ready_entries:
+        score = metric_status_score(
+            external_consumer_score_map,
+            str(entry.get("contract_status", "")).strip(),
+        )
+        if score is not None:
+            bridge_alignment_scores.append(score)
+    external_consumer_alignment = average_metric_scores(bridge_alignment_scores)
     sib_component_scores = {
         "specification_verifiability": metrics_by_id["specification_verifiability"]["score"],
         "process_observability": metrics_by_id["process_observability"]["score"],
         "structural_observability": metrics_by_id["structural_observability"]["score"],
+        "external_consumer_alignment": external_consumer_alignment,
     }
+    sib_derivation_mode = (
+        "bridge_backed" if external_consumer_alignment is not None else "bootstrap_fallback"
+    )
     sib_proxy_score = weighted_metric_average(sib_component_scores, sib_weights)
     sib_proxy_threshold = float(metric_threshold_definition("sib_proxy")["minimum_score"])
     sib_proxy_status = metric_status_from_score(sib_proxy_score, sib_proxy_threshold)
@@ -11855,13 +12242,44 @@ def build_metric_signal_index(specs: list[SpecNode]) -> dict[str, Any]:
         "status": sib_proxy_status,
         "trigger_signal": sib_proxy_signal,
         "signal_emitted": sib_proxy_status == "below_threshold",
+        "derivation_mode": sib_derivation_mode,
         "basis": (
-            "Bootstrap composite from specification verifiability, process observability, and "
-            "structural observability. This is not the final canonical SIB formula."
+            "Bridge-backed bootstrap composite anchored by the stable external Metrics/SIB "
+            "consumer when available."
+            if sib_derivation_mode == "bridge_backed"
+            else (
+                "Bootstrap composite from specification verifiability, process observability, "
+                "and structural observability. This remains the fallback until a stable "
+                "external Metrics/SIB bridge is locally available."
+            )
         ),
         "input_summary": {
             "component_scores": copy.deepcopy(sib_component_scores),
             "component_weights": copy.deepcopy(sib_weights),
+            "stable_bridge_consumer_ids": [
+                str(entry.get("consumer_id", "")).strip() for entry in stable_bridge_entries
+            ],
+            "draft_bridge_consumer_ids": [
+                str(entry.get("consumer_id", "")).strip() for entry in draft_bridge_entries
+            ],
+            "bridge_ready_consumer_ids": [
+                str(entry.get("consumer_id", "")).strip() for entry in bridge_ready_entries
+            ],
+            "bridge_unverified_identity_consumer_ids": sorted(
+                {
+                    str(entry.get("consumer_id", "")).strip()
+                    for entry in stable_bridge_entries
+                    if str(entry.get("local_checkout", {}).get("status", "")).strip() == "available"
+                    and entry.get("local_checkout", {}).get("remote_matches") is not True
+                }
+            ),
+            "bridge_missing_checkout_ids": sorted(
+                {
+                    str(entry.get("consumer_id", "")).strip()
+                    for entry in stable_bridge_entries
+                    if str(entry.get("local_checkout", {}).get("status", "")).strip() != "available"
+                }
+            ),
         },
     }
 
@@ -11910,6 +12328,10 @@ def build_metric_signal_index(specs: list[SpecNode]) -> dict[str, Any]:
             "evidence_plane_overlay": {
                 "artifact_path": evidence_plane_overlay_path().relative_to(ROOT).as_posix(),
                 "generated_at": evidence_overlay.get("generated_at"),
+            },
+            "external_consumer_index": {
+                "artifact_path": external_consumer_index_path().relative_to(ROOT).as_posix(),
+                "generated_at": external_consumer_index.get("generated_at"),
             },
             "graph_health_overlay": {
                 "artifact_path": graph_health_overlay_path().relative_to(ROOT).as_posix(),
@@ -16578,6 +17000,7 @@ def main(
     build_spec_trace_projection_mode: bool = False,
     build_evidence_plane_index_mode: bool = False,
     build_evidence_plane_overlay_mode: bool = False,
+    build_external_consumer_index_mode: bool = False,
     build_metric_signal_index_mode: bool = False,
     build_metric_threshold_proposals_mode: bool = False,
     build_graph_dashboard_mode: bool = False,
@@ -16624,6 +17047,7 @@ def main(
         "--build-spec-trace-projection": build_spec_trace_projection_mode,
         "--build-evidence-plane-index": build_evidence_plane_index_mode,
         "--build-evidence-plane-overlay": build_evidence_plane_overlay_mode,
+        "--build-external-consumer-index": build_external_consumer_index_mode,
         "--build-metric-signal-index": build_metric_signal_index_mode,
         "--build-metric-threshold-proposals": build_metric_threshold_proposals_mode,
         "--build-graph-dashboard": build_graph_dashboard_mode,
@@ -16781,6 +17205,53 @@ def main(
         overlay = build_intent_layer_overlay()
         write_intent_layer_overlay(overlay)
         print(json.dumps(overlay, ensure_ascii=False, indent=2))
+        return 0
+
+    if build_external_consumer_index_mode:
+        if any(
+            (
+                dry_run,
+                auto_approve,
+                loop,
+                resolve_gate,
+                decision,
+                note,
+                target_spec,
+                split_proposal,
+                apply_split_proposal,
+                operator_note,
+                mutation_budget,
+                run_authority,
+                execution_profile,
+                child_model,
+                child_timeout_seconds,
+                verbose,
+                list_stale_runtime,
+                clean_stale_runtime,
+                observe_graph_health_mode,
+                operator_request_packet_path,
+                build_vocabulary_index_mode,
+                build_vocabulary_drift_report_mode,
+                build_pre_spec_semantics_index_mode,
+                build_graph_health_overlay_mode,
+                build_graph_health_trends_mode,
+                build_spec_trace_index_mode,
+                build_spec_trace_projection_mode,
+                build_evidence_plane_index_mode,
+                build_evidence_plane_overlay_mode,
+                build_proposal_lane_overlay_mode,
+                build_proposal_runtime_index_mode,
+                build_proposal_promotion_index_mode,
+            )
+        ):
+            print(
+                "--build-external-consumer-index must be used as a standalone command",
+                file=sys.stderr,
+            )
+            return 1
+        index = build_external_consumer_index()
+        write_external_consumer_index(index)
+        print(json.dumps(index, ensure_ascii=False, indent=2))
         return 0
 
     if build_proposal_lane_overlay_mode:
@@ -18037,6 +18508,14 @@ if __name__ == "__main__":
         ),
     )
     parser.add_argument(
+        "--build-external-consumer-index",
+        action="store_true",
+        help=(
+            "Build a derived bridge index for declared external consumers such as Metrics/SIB, "
+            "including stable-vs-draft reference state and local checkout availability"
+        ),
+    )
+    parser.add_argument(
         "--build-metric-signal-index",
         action="store_true",
         help=(
@@ -18211,6 +18690,7 @@ if __name__ == "__main__":
             build_spec_trace_projection_mode=args.build_spec_trace_projection,
             build_evidence_plane_index_mode=args.build_evidence_plane_index,
             build_evidence_plane_overlay_mode=args.build_evidence_plane_overlay,
+            build_external_consumer_index_mode=args.build_external_consumer_index,
             build_metric_signal_index_mode=args.build_metric_signal_index,
             build_metric_threshold_proposals_mode=args.build_metric_threshold_proposals,
             build_graph_dashboard_mode=args.build_graph_dashboard,
