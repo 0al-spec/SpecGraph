@@ -12,6 +12,8 @@ Use it when you need to:
 
 For constitutional limits, see [CONSTITUTION.md](../CONSTITUTION.md).
 For repository editing rules, see [AGENTS.md](../AGENTS.md).
+For a compact artifact map aimed at dashboards and graph visualizers, see
+[metrics_visualization_guide.md](./metrics_visualization_guide.md).
 
 ## 1. Supervisor Role
 
@@ -93,6 +95,10 @@ particular task.
   `--build-evidence-plane-overlay`
 - build a bridge index for declared external consumers such as `Metrics/SIB`:
   `--build-external-consumer-index`
+- build a viewer/backlog overlay for sibling-consumer bridges:
+  `--build-external-consumer-overlay`
+- build reviewable downstream packets for stable sibling consumers:
+  `--build-external-consumer-handoffs`
 - build metric-driven derived signals from trace, evidence, graph health, and proposal runtime:
   `--build-metric-signal-index`
 - turn metric-threshold breaches into reviewable proposal artifacts:
@@ -527,6 +533,57 @@ canonical truth and does not require Git submodules.
 Use it when you want metric-driven pressure to be machine-readable without
 turning those metrics into canonical facts or policy by default.
 
+### External consumer overlay
+
+```bash
+python3 tools/supervisor.py --build-external-consumer-overlay
+```
+
+Builds `runs/external_consumer_overlay.json` from a fresh bridge index and a
+fresh metric signal index.
+
+This viewer-facing layer answers:
+
+- which stable bridges are ready
+- which stable bridges are blocked by missing checkout or wrong repo identity
+- which contracts are partial because declared artifacts drifted
+- which draft references are visible but still non-authoritative
+- what the next bounded remediation gap is for each sibling consumer
+
+The overlay adds:
+
+- `bridge_state`
+- `bound_metric_status`
+- named filters such as `stable_ready`, `identity_unverified`, and `metric_pressure`
+- `external_consumer_backlog` grouped by `next_gap`
+
+This is the preferred visualizer surface for sibling-consumer bridge state.
+
+### External consumer handoffs
+
+```bash
+python3 tools/supervisor.py --build-external-consumer-handoffs
+```
+
+Builds `runs/external_consumer_handoff_packets.json` from:
+
+- `runs/external_consumer_index.json`
+- `runs/external_consumer_overlay.json`
+- `runs/metric_signal_index.json`
+- `runs/metric_threshold_proposals.json`
+
+This is the first explicit `SpecGraph -> Metrics` handoff surface.
+
+Each declared external consumer is classified into:
+
+- `ready_for_handoff`
+- `blocked_by_bridge_gap`
+- `draft_reference_only`
+
+Only stable-ready consumers receive a normalized downstream `handoff` packet.
+Today that means `Metrics/SIB` can become reviewable handoff material, while
+`Metrics/SIB_FULL` remains visible as draft-only context and next-gap pressure.
+
 ### Metric-threshold proposals
 
 ```bash
@@ -846,10 +903,16 @@ path.
   - derived bridge surface for declared external consumers, including
     stable-vs-draft references, checkout availability, contract readiness, and
     metric bindings
+- `runs/external_consumer_overlay.json`
+  - viewer/backlog surface for sibling-consumer bridges, including bridge
+    state, metric pressure, and explicit next-gap remediation pressure
+- `runs/external_consumer_handoff_packets.json`
+  - reviewable downstream handoff packets for sibling consumers, including
+    handoff readiness, packet validation, and next-gap backlog
 - `runs/graph_dashboard.json`
   - aggregated dashboard surface with headline cards and numeric section
-    summaries for graph, health, proposals, implementation, evidence, and
-    metrics
+    summaries for graph, health, proposals, implementation, evidence, external
+    consumers, external handoffs, and metrics
 - `tools/proposal_lane_policy.json`
   - declarative proposal-lane contract for repository presence, authority-state
     mapping, and overlay/query semantics
