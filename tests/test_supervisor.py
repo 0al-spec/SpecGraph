@@ -8236,7 +8236,7 @@ def test_build_metric_signal_index_uses_bridge_backed_sib_proxy_when_stable_cons
                     "consumer_id": "metrics_sib",
                     "reference_state": "stable_reference",
                     "contract_status": "ready",
-                    "local_checkout": {"status": "available"},
+                    "local_checkout": {"status": "available", "remote_matches": True},
                     "metric_bindings": [
                         {
                             "metric_id": "sib_proxy",
@@ -8268,6 +8268,126 @@ def test_build_metric_signal_index_uses_bridge_backed_sib_proxy_when_stable_cons
     assert sib["input_summary"]["component_scores"]["external_consumer_alignment"] == 1.0
     assert sib["input_summary"]["stable_bridge_consumer_ids"] == ["metrics_sib"]
     assert sib["input_summary"]["draft_bridge_consumer_ids"] == ["metrics_sib_full"]
+    assert sib["input_summary"]["bridge_unverified_identity_consumer_ids"] == []
+
+
+def test_build_metric_signal_index_requires_verified_repo_identity_for_bridge_backed_sib_proxy(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    specs_dir = repo_fixture / "specs" / "nodes"
+    specs_dir.joinpath("SG-SPEC-0002.yaml").write_text(
+        json.dumps(
+            {
+                "id": "SG-SPEC-0002",
+                "title": "Second Spec",
+                "kind": "spec",
+                "created_at": "2026-04-19T00:00:00Z",
+                "updated_at": "2026-04-19T00:00:00Z",
+                "status": "outlined",
+                "maturity": 0.2,
+                "depends_on": [],
+                "outputs": ["specs/nodes/SG-SPEC-0002.yaml"],
+                "allowed_paths": ["specs/nodes/SG-SPEC-0002.yaml"],
+                "acceptance": ["criterion"],
+                "prompt": "Second spec.",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_spec_trace_index",
+        lambda specs: {
+            "generated_at": "2026-04-19T00:00:00Z",
+            "entries": [
+                {"spec_id": "SG-SPEC-0001", "acceptance_coverage": {"status": "covered"}},
+                {"spec_id": "SG-SPEC-0002", "acceptance_coverage": {"status": "covered"}},
+            ],
+        },
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_spec_trace_projection",
+        lambda index: {"generated_at": "2026-04-19T00:00:01Z", "viewer_projection": {}},
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_evidence_plane_index",
+        lambda specs: {
+            "generated_at": "2026-04-19T00:00:02Z",
+            "entries": [{"spec_id": "SG-SPEC-0001", "chain_status": "chain_complete"}],
+        },
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_evidence_plane_overlay",
+        lambda index: {"generated_at": "2026-04-19T00:00:03Z", "viewer_projection": {}},
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_graph_health_overlay",
+        lambda specs: {
+            "generated_at": "2026-04-19T00:00:04Z",
+            "entries": [{"spec_id": "SG-SPEC-0001", "signals": []}],
+            "viewer_projection": {"named_filters": {}},
+        },
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_graph_health_trends",
+        lambda specs, overlay=None: {
+            "generated_at": "2026-04-19T00:00:05Z",
+            "entries": [],
+            "viewer_projection": {"named_filters": {}},
+        },
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_proposal_runtime_index",
+        lambda: {
+            "generated_at": "2026-04-19T00:00:06Z",
+            "entries": [
+                {
+                    "proposal_id": "0024",
+                    "posture": "synchronous_runtime_slice",
+                    "observation_coverage": {"status": "covered"},
+                }
+            ],
+        },
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_external_consumer_index",
+        lambda: {
+            "generated_at": "2026-04-20T00:00:00Z",
+            "entries": [
+                {
+                    "consumer_id": "metrics_sib",
+                    "reference_state": "stable_reference",
+                    "contract_status": "ready",
+                    "local_checkout": {"status": "available", "remote_matches": False},
+                    "metric_bindings": [
+                        {
+                            "metric_id": "sib_proxy",
+                            "binding_role": "stable_bridge_reference",
+                        }
+                    ],
+                }
+            ],
+        },
+    )
+
+    index = supervisor_module.build_metric_signal_index(supervisor_module.load_specs())
+
+    by_id = {entry["metric_id"]: entry for entry in index["metrics"]}
+    sib = by_id["sib_proxy"]
+    assert sib["derivation_mode"] == "bootstrap_fallback"
+    assert sib["input_summary"]["component_scores"]["external_consumer_alignment"] is None
+    assert sib["input_summary"]["bridge_ready_consumer_ids"] == []
+    assert sib["input_summary"]["bridge_unverified_identity_consumer_ids"] == ["metrics_sib"]
 
 
 def test_main_builds_metric_signal_index_as_standalone_command(

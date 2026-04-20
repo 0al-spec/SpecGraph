@@ -12208,6 +12208,7 @@ def build_metric_signal_index(specs: list[SpecNode]) -> dict[str, Any]:
         entry
         for entry in stable_bridge_entries
         if str(entry.get("local_checkout", {}).get("status", "")).strip() == "available"
+        and entry.get("local_checkout", {}).get("remote_matches") is True
         and str(entry.get("contract_status", "")).strip() in {"ready", "partial"}
     ]
     bridge_alignment_scores: list[float] = []
@@ -12264,6 +12265,14 @@ def build_metric_signal_index(specs: list[SpecNode]) -> dict[str, Any]:
             "bridge_ready_consumer_ids": [
                 str(entry.get("consumer_id", "")).strip() for entry in bridge_ready_entries
             ],
+            "bridge_unverified_identity_consumer_ids": sorted(
+                {
+                    str(entry.get("consumer_id", "")).strip()
+                    for entry in stable_bridge_entries
+                    if str(entry.get("local_checkout", {}).get("status", "")).strip() == "available"
+                    and entry.get("local_checkout", {}).get("remote_matches") is not True
+                }
+            ),
             "bridge_missing_checkout_ids": sorted(
                 {
                     str(entry.get("consumer_id", "")).strip()
