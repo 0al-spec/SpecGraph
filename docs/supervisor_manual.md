@@ -12,6 +12,8 @@ Use it when you need to:
 
 For constitutional limits, see [CONSTITUTION.md](../CONSTITUTION.md).
 For repository editing rules, see [AGENTS.md](../AGENTS.md).
+For a compact artifact map aimed at dashboards and graph visualizers, see
+[metrics_visualization_guide.md](./metrics_visualization_guide.md).
 
 ## 1. Supervisor Role
 
