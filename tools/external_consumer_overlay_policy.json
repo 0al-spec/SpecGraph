@@ -1,0 +1,50 @@
+{
+  "artifact_kind": "external_consumer_overlay_policy",
+  "version": 1,
+  "repository_layout": {
+    "overlay_artifact": "runs/external_consumer_overlay.json"
+  },
+  "overlay_contract": {
+    "artifact_kind": "external_consumer_overlay",
+    "schema_version": 1,
+    "layer_name": "external_consumer_bridge",
+    "named_filters": [
+      "stable_ready",
+      "contract_gap",
+      "identity_unverified",
+      "missing_checkout",
+      "draft_visible",
+      "metric_pressure",
+      "threshold_driver_ready"
+    ]
+  },
+  "bridge_statuses": [
+    "stable_ready",
+    "stable_partial",
+    "stable_identity_unverified",
+    "stable_checkout_missing",
+    "draft_visible",
+    "draft_checkout_missing"
+  ],
+  "next_gap_defaults": {
+    "stable_checkout_missing": "attach_local_checkout",
+    "stable_identity_unverified": "verify_repo_identity",
+    "stable_partial": "align_declared_artifacts",
+    "stable_partial_priority": [
+      {
+        "artifact_status": "marker_mismatch",
+        "next_gap": "repair_artifact_markers"
+      },
+      {
+        "artifact_status": "missing",
+        "next_gap": "restore_required_artifacts"
+      },
+      {
+        "artifact_status": "unavailable",
+        "next_gap": "align_declared_artifacts"
+      }
+    ],
+    "draft_visible": "review_draft_reference",
+    "draft_checkout_missing": "inspect_draft_reference"
+  }
+}

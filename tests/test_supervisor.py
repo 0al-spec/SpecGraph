@@ -7913,6 +7913,132 @@ def test_main_builds_external_consumer_index_as_standalone_command(
     assert artifact["entry_count"] == 1
 
 
+def test_build_external_consumer_overlay_reports_bridge_states_and_backlog(
+    supervisor_module: object,
+) -> None:
+    index = {
+        "generated_at": "2026-04-20T00:00:00Z",
+        "entries": [
+            {
+                "consumer_id": "metrics_sib",
+                "title": "Metrics / SIB",
+                "reference_state": "stable_reference",
+                "contract_status": "partial",
+                "local_checkout": {"status": "available", "remote_matches": True},
+                "artifact_status_counts": {"marker_mismatch": 1},
+                "metric_bindings": [
+                    {"metric_id": "sib_proxy", "binding_role": "stable_bridge_reference"}
+                ],
+                "notes": "stable",
+            },
+            {
+                "consumer_id": "metrics_sib_full",
+                "title": "Metrics / SIB Full",
+                "reference_state": "draft_reference",
+                "contract_status": "ready",
+                "local_checkout": {"status": "available", "remote_matches": True},
+                "artifact_status_counts": {"verified": 2},
+                "metric_bindings": [
+                    {"metric_id": "sib_proxy", "binding_role": "draft_extended_reference"}
+                ],
+                "notes": "draft",
+            },
+            {
+                "consumer_id": "metrics_shadow",
+                "title": "Metrics / Shadow",
+                "reference_state": "stable_reference",
+                "contract_status": "ready",
+                "local_checkout": {"status": "available", "remote_matches": False},
+                "artifact_status_counts": {"verified": 2},
+                "metric_bindings": [],
+                "notes": "wrong checkout",
+            },
+        ],
+    }
+    metric_signal_index = {
+        "generated_at": "2026-04-20T00:00:01Z",
+        "metrics": [
+            {
+                "metric_id": "sib_proxy",
+                "status": "below_threshold",
+                "score": 0.41,
+                "minimum_score": 0.55,
+                "threshold_gap": 0.14,
+            }
+        ],
+    }
+
+    overlay = supervisor_module.build_external_consumer_overlay(index, metric_signal_index)
+
+    assert overlay["artifact_kind"] == supervisor_module.EXTERNAL_CONSUMER_OVERLAY_ARTIFACT_KIND
+    assert overlay["viewer_projection"]["bridge_state"]["stable_partial"] == ["metrics_sib"]
+    assert overlay["viewer_projection"]["bridge_state"]["draft_visible"] == ["metrics_sib_full"]
+    assert overlay["viewer_projection"]["bridge_state"]["stable_identity_unverified"] == [
+        "metrics_shadow"
+    ]
+    assert overlay["viewer_projection"]["named_filters"]["metric_pressure"] == [
+        "metrics_sib",
+        "metrics_sib_full",
+    ]
+    assert overlay["viewer_projection"]["named_filters"]["identity_unverified"] == [
+        "metrics_shadow"
+    ]
+    assert overlay["external_consumer_backlog"]["grouped_by_next_gap"] == {
+        "repair_artifact_markers": ["metrics_sib"],
+        "review_draft_reference": ["metrics_sib_full"],
+        "verify_repo_identity": ["metrics_shadow"],
+    }
+
+
+def test_main_builds_external_consumer_overlay_as_standalone_command(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    consumer_index = {
+        "artifact_kind": supervisor_module.EXTERNAL_CONSUMER_INDEX_ARTIFACT_KIND,
+        "generated_at": "2026-04-20T00:00:00Z",
+        "entries": [],
+    }
+    metric_signal_index = {
+        "artifact_kind": supervisor_module.METRIC_SIGNAL_INDEX_ARTIFACT_KIND,
+        "generated_at": "2026-04-20T00:00:01Z",
+        "metrics": [],
+    }
+
+    monkeypatch.setattr(supervisor_module, "build_external_consumer_index", lambda: consumer_index)
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_metric_signal_index",
+        lambda specs: metric_signal_index,
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_external_consumer_overlay",
+        lambda index, signal_index: {
+            "artifact_kind": supervisor_module.EXTERNAL_CONSUMER_OVERLAY_ARTIFACT_KIND,
+            "schema_version": supervisor_module.EXTERNAL_CONSUMER_OVERLAY_SCHEMA_VERSION,
+            "generated_at": "2026-04-20T00:00:02Z",
+            "entry_count": 0,
+            "viewer_projection": {"bridge_state": {}, "named_filters": {}},
+            "external_consumer_backlog": {"entry_count": 0, "grouped_by_next_gap": {}},
+            "source_index_generated_at": index["generated_at"],
+            "source_metric_signal_generated_at": signal_index["generated_at"],
+        },
+    )
+
+    exit_code = supervisor_module.main(build_external_consumer_overlay_mode=True)
+
+    assert exit_code == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["artifact_kind"] == supervisor_module.EXTERNAL_CONSUMER_OVERLAY_ARTIFACT_KIND
+    artifact = json.loads(
+        (repo_fixture / "runs" / "external_consumer_overlay.json").read_text(encoding="utf-8")
+    )
+    assert artifact["artifact_kind"] == supervisor_module.EXTERNAL_CONSUMER_OVERLAY_ARTIFACT_KIND
+
+
 def test_build_metric_signal_index_reports_threshold_breaches(
     supervisor_module: object,
     repo_fixture: Path,
@@ -8732,6 +8858,39 @@ def test_build_graph_dashboard_aggregates_runtime_surfaces(
     )
     monkeypatch.setattr(
         supervisor_module,
+        "build_external_consumer_index",
+        lambda: {
+            "generated_at": "2026-04-19T00:00:10Z",
+            "available_entry_count": 2,
+            "entry_count": 2,
+        },
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_external_consumer_overlay",
+        lambda index, metric_signal_index: {
+            "generated_at": "2026-04-19T00:00:10Z",
+            "entry_count": 2,
+            "viewer_projection": {
+                "bridge_state": {
+                    "stable_ready": ["metrics_sib"],
+                    "draft_visible": ["metrics_sib_full"],
+                },
+                "bound_metric_status": {
+                    "below_threshold": ["metrics_sib"],
+                    "healthy": ["metrics_sib_full"],
+                },
+                "named_filters": {
+                    "stable_ready": ["metrics_sib"],
+                    "metric_pressure": ["metrics_sib"],
+                    "draft_visible": ["metrics_sib_full"],
+                },
+            },
+            "external_consumer_backlog": {"entry_count": 1},
+        },
+    )
+    monkeypatch.setattr(
+        supervisor_module,
         "build_metric_threshold_proposals",
         lambda index: {
             "generated_at": "2026-04-19T00:00:11Z",
@@ -8759,10 +8918,15 @@ def test_build_graph_dashboard_aggregates_runtime_surfaces(
         "chain_complete": 1,
         "observation_backed": 1,
     }
+    assert report["sections"]["external_consumers"]["bridge_state_counts"] == {
+        "draft_visible": 1,
+        "stable_ready": 1,
+    }
     assert report["sections"]["metrics"]["below_threshold_metric_ids"] == ["process_observability"]
     by_card_id = {entry["card_id"]: entry for entry in report["headline_cards"]}
     assert by_card_id["metrics_below_threshold"]["value"] == 1
     assert by_card_id["structural_pressure_specs"]["value"] == 1
+    assert by_card_id["stable_bridges_ready"]["value"] == 1
 
 
 def test_main_builds_graph_dashboard_as_standalone_command(

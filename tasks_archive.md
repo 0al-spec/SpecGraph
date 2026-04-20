@@ -118,3 +118,8 @@ Task numbers are preserved for traceability across commits, PRs, and review thre
 
 62. [done] Define telemetry evidence artifacts that link canonical nodes to runtime entities, observations, outcomes, and adoption without leaking raw telemetry into canonical specs.
 63. [done] Add viewer and inspection overlays for the evidence plane so operators can inspect runtime-backed evidence chains separately from canonical graph truth.
+
+## External Consumer Bridge
+
+85. [done] Add a viewer-facing external consumer bridge overlay so sibling repositories such as Metrics expose stable-vs-draft readiness, identity state, and bound metric pressure separately from canonical graph truth.
+86. [done] Derive explicit backlog pressure from external consumer bridge state so missing checkout, repo-identity mismatch, partial declared contracts, and draft-reference follow-up surface as named next gaps instead of remaining implicit inside `sib_proxy`.

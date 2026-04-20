@@ -93,6 +93,8 @@ particular task.
   `--build-evidence-plane-overlay`
 - build a bridge index for declared external consumers such as `Metrics/SIB`:
   `--build-external-consumer-index`
+- build a viewer/backlog overlay for sibling-consumer bridges:
+  `--build-external-consumer-overlay`
 - build metric-driven derived signals from trace, evidence, graph health, and proposal runtime:
   `--build-metric-signal-index`
 - turn metric-threshold breaches into reviewable proposal artifacts:
@@ -527,6 +529,32 @@ canonical truth and does not require Git submodules.
 Use it when you want metric-driven pressure to be machine-readable without
 turning those metrics into canonical facts or policy by default.
 
+### External consumer overlay
+
+```bash
+python3 tools/supervisor.py --build-external-consumer-overlay
+```
+
+Builds `runs/external_consumer_overlay.json` from a fresh bridge index and a
+fresh metric signal index.
+
+This viewer-facing layer answers:
+
+- which stable bridges are ready
+- which stable bridges are blocked by missing checkout or wrong repo identity
+- which contracts are partial because declared artifacts drifted
+- which draft references are visible but still non-authoritative
+- what the next bounded remediation gap is for each sibling consumer
+
+The overlay adds:
+
+- `bridge_state`
+- `bound_metric_status`
+- named filters such as `stable_ready`, `identity_unverified`, and `metric_pressure`
+- `external_consumer_backlog` grouped by `next_gap`
+
+This is the preferred visualizer surface for sibling-consumer bridge state.
+
 ### Metric-threshold proposals
 
 ```bash
@@ -846,10 +874,13 @@ path.
   - derived bridge surface for declared external consumers, including
     stable-vs-draft references, checkout availability, contract readiness, and
     metric bindings
+- `runs/external_consumer_overlay.json`
+  - viewer/backlog surface for sibling-consumer bridges, including bridge
+    state, metric pressure, and explicit next-gap remediation pressure
 - `runs/graph_dashboard.json`
   - aggregated dashboard surface with headline cards and numeric section
-    summaries for graph, health, proposals, implementation, evidence, and
-    metrics
+    summaries for graph, health, proposals, implementation, evidence, external
+    consumers, and metrics
 - `tools/proposal_lane_policy.json`
   - declarative proposal-lane contract for repository presence, authority-state
     mapping, and overlay/query semantics

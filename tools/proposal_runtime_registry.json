@@ -191,5 +191,44 @@
         "pattern": "\"derivation_mode\": sib_derivation_mode"
       }
     ]
+  },
+  {
+    "proposal_id": "0025",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "tools/supervisor.py",
+      "tests/test_supervisor.py",
+      "tools/external_consumer_overlay_policy.json"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def build_external_consumer_overlay("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "EXTERNAL_CONSUMER_OVERLAY_FILENAME"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_external_consumer_overlay_reports_bridge_states_and_backlog("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_main_builds_external_consumer_overlay_as_standalone_command("
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "EXTERNAL_CONSUMER_OVERLAY_FILENAME = "
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "\"external_consumer_backlog\": {"
+      }
+    ]
   }
 ]

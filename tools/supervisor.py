@@ -37,6 +37,7 @@ Derived artifacts:
 - proposal-lane overlay: `runs/proposal_lane_overlay.json`
 - graph health overlay: `runs/graph_health_overlay.json`
 - external consumer index: `runs/external_consumer_index.json`
+- external consumer overlay: `runs/external_consumer_overlay.json`
 - spec trace index: `runs/spec_trace_index.json`
 - spec trace projection: `runs/spec_trace_projection.json`
 - proposal runtime index: `runs/proposal_runtime_index.json`
@@ -95,6 +96,7 @@ EVALUATOR_INTERVENTION_POLICY_RELATIVE_PATH = "tools/evaluator_intervention_poli
 EVIDENCE_PLANE_POLICY_RELATIVE_PATH = "tools/evidence_plane_policy.json"
 METRIC_SIGNAL_POLICY_RELATIVE_PATH = "tools/metric_signal_policy.json"
 EXTERNAL_CONSUMER_REGISTRY_RELATIVE_PATH = "tools/external_consumers.json"
+EXTERNAL_CONSUMER_OVERLAY_POLICY_RELATIVE_PATH = "tools/external_consumer_overlay_policy.json"
 
 
 def supervisor_policy_path() -> Path:
@@ -151,6 +153,10 @@ def evidence_plane_policy_path() -> Path:
 
 def metric_signal_policy_path() -> Path:
     return TOOLS_DIR / "metric_signal_policy.json"
+
+
+def external_consumer_overlay_policy_path() -> Path:
+    return TOOLS_DIR / "external_consumer_overlay_policy.json"
 
 
 def load_supervisor_policy() -> tuple[dict[str, Any], str]:
@@ -612,6 +618,45 @@ def load_metric_signal_policy() -> tuple[dict[str, Any], str]:
 METRIC_SIGNAL_POLICY, METRIC_SIGNAL_POLICY_SHA256 = load_metric_signal_policy()
 
 
+def load_external_consumer_overlay_policy() -> tuple[dict[str, Any], str]:
+    path = external_consumer_overlay_policy_path()
+    try:
+        raw_text = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise RuntimeError(
+            f"failed to read external consumer overlay policy artifact: {path.as_posix()} ({exc})"
+        ) from exc
+    try:
+        payload = json.loads(raw_text)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(
+            f"malformed external consumer overlay policy artifact: {path.as_posix()} ({exc})"
+        ) from exc
+    if not isinstance(payload, dict):
+        raise RuntimeError(
+            "malformed external consumer overlay policy artifact: "
+            f"{path.as_posix()} must contain a JSON object"
+        )
+    required_sections = (
+        "repository_layout",
+        "overlay_contract",
+        "bridge_statuses",
+        "next_gap_defaults",
+    )
+    missing = [section for section in required_sections if section not in payload]
+    if missing:
+        raise RuntimeError(
+            "malformed external consumer overlay policy artifact: missing top-level section(s): "
+            + ", ".join(missing)
+        )
+    return payload, hashlib.sha256(raw_text.encode("utf-8")).hexdigest()
+
+
+EXTERNAL_CONSUMER_OVERLAY_POLICY, EXTERNAL_CONSUMER_OVERLAY_POLICY_SHA256 = (
+    load_external_consumer_overlay_policy()
+)
+
+
 def policy_lookup(policy_path: str) -> Any:
     current: Any = SUPERVISOR_POLICY
     for part in policy_path.split("."):
@@ -650,6 +695,15 @@ def intent_layer_policy_lookup(policy_path: str) -> Any:
 
 def operator_request_bridge_policy_lookup(policy_path: str) -> Any:
     current: Any = OPERATOR_REQUEST_BRIDGE_POLICY
+    for part in policy_path.split("."):
+        if not isinstance(current, dict) or part not in current:
+            raise KeyError(policy_path)
+        current = current[part]
+    return copy.deepcopy(current)
+
+
+def external_consumer_overlay_policy_lookup(policy_path: str) -> Any:
+    current: Any = EXTERNAL_CONSUMER_OVERLAY_POLICY
     for part in policy_path.split("."):
         if not isinstance(current, dict) or part not in current:
             raise KeyError(policy_path)
@@ -834,6 +888,14 @@ def metric_signal_policy_reference() -> dict[str, Any]:
     }
 
 
+def external_consumer_overlay_policy_reference() -> dict[str, Any]:
+    return {
+        "artifact_path": EXTERNAL_CONSUMER_OVERLAY_POLICY_RELATIVE_PATH,
+        "artifact_sha256": EXTERNAL_CONSUMER_OVERLAY_POLICY_SHA256,
+        "version": EXTERNAL_CONSUMER_OVERLAY_POLICY.get("version"),
+    }
+
+
 READY_DEP_STATUSES = {"reviewed", "frozen"}
 WORKABLE_STATUSES = {"outlined", "specified"}
 CONTINUATION_STATUSES = {"linked"}
@@ -981,6 +1043,22 @@ EVIDENCE_PLANE_NAMED_FILTERS = list(evidence_plane_policy_lookup("overlay_contra
 EXTERNAL_CONSUMER_INDEX_FILENAME = "external_consumer_index.json"
 EXTERNAL_CONSUMER_INDEX_ARTIFACT_KIND = "external_consumer_index"
 EXTERNAL_CONSUMER_INDEX_SCHEMA_VERSION = 1
+EXTERNAL_CONSUMER_OVERLAY_FILENAME = Path(
+    str(external_consumer_overlay_policy_lookup("repository_layout.overlay_artifact"))
+).name
+EXTERNAL_CONSUMER_OVERLAY_ARTIFACT_KIND = str(
+    external_consumer_overlay_policy_lookup("overlay_contract.artifact_kind")
+)
+EXTERNAL_CONSUMER_OVERLAY_SCHEMA_VERSION = int(
+    external_consumer_overlay_policy_lookup("overlay_contract.schema_version")
+)
+EXTERNAL_CONSUMER_LAYER_NAME = str(
+    external_consumer_overlay_policy_lookup("overlay_contract.layer_name")
+)
+EXTERNAL_CONSUMER_BRIDGE_STATUSES = list(external_consumer_overlay_policy_lookup("bridge_statuses"))
+EXTERNAL_CONSUMER_NAMED_FILTERS = list(
+    external_consumer_overlay_policy_lookup("overlay_contract.named_filters")
+)
 METRIC_SIGNAL_INDEX_FILENAME = Path(
     str(metric_signal_policy_lookup("repository_layout.signal_artifact"))
 ).name
@@ -10399,6 +10477,10 @@ def external_consumer_index_path() -> Path:
     return RUNS_DIR / EXTERNAL_CONSUMER_INDEX_FILENAME
 
 
+def external_consumer_overlay_path() -> Path:
+    return RUNS_DIR / EXTERNAL_CONSUMER_OVERLAY_FILENAME
+
+
 def evidence_plane_index_path() -> Path:
     return RUNS_DIR / EVIDENCE_PLANE_INDEX_FILENAME
 
@@ -11888,6 +11970,225 @@ def write_external_consumer_index(index: dict[str, Any]) -> Path:
     return path
 
 
+def derive_external_consumer_bridge_state(entry: dict[str, Any]) -> str:
+    reference_state = str(entry.get("reference_state", "")).strip() or "draft_reference"
+    checkout_status = str(entry.get("local_checkout", {}).get("status", "")).strip() or "missing"
+    remote_matches = entry.get("local_checkout", {}).get("remote_matches")
+    contract_status = str(entry.get("contract_status", "")).strip() or "unavailable"
+    if reference_state == "stable_reference":
+        if checkout_status != "available":
+            return "stable_checkout_missing"
+        if remote_matches is not True:
+            return "stable_identity_unverified"
+        if contract_status == "ready":
+            return "stable_ready"
+        return "stable_partial"
+    if checkout_status == "available":
+        return "draft_visible"
+    return "draft_checkout_missing"
+
+
+def derive_external_consumer_next_gap(entry: dict[str, Any], bridge_state: str) -> str:
+    artifact_status_counts = entry.get("artifact_status_counts", {})
+    if not isinstance(artifact_status_counts, dict):
+        artifact_status_counts = {}
+    if bridge_state == "stable_checkout_missing":
+        return str(
+            external_consumer_overlay_policy_lookup("next_gap_defaults.stable_checkout_missing")
+        )
+    if bridge_state == "stable_identity_unverified":
+        return str(
+            external_consumer_overlay_policy_lookup("next_gap_defaults.stable_identity_unverified")
+        )
+    if bridge_state == "stable_partial":
+        partial_priority = external_consumer_overlay_policy_lookup(
+            "next_gap_defaults.stable_partial_priority"
+        )
+        if isinstance(partial_priority, list):
+            for item in partial_priority:
+                if not isinstance(item, dict):
+                    continue
+                artifact_status = str(item.get("artifact_status", "")).strip()
+                next_gap = str(item.get("next_gap", "")).strip()
+                status_count = int(artifact_status_counts.get(artifact_status, 0) or 0)
+                if artifact_status and next_gap and status_count > 0:
+                    return next_gap
+        return str(external_consumer_overlay_policy_lookup("next_gap_defaults.stable_partial"))
+    if bridge_state == "draft_visible":
+        return str(external_consumer_overlay_policy_lookup("next_gap_defaults.draft_visible"))
+    if bridge_state == "draft_checkout_missing":
+        return str(
+            external_consumer_overlay_policy_lookup("next_gap_defaults.draft_checkout_missing")
+        )
+    return "none"
+
+
+def build_external_consumer_overlay(
+    index: dict[str, Any],
+    metric_signal_index: dict[str, Any],
+) -> dict[str, Any]:
+    entries = list(index.get("entries", []))
+    metrics_by_id = {
+        str(entry.get("metric_id", "")).strip(): entry
+        for entry in metric_signal_index.get("metrics", [])
+        if isinstance(entry, dict) and str(entry.get("metric_id", "")).strip()
+    }
+    bridge_state_groups: dict[str, list[str]] = {}
+    reference_state_groups: dict[str, list[str]] = {}
+    contract_status_groups: dict[str, list[str]] = {}
+    metric_pressure_groups: dict[str, list[str]] = {}
+    named_filters = {name: [] for name in EXTERNAL_CONSUMER_NAMED_FILTERS}
+    backlog_items: list[dict[str, Any]] = []
+    overlay_entries: list[dict[str, Any]] = []
+
+    for raw_entry in entries:
+        if not isinstance(raw_entry, dict):
+            continue
+        consumer_id = str(raw_entry.get("consumer_id", "")).strip()
+        if not consumer_id:
+            continue
+        reference_state = str(raw_entry.get("reference_state", "")).strip() or "draft_reference"
+        contract_status = str(raw_entry.get("contract_status", "")).strip() or "unavailable"
+        bridge_state = derive_external_consumer_bridge_state(raw_entry)
+        metric_bindings = [
+            binding
+            for binding in raw_entry.get("metric_bindings", [])
+            if isinstance(binding, dict) and str(binding.get("metric_id", "")).strip()
+        ]
+        bound_metrics: list[dict[str, Any]] = []
+        bound_metric_status = "unbound"
+        for binding in metric_bindings:
+            metric_id = str(binding.get("metric_id", "")).strip()
+            metric_entry = metrics_by_id.get(metric_id, {})
+            metric_status = str(metric_entry.get("status", "unknown")).strip() or "unknown"
+            bound_metrics.append(
+                {
+                    "metric_id": metric_id,
+                    "binding_role": str(binding.get("binding_role", "")).strip(),
+                    "status": metric_status,
+                    "score": metric_entry.get("score"),
+                    "minimum_score": metric_entry.get("minimum_score"),
+                    "threshold_gap": metric_entry.get("threshold_gap"),
+                }
+            )
+        if bound_metrics:
+            statuses = {str(item.get("status", "")).strip() for item in bound_metrics}
+            if "below_threshold" in statuses:
+                bound_metric_status = "below_threshold"
+            elif "healthy" in statuses:
+                bound_metric_status = "healthy"
+            else:
+                bound_metric_status = "tracked_unknown"
+        next_gap = derive_external_consumer_next_gap(raw_entry, bridge_state)
+
+        bridge_state_groups.setdefault(bridge_state, []).append(consumer_id)
+        reference_state_groups.setdefault(reference_state, []).append(consumer_id)
+        contract_status_groups.setdefault(contract_status, []).append(consumer_id)
+        metric_pressure_groups.setdefault(bound_metric_status, []).append(consumer_id)
+
+        if bridge_state == "stable_ready":
+            named_filters["stable_ready"].append(consumer_id)
+        if bridge_state == "stable_partial":
+            named_filters["contract_gap"].append(consumer_id)
+        if bridge_state == "stable_identity_unverified":
+            named_filters["identity_unverified"].append(consumer_id)
+        if bridge_state in {"stable_checkout_missing", "draft_checkout_missing"}:
+            named_filters["missing_checkout"].append(consumer_id)
+        if bridge_state == "draft_visible":
+            named_filters["draft_visible"].append(consumer_id)
+        if bound_metric_status == "below_threshold":
+            named_filters["metric_pressure"].append(consumer_id)
+        if bridge_state == "stable_ready" and metric_bindings:
+            named_filters["threshold_driver_ready"].append(consumer_id)
+
+        overlay_entry = {
+            "consumer_id": consumer_id,
+            "title": str(raw_entry.get("title", "")).strip(),
+            "reference_state": reference_state,
+            "bridge_state": bridge_state,
+            "contract_status": contract_status,
+            "bound_metric_status": bound_metric_status,
+            "next_gap": next_gap,
+            "policy_reference": external_consumer_overlay_policy_reference(),
+            "local_checkout": copy.deepcopy(raw_entry.get("local_checkout", {})),
+            "artifact_status_counts": copy.deepcopy(raw_entry.get("artifact_status_counts", {})),
+            "metric_bindings": bound_metrics,
+            "notes": str(raw_entry.get("notes", "")).strip(),
+        }
+        overlay_entries.append(overlay_entry)
+
+        if next_gap != "none":
+            backlog_items.append(
+                {
+                    "consumer_id": consumer_id,
+                    "title": str(raw_entry.get("title", "")).strip(),
+                    "bridge_state": bridge_state,
+                    "contract_status": contract_status,
+                    "bound_metric_status": bound_metric_status,
+                    "next_gap": next_gap,
+                }
+            )
+
+    grouped_backlog: dict[str, list[str]] = {}
+    for item in backlog_items:
+        grouped_backlog.setdefault(str(item["next_gap"]), []).append(str(item["consumer_id"]))
+
+    for bucket in (
+        bridge_state_groups,
+        reference_state_groups,
+        contract_status_groups,
+        metric_pressure_groups,
+        named_filters,
+        grouped_backlog,
+    ):
+        for key in list(bucket):
+            bucket[key] = sorted(set(bucket[key]))
+
+    return {
+        "artifact_kind": EXTERNAL_CONSUMER_OVERLAY_ARTIFACT_KIND,
+        "schema_version": EXTERNAL_CONSUMER_OVERLAY_SCHEMA_VERSION,
+        "generated_at": utc_now_iso(),
+        "layer_name": EXTERNAL_CONSUMER_LAYER_NAME,
+        "policy_reference": external_consumer_overlay_policy_reference(),
+        "source_index_path": external_consumer_index_path().relative_to(ROOT).as_posix(),
+        "source_index_generated_at": index.get("generated_at"),
+        "source_metric_signal_path": metric_signal_index_path().relative_to(ROOT).as_posix(),
+        "source_metric_signal_generated_at": metric_signal_index.get("generated_at"),
+        "entry_count": len(overlay_entries),
+        "entries": overlay_entries,
+        "viewer_projection": {
+            "bridge_state": {
+                key: sorted(value) for key, value in sorted(bridge_state_groups.items())
+            },
+            "reference_state": {
+                key: sorted(value) for key, value in sorted(reference_state_groups.items())
+            },
+            "contract_status": {
+                key: sorted(value) for key, value in sorted(contract_status_groups.items())
+            },
+            "bound_metric_status": {
+                key: sorted(value) for key, value in sorted(metric_pressure_groups.items())
+            },
+            "named_filters": {key: sorted(value) for key, value in sorted(named_filters.items())},
+        },
+        "external_consumer_backlog": {
+            "entry_count": len(backlog_items),
+            "items": backlog_items,
+            "grouped_by_next_gap": {
+                key: sorted(value) for key, value in sorted(grouped_backlog.items())
+            },
+        },
+    }
+
+
+def write_external_consumer_overlay(overlay: dict[str, Any]) -> Path:
+    RUNS_DIR.mkdir(parents=True, exist_ok=True)
+    path = external_consumer_overlay_path()
+    with artifact_lock(path):
+        atomic_write_json(path, overlay)
+    return path
+
+
 def metric_status_score(mapping: dict[str, Any], status: str) -> float | None:
     raw_value = mapping.get(status)
     if raw_value is None:
@@ -13329,7 +13630,12 @@ def build_graph_dashboard(specs: list[SpecNode]) -> dict[str, Any]:
     spec_trace_projection = build_spec_trace_projection(spec_trace_index)
     evidence_index = build_evidence_plane_index(specs)
     evidence_overlay = build_evidence_plane_overlay(evidence_index)
+    external_consumer_index = build_external_consumer_index()
     metric_signal_index = build_metric_signal_index(specs)
+    external_consumer_overlay = build_external_consumer_overlay(
+        external_consumer_index,
+        metric_signal_index,
+    )
     metric_threshold_proposals = build_metric_threshold_proposals(metric_signal_index)
 
     total_spec_count = len(specs)
@@ -13415,6 +13721,15 @@ def build_graph_dashboard(specs: list[SpecNode]) -> dict[str, Any]:
     )
     evidence_named_filter_counts = grouped_identifier_counts(
         evidence_overlay.get("viewer_projection", {}).get("named_filters", {})
+    )
+    external_consumer_bridge_state_counts = grouped_identifier_counts(
+        external_consumer_overlay.get("viewer_projection", {}).get("bridge_state", {})
+    )
+    external_consumer_metric_pressure_counts = grouped_identifier_counts(
+        external_consumer_overlay.get("viewer_projection", {}).get("bound_metric_status", {})
+    )
+    external_consumer_named_filter_counts = grouped_identifier_counts(
+        external_consumer_overlay.get("viewer_projection", {}).get("named_filters", {})
     )
 
     metric_entries = [
@@ -13507,6 +13822,21 @@ def build_graph_dashboard(specs: list[SpecNode]) -> dict[str, Any]:
             ),
         ),
         dashboard_card(
+            card_id="stable_bridges_ready",
+            title="Stable Bridges Ready",
+            value=external_consumer_named_filter_counts.get("stable_ready", 0),
+            section="external_consumers",
+            status=(
+                "healthy"
+                if external_consumer_named_filter_counts.get("stable_ready", 0) > 0
+                else "attention"
+            ),
+            basis=(
+                "Stable sibling-consumer bridges with verified repo identity and ready "
+                "declared contract surfaces."
+            ),
+        ),
+        dashboard_card(
             card_id="metrics_below_threshold",
             title="Metrics Below Threshold",
             value=len(below_threshold_metric_ids),
@@ -13552,6 +13882,14 @@ def build_graph_dashboard(specs: list[SpecNode]) -> dict[str, Any]:
             "evidence_plane_overlay": {
                 "artifact_path": evidence_plane_overlay_path().relative_to(ROOT).as_posix(),
                 "generated_at": evidence_overlay.get("generated_at"),
+            },
+            "external_consumer_index": {
+                "artifact_path": external_consumer_index_path().relative_to(ROOT).as_posix(),
+                "generated_at": external_consumer_index.get("generated_at"),
+            },
+            "external_consumer_overlay": {
+                "artifact_path": external_consumer_overlay_path().relative_to(ROOT).as_posix(),
+                "generated_at": external_consumer_overlay.get("generated_at"),
             },
             "metric_signal_index": {
                 "artifact_path": metric_signal_index_path().relative_to(ROOT).as_posix(),
@@ -13619,6 +13957,21 @@ def build_graph_dashboard(specs: list[SpecNode]) -> dict[str, Any]:
                     evidence_overlay.get("evidence_backlog", {}).get("entry_count", 0) or 0
                 ),
             },
+            "external_consumers": {
+                "entry_count": int(external_consumer_overlay.get("entry_count", 0) or 0),
+                "available_count": int(
+                    external_consumer_index.get("available_entry_count", 0) or 0
+                ),
+                "bridge_state_counts": external_consumer_bridge_state_counts,
+                "metric_pressure_counts": external_consumer_metric_pressure_counts,
+                "named_filter_counts": external_consumer_named_filter_counts,
+                "external_consumer_backlog_count": int(
+                    external_consumer_overlay.get("external_consumer_backlog", {}).get(
+                        "entry_count", 0
+                    )
+                    or 0
+                ),
+            },
             "metrics": {
                 "metric_count": len(metric_entries),
                 "metric_status_counts": metric_status_counts,
@@ -13639,6 +13992,7 @@ def build_graph_dashboard(specs: list[SpecNode]) -> dict[str, Any]:
                 "proposals",
                 "implementation",
                 "evidence",
+                "external_consumers",
                 "metrics",
             ],
             "named_filters": {
@@ -13653,6 +14007,9 @@ def build_graph_dashboard(specs: list[SpecNode]) -> dict[str, Any]:
                 "drifted_specs": trace_impl_counts.get("drifted", 0),
                 "complete_evidence_chain_specs": evidence_named_filter_counts.get(
                     "complete_chain", 0
+                ),
+                "external_consumer_metric_pressure": external_consumer_named_filter_counts.get(
+                    "metric_pressure", 0
                 ),
                 "metrics_below_threshold": len(below_threshold_metric_ids),
             },
@@ -17001,6 +17358,7 @@ def main(
     build_evidence_plane_index_mode: bool = False,
     build_evidence_plane_overlay_mode: bool = False,
     build_external_consumer_index_mode: bool = False,
+    build_external_consumer_overlay_mode: bool = False,
     build_metric_signal_index_mode: bool = False,
     build_metric_threshold_proposals_mode: bool = False,
     build_graph_dashboard_mode: bool = False,
@@ -17048,6 +17406,7 @@ def main(
         "--build-evidence-plane-index": build_evidence_plane_index_mode,
         "--build-evidence-plane-overlay": build_evidence_plane_overlay_mode,
         "--build-external-consumer-index": build_external_consumer_index_mode,
+        "--build-external-consumer-overlay": build_external_consumer_overlay_mode,
         "--build-metric-signal-index": build_metric_signal_index_mode,
         "--build-metric-threshold-proposals": build_metric_threshold_proposals_mode,
         "--build-graph-dashboard": build_graph_dashboard_mode,
@@ -17668,6 +18027,58 @@ def main(
         write_evidence_plane_index(index)
         overlay = build_evidence_plane_overlay(index)
         write_evidence_plane_overlay(overlay)
+        print(json.dumps(overlay, ensure_ascii=False, indent=2))
+        return 0
+
+    if build_external_consumer_overlay_mode:
+        if any(
+            (
+                dry_run,
+                auto_approve,
+                loop,
+                resolve_gate,
+                decision,
+                note,
+                target_spec,
+                split_proposal,
+                apply_split_proposal,
+                operator_note,
+                mutation_budget,
+                run_authority,
+                execution_profile,
+                child_model,
+                child_timeout_seconds,
+                verbose,
+                list_stale_runtime,
+                clean_stale_runtime,
+                observe_graph_health_mode,
+                operator_request_packet_path,
+                build_vocabulary_index_mode,
+                build_vocabulary_drift_report_mode,
+                build_pre_spec_semantics_index_mode,
+                build_intent_layer_overlay_mode,
+                build_graph_health_overlay_mode,
+                build_graph_health_trends_mode,
+                build_spec_trace_index_mode,
+                build_spec_trace_projection_mode,
+                build_evidence_plane_index_mode,
+                build_evidence_plane_overlay_mode,
+                build_proposal_lane_overlay_mode,
+                build_proposal_runtime_index_mode,
+                build_proposal_promotion_index_mode,
+            )
+        ):
+            print(
+                "--build-external-consumer-overlay must be used as a standalone command",
+                file=sys.stderr,
+            )
+            return 1
+        consumer_index = build_external_consumer_index()
+        write_external_consumer_index(consumer_index)
+        metric_index = build_metric_signal_index(specs)
+        write_metric_signal_index(metric_index)
+        overlay = build_external_consumer_overlay(consumer_index, metric_index)
+        write_external_consumer_overlay(overlay)
         print(json.dumps(overlay, ensure_ascii=False, indent=2))
         return 0
 
@@ -18516,6 +18927,14 @@ if __name__ == "__main__":
         ),
     )
     parser.add_argument(
+        "--build-external-consumer-overlay",
+        action="store_true",
+        help=(
+            "Build a viewer/backlog overlay for sibling-consumer bridges, including bridge "
+            "state, bound metric pressure, and next-gap backlog"
+        ),
+    )
+    parser.add_argument(
         "--build-metric-signal-index",
         action="store_true",
         help=(
@@ -18691,6 +19110,7 @@ if __name__ == "__main__":
             build_evidence_plane_index_mode=args.build_evidence_plane_index,
             build_evidence_plane_overlay_mode=args.build_evidence_plane_overlay,
             build_external_consumer_index_mode=args.build_external_consumer_index,
+            build_external_consumer_overlay_mode=args.build_external_consumer_overlay,
             build_metric_signal_index_mode=args.build_metric_signal_index,
             build_metric_threshold_proposals_mode=args.build_metric_threshold_proposals,
             build_graph_dashboard_mode=args.build_graph_dashboard,
