@@ -73,6 +73,34 @@ The key surfaces are:
   `below_threshold`
 - `viewer_projection.named_filters`: compact metric-driven filters
 
+### Supervisor performance panel
+
+Build:
+
+```bash
+python3 tools/supervisor.py --build-supervisor-performance-index
+```
+
+Read:
+
+- `runs/supervisor_performance_index.json`
+
+Use this for:
+
+- throughput cards
+- runtime failure monitors
+- per-profile duration charts
+- run-yield tables
+- repeat-hotspot warnings
+
+The key surfaces are:
+
+- `entries[]`: one normalized supervisor run record
+- `aggregates`: counts, duration summaries, and repeat hotspots
+- `batches.by_day_utc`: compact day-level trend buckets
+- `viewer_projection`: grouped run ids for `runtime_status`, `yield_status`,
+  `graph_impact_status`, `run_kind`, `execution_profile`, and named filters
+
 ### Node overlays for the graph itself
 
 Build:
@@ -262,7 +290,9 @@ If you want one compact but useful UI, this layout works well:
    - `spec_trace_projection.json`
    - `evidence_plane_overlay.json`
 4. Right-side metric panel from `metric_signal_index.json`
-5. Bottom sibling-consumer panel from:
+5. Secondary runtime/performance panel from:
+   - `supervisor_performance_index.json`
+6. Bottom sibling-consumer panel from:
    - `external_consumer_overlay.json`
    - `external_consumer_handoff_packets.json`
 
@@ -332,6 +362,7 @@ python3 tools/supervisor.py --build-evidence-plane-overlay
 python3 tools/supervisor.py --build-external-consumer-overlay
 python3 tools/supervisor.py --build-external-consumer-handoffs
 python3 tools/supervisor.py --build-metric-signal-index
+python3 tools/supervisor.py --build-supervisor-performance-index
 python3 tools/supervisor.py --build-graph-dashboard
 ```
 
@@ -339,6 +370,7 @@ If the UI only needs global cards and metric panels:
 
 ```bash
 python3 tools/supervisor.py --build-metric-signal-index
+python3 tools/supervisor.py --build-supervisor-performance-index
 python3 tools/supervisor.py --build-graph-dashboard
 ```
 

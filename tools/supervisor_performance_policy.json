@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "repository_layout": {
+    "index_artifact": "runs/supervisor_performance_index.json"
+  },
+  "index_contract": {
+    "artifact_kind": "supervisor_performance_index",
+    "schema_version": 1,
+    "runtime_statuses": [
+      "runtime_clean",
+      "runtime_degraded",
+      "runtime_failed"
+    ],
+    "yield_statuses": [
+      "accepted_change",
+      "proposal_emitted",
+      "productive_split_required",
+      "review_pending_candidate",
+      "low_yield",
+      "runtime_blocked"
+    ],
+    "graph_impact_statuses": [
+      "canonical_improvement",
+      "proposal_only",
+      "pending_review",
+      "structural_pressure",
+      "blocked_or_regressed",
+      "neutral"
+    ],
+    "named_filters": [
+      "runtime_failures",
+      "runtime_degraded",
+      "slow_runs",
+      "productive_runs",
+      "accepted_changes",
+      "proposal_emitted",
+      "split_productive_runs",
+      "review_pending_candidates",
+      "low_yield_runs",
+      "positive_graph_impact",
+      "negative_graph_impact",
+      "repeat_hotspot_specs"
+    ]
+  },
+  "runtime_thresholds": {
+    "slow_run_duration_sec": 300.0
+  },
+  "yield_contract": {
+    "proposal_run_kinds": [
+      "split_proposal"
+    ],
+    "review_pending_gate_states": [
+      "review_pending"
+    ]
+  },
+  "graph_impact_contract": {
+    "blocked_gate_states": [
+      "blocked",
+      "retry_pending",
+      "escalated"
+    ]
+  },
+  "batch_contract": {
+    "time_bucket": "day_utc",
+    "repeat_hotspot_run_count": 3
+  }
+}

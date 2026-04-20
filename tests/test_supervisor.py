@@ -8862,6 +8862,287 @@ def test_main_builds_metric_threshold_proposals_as_standalone_command(
     assert proposal_artifact["entry_count"] == 1
 
 
+def test_build_supervisor_performance_index_classifies_runtime_yield_and_graph_impact(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    runs_dir = repo_fixture / "runs"
+    payloads = [
+        {
+            "run_id": "20260421T100001Z-SG-SPEC-0001-a1b2c3d4",
+            "timestamp_utc": "2026-04-21T10:00:31Z",
+            "started_at_utc": "2026-04-21T10:00:01Z",
+            "finished_at_utc": "2026-04-21T10:00:31Z",
+            "run_duration_sec": 30.0,
+            "spec_id": "SG-SPEC-0001",
+            "title": "First Spec",
+            "run_kind": "ordinary_refine",
+            "execution_profile": "standard",
+            "child_model": "gpt-5.4",
+            "before_status": "outlined",
+            "final_status": "specified",
+            "before_maturity": 0.2,
+            "final_maturity": 0.4,
+            "completion_status": "ok",
+            "outcome": "done",
+            "blocker": "none",
+            "gate_state": "none",
+            "changed_files": ["specs/nodes/SG-SPEC-0001.yaml"],
+            "accepted_canonical_diff": True,
+            "productive_split_required": False,
+            "new_child_materialized_count": 0,
+            "materialized_child_paths": [],
+            "yaml_repair_paths": [],
+            "validation_findings": [],
+            "validation_summary": {"finding_count": 0, "by_family": {}},
+            "validator_results": {"executor_environment": True, "runtime_artifacts": True},
+            "graph_health": {"source_spec_id": "SG-SPEC-0001", "signals": []},
+            "decision_inspector": {
+                "queue_effects": {
+                    "proposal_queue": {"emitted_ids": [], "updated_ids": [], "cleared_ids": []},
+                    "refactor_queue": {"emitted_ids": [], "updated_ids": [], "cleared_ids": []},
+                }
+            },
+        },
+        {
+            "run_id": "20260421T101001Z-SG-SPEC-0002-e5f6a7b8",
+            "timestamp_utc": "2026-04-21T10:10:21Z",
+            "started_at_utc": "2026-04-21T10:10:01Z",
+            "finished_at_utc": "2026-04-21T10:10:21Z",
+            "run_duration_sec": 20.0,
+            "spec_id": "SG-SPEC-0002",
+            "title": "Second Spec",
+            "run_kind": "split_proposal",
+            "execution_profile": "standard",
+            "child_model": "",
+            "before_status": "linked",
+            "final_status": "linked",
+            "before_maturity": 0.6,
+            "final_maturity": 0.6,
+            "completion_status": "ok",
+            "outcome": "done",
+            "blocker": "none",
+            "gate_state": "none",
+            "changed_files": [
+                "runs/proposals/refactor_proposal__SG-SPEC-0002__oversized_spec.json"
+            ],
+            "accepted_canonical_diff": False,
+            "productive_split_required": False,
+            "new_child_materialized_count": 0,
+            "materialized_child_paths": [],
+            "proposal_artifact_path": (
+                "runs/proposals/refactor_proposal__SG-SPEC-0002__oversized_spec.json"
+            ),
+            "yaml_repair_paths": [],
+            "validation_findings": [],
+            "validation_summary": {"finding_count": 0, "by_family": {}},
+            "validator_results": {"executor_environment": True, "runtime_artifacts": True},
+            "graph_health": {"source_spec_id": "SG-SPEC-0002", "signals": ["oversized_spec"]},
+            "decision_inspector": {
+                "queue_effects": {
+                    "proposal_queue": {
+                        "emitted_ids": ["refactor_proposal::SG-SPEC-0002::oversized_spec"],
+                        "updated_ids": [],
+                        "cleared_ids": [],
+                    },
+                    "refactor_queue": {"emitted_ids": [], "updated_ids": [], "cleared_ids": []},
+                }
+            },
+        },
+        {
+            "run_id": "20260421T102001Z-SG-SPEC-0001-11223344",
+            "timestamp_utc": "2026-04-21T10:20:11Z",
+            "started_at_utc": "2026-04-21T10:20:01Z",
+            "finished_at_utc": "2026-04-21T10:20:11Z",
+            "run_duration_sec": 10.0,
+            "spec_id": "SG-SPEC-0001",
+            "title": "First Spec",
+            "run_kind": "ordinary_refine",
+            "execution_profile": "fast",
+            "child_model": "",
+            "before_status": "specified",
+            "final_status": "specified",
+            "before_maturity": 0.4,
+            "final_maturity": 0.4,
+            "completion_status": "failed",
+            "outcome": "blocked",
+            "blocker": "executor environment failure",
+            "gate_state": "blocked",
+            "changed_files": [],
+            "accepted_canonical_diff": False,
+            "productive_split_required": False,
+            "new_child_materialized_count": 0,
+            "materialized_child_paths": [],
+            "yaml_repair_paths": [],
+            "validation_findings": [
+                {
+                    "family": "artifact",
+                    "error_class": "artifact_integrity_failure",
+                    "code": "executor_machine_protocol_failure",
+                }
+            ],
+            "validation_summary": {"finding_count": 1, "by_family": {"artifact": 1}},
+            "validator_results": {"executor_environment": False, "runtime_artifacts": True},
+            "graph_health": {"source_spec_id": "SG-SPEC-0001", "signals": []},
+            "decision_inspector": {
+                "queue_effects": {
+                    "proposal_queue": {"emitted_ids": [], "updated_ids": [], "cleared_ids": []},
+                    "refactor_queue": {"emitted_ids": [], "updated_ids": [], "cleared_ids": []},
+                }
+            },
+        },
+        {
+            "run_id": "20260421T103001Z-SG-SPEC-0001-55667788",
+            "timestamp_utc": "2026-04-21T10:31:01Z",
+            "started_at_utc": "2026-04-21T10:30:01Z",
+            "finished_at_utc": "2026-04-21T10:31:01Z",
+            "run_duration_sec": 60.0,
+            "spec_id": "SG-SPEC-0001",
+            "title": "First Spec",
+            "run_kind": "ordinary_refine",
+            "execution_profile": "materialize",
+            "child_model": "",
+            "before_status": "specified",
+            "final_status": "specified",
+            "before_maturity": 0.4,
+            "final_maturity": 0.4,
+            "completion_status": "ok",
+            "outcome": "split_required",
+            "blocker": "spec exceeds atomicity quality gate",
+            "gate_state": "split_required",
+            "changed_files": [
+                "specs/nodes/SG-SPEC-0001.yaml",
+                "specs/nodes/SG-SPEC-0003.yaml",
+            ],
+            "accepted_canonical_diff": False,
+            "productive_split_required": True,
+            "new_child_materialized_count": 1,
+            "materialized_child_paths": ["specs/nodes/SG-SPEC-0003.yaml"],
+            "yaml_repair_paths": ["specs/nodes/SG-SPEC-0001.yaml"],
+            "validation_findings": [],
+            "validation_summary": {"finding_count": 0, "by_family": {}},
+            "validator_results": {"executor_environment": True, "runtime_artifacts": True},
+            "graph_health": {
+                "source_spec_id": "SG-SPEC-0001",
+                "signals": ["repeated_split_required_candidate"],
+            },
+            "decision_inspector": {
+                "queue_effects": {
+                    "proposal_queue": {"emitted_ids": [], "updated_ids": [], "cleared_ids": []},
+                    "refactor_queue": {
+                        "emitted_ids": ["graph_refactor::SG-SPEC-0001::oversized_spec"],
+                        "updated_ids": [],
+                        "cleared_ids": [],
+                    },
+                }
+            },
+        },
+    ]
+    for payload in payloads:
+        run_path = runs_dir / f"{payload['run_id']}.json"
+        run_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    report = supervisor_module.build_supervisor_performance_index()
+
+    assert report["artifact_kind"] == supervisor_module.SUPERVISOR_PERFORMANCE_INDEX_ARTIFACT_KIND
+    assert report["entry_count"] == 4
+    by_run_id = {entry["run_id"]: entry for entry in report["entries"]}
+    assert by_run_id["20260421T100001Z-SG-SPEC-0001-a1b2c3d4"]["yield_status"] == "accepted_change"
+    assert (
+        by_run_id["20260421T100001Z-SG-SPEC-0001-a1b2c3d4"]["graph_impact_status"]
+        == "canonical_improvement"
+    )
+    assert by_run_id["20260421T101001Z-SG-SPEC-0002-e5f6a7b8"]["yield_status"] == "proposal_emitted"
+    assert (
+        by_run_id["20260421T101001Z-SG-SPEC-0002-e5f6a7b8"]["graph_impact_status"]
+        == "proposal_only"
+    )
+    assert by_run_id["20260421T102001Z-SG-SPEC-0001-11223344"]["runtime_status"] == "runtime_failed"
+    assert by_run_id["20260421T102001Z-SG-SPEC-0001-11223344"]["yield_status"] == "runtime_blocked"
+    assert (
+        by_run_id["20260421T103001Z-SG-SPEC-0001-55667788"]["runtime_status"] == "runtime_degraded"
+    )
+    assert (
+        by_run_id["20260421T103001Z-SG-SPEC-0001-55667788"]["yield_status"]
+        == "productive_split_required"
+    )
+    assert report["aggregates"]["productive_run_count"] == 3
+    assert report["aggregates"]["proposal_emitted_count"] == 1
+    assert report["aggregates"]["runtime_failed_count"] == 1
+    assert report["aggregates"]["runtime_degraded_count"] == 1
+    assert report["aggregates"]["same_spec_repeat_hotspots"] == [
+        {"spec_id": "SG-SPEC-0001", "run_count": 3}
+    ]
+    assert report["viewer_projection"]["named_filters"]["repeat_hotspot_specs"] == ["SG-SPEC-0001"]
+    assert report["batches"]["by_day_utc"][0]["day_utc"] == "2026-04-21"
+    assert report["batches"]["by_day_utc"][0]["run_count"] == 4
+
+
+def test_main_builds_supervisor_performance_index_as_standalone_command(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    def fake_report() -> dict[str, object]:
+        return {
+            "artifact_kind": supervisor_module.SUPERVISOR_PERFORMANCE_INDEX_ARTIFACT_KIND,
+            "schema_version": supervisor_module.SUPERVISOR_PERFORMANCE_INDEX_SCHEMA_VERSION,
+            "generated_at": "2026-04-21T00:00:00Z",
+            "policy_reference": {"artifact_path": "tools/supervisor_performance_policy.json"},
+            "source_artifacts": {"run_logs_dir": "runs", "run_logs_scanned": 0},
+            "entry_count": 0,
+            "entries": [],
+            "aggregates": {
+                "runtime_status_counts": {},
+                "yield_status_counts": {},
+                "graph_impact_status_counts": {},
+                "run_kind_counts": {},
+                "execution_profile_counts": {},
+                "productive_run_count": 0,
+                "accepted_canonical_diff_count": 0,
+                "proposal_emitted_count": 0,
+                "productive_split_required_count": 0,
+                "review_pending_candidate_count": 0,
+                "runtime_failed_count": 0,
+                "runtime_degraded_count": 0,
+                "new_child_materialized_count": 0,
+                "median_run_duration_sec": None,
+                "max_run_duration_sec": None,
+                "same_spec_repeat_hotspots": [],
+            },
+            "batches": {"time_bucket": "day_utc", "by_day_utc": []},
+            "viewer_projection": {
+                "runtime_status": {},
+                "yield_status": {},
+                "graph_impact_status": {},
+                "run_kind": {},
+                "execution_profile": {},
+                "named_filters": {"runtime_failures": []},
+            },
+            "skipped_invalid_run_logs": [],
+        }
+
+    monkeypatch.setattr(supervisor_module, "build_supervisor_performance_index", fake_report)
+    monkeypatch.setattr(
+        supervisor_module,
+        "load_specs",
+        lambda: (_ for _ in ()).throw(AssertionError("load_specs should not be called")),
+    )
+
+    exit_code = supervisor_module.main(build_supervisor_performance_index_mode=True)
+
+    assert exit_code == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["artifact_kind"] == supervisor_module.SUPERVISOR_PERFORMANCE_INDEX_ARTIFACT_KIND
+    artifact = json.loads(
+        (repo_fixture / "runs" / "supervisor_performance_index.json").read_text(encoding="utf-8")
+    )
+    assert artifact["policy_reference"]["artifact_path"] == (
+        "tools/supervisor_performance_policy.json"
+    )
+
+
 def test_build_graph_dashboard_aggregates_runtime_surfaces(
     supervisor_module: object,
     repo_fixture: Path,

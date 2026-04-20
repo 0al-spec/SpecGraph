@@ -119,6 +119,10 @@ Task numbers are preserved for traceability across commits, PRs, and review thre
 62. [done] Define telemetry evidence artifacts that link canonical nodes to runtime entities, observations, outcomes, and adoption without leaking raw telemetry into canonical specs.
 63. [done] Add viewer and inspection overlays for the evidence plane so operators can inspect runtime-backed evidence chains separately from canonical graph truth.
 
+## Evaluator, Validation, and Benchmarking
+
+56. [done] Record supervisor performance and yield metrics as derived run artifacts so throughput, intervention cost, and graph impact can be inspected over time.
+
 ## External Consumer Bridge
 
 85. [done] Add a viewer-facing external consumer bridge overlay so sibling repositories such as Metrics expose stable-vs-draft readiness, identity state, and bound metric pressure separately from canonical graph truth.

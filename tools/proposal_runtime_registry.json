@@ -1,5 +1,44 @@
 [
   {
+    "proposal_id": "0007",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "tools/supervisor.py",
+      "tests/test_supervisor.py",
+      "tools/supervisor_performance_policy.json"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def build_supervisor_performance_index("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "SUPERVISOR_PERFORMANCE_INDEX_FILENAME = "
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_supervisor_performance_index_classifies_runtime_yield_and_graph_impact("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_main_builds_supervisor_performance_index_as_standalone_command("
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "write_supervisor_performance_index(report)"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "\"artifact_kind\": SUPERVISOR_PERFORMANCE_INDEX_ARTIFACT_KIND"
+      }
+    ]
+  },
+  {
     "proposal_id": "0016",
     "posture": "synchronous_runtime_slice",
     "runtime_surfaces": [

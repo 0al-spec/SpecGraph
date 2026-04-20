@@ -32,6 +32,7 @@ Derived artifacts:
 - graph refactor queue: `runs/refactor_queue.json`
 - proposal queue index: `runs/proposal_queue.json`
 - structured proposal artifacts: `runs/proposals/*.json`
+- supervisor performance index: `runs/supervisor_performance_index.json`
 - graph dashboard: `runs/graph_dashboard.json`
 - intent-layer overlay: `runs/intent_layer_overlay.json`
 - proposal-lane overlay: `runs/proposal_lane_overlay.json`
@@ -96,6 +97,7 @@ EVALUATOR_LOOP_POLICY_RELATIVE_PATH = "tools/evaluator_loop_policy.json"
 EVALUATOR_INTERVENTION_POLICY_RELATIVE_PATH = "tools/evaluator_intervention_policy.json"
 EVIDENCE_PLANE_POLICY_RELATIVE_PATH = "tools/evidence_plane_policy.json"
 METRIC_SIGNAL_POLICY_RELATIVE_PATH = "tools/metric_signal_policy.json"
+SUPERVISOR_PERFORMANCE_POLICY_RELATIVE_PATH = "tools/supervisor_performance_policy.json"
 EXTERNAL_CONSUMER_REGISTRY_RELATIVE_PATH = "tools/external_consumers.json"
 EXTERNAL_CONSUMER_OVERLAY_POLICY_RELATIVE_PATH = "tools/external_consumer_overlay_policy.json"
 EXTERNAL_CONSUMER_HANDOFF_POLICY_RELATIVE_PATH = "tools/external_consumer_handoff_policy.json"
@@ -155,6 +157,10 @@ def evidence_plane_policy_path() -> Path:
 
 def metric_signal_policy_path() -> Path:
     return TOOLS_DIR / "metric_signal_policy.json"
+
+
+def supervisor_performance_policy_path() -> Path:
+    return TOOLS_DIR / "supervisor_performance_policy.json"
 
 
 def external_consumer_overlay_policy_path() -> Path:
@@ -624,6 +630,47 @@ def load_metric_signal_policy() -> tuple[dict[str, Any], str]:
 METRIC_SIGNAL_POLICY, METRIC_SIGNAL_POLICY_SHA256 = load_metric_signal_policy()
 
 
+def load_supervisor_performance_policy() -> tuple[dict[str, Any], str]:
+    path = supervisor_performance_policy_path()
+    try:
+        raw_text = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise RuntimeError(
+            f"failed to read supervisor performance policy artifact: {path.as_posix()} ({exc})"
+        ) from exc
+    try:
+        payload = json.loads(raw_text)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(
+            f"malformed supervisor performance policy artifact: {path.as_posix()} ({exc})"
+        ) from exc
+    if not isinstance(payload, dict):
+        raise RuntimeError(
+            "malformed supervisor performance policy artifact: "
+            f"{path.as_posix()} must contain a JSON object"
+        )
+    required_sections = (
+        "repository_layout",
+        "index_contract",
+        "runtime_thresholds",
+        "yield_contract",
+        "graph_impact_contract",
+        "batch_contract",
+    )
+    missing = [section for section in required_sections if section not in payload]
+    if missing:
+        raise RuntimeError(
+            "malformed supervisor performance policy artifact: missing top-level section(s): "
+            + ", ".join(missing)
+        )
+    return payload, hashlib.sha256(raw_text.encode("utf-8")).hexdigest()
+
+
+SUPERVISOR_PERFORMANCE_POLICY, SUPERVISOR_PERFORMANCE_POLICY_SHA256 = (
+    load_supervisor_performance_policy()
+)
+
+
 def load_external_consumer_overlay_policy() -> tuple[dict[str, Any], str]:
     path = external_consumer_overlay_policy_path()
     try:
@@ -802,6 +849,15 @@ def metric_signal_policy_lookup(policy_path: str) -> Any:
     return copy.deepcopy(current)
 
 
+def supervisor_performance_policy_lookup(policy_path: str) -> Any:
+    current: Any = SUPERVISOR_PERFORMANCE_POLICY
+    for part in policy_path.split("."):
+        if not isinstance(current, dict) or part not in current:
+            raise KeyError(policy_path)
+        current = current[part]
+    return copy.deepcopy(current)
+
+
 def evaluator_intervention_policy_lookup(policy_path: str) -> Any:
     current: Any = EVALUATOR_INTERVENTION_POLICY
     for part in policy_path.split("."):
@@ -940,6 +996,14 @@ def metric_signal_policy_reference() -> dict[str, Any]:
         "artifact_path": METRIC_SIGNAL_POLICY_RELATIVE_PATH,
         "artifact_sha256": METRIC_SIGNAL_POLICY_SHA256,
         "version": METRIC_SIGNAL_POLICY.get("version"),
+    }
+
+
+def supervisor_performance_policy_reference() -> dict[str, Any]:
+    return {
+        "artifact_path": SUPERVISOR_PERFORMANCE_POLICY_RELATIVE_PATH,
+        "artifact_sha256": SUPERVISOR_PERFORMANCE_POLICY_SHA256,
+        "version": SUPERVISOR_PERFORMANCE_POLICY.get("version"),
     }
 
 
@@ -1175,6 +1239,42 @@ METRIC_THRESHOLD_PROPOSAL_KINDS = list(
 )
 METRIC_THRESHOLD_PROPOSAL_NAMED_FILTERS = list(
     metric_signal_policy_lookup("proposal_contract.named_filters")
+)
+SUPERVISOR_PERFORMANCE_INDEX_FILENAME = Path(
+    str(supervisor_performance_policy_lookup("repository_layout.index_artifact"))
+).name
+SUPERVISOR_PERFORMANCE_INDEX_ARTIFACT_KIND = str(
+    supervisor_performance_policy_lookup("index_contract.artifact_kind")
+)
+SUPERVISOR_PERFORMANCE_INDEX_SCHEMA_VERSION = int(
+    supervisor_performance_policy_lookup("index_contract.schema_version")
+)
+SUPERVISOR_PERFORMANCE_RUNTIME_STATUSES = list(
+    supervisor_performance_policy_lookup("index_contract.runtime_statuses")
+)
+SUPERVISOR_PERFORMANCE_YIELD_STATUSES = list(
+    supervisor_performance_policy_lookup("index_contract.yield_statuses")
+)
+SUPERVISOR_PERFORMANCE_GRAPH_IMPACT_STATUSES = list(
+    supervisor_performance_policy_lookup("index_contract.graph_impact_statuses")
+)
+SUPERVISOR_PERFORMANCE_NAMED_FILTERS = list(
+    supervisor_performance_policy_lookup("index_contract.named_filters")
+)
+SUPERVISOR_PERFORMANCE_SLOW_RUN_THRESHOLD_SECONDS = float(
+    supervisor_performance_policy_lookup("runtime_thresholds.slow_run_duration_sec")
+)
+SUPERVISOR_PERFORMANCE_PROPOSAL_RUN_KINDS = set(
+    supervisor_performance_policy_lookup("yield_contract.proposal_run_kinds")
+)
+SUPERVISOR_PERFORMANCE_REVIEW_PENDING_GATE_STATES = set(
+    supervisor_performance_policy_lookup("yield_contract.review_pending_gate_states")
+)
+SUPERVISOR_PERFORMANCE_BLOCKED_GATE_STATES = set(
+    supervisor_performance_policy_lookup("graph_impact_contract.blocked_gate_states")
+)
+SUPERVISOR_PERFORMANCE_REPEAT_HOTSPOT_RUN_COUNT = int(
+    supervisor_performance_policy_lookup("batch_contract.repeat_hotspot_run_count")
 )
 OPERATOR_REQUEST_PACKET_ARTIFACT_KIND = str(
     operator_request_bridge_policy_lookup("packet_contract.artifact_kind")
@@ -2511,6 +2611,16 @@ def median_int(values: list[int]) -> float:
     if len(ordered) % 2 == 1:
         return float(ordered[midpoint])
     return (ordered[midpoint - 1] + ordered[midpoint]) / 2.0
+
+
+def median_float(values: list[float]) -> float | None:
+    if not values:
+        return None
+    ordered = sorted(values)
+    midpoint = len(ordered) // 2
+    if len(ordered) % 2 == 1:
+        return float(ordered[midpoint])
+    return round((ordered[midpoint - 1] + ordered[midpoint]) / 2.0, 3)
 
 
 def node_text_for_shape_analysis(node: SpecNode) -> str:
@@ -10591,6 +10701,10 @@ def metric_threshold_proposals_path() -> Path:
     return RUNS_DIR / METRIC_THRESHOLD_PROPOSALS_FILENAME
 
 
+def supervisor_performance_index_path() -> Path:
+    return RUNS_DIR / SUPERVISOR_PERFORMANCE_INDEX_FILENAME
+
+
 def load_spec_trace_registry() -> dict[str, dict[str, Any]]:
     path = spec_trace_registry_path()
     if not path.exists():
@@ -13130,6 +13244,566 @@ def build_metric_threshold_proposals(signal_index: dict[str, Any]) -> dict[str, 
 def write_metric_threshold_proposals(report: dict[str, Any]) -> Path:
     RUNS_DIR.mkdir(parents=True, exist_ok=True)
     path = metric_threshold_proposals_path()
+    with artifact_lock(path):
+        atomic_write_json(path, report)
+    return path
+
+
+def _iso_or_empty(value: dt.datetime | None) -> str:
+    if value is None:
+        return ""
+    return value.astimezone(dt.timezone.utc).isoformat().replace("+00:00", "Z")
+
+
+def performance_run_timestamp(payload: dict[str, Any], path: Path) -> dt.datetime | None:
+    finished_at = parse_iso_datetime(payload.get("finished_at_utc", ""))
+    if finished_at is not None:
+        return finished_at
+    started_at = parse_iso_datetime(payload.get("started_at_utc", ""))
+    if started_at is not None:
+        return started_at
+    return graph_health_event_timestamp(payload, path)
+
+
+def performance_run_kind(payload: dict[str, Any]) -> str:
+    explicit = str(payload.get("run_kind", "")).strip()
+    if explicit:
+        return explicit
+    selected_by_rule = payload.get("selected_by_rule", {})
+    if not isinstance(selected_by_rule, dict):
+        selected_by_rule = {}
+    selection_mode = str(selected_by_rule.get("selection_mode", "")).strip()
+    if selection_mode == "split_refactor_proposal":
+        return "split_proposal"
+    if selection_mode == "apply_split_proposal":
+        return "apply_split_proposal"
+    refactor_work_item = selected_by_rule.get("refactor_work_item", {})
+    if isinstance(refactor_work_item, dict) and str(refactor_work_item.get("id", "")).strip():
+        return "graph_refactor"
+    return "ordinary_refine"
+
+
+def performance_execution_profile(payload: dict[str, Any]) -> str:
+    explicit = str(payload.get("execution_profile", "")).strip()
+    if explicit:
+        return explicit
+    selected_by_rule = payload.get("selected_by_rule", {})
+    if not isinstance(selected_by_rule, dict):
+        return ""
+    return str(selected_by_rule.get("execution_profile", "")).strip()
+
+
+def performance_child_model(payload: dict[str, Any]) -> str:
+    return str(payload.get("child_model", "")).strip()
+
+
+def performance_run_duration_sec(payload: dict[str, Any], path: Path) -> float | None:
+    explicit = payload.get("run_duration_sec")
+    if isinstance(explicit, (int, float)):
+        return round(float(explicit), 3)
+    started_at = parse_iso_datetime(payload.get("started_at_utc", ""))
+    finished_at = parse_iso_datetime(payload.get("finished_at_utc", ""))
+    if started_at is None or finished_at is None:
+        return None
+    duration = (finished_at - started_at).total_seconds()
+    if duration < 0:
+        return None
+    return round(duration, 3)
+
+
+def performance_validation_findings(payload: dict[str, Any]) -> list[dict[str, Any]]:
+    return coerce_validation_findings(payload.get("validation_findings", []))
+
+
+def performance_queue_transition(payload: dict[str, Any], queue_name: str) -> dict[str, Any]:
+    decision_inspector = payload.get("decision_inspector", {})
+    if not isinstance(decision_inspector, dict):
+        return {}
+    queue_effects = decision_inspector.get("queue_effects", {})
+    if not isinstance(queue_effects, dict):
+        return {}
+    transition = queue_effects.get(queue_name, {})
+    if not isinstance(transition, dict):
+        return {}
+    return transition
+
+
+def performance_new_child_materialized_count(payload: dict[str, Any]) -> int:
+    explicit = payload.get("new_child_materialized_count")
+    if isinstance(explicit, int):
+        return max(explicit, 0)
+    materialized = payload.get("materialized_child_paths", [])
+    if isinstance(materialized, list):
+        return sum(1 for item in materialized if str(item).strip())
+    changed_files = payload.get("changed_files", [])
+    spec_id = str(payload.get("spec_id", "")).strip()
+    source_path = f"specs/nodes/{spec_id}.yaml" if spec_id else ""
+    if not isinstance(changed_files, list):
+        return 0
+    return sum(
+        1
+        for item in changed_files
+        if is_spec_node_path(str(item).strip()) and str(item).strip() != source_path
+    )
+
+
+def performance_accepted_canonical_diff(payload: dict[str, Any]) -> bool:
+    explicit = payload.get("accepted_canonical_diff")
+    if isinstance(explicit, bool):
+        return explicit
+    if performance_run_kind(payload) == "apply_split_proposal":
+        validator_results = payload.get("validator_results", {})
+        if isinstance(validator_results, dict):
+            return bool(validator_results.get("canonical_writeback"))
+    if bool(payload.get("auto_approved")):
+        return True
+    before_status = str(payload.get("before_status", "")).strip()
+    final_status = str(payload.get("final_status", "")).strip()
+    if before_status and final_status and before_status != final_status:
+        return True
+    before_maturity = payload.get("before_maturity")
+    final_maturity = payload.get("final_maturity")
+    if isinstance(before_maturity, (int, float)) and isinstance(final_maturity, (int, float)):
+        return float(final_maturity) > float(before_maturity)
+    return False
+
+
+def performance_productive_split_required(payload: dict[str, Any]) -> bool:
+    explicit = payload.get("productive_split_required")
+    if isinstance(explicit, bool):
+        return explicit
+    outcome = str(payload.get("outcome", "")).strip()
+    changed_files = payload.get("changed_files", [])
+    return outcome == "split_required" and isinstance(changed_files, list) and bool(changed_files)
+
+
+def performance_runtime_status(
+    payload: dict[str, Any],
+    findings: list[dict[str, Any]],
+) -> tuple[str, list[str]]:
+    validator_results = payload.get("validator_results", {})
+    if not isinstance(validator_results, dict):
+        validator_results = {}
+    reasons: list[str] = []
+    if validator_results.get("executor_environment") is False:
+        reasons.append("executor_environment")
+    if validator_results.get("runtime_artifacts") is False:
+        reasons.append("runtime_artifacts")
+    finding_codes = {
+        str(finding.get("code", "")).strip()
+        for finding in findings
+        if str(finding.get("code", "")).strip()
+    }
+    if "executor_machine_protocol_failure" in finding_codes:
+        reasons.append("executor_machine_protocol")
+    if reasons:
+        return "runtime_failed", sorted(set(reasons))
+    yaml_repair_paths = payload.get("yaml_repair_paths", [])
+    if isinstance(yaml_repair_paths, list) and any(str(item).strip() for item in yaml_repair_paths):
+        return "runtime_degraded", ["yaml_repair_applied"]
+    return "runtime_clean", []
+
+
+def performance_yield_status(
+    payload: dict[str, Any],
+    *,
+    runtime_status: str,
+    accepted_canonical_diff: bool,
+    productive_split_required: bool,
+    proposal_emitted: bool,
+    review_required: bool,
+    changed_files: list[str],
+) -> tuple[str, bool]:
+    if runtime_status == "runtime_failed":
+        return "runtime_blocked", False
+    if accepted_canonical_diff:
+        return "accepted_change", True
+    if proposal_emitted:
+        return "proposal_emitted", True
+    if productive_split_required:
+        return "productive_split_required", True
+    if review_required and changed_files:
+        return "review_pending_candidate", True
+    return "low_yield", False
+
+
+def performance_graph_impact_status(
+    *,
+    runtime_status: str,
+    yield_status: str,
+    before_status: str,
+    final_status: str,
+    before_maturity: float | None,
+    final_maturity: float | None,
+    new_child_materialized_count: int,
+    gate_state: str,
+) -> str:
+    maturity_increased = (
+        before_maturity is not None
+        and final_maturity is not None
+        and float(final_maturity) > float(before_maturity)
+    )
+    if yield_status == "accepted_change" and (
+        before_status != final_status or maturity_increased or new_child_materialized_count > 0
+    ):
+        return "canonical_improvement"
+    if yield_status == "proposal_emitted":
+        return "proposal_only"
+    if yield_status == "review_pending_candidate":
+        return "pending_review"
+    if yield_status == "productive_split_required":
+        return "structural_pressure"
+    if (
+        runtime_status == "runtime_failed"
+        or gate_state in SUPERVISOR_PERFORMANCE_BLOCKED_GATE_STATES
+    ):
+        return "blocked_or_regressed"
+    return "neutral"
+
+
+def build_supervisor_performance_index() -> dict[str, Any]:
+    grouped_runtime_status: dict[str, list[str]] = {}
+    grouped_yield_status: dict[str, list[str]] = {}
+    grouped_graph_impact_status: dict[str, list[str]] = {}
+    grouped_run_kind: dict[str, list[str]] = {}
+    grouped_execution_profile: dict[str, list[str]] = {}
+    named_filters = {name: [] for name in SUPERVISOR_PERFORMANCE_NAMED_FILTERS}
+    entries: list[dict[str, Any]] = []
+    run_logs_scanned = 0
+    skipped_invalid_run_logs: list[dict[str, str]] = []
+
+    run_records: list[tuple[dt.datetime | None, Path, dict[str, Any]]] = []
+    for path in run_log_paths():
+        payload, error = load_json_object_report(path, artifact_kind="run log")
+        if payload is None:
+            skipped_invalid_run_logs.append(
+                {
+                    "path": path.relative_to(ROOT).as_posix(),
+                    "error": error,
+                }
+            )
+            continue
+        run_logs_scanned += 1
+        run_records.append((performance_run_timestamp(payload, path), path, payload))
+
+    run_records.sort(
+        key=lambda item: (
+            item[0] is None,
+            item[0] or dt.datetime.min.replace(tzinfo=dt.timezone.utc),
+            str(item[2].get("run_id", item[1].stem)),
+        )
+    )
+
+    durations: list[float] = []
+    spec_run_counts: dict[str, int] = {}
+    per_day_buckets: dict[str, dict[str, Any]] = {}
+
+    for timestamp, path, payload in run_records:
+        run_id = str(payload.get("run_id", "")).strip() or path.stem
+        spec_id = str(payload.get("spec_id", "")).strip()
+        spec_run_counts[spec_id] = spec_run_counts.get(spec_id, 0) + 1
+        same_spec_repeat_count = max(spec_run_counts[spec_id] - 1, 0) if spec_id else 0
+
+        findings = performance_validation_findings(payload)
+        run_kind = performance_run_kind(payload)
+        execution_profile = performance_execution_profile(payload)
+        child_model = performance_child_model(payload)
+        duration_sec = performance_run_duration_sec(payload, path)
+        if duration_sec is not None:
+            durations.append(duration_sec)
+        before_status = str(payload.get("before_status", "")).strip()
+        final_status = str(payload.get("final_status", "")).strip()
+        gate_state = str(payload.get("gate_state", "")).strip() or "none"
+        before_maturity_raw = payload.get("before_maturity")
+        final_maturity_raw = payload.get("final_maturity")
+        before_maturity = (
+            float(before_maturity_raw) if isinstance(before_maturity_raw, (int, float)) else None
+        )
+        final_maturity = (
+            float(final_maturity_raw) if isinstance(final_maturity_raw, (int, float)) else None
+        )
+        changed_files = (
+            [str(item).strip() for item in payload.get("changed_files", []) if str(item).strip()]
+            if isinstance(payload.get("changed_files", []), list)
+            else []
+        )
+        proposal_queue_transition = performance_queue_transition(payload, "proposal_queue")
+        refactor_queue_transition = performance_queue_transition(payload, "refactor_queue")
+        proposal_emitted = bool(proposal_queue_transition.get("emitted_ids")) or (
+            run_kind in SUPERVISOR_PERFORMANCE_PROPOSAL_RUN_KINDS
+            and str(payload.get("proposal_artifact_path", "")).strip()
+            and str(payload.get("outcome", "")).strip() == "done"
+        )
+        accepted_canonical_diff = performance_accepted_canonical_diff(payload)
+        productive_split_required = performance_productive_split_required(payload)
+        new_child_materialized_count = performance_new_child_materialized_count(payload)
+        review_required = gate_state in SUPERVISOR_PERFORMANCE_REVIEW_PENDING_GATE_STATES
+        runtime_status, runtime_failure_reasons = performance_runtime_status(payload, findings)
+        yield_status, productive_run = performance_yield_status(
+            payload,
+            runtime_status=runtime_status,
+            accepted_canonical_diff=accepted_canonical_diff,
+            productive_split_required=productive_split_required,
+            proposal_emitted=proposal_emitted,
+            review_required=review_required,
+            changed_files=changed_files,
+        )
+        graph_impact_status = performance_graph_impact_status(
+            runtime_status=runtime_status,
+            yield_status=yield_status,
+            before_status=before_status,
+            final_status=final_status,
+            before_maturity=before_maturity,
+            final_maturity=final_maturity,
+            new_child_materialized_count=new_child_materialized_count,
+            gate_state=gate_state,
+        )
+        graph_health = payload.get("graph_health", {})
+        if isinstance(graph_health, dict) and isinstance(graph_health.get("signals", []), list):
+            graph_signals = [
+                str(item).strip() for item in graph_health.get("signals", []) if str(item).strip()
+            ]
+        else:
+            graph_signals = []
+        validation_summary_payload = payload.get("validation_summary", {})
+        if not isinstance(validation_summary_payload, dict):
+            validation_summary_payload = {}
+
+        entry = {
+            "run_id": run_id,
+            "spec_id": spec_id,
+            "title": str(payload.get("title", "")).strip(),
+            "run_kind": run_kind,
+            "execution_profile": execution_profile,
+            "child_model": child_model,
+            "timestamp_utc": _iso_or_empty(timestamp),
+            "started_at_utc": _iso_or_empty(parse_iso_datetime(payload.get("started_at_utc", ""))),
+            "finished_at_utc": _iso_or_empty(
+                parse_iso_datetime(payload.get("finished_at_utc", ""))
+                or parse_iso_datetime(payload.get("timestamp_utc", ""))
+            ),
+            "run_duration_sec": duration_sec,
+            "runtime_status": runtime_status,
+            "runtime_failure_reasons": runtime_failure_reasons,
+            "yield_status": yield_status,
+            "graph_impact_status": graph_impact_status,
+            "productive_run": productive_run,
+            "accepted_canonical_diff": accepted_canonical_diff,
+            "proposal_emitted": proposal_emitted,
+            "productive_split_required": productive_split_required,
+            "review_required": review_required,
+            "new_child_materialized_count": new_child_materialized_count,
+            "same_spec_repeat_count": same_spec_repeat_count,
+            "completion_status": str(payload.get("completion_status", "")).strip(),
+            "outcome": str(payload.get("outcome", "")).strip(),
+            "blocker": str(payload.get("blocker", "")).strip(),
+            "gate_state": gate_state,
+            "status_delta": {
+                "before": before_status,
+                "after": final_status,
+                "changed": bool(before_status and final_status and before_status != final_status),
+            },
+            "maturity_delta": {
+                "before": before_maturity,
+                "after": final_maturity,
+                "delta": (
+                    round(final_maturity - before_maturity, 3)
+                    if before_maturity is not None and final_maturity is not None
+                    else None
+                ),
+            },
+            "graph_signal_summary": {
+                "signal_count": len(graph_signals),
+                "signals": graph_signals,
+            },
+            "intervention_cost": {
+                "changed_file_count": len(changed_files),
+                "validation_finding_count": len(findings),
+                "proposal_queue_emission_count": len(
+                    [
+                        item
+                        for item in proposal_queue_transition.get("emitted_ids", [])
+                        if str(item).strip()
+                    ]
+                ),
+                "refactor_queue_emission_count": len(
+                    [
+                        item
+                        for item in refactor_queue_transition.get("emitted_ids", [])
+                        if str(item).strip()
+                    ]
+                ),
+            },
+            "validation_summary": copy.deepcopy(validation_summary_payload),
+        }
+        entries.append(entry)
+
+        grouped_runtime_status.setdefault(runtime_status, []).append(run_id)
+        grouped_yield_status.setdefault(yield_status, []).append(run_id)
+        grouped_graph_impact_status.setdefault(graph_impact_status, []).append(run_id)
+        if run_kind:
+            grouped_run_kind.setdefault(run_kind, []).append(run_id)
+        if execution_profile:
+            grouped_execution_profile.setdefault(execution_profile, []).append(run_id)
+
+        if runtime_status == "runtime_failed":
+            named_filters["runtime_failures"].append(run_id)
+        if runtime_status == "runtime_degraded":
+            named_filters["runtime_degraded"].append(run_id)
+        if productive_run:
+            named_filters["productive_runs"].append(run_id)
+        if yield_status == "accepted_change":
+            named_filters["accepted_changes"].append(run_id)
+        if yield_status == "proposal_emitted":
+            named_filters["proposal_emitted"].append(run_id)
+        if yield_status == "productive_split_required":
+            named_filters["split_productive_runs"].append(run_id)
+        if yield_status == "review_pending_candidate":
+            named_filters["review_pending_candidates"].append(run_id)
+        if yield_status == "low_yield":
+            named_filters["low_yield_runs"].append(run_id)
+        if graph_impact_status in {"canonical_improvement", "proposal_only"}:
+            named_filters["positive_graph_impact"].append(run_id)
+        if graph_impact_status == "blocked_or_regressed":
+            named_filters["negative_graph_impact"].append(run_id)
+        if (
+            duration_sec is not None
+            and duration_sec >= SUPERVISOR_PERFORMANCE_SLOW_RUN_THRESHOLD_SECONDS
+        ):
+            named_filters["slow_runs"].append(run_id)
+
+        day_key = timestamp.date().isoformat() if timestamp is not None else "unknown"
+        bucket = per_day_buckets.setdefault(
+            day_key,
+            {
+                "day_utc": day_key,
+                "run_ids": [],
+                "run_count": 0,
+                "productive_run_count": 0,
+                "runtime_failed_count": 0,
+                "accepted_canonical_diff_count": 0,
+                "proposal_emitted_count": 0,
+                "new_child_materialized_count": 0,
+                "durations": [],
+            },
+        )
+        bucket["run_ids"].append(run_id)
+        bucket["run_count"] += 1
+        bucket["productive_run_count"] += 1 if productive_run else 0
+        bucket["runtime_failed_count"] += 1 if runtime_status == "runtime_failed" else 0
+        bucket["accepted_canonical_diff_count"] += 1 if accepted_canonical_diff else 0
+        bucket["proposal_emitted_count"] += 1 if proposal_emitted else 0
+        bucket["new_child_materialized_count"] += new_child_materialized_count
+        if duration_sec is not None:
+            bucket["durations"].append(duration_sec)
+
+    repeat_hotspots = sorted(
+        (
+            {"spec_id": spec_id, "run_count": count}
+            for spec_id, count in spec_run_counts.items()
+            if spec_id and count >= SUPERVISOR_PERFORMANCE_REPEAT_HOTSPOT_RUN_COUNT
+        ),
+        key=lambda item: (-int(item["run_count"]), str(item["spec_id"])),
+    )
+    named_filters["repeat_hotspot_specs"] = [item["spec_id"] for item in repeat_hotspots]
+
+    batches_by_day = []
+    for day_key in sorted(per_day_buckets):
+        bucket = per_day_buckets[day_key]
+        batches_by_day.append(
+            {
+                "day_utc": day_key,
+                "run_count": bucket["run_count"],
+                "productive_run_count": bucket["productive_run_count"],
+                "runtime_failed_count": bucket["runtime_failed_count"],
+                "accepted_canonical_diff_count": bucket["accepted_canonical_diff_count"],
+                "proposal_emitted_count": bucket["proposal_emitted_count"],
+                "new_child_materialized_count": bucket["new_child_materialized_count"],
+                "median_run_duration_sec": median_float(bucket["durations"]),
+                "run_ids": list(bucket["run_ids"]),
+            }
+        )
+
+    runtime_status_counts = grouped_identifier_counts(grouped_runtime_status)
+    yield_status_counts = grouped_identifier_counts(grouped_yield_status)
+    graph_impact_status_counts = grouped_identifier_counts(grouped_graph_impact_status)
+    run_kind_counts = grouped_identifier_counts(grouped_run_kind)
+    execution_profile_counts = grouped_identifier_counts(grouped_execution_profile)
+    accepted_canonical_diff_count = sum(
+        1 for entry in entries if bool(entry.get("accepted_canonical_diff"))
+    )
+    proposal_emitted_count = sum(1 for entry in entries if bool(entry.get("proposal_emitted")))
+    productive_split_required_count = sum(
+        1 for entry in entries if bool(entry.get("productive_split_required"))
+    )
+    review_pending_candidate_count = sum(
+        1
+        for entry in entries
+        if str(entry.get("yield_status", "")).strip() == "review_pending_candidate"
+    )
+    productive_run_count = sum(1 for entry in entries if bool(entry.get("productive_run")))
+    runtime_failed_count = runtime_status_counts.get("runtime_failed", 0)
+    runtime_degraded_count = runtime_status_counts.get("runtime_degraded", 0)
+
+    return {
+        "artifact_kind": SUPERVISOR_PERFORMANCE_INDEX_ARTIFACT_KIND,
+        "schema_version": SUPERVISOR_PERFORMANCE_INDEX_SCHEMA_VERSION,
+        "generated_at": utc_now_iso(),
+        "policy_reference": supervisor_performance_policy_reference(),
+        "source_artifacts": {
+            "run_logs_dir": RUNS_DIR.relative_to(ROOT).as_posix(),
+            "run_logs_scanned": run_logs_scanned,
+            "skipped_invalid_run_log_count": len(skipped_invalid_run_logs),
+        },
+        "entry_count": len(entries),
+        "entries": entries,
+        "aggregates": {
+            "runtime_status_counts": runtime_status_counts,
+            "yield_status_counts": yield_status_counts,
+            "graph_impact_status_counts": graph_impact_status_counts,
+            "run_kind_counts": run_kind_counts,
+            "execution_profile_counts": execution_profile_counts,
+            "productive_run_count": productive_run_count,
+            "accepted_canonical_diff_count": accepted_canonical_diff_count,
+            "proposal_emitted_count": proposal_emitted_count,
+            "productive_split_required_count": productive_split_required_count,
+            "review_pending_candidate_count": review_pending_candidate_count,
+            "runtime_failed_count": runtime_failed_count,
+            "runtime_degraded_count": runtime_degraded_count,
+            "new_child_materialized_count": sum(
+                int(entry.get("new_child_materialized_count", 0)) for entry in entries
+            ),
+            "median_run_duration_sec": median_float(durations),
+            "max_run_duration_sec": round(max(durations), 3) if durations else None,
+            "same_spec_repeat_hotspots": repeat_hotspots,
+        },
+        "batches": {
+            "time_bucket": str(supervisor_performance_policy_lookup("batch_contract.time_bucket")),
+            "by_day_utc": batches_by_day,
+        },
+        "viewer_projection": {
+            "runtime_status": {
+                key: sorted(value) for key, value in sorted(grouped_runtime_status.items())
+            },
+            "yield_status": {
+                key: sorted(value) for key, value in sorted(grouped_yield_status.items())
+            },
+            "graph_impact_status": {
+                key: sorted(value) for key, value in sorted(grouped_graph_impact_status.items())
+            },
+            "run_kind": {key: sorted(value) for key, value in sorted(grouped_run_kind.items())},
+            "execution_profile": {
+                key: sorted(value) for key, value in sorted(grouped_execution_profile.items())
+            },
+            "named_filters": {key: sorted(value) for key, value in sorted(named_filters.items())},
+        },
+        "skipped_invalid_run_logs": skipped_invalid_run_logs,
+    }
+
+
+def write_supervisor_performance_index(report: dict[str, Any]) -> Path:
+    RUNS_DIR.mkdir(parents=True, exist_ok=True)
+    path = supervisor_performance_index_path()
     with artifact_lock(path):
         atomic_write_json(path, report)
     return path
@@ -16087,6 +16761,8 @@ def _apply_split_proposal(
         return 1
 
     run_id = make_run_id(node.id)
+    run_started_at = utc_now_iso()
+    run_started_monotonic = time.monotonic()
     proposal_queue_before = load_proposal_queue()
     refactor_queue_before = load_refactor_queue()
     selected_by_rule = {
@@ -16120,6 +16796,7 @@ def _apply_split_proposal(
         )
 
     before_status = node.status
+    before_maturity = node.maturity
     validation_errors: list[str] = []
     validation_findings: list[dict[str, Any]] = []
     artifact_io_errors: list[str] = []
@@ -16311,16 +16988,26 @@ def _apply_split_proposal(
         validation_findings=validation_findings,
     )
     evaluator_control_artifact = write_evaluator_control_artifact(evaluator_loop_control)
+    run_finished_at = utc_now_iso()
+    run_duration_sec = round(max(time.monotonic() - run_started_monotonic, 0.0), 3)
     payload = {
         "run_id": run_id,
-        "timestamp_utc": utc_now_iso(),
+        "timestamp_utc": run_finished_at,
+        "started_at_utc": run_started_at,
+        "finished_at_utc": run_finished_at,
+        "run_duration_sec": run_duration_sec,
         "spec_id": node.id,
         "title": node.title,
+        "run_kind": "apply_split_proposal",
+        "execution_profile": "",
+        "child_model": "",
         "completion_status": COMPLETION_STATUS_OK if success else COMPLETION_STATUS_FAILED,
         "selected_by_rule": selected_by_rule,
         "before_status": before_status,
         "proposed_status": None,
         "final_status": node.status,
+        "before_maturity": before_maturity,
+        "final_maturity": node.maturity,
         "outcome": "done" if success else "blocked",
         "blocker": "none" if success else "split proposal application failed",
         "gate_state": "none",
@@ -16331,6 +17018,20 @@ def _apply_split_proposal(
         "isolation_mode": isolation_mode_for_branch(branch),
         "branch": branch,
         "changed_files": changed,
+        "materialized_child_paths": [
+            path
+            for path in changed
+            if is_spec_node_path(str(path).strip())
+            and str(path).strip() != f"specs/nodes/{node.id}.yaml"
+        ],
+        "new_child_materialized_count": sum(
+            1
+            for path in changed
+            if is_spec_node_path(str(path).strip())
+            and str(path).strip() != f"specs/nodes/{node.id}.yaml"
+        ),
+        "accepted_canonical_diff": bool(success),
+        "productive_split_required": False,
         "validation_findings_policy": validation_findings_policy_reference(),
         "validation_findings": validation_findings,
         "validation_summary": validation_summary(validation_findings),
@@ -16386,6 +17087,8 @@ def _process_split_refactor_proposal(
     - proposal queue refreshed as an index, not as the full payload store
     """
     run_id = make_run_id(node.id)
+    run_started_at = utc_now_iso()
+    run_started_monotonic = time.monotonic()
     proposal_queue_before = load_proposal_queue()
     refactor_queue_before = load_refactor_queue()
     refactor_work_item = build_split_refactor_work_item(node)
@@ -16423,6 +17126,7 @@ def _process_split_refactor_proposal(
         operator_target=True,
     )
     before_status = node.status
+    before_maturity = node.maturity
 
     try:
         worktree_path, branch = create_isolated_worktree(node.id)
@@ -16714,16 +17418,26 @@ def _process_split_refactor_proposal(
         validation_findings=validation_findings,
     )
     evaluator_control_artifact = write_evaluator_control_artifact(evaluator_loop_control)
+    run_finished_at = utc_now_iso()
+    run_duration_sec = round(max(time.monotonic() - run_started_monotonic, 0.0), 3)
     payload = {
         "run_id": run_id,
-        "timestamp_utc": utc_now_iso(),
+        "timestamp_utc": run_finished_at,
+        "started_at_utc": run_started_at,
+        "finished_at_utc": run_finished_at,
+        "run_duration_sec": run_duration_sec,
         "spec_id": node.id,
         "title": node.title,
+        "run_kind": "split_proposal",
+        "execution_profile": str(selected_by_rule.get("execution_profile", "")).strip(),
+        "child_model": child_model or "",
         "completion_status": COMPLETION_STATUS_OK if success else COMPLETION_STATUS_FAILED,
         "selected_by_rule": selected_by_rule,
         "before_status": before_status,
         "proposed_status": None,
         "final_status": before_status,
+        "before_maturity": before_maturity,
+        "final_maturity": before_maturity,
         "outcome": outcome,
         "blocker": blocker,
         "gate_state": "none",
@@ -16734,6 +17448,10 @@ def _process_split_refactor_proposal(
         "isolation_mode": isolation_mode_for_branch(branch),
         "branch": branch,
         "changed_files": changed,
+        "materialized_child_paths": [],
+        "new_child_materialized_count": 0,
+        "accepted_canonical_diff": False,
+        "productive_split_required": False,
         "validation_findings_policy": validation_findings_policy_reference(),
         "validation_findings": validation_findings,
         "validation_summary": validation_summary(validation_findings),
@@ -16894,8 +17612,11 @@ def _process_one_spec(
     before_source_text = node.path.read_text(encoding="utf-8")
     before_node_data = copy.deepcopy(node.data)
     before_canonical = canonical_spec_snapshot(node.data)
+    before_maturity = node.maturity
     source_spec_relpath = node.path.relative_to(ROOT).as_posix()
     run_id = make_run_id(node.id)
+    run_started_at = utc_now_iso()
+    run_started_monotonic = time.monotonic()
     child_materialization_requested = targeted_child_materialization_requested(
         node=node,
         operator_target=operator_target,
@@ -17628,16 +18349,30 @@ def _process_one_spec(
             spec_id=str(child_materialization_hint.get("id", "")).strip(),
             run_id=run_id,
         )
+    run_finished_at = utc_now_iso()
+    run_duration_sec = round(max(time.monotonic() - run_started_monotonic, 0.0), 3)
+    run_kind = "graph_refactor" if is_graph_refactor_run else "ordinary_refine"
+    accepted_canonical_diff = bool(success and node.data.get("gate_state") == "none") or bool(
+        split_sync_allowed
+    )
     payload = {
         "run_id": run_id,
-        "timestamp_utc": utc_now_iso(),
+        "timestamp_utc": run_finished_at,
+        "started_at_utc": run_started_at,
+        "finished_at_utc": run_finished_at,
+        "run_duration_sec": run_duration_sec,
         "spec_id": node.id,
         "title": node.title,
+        "run_kind": run_kind,
+        "execution_profile": effective_execution_profile,
+        "child_model": child_model or "",
         "completion_status": completion_status,
         "selected_by_rule": selected_by_rule,
         "before_status": before_status,
         "proposed_status": node.data.get("proposed_status"),
         "final_status": node.data.get("status"),
+        "before_maturity": before_maturity,
+        "final_maturity": node.maturity,
         "outcome": outcome,
         "blocker": blocker,
         "gate_state": node.data.get("gate_state"),
@@ -17655,6 +18390,10 @@ def _process_one_spec(
         "safe_repair_artifact": safe_repair_artifact,
         "branch": branch,
         "changed_files": changed,
+        "materialized_child_paths": materialized_child_paths,
+        "new_child_materialized_count": len(materialized_child_paths),
+        "accepted_canonical_diff": accepted_canonical_diff,
+        "productive_split_required": productive_split_required,
         "validation_findings_policy": validation_findings_policy_reference(),
         "validation_findings": validation_findings,
         "validation_summary": validation_summary(validation_findings),
@@ -17766,6 +18505,7 @@ def main(
     build_external_consumer_handoffs_mode: bool = False,
     build_metric_signal_index_mode: bool = False,
     build_metric_threshold_proposals_mode: bool = False,
+    build_supervisor_performance_index_mode: bool = False,
     build_graph_dashboard_mode: bool = False,
     build_proposal_lane_overlay_mode: bool = False,
     build_proposal_runtime_index_mode: bool = False,
@@ -17815,6 +18555,7 @@ def main(
         "--build-external-consumer-handoffs": build_external_consumer_handoffs_mode,
         "--build-metric-signal-index": build_metric_signal_index_mode,
         "--build-metric-threshold-proposals": build_metric_threshold_proposals_mode,
+        "--build-supervisor-performance-index": build_supervisor_performance_index_mode,
         "--build-graph-dashboard": build_graph_dashboard_mode,
         "--build-proposal-lane-overlay": build_proposal_lane_overlay_mode,
         "--build-proposal-runtime-index": build_proposal_runtime_index_mode,
@@ -18059,6 +18800,59 @@ def main(
         overlay = build_proposal_lane_overlay()
         write_proposal_lane_overlay(overlay)
         print(json.dumps(overlay, ensure_ascii=False, indent=2))
+        return 0
+
+    if build_supervisor_performance_index_mode:
+        if any(
+            (
+                dry_run,
+                auto_approve,
+                loop,
+                resolve_gate,
+                decision,
+                note,
+                target_spec,
+                split_proposal,
+                apply_split_proposal,
+                operator_note,
+                mutation_budget,
+                run_authority,
+                execution_profile,
+                child_model,
+                child_timeout_seconds,
+                verbose,
+                list_stale_runtime,
+                clean_stale_runtime,
+                observe_graph_health_mode,
+                operator_request_packet_path,
+                build_intent_layer_overlay_mode,
+                build_vocabulary_index_mode,
+                build_vocabulary_drift_report_mode,
+                build_pre_spec_semantics_index_mode,
+                build_graph_health_overlay_mode,
+                build_graph_health_trends_mode,
+                build_spec_trace_index_mode,
+                build_spec_trace_projection_mode,
+                build_evidence_plane_index_mode,
+                build_evidence_plane_overlay_mode,
+                build_external_consumer_index_mode,
+                build_external_consumer_overlay_mode,
+                build_external_consumer_handoffs_mode,
+                build_metric_signal_index_mode,
+                build_metric_threshold_proposals_mode,
+                build_graph_dashboard_mode,
+                build_proposal_runtime_index_mode,
+                build_proposal_promotion_index_mode,
+            )
+        ):
+            print(
+                "--build-supervisor-performance-index must be used as a standalone command",
+                file=sys.stderr,
+            )
+            return 1
+        report = build_supervisor_performance_index()
+        write_supervisor_performance_index(report)
+        print(json.dumps(report, ensure_ascii=False, indent=2))
         return 0
 
     try:
@@ -19426,6 +20220,14 @@ if __name__ == "__main__":
         ),
     )
     parser.add_argument(
+        "--build-supervisor-performance-index",
+        action="store_true",
+        help=(
+            "Build a derived supervisor performance index from historical run logs, including "
+            "runtime cleanliness, yield, and graph-impact summaries"
+        ),
+    )
+    parser.add_argument(
         "--build-graph-dashboard",
         action="store_true",
         help=(
@@ -19589,6 +20391,7 @@ if __name__ == "__main__":
             build_external_consumer_handoffs_mode=args.build_external_consumer_handoffs,
             build_metric_signal_index_mode=args.build_metric_signal_index,
             build_metric_threshold_proposals_mode=args.build_metric_threshold_proposals,
+            build_supervisor_performance_index_mode=args.build_supervisor_performance_index,
             build_graph_dashboard_mode=args.build_graph_dashboard,
             build_proposal_lane_overlay_mode=args.build_proposal_lane_overlay,
             build_proposal_runtime_index_mode=args.build_proposal_runtime_index,
