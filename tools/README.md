@@ -94,6 +94,10 @@ Supervisor modes:
   `runs/external_consumer_handoff_packets.json` so stable sibling consumers
   receive explicit reviewable downstream handoff packets while draft references
   remain visible but non-operational.
+- `--build-specpm-export-preview`: build `runs/specpm_export_preview.json`
+  from the tracked `SpecPM` consumer contract and
+  `tools/specpm_export_registry.json`, producing a reviewable package preview
+  without pretending that the full `BoundarySpec` is already finalized.
 - `--build-metric-signal-index`: build `runs/metric_signal_index.json` from
   trace, evidence, graph-health, and proposal-runtime surfaces so metric-driven
   advisory signals remain derived rather than canonical facts. `sib_proxy` now
@@ -201,6 +205,9 @@ Key derived artifacts:
 - `runs/external_consumer_handoff_packets.json`: reviewable downstream handoff
   artifact for sibling consumers, grouped by handoff status, review state, and
   next-gap backlog
+- `runs/specpm_export_preview.json`: reviewable `SpecPM` package preview
+  artifact, including manifest preview, boundary-source preview, export
+  status, and next-gap backlog for future full package emission
 - `runs/metric_signal_index.json`: derived metric surface for
   `Specification Verifiability`, `Process Observability`,
   `Structural Observability`, and a bridge-aware `SIB` proxy, plus
@@ -234,6 +241,12 @@ Key derived artifacts:
 - `tools/external_consumer_handoff_policy.json`: declarative contract for
   sibling-consumer handoff packets, including handoff states, packet
   provenance, and review-state defaults
+- `tools/specpm_export_policy.json`: declarative contract for `SpecPM` export
+  previews, including review status, next-gap defaults, and required export
+  registry fields
+- `tools/specpm_export_registry.json`: tracked declaration of which bounded
+  `SpecGraph` regions should emit `SpecPM` package previews and under which
+  package identity and capability IDs
 - `tools/runtime_evidence_registry.json`: explicit evidence contracts that bind
   selected canonical specs to artifact refs, runtime entities, and observation,
   outcome, and adoption markers

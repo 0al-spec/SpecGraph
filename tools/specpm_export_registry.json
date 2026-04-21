@@ -1,0 +1,31 @@
+{
+  "artifact_kind": "specpm_export_registry",
+  "version": 1,
+  "entries": [
+    {
+      "export_id": "specgraph_core_repository_facade",
+      "consumer_id": "specpm",
+      "package_id": "specgraph.core_repository_facade",
+      "package_name": "SpecGraph Core Repository Facade",
+      "package_version": "0.1.0",
+      "package_summary": "Boundary-first package preview for the top-level SpecGraph repository facade and its canonical ontology boundary.",
+      "package_license": "Apache-2.0",
+      "root_spec_id": "SG-SPEC-0001",
+      "source_spec_ids": [
+        "SG-SPEC-0001"
+      ],
+      "provides_capabilities": [
+        "specgraph.repository_facade"
+      ],
+      "requires_capabilities": [],
+      "bounded_context": "specgraph_repository",
+      "keywords": [
+        "specgraph",
+        "ontology",
+        "boundary-package",
+        "repository-facade"
+      ],
+      "notes": "Initial export candidate for the whole SpecGraph repository facade. This is a reviewable preview contract, not final package publication."
+    }
+  ]
+}

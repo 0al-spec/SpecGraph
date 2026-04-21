@@ -99,6 +99,8 @@ particular task.
   `--build-external-consumer-overlay`
 - build reviewable downstream packets for stable sibling consumers:
   `--build-external-consumer-handoffs`
+- build a reviewable `SpecPM` package preview from a declared export contract:
+  `--build-specpm-export-preview`
 - build metric-driven derived signals from trace, evidence, graph health, and proposal runtime:
   `--build-metric-signal-index`
 - turn metric-threshold breaches into reviewable proposal artifacts:
@@ -585,6 +587,37 @@ Each declared external consumer is classified into:
 Only stable-ready consumers receive a normalized downstream `handoff` packet.
 Today that means `Metrics/SIB` can become reviewable handoff material, while
 `Metrics/SIB_FULL` remains visible as draft-only context and next-gap pressure.
+
+### SpecPM export preview
+
+```bash
+python3 tools/supervisor.py --build-specpm-export-preview
+```
+
+Builds `runs/specpm_export_preview.json` from:
+
+- `tools/specpm_export_registry.json`
+- `runs/external_consumer_index.json`
+- `runs/external_consumer_overlay.json`
+- the canonical source specs named in the export registry
+
+This layer is intentionally preview-first.
+
+It emits:
+
+- a minimal `specpm.yaml`-shaped manifest preview
+- a boundary-source preview rooted in canonical `SG-SPEC-*` sources
+- explicit missing fields that still block a future full `BoundarySpec`
+
+Use it when you want to review:
+
+- which bounded `SpecGraph` region is being prepared for `SpecPM`
+- whether `SpecPM` is only draft-visible or later becomes stable-ready
+- which package ID, version, summary, and capability IDs are already declared
+- what still needs to be governed before true package export/import can exist
+
+Because the current `SpecPM` RFC remains draft, a valid preview may still land
+in `draft_preview_only` rather than `ready_for_review`.
 
 ### Metric-threshold proposals
 

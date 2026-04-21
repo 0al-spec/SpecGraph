@@ -101,6 +101,8 @@ SUPERVISOR_PERFORMANCE_POLICY_RELATIVE_PATH = "tools/supervisor_performance_poli
 EXTERNAL_CONSUMER_REGISTRY_RELATIVE_PATH = "tools/external_consumers.json"
 EXTERNAL_CONSUMER_OVERLAY_POLICY_RELATIVE_PATH = "tools/external_consumer_overlay_policy.json"
 EXTERNAL_CONSUMER_HANDOFF_POLICY_RELATIVE_PATH = "tools/external_consumer_handoff_policy.json"
+SPECPM_EXPORT_POLICY_RELATIVE_PATH = "tools/specpm_export_policy.json"
+SPECPM_EXPORT_REGISTRY_RELATIVE_PATH = "tools/specpm_export_registry.json"
 
 
 def supervisor_policy_path() -> Path:
@@ -169,6 +171,14 @@ def external_consumer_overlay_policy_path() -> Path:
 
 def external_consumer_handoff_policy_path() -> Path:
     return TOOLS_DIR / "external_consumer_handoff_policy.json"
+
+
+def specpm_export_policy_path() -> Path:
+    return TOOLS_DIR / "specpm_export_policy.json"
+
+
+def specpm_export_registry_path() -> Path:
+    return TOOLS_DIR / "specpm_export_registry.json"
 
 
 def load_supervisor_policy() -> tuple[dict[str, Any], str]:
@@ -750,6 +760,44 @@ EXTERNAL_CONSUMER_HANDOFF_POLICY, EXTERNAL_CONSUMER_HANDOFF_POLICY_SHA256 = (
 )
 
 
+def load_specpm_export_policy() -> tuple[dict[str, Any], str]:
+    path = specpm_export_policy_path()
+    try:
+        raw_text = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise RuntimeError(
+            f"failed to read SpecPM export policy artifact: {path.as_posix()} ({exc})"
+        ) from exc
+    try:
+        payload = json.loads(raw_text)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(
+            f"malformed SpecPM export policy artifact: {path.as_posix()} ({exc})"
+        ) from exc
+    if not isinstance(payload, dict):
+        raise RuntimeError(
+            f"malformed SpecPM export policy artifact: {path.as_posix()} must contain a JSON object"
+        )
+    required_sections = (
+        "repository_layout",
+        "consumer_contract",
+        "preview_contract",
+        "next_gap_defaults",
+        "required_export_fields",
+        "boundary_spec_gaps",
+    )
+    missing = [section for section in required_sections if section not in payload]
+    if missing:
+        raise RuntimeError(
+            "malformed SpecPM export policy artifact: missing top-level section(s): "
+            + ", ".join(missing)
+        )
+    return payload, hashlib.sha256(raw_text.encode("utf-8")).hexdigest()
+
+
+SPECPM_EXPORT_POLICY, SPECPM_EXPORT_POLICY_SHA256 = load_specpm_export_policy()
+
+
 def policy_lookup(policy_path: str) -> Any:
     current: Any = SUPERVISOR_POLICY
     for part in policy_path.split("."):
@@ -806,6 +854,15 @@ def external_consumer_overlay_policy_lookup(policy_path: str) -> Any:
 
 def external_consumer_handoff_policy_lookup(policy_path: str) -> Any:
     current: Any = EXTERNAL_CONSUMER_HANDOFF_POLICY
+    for part in policy_path.split("."):
+        if not isinstance(current, dict) or part not in current:
+            raise KeyError(policy_path)
+        current = current[part]
+    return copy.deepcopy(current)
+
+
+def specpm_export_policy_lookup(policy_path: str) -> Any:
+    current: Any = SPECPM_EXPORT_POLICY
     for part in policy_path.split("."):
         if not isinstance(current, dict) or part not in current:
             raise KeyError(policy_path)
@@ -1023,6 +1080,14 @@ def external_consumer_handoff_policy_reference() -> dict[str, Any]:
     }
 
 
+def specpm_export_policy_reference() -> dict[str, Any]:
+    return {
+        "artifact_path": SPECPM_EXPORT_POLICY_RELATIVE_PATH,
+        "artifact_sha256": SPECPM_EXPORT_POLICY_SHA256,
+        "version": SPECPM_EXPORT_POLICY.get("version"),
+    }
+
+
 READY_DEP_STATUSES = {"reviewed", "frozen"}
 WORKABLE_STATUSES = {"outlined", "specified"}
 CONTINUATION_STATUSES = {"linked"}
@@ -1212,6 +1277,22 @@ EXTERNAL_CONSUMER_HANDOFF_REVIEW_STATES = list(
 )
 EXTERNAL_CONSUMER_HANDOFF_NAMED_FILTERS = list(
     external_consumer_handoff_policy_lookup("handoff_contract.named_filters")
+)
+SPECPM_EXPORT_PREVIEW_FILENAME = Path(
+    str(specpm_export_policy_lookup("repository_layout.preview_artifact"))
+).name
+SPECPM_EXPORT_PREVIEW_ARTIFACT_KIND = str(
+    specpm_export_policy_lookup("preview_contract.artifact_kind")
+)
+SPECPM_EXPORT_PREVIEW_SCHEMA_VERSION = int(
+    specpm_export_policy_lookup("preview_contract.schema_version")
+)
+SPECPM_EXPORT_PREVIEW_STATUSES = list(specpm_export_policy_lookup("preview_contract.status_values"))
+SPECPM_EXPORT_PREVIEW_REVIEW_STATES = list(
+    specpm_export_policy_lookup("preview_contract.review_states")
+)
+SPECPM_EXPORT_PREVIEW_NAMED_FILTERS = list(
+    specpm_export_policy_lookup("preview_contract.named_filters")
 )
 METRIC_SIGNAL_INDEX_FILENAME = Path(
     str(metric_signal_policy_lookup("repository_layout.signal_artifact"))
@@ -10685,6 +10766,10 @@ def external_consumer_handoff_packets_path() -> Path:
     return RUNS_DIR / EXTERNAL_CONSUMER_HANDOFF_FILENAME
 
 
+def specpm_export_preview_path() -> Path:
+    return RUNS_DIR / SPECPM_EXPORT_PREVIEW_FILENAME
+
+
 def evidence_plane_index_path() -> Path:
     return RUNS_DIR / EVIDENCE_PLANE_INDEX_FILENAME
 
@@ -10812,6 +10897,46 @@ def load_external_consumers_registry() -> dict[str, Any]:
             raise RuntimeError(
                 "malformed external consumer registry: "
                 f"entry {index} in {path.as_posix()} missing consumer_id"
+            )
+    return payload
+
+
+def load_specpm_export_registry() -> dict[str, Any]:
+    path = specpm_export_registry_path()
+    if not path.exists():
+        return {
+            "artifact_kind": "specpm_export_registry",
+            "version": 1,
+            "entries": [],
+        }
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except OSError as exc:
+        raise RuntimeError(
+            f"failed to read SpecPM export registry: {path.as_posix()} ({exc})"
+        ) from exc
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(f"malformed SpecPM export registry: {path.as_posix()} ({exc})") from exc
+    if not isinstance(payload, dict):
+        raise RuntimeError(
+            f"malformed SpecPM export registry: {path.as_posix()} must contain a JSON object"
+        )
+    raw_entries = payload.get("entries", [])
+    if not isinstance(raw_entries, list):
+        raise RuntimeError(
+            f"malformed SpecPM export registry: {path.as_posix()} entries must be a JSON list"
+        )
+    for index, item in enumerate(raw_entries, start=1):
+        if not isinstance(item, dict):
+            raise RuntimeError(
+                "malformed SpecPM export registry: "
+                f"entry {index} in {path.as_posix()} must be an object"
+            )
+        export_id = str(item.get("export_id", "")).strip()
+        if not export_id:
+            raise RuntimeError(
+                "malformed SpecPM export registry: "
+                f"entry {index} in {path.as_posix()} missing export_id"
             )
     return payload
 
@@ -12661,6 +12786,318 @@ def build_external_consumer_handoff_packets(
 def write_external_consumer_handoff_packets(report: dict[str, Any]) -> Path:
     RUNS_DIR.mkdir(parents=True, exist_ok=True)
     path = external_consumer_handoff_packets_path()
+    with artifact_lock(path):
+        atomic_write_json(path, report)
+    return path
+
+
+def build_specpm_export_preview(specs: list[SpecNode]) -> dict[str, Any]:
+    registry = load_specpm_export_registry()
+    external_consumer_index = build_external_consumer_index()
+    metric_signal_index = build_metric_signal_index(specs)
+    external_consumer_overlay = build_external_consumer_overlay(
+        external_consumer_index,
+        metric_signal_index,
+    )
+    spec_by_id = {spec.id: spec for spec in specs if spec.id}
+    consumer_entries = {
+        str(entry.get("consumer_id", "")).strip(): entry
+        for entry in external_consumer_index.get("entries", [])
+        if isinstance(entry, dict) and str(entry.get("consumer_id", "")).strip()
+    }
+    overlay_entries = {
+        str(entry.get("consumer_id", "")).strip(): entry
+        for entry in external_consumer_overlay.get("entries", [])
+        if isinstance(entry, dict) and str(entry.get("consumer_id", "")).strip()
+    }
+    required_consumer_id = str(
+        specpm_export_policy_lookup("consumer_contract.required_consumer_id")
+    )
+    required_profile = str(specpm_export_policy_lookup("consumer_contract.required_profile"))
+    required_fields = [
+        str(item).strip()
+        for item in specpm_export_policy_lookup("required_export_fields")
+        if str(item).strip()
+    ]
+    boundary_spec_gaps = [
+        str(item).strip()
+        for item in specpm_export_policy_lookup("boundary_spec_gaps")
+        if str(item).strip()
+    ]
+
+    entries: list[dict[str, Any]] = []
+    status_groups: dict[str, list[str]] = {}
+    review_state_groups: dict[str, list[str]] = {}
+    next_gap_groups: dict[str, list[str]] = {}
+    named_filters = {name: [] for name in SPECPM_EXPORT_PREVIEW_NAMED_FILTERS}
+    backlog_items: list[dict[str, Any]] = []
+
+    for raw_entry in registry.get("entries", []):
+        if not isinstance(raw_entry, dict):
+            continue
+        export_id = str(raw_entry.get("export_id", "")).strip()
+        if not export_id:
+            continue
+
+        export_contract_errors: list[str] = []
+        for field_name in required_fields:
+            raw_value = raw_entry.get(field_name)
+            if field_name in {
+                "source_spec_ids",
+                "provides_capabilities",
+                "requires_capabilities",
+                "keywords",
+            }:
+                if field_name not in raw_entry:
+                    export_contract_errors.append(f"missing_{field_name}")
+                    continue
+                if not isinstance(raw_value, list) or not any(
+                    str(item).strip() for item in raw_value
+                ):
+                    if field_name != "requires_capabilities":
+                        export_contract_errors.append(f"invalid_{field_name}")
+                continue
+            if not str(raw_value).strip():
+                export_contract_errors.append(f"missing_{field_name}")
+
+        consumer_id = str(raw_entry.get("consumer_id", "")).strip()
+        consumer_entry = consumer_entries.get(consumer_id, {})
+        overlay_entry = overlay_entries.get(consumer_id, {})
+        consumer_title = str(consumer_entry.get("title", "")).strip() or consumer_id
+        consumer_profile = str(consumer_entry.get("profile", "")).strip()
+        consumer_reference_state = (
+            str(consumer_entry.get("reference_state", "")).strip() or "draft_reference"
+        )
+        consumer_bridge_state = str(overlay_entry.get("bridge_state", "")).strip()
+        consumer_next_gap = str(overlay_entry.get("next_gap", "")).strip() or "none"
+
+        if consumer_id != required_consumer_id:
+            export_contract_errors.append("wrong_consumer_id")
+        if consumer_profile and consumer_profile != required_profile:
+            export_contract_errors.append("wrong_consumer_profile")
+        if not consumer_entry:
+            export_contract_errors.append("missing_external_consumer")
+
+        root_spec_id = str(raw_entry.get("root_spec_id", "")).strip()
+        source_spec_ids: list[str] = []
+        for item in raw_entry.get("source_spec_ids", []):
+            spec_id = str(item).strip()
+            if spec_id and spec_id not in source_spec_ids:
+                source_spec_ids.append(spec_id)
+        provides_capabilities: list[str] = []
+        for item in raw_entry.get("provides_capabilities", []):
+            capability_id = str(item).strip()
+            if capability_id and capability_id not in provides_capabilities:
+                provides_capabilities.append(capability_id)
+        requires_capabilities: list[str] = []
+        for item in raw_entry.get("requires_capabilities", []):
+            capability_id = str(item).strip()
+            if capability_id and capability_id not in requires_capabilities:
+                requires_capabilities.append(capability_id)
+        keywords: list[str] = []
+        for item in raw_entry.get("keywords", []):
+            keyword = str(item).strip()
+            if keyword and keyword not in keywords:
+                keywords.append(keyword)
+
+        if root_spec_id and root_spec_id not in spec_by_id:
+            export_contract_errors.append("missing_root_spec")
+        missing_source_spec_ids = [
+            spec_id for spec_id in source_spec_ids if spec_id not in spec_by_id
+        ]
+        if missing_source_spec_ids:
+            export_contract_errors.append("missing_source_specs")
+
+        export_status = "invalid_export_contract"
+        review_state = "not_emitted"
+        if not export_contract_errors:
+            if consumer_bridge_state == "stable_ready":
+                export_status = "ready_for_review"
+                review_state = "ready_for_review"
+            elif consumer_bridge_state == "draft_visible":
+                export_status = "draft_preview_only"
+                review_state = "draft_preview_only"
+            else:
+                export_status = "blocked_by_consumer_gap"
+
+        if export_status == "ready_for_review":
+            next_gap = str(specpm_export_policy_lookup("next_gap_defaults.ready_for_review"))
+        elif export_status == "draft_preview_only":
+            next_gap = str(specpm_export_policy_lookup("next_gap_defaults.draft_preview_only"))
+        elif export_status == "blocked_by_consumer_gap":
+            next_gap = consumer_next_gap or str(
+                specpm_export_policy_lookup("next_gap_defaults.blocked_by_consumer_gap")
+            )
+        else:
+            next_gap = str(specpm_export_policy_lookup("next_gap_defaults.invalid_export_contract"))
+
+        manifest_preview = None
+        boundary_source_preview = None
+        if not export_contract_errors:
+            manifest_preview = {
+                "apiVersion": "specpm.dev/v0.1",
+                "kind": "SpecPackage",
+                "metadata": {
+                    "id": str(raw_entry.get("package_id", "")).strip(),
+                    "name": str(raw_entry.get("package_name", "")).strip(),
+                    "version": str(raw_entry.get("package_version", "")).strip(),
+                    "summary": str(raw_entry.get("package_summary", "")).strip(),
+                    "license": str(raw_entry.get("package_license", "")).strip(),
+                },
+                "specs": [
+                    {
+                        "path": "specs/main.spec.yaml",
+                    }
+                ],
+                "index": {
+                    "provides": {
+                        "capabilities": provides_capabilities,
+                    },
+                    "requires": {
+                        "capabilities": requires_capabilities,
+                    },
+                },
+                "preview_only": True,
+            }
+            if keywords:
+                manifest_preview["keywords"] = keywords
+
+            source_spec_entries = [
+                {
+                    "spec_id": spec.id,
+                    "title": spec.title,
+                    "path": spec.path.relative_to(ROOT).as_posix(),
+                    "status": spec.status,
+                    "maturity": spec.maturity,
+                }
+                for spec_id in source_spec_ids
+                for spec in [spec_by_id[spec_id]]
+            ]
+            root_spec = spec_by_id[root_spec_id]
+            boundary_source_preview = {
+                "root_spec_id": root_spec_id,
+                "root_spec_title": root_spec.title,
+                "bounded_context": str(raw_entry.get("bounded_context", "")).strip(),
+                "intent_summary": str(raw_entry.get("package_summary", "")).strip(),
+                "source_specs": source_spec_entries,
+                "acceptance_criteria": [
+                    str(item).strip()
+                    for item in root_spec.data.get("acceptance", [])
+                    if str(item).strip()
+                ],
+                "evidence_refs": sorted(
+                    {
+                        str(item).strip()
+                        for item in (
+                            list(root_spec.inputs)
+                            + [spec.path.relative_to(ROOT).as_posix() for spec in [root_spec]]
+                        )
+                        if str(item).strip()
+                    }
+                ),
+                "provides_capabilities": provides_capabilities,
+                "requires_capabilities": requires_capabilities,
+                "missing_fields_for_full_boundary_spec": boundary_spec_gaps,
+                "notes": str(raw_entry.get("notes", "")).strip(),
+            }
+
+        entry = {
+            "export_id": export_id,
+            "consumer_id": consumer_id,
+            "consumer_title": consumer_title,
+            "consumer_reference_state": consumer_reference_state,
+            "consumer_bridge_state": consumer_bridge_state,
+            "export_status": export_status,
+            "review_state": review_state,
+            "next_gap": next_gap,
+            "policy_reference": specpm_export_policy_reference(),
+            "registry_reference": {
+                "artifact_path": SPECPM_EXPORT_REGISTRY_RELATIVE_PATH,
+                "artifact_kind": str(registry.get("artifact_kind", "")).strip()
+                or "specpm_export_registry",
+                "version": int(registry.get("version", 1) or 1),
+            },
+            "package_preview": manifest_preview,
+            "boundary_source_preview": boundary_source_preview,
+            "contract_summary": {
+                "root_spec_id": root_spec_id,
+                "source_spec_ids": source_spec_ids,
+                "provides_capabilities": provides_capabilities,
+                "requires_capabilities": requires_capabilities,
+            },
+            "contract_errors": sorted(set(export_contract_errors)),
+            "notes": str(raw_entry.get("notes", "")).strip(),
+        }
+        entries.append(entry)
+
+        status_groups.setdefault(export_status, []).append(export_id)
+        review_state_groups.setdefault(review_state, []).append(export_id)
+        next_gap_groups.setdefault(next_gap, []).append(export_id)
+
+        if export_status == "ready_for_review":
+            named_filters["stable_ready"].append(export_id)
+        if export_status == "draft_preview_only":
+            named_filters["draft_preview_only"].append(export_id)
+        if export_status == "blocked_by_consumer_gap":
+            named_filters["blocked_by_consumer_gap"].append(export_id)
+        if export_status == "invalid_export_contract":
+            named_filters["invalid_export_contract"].append(export_id)
+        if manifest_preview is not None:
+            named_filters["manifest_preview_complete"].append(export_id)
+
+        if next_gap != "none":
+            backlog_items.append(
+                {
+                    "export_id": export_id,
+                    "export_status": export_status,
+                    "review_state": review_state,
+                    "next_gap": next_gap,
+                }
+            )
+
+    for bucket in (status_groups, review_state_groups, next_gap_groups, named_filters):
+        for key in list(bucket):
+            bucket[key] = sorted(set(bucket[key]))
+
+    return {
+        "artifact_kind": SPECPM_EXPORT_PREVIEW_ARTIFACT_KIND,
+        "schema_version": SPECPM_EXPORT_PREVIEW_SCHEMA_VERSION,
+        "generated_at": utc_now_iso(),
+        "policy_reference": specpm_export_policy_reference(),
+        "source_artifacts": {
+            "specpm_export_registry": {
+                "artifact_path": SPECPM_EXPORT_REGISTRY_RELATIVE_PATH,
+                "version": int(registry.get("version", 1) or 1),
+            },
+            "external_consumer_index": {
+                "artifact_path": external_consumer_index_path().relative_to(ROOT).as_posix(),
+                "generated_at": external_consumer_index.get("generated_at"),
+            },
+            "external_consumer_overlay": {
+                "artifact_path": external_consumer_overlay_path().relative_to(ROOT).as_posix(),
+                "generated_at": external_consumer_overlay.get("generated_at"),
+            },
+        },
+        "entry_count": len(entries),
+        "entries": entries,
+        "viewer_projection": {
+            "export_status": {key: sorted(value) for key, value in sorted(status_groups.items())},
+            "review_state": {
+                key: sorted(value) for key, value in sorted(review_state_groups.items())
+            },
+            "next_gap": {key: sorted(value) for key, value in sorted(next_gap_groups.items())},
+            "named_filters": {key: sorted(value) for key, value in sorted(named_filters.items())},
+        },
+        "export_backlog": {
+            "entry_count": len(backlog_items),
+            "items": backlog_items,
+        },
+    }
+
+
+def write_specpm_export_preview(report: dict[str, Any]) -> Path:
+    RUNS_DIR.mkdir(parents=True, exist_ok=True)
+    path = specpm_export_preview_path()
     with artifact_lock(path):
         atomic_write_json(path, report)
     return path
@@ -18503,6 +18940,7 @@ def main(
     build_external_consumer_index_mode: bool = False,
     build_external_consumer_overlay_mode: bool = False,
     build_external_consumer_handoffs_mode: bool = False,
+    build_specpm_export_preview_mode: bool = False,
     build_metric_signal_index_mode: bool = False,
     build_metric_threshold_proposals_mode: bool = False,
     build_supervisor_performance_index_mode: bool = False,
@@ -18553,6 +18991,7 @@ def main(
         "--build-external-consumer-index": build_external_consumer_index_mode,
         "--build-external-consumer-overlay": build_external_consumer_overlay_mode,
         "--build-external-consumer-handoffs": build_external_consumer_handoffs_mode,
+        "--build-specpm-export-preview": build_specpm_export_preview_mode,
         "--build-metric-signal-index": build_metric_signal_index_mode,
         "--build-metric-threshold-proposals": build_metric_threshold_proposals_mode,
         "--build-supervisor-performance-index": build_supervisor_performance_index_mode,
@@ -19341,6 +19780,41 @@ def main(
         )
         write_external_consumer_handoff_packets(handoff_packets)
         print(json.dumps(handoff_packets, ensure_ascii=False, indent=2))
+        return 0
+
+    if build_specpm_export_preview_mode:
+        if any(
+            (
+                dry_run,
+                auto_approve,
+                loop,
+                resolve_gate,
+                decision,
+                note,
+                target_spec,
+                split_proposal,
+                apply_split_proposal,
+                operator_note,
+                mutation_budget,
+                run_authority,
+                execution_profile,
+                child_model,
+                child_timeout_seconds,
+                verbose,
+                list_stale_runtime,
+                clean_stale_runtime,
+                observe_graph_health_mode,
+                operator_request_packet_path,
+            )
+        ):
+            print(
+                "--build-specpm-export-preview must be used as a standalone command",
+                file=sys.stderr,
+            )
+            return 1
+        preview = build_specpm_export_preview(specs)
+        write_specpm_export_preview(preview)
+        print(json.dumps(preview, ensure_ascii=False, indent=2))
         return 0
 
     if build_metric_signal_index_mode:
@@ -20204,6 +20678,14 @@ if __name__ == "__main__":
         ),
     )
     parser.add_argument(
+        "--build-specpm-export-preview",
+        action="store_true",
+        help=(
+            "Build a reviewable SpecPM package preview from the declared SpecPM export "
+            "registry and current external-consumer bridge state"
+        ),
+    )
+    parser.add_argument(
         "--build-metric-signal-index",
         action="store_true",
         help=(
@@ -20389,6 +20871,7 @@ if __name__ == "__main__":
             build_external_consumer_index_mode=args.build_external_consumer_index,
             build_external_consumer_overlay_mode=args.build_external_consumer_overlay,
             build_external_consumer_handoffs_mode=args.build_external_consumer_handoffs,
+            build_specpm_export_preview_mode=args.build_specpm_export_preview,
             build_metric_signal_index_mode=args.build_metric_signal_index,
             build_metric_threshold_proposals_mode=args.build_metric_threshold_proposals,
             build_supervisor_performance_index_mode=args.build_supervisor_performance_index,
