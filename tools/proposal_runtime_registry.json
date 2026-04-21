@@ -308,5 +308,46 @@
         "pattern": "\"ready_external_handoffs\""
       }
     ]
+  },
+  {
+    "proposal_id": "0027",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "tools/supervisor.py",
+      "tests/test_supervisor.py",
+      "tools/specpm_export_policy.json",
+      "tools/specpm_export_registry.json",
+      "tools/external_consumers.json"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def build_specpm_export_preview("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "SPECPM_EXPORT_PREVIEW_FILENAME = "
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_specpm_export_preview_emits_draft_preview_from_registry("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_main_builds_specpm_export_preview_as_standalone_command("
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "write_specpm_export_preview(preview)"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "\"artifact_kind\": SPECPM_EXPORT_PREVIEW_ARTIFACT_KIND"
+      }
+    ]
   }
 ]

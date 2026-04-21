@@ -9,7 +9,8 @@
     "draft_reference"
   ],
   "consumer_profiles": [
-    "sibling_metric_consumer"
+    "sibling_metric_consumer",
+    "boundary_package_consumer"
   ],
   "contract_statuses": [
     "ready",
@@ -114,6 +115,38 @@
         }
       ],
       "notes": "Draft extended reference. Visible to the bridge index, but not threshold-driving authority for sib_proxy yet."
+    },
+    {
+      "consumer_id": "specpm",
+      "title": "SpecPM / Boundary Package Consumer",
+      "reference_state": "draft_reference",
+      "profile": "boundary_package_consumer",
+      "repo_url": "https://github.com/0al-spec/SpecPM",
+      "local_checkout_hint": "/Users/egor/Development/GitHub/0AL/SpecPM",
+      "metric_bindings": [],
+      "declared_artifacts": [
+        {
+          "artifact_id": "specpm_readme",
+          "path": "README.md",
+          "kind": "consumer_readme",
+          "required": true,
+          "markers": [
+            "# SpecPM",
+            "Intent-level dependency management"
+          ]
+        },
+        {
+          "artifact_id": "specpm_rfc_0001",
+          "path": "RFC/SpecGraph-RFC-0001.md",
+          "kind": "source_document",
+          "required": true,
+          "markers": [
+            "# SpecGraph RFC 0001 Minimal Specification Package Format for SpecPM MVP",
+            "## 10. Package Manifest: specpm.yaml"
+          ]
+        }
+      ],
+      "notes": "Draft boundary package consumer for SpecGraph -> SpecPM export preview and later package import/export bridge work."
     }
   ]
 }

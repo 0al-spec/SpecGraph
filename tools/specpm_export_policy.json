@@ -1,0 +1,61 @@
+{
+  "artifact_kind": "specpm_export_preview_policy",
+  "version": 1,
+  "repository_layout": {
+    "registry_artifact": "tools/specpm_export_registry.json",
+    "preview_artifact": "runs/specpm_export_preview.json"
+  },
+  "consumer_contract": {
+    "required_consumer_id": "specpm",
+    "required_profile": "boundary_package_consumer",
+    "draft_reference_state": "draft_reference",
+    "stable_reference_state": "stable_reference"
+  },
+  "preview_contract": {
+    "artifact_kind": "specpm_export_preview",
+    "schema_version": 1,
+    "status_values": [
+      "ready_for_review",
+      "draft_preview_only",
+      "blocked_by_consumer_gap",
+      "invalid_export_contract"
+    ],
+    "review_states": [
+      "ready_for_review",
+      "draft_preview_only",
+      "not_emitted"
+    ],
+    "named_filters": [
+      "stable_ready",
+      "draft_preview_only",
+      "blocked_by_consumer_gap",
+      "invalid_export_contract",
+      "manifest_preview_complete"
+    ]
+  },
+  "next_gap_defaults": {
+    "ready_for_review": "review_specpm_export_preview",
+    "draft_preview_only": "review_draft_specpm_boundary",
+    "blocked_by_consumer_gap": "inherit_external_consumer_next_gap",
+    "invalid_export_contract": "repair_specpm_export_registry"
+  },
+  "required_export_fields": [
+    "export_id",
+    "consumer_id",
+    "package_id",
+    "package_name",
+    "package_version",
+    "package_summary",
+    "package_license",
+    "root_spec_id",
+    "source_spec_ids",
+    "provides_capabilities",
+    "bounded_context"
+  ],
+  "boundary_spec_gaps": [
+    "interfaces",
+    "effects",
+    "constraints",
+    "provenance"
+  ]
+}
