@@ -1,0 +1,51 @@
+{
+  "artifact_kind": "specpm_handoff_policy",
+  "version": 1,
+  "repository_layout": {
+    "artifact": "runs/specpm_handoff_packets.json"
+  },
+  "handoff_contract": {
+    "artifact_kind": "specpm_handoff_packets",
+    "schema_version": 1,
+    "transition_profile": "implementation_trace",
+    "packet_type": "handoff",
+    "target_artifact_class": "specpm_boundary_package_handoff",
+    "handoff_statuses": [
+      "ready_for_handoff",
+      "draft_preview_only",
+      "blocked_by_preview_gap",
+      "invalid_export_contract"
+    ],
+    "review_states": [
+      "ready_for_review",
+      "draft_preview_only",
+      "not_emitted"
+    ],
+    "named_filters": [
+      "ready_for_handoff",
+      "draft_preview_only",
+      "blocked_by_preview_gap",
+      "invalid_export_contract",
+      "packet_validation_failed",
+      "package_preview_complete"
+    ]
+  },
+  "packet_provenance": {
+    "source_refs": [
+      "tools/specpm_export_registry.json",
+      "tools/external_consumers.json",
+      "runs/specpm_export_preview.json"
+    ],
+    "required_provenance_links": [
+      "specpm_export_registry",
+      "specpm_export_preview",
+      "external_consumer_registry"
+    ]
+  },
+  "next_gap_defaults": {
+    "ready_for_handoff": "review_specpm_handoff_packet",
+    "draft_preview_only": "review_draft_specpm_boundary",
+    "blocked_by_preview_gap": "inherit_preview_next_gap",
+    "invalid_export_contract": "repair_specpm_export_preview"
+  }
+}

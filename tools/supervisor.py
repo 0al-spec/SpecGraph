@@ -102,6 +102,7 @@ EXTERNAL_CONSUMER_REGISTRY_RELATIVE_PATH = "tools/external_consumers.json"
 EXTERNAL_CONSUMER_OVERLAY_POLICY_RELATIVE_PATH = "tools/external_consumer_overlay_policy.json"
 EXTERNAL_CONSUMER_HANDOFF_POLICY_RELATIVE_PATH = "tools/external_consumer_handoff_policy.json"
 SPECPM_EXPORT_POLICY_RELATIVE_PATH = "tools/specpm_export_policy.json"
+SPECPM_HANDOFF_POLICY_RELATIVE_PATH = "tools/specpm_handoff_policy.json"
 SPECPM_EXPORT_REGISTRY_RELATIVE_PATH = "tools/specpm_export_registry.json"
 
 
@@ -175,6 +176,10 @@ def external_consumer_handoff_policy_path() -> Path:
 
 def specpm_export_policy_path() -> Path:
     return TOOLS_DIR / "specpm_export_policy.json"
+
+
+def specpm_handoff_policy_path() -> Path:
+    return TOOLS_DIR / "specpm_handoff_policy.json"
 
 
 def specpm_export_registry_path() -> Path:
@@ -798,6 +803,43 @@ def load_specpm_export_policy() -> tuple[dict[str, Any], str]:
 SPECPM_EXPORT_POLICY, SPECPM_EXPORT_POLICY_SHA256 = load_specpm_export_policy()
 
 
+def load_specpm_handoff_policy() -> tuple[dict[str, Any], str]:
+    path = specpm_handoff_policy_path()
+    try:
+        raw_text = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise RuntimeError(
+            f"failed to read SpecPM handoff policy artifact: {path.as_posix()} ({exc})"
+        ) from exc
+    try:
+        payload = json.loads(raw_text)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(
+            f"malformed SpecPM handoff policy artifact: {path.as_posix()} ({exc})"
+        ) from exc
+    if not isinstance(payload, dict):
+        raise RuntimeError(
+            "malformed SpecPM handoff policy artifact: "
+            f"{path.as_posix()} must contain a JSON object"
+        )
+    required_sections = (
+        "repository_layout",
+        "handoff_contract",
+        "packet_provenance",
+        "next_gap_defaults",
+    )
+    missing = [section for section in required_sections if section not in payload]
+    if missing:
+        raise RuntimeError(
+            "malformed SpecPM handoff policy artifact: missing top-level section(s): "
+            + ", ".join(missing)
+        )
+    return payload, hashlib.sha256(raw_text.encode("utf-8")).hexdigest()
+
+
+SPECPM_HANDOFF_POLICY, SPECPM_HANDOFF_POLICY_SHA256 = load_specpm_handoff_policy()
+
+
 def policy_lookup(policy_path: str) -> Any:
     current: Any = SUPERVISOR_POLICY
     for part in policy_path.split("."):
@@ -863,6 +905,15 @@ def external_consumer_handoff_policy_lookup(policy_path: str) -> Any:
 
 def specpm_export_policy_lookup(policy_path: str) -> Any:
     current: Any = SPECPM_EXPORT_POLICY
+    for part in policy_path.split("."):
+        if not isinstance(current, dict) or part not in current:
+            raise KeyError(policy_path)
+        current = current[part]
+    return copy.deepcopy(current)
+
+
+def specpm_handoff_policy_lookup(policy_path: str) -> Any:
+    current: Any = SPECPM_HANDOFF_POLICY
     for part in policy_path.split("."):
         if not isinstance(current, dict) or part not in current:
             raise KeyError(policy_path)
@@ -1088,6 +1139,14 @@ def specpm_export_policy_reference() -> dict[str, Any]:
     }
 
 
+def specpm_handoff_policy_reference() -> dict[str, Any]:
+    return {
+        "artifact_path": SPECPM_HANDOFF_POLICY_RELATIVE_PATH,
+        "artifact_sha256": SPECPM_HANDOFF_POLICY_SHA256,
+        "version": SPECPM_HANDOFF_POLICY.get("version"),
+    }
+
+
 READY_DEP_STATUSES = {"reviewed", "frozen"}
 WORKABLE_STATUSES = {"outlined", "specified"}
 CONTINUATION_STATUSES = {"linked"}
@@ -1294,6 +1353,19 @@ SPECPM_EXPORT_PREVIEW_REVIEW_STATES = list(
 SPECPM_EXPORT_PREVIEW_NAMED_FILTERS = list(
     specpm_export_policy_lookup("preview_contract.named_filters")
 )
+SPECPM_HANDOFF_FILENAME = Path(str(specpm_handoff_policy_lookup("repository_layout.artifact"))).name
+SPECPM_HANDOFF_ARTIFACT_KIND = str(specpm_handoff_policy_lookup("handoff_contract.artifact_kind"))
+SPECPM_HANDOFF_SCHEMA_VERSION = int(specpm_handoff_policy_lookup("handoff_contract.schema_version"))
+SPECPM_HANDOFF_TRANSITION_PROFILE = str(
+    specpm_handoff_policy_lookup("handoff_contract.transition_profile")
+)
+SPECPM_HANDOFF_PACKET_TYPE = str(specpm_handoff_policy_lookup("handoff_contract.packet_type"))
+SPECPM_HANDOFF_TARGET_ARTIFACT_CLASS = str(
+    specpm_handoff_policy_lookup("handoff_contract.target_artifact_class")
+)
+SPECPM_HANDOFF_STATUSES = list(specpm_handoff_policy_lookup("handoff_contract.handoff_statuses"))
+SPECPM_HANDOFF_REVIEW_STATES = list(specpm_handoff_policy_lookup("handoff_contract.review_states"))
+SPECPM_HANDOFF_NAMED_FILTERS = list(specpm_handoff_policy_lookup("handoff_contract.named_filters"))
 METRIC_SIGNAL_INDEX_FILENAME = Path(
     str(metric_signal_policy_lookup("repository_layout.signal_artifact"))
 ).name
@@ -10770,6 +10842,10 @@ def specpm_export_preview_path() -> Path:
     return RUNS_DIR / SPECPM_EXPORT_PREVIEW_FILENAME
 
 
+def specpm_handoff_packets_path() -> Path:
+    return RUNS_DIR / SPECPM_HANDOFF_FILENAME
+
+
 def evidence_plane_index_path() -> Path:
     return RUNS_DIR / EVIDENCE_PLANE_INDEX_FILENAME
 
@@ -13098,6 +13174,211 @@ def build_specpm_export_preview(specs: list[SpecNode]) -> dict[str, Any]:
 def write_specpm_export_preview(report: dict[str, Any]) -> Path:
     RUNS_DIR.mkdir(parents=True, exist_ok=True)
     path = specpm_export_preview_path()
+    with artifact_lock(path):
+        atomic_write_json(path, report)
+    return path
+
+
+def derive_specpm_handoff_next_gap(
+    *,
+    handoff_status: str,
+    preview_entry: dict[str, Any],
+) -> str:
+    default_gap = str(specpm_handoff_policy_lookup(f"next_gap_defaults.{handoff_status}")).strip()
+    if default_gap == "inherit_preview_next_gap":
+        inherited = str(preview_entry.get("next_gap", "")).strip()
+        return inherited or "review_specpm_export_preview"
+    return default_gap or "none"
+
+
+def build_specpm_handoff_packets(
+    specpm_export_preview: dict[str, Any],
+    external_consumer_index: dict[str, Any],
+) -> dict[str, Any]:
+    consumer_entries = {
+        str(entry.get("consumer_id", "")).strip(): entry
+        for entry in external_consumer_index.get("entries", [])
+        if isinstance(entry, dict) and str(entry.get("consumer_id", "")).strip()
+    }
+    entries: list[dict[str, Any]] = []
+    handoff_status_groups: dict[str, list[str]] = {}
+    review_state_groups: dict[str, list[str]] = {}
+    named_filters = {name: [] for name in SPECPM_HANDOFF_NAMED_FILTERS}
+    backlog_items: list[dict[str, Any]] = []
+    grouped_backlog: dict[str, list[str]] = {}
+    source_refs = [
+        str(path).strip()
+        for path in specpm_handoff_policy_lookup("packet_provenance.source_refs")
+        if str(path).strip()
+    ]
+    required_provenance_links = [
+        str(item).strip()
+        for item in specpm_handoff_policy_lookup("packet_provenance.required_provenance_links")
+        if str(item).strip()
+    ]
+
+    for raw_entry in specpm_export_preview.get("entries", []):
+        if not isinstance(raw_entry, dict):
+            continue
+        export_id = str(raw_entry.get("export_id", "")).strip()
+        if not export_id:
+            continue
+        consumer_id = str(raw_entry.get("consumer_id", "")).strip()
+        consumer_entry = consumer_entries.get(consumer_id, {})
+        export_status = str(raw_entry.get("export_status", "")).strip()
+        if export_status == "ready_for_review":
+            handoff_status = "ready_for_handoff"
+            review_state = "ready_for_review"
+        elif export_status == "draft_preview_only":
+            handoff_status = "draft_preview_only"
+            review_state = "draft_preview_only"
+        elif export_status == "blocked_by_consumer_gap":
+            handoff_status = "blocked_by_preview_gap"
+            review_state = "not_emitted"
+        else:
+            handoff_status = "invalid_export_contract"
+            review_state = "not_emitted"
+
+        next_gap = derive_specpm_handoff_next_gap(
+            handoff_status=handoff_status,
+            preview_entry=raw_entry,
+        )
+        local_checkout_hint = ""
+        local_checkout = consumer_entry.get("local_checkout", {})
+        if isinstance(local_checkout, dict):
+            local_checkout_hint = str(local_checkout.get("checkout_path", "")).strip()
+        if not local_checkout_hint:
+            local_checkout_hint = str(consumer_entry.get("local_checkout_hint", "")).strip()
+
+        package_preview = copy.deepcopy(raw_entry.get("package_preview"))
+        boundary_source_preview = copy.deepcopy(raw_entry.get("boundary_source_preview"))
+        package_metadata = (
+            package_preview.get("metadata", {}) if isinstance(package_preview, dict) else {}
+        )
+        transition_packet = None
+        validation_report = None
+        if handoff_status == "ready_for_handoff":
+            transition_packet = {
+                "packet_type": SPECPM_HANDOFF_PACKET_TYPE,
+                "transition_profile": SPECPM_HANDOFF_TRANSITION_PROFILE,
+                "transition_intent": (
+                    "handoff SpecPM boundary package preview "
+                    f"{str(package_metadata.get('id', export_id)).strip() or export_id} "
+                    "for downstream review"
+                ),
+                "source_refs": copy.deepcopy(source_refs),
+                "actor_class": "supervisor_derived",
+                "target_artifact_class": SPECPM_HANDOFF_TARGET_ARTIFACT_CLASS,
+                "lineage_root": f"specpm-export::{export_id}",
+                "declared_change_surface": [
+                    specpm_handoff_packets_path().relative_to(ROOT).as_posix()
+                ],
+                "required_provenance_links": copy.deepcopy(required_provenance_links),
+            }
+            validation_report = validate_transition_packet_report(
+                transition_packet,
+                validator_profile=SPECPM_HANDOFF_TRANSITION_PROFILE,
+            )
+
+        entry = {
+            "handoff_id": f"specpm_handoff::{export_id}",
+            "export_id": export_id,
+            "consumer_id": consumer_id,
+            "handoff_status": handoff_status,
+            "review_state": review_state,
+            "next_gap": next_gap,
+            "policy_reference": specpm_handoff_policy_reference(),
+            "preview_reference": {
+                "artifact_path": specpm_export_preview_path().relative_to(ROOT).as_posix(),
+                "generated_at": specpm_export_preview.get("generated_at"),
+                "export_status": export_status,
+                "review_state": str(raw_entry.get("review_state", "")).strip(),
+            },
+            "target_consumer": {
+                "consumer_id": consumer_id,
+                "title": str(consumer_entry.get("title", "")).strip()
+                or str(raw_entry.get("consumer_title", "")).strip()
+                or consumer_id,
+                "profile": str(consumer_entry.get("profile", "")).strip(),
+                "reference_state": str(raw_entry.get("consumer_reference_state", "")).strip(),
+                "bridge_state": str(raw_entry.get("consumer_bridge_state", "")).strip(),
+                "repo_url": str(consumer_entry.get("repo_url", "")).strip(),
+                "local_checkout_hint": local_checkout_hint,
+            },
+            "package_identity": {
+                "package_id": str(package_metadata.get("id", "")).strip(),
+                "package_name": str(package_metadata.get("name", "")).strip(),
+                "package_version": str(package_metadata.get("version", "")).strip(),
+            },
+            "package_preview": package_preview,
+            "boundary_source_preview": boundary_source_preview,
+            "contract_errors": copy.deepcopy(raw_entry.get("contract_errors", [])),
+            "transition_packet": transition_packet,
+            "transition_packet_validation": validation_report,
+            "notes": str(raw_entry.get("notes", "")).strip(),
+        }
+        entries.append(entry)
+        handoff_status_groups.setdefault(handoff_status, []).append(export_id)
+        review_state_groups.setdefault(review_state, []).append(export_id)
+        named_filters.setdefault(handoff_status, []).append(export_id)
+        if package_preview is not None:
+            named_filters["package_preview_complete"].append(export_id)
+        if validation_report and not validation_report.get("ok"):
+            named_filters["packet_validation_failed"].append(export_id)
+        if next_gap != "none":
+            backlog_items.append(
+                {
+                    "export_id": export_id,
+                    "handoff_status": handoff_status,
+                    "review_state": review_state,
+                    "next_gap": next_gap,
+                }
+            )
+            grouped_backlog.setdefault(next_gap, []).append(export_id)
+
+    for bucket in (handoff_status_groups, review_state_groups, named_filters, grouped_backlog):
+        for key in list(bucket):
+            bucket[key] = sorted(set(bucket[key]))
+
+    return {
+        "artifact_kind": SPECPM_HANDOFF_ARTIFACT_KIND,
+        "schema_version": SPECPM_HANDOFF_SCHEMA_VERSION,
+        "generated_at": utc_now_iso(),
+        "policy_reference": specpm_handoff_policy_reference(),
+        "source_artifacts": {
+            "specpm_export_preview": {
+                "artifact_path": specpm_export_preview_path().relative_to(ROOT).as_posix(),
+                "generated_at": specpm_export_preview.get("generated_at"),
+            },
+            "external_consumer_index": {
+                "artifact_path": external_consumer_index_path().relative_to(ROOT).as_posix(),
+                "generated_at": external_consumer_index.get("generated_at"),
+            },
+        },
+        "entry_count": len(entries),
+        "entries": entries,
+        "viewer_projection": {
+            "handoff_status": {
+                key: sorted(value) for key, value in sorted(handoff_status_groups.items())
+            },
+            "review_state": {
+                key: sorted(value) for key, value in sorted(review_state_groups.items())
+            },
+            "named_filters": {key: sorted(value) for key, value in sorted(named_filters.items())},
+        },
+        "handoff_backlog": {
+            "entry_count": len(backlog_items),
+            "items": backlog_items,
+            "grouped_by_next_gap": {
+                key: sorted(value) for key, value in sorted(grouped_backlog.items())
+            },
+        },
+    }
+
+
+def write_specpm_handoff_packets(report: dict[str, Any]) -> Path:
+    RUNS_DIR.mkdir(parents=True, exist_ok=True)
+    path = specpm_handoff_packets_path()
     with artifact_lock(path):
         atomic_write_json(path, report)
     return path
@@ -18941,6 +19222,7 @@ def main(
     build_external_consumer_overlay_mode: bool = False,
     build_external_consumer_handoffs_mode: bool = False,
     build_specpm_export_preview_mode: bool = False,
+    build_specpm_handoff_packets_mode: bool = False,
     build_metric_signal_index_mode: bool = False,
     build_metric_threshold_proposals_mode: bool = False,
     build_supervisor_performance_index_mode: bool = False,
@@ -18992,6 +19274,7 @@ def main(
         "--build-external-consumer-overlay": build_external_consumer_overlay_mode,
         "--build-external-consumer-handoffs": build_external_consumer_handoffs_mode,
         "--build-specpm-export-preview": build_specpm_export_preview_mode,
+        "--build-specpm-handoff-packets": build_specpm_handoff_packets_mode,
         "--build-metric-signal-index": build_metric_signal_index_mode,
         "--build-metric-threshold-proposals": build_metric_threshold_proposals_mode,
         "--build-supervisor-performance-index": build_supervisor_performance_index_mode,
@@ -19815,6 +20098,44 @@ def main(
         preview = build_specpm_export_preview(specs)
         write_specpm_export_preview(preview)
         print(json.dumps(preview, ensure_ascii=False, indent=2))
+        return 0
+
+    if build_specpm_handoff_packets_mode:
+        if any(
+            (
+                dry_run,
+                auto_approve,
+                loop,
+                resolve_gate,
+                decision,
+                note,
+                target_spec,
+                split_proposal,
+                apply_split_proposal,
+                operator_note,
+                mutation_budget,
+                run_authority,
+                execution_profile,
+                child_model,
+                child_timeout_seconds,
+                verbose,
+                list_stale_runtime,
+                clean_stale_runtime,
+                observe_graph_health_mode,
+                operator_request_packet_path,
+            )
+        ):
+            print(
+                "--build-specpm-handoff-packets must be used as a standalone command",
+                file=sys.stderr,
+            )
+            return 1
+        preview = build_specpm_export_preview(specs)
+        write_specpm_export_preview(preview)
+        consumer_index = build_external_consumer_index()
+        handoff_packets = build_specpm_handoff_packets(preview, consumer_index)
+        write_specpm_handoff_packets(handoff_packets)
+        print(json.dumps(handoff_packets, ensure_ascii=False, indent=2))
         return 0
 
     if build_metric_signal_index_mode:
@@ -20686,6 +21007,14 @@ if __name__ == "__main__":
         ),
     )
     parser.add_argument(
+        "--build-specpm-handoff-packets",
+        action="store_true",
+        help=(
+            "Build reviewable SpecPM handoff packets from the current SpecPM export preview "
+            "and external-consumer identity data"
+        ),
+    )
+    parser.add_argument(
         "--build-metric-signal-index",
         action="store_true",
         help=(
@@ -20872,6 +21201,7 @@ if __name__ == "__main__":
             build_external_consumer_overlay_mode=args.build_external_consumer_overlay,
             build_external_consumer_handoffs_mode=args.build_external_consumer_handoffs,
             build_specpm_export_preview_mode=args.build_specpm_export_preview,
+            build_specpm_handoff_packets_mode=args.build_specpm_handoff_packets,
             build_metric_signal_index_mode=args.build_metric_signal_index,
             build_metric_threshold_proposals_mode=args.build_metric_threshold_proposals,
             build_supervisor_performance_index_mode=args.build_supervisor_performance_index,

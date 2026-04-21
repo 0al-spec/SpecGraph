@@ -101,6 +101,8 @@ particular task.
   `--build-external-consumer-handoffs`
 - build a reviewable `SpecPM` package preview from a declared export contract:
   `--build-specpm-export-preview`
+- build reviewable `SpecPM` handoff packets on top of the current preview:
+  `--build-specpm-handoff-packets`
 - build metric-driven derived signals from trace, evidence, graph health, and proposal runtime:
   `--build-metric-signal-index`
 - turn metric-threshold breaches into reviewable proposal artifacts:
@@ -618,6 +620,35 @@ Use it when you want to review:
 
 Because the current `SpecPM` RFC remains draft, a valid preview may still land
 in `draft_preview_only` rather than `ready_for_review`.
+
+### SpecPM handoff packets
+
+```bash
+python3 tools/supervisor.py --build-specpm-handoff-packets
+```
+
+Builds `runs/specpm_handoff_packets.json` from:
+
+- a freshly rebuilt `runs/specpm_export_preview.json`
+- `runs/external_consumer_index.json`
+
+This layer is intentionally one step beyond preview, but still review-first.
+
+It emits:
+
+- one handoff entry per declared `SpecPM` export entry
+- explicit `handoff_status` such as `ready_for_handoff`, `draft_preview_only`,
+  `blocked_by_preview_gap`, or `invalid_export_contract`
+- target consumer identity, local checkout hint, manifest preview, and
+  boundary-source preview
+- a normalized transition packet only when the export is actually ready for
+  downstream handoff
+
+Use it when you want to review:
+
+- whether a given `SpecPM` export preview is now ready to be handed off
+- which package preview and boundary source would be carried downstream
+- which preview gaps still block downstream delivery
 
 ### Metric-threshold proposals
 

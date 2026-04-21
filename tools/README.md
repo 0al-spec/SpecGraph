@@ -98,6 +98,10 @@ Supervisor modes:
   from the tracked `SpecPM` consumer contract and
   `tools/specpm_export_registry.json`, producing a reviewable package preview
   without pretending that the full `BoundarySpec` is already finalized.
+- `--build-specpm-handoff-packets`: build
+  `runs/specpm_handoff_packets.json` from the current `SpecPM` export preview
+  plus external-consumer identity data, so previewable exports can become
+  explicit downstream handoff packets before any real write into `SpecPM`.
 - `--build-metric-signal-index`: build `runs/metric_signal_index.json` from
   trace, evidence, graph-health, and proposal-runtime surfaces so metric-driven
   advisory signals remain derived rather than canonical facts. `sib_proxy` now
@@ -208,6 +212,9 @@ Key derived artifacts:
 - `runs/specpm_export_preview.json`: reviewable `SpecPM` package preview
   artifact, including manifest preview, boundary-source preview, export
   status, and next-gap backlog for future full package emission
+- `runs/specpm_handoff_packets.json`: reviewable `SpecPM` handoff layer
+  derived from the current preview, grouped by handoff status, review state,
+  and next-gap backlog for downstream transfer readiness
 - `runs/metric_signal_index.json`: derived metric surface for
   `Specification Verifiability`, `Process Observability`,
   `Structural Observability`, and a bridge-aware `SIB` proxy, plus
@@ -247,6 +254,9 @@ Key derived artifacts:
 - `tools/specpm_export_registry.json`: tracked declaration of which bounded
   `SpecGraph` regions should emit `SpecPM` package previews and under which
   package identity and capability IDs
+- `tools/specpm_handoff_policy.json`: declarative contract for `SpecPM`
+  handoff packets, including handoff states, provenance links, and next-gap
+  defaults on top of the export preview layer
 - `tools/runtime_evidence_registry.json`: explicit evidence contracts that bind
   selected canonical specs to artifact refs, runtime entities, and observation,
   outcome, and adoption markers

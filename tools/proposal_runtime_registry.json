@@ -349,5 +349,44 @@
         "pattern": "\"artifact_kind\": SPECPM_EXPORT_PREVIEW_ARTIFACT_KIND"
       }
     ]
+  },
+  {
+    "proposal_id": "0028",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "tools/supervisor.py",
+      "tests/test_supervisor.py",
+      "tools/specpm_handoff_policy.json"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def build_specpm_handoff_packets("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "SPECPM_HANDOFF_FILENAME = "
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_specpm_handoff_packets_emits_ready_and_draft_entries("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_main_builds_specpm_handoff_packets_as_standalone_command("
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "write_specpm_handoff_packets(handoff_packets)"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "\"artifact_kind\": SPECPM_HANDOFF_ARTIFACT_KIND"
+      }
+    ]
   }
 ]
