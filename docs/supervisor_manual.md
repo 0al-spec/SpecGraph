@@ -103,6 +103,8 @@ particular task.
   `--build-metric-signal-index`
 - turn metric-threshold breaches into reviewable proposal artifacts:
   `--build-metric-threshold-proposals`
+- build supervisor runtime/yield/graph-impact metrics from historical run logs:
+  `--build-supervisor-performance-index`
 - build one aggregated graph dashboard for a viewer or visualizer:
   `--build-graph-dashboard`
 - build a repository-tracked intent-layer overlay:
@@ -614,6 +616,42 @@ Entries carry:
 - a proposal-first transition envelope showing that the result is reviewable
   follow-up, not silent policy tuning
 
+### Supervisor performance index
+
+```bash
+python3 tools/supervisor.py --build-supervisor-performance-index
+```
+
+Builds `runs/supervisor_performance_index.json` from historical run logs.
+
+This measurement layer keeps three questions separate:
+
+- did the runtime operate cleanly
+- did the run produce a meaningful bounded result
+- did the graph actually improve
+
+Each run entry records:
+
+- `run_kind`, `execution_profile`, and `child_model`
+- `started_at_utc`, `finished_at_utc`, and `run_duration_sec`
+- `runtime_status`
+- `yield_status`
+- `graph_impact_status`
+- `same_spec_repeat_count`
+- `accepted_canonical_diff`, `proposal_emitted`, and
+  `productive_split_required`
+
+The artifact also aggregates:
+
+- runtime/yield/graph-impact counts
+- per-run-kind and per-profile counts
+- median and max run duration
+- same-spec repeat hotspots
+- daily batch summaries
+
+Use it when you want to inspect supervisor throughput, intervention cost, and
+graph effect over time without collapsing those questions into one score.
+
 ### Graph dashboard
 
 ```bash
@@ -909,6 +947,9 @@ path.
 - `runs/external_consumer_handoff_packets.json`
   - reviewable downstream handoff packets for sibling consumers, including
     handoff readiness, packet validation, and next-gap backlog
+- `runs/supervisor_performance_index.json`
+  - derived measurement surface for runtime cleanliness, run yield, graph
+    impact, and same-spec repeat hotspots over time
 - `runs/graph_dashboard.json`
   - aggregated dashboard surface with headline cards and numeric section
     summaries for graph, health, proposals, implementation, evidence, external
