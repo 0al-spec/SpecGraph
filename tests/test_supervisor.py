@@ -8479,6 +8479,91 @@ def test_build_specpm_export_preview_marks_invalid_contract_for_missing_root_spe
     ]
 
 
+def test_build_specpm_export_preview_rejects_blank_consumer_profile(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(supervisor_module, "TOOLS_DIR", repo_fixture / "tools")
+    (repo_fixture / "tools").mkdir(exist_ok=True)
+    (repo_fixture / "tools" / "specpm_export_registry.json").write_text(
+        json.dumps(
+            {
+                "artifact_kind": "specpm_export_registry",
+                "version": 1,
+                "entries": [
+                    {
+                        "export_id": "blank_profile_preview",
+                        "consumer_id": "specpm",
+                        "package_id": "specgraph.blank_profile_preview",
+                        "package_name": "Blank Profile Preview",
+                        "package_version": "0.1.0",
+                        "package_summary": (
+                            "Export preview with an invalid external consumer profile."
+                        ),
+                        "package_license": "Apache-2.0",
+                        "root_spec_id": "SG-SPEC-0001",
+                        "source_spec_ids": ["SG-SPEC-0001"],
+                        "provides_capabilities": ["specgraph.blank_profile_preview"],
+                        "requires_capabilities": [],
+                        "bounded_context": "blank_profile_preview",
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_external_consumer_index",
+        lambda: {
+            "generated_at": "2026-04-22T00:00:00Z",
+            "entries": [
+                {
+                    "consumer_id": "specpm",
+                    "title": "SpecPM / Boundary Package Consumer",
+                    "reference_state": "draft_reference",
+                    "profile": "",
+                }
+            ],
+        },
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_metric_signal_index",
+        lambda specs: {
+            "generated_at": "2026-04-22T00:00:01Z",
+            "metrics": [],
+        },
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_external_consumer_overlay",
+        lambda index, metric_index: {
+            "generated_at": "2026-04-22T00:00:02Z",
+            "entries": [
+                {
+                    "consumer_id": "specpm",
+                    "bridge_state": "draft_visible",
+                    "next_gap": "review_draft_reference",
+                }
+            ],
+        },
+    )
+
+    preview = supervisor_module.build_specpm_export_preview(supervisor_module.load_specs())
+
+    entry = preview["entries"][0]
+    assert entry["export_status"] == "invalid_export_contract"
+    assert entry["review_state"] == "not_emitted"
+    assert "wrong_consumer_profile" in entry["contract_errors"]
+    assert entry["package_preview"] is None
+    assert preview["viewer_projection"]["named_filters"]["invalid_export_contract"] == [
+        "blank_profile_preview"
+    ]
+
+
 def test_main_builds_specpm_export_preview_as_standalone_command(
     supervisor_module: object,
     repo_fixture: Path,

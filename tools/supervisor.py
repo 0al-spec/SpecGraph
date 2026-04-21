@@ -12873,7 +12873,7 @@ def build_specpm_export_preview(specs: list[SpecNode]) -> dict[str, Any]:
 
         if consumer_id != required_consumer_id:
             export_contract_errors.append("wrong_consumer_id")
-        if consumer_profile and consumer_profile != required_profile:
+        if consumer_profile != required_profile:
             export_contract_errors.append("wrong_consumer_profile")
         if not consumer_entry:
             export_contract_errors.append("missing_external_consumer")
