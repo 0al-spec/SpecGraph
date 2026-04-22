@@ -8744,6 +8744,10 @@ def test_main_builds_specpm_handoff_packets_as_standalone_command(
     assert (
         preview_artifact["artifact_kind"] == supervisor_module.SPECPM_EXPORT_PREVIEW_ARTIFACT_KIND
     )
+    consumer_index_artifact = json.loads(
+        (repo_fixture / "runs" / "external_consumer_index.json").read_text(encoding="utf-8")
+    )
+    assert consumer_index_artifact["generated_at"] == "2026-04-22T01:00:01Z"
     handoff_artifact = json.loads(
         (repo_fixture / "runs" / "specpm_handoff_packets.json").read_text(encoding="utf-8")
     )

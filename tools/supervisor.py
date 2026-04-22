@@ -20133,6 +20133,7 @@ def main(
         preview = build_specpm_export_preview(specs)
         write_specpm_export_preview(preview)
         consumer_index = build_external_consumer_index()
+        write_external_consumer_index(consumer_index)
         handoff_packets = build_specpm_handoff_packets(preview, consumer_index)
         write_specpm_handoff_packets(handoff_packets)
         print(json.dumps(handoff_packets, ensure_ascii=False, indent=2))
