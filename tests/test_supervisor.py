@@ -9134,6 +9134,395 @@ def test_main_materializes_specpm_export_bundles_as_standalone_command(
     )
 
 
+def test_build_specpm_import_preview_reads_materialized_bundle(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    specpm_checkout = repo_fixture / "SpecPM"
+    bundle_root = specpm_checkout / ".specgraph_exports" / "specgraph.core_repository_facade"
+    (bundle_root / "specs").mkdir(parents=True)
+    (bundle_root / "evidence" / "source").mkdir(parents=True)
+    (bundle_root / "specpm.yaml").write_text(
+        """
+apiVersion: specpm.dev/v0.1
+kind: SpecPackage
+metadata:
+  id: specgraph.core_repository_facade
+  name: SpecGraph Core Repository Facade
+  version: 0.1.0
+  summary: Reviewable SpecPM import bundle.
+""".strip()
+        + "\n",
+        encoding="utf-8",
+    )
+    (bundle_root / "specs" / "main.spec.yaml").write_text(
+        """
+apiVersion: specpm.dev/v0.1
+kind: BoundarySpec
+metadata:
+  id: specgraph.repository_facade
+  title: SpecGraph Repository Facade
+scope:
+  boundedContext: specgraph_repository
+provides:
+  capabilities:
+    - id: specgraph.repository_facade
+""".strip()
+        + "\n",
+        encoding="utf-8",
+    )
+    (bundle_root / "handoff.json").write_text(
+        json.dumps(
+            {
+                "export_id": "specgraph_core_repository_facade",
+                "handoff_id": "specpm_handoff::specgraph_core_repository_facade",
+                "handoff_status": "ready_for_handoff",
+                "consumer_id": "specpm",
+                "package_identity": {
+                    "package_id": "specgraph.core_repository_facade",
+                    "package_name": "SpecGraph Core Repository Facade",
+                    "package_version": "0.1.0",
+                },
+                "source_handoff_artifact": "runs/specpm_handoff_packets.json",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_external_consumer_index",
+        lambda: {
+            "generated_at": "2026-04-22T03:00:00Z",
+            "entries": [
+                {
+                    "consumer_id": "specpm",
+                    "title": "SpecPM / Boundary Package Consumer",
+                    "profile": "boundary_package_consumer",
+                    "repo_url": "https://github.com/0al-spec/SpecPM",
+                    "local_checkout": {
+                        "checkout_path": specpm_checkout.as_posix(),
+                        "status": "available",
+                        "remote_matches": True,
+                    },
+                }
+            ],
+        },
+    )
+
+    preview = supervisor_module.build_specpm_import_preview()
+
+    assert preview["artifact_kind"] == supervisor_module.SPECPM_IMPORT_PREVIEW_ARTIFACT_KIND
+    assert preview["import_source"]["bundle_count"] == 1
+    entry = preview["entries"][0]
+    assert entry["bundle_id"] == "specgraph.core_repository_facade"
+    assert entry["import_status"] == "ready_for_review"
+    assert entry["review_state"] == "ready_for_review"
+    assert entry["next_gap"] == "review_specpm_import_preview"
+    assert entry["suggested_target_kind"] == "proposal"
+    assert entry["handoff_continuity"]["continuous"] is True
+    assert entry["boundary_summary"]["provides_capabilities"] == ["specgraph.repository_facade"]
+    assert preview["viewer_projection"]["named_filters"]["handoff_continuous"] == [
+        "specgraph.core_repository_facade"
+    ]
+
+
+def test_build_specpm_import_preview_blocks_unverified_checkout(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    specpm_checkout = repo_fixture / "SpecPM"
+    bundle_root = specpm_checkout / ".specgraph_exports" / "specgraph.draft_bundle"
+    (bundle_root / "specs").mkdir(parents=True)
+    (bundle_root / "specpm.yaml").write_text(
+        """
+apiVersion: specpm.dev/v0.1
+kind: SpecPackage
+metadata:
+  id: specgraph.draft_bundle
+  name: SpecGraph Draft Bundle
+  version: 0.1.0
+""".strip()
+        + "\n",
+        encoding="utf-8",
+    )
+    (bundle_root / "specs" / "main.spec.yaml").write_text(
+        """
+apiVersion: specpm.dev/v0.1
+kind: BoundarySpec
+metadata:
+  id: specgraph.draft_bundle
+  title: SpecGraph Draft Bundle
+""".strip()
+        + "\n",
+        encoding="utf-8",
+    )
+    (bundle_root / "handoff.json").write_text(
+        json.dumps(
+            {
+                "export_id": "draft_bundle",
+                "handoff_id": "specpm_handoff::draft_bundle",
+                "handoff_status": "draft_preview_only",
+                "consumer_id": "specpm",
+                "package_identity": {"package_id": "specgraph.draft_bundle"},
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_external_consumer_index",
+        lambda: {
+            "generated_at": "2026-04-22T03:00:00Z",
+            "entries": [
+                {
+                    "consumer_id": "specpm",
+                    "title": "SpecPM / Boundary Package Consumer",
+                    "profile": "boundary_package_consumer",
+                    "repo_url": "https://github.com/0al-spec/SpecPM",
+                    "local_checkout": {
+                        "checkout_path": specpm_checkout.as_posix(),
+                        "status": "available",
+                        "remote_matches": False,
+                    },
+                }
+            ],
+        },
+    )
+
+    preview = supervisor_module.build_specpm_import_preview()
+
+    entry = preview["entries"][0]
+    assert entry["import_status"] == "blocked_by_bundle_gap"
+    assert entry["review_state"] == "not_ready"
+    assert entry["next_gap"] == "verify_specpm_checkout_identity"
+    assert entry["suggested_target_kind"] == "pre_spec"
+
+
+def test_build_specpm_import_preview_marks_invalid_contract_for_package_mismatch(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    specpm_checkout = repo_fixture / "SpecPM"
+    bundle_root = specpm_checkout / ".specgraph_exports" / "specgraph.mismatched_bundle"
+    (bundle_root / "specs").mkdir(parents=True)
+    (bundle_root / "specpm.yaml").write_text(
+        """
+apiVersion: specpm.dev/v0.1
+kind: SpecPackage
+metadata:
+  id: specgraph.other_bundle
+  name: SpecGraph Other Bundle
+  version: 0.1.0
+""".strip()
+        + "\n",
+        encoding="utf-8",
+    )
+    (bundle_root / "specs" / "main.spec.yaml").write_text(
+        """
+apiVersion: specpm.dev/v0.1
+kind: BoundarySpec
+metadata:
+  id: specgraph.other_bundle
+  title: SpecGraph Other Bundle
+""".strip()
+        + "\n",
+        encoding="utf-8",
+    )
+    (bundle_root / "handoff.json").write_text(
+        json.dumps(
+            {
+                "export_id": "mismatched_bundle",
+                "handoff_id": "specpm_handoff::mismatched_bundle",
+                "handoff_status": "ready_for_handoff",
+                "consumer_id": "specpm",
+                "package_identity": {"package_id": "specgraph.other_bundle"},
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_external_consumer_index",
+        lambda: {
+            "generated_at": "2026-04-22T03:00:00Z",
+            "entries": [
+                {
+                    "consumer_id": "specpm",
+                    "title": "SpecPM / Boundary Package Consumer",
+                    "profile": "boundary_package_consumer",
+                    "repo_url": "https://github.com/0al-spec/SpecPM",
+                    "local_checkout": {
+                        "checkout_path": specpm_checkout.as_posix(),
+                        "status": "available",
+                        "remote_matches": True,
+                    },
+                }
+            ],
+        },
+    )
+
+    preview = supervisor_module.build_specpm_import_preview()
+
+    entry = preview["entries"][0]
+    assert entry["import_status"] == "invalid_import_contract"
+    assert entry["review_state"] == "not_ready"
+    assert entry["next_gap"] == "repair_specpm_import_bundle"
+    assert "manifest_package_id_mismatch" in entry["contract_errors"]
+    assert entry["suggested_target_kind"] == ""
+
+
+def test_main_builds_specpm_import_preview_as_standalone_command(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_external_consumer_index",
+        lambda: {
+            "generated_at": "2026-04-22T03:00:00Z",
+            "entries": [],
+        },
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_specpm_import_preview",
+        lambda external_consumer_index=None: {
+            "artifact_kind": supervisor_module.SPECPM_IMPORT_PREVIEW_ARTIFACT_KIND,
+            "schema_version": supervisor_module.SPECPM_IMPORT_PREVIEW_SCHEMA_VERSION,
+            "generated_at": "2026-04-22T03:00:01Z",
+            "import_source": {
+                "consumer_id": "specpm",
+                "profile": "boundary_package_consumer",
+                "checkout_path": "",
+                "checkout_status": "missing",
+                "identity_verified": False,
+                "inbox_root": "",
+                "bundle_count": 0,
+                "next_gap": "repair_specpm_checkout",
+            },
+            "entry_count": 0,
+            "entries": [],
+            "viewer_projection": {
+                "import_status": {},
+                "review_state": {},
+                "suggested_target_kind": {},
+                "named_filters": {},
+            },
+            "import_backlog": {"entry_count": 0, "items": [], "grouped_by_next_gap": {}},
+        },
+    )
+
+    exit_code = supervisor_module.main(build_specpm_import_preview_mode=True)
+
+    assert exit_code == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["artifact_kind"] == supervisor_module.SPECPM_IMPORT_PREVIEW_ARTIFACT_KIND
+    consumer_index_artifact = json.loads(
+        (repo_fixture / "runs" / "external_consumer_index.json").read_text(encoding="utf-8")
+    )
+    assert consumer_index_artifact["generated_at"] == "2026-04-22T03:00:00Z"
+    import_preview_artifact = json.loads(
+        (repo_fixture / "runs" / "specpm_import_preview.json").read_text(encoding="utf-8")
+    )
+    assert (
+        import_preview_artifact["artifact_kind"]
+        == supervisor_module.SPECPM_IMPORT_PREVIEW_ARTIFACT_KIND
+    )
+
+
+def test_main_builds_specpm_import_preview_reuses_written_consumer_index(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    call_count = 0
+
+    def fake_build_external_consumer_index() -> dict[str, object]:
+        nonlocal call_count
+        call_count += 1
+        return {
+            "generated_at": "2026-04-22T03:00:00Z",
+            "entries": [],
+        }
+
+    def fake_build_specpm_import_preview(
+        external_consumer_index: dict[str, object] | None = None,
+    ) -> dict[str, object]:
+        assert external_consumer_index is not None
+        assert external_consumer_index["generated_at"] == "2026-04-22T03:00:00Z"
+        return {
+            "artifact_kind": supervisor_module.SPECPM_IMPORT_PREVIEW_ARTIFACT_KIND,
+            "schema_version": supervisor_module.SPECPM_IMPORT_PREVIEW_SCHEMA_VERSION,
+            "generated_at": "2026-04-22T03:00:01Z",
+            "source_artifacts": {
+                "external_consumer_index": {
+                    "artifact_path": "runs/external_consumer_index.json",
+                    "generated_at": external_consumer_index["generated_at"],
+                }
+            },
+            "import_source": {
+                "consumer_id": "specpm",
+                "profile": "boundary_package_consumer",
+                "checkout_path": "",
+                "checkout_status": "missing",
+                "identity_verified": False,
+                "inbox_root": "",
+                "bundle_count": 0,
+                "next_gap": "repair_specpm_checkout",
+            },
+            "entry_count": 0,
+            "entries": [],
+            "viewer_projection": {
+                "import_status": {},
+                "review_state": {},
+                "suggested_target_kind": {},
+                "named_filters": {},
+            },
+            "import_backlog": {"entry_count": 0, "items": [], "grouped_by_next_gap": {}},
+        }
+
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_external_consumer_index",
+        fake_build_external_consumer_index,
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_specpm_import_preview",
+        fake_build_specpm_import_preview,
+    )
+
+    exit_code = supervisor_module.main(build_specpm_import_preview_mode=True)
+
+    assert exit_code == 0
+    assert call_count == 1
+    report = json.loads(capsys.readouterr().out)
+    assert (
+        report["source_artifacts"]["external_consumer_index"]["generated_at"]
+        == "2026-04-22T03:00:00Z"
+    )
+    persisted_index = json.loads(
+        (repo_fixture / "runs" / "external_consumer_index.json").read_text(encoding="utf-8")
+    )
+    assert persisted_index["generated_at"] == "2026-04-22T03:00:00Z"
+    persisted_preview = json.loads(
+        (repo_fixture / "runs" / "specpm_import_preview.json").read_text(encoding="utf-8")
+    )
+    assert (
+        persisted_preview["source_artifacts"]["external_consumer_index"]["generated_at"]
+        == persisted_index["generated_at"]
+    )
+
+
 def test_build_metric_signal_index_reports_threshold_breaches(
     supervisor_module: object,
     repo_fixture: Path,

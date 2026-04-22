@@ -40,6 +40,7 @@ Derived artifacts:
 - external consumer index: `runs/external_consumer_index.json`
 - external consumer overlay: `runs/external_consumer_overlay.json`
 - external consumer handoff packets: `runs/external_consumer_handoff_packets.json`
+- SpecPM import preview: `runs/specpm_import_preview.json`
 - spec trace index: `runs/spec_trace_index.json`
 - spec trace projection: `runs/spec_trace_projection.json`
 - proposal runtime index: `runs/proposal_runtime_index.json`
@@ -104,6 +105,7 @@ EXTERNAL_CONSUMER_HANDOFF_POLICY_RELATIVE_PATH = "tools/external_consumer_handof
 SPECPM_EXPORT_POLICY_RELATIVE_PATH = "tools/specpm_export_policy.json"
 SPECPM_HANDOFF_POLICY_RELATIVE_PATH = "tools/specpm_handoff_policy.json"
 SPECPM_MATERIALIZATION_POLICY_RELATIVE_PATH = "tools/specpm_materialization_policy.json"
+SPECPM_IMPORT_POLICY_RELATIVE_PATH = "tools/specpm_import_policy.json"
 SPECPM_EXPORT_REGISTRY_RELATIVE_PATH = "tools/specpm_export_registry.json"
 
 
@@ -185,6 +187,10 @@ def specpm_handoff_policy_path() -> Path:
 
 def specpm_materialization_policy_path() -> Path:
     return TOOLS_DIR / "specpm_materialization_policy.json"
+
+
+def specpm_import_policy_path() -> Path:
+    return TOOLS_DIR / "specpm_import_policy.json"
 
 
 def specpm_export_registry_path() -> Path:
@@ -886,6 +892,43 @@ SPECPM_MATERIALIZATION_POLICY, SPECPM_MATERIALIZATION_POLICY_SHA256 = (
 )
 
 
+def load_specpm_import_policy() -> tuple[dict[str, Any], str]:
+    path = specpm_import_policy_path()
+    try:
+        raw_text = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise RuntimeError(
+            f"failed to read SpecPM import policy artifact: {path.as_posix()} ({exc})"
+        ) from exc
+    try:
+        payload = json.loads(raw_text)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(
+            f"malformed SpecPM import policy artifact: {path.as_posix()} ({exc})"
+        ) from exc
+    if not isinstance(payload, dict):
+        raise RuntimeError(
+            f"malformed SpecPM import policy artifact: {path.as_posix()} must contain a JSON object"
+        )
+    required_sections = (
+        "repository_layout",
+        "consumer_contract",
+        "bundle_contract",
+        "suggested_target_kind_mapping",
+        "next_gap_defaults",
+    )
+    missing = [section for section in required_sections if section not in payload]
+    if missing:
+        raise RuntimeError(
+            "malformed SpecPM import policy artifact: missing top-level section(s): "
+            + ", ".join(missing)
+        )
+    return payload, hashlib.sha256(raw_text.encode("utf-8")).hexdigest()
+
+
+SPECPM_IMPORT_POLICY, SPECPM_IMPORT_POLICY_SHA256 = load_specpm_import_policy()
+
+
 def policy_lookup(policy_path: str) -> Any:
     current: Any = SUPERVISOR_POLICY
     for part in policy_path.split("."):
@@ -969,6 +1012,15 @@ def specpm_handoff_policy_lookup(policy_path: str) -> Any:
 
 def specpm_materialization_policy_lookup(policy_path: str) -> Any:
     current: Any = SPECPM_MATERIALIZATION_POLICY
+    for part in policy_path.split("."):
+        if not isinstance(current, dict) or part not in current:
+            raise KeyError(policy_path)
+        current = current[part]
+    return copy.deepcopy(current)
+
+
+def specpm_import_policy_lookup(policy_path: str) -> Any:
+    current: Any = SPECPM_IMPORT_POLICY
     for part in policy_path.split("."):
         if not isinstance(current, dict) or part not in current:
             raise KeyError(policy_path)
@@ -1210,6 +1262,14 @@ def specpm_materialization_policy_reference() -> dict[str, Any]:
     }
 
 
+def specpm_import_policy_reference() -> dict[str, Any]:
+    return {
+        "artifact_path": SPECPM_IMPORT_POLICY_RELATIVE_PATH,
+        "artifact_sha256": SPECPM_IMPORT_POLICY_SHA256,
+        "version": SPECPM_IMPORT_POLICY.get("version"),
+    }
+
+
 READY_DEP_STATUSES = {"reviewed", "frozen"}
 WORKABLE_STATUSES = {"outlined", "specified"}
 CONTINUATION_STATUSES = {"linked"}
@@ -1446,6 +1506,22 @@ SPECPM_MATERIALIZATION_REVIEW_STATES = list(
 )
 SPECPM_MATERIALIZATION_NAMED_FILTERS = list(
     specpm_materialization_policy_lookup("materialization_contract.named_filters")
+)
+SPECPM_IMPORT_PREVIEW_FILENAME = Path(
+    str(specpm_import_policy_lookup("repository_layout.artifact"))
+).name
+SPECPM_IMPORT_PREVIEW_ARTIFACT_KIND = str(
+    specpm_import_policy_lookup("bundle_contract.artifact_kind")
+)
+SPECPM_IMPORT_PREVIEW_SCHEMA_VERSION = int(
+    specpm_import_policy_lookup("bundle_contract.schema_version")
+)
+SPECPM_IMPORT_PREVIEW_STATUSES = list(specpm_import_policy_lookup("bundle_contract.status_values"))
+SPECPM_IMPORT_PREVIEW_REVIEW_STATES = list(
+    specpm_import_policy_lookup("bundle_contract.review_states")
+)
+SPECPM_IMPORT_PREVIEW_NAMED_FILTERS = list(
+    specpm_import_policy_lookup("bundle_contract.named_filters")
 )
 METRIC_SIGNAL_INDEX_FILENAME = Path(
     str(metric_signal_policy_lookup("repository_layout.signal_artifact"))
@@ -10931,6 +11007,10 @@ def specpm_materialization_report_path() -> Path:
     return RUNS_DIR / SPECPM_MATERIALIZATION_REPORT_FILENAME
 
 
+def specpm_import_preview_path() -> Path:
+    return RUNS_DIR / SPECPM_IMPORT_PREVIEW_FILENAME
+
+
 def evidence_plane_index_path() -> Path:
     return RUNS_DIR / EVIDENCE_PLANE_INDEX_FILENAME
 
@@ -13997,6 +14077,447 @@ def materialize_specpm_export_bundles(
 def write_specpm_materialization_report(report: dict[str, Any]) -> Path:
     RUNS_DIR.mkdir(parents=True, exist_ok=True)
     path = specpm_materialization_report_path()
+    with artifact_lock(path):
+        atomic_write_json(path, report)
+    return path
+
+
+def load_yaml_object_report(
+    path: Path,
+    *,
+    label: str,
+    required_kind: str | None = None,
+) -> tuple[dict[str, Any] | None, list[str]]:
+    if yaml is None:
+        raise RuntimeError("PyYAML is required to read SpecPM import bundles")
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError:
+        return None, [f"unreadable_{label}"]
+    try:
+        payload = yaml.safe_load(text) or {}
+    except yaml.YAMLError:
+        return None, [f"malformed_{label}"]
+    if not isinstance(payload, dict):
+        return None, [f"invalid_{label}_shape"]
+    errors: list[str] = []
+    if required_kind and str(payload.get("kind", "")).strip() != required_kind:
+        errors.append(f"wrong_{label}_kind")
+    return payload, errors
+
+
+def load_json_object_preview_report(
+    path: Path,
+    *,
+    label: str,
+) -> tuple[dict[str, Any] | None, list[str]]:
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError:
+        return None, [f"unreadable_{label}"]
+    try:
+        payload = json.loads(text)
+    except json.JSONDecodeError:
+        return None, [f"malformed_{label}"]
+    if not isinstance(payload, dict):
+        return None, [f"invalid_{label}_shape"]
+    return payload, []
+
+
+def derive_specpm_import_next_gap(
+    *,
+    import_status: str,
+    checkout_status: str,
+    identity_verified: bool,
+    missing_files: list[str],
+) -> str:
+    if import_status == "blocked_by_bundle_gap":
+        required_checkout_status = str(
+            specpm_import_policy_lookup("consumer_contract.required_checkout_status")
+        ).strip()
+        require_verified_identity = bool(
+            specpm_import_policy_lookup("consumer_contract.require_verified_identity")
+        )
+        if checkout_status != required_checkout_status:
+            return "repair_specpm_checkout"
+        if require_verified_identity and not identity_verified:
+            return "verify_specpm_checkout_identity"
+        if missing_files:
+            return "repair_specpm_bundle"
+    default_gap = str(specpm_import_policy_lookup(f"next_gap_defaults.{import_status}")).strip()
+    return default_gap or "none"
+
+
+def build_specpm_import_preview(
+    external_consumer_index: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    consumer_index = (
+        copy.deepcopy(external_consumer_index)
+        if isinstance(external_consumer_index, dict)
+        else build_external_consumer_index()
+    )
+    consumer_entries = {
+        str(entry.get("consumer_id", "")).strip(): entry
+        for entry in consumer_index.get("entries", [])
+        if isinstance(entry, dict) and str(entry.get("consumer_id", "")).strip()
+    }
+    required_consumer_id = str(
+        specpm_import_policy_lookup("consumer_contract.required_consumer_id")
+    ).strip()
+    required_profile = str(
+        specpm_import_policy_lookup("consumer_contract.required_profile")
+    ).strip()
+    required_checkout_status = str(
+        specpm_import_policy_lookup("consumer_contract.required_checkout_status")
+    ).strip()
+    require_verified_identity = bool(
+        specpm_import_policy_lookup("consumer_contract.require_verified_identity")
+    )
+    required_files = [
+        str(item).strip()
+        for item in specpm_import_policy_lookup("bundle_contract.required_files")
+        if str(item).strip()
+    ]
+    required_manifest_kind = str(
+        specpm_import_policy_lookup("bundle_contract.required_manifest_kind")
+    ).strip()
+    required_boundary_kind = str(
+        specpm_import_policy_lookup("bundle_contract.required_boundary_kind")
+    ).strip()
+    consumer_inbox_root = str(
+        specpm_import_policy_lookup("repository_layout.consumer_inbox_root")
+    ).strip()
+    target_kind_mapping = specpm_import_policy_lookup("suggested_target_kind_mapping")
+
+    consumer_entry = consumer_entries.get(required_consumer_id, {})
+    target_profile = str(consumer_entry.get("profile", "")).strip()
+    local_checkout = consumer_entry.get("local_checkout", {})
+    checkout_path = ""
+    checkout_status = ""
+    identity_verified = False
+    if isinstance(local_checkout, dict):
+        checkout_path = str(local_checkout.get("checkout_path", "")).strip()
+        checkout_status = str(local_checkout.get("status", "")).strip()
+        identity_verified = local_checkout.get("remote_matches") is True
+    if not checkout_path:
+        checkout_path = str(consumer_entry.get("local_checkout_hint", "")).strip()
+    if not checkout_status:
+        checkout_status = "missing" if not checkout_path else ""
+    checkout_root = Path(checkout_path).expanduser() if checkout_path else None
+    inbox_root = checkout_root / consumer_inbox_root if checkout_root is not None else None
+    bundle_dirs: list[Path] = []
+    if inbox_root is not None and inbox_root.exists() and inbox_root.is_dir():
+        for child in sorted(inbox_root.iterdir(), key=lambda item: item.name):
+            if not child.is_dir():
+                continue
+            try:
+                child.resolve().relative_to(inbox_root.resolve())
+            except ValueError:
+                continue
+            bundle_dirs.append(child)
+
+    source_next_gap = "none"
+    if not consumer_entry or target_profile != required_profile:
+        source_next_gap = "repair_external_consumer_registry"
+    elif checkout_status != required_checkout_status:
+        source_next_gap = "repair_specpm_checkout"
+    elif require_verified_identity and not identity_verified:
+        source_next_gap = "verify_specpm_checkout_identity"
+    elif inbox_root is None or not inbox_root.exists():
+        source_next_gap = "materialize_specpm_export_bundle"
+    elif not bundle_dirs:
+        source_next_gap = "materialize_specpm_export_bundle"
+
+    entries: list[dict[str, Any]] = []
+    import_status_groups: dict[str, list[str]] = {}
+    review_state_groups: dict[str, list[str]] = {}
+    suggested_target_groups: dict[str, list[str]] = {}
+    named_filters = {name: [] for name in SPECPM_IMPORT_PREVIEW_NAMED_FILTERS}
+    backlog_items: list[dict[str, Any]] = []
+    grouped_backlog: dict[str, list[str]] = {}
+
+    for bundle_root in bundle_dirs:
+        bundle_id = bundle_root.name
+        normalized_bundle_id = normalize_specpm_materialization_package_id(bundle_id)
+        manifest_path = bundle_root / "specpm.yaml"
+        boundary_spec_path = bundle_root / "specs" / "main.spec.yaml"
+        handoff_path = bundle_root / "handoff.json"
+        evidence_root_path = bundle_root / "evidence" / "source"
+
+        contract_errors: list[str] = []
+        missing_files: list[str] = []
+        if normalized_bundle_id != bundle_id:
+            contract_errors.append("invalid_bundle_directory_name")
+        if not consumer_entry:
+            contract_errors.append("missing_external_consumer")
+        if str(consumer_entry.get("consumer_id", "")).strip() != required_consumer_id:
+            contract_errors.append("wrong_consumer_id")
+        if target_profile != required_profile:
+            contract_errors.append("wrong_consumer_profile")
+
+        required_file_paths = {
+            "specpm.yaml": manifest_path,
+            "specs/main.spec.yaml": boundary_spec_path,
+            "handoff.json": handoff_path,
+        }
+        for relpath in required_files:
+            if not required_file_paths[relpath].exists():
+                missing_files.append(relpath)
+
+        manifest_payload = None
+        boundary_payload = None
+        handoff_payload = None
+        if "specpm.yaml" not in missing_files:
+            manifest_payload, manifest_errors = load_yaml_object_report(
+                manifest_path,
+                label="manifest",
+                required_kind=required_manifest_kind,
+            )
+            contract_errors.extend(manifest_errors)
+        if "specs/main.spec.yaml" not in missing_files:
+            boundary_payload, boundary_errors = load_yaml_object_report(
+                boundary_spec_path,
+                label="boundary_spec",
+                required_kind=required_boundary_kind,
+            )
+            contract_errors.extend(boundary_errors)
+        if "handoff.json" not in missing_files:
+            handoff_payload, handoff_errors = load_json_object_preview_report(
+                handoff_path,
+                label="handoff",
+            )
+            contract_errors.extend(handoff_errors)
+
+        manifest_metadata = (
+            manifest_payload.get("metadata", {}) if isinstance(manifest_payload, dict) else {}
+        )
+        boundary_metadata = (
+            boundary_payload.get("metadata", {}) if isinstance(boundary_payload, dict) else {}
+        )
+        package_id = str(manifest_metadata.get("id", "")).strip()
+        package_name = str(manifest_metadata.get("name", "")).strip()
+        package_version = str(manifest_metadata.get("version", "")).strip()
+        boundary_spec_id = str(boundary_metadata.get("id", "")).strip()
+        boundary_title = str(boundary_metadata.get("title", "")).strip()
+
+        provides_capabilities: list[str] = []
+        if isinstance(boundary_payload, dict):
+            for raw_item in boundary_payload.get("provides", {}).get("capabilities", []):
+                if not isinstance(raw_item, dict):
+                    continue
+                capability_id = str(raw_item.get("id", "")).strip()
+                if capability_id and capability_id not in provides_capabilities:
+                    provides_capabilities.append(capability_id)
+
+        handoff_package_identity = (
+            handoff_payload.get("package_identity", {}) if isinstance(handoff_payload, dict) else {}
+        )
+        handoff_package_id = str(handoff_package_identity.get("package_id", "")).strip()
+        handoff_consumer_id = str(
+            handoff_payload.get("consumer_id", "") if isinstance(handoff_payload, dict) else ""
+        ).strip()
+        handoff_status = str(
+            handoff_payload.get("handoff_status", "") if isinstance(handoff_payload, dict) else ""
+        ).strip()
+        source_export_id = str(
+            handoff_payload.get("export_id", "") if isinstance(handoff_payload, dict) else ""
+        ).strip()
+        source_handoff_id = str(
+            handoff_payload.get("handoff_id", "") if isinstance(handoff_payload, dict) else ""
+        ).strip()
+        source_handoff_artifact = str(
+            handoff_payload.get("source_handoff_artifact", "")
+            if isinstance(handoff_payload, dict)
+            else ""
+        ).strip()
+
+        if manifest_payload is not None and not package_id:
+            contract_errors.append("missing_manifest_package_id")
+        if boundary_payload is not None and not boundary_spec_id:
+            contract_errors.append("missing_boundary_spec_id")
+        if handoff_payload is not None and not handoff_status:
+            contract_errors.append("missing_handoff_status")
+        if handoff_payload is not None and handoff_consumer_id != required_consumer_id:
+            contract_errors.append("handoff_consumer_id_mismatch")
+        if package_id and normalized_bundle_id and package_id != normalized_bundle_id:
+            contract_errors.append("manifest_package_id_mismatch")
+        if handoff_package_id and package_id and handoff_package_id != package_id:
+            contract_errors.append("handoff_package_id_mismatch")
+        if handoff_payload is not None and not handoff_package_id:
+            contract_errors.append("missing_handoff_package_id")
+        if handoff_status and handoff_status not in {"ready_for_handoff", "draft_preview_only"}:
+            contract_errors.append("unknown_handoff_status")
+
+        import_status = "invalid_import_contract"
+        review_state = "not_ready"
+        if contract_errors:
+            import_status = "invalid_import_contract"
+        elif (
+            checkout_status != required_checkout_status
+            or (require_verified_identity and not identity_verified)
+            or missing_files
+        ):
+            import_status = "blocked_by_bundle_gap"
+        elif handoff_status == "ready_for_handoff":
+            import_status = "ready_for_review"
+            review_state = "ready_for_review"
+        else:
+            import_status = "draft_visible"
+            review_state = "draft_visible"
+
+        next_gap = derive_specpm_import_next_gap(
+            import_status=import_status,
+            checkout_status=checkout_status,
+            identity_verified=identity_verified,
+            missing_files=missing_files,
+        )
+        suggested_target_kind = str(target_kind_mapping.get(import_status, "")).strip()
+        handoff_continuous = (
+            handoff_payload is not None
+            and not contract_errors
+            and not missing_files
+            and handoff_consumer_id == required_consumer_id
+            and bool(source_handoff_id)
+        )
+
+        entry = {
+            "bundle_id": bundle_id,
+            "bundle_root": bundle_root.as_posix(),
+            "consumer_id": required_consumer_id,
+            "import_status": import_status,
+            "review_state": review_state,
+            "next_gap": next_gap,
+            "suggested_target_kind": suggested_target_kind,
+            "policy_reference": specpm_import_policy_reference(),
+            "target_consumer": {
+                "consumer_id": str(consumer_entry.get("consumer_id", "")).strip()
+                or required_consumer_id,
+                "title": str(consumer_entry.get("title", "")).strip() or required_consumer_id,
+                "profile": target_profile,
+                "repo_url": str(consumer_entry.get("repo_url", "")).strip(),
+                "local_checkout_hint": checkout_path,
+                "checkout_status": checkout_status,
+                "identity_verified": identity_verified,
+            },
+            "bundle_sources": {
+                "manifest_path": manifest_path.as_posix(),
+                "boundary_spec_path": boundary_spec_path.as_posix(),
+                "handoff_path": handoff_path.as_posix(),
+                "evidence_root_path": evidence_root_path.as_posix(),
+            },
+            "missing_files": sorted(set(missing_files)),
+            "contract_errors": sorted(set(contract_errors)),
+            "manifest_summary": {
+                "package_id": package_id,
+                "package_name": package_name,
+                "package_version": package_version,
+                "summary": str(manifest_metadata.get("summary", "")).strip(),
+            },
+            "boundary_summary": {
+                "boundary_spec_id": boundary_spec_id,
+                "boundary_title": boundary_title,
+                "bounded_context": (
+                    str(boundary_payload.get("scope", {}).get("boundedContext", "")).strip()
+                    if isinstance(boundary_payload, dict)
+                    else ""
+                ),
+                "provides_capabilities": provides_capabilities,
+            },
+            "handoff_continuity": {
+                "handoff_present": handoff_payload is not None,
+                "continuous": handoff_continuous,
+                "handoff_status": handoff_status,
+                "source_export_id": source_export_id,
+                "source_handoff_id": source_handoff_id,
+                "source_handoff_artifact": source_handoff_artifact,
+                "consumer_id_matches": handoff_consumer_id == required_consumer_id,
+                "bundle_id_matches_manifest": bool(package_id)
+                and package_id == normalized_bundle_id,
+                "bundle_id_matches_handoff": bool(handoff_package_id)
+                and handoff_package_id == normalized_bundle_id,
+            },
+        }
+        entries.append(entry)
+        import_status_groups.setdefault(import_status, []).append(bundle_id)
+        review_state_groups.setdefault(review_state, []).append(bundle_id)
+        if suggested_target_kind:
+            suggested_target_groups.setdefault(suggested_target_kind, []).append(bundle_id)
+        named_filters.setdefault(import_status, []).append(bundle_id)
+        if handoff_continuous:
+            named_filters["handoff_continuous"].append(bundle_id)
+        if manifest_payload is not None:
+            named_filters["manifest_present"].append(bundle_id)
+        if boundary_payload is not None:
+            named_filters["boundary_spec_present"].append(bundle_id)
+        if next_gap != "none":
+            backlog_items.append(
+                {
+                    "bundle_id": bundle_id,
+                    "import_status": import_status,
+                    "review_state": review_state,
+                    "next_gap": next_gap,
+                }
+            )
+            grouped_backlog.setdefault(next_gap, []).append(bundle_id)
+
+    for bucket in (
+        import_status_groups,
+        review_state_groups,
+        suggested_target_groups,
+        named_filters,
+        grouped_backlog,
+    ):
+        for key in list(bucket):
+            bucket[key] = sorted(set(bucket[key]))
+
+    return {
+        "artifact_kind": SPECPM_IMPORT_PREVIEW_ARTIFACT_KIND,
+        "schema_version": SPECPM_IMPORT_PREVIEW_SCHEMA_VERSION,
+        "generated_at": utc_now_iso(),
+        "policy_reference": specpm_import_policy_reference(),
+        "source_artifacts": {
+            "external_consumer_index": {
+                "artifact_path": external_consumer_index_path().relative_to(ROOT).as_posix(),
+                "generated_at": consumer_index.get("generated_at"),
+            }
+        },
+        "import_source": {
+            "consumer_id": required_consumer_id,
+            "profile": target_profile,
+            "checkout_path": checkout_path,
+            "checkout_status": checkout_status,
+            "identity_verified": identity_verified,
+            "inbox_root": inbox_root.as_posix() if inbox_root is not None else "",
+            "bundle_count": len(entries),
+            "next_gap": source_next_gap,
+        },
+        "entry_count": len(entries),
+        "entries": entries,
+        "viewer_projection": {
+            "import_status": {
+                key: sorted(value) for key, value in sorted(import_status_groups.items())
+            },
+            "review_state": {
+                key: sorted(value) for key, value in sorted(review_state_groups.items())
+            },
+            "suggested_target_kind": {
+                key: sorted(value) for key, value in sorted(suggested_target_groups.items())
+            },
+            "named_filters": {key: sorted(value) for key, value in sorted(named_filters.items())},
+        },
+        "import_backlog": {
+            "entry_count": len(backlog_items),
+            "items": backlog_items,
+            "grouped_by_next_gap": {
+                key: sorted(value) for key, value in sorted(grouped_backlog.items())
+            },
+        },
+    }
+
+
+def write_specpm_import_preview(report: dict[str, Any]) -> Path:
+    RUNS_DIR.mkdir(parents=True, exist_ok=True)
+    path = specpm_import_preview_path()
     with artifact_lock(path):
         atomic_write_json(path, report)
     return path
@@ -19842,6 +20363,7 @@ def main(
     build_specpm_export_preview_mode: bool = False,
     build_specpm_handoff_packets_mode: bool = False,
     materialize_specpm_export_bundles_mode: bool = False,
+    build_specpm_import_preview_mode: bool = False,
     build_metric_signal_index_mode: bool = False,
     build_metric_threshold_proposals_mode: bool = False,
     build_supervisor_performance_index_mode: bool = False,
@@ -19895,6 +20417,7 @@ def main(
         "--build-specpm-export-preview": build_specpm_export_preview_mode,
         "--build-specpm-handoff-packets": build_specpm_handoff_packets_mode,
         "--materialize-specpm-export-bundles": materialize_specpm_export_bundles_mode,
+        "--build-specpm-import-preview": build_specpm_import_preview_mode,
         "--build-metric-signal-index": build_metric_signal_index_mode,
         "--build-metric-threshold-proposals": build_metric_threshold_proposals_mode,
         "--build-supervisor-performance-index": build_supervisor_performance_index_mode,
@@ -20100,6 +20623,65 @@ def main(
         index = build_external_consumer_index()
         write_external_consumer_index(index)
         print(json.dumps(index, ensure_ascii=False, indent=2))
+        return 0
+
+    if build_specpm_import_preview_mode:
+        if any(
+            (
+                dry_run,
+                auto_approve,
+                loop,
+                resolve_gate,
+                decision,
+                note,
+                target_spec,
+                split_proposal,
+                apply_split_proposal,
+                operator_note,
+                mutation_budget,
+                run_authority,
+                execution_profile,
+                child_model,
+                child_timeout_seconds,
+                verbose,
+                list_stale_runtime,
+                clean_stale_runtime,
+                observe_graph_health_mode,
+                operator_request_packet_path,
+                build_intent_layer_overlay_mode,
+                build_vocabulary_index_mode,
+                build_vocabulary_drift_report_mode,
+                build_pre_spec_semantics_index_mode,
+                build_graph_health_overlay_mode,
+                build_graph_health_trends_mode,
+                build_spec_trace_index_mode,
+                build_spec_trace_projection_mode,
+                build_evidence_plane_index_mode,
+                build_evidence_plane_overlay_mode,
+                build_external_consumer_overlay_mode,
+                build_external_consumer_handoffs_mode,
+                build_specpm_export_preview_mode,
+                build_specpm_handoff_packets_mode,
+                materialize_specpm_export_bundles_mode,
+                build_metric_signal_index_mode,
+                build_metric_threshold_proposals_mode,
+                build_supervisor_performance_index_mode,
+                build_graph_dashboard_mode,
+                build_proposal_lane_overlay_mode,
+                build_proposal_runtime_index_mode,
+                build_proposal_promotion_index_mode,
+            )
+        ):
+            print(
+                "--build-specpm-import-preview must be used as a standalone command",
+                file=sys.stderr,
+            )
+            return 1
+        consumer_index = build_external_consumer_index()
+        write_external_consumer_index(consumer_index)
+        preview = build_specpm_import_preview(consumer_index)
+        write_specpm_import_preview(preview)
+        print(json.dumps(preview, ensure_ascii=False, indent=2))
         return 0
 
     if build_proposal_lane_overlay_mode:
@@ -21685,6 +22267,14 @@ if __name__ == "__main__":
         ),
     )
     parser.add_argument(
+        "--build-specpm-import-preview",
+        action="store_true",
+        help=(
+            "Build a reviewable SpecPM import preview from local bundles in the sibling "
+            "SpecPM checkout without mutating canonical SpecGraph specs"
+        ),
+    )
+    parser.add_argument(
         "--build-metric-signal-index",
         action="store_true",
         help=(
@@ -21873,6 +22463,7 @@ if __name__ == "__main__":
             build_specpm_export_preview_mode=args.build_specpm_export_preview,
             build_specpm_handoff_packets_mode=args.build_specpm_handoff_packets,
             materialize_specpm_export_bundles_mode=args.materialize_specpm_export_bundles,
+            build_specpm_import_preview_mode=args.build_specpm_import_preview,
             build_metric_signal_index_mode=args.build_metric_signal_index,
             build_metric_threshold_proposals_mode=args.build_metric_threshold_proposals,
             build_supervisor_performance_index_mode=args.build_supervisor_performance_index,

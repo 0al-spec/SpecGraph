@@ -1,0 +1,57 @@
+{
+  "artifact_kind": "specpm_import_preview_policy",
+  "version": 1,
+  "repository_layout": {
+    "artifact": "runs/specpm_import_preview.json",
+    "consumer_inbox_root": ".specgraph_exports"
+  },
+  "consumer_contract": {
+    "required_consumer_id": "specpm",
+    "required_profile": "boundary_package_consumer",
+    "required_checkout_status": "available",
+    "require_verified_identity": true
+  },
+  "bundle_contract": {
+    "artifact_kind": "specpm_import_preview",
+    "schema_version": 1,
+    "status_values": [
+      "ready_for_review",
+      "draft_visible",
+      "blocked_by_bundle_gap",
+      "invalid_import_contract"
+    ],
+    "review_states": [
+      "ready_for_review",
+      "draft_visible",
+      "not_ready"
+    ],
+    "named_filters": [
+      "ready_for_review",
+      "draft_visible",
+      "blocked_by_bundle_gap",
+      "invalid_import_contract",
+      "handoff_continuous",
+      "manifest_present",
+      "boundary_spec_present"
+    ],
+    "required_files": [
+      "specpm.yaml",
+      "specs/main.spec.yaml",
+      "handoff.json"
+    ],
+    "required_manifest_kind": "SpecPackage",
+    "required_boundary_kind": "BoundarySpec"
+  },
+  "suggested_target_kind_mapping": {
+    "ready_for_review": "proposal",
+    "draft_visible": "handoff_candidate",
+    "blocked_by_bundle_gap": "pre_spec",
+    "invalid_import_contract": ""
+  },
+  "next_gap_defaults": {
+    "ready_for_review": "review_specpm_import_preview",
+    "draft_visible": "review_draft_specpm_import_preview",
+    "blocked_by_bundle_gap": "repair_specpm_bundle",
+    "invalid_import_contract": "repair_specpm_import_bundle"
+  }
+}

@@ -103,6 +103,8 @@ particular task.
   `--build-specpm-export-preview`
 - build reviewable `SpecPM` handoff packets on top of the current preview:
   `--build-specpm-handoff-packets`
+- build a reviewable `SpecPM` import preview from local materialized bundles:
+  `--build-specpm-import-preview`
 - build metric-driven derived signals from trace, evidence, graph health, and proposal runtime:
   `--build-metric-signal-index`
 - turn metric-threshold breaches into reviewable proposal artifacts:
@@ -683,6 +685,41 @@ Use it when you want to review:
 - whether a given `SpecPM` handoff is now locally materializable
 - what exact draft bundle would be placed into the sibling checkout
 - which checkout, identity, or handoff gaps still block downstream review
+
+### SpecPM import preview
+
+```bash
+python3 tools/supervisor.py --build-specpm-import-preview
+```
+
+Builds `runs/specpm_import_preview.json` from:
+
+- a freshly rebuilt `runs/external_consumer_index.json`
+- local bundles already present under the sibling `SpecPM` checkout at
+  `.specgraph_exports/<package_id>/`
+
+This layer is intentionally import-preview-only.
+
+It emits:
+
+- one entry per discovered local bundle
+- explicit `import_status` such as `ready_for_review`, `draft_visible`,
+  `blocked_by_bundle_gap`, or `invalid_import_contract`
+- per-bundle validation of `specpm.yaml`, `specs/main.spec.yaml`, and
+  `handoff.json`
+- continuity checks back to the original SpecGraph handoff packet
+- a suggested upstream target kind such as `proposal`, `pre_spec`, or
+  `handoff_candidate`
+
+Use it when you want to review:
+
+- whether a local `SpecPM` bundle is structurally sound enough for inbound
+  discussion
+- whether the bundle still preserves continuity with the original export/handoff
+- what would be the next reviewable upstream artifact inside `SpecGraph`
+
+This command does **not** import anything into canonical specs and does not
+write proposal-lane or intent-layer nodes automatically.
 
 ### Metric-threshold proposals
 
