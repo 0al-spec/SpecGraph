@@ -1,0 +1,72 @@
+{
+  "artifact_kind": "specpm_materialization_policy",
+  "version": 1,
+  "repository_layout": {
+    "report_artifact": "runs/specpm_materialization_report.json",
+    "consumer_inbox_root": ".specgraph_exports"
+  },
+  "materialization_contract": {
+    "artifact_kind": "specpm_materialization_report",
+    "schema_version": 1,
+    "entry_statuses": [
+      "materialized_for_review",
+      "draft_materialized",
+      "blocked_by_handoff_gap",
+      "blocked_by_checkout_gap",
+      "blocked_by_consumer_identity",
+      "invalid_handoff_contract"
+    ],
+    "review_states": [
+      "materialized_for_review",
+      "draft_materialized",
+      "not_materialized"
+    ],
+    "named_filters": [
+      "materialized_for_review",
+      "draft_materialized",
+      "blocked_by_handoff_gap",
+      "blocked_by_checkout_gap",
+      "blocked_by_consumer_identity",
+      "invalid_handoff_contract",
+      "evidence_copied"
+    ]
+  },
+  "eligibility_rules": {
+    "required_consumer_id": "specpm",
+    "required_profile": "boundary_package_consumer",
+    "allowed_handoff_statuses": [
+      "ready_for_handoff",
+      "draft_preview_only"
+    ],
+    "required_checkout_status": "available",
+    "require_verified_identity": true
+  },
+  "bundle_layout": {
+    "manifest_path": "specpm.yaml",
+    "boundary_spec_path": "specs/main.spec.yaml",
+    "evidence_root": "evidence/source",
+    "handoff_sidecar_path": "handoff.json"
+  },
+  "boundary_defaults": {
+    "api_version": "specpm.dev/v0.1",
+    "status": "draft",
+    "placeholder_inbound_interface_id": "draft_boundary_interface",
+    "placeholder_inbound_interface_kind": "unknown",
+    "placeholder_inbound_summary": "Draft placeholder interface. Replace with concrete boundary interfaces before publication.",
+    "draft_constraint_id": "generated_draft_bundle",
+    "draft_constraint_statement": "This bundle was materialized from SpecGraph preview/handoff artifacts and requires manual review before publication.",
+    "source_confidence": {
+      "intent": "medium",
+      "boundary": "low",
+      "behavior": "low"
+    }
+  },
+  "next_gap_defaults": {
+    "materialized_for_review": "review_materialized_bundle",
+    "draft_materialized": "review_draft_materialized_bundle",
+    "blocked_by_handoff_gap": "inherit_handoff_next_gap",
+    "blocked_by_checkout_gap": "repair_specpm_checkout",
+    "blocked_by_consumer_identity": "verify_specpm_checkout_identity",
+    "invalid_handoff_contract": "repair_specpm_handoff_packet"
+  }
+}

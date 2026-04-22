@@ -388,5 +388,44 @@
         "pattern": "\"artifact_kind\": SPECPM_HANDOFF_ARTIFACT_KIND"
       }
     ]
+  },
+  {
+    "proposal_id": "0029",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "tools/supervisor.py",
+      "tests/test_supervisor.py",
+      "tools/specpm_materialization_policy.json"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def materialize_specpm_export_bundles("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "SPECPM_MATERIALIZATION_REPORT_FILENAME = "
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_materialize_specpm_export_bundles_writes_bundle_for_draft_entry("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_main_materializes_specpm_export_bundles_as_standalone_command("
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "write_specpm_materialization_report(report)"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "\"artifact_kind\": SPECPM_MATERIALIZATION_REPORT_ARTIFACT_KIND"
+      }
+    ]
   }
 ]

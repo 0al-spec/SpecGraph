@@ -8754,6 +8754,386 @@ def test_main_builds_specpm_handoff_packets_as_standalone_command(
     assert handoff_artifact["artifact_kind"] == supervisor_module.SPECPM_HANDOFF_ARTIFACT_KIND
 
 
+def test_materialize_specpm_export_bundles_writes_bundle_for_draft_entry(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    specpm_checkout = repo_fixture / "SpecPM"
+    evidence_source = repo_fixture / "runs" / "specpm-evidence.json"
+    specpm_checkout.mkdir()
+    evidence_source.write_text(json.dumps({"ok": True}), encoding="utf-8")
+
+    handoff_packets = {
+        "generated_at": "2026-04-22T02:00:00Z",
+        "entries": [
+            {
+                "export_id": "specgraph_core_repository_facade",
+                "handoff_id": "handoff_specgraph_core_repository_facade",
+                "handoff_status": "draft_preview_only",
+                "next_gap": "review_draft_specpm_boundary",
+                "contract_errors": [],
+                "target_consumer": {
+                    "consumer_id": "specpm",
+                    "profile": "boundary_package_consumer",
+                    "local_checkout_hint": specpm_checkout.as_posix(),
+                    "local_checkout_status": "available",
+                    "identity_verified": True,
+                },
+                "package_identity": {
+                    "package_id": "specgraph.core_repository_facade",
+                    "package_name": "SpecGraph Core Repository Facade",
+                    "package_version": "0.1.0",
+                },
+                "package_preview": {
+                    "apiVersion": "specpm.dev/v0.1",
+                    "kind": "SpecPackage",
+                    "metadata": {
+                        "id": "specgraph.core_repository_facade",
+                        "name": "SpecGraph Core Repository Facade",
+                        "version": "0.1.0",
+                        "summary": "Boundary-first package preview for SpecGraph.",
+                    },
+                },
+                "boundary_source_preview": {
+                    "root_spec_id": "SG-SPEC-0001",
+                    "intent_summary": "Expose the repository-facing boundary.",
+                    "bounded_context": "specgraph_repository",
+                    "provides_capabilities": ["specgraph.repository_facade"],
+                    "requires_capabilities": ["metrics.bridge"],
+                    "acceptance_criteria": ["Exports remain reviewable."],
+                    "evidence_refs": ["runs/specpm-evidence.json"],
+                },
+            }
+        ],
+    }
+
+    report = supervisor_module.materialize_specpm_export_bundles(handoff_packets)
+
+    assert report["artifact_kind"] == supervisor_module.SPECPM_MATERIALIZATION_REPORT_ARTIFACT_KIND
+    entry = report["entries"][0]
+    assert entry["materialization_status"] == "draft_materialized"
+    assert entry["review_state"] == "draft_materialized"
+    assert entry["next_gap"] == "review_draft_materialized_bundle"
+    bundle_root = specpm_checkout / ".specgraph_exports" / "specgraph.core_repository_facade"
+    assert entry["bundle_root"] == bundle_root.as_posix()
+    assert bundle_root.exists()
+
+    manifest_path = bundle_root / "specpm.yaml"
+    boundary_path = bundle_root / "specs" / "main.spec.yaml"
+    copied_evidence_path = bundle_root / "evidence" / "source" / "runs" / "specpm-evidence.json"
+    notes_path = bundle_root / "evidence" / "source" / "specgraph_materialization_notes.md"
+    handoff_path = bundle_root / "handoff.json"
+
+    assert manifest_path.exists()
+    assert boundary_path.exists()
+    assert copied_evidence_path.exists()
+    assert notes_path.exists()
+    assert handoff_path.exists()
+    assert entry["copied_evidence_refs"] == ["runs/specpm-evidence.json"]
+    assert entry["missing_evidence_refs"] == []
+
+    manifest = supervisor_module.yaml.safe_load(manifest_path.read_text(encoding="utf-8"))
+    assert manifest["kind"] == "SpecPackage"
+    assert manifest["metadata"]["id"] == "specgraph.core_repository_facade"
+
+    boundary_spec = supervisor_module.yaml.safe_load(boundary_path.read_text(encoding="utf-8"))
+    assert boundary_spec["kind"] == "BoundarySpec"
+    assert boundary_spec["metadata"]["id"] == "specgraph.repository_facade"
+    assert boundary_spec["scope"]["boundedContext"] == "specgraph_repository"
+    assert boundary_spec["provides"]["capabilities"][0]["id"] == "specgraph.repository_facade"
+
+    handoff_sidecar = json.loads(handoff_path.read_text(encoding="utf-8"))
+    assert handoff_sidecar["export_id"] == "specgraph_core_repository_facade"
+    assert handoff_sidecar["consumer_id"] == "specpm"
+
+
+def test_materialize_specpm_export_bundles_blocks_unverified_checkout(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    specpm_checkout = repo_fixture / "SpecPM"
+    specpm_checkout.mkdir()
+
+    handoff_packets = {
+        "generated_at": "2026-04-22T02:00:00Z",
+        "entries": [
+            {
+                "export_id": "unverified_export",
+                "handoff_id": "handoff_unverified_export",
+                "handoff_status": "ready_for_handoff",
+                "next_gap": "review_specpm_handoff_packet",
+                "contract_errors": [],
+                "target_consumer": {
+                    "consumer_id": "specpm",
+                    "profile": "boundary_package_consumer",
+                    "local_checkout_hint": specpm_checkout.as_posix(),
+                    "local_checkout_status": "available",
+                    "identity_verified": False,
+                },
+                "package_identity": {
+                    "package_id": "specgraph.unverified_export",
+                    "package_name": "Unverified Export",
+                    "package_version": "0.1.0",
+                },
+                "package_preview": {
+                    "apiVersion": "specpm.dev/v0.1",
+                    "kind": "SpecPackage",
+                    "metadata": {
+                        "id": "specgraph.unverified_export",
+                        "name": "Unverified Export",
+                        "version": "0.1.0",
+                        "summary": "Export blocked by unverified consumer identity.",
+                    },
+                },
+                "boundary_source_preview": {
+                    "root_spec_id": "SG-SPEC-0001",
+                    "intent_summary": "Blocked export.",
+                    "bounded_context": "specgraph_repository",
+                    "provides_capabilities": ["specgraph.unverified_export"],
+                    "requires_capabilities": [],
+                    "acceptance_criteria": [],
+                    "evidence_refs": [],
+                },
+            }
+        ],
+    }
+
+    report = supervisor_module.materialize_specpm_export_bundles(handoff_packets)
+
+    entry = report["entries"][0]
+    assert entry["materialization_status"] == "blocked_by_consumer_identity"
+    assert entry["review_state"] == "not_materialized"
+    assert entry["next_gap"] == "verify_specpm_checkout_identity"
+    assert entry["bundle_root"] == ""
+    assert not (specpm_checkout / ".specgraph_exports" / "specgraph.unverified_export").exists()
+
+
+def test_materialize_specpm_export_bundles_rejects_traversal_package_id(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    specpm_checkout = repo_fixture / "SpecPM"
+    specpm_checkout.mkdir()
+
+    handoff_packets = {
+        "generated_at": "2026-04-22T02:00:00Z",
+        "entries": [
+            {
+                "export_id": "bad_package_id_export",
+                "handoff_id": "handoff_bad_package_id_export",
+                "handoff_status": "ready_for_handoff",
+                "next_gap": "review_specpm_handoff_packet",
+                "contract_errors": [],
+                "target_consumer": {
+                    "consumer_id": "specpm",
+                    "profile": "boundary_package_consumer",
+                    "local_checkout_hint": specpm_checkout.as_posix(),
+                    "local_checkout_status": "available",
+                    "identity_verified": True,
+                },
+                "package_identity": {
+                    "package_id": "../../outside",
+                    "package_name": "Bad Package ID",
+                    "package_version": "0.1.0",
+                },
+                "package_preview": {
+                    "apiVersion": "specpm.dev/v0.1",
+                    "kind": "SpecPackage",
+                    "metadata": {
+                        "id": "../../outside",
+                        "name": "Bad Package ID",
+                        "version": "0.1.0",
+                        "summary": "Should be rejected before bundle_root derivation.",
+                    },
+                },
+                "boundary_source_preview": {
+                    "root_spec_id": "SG-SPEC-0001",
+                    "intent_summary": "Blocked export.",
+                    "bounded_context": "specgraph_repository",
+                    "provides_capabilities": ["specgraph.bad_package_id_export"],
+                    "requires_capabilities": [],
+                    "acceptance_criteria": [],
+                    "evidence_refs": [],
+                },
+            }
+        ],
+    }
+
+    report = supervisor_module.materialize_specpm_export_bundles(handoff_packets)
+
+    entry = report["entries"][0]
+    assert entry["materialization_status"] == "invalid_handoff_contract"
+    assert entry["review_state"] == "not_materialized"
+    assert entry["bundle_root"] == ""
+    assert not (specpm_checkout / ".specgraph_exports").exists()
+    assert not (repo_fixture.parent / "outside").exists()
+
+
+def test_materialize_specpm_export_bundles_skips_traversal_evidence_ref(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    specpm_checkout = repo_fixture / "SpecPM"
+    specpm_checkout.mkdir()
+    safe_evidence = repo_fixture / "runs" / "safe-evidence.json"
+    safe_evidence.write_text(json.dumps({"safe": True}), encoding="utf-8")
+    outside_evidence = repo_fixture.parent / "outside-evidence.json"
+    outside_evidence.write_text(json.dumps({"outside": True}), encoding="utf-8")
+
+    handoff_packets = {
+        "generated_at": "2026-04-22T02:00:00Z",
+        "entries": [
+            {
+                "export_id": "bad_evidence_export",
+                "handoff_id": "handoff_bad_evidence_export",
+                "handoff_status": "draft_preview_only",
+                "next_gap": "review_draft_specpm_boundary",
+                "contract_errors": [],
+                "target_consumer": {
+                    "consumer_id": "specpm",
+                    "profile": "boundary_package_consumer",
+                    "local_checkout_hint": specpm_checkout.as_posix(),
+                    "local_checkout_status": "available",
+                    "identity_verified": True,
+                },
+                "package_identity": {
+                    "package_id": "specgraph.bad_evidence_export",
+                    "package_name": "Bad Evidence Export",
+                    "package_version": "0.1.0",
+                },
+                "package_preview": {
+                    "apiVersion": "specpm.dev/v0.1",
+                    "kind": "SpecPackage",
+                    "metadata": {
+                        "id": "specgraph.bad_evidence_export",
+                        "name": "Bad Evidence Export",
+                        "version": "0.1.0",
+                        "summary": "Should skip traversal evidence refs.",
+                    },
+                },
+                "boundary_source_preview": {
+                    "root_spec_id": "SG-SPEC-0001",
+                    "intent_summary": "Export with one invalid evidence ref.",
+                    "bounded_context": "specgraph_repository",
+                    "provides_capabilities": ["specgraph.bad_evidence_export"],
+                    "requires_capabilities": [],
+                    "acceptance_criteria": [],
+                    "evidence_refs": ["../../outside-evidence.json", "runs/safe-evidence.json"],
+                },
+            }
+        ],
+    }
+
+    report = supervisor_module.materialize_specpm_export_bundles(handoff_packets)
+
+    entry = report["entries"][0]
+    assert entry["materialization_status"] == "draft_materialized"
+    assert entry["copied_evidence_refs"] == ["runs/safe-evidence.json"]
+    assert entry["missing_evidence_refs"] == ["../../outside-evidence.json"]
+    bundle_root = specpm_checkout / ".specgraph_exports" / "specgraph.bad_evidence_export"
+    assert (bundle_root / "evidence" / "source" / "runs" / "safe-evidence.json").exists()
+    assert not (bundle_root / "evidence" / "outside-evidence.json").exists()
+
+
+def test_main_materializes_specpm_export_bundles_as_standalone_command(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_external_consumer_index",
+        lambda: {
+            "generated_at": "2026-04-22T02:00:00Z",
+            "entries": [],
+        },
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_specpm_export_preview",
+        lambda specs: {
+            "artifact_kind": supervisor_module.SPECPM_EXPORT_PREVIEW_ARTIFACT_KIND,
+            "schema_version": supervisor_module.SPECPM_EXPORT_PREVIEW_SCHEMA_VERSION,
+            "generated_at": "2026-04-22T02:00:01Z",
+            "entry_count": 0,
+            "entries": [],
+            "viewer_projection": {
+                "export_status": {},
+                "review_state": {},
+                "next_gap": {},
+                "named_filters": {},
+            },
+            "export_backlog": {"entry_count": 0, "items": []},
+        },
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_specpm_handoff_packets",
+        lambda preview, consumer_index: {
+            "artifact_kind": supervisor_module.SPECPM_HANDOFF_ARTIFACT_KIND,
+            "schema_version": supervisor_module.SPECPM_HANDOFF_SCHEMA_VERSION,
+            "generated_at": "2026-04-22T02:00:02Z",
+            "entry_count": 0,
+            "entries": [],
+            "viewer_projection": {
+                "handoff_status": {},
+                "review_state": {},
+                "named_filters": {},
+            },
+            "handoff_backlog": {"entry_count": 0, "items": [], "grouped_by_next_gap": {}},
+        },
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "materialize_specpm_export_bundles",
+        lambda handoff_packets: {
+            "artifact_kind": supervisor_module.SPECPM_MATERIALIZATION_REPORT_ARTIFACT_KIND,
+            "schema_version": supervisor_module.SPECPM_MATERIALIZATION_REPORT_SCHEMA_VERSION,
+            "generated_at": "2026-04-22T02:00:03Z",
+            "entry_count": 0,
+            "entries": [],
+            "viewer_projection": {
+                "materialization_status": {},
+                "review_state": {},
+                "named_filters": {},
+            },
+            "materialization_backlog": {
+                "entry_count": 0,
+                "items": [],
+                "grouped_by_next_gap": {},
+            },
+        },
+    )
+
+    exit_code = supervisor_module.main(materialize_specpm_export_bundles_mode=True)
+
+    assert exit_code == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["artifact_kind"] == supervisor_module.SPECPM_MATERIALIZATION_REPORT_ARTIFACT_KIND
+    consumer_index_artifact = json.loads(
+        (repo_fixture / "runs" / "external_consumer_index.json").read_text(encoding="utf-8")
+    )
+    assert consumer_index_artifact["generated_at"] == "2026-04-22T02:00:00Z"
+    preview_artifact = json.loads(
+        (repo_fixture / "runs" / "specpm_export_preview.json").read_text(encoding="utf-8")
+    )
+    assert (
+        preview_artifact["artifact_kind"] == supervisor_module.SPECPM_EXPORT_PREVIEW_ARTIFACT_KIND
+    )
+    handoff_artifact = json.loads(
+        (repo_fixture / "runs" / "specpm_handoff_packets.json").read_text(encoding="utf-8")
+    )
+    assert handoff_artifact["artifact_kind"] == supervisor_module.SPECPM_HANDOFF_ARTIFACT_KIND
+    materialization_artifact = json.loads(
+        (repo_fixture / "runs" / "specpm_materialization_report.json").read_text(encoding="utf-8")
+    )
+    assert (
+        materialization_artifact["artifact_kind"]
+        == supervisor_module.SPECPM_MATERIALIZATION_REPORT_ARTIFACT_KIND
+    )
+
+
 def test_build_metric_signal_index_reports_threshold_breaches(
     supervisor_module: object,
     repo_fixture: Path,

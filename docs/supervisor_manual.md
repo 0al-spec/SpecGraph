@@ -650,6 +650,40 @@ Use it when you want to review:
 - which package preview and boundary source would be carried downstream
 - which preview gaps still block downstream delivery
 
+### SpecPM local export bundle materialization
+
+```bash
+python3 tools/supervisor.py --materialize-specpm-export-bundles
+```
+
+Builds `runs/specpm_materialization_report.json` from:
+
+- a freshly rebuilt `runs/external_consumer_index.json`
+- a freshly rebuilt `runs/specpm_export_preview.json`
+- a freshly rebuilt `runs/specpm_handoff_packets.json`
+
+This layer is still review-first, but it goes one step beyond handoff packets:
+it writes a local draft export bundle into the sibling `SpecPM` checkout under
+its controlled inbox root `.specgraph_exports/<package_id>/`.
+
+It emits:
+
+- one materialization entry per eligible `SpecPM` handoff entry
+- explicit `materialization_status` such as `materialized_for_review`,
+  `draft_materialized`, `blocked_by_handoff_gap`,
+  `blocked_by_checkout_gap`, `blocked_by_consumer_identity`, or
+  `invalid_handoff_contract`
+- a local bundle containing `specpm.yaml`, `specs/main.spec.yaml`,
+  copied source evidence, and `handoff.json`
+- a report surface that viewer code can use for export-preview and
+  review-readiness states without auto-committing into `SpecPM`
+
+Use it when you want to review:
+
+- whether a given `SpecPM` handoff is now locally materializable
+- what exact draft bundle would be placed into the sibling checkout
+- which checkout, identity, or handoff gaps still block downstream review
+
 ### Metric-threshold proposals
 
 ```bash
