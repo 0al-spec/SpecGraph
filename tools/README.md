@@ -106,6 +106,10 @@ Supervisor modes:
   `runs/specpm_materialization_report.json` and write local draft export
   bundles into the sibling `SpecPM` checkout under a controlled
   `.specgraph_exports/<package_id>/` inbox, without auto-committing there.
+- `--build-specpm-import-preview`: build
+  `runs/specpm_import_preview.json` from local bundles in the sibling
+  `SpecPM` checkout so import readiness stays review-first and does not mutate
+  canonical `SpecGraph` specs.
 - `--build-metric-signal-index`: build `runs/metric_signal_index.json` from
   trace, evidence, graph-health, and proposal-runtime surfaces so metric-driven
   advisory signals remain derived rather than canonical facts. `sib_proxy` now
@@ -223,6 +227,9 @@ Key derived artifacts:
   `SpecPM` bundle materialization, grouped by materialization status, review
   state, and next-gap backlog after writing draft bundles into the sibling
   checkout inbox
+- `runs/specpm_import_preview.json`: reviewable inbound `SpecPM` bundle
+  surface, grouped by import status, review state, suggested upstream target
+  kind, and next-gap backlog before any import into canonical specs
 - `runs/metric_signal_index.json`: derived metric surface for
   `Specification Verifiability`, `Process Observability`,
   `Structural Observability`, and a bridge-aware `SIB` proxy, plus
@@ -244,6 +251,9 @@ Key derived artifacts:
 - `tools/specpm_materialization_policy.json`: declarative contract for local
   `SpecPM` bundle materialization, including eligibility checks, inbox layout,
   bundle file paths, and viewer/backlog states
+- `tools/specpm_import_policy.json`: declarative contract for `SpecPM`
+  import preview, including required bundle files, review states, target-kind
+  suggestions, and next-gap defaults
 - `tools/metric_signal_policy.json`: declarative thresholds, score mappings,
   metric identities, and proposal-first threshold semantics for the derived
   metric signal layer
