@@ -14,6 +14,8 @@ For constitutional limits, see [CONSTITUTION.md](../CONSTITUTION.md).
 For repository editing rules, see [AGENTS.md](../AGENTS.md).
 For a compact artifact map aimed at dashboards and graph visualizers, see
 [metrics_visualization_guide.md](./metrics_visualization_guide.md).
+For the dedicated `SpecPM` package/export/import viewer contract, see
+[specpm_viewer_contract.md](./specpm_viewer_contract.md).
 
 ## 1. Supervisor Role
 

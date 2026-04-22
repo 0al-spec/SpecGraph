@@ -4,6 +4,9 @@ This guide is for consumers that need a compact, machine-readable view of
 SpecGraph state for dashboards, badges, graph coloring, or external
 visualizers.
 
+For the dedicated `SpecPM` package-export/import viewer contract, see
+[specpm_viewer_contract.md](./specpm_viewer_contract.md).
+
 The important boundary is:
 
 - canonical specs stay in `specs/nodes/*.yaml`
