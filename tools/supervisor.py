@@ -103,6 +103,7 @@ EXTERNAL_CONSUMER_OVERLAY_POLICY_RELATIVE_PATH = "tools/external_consumer_overla
 EXTERNAL_CONSUMER_HANDOFF_POLICY_RELATIVE_PATH = "tools/external_consumer_handoff_policy.json"
 SPECPM_EXPORT_POLICY_RELATIVE_PATH = "tools/specpm_export_policy.json"
 SPECPM_HANDOFF_POLICY_RELATIVE_PATH = "tools/specpm_handoff_policy.json"
+SPECPM_MATERIALIZATION_POLICY_RELATIVE_PATH = "tools/specpm_materialization_policy.json"
 SPECPM_EXPORT_REGISTRY_RELATIVE_PATH = "tools/specpm_export_registry.json"
 
 
@@ -180,6 +181,10 @@ def specpm_export_policy_path() -> Path:
 
 def specpm_handoff_policy_path() -> Path:
     return TOOLS_DIR / "specpm_handoff_policy.json"
+
+
+def specpm_materialization_policy_path() -> Path:
+    return TOOLS_DIR / "specpm_materialization_policy.json"
 
 
 def specpm_export_registry_path() -> Path:
@@ -840,6 +845,47 @@ def load_specpm_handoff_policy() -> tuple[dict[str, Any], str]:
 SPECPM_HANDOFF_POLICY, SPECPM_HANDOFF_POLICY_SHA256 = load_specpm_handoff_policy()
 
 
+def load_specpm_materialization_policy() -> tuple[dict[str, Any], str]:
+    path = specpm_materialization_policy_path()
+    try:
+        raw_text = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise RuntimeError(
+            f"failed to read SpecPM materialization policy artifact: {path.as_posix()} ({exc})"
+        ) from exc
+    try:
+        payload = json.loads(raw_text)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(
+            f"malformed SpecPM materialization policy artifact: {path.as_posix()} ({exc})"
+        ) from exc
+    if not isinstance(payload, dict):
+        raise RuntimeError(
+            "malformed SpecPM materialization policy artifact: "
+            f"{path.as_posix()} must contain a JSON object"
+        )
+    required_sections = (
+        "repository_layout",
+        "materialization_contract",
+        "eligibility_rules",
+        "bundle_layout",
+        "boundary_defaults",
+        "next_gap_defaults",
+    )
+    missing = [section for section in required_sections if section not in payload]
+    if missing:
+        raise RuntimeError(
+            "malformed SpecPM materialization policy artifact: missing top-level section(s): "
+            + ", ".join(missing)
+        )
+    return payload, hashlib.sha256(raw_text.encode("utf-8")).hexdigest()
+
+
+SPECPM_MATERIALIZATION_POLICY, SPECPM_MATERIALIZATION_POLICY_SHA256 = (
+    load_specpm_materialization_policy()
+)
+
+
 def policy_lookup(policy_path: str) -> Any:
     current: Any = SUPERVISOR_POLICY
     for part in policy_path.split("."):
@@ -914,6 +960,15 @@ def specpm_export_policy_lookup(policy_path: str) -> Any:
 
 def specpm_handoff_policy_lookup(policy_path: str) -> Any:
     current: Any = SPECPM_HANDOFF_POLICY
+    for part in policy_path.split("."):
+        if not isinstance(current, dict) or part not in current:
+            raise KeyError(policy_path)
+        current = current[part]
+    return copy.deepcopy(current)
+
+
+def specpm_materialization_policy_lookup(policy_path: str) -> Any:
+    current: Any = SPECPM_MATERIALIZATION_POLICY
     for part in policy_path.split("."):
         if not isinstance(current, dict) or part not in current:
             raise KeyError(policy_path)
@@ -1147,6 +1202,14 @@ def specpm_handoff_policy_reference() -> dict[str, Any]:
     }
 
 
+def specpm_materialization_policy_reference() -> dict[str, Any]:
+    return {
+        "artifact_path": SPECPM_MATERIALIZATION_POLICY_RELATIVE_PATH,
+        "artifact_sha256": SPECPM_MATERIALIZATION_POLICY_SHA256,
+        "version": SPECPM_MATERIALIZATION_POLICY.get("version"),
+    }
+
+
 READY_DEP_STATUSES = {"reviewed", "frozen"}
 WORKABLE_STATUSES = {"outlined", "specified"}
 CONTINUATION_STATUSES = {"linked"}
@@ -1366,6 +1429,24 @@ SPECPM_HANDOFF_TARGET_ARTIFACT_CLASS = str(
 SPECPM_HANDOFF_STATUSES = list(specpm_handoff_policy_lookup("handoff_contract.handoff_statuses"))
 SPECPM_HANDOFF_REVIEW_STATES = list(specpm_handoff_policy_lookup("handoff_contract.review_states"))
 SPECPM_HANDOFF_NAMED_FILTERS = list(specpm_handoff_policy_lookup("handoff_contract.named_filters"))
+SPECPM_MATERIALIZATION_REPORT_FILENAME = Path(
+    str(specpm_materialization_policy_lookup("repository_layout.report_artifact"))
+).name
+SPECPM_MATERIALIZATION_REPORT_ARTIFACT_KIND = str(
+    specpm_materialization_policy_lookup("materialization_contract.artifact_kind")
+)
+SPECPM_MATERIALIZATION_REPORT_SCHEMA_VERSION = int(
+    specpm_materialization_policy_lookup("materialization_contract.schema_version")
+)
+SPECPM_MATERIALIZATION_ENTRY_STATUSES = list(
+    specpm_materialization_policy_lookup("materialization_contract.entry_statuses")
+)
+SPECPM_MATERIALIZATION_REVIEW_STATES = list(
+    specpm_materialization_policy_lookup("materialization_contract.review_states")
+)
+SPECPM_MATERIALIZATION_NAMED_FILTERS = list(
+    specpm_materialization_policy_lookup("materialization_contract.named_filters")
+)
 METRIC_SIGNAL_INDEX_FILENAME = Path(
     str(metric_signal_policy_lookup("repository_layout.signal_artifact"))
 ).name
@@ -10846,6 +10927,10 @@ def specpm_handoff_packets_path() -> Path:
     return RUNS_DIR / SPECPM_HANDOFF_FILENAME
 
 
+def specpm_materialization_report_path() -> Path:
+    return RUNS_DIR / SPECPM_MATERIALIZATION_REPORT_FILENAME
+
+
 def evidence_plane_index_path() -> Path:
     return RUNS_DIR / EVIDENCE_PLANE_INDEX_FILENAME
 
@@ -13245,8 +13330,12 @@ def build_specpm_handoff_packets(
         )
         local_checkout_hint = ""
         local_checkout = consumer_entry.get("local_checkout", {})
+        local_checkout_status = ""
+        remote_matches = None
         if isinstance(local_checkout, dict):
             local_checkout_hint = str(local_checkout.get("checkout_path", "")).strip()
+            local_checkout_status = str(local_checkout.get("status", "")).strip()
+            remote_matches = local_checkout.get("remote_matches")
         if not local_checkout_hint:
             local_checkout_hint = str(consumer_entry.get("local_checkout_hint", "")).strip()
 
@@ -13304,6 +13393,8 @@ def build_specpm_handoff_packets(
                 "bridge_state": str(raw_entry.get("consumer_bridge_state", "")).strip(),
                 "repo_url": str(consumer_entry.get("repo_url", "")).strip(),
                 "local_checkout_hint": local_checkout_hint,
+                "local_checkout_status": local_checkout_status,
+                "identity_verified": remote_matches is True,
             },
             "package_identity": {
                 "package_id": str(package_metadata.get("id", "")).strip(),
@@ -13379,6 +13470,448 @@ def build_specpm_handoff_packets(
 def write_specpm_handoff_packets(report: dict[str, Any]) -> Path:
     RUNS_DIR.mkdir(parents=True, exist_ok=True)
     path = specpm_handoff_packets_path()
+    with artifact_lock(path):
+        atomic_write_json(path, report)
+    return path
+
+
+def render_yaml_document(data: dict[str, Any]) -> str:
+    if yaml is None:
+        raise RuntimeError("PyYAML is required to render SpecPM export bundles")
+    rendered = yaml.safe_dump(
+        data,
+        sort_keys=False,
+        allow_unicode=True,
+        default_flow_style=False,
+        width=100,
+    )
+    if not rendered.endswith("\n"):
+        rendered += "\n"
+    return rendered
+
+
+def infer_evidence_kind(rel_path: str) -> str:
+    text = str(rel_path).strip().lower()
+    if text.endswith(".md"):
+        return "documentation"
+    if "/tests/" in text or text.startswith("tests/"):
+        return "test"
+    if text.endswith((".yaml", ".yml", ".json", ".graphql", ".proto")):
+        return "schema"
+    if text.endswith((".py", ".ts", ".js", ".rs", ".go", ".java", ".swift")):
+        return "source"
+    return "unknown"
+
+
+def build_specpm_boundary_spec(
+    handoff_entry: dict[str, Any],
+    *,
+    evidence_entries: list[dict[str, Any]],
+) -> dict[str, Any]:
+    boundary_preview = handoff_entry.get("boundary_source_preview", {})
+    package_identity = handoff_entry.get("package_identity", {})
+    package_preview = handoff_entry.get("package_preview", {})
+    provides_capabilities = [
+        str(item).strip()
+        for item in boundary_preview.get("provides_capabilities", [])
+        if str(item).strip()
+    ]
+    requires_capabilities = [
+        str(item).strip()
+        for item in boundary_preview.get("requires_capabilities", [])
+        if str(item).strip()
+    ]
+    includes = [
+        str(item).strip()
+        for item in boundary_preview.get("acceptance_criteria", [])
+        if str(item).strip()
+    ]
+    boundary_spec_id = (
+        provides_capabilities[0]
+        if provides_capabilities
+        else str(package_identity.get("package_id", "")).strip()
+    )
+    title = str(package_identity.get("package_name", "")).strip()
+    version = str(package_identity.get("package_version", "")).strip()
+    summary = (
+        str(boundary_preview.get("intent_summary", "")).strip()
+        or str(package_preview.get("metadata", {}).get("summary", "")).strip()
+    )
+    bounded_context = str(boundary_preview.get("bounded_context", "")).strip()
+    interface_id = str(
+        specpm_materialization_policy_lookup("boundary_defaults.placeholder_inbound_interface_id")
+    ).strip()
+    interface_kind = str(
+        specpm_materialization_policy_lookup("boundary_defaults.placeholder_inbound_interface_kind")
+    ).strip()
+    interface_summary = str(
+        specpm_materialization_policy_lookup("boundary_defaults.placeholder_inbound_summary")
+    ).strip()
+    draft_constraint_id = str(
+        specpm_materialization_policy_lookup("boundary_defaults.draft_constraint_id")
+    ).strip()
+    draft_constraint_statement = str(
+        specpm_materialization_policy_lookup("boundary_defaults.draft_constraint_statement")
+    ).strip()
+
+    return {
+        "apiVersion": str(specpm_materialization_policy_lookup("boundary_defaults.api_version")),
+        "kind": "BoundarySpec",
+        "metadata": {
+            "id": boundary_spec_id,
+            "title": title,
+            "version": version,
+            "status": str(specpm_materialization_policy_lookup("boundary_defaults.status")),
+        },
+        "intent": {
+            "summary": summary,
+        },
+        "scope": {
+            "boundedContext": bounded_context,
+            "includes": includes,
+        },
+        "provides": {
+            "capabilities": [
+                {
+                    "id": capability_id,
+                    "role": "primary" if index == 0 else "supporting",
+                    "summary": (
+                        f"Exported capability {capability_id} from SpecGraph boundary preview."
+                    ),
+                }
+                for index, capability_id in enumerate(provides_capabilities)
+            ],
+        },
+        "requires": {
+            "capabilities": [
+                {
+                    "id": capability_id,
+                    "optional": False,
+                    "summary": (
+                        f"Required capability {capability_id} declared by the "
+                        "SpecGraph boundary preview."
+                    ),
+                }
+                for capability_id in requires_capabilities
+            ],
+        },
+        "interfaces": {
+            "inbound": [
+                {
+                    "id": interface_id,
+                    "kind": interface_kind,
+                    "summary": interface_summary,
+                }
+            ],
+            "outbound": [],
+        },
+        "constraints": [
+            {
+                "id": draft_constraint_id,
+                "level": "SHOULD",
+                "statement": draft_constraint_statement,
+            }
+        ],
+        "evidence": evidence_entries,
+        "provenance": {
+            "sourceConfidence": copy.deepcopy(
+                specpm_materialization_policy_lookup("boundary_defaults.source_confidence")
+            )
+        },
+    }
+
+
+def derive_specpm_materialization_next_gap(
+    *,
+    status: str,
+    handoff_entry: dict[str, Any],
+) -> str:
+    default_gap = str(specpm_materialization_policy_lookup(f"next_gap_defaults.{status}")).strip()
+    if default_gap == "inherit_handoff_next_gap":
+        inherited = str(handoff_entry.get("next_gap", "")).strip()
+        return inherited or "review_specpm_handoff_packet"
+    return default_gap or "none"
+
+
+def materialize_specpm_export_bundles(
+    specpm_handoff_packets: dict[str, Any],
+) -> dict[str, Any]:
+    inbox_root = str(specpm_materialization_policy_lookup("repository_layout.consumer_inbox_root"))
+    manifest_relpath = str(specpm_materialization_policy_lookup("bundle_layout.manifest_path"))
+    boundary_spec_relpath = str(
+        specpm_materialization_policy_lookup("bundle_layout.boundary_spec_path")
+    )
+    evidence_root_relpath = str(specpm_materialization_policy_lookup("bundle_layout.evidence_root"))
+    handoff_sidecar_relpath = str(
+        specpm_materialization_policy_lookup("bundle_layout.handoff_sidecar_path")
+    )
+    required_consumer_id = str(
+        specpm_materialization_policy_lookup("eligibility_rules.required_consumer_id")
+    )
+    required_profile = str(
+        specpm_materialization_policy_lookup("eligibility_rules.required_profile")
+    )
+    required_checkout_status = str(
+        specpm_materialization_policy_lookup("eligibility_rules.required_checkout_status")
+    )
+    require_verified_identity = bool(
+        specpm_materialization_policy_lookup("eligibility_rules.require_verified_identity")
+    )
+    allowed_handoff_statuses = {
+        str(item).strip()
+        for item in specpm_materialization_policy_lookup(
+            "eligibility_rules.allowed_handoff_statuses"
+        )
+        if str(item).strip()
+    }
+
+    entries: list[dict[str, Any]] = []
+    status_groups: dict[str, list[str]] = {}
+    review_state_groups: dict[str, list[str]] = {}
+    named_filters = {name: [] for name in SPECPM_MATERIALIZATION_NAMED_FILTERS}
+    backlog_items: list[dict[str, Any]] = []
+    grouped_backlog: dict[str, list[str]] = {}
+
+    for raw_entry in specpm_handoff_packets.get("entries", []):
+        if not isinstance(raw_entry, dict):
+            continue
+        export_id = str(raw_entry.get("export_id", "")).strip()
+        if not export_id:
+            continue
+        target_consumer = raw_entry.get("target_consumer", {})
+        consumer_id = str(target_consumer.get("consumer_id", "")).strip()
+        profile = str(target_consumer.get("profile", "")).strip()
+        checkout_hint = str(target_consumer.get("local_checkout_hint", "")).strip()
+        checkout_status = str(target_consumer.get("local_checkout_status", "")).strip()
+        identity_verified = bool(target_consumer.get("identity_verified", False))
+        handoff_status = str(raw_entry.get("handoff_status", "")).strip()
+        package_identity = raw_entry.get("package_identity", {})
+        package_id = str(package_identity.get("package_id", "")).strip()
+        package_preview = raw_entry.get("package_preview")
+        boundary_source_preview = raw_entry.get("boundary_source_preview")
+        contract_errors = [
+            str(item).strip() for item in raw_entry.get("contract_errors", []) if str(item).strip()
+        ]
+
+        status = "invalid_handoff_contract"
+        review_state = "not_materialized"
+        next_gap = "repair_specpm_handoff_packet"
+        bundle_root_text = ""
+        written_files: list[str] = []
+        copied_evidence_refs: list[str] = []
+        missing_evidence_refs: list[str] = []
+
+        if (
+            consumer_id != required_consumer_id
+            or profile != required_profile
+            or not package_id
+            or not isinstance(package_preview, dict)
+            or not isinstance(boundary_source_preview, dict)
+            or contract_errors
+        ):
+            status = "invalid_handoff_contract"
+            next_gap = derive_specpm_materialization_next_gap(
+                status=status,
+                handoff_entry=raw_entry,
+            )
+        elif handoff_status not in allowed_handoff_statuses:
+            status = "blocked_by_handoff_gap"
+            next_gap = derive_specpm_materialization_next_gap(
+                status=status,
+                handoff_entry=raw_entry,
+            )
+        elif checkout_status != required_checkout_status or not checkout_hint:
+            status = "blocked_by_checkout_gap"
+            next_gap = derive_specpm_materialization_next_gap(
+                status=status,
+                handoff_entry=raw_entry,
+            )
+        elif require_verified_identity and not identity_verified:
+            status = "blocked_by_consumer_identity"
+            next_gap = derive_specpm_materialization_next_gap(
+                status=status,
+                handoff_entry=raw_entry,
+            )
+        else:
+            checkout_root = Path(checkout_hint)
+            bundle_root = checkout_root / inbox_root / package_id
+            bundle_root_text = bundle_root.as_posix()
+            if bundle_root.exists():
+                shutil.rmtree(bundle_root)
+            (bundle_root / Path(boundary_spec_relpath).parent).mkdir(parents=True, exist_ok=True)
+            (bundle_root / evidence_root_relpath).mkdir(parents=True, exist_ok=True)
+
+            evidence_entries: list[dict[str, Any]] = []
+            evidence_refs = [
+                str(item).strip()
+                for item in boundary_source_preview.get("evidence_refs", [])
+                if str(item).strip()
+            ]
+            for index, rel_ref in enumerate(evidence_refs, start=1):
+                source_path = ROOT / rel_ref
+                if not source_path.exists() or not source_path.is_file():
+                    missing_evidence_refs.append(rel_ref)
+                    continue
+                target_path = bundle_root / evidence_root_relpath / rel_ref
+                target_path.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(source_path, target_path)
+                copied_relpath = target_path.relative_to(bundle_root).as_posix()
+                copied_evidence_refs.append(rel_ref)
+                written_files.append(copied_relpath)
+                evidence_entries.append(
+                    {
+                        "id": f"evidence_{index}",
+                        "kind": infer_evidence_kind(rel_ref),
+                        "path": copied_relpath,
+                        "supports": [
+                            "intent.summary",
+                            *[
+                                f"provides.capabilities.{capability_id}"
+                                for capability_id in (
+                                    boundary_source_preview.get("provides_capabilities", []) or []
+                                )
+                                if str(capability_id).strip()
+                            ],
+                        ],
+                    }
+                )
+
+            notes_relpath = f"{evidence_root_relpath}/specgraph_materialization_notes.md"
+            notes_text = (
+                "# Generated Draft Export Bundle\n\n"
+                "This bundle was materialized by SpecGraph from preview and handoff artifacts.\n"
+                "Review the placeholder interface surface and complete boundary "
+                "details before publication.\n"
+            )
+            notes_path = bundle_root / notes_relpath
+            notes_path.parent.mkdir(parents=True, exist_ok=True)
+            atomic_write_text(notes_path, notes_text)
+            written_files.append(notes_relpath)
+            evidence_entries.append(
+                {
+                    "id": "materialization_notes",
+                    "kind": "manual_assertion",
+                    "path": notes_relpath,
+                    "supports": ["intent.summary"],
+                }
+            )
+
+            manifest_text = render_yaml_document(copy.deepcopy(package_preview))
+            manifest_path = bundle_root / manifest_relpath
+            manifest_path.parent.mkdir(parents=True, exist_ok=True)
+            atomic_write_text(manifest_path, manifest_text)
+            written_files.append(manifest_relpath)
+
+            boundary_spec = build_specpm_boundary_spec(raw_entry, evidence_entries=evidence_entries)
+            boundary_text = render_yaml_document(boundary_spec)
+            boundary_path = bundle_root / boundary_spec_relpath
+            boundary_path.parent.mkdir(parents=True, exist_ok=True)
+            atomic_write_text(boundary_path, boundary_text)
+            written_files.append(boundary_spec_relpath)
+
+            sidecar_path = bundle_root / handoff_sidecar_relpath
+            sidecar_path.parent.mkdir(parents=True, exist_ok=True)
+            sidecar_payload = {
+                "materialized_at": utc_now_iso(),
+                "export_id": export_id,
+                "handoff_id": str(raw_entry.get("handoff_id", "")).strip(),
+                "handoff_status": handoff_status,
+                "consumer_id": consumer_id,
+                "package_identity": copy.deepcopy(package_identity),
+                "source_handoff_artifact": (
+                    specpm_handoff_packets_path().relative_to(ROOT).as_posix()
+                ),
+            }
+            atomic_write_json(sidecar_path, sidecar_payload)
+            written_files.append(handoff_sidecar_relpath)
+
+            if handoff_status == "ready_for_handoff":
+                status = "materialized_for_review"
+                review_state = "materialized_for_review"
+            else:
+                status = "draft_materialized"
+                review_state = "draft_materialized"
+            next_gap = derive_specpm_materialization_next_gap(
+                status=status,
+                handoff_entry=raw_entry,
+            )
+
+        entry = {
+            "export_id": export_id,
+            "handoff_id": str(raw_entry.get("handoff_id", "")).strip(),
+            "consumer_id": consumer_id,
+            "materialization_status": status,
+            "review_state": review_state,
+            "next_gap": next_gap,
+            "bundle_root": bundle_root_text,
+            "written_files": sorted(set(written_files)),
+            "copied_evidence_refs": sorted(set(copied_evidence_refs)),
+            "missing_evidence_refs": sorted(set(missing_evidence_refs)),
+            "policy_reference": specpm_materialization_policy_reference(),
+            "source_handoff": {
+                "artifact_path": specpm_handoff_packets_path().relative_to(ROOT).as_posix(),
+                "generated_at": specpm_handoff_packets.get("generated_at"),
+                "handoff_status": handoff_status,
+            },
+            "target_consumer": copy.deepcopy(target_consumer),
+            "package_identity": copy.deepcopy(package_identity),
+        }
+        entries.append(entry)
+        status_groups.setdefault(status, []).append(export_id)
+        review_state_groups.setdefault(review_state, []).append(export_id)
+        named_filters.setdefault(status, []).append(export_id)
+        if copied_evidence_refs:
+            named_filters["evidence_copied"].append(export_id)
+        if next_gap != "none":
+            backlog_items.append(
+                {
+                    "export_id": export_id,
+                    "materialization_status": status,
+                    "review_state": review_state,
+                    "next_gap": next_gap,
+                }
+            )
+            grouped_backlog.setdefault(next_gap, []).append(export_id)
+
+    for bucket in (status_groups, review_state_groups, named_filters, grouped_backlog):
+        for key in list(bucket):
+            bucket[key] = sorted(set(bucket[key]))
+
+    return {
+        "artifact_kind": SPECPM_MATERIALIZATION_REPORT_ARTIFACT_KIND,
+        "schema_version": SPECPM_MATERIALIZATION_REPORT_SCHEMA_VERSION,
+        "generated_at": utc_now_iso(),
+        "policy_reference": specpm_materialization_policy_reference(),
+        "source_artifacts": {
+            "specpm_handoff_packets": {
+                "artifact_path": specpm_handoff_packets_path().relative_to(ROOT).as_posix(),
+                "generated_at": specpm_handoff_packets.get("generated_at"),
+            }
+        },
+        "entry_count": len(entries),
+        "entries": entries,
+        "viewer_projection": {
+            "materialization_status": {
+                key: sorted(value) for key, value in sorted(status_groups.items())
+            },
+            "review_state": {
+                key: sorted(value) for key, value in sorted(review_state_groups.items())
+            },
+            "named_filters": {key: sorted(value) for key, value in sorted(named_filters.items())},
+        },
+        "materialization_backlog": {
+            "entry_count": len(backlog_items),
+            "items": backlog_items,
+            "grouped_by_next_gap": {
+                key: sorted(value) for key, value in sorted(grouped_backlog.items())
+            },
+        },
+    }
+
+
+def write_specpm_materialization_report(report: dict[str, Any]) -> Path:
+    RUNS_DIR.mkdir(parents=True, exist_ok=True)
+    path = specpm_materialization_report_path()
     with artifact_lock(path):
         atomic_write_json(path, report)
     return path
@@ -19223,6 +19756,7 @@ def main(
     build_external_consumer_handoffs_mode: bool = False,
     build_specpm_export_preview_mode: bool = False,
     build_specpm_handoff_packets_mode: bool = False,
+    materialize_specpm_export_bundles_mode: bool = False,
     build_metric_signal_index_mode: bool = False,
     build_metric_threshold_proposals_mode: bool = False,
     build_supervisor_performance_index_mode: bool = False,
@@ -19275,6 +19809,7 @@ def main(
         "--build-external-consumer-handoffs": build_external_consumer_handoffs_mode,
         "--build-specpm-export-preview": build_specpm_export_preview_mode,
         "--build-specpm-handoff-packets": build_specpm_handoff_packets_mode,
+        "--materialize-specpm-export-bundles": materialize_specpm_export_bundles_mode,
         "--build-metric-signal-index": build_metric_signal_index_mode,
         "--build-metric-threshold-proposals": build_metric_threshold_proposals_mode,
         "--build-supervisor-performance-index": build_supervisor_performance_index_mode,
@@ -20137,6 +20672,47 @@ def main(
         handoff_packets = build_specpm_handoff_packets(preview, consumer_index)
         write_specpm_handoff_packets(handoff_packets)
         print(json.dumps(handoff_packets, ensure_ascii=False, indent=2))
+        return 0
+
+    if materialize_specpm_export_bundles_mode:
+        if any(
+            (
+                dry_run,
+                auto_approve,
+                loop,
+                resolve_gate,
+                decision,
+                note,
+                target_spec,
+                split_proposal,
+                apply_split_proposal,
+                operator_note,
+                mutation_budget,
+                run_authority,
+                execution_profile,
+                child_model,
+                child_timeout_seconds,
+                verbose,
+                list_stale_runtime,
+                clean_stale_runtime,
+                observe_graph_health_mode,
+                operator_request_packet_path,
+            )
+        ):
+            print(
+                "--materialize-specpm-export-bundles must be used as a standalone command",
+                file=sys.stderr,
+            )
+            return 1
+        consumer_index = build_external_consumer_index()
+        write_external_consumer_index(consumer_index)
+        preview = build_specpm_export_preview(specs)
+        write_specpm_export_preview(preview)
+        handoff_packets = build_specpm_handoff_packets(preview, consumer_index)
+        write_specpm_handoff_packets(handoff_packets)
+        report = materialize_specpm_export_bundles(handoff_packets)
+        write_specpm_materialization_report(report)
+        print(json.dumps(report, ensure_ascii=False, indent=2))
         return 0
 
     if build_metric_signal_index_mode:
@@ -21016,6 +21592,14 @@ if __name__ == "__main__":
         ),
     )
     parser.add_argument(
+        "--materialize-specpm-export-bundles",
+        action="store_true",
+        help=(
+            "Materialize local draft SpecPM export bundles into the sibling SpecPM checkout "
+            "from the current handoff packets, without auto-committing there"
+        ),
+    )
+    parser.add_argument(
         "--build-metric-signal-index",
         action="store_true",
         help=(
@@ -21203,6 +21787,7 @@ if __name__ == "__main__":
             build_external_consumer_handoffs_mode=args.build_external_consumer_handoffs,
             build_specpm_export_preview_mode=args.build_specpm_export_preview,
             build_specpm_handoff_packets_mode=args.build_specpm_handoff_packets,
+            materialize_specpm_export_bundles_mode=args.materialize_specpm_export_bundles,
             build_metric_signal_index_mode=args.build_metric_signal_index,
             build_metric_threshold_proposals_mode=args.build_metric_threshold_proposals,
             build_supervisor_performance_index_mode=args.build_supervisor_performance_index,

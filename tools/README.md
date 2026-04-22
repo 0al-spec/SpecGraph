@@ -102,6 +102,10 @@ Supervisor modes:
   `runs/specpm_handoff_packets.json` from the current `SpecPM` export preview
   plus external-consumer identity data, so previewable exports can become
   explicit downstream handoff packets before any real write into `SpecPM`.
+- `--materialize-specpm-export-bundles`: build
+  `runs/specpm_materialization_report.json` and write local draft export
+  bundles into the sibling `SpecPM` checkout under a controlled
+  `.specgraph_exports/<package_id>/` inbox, without auto-committing there.
 - `--build-metric-signal-index`: build `runs/metric_signal_index.json` from
   trace, evidence, graph-health, and proposal-runtime surfaces so metric-driven
   advisory signals remain derived rather than canonical facts. `sib_proxy` now
@@ -215,6 +219,10 @@ Key derived artifacts:
 - `runs/specpm_handoff_packets.json`: reviewable `SpecPM` handoff layer
   derived from the current preview, grouped by handoff status, review state,
   and next-gap backlog for downstream transfer readiness
+- `runs/specpm_materialization_report.json`: viewer-facing report for local
+  `SpecPM` bundle materialization, grouped by materialization status, review
+  state, and next-gap backlog after writing draft bundles into the sibling
+  checkout inbox
 - `runs/metric_signal_index.json`: derived metric surface for
   `Specification Verifiability`, `Process Observability`,
   `Structural Observability`, and a bridge-aware `SIB` proxy, plus
@@ -233,6 +241,9 @@ Key derived artifacts:
   `implemented`, `verified`, `drifted`, and `blocked`
 - `tools/evidence_plane_policy.json`: declarative boundary for the derived
   evidence plane, including its semantic chain and overlay/index contracts
+- `tools/specpm_materialization_policy.json`: declarative contract for local
+  `SpecPM` bundle materialization, including eligibility checks, inbox layout,
+  bundle file paths, and viewer/backlog states
 - `tools/metric_signal_policy.json`: declarative thresholds, score mappings,
   metric identities, and proposal-first threshold semantics for the derived
   metric signal layer
