@@ -84,7 +84,6 @@ Required fields for the viewer:
 - `next_gap`
 - `package_preview`
 - `boundary_source_preview`
-- `missing_fields_for_full_boundary_spec`
 - `contract_errors`
 
 Recommended card title:
@@ -109,6 +108,7 @@ Recommended detail section:
 - `boundary_source_preview.provides_capabilities`
 - `boundary_source_preview.requires_capabilities`
 - `boundary_source_preview.evidence_refs`
+- `boundary_source_preview.missing_fields_for_full_boundary_spec`
 
 Current status vocabulary:
 
@@ -402,4 +402,3 @@ Current UI should stay honest and use labels such as:
 - `Handoff Preview`
 - `Local Draft Bundle`
 - `Import Preview`
-
