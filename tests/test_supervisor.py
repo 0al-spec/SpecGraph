@@ -8908,6 +8908,133 @@ def test_materialize_specpm_export_bundles_blocks_unverified_checkout(
     assert not (specpm_checkout / ".specgraph_exports" / "specgraph.unverified_export").exists()
 
 
+def test_materialize_specpm_export_bundles_rejects_traversal_package_id(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    specpm_checkout = repo_fixture / "SpecPM"
+    specpm_checkout.mkdir()
+
+    handoff_packets = {
+        "generated_at": "2026-04-22T02:00:00Z",
+        "entries": [
+            {
+                "export_id": "bad_package_id_export",
+                "handoff_id": "handoff_bad_package_id_export",
+                "handoff_status": "ready_for_handoff",
+                "next_gap": "review_specpm_handoff_packet",
+                "contract_errors": [],
+                "target_consumer": {
+                    "consumer_id": "specpm",
+                    "profile": "boundary_package_consumer",
+                    "local_checkout_hint": specpm_checkout.as_posix(),
+                    "local_checkout_status": "available",
+                    "identity_verified": True,
+                },
+                "package_identity": {
+                    "package_id": "../../outside",
+                    "package_name": "Bad Package ID",
+                    "package_version": "0.1.0",
+                },
+                "package_preview": {
+                    "apiVersion": "specpm.dev/v0.1",
+                    "kind": "SpecPackage",
+                    "metadata": {
+                        "id": "../../outside",
+                        "name": "Bad Package ID",
+                        "version": "0.1.0",
+                        "summary": "Should be rejected before bundle_root derivation.",
+                    },
+                },
+                "boundary_source_preview": {
+                    "root_spec_id": "SG-SPEC-0001",
+                    "intent_summary": "Blocked export.",
+                    "bounded_context": "specgraph_repository",
+                    "provides_capabilities": ["specgraph.bad_package_id_export"],
+                    "requires_capabilities": [],
+                    "acceptance_criteria": [],
+                    "evidence_refs": [],
+                },
+            }
+        ],
+    }
+
+    report = supervisor_module.materialize_specpm_export_bundles(handoff_packets)
+
+    entry = report["entries"][0]
+    assert entry["materialization_status"] == "invalid_handoff_contract"
+    assert entry["review_state"] == "not_materialized"
+    assert entry["bundle_root"] == ""
+    assert not (specpm_checkout / ".specgraph_exports").exists()
+    assert not (repo_fixture.parent / "outside").exists()
+
+
+def test_materialize_specpm_export_bundles_skips_traversal_evidence_ref(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    specpm_checkout = repo_fixture / "SpecPM"
+    specpm_checkout.mkdir()
+    safe_evidence = repo_fixture / "runs" / "safe-evidence.json"
+    safe_evidence.write_text(json.dumps({"safe": True}), encoding="utf-8")
+    outside_evidence = repo_fixture.parent / "outside-evidence.json"
+    outside_evidence.write_text(json.dumps({"outside": True}), encoding="utf-8")
+
+    handoff_packets = {
+        "generated_at": "2026-04-22T02:00:00Z",
+        "entries": [
+            {
+                "export_id": "bad_evidence_export",
+                "handoff_id": "handoff_bad_evidence_export",
+                "handoff_status": "draft_preview_only",
+                "next_gap": "review_draft_specpm_boundary",
+                "contract_errors": [],
+                "target_consumer": {
+                    "consumer_id": "specpm",
+                    "profile": "boundary_package_consumer",
+                    "local_checkout_hint": specpm_checkout.as_posix(),
+                    "local_checkout_status": "available",
+                    "identity_verified": True,
+                },
+                "package_identity": {
+                    "package_id": "specgraph.bad_evidence_export",
+                    "package_name": "Bad Evidence Export",
+                    "package_version": "0.1.0",
+                },
+                "package_preview": {
+                    "apiVersion": "specpm.dev/v0.1",
+                    "kind": "SpecPackage",
+                    "metadata": {
+                        "id": "specgraph.bad_evidence_export",
+                        "name": "Bad Evidence Export",
+                        "version": "0.1.0",
+                        "summary": "Should skip traversal evidence refs.",
+                    },
+                },
+                "boundary_source_preview": {
+                    "root_spec_id": "SG-SPEC-0001",
+                    "intent_summary": "Export with one invalid evidence ref.",
+                    "bounded_context": "specgraph_repository",
+                    "provides_capabilities": ["specgraph.bad_evidence_export"],
+                    "requires_capabilities": [],
+                    "acceptance_criteria": [],
+                    "evidence_refs": ["../../outside-evidence.json", "runs/safe-evidence.json"],
+                },
+            }
+        ],
+    }
+
+    report = supervisor_module.materialize_specpm_export_bundles(handoff_packets)
+
+    entry = report["entries"][0]
+    assert entry["materialization_status"] == "draft_materialized"
+    assert entry["copied_evidence_refs"] == ["runs/safe-evidence.json"]
+    assert entry["missing_evidence_refs"] == ["../../outside-evidence.json"]
+    bundle_root = specpm_checkout / ".specgraph_exports" / "specgraph.bad_evidence_export"
+    assert (bundle_root / "evidence" / "source" / "runs" / "safe-evidence.json").exists()
+    assert not (bundle_root / "evidence" / "outside-evidence.json").exists()
+
+
 def test_main_materializes_specpm_export_bundles_as_standalone_command(
     supervisor_module: object,
     repo_fixture: Path,

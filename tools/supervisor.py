@@ -13633,6 +13633,28 @@ def derive_specpm_materialization_next_gap(
     return default_gap or "none"
 
 
+def normalize_specpm_materialization_package_id(value: str) -> str:
+    normalized = str(value).strip()
+    if not normalized:
+        return ""
+    path = PurePosixPath(normalized)
+    if path.is_absolute() or ".." in path.parts or "." in path.parts or len(path.parts) != 1:
+        return ""
+    return normalized
+
+
+def normalize_specpm_materialization_evidence_ref(value: str) -> str:
+    normalized = _normalize_transition_repo_path(str(value).strip())
+    if not normalized or not _looks_like_repo_path(normalized):
+        return ""
+    if _validate_transition_surface_path(field_name="evidence_ref", value=normalized):
+        return ""
+    path = PurePosixPath(normalized)
+    if not path.parts or path.name in {"", ".", ".."}:
+        return ""
+    return path.as_posix()
+
+
 def materialize_specpm_export_bundles(
     specpm_handoff_packets: dict[str, Any],
 ) -> dict[str, Any]:
@@ -13686,7 +13708,9 @@ def materialize_specpm_export_bundles(
         identity_verified = bool(target_consumer.get("identity_verified", False))
         handoff_status = str(raw_entry.get("handoff_status", "")).strip()
         package_identity = raw_entry.get("package_identity", {})
-        package_id = str(package_identity.get("package_id", "")).strip()
+        package_id = normalize_specpm_materialization_package_id(
+            str(package_identity.get("package_id", "")).strip()
+        )
         package_preview = raw_entry.get("package_preview")
         boundary_source_preview = raw_entry.get("boundary_source_preview")
         contract_errors = [
@@ -13733,8 +13757,52 @@ def materialize_specpm_export_bundles(
                 handoff_entry=raw_entry,
             )
         else:
-            checkout_root = Path(checkout_hint)
-            bundle_root = checkout_root / inbox_root / package_id
+            checkout_root = Path(checkout_hint).expanduser()
+            inbox_path = checkout_root / inbox_root
+            bundle_root = inbox_path / package_id
+            try:
+                bundle_root.resolve().relative_to(inbox_path.resolve())
+            except ValueError:
+                status = "invalid_handoff_contract"
+                next_gap = derive_specpm_materialization_next_gap(
+                    status=status,
+                    handoff_entry=raw_entry,
+                )
+                entry = {
+                    "export_id": export_id,
+                    "handoff_id": str(raw_entry.get("handoff_id", "")).strip(),
+                    "consumer_id": consumer_id,
+                    "materialization_status": status,
+                    "review_state": review_state,
+                    "next_gap": next_gap,
+                    "bundle_root": bundle_root_text,
+                    "written_files": sorted(set(written_files)),
+                    "copied_evidence_refs": sorted(set(copied_evidence_refs)),
+                    "missing_evidence_refs": sorted(set(missing_evidence_refs)),
+                    "policy_reference": specpm_materialization_policy_reference(),
+                    "source_handoff": {
+                        "artifact_path": specpm_handoff_packets_path().relative_to(ROOT).as_posix(),
+                        "generated_at": specpm_handoff_packets.get("generated_at"),
+                        "handoff_status": handoff_status,
+                    },
+                    "target_consumer": copy.deepcopy(target_consumer),
+                    "package_identity": copy.deepcopy(package_identity),
+                }
+                entries.append(entry)
+                status_groups.setdefault(status, []).append(export_id)
+                review_state_groups.setdefault(review_state, []).append(export_id)
+                named_filters.setdefault(status, []).append(export_id)
+                if next_gap != "none":
+                    backlog_items.append(
+                        {
+                            "export_id": export_id,
+                            "materialization_status": status,
+                            "review_state": review_state,
+                            "next_gap": next_gap,
+                        }
+                    )
+                    grouped_backlog.setdefault(next_gap, []).append(export_id)
+                continue
             bundle_root_text = bundle_root.as_posix()
             if bundle_root.exists():
                 shutil.rmtree(bundle_root)
@@ -13742,17 +13810,34 @@ def materialize_specpm_export_bundles(
             (bundle_root / evidence_root_relpath).mkdir(parents=True, exist_ok=True)
 
             evidence_entries: list[dict[str, Any]] = []
-            evidence_refs = [
-                str(item).strip()
-                for item in boundary_source_preview.get("evidence_refs", [])
-                if str(item).strip()
-            ]
+            evidence_refs: list[str] = []
+            for raw_item in boundary_source_preview.get("evidence_refs", []):
+                raw_ref = str(raw_item).strip()
+                if not raw_ref:
+                    continue
+                normalized_ref = normalize_specpm_materialization_evidence_ref(raw_ref)
+                if not normalized_ref:
+                    missing_evidence_refs.append(raw_ref)
+                    continue
+                evidence_refs.append(normalized_ref)
             for index, rel_ref in enumerate(evidence_refs, start=1):
-                source_path = ROOT / rel_ref
+                source_path = (ROOT / rel_ref).resolve()
+                try:
+                    source_path.relative_to(ROOT.resolve())
+                except ValueError:
+                    missing_evidence_refs.append(rel_ref)
+                    continue
                 if not source_path.exists() or not source_path.is_file():
                     missing_evidence_refs.append(rel_ref)
                     continue
                 target_path = bundle_root / evidence_root_relpath / rel_ref
+                try:
+                    target_path.resolve().relative_to(
+                        (bundle_root / evidence_root_relpath).resolve()
+                    )
+                except ValueError:
+                    missing_evidence_refs.append(rel_ref)
+                    continue
                 target_path.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(source_path, target_path)
                 copied_relpath = target_path.relative_to(bundle_root).as_posix()
