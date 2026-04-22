@@ -9394,7 +9394,7 @@ def test_main_builds_specpm_import_preview_as_standalone_command(
     monkeypatch.setattr(
         supervisor_module,
         "build_specpm_import_preview",
-        lambda: {
+        lambda external_consumer_index=None: {
             "artifact_kind": supervisor_module.SPECPM_IMPORT_PREVIEW_ARTIFACT_KIND,
             "schema_version": supervisor_module.SPECPM_IMPORT_PREVIEW_SCHEMA_VERSION,
             "generated_at": "2026-04-22T03:00:01Z",
@@ -9435,6 +9435,91 @@ def test_main_builds_specpm_import_preview_as_standalone_command(
     assert (
         import_preview_artifact["artifact_kind"]
         == supervisor_module.SPECPM_IMPORT_PREVIEW_ARTIFACT_KIND
+    )
+
+
+def test_main_builds_specpm_import_preview_reuses_written_consumer_index(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    call_count = 0
+
+    def fake_build_external_consumer_index() -> dict[str, object]:
+        nonlocal call_count
+        call_count += 1
+        return {
+            "generated_at": "2026-04-22T03:00:00Z",
+            "entries": [],
+        }
+
+    def fake_build_specpm_import_preview(
+        external_consumer_index: dict[str, object] | None = None,
+    ) -> dict[str, object]:
+        assert external_consumer_index is not None
+        assert external_consumer_index["generated_at"] == "2026-04-22T03:00:00Z"
+        return {
+            "artifact_kind": supervisor_module.SPECPM_IMPORT_PREVIEW_ARTIFACT_KIND,
+            "schema_version": supervisor_module.SPECPM_IMPORT_PREVIEW_SCHEMA_VERSION,
+            "generated_at": "2026-04-22T03:00:01Z",
+            "source_artifacts": {
+                "external_consumer_index": {
+                    "artifact_path": "runs/external_consumer_index.json",
+                    "generated_at": external_consumer_index["generated_at"],
+                }
+            },
+            "import_source": {
+                "consumer_id": "specpm",
+                "profile": "boundary_package_consumer",
+                "checkout_path": "",
+                "checkout_status": "missing",
+                "identity_verified": False,
+                "inbox_root": "",
+                "bundle_count": 0,
+                "next_gap": "repair_specpm_checkout",
+            },
+            "entry_count": 0,
+            "entries": [],
+            "viewer_projection": {
+                "import_status": {},
+                "review_state": {},
+                "suggested_target_kind": {},
+                "named_filters": {},
+            },
+            "import_backlog": {"entry_count": 0, "items": [], "grouped_by_next_gap": {}},
+        }
+
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_external_consumer_index",
+        fake_build_external_consumer_index,
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_specpm_import_preview",
+        fake_build_specpm_import_preview,
+    )
+
+    exit_code = supervisor_module.main(build_specpm_import_preview_mode=True)
+
+    assert exit_code == 0
+    assert call_count == 1
+    report = json.loads(capsys.readouterr().out)
+    assert (
+        report["source_artifacts"]["external_consumer_index"]["generated_at"]
+        == "2026-04-22T03:00:00Z"
+    )
+    persisted_index = json.loads(
+        (repo_fixture / "runs" / "external_consumer_index.json").read_text(encoding="utf-8")
+    )
+    assert persisted_index["generated_at"] == "2026-04-22T03:00:00Z"
+    persisted_preview = json.loads(
+        (repo_fixture / "runs" / "specpm_import_preview.json").read_text(encoding="utf-8")
+    )
+    assert (
+        persisted_preview["source_artifacts"]["external_consumer_index"]["generated_at"]
+        == persisted_index["generated_at"]
     )
 
 

@@ -14148,8 +14148,14 @@ def derive_specpm_import_next_gap(
     return default_gap or "none"
 
 
-def build_specpm_import_preview() -> dict[str, Any]:
-    consumer_index = build_external_consumer_index()
+def build_specpm_import_preview(
+    external_consumer_index: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    consumer_index = (
+        copy.deepcopy(external_consumer_index)
+        if isinstance(external_consumer_index, dict)
+        else build_external_consumer_index()
+    )
     consumer_entries = {
         str(entry.get("consumer_id", "")).strip(): entry
         for entry in consumer_index.get("entries", [])
@@ -20673,7 +20679,7 @@ def main(
             return 1
         consumer_index = build_external_consumer_index()
         write_external_consumer_index(consumer_index)
-        preview = build_specpm_import_preview()
+        preview = build_specpm_import_preview(consumer_index)
         write_specpm_import_preview(preview)
         print(json.dumps(preview, ensure_ascii=False, indent=2))
         return 0
