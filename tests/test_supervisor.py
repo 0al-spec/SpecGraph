@@ -8600,6 +8600,160 @@ def test_main_builds_specpm_export_preview_as_standalone_command(
     assert artifact["artifact_kind"] == supervisor_module.SPECPM_EXPORT_PREVIEW_ARTIFACT_KIND
 
 
+def test_build_specpm_handoff_packets_emits_ready_and_draft_entries(
+    supervisor_module: object,
+) -> None:
+    preview = {
+        "generated_at": "2026-04-22T01:00:00Z",
+        "entries": [
+            {
+                "export_id": "ready_export",
+                "consumer_id": "specpm",
+                "consumer_title": "SpecPM / Boundary Package Consumer",
+                "consumer_reference_state": "stable_reference",
+                "consumer_bridge_state": "stable_ready",
+                "export_status": "ready_for_review",
+                "review_state": "ready_for_review",
+                "next_gap": "review_specpm_export_preview",
+                "package_preview": {
+                    "metadata": {
+                        "id": "specgraph.ready_export",
+                        "name": "Ready Export",
+                        "version": "0.1.0",
+                    }
+                },
+                "boundary_source_preview": {"root_spec_id": "SG-SPEC-0001"},
+                "contract_errors": [],
+                "notes": "stable preview",
+            },
+            {
+                "export_id": "draft_export",
+                "consumer_id": "specpm",
+                "consumer_title": "SpecPM / Boundary Package Consumer",
+                "consumer_reference_state": "draft_reference",
+                "consumer_bridge_state": "draft_visible",
+                "export_status": "draft_preview_only",
+                "review_state": "draft_preview_only",
+                "next_gap": "review_draft_specpm_boundary",
+                "package_preview": {
+                    "metadata": {
+                        "id": "specgraph.draft_export",
+                        "name": "Draft Export",
+                        "version": "0.1.0",
+                    }
+                },
+                "boundary_source_preview": {"root_spec_id": "SG-SPEC-0001"},
+                "contract_errors": [],
+                "notes": "draft preview",
+            },
+        ],
+    }
+    consumer_index = {
+        "generated_at": "2026-04-22T01:00:01Z",
+        "entries": [
+            {
+                "consumer_id": "specpm",
+                "title": "SpecPM / Boundary Package Consumer",
+                "profile": "boundary_package_consumer",
+                "repo_url": "https://github.com/0al-spec/SpecPM",
+                "local_checkout": {
+                    "checkout_path": "/Users/egor/Development/GitHub/0AL/SpecPM",
+                },
+            }
+        ],
+    }
+
+    report = supervisor_module.build_specpm_handoff_packets(preview, consumer_index)
+
+    assert report["artifact_kind"] == supervisor_module.SPECPM_HANDOFF_ARTIFACT_KIND
+    assert report["viewer_projection"]["handoff_status"]["ready_for_handoff"] == ["ready_export"]
+    assert report["viewer_projection"]["handoff_status"]["draft_preview_only"] == ["draft_export"]
+    ready = next(entry for entry in report["entries"] if entry["export_id"] == "ready_export")
+    assert ready["review_state"] == "ready_for_review"
+    assert ready["next_gap"] == "review_specpm_handoff_packet"
+    assert ready["transition_packet"]["transition_profile"] == "implementation_trace"
+    assert ready["transition_packet_validation"]["ok"] is True
+    assert (
+        ready["target_consumer"]["local_checkout_hint"]
+        == "/Users/egor/Development/GitHub/0AL/SpecPM"
+    )
+    draft = next(entry for entry in report["entries"] if entry["export_id"] == "draft_export")
+    assert draft["review_state"] == "draft_preview_only"
+    assert draft["next_gap"] == "review_draft_specpm_boundary"
+    assert draft["transition_packet"] is None
+
+
+def test_main_builds_specpm_handoff_packets_as_standalone_command(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_specpm_export_preview",
+        lambda specs: {
+            "artifact_kind": supervisor_module.SPECPM_EXPORT_PREVIEW_ARTIFACT_KIND,
+            "schema_version": supervisor_module.SPECPM_EXPORT_PREVIEW_SCHEMA_VERSION,
+            "generated_at": "2026-04-22T01:00:00Z",
+            "entry_count": 0,
+            "entries": [],
+            "viewer_projection": {
+                "export_status": {},
+                "review_state": {},
+                "next_gap": {},
+                "named_filters": {},
+            },
+            "export_backlog": {"entry_count": 0, "items": []},
+        },
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_external_consumer_index",
+        lambda: {
+            "generated_at": "2026-04-22T01:00:01Z",
+            "entries": [],
+        },
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_specpm_handoff_packets",
+        lambda preview, consumer_index: {
+            "artifact_kind": supervisor_module.SPECPM_HANDOFF_ARTIFACT_KIND,
+            "schema_version": supervisor_module.SPECPM_HANDOFF_SCHEMA_VERSION,
+            "generated_at": "2026-04-22T01:00:02Z",
+            "entry_count": 0,
+            "entries": [],
+            "viewer_projection": {
+                "handoff_status": {},
+                "review_state": {},
+                "named_filters": {},
+            },
+            "handoff_backlog": {"entry_count": 0, "items": [], "grouped_by_next_gap": {}},
+        },
+    )
+
+    exit_code = supervisor_module.main(build_specpm_handoff_packets_mode=True)
+
+    assert exit_code == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["artifact_kind"] == supervisor_module.SPECPM_HANDOFF_ARTIFACT_KIND
+    preview_artifact = json.loads(
+        (repo_fixture / "runs" / "specpm_export_preview.json").read_text(encoding="utf-8")
+    )
+    assert (
+        preview_artifact["artifact_kind"] == supervisor_module.SPECPM_EXPORT_PREVIEW_ARTIFACT_KIND
+    )
+    consumer_index_artifact = json.loads(
+        (repo_fixture / "runs" / "external_consumer_index.json").read_text(encoding="utf-8")
+    )
+    assert consumer_index_artifact["generated_at"] == "2026-04-22T01:00:01Z"
+    handoff_artifact = json.loads(
+        (repo_fixture / "runs" / "specpm_handoff_packets.json").read_text(encoding="utf-8")
+    )
+    assert handoff_artifact["artifact_kind"] == supervisor_module.SPECPM_HANDOFF_ARTIFACT_KIND
+
+
 def test_build_metric_signal_index_reports_threshold_breaches(
     supervisor_module: object,
     repo_fixture: Path,
