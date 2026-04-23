@@ -109,6 +109,9 @@ particular task.
   `--build-specpm-import-preview`
 - build a reviewable `SpecPM` delivery workflow from local materialized bundles:
   `--build-specpm-delivery-workflow`
+- build a derived `SpecPM` feedback index from current delivery state and
+  downstream checkout observations:
+  `--build-specpm-feedback-index`
 - build metric-driven derived signals from trace, evidence, graph health, and proposal runtime:
   `--build-metric-signal-index`
 - turn metric-threshold breaches into reviewable proposal artifacts:
@@ -800,6 +803,42 @@ Use it when you want to review:
 This command does **not** commit into `SpecPM`, does not push a branch, and
 does not create a downstream PR automatically.
 
+### SpecPM feedback index
+
+```bash
+python3 tools/supervisor.py --build-specpm-feedback-index
+```
+
+Builds `runs/specpm_feedback_index.json` from:
+
+- a freshly rebuilt `runs/specpm_export_preview.json`
+- the current `runs/specpm_delivery_workflow.json` when present, otherwise a
+  safe rebuild from the existing materialization report
+- the observed git state of the sibling `SpecPM` checkout for each package
+
+This layer stays review-first and derived. It does not import anything back
+into canonical specs. Instead, it turns downstream checkout observations into
+an explicit feedback surface.
+
+It emits:
+
+- one feedback entry per `SpecPM` package under observation
+- explicit `feedback_status` such as `downstream_unobserved`,
+  `review_activity_observed`, `adoption_observed_locally`,
+  `blocked_by_delivery_gap`, or `invalid_feedback_contract`
+- observed checkout signals such as tracked bundle paths, latest bundle commit,
+  branch/upstream context, and bundle-scoped dirty paths
+- source-spec linkage back to the originating `SpecGraph` export contract
+- grouped backlog by `next_gap` for follow-up review or adoption collection
+
+Use it when you want to review:
+
+- whether downstream `SpecPM` work has started beyond local draft materialization
+- whether a bundle is only tracked on a review branch or appears locally
+  adopted on a default branch
+- which next follow-up gap should be surfaced without treating downstream
+  state as automatic canonical acceptance
+
 ### Metric-threshold proposals
 
 ```bash
@@ -1161,6 +1200,10 @@ path.
 - `runs/external_consumer_handoff_packets.json`
   - reviewable downstream handoff packets for sibling consumers, including
     handoff readiness, packet validation, and next-gap backlog
+- `runs/specpm_feedback_index.json`
+  - derived downstream feedback surface for `SpecPM`, including observed review
+    activity, local adoption visibility, and source-spec linkage without
+    automatic canonical acceptance
 - `runs/supervisor_performance_index.json`
   - derived measurement surface for runtime cleanliness, run yield, graph
     impact, and same-spec repeat hotspots over time

@@ -544,5 +544,44 @@
         "pattern": "\"artifact_kind\": SPECPM_DELIVERY_WORKFLOW_ARTIFACT_KIND"
       }
     ]
+  },
+  {
+    "proposal_id": "0033",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "tools/supervisor.py",
+      "tests/test_supervisor.py",
+      "tools/specpm_feedback_policy.json"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def build_specpm_feedback_index("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "SPECPM_FEEDBACK_INDEX_FILENAME = "
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_specpm_feedback_index_emits_observed_and_blocked_entries("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_main_builds_specpm_feedback_index_as_standalone_command("
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "write_specpm_feedback_index(feedback_index)"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "\"artifact_kind\": SPECPM_FEEDBACK_INDEX_ARTIFACT_KIND"
+      }
+    ]
   }
 ]

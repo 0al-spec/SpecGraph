@@ -47,10 +47,6 @@ Task numbers are preserved for traceability across commits and PRs.
 91. [todo] Replace compatibility `sib_proxy` semantics with a bridge-native sibling metric family, while preserving a migration-safe alias surface for existing dashboards and visualizers.
 92. [todo] Define the promotion path by which `Metrics/SIB_FULL` may graduate from `draft_reference` to a reviewable operational metric input without silently becoming threshold authority.
 
-## SpecPM Downstream Loop
-
-96. [todo] Add a feedback path from `SpecPM` review/adoption state back into derived SpecGraph overlays, evidence, or dashboard surfaces without treating downstream acceptance as canonical truth automatically.
-
 ## Proposal Promotion
 
 64. [done] Define the semantic boundary between informal working drafts and reviewable proposal artifacts so proposal promotion becomes a governed transition rather than a folder move.

@@ -9482,6 +9482,351 @@ def test_main_builds_specpm_delivery_workflow_as_standalone_command(
     )
 
 
+def test_build_specpm_feedback_index_emits_observed_and_blocked_entries(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    specpm_checkout = repo_fixture / "SpecPM"
+
+    def fake_inspect_specpm_feedback_checkout(
+        checkout_root: Path,
+        *,
+        bundle_rel_root: str,
+    ) -> dict[str, object]:
+        assert checkout_root == specpm_checkout
+        if bundle_rel_root.endswith("specgraph.review_bundle"):
+            return {
+                "is_git_repo": True,
+                "current_branch": "specgraph-delivery/specgraph-review-bundle",
+                "upstream_branch": "origin/specgraph-delivery/specgraph-review-bundle",
+                "ahead_count": 1,
+                "behind_count": 0,
+                "changed_paths": [".specgraph_exports/specgraph.review_bundle/specpm.yaml"],
+                "bundle_changed_paths": [".specgraph_exports/specgraph.review_bundle/specpm.yaml"],
+                "unrelated_changed_paths": [],
+                "has_bundle_checkout_changes": True,
+                "has_unrelated_checkout_changes": False,
+                "tracked_bundle_paths": [".specgraph_exports/specgraph.review_bundle/specpm.yaml"],
+                "tracked_bundle_present": True,
+                "latest_bundle_commit": {
+                    "commit_sha": "abc123",
+                    "committed_at": "2026-04-23T10:00:00+00:00",
+                    "subject": "Add review bundle",
+                },
+                "bundle_commit_present": True,
+            }
+        if bundle_rel_root.endswith("specgraph.adopted_bundle"):
+            return {
+                "is_git_repo": True,
+                "current_branch": "main",
+                "upstream_branch": "origin/main",
+                "ahead_count": 0,
+                "behind_count": 0,
+                "changed_paths": [],
+                "bundle_changed_paths": [],
+                "unrelated_changed_paths": [],
+                "has_bundle_checkout_changes": False,
+                "has_unrelated_checkout_changes": False,
+                "tracked_bundle_paths": [".specgraph_exports/specgraph.adopted_bundle/specpm.yaml"],
+                "tracked_bundle_present": True,
+                "latest_bundle_commit": {
+                    "commit_sha": "def456",
+                    "committed_at": "2026-04-23T10:10:00+00:00",
+                    "subject": "Adopt package",
+                },
+                "bundle_commit_present": True,
+            }
+        return {
+            "is_git_repo": True,
+            "current_branch": "main",
+            "upstream_branch": "origin/main",
+            "ahead_count": 0,
+            "behind_count": 0,
+            "changed_paths": [],
+            "bundle_changed_paths": [],
+            "unrelated_changed_paths": [],
+            "has_bundle_checkout_changes": False,
+            "has_unrelated_checkout_changes": False,
+            "tracked_bundle_paths": [],
+            "tracked_bundle_present": False,
+            "latest_bundle_commit": {},
+            "bundle_commit_present": False,
+        }
+
+    monkeypatch.setattr(
+        supervisor_module,
+        "inspect_specpm_feedback_checkout",
+        fake_inspect_specpm_feedback_checkout,
+    )
+
+    export_preview = {
+        "generated_at": "2026-04-23T10:00:00Z",
+        "entries": [
+            {
+                "export_id": "draft_export",
+                "export_status": "ready_for_review",
+                "review_state": "ready_for_review",
+                "package_preview": {"metadata": {"id": "specgraph.draft_bundle"}},
+                "contract_summary": {
+                    "root_spec_id": "SG-SPEC-0001",
+                    "source_spec_ids": ["SG-SPEC-0001"],
+                    "provides_capabilities": ["specgraph.draft"],
+                    "requires_capabilities": [],
+                },
+            },
+            {
+                "export_id": "review_export",
+                "export_status": "ready_for_review",
+                "review_state": "ready_for_review",
+                "package_preview": {"metadata": {"id": "specgraph.review_bundle"}},
+                "contract_summary": {
+                    "root_spec_id": "SG-SPEC-0002",
+                    "source_spec_ids": ["SG-SPEC-0002"],
+                    "provides_capabilities": ["specgraph.review"],
+                    "requires_capabilities": [],
+                },
+            },
+            {
+                "export_id": "adopted_export",
+                "export_status": "ready_for_review",
+                "review_state": "ready_for_review",
+                "package_preview": {"metadata": {"id": "specgraph.adopted_bundle"}},
+                "contract_summary": {
+                    "root_spec_id": "SG-SPEC-0003",
+                    "source_spec_ids": ["SG-SPEC-0003"],
+                    "provides_capabilities": ["specgraph.adopted"],
+                    "requires_capabilities": [],
+                },
+            },
+            {
+                "export_id": "blocked_export",
+                "export_status": "ready_for_review",
+                "review_state": "ready_for_review",
+                "package_preview": {"metadata": {"id": "specgraph.blocked_bundle"}},
+                "contract_summary": {
+                    "root_spec_id": "SG-SPEC-0004",
+                    "source_spec_ids": ["SG-SPEC-0004"],
+                    "provides_capabilities": ["specgraph.blocked"],
+                    "requires_capabilities": [],
+                },
+            },
+        ],
+    }
+    delivery_workflow = {
+        "generated_at": "2026-04-23T10:05:00Z",
+        "entries": [
+            {
+                "export_id": "draft_export",
+                "delivery_status": "ready_for_delivery_review",
+                "review_state": "ready_for_review",
+                "next_gap": "review_specpm_delivery_workflow",
+                "bundle_root": (
+                    specpm_checkout / ".specgraph_exports" / "specgraph.draft_bundle"
+                ).as_posix(),
+                "delivery_root": ".specgraph_exports/specgraph.draft_bundle",
+                "target_consumer": {
+                    "consumer_id": "specpm",
+                    "profile": "boundary_package_consumer",
+                    "local_checkout_hint": specpm_checkout.as_posix(),
+                },
+                "package_identity": {
+                    "package_id": "specgraph.draft_bundle",
+                    "package_name": "Draft Bundle",
+                },
+            },
+            {
+                "export_id": "review_export",
+                "delivery_status": "ready_for_delivery_review",
+                "review_state": "ready_for_review",
+                "next_gap": "review_specpm_delivery_workflow",
+                "bundle_root": (
+                    specpm_checkout / ".specgraph_exports" / "specgraph.review_bundle"
+                ).as_posix(),
+                "delivery_root": ".specgraph_exports/specgraph.review_bundle",
+                "target_consumer": {
+                    "consumer_id": "specpm",
+                    "profile": "boundary_package_consumer",
+                    "local_checkout_hint": specpm_checkout.as_posix(),
+                },
+                "package_identity": {
+                    "package_id": "specgraph.review_bundle",
+                    "package_name": "Review Bundle",
+                },
+            },
+            {
+                "export_id": "adopted_export",
+                "delivery_status": "ready_for_delivery_review",
+                "review_state": "ready_for_review",
+                "next_gap": "review_specpm_delivery_workflow",
+                "bundle_root": (
+                    specpm_checkout / ".specgraph_exports" / "specgraph.adopted_bundle"
+                ).as_posix(),
+                "delivery_root": ".specgraph_exports/specgraph.adopted_bundle",
+                "target_consumer": {
+                    "consumer_id": "specpm",
+                    "profile": "boundary_package_consumer",
+                    "local_checkout_hint": specpm_checkout.as_posix(),
+                },
+                "package_identity": {
+                    "package_id": "specgraph.adopted_bundle",
+                    "package_name": "Adopted Bundle",
+                },
+            },
+            {
+                "export_id": "blocked_export",
+                "delivery_status": "blocked_by_repo_state",
+                "review_state": "not_ready",
+                "next_gap": "isolate_specpm_checkout_changes",
+                "bundle_root": (
+                    specpm_checkout / ".specgraph_exports" / "specgraph.blocked_bundle"
+                ).as_posix(),
+                "delivery_root": ".specgraph_exports/specgraph.blocked_bundle",
+                "target_consumer": {
+                    "consumer_id": "specpm",
+                    "profile": "boundary_package_consumer",
+                    "local_checkout_hint": specpm_checkout.as_posix(),
+                },
+                "package_identity": {
+                    "package_id": "specgraph.blocked_bundle",
+                    "package_name": "Blocked Bundle",
+                },
+            },
+        ],
+    }
+
+    report = supervisor_module.build_specpm_feedback_index(export_preview, delivery_workflow)
+
+    assert report["artifact_kind"] == supervisor_module.SPECPM_FEEDBACK_INDEX_ARTIFACT_KIND
+    assert report["viewer_projection"]["feedback_status"]["downstream_unobserved"] == [
+        "specgraph.draft_bundle"
+    ]
+    assert report["viewer_projection"]["feedback_status"]["review_activity_observed"] == [
+        "specgraph.review_bundle"
+    ]
+    assert report["viewer_projection"]["feedback_status"]["adoption_observed_locally"] == [
+        "specgraph.adopted_bundle"
+    ]
+    assert report["viewer_projection"]["feedback_status"]["blocked_by_delivery_gap"] == [
+        "specgraph.blocked_bundle"
+    ]
+
+    by_package_id = {entry["package_id"]: entry for entry in report["entries"]}
+    assert by_package_id["specgraph.draft_bundle"]["review_state"] == "not_observed"
+    assert by_package_id["specgraph.draft_bundle"]["next_gap"] == "observe_specpm_downstream_review"
+    assert by_package_id["specgraph.review_bundle"]["review_state"] == "review_visible"
+    assert (
+        by_package_id["specgraph.review_bundle"]["next_gap"] == "review_specpm_downstream_feedback"
+    )
+    assert (
+        by_package_id["specgraph.review_bundle"]["observed_checkout_feedback"][
+            "bundle_commit_present"
+        ]
+        is True
+    )
+    assert by_package_id["specgraph.adopted_bundle"]["review_state"] == "adoption_visible"
+    assert (
+        by_package_id["specgraph.adopted_bundle"]["observed_checkout_feedback"][
+            "adoption_candidate"
+        ]
+        is True
+    )
+    assert (
+        by_package_id["specgraph.blocked_bundle"]["next_gap"] == "isolate_specpm_checkout_changes"
+    )
+    assert report["viewer_projection"]["source_spec_ids"]["SG-SPEC-0003"] == [
+        "specgraph.adopted_bundle"
+    ]
+
+
+def test_main_builds_specpm_feedback_index_as_standalone_command(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_specpm_export_preview",
+        lambda specs: {
+            "artifact_kind": supervisor_module.SPECPM_EXPORT_PREVIEW_ARTIFACT_KIND,
+            "schema_version": supervisor_module.SPECPM_EXPORT_PREVIEW_SCHEMA_VERSION,
+            "generated_at": "2026-04-23T11:00:00Z",
+            "entry_count": 0,
+            "entries": [],
+            "viewer_projection": {
+                "export_status": {},
+                "review_state": {},
+                "next_gap": {},
+                "named_filters": {},
+            },
+            "export_backlog": {"entry_count": 0, "items": []},
+        },
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "load_current_specpm_delivery_workflow",
+        lambda: {
+            "artifact_kind": supervisor_module.SPECPM_DELIVERY_WORKFLOW_ARTIFACT_KIND,
+            "schema_version": supervisor_module.SPECPM_DELIVERY_WORKFLOW_SCHEMA_VERSION,
+            "generated_at": "2026-04-23T11:00:01Z",
+            "entry_count": 0,
+            "entries": [],
+            "viewer_projection": {
+                "delivery_status": {},
+                "review_state": {},
+                "named_filters": {},
+            },
+            "delivery_backlog": {"entry_count": 0, "items": [], "grouped_by_next_gap": {}},
+        },
+    )
+
+    def fake_build_specpm_feedback_index(
+        specpm_export_preview: dict[str, object],
+        specpm_delivery_workflow: dict[str, object],
+    ) -> dict[str, object]:
+        assert specpm_export_preview["generated_at"] == "2026-04-23T11:00:00Z"
+        assert specpm_delivery_workflow["generated_at"] == "2026-04-23T11:00:01Z"
+        return {
+            "artifact_kind": supervisor_module.SPECPM_FEEDBACK_INDEX_ARTIFACT_KIND,
+            "schema_version": supervisor_module.SPECPM_FEEDBACK_INDEX_SCHEMA_VERSION,
+            "generated_at": "2026-04-23T11:00:02Z",
+            "entry_count": 0,
+            "entries": [],
+            "viewer_projection": {
+                "feedback_status": {},
+                "review_state": {},
+                "named_filters": {},
+                "source_spec_ids": {},
+            },
+            "feedback_backlog": {"entry_count": 0, "items": [], "grouped_by_next_gap": {}},
+        }
+
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_specpm_feedback_index",
+        fake_build_specpm_feedback_index,
+    )
+
+    exit_code = supervisor_module.main(build_specpm_feedback_index_mode=True)
+
+    assert exit_code == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["artifact_kind"] == supervisor_module.SPECPM_FEEDBACK_INDEX_ARTIFACT_KIND
+    preview_artifact = json.loads(
+        (repo_fixture / "runs" / "specpm_export_preview.json").read_text(encoding="utf-8")
+    )
+    assert preview_artifact["generated_at"] == "2026-04-23T11:00:00Z"
+    delivery_artifact = json.loads(
+        (repo_fixture / "runs" / "specpm_delivery_workflow.json").read_text(encoding="utf-8")
+    )
+    assert delivery_artifact["generated_at"] == "2026-04-23T11:00:01Z"
+    feedback_artifact = json.loads(
+        (repo_fixture / "runs" / "specpm_feedback_index.json").read_text(encoding="utf-8")
+    )
+    assert feedback_artifact["generated_at"] == "2026-04-23T11:00:02Z"
+
+
 def test_build_specpm_import_preview_reads_materialized_bundle(
     supervisor_module: object,
     repo_fixture: Path,
@@ -11275,6 +11620,48 @@ def test_build_graph_dashboard_aggregates_runtime_surfaces(
     )
     monkeypatch.setattr(
         supervisor_module,
+        "build_specpm_export_preview",
+        lambda specs: {
+            "generated_at": "2026-04-19T00:00:10Z",
+            "entry_count": 1,
+            "entries": [],
+        },
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "load_current_specpm_delivery_workflow",
+        lambda: {
+            "generated_at": "2026-04-19T00:00:10Z",
+            "entry_count": 1,
+            "entries": [],
+            "viewer_projection": {
+                "delivery_status": {},
+                "review_state": {},
+                "named_filters": {},
+            },
+            "delivery_backlog": {"entry_count": 0, "items": [], "grouped_by_next_gap": {}},
+        },
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_specpm_feedback_index",
+        lambda preview, workflow: {
+            "generated_at": "2026-04-19T00:00:10Z",
+            "entry_count": 1,
+            "viewer_projection": {
+                "feedback_status": {"adoption_observed_locally": ["specgraph.core"]},
+                "review_state": {"adoption_visible": ["specgraph.core"]},
+                "named_filters": {
+                    "adoption_observed_locally": ["specgraph.core"],
+                    "tracked_bundle_present": ["specgraph.core"],
+                },
+                "source_spec_ids": {"SG-SPEC-0001": ["specgraph.core"]},
+            },
+            "feedback_backlog": {"entry_count": 1},
+        },
+    )
+    monkeypatch.setattr(
+        supervisor_module,
         "build_metric_threshold_proposals",
         lambda index: {
             "generated_at": "2026-04-19T00:00:11Z",
@@ -11309,12 +11696,16 @@ def test_build_graph_dashboard_aggregates_runtime_surfaces(
     assert report["sections"]["external_consumers"]["handoff_status_counts"] == {
         "ready_for_handoff": 1
     }
+    assert report["sections"]["external_consumers"]["specpm_feedback_status_counts"] == {
+        "adoption_observed_locally": 1
+    }
     assert report["sections"]["metrics"]["below_threshold_metric_ids"] == ["process_observability"]
     by_card_id = {entry["card_id"]: entry for entry in report["headline_cards"]}
     assert by_card_id["metrics_below_threshold"]["value"] == 1
     assert by_card_id["structural_pressure_specs"]["value"] == 1
     assert by_card_id["stable_bridges_ready"]["value"] == 1
     assert by_card_id["ready_external_handoffs"]["value"] == 1
+    assert by_card_id["specpm_adoption_visible"]["value"] == 1
 
 
 def test_main_builds_graph_dashboard_as_standalone_command(

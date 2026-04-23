@@ -49,6 +49,12 @@ The key surfaces are:
 - `viewer_projection.named_filters`: compact filter counts for UI chips or
   quick toggles
 
+`graph_dashboard.json` now also carries downstream `SpecPM` feedback counts in:
+
+- `sections.external_consumers.specpm_feedback_status_counts`
+- `sections.external_consumers.specpm_feedback_review_state_counts`
+- `viewer_projection.named_filters.specpm_adoption_visible`
+
 ### Global metric panel
 
 Build:
@@ -142,6 +148,7 @@ Read:
 - `runs/external_consumer_index.json`
 - `runs/external_consumer_overlay.json`
 - `runs/external_consumer_handoff_packets.json`
+- `runs/specpm_feedback_index.json`
 
 Use these for:
 
@@ -149,6 +156,7 @@ Use these for:
 - bridge readiness
 - backlog pressure for sibling repos
 - downstream handoff review queues
+- downstream `SpecPM` review/adoption observation panels
 
 This is not node-level graph data. Treat it as a separate panel or side rail.
 
@@ -175,6 +183,7 @@ Good examples of stable card ids:
 - `complete_evidence_chains`
 - `stable_bridges_ready`
 - `ready_external_handoffs`
+- `specpm_adoption_visible`
 - `metrics_below_threshold`
 
 ### `metric_signal_index.json`

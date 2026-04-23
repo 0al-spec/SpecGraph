@@ -120,6 +120,10 @@ Supervisor modes:
   `runs/specpm_delivery_workflow.json` from the current `SpecPM`
   materialization report so downstream branch, commit, and PR scaffolding
   becomes reviewable before any real cross-repo write exists.
+- `--build-specpm-feedback-index`: build
+  `runs/specpm_feedback_index.json` from the current `SpecPM`
+  delivery workflow plus downstream checkout observations so local review or
+  adoption signals become visible without turning them into canonical truth.
 - `--build-metric-signal-index`: build `runs/metric_signal_index.json` from
   trace, evidence, graph-health, and proposal-runtime surfaces so metric-driven
   advisory signals remain derived rather than canonical facts. `sib_proxy` now
@@ -246,6 +250,9 @@ Key derived artifacts:
 - `runs/specpm_delivery_workflow.json`: reviewable outbound `SpecPM`
   delivery workflow surface, grouped by delivery status, review state, git
   checkout state, and next-gap backlog before any downstream commit or PR
+- `runs/specpm_feedback_index.json`: derived `SpecPM` downstream feedback
+  surface, grouped by observed review/adoption status, checkout signals, and
+  next-gap backlog without auto-accepting that downstream state as canonical
 - `runs/metric_signal_index.json`: derived metric surface for
   `Specification Verifiability`, `Process Observability`,
   `Structural Observability`, and a bridge-aware `SIB` proxy, plus
@@ -273,6 +280,9 @@ Key derived artifacts:
 - `tools/specpm_delivery_policy.json`: declarative contract for reviewable
   `SpecGraph -> SpecPM` delivery workflow, including eligibility, checkout git
   state checks, and downstream branch/commit/PR scaffolding
+- `tools/specpm_feedback_policy.json`: declarative contract for downstream
+  `SpecPM` feedback observation, including status vocabulary, branch/adoption
+  heuristics, and review-safe next-gap defaults
 - `tools/metric_signal_policy.json`: declarative thresholds, score mappings,
   metric identities, and proposal-first threshold semantics for the derived
   metric signal layer
