@@ -9359,6 +9359,37 @@ def test_build_specpm_delivery_workflow_emits_ready_draft_and_blocked_entries(
     assert blocked["next_gap"] == "review_specpm_handoff_packet"
 
 
+def test_inspect_specpm_delivery_checkout_keeps_untracked_sibling_bundle_unrelated(
+    supervisor_module: object,
+    tmp_path: Path,
+) -> None:
+    specpm_checkout = tmp_path / "SpecPM"
+    specpm_checkout.mkdir()
+    subprocess.run(
+        ["git", "init"],
+        cwd=specpm_checkout,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    sibling_file = (
+        specpm_checkout / ".specgraph_exports" / "specgraph.sibling_bundle" / "specpm.yaml"
+    )
+    sibling_file.parent.mkdir(parents=True)
+    sibling_file.write_text("package: sibling\n", encoding="utf-8")
+
+    snapshot = supervisor_module.inspect_specpm_delivery_checkout(
+        specpm_checkout,
+        bundle_rel_root=".specgraph_exports/specgraph.target_bundle",
+    )
+
+    assert snapshot["is_git_repo"] is True
+    assert snapshot["bundle_changed_paths"] == []
+    assert snapshot["unrelated_changed_paths"] == [
+        ".specgraph_exports/specgraph.sibling_bundle/specpm.yaml"
+    ]
+
+
 def test_main_builds_specpm_delivery_workflow_as_standalone_command(
     supervisor_module: object,
     repo_fixture: Path,
@@ -9737,6 +9768,63 @@ def test_build_specpm_feedback_index_emits_observed_and_blocked_entries(
     assert report["viewer_projection"]["source_spec_ids"]["SG-SPEC-0003"] == [
         "specgraph.adopted_bundle"
     ]
+
+
+def test_build_specpm_feedback_index_blocks_stale_checkout_hint(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    missing_checkout = repo_fixture / "missing-SpecPM"
+    export_preview = {
+        "generated_at": "2026-04-23T10:00:00Z",
+        "entries": [
+            {
+                "export_id": "stale_export",
+                "export_status": "ready_for_review",
+                "review_state": "ready_for_review",
+                "package_preview": {"metadata": {"id": "specgraph.stale_bundle"}},
+                "contract_summary": {
+                    "root_spec_id": "SG-SPEC-0001",
+                    "source_spec_ids": ["SG-SPEC-0001"],
+                    "provides_capabilities": ["specgraph.stale"],
+                    "requires_capabilities": [],
+                },
+            }
+        ],
+    }
+    delivery_workflow = {
+        "generated_at": "2026-04-23T10:05:00Z",
+        "entries": [
+            {
+                "export_id": "stale_export",
+                "delivery_status": "ready_for_delivery_review",
+                "review_state": "ready_for_review",
+                "next_gap": "review_specpm_delivery_workflow",
+                "bundle_root": (
+                    missing_checkout / ".specgraph_exports" / "specgraph.stale_bundle"
+                ).as_posix(),
+                "delivery_root": ".specgraph_exports/specgraph.stale_bundle",
+                "target_consumer": {
+                    "consumer_id": "specpm",
+                    "profile": "boundary_package_consumer",
+                    "local_checkout_hint": missing_checkout.as_posix(),
+                },
+                "package_identity": {
+                    "package_id": "specgraph.stale_bundle",
+                    "package_name": "Stale Bundle",
+                },
+            }
+        ],
+    }
+
+    report = supervisor_module.build_specpm_feedback_index(export_preview, delivery_workflow)
+
+    entry = report["entries"][0]
+    assert entry["feedback_status"] == "blocked_by_delivery_gap"
+    assert entry["review_state"] == "not_observed"
+    assert entry["next_gap"] == "review_specpm_delivery_workflow"
+    assert entry["observed_checkout_feedback"]["checkout_path_exists"] is False
+    assert entry["observed_checkout_feedback"]["is_git_repo"] is False
 
 
 def test_main_builds_specpm_feedback_index_as_standalone_command(

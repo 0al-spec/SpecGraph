@@ -15029,11 +15029,7 @@ def specpm_delivery_path_matches_bundle(path_text: str, bundle_rel_root: str) ->
     bundle_root = bundle_rel_root.strip().strip("/")
     if not candidate or not bundle_root:
         return False
-    return (
-        candidate == bundle_root
-        or candidate.startswith(f"{bundle_root}/")
-        or bundle_root.startswith(f"{candidate}/")
-    )
+    return candidate == bundle_root or candidate.startswith(f"{bundle_root}/")
 
 
 def inspect_specpm_delivery_checkout(
@@ -15041,8 +15037,24 @@ def inspect_specpm_delivery_checkout(
     *,
     bundle_rel_root: str,
 ) -> dict[str, Any]:
+    checkout_path_exists = checkout_root.exists()
+    checkout_path_is_dir = checkout_root.is_dir()
+    if not checkout_path_exists or not checkout_path_is_dir:
+        return {
+            "is_git_repo": False,
+            "checkout_path_exists": checkout_path_exists,
+            "checkout_path_is_dir": checkout_path_is_dir,
+            "current_branch": "",
+            "upstream_branch": "",
+            "ahead_count": 0,
+            "behind_count": 0,
+            "changed_paths": [],
+            "bundle_changed_paths": [],
+            "unrelated_changed_paths": [],
+        }
+
     result = subprocess.run(
-        ["git", "status", "--porcelain", "--branch"],
+        ["git", "status", "--porcelain", "--branch", "--untracked-files=all"],
         cwd=checkout_root,
         capture_output=True,
         text=True,
@@ -15051,6 +15063,8 @@ def inspect_specpm_delivery_checkout(
     if result.returncode != 0:
         return {
             "is_git_repo": False,
+            "checkout_path_exists": checkout_path_exists,
+            "checkout_path_is_dir": checkout_path_is_dir,
             "current_branch": "",
             "upstream_branch": "",
             "ahead_count": 0,
@@ -15106,6 +15120,8 @@ def inspect_specpm_delivery_checkout(
 
     return {
         "is_git_repo": True,
+        "checkout_path_exists": checkout_path_exists,
+        "checkout_path_is_dir": checkout_path_is_dir,
         "current_branch": current_branch,
         "upstream_branch": upstream_branch,
         "ahead_count": ahead_count,
@@ -15617,6 +15633,9 @@ def build_specpm_feedback_index(
         review_state = "not_observed"
         next_gap = "repair_specpm_delivery_workflow"
         observed_feedback = {
+            "is_git_repo": False,
+            "checkout_path_exists": False,
+            "checkout_path_is_dir": False,
             "current_branch": "",
             "upstream_branch": "",
             "ahead_count": 0,
@@ -15690,7 +15709,10 @@ def build_specpm_feedback_index(
                 )
             observed_feedback["adoption_candidate"] = adoption_candidate
 
-            if adoption_candidate:
+            if not bool(observed_feedback.get("is_git_repo")):
+                feedback_status = "blocked_by_delivery_gap"
+                review_state = "not_observed"
+            elif adoption_candidate:
                 feedback_status = "adoption_observed_locally"
                 review_state = "adoption_visible"
             elif bool(observed_feedback.get("tracked_bundle_present")) or bool(
