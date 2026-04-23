@@ -88,11 +88,13 @@ Build:
 
 ```bash
 python3 tools/supervisor.py --build-supervisor-performance-index
+python3 tools/supervisor.py --build-bootstrap-smoke-benchmark
 ```
 
 Read:
 
 - `runs/supervisor_performance_index.json`
+- `runs/bootstrap_smoke_benchmark.json`
 
 Use this for:
 
@@ -101,6 +103,7 @@ Use this for:
 - per-profile duration charts
 - run-yield tables
 - repeat-hotspot warnings
+- bootstrap smoke status cards
 
 The key surfaces are:
 
@@ -109,6 +112,10 @@ The key surfaces are:
 - `batches.by_day_utc`: compact day-level trend buckets
 - `viewer_projection`: grouped run ids for `runtime_status`, `yield_status`,
   `graph_impact_status`, `run_kind`, `execution_profile`, and named filters
+- `bootstrap_smoke_benchmark.benchmark_status`: `not_run`, `passed`,
+  `failed`, `blocked_by_runtime`, or `insufficient_data`
+- `bootstrap_smoke_benchmark.criteria_results[]`: structural pass/fail checks
+  for minimal-seed yield without exact text matching
 
 ### Node overlays for the graph itself
 
@@ -304,6 +311,7 @@ If you want one compact but useful UI, this layout works well:
 4. Right-side metric panel from `metric_signal_index.json`
 5. Secondary runtime/performance panel from:
    - `supervisor_performance_index.json`
+   - `bootstrap_smoke_benchmark.json`
 6. Bottom sibling-consumer panel from:
    - `external_consumer_overlay.json`
    - `external_consumer_handoff_packets.json`

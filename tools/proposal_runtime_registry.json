@@ -39,6 +39,48 @@
     ]
   },
   {
+    "proposal_id": "0010",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "tools/supervisor.py",
+      "tests/test_supervisor.py",
+      "tools/bootstrap_smoke_benchmark_policy.json"
+    ],
+    "task_ids": [
+      57
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def build_bootstrap_smoke_benchmark("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "BOOTSTRAP_SMOKE_BENCHMARK_FILENAME"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_bootstrap_smoke_benchmark_evaluates_structural_yield("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_main_builds_bootstrap_smoke_benchmark_as_standalone_command("
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "write_bootstrap_smoke_benchmark(report)"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "\"artifact_kind\": BOOTSTRAP_SMOKE_BENCHMARK_ARTIFACT_KIND"
+      }
+    ]
+  },
+  {
     "proposal_id": "0016",
     "posture": "synchronous_runtime_slice",
     "runtime_surfaces": [

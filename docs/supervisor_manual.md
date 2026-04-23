@@ -118,6 +118,8 @@ particular task.
   `--build-metric-threshold-proposals`
 - build supervisor runtime/yield/graph-impact metrics from historical run logs:
   `--build-supervisor-performance-index`
+- build an advisory minimal-seed bootstrap smoke benchmark report:
+  `--build-bootstrap-smoke-benchmark`
 - build one aggregated graph dashboard for a viewer or visualizer:
   `--build-graph-dashboard`
 - build a repository-tracked intent-layer overlay:
@@ -905,6 +907,28 @@ The artifact also aggregates:
 Use it when you want to inspect supervisor throughput, intervention cost, and
 graph effect over time without collapsing those questions into one score.
 
+### Bootstrap smoke benchmark
+
+```bash
+python3 tools/supervisor.py --build-bootstrap-smoke-benchmark
+```
+
+Builds `runs/bootstrap_smoke_benchmark.json` as an advisory smoke report over
+benchmark-tagged supervisor runs.
+
+The report is intentionally structural:
+
+- it selects the latest smoke batch from `runs/supervisor_performance_index.json`
+- it checks productive run count, new child materialization, runtime failures,
+  low-yield pressure, blocked graph impact, and fixed-budget compliance
+- it never compares exact generated node prose
+- it emits `not_run` when no smoke batch is present, rather than failing the
+  command
+
+The first benchmark contract is `minimal_seed_structural_yield`. It is
+advisory and suitable for manual or scheduled observation before becoming a
+blocking CI gate.
+
 ### Graph dashboard
 
 ```bash
@@ -1207,6 +1231,9 @@ path.
 - `runs/supervisor_performance_index.json`
   - derived measurement surface for runtime cleanliness, run yield, graph
     impact, and same-spec repeat hotspots over time
+- `runs/bootstrap_smoke_benchmark.json`
+  - advisory smoke benchmark surface for minimal-seed structural yield, based
+    on performance-index run signals rather than exact generated text
 - `runs/graph_dashboard.json`
   - aggregated dashboard surface with headline cards and numeric section
     summaries for graph, health, proposals, implementation, evidence, external

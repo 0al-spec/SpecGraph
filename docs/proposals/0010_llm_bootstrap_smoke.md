@@ -2,7 +2,7 @@
 
 ## Status
 
-Draft proposal
+Implemented
 
 ## Problem
 
@@ -234,4 +234,3 @@ These risks reinforce the need to keep the first version:
 - cheap
 - small in scope
 - advisory rather than blocking
-
