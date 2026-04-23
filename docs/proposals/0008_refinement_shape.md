@@ -2,7 +2,16 @@
 
 ## Status
 
-Draft proposal
+Implemented
+
+Runtime realization:
+
+- `tools/supervisor.py` emits subtree-shape signals through graph-health
+  inspection and projects them into `runs/refactor_queue.json`,
+  `runs/proposal_queue.json`, `runs/graph_health_overlay.json`, and
+  `runs/graph_dashboard.json`.
+- `tests/test_supervisor.py` covers serial/shape signal emission,
+  retrospective proposal routing, queue projection, and dashboard visibility.
 
 ## Problem
 
@@ -261,3 +270,5 @@ After this proposal, the next bounded implementation step should be:
 - log them in run artifacts
 - add evaluator penalties for repeated one-child ladders
 - emit retrospective subtree rebalance proposals when the signals persist
+
+This implementation step is now complete for the MVP derived-surface layer.

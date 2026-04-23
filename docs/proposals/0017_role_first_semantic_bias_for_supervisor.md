@@ -2,7 +2,17 @@
 
 ## Status
 
-Draft proposal
+Implemented
+
+Runtime realization:
+
+- `tools/supervisor.py` derives role-legibility profiles for canonical
+  subtrees and emits `role_obscured_node` and `bookkeeping_only_node` signals.
+- Those signals are visible through graph-health overlays, refactor/proposal
+  queues, decision-inspector queue rules, and the dashboard health section.
+- `tests/test_supervisor.py` covers role-legibility detection, false-positive
+  protection, proposal-first queue routing, prompt guidance, and dashboard
+  projection.
 
 ## Problem
 

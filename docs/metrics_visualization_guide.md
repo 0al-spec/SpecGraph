@@ -185,6 +185,7 @@ Good examples of stable card ids:
 - `active_specs`
 - `gated_specs`
 - `structural_pressure_specs`
+- `retrospective_refactor_candidates`
 - `proposal_lane_active`
 - `verified_specs`
 - `complete_evidence_chains`
@@ -226,6 +227,7 @@ Useful filters include:
 - `shape_pressure`
 - `clustering_pressure`
 - `oversized_or_atomicity_pressure`
+- `retrospective_refactor_candidates`
 - `handoff_boundary_pressure`
 - `techspec_ready_regions`
 

@@ -11721,12 +11721,21 @@ def test_build_graph_dashboard_aggregates_runtime_surfaces(
         lambda specs: {
             "generated_at": "2026-04-19T00:00:00Z",
             "entries": [
-                {"spec_id": "SG-SPEC-0001", "signals": ["depth_without_breadth"]},
+                {
+                    "spec_id": "SG-SPEC-0001",
+                    "signals": [
+                        "depth_without_breadth",
+                        supervisor_module.RETROSPECTIVE_REFACTOR_SIGNAL,
+                    ],
+                },
                 {"spec_id": "SG-SPEC-0002", "signals": []},
             ],
             "hotspot_regions": [{"spec_id": "SG-SPEC-0001"}],
             "viewer_projection": {
-                "signals": {"depth_without_breadth": ["SG-SPEC-0001"]},
+                "signals": {
+                    "depth_without_breadth": ["SG-SPEC-0001"],
+                    supervisor_module.RETROSPECTIVE_REFACTOR_SIGNAL: ["SG-SPEC-0001"],
+                },
                 "recommended_actions": {"rewrite_node_role_boundary": ["SG-SPEC-0001"]},
                 "named_filters": {
                     "gated_specs": ["SG-SPEC-0001"],
@@ -11789,6 +11798,33 @@ def test_build_graph_dashboard_aggregates_runtime_surfaces(
             "entry_count": 1,
             "viewer_projection": {"traceability_status": {"bounded": ["0019"]}},
         },
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "load_refactor_queue",
+        lambda: [
+            {
+                "id": "graph_refactor::SG-SPEC-0001::retrospective_refactor_candidate",
+                "work_item_type": "graph_refactor",
+                "spec_id": "SG-SPEC-0001",
+                "signal": supervisor_module.RETROSPECTIVE_REFACTOR_SIGNAL,
+                "status": "proposed",
+            }
+        ],
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "load_proposal_queue",
+        lambda: [
+            {
+                "id": "refactor_proposal::SG-SPEC-0001::retrospective_refactor_candidate",
+                "proposal_type": "refactor_proposal",
+                "spec_id": "SG-SPEC-0001",
+                "signal": supervisor_module.RETROSPECTIVE_REFACTOR_SIGNAL,
+                "status": "proposed",
+                "trigger": "retrospective_signal",
+            }
+        ],
     )
     monkeypatch.setattr(
         supervisor_module,
@@ -11974,6 +12010,11 @@ def test_build_graph_dashboard_aggregates_runtime_surfaces(
     assert report["sections"]["graph"]["total_spec_count"] == 2
     assert report["sections"]["graph"]["active_spec_count"] == 1
     assert report["sections"]["proposals"]["proposal_lane_active_count"] == 1
+    assert report["sections"]["health"]["retrospective_refactor_candidate_spec_ids"] == [
+        "SG-SPEC-0001"
+    ]
+    assert report["sections"]["proposals"]["retrospective_refactor_queue_count"] == 1
+    assert report["sections"]["proposals"]["retrospective_refactor_proposal_count"] == 1
     assert report["sections"]["implementation"]["implementation_state_counts"] == {
         "drifted": 1,
         "verified": 1,
@@ -11996,9 +12037,11 @@ def test_build_graph_dashboard_aggregates_runtime_surfaces(
     by_card_id = {entry["card_id"]: entry for entry in report["headline_cards"]}
     assert by_card_id["metrics_below_threshold"]["value"] == 1
     assert by_card_id["structural_pressure_specs"]["value"] == 1
+    assert by_card_id["retrospective_refactor_candidates"]["value"] == 1
     assert by_card_id["stable_bridges_ready"]["value"] == 1
     assert by_card_id["ready_external_handoffs"]["value"] == 1
     assert by_card_id["specpm_adoption_visible"]["value"] == 1
+    assert report["viewer_projection"]["named_filters"]["retrospective_refactor_candidates"] == 1
 
 
 def test_main_builds_graph_dashboard_as_standalone_command(

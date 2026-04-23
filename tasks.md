@@ -5,8 +5,6 @@ Task numbers are preserved for traceability across commits and PRs.
 
 ## Reflective Evolution Loop
 
-17. [inprogress] Add support for retrospective spec refactoring after a graph has already grown suboptimally, not only at creation time.
-
 ## Intent Layer
 
 
