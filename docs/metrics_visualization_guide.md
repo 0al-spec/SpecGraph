@@ -55,6 +55,13 @@ The key surfaces are:
 - `sections.external_consumers.specpm_feedback_review_state_counts`
 - `viewer_projection.named_filters.specpm_adoption_visible`
 
+It also carries Metrics handoff delivery and feedback counts in:
+
+- `sections.external_consumers.metrics_delivery_status_counts`
+- `sections.external_consumers.metrics_feedback_status_counts`
+- `viewer_projection.named_filters.metrics_delivery_ready`
+- `viewer_projection.named_filters.metrics_feedback_visible`
+
 ### Global metric panel
 
 Build:
@@ -148,6 +155,9 @@ Build:
 python3 tools/supervisor.py --build-external-consumer-index
 python3 tools/supervisor.py --build-external-consumer-overlay
 python3 tools/supervisor.py --build-external-consumer-handoffs
+python3 tools/supervisor.py --build-specpm-feedback-index
+python3 tools/supervisor.py --build-metrics-delivery-workflow
+python3 tools/supervisor.py --build-metrics-feedback-index
 ```
 
 Read:
@@ -156,6 +166,8 @@ Read:
 - `runs/external_consumer_overlay.json`
 - `runs/external_consumer_handoff_packets.json`
 - `runs/specpm_feedback_index.json`
+- `runs/metrics_delivery_workflow.json`
+- `runs/metrics_feedback_index.json`
 
 Use these for:
 
@@ -164,6 +176,7 @@ Use these for:
 - backlog pressure for sibling repos
 - downstream handoff review queues
 - downstream `SpecPM` review/adoption observation panels
+- downstream `Metrics` handoff delivery and review/adoption observation panels
 
 This is not node-level graph data. Treat it as a separate panel or side rail.
 
@@ -192,6 +205,8 @@ Good examples of stable card ids:
 - `stable_bridges_ready`
 - `ready_external_handoffs`
 - `specpm_adoption_visible`
+- `metrics_delivery_ready`
+- `metrics_feedback_visible`
 - `metrics_below_threshold`
 
 ### `metric_signal_index.json`

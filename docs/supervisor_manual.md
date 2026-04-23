@@ -112,6 +112,11 @@ particular task.
 - build a derived `SpecPM` feedback index from current delivery state and
   downstream checkout observations:
   `--build-specpm-feedback-index`
+- build a reviewable `Metrics` delivery workflow from sibling-consumer handoffs:
+  `--build-metrics-delivery-workflow`
+- build a derived `Metrics` feedback index from current delivery state and
+  downstream checkout observations:
+  `--build-metrics-feedback-index`
 - build metric-driven derived signals from trace, evidence, graph health, and proposal runtime:
   `--build-metric-signal-index`
 - turn metric-threshold breaches into reviewable proposal artifacts:
@@ -841,6 +846,64 @@ Use it when you want to review:
 - which next follow-up gap should be surfaced without treating downstream
   state as automatic canonical acceptance
 
+### Metrics delivery workflow
+
+```bash
+python3 tools/supervisor.py --build-metrics-delivery-workflow
+```
+
+Builds `runs/metrics_delivery_workflow.json` from a freshly rebuilt external
+consumer bridge, metric signal index, threshold proposals, and
+`runs/external_consumer_handoff_packets.json`.
+
+This layer is the reviewable `SpecGraph -> Metrics` workflow. It inspects the
+real git state of the sibling `Metrics` checkout and turns ready Metrics/SIB
+handoff packets into explicit downstream branch, commit, and PR scaffolding.
+
+It emits:
+
+- one delivery entry per sibling metric consumer handoff
+- `delivery_status` such as `ready_for_delivery_review`,
+  `draft_delivery_only`, `blocked_by_handoff_gap`,
+  `blocked_by_checkout_gap`, `blocked_by_repo_state`, or
+  `invalid_handoff_contract`
+- git checkout diagnostics scoped to `.specgraph_handoffs/<consumer_id>/`
+- suggested downstream branch, commit subject, PR title, and ordered workflow
+  steps
+
+This command does **not** write into `Metrics`, does not commit, does not push,
+and does not create a downstream PR automatically.
+
+### Metrics feedback index
+
+```bash
+python3 tools/supervisor.py --build-metrics-feedback-index
+```
+
+Builds `runs/metrics_feedback_index.json` from the current
+`runs/metrics_delivery_workflow.json` when present, otherwise from the current
+external-consumer handoff artifact, plus observed git state in the sibling
+`Metrics` checkout.
+
+This layer is the reverse ingestion path for Metrics observations. It keeps
+downstream review/adoption signals derived and reviewable rather than treating
+them as canonical SpecGraph truth.
+
+It emits:
+
+- one feedback entry per Metrics delivery candidate
+- `feedback_status` such as `downstream_unobserved`,
+  `review_activity_observed`, `adoption_observed_locally`,
+  `blocked_by_delivery_gap`, or `invalid_feedback_contract`
+- tracked handoff paths, latest handoff commit, branch/upstream context, and
+  handoff-scoped dirty paths
+- metric bindings and threshold-proposal links for viewer or dashboard
+  grouping
+
+Use it when you want to see whether a Metrics handoff has moved beyond local
+SpecGraph artifacts into downstream review or local adoption, without making
+that downstream state canonical automatically.
+
 ### Metric-threshold proposals
 
 ```bash
@@ -1228,6 +1291,14 @@ path.
   - derived downstream feedback surface for `SpecPM`, including observed review
     activity, local adoption visibility, and source-spec linkage without
     automatic canonical acceptance
+- `runs/metrics_delivery_workflow.json`
+  - reviewable downstream delivery workflow for Metrics/SIB handoff packets,
+    including checkout state, metric binding, branch/commit/PR scaffold, and
+    next-gap backlog
+- `runs/metrics_feedback_index.json`
+  - derived downstream feedback surface for Metrics/SIB, including observed
+    review activity, local adoption visibility, metric binding, and next-gap
+    backlog without automatic canonical acceptance
 - `runs/supervisor_performance_index.json`
   - derived measurement surface for runtime cleanliness, run yield, graph
     impact, and same-spec repeat hotspots over time

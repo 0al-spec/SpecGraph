@@ -1,0 +1,60 @@
+{
+  "artifact_kind": "metrics_delivery_policy",
+  "schema_version": 1,
+  "repository_layout": {
+    "artifact": "runs/metrics_delivery_workflow.json"
+  },
+  "delivery_contract": {
+    "artifact_kind": "metrics_delivery_workflow",
+    "schema_version": 1,
+    "delivery_statuses": [
+      "ready_for_delivery_review",
+      "draft_delivery_only",
+      "blocked_by_handoff_gap",
+      "blocked_by_checkout_gap",
+      "blocked_by_repo_state",
+      "invalid_handoff_contract"
+    ],
+    "review_states": [
+      "ready_for_review",
+      "draft_visible",
+      "not_ready"
+    ],
+    "named_filters": [
+      "ready_for_delivery_review",
+      "draft_delivery_only",
+      "blocked_by_handoff_gap",
+      "blocked_by_checkout_gap",
+      "blocked_by_repo_state",
+      "invalid_handoff_contract",
+      "handoff_checkout_changes_present",
+      "unrelated_checkout_changes_present",
+      "checkout_behind_remote",
+      "threshold_driven"
+    ]
+  },
+  "eligibility_rules": {
+    "required_profile": "sibling_metric_consumer",
+    "allowed_handoff_statuses": [
+      "ready_for_handoff",
+      "draft_reference_only"
+    ]
+  },
+  "workflow_defaults": {
+    "required_git_repo": true,
+    "allow_unrelated_checkout_changes": false,
+    "required_delivery_root": ".specgraph_handoffs",
+    "delivery_branch_prefix": "specgraph-metrics-handoff/",
+    "commit_subject_template": "Add SpecGraph Metrics handoff {consumer_id}",
+    "pr_title_template": "Add SpecGraph Metrics handoff {consumer_title}",
+    "draft_pr_title_template": "Draft SpecGraph Metrics handoff {consumer_title}"
+  },
+  "next_gap_defaults": {
+    "ready_for_delivery_review": "review_metrics_delivery_workflow",
+    "draft_delivery_only": "review_draft_metrics_delivery",
+    "blocked_by_handoff_gap": "inherit_handoff_next_gap",
+    "blocked_by_checkout_gap": "repair_metrics_checkout",
+    "blocked_by_repo_state": "isolate_metrics_checkout_changes",
+    "invalid_handoff_contract": "repair_external_consumer_handoff_packet"
+  }
+}

@@ -131,6 +131,8 @@ Task numbers are preserved for traceability across commits, PRs, and review thre
 86. [done] Derive explicit backlog pressure from external consumer bridge state so missing checkout, repo-identity mismatch, partial declared contracts, and draft-reference follow-up surface as named next gaps instead of remaining implicit inside `sib_proxy`.
 87. [done] Add explicit SpecGraph-to-Metrics handoff packets for stable sibling consumers so downstream reviewable delivery stops being implicit inside bridge state and metric pressure.
 88. [done] Surface external-consumer handoff readiness in dashboard/report views so visualizers can distinguish stable bridge readiness from emitted sibling-consumer handoff packets.
+89. [done] Add a reverse ingestion path so `Metrics` or other sibling-consumer observations and handoff review state can feed back into derived SpecGraph evidence, dashboard, or proposal surfaces without becoming canonical truth directly.
+90. [done] Add a reviewable cross-repo workflow for `SpecGraph -> Metrics` handoff packets so ready external-consumer handoffs can be delivered, tracked, and re-observed beyond local `runs/` artifacts.
 
 ## SpecPM Downstream Loop
 
