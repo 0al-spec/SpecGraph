@@ -1,0 +1,66 @@
+{
+  "artifact_kind": "specpm_import_handoff_policy",
+  "version": 1,
+  "repository_layout": {
+    "artifact": "runs/specpm_import_handoff_packets.json"
+  },
+  "handoff_contract": {
+    "artifact_kind": "specpm_import_handoff_packets",
+    "schema_version": 1,
+    "transition_profile": "specgraph_core",
+    "packet_type": "handoff",
+    "target_artifact_class": "proposal_lane_candidate",
+    "handoff_statuses": [
+      "ready_for_lane",
+      "draft_visible_only",
+      "blocked_by_import_gap",
+      "invalid_import_contract"
+    ],
+    "review_states": [
+      "ready_for_review",
+      "draft_visible",
+      "not_emitted"
+    ],
+    "named_filters": [
+      "ready_for_lane",
+      "draft_visible_only",
+      "blocked_by_import_gap",
+      "invalid_import_contract",
+      "packet_validation_failed",
+      "proposal_lane_candidate",
+      "handoff_candidate",
+      "pre_spec_candidate"
+    ]
+  },
+  "route_contract": {
+    "route_kind_mapping": {
+      "proposal": "proposal_lane_candidate",
+      "handoff_candidate": "handoff_candidate",
+      "pre_spec": "pre_spec_candidate",
+      "": ""
+    },
+    "proposal_lane_route": {
+      "target_scope": "proposal_lane/nodes",
+      "target_artifact_class": "proposal_lane_candidate",
+      "proposal_lane_equivalence": true
+    }
+  },
+  "packet_provenance": {
+    "source_refs": [
+      "runs/specpm_import_preview.json",
+      "tools/specpm_import_policy.json",
+      "tools/external_consumers.json"
+    ],
+    "required_provenance_links": [
+      "specpm_import_preview",
+      "specpm_import_policy",
+      "external_consumer_registry"
+    ]
+  },
+  "next_gap_defaults": {
+    "ready_for_lane": "review_specpm_import_handoff_packet",
+    "draft_visible_only": "inherit_import_next_gap",
+    "blocked_by_import_gap": "inherit_import_next_gap",
+    "invalid_import_contract": "repair_specpm_import_preview"
+  }
+}

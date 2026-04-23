@@ -112,6 +112,10 @@ Supervisor modes:
   `runs/specpm_import_preview.json` from local bundles in the sibling
   `SpecPM` checkout so import readiness stays review-first and does not mutate
   canonical `SpecGraph` specs.
+- `--build-specpm-import-handoff-packets`: build
+  `runs/specpm_import_handoff_packets.json` from the current `SpecPM` import
+  preview so valid inbound bundles become explicit proposal-lane or handoff
+  candidates without mutating canonical specs directly.
 - `--build-metric-signal-index`: build `runs/metric_signal_index.json` from
   trace, evidence, graph-health, and proposal-runtime surfaces so metric-driven
   advisory signals remain derived rather than canonical facts. `sib_proxy` now
@@ -232,6 +236,9 @@ Key derived artifacts:
 - `runs/specpm_import_preview.json`: reviewable inbound `SpecPM` bundle
   surface, grouped by import status, review state, suggested upstream target
   kind, and next-gap backlog before any import into canonical specs
+- `runs/specpm_import_handoff_packets.json`: reviewable inbound `SpecPM`
+  handoff surface, grouped by handoff status, review state, route kind, and
+  next-gap backlog before any proposal-lane or handoff-node creation
 - `runs/metric_signal_index.json`: derived metric surface for
   `Specification Verifiability`, `Process Observability`,
   `Structural Observability`, and a bridge-aware `SIB` proxy, plus
