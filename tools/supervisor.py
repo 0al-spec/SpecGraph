@@ -13466,6 +13466,20 @@ def build_external_consumer_handoff_packets(
         if not metric_id:
             continue
         threshold_entries_by_metric.setdefault(metric_id, []).append(entry)
+    threshold_equivalent_metric_ids: dict[str, set[str]] = {}
+    for metric_id, metric_entry in metrics_by_id.items():
+        equivalent_ids = {metric_id}
+        if isinstance(metric_entry, dict):
+            alias_of = str(metric_entry.get("alias_of", "")).strip()
+            if alias_of:
+                equivalent_ids.add(alias_of)
+            equivalent_ids.update(
+                str(alias).strip()
+                for alias in metric_entry.get("legacy_metric_ids", [])
+                if str(alias).strip()
+            )
+        for equivalent_id in equivalent_ids:
+            threshold_equivalent_metric_ids.setdefault(equivalent_id, set()).update(equivalent_ids)
 
     entries: list[dict[str, Any]] = []
     handoff_status_groups: dict[str, list[str]] = {}
@@ -13531,7 +13545,10 @@ def build_external_consumer_handoff_packets(
             if metric_id in metrics_by_id
         ]
         threshold_proposals = []
-        for metric_id in metric_ids:
+        threshold_metric_ids = set(metric_ids) | set(legacy_metric_ids)
+        for metric_id in list(threshold_metric_ids):
+            threshold_metric_ids.update(threshold_equivalent_metric_ids.get(metric_id, set()))
+        for metric_id in sorted(threshold_metric_ids):
             threshold_proposals.extend(
                 copy.deepcopy(item) for item in threshold_entries_by_metric.get(metric_id, [])
             )

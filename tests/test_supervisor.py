@@ -8144,6 +8144,84 @@ def test_build_external_consumer_handoff_packets_emits_ready_and_draft_entries(
     assert draft["transition_packet"] is None
 
 
+def test_build_external_consumer_handoff_packets_links_canonical_sib_proposals_for_legacy_binding(
+    supervisor_module: object,
+) -> None:
+    consumer_index = {
+        "generated_at": "2026-04-20T00:00:00Z",
+        "entries": [
+            {
+                "consumer_id": "metrics_sib",
+                "title": "Metrics / SIB",
+                "reference_state": "stable_reference",
+                "profile": "sibling_metric_consumer",
+                "repo_url": "https://github.com/0al-spec/Metrics",
+                "local_checkout": {
+                    "checkout_path": "/Users/egor/Development/GitHub/0AL/Metrics",
+                },
+                "metric_bindings": [
+                    {"metric_id": "sib_proxy", "binding_role": "stable_bridge_reference"}
+                ],
+                "notes": "legacy binding",
+            }
+        ],
+    }
+    overlay = {
+        "generated_at": "2026-04-20T00:00:01Z",
+        "entries": [
+            {
+                "consumer_id": "metrics_sib",
+                "bridge_state": "stable_ready",
+                "next_gap": "none",
+            }
+        ],
+    }
+    metric_signal_index = {
+        "generated_at": "2026-04-20T00:00:02Z",
+        "metrics": [
+            {
+                "metric_id": "sib",
+                "status": "below_threshold",
+                "score": 0.41,
+                "minimum_score": 0.6,
+                "threshold_gap": 0.19,
+                "legacy_metric_ids": ["sib_proxy"],
+                "threshold_authority_state": "canonical_threshold_authority",
+            },
+            {
+                "metric_id": "sib_proxy",
+                "alias_of": "sib",
+                "status": "below_threshold",
+                "score": 0.41,
+                "minimum_score": 0.6,
+                "threshold_gap": 0.19,
+                "threshold_authority_state": "alias_only",
+            },
+        ],
+    }
+    threshold_proposals = {
+        "generated_at": "2026-04-20T00:00:03Z",
+        "entries": [
+            {
+                "proposal_id": "metric-sib-followup",
+                "metric_id": "sib",
+            }
+        ],
+    }
+
+    report = supervisor_module.build_external_consumer_handoff_packets(
+        consumer_index,
+        overlay,
+        metric_signal_index,
+        threshold_proposals,
+    )
+
+    entry = report["entries"][0]
+    assert entry["bound_metric_ids"] == ["sib_proxy"]
+    assert entry["threshold_proposal_ids"] == ["metric-sib-followup"]
+    assert report["viewer_projection"]["named_filters"]["threshold_driven"] == ["metrics_sib"]
+
+
 def test_main_builds_external_consumer_handoffs_as_standalone_command(
     supervisor_module: object,
     repo_fixture: Path,
