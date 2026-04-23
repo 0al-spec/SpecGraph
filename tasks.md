@@ -49,7 +49,6 @@ Task numbers are preserved for traceability across commits and PRs.
 
 ## SpecPM Downstream Loop
 
-95. [todo] Add a reviewable cross-repo workflow for `SpecGraph -> SpecPM` package delivery so local `.specgraph_exports/` materialization can graduate into tracked downstream exchange rather than staying a local-only draft bundle.
 96. [todo] Add a feedback path from `SpecPM` review/adoption state back into derived SpecGraph overlays, evidence, or dashboard surfaces without treating downstream acceptance as canonical truth automatically.
 
 ## Proposal Promotion

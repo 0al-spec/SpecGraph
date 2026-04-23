@@ -116,6 +116,10 @@ Supervisor modes:
   `runs/specpm_import_handoff_packets.json` from the current `SpecPM` import
   preview so valid inbound bundles become explicit proposal-lane or handoff
   candidates without mutating canonical specs directly.
+- `--build-specpm-delivery-workflow`: build
+  `runs/specpm_delivery_workflow.json` from the current `SpecPM`
+  materialization report so downstream branch, commit, and PR scaffolding
+  becomes reviewable before any real cross-repo write exists.
 - `--build-metric-signal-index`: build `runs/metric_signal_index.json` from
   trace, evidence, graph-health, and proposal-runtime surfaces so metric-driven
   advisory signals remain derived rather than canonical facts. `sib_proxy` now
@@ -239,6 +243,9 @@ Key derived artifacts:
 - `runs/specpm_import_handoff_packets.json`: reviewable inbound `SpecPM`
   handoff surface, grouped by handoff status, review state, route kind, and
   next-gap backlog before any proposal-lane or handoff-node creation
+- `runs/specpm_delivery_workflow.json`: reviewable outbound `SpecPM`
+  delivery workflow surface, grouped by delivery status, review state, git
+  checkout state, and next-gap backlog before any downstream commit or PR
 - `runs/metric_signal_index.json`: derived metric surface for
   `Specification Verifiability`, `Process Observability`,
   `Structural Observability`, and a bridge-aware `SIB` proxy, plus
@@ -263,6 +270,9 @@ Key derived artifacts:
 - `tools/specpm_import_policy.json`: declarative contract for `SpecPM`
   import preview, including required bundle files, review states, target-kind
   suggestions, and next-gap defaults
+- `tools/specpm_delivery_policy.json`: declarative contract for reviewable
+  `SpecGraph -> SpecPM` delivery workflow, including eligibility, checkout git
+  state checks, and downstream branch/commit/PR scaffolding
 - `tools/metric_signal_policy.json`: declarative thresholds, score mappings,
   metric identities, and proposal-first threshold semantics for the derived
   metric signal layer

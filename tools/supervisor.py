@@ -42,6 +42,7 @@ Derived artifacts:
 - external consumer handoff packets: `runs/external_consumer_handoff_packets.json`
 - SpecPM import preview: `runs/specpm_import_preview.json`
 - SpecPM import handoff packets: `runs/specpm_import_handoff_packets.json`
+- SpecPM delivery workflow: `runs/specpm_delivery_workflow.json`
 - spec trace index: `runs/spec_trace_index.json`
 - spec trace projection: `runs/spec_trace_projection.json`
 - proposal runtime index: `runs/proposal_runtime_index.json`
@@ -108,6 +109,7 @@ SPECPM_HANDOFF_POLICY_RELATIVE_PATH = "tools/specpm_handoff_policy.json"
 SPECPM_MATERIALIZATION_POLICY_RELATIVE_PATH = "tools/specpm_materialization_policy.json"
 SPECPM_IMPORT_POLICY_RELATIVE_PATH = "tools/specpm_import_policy.json"
 SPECPM_IMPORT_HANDOFF_POLICY_RELATIVE_PATH = "tools/specpm_import_handoff_policy.json"
+SPECPM_DELIVERY_POLICY_RELATIVE_PATH = "tools/specpm_delivery_policy.json"
 SPECPM_EXPORT_REGISTRY_RELATIVE_PATH = "tools/specpm_export_registry.json"
 
 
@@ -197,6 +199,10 @@ def specpm_import_policy_path() -> Path:
 
 def specpm_import_handoff_policy_path() -> Path:
     return TOOLS_DIR / "specpm_import_handoff_policy.json"
+
+
+def specpm_delivery_policy_path() -> Path:
+    return TOOLS_DIR / "specpm_delivery_policy.json"
 
 
 def specpm_export_registry_path() -> Path:
@@ -975,6 +981,44 @@ SPECPM_IMPORT_HANDOFF_POLICY, SPECPM_IMPORT_HANDOFF_POLICY_SHA256 = (
 )
 
 
+def load_specpm_delivery_policy() -> tuple[dict[str, Any], str]:
+    path = specpm_delivery_policy_path()
+    try:
+        raw_text = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise RuntimeError(
+            f"failed to read SpecPM delivery policy artifact: {path.as_posix()} ({exc})"
+        ) from exc
+    try:
+        payload = json.loads(raw_text)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(
+            f"malformed SpecPM delivery policy artifact: {path.as_posix()} ({exc})"
+        ) from exc
+    if not isinstance(payload, dict):
+        raise RuntimeError(
+            "malformed SpecPM delivery policy artifact: "
+            f"{path.as_posix()} must contain a JSON object"
+        )
+    required_sections = (
+        "repository_layout",
+        "delivery_contract",
+        "eligibility_rules",
+        "workflow_defaults",
+        "next_gap_defaults",
+    )
+    missing = [section for section in required_sections if section not in payload]
+    if missing:
+        raise RuntimeError(
+            "malformed SpecPM delivery policy artifact: missing top-level section(s): "
+            + ", ".join(missing)
+        )
+    return payload, hashlib.sha256(raw_text.encode("utf-8")).hexdigest()
+
+
+SPECPM_DELIVERY_POLICY, SPECPM_DELIVERY_POLICY_SHA256 = load_specpm_delivery_policy()
+
+
 def policy_lookup(policy_path: str) -> Any:
     current: Any = SUPERVISOR_POLICY
     for part in policy_path.split("."):
@@ -1076,6 +1120,15 @@ def specpm_import_policy_lookup(policy_path: str) -> Any:
 
 def specpm_import_handoff_policy_lookup(policy_path: str) -> Any:
     current: Any = SPECPM_IMPORT_HANDOFF_POLICY
+    for part in policy_path.split("."):
+        if not isinstance(current, dict) or part not in current:
+            raise KeyError(policy_path)
+        current = current[part]
+    return copy.deepcopy(current)
+
+
+def specpm_delivery_policy_lookup(policy_path: str) -> Any:
+    current: Any = SPECPM_DELIVERY_POLICY
     for part in policy_path.split("."):
         if not isinstance(current, dict) or part not in current:
             raise KeyError(policy_path)
@@ -1330,6 +1383,14 @@ def specpm_import_handoff_policy_reference() -> dict[str, Any]:
         "artifact_path": SPECPM_IMPORT_HANDOFF_POLICY_RELATIVE_PATH,
         "artifact_sha256": SPECPM_IMPORT_HANDOFF_POLICY_SHA256,
         "version": SPECPM_IMPORT_HANDOFF_POLICY.get("version"),
+    }
+
+
+def specpm_delivery_policy_reference() -> dict[str, Any]:
+    return {
+        "artifact_path": SPECPM_DELIVERY_POLICY_RELATIVE_PATH,
+        "artifact_sha256": SPECPM_DELIVERY_POLICY_SHA256,
+        "version": SPECPM_DELIVERY_POLICY.get("version"),
     }
 
 
@@ -1618,6 +1679,24 @@ SPECPM_IMPORT_HANDOFF_ROUTE_KIND_MAPPING = specpm_import_handoff_policy_lookup(
 )
 SPECPM_IMPORT_HANDOFF_PROPOSAL_LANE_ROUTE = specpm_import_handoff_policy_lookup(
     "route_contract.proposal_lane_route"
+)
+SPECPM_DELIVERY_WORKFLOW_FILENAME = Path(
+    str(specpm_delivery_policy_lookup("repository_layout.artifact"))
+).name
+SPECPM_DELIVERY_WORKFLOW_ARTIFACT_KIND = str(
+    specpm_delivery_policy_lookup("delivery_contract.artifact_kind")
+)
+SPECPM_DELIVERY_WORKFLOW_SCHEMA_VERSION = int(
+    specpm_delivery_policy_lookup("delivery_contract.schema_version")
+)
+SPECPM_DELIVERY_WORKFLOW_STATUSES = list(
+    specpm_delivery_policy_lookup("delivery_contract.delivery_statuses")
+)
+SPECPM_DELIVERY_WORKFLOW_REVIEW_STATES = list(
+    specpm_delivery_policy_lookup("delivery_contract.review_states")
+)
+SPECPM_DELIVERY_WORKFLOW_NAMED_FILTERS = list(
+    specpm_delivery_policy_lookup("delivery_contract.named_filters")
 )
 METRIC_SIGNAL_INDEX_FILENAME = Path(
     str(metric_signal_policy_lookup("repository_layout.signal_artifact"))
@@ -11111,6 +11190,10 @@ def specpm_import_handoff_packets_path() -> Path:
     return RUNS_DIR / SPECPM_IMPORT_HANDOFF_FILENAME
 
 
+def specpm_delivery_workflow_path() -> Path:
+    return RUNS_DIR / SPECPM_DELIVERY_WORKFLOW_FILENAME
+
+
 def evidence_plane_index_path() -> Path:
     return RUNS_DIR / EVIDENCE_PLANE_INDEX_FILENAME
 
@@ -14853,6 +14936,439 @@ def build_specpm_import_handoff_packets(
 def write_specpm_import_handoff_packets(report: dict[str, Any]) -> Path:
     RUNS_DIR.mkdir(parents=True, exist_ok=True)
     path = specpm_import_handoff_packets_path()
+    with artifact_lock(path):
+        atomic_write_json(path, report)
+    return path
+
+
+def specpm_delivery_path_matches_bundle(path_text: str, bundle_rel_root: str) -> bool:
+    candidate = path_text.strip().strip("/")
+    bundle_root = bundle_rel_root.strip().strip("/")
+    if not candidate or not bundle_root:
+        return False
+    return (
+        candidate == bundle_root
+        or candidate.startswith(f"{bundle_root}/")
+        or bundle_root.startswith(f"{candidate}/")
+    )
+
+
+def inspect_specpm_delivery_checkout(
+    checkout_root: Path,
+    *,
+    bundle_rel_root: str,
+) -> dict[str, Any]:
+    result = subprocess.run(
+        ["git", "status", "--porcelain", "--branch"],
+        cwd=checkout_root,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if result.returncode != 0:
+        return {
+            "is_git_repo": False,
+            "current_branch": "",
+            "upstream_branch": "",
+            "ahead_count": 0,
+            "behind_count": 0,
+            "changed_paths": [],
+            "bundle_changed_paths": [],
+            "unrelated_changed_paths": [],
+        }
+
+    current_branch = ""
+    upstream_branch = ""
+    ahead_count = 0
+    behind_count = 0
+    changed_paths: list[str] = []
+    bundle_changed_paths: list[str] = []
+    unrelated_changed_paths: list[str] = []
+
+    for line in result.stdout.splitlines():
+        if line.startswith("## "):
+            branch_meta = line[3:].strip()
+            flags_text = ""
+            if " [" in branch_meta and branch_meta.endswith("]"):
+                branch_meta, flags_text = branch_meta[:-1].split(" [", 1)
+            if "..." in branch_meta:
+                current_branch, upstream_branch = branch_meta.split("...", 1)
+            else:
+                current_branch = branch_meta
+            current_branch = current_branch.strip()
+            upstream_branch = upstream_branch.strip()
+            for raw_flag in flags_text.split(","):
+                flag = raw_flag.strip()
+                if flag.startswith("ahead "):
+                    try:
+                        ahead_count = int(flag.removeprefix("ahead ").strip())
+                    except ValueError:
+                        ahead_count = 0
+                elif flag.startswith("behind "):
+                    try:
+                        behind_count = int(flag.removeprefix("behind ").strip())
+                    except ValueError:
+                        behind_count = 0
+            continue
+        if len(line) < 4:
+            continue
+        candidate = line[3:].strip()
+        if " -> " in candidate:
+            candidate = candidate.split(" -> ", 1)[1].strip()
+        changed_paths.append(candidate)
+        if specpm_delivery_path_matches_bundle(candidate, bundle_rel_root):
+            bundle_changed_paths.append(candidate)
+        else:
+            unrelated_changed_paths.append(candidate)
+
+    return {
+        "is_git_repo": True,
+        "current_branch": current_branch,
+        "upstream_branch": upstream_branch,
+        "ahead_count": ahead_count,
+        "behind_count": behind_count,
+        "changed_paths": sorted(set(changed_paths)),
+        "bundle_changed_paths": sorted(set(bundle_changed_paths)),
+        "unrelated_changed_paths": sorted(set(unrelated_changed_paths)),
+    }
+
+
+def derive_specpm_delivery_next_gap(
+    *,
+    delivery_status: str,
+    materialization_entry: dict[str, Any],
+) -> str:
+    default_gap = str(specpm_delivery_policy_lookup(f"next_gap_defaults.{delivery_status}")).strip()
+    if default_gap == "inherit_materialization_next_gap":
+        inherited = str(materialization_entry.get("next_gap", "")).strip()
+        return inherited or "review_specpm_materialization_report"
+    return default_gap or "none"
+
+
+def build_specpm_delivery_workflow(
+    specpm_materialization_report: dict[str, Any],
+) -> dict[str, Any]:
+    required_consumer_id = str(
+        specpm_delivery_policy_lookup("eligibility_rules.required_consumer_id")
+    ).strip()
+    required_profile = str(
+        specpm_delivery_policy_lookup("eligibility_rules.required_profile")
+    ).strip()
+    required_checkout_status = str(
+        specpm_delivery_policy_lookup("eligibility_rules.required_checkout_status")
+    ).strip()
+    require_verified_identity = bool(
+        specpm_delivery_policy_lookup("eligibility_rules.require_verified_identity")
+    )
+    allowed_materialization_statuses = {
+        str(item).strip()
+        for item in specpm_delivery_policy_lookup(
+            "eligibility_rules.allowed_materialization_statuses"
+        )
+        if str(item).strip()
+    }
+    required_git_repo = bool(specpm_delivery_policy_lookup("workflow_defaults.required_git_repo"))
+    allow_unrelated_checkout_changes = bool(
+        specpm_delivery_policy_lookup("workflow_defaults.allow_unrelated_checkout_changes")
+    )
+    required_delivery_root = str(
+        specpm_delivery_policy_lookup("workflow_defaults.required_delivery_root")
+    ).strip()
+    delivery_branch_prefix = str(
+        specpm_delivery_policy_lookup("workflow_defaults.delivery_branch_prefix")
+    ).strip()
+    commit_subject_template = str(
+        specpm_delivery_policy_lookup("workflow_defaults.commit_subject_template")
+    ).strip()
+    pr_title_template = str(
+        specpm_delivery_policy_lookup("workflow_defaults.pr_title_template")
+    ).strip()
+    draft_pr_title_template = str(
+        specpm_delivery_policy_lookup("workflow_defaults.draft_pr_title_template")
+    ).strip()
+
+    entries: list[dict[str, Any]] = []
+    status_groups: dict[str, list[str]] = {}
+    review_state_groups: dict[str, list[str]] = {}
+    named_filters = {name: [] for name in SPECPM_DELIVERY_WORKFLOW_NAMED_FILTERS}
+    backlog_items: list[dict[str, Any]] = []
+    grouped_backlog: dict[str, list[str]] = {}
+
+    for raw_entry in specpm_materialization_report.get("entries", []):
+        if not isinstance(raw_entry, dict):
+            continue
+        export_id = str(raw_entry.get("export_id", "")).strip()
+        target_consumer = raw_entry.get("target_consumer", {})
+        package_identity = raw_entry.get("package_identity", {})
+        consumer_id = str(target_consumer.get("consumer_id", "")).strip()
+        profile = str(target_consumer.get("profile", "")).strip()
+        checkout_path = str(target_consumer.get("local_checkout_hint", "")).strip()
+        checkout_status = str(target_consumer.get("local_checkout_status", "")).strip()
+        identity_verified = bool(target_consumer.get("identity_verified", False))
+        materialization_status = str(raw_entry.get("materialization_status", "")).strip()
+        package_id = str(package_identity.get("package_id", "")).strip()
+        package_name = str(package_identity.get("package_name", "")).strip() or package_id
+        bundle_root_text = str(raw_entry.get("bundle_root", "")).strip()
+        written_files = [
+            str(item).strip() for item in raw_entry.get("written_files", []) if str(item).strip()
+        ]
+
+        delivery_status = "invalid_materialization_contract"
+        review_state = "not_ready"
+        next_gap = "repair_specpm_materialization_report"
+        delivery_root = ""
+        delivery_paths: list[str] = []
+        repo_snapshot = {
+            "is_git_repo": False,
+            "current_branch": "",
+            "upstream_branch": "",
+            "ahead_count": 0,
+            "behind_count": 0,
+            "changed_paths": [],
+            "bundle_changed_paths": [],
+            "unrelated_changed_paths": [],
+            "has_bundle_checkout_changes": False,
+            "has_unrelated_checkout_changes": False,
+        }
+        workflow_steps: list[dict[str, str]] = []
+
+        if materialization_status not in allowed_materialization_statuses:
+            delivery_status = "blocked_by_materialization_gap"
+            next_gap = derive_specpm_delivery_next_gap(
+                delivery_status=delivery_status,
+                materialization_entry=raw_entry,
+            )
+        elif (
+            not export_id
+            or consumer_id != required_consumer_id
+            or profile != required_profile
+            or not package_id
+            or not bundle_root_text
+        ):
+            delivery_status = "invalid_materialization_contract"
+            next_gap = derive_specpm_delivery_next_gap(
+                delivery_status=delivery_status,
+                materialization_entry=raw_entry,
+            )
+        elif checkout_status != required_checkout_status or not checkout_path:
+            delivery_status = "blocked_by_checkout_gap"
+            next_gap = derive_specpm_delivery_next_gap(
+                delivery_status=delivery_status,
+                materialization_entry=raw_entry,
+            )
+        elif require_verified_identity and not identity_verified:
+            delivery_status = "blocked_by_checkout_gap"
+            next_gap = derive_specpm_delivery_next_gap(
+                delivery_status=delivery_status,
+                materialization_entry=raw_entry,
+            )
+        else:
+            checkout_root = Path(checkout_path).expanduser()
+            bundle_root = Path(bundle_root_text).expanduser()
+            try:
+                bundle_rel_root = (
+                    bundle_root.resolve().relative_to(checkout_root.resolve()).as_posix()
+                )
+            except ValueError:
+                delivery_status = "invalid_materialization_contract"
+                next_gap = derive_specpm_delivery_next_gap(
+                    delivery_status=delivery_status,
+                    materialization_entry=raw_entry,
+                )
+            else:
+                delivery_root = bundle_rel_root
+                delivery_paths = (
+                    [f"{bundle_rel_root}/{relpath}" for relpath in written_files]
+                    if written_files
+                    else [bundle_rel_root]
+                )
+                if not bundle_root.exists():
+                    delivery_status = "blocked_by_materialization_gap"
+                    next_gap = "materialize_specpm_export_bundle"
+                elif required_delivery_root and not specpm_delivery_path_matches_bundle(
+                    bundle_rel_root,
+                    required_delivery_root,
+                ):
+                    delivery_status = "invalid_materialization_contract"
+                    next_gap = derive_specpm_delivery_next_gap(
+                        delivery_status=delivery_status,
+                        materialization_entry=raw_entry,
+                    )
+                else:
+                    repo_snapshot = inspect_specpm_delivery_checkout(
+                        checkout_root,
+                        bundle_rel_root=bundle_rel_root,
+                    )
+                    repo_snapshot["has_bundle_checkout_changes"] = bool(
+                        repo_snapshot["bundle_changed_paths"]
+                    )
+                    repo_snapshot["has_unrelated_checkout_changes"] = bool(
+                        repo_snapshot["unrelated_changed_paths"]
+                    )
+
+                    if required_git_repo and not repo_snapshot["is_git_repo"]:
+                        delivery_status = "blocked_by_repo_state"
+                        next_gap = "repair_specpm_checkout_git_state"
+                    elif (
+                        not allow_unrelated_checkout_changes
+                        and repo_snapshot["has_unrelated_checkout_changes"]
+                    ):
+                        delivery_status = "blocked_by_repo_state"
+                        next_gap = derive_specpm_delivery_next_gap(
+                            delivery_status=delivery_status,
+                            materialization_entry=raw_entry,
+                        )
+                    elif materialization_status == "materialized_for_review":
+                        delivery_status = "ready_for_delivery_review"
+                        review_state = "ready_for_review"
+                        next_gap = derive_specpm_delivery_next_gap(
+                            delivery_status=delivery_status,
+                            materialization_entry=raw_entry,
+                        )
+                    else:
+                        delivery_status = "draft_delivery_only"
+                        review_state = "draft_visible"
+                        next_gap = derive_specpm_delivery_next_gap(
+                            delivery_status=delivery_status,
+                            materialization_entry=raw_entry,
+                        )
+
+        package_slug = re.sub(r"[^a-z0-9]+", "-", package_id.lower()).strip("-") or "package"
+        suggested_branch = f"{delivery_branch_prefix}{package_slug}"
+        template_args = {
+            "package_id": package_id,
+            "package_name": package_name or package_id,
+        }
+        commit_subject = commit_subject_template.format(**template_args)
+        pr_title_template_to_use = (
+            draft_pr_title_template
+            if delivery_status == "draft_delivery_only"
+            else pr_title_template
+        )
+        pr_title = pr_title_template_to_use.format(**template_args)
+
+        if delivery_status in {"ready_for_delivery_review", "draft_delivery_only"}:
+            workflow_steps = [
+                {
+                    "step_id": "create_branch",
+                    "summary": f"Create or switch to `{suggested_branch}` in the SpecPM checkout.",
+                },
+                {
+                    "step_id": "stage_delivery_paths",
+                    "summary": "Stage only the declared delivery paths for the package bundle.",
+                },
+                {
+                    "step_id": "commit_bundle",
+                    "summary": f"Commit the delivery candidate with subject `{commit_subject}`.",
+                },
+                {
+                    "step_id": "open_review_pr",
+                    "summary": f"Open a SpecPM review PR titled `{pr_title}`.",
+                },
+            ]
+        else:
+            workflow_steps = [
+                {
+                    "step_id": "resolve_gap",
+                    "summary": f"Resolve `{next_gap}` before attempting downstream delivery.",
+                },
+                {
+                    "step_id": "rebuild_delivery_workflow",
+                    "summary": (
+                        "Rebuild the SpecPM delivery workflow artifact after the blocker "
+                        "is cleared."
+                    ),
+                },
+            ]
+
+        entry = {
+            "delivery_id": f"specpm_delivery::{package_id or export_id}",
+            "export_id": export_id,
+            "handoff_id": str(raw_entry.get("handoff_id", "")).strip(),
+            "consumer_id": consumer_id,
+            "delivery_status": delivery_status,
+            "review_state": review_state,
+            "next_gap": next_gap,
+            "policy_reference": specpm_delivery_policy_reference(),
+            "source_materialization": {
+                "artifact_path": specpm_materialization_report_path().relative_to(ROOT).as_posix(),
+                "generated_at": specpm_materialization_report.get("generated_at"),
+                "materialization_status": materialization_status,
+                "review_state": str(raw_entry.get("review_state", "")).strip(),
+            },
+            "target_consumer": copy.deepcopy(target_consumer),
+            "package_identity": copy.deepcopy(package_identity),
+            "bundle_root": bundle_root_text,
+            "delivery_root": delivery_root,
+            "delivery_paths": sorted(set(delivery_paths)),
+            "repo_snapshot": repo_snapshot,
+            "delivery_scaffold": {
+                "suggested_branch": suggested_branch,
+                "commit_subject": commit_subject,
+                "pr_title": pr_title,
+                "delivery_paths": sorted(set(delivery_paths)),
+                "target_repo_url": str(target_consumer.get("repo_url", "")).strip(),
+            },
+            "workflow_steps": workflow_steps,
+        }
+        entries.append(entry)
+        status_groups.setdefault(delivery_status, []).append(package_id or export_id)
+        review_state_groups.setdefault(review_state, []).append(package_id or export_id)
+        named_filters.setdefault(delivery_status, []).append(package_id or export_id)
+        if repo_snapshot["has_bundle_checkout_changes"]:
+            named_filters["bundle_checkout_changes_present"].append(package_id or export_id)
+        if repo_snapshot["has_unrelated_checkout_changes"]:
+            named_filters["unrelated_checkout_changes_present"].append(package_id or export_id)
+        if repo_snapshot["behind_count"] > 0:
+            named_filters["checkout_behind_remote"].append(package_id or export_id)
+        if next_gap != "none":
+            backlog_items.append(
+                {
+                    "package_id": package_id,
+                    "delivery_status": delivery_status,
+                    "review_state": review_state,
+                    "next_gap": next_gap,
+                }
+            )
+            grouped_backlog.setdefault(next_gap, []).append(package_id or export_id)
+
+    for bucket in (status_groups, review_state_groups, named_filters, grouped_backlog):
+        for key in list(bucket):
+            bucket[key] = sorted(set(bucket[key]))
+
+    return {
+        "artifact_kind": SPECPM_DELIVERY_WORKFLOW_ARTIFACT_KIND,
+        "schema_version": SPECPM_DELIVERY_WORKFLOW_SCHEMA_VERSION,
+        "generated_at": utc_now_iso(),
+        "policy_reference": specpm_delivery_policy_reference(),
+        "source_artifacts": {
+            "specpm_materialization_report": {
+                "artifact_path": specpm_materialization_report_path().relative_to(ROOT).as_posix(),
+                "generated_at": specpm_materialization_report.get("generated_at"),
+            }
+        },
+        "entry_count": len(entries),
+        "entries": entries,
+        "viewer_projection": {
+            "delivery_status": {key: sorted(value) for key, value in sorted(status_groups.items())},
+            "review_state": {
+                key: sorted(value) for key, value in sorted(review_state_groups.items())
+            },
+            "named_filters": {key: sorted(value) for key, value in sorted(named_filters.items())},
+        },
+        "delivery_backlog": {
+            "entry_count": len(backlog_items),
+            "items": backlog_items,
+            "grouped_by_next_gap": {
+                key: sorted(value) for key, value in sorted(grouped_backlog.items())
+            },
+        },
+    }
+
+
+def write_specpm_delivery_workflow(report: dict[str, Any]) -> Path:
+    RUNS_DIR.mkdir(parents=True, exist_ok=True)
+    path = specpm_delivery_workflow_path()
     with artifact_lock(path):
         atomic_write_json(path, report)
     return path
@@ -20700,6 +21216,7 @@ def main(
     materialize_specpm_export_bundles_mode: bool = False,
     build_specpm_import_preview_mode: bool = False,
     build_specpm_import_handoff_packets_mode: bool = False,
+    build_specpm_delivery_workflow_mode: bool = False,
     build_metric_signal_index_mode: bool = False,
     build_metric_threshold_proposals_mode: bool = False,
     build_supervisor_performance_index_mode: bool = False,
@@ -20755,6 +21272,7 @@ def main(
         "--materialize-specpm-export-bundles": materialize_specpm_export_bundles_mode,
         "--build-specpm-import-preview": build_specpm_import_preview_mode,
         "--build-specpm-import-handoff-packets": build_specpm_import_handoff_packets_mode,
+        "--build-specpm-delivery-workflow": build_specpm_delivery_workflow_mode,
         "--build-metric-signal-index": build_metric_signal_index_mode,
         "--build-metric-threshold-proposals": build_metric_threshold_proposals_mode,
         "--build-supervisor-performance-index": build_supervisor_performance_index_mode,
@@ -21001,6 +21519,7 @@ def main(
                 build_specpm_handoff_packets_mode,
                 materialize_specpm_export_bundles_mode,
                 build_specpm_import_handoff_packets_mode,
+                build_specpm_delivery_workflow_mode,
                 build_metric_signal_index_mode,
                 build_metric_threshold_proposals_mode,
                 build_supervisor_performance_index_mode,
@@ -21061,6 +21580,7 @@ def main(
                 build_specpm_handoff_packets_mode,
                 materialize_specpm_export_bundles_mode,
                 build_specpm_import_preview_mode,
+                build_specpm_delivery_workflow_mode,
                 build_metric_signal_index_mode,
                 build_metric_threshold_proposals_mode,
                 build_supervisor_performance_index_mode,
@@ -21780,6 +22300,70 @@ def main(
         report = materialize_specpm_export_bundles(handoff_packets)
         write_specpm_materialization_report(report)
         print(json.dumps(report, ensure_ascii=False, indent=2))
+        return 0
+
+    if build_specpm_delivery_workflow_mode:
+        if any(
+            (
+                dry_run,
+                auto_approve,
+                loop,
+                resolve_gate,
+                decision,
+                note,
+                target_spec,
+                split_proposal,
+                apply_split_proposal,
+                operator_note,
+                mutation_budget,
+                run_authority,
+                execution_profile,
+                child_model,
+                child_timeout_seconds,
+                verbose,
+                list_stale_runtime,
+                clean_stale_runtime,
+                observe_graph_health_mode,
+                operator_request_packet_path,
+                build_intent_layer_overlay_mode,
+                build_vocabulary_index_mode,
+                build_vocabulary_drift_report_mode,
+                build_pre_spec_semantics_index_mode,
+                build_graph_health_overlay_mode,
+                build_graph_health_trends_mode,
+                build_spec_trace_index_mode,
+                build_spec_trace_projection_mode,
+                build_evidence_plane_index_mode,
+                build_evidence_plane_overlay_mode,
+                build_external_consumer_overlay_mode,
+                build_external_consumer_handoffs_mode,
+                build_specpm_import_preview_mode,
+                build_specpm_import_handoff_packets_mode,
+                build_metric_signal_index_mode,
+                build_metric_threshold_proposals_mode,
+                build_supervisor_performance_index_mode,
+                build_graph_dashboard_mode,
+                build_proposal_lane_overlay_mode,
+                build_proposal_runtime_index_mode,
+                build_proposal_promotion_index_mode,
+            )
+        ):
+            print(
+                "--build-specpm-delivery-workflow must be used as a standalone command",
+                file=sys.stderr,
+            )
+            return 1
+        consumer_index = build_external_consumer_index()
+        write_external_consumer_index(consumer_index)
+        preview = build_specpm_export_preview(specs)
+        write_specpm_export_preview(preview)
+        handoff_packets = build_specpm_handoff_packets(preview, consumer_index)
+        write_specpm_handoff_packets(handoff_packets)
+        materialization_report = materialize_specpm_export_bundles(handoff_packets)
+        write_specpm_materialization_report(materialization_report)
+        delivery_workflow = build_specpm_delivery_workflow(materialization_report)
+        write_specpm_delivery_workflow(delivery_workflow)
+        print(json.dumps(delivery_workflow, ensure_ascii=False, indent=2))
         return 0
 
     if build_metric_signal_index_mode:
@@ -22683,6 +23267,14 @@ if __name__ == "__main__":
         ),
     )
     parser.add_argument(
+        "--build-specpm-delivery-workflow",
+        action="store_true",
+        help=(
+            "Build a reviewable cross-repo delivery workflow for SpecPM bundles from "
+            "the current materialization report without auto-committing into SpecPM"
+        ),
+    )
+    parser.add_argument(
         "--build-metric-signal-index",
         action="store_true",
         help=(
@@ -22873,6 +23465,7 @@ if __name__ == "__main__":
             materialize_specpm_export_bundles_mode=args.materialize_specpm_export_bundles,
             build_specpm_import_preview_mode=args.build_specpm_import_preview,
             build_specpm_import_handoff_packets_mode=args.build_specpm_import_handoff_packets,
+            build_specpm_delivery_workflow_mode=args.build_specpm_delivery_workflow,
             build_metric_signal_index_mode=args.build_metric_signal_index,
             build_metric_threshold_proposals_mode=args.build_metric_threshold_proposals,
             build_supervisor_performance_index_mode=args.build_supervisor_performance_index,

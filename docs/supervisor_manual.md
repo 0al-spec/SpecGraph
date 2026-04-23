@@ -107,6 +107,8 @@ particular task.
   `--build-specpm-handoff-packets`
 - build a reviewable `SpecPM` import preview from local materialized bundles:
   `--build-specpm-import-preview`
+- build a reviewable `SpecPM` delivery workflow from local materialized bundles:
+  `--build-specpm-delivery-workflow`
 - build metric-driven derived signals from trace, evidence, graph health, and proposal runtime:
   `--build-metric-signal-index`
 - turn metric-threshold breaches into reviewable proposal artifacts:
@@ -758,6 +760,45 @@ Use it when you want to review:
 
 This command does **not** apply imports into canonical specs and does not write
 proposal-lane nodes automatically.
+
+### SpecPM delivery workflow
+
+```bash
+python3 tools/supervisor.py --build-specpm-delivery-workflow
+```
+
+Builds `runs/specpm_delivery_workflow.json` from:
+
+- a freshly rebuilt `runs/external_consumer_index.json`
+- a freshly rebuilt `runs/specpm_export_preview.json`
+- a freshly rebuilt `runs/specpm_handoff_packets.json`
+- a freshly rebuilt `runs/specpm_materialization_report.json`
+
+This layer stays review-first, but it moves one step beyond local
+materialization: it inspects the real git state of the sibling `SpecPM`
+checkout and turns bundle delivery into an explicit downstream review workflow.
+
+It emits:
+
+- one delivery entry per materialized package bundle
+- explicit `delivery_status` such as `ready_for_delivery_review`,
+  `draft_delivery_only`, `blocked_by_materialization_gap`,
+  `blocked_by_checkout_gap`, `blocked_by_repo_state`, or
+  `invalid_materialization_contract`
+- git checkout diagnostics such as current branch, upstream, ahead/behind
+  counts, bundle-scoped changed paths, and unrelated changed paths
+- suggested downstream branch, commit subject, PR title, and ordered workflow
+  steps
+
+Use it when you want to review:
+
+- whether a materialized `SpecPM` bundle is actually safe to move into
+  downstream review
+- whether unrelated dirt in the sibling checkout would contaminate delivery
+- what exact branch/commit/PR scaffold should be used for downstream exchange
+
+This command does **not** commit into `SpecPM`, does not push a branch, and
+does not create a downstream PR automatically.
 
 ### Metric-threshold proposals
 

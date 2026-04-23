@@ -134,3 +134,4 @@ Task numbers are preserved for traceability across commits, PRs, and review thre
 
 93. [done] Define and stabilize a viewer-facing JSON contract over `specpm_export_preview`, `specpm_handoff_packets`, `specpm_materialization_report`, and `specpm_import_preview` so UI code can bind to one declared lifecycle model instead of scraping ad hoc fields.
 94. [done] Add reviewable `SpecPM -> SpecGraph` import handoff artifacts that turn valid import previews into explicit proposal-lane or handoff candidates without mutating canonical specs directly.
+95. [done] Add a reviewable cross-repo workflow for `SpecGraph -> SpecPM` package delivery so local `.specgraph_exports/` materialization can graduate into tracked downstream exchange rather than staying a local-only draft bundle.

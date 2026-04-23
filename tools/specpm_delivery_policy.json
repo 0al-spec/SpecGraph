@@ -1,0 +1,62 @@
+{
+  "artifact_kind": "specpm_delivery_policy",
+  "schema_version": 1,
+  "repository_layout": {
+    "artifact": "runs/specpm_delivery_workflow.json"
+  },
+  "delivery_contract": {
+    "artifact_kind": "specpm_delivery_workflow",
+    "schema_version": 1,
+    "delivery_statuses": [
+      "ready_for_delivery_review",
+      "draft_delivery_only",
+      "blocked_by_materialization_gap",
+      "blocked_by_checkout_gap",
+      "blocked_by_repo_state",
+      "invalid_materialization_contract"
+    ],
+    "review_states": [
+      "ready_for_review",
+      "draft_visible",
+      "not_ready"
+    ],
+    "named_filters": [
+      "ready_for_delivery_review",
+      "draft_delivery_only",
+      "blocked_by_materialization_gap",
+      "blocked_by_checkout_gap",
+      "blocked_by_repo_state",
+      "invalid_materialization_contract",
+      "bundle_checkout_changes_present",
+      "unrelated_checkout_changes_present",
+      "checkout_behind_remote"
+    ]
+  },
+  "eligibility_rules": {
+    "required_consumer_id": "specpm",
+    "required_profile": "boundary_package_consumer",
+    "required_checkout_status": "available",
+    "require_verified_identity": true,
+    "allowed_materialization_statuses": [
+      "materialized_for_review",
+      "draft_materialized"
+    ]
+  },
+  "workflow_defaults": {
+    "required_git_repo": true,
+    "allow_unrelated_checkout_changes": false,
+    "required_delivery_root": ".specgraph_exports",
+    "delivery_branch_prefix": "specgraph-delivery/",
+    "commit_subject_template": "Add SpecGraph package {package_id}",
+    "pr_title_template": "Add SpecGraph package {package_name}",
+    "draft_pr_title_template": "Draft SpecGraph package {package_name}"
+  },
+  "next_gap_defaults": {
+    "ready_for_delivery_review": "review_specpm_delivery_workflow",
+    "draft_delivery_only": "review_draft_specpm_delivery",
+    "blocked_by_materialization_gap": "inherit_materialization_next_gap",
+    "blocked_by_checkout_gap": "inherit_materialization_next_gap",
+    "blocked_by_repo_state": "isolate_specpm_checkout_changes",
+    "invalid_materialization_contract": "repair_specpm_materialization_report"
+  }
+}

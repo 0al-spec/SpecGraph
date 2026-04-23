@@ -9134,6 +9134,354 @@ def test_main_materializes_specpm_export_bundles_as_standalone_command(
     )
 
 
+def test_build_specpm_delivery_workflow_emits_ready_draft_and_blocked_entries(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    specpm_checkout = repo_fixture / "SpecPM"
+    ready_bundle = specpm_checkout / ".specgraph_exports" / "specgraph.ready_bundle"
+    draft_bundle = specpm_checkout / ".specgraph_exports" / "specgraph.draft_bundle"
+    repo_state_bundle = specpm_checkout / ".specgraph_exports" / "specgraph.repo_state_bundle"
+    for path in (ready_bundle, draft_bundle, repo_state_bundle):
+        path.mkdir(parents=True)
+
+    def fake_inspect_specpm_delivery_checkout(
+        checkout_root: Path,
+        *,
+        bundle_rel_root: str,
+    ) -> dict[str, object]:
+        assert checkout_root == specpm_checkout
+        if bundle_rel_root.endswith("specgraph.ready_bundle"):
+            return {
+                "is_git_repo": True,
+                "current_branch": "main",
+                "upstream_branch": "origin/main",
+                "ahead_count": 0,
+                "behind_count": 0,
+                "changed_paths": [".specgraph_exports/"],
+                "bundle_changed_paths": [".specgraph_exports/"],
+                "unrelated_changed_paths": [],
+            }
+        if bundle_rel_root.endswith("specgraph.draft_bundle"):
+            return {
+                "is_git_repo": True,
+                "current_branch": "main",
+                "upstream_branch": "origin/main",
+                "ahead_count": 0,
+                "behind_count": 1,
+                "changed_paths": [".specgraph_exports/specgraph.draft_bundle/specpm.yaml"],
+                "bundle_changed_paths": [".specgraph_exports/specgraph.draft_bundle/specpm.yaml"],
+                "unrelated_changed_paths": [],
+            }
+        return {
+            "is_git_repo": True,
+            "current_branch": "main",
+            "upstream_branch": "origin/main",
+            "ahead_count": 0,
+            "behind_count": 0,
+            "changed_paths": [
+                ".specgraph_exports/specgraph.repo_state_bundle/specpm.yaml",
+                "Makefile",
+            ],
+            "bundle_changed_paths": [".specgraph_exports/specgraph.repo_state_bundle/specpm.yaml"],
+            "unrelated_changed_paths": ["Makefile"],
+        }
+
+    monkeypatch.setattr(
+        supervisor_module,
+        "inspect_specpm_delivery_checkout",
+        fake_inspect_specpm_delivery_checkout,
+    )
+
+    report = supervisor_module.build_specpm_delivery_workflow(
+        {
+            "generated_at": "2026-04-23T10:00:00Z",
+            "entries": [
+                {
+                    "export_id": "ready_export",
+                    "handoff_id": "specpm_handoff::ready_export",
+                    "consumer_id": "specpm",
+                    "materialization_status": "materialized_for_review",
+                    "review_state": "materialized_for_review",
+                    "next_gap": "review_materialized_bundle",
+                    "bundle_root": ready_bundle.as_posix(),
+                    "written_files": ["specpm.yaml", "specs/main.spec.yaml", "handoff.json"],
+                    "target_consumer": {
+                        "consumer_id": "specpm",
+                        "profile": "boundary_package_consumer",
+                        "local_checkout_hint": specpm_checkout.as_posix(),
+                        "local_checkout_status": "available",
+                        "identity_verified": True,
+                        "repo_url": "https://github.com/0al-spec/SpecPM",
+                    },
+                    "package_identity": {
+                        "package_id": "specgraph.ready_bundle",
+                        "package_name": "Ready Bundle",
+                        "package_version": "0.1.0",
+                    },
+                },
+                {
+                    "export_id": "draft_export",
+                    "handoff_id": "specpm_handoff::draft_export",
+                    "consumer_id": "specpm",
+                    "materialization_status": "draft_materialized",
+                    "review_state": "draft_materialized",
+                    "next_gap": "review_draft_materialized_bundle",
+                    "bundle_root": draft_bundle.as_posix(),
+                    "written_files": ["specpm.yaml"],
+                    "target_consumer": {
+                        "consumer_id": "specpm",
+                        "profile": "boundary_package_consumer",
+                        "local_checkout_hint": specpm_checkout.as_posix(),
+                        "local_checkout_status": "available",
+                        "identity_verified": True,
+                        "repo_url": "https://github.com/0al-spec/SpecPM",
+                    },
+                    "package_identity": {
+                        "package_id": "specgraph.draft_bundle",
+                        "package_name": "Draft Bundle",
+                        "package_version": "0.1.0",
+                    },
+                },
+                {
+                    "export_id": "repo_state_export",
+                    "handoff_id": "specpm_handoff::repo_state_export",
+                    "consumer_id": "specpm",
+                    "materialization_status": "materialized_for_review",
+                    "review_state": "materialized_for_review",
+                    "next_gap": "review_materialized_bundle",
+                    "bundle_root": repo_state_bundle.as_posix(),
+                    "written_files": ["specpm.yaml"],
+                    "target_consumer": {
+                        "consumer_id": "specpm",
+                        "profile": "boundary_package_consumer",
+                        "local_checkout_hint": specpm_checkout.as_posix(),
+                        "local_checkout_status": "available",
+                        "identity_verified": True,
+                        "repo_url": "https://github.com/0al-spec/SpecPM",
+                    },
+                    "package_identity": {
+                        "package_id": "specgraph.repo_state_bundle",
+                        "package_name": "Repo State Bundle",
+                        "package_version": "0.1.0",
+                    },
+                },
+                {
+                    "export_id": "blocked_export",
+                    "handoff_id": "specpm_handoff::blocked_export",
+                    "consumer_id": "specpm",
+                    "materialization_status": "blocked_by_handoff_gap",
+                    "review_state": "not_materialized",
+                    "next_gap": "review_specpm_handoff_packet",
+                    "bundle_root": "",
+                    "written_files": [],
+                    "target_consumer": {
+                        "consumer_id": "specpm",
+                        "profile": "boundary_package_consumer",
+                        "local_checkout_hint": specpm_checkout.as_posix(),
+                        "local_checkout_status": "available",
+                        "identity_verified": True,
+                        "repo_url": "https://github.com/0al-spec/SpecPM",
+                    },
+                    "package_identity": {
+                        "package_id": "specgraph.blocked_bundle",
+                        "package_name": "Blocked Bundle",
+                        "package_version": "0.1.0",
+                    },
+                },
+            ],
+        }
+    )
+
+    assert report["artifact_kind"] == supervisor_module.SPECPM_DELIVERY_WORKFLOW_ARTIFACT_KIND
+    assert report["viewer_projection"]["delivery_status"]["ready_for_delivery_review"] == [
+        "specgraph.ready_bundle"
+    ]
+    assert report["viewer_projection"]["delivery_status"]["draft_delivery_only"] == [
+        "specgraph.draft_bundle"
+    ]
+    assert report["viewer_projection"]["delivery_status"]["blocked_by_repo_state"] == [
+        "specgraph.repo_state_bundle"
+    ]
+    assert report["viewer_projection"]["delivery_status"]["blocked_by_materialization_gap"] == [
+        "specgraph.blocked_bundle"
+    ]
+
+    ready = next(
+        entry
+        for entry in report["entries"]
+        if entry["package_identity"]["package_id"] == "specgraph.ready_bundle"
+    )
+    assert ready["review_state"] == "ready_for_review"
+    assert ready["next_gap"] == "review_specpm_delivery_workflow"
+    assert (
+        ready["delivery_scaffold"]["suggested_branch"]
+        == "specgraph-delivery/specgraph-ready-bundle"
+    )
+    assert ready["delivery_paths"] == [
+        ".specgraph_exports/specgraph.ready_bundle/handoff.json",
+        ".specgraph_exports/specgraph.ready_bundle/specpm.yaml",
+        ".specgraph_exports/specgraph.ready_bundle/specs/main.spec.yaml",
+    ]
+
+    draft = next(
+        entry
+        for entry in report["entries"]
+        if entry["package_identity"]["package_id"] == "specgraph.draft_bundle"
+    )
+    assert draft["review_state"] == "draft_visible"
+    assert draft["next_gap"] == "review_draft_specpm_delivery"
+    assert draft["delivery_scaffold"]["pr_title"] == "Draft SpecGraph package Draft Bundle"
+    assert draft["repo_snapshot"]["behind_count"] == 1
+    assert report["viewer_projection"]["named_filters"]["checkout_behind_remote"] == [
+        "specgraph.draft_bundle"
+    ]
+
+    repo_state = next(
+        entry
+        for entry in report["entries"]
+        if entry["package_identity"]["package_id"] == "specgraph.repo_state_bundle"
+    )
+    assert repo_state["review_state"] == "not_ready"
+    assert repo_state["next_gap"] == "isolate_specpm_checkout_changes"
+    assert repo_state["repo_snapshot"]["has_unrelated_checkout_changes"] is True
+    assert report["viewer_projection"]["named_filters"]["unrelated_checkout_changes_present"] == [
+        "specgraph.repo_state_bundle"
+    ]
+
+    blocked = next(
+        entry
+        for entry in report["entries"]
+        if entry["package_identity"]["package_id"] == "specgraph.blocked_bundle"
+    )
+    assert blocked["review_state"] == "not_ready"
+    assert blocked["next_gap"] == "review_specpm_handoff_packet"
+
+
+def test_main_builds_specpm_delivery_workflow_as_standalone_command(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_external_consumer_index",
+        lambda: {
+            "generated_at": "2026-04-23T10:00:00Z",
+            "entries": [],
+        },
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_specpm_export_preview",
+        lambda specs: {
+            "artifact_kind": supervisor_module.SPECPM_EXPORT_PREVIEW_ARTIFACT_KIND,
+            "schema_version": supervisor_module.SPECPM_EXPORT_PREVIEW_SCHEMA_VERSION,
+            "generated_at": "2026-04-23T10:00:01Z",
+            "entry_count": 0,
+            "entries": [],
+            "viewer_projection": {
+                "export_status": {},
+                "review_state": {},
+                "next_gap": {},
+                "named_filters": {},
+            },
+            "export_backlog": {"entry_count": 0, "items": []},
+        },
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_specpm_handoff_packets",
+        lambda preview, consumer_index: {
+            "artifact_kind": supervisor_module.SPECPM_HANDOFF_ARTIFACT_KIND,
+            "schema_version": supervisor_module.SPECPM_HANDOFF_SCHEMA_VERSION,
+            "generated_at": "2026-04-23T10:00:02Z",
+            "entry_count": 0,
+            "entries": [],
+            "viewer_projection": {
+                "handoff_status": {},
+                "review_state": {},
+                "named_filters": {},
+            },
+            "handoff_backlog": {"entry_count": 0, "items": [], "grouped_by_next_gap": {}},
+        },
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "materialize_specpm_export_bundles",
+        lambda handoff_packets: {
+            "artifact_kind": supervisor_module.SPECPM_MATERIALIZATION_REPORT_ARTIFACT_KIND,
+            "schema_version": supervisor_module.SPECPM_MATERIALIZATION_REPORT_SCHEMA_VERSION,
+            "generated_at": "2026-04-23T10:00:03Z",
+            "entry_count": 0,
+            "entries": [],
+            "viewer_projection": {
+                "materialization_status": {},
+                "review_state": {},
+                "named_filters": {},
+            },
+            "materialization_backlog": {
+                "entry_count": 0,
+                "items": [],
+                "grouped_by_next_gap": {},
+            },
+        },
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_specpm_delivery_workflow",
+        lambda materialization_report: {
+            "artifact_kind": supervisor_module.SPECPM_DELIVERY_WORKFLOW_ARTIFACT_KIND,
+            "schema_version": supervisor_module.SPECPM_DELIVERY_WORKFLOW_SCHEMA_VERSION,
+            "generated_at": "2026-04-23T10:00:04Z",
+            "entry_count": 0,
+            "entries": [],
+            "viewer_projection": {
+                "delivery_status": {},
+                "review_state": {},
+                "named_filters": {},
+            },
+            "delivery_backlog": {"entry_count": 0, "items": [], "grouped_by_next_gap": {}},
+        },
+    )
+
+    exit_code = supervisor_module.main(build_specpm_delivery_workflow_mode=True)
+
+    assert exit_code == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["artifact_kind"] == supervisor_module.SPECPM_DELIVERY_WORKFLOW_ARTIFACT_KIND
+    consumer_index_artifact = json.loads(
+        (repo_fixture / "runs" / "external_consumer_index.json").read_text(encoding="utf-8")
+    )
+    assert consumer_index_artifact["generated_at"] == "2026-04-23T10:00:00Z"
+    preview_artifact = json.loads(
+        (repo_fixture / "runs" / "specpm_export_preview.json").read_text(encoding="utf-8")
+    )
+    assert (
+        preview_artifact["artifact_kind"] == supervisor_module.SPECPM_EXPORT_PREVIEW_ARTIFACT_KIND
+    )
+    handoff_artifact = json.loads(
+        (repo_fixture / "runs" / "specpm_handoff_packets.json").read_text(encoding="utf-8")
+    )
+    assert handoff_artifact["artifact_kind"] == supervisor_module.SPECPM_HANDOFF_ARTIFACT_KIND
+    materialization_artifact = json.loads(
+        (repo_fixture / "runs" / "specpm_materialization_report.json").read_text(encoding="utf-8")
+    )
+    assert (
+        materialization_artifact["artifact_kind"]
+        == supervisor_module.SPECPM_MATERIALIZATION_REPORT_ARTIFACT_KIND
+    )
+    delivery_artifact = json.loads(
+        (repo_fixture / "runs" / "specpm_delivery_workflow.json").read_text(encoding="utf-8")
+    )
+    assert (
+        delivery_artifact["artifact_kind"]
+        == supervisor_module.SPECPM_DELIVERY_WORKFLOW_ARTIFACT_KIND
+    )
+
+
 def test_build_specpm_import_preview_reads_materialized_bundle(
     supervisor_module: object,
     repo_fixture: Path,
