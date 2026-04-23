@@ -11571,6 +11571,59 @@ def test_build_bootstrap_smoke_benchmark_evaluates_structural_yield(
     assert all(result["passed"] for result in report["criteria_results"])
 
 
+def test_build_bootstrap_smoke_benchmark_ignores_other_benchmark_batches(
+    supervisor_module: object,
+) -> None:
+    performance_index = {
+        "artifact_kind": supervisor_module.SUPERVISOR_PERFORMANCE_INDEX_ARTIFACT_KIND,
+        "schema_version": supervisor_module.SUPERVISOR_PERFORMANCE_INDEX_SCHEMA_VERSION,
+        "generated_at": "2026-04-23T11:00:00Z",
+        "entry_count": 2,
+        "entries": [
+            {
+                "run_id": "bootstrap-smoke::minimal_seed_structural_yield::target-1",
+                "spec_id": "SG-SPEC-SMOKE-0001",
+                "timestamp_utc": "2026-04-23T10:00:00Z",
+                "run_kind": "bootstrap_smoke",
+                "execution_profile": "fast",
+                "runtime_status": "runtime_clean",
+                "yield_status": "productive_split_required",
+                "graph_impact_status": "structural_pressure",
+                "productive_run": True,
+                "new_child_materialized_count": 1,
+                "benchmark": {
+                    "benchmark_id": supervisor_module.BOOTSTRAP_SMOKE_BENCHMARK_ID,
+                    "batch_id": "target",
+                },
+            },
+            {
+                "run_id": "bootstrap-smoke::unrelated_seed_structural_yield::newer-1",
+                "spec_id": "SG-SPEC-SMOKE-0002",
+                "timestamp_utc": "2026-04-23T10:30:00Z",
+                "run_kind": "bootstrap_smoke",
+                "execution_profile": "fast",
+                "runtime_status": "runtime_failed",
+                "yield_status": "runtime_blocked",
+                "graph_impact_status": "blocked_or_regressed",
+                "productive_run": False,
+                "new_child_materialized_count": 0,
+                "benchmark": {
+                    "benchmark_id": "unrelated_seed_structural_yield",
+                    "batch_id": "unrelated",
+                },
+            },
+        ],
+    }
+
+    report = supervisor_module.build_bootstrap_smoke_benchmark(performance_index)
+
+    assert report["benchmark_status"] == "passed"
+    assert report["selected_run_ids"] == [
+        "bootstrap-smoke::minimal_seed_structural_yield::target-1"
+    ]
+    assert report["summary"]["runtime_failed_count"] == 0
+
+
 def test_build_bootstrap_smoke_benchmark_reports_not_run(
     supervisor_module: object,
 ) -> None:

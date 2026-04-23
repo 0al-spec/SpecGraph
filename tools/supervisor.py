@@ -17128,10 +17128,12 @@ def bootstrap_smoke_entry_matches(entry: dict[str, Any]) -> bool:
     entry_benchmark_id = str(benchmark_payload.get("benchmark_id", "")).strip()
     entry_run_kind = str(entry.get("run_kind", "")).strip()
     entry_run_id = str(entry.get("run_id", "")).strip()
-    return (
-        bool(benchmark_id and entry_benchmark_id == benchmark_id)
-        or bool(run_kind and entry_run_kind == run_kind)
-        or bool(run_id_prefix and entry_run_id.startswith(run_id_prefix))
+    if benchmark_id:
+        if entry_benchmark_id:
+            return entry_benchmark_id == benchmark_id
+        return bool(run_id_prefix and entry_run_id.startswith(run_id_prefix))
+    return bool(run_kind and entry_run_kind == run_kind) or bool(
+        run_id_prefix and entry_run_id.startswith(run_id_prefix)
     )
 
 
