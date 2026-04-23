@@ -950,8 +950,8 @@ The dashboard is explicitly derived-only. It pulls fresh counts from:
 The output includes:
 
 - headline cards for quick counts such as total specs, gated specs, structural
-  pressure regions, verified specs, complete evidence chains, and metrics below
-  threshold
+  pressure regions, retrospective refactor candidates, verified specs, complete
+  evidence chains, and metrics below threshold
 - section-level counts for graph, health, proposals, implementation, evidence,
   and metrics
 - source artifact references with generated timestamps so a visualizer can show

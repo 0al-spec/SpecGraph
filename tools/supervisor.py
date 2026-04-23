@@ -18230,6 +18230,16 @@ def grouped_identifier_counts(value: Any) -> dict[str, int]:
     return counts
 
 
+def active_queue_items(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    inactive_statuses = {"applied", "rejected", "superseded"}
+    active_items: list[dict[str, Any]] = []
+    for item in items:
+        status = str(item.get("status", "")).strip()
+        if status not in inactive_statuses:
+            active_items.append(item)
+    return active_items
+
+
 def dashboard_card(
     *,
     card_id: str,
@@ -18280,6 +18290,10 @@ def build_graph_dashboard(specs: list[SpecNode]) -> dict[str, Any]:
         specpm_export_preview,
         specpm_delivery_workflow,
     )
+    refactor_queue_items = [item for item in load_refactor_queue() if isinstance(item, dict)]
+    proposal_queue_items = [item for item in load_proposal_queue() if isinstance(item, dict)]
+    active_refactor_queue_items = active_queue_items(refactor_queue_items)
+    active_proposal_queue_items = active_queue_items(proposal_queue_items)
 
     total_spec_count = len(specs)
     active_spec_count = sum(1 for spec in specs if not is_historical_spec(spec.data))
@@ -18308,6 +18322,41 @@ def build_graph_dashboard(specs: list[SpecNode]) -> dict[str, Any]:
     )
     graph_named_filter_counts = grouped_identifier_counts(
         graph_overlay.get("viewer_projection", {}).get("named_filters", {})
+    )
+    graph_signal_projection = graph_overlay.get("viewer_projection", {}).get("signals", {})
+    if not isinstance(graph_signal_projection, dict):
+        graph_signal_projection = {}
+    retrospective_signal_spec_ids = sorted(
+        {
+            str(item).strip()
+            for item in graph_signal_projection.get(RETROSPECTIVE_REFACTOR_SIGNAL, [])
+            if str(item).strip()
+        }
+    )
+    retrospective_refactor_queue_ids = sorted(
+        {
+            str(item.get("id", "")).strip()
+            for item in active_refactor_queue_items
+            if str(item.get("signal", "")).strip() == RETROSPECTIVE_REFACTOR_SIGNAL
+            and str(item.get("id", "")).strip()
+        }
+    )
+    retrospective_proposal_queue_ids = sorted(
+        {
+            str(item.get("id", "")).strip()
+            for item in active_proposal_queue_items
+            if str(item.get("signal", "")).strip() == RETROSPECTIVE_REFACTOR_SIGNAL
+            and str(item.get("id", "")).strip()
+        }
+    )
+    retrospective_refactor_spec_ids = sorted(
+        set(retrospective_signal_spec_ids)
+        | {
+            str(item.get("spec_id", "")).strip()
+            for item in active_refactor_queue_items + active_proposal_queue_items
+            if str(item.get("signal", "")).strip() == RETROSPECTIVE_REFACTOR_SIGNAL
+            and str(item.get("spec_id", "")).strip()
+        }
     )
     graph_trend_status_counts = grouped_identifier_counts(
         graph_trends.get("viewer_projection", {}).get("trend_status", {})
@@ -18453,6 +18502,17 @@ def build_graph_dashboard(specs: list[SpecNode]) -> dict[str, Any]:
             basis="Specs with active graph-health signals, excluding gate-only entries.",
         ),
         dashboard_card(
+            card_id="retrospective_refactor_candidates",
+            title="Retrospective Refactor Candidates",
+            value=len(retrospective_refactor_spec_ids),
+            section="health",
+            status="attention" if retrospective_refactor_spec_ids else "healthy",
+            basis=(
+                "Specs currently visible through retrospective graph-health signals, "
+                "refactor_queue items, or proposal_queue items."
+            ),
+        ),
+        dashboard_card(
             card_id="proposal_lane_active",
             title="Active Proposal Lane Nodes",
             value=proposal_lane_active_count,
@@ -18564,6 +18624,14 @@ def build_graph_dashboard(specs: list[SpecNode]) -> dict[str, Any]:
                 "artifact_path": proposal_promotion_index_path().relative_to(ROOT).as_posix(),
                 "generated_at": proposal_promotion_index.get("generated_at"),
             },
+            "proposal_queue": {
+                "artifact_path": proposal_queue_path().relative_to(ROOT).as_posix(),
+                "entry_count": len(proposal_queue_items),
+            },
+            "refactor_queue": {
+                "artifact_path": refactor_queue_path().relative_to(ROOT).as_posix(),
+                "entry_count": len(refactor_queue_items),
+            },
             "spec_trace_projection": {
                 "artifact_path": spec_trace_projection_path().relative_to(ROOT).as_posix(),
                 "generated_at": spec_trace_projection.get("generated_at"),
@@ -18614,6 +18682,8 @@ def build_graph_dashboard(specs: list[SpecNode]) -> dict[str, Any]:
                 "trend_status_counts": graph_trend_status_counts,
                 "trend_named_filter_counts": graph_trend_named_filter_counts,
                 "structural_pressure_spec_ids": structural_pressure_spec_ids,
+                "retrospective_refactor_candidate_spec_ids": retrospective_refactor_spec_ids,
+                "retrospective_refactor_signal_spec_ids": retrospective_signal_spec_ids,
                 "hotspot_region_count": len(graph_overlay.get("hotspot_regions", [])),
             },
             "proposals": {
@@ -18635,6 +18705,14 @@ def build_graph_dashboard(specs: list[SpecNode]) -> dict[str, Any]:
                     proposal_promotion_index.get("entry_count", 0) or 0
                 ),
                 "proposal_promotion_traceability_counts": proposal_promotion_traceability_counts,
+                "refactor_queue_entry_count": len(refactor_queue_items),
+                "refactor_queue_active_count": len(active_refactor_queue_items),
+                "proposal_queue_entry_count": len(proposal_queue_items),
+                "proposal_queue_active_count": len(active_proposal_queue_items),
+                "retrospective_refactor_queue_count": len(retrospective_refactor_queue_ids),
+                "retrospective_refactor_proposal_count": len(retrospective_proposal_queue_ids),
+                "retrospective_refactor_queue_ids": retrospective_refactor_queue_ids,
+                "retrospective_refactor_proposal_ids": retrospective_proposal_queue_ids,
             },
             "implementation": {
                 "trace_entry_count": int(spec_trace_projection.get("entry_count", 0) or 0),
@@ -18717,6 +18795,7 @@ def build_graph_dashboard(specs: list[SpecNode]) -> dict[str, Any]:
                 "proposal_promotion_missing_trace": proposal_promotion_traceability_counts.get(
                     "missing_trace", 0
                 ),
+                "retrospective_refactor_candidates": len(retrospective_refactor_spec_ids),
                 "drifted_specs": trace_impl_counts.get("drifted", 0),
                 "complete_evidence_chain_specs": evidence_named_filter_counts.get(
                     "complete_chain", 0

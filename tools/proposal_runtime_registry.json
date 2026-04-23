@@ -39,6 +39,56 @@
     ]
   },
   {
+    "proposal_id": "0008",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "tools/supervisor.py",
+      "tests/test_supervisor.py",
+      "docs/proposals/0008_refinement_shape.md"
+    ],
+    "task_ids": [
+      17
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "SUBTREE_SHAPE_SIGNALS = "
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "RETROSPECTIVE_REFACTOR_SIGNAL = "
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "\"retrospective_refactor_candidates\""
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_observe_graph_health_emits_retrospective_signal_for_live_oversized_parent("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_update_proposal_queue_emits_retrospective_refactor_proposal_immediately("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "retrospective_refactor_candidates"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "build_graph_health_overlay(specs)"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "retrospective_refactor_candidate_spec_ids"
+      }
+    ]
+  },
+  {
     "proposal_id": "0010",
     "posture": "synchronous_runtime_slice",
     "runtime_surfaces": [
@@ -111,6 +161,56 @@
       {
         "path": "tools/supervisor.py",
         "pattern": "\"decision_inspector\": build_decision_inspector("
+      }
+    ]
+  },
+  {
+    "proposal_id": "0017",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "tools/supervisor.py",
+      "tests/test_supervisor.py",
+      "docs/proposals/0017_role_first_semantic_bias_for_supervisor.md"
+    ],
+    "task_ids": [
+      17
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def node_role_legibility_profile("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "\"role_obscured_node\""
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "\"bookkeeping_only_node\""
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "role_obscured_node"
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "bookkeeping_only_node"
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_update_refactor_queue_routes_role_legibility_signals_to_proposal_first("
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "\"role_legibility_pressure\""
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "queue_policy.subtree_shape_signals"
       }
     ]
   },

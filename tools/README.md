@@ -271,8 +271,9 @@ Key derived artifacts:
   evaluates cheap bootstrap-smoke runs from structural yield criteria instead
   of golden text snapshots
 - `runs/graph_dashboard.json`: aggregated dashboard artifact with headline
-  cards and section counts for graph, health, proposals, implementation,
-  evidence, external consumers, external handoffs, and metric surfaces
+  cards and section counts for graph, health, retrospective refactor candidates,
+  proposals, implementation, evidence, external consumers, external handoffs,
+  and metric surfaces
 - `tools/spec_trace_registry.json`: explicit strong trace contracts used to
   derive conservative `implementation_state` overlays such as `planned`,
   `implemented`, `verified`, `drifted`, and `blocked`
