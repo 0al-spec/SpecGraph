@@ -723,6 +723,42 @@ Use it when you want to review:
 This command does **not** import anything into canonical specs and does not
 write proposal-lane or intent-layer nodes automatically.
 
+### SpecPM import handoff packets
+
+```bash
+python3 tools/supervisor.py --build-specpm-import-handoff-packets
+```
+
+Builds `runs/specpm_import_handoff_packets.json` from:
+
+- a freshly rebuilt `runs/external_consumer_index.json`
+- a freshly rebuilt `runs/specpm_import_preview.json`
+
+This layer stays review-first, but it goes one step beyond import preview:
+valid inbound bundles become explicit upstream routing candidates without
+creating proposal-lane nodes or mutating canonical specs directly.
+
+It emits:
+
+- one handoff entry per imported bundle preview
+- explicit `handoff_status` such as `ready_for_lane`, `draft_visible_only`,
+  `blocked_by_import_gap`, or `invalid_import_contract`
+- target-route metadata such as `proposal_lane_candidate`,
+  `handoff_candidate`, or `pre_spec_candidate`
+- a normalized transition packet only when the bundle is actually ready for a
+  proposal-lane style handoff
+- grouped backlog by `next_gap` for review-first upstream intake
+
+Use it when you want to review:
+
+- whether an inbound `SpecPM` bundle is ready to become a proposal-lane review
+  candidate
+- whether it should stay visible only as a draft handoff or pre-spec intake
+- which import gaps still block upstream intake
+
+This command does **not** apply imports into canonical specs and does not write
+proposal-lane nodes automatically.
+
 ### Metric-threshold proposals
 
 ```bash

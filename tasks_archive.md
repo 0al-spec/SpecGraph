@@ -129,3 +129,8 @@ Task numbers are preserved for traceability across commits, PRs, and review thre
 86. [done] Derive explicit backlog pressure from external consumer bridge state so missing checkout, repo-identity mismatch, partial declared contracts, and draft-reference follow-up surface as named next gaps instead of remaining implicit inside `sib_proxy`.
 87. [done] Add explicit SpecGraph-to-Metrics handoff packets for stable sibling consumers so downstream reviewable delivery stops being implicit inside bridge state and metric pressure.
 88. [done] Surface external-consumer handoff readiness in dashboard/report views so visualizers can distinguish stable bridge readiness from emitted sibling-consumer handoff packets.
+
+## SpecPM Downstream Loop
+
+93. [done] Define and stabilize a viewer-facing JSON contract over `specpm_export_preview`, `specpm_handoff_packets`, `specpm_materialization_report`, and `specpm_import_preview` so UI code can bind to one declared lifecycle model instead of scraping ad hoc fields.
+94. [done] Add reviewable `SpecPM -> SpecGraph` import handoff artifacts that turn valid import previews into explicit proposal-lane or handoff candidates without mutating canonical specs directly.

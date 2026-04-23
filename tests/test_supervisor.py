@@ -9523,6 +9523,263 @@ def test_main_builds_specpm_import_preview_reuses_written_consumer_index(
     )
 
 
+def test_build_specpm_import_handoff_packets_emits_routes_and_packets(
+    supervisor_module: object,
+) -> None:
+    preview = {
+        "generated_at": "2026-04-23T08:00:00Z",
+        "entries": [
+            {
+                "bundle_id": "specgraph.ready_bundle",
+                "consumer_id": "specpm",
+                "import_status": "ready_for_review",
+                "review_state": "ready_for_review",
+                "next_gap": "review_specpm_import_preview",
+                "suggested_target_kind": "proposal",
+                "bundle_root": "/tmp/specpm/specgraph.ready_bundle",
+                "bundle_sources": {
+                    "manifest_path": "/tmp/specpm/specgraph.ready_bundle/specpm.yaml"
+                },
+                "target_consumer": {
+                    "consumer_id": "specpm",
+                    "profile": "boundary_package_consumer",
+                },
+                "manifest_summary": {"package_id": "specgraph.ready_bundle"},
+                "boundary_summary": {"boundary_spec_id": "specgraph.ready_bundle"},
+                "handoff_continuity": {"continuous": True},
+                "missing_files": [],
+                "contract_errors": [],
+            },
+            {
+                "bundle_id": "specgraph.draft_bundle",
+                "consumer_id": "specpm",
+                "import_status": "draft_visible",
+                "review_state": "draft_visible",
+                "next_gap": "review_draft_specpm_import_preview",
+                "suggested_target_kind": "handoff_candidate",
+                "bundle_root": "/tmp/specpm/specgraph.draft_bundle",
+                "bundle_sources": {
+                    "manifest_path": "/tmp/specpm/specgraph.draft_bundle/specpm.yaml"
+                },
+                "target_consumer": {
+                    "consumer_id": "specpm",
+                    "profile": "boundary_package_consumer",
+                },
+                "manifest_summary": {"package_id": "specgraph.draft_bundle"},
+                "boundary_summary": {"boundary_spec_id": "specgraph.draft_bundle"},
+                "handoff_continuity": {"continuous": True},
+                "missing_files": [],
+                "contract_errors": [],
+            },
+            {
+                "bundle_id": "specgraph.blocked_bundle",
+                "consumer_id": "specpm",
+                "import_status": "blocked_by_bundle_gap",
+                "review_state": "not_ready",
+                "next_gap": "verify_specpm_checkout_identity",
+                "suggested_target_kind": "pre_spec",
+                "bundle_root": "/tmp/specpm/specgraph.blocked_bundle",
+                "bundle_sources": {
+                    "manifest_path": "/tmp/specpm/specgraph.blocked_bundle/specpm.yaml"
+                },
+                "target_consumer": {
+                    "consumer_id": "specpm",
+                    "profile": "boundary_package_consumer",
+                },
+                "manifest_summary": {"package_id": "specgraph.blocked_bundle"},
+                "boundary_summary": {"boundary_spec_id": "specgraph.blocked_bundle"},
+                "handoff_continuity": {"continuous": False},
+                "missing_files": ["handoff.json"],
+                "contract_errors": [],
+            },
+            {
+                "bundle_id": "specgraph.invalid_bundle",
+                "consumer_id": "specpm",
+                "import_status": "invalid_import_contract",
+                "review_state": "not_ready",
+                "next_gap": "repair_specpm_import_bundle",
+                "suggested_target_kind": "",
+                "bundle_root": "/tmp/specpm/specgraph.invalid_bundle",
+                "bundle_sources": {
+                    "manifest_path": "/tmp/specpm/specgraph.invalid_bundle/specpm.yaml"
+                },
+                "target_consumer": {
+                    "consumer_id": "specpm",
+                    "profile": "boundary_package_consumer",
+                },
+                "manifest_summary": {"package_id": "specgraph.invalid_bundle"},
+                "boundary_summary": {"boundary_spec_id": "specgraph.invalid_bundle"},
+                "handoff_continuity": {"continuous": False},
+                "missing_files": [],
+                "contract_errors": ["manifest_package_id_mismatch"],
+            },
+        ],
+    }
+
+    report = supervisor_module.build_specpm_import_handoff_packets(preview)
+
+    assert report["artifact_kind"] == supervisor_module.SPECPM_IMPORT_HANDOFF_ARTIFACT_KIND
+    assert report["viewer_projection"]["handoff_status"]["ready_for_lane"] == [
+        "specgraph.ready_bundle"
+    ]
+    assert report["viewer_projection"]["handoff_status"]["draft_visible_only"] == [
+        "specgraph.draft_bundle"
+    ]
+    assert report["viewer_projection"]["handoff_status"]["blocked_by_import_gap"] == [
+        "specgraph.blocked_bundle"
+    ]
+    assert report["viewer_projection"]["handoff_status"]["invalid_import_contract"] == [
+        "specgraph.invalid_bundle"
+    ]
+
+    ready = next(
+        entry for entry in report["entries"] if entry["bundle_id"] == "specgraph.ready_bundle"
+    )
+    assert ready["review_state"] == "ready_for_review"
+    assert ready["next_gap"] == "review_specpm_import_handoff_packet"
+    assert ready["target_route"]["route_kind"] == "proposal_lane_candidate"
+    assert ready["target_route"]["target_scope"] == "proposal_lane/nodes"
+    assert ready["transition_packet"] is not None
+    assert ready["transition_packet"]["transition_profile"] == "specgraph_core"
+    assert ready["transition_packet_validation"]["ok"] is True
+
+    draft = next(
+        entry for entry in report["entries"] if entry["bundle_id"] == "specgraph.draft_bundle"
+    )
+    assert draft["review_state"] == "draft_visible"
+    assert draft["next_gap"] == "review_draft_specpm_import_preview"
+    assert draft["target_route"]["route_kind"] == "handoff_candidate"
+    assert draft["transition_packet"] is None
+
+    blocked = next(
+        entry for entry in report["entries"] if entry["bundle_id"] == "specgraph.blocked_bundle"
+    )
+    assert blocked["review_state"] == "not_emitted"
+    assert blocked["next_gap"] == "verify_specpm_checkout_identity"
+    assert blocked["target_route"]["route_kind"] == "pre_spec_candidate"
+    assert blocked["transition_packet"] is None
+
+    invalid = next(
+        entry for entry in report["entries"] if entry["bundle_id"] == "specgraph.invalid_bundle"
+    )
+    assert invalid["review_state"] == "not_emitted"
+    assert invalid["next_gap"] == "repair_specpm_import_preview"
+    assert invalid["target_route"]["route_kind"] == ""
+    assert invalid["transition_packet"] is None
+
+
+def test_main_builds_specpm_import_handoff_packets_as_standalone_command(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    def fake_build_external_consumer_index() -> dict[str, object]:
+        return {
+            "generated_at": "2026-04-23T08:00:00Z",
+            "entries": [],
+        }
+
+    def fake_build_specpm_import_preview(
+        external_consumer_index: dict[str, object] | None = None,
+    ) -> dict[str, object]:
+        assert external_consumer_index is not None
+        assert external_consumer_index["generated_at"] == "2026-04-23T08:00:00Z"
+        return {
+            "artifact_kind": supervisor_module.SPECPM_IMPORT_PREVIEW_ARTIFACT_KIND,
+            "schema_version": supervisor_module.SPECPM_IMPORT_PREVIEW_SCHEMA_VERSION,
+            "generated_at": "2026-04-23T08:00:01Z",
+            "source_artifacts": {
+                "external_consumer_index": {
+                    "artifact_path": "runs/external_consumer_index.json",
+                    "generated_at": external_consumer_index["generated_at"],
+                }
+            },
+            "import_source": {
+                "consumer_id": "specpm",
+                "profile": "boundary_package_consumer",
+                "checkout_path": "",
+                "checkout_status": "missing",
+                "identity_verified": False,
+                "inbox_root": "",
+                "bundle_count": 0,
+                "next_gap": "repair_specpm_checkout",
+            },
+            "entry_count": 0,
+            "entries": [],
+            "viewer_projection": {
+                "import_status": {},
+                "review_state": {},
+                "suggested_target_kind": {},
+                "named_filters": {},
+            },
+            "import_backlog": {"entry_count": 0, "items": [], "grouped_by_next_gap": {}},
+        }
+
+    def fake_build_specpm_import_handoff_packets(
+        preview: dict[str, object],
+    ) -> dict[str, object]:
+        assert preview["generated_at"] == "2026-04-23T08:00:01Z"
+        return {
+            "artifact_kind": supervisor_module.SPECPM_IMPORT_HANDOFF_ARTIFACT_KIND,
+            "schema_version": supervisor_module.SPECPM_IMPORT_HANDOFF_SCHEMA_VERSION,
+            "generated_at": "2026-04-23T08:00:02Z",
+            "source_artifacts": {
+                "specpm_import_preview": {
+                    "artifact_path": "runs/specpm_import_preview.json",
+                    "generated_at": preview["generated_at"],
+                }
+            },
+            "entry_count": 0,
+            "entries": [],
+            "viewer_projection": {
+                "handoff_status": {},
+                "review_state": {},
+                "route_kind": {},
+                "named_filters": {},
+            },
+            "handoff_backlog": {"entry_count": 0, "items": [], "grouped_by_next_gap": {}},
+        }
+
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_external_consumer_index",
+        fake_build_external_consumer_index,
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_specpm_import_preview",
+        fake_build_specpm_import_preview,
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_specpm_import_handoff_packets",
+        fake_build_specpm_import_handoff_packets,
+    )
+
+    exit_code = supervisor_module.main(build_specpm_import_handoff_packets_mode=True)
+
+    assert exit_code == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["artifact_kind"] == supervisor_module.SPECPM_IMPORT_HANDOFF_ARTIFACT_KIND
+    consumer_index_artifact = json.loads(
+        (repo_fixture / "runs" / "external_consumer_index.json").read_text(encoding="utf-8")
+    )
+    assert consumer_index_artifact["generated_at"] == "2026-04-23T08:00:00Z"
+    preview_artifact = json.loads(
+        (repo_fixture / "runs" / "specpm_import_preview.json").read_text(encoding="utf-8")
+    )
+    assert (
+        preview_artifact["artifact_kind"] == supervisor_module.SPECPM_IMPORT_PREVIEW_ARTIFACT_KIND
+    )
+    handoff_artifact = json.loads(
+        (repo_fixture / "runs" / "specpm_import_handoff_packets.json").read_text(encoding="utf-8")
+    )
+    assert (
+        handoff_artifact["artifact_kind"] == supervisor_module.SPECPM_IMPORT_HANDOFF_ARTIFACT_KIND
+    )
+
+
 def test_build_metric_signal_index_reports_threshold_breaches(
     supervisor_module: object,
     repo_fixture: Path,

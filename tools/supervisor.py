@@ -41,6 +41,7 @@ Derived artifacts:
 - external consumer overlay: `runs/external_consumer_overlay.json`
 - external consumer handoff packets: `runs/external_consumer_handoff_packets.json`
 - SpecPM import preview: `runs/specpm_import_preview.json`
+- SpecPM import handoff packets: `runs/specpm_import_handoff_packets.json`
 - spec trace index: `runs/spec_trace_index.json`
 - spec trace projection: `runs/spec_trace_projection.json`
 - proposal runtime index: `runs/proposal_runtime_index.json`
@@ -106,6 +107,7 @@ SPECPM_EXPORT_POLICY_RELATIVE_PATH = "tools/specpm_export_policy.json"
 SPECPM_HANDOFF_POLICY_RELATIVE_PATH = "tools/specpm_handoff_policy.json"
 SPECPM_MATERIALIZATION_POLICY_RELATIVE_PATH = "tools/specpm_materialization_policy.json"
 SPECPM_IMPORT_POLICY_RELATIVE_PATH = "tools/specpm_import_policy.json"
+SPECPM_IMPORT_HANDOFF_POLICY_RELATIVE_PATH = "tools/specpm_import_handoff_policy.json"
 SPECPM_EXPORT_REGISTRY_RELATIVE_PATH = "tools/specpm_export_registry.json"
 
 
@@ -191,6 +193,10 @@ def specpm_materialization_policy_path() -> Path:
 
 def specpm_import_policy_path() -> Path:
     return TOOLS_DIR / "specpm_import_policy.json"
+
+
+def specpm_import_handoff_policy_path() -> Path:
+    return TOOLS_DIR / "specpm_import_handoff_policy.json"
 
 
 def specpm_export_registry_path() -> Path:
@@ -929,6 +935,46 @@ def load_specpm_import_policy() -> tuple[dict[str, Any], str]:
 SPECPM_IMPORT_POLICY, SPECPM_IMPORT_POLICY_SHA256 = load_specpm_import_policy()
 
 
+def load_specpm_import_handoff_policy() -> tuple[dict[str, Any], str]:
+    path = specpm_import_handoff_policy_path()
+    try:
+        raw_text = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise RuntimeError(
+            f"failed to read SpecPM import handoff policy artifact: {path.as_posix()} ({exc})"
+        ) from exc
+    try:
+        payload = json.loads(raw_text)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(
+            f"malformed SpecPM import handoff policy artifact: {path.as_posix()} ({exc})"
+        ) from exc
+    if not isinstance(payload, dict):
+        raise RuntimeError(
+            "malformed SpecPM import handoff policy artifact: "
+            f"{path.as_posix()} must contain a JSON object"
+        )
+    required_sections = (
+        "repository_layout",
+        "handoff_contract",
+        "route_contract",
+        "packet_provenance",
+        "next_gap_defaults",
+    )
+    missing = [section for section in required_sections if section not in payload]
+    if missing:
+        raise RuntimeError(
+            "malformed SpecPM import handoff policy artifact: missing top-level section(s): "
+            + ", ".join(missing)
+        )
+    return payload, hashlib.sha256(raw_text.encode("utf-8")).hexdigest()
+
+
+SPECPM_IMPORT_HANDOFF_POLICY, SPECPM_IMPORT_HANDOFF_POLICY_SHA256 = (
+    load_specpm_import_handoff_policy()
+)
+
+
 def policy_lookup(policy_path: str) -> Any:
     current: Any = SUPERVISOR_POLICY
     for part in policy_path.split("."):
@@ -1021,6 +1067,15 @@ def specpm_materialization_policy_lookup(policy_path: str) -> Any:
 
 def specpm_import_policy_lookup(policy_path: str) -> Any:
     current: Any = SPECPM_IMPORT_POLICY
+    for part in policy_path.split("."):
+        if not isinstance(current, dict) or part not in current:
+            raise KeyError(policy_path)
+        current = current[part]
+    return copy.deepcopy(current)
+
+
+def specpm_import_handoff_policy_lookup(policy_path: str) -> Any:
+    current: Any = SPECPM_IMPORT_HANDOFF_POLICY
     for part in policy_path.split("."):
         if not isinstance(current, dict) or part not in current:
             raise KeyError(policy_path)
@@ -1267,6 +1322,14 @@ def specpm_import_policy_reference() -> dict[str, Any]:
         "artifact_path": SPECPM_IMPORT_POLICY_RELATIVE_PATH,
         "artifact_sha256": SPECPM_IMPORT_POLICY_SHA256,
         "version": SPECPM_IMPORT_POLICY.get("version"),
+    }
+
+
+def specpm_import_handoff_policy_reference() -> dict[str, Any]:
+    return {
+        "artifact_path": SPECPM_IMPORT_HANDOFF_POLICY_RELATIVE_PATH,
+        "artifact_sha256": SPECPM_IMPORT_HANDOFF_POLICY_SHA256,
+        "version": SPECPM_IMPORT_HANDOFF_POLICY.get("version"),
     }
 
 
@@ -1522,6 +1585,39 @@ SPECPM_IMPORT_PREVIEW_REVIEW_STATES = list(
 )
 SPECPM_IMPORT_PREVIEW_NAMED_FILTERS = list(
     specpm_import_policy_lookup("bundle_contract.named_filters")
+)
+SPECPM_IMPORT_HANDOFF_FILENAME = Path(
+    str(specpm_import_handoff_policy_lookup("repository_layout.artifact"))
+).name
+SPECPM_IMPORT_HANDOFF_ARTIFACT_KIND = str(
+    specpm_import_handoff_policy_lookup("handoff_contract.artifact_kind")
+)
+SPECPM_IMPORT_HANDOFF_SCHEMA_VERSION = int(
+    specpm_import_handoff_policy_lookup("handoff_contract.schema_version")
+)
+SPECPM_IMPORT_HANDOFF_TRANSITION_PROFILE = str(
+    specpm_import_handoff_policy_lookup("handoff_contract.transition_profile")
+)
+SPECPM_IMPORT_HANDOFF_PACKET_TYPE = str(
+    specpm_import_handoff_policy_lookup("handoff_contract.packet_type")
+)
+SPECPM_IMPORT_HANDOFF_TARGET_ARTIFACT_CLASS = str(
+    specpm_import_handoff_policy_lookup("handoff_contract.target_artifact_class")
+)
+SPECPM_IMPORT_HANDOFF_STATUSES = list(
+    specpm_import_handoff_policy_lookup("handoff_contract.handoff_statuses")
+)
+SPECPM_IMPORT_HANDOFF_REVIEW_STATES = list(
+    specpm_import_handoff_policy_lookup("handoff_contract.review_states")
+)
+SPECPM_IMPORT_HANDOFF_NAMED_FILTERS = list(
+    specpm_import_handoff_policy_lookup("handoff_contract.named_filters")
+)
+SPECPM_IMPORT_HANDOFF_ROUTE_KIND_MAPPING = specpm_import_handoff_policy_lookup(
+    "route_contract.route_kind_mapping"
+)
+SPECPM_IMPORT_HANDOFF_PROPOSAL_LANE_ROUTE = specpm_import_handoff_policy_lookup(
+    "route_contract.proposal_lane_route"
 )
 METRIC_SIGNAL_INDEX_FILENAME = Path(
     str(metric_signal_policy_lookup("repository_layout.signal_artifact"))
@@ -11011,6 +11107,10 @@ def specpm_import_preview_path() -> Path:
     return RUNS_DIR / SPECPM_IMPORT_PREVIEW_FILENAME
 
 
+def specpm_import_handoff_packets_path() -> Path:
+    return RUNS_DIR / SPECPM_IMPORT_HANDOFF_FILENAME
+
+
 def evidence_plane_index_path() -> Path:
     return RUNS_DIR / EVIDENCE_PLANE_INDEX_FILENAME
 
@@ -14148,6 +14248,58 @@ def derive_specpm_import_next_gap(
     return default_gap or "none"
 
 
+def derive_specpm_import_handoff_next_gap(
+    *,
+    handoff_status: str,
+    preview_entry: dict[str, Any],
+) -> str:
+    default_gap = str(
+        specpm_import_handoff_policy_lookup(f"next_gap_defaults.{handoff_status}")
+    ).strip()
+    if default_gap == "inherit_import_next_gap":
+        inherited = str(preview_entry.get("next_gap", "")).strip()
+        return inherited or "review_specpm_import_preview"
+    return default_gap or "none"
+
+
+def derive_specpm_import_handoff_route(
+    *,
+    preview_entry: dict[str, Any],
+    handoff_status: str,
+) -> dict[str, Any]:
+    suggested_target_kind = str(preview_entry.get("suggested_target_kind", "")).strip()
+    route_kind = str(
+        SPECPM_IMPORT_HANDOFF_ROUTE_KIND_MAPPING.get(suggested_target_kind, "")
+    ).strip()
+    if handoff_status == "ready_for_lane" and not route_kind:
+        route_kind = "proposal_lane_candidate"
+
+    target_scope = ""
+    target_artifact_class = ""
+    proposal_lane_equivalence = False
+    if route_kind == "proposal_lane_candidate":
+        target_scope = str(
+            SPECPM_IMPORT_HANDOFF_PROPOSAL_LANE_ROUTE.get("target_scope", "")
+        ).strip()
+        target_artifact_class = (
+            str(SPECPM_IMPORT_HANDOFF_PROPOSAL_LANE_ROUTE.get("target_artifact_class", "")).strip()
+            or SPECPM_IMPORT_HANDOFF_TARGET_ARTIFACT_CLASS
+        )
+        proposal_lane_equivalence = bool(
+            SPECPM_IMPORT_HANDOFF_PROPOSAL_LANE_ROUTE.get("proposal_lane_equivalence", False)
+        )
+    elif route_kind:
+        target_artifact_class = route_kind
+
+    return {
+        "suggested_target_kind": suggested_target_kind,
+        "route_kind": route_kind,
+        "target_scope": target_scope,
+        "target_artifact_class": target_artifact_class,
+        "proposal_lane_equivalence": proposal_lane_equivalence,
+    }
+
+
 def build_specpm_import_preview(
     external_consumer_index: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
@@ -14518,6 +14670,189 @@ def build_specpm_import_preview(
 def write_specpm_import_preview(report: dict[str, Any]) -> Path:
     RUNS_DIR.mkdir(parents=True, exist_ok=True)
     path = specpm_import_preview_path()
+    with artifact_lock(path):
+        atomic_write_json(path, report)
+    return path
+
+
+def build_specpm_import_handoff_packets(
+    specpm_import_preview: dict[str, Any],
+) -> dict[str, Any]:
+    entries: list[dict[str, Any]] = []
+    handoff_status_groups: dict[str, list[str]] = {}
+    review_state_groups: dict[str, list[str]] = {}
+    route_kind_groups: dict[str, list[str]] = {}
+    named_filters = {name: [] for name in SPECPM_IMPORT_HANDOFF_NAMED_FILTERS}
+    backlog_items: list[dict[str, Any]] = []
+    grouped_backlog: dict[str, list[str]] = {}
+    source_refs = [
+        str(path).strip()
+        for path in specpm_import_handoff_policy_lookup("packet_provenance.source_refs")
+        if str(path).strip()
+    ]
+    required_provenance_links = [
+        str(item).strip()
+        for item in specpm_import_handoff_policy_lookup(
+            "packet_provenance.required_provenance_links"
+        )
+        if str(item).strip()
+    ]
+
+    for raw_entry in specpm_import_preview.get("entries", []):
+        if not isinstance(raw_entry, dict):
+            continue
+        bundle_id = str(raw_entry.get("bundle_id", "")).strip()
+        if not bundle_id:
+            continue
+
+        import_status = str(raw_entry.get("import_status", "")).strip()
+        preview_review_state = str(raw_entry.get("review_state", "")).strip()
+        if import_status == "ready_for_review":
+            handoff_status = "ready_for_lane"
+            review_state = "ready_for_review"
+        elif import_status == "draft_visible":
+            handoff_status = "draft_visible_only"
+            review_state = "draft_visible"
+        elif import_status == "blocked_by_bundle_gap":
+            handoff_status = "blocked_by_import_gap"
+            review_state = "not_emitted"
+        else:
+            handoff_status = "invalid_import_contract"
+            review_state = "not_emitted"
+
+        next_gap = derive_specpm_import_handoff_next_gap(
+            handoff_status=handoff_status,
+            preview_entry=raw_entry,
+        )
+        target_route = derive_specpm_import_handoff_route(
+            preview_entry=raw_entry,
+            handoff_status=handoff_status,
+        )
+        route_kind = str(target_route.get("route_kind", "")).strip()
+
+        transition_packet = None
+        validation_report = None
+        if handoff_status == "ready_for_lane" and route_kind == "proposal_lane_candidate":
+            target_scope = str(target_route.get("target_scope", "")).strip()
+            declared_change_surface = [target_scope] if target_scope else []
+            manifest_package_id = str(
+                raw_entry.get("manifest_summary", {}).get("package_id", "")
+            ).strip()
+            transition_packet = {
+                "packet_type": SPECPM_IMPORT_HANDOFF_PACKET_TYPE,
+                "transition_profile": SPECPM_IMPORT_HANDOFF_TRANSITION_PROFILE,
+                "transition_intent": (
+                    "handoff SpecPM import bundle "
+                    f"{manifest_package_id or bundle_id} "
+                    "as a proposal-lane review candidate"
+                ),
+                "source_refs": copy.deepcopy(source_refs),
+                "actor_class": "supervisor_derived",
+                "source_artifact_class": "specpm_import_bundle",
+                "target_artifact_class": str(target_route.get("target_artifact_class", "")).strip()
+                or SPECPM_IMPORT_HANDOFF_TARGET_ARTIFACT_CLASS,
+                "target_scope": target_scope,
+                "lineage_root": f"specpm-import::{bundle_id}",
+                "declared_change_surface": declared_change_surface,
+                "required_provenance_links": copy.deepcopy(required_provenance_links),
+            }
+            validation_report = validate_transition_packet_report(
+                transition_packet,
+                validator_profile=SPECPM_IMPORT_HANDOFF_TRANSITION_PROFILE,
+            )
+
+        entry = {
+            "import_handoff_id": f"specpm_import_handoff::{bundle_id}",
+            "bundle_id": bundle_id,
+            "consumer_id": str(raw_entry.get("consumer_id", "")).strip(),
+            "handoff_status": handoff_status,
+            "review_state": review_state,
+            "next_gap": next_gap,
+            "policy_reference": specpm_import_handoff_policy_reference(),
+            "import_preview_reference": {
+                "artifact_path": specpm_import_preview_path().relative_to(ROOT).as_posix(),
+                "generated_at": specpm_import_preview.get("generated_at"),
+                "import_status": import_status,
+                "review_state": preview_review_state,
+            },
+            "target_route": target_route,
+            "bundle_root": str(raw_entry.get("bundle_root", "")).strip(),
+            "bundle_sources": copy.deepcopy(raw_entry.get("bundle_sources", {})),
+            "target_consumer": copy.deepcopy(raw_entry.get("target_consumer", {})),
+            "manifest_summary": copy.deepcopy(raw_entry.get("manifest_summary", {})),
+            "boundary_summary": copy.deepcopy(raw_entry.get("boundary_summary", {})),
+            "handoff_continuity": copy.deepcopy(raw_entry.get("handoff_continuity", {})),
+            "missing_files": copy.deepcopy(raw_entry.get("missing_files", [])),
+            "contract_errors": copy.deepcopy(raw_entry.get("contract_errors", [])),
+            "transition_packet": transition_packet,
+            "transition_packet_validation": validation_report,
+        }
+        entries.append(entry)
+        handoff_status_groups.setdefault(handoff_status, []).append(bundle_id)
+        review_state_groups.setdefault(review_state, []).append(bundle_id)
+        if route_kind:
+            route_kind_groups.setdefault(route_kind, []).append(bundle_id)
+            named_filters.setdefault(route_kind, []).append(bundle_id)
+        named_filters.setdefault(handoff_status, []).append(bundle_id)
+        if validation_report and not validation_report.get("ok"):
+            named_filters["packet_validation_failed"].append(bundle_id)
+        if next_gap != "none":
+            backlog_items.append(
+                {
+                    "bundle_id": bundle_id,
+                    "handoff_status": handoff_status,
+                    "review_state": review_state,
+                    "next_gap": next_gap,
+                }
+            )
+            grouped_backlog.setdefault(next_gap, []).append(bundle_id)
+
+    for bucket in (
+        handoff_status_groups,
+        review_state_groups,
+        route_kind_groups,
+        named_filters,
+        grouped_backlog,
+    ):
+        for key in list(bucket):
+            bucket[key] = sorted(set(bucket[key]))
+
+    return {
+        "artifact_kind": SPECPM_IMPORT_HANDOFF_ARTIFACT_KIND,
+        "schema_version": SPECPM_IMPORT_HANDOFF_SCHEMA_VERSION,
+        "generated_at": utc_now_iso(),
+        "policy_reference": specpm_import_handoff_policy_reference(),
+        "source_artifacts": {
+            "specpm_import_preview": {
+                "artifact_path": specpm_import_preview_path().relative_to(ROOT).as_posix(),
+                "generated_at": specpm_import_preview.get("generated_at"),
+            }
+        },
+        "entry_count": len(entries),
+        "entries": entries,
+        "viewer_projection": {
+            "handoff_status": {
+                key: sorted(value) for key, value in sorted(handoff_status_groups.items())
+            },
+            "review_state": {
+                key: sorted(value) for key, value in sorted(review_state_groups.items())
+            },
+            "route_kind": {key: sorted(value) for key, value in sorted(route_kind_groups.items())},
+            "named_filters": {key: sorted(value) for key, value in sorted(named_filters.items())},
+        },
+        "handoff_backlog": {
+            "entry_count": len(backlog_items),
+            "items": backlog_items,
+            "grouped_by_next_gap": {
+                key: sorted(value) for key, value in sorted(grouped_backlog.items())
+            },
+        },
+    }
+
+
+def write_specpm_import_handoff_packets(report: dict[str, Any]) -> Path:
+    RUNS_DIR.mkdir(parents=True, exist_ok=True)
+    path = specpm_import_handoff_packets_path()
     with artifact_lock(path):
         atomic_write_json(path, report)
     return path
@@ -20364,6 +20699,7 @@ def main(
     build_specpm_handoff_packets_mode: bool = False,
     materialize_specpm_export_bundles_mode: bool = False,
     build_specpm_import_preview_mode: bool = False,
+    build_specpm_import_handoff_packets_mode: bool = False,
     build_metric_signal_index_mode: bool = False,
     build_metric_threshold_proposals_mode: bool = False,
     build_supervisor_performance_index_mode: bool = False,
@@ -20418,6 +20754,7 @@ def main(
         "--build-specpm-handoff-packets": build_specpm_handoff_packets_mode,
         "--materialize-specpm-export-bundles": materialize_specpm_export_bundles_mode,
         "--build-specpm-import-preview": build_specpm_import_preview_mode,
+        "--build-specpm-import-handoff-packets": build_specpm_import_handoff_packets_mode,
         "--build-metric-signal-index": build_metric_signal_index_mode,
         "--build-metric-threshold-proposals": build_metric_threshold_proposals_mode,
         "--build-supervisor-performance-index": build_supervisor_performance_index_mode,
@@ -20663,6 +21000,7 @@ def main(
                 build_specpm_export_preview_mode,
                 build_specpm_handoff_packets_mode,
                 materialize_specpm_export_bundles_mode,
+                build_specpm_import_handoff_packets_mode,
                 build_metric_signal_index_mode,
                 build_metric_threshold_proposals_mode,
                 build_supervisor_performance_index_mode,
@@ -20682,6 +21020,68 @@ def main(
         preview = build_specpm_import_preview(consumer_index)
         write_specpm_import_preview(preview)
         print(json.dumps(preview, ensure_ascii=False, indent=2))
+        return 0
+
+    if build_specpm_import_handoff_packets_mode:
+        if any(
+            (
+                dry_run,
+                auto_approve,
+                loop,
+                resolve_gate,
+                decision,
+                note,
+                target_spec,
+                split_proposal,
+                apply_split_proposal,
+                operator_note,
+                mutation_budget,
+                run_authority,
+                execution_profile,
+                child_model,
+                child_timeout_seconds,
+                verbose,
+                list_stale_runtime,
+                clean_stale_runtime,
+                observe_graph_health_mode,
+                operator_request_packet_path,
+                build_intent_layer_overlay_mode,
+                build_vocabulary_index_mode,
+                build_vocabulary_drift_report_mode,
+                build_pre_spec_semantics_index_mode,
+                build_graph_health_overlay_mode,
+                build_graph_health_trends_mode,
+                build_spec_trace_index_mode,
+                build_spec_trace_projection_mode,
+                build_evidence_plane_index_mode,
+                build_evidence_plane_overlay_mode,
+                build_external_consumer_overlay_mode,
+                build_external_consumer_handoffs_mode,
+                build_specpm_export_preview_mode,
+                build_specpm_handoff_packets_mode,
+                materialize_specpm_export_bundles_mode,
+                build_specpm_import_preview_mode,
+                build_metric_signal_index_mode,
+                build_metric_threshold_proposals_mode,
+                build_supervisor_performance_index_mode,
+                build_graph_dashboard_mode,
+                build_proposal_lane_overlay_mode,
+                build_proposal_runtime_index_mode,
+                build_proposal_promotion_index_mode,
+            )
+        ):
+            print(
+                "--build-specpm-import-handoff-packets must be used as a standalone command",
+                file=sys.stderr,
+            )
+            return 1
+        consumer_index = build_external_consumer_index()
+        write_external_consumer_index(consumer_index)
+        preview = build_specpm_import_preview(consumer_index)
+        write_specpm_import_preview(preview)
+        handoff_packets = build_specpm_import_handoff_packets(preview)
+        write_specpm_import_handoff_packets(handoff_packets)
+        print(json.dumps(handoff_packets, ensure_ascii=False, indent=2))
         return 0
 
     if build_proposal_lane_overlay_mode:
@@ -22275,6 +22675,14 @@ if __name__ == "__main__":
         ),
     )
     parser.add_argument(
+        "--build-specpm-import-handoff-packets",
+        action="store_true",
+        help=(
+            "Build reviewable SpecPM import handoff packets from the current import "
+            "preview without mutating canonical SpecGraph specs or proposal-lane nodes"
+        ),
+    )
+    parser.add_argument(
         "--build-metric-signal-index",
         action="store_true",
         help=(
@@ -22464,6 +22872,7 @@ if __name__ == "__main__":
             build_specpm_handoff_packets_mode=args.build_specpm_handoff_packets,
             materialize_specpm_export_bundles_mode=args.materialize_specpm_export_bundles,
             build_specpm_import_preview_mode=args.build_specpm_import_preview,
+            build_specpm_import_handoff_packets_mode=args.build_specpm_import_handoff_packets,
             build_metric_signal_index_mode=args.build_metric_signal_index,
             build_metric_threshold_proposals_mode=args.build_metric_threshold_proposals,
             build_supervisor_performance_index_mode=args.build_supervisor_performance_index,
