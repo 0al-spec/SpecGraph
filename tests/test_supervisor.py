@@ -11212,18 +11212,24 @@ def test_build_metric_signal_index_reports_threshold_breaches(
     assert by_id["specification_verifiability"]["status"] == "below_threshold"
     assert by_id["process_observability"]["status"] == "healthy"
     assert by_id["structural_observability"]["status"] == "below_threshold"
+    assert by_id["sib"]["status"] == "below_threshold"
+    assert by_id["sib"]["threshold_authority_state"] == "canonical_threshold_authority"
     assert by_id["sib_proxy"]["status"] == "below_threshold"
+    assert by_id["sib_proxy"]["alias_of"] == "sib"
+    assert by_id["sib_proxy"]["threshold_authority_state"] == "alias_only"
+    assert by_id["sib_proxy"]["signal_emitted"] is False
     assert by_id["sib_proxy"]["derivation_mode"] == "bootstrap_fallback"
     assert sorted(index["active_signals"]) == [
-        "low_sib_proxy",
+        "low_sib",
         "low_specification_verifiability",
         "low_structural_observability",
     ]
     assert index["viewer_projection"]["named_filters"]["metrics_below_threshold"] == [
-        "sib_proxy",
+        "sib",
         "specification_verifiability",
         "structural_observability",
     ]
+    assert index["viewer_projection"]["named_filters"]["legacy_alias_metrics"] == ["sib_proxy"]
 
 
 def test_build_metric_signal_index_ignores_gate_only_overlay_entries(
@@ -11441,12 +11447,14 @@ def test_build_metric_signal_index_uses_bridge_backed_sib_proxy_when_stable_cons
     index = supervisor_module.build_metric_signal_index(supervisor_module.load_specs())
 
     by_id = {entry["metric_id"]: entry for entry in index["metrics"]}
-    sib = by_id["sib_proxy"]
+    sib = by_id["sib"]
     assert sib["derivation_mode"] == "bridge_backed"
     assert sib["input_summary"]["component_scores"]["external_consumer_alignment"] == 1.0
     assert sib["input_summary"]["stable_bridge_consumer_ids"] == ["metrics_sib"]
     assert sib["input_summary"]["draft_bridge_consumer_ids"] == ["metrics_sib_full"]
     assert sib["input_summary"]["bridge_unverified_identity_consumer_ids"] == []
+    assert by_id["sib_proxy"]["alias_of"] == "sib"
+    assert by_id["sib_proxy"]["threshold_authority_state"] == "alias_only"
 
 
 def test_build_metric_signal_index_requires_verified_repo_identity_for_bridge_backed_sib_proxy(
@@ -11561,11 +11569,201 @@ def test_build_metric_signal_index_requires_verified_repo_identity_for_bridge_ba
     index = supervisor_module.build_metric_signal_index(supervisor_module.load_specs())
 
     by_id = {entry["metric_id"]: entry for entry in index["metrics"]}
-    sib = by_id["sib_proxy"]
+    sib = by_id["sib"]
     assert sib["derivation_mode"] == "bootstrap_fallback"
     assert sib["input_summary"]["component_scores"]["external_consumer_alignment"] is None
     assert sib["input_summary"]["bridge_ready_consumer_ids"] == []
     assert sib["input_summary"]["bridge_unverified_identity_consumer_ids"] == ["metrics_sib"]
+
+
+def test_build_metrics_source_promotion_index_keeps_sib_full_review_first(
+    supervisor_module: object,
+) -> None:
+    consumer_index = {
+        "generated_at": "2026-04-24T12:00:00Z",
+        "entries": [
+            {
+                "consumer_id": "metrics_sib",
+                "title": "Metrics / SIB",
+                "profile": "sibling_metric_consumer",
+                "reference_state": "stable_reference",
+                "contract_status": "ready",
+                "local_checkout": {"status": "available", "remote_matches": True},
+                "metric_bindings": [
+                    {
+                        "metric_id": "sib",
+                        "binding_role": "stable_bridge_reference",
+                        "legacy_metric_ids": ["sib_proxy"],
+                    }
+                ],
+            },
+            {
+                "consumer_id": "metrics_sib_full",
+                "title": "Metrics / SIB Full",
+                "profile": "sibling_metric_consumer",
+                "reference_state": "draft_reference",
+                "contract_status": "ready",
+                "local_checkout": {"status": "available"},
+                "metric_bindings": [
+                    {
+                        "metric_id": "sib",
+                        "binding_role": "draft_extended_reference",
+                        "legacy_metric_ids": ["sib_proxy"],
+                    }
+                ],
+            },
+            {
+                "consumer_id": "metrics_sib_full_partial",
+                "title": "Metrics / SIB Full Partial",
+                "profile": "sibling_metric_consumer",
+                "reference_state": "draft_reference",
+                "contract_status": "partial",
+                "local_checkout": {"status": "available"},
+                "metric_bindings": [
+                    {
+                        "metric_id": "sib",
+                        "binding_role": "draft_extended_reference",
+                    }
+                ],
+            },
+        ],
+    }
+    metric_signal_index = {
+        "generated_at": "2026-04-24T12:01:00Z",
+        "metrics": [
+            {
+                "metric_id": "sib",
+                "status": "healthy",
+                "score": 0.9,
+                "minimum_score": 0.6,
+                "threshold_authority_state": "canonical_threshold_authority",
+            },
+            {
+                "metric_id": "sib_proxy",
+                "status": "healthy",
+                "alias_of": "sib",
+                "threshold_authority_state": "alias_only",
+            },
+        ],
+    }
+
+    report = supervisor_module.build_metrics_source_promotion_index(
+        consumer_index,
+        metric_signal_index,
+    )
+
+    assert report["artifact_kind"] == supervisor_module.METRICS_SOURCE_PROMOTION_INDEX_ARTIFACT_KIND
+    assert report["stable_family_anchor_consumer_ids"] == ["metrics_sib"]
+    assert report["viewer_projection"]["promotion_status"]["ready_for_promotion_review"] == [
+        "metrics_sib_full"
+    ]
+    assert report["viewer_projection"]["promotion_status"]["blocked_by_contract_gap"] == [
+        "metrics_sib_full_partial"
+    ]
+    ready = next(entry for entry in report["entries"] if entry["consumer_id"] == "metrics_sib_full")
+    assert ready["review_state"] == "ready_for_review"
+    assert ready["authority_state"] == "promotion_candidate"
+    assert ready["guardrails"]["requires_human_review"] is True
+    assert ready["guardrails"]["auto_threshold_authority"] is False
+    assert ready["guardrails"]["threshold_authority_grant"] is False
+    assert ready["next_gap"] == "review_metrics_source_promotion"
+
+
+def test_build_metrics_source_promotion_index_blocks_without_stable_sib_anchor(
+    supervisor_module: object,
+) -> None:
+    consumer_index = {
+        "generated_at": "2026-04-24T12:00:00Z",
+        "entries": [
+            {
+                "consumer_id": "metrics_sib_full",
+                "title": "Metrics / SIB Full",
+                "profile": "sibling_metric_consumer",
+                "reference_state": "draft_reference",
+                "contract_status": "ready",
+                "local_checkout": {"status": "available"},
+                "metric_bindings": [
+                    {
+                        "metric_id": "sib",
+                        "binding_role": "draft_extended_reference",
+                    }
+                ],
+            }
+        ],
+    }
+    metric_signal_index = {
+        "generated_at": "2026-04-24T12:01:00Z",
+        "metrics": [{"metric_id": "sib", "status": "healthy"}],
+    }
+
+    report = supervisor_module.build_metrics_source_promotion_index(
+        consumer_index,
+        metric_signal_index,
+    )
+
+    entry = report["entries"][0]
+    assert entry["promotion_status"] == "blocked_by_stable_family_gap"
+    assert entry["review_state"] == "not_ready"
+    assert entry["authority_state"] == "not_threshold_authority"
+    assert entry["next_gap"] == "establish_stable_sib_family_anchor"
+
+
+def test_main_builds_metrics_source_promotion_index_as_standalone_command(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_external_consumer_index",
+        lambda: {"generated_at": "2026-04-24T12:00:00Z", "entries": []},
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_metric_signal_index",
+        lambda specs: {
+            "artifact_kind": supervisor_module.METRIC_SIGNAL_INDEX_ARTIFACT_KIND,
+            "schema_version": supervisor_module.METRIC_SIGNAL_INDEX_SCHEMA_VERSION,
+            "generated_at": "2026-04-24T12:01:00Z",
+            "metrics": [],
+            "active_signals": [],
+            "viewer_projection": {"metric_status": {}, "active_signals": [], "named_filters": {}},
+        },
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_metrics_source_promotion_index",
+        lambda consumer_index, metric_signal_index: {
+            "artifact_kind": supervisor_module.METRICS_SOURCE_PROMOTION_INDEX_ARTIFACT_KIND,
+            "schema_version": supervisor_module.METRICS_SOURCE_PROMOTION_INDEX_SCHEMA_VERSION,
+            "generated_at": "2026-04-24T12:02:00Z",
+            "entry_count": 0,
+            "entries": [],
+            "viewer_projection": {
+                "promotion_status": {},
+                "review_state": {},
+                "authority_state": {},
+                "metric_id": {},
+                "named_filters": {},
+            },
+            "promotion_backlog": {"entry_count": 0, "items": [], "grouped_by_next_gap": {}},
+        },
+    )
+
+    exit_code = supervisor_module.main(build_metrics_source_promotion_index_mode=True)
+
+    assert exit_code == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["artifact_kind"] == supervisor_module.METRICS_SOURCE_PROMOTION_INDEX_ARTIFACT_KIND
+    consumer_index_artifact = json.loads(
+        (repo_fixture / "runs" / "external_consumer_index.json").read_text(encoding="utf-8")
+    )
+    assert consumer_index_artifact["generated_at"] == "2026-04-24T12:00:00Z"
+    promotion_artifact = json.loads(
+        (repo_fixture / "runs" / "metrics_source_promotion_index.json").read_text(encoding="utf-8")
+    )
+    assert promotion_artifact["generated_at"] == "2026-04-24T12:02:00Z"
 
 
 def test_main_builds_metric_signal_index_as_standalone_command(
@@ -11630,12 +11828,24 @@ def test_build_metric_threshold_proposals_emits_reviewable_followups(
                     "input_summary": {"relevant_spec_count": 3},
                 },
                 {
-                    "metric_id": "sib_proxy",
-                    "title": "SIB Proxy",
+                    "metric_id": "sib",
+                    "title": "Sibling Implementation Balance",
                     "score": 0.52,
                     "minimum_score": 0.6,
                     "status": "below_threshold",
-                    "trigger_signal": "low_sib_proxy",
+                    "trigger_signal": "low_sib",
+                    "threshold_authority_state": "canonical_threshold_authority",
+                    "input_summary": {"component_scores": {}},
+                },
+                {
+                    "metric_id": "sib_proxy",
+                    "title": "SIB Proxy (legacy alias)",
+                    "score": 0.52,
+                    "minimum_score": 0.6,
+                    "status": "below_threshold",
+                    "trigger_signal": "",
+                    "threshold_authority_state": "alias_only",
+                    "alias_of": "sib",
                     "input_summary": {"component_scores": {}},
                 },
                 {
@@ -11656,7 +11866,8 @@ def test_build_metric_threshold_proposals_emits_reviewable_followups(
     by_id = {entry["metric_id"]: entry for entry in report["entries"]}
     assert by_id["specification_verifiability"]["proposal_kind"] == "metric_remediation_proposal"
     assert by_id["specification_verifiability"]["policy_mutation_state"] == "proposal_only"
-    assert by_id["sib_proxy"]["proposal_kind"] == "metric_threshold_review_proposal"
+    assert by_id["sib"]["proposal_kind"] == "metric_threshold_review_proposal"
+    assert "sib_proxy" not in by_id
     assert report["viewer_projection"]["named_filters"]["remediation_proposals"] == [
         "metric-specification_verifiability-followup"
     ]
@@ -12533,7 +12744,7 @@ def test_build_graph_dashboard_aggregates_runtime_surfaces(
                     "ready_for_delivery_review": ["metrics_sib"],
                     "threshold_driven": ["metrics_sib"],
                 },
-                "metric_ids": {"sib_proxy": ["metrics_sib"]},
+                "metric_ids": {"sib": ["metrics_sib"], "sib_proxy": ["metrics_sib"]},
             },
             "delivery_backlog": {"entry_count": 1},
         },
@@ -12551,9 +12762,28 @@ def test_build_graph_dashboard_aggregates_runtime_surfaces(
                     "review_activity_observed": ["metrics_sib"],
                     "tracked_handoff_present": ["metrics_sib"],
                 },
-                "metric_ids": {"sib_proxy": ["metrics_sib"]},
+                "metric_ids": {"sib": ["metrics_sib"], "sib_proxy": ["metrics_sib"]},
             },
             "feedback_backlog": {"entry_count": 1},
+        },
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_metrics_source_promotion_index",
+        lambda consumer_index, metric_signal_index: {
+            "generated_at": "2026-04-19T00:00:10Z",
+            "entry_count": 1,
+            "viewer_projection": {
+                "promotion_status": {"ready_for_promotion_review": ["metrics_sib_full"]},
+                "review_state": {"ready_for_review": ["metrics_sib_full"]},
+                "authority_state": {"promotion_candidate": ["metrics_sib_full"]},
+                "metric_id": {"sib": ["metrics_sib_full"]},
+                "named_filters": {
+                    "ready_for_promotion_review": ["metrics_sib_full"],
+                    "threshold_authority_blocked": ["metrics_sib_full"],
+                },
+            },
+            "promotion_backlog": {"entry_count": 1},
         },
     )
     monkeypatch.setattr(
@@ -12606,6 +12836,9 @@ def test_build_graph_dashboard_aggregates_runtime_surfaces(
     assert report["sections"]["external_consumers"]["metrics_feedback_status_counts"] == {
         "review_activity_observed": 1
     }
+    assert report["sections"]["external_consumers"]["metrics_source_promotion_status_counts"] == {
+        "ready_for_promotion_review": 1
+    }
     assert report["sections"]["metrics"]["below_threshold_metric_ids"] == ["process_observability"]
     by_card_id = {entry["card_id"]: entry for entry in report["headline_cards"]}
     assert by_card_id["metrics_below_threshold"]["value"] == 1
@@ -12616,6 +12849,7 @@ def test_build_graph_dashboard_aggregates_runtime_surfaces(
     assert by_card_id["specpm_adoption_visible"]["value"] == 1
     assert by_card_id["metrics_delivery_ready"]["value"] == 1
     assert by_card_id["metrics_feedback_visible"]["value"] == 1
+    assert by_card_id["metrics_source_promotion_ready"]["value"] == 1
     assert report["viewer_projection"]["named_filters"]["retrospective_refactor_candidates"] == 1
 
 

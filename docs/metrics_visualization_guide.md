@@ -158,6 +158,7 @@ python3 tools/supervisor.py --build-external-consumer-handoffs
 python3 tools/supervisor.py --build-specpm-feedback-index
 python3 tools/supervisor.py --build-metrics-delivery-workflow
 python3 tools/supervisor.py --build-metrics-feedback-index
+python3 tools/supervisor.py --build-metrics-source-promotion-index
 ```
 
 Read:
@@ -168,6 +169,7 @@ Read:
 - `runs/specpm_feedback_index.json`
 - `runs/metrics_delivery_workflow.json`
 - `runs/metrics_feedback_index.json`
+- `runs/metrics_source_promotion_index.json`
 
 Use these for:
 
@@ -207,6 +209,7 @@ Good examples of stable card ids:
 - `specpm_adoption_visible`
 - `metrics_delivery_ready`
 - `metrics_feedback_visible`
+- `metrics_source_promotion_ready`
 - `metrics_below_threshold`
 
 ### `metric_signal_index.json`
@@ -221,10 +224,13 @@ Recommended mappings:
 
 Notes:
 
-- `sib_proxy` may report `derivation_mode = "bridge_backed"` or
+- `sib` may report `derivation_mode = "bridge_backed"` or
   `derivation_mode = "bootstrap_fallback"`
 - if `derivation_mode = "bridge_backed"`, the metric is using the declared
   `Metrics/SIB` bridge instead of pure internal surrogate inputs
+- `sib_proxy` remains as an alias-only compatibility entry with
+  `alias_of = "sib"` and `threshold_authority_state = "alias_only"`; avoid
+  counting it as a second threshold-authoritative metric
 
 ### `graph_health_overlay.json`
 
@@ -418,5 +424,5 @@ python3 tools/supervisor.py --build-graph-dashboard
   `artifact_kind` and `schema_version` checks in the visualizer.
 - `external_consumer_*` artifacts are not spec nodes and should not be rendered
   as canonical graph vertices unless you intentionally want a multi-layer graph.
-- `sib_proxy` is still the compatibility name of the sibling-consumer metric.
-  Its basis is now bridge-aware, but the identifier has not yet been renamed.
+- `sib` is the bridge-native sibling-consumer metric family. `sib_proxy` is now
+  only a migration alias for older dashboards and visualizers.

@@ -1,0 +1,72 @@
+{
+  "artifact_kind": "metrics_source_promotion_policy",
+  "schema_version": 1,
+  "repository_layout": {
+    "artifact": "runs/metrics_source_promotion_index.json"
+  },
+  "promotion_contract": {
+    "artifact_kind": "metrics_source_promotion_index",
+    "schema_version": 1,
+    "promotion_statuses": [
+      "ready_for_promotion_review",
+      "draft_visible_only",
+      "blocked_by_contract_gap",
+      "blocked_by_stable_family_gap",
+      "invalid_promotion_contract"
+    ],
+    "review_states": [
+      "ready_for_review",
+      "draft_visible",
+      "not_ready"
+    ],
+    "authority_states": [
+      "not_threshold_authority",
+      "promotion_candidate",
+      "operational_source_after_review"
+    ],
+    "named_filters": [
+      "ready_for_promotion_review",
+      "draft_visible_only",
+      "blocked_by_contract_gap",
+      "blocked_by_stable_family_gap",
+      "invalid_promotion_contract",
+      "threshold_authority_blocked",
+      "sib_family_candidate"
+    ]
+  },
+  "eligibility_rules": {
+    "required_profile": "sibling_metric_consumer",
+    "source_reference_state": "draft_reference",
+    "stable_reference_state": "stable_reference",
+    "canonical_metric_id": "sib",
+    "legacy_metric_ids": [
+      "sib_proxy"
+    ],
+    "stable_binding_roles": [
+      "stable_bridge_reference"
+    ],
+    "draft_binding_roles": [
+      "draft_extended_reference"
+    ],
+    "ready_contract_statuses": [
+      "ready"
+    ],
+    "blocking_contract_statuses": [
+      "partial",
+      "unavailable"
+    ]
+  },
+  "promotion_guardrails": {
+    "requires_human_review": true,
+    "auto_threshold_authority": false,
+    "requires_stable_family_anchor": true,
+    "target_transition": "draft_reference_to_operational_metric_source"
+  },
+  "next_gap_defaults": {
+    "ready_for_promotion_review": "review_metrics_source_promotion",
+    "draft_visible_only": "review_draft_metric_source",
+    "blocked_by_contract_gap": "align_draft_metric_contract",
+    "blocked_by_stable_family_gap": "establish_stable_sib_family_anchor",
+    "invalid_promotion_contract": "repair_metrics_source_promotion_contract"
+  }
+}

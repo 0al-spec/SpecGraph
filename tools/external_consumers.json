@@ -37,8 +37,11 @@
       "local_checkout_hint": "/Users/egor/Development/GitHub/0AL/Metrics",
       "metric_bindings": [
         {
-          "metric_id": "sib_proxy",
-          "binding_role": "stable_bridge_reference"
+          "metric_id": "sib",
+          "binding_role": "stable_bridge_reference",
+          "legacy_metric_ids": [
+            "sib_proxy"
+          ]
         }
       ],
       "declared_artifacts": [
@@ -70,7 +73,7 @@
           "markers": []
         }
       ],
-      "notes": "Stable sibling consumer contract used for the first bridge-backed replacement of bootstrap sib_proxy semantics."
+      "notes": "Stable sibling consumer contract used for the bridge-native SIB metric family while preserving sib_proxy as a compatibility alias."
     },
     {
       "consumer_id": "metrics_sib_full",
@@ -81,8 +84,11 @@
       "local_checkout_hint": "/Users/egor/Development/GitHub/0AL/Metrics",
       "metric_bindings": [
         {
-          "metric_id": "sib_proxy",
-          "binding_role": "draft_extended_reference"
+          "metric_id": "sib",
+          "binding_role": "draft_extended_reference",
+          "legacy_metric_ids": [
+            "sib_proxy"
+          ]
         }
       ],
       "declared_artifacts": [
@@ -114,7 +120,7 @@
           "markers": []
         }
       ],
-      "notes": "Draft extended reference. Visible to the bridge index, but not threshold-driving authority for sib_proxy yet."
+      "notes": "Draft extended reference. Visible to the bridge index and promotion path, but not threshold-driving authority for the SIB metric family yet."
     },
     {
       "consumer_id": "specpm",
