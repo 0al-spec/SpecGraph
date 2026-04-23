@@ -132,11 +132,15 @@ Supervisor modes:
   `runs/metrics_feedback_index.json` from the current Metrics delivery
   workflow plus downstream checkout observations so review/adoption signals
   feed back into derived surfaces without becoming canonical truth.
+- `--build-metrics-source-promotion-index`: build
+  `runs/metrics_source_promotion_index.json` so draft Metrics/SIB_FULL sources
+  can become reviewable promotion candidates without receiving threshold
+  authority automatically.
 - `--build-metric-signal-index`: build `runs/metric_signal_index.json` from
   trace, evidence, graph-health, and proposal-runtime surfaces so metric-driven
-  advisory signals remain derived rather than canonical facts. `sib_proxy` now
-  reports `bridge_backed` vs `bootstrap_fallback` derivation depending on
-  whether a stable external consumer bridge is locally available.
+  advisory signals remain derived rather than canonical facts. `sib` is the
+  bridge-native SIB metric family; `sib_proxy` remains an alias-only
+  compatibility entry for existing viewers.
 - `--build-metric-threshold-proposals`: build
   `runs/metric_threshold_proposals.json` from metric-threshold breaches so the
   next step is a reviewable proposal artifact, not a direct policy mutation.
@@ -273,10 +277,13 @@ Key derived artifacts:
   surface, grouped by observed review/adoption status, checkout signals, metric
   binding, and next-gap backlog without auto-accepting downstream state as
   canonical
+- `runs/metrics_source_promotion_index.json`: reviewable `Metrics/SIB_FULL`
+  promotion surface, grouped by promotion status, review state, authority
+  guardrail, metric binding, and next-gap backlog
 - `runs/metric_signal_index.json`: derived metric surface for
   `Specification Verifiability`, `Process Observability`,
-  `Structural Observability`, and a bridge-aware `SIB` proxy, plus
-  threshold-based advisory signals
+  `Structural Observability`, bridge-native `SIB`, and the alias-only
+  `sib_proxy` compatibility projection, plus threshold-based advisory signals
 - `runs/metric_threshold_proposals.json`: reviewable proposal artifact emitted
   from metric-threshold breaches, grouped by proposal kind, severity, and
   target metric
@@ -313,6 +320,9 @@ Key derived artifacts:
 - `tools/metrics_feedback_policy.json`: declarative contract for downstream
   `Metrics` feedback observation, including status vocabulary, branch/adoption
   heuristics, metric binding, and review-safe next-gap defaults
+- `tools/metrics_source_promotion_policy.json`: declarative contract for
+  reviewable promotion of draft sibling metric sources such as `Metrics/SIB_FULL`
+  without automatic threshold authority
 - `tools/metric_signal_policy.json`: declarative thresholds, score mappings,
   metric identities, and proposal-first threshold semantics for the derived
   metric signal layer

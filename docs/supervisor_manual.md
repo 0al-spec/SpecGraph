@@ -512,14 +512,19 @@ Current bootstrap metric families are:
 - `specification_verifiability`
 - `process_observability`
 - `structural_observability`
-- `sib_proxy`
+- `sib`
 
-`sib_proxy` is now bridge-aware:
+`sib` is the bridge-native SIB metric family:
 
 - `bridge_backed` when a stable external consumer such as `Metrics/SIB` is
   locally available through the declared bridge registry
 - `bootstrap_fallback` when no stable bridge is locally available and the
   metric must fall back to internal SpecGraph-derived surfaces only
+
+`sib_proxy` remains present as a compatibility alias entry in
+`metric_signal_index.json`, with `alias_of = "sib"` and
+`threshold_authority_state = "alias_only"`. Viewers may keep reading it during
+migration, but threshold proposals are emitted only for `sib`.
 
 Each metric entry records:
 
@@ -547,7 +552,7 @@ The index reports:
 - local checkout availability
 - declared artifact verification status
 - contract readiness
-- metric bindings such as the stable `Metrics/SIB` bridge for `sib_proxy`
+- metric bindings such as the stable `Metrics/SIB` bridge for `sib`
 
 This layer is still derived-only. It does not import external repositories into
 canonical truth and does not require Git submodules.
@@ -903,6 +908,37 @@ It emits:
 Use it when you want to see whether a Metrics handoff has moved beyond local
 SpecGraph artifacts into downstream review or local adoption, without making
 that downstream state canonical automatically.
+
+### Metrics source promotion index
+
+```bash
+python3 tools/supervisor.py --build-metrics-source-promotion-index
+```
+
+Builds `runs/metrics_source_promotion_index.json` from:
+
+- a freshly rebuilt `runs/external_consumer_index.json`
+- a freshly rebuilt `runs/metric_signal_index.json`
+
+This layer defines the review path for `Metrics/SIB_FULL` and later sibling
+metric sources. A draft source can become `ready_for_promotion_review`, but it
+does not receive threshold authority automatically.
+
+It emits:
+
+- one promotion entry per draft sibling metric consumer candidate
+- `promotion_status` such as `ready_for_promotion_review`,
+  `draft_visible_only`, `blocked_by_contract_gap`,
+  `blocked_by_stable_family_gap`, or `invalid_promotion_contract`
+- `authority_state`, where draft sources stay `not_threshold_authority` until
+  review makes them operational
+- explicit guardrails: `requires_human_review = true`,
+  `auto_threshold_authority = false`, and `threshold_authority_grant = false`
+  for review candidates
+
+Use it when you want to review whether `Metrics/SIB_FULL` is ready to graduate
+from draft reference to operational input without silently changing metric
+threshold authority.
 
 ### Metric-threshold proposals
 
@@ -1299,6 +1335,10 @@ path.
   - derived downstream feedback surface for Metrics/SIB, including observed
     review activity, local adoption visibility, metric binding, and next-gap
     backlog without automatic canonical acceptance
+- `runs/metrics_source_promotion_index.json`
+  - reviewable promotion surface for draft sibling metric sources such as
+    `Metrics/SIB_FULL`, including authority guardrails and promotion backlog
+    without automatic threshold authority
 - `runs/supervisor_performance_index.json`
   - derived measurement surface for runtime cleanliness, run yield, graph
     impact, and same-spec repeat hotspots over time

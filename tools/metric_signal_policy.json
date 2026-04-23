@@ -12,6 +12,7 @@
       "specification_verifiability",
       "process_observability",
       "structural_observability",
+      "sib",
       "sib_proxy"
     ],
     "metric_statuses": [
@@ -25,7 +26,9 @@
       "specification_attention",
       "process_attention",
       "structural_attention",
-      "sib_attention"
+      "sib_attention",
+      "sib_family_attention",
+      "legacy_alias_metrics"
     ]
   },
   "status_scoring": {
@@ -68,17 +71,43 @@
       "minimum_score": 0.7,
       "trigger_signal": "low_structural_observability"
     },
+    "sib": {
+      "minimum_score": 0.6,
+      "trigger_signal": "low_sib"
+    },
     "sib_proxy": {
       "minimum_score": 0.6,
       "trigger_signal": "low_sib_proxy"
     }
   },
   "metric_composition": {
+    "sib_weights": {
+      "specification_verifiability": 0.4,
+      "process_observability": 0.25,
+      "structural_observability": 0.2,
+      "external_consumer_alignment": 0.15
+    },
     "sib_proxy_weights": {
       "specification_verifiability": 0.4,
       "process_observability": 0.25,
       "structural_observability": 0.2,
       "external_consumer_alignment": 0.15
+    }
+  },
+  "metric_family": {
+    "sib": {
+      "canonical_metric_id": "sib",
+      "title": "Sibling Implementation Balance",
+      "legacy_metric_ids": [
+        "sib_proxy"
+      ],
+      "threshold_authority": "canonical_only",
+      "stable_binding_roles": [
+        "stable_bridge_reference"
+      ],
+      "draft_binding_roles": [
+        "draft_extended_reference"
+      ]
     }
   },
   "proposal_contract": {
@@ -136,7 +165,7 @@
         "runs/graph_health_trends.json"
       ]
     },
-    "low_sib_proxy": {
+    "low_sib": {
       "proposal_kind": "metric_threshold_review_proposal",
       "recommended_actions": [
         "review_metric_inputs",
@@ -146,6 +175,17 @@
       "target_surfaces": [
         "tools/metric_signal_policy.json",
         "tools/external_consumers.json"
+      ]
+    },
+    "low_sib_proxy": {
+      "proposal_kind": "metric_threshold_review_proposal",
+      "recommended_actions": [
+        "review_legacy_metric_alias",
+        "migrate_viewer_to_sib_metric_id"
+      ],
+      "target_surfaces": [
+        "tools/metric_signal_policy.json",
+        "docs/metrics_visualization_guide.md"
       ]
     }
   }

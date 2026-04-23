@@ -46,6 +46,7 @@ Derived artifacts:
 - SpecPM feedback index: `runs/specpm_feedback_index.json`
 - Metrics delivery workflow: `runs/metrics_delivery_workflow.json`
 - Metrics feedback index: `runs/metrics_feedback_index.json`
+- Metrics source promotion index: `runs/metrics_source_promotion_index.json`
 - bootstrap smoke benchmark: `runs/bootstrap_smoke_benchmark.json`
 - spec trace index: `runs/spec_trace_index.json`
 - spec trace projection: `runs/spec_trace_projection.json`
@@ -118,6 +119,7 @@ SPECPM_DELIVERY_POLICY_RELATIVE_PATH = "tools/specpm_delivery_policy.json"
 SPECPM_FEEDBACK_POLICY_RELATIVE_PATH = "tools/specpm_feedback_policy.json"
 METRICS_DELIVERY_POLICY_RELATIVE_PATH = "tools/metrics_delivery_policy.json"
 METRICS_FEEDBACK_POLICY_RELATIVE_PATH = "tools/metrics_feedback_policy.json"
+METRICS_SOURCE_PROMOTION_POLICY_RELATIVE_PATH = "tools/metrics_source_promotion_policy.json"
 SPECPM_EXPORT_REGISTRY_RELATIVE_PATH = "tools/specpm_export_registry.json"
 
 
@@ -175,6 +177,10 @@ def evidence_plane_policy_path() -> Path:
 
 def metric_signal_policy_path() -> Path:
     return TOOLS_DIR / "metric_signal_policy.json"
+
+
+def metrics_source_promotion_policy_path() -> Path:
+    return TOOLS_DIR / "metrics_source_promotion_policy.json"
 
 
 def supervisor_performance_policy_path() -> Path:
@@ -677,6 +683,7 @@ def load_metric_signal_policy() -> tuple[dict[str, Any], str]:
         "status_scoring",
         "metric_thresholds",
         "metric_composition",
+        "metric_family",
         "proposal_contract",
         "proposal_mapping",
     )
@@ -690,6 +697,46 @@ def load_metric_signal_policy() -> tuple[dict[str, Any], str]:
 
 
 METRIC_SIGNAL_POLICY, METRIC_SIGNAL_POLICY_SHA256 = load_metric_signal_policy()
+
+
+def load_metrics_source_promotion_policy() -> tuple[dict[str, Any], str]:
+    path = metrics_source_promotion_policy_path()
+    try:
+        raw_text = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise RuntimeError(
+            f"failed to read Metrics source promotion policy artifact: {path.as_posix()} ({exc})"
+        ) from exc
+    try:
+        payload = json.loads(raw_text)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(
+            f"malformed Metrics source promotion policy artifact: {path.as_posix()} ({exc})"
+        ) from exc
+    if not isinstance(payload, dict):
+        raise RuntimeError(
+            "malformed Metrics source promotion policy artifact: "
+            f"{path.as_posix()} must contain a JSON object"
+        )
+    required_sections = (
+        "repository_layout",
+        "promotion_contract",
+        "eligibility_rules",
+        "promotion_guardrails",
+        "next_gap_defaults",
+    )
+    missing = [section for section in required_sections if section not in payload]
+    if missing:
+        raise RuntimeError(
+            "malformed Metrics source promotion policy artifact: missing top-level section(s): "
+            + ", ".join(missing)
+        )
+    return payload, hashlib.sha256(raw_text.encode("utf-8")).hexdigest()
+
+
+METRICS_SOURCE_PROMOTION_POLICY, METRICS_SOURCE_PROMOTION_POLICY_SHA256 = (
+    load_metrics_source_promotion_policy()
+)
 
 
 def load_supervisor_performance_policy() -> tuple[dict[str, Any], str]:
@@ -1378,6 +1425,15 @@ def metric_signal_policy_lookup(policy_path: str) -> Any:
     return copy.deepcopy(current)
 
 
+def metrics_source_promotion_policy_lookup(policy_path: str) -> Any:
+    current: Any = METRICS_SOURCE_PROMOTION_POLICY
+    for part in policy_path.split("."):
+        if not isinstance(current, dict) or part not in current:
+            raise KeyError(policy_path)
+        current = current[part]
+    return copy.deepcopy(current)
+
+
 def supervisor_performance_policy_lookup(policy_path: str) -> Any:
     current: Any = SUPERVISOR_PERFORMANCE_POLICY
     for part in policy_path.split("."):
@@ -1534,6 +1590,14 @@ def metric_signal_policy_reference() -> dict[str, Any]:
         "artifact_path": METRIC_SIGNAL_POLICY_RELATIVE_PATH,
         "artifact_sha256": METRIC_SIGNAL_POLICY_SHA256,
         "version": METRIC_SIGNAL_POLICY.get("version"),
+    }
+
+
+def metrics_source_promotion_policy_reference() -> dict[str, Any]:
+    return {
+        "artifact_path": METRICS_SOURCE_PROMOTION_POLICY_RELATIVE_PATH,
+        "artifact_sha256": METRICS_SOURCE_PROMOTION_POLICY_SHA256,
+        "version": METRICS_SOURCE_PROMOTION_POLICY.get("version"),
     }
 
 
@@ -2025,6 +2089,35 @@ METRIC_THRESHOLD_PROPOSAL_KINDS = list(
 )
 METRIC_THRESHOLD_PROPOSAL_NAMED_FILTERS = list(
     metric_signal_policy_lookup("proposal_contract.named_filters")
+)
+SIB_METRIC_FAMILY = copy.deepcopy(metric_signal_policy_lookup("metric_family.sib"))
+SIB_CANONICAL_METRIC_ID = str(SIB_METRIC_FAMILY.get("canonical_metric_id", "sib")).strip() or "sib"
+SIB_LEGACY_METRIC_IDS = [
+    str(item).strip()
+    for item in SIB_METRIC_FAMILY.get("legacy_metric_ids", [])
+    if str(item).strip()
+]
+SIB_METRIC_IDS = sorted({SIB_CANONICAL_METRIC_ID, *SIB_LEGACY_METRIC_IDS})
+METRICS_SOURCE_PROMOTION_INDEX_FILENAME = Path(
+    str(metrics_source_promotion_policy_lookup("repository_layout.artifact"))
+).name
+METRICS_SOURCE_PROMOTION_INDEX_ARTIFACT_KIND = str(
+    metrics_source_promotion_policy_lookup("promotion_contract.artifact_kind")
+)
+METRICS_SOURCE_PROMOTION_INDEX_SCHEMA_VERSION = int(
+    metrics_source_promotion_policy_lookup("promotion_contract.schema_version")
+)
+METRICS_SOURCE_PROMOTION_STATUSES = list(
+    metrics_source_promotion_policy_lookup("promotion_contract.promotion_statuses")
+)
+METRICS_SOURCE_PROMOTION_REVIEW_STATES = list(
+    metrics_source_promotion_policy_lookup("promotion_contract.review_states")
+)
+METRICS_SOURCE_PROMOTION_AUTHORITY_STATES = list(
+    metrics_source_promotion_policy_lookup("promotion_contract.authority_states")
+)
+METRICS_SOURCE_PROMOTION_NAMED_FILTERS = list(
+    metrics_source_promotion_policy_lookup("promotion_contract.named_filters")
 )
 SUPERVISOR_PERFORMANCE_INDEX_FILENAME = Path(
     str(supervisor_performance_policy_lookup("repository_layout.index_artifact"))
@@ -11544,6 +11637,10 @@ def metric_threshold_proposals_path() -> Path:
     return RUNS_DIR / METRIC_THRESHOLD_PROPOSALS_FILENAME
 
 
+def metrics_source_promotion_index_path() -> Path:
+    return RUNS_DIR / METRICS_SOURCE_PROMOTION_INDEX_FILENAME
+
+
 def supervisor_performance_index_path() -> Path:
     return RUNS_DIR / SUPERVISOR_PERFORMANCE_INDEX_FILENAME
 
@@ -12978,6 +13075,11 @@ def build_external_consumer_index() -> dict[str, Any]:
             {
                 "metric_id": str(item.get("metric_id", "")).strip(),
                 "binding_role": str(item.get("binding_role", "")).strip(),
+                "legacy_metric_ids": [
+                    str(alias).strip()
+                    for alias in item.get("legacy_metric_ids", [])
+                    if str(alias).strip()
+                ],
             }
             for item in consumer.get("metric_bindings", [])
             if isinstance(item, dict) and str(item.get("metric_id", "")).strip()
@@ -13022,6 +13124,10 @@ def build_external_consumer_index() -> dict[str, Any]:
             metric_id = str(binding.get("metric_id", "")).strip()
             if metric_id:
                 metric_groups.setdefault(metric_id, []).append(consumer_id)
+            for legacy_metric_id in binding.get("legacy_metric_ids", []):
+                legacy_metric_id = str(legacy_metric_id).strip()
+                if legacy_metric_id:
+                    metric_groups.setdefault(legacy_metric_id, []).append(consumer_id)
 
     for bucket in (reference_state_groups, contract_status_groups, metric_groups, named_filters):
         for key in list(bucket):
@@ -13159,6 +13265,11 @@ def build_external_consumer_overlay(
             bound_metrics.append(
                 {
                     "metric_id": metric_id,
+                    "legacy_metric_ids": [
+                        str(alias).strip()
+                        for alias in binding.get("legacy_metric_ids", [])
+                        if str(alias).strip()
+                    ],
                     "binding_role": str(binding.get("binding_role", "")).strip(),
                     "status": metric_status,
                     "score": metric_entry.get("score"),
@@ -13355,6 +13466,20 @@ def build_external_consumer_handoff_packets(
         if not metric_id:
             continue
         threshold_entries_by_metric.setdefault(metric_id, []).append(entry)
+    threshold_equivalent_metric_ids: dict[str, set[str]] = {}
+    for metric_id, metric_entry in metrics_by_id.items():
+        equivalent_ids = {metric_id}
+        if isinstance(metric_entry, dict):
+            alias_of = str(metric_entry.get("alias_of", "")).strip()
+            if alias_of:
+                equivalent_ids.add(alias_of)
+            equivalent_ids.update(
+                str(alias).strip()
+                for alias in metric_entry.get("legacy_metric_ids", [])
+                if str(alias).strip()
+            )
+        for equivalent_id in equivalent_ids:
+            threshold_equivalent_metric_ids.setdefault(equivalent_id, set()).update(equivalent_ids)
 
     entries: list[dict[str, Any]] = []
     handoff_status_groups: dict[str, list[str]] = {}
@@ -13405,13 +13530,25 @@ def build_external_consumer_handoff_packets(
                 if isinstance(binding, dict) and str(binding.get("metric_id", "")).strip()
             }
         )
+        legacy_metric_ids = sorted(
+            {
+                str(alias).strip()
+                for binding in raw_entry.get("metric_bindings", [])
+                if isinstance(binding, dict)
+                for alias in binding.get("legacy_metric_ids", [])
+                if str(alias).strip()
+            }
+        )
         bound_metrics = [
             copy.deepcopy(metrics_by_id[metric_id])
             for metric_id in metric_ids
             if metric_id in metrics_by_id
         ]
         threshold_proposals = []
-        for metric_id in metric_ids:
+        threshold_metric_ids = set(metric_ids) | set(legacy_metric_ids)
+        for metric_id in list(threshold_metric_ids):
+            threshold_metric_ids.update(threshold_equivalent_metric_ids.get(metric_id, set()))
+        for metric_id in sorted(threshold_metric_ids):
             threshold_proposals.extend(
                 copy.deepcopy(item) for item in threshold_entries_by_metric.get(metric_id, [])
             )
@@ -13460,6 +13597,7 @@ def build_external_consumer_handoff_packets(
             "next_gap": next_gap,
             "policy_reference": external_consumer_handoff_policy_reference(),
             "bound_metric_ids": metric_ids,
+            "legacy_bound_metric_ids": legacy_metric_ids,
             "bound_metrics": bound_metrics,
             "threshold_proposal_ids": threshold_proposal_ids,
             "threshold_proposal_count": len(threshold_proposal_ids),
@@ -16847,6 +16985,36 @@ def metric_signal_mapping(signal_name: str) -> dict[str, Any]:
     return copy.deepcopy(metric_signal_policy_lookup(f"proposal_mapping.{signal_name}"))
 
 
+def metric_binding_matches(binding: dict[str, Any], metric_ids: set[str]) -> bool:
+    metric_id = str(binding.get("metric_id", "")).strip()
+    if metric_id in metric_ids:
+        return True
+    return any(
+        str(alias).strip() in metric_ids
+        for alias in binding.get("legacy_metric_ids", [])
+        if str(alias).strip()
+    )
+
+
+def entry_metric_bindings(
+    entry: dict[str, Any],
+    *,
+    metric_ids: set[str],
+    binding_roles: set[str] | None = None,
+) -> list[dict[str, Any]]:
+    matches: list[dict[str, Any]] = []
+    for binding in entry.get("metric_bindings", []):
+        if not isinstance(binding, dict):
+            continue
+        if not metric_binding_matches(binding, metric_ids):
+            continue
+        binding_role = str(binding.get("binding_role", "")).strip()
+        if binding_roles is not None and binding_role not in binding_roles:
+            continue
+        matches.append(binding)
+    return matches
+
+
 def build_metric_signal_index(specs: list[SpecNode]) -> dict[str, Any]:
     trace_index = build_spec_trace_index(specs)
     trace_projection = build_spec_trace_projection(trace_index)
@@ -16869,7 +17037,7 @@ def build_metric_signal_index(specs: list[SpecNode]) -> dict[str, Any]:
     external_consumer_score_map = copy.deepcopy(
         metric_signal_policy_lookup("status_scoring.external_consumer_contract")
     )
-    sib_weights = copy.deepcopy(metric_signal_policy_lookup("metric_composition.sib_proxy_weights"))
+    sib_weights = copy.deepcopy(metric_signal_policy_lookup("metric_composition.sib_weights"))
 
     metrics_by_id: dict[str, dict[str, Any]] = {}
 
@@ -17084,14 +17252,26 @@ def build_metric_signal_index(specs: list[SpecNode]) -> dict[str, Any]:
         },
     }
 
+    sib_metric_ids = set(SIB_METRIC_IDS)
+    stable_binding_roles = {
+        str(item).strip()
+        for item in SIB_METRIC_FAMILY.get("stable_binding_roles", [])
+        if str(item).strip()
+    }
+    draft_binding_roles = {
+        str(item).strip()
+        for item in SIB_METRIC_FAMILY.get("draft_binding_roles", [])
+        if str(item).strip()
+    }
     stable_bridge_entries = [
         entry
         for entry in external_consumer_index.get("entries", [])
         if isinstance(entry, dict)
         and str(entry.get("reference_state", "")).strip() == "stable_reference"
-        and any(
-            isinstance(binding, dict) and str(binding.get("metric_id", "")).strip() == "sib_proxy"
-            for binding in entry.get("metric_bindings", [])
+        and entry_metric_bindings(
+            entry,
+            metric_ids=sib_metric_ids,
+            binding_roles=stable_binding_roles or None,
         )
     ]
     draft_bridge_entries = [
@@ -17099,9 +17279,10 @@ def build_metric_signal_index(specs: list[SpecNode]) -> dict[str, Any]:
         for entry in external_consumer_index.get("entries", [])
         if isinstance(entry, dict)
         and str(entry.get("reference_state", "")).strip() == "draft_reference"
-        and any(
-            isinstance(binding, dict) and str(binding.get("metric_id", "")).strip() == "sib_proxy"
-            for binding in entry.get("metric_bindings", [])
+        and entry_metric_bindings(
+            entry,
+            metric_ids=sib_metric_ids,
+            binding_roles=draft_binding_roles or None,
         )
     ]
     bridge_ready_entries = [
@@ -17129,20 +17310,25 @@ def build_metric_signal_index(specs: list[SpecNode]) -> dict[str, Any]:
     sib_derivation_mode = (
         "bridge_backed" if external_consumer_alignment is not None else "bootstrap_fallback"
     )
-    sib_proxy_score = weighted_metric_average(sib_component_scores, sib_weights)
-    sib_proxy_threshold = float(metric_threshold_definition("sib_proxy")["minimum_score"])
-    sib_proxy_status = metric_status_from_score(sib_proxy_score, sib_proxy_threshold)
-    sib_proxy_signal = str(metric_threshold_definition("sib_proxy")["trigger_signal"])
-    metrics_by_id["sib_proxy"] = {
-        "metric_id": "sib_proxy",
-        "title": "SIB Proxy",
-        "score": sib_proxy_score,
-        "minimum_score": sib_proxy_threshold,
-        "threshold_gap": metric_gap_from_threshold(sib_proxy_score, sib_proxy_threshold),
-        "status": sib_proxy_status,
-        "trigger_signal": sib_proxy_signal,
-        "signal_emitted": sib_proxy_status == "below_threshold",
+    sib_score = weighted_metric_average(sib_component_scores, sib_weights)
+    sib_threshold = float(metric_threshold_definition(SIB_CANONICAL_METRIC_ID)["minimum_score"])
+    sib_status = metric_status_from_score(sib_score, sib_threshold)
+    sib_signal = str(metric_threshold_definition(SIB_CANONICAL_METRIC_ID)["trigger_signal"])
+    sib_entry = {
+        "metric_id": SIB_CANONICAL_METRIC_ID,
+        "title": (
+            str(SIB_METRIC_FAMILY.get("title", "")).strip() or "Sibling Implementation Balance"
+        ),
+        "score": sib_score,
+        "minimum_score": sib_threshold,
+        "threshold_gap": metric_gap_from_threshold(sib_score, sib_threshold),
+        "status": sib_status,
+        "trigger_signal": sib_signal,
+        "signal_emitted": sib_status == "below_threshold",
         "derivation_mode": sib_derivation_mode,
+        "metric_family": "sib",
+        "legacy_metric_ids": copy.deepcopy(SIB_LEGACY_METRIC_IDS),
+        "threshold_authority_state": "canonical_threshold_authority",
         "basis": (
             "Bridge-backed bootstrap composite anchored by the stable external Metrics/SIB "
             "consumer when available."
@@ -17182,6 +17368,27 @@ def build_metric_signal_index(specs: list[SpecNode]) -> dict[str, Any]:
             ),
         },
     }
+    metrics_by_id[SIB_CANONICAL_METRIC_ID] = sib_entry
+    for legacy_metric_id in SIB_LEGACY_METRIC_IDS:
+        metrics_by_id[legacy_metric_id] = {
+            **copy.deepcopy(sib_entry),
+            "metric_id": legacy_metric_id,
+            "title": "SIB Proxy (legacy alias)",
+            "alias_of": SIB_CANONICAL_METRIC_ID,
+            "legacy_metric_ids": [],
+            "threshold_authority_state": "alias_only",
+            "signal_emitted": False,
+            "trigger_signal": "",
+            "legacy_trigger_signal": str(
+                metric_threshold_definition(legacy_metric_id).get("trigger_signal", "")
+            ),
+            "migration_state": "compatibility_alias",
+            "basis": (
+                f"Compatibility alias for `{SIB_CANONICAL_METRIC_ID}`. Viewers may keep "
+                "reading this entry during migration, but threshold proposals and authority "
+                "now belong to the bridge-native SIB metric family."
+            ),
+        }
 
     metrics = [copy.deepcopy(metrics_by_id[metric_id]) for metric_id in METRIC_SIGNAL_METRIC_IDS]
     status_groups: dict[str, list[str]] = {}
@@ -17190,6 +17397,7 @@ def build_metric_signal_index(specs: list[SpecNode]) -> dict[str, Any]:
     for entry in metrics:
         metric_id = str(entry["metric_id"])
         status = str(entry["status"])
+        is_alias_only = str(entry.get("threshold_authority_state", "")).strip() == "alias_only"
         status_groups.setdefault(status, []).append(metric_id)
         if entry["signal_emitted"]:
             signal_name = str(entry["trigger_signal"])
@@ -17202,10 +17410,14 @@ def build_metric_signal_index(specs: list[SpecNode]) -> dict[str, Any]:
                 named_filters["process_attention"].append(metric_id)
             elif metric_id == "structural_observability":
                 named_filters["structural_attention"].append(metric_id)
-            elif metric_id == "sib_proxy":
+            elif metric_id == SIB_CANONICAL_METRIC_ID:
                 named_filters["sib_attention"].append(metric_id)
-        elif status == "healthy":
+                if "sib_family_attention" in named_filters:
+                    named_filters["sib_family_attention"].append(metric_id)
+        elif status == "healthy" and not is_alias_only:
             named_filters["healthy_metrics"].append(metric_id)
+        if is_alias_only:
+            named_filters.setdefault("legacy_alias_metrics", []).append(metric_id)
 
     return {
         "artifact_kind": METRIC_SIGNAL_INDEX_ARTIFACT_KIND,
@@ -17285,6 +17497,8 @@ def build_metric_threshold_proposals(signal_index: dict[str, Any]) -> dict[str, 
 
     for metric in signal_index.get("metrics", []):
         if not isinstance(metric, dict):
+            continue
+        if str(metric.get("threshold_authority_state", "")).strip() == "alias_only":
             continue
         if str(metric.get("status", "")).strip() != "below_threshold":
             continue
@@ -17366,6 +17580,265 @@ def build_metric_threshold_proposals(signal_index: dict[str, Any]) -> dict[str, 
 def write_metric_threshold_proposals(report: dict[str, Any]) -> Path:
     RUNS_DIR.mkdir(parents=True, exist_ok=True)
     path = metric_threshold_proposals_path()
+    with artifact_lock(path):
+        atomic_write_json(path, report)
+    return path
+
+
+def derive_metrics_source_promotion_next_gap(promotion_status: str) -> str:
+    return (
+        str(metrics_source_promotion_policy_lookup(f"next_gap_defaults.{promotion_status}")).strip()
+        or "review_metrics_source_promotion"
+    )
+
+
+def build_metrics_source_promotion_index(
+    external_consumer_index: dict[str, Any],
+    metric_signal_index: dict[str, Any],
+) -> dict[str, Any]:
+    required_profile = str(
+        metrics_source_promotion_policy_lookup("eligibility_rules.required_profile")
+    ).strip()
+    source_reference_state = str(
+        metrics_source_promotion_policy_lookup("eligibility_rules.source_reference_state")
+    ).strip()
+    stable_reference_state = str(
+        metrics_source_promotion_policy_lookup("eligibility_rules.stable_reference_state")
+    ).strip()
+    canonical_metric_id = str(
+        metrics_source_promotion_policy_lookup("eligibility_rules.canonical_metric_id")
+    ).strip()
+    legacy_metric_ids = {
+        str(item).strip()
+        for item in metrics_source_promotion_policy_lookup("eligibility_rules.legacy_metric_ids")
+        if str(item).strip()
+    }
+    metric_ids = {canonical_metric_id, *legacy_metric_ids}
+    stable_binding_roles = {
+        str(item).strip()
+        for item in metrics_source_promotion_policy_lookup("eligibility_rules.stable_binding_roles")
+        if str(item).strip()
+    }
+    draft_binding_roles = {
+        str(item).strip()
+        for item in metrics_source_promotion_policy_lookup("eligibility_rules.draft_binding_roles")
+        if str(item).strip()
+    }
+    ready_contract_statuses = {
+        str(item).strip()
+        for item in metrics_source_promotion_policy_lookup(
+            "eligibility_rules.ready_contract_statuses"
+        )
+        if str(item).strip()
+    }
+    requires_human_review = bool(
+        metrics_source_promotion_policy_lookup("promotion_guardrails.requires_human_review")
+    )
+    auto_threshold_authority = bool(
+        metrics_source_promotion_policy_lookup("promotion_guardrails.auto_threshold_authority")
+    )
+
+    metrics_by_id = {
+        str(entry.get("metric_id", "")).strip(): entry
+        for entry in metric_signal_index.get("metrics", [])
+        if isinstance(entry, dict) and str(entry.get("metric_id", "")).strip()
+    }
+    stable_anchor_ids = sorted(
+        {
+            str(entry.get("consumer_id", "")).strip()
+            for entry in external_consumer_index.get("entries", [])
+            if isinstance(entry, dict)
+            and str(entry.get("profile", "")).strip() == required_profile
+            and str(entry.get("reference_state", "")).strip() == stable_reference_state
+            and str(entry.get("contract_status", "")).strip() in ready_contract_statuses
+            and str(entry.get("local_checkout", {}).get("status", "")).strip() == "available"
+            and entry.get("local_checkout", {}).get("remote_matches") is True
+            and entry_metric_bindings(
+                entry,
+                metric_ids=metric_ids,
+                binding_roles=stable_binding_roles or None,
+            )
+        }
+    )
+
+    entries: list[dict[str, Any]] = []
+    status_groups: dict[str, list[str]] = {}
+    review_state_groups: dict[str, list[str]] = {}
+    authority_groups: dict[str, list[str]] = {}
+    metric_groups: dict[str, list[str]] = {}
+    named_filters = {name: [] for name in METRICS_SOURCE_PROMOTION_NAMED_FILTERS}
+    backlog_items: list[dict[str, Any]] = []
+    grouped_backlog: dict[str, list[str]] = {}
+
+    for raw_entry in external_consumer_index.get("entries", []):
+        if not isinstance(raw_entry, dict):
+            continue
+        consumer_id = str(raw_entry.get("consumer_id", "")).strip()
+        if not consumer_id:
+            continue
+        if str(raw_entry.get("profile", "")).strip() != required_profile:
+            continue
+        if str(raw_entry.get("reference_state", "")).strip() != source_reference_state:
+            continue
+        draft_bindings = entry_metric_bindings(
+            raw_entry,
+            metric_ids=metric_ids,
+            binding_roles=draft_binding_roles or None,
+        )
+        if not draft_bindings:
+            continue
+
+        contract_status = str(raw_entry.get("contract_status", "")).strip()
+        checkout_status = str(raw_entry.get("local_checkout", {}).get("status", "")).strip()
+        candidate_metric_id = canonical_metric_id
+        promotion_status = "invalid_promotion_contract"
+        review_state = "not_ready"
+        authority_state = "not_threshold_authority"
+        threshold_authority_grant = False
+
+        if not canonical_metric_id or candidate_metric_id not in metrics_by_id:
+            promotion_status = "invalid_promotion_contract"
+        elif not stable_anchor_ids:
+            promotion_status = "blocked_by_stable_family_gap"
+        elif checkout_status != "available":
+            promotion_status = "draft_visible_only"
+            review_state = "draft_visible"
+        elif contract_status not in ready_contract_statuses:
+            promotion_status = "blocked_by_contract_gap"
+        else:
+            promotion_status = "ready_for_promotion_review"
+            review_state = "ready_for_review"
+            authority_state = "promotion_candidate"
+            threshold_authority_grant = bool(auto_threshold_authority)
+
+        next_gap = derive_metrics_source_promotion_next_gap(promotion_status)
+        key = consumer_id
+        entry = {
+            "promotion_id": f"metrics_source_promotion::{consumer_id}::{candidate_metric_id}",
+            "consumer_id": consumer_id,
+            "title": str(raw_entry.get("title", "")).strip(),
+            "candidate_metric_id": candidate_metric_id,
+            "legacy_metric_ids": sorted(legacy_metric_ids),
+            "promotion_status": promotion_status,
+            "review_state": review_state,
+            "authority_state": authority_state,
+            "next_gap": next_gap,
+            "policy_reference": metrics_source_promotion_policy_reference(),
+            "source_consumer": copy.deepcopy(raw_entry),
+            "stable_family_anchor_consumer_ids": stable_anchor_ids,
+            "guardrails": {
+                "requires_human_review": requires_human_review,
+                "auto_threshold_authority": auto_threshold_authority,
+                "threshold_authority_grant": threshold_authority_grant,
+                "target_transition": str(
+                    metrics_source_promotion_policy_lookup("promotion_guardrails.target_transition")
+                ).strip(),
+            },
+            "candidate_metric_summary": {
+                "status": str(metrics_by_id.get(candidate_metric_id, {}).get("status", "")).strip(),
+                "score": metrics_by_id.get(candidate_metric_id, {}).get("score"),
+                "minimum_score": metrics_by_id.get(candidate_metric_id, {}).get("minimum_score"),
+                "threshold_authority_state": str(
+                    metrics_by_id.get(candidate_metric_id, {}).get(
+                        "threshold_authority_state",
+                        "",
+                    )
+                ).strip(),
+            },
+            "promotion_steps": [
+                {
+                    "step_id": "review_draft_source_contract",
+                    "summary": "Review the draft Metrics/SIB_FULL source contract and evidence.",
+                },
+                {
+                    "step_id": "approve_operational_source",
+                    "summary": (
+                        "Approve the draft source as operational input only through human "
+                        "review; do not grant threshold authority automatically."
+                    ),
+                },
+                {
+                    "step_id": "rebuild_metric_signal_index",
+                    "summary": "Rebuild metric signals after the promotion decision is recorded.",
+                },
+            ],
+        }
+        entries.append(entry)
+        status_groups.setdefault(promotion_status, []).append(key)
+        review_state_groups.setdefault(review_state, []).append(key)
+        authority_groups.setdefault(authority_state, []).append(key)
+        metric_groups.setdefault(candidate_metric_id, []).append(key)
+        named_filters.setdefault(promotion_status, []).append(key)
+        named_filters["threshold_authority_blocked"].append(key)
+        named_filters["sib_family_candidate"].append(key)
+        if next_gap != "none":
+            backlog_items.append(
+                {
+                    "consumer_id": consumer_id,
+                    "candidate_metric_id": candidate_metric_id,
+                    "promotion_status": promotion_status,
+                    "review_state": review_state,
+                    "authority_state": authority_state,
+                    "next_gap": next_gap,
+                }
+            )
+            grouped_backlog.setdefault(next_gap, []).append(key)
+
+    for bucket in (
+        status_groups,
+        review_state_groups,
+        authority_groups,
+        metric_groups,
+        named_filters,
+        grouped_backlog,
+    ):
+        for key in list(bucket):
+            bucket[key] = sorted(set(bucket[key]))
+
+    return {
+        "artifact_kind": METRICS_SOURCE_PROMOTION_INDEX_ARTIFACT_KIND,
+        "schema_version": METRICS_SOURCE_PROMOTION_INDEX_SCHEMA_VERSION,
+        "generated_at": utc_now_iso(),
+        "policy_reference": metrics_source_promotion_policy_reference(),
+        "source_artifacts": {
+            "external_consumer_index": {
+                "artifact_path": external_consumer_index_path().relative_to(ROOT).as_posix(),
+                "generated_at": external_consumer_index.get("generated_at"),
+            },
+            "metric_signal_index": {
+                "artifact_path": metric_signal_index_path().relative_to(ROOT).as_posix(),
+                "generated_at": metric_signal_index.get("generated_at"),
+            },
+        },
+        "stable_family_anchor_consumer_ids": stable_anchor_ids,
+        "entry_count": len(entries),
+        "entries": entries,
+        "viewer_projection": {
+            "promotion_status": {
+                key: sorted(value) for key, value in sorted(status_groups.items())
+            },
+            "review_state": {
+                key: sorted(value) for key, value in sorted(review_state_groups.items())
+            },
+            "authority_state": {
+                key: sorted(value) for key, value in sorted(authority_groups.items())
+            },
+            "metric_id": {key: sorted(value) for key, value in sorted(metric_groups.items())},
+            "named_filters": {key: sorted(value) for key, value in sorted(named_filters.items())},
+        },
+        "promotion_backlog": {
+            "entry_count": len(backlog_items),
+            "items": backlog_items,
+            "grouped_by_next_gap": {
+                key: sorted(value) for key, value in sorted(grouped_backlog.items())
+            },
+        },
+    }
+
+
+def write_metrics_source_promotion_index(report: dict[str, Any]) -> Path:
+    RUNS_DIR.mkdir(parents=True, exist_ok=True)
+    path = metrics_source_promotion_index_path()
     with artifact_lock(path):
         atomic_write_json(path, report)
     return path
@@ -19116,6 +19589,10 @@ def build_graph_dashboard(specs: list[SpecNode]) -> dict[str, Any]:
         metric_signal_index,
         metric_threshold_proposals,
     )
+    metrics_source_promotion_index = build_metrics_source_promotion_index(
+        external_consumer_index,
+        metric_signal_index,
+    )
     metrics_delivery_workflow = build_metrics_delivery_workflow(external_consumer_handoffs)
     metrics_feedback_index = build_metrics_feedback_index(metrics_delivery_workflow)
     specpm_export_preview = build_specpm_export_preview(specs)
@@ -19290,6 +19767,15 @@ def build_graph_dashboard(specs: list[SpecNode]) -> dict[str, Any]:
     metrics_feedback_named_filter_counts = grouped_identifier_counts(
         metrics_feedback_index.get("viewer_projection", {}).get("named_filters", {})
     )
+    metrics_source_promotion_status_counts = grouped_identifier_counts(
+        metrics_source_promotion_index.get("viewer_projection", {}).get("promotion_status", {})
+    )
+    metrics_source_promotion_authority_counts = grouped_identifier_counts(
+        metrics_source_promotion_index.get("viewer_projection", {}).get("authority_state", {})
+    )
+    metrics_source_promotion_named_filter_counts = grouped_identifier_counts(
+        metrics_source_promotion_index.get("viewer_projection", {}).get("named_filters", {})
+    )
 
     metric_entries = [
         entry for entry in metric_signal_index.get("metrics", []) if isinstance(entry, dict)
@@ -19297,6 +19783,7 @@ def build_graph_dashboard(specs: list[SpecNode]) -> dict[str, Any]:
     metric_status_counts: dict[str, int] = {}
     metric_scores: dict[str, dict[str, Any]] = {}
     below_threshold_metric_ids: list[str] = []
+    below_threshold_authoritative_metric_ids: list[str] = []
     for entry in metric_entries:
         metric_id = str(entry.get("metric_id", "")).strip()
         if not metric_id:
@@ -19311,6 +19798,8 @@ def build_graph_dashboard(specs: list[SpecNode]) -> dict[str, Any]:
         }
         if status == "below_threshold":
             below_threshold_metric_ids.append(metric_id)
+            if str(entry.get("threshold_authority_state", "")).strip() != "alias_only":
+                below_threshold_authoritative_metric_ids.append(metric_id)
     metric_threshold_kind_counts = grouped_identifier_counts(
         metric_threshold_proposals.get("viewer_projection", {}).get("proposal_kind", {})
     )
@@ -19475,12 +19964,30 @@ def build_graph_dashboard(specs: list[SpecNode]) -> dict[str, Any]:
             ),
         ),
         dashboard_card(
+            card_id="metrics_source_promotion_ready",
+            title="Metrics Source Promotion Ready",
+            value=metrics_source_promotion_status_counts.get("ready_for_promotion_review", 0),
+            section="external_consumers",
+            status=(
+                "attention"
+                if metrics_source_promotion_status_counts.get("ready_for_promotion_review", 0) > 0
+                else "healthy"
+            ),
+            basis=(
+                "Draft Metrics/SIB_FULL sources ready for promotion review. These remain "
+                "non-authoritative until explicit human approval."
+            ),
+        ),
+        dashboard_card(
             card_id="metrics_below_threshold",
             title="Metrics Below Threshold",
-            value=len(below_threshold_metric_ids),
+            value=len(below_threshold_authoritative_metric_ids),
             section="metrics",
-            status="attention" if below_threshold_metric_ids else "healthy",
-            basis="Derived metrics currently below configured minimum scores.",
+            status="attention" if below_threshold_authoritative_metric_ids else "healthy",
+            basis=(
+                "Threshold-authoritative derived metrics currently below configured "
+                "minimum scores, excluding compatibility alias entries."
+            ),
         ),
     ]
 
@@ -19554,6 +20061,10 @@ def build_graph_dashboard(specs: list[SpecNode]) -> dict[str, Any]:
             "metrics_feedback_index": {
                 "artifact_path": metrics_feedback_index_path().relative_to(ROOT).as_posix(),
                 "generated_at": metrics_feedback_index.get("generated_at"),
+            },
+            "metrics_source_promotion_index": {
+                "artifact_path": metrics_source_promotion_index_path().relative_to(ROOT).as_posix(),
+                "generated_at": metrics_source_promotion_index.get("generated_at"),
             },
             "metric_signal_index": {
                 "artifact_path": metric_signal_index_path().relative_to(ROOT).as_posix(),
@@ -19650,6 +20161,13 @@ def build_graph_dashboard(specs: list[SpecNode]) -> dict[str, Any]:
                 "metrics_feedback_status_counts": metrics_feedback_status_counts,
                 "metrics_feedback_review_state_counts": metrics_feedback_review_state_counts,
                 "metrics_feedback_named_filter_counts": metrics_feedback_named_filter_counts,
+                "metrics_source_promotion_status_counts": metrics_source_promotion_status_counts,
+                "metrics_source_promotion_authority_counts": (
+                    metrics_source_promotion_authority_counts
+                ),
+                "metrics_source_promotion_named_filter_counts": (
+                    metrics_source_promotion_named_filter_counts
+                ),
                 "external_consumer_backlog_count": int(
                     external_consumer_overlay.get("external_consumer_backlog", {}).get(
                         "entry_count", 0
@@ -19677,12 +20195,25 @@ def build_graph_dashboard(specs: list[SpecNode]) -> dict[str, Any]:
                 "metrics_feedback_backlog_count": int(
                     metrics_feedback_index.get("feedback_backlog", {}).get("entry_count", 0) or 0
                 ),
+                "metrics_source_promotion_entry_count": int(
+                    metrics_source_promotion_index.get("entry_count", 0) or 0
+                ),
+                "metrics_source_promotion_backlog_count": int(
+                    metrics_source_promotion_index.get("promotion_backlog", {}).get(
+                        "entry_count",
+                        0,
+                    )
+                    or 0
+                ),
             },
             "metrics": {
                 "metric_count": len(metric_entries),
                 "metric_status_counts": metric_status_counts,
                 "metric_scores": metric_scores,
                 "below_threshold_metric_ids": sorted(below_threshold_metric_ids),
+                "below_threshold_authoritative_metric_ids": sorted(
+                    below_threshold_authoritative_metric_ids
+                ),
                 "threshold_proposal_entry_count": int(
                     metric_threshold_proposals.get("entry_count", 0) or 0
                 ),
@@ -19731,7 +20262,11 @@ def build_graph_dashboard(specs: list[SpecNode]) -> dict[str, Any]:
                     metrics_feedback_status_counts.get("review_activity_observed", 0)
                     + metrics_feedback_status_counts.get("adoption_observed_locally", 0)
                 ),
-                "metrics_below_threshold": len(below_threshold_metric_ids),
+                "metrics_source_promotion_ready": metrics_source_promotion_status_counts.get(
+                    "ready_for_promotion_review",
+                    0,
+                ),
+                "metrics_below_threshold": len(below_threshold_authoritative_metric_ids),
             },
         },
     }
@@ -23154,6 +23689,7 @@ def main(
     build_specpm_feedback_index_mode: bool = False,
     build_metrics_delivery_workflow_mode: bool = False,
     build_metrics_feedback_index_mode: bool = False,
+    build_metrics_source_promotion_index_mode: bool = False,
     build_metric_signal_index_mode: bool = False,
     build_metric_threshold_proposals_mode: bool = False,
     build_supervisor_performance_index_mode: bool = False,
@@ -23214,6 +23750,7 @@ def main(
         "--build-specpm-feedback-index": build_specpm_feedback_index_mode,
         "--build-metrics-delivery-workflow": build_metrics_delivery_workflow_mode,
         "--build-metrics-feedback-index": build_metrics_feedback_index_mode,
+        "--build-metrics-source-promotion-index": build_metrics_source_promotion_index_mode,
         "--build-metric-signal-index": build_metric_signal_index_mode,
         "--build-metric-threshold-proposals": build_metric_threshold_proposals_mode,
         "--build-supervisor-performance-index": build_supervisor_performance_index_mode,
@@ -24535,6 +25072,66 @@ def main(
         print(json.dumps(feedback_index, ensure_ascii=False, indent=2))
         return 0
 
+    if build_metrics_source_promotion_index_mode:
+        if any(
+            (
+                dry_run,
+                auto_approve,
+                loop,
+                resolve_gate,
+                decision,
+                note,
+                target_spec,
+                split_proposal,
+                apply_split_proposal,
+                operator_note,
+                mutation_budget,
+                run_authority,
+                execution_profile,
+                child_model,
+                child_timeout_seconds,
+                verbose,
+                list_stale_runtime,
+                clean_stale_runtime,
+                observe_graph_health_mode,
+                operator_request_packet_path,
+                build_intent_layer_overlay_mode,
+                build_vocabulary_index_mode,
+                build_vocabulary_drift_report_mode,
+                build_pre_spec_semantics_index_mode,
+                build_graph_health_overlay_mode,
+                build_graph_health_trends_mode,
+                build_spec_trace_index_mode,
+                build_spec_trace_projection_mode,
+                build_evidence_plane_index_mode,
+                build_evidence_plane_overlay_mode,
+                build_external_consumer_overlay_mode,
+                build_external_consumer_handoffs_mode,
+                build_specpm_import_preview_mode,
+                build_specpm_import_handoff_packets_mode,
+                build_metric_signal_index_mode,
+                build_metric_threshold_proposals_mode,
+                build_supervisor_performance_index_mode,
+                build_graph_dashboard_mode,
+                build_proposal_lane_overlay_mode,
+                build_proposal_runtime_index_mode,
+                build_proposal_promotion_index_mode,
+            )
+        ):
+            print(
+                "--build-metrics-source-promotion-index must be used as a standalone command",
+                file=sys.stderr,
+            )
+            return 1
+        consumer_index = build_external_consumer_index()
+        write_external_consumer_index(consumer_index)
+        metric_index = build_metric_signal_index(specs)
+        write_metric_signal_index(metric_index)
+        promotion_index = build_metrics_source_promotion_index(consumer_index, metric_index)
+        write_metrics_source_promotion_index(promotion_index)
+        print(json.dumps(promotion_index, ensure_ascii=False, indent=2))
+        return 0
+
     if build_metric_signal_index_mode:
         if any(
             (
@@ -25468,6 +26065,14 @@ if __name__ == "__main__":
         ),
     )
     parser.add_argument(
+        "--build-metrics-source-promotion-index",
+        action="store_true",
+        help=(
+            "Build a reviewable Metrics/SIB_FULL promotion index that keeps draft sources "
+            "non-authoritative until explicit human review"
+        ),
+    )
+    parser.add_argument(
         "--build-metric-signal-index",
         action="store_true",
         help=(
@@ -25670,6 +26275,7 @@ if __name__ == "__main__":
             build_specpm_feedback_index_mode=args.build_specpm_feedback_index,
             build_metrics_delivery_workflow_mode=args.build_metrics_delivery_workflow,
             build_metrics_feedback_index_mode=args.build_metrics_feedback_index,
+            build_metrics_source_promotion_index_mode=args.build_metrics_source_promotion_index,
             build_metric_signal_index_mode=args.build_metric_signal_index,
             build_metric_threshold_proposals_mode=args.build_metric_threshold_proposals,
             build_supervisor_performance_index_mode=args.build_supervisor_performance_index,

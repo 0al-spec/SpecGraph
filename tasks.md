@@ -39,8 +39,6 @@ Task numbers are preserved for traceability across commits and PRs.
 
 ## External Consumer Metrics Bridge
 
-91. [todo] Replace compatibility `sib_proxy` semantics with a bridge-native sibling metric family, while preserving a migration-safe alias surface for existing dashboards and visualizers.
-92. [todo] Define the promotion path by which `Metrics/SIB_FULL` may graduate from `draft_reference` to a reviewable operational metric input without silently becoming threshold authority.
 
 ## Proposal Promotion
 
