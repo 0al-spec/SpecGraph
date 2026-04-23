@@ -9915,6 +9915,536 @@ def test_main_builds_specpm_feedback_index_as_standalone_command(
     assert feedback_artifact["generated_at"] == "2026-04-23T11:00:02Z"
 
 
+def test_build_metrics_delivery_workflow_emits_ready_draft_and_blocked_entries(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    metrics_checkout = repo_fixture / "Metrics"
+
+    def fake_inspect_delivery_checkout(
+        checkout_root: Path,
+        *,
+        bundle_rel_root: str,
+    ) -> dict[str, object]:
+        assert checkout_root == metrics_checkout
+        if bundle_rel_root.endswith("metrics_sib"):
+            return {
+                "is_git_repo": True,
+                "current_branch": "main",
+                "upstream_branch": "origin/main",
+                "ahead_count": 0,
+                "behind_count": 0,
+                "changed_paths": [".specgraph_handoffs/metrics_sib/handoff.json"],
+                "bundle_changed_paths": [".specgraph_handoffs/metrics_sib/handoff.json"],
+                "unrelated_changed_paths": [],
+            }
+        if bundle_rel_root.endswith("metrics_sib_full"):
+            return {
+                "is_git_repo": True,
+                "current_branch": "main",
+                "upstream_branch": "origin/main",
+                "ahead_count": 0,
+                "behind_count": 1,
+                "changed_paths": [".specgraph_handoffs/metrics_sib_full/handoff.json"],
+                "bundle_changed_paths": [".specgraph_handoffs/metrics_sib_full/handoff.json"],
+                "unrelated_changed_paths": [],
+            }
+        return {
+            "is_git_repo": True,
+            "current_branch": "main",
+            "upstream_branch": "origin/main",
+            "ahead_count": 0,
+            "behind_count": 0,
+            "changed_paths": [".specgraph_handoffs/metrics_dirty/handoff.json", "README.md"],
+            "bundle_changed_paths": [".specgraph_handoffs/metrics_dirty/handoff.json"],
+            "unrelated_changed_paths": ["README.md"],
+        }
+
+    monkeypatch.setattr(
+        supervisor_module,
+        "inspect_specpm_delivery_checkout",
+        fake_inspect_delivery_checkout,
+    )
+
+    handoffs = {
+        "generated_at": "2026-04-24T10:00:00Z",
+        "entries": [
+            {
+                "handoff_id": "external_consumer_handoff::metrics_sib",
+                "consumer_id": "metrics_sib",
+                "title": "Metrics / SIB",
+                "handoff_status": "ready_for_handoff",
+                "review_state": "ready_for_review",
+                "next_gap": "review_handoff_packet",
+                "bound_metric_ids": ["sib_proxy"],
+                "threshold_proposal_ids": ["metric-sib-followup"],
+                "target_consumer": {
+                    "consumer_id": "metrics_sib",
+                    "profile": "sibling_metric_consumer",
+                    "local_checkout_hint": metrics_checkout.as_posix(),
+                    "repo_url": "https://github.com/0al-spec/Metrics",
+                },
+            },
+            {
+                "handoff_id": "external_consumer_handoff::metrics_sib_full",
+                "consumer_id": "metrics_sib_full",
+                "title": "Metrics / SIB Full",
+                "handoff_status": "draft_reference_only",
+                "review_state": "not_emitted",
+                "next_gap": "review_draft_reference",
+                "bound_metric_ids": ["sib_proxy"],
+                "threshold_proposal_ids": [],
+                "target_consumer": {
+                    "consumer_id": "metrics_sib_full",
+                    "profile": "sibling_metric_consumer",
+                    "local_checkout_hint": metrics_checkout.as_posix(),
+                    "repo_url": "https://github.com/0al-spec/Metrics",
+                },
+            },
+            {
+                "handoff_id": "external_consumer_handoff::metrics_dirty",
+                "consumer_id": "metrics_dirty",
+                "title": "Metrics Dirty",
+                "handoff_status": "ready_for_handoff",
+                "review_state": "ready_for_review",
+                "next_gap": "review_handoff_packet",
+                "bound_metric_ids": [],
+                "threshold_proposal_ids": [],
+                "target_consumer": {
+                    "consumer_id": "metrics_dirty",
+                    "profile": "sibling_metric_consumer",
+                    "local_checkout_hint": metrics_checkout.as_posix(),
+                    "repo_url": "https://github.com/0al-spec/Metrics",
+                },
+            },
+            {
+                "handoff_id": "external_consumer_handoff::metrics_blocked",
+                "consumer_id": "metrics_blocked",
+                "title": "Metrics Blocked",
+                "handoff_status": "blocked_by_bridge_gap",
+                "review_state": "not_emitted",
+                "next_gap": "repair_metrics_bridge",
+                "bound_metric_ids": [],
+                "threshold_proposal_ids": [],
+                "target_consumer": {
+                    "consumer_id": "metrics_blocked",
+                    "profile": "sibling_metric_consumer",
+                    "local_checkout_hint": metrics_checkout.as_posix(),
+                    "repo_url": "https://github.com/0al-spec/Metrics",
+                },
+            },
+            {
+                "handoff_id": "external_consumer_handoff::specpm",
+                "consumer_id": "specpm",
+                "handoff_status": "draft_reference_only",
+                "target_consumer": {"profile": "boundary_package_consumer"},
+            },
+        ],
+    }
+
+    report = supervisor_module.build_metrics_delivery_workflow(handoffs)
+
+    assert report["artifact_kind"] == supervisor_module.METRICS_DELIVERY_WORKFLOW_ARTIFACT_KIND
+    assert report["entry_count"] == 4
+    assert report["viewer_projection"]["delivery_status"]["ready_for_delivery_review"] == [
+        "metrics_sib"
+    ]
+    assert report["viewer_projection"]["delivery_status"]["draft_delivery_only"] == [
+        "metrics_sib_full"
+    ]
+    assert report["viewer_projection"]["delivery_status"]["blocked_by_repo_state"] == [
+        "metrics_dirty"
+    ]
+    assert report["viewer_projection"]["delivery_status"]["blocked_by_handoff_gap"] == [
+        "metrics_blocked"
+    ]
+
+    ready = next(entry for entry in report["entries"] if entry["consumer_id"] == "metrics_sib")
+    assert ready["review_state"] == "ready_for_review"
+    assert ready["next_gap"] == "review_metrics_delivery_workflow"
+    assert ready["delivery_paths"] == [".specgraph_handoffs/metrics_sib/handoff.json"]
+    assert ready["delivery_scaffold"]["suggested_branch"] == "specgraph-metrics-handoff/metrics-sib"
+    assert report["viewer_projection"]["named_filters"]["threshold_driven"] == ["metrics_sib"]
+
+    draft = next(entry for entry in report["entries"] if entry["consumer_id"] == "metrics_sib_full")
+    assert draft["review_state"] == "draft_visible"
+    assert draft["next_gap"] == "review_draft_metrics_delivery"
+    assert (
+        draft["delivery_scaffold"]["pr_title"]
+        == "Draft SpecGraph Metrics handoff Metrics / SIB Full"
+    )
+    assert report["viewer_projection"]["named_filters"]["checkout_behind_remote"] == [
+        "metrics_sib_full"
+    ]
+
+    dirty = next(entry for entry in report["entries"] if entry["consumer_id"] == "metrics_dirty")
+    assert dirty["review_state"] == "not_ready"
+    assert dirty["next_gap"] == "isolate_metrics_checkout_changes"
+    assert dirty["repo_snapshot"]["has_unrelated_checkout_changes"] is True
+
+
+def test_build_metrics_feedback_index_emits_observed_and_blocked_entries(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    metrics_checkout = repo_fixture / "Metrics"
+
+    def fake_inspect_metrics_feedback_checkout(
+        checkout_root: Path,
+        *,
+        handoff_rel_root: str,
+    ) -> dict[str, object]:
+        assert checkout_root == metrics_checkout
+        if handoff_rel_root.endswith("metrics_review"):
+            return {
+                "is_git_repo": True,
+                "current_branch": "specgraph-metrics-handoff/metrics-review",
+                "upstream_branch": "origin/specgraph-metrics-handoff/metrics-review",
+                "ahead_count": 1,
+                "behind_count": 0,
+                "changed_paths": [".specgraph_handoffs/metrics_review/handoff.json"],
+                "handoff_changed_paths": [".specgraph_handoffs/metrics_review/handoff.json"],
+                "unrelated_changed_paths": [],
+                "has_handoff_checkout_changes": True,
+                "has_unrelated_checkout_changes": False,
+                "tracked_handoff_paths": [".specgraph_handoffs/metrics_review/handoff.json"],
+                "tracked_handoff_present": True,
+                "latest_handoff_commit": {
+                    "commit_sha": "abc123",
+                    "committed_at": "2026-04-24T10:00:00+00:00",
+                    "subject": "Add Metrics handoff",
+                },
+                "handoff_commit_present": True,
+            }
+        if handoff_rel_root.endswith("metrics_adopted"):
+            return {
+                "is_git_repo": True,
+                "current_branch": "main",
+                "upstream_branch": "origin/main",
+                "ahead_count": 0,
+                "behind_count": 0,
+                "changed_paths": [],
+                "handoff_changed_paths": [],
+                "unrelated_changed_paths": [],
+                "has_handoff_checkout_changes": False,
+                "has_unrelated_checkout_changes": False,
+                "tracked_handoff_paths": [".specgraph_handoffs/metrics_adopted/handoff.json"],
+                "tracked_handoff_present": True,
+                "latest_handoff_commit": {
+                    "commit_sha": "def456",
+                    "committed_at": "2026-04-24T10:10:00+00:00",
+                    "subject": "Adopt Metrics handoff",
+                },
+                "handoff_commit_present": True,
+            }
+        return {
+            "is_git_repo": True,
+            "current_branch": "main",
+            "upstream_branch": "origin/main",
+            "ahead_count": 0,
+            "behind_count": 0,
+            "changed_paths": [],
+            "handoff_changed_paths": [],
+            "unrelated_changed_paths": [],
+            "has_handoff_checkout_changes": False,
+            "has_unrelated_checkout_changes": False,
+            "tracked_handoff_paths": [],
+            "tracked_handoff_present": False,
+            "latest_handoff_commit": {},
+            "handoff_commit_present": False,
+        }
+
+    monkeypatch.setattr(
+        supervisor_module,
+        "inspect_metrics_feedback_checkout",
+        fake_inspect_metrics_feedback_checkout,
+    )
+
+    delivery_workflow = {
+        "generated_at": "2026-04-24T10:05:00Z",
+        "entries": [
+            {
+                "delivery_id": "metrics_delivery::metrics_draft",
+                "handoff_id": "external_consumer_handoff::metrics_draft",
+                "consumer_id": "metrics_draft",
+                "title": "Metrics Draft",
+                "delivery_status": "ready_for_delivery_review",
+                "review_state": "ready_for_review",
+                "next_gap": "review_metrics_delivery_workflow",
+                "delivery_root": ".specgraph_handoffs/metrics_draft",
+                "target_consumer": {
+                    "profile": "sibling_metric_consumer",
+                    "local_checkout_hint": metrics_checkout.as_posix(),
+                },
+                "bound_metric_ids": ["sib_proxy"],
+                "threshold_proposal_ids": [],
+            },
+            {
+                "delivery_id": "metrics_delivery::metrics_review",
+                "handoff_id": "external_consumer_handoff::metrics_review",
+                "consumer_id": "metrics_review",
+                "title": "Metrics Review",
+                "delivery_status": "ready_for_delivery_review",
+                "review_state": "ready_for_review",
+                "next_gap": "review_metrics_delivery_workflow",
+                "delivery_root": ".specgraph_handoffs/metrics_review",
+                "target_consumer": {
+                    "profile": "sibling_metric_consumer",
+                    "local_checkout_hint": metrics_checkout.as_posix(),
+                },
+                "bound_metric_ids": ["sib_proxy"],
+                "threshold_proposal_ids": ["metric-sib-followup"],
+            },
+            {
+                "delivery_id": "metrics_delivery::metrics_adopted",
+                "handoff_id": "external_consumer_handoff::metrics_adopted",
+                "consumer_id": "metrics_adopted",
+                "title": "Metrics Adopted",
+                "delivery_status": "ready_for_delivery_review",
+                "review_state": "ready_for_review",
+                "next_gap": "review_metrics_delivery_workflow",
+                "delivery_root": ".specgraph_handoffs/metrics_adopted",
+                "target_consumer": {
+                    "profile": "sibling_metric_consumer",
+                    "local_checkout_hint": metrics_checkout.as_posix(),
+                },
+                "bound_metric_ids": ["sib_proxy"],
+                "threshold_proposal_ids": [],
+            },
+            {
+                "delivery_id": "metrics_delivery::metrics_blocked",
+                "handoff_id": "external_consumer_handoff::metrics_blocked",
+                "consumer_id": "metrics_blocked",
+                "title": "Metrics Blocked",
+                "delivery_status": "blocked_by_repo_state",
+                "review_state": "not_ready",
+                "next_gap": "isolate_metrics_checkout_changes",
+                "delivery_root": ".specgraph_handoffs/metrics_blocked",
+                "target_consumer": {
+                    "profile": "sibling_metric_consumer",
+                    "local_checkout_hint": metrics_checkout.as_posix(),
+                },
+                "bound_metric_ids": [],
+                "threshold_proposal_ids": [],
+            },
+        ],
+    }
+
+    report = supervisor_module.build_metrics_feedback_index(delivery_workflow)
+
+    assert report["artifact_kind"] == supervisor_module.METRICS_FEEDBACK_INDEX_ARTIFACT_KIND
+    assert report["viewer_projection"]["feedback_status"]["downstream_unobserved"] == [
+        "metrics_draft"
+    ]
+    assert report["viewer_projection"]["feedback_status"]["review_activity_observed"] == [
+        "metrics_review"
+    ]
+    assert report["viewer_projection"]["feedback_status"]["adoption_observed_locally"] == [
+        "metrics_adopted"
+    ]
+    assert report["viewer_projection"]["feedback_status"]["blocked_by_delivery_gap"] == [
+        "metrics_blocked"
+    ]
+
+    by_consumer = {entry["consumer_id"]: entry for entry in report["entries"]}
+    assert by_consumer["metrics_draft"]["review_state"] == "not_observed"
+    assert by_consumer["metrics_draft"]["next_gap"] == "observe_metrics_downstream_review"
+    assert by_consumer["metrics_review"]["review_state"] == "review_visible"
+    assert by_consumer["metrics_review"]["next_gap"] == "review_metrics_downstream_feedback"
+    assert (
+        by_consumer["metrics_review"]["observed_checkout_feedback"]["handoff_commit_present"]
+        is True
+    )
+    assert by_consumer["metrics_adopted"]["review_state"] == "adoption_visible"
+    assert (
+        by_consumer["metrics_adopted"]["observed_checkout_feedback"]["adoption_candidate"] is True
+    )
+    assert by_consumer["metrics_blocked"]["next_gap"] == "isolate_metrics_checkout_changes"
+    assert report["viewer_projection"]["metric_ids"]["sib_proxy"] == [
+        "metrics_adopted",
+        "metrics_draft",
+        "metrics_review",
+    ]
+    assert report["viewer_projection"]["named_filters"]["threshold_driven"] == ["metrics_review"]
+
+
+def test_main_builds_metrics_delivery_workflow_as_standalone_command(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_external_consumer_index",
+        lambda: {"generated_at": "2026-04-24T10:00:00Z", "entries": []},
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_metric_signal_index",
+        lambda specs: {
+            "artifact_kind": supervisor_module.METRIC_SIGNAL_INDEX_ARTIFACT_KIND,
+            "schema_version": supervisor_module.METRIC_SIGNAL_INDEX_SCHEMA_VERSION,
+            "generated_at": "2026-04-24T10:00:01Z",
+            "metrics": [],
+            "viewer_projection": {"metric_status": {}, "named_filters": {}},
+        },
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_external_consumer_overlay",
+        lambda index, metric_index: {
+            "generated_at": "2026-04-24T10:00:02Z",
+            "entry_count": 0,
+            "entries": [],
+            "viewer_projection": {
+                "bridge_state": {},
+                "bound_metric_status": {},
+                "named_filters": {},
+            },
+            "external_consumer_backlog": {
+                "entry_count": 0,
+                "items": [],
+                "grouped_by_next_gap": {},
+            },
+        },
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_metric_threshold_proposals",
+        lambda index: {
+            "artifact_kind": supervisor_module.METRIC_THRESHOLD_PROPOSALS_ARTIFACT_KIND,
+            "schema_version": supervisor_module.METRIC_THRESHOLD_PROPOSALS_SCHEMA_VERSION,
+            "generated_at": "2026-04-24T10:00:03Z",
+            "entry_count": 0,
+            "entries": [],
+            "viewer_projection": {
+                "proposal_kind": {},
+                "severity": {},
+                "named_filters": {},
+            },
+        },
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_external_consumer_handoff_packets",
+        lambda index, overlay, metric_index, proposals: {
+            "artifact_kind": supervisor_module.EXTERNAL_CONSUMER_HANDOFF_ARTIFACT_KIND,
+            "schema_version": supervisor_module.EXTERNAL_CONSUMER_HANDOFF_SCHEMA_VERSION,
+            "generated_at": "2026-04-24T10:00:04Z",
+            "entry_count": 0,
+            "entries": [],
+            "viewer_projection": {
+                "handoff_status": {},
+                "review_state": {},
+                "named_filters": {},
+            },
+            "handoff_backlog": {"entry_count": 0, "items": [], "grouped_by_next_gap": {}},
+        },
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_metrics_delivery_workflow",
+        lambda handoffs: {
+            "artifact_kind": supervisor_module.METRICS_DELIVERY_WORKFLOW_ARTIFACT_KIND,
+            "schema_version": supervisor_module.METRICS_DELIVERY_WORKFLOW_SCHEMA_VERSION,
+            "generated_at": "2026-04-24T10:00:05Z",
+            "entry_count": 0,
+            "entries": [],
+            "viewer_projection": {
+                "delivery_status": {},
+                "review_state": {},
+                "named_filters": {},
+                "metric_ids": {},
+            },
+            "delivery_backlog": {"entry_count": 0, "items": [], "grouped_by_next_gap": {}},
+        },
+    )
+
+    exit_code = supervisor_module.main(build_metrics_delivery_workflow_mode=True)
+
+    assert exit_code == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["artifact_kind"] == supervisor_module.METRICS_DELIVERY_WORKFLOW_ARTIFACT_KIND
+    handoff_artifact = json.loads(
+        (repo_fixture / "runs" / "external_consumer_handoff_packets.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert handoff_artifact["generated_at"] == "2026-04-24T10:00:04Z"
+    delivery_artifact = json.loads(
+        (repo_fixture / "runs" / "metrics_delivery_workflow.json").read_text(encoding="utf-8")
+    )
+    assert delivery_artifact["generated_at"] == "2026-04-24T10:00:05Z"
+
+
+def test_main_builds_metrics_feedback_index_as_standalone_command(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    monkeypatch.setattr(
+        supervisor_module,
+        "load_current_metrics_delivery_workflow",
+        lambda: {
+            "artifact_kind": supervisor_module.METRICS_DELIVERY_WORKFLOW_ARTIFACT_KIND,
+            "schema_version": supervisor_module.METRICS_DELIVERY_WORKFLOW_SCHEMA_VERSION,
+            "generated_at": "2026-04-24T11:00:00Z",
+            "entry_count": 0,
+            "entries": [],
+            "viewer_projection": {
+                "delivery_status": {},
+                "review_state": {},
+                "named_filters": {},
+                "metric_ids": {},
+            },
+            "delivery_backlog": {"entry_count": 0, "items": [], "grouped_by_next_gap": {}},
+        },
+    )
+
+    def fake_build_metrics_feedback_index(
+        metrics_delivery_workflow: dict[str, object],
+    ) -> dict[str, object]:
+        assert metrics_delivery_workflow["generated_at"] == "2026-04-24T11:00:00Z"
+        return {
+            "artifact_kind": supervisor_module.METRICS_FEEDBACK_INDEX_ARTIFACT_KIND,
+            "schema_version": supervisor_module.METRICS_FEEDBACK_INDEX_SCHEMA_VERSION,
+            "generated_at": "2026-04-24T11:00:01Z",
+            "entry_count": 0,
+            "entries": [],
+            "viewer_projection": {
+                "feedback_status": {},
+                "review_state": {},
+                "named_filters": {},
+                "metric_ids": {},
+            },
+            "feedback_backlog": {"entry_count": 0, "items": [], "grouped_by_next_gap": {}},
+        }
+
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_metrics_feedback_index",
+        fake_build_metrics_feedback_index,
+    )
+
+    exit_code = supervisor_module.main(build_metrics_feedback_index_mode=True)
+
+    assert exit_code == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["artifact_kind"] == supervisor_module.METRICS_FEEDBACK_INDEX_ARTIFACT_KIND
+    delivery_artifact = json.loads(
+        (repo_fixture / "runs" / "metrics_delivery_workflow.json").read_text(encoding="utf-8")
+    )
+    assert delivery_artifact["generated_at"] == "2026-04-24T11:00:00Z"
+    feedback_artifact = json.loads(
+        (repo_fixture / "runs" / "metrics_feedback_index.json").read_text(encoding="utf-8")
+    )
+    assert feedback_artifact["generated_at"] == "2026-04-24T11:00:01Z"
+
+
 def test_build_specpm_import_preview_reads_materialized_bundle(
     supervisor_module: object,
     repo_fixture: Path,
@@ -11991,6 +12521,43 @@ def test_build_graph_dashboard_aggregates_runtime_surfaces(
     )
     monkeypatch.setattr(
         supervisor_module,
+        "build_metrics_delivery_workflow",
+        lambda handoffs: {
+            "generated_at": "2026-04-19T00:00:10Z",
+            "entry_count": 1,
+            "entries": [],
+            "viewer_projection": {
+                "delivery_status": {"ready_for_delivery_review": ["metrics_sib"]},
+                "review_state": {"ready_for_review": ["metrics_sib"]},
+                "named_filters": {
+                    "ready_for_delivery_review": ["metrics_sib"],
+                    "threshold_driven": ["metrics_sib"],
+                },
+                "metric_ids": {"sib_proxy": ["metrics_sib"]},
+            },
+            "delivery_backlog": {"entry_count": 1},
+        },
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_metrics_feedback_index",
+        lambda workflow: {
+            "generated_at": "2026-04-19T00:00:10Z",
+            "entry_count": 1,
+            "viewer_projection": {
+                "feedback_status": {"review_activity_observed": ["metrics_sib"]},
+                "review_state": {"review_visible": ["metrics_sib"]},
+                "named_filters": {
+                    "review_activity_observed": ["metrics_sib"],
+                    "tracked_handoff_present": ["metrics_sib"],
+                },
+                "metric_ids": {"sib_proxy": ["metrics_sib"]},
+            },
+            "feedback_backlog": {"entry_count": 1},
+        },
+    )
+    monkeypatch.setattr(
+        supervisor_module,
         "build_metric_threshold_proposals",
         lambda index: {
             "generated_at": "2026-04-19T00:00:11Z",
@@ -12033,6 +12600,12 @@ def test_build_graph_dashboard_aggregates_runtime_surfaces(
     assert report["sections"]["external_consumers"]["specpm_feedback_status_counts"] == {
         "adoption_observed_locally": 1
     }
+    assert report["sections"]["external_consumers"]["metrics_delivery_status_counts"] == {
+        "ready_for_delivery_review": 1
+    }
+    assert report["sections"]["external_consumers"]["metrics_feedback_status_counts"] == {
+        "review_activity_observed": 1
+    }
     assert report["sections"]["metrics"]["below_threshold_metric_ids"] == ["process_observability"]
     by_card_id = {entry["card_id"]: entry for entry in report["headline_cards"]}
     assert by_card_id["metrics_below_threshold"]["value"] == 1
@@ -12041,6 +12614,8 @@ def test_build_graph_dashboard_aggregates_runtime_surfaces(
     assert by_card_id["stable_bridges_ready"]["value"] == 1
     assert by_card_id["ready_external_handoffs"]["value"] == 1
     assert by_card_id["specpm_adoption_visible"]["value"] == 1
+    assert by_card_id["metrics_delivery_ready"]["value"] == 1
+    assert by_card_id["metrics_feedback_visible"]["value"] == 1
     assert report["viewer_projection"]["named_filters"]["retrospective_refactor_candidates"] == 1
 
 

@@ -44,6 +44,8 @@ Derived artifacts:
 - SpecPM import handoff packets: `runs/specpm_import_handoff_packets.json`
 - SpecPM delivery workflow: `runs/specpm_delivery_workflow.json`
 - SpecPM feedback index: `runs/specpm_feedback_index.json`
+- Metrics delivery workflow: `runs/metrics_delivery_workflow.json`
+- Metrics feedback index: `runs/metrics_feedback_index.json`
 - bootstrap smoke benchmark: `runs/bootstrap_smoke_benchmark.json`
 - spec trace index: `runs/spec_trace_index.json`
 - spec trace projection: `runs/spec_trace_projection.json`
@@ -114,6 +116,8 @@ SPECPM_IMPORT_POLICY_RELATIVE_PATH = "tools/specpm_import_policy.json"
 SPECPM_IMPORT_HANDOFF_POLICY_RELATIVE_PATH = "tools/specpm_import_handoff_policy.json"
 SPECPM_DELIVERY_POLICY_RELATIVE_PATH = "tools/specpm_delivery_policy.json"
 SPECPM_FEEDBACK_POLICY_RELATIVE_PATH = "tools/specpm_feedback_policy.json"
+METRICS_DELIVERY_POLICY_RELATIVE_PATH = "tools/metrics_delivery_policy.json"
+METRICS_FEEDBACK_POLICY_RELATIVE_PATH = "tools/metrics_feedback_policy.json"
 SPECPM_EXPORT_REGISTRY_RELATIVE_PATH = "tools/specpm_export_registry.json"
 
 
@@ -215,6 +219,14 @@ def specpm_delivery_policy_path() -> Path:
 
 def specpm_feedback_policy_path() -> Path:
     return TOOLS_DIR / "specpm_feedback_policy.json"
+
+
+def metrics_delivery_policy_path() -> Path:
+    return TOOLS_DIR / "metrics_delivery_policy.json"
+
+
+def metrics_feedback_policy_path() -> Path:
+    return TOOLS_DIR / "metrics_feedback_policy.json"
 
 
 def specpm_export_registry_path() -> Path:
@@ -1110,6 +1122,82 @@ def load_specpm_feedback_policy() -> tuple[dict[str, Any], str]:
 SPECPM_FEEDBACK_POLICY, SPECPM_FEEDBACK_POLICY_SHA256 = load_specpm_feedback_policy()
 
 
+def load_metrics_delivery_policy() -> tuple[dict[str, Any], str]:
+    path = metrics_delivery_policy_path()
+    try:
+        raw_text = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise RuntimeError(
+            f"failed to read Metrics delivery policy artifact: {path.as_posix()} ({exc})"
+        ) from exc
+    try:
+        payload = json.loads(raw_text)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(
+            f"malformed Metrics delivery policy artifact: {path.as_posix()} ({exc})"
+        ) from exc
+    if not isinstance(payload, dict):
+        raise RuntimeError(
+            "malformed Metrics delivery policy artifact: "
+            f"{path.as_posix()} must contain a JSON object"
+        )
+    required_sections = (
+        "repository_layout",
+        "delivery_contract",
+        "eligibility_rules",
+        "workflow_defaults",
+        "next_gap_defaults",
+    )
+    missing = [section for section in required_sections if section not in payload]
+    if missing:
+        raise RuntimeError(
+            "malformed Metrics delivery policy artifact: missing top-level section(s): "
+            + ", ".join(missing)
+        )
+    return payload, hashlib.sha256(raw_text.encode("utf-8")).hexdigest()
+
+
+METRICS_DELIVERY_POLICY, METRICS_DELIVERY_POLICY_SHA256 = load_metrics_delivery_policy()
+
+
+def load_metrics_feedback_policy() -> tuple[dict[str, Any], str]:
+    path = metrics_feedback_policy_path()
+    try:
+        raw_text = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise RuntimeError(
+            f"failed to read Metrics feedback policy artifact: {path.as_posix()} ({exc})"
+        ) from exc
+    try:
+        payload = json.loads(raw_text)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(
+            f"malformed Metrics feedback policy artifact: {path.as_posix()} ({exc})"
+        ) from exc
+    if not isinstance(payload, dict):
+        raise RuntimeError(
+            "malformed Metrics feedback policy artifact: "
+            f"{path.as_posix()} must contain a JSON object"
+        )
+    required_sections = (
+        "repository_layout",
+        "feedback_contract",
+        "eligibility_rules",
+        "observation_rules",
+        "next_gap_defaults",
+    )
+    missing = [section for section in required_sections if section not in payload]
+    if missing:
+        raise RuntimeError(
+            "malformed Metrics feedback policy artifact: missing top-level section(s): "
+            + ", ".join(missing)
+        )
+    return payload, hashlib.sha256(raw_text.encode("utf-8")).hexdigest()
+
+
+METRICS_FEEDBACK_POLICY, METRICS_FEEDBACK_POLICY_SHA256 = load_metrics_feedback_policy()
+
+
 def policy_lookup(policy_path: str) -> Any:
     current: Any = SUPERVISOR_POLICY
     for part in policy_path.split("."):
@@ -1229,6 +1317,24 @@ def specpm_delivery_policy_lookup(policy_path: str) -> Any:
 
 def specpm_feedback_policy_lookup(policy_path: str) -> Any:
     current: Any = SPECPM_FEEDBACK_POLICY
+    for part in policy_path.split("."):
+        if not isinstance(current, dict) or part not in current:
+            raise KeyError(policy_path)
+        current = current[part]
+    return copy.deepcopy(current)
+
+
+def metrics_delivery_policy_lookup(policy_path: str) -> Any:
+    current: Any = METRICS_DELIVERY_POLICY
+    for part in policy_path.split("."):
+        if not isinstance(current, dict) or part not in current:
+            raise KeyError(policy_path)
+        current = current[part]
+    return copy.deepcopy(current)
+
+
+def metrics_feedback_policy_lookup(policy_path: str) -> Any:
+    current: Any = METRICS_FEEDBACK_POLICY
     for part in policy_path.split("."):
         if not isinstance(current, dict) or part not in current:
             raise KeyError(policy_path)
@@ -1516,6 +1622,22 @@ def specpm_feedback_policy_reference() -> dict[str, Any]:
         "artifact_path": SPECPM_FEEDBACK_POLICY_RELATIVE_PATH,
         "artifact_sha256": SPECPM_FEEDBACK_POLICY_SHA256,
         "version": SPECPM_FEEDBACK_POLICY.get("version"),
+    }
+
+
+def metrics_delivery_policy_reference() -> dict[str, Any]:
+    return {
+        "artifact_path": METRICS_DELIVERY_POLICY_RELATIVE_PATH,
+        "artifact_sha256": METRICS_DELIVERY_POLICY_SHA256,
+        "version": METRICS_DELIVERY_POLICY.get("version"),
+    }
+
+
+def metrics_feedback_policy_reference() -> dict[str, Any]:
+    return {
+        "artifact_path": METRICS_FEEDBACK_POLICY_RELATIVE_PATH,
+        "artifact_sha256": METRICS_FEEDBACK_POLICY_SHA256,
+        "version": METRICS_FEEDBACK_POLICY.get("version"),
     }
 
 
@@ -1840,6 +1962,42 @@ SPECPM_FEEDBACK_REVIEW_STATES = list(
 )
 SPECPM_FEEDBACK_NAMED_FILTERS = list(
     specpm_feedback_policy_lookup("feedback_contract.named_filters")
+)
+METRICS_DELIVERY_WORKFLOW_FILENAME = Path(
+    str(metrics_delivery_policy_lookup("repository_layout.artifact"))
+).name
+METRICS_DELIVERY_WORKFLOW_ARTIFACT_KIND = str(
+    metrics_delivery_policy_lookup("delivery_contract.artifact_kind")
+)
+METRICS_DELIVERY_WORKFLOW_SCHEMA_VERSION = int(
+    metrics_delivery_policy_lookup("delivery_contract.schema_version")
+)
+METRICS_DELIVERY_WORKFLOW_STATUSES = list(
+    metrics_delivery_policy_lookup("delivery_contract.delivery_statuses")
+)
+METRICS_DELIVERY_WORKFLOW_REVIEW_STATES = list(
+    metrics_delivery_policy_lookup("delivery_contract.review_states")
+)
+METRICS_DELIVERY_WORKFLOW_NAMED_FILTERS = list(
+    metrics_delivery_policy_lookup("delivery_contract.named_filters")
+)
+METRICS_FEEDBACK_INDEX_FILENAME = Path(
+    str(metrics_feedback_policy_lookup("repository_layout.artifact"))
+).name
+METRICS_FEEDBACK_INDEX_ARTIFACT_KIND = str(
+    metrics_feedback_policy_lookup("feedback_contract.artifact_kind")
+)
+METRICS_FEEDBACK_INDEX_SCHEMA_VERSION = int(
+    metrics_feedback_policy_lookup("feedback_contract.schema_version")
+)
+METRICS_FEEDBACK_STATUSES = list(
+    metrics_feedback_policy_lookup("feedback_contract.feedback_statuses")
+)
+METRICS_FEEDBACK_REVIEW_STATES = list(
+    metrics_feedback_policy_lookup("feedback_contract.review_states")
+)
+METRICS_FEEDBACK_NAMED_FILTERS = list(
+    metrics_feedback_policy_lookup("feedback_contract.named_filters")
 )
 METRIC_SIGNAL_INDEX_FILENAME = Path(
     str(metric_signal_policy_lookup("repository_layout.signal_artifact"))
@@ -11362,6 +11520,14 @@ def specpm_feedback_index_path() -> Path:
     return RUNS_DIR / SPECPM_FEEDBACK_INDEX_FILENAME
 
 
+def metrics_delivery_workflow_path() -> Path:
+    return RUNS_DIR / METRICS_DELIVERY_WORKFLOW_FILENAME
+
+
+def metrics_feedback_index_path() -> Path:
+    return RUNS_DIR / METRICS_FEEDBACK_INDEX_FILENAME
+
+
 def evidence_plane_index_path() -> Path:
     return RUNS_DIR / EVIDENCE_PLANE_INDEX_FILENAME
 
@@ -15956,6 +16122,672 @@ def load_current_specpm_delivery_workflow() -> dict[str, Any]:
     }
 
 
+def derive_metrics_delivery_next_gap(
+    *,
+    delivery_status: str,
+    handoff_entry: dict[str, Any],
+) -> str:
+    default_gap = str(
+        metrics_delivery_policy_lookup(f"next_gap_defaults.{delivery_status}")
+    ).strip()
+    if default_gap == "inherit_handoff_next_gap":
+        inherited = str(handoff_entry.get("next_gap", "")).strip()
+        return inherited or "review_external_consumer_handoff_packet"
+    return default_gap or "none"
+
+
+def build_metrics_delivery_workflow(
+    external_consumer_handoffs: dict[str, Any],
+) -> dict[str, Any]:
+    required_profile = str(
+        metrics_delivery_policy_lookup("eligibility_rules.required_profile")
+    ).strip()
+    allowed_handoff_statuses = {
+        str(item).strip()
+        for item in metrics_delivery_policy_lookup("eligibility_rules.allowed_handoff_statuses")
+        if str(item).strip()
+    }
+    required_git_repo = bool(metrics_delivery_policy_lookup("workflow_defaults.required_git_repo"))
+    allow_unrelated_checkout_changes = bool(
+        metrics_delivery_policy_lookup("workflow_defaults.allow_unrelated_checkout_changes")
+    )
+    required_delivery_root = str(
+        metrics_delivery_policy_lookup("workflow_defaults.required_delivery_root")
+    ).strip()
+    delivery_branch_prefix = str(
+        metrics_delivery_policy_lookup("workflow_defaults.delivery_branch_prefix")
+    ).strip()
+    commit_subject_template = str(
+        metrics_delivery_policy_lookup("workflow_defaults.commit_subject_template")
+    ).strip()
+    pr_title_template = str(
+        metrics_delivery_policy_lookup("workflow_defaults.pr_title_template")
+    ).strip()
+    draft_pr_title_template = str(
+        metrics_delivery_policy_lookup("workflow_defaults.draft_pr_title_template")
+    ).strip()
+
+    entries: list[dict[str, Any]] = []
+    status_groups: dict[str, list[str]] = {}
+    review_state_groups: dict[str, list[str]] = {}
+    named_filters = {name: [] for name in METRICS_DELIVERY_WORKFLOW_NAMED_FILTERS}
+    metric_groups: dict[str, list[str]] = {}
+    backlog_items: list[dict[str, Any]] = []
+    grouped_backlog: dict[str, list[str]] = {}
+
+    for raw_entry in external_consumer_handoffs.get("entries", []):
+        if not isinstance(raw_entry, dict):
+            continue
+        target_consumer = raw_entry.get("target_consumer", {})
+        if not isinstance(target_consumer, dict):
+            target_consumer = {}
+        profile = str(target_consumer.get("profile", "")).strip()
+        if profile != required_profile:
+            continue
+
+        consumer_id = str(raw_entry.get("consumer_id", "")).strip()
+        handoff_id = str(raw_entry.get("handoff_id", "")).strip()
+        if not consumer_id and not handoff_id:
+            continue
+        key = consumer_id or handoff_id
+        consumer_title = str(raw_entry.get("title", "")).strip() or consumer_id
+        handoff_status = str(raw_entry.get("handoff_status", "")).strip()
+        checkout_path = str(target_consumer.get("local_checkout_hint", "")).strip()
+        bound_metric_ids = sorted(
+            {
+                str(item).strip()
+                for item in raw_entry.get("bound_metric_ids", [])
+                if str(item).strip()
+            }
+        )
+        threshold_proposal_ids = sorted(
+            {
+                str(item).strip()
+                for item in raw_entry.get("threshold_proposal_ids", [])
+                if str(item).strip()
+            }
+        )
+
+        delivery_status = "invalid_handoff_contract"
+        review_state = "not_ready"
+        next_gap = "repair_external_consumer_handoff_packet"
+        delivery_root = (
+            f"{required_delivery_root.strip('/')}/{consumer_id}".strip("/") if consumer_id else ""
+        )
+        delivery_paths = [f"{delivery_root}/handoff.json"] if delivery_root else []
+        repo_snapshot = {
+            "is_git_repo": False,
+            "checkout_path_exists": False,
+            "checkout_path_is_dir": False,
+            "current_branch": "",
+            "upstream_branch": "",
+            "ahead_count": 0,
+            "behind_count": 0,
+            "changed_paths": [],
+            "bundle_changed_paths": [],
+            "handoff_changed_paths": [],
+            "unrelated_changed_paths": [],
+            "has_handoff_checkout_changes": False,
+            "has_unrelated_checkout_changes": False,
+        }
+        workflow_steps: list[dict[str, str]] = []
+
+        if not consumer_id or not handoff_id or not delivery_root:
+            delivery_status = "invalid_handoff_contract"
+            next_gap = derive_metrics_delivery_next_gap(
+                delivery_status=delivery_status,
+                handoff_entry=raw_entry,
+            )
+        elif handoff_status not in allowed_handoff_statuses:
+            delivery_status = "blocked_by_handoff_gap"
+            next_gap = derive_metrics_delivery_next_gap(
+                delivery_status=delivery_status,
+                handoff_entry=raw_entry,
+            )
+        elif not checkout_path:
+            delivery_status = "blocked_by_checkout_gap"
+            next_gap = derive_metrics_delivery_next_gap(
+                delivery_status=delivery_status,
+                handoff_entry=raw_entry,
+            )
+        else:
+            checkout_root = Path(checkout_path).expanduser()
+            repo_snapshot = inspect_specpm_delivery_checkout(
+                checkout_root,
+                bundle_rel_root=delivery_root,
+            )
+            repo_snapshot["handoff_changed_paths"] = list(
+                repo_snapshot.get("bundle_changed_paths", [])
+            )
+            repo_snapshot["has_handoff_checkout_changes"] = bool(
+                repo_snapshot.get("handoff_changed_paths")
+            )
+            repo_snapshot["has_unrelated_checkout_changes"] = bool(
+                repo_snapshot.get("unrelated_changed_paths")
+            )
+
+            if required_git_repo and not repo_snapshot["is_git_repo"]:
+                checkout_exists = bool(repo_snapshot.get("checkout_path_exists"))
+                checkout_is_dir = bool(repo_snapshot.get("checkout_path_is_dir"))
+                delivery_status = (
+                    "blocked_by_checkout_gap"
+                    if not checkout_exists or not checkout_is_dir
+                    else "blocked_by_repo_state"
+                )
+                next_gap = derive_metrics_delivery_next_gap(
+                    delivery_status=delivery_status,
+                    handoff_entry=raw_entry,
+                )
+            elif (
+                not allow_unrelated_checkout_changes
+                and repo_snapshot["has_unrelated_checkout_changes"]
+            ):
+                delivery_status = "blocked_by_repo_state"
+                next_gap = derive_metrics_delivery_next_gap(
+                    delivery_status=delivery_status,
+                    handoff_entry=raw_entry,
+                )
+            elif handoff_status == "ready_for_handoff":
+                delivery_status = "ready_for_delivery_review"
+                review_state = "ready_for_review"
+                next_gap = derive_metrics_delivery_next_gap(
+                    delivery_status=delivery_status,
+                    handoff_entry=raw_entry,
+                )
+            else:
+                delivery_status = "draft_delivery_only"
+                review_state = "draft_visible"
+                next_gap = derive_metrics_delivery_next_gap(
+                    delivery_status=delivery_status,
+                    handoff_entry=raw_entry,
+                )
+
+        consumer_slug = re.sub(r"[^a-z0-9]+", "-", key.lower()).strip("-") or "metrics"
+        suggested_branch = f"{delivery_branch_prefix}{consumer_slug}"
+        template_args = {
+            "consumer_id": consumer_id,
+            "consumer_title": consumer_title or consumer_id,
+        }
+        commit_subject = commit_subject_template.format(**template_args)
+        pr_title_template_to_use = (
+            draft_pr_title_template
+            if delivery_status == "draft_delivery_only"
+            else pr_title_template
+        )
+        pr_title = pr_title_template_to_use.format(**template_args)
+
+        if delivery_status in {"ready_for_delivery_review", "draft_delivery_only"}:
+            workflow_steps = [
+                {
+                    "step_id": "create_branch",
+                    "summary": f"Create or switch to `{suggested_branch}` in the Metrics checkout.",
+                },
+                {
+                    "step_id": "copy_handoff_packet",
+                    "summary": (
+                        "Copy the selected external-consumer handoff packet into "
+                        f"`{delivery_paths[0]}` for downstream review."
+                    ),
+                },
+                {
+                    "step_id": "stage_delivery_paths",
+                    "summary": "Stage only the declared Metrics handoff delivery paths.",
+                },
+                {
+                    "step_id": "commit_handoff",
+                    "summary": f"Commit the delivery candidate with subject `{commit_subject}`.",
+                },
+                {
+                    "step_id": "open_review_pr",
+                    "summary": f"Open a Metrics review PR titled `{pr_title}`.",
+                },
+            ]
+        else:
+            workflow_steps = [
+                {
+                    "step_id": "resolve_gap",
+                    "summary": f"Resolve `{next_gap}` before attempting Metrics delivery.",
+                },
+                {
+                    "step_id": "rebuild_delivery_workflow",
+                    "summary": (
+                        "Rebuild the Metrics delivery workflow artifact after the blocker "
+                        "is cleared."
+                    ),
+                },
+            ]
+
+        entry = {
+            "delivery_id": f"metrics_delivery::{key}",
+            "handoff_id": handoff_id,
+            "consumer_id": consumer_id,
+            "title": consumer_title,
+            "delivery_status": delivery_status,
+            "review_state": review_state,
+            "next_gap": next_gap,
+            "policy_reference": metrics_delivery_policy_reference(),
+            "source_handoff": {
+                "artifact_path": external_consumer_handoff_packets_path()
+                .relative_to(ROOT)
+                .as_posix(),
+                "generated_at": external_consumer_handoffs.get("generated_at"),
+                "handoff_status": handoff_status,
+                "review_state": str(raw_entry.get("review_state", "")).strip(),
+            },
+            "target_consumer": copy.deepcopy(target_consumer),
+            "bound_metric_ids": bound_metric_ids,
+            "threshold_proposal_ids": threshold_proposal_ids,
+            "threshold_proposal_count": len(threshold_proposal_ids),
+            "delivery_root": delivery_root,
+            "delivery_paths": sorted(set(delivery_paths)),
+            "repo_snapshot": repo_snapshot,
+            "delivery_scaffold": {
+                "suggested_branch": suggested_branch,
+                "commit_subject": commit_subject,
+                "pr_title": pr_title,
+                "delivery_paths": sorted(set(delivery_paths)),
+                "target_repo_url": str(target_consumer.get("repo_url", "")).strip(),
+                "source_handoff_id": handoff_id,
+            },
+            "workflow_steps": workflow_steps,
+        }
+        entries.append(entry)
+        status_groups.setdefault(delivery_status, []).append(key)
+        review_state_groups.setdefault(review_state, []).append(key)
+        named_filters.setdefault(delivery_status, []).append(key)
+        if repo_snapshot.get("has_handoff_checkout_changes"):
+            named_filters["handoff_checkout_changes_present"].append(key)
+        if repo_snapshot.get("has_unrelated_checkout_changes"):
+            named_filters["unrelated_checkout_changes_present"].append(key)
+        if int(repo_snapshot.get("behind_count", 0) or 0) > 0:
+            named_filters["checkout_behind_remote"].append(key)
+        if threshold_proposal_ids:
+            named_filters["threshold_driven"].append(key)
+        for metric_id in bound_metric_ids:
+            metric_groups.setdefault(metric_id, []).append(key)
+        if next_gap != "none":
+            backlog_items.append(
+                {
+                    "consumer_id": consumer_id,
+                    "delivery_status": delivery_status,
+                    "review_state": review_state,
+                    "next_gap": next_gap,
+                }
+            )
+            grouped_backlog.setdefault(next_gap, []).append(key)
+
+    for bucket in (
+        status_groups,
+        review_state_groups,
+        named_filters,
+        metric_groups,
+        grouped_backlog,
+    ):
+        for key in list(bucket):
+            bucket[key] = sorted(set(bucket[key]))
+
+    return {
+        "artifact_kind": METRICS_DELIVERY_WORKFLOW_ARTIFACT_KIND,
+        "schema_version": METRICS_DELIVERY_WORKFLOW_SCHEMA_VERSION,
+        "generated_at": utc_now_iso(),
+        "policy_reference": metrics_delivery_policy_reference(),
+        "source_artifacts": {
+            "external_consumer_handoffs": {
+                "artifact_path": external_consumer_handoff_packets_path()
+                .relative_to(ROOT)
+                .as_posix(),
+                "generated_at": external_consumer_handoffs.get("generated_at"),
+            }
+        },
+        "entry_count": len(entries),
+        "entries": entries,
+        "viewer_projection": {
+            "delivery_status": {key: sorted(value) for key, value in sorted(status_groups.items())},
+            "review_state": {
+                key: sorted(value) for key, value in sorted(review_state_groups.items())
+            },
+            "named_filters": {key: sorted(value) for key, value in sorted(named_filters.items())},
+            "metric_ids": {key: sorted(value) for key, value in sorted(metric_groups.items())},
+        },
+        "delivery_backlog": {
+            "entry_count": len(backlog_items),
+            "items": backlog_items,
+            "grouped_by_next_gap": {
+                key: sorted(value) for key, value in sorted(grouped_backlog.items())
+            },
+        },
+    }
+
+
+def write_metrics_delivery_workflow(report: dict[str, Any]) -> Path:
+    RUNS_DIR.mkdir(parents=True, exist_ok=True)
+    path = metrics_delivery_workflow_path()
+    with artifact_lock(path):
+        atomic_write_json(path, report)
+    return path
+
+
+def inspect_metrics_feedback_checkout(
+    checkout_root: Path,
+    *,
+    handoff_rel_root: str,
+) -> dict[str, Any]:
+    repo_snapshot = inspect_specpm_feedback_checkout(
+        checkout_root,
+        bundle_rel_root=handoff_rel_root,
+    )
+    repo_snapshot["handoff_changed_paths"] = list(repo_snapshot.get("bundle_changed_paths", []))
+    repo_snapshot["has_handoff_checkout_changes"] = bool(repo_snapshot.get("handoff_changed_paths"))
+    repo_snapshot["tracked_handoff_paths"] = list(repo_snapshot.get("tracked_bundle_paths", []))
+    repo_snapshot["tracked_handoff_present"] = bool(repo_snapshot.get("tracked_handoff_paths"))
+    repo_snapshot["latest_handoff_commit"] = dict(repo_snapshot.get("latest_bundle_commit", {}))
+    repo_snapshot["handoff_commit_present"] = bool(
+        repo_snapshot.get("latest_handoff_commit", {}).get("commit_sha")
+        if isinstance(repo_snapshot.get("latest_handoff_commit"), dict)
+        else False
+    )
+    return repo_snapshot
+
+
+def derive_metrics_feedback_next_gap(
+    *,
+    feedback_status: str,
+    delivery_entry: dict[str, Any],
+) -> str:
+    default_gap = str(
+        metrics_feedback_policy_lookup(f"next_gap_defaults.{feedback_status}")
+    ).strip()
+    if default_gap == "inherit_delivery_next_gap":
+        inherited = str(delivery_entry.get("next_gap", "")).strip()
+        return inherited or "review_metrics_delivery_workflow"
+    return default_gap or "none"
+
+
+def build_metrics_feedback_index(
+    metrics_delivery_workflow: dict[str, Any],
+) -> dict[str, Any]:
+    required_profile = str(
+        metrics_feedback_policy_lookup("eligibility_rules.required_profile")
+    ).strip()
+    default_branch_names = {
+        str(item).strip()
+        for item in metrics_feedback_policy_lookup("observation_rules.default_branch_names")
+        if str(item).strip()
+    }
+    adoption_requires_clean_handoff_paths = bool(
+        metrics_feedback_policy_lookup("observation_rules.adoption_requires_clean_handoff_paths")
+    )
+    adoption_requires_default_branch = bool(
+        metrics_feedback_policy_lookup("observation_rules.adoption_requires_default_branch")
+    )
+
+    entries: list[dict[str, Any]] = []
+    status_groups: dict[str, list[str]] = {}
+    review_state_groups: dict[str, list[str]] = {}
+    named_filters = {name: [] for name in METRICS_FEEDBACK_NAMED_FILTERS}
+    metric_groups: dict[str, list[str]] = {}
+    backlog_items: list[dict[str, Any]] = []
+    grouped_backlog: dict[str, list[str]] = {}
+
+    for raw_entry in metrics_delivery_workflow.get("entries", []):
+        if not isinstance(raw_entry, dict):
+            continue
+        target_consumer = raw_entry.get("target_consumer", {})
+        if not isinstance(target_consumer, dict):
+            target_consumer = {}
+        consumer_id = str(raw_entry.get("consumer_id", "")).strip()
+        delivery_id = str(raw_entry.get("delivery_id", "")).strip()
+        key = consumer_id or delivery_id
+        if not key:
+            continue
+        profile = str(target_consumer.get("profile", "")).strip()
+        delivery_status = str(raw_entry.get("delivery_status", "")).strip()
+        delivery_review_state = str(raw_entry.get("review_state", "")).strip()
+        delivery_root = str(raw_entry.get("delivery_root", "")).strip()
+        checkout_path = str(target_consumer.get("local_checkout_hint", "")).strip()
+        bound_metric_ids = sorted(
+            {
+                str(item).strip()
+                for item in raw_entry.get("bound_metric_ids", [])
+                if str(item).strip()
+            }
+        )
+        threshold_proposal_ids = sorted(
+            {
+                str(item).strip()
+                for item in raw_entry.get("threshold_proposal_ids", [])
+                if str(item).strip()
+            }
+        )
+
+        feedback_status = "invalid_feedback_contract"
+        review_state = "not_observed"
+        next_gap = "repair_metrics_delivery_workflow"
+        observed_feedback = {
+            "is_git_repo": False,
+            "checkout_path_exists": False,
+            "checkout_path_is_dir": False,
+            "current_branch": "",
+            "upstream_branch": "",
+            "ahead_count": 0,
+            "behind_count": 0,
+            "changed_paths": [],
+            "handoff_changed_paths": [],
+            "unrelated_changed_paths": [],
+            "has_handoff_checkout_changes": False,
+            "has_unrelated_checkout_changes": False,
+            "default_branch_match": False,
+            "tracked_handoff_paths": [],
+            "tracked_handoff_present": False,
+            "latest_handoff_commit": {},
+            "handoff_commit_present": False,
+            "adoption_candidate": False,
+        }
+
+        if profile != required_profile or not consumer_id or not delivery_root:
+            feedback_status = "invalid_feedback_contract"
+            next_gap = derive_metrics_feedback_next_gap(
+                feedback_status=feedback_status,
+                delivery_entry=raw_entry,
+            )
+        elif delivery_status in {
+            "blocked_by_handoff_gap",
+            "blocked_by_checkout_gap",
+            "blocked_by_repo_state",
+        }:
+            feedback_status = "blocked_by_delivery_gap"
+            next_gap = derive_metrics_feedback_next_gap(
+                feedback_status=feedback_status,
+                delivery_entry=raw_entry,
+            )
+        elif delivery_status not in {"ready_for_delivery_review", "draft_delivery_only"}:
+            feedback_status = "invalid_feedback_contract"
+            next_gap = derive_metrics_feedback_next_gap(
+                feedback_status=feedback_status,
+                delivery_entry=raw_entry,
+            )
+        elif not checkout_path:
+            feedback_status = "blocked_by_delivery_gap"
+            next_gap = derive_metrics_feedback_next_gap(
+                feedback_status=feedback_status,
+                delivery_entry=raw_entry,
+            )
+        else:
+            checkout_root = Path(checkout_path).expanduser()
+            observed_feedback = inspect_metrics_feedback_checkout(
+                checkout_root,
+                handoff_rel_root=delivery_root,
+            )
+            observed_feedback["default_branch_match"] = (
+                str(observed_feedback.get("current_branch", "")).strip() in default_branch_names
+            )
+            adoption_candidate = bool(observed_feedback.get("tracked_handoff_present")) and bool(
+                observed_feedback.get("handoff_commit_present")
+            )
+            if adoption_requires_clean_handoff_paths:
+                adoption_candidate = adoption_candidate and not bool(
+                    observed_feedback.get("handoff_changed_paths")
+                )
+            if adoption_requires_default_branch:
+                adoption_candidate = adoption_candidate and bool(
+                    observed_feedback.get("default_branch_match")
+                )
+            observed_feedback["adoption_candidate"] = adoption_candidate
+
+            if not bool(observed_feedback.get("is_git_repo")):
+                feedback_status = "blocked_by_delivery_gap"
+                review_state = "not_observed"
+            elif adoption_candidate:
+                feedback_status = "adoption_observed_locally"
+                review_state = "adoption_visible"
+            elif (
+                bool(observed_feedback.get("tracked_handoff_present"))
+                or bool(observed_feedback.get("handoff_commit_present"))
+                or bool(observed_feedback.get("has_handoff_checkout_changes"))
+            ):
+                feedback_status = "review_activity_observed"
+                review_state = "review_visible"
+            else:
+                feedback_status = "downstream_unobserved"
+                review_state = "not_observed"
+
+            next_gap = derive_metrics_feedback_next_gap(
+                feedback_status=feedback_status,
+                delivery_entry=raw_entry,
+            )
+
+        entry = {
+            "feedback_id": f"metrics_feedback::{key}",
+            "delivery_id": delivery_id,
+            "handoff_id": str(raw_entry.get("handoff_id", "")).strip(),
+            "consumer_id": consumer_id,
+            "title": str(raw_entry.get("title", "")).strip(),
+            "feedback_status": feedback_status,
+            "review_state": review_state,
+            "next_gap": next_gap,
+            "policy_reference": metrics_feedback_policy_reference(),
+            "source_delivery": {
+                "artifact_path": metrics_delivery_workflow_path().relative_to(ROOT).as_posix(),
+                "generated_at": metrics_delivery_workflow.get("generated_at"),
+                "delivery_status": delivery_status,
+                "review_state": delivery_review_state,
+            },
+            "target_consumer": copy.deepcopy(target_consumer),
+            "bound_metric_ids": bound_metric_ids,
+            "threshold_proposal_ids": threshold_proposal_ids,
+            "threshold_proposal_count": len(threshold_proposal_ids),
+            "delivery_root": delivery_root,
+            "observed_checkout_feedback": observed_feedback,
+        }
+        entries.append(entry)
+        status_groups.setdefault(feedback_status, []).append(key)
+        review_state_groups.setdefault(review_state, []).append(key)
+        named_filters.setdefault(feedback_status, []).append(key)
+        if observed_feedback.get("tracked_handoff_present"):
+            named_filters["tracked_handoff_present"].append(key)
+        if observed_feedback.get("handoff_commit_present"):
+            named_filters["handoff_commit_present"].append(key)
+        if observed_feedback.get("default_branch_match"):
+            named_filters["default_branch_match"].append(key)
+        if observed_feedback.get("has_handoff_checkout_changes"):
+            named_filters["handoff_checkout_changes_present"].append(key)
+        if observed_feedback.get("has_unrelated_checkout_changes"):
+            named_filters["unrelated_checkout_changes_present"].append(key)
+        if int(observed_feedback.get("behind_count", 0) or 0) > 0:
+            named_filters["checkout_behind_remote"].append(key)
+        if threshold_proposal_ids:
+            named_filters["threshold_driven"].append(key)
+        for metric_id in bound_metric_ids:
+            metric_groups.setdefault(metric_id, []).append(key)
+        if next_gap != "none":
+            backlog_items.append(
+                {
+                    "consumer_id": consumer_id,
+                    "feedback_status": feedback_status,
+                    "review_state": review_state,
+                    "next_gap": next_gap,
+                }
+            )
+            grouped_backlog.setdefault(next_gap, []).append(key)
+
+    for bucket in (
+        status_groups,
+        review_state_groups,
+        named_filters,
+        metric_groups,
+        grouped_backlog,
+    ):
+        for key in list(bucket):
+            bucket[key] = sorted(set(bucket[key]))
+
+    return {
+        "artifact_kind": METRICS_FEEDBACK_INDEX_ARTIFACT_KIND,
+        "schema_version": METRICS_FEEDBACK_INDEX_SCHEMA_VERSION,
+        "generated_at": utc_now_iso(),
+        "policy_reference": metrics_feedback_policy_reference(),
+        "source_artifacts": {
+            "metrics_delivery_workflow": {
+                "artifact_path": metrics_delivery_workflow_path().relative_to(ROOT).as_posix(),
+                "generated_at": metrics_delivery_workflow.get("generated_at"),
+            }
+        },
+        "entry_count": len(entries),
+        "entries": entries,
+        "viewer_projection": {
+            "feedback_status": {key: sorted(value) for key, value in sorted(status_groups.items())},
+            "review_state": {
+                key: sorted(value) for key, value in sorted(review_state_groups.items())
+            },
+            "named_filters": {key: sorted(value) for key, value in sorted(named_filters.items())},
+            "metric_ids": {key: sorted(value) for key, value in sorted(metric_groups.items())},
+        },
+        "feedback_backlog": {
+            "entry_count": len(backlog_items),
+            "items": backlog_items,
+            "grouped_by_next_gap": {
+                key: sorted(value) for key, value in sorted(grouped_backlog.items())
+            },
+        },
+    }
+
+
+def write_metrics_feedback_index(report: dict[str, Any]) -> Path:
+    RUNS_DIR.mkdir(parents=True, exist_ok=True)
+    path = metrics_feedback_index_path()
+    with artifact_lock(path):
+        atomic_write_json(path, report)
+    return path
+
+
+def load_current_metrics_delivery_workflow() -> dict[str, Any]:
+    existing = load_json_object(metrics_delivery_workflow_path())
+    if isinstance(existing, dict):
+        return existing
+    handoff_packets = load_json_object(external_consumer_handoff_packets_path())
+    if isinstance(handoff_packets, dict):
+        return build_metrics_delivery_workflow(handoff_packets)
+    return {
+        "artifact_kind": METRICS_DELIVERY_WORKFLOW_ARTIFACT_KIND,
+        "schema_version": METRICS_DELIVERY_WORKFLOW_SCHEMA_VERSION,
+        "generated_at": utc_now_iso(),
+        "policy_reference": metrics_delivery_policy_reference(),
+        "source_artifacts": {},
+        "entry_count": 0,
+        "entries": [],
+        "viewer_projection": {
+            "delivery_status": {},
+            "review_state": {},
+            "named_filters": {},
+            "metric_ids": {},
+        },
+        "delivery_backlog": {
+            "entry_count": 0,
+            "items": [],
+            "grouped_by_next_gap": {},
+        },
+    }
+
+
 def metric_status_score(mapping: dict[str, Any], status: str) -> float | None:
     raw_value = mapping.get(status)
     if raw_value is None:
@@ -18284,6 +19116,8 @@ def build_graph_dashboard(specs: list[SpecNode]) -> dict[str, Any]:
         metric_signal_index,
         metric_threshold_proposals,
     )
+    metrics_delivery_workflow = build_metrics_delivery_workflow(external_consumer_handoffs)
+    metrics_feedback_index = build_metrics_feedback_index(metrics_delivery_workflow)
     specpm_export_preview = build_specpm_export_preview(specs)
     specpm_delivery_workflow = load_current_specpm_delivery_workflow()
     specpm_feedback_index = build_specpm_feedback_index(
@@ -18438,6 +19272,24 @@ def build_graph_dashboard(specs: list[SpecNode]) -> dict[str, Any]:
     specpm_feedback_named_filter_counts = grouped_identifier_counts(
         specpm_feedback_index.get("viewer_projection", {}).get("named_filters", {})
     )
+    metrics_delivery_status_counts = grouped_identifier_counts(
+        metrics_delivery_workflow.get("viewer_projection", {}).get("delivery_status", {})
+    )
+    metrics_delivery_review_state_counts = grouped_identifier_counts(
+        metrics_delivery_workflow.get("viewer_projection", {}).get("review_state", {})
+    )
+    metrics_delivery_named_filter_counts = grouped_identifier_counts(
+        metrics_delivery_workflow.get("viewer_projection", {}).get("named_filters", {})
+    )
+    metrics_feedback_status_counts = grouped_identifier_counts(
+        metrics_feedback_index.get("viewer_projection", {}).get("feedback_status", {})
+    )
+    metrics_feedback_review_state_counts = grouped_identifier_counts(
+        metrics_feedback_index.get("viewer_projection", {}).get("review_state", {})
+    )
+    metrics_feedback_named_filter_counts = grouped_identifier_counts(
+        metrics_feedback_index.get("viewer_projection", {}).get("named_filters", {})
+    )
 
     metric_entries = [
         entry for entry in metric_signal_index.get("metrics", []) if isinstance(entry, dict)
@@ -18586,6 +19438,43 @@ def build_graph_dashboard(specs: list[SpecNode]) -> dict[str, Any]:
             ),
         ),
         dashboard_card(
+            card_id="metrics_delivery_ready",
+            title="Metrics Delivery Ready",
+            value=metrics_delivery_status_counts.get("ready_for_delivery_review", 0),
+            section="external_consumers",
+            status=(
+                "attention"
+                if metrics_delivery_status_counts.get("ready_for_delivery_review", 0) > 0
+                else "healthy"
+            ),
+            basis=(
+                "Metrics sibling-consumer handoffs with reviewable downstream branch, "
+                "commit, and PR scaffolding available."
+            ),
+        ),
+        dashboard_card(
+            card_id="metrics_feedback_visible",
+            title="Metrics Feedback Visible",
+            value=(
+                metrics_feedback_status_counts.get("review_activity_observed", 0)
+                + metrics_feedback_status_counts.get("adoption_observed_locally", 0)
+            ),
+            section="external_consumers",
+            status=(
+                "info"
+                if (
+                    metrics_feedback_status_counts.get("review_activity_observed", 0)
+                    + metrics_feedback_status_counts.get("adoption_observed_locally", 0)
+                )
+                > 0
+                else "healthy"
+            ),
+            basis=(
+                "Metrics downstream review or local adoption signals observed as derived "
+                "feedback without becoming canonical truth automatically."
+            ),
+        ),
+        dashboard_card(
             card_id="metrics_below_threshold",
             title="Metrics Below Threshold",
             value=len(below_threshold_metric_ids),
@@ -18657,6 +19546,14 @@ def build_graph_dashboard(specs: list[SpecNode]) -> dict[str, Any]:
             "specpm_feedback_index": {
                 "artifact_path": specpm_feedback_index_path().relative_to(ROOT).as_posix(),
                 "generated_at": specpm_feedback_index.get("generated_at"),
+            },
+            "metrics_delivery_workflow": {
+                "artifact_path": metrics_delivery_workflow_path().relative_to(ROOT).as_posix(),
+                "generated_at": metrics_delivery_workflow.get("generated_at"),
+            },
+            "metrics_feedback_index": {
+                "artifact_path": metrics_feedback_index_path().relative_to(ROOT).as_posix(),
+                "generated_at": metrics_feedback_index.get("generated_at"),
             },
             "metric_signal_index": {
                 "artifact_path": metric_signal_index_path().relative_to(ROOT).as_posix(),
@@ -18747,6 +19644,12 @@ def build_graph_dashboard(specs: list[SpecNode]) -> dict[str, Any]:
                 "specpm_feedback_status_counts": specpm_feedback_status_counts,
                 "specpm_feedback_review_state_counts": specpm_feedback_review_state_counts,
                 "specpm_feedback_named_filter_counts": specpm_feedback_named_filter_counts,
+                "metrics_delivery_status_counts": metrics_delivery_status_counts,
+                "metrics_delivery_review_state_counts": metrics_delivery_review_state_counts,
+                "metrics_delivery_named_filter_counts": metrics_delivery_named_filter_counts,
+                "metrics_feedback_status_counts": metrics_feedback_status_counts,
+                "metrics_feedback_review_state_counts": metrics_feedback_review_state_counts,
+                "metrics_feedback_named_filter_counts": metrics_feedback_named_filter_counts,
                 "external_consumer_backlog_count": int(
                     external_consumer_overlay.get("external_consumer_backlog", {}).get(
                         "entry_count", 0
@@ -18761,6 +19664,18 @@ def build_graph_dashboard(specs: list[SpecNode]) -> dict[str, Any]:
                 ),
                 "specpm_feedback_backlog_count": int(
                     specpm_feedback_index.get("feedback_backlog", {}).get("entry_count", 0) or 0
+                ),
+                "metrics_delivery_entry_count": int(
+                    metrics_delivery_workflow.get("entry_count", 0) or 0
+                ),
+                "metrics_delivery_backlog_count": int(
+                    metrics_delivery_workflow.get("delivery_backlog", {}).get("entry_count", 0) or 0
+                ),
+                "metrics_feedback_entry_count": int(
+                    metrics_feedback_index.get("entry_count", 0) or 0
+                ),
+                "metrics_feedback_backlog_count": int(
+                    metrics_feedback_index.get("feedback_backlog", {}).get("entry_count", 0) or 0
                 ),
             },
             "metrics": {
@@ -18808,6 +19723,13 @@ def build_graph_dashboard(specs: list[SpecNode]) -> dict[str, Any]:
                 ),
                 "specpm_adoption_visible": specpm_feedback_status_counts.get(
                     "adoption_observed_locally", 0
+                ),
+                "metrics_delivery_ready": metrics_delivery_status_counts.get(
+                    "ready_for_delivery_review", 0
+                ),
+                "metrics_feedback_visible": (
+                    metrics_feedback_status_counts.get("review_activity_observed", 0)
+                    + metrics_feedback_status_counts.get("adoption_observed_locally", 0)
                 ),
                 "metrics_below_threshold": len(below_threshold_metric_ids),
             },
@@ -22230,6 +23152,8 @@ def main(
     build_specpm_import_handoff_packets_mode: bool = False,
     build_specpm_delivery_workflow_mode: bool = False,
     build_specpm_feedback_index_mode: bool = False,
+    build_metrics_delivery_workflow_mode: bool = False,
+    build_metrics_feedback_index_mode: bool = False,
     build_metric_signal_index_mode: bool = False,
     build_metric_threshold_proposals_mode: bool = False,
     build_supervisor_performance_index_mode: bool = False,
@@ -22288,6 +23212,8 @@ def main(
         "--build-specpm-import-handoff-packets": build_specpm_import_handoff_packets_mode,
         "--build-specpm-delivery-workflow": build_specpm_delivery_workflow_mode,
         "--build-specpm-feedback-index": build_specpm_feedback_index_mode,
+        "--build-metrics-delivery-workflow": build_metrics_delivery_workflow_mode,
+        "--build-metrics-feedback-index": build_metrics_feedback_index_mode,
         "--build-metric-signal-index": build_metric_signal_index_mode,
         "--build-metric-threshold-proposals": build_metric_threshold_proposals_mode,
         "--build-supervisor-performance-index": build_supervisor_performance_index_mode,
@@ -23480,6 +24406,135 @@ def main(
         print(json.dumps(feedback_index, ensure_ascii=False, indent=2))
         return 0
 
+    if build_metrics_delivery_workflow_mode:
+        if any(
+            (
+                dry_run,
+                auto_approve,
+                loop,
+                resolve_gate,
+                decision,
+                note,
+                target_spec,
+                split_proposal,
+                apply_split_proposal,
+                operator_note,
+                mutation_budget,
+                run_authority,
+                execution_profile,
+                child_model,
+                child_timeout_seconds,
+                verbose,
+                list_stale_runtime,
+                clean_stale_runtime,
+                observe_graph_health_mode,
+                operator_request_packet_path,
+                build_intent_layer_overlay_mode,
+                build_vocabulary_index_mode,
+                build_vocabulary_drift_report_mode,
+                build_pre_spec_semantics_index_mode,
+                build_graph_health_overlay_mode,
+                build_graph_health_trends_mode,
+                build_spec_trace_index_mode,
+                build_spec_trace_projection_mode,
+                build_evidence_plane_index_mode,
+                build_evidence_plane_overlay_mode,
+                build_external_consumer_overlay_mode,
+                build_external_consumer_handoffs_mode,
+                build_specpm_import_preview_mode,
+                build_specpm_import_handoff_packets_mode,
+                build_metric_signal_index_mode,
+                build_metric_threshold_proposals_mode,
+                build_supervisor_performance_index_mode,
+                build_graph_dashboard_mode,
+                build_proposal_lane_overlay_mode,
+                build_proposal_runtime_index_mode,
+                build_proposal_promotion_index_mode,
+            )
+        ):
+            print(
+                "--build-metrics-delivery-workflow must be used as a standalone command",
+                file=sys.stderr,
+            )
+            return 1
+        consumer_index = build_external_consumer_index()
+        write_external_consumer_index(consumer_index)
+        metric_index = build_metric_signal_index(specs)
+        write_metric_signal_index(metric_index)
+        overlay = build_external_consumer_overlay(consumer_index, metric_index)
+        write_external_consumer_overlay(overlay)
+        threshold_proposals = build_metric_threshold_proposals(metric_index)
+        write_metric_threshold_proposals(threshold_proposals)
+        handoff_packets = build_external_consumer_handoff_packets(
+            consumer_index,
+            overlay,
+            metric_index,
+            threshold_proposals,
+        )
+        write_external_consumer_handoff_packets(handoff_packets)
+        delivery_workflow = build_metrics_delivery_workflow(handoff_packets)
+        write_metrics_delivery_workflow(delivery_workflow)
+        print(json.dumps(delivery_workflow, ensure_ascii=False, indent=2))
+        return 0
+
+    if build_metrics_feedback_index_mode:
+        if any(
+            (
+                dry_run,
+                auto_approve,
+                loop,
+                resolve_gate,
+                decision,
+                note,
+                target_spec,
+                split_proposal,
+                apply_split_proposal,
+                operator_note,
+                mutation_budget,
+                run_authority,
+                execution_profile,
+                child_model,
+                child_timeout_seconds,
+                verbose,
+                list_stale_runtime,
+                clean_stale_runtime,
+                observe_graph_health_mode,
+                operator_request_packet_path,
+                build_intent_layer_overlay_mode,
+                build_vocabulary_index_mode,
+                build_vocabulary_drift_report_mode,
+                build_pre_spec_semantics_index_mode,
+                build_graph_health_overlay_mode,
+                build_graph_health_trends_mode,
+                build_spec_trace_index_mode,
+                build_spec_trace_projection_mode,
+                build_evidence_plane_index_mode,
+                build_evidence_plane_overlay_mode,
+                build_external_consumer_overlay_mode,
+                build_external_consumer_handoffs_mode,
+                build_specpm_import_preview_mode,
+                build_specpm_import_handoff_packets_mode,
+                build_metric_signal_index_mode,
+                build_metric_threshold_proposals_mode,
+                build_supervisor_performance_index_mode,
+                build_graph_dashboard_mode,
+                build_proposal_lane_overlay_mode,
+                build_proposal_runtime_index_mode,
+                build_proposal_promotion_index_mode,
+            )
+        ):
+            print(
+                "--build-metrics-feedback-index must be used as a standalone command",
+                file=sys.stderr,
+            )
+            return 1
+        delivery_workflow = load_current_metrics_delivery_workflow()
+        write_metrics_delivery_workflow(delivery_workflow)
+        feedback_index = build_metrics_feedback_index(delivery_workflow)
+        write_metrics_feedback_index(feedback_index)
+        print(json.dumps(feedback_index, ensure_ascii=False, indent=2))
+        return 0
+
     if build_metric_signal_index_mode:
         if any(
             (
@@ -24397,6 +25452,22 @@ if __name__ == "__main__":
         ),
     )
     parser.add_argument(
+        "--build-metrics-delivery-workflow",
+        action="store_true",
+        help=(
+            "Build a reviewable cross-repo delivery workflow for Metrics/SIB handoff "
+            "packets without auto-committing into the Metrics checkout"
+        ),
+    )
+    parser.add_argument(
+        "--build-metrics-feedback-index",
+        action="store_true",
+        help=(
+            "Build a derived Metrics feedback index from the current delivery workflow "
+            "and downstream checkout observations without mutating canonical specs"
+        ),
+    )
+    parser.add_argument(
         "--build-metric-signal-index",
         action="store_true",
         help=(
@@ -24597,6 +25668,8 @@ if __name__ == "__main__":
             build_specpm_import_handoff_packets_mode=args.build_specpm_import_handoff_packets,
             build_specpm_delivery_workflow_mode=args.build_specpm_delivery_workflow,
             build_specpm_feedback_index_mode=args.build_specpm_feedback_index,
+            build_metrics_delivery_workflow_mode=args.build_metrics_delivery_workflow,
+            build_metrics_feedback_index_mode=args.build_metrics_feedback_index,
             build_metric_signal_index_mode=args.build_metric_signal_index,
             build_metric_threshold_proposals_mode=args.build_metric_threshold_proposals,
             build_supervisor_performance_index_mode=args.build_supervisor_performance_index,

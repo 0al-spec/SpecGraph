@@ -124,6 +124,14 @@ Supervisor modes:
   `runs/specpm_feedback_index.json` from the current `SpecPM`
   delivery workflow plus downstream checkout observations so local review or
   adoption signals become visible without turning them into canonical truth.
+- `--build-metrics-delivery-workflow`: build
+  `runs/metrics_delivery_workflow.json` from current Metrics/SIB handoff
+  packets so downstream branch, commit, and PR scaffolding becomes reviewable
+  before any real cross-repo write exists.
+- `--build-metrics-feedback-index`: build
+  `runs/metrics_feedback_index.json` from the current Metrics delivery
+  workflow plus downstream checkout observations so review/adoption signals
+  feed back into derived surfaces without becoming canonical truth.
 - `--build-metric-signal-index`: build `runs/metric_signal_index.json` from
   trace, evidence, graph-health, and proposal-runtime surfaces so metric-driven
   advisory signals remain derived rather than canonical facts. `sib_proxy` now
@@ -257,6 +265,14 @@ Key derived artifacts:
 - `runs/specpm_feedback_index.json`: derived `SpecPM` downstream feedback
   surface, grouped by observed review/adoption status, checkout signals, and
   next-gap backlog without auto-accepting that downstream state as canonical
+- `runs/metrics_delivery_workflow.json`: reviewable outbound `Metrics`
+  delivery workflow surface, grouped by delivery status, review state, git
+  checkout state, metric binding, and next-gap backlog before downstream commit
+  or PR
+- `runs/metrics_feedback_index.json`: derived `Metrics` downstream feedback
+  surface, grouped by observed review/adoption status, checkout signals, metric
+  binding, and next-gap backlog without auto-accepting downstream state as
+  canonical
 - `runs/metric_signal_index.json`: derived metric surface for
   `Specification Verifiability`, `Process Observability`,
   `Structural Observability`, and a bridge-aware `SIB` proxy, plus
@@ -291,6 +307,12 @@ Key derived artifacts:
 - `tools/specpm_feedback_policy.json`: declarative contract for downstream
   `SpecPM` feedback observation, including status vocabulary, branch/adoption
   heuristics, and review-safe next-gap defaults
+- `tools/metrics_delivery_policy.json`: declarative contract for reviewable
+  `SpecGraph -> Metrics` handoff delivery workflow, including eligibility, git
+  state checks, and downstream branch/commit/PR scaffolding
+- `tools/metrics_feedback_policy.json`: declarative contract for downstream
+  `Metrics` feedback observation, including status vocabulary, branch/adoption
+  heuristics, metric binding, and review-safe next-gap defaults
 - `tools/metric_signal_policy.json`: declarative thresholds, score mappings,
   metric identities, and proposal-first threshold semantics for the derived
   metric signal layer
