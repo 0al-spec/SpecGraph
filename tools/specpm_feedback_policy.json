@@ -1,0 +1,55 @@
+{
+  "artifact_kind": "specpm_feedback_policy",
+  "schema_version": 1,
+  "repository_layout": {
+    "artifact": "runs/specpm_feedback_index.json"
+  },
+  "feedback_contract": {
+    "artifact_kind": "specpm_feedback_index",
+    "schema_version": 1,
+    "feedback_statuses": [
+      "downstream_unobserved",
+      "review_activity_observed",
+      "adoption_observed_locally",
+      "blocked_by_delivery_gap",
+      "invalid_feedback_contract"
+    ],
+    "review_states": [
+      "not_observed",
+      "review_visible",
+      "adoption_visible"
+    ],
+    "named_filters": [
+      "downstream_unobserved",
+      "review_activity_observed",
+      "adoption_observed_locally",
+      "blocked_by_delivery_gap",
+      "invalid_feedback_contract",
+      "tracked_bundle_present",
+      "bundle_commit_present",
+      "default_branch_match",
+      "bundle_checkout_changes_present",
+      "unrelated_checkout_changes_present",
+      "checkout_behind_remote"
+    ]
+  },
+  "eligibility_rules": {
+    "required_consumer_id": "specpm",
+    "required_profile": "boundary_package_consumer"
+  },
+  "observation_rules": {
+    "default_branch_names": [
+      "main",
+      "master"
+    ],
+    "adoption_requires_clean_bundle_paths": true,
+    "adoption_requires_default_branch": true
+  },
+  "next_gap_defaults": {
+    "downstream_unobserved": "observe_specpm_downstream_review",
+    "review_activity_observed": "review_specpm_downstream_feedback",
+    "adoption_observed_locally": "collect_specpm_adoption_feedback",
+    "blocked_by_delivery_gap": "inherit_delivery_next_gap",
+    "invalid_feedback_contract": "repair_specpm_delivery_workflow"
+  }
+}

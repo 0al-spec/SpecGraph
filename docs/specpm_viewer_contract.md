@@ -14,6 +14,7 @@ Use this document when implementing:
 - handoff status cards
 - local materialization status
 - import review status
+- downstream feedback status
 
 ## 1. Lifecycle Overview
 
@@ -23,6 +24,7 @@ The current downstream loop is:
 2. build handoff packets
 3. materialize local draft bundle into sibling `SpecPM`
 4. build import preview from local bundle inbox
+5. observe downstream review or local adoption feedback from `SpecPM`
 
 The corresponding artifacts are:
 
@@ -30,6 +32,7 @@ The corresponding artifacts are:
 - `runs/specpm_handoff_packets.json`
 - `runs/specpm_materialization_report.json`
 - `runs/specpm_import_preview.json`
+- `runs/specpm_feedback_index.json`
 
 Recommended rebuild order for a viewer button group:
 
@@ -38,11 +41,12 @@ python3 tools/supervisor.py --build-specpm-export-preview
 python3 tools/supervisor.py --build-specpm-handoff-packets
 python3 tools/supervisor.py --materialize-specpm-export-bundles
 python3 tools/supervisor.py --build-specpm-import-preview
+python3 tools/supervisor.py --build-specpm-feedback-index
 ```
 
 ## 2. Stable Top-Level Contract
 
-All four artifacts should be consumed with the same top-level assumptions:
+All five artifacts should be consumed with the same top-level assumptions:
 
 - `artifact_kind`
 - `schema_version`
@@ -276,10 +280,53 @@ Current target vocabulary:
 - `handoff_candidate`
 - `pre_spec`
 
-## 7. Recommended Viewer Model
+## 7. Feedback Contract
+
+Read:
+
+- `runs/specpm_feedback_index.json`
+
+Use each `entries[]` object as one downstream feedback card.
+
+Required fields for the viewer:
+
+- `feedback_id`
+- `export_id`
+- `package_id`
+- `package_name`
+- `feedback_status`
+- `review_state`
+- `next_gap`
+- `target_consumer`
+- `related_specs`
+- `observed_checkout_feedback`
+
+Recommended status badge:
+
+- `feedback_status`
+
+Recommended detail block:
+
+- `related_specs.root_spec_id`
+- `related_specs.source_spec_ids`
+- `observed_checkout_feedback.current_branch`
+- `observed_checkout_feedback.upstream_branch`
+- `observed_checkout_feedback.tracked_bundle_paths`
+- `observed_checkout_feedback.latest_bundle_commit`
+- `observed_checkout_feedback.adoption_candidate`
+
+Current status vocabulary:
+
+- `downstream_unobserved`
+- `review_activity_observed`
+- `adoption_observed_locally`
+- `blocked_by_delivery_gap`
+- `invalid_feedback_contract`
+
+## 8. Recommended Viewer Model
 
 The viewer should not invent a separate persistence format yet. It should build
-one in-memory adapter from the four artifacts.
+one in-memory adapter from the five artifacts.
 
 Recommended normalized package-lifecycle shape:
 
@@ -306,6 +353,11 @@ Recommended normalized package-lifecycle shape:
     "review_state": "draft_visible",
     "next_gap": "review_draft_specpm_import_preview",
     "suggested_target_kind": "handoff_candidate"
+  },
+  "feedback": {
+    "status": "downstream_unobserved",
+    "review_state": "not_observed",
+    "next_gap": "observe_specpm_downstream_review"
   }
 }
 ```
@@ -316,13 +368,15 @@ Recommended join keys:
 - handoff side: `package_identity.package_id`
 - materialization side: `package_identity.package_id`
 - import side: `manifest_summary.package_id`
+- feedback side: `package_id`
 
 If a join key is missing, fall back to:
 
 - export/handoff/materialization: `export_id`
 - import: `bundle_id`
+- feedback: `export_id`
 
-## 8. Recommended Buttons
+## 9. Recommended Buttons
 
 ### `Build Export Preview`
 
@@ -366,7 +420,19 @@ This is a real local write into the sibling checkout:
 
 It is still review-first and is not a git commit workflow.
 
-## 9. Current Live Mock
+### `Build SpecPM Feedback`
+
+Run:
+
+```bash
+python3 tools/supervisor.py --build-specpm-feedback-index
+```
+
+Then read:
+
+- `runs/specpm_feedback_index.json`
+
+## 10. Current Live Mock
 
 At the time this document was written, a live local mock exists for:
 
@@ -378,6 +444,8 @@ Observed state:
 - handoff: `draft_preview_only`
 - materialization: `draft_materialized`
 - import: `draft_visible`
+- feedback: `downstream_unobserved` or a blocked downstream status depending on
+  current checkout state
 - suggested target: `handoff_candidate`
 
 This is enough for a viewer to render:
@@ -385,9 +453,10 @@ This is enough for a viewer to render:
 - one package lifecycle card
 - export/import preview panels
 - local materialization status
+- downstream feedback status
 - next-gap badges
 
-## 10. Non-Goals For The Viewer
+## 11. Non-Goals For The Viewer
 
 Do not assume yet:
 
