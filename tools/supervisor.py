@@ -44,6 +44,7 @@ Derived artifacts:
 - SpecPM import handoff packets: `runs/specpm_import_handoff_packets.json`
 - SpecPM delivery workflow: `runs/specpm_delivery_workflow.json`
 - SpecPM feedback index: `runs/specpm_feedback_index.json`
+- bootstrap smoke benchmark: `runs/bootstrap_smoke_benchmark.json`
 - spec trace index: `runs/spec_trace_index.json`
 - spec trace projection: `runs/spec_trace_projection.json`
 - proposal runtime index: `runs/proposal_runtime_index.json`
@@ -102,6 +103,7 @@ EVALUATOR_INTERVENTION_POLICY_RELATIVE_PATH = "tools/evaluator_intervention_poli
 EVIDENCE_PLANE_POLICY_RELATIVE_PATH = "tools/evidence_plane_policy.json"
 METRIC_SIGNAL_POLICY_RELATIVE_PATH = "tools/metric_signal_policy.json"
 SUPERVISOR_PERFORMANCE_POLICY_RELATIVE_PATH = "tools/supervisor_performance_policy.json"
+BOOTSTRAP_SMOKE_BENCHMARK_POLICY_RELATIVE_PATH = "tools/bootstrap_smoke_benchmark_policy.json"
 EXTERNAL_CONSUMER_REGISTRY_RELATIVE_PATH = "tools/external_consumers.json"
 EXTERNAL_CONSUMER_OVERLAY_POLICY_RELATIVE_PATH = "tools/external_consumer_overlay_policy.json"
 EXTERNAL_CONSUMER_HANDOFF_POLICY_RELATIVE_PATH = "tools/external_consumer_handoff_policy.json"
@@ -173,6 +175,10 @@ def metric_signal_policy_path() -> Path:
 
 def supervisor_performance_policy_path() -> Path:
     return TOOLS_DIR / "supervisor_performance_policy.json"
+
+
+def bootstrap_smoke_benchmark_policy_path() -> Path:
+    return TOOLS_DIR / "bootstrap_smoke_benchmark_policy.json"
 
 
 def external_consumer_overlay_policy_path() -> Path:
@@ -715,6 +721,47 @@ SUPERVISOR_PERFORMANCE_POLICY, SUPERVISOR_PERFORMANCE_POLICY_SHA256 = (
 )
 
 
+def load_bootstrap_smoke_benchmark_policy() -> tuple[dict[str, Any], str]:
+    path = bootstrap_smoke_benchmark_policy_path()
+    try:
+        raw_text = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise RuntimeError(
+            f"failed to read bootstrap smoke benchmark policy artifact: {path.as_posix()} ({exc})"
+        ) from exc
+    try:
+        payload = json.loads(raw_text)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(
+            f"malformed bootstrap smoke benchmark policy artifact: {path.as_posix()} ({exc})"
+        ) from exc
+    if not isinstance(payload, dict):
+        raise RuntimeError(
+            "malformed bootstrap smoke benchmark policy artifact: "
+            f"{path.as_posix()} must contain a JSON object"
+        )
+    required_sections = (
+        "repository_layout",
+        "benchmark_contract",
+        "seed_fixture",
+        "run_selection",
+        "fixed_budget",
+        "pass_criteria",
+    )
+    missing = [section for section in required_sections if section not in payload]
+    if missing:
+        raise RuntimeError(
+            "malformed bootstrap smoke benchmark policy artifact: missing top-level section(s): "
+            + ", ".join(missing)
+        )
+    return payload, hashlib.sha256(raw_text.encode("utf-8")).hexdigest()
+
+
+BOOTSTRAP_SMOKE_BENCHMARK_POLICY, BOOTSTRAP_SMOKE_BENCHMARK_POLICY_SHA256 = (
+    load_bootstrap_smoke_benchmark_policy()
+)
+
+
 def load_external_consumer_overlay_policy() -> tuple[dict[str, Any], str]:
     path = external_consumer_overlay_policy_path()
     try:
@@ -1234,6 +1281,15 @@ def supervisor_performance_policy_lookup(policy_path: str) -> Any:
     return copy.deepcopy(current)
 
 
+def bootstrap_smoke_benchmark_policy_lookup(policy_path: str) -> Any:
+    current: Any = BOOTSTRAP_SMOKE_BENCHMARK_POLICY
+    for part in policy_path.split("."):
+        if not isinstance(current, dict) or part not in current:
+            raise KeyError(policy_path)
+        current = current[part]
+    return copy.deepcopy(current)
+
+
 def evaluator_intervention_policy_lookup(policy_path: str) -> Any:
     current: Any = EVALUATOR_INTERVENTION_POLICY
     for part in policy_path.split("."):
@@ -1380,6 +1436,14 @@ def supervisor_performance_policy_reference() -> dict[str, Any]:
         "artifact_path": SUPERVISOR_PERFORMANCE_POLICY_RELATIVE_PATH,
         "artifact_sha256": SUPERVISOR_PERFORMANCE_POLICY_SHA256,
         "version": SUPERVISOR_PERFORMANCE_POLICY.get("version"),
+    }
+
+
+def bootstrap_smoke_benchmark_policy_reference() -> dict[str, Any]:
+    return {
+        "artifact_path": BOOTSTRAP_SMOKE_BENCHMARK_POLICY_RELATIVE_PATH,
+        "artifact_sha256": BOOTSTRAP_SMOKE_BENCHMARK_POLICY_SHA256,
+        "version": BOOTSTRAP_SMOKE_BENCHMARK_POLICY.get("version"),
     }
 
 
@@ -1839,6 +1903,27 @@ SUPERVISOR_PERFORMANCE_BLOCKED_GATE_STATES = set(
 )
 SUPERVISOR_PERFORMANCE_REPEAT_HOTSPOT_RUN_COUNT = int(
     supervisor_performance_policy_lookup("batch_contract.repeat_hotspot_run_count")
+)
+BOOTSTRAP_SMOKE_BENCHMARK_FILENAME = Path(
+    str(bootstrap_smoke_benchmark_policy_lookup("repository_layout.report_artifact"))
+).name
+BOOTSTRAP_SMOKE_BENCHMARK_ARTIFACT_KIND = str(
+    bootstrap_smoke_benchmark_policy_lookup("benchmark_contract.artifact_kind")
+)
+BOOTSTRAP_SMOKE_BENCHMARK_SCHEMA_VERSION = int(
+    bootstrap_smoke_benchmark_policy_lookup("benchmark_contract.schema_version")
+)
+BOOTSTRAP_SMOKE_BENCHMARK_ID = str(
+    bootstrap_smoke_benchmark_policy_lookup("benchmark_contract.benchmark_id")
+)
+BOOTSTRAP_SMOKE_BENCHMARK_STATUSES = list(
+    bootstrap_smoke_benchmark_policy_lookup("benchmark_contract.benchmark_statuses")
+)
+BOOTSTRAP_SMOKE_BENCHMARK_REVIEW_STATES = list(
+    bootstrap_smoke_benchmark_policy_lookup("benchmark_contract.review_states")
+)
+BOOTSTRAP_SMOKE_BENCHMARK_NAMED_FILTERS = list(
+    bootstrap_smoke_benchmark_policy_lookup("benchmark_contract.named_filters")
 )
 OPERATOR_REQUEST_PACKET_ARTIFACT_KIND = str(
     operator_request_bridge_policy_lookup("packet_contract.artifact_kind")
@@ -11297,6 +11382,10 @@ def supervisor_performance_index_path() -> Path:
     return RUNS_DIR / SUPERVISOR_PERFORMANCE_INDEX_FILENAME
 
 
+def bootstrap_smoke_benchmark_path() -> Path:
+    return RUNS_DIR / BOOTSTRAP_SMOKE_BENCHMARK_FILENAME
+
+
 def load_spec_trace_registry() -> dict[str, dict[str, Any]]:
     path = spec_trace_registry_path()
     if not path.exists():
@@ -16769,6 +16858,23 @@ def build_supervisor_performance_index() -> dict[str, Any]:
         validation_summary_payload = payload.get("validation_summary", {})
         if not isinstance(validation_summary_payload, dict):
             validation_summary_payload = {}
+        benchmark_payload = payload.get("benchmark", {})
+        if not isinstance(benchmark_payload, dict):
+            benchmark_payload = {}
+        benchmark_metadata = {
+            "benchmark_id": str(
+                benchmark_payload.get("benchmark_id", payload.get("benchmark_id", ""))
+            ).strip(),
+            "scenario_id": str(
+                benchmark_payload.get("scenario_id", payload.get("benchmark_scenario_id", ""))
+            ).strip(),
+            "batch_id": str(
+                benchmark_payload.get("batch_id", payload.get("benchmark_batch_id", ""))
+            ).strip(),
+            "seed_id": str(
+                benchmark_payload.get("seed_id", payload.get("benchmark_seed_id", ""))
+            ).strip(),
+        }
 
         entry = {
             "run_id": run_id,
@@ -16836,6 +16942,7 @@ def build_supervisor_performance_index() -> dict[str, Any]:
                 ),
             },
             "validation_summary": copy.deepcopy(validation_summary_payload),
+            "benchmark": benchmark_metadata,
         }
         entries.append(entry)
 
@@ -17005,6 +17112,290 @@ def build_supervisor_performance_index() -> dict[str, Any]:
 def write_supervisor_performance_index(report: dict[str, Any]) -> Path:
     RUNS_DIR.mkdir(parents=True, exist_ok=True)
     path = supervisor_performance_index_path()
+    with artifact_lock(path):
+        atomic_write_json(path, report)
+    return path
+
+
+def bootstrap_smoke_entry_matches(entry: dict[str, Any]) -> bool:
+    benchmark_id = BOOTSTRAP_SMOKE_BENCHMARK_ID.strip()
+    run_selection = bootstrap_smoke_benchmark_policy_lookup("run_selection")
+    run_kind = str(run_selection.get("run_kind", "")).strip()
+    run_id_prefix = str(run_selection.get("run_id_prefix", "")).strip()
+    benchmark_payload = entry.get("benchmark", {})
+    if not isinstance(benchmark_payload, dict):
+        benchmark_payload = {}
+    entry_benchmark_id = str(benchmark_payload.get("benchmark_id", "")).strip()
+    entry_run_kind = str(entry.get("run_kind", "")).strip()
+    entry_run_id = str(entry.get("run_id", "")).strip()
+    return (
+        bool(benchmark_id and entry_benchmark_id == benchmark_id)
+        or bool(run_kind and entry_run_kind == run_kind)
+        or bool(run_id_prefix and entry_run_id.startswith(run_id_prefix))
+    )
+
+
+def bootstrap_smoke_latest_batch(entries: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    batch_groups: dict[str, list[dict[str, Any]]] = {}
+    for entry in entries:
+        benchmark_payload = entry.get("benchmark", {})
+        if not isinstance(benchmark_payload, dict):
+            benchmark_payload = {}
+        batch_id = str(benchmark_payload.get("batch_id", "")).strip()
+        if not batch_id:
+            batch_id = "default"
+        batch_groups.setdefault(batch_id, []).append(entry)
+    if not batch_groups:
+        return []
+
+    def batch_sort_key(item: tuple[str, list[dict[str, Any]]]) -> tuple[str, str]:
+        batch_id, batch_entries = item
+        latest_timestamp = max(
+            (str(entry.get("timestamp_utc", "")).strip() for entry in batch_entries),
+            default="",
+        )
+        return latest_timestamp, batch_id
+
+    _, latest_entries = max(batch_groups.items(), key=batch_sort_key)
+    return sorted(
+        latest_entries,
+        key=lambda entry: (
+            str(entry.get("timestamp_utc", "")).strip(),
+            str(entry.get("run_id", "")).strip(),
+        ),
+    )
+
+
+def bootstrap_smoke_criterion(
+    *,
+    criterion_id: str,
+    observed: int | bool | None,
+    required: int | bool | str,
+    passed: bool,
+) -> dict[str, Any]:
+    return {
+        "criterion_id": criterion_id,
+        "passed": passed,
+        "observed": observed,
+        "required": required,
+    }
+
+
+def build_bootstrap_smoke_benchmark(
+    supervisor_performance_index: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    if supervisor_performance_index is None:
+        supervisor_performance_index = build_supervisor_performance_index()
+
+    all_entries = [
+        entry
+        for entry in supervisor_performance_index.get("entries", [])
+        if isinstance(entry, dict)
+    ]
+    matching_entries = [entry for entry in all_entries if bootstrap_smoke_entry_matches(entry)]
+    selected_entries = bootstrap_smoke_latest_batch(matching_entries)
+    selected_run_ids = [str(entry.get("run_id", "")).strip() for entry in selected_entries]
+
+    pass_criteria = bootstrap_smoke_benchmark_policy_lookup("pass_criteria")
+    seed_fixture = bootstrap_smoke_benchmark_policy_lookup("seed_fixture")
+    fixed_budget = bootstrap_smoke_benchmark_policy_lookup("fixed_budget")
+    seed_node_count = int(seed_fixture.get("seed_node_count", 1) or 1)
+    max_iterations = int(fixed_budget.get("max_iterations", 0) or 0)
+
+    productive_run_count = sum(1 for entry in selected_entries if bool(entry.get("productive_run")))
+    runtime_failed_count = sum(
+        1
+        for entry in selected_entries
+        if str(entry.get("runtime_status", "")).strip() == "runtime_failed"
+    )
+    low_yield_count = sum(
+        1 for entry in selected_entries if str(entry.get("yield_status", "")).strip() == "low_yield"
+    )
+    blocked_or_regressed_count = sum(
+        1
+        for entry in selected_entries
+        if str(entry.get("graph_impact_status", "")).strip() == "blocked_or_regressed"
+    )
+    new_child_materialized_count = sum(
+        int(entry.get("new_child_materialized_count", 0) or 0) for entry in selected_entries
+    )
+    estimated_final_node_count = seed_node_count + new_child_materialized_count
+    terminal_yield_status = (
+        str(selected_entries[-1].get("yield_status", "")).strip() if selected_entries else ""
+    )
+    allowed_terminal_yield_statuses = {
+        str(item).strip()
+        for item in pass_criteria.get("allowed_terminal_yield_statuses", [])
+        if str(item).strip()
+    }
+
+    criteria_results = [
+        bootstrap_smoke_criterion(
+            criterion_id="min_productive_run_count",
+            observed=productive_run_count,
+            required=int(pass_criteria.get("min_productive_run_count", 0) or 0),
+            passed=productive_run_count
+            >= int(pass_criteria.get("min_productive_run_count", 0) or 0),
+        ),
+        bootstrap_smoke_criterion(
+            criterion_id="min_new_child_materialized_count",
+            observed=new_child_materialized_count,
+            required=int(pass_criteria.get("min_new_child_materialized_count", 0) or 0),
+            passed=new_child_materialized_count
+            >= int(pass_criteria.get("min_new_child_materialized_count", 0) or 0),
+        ),
+        bootstrap_smoke_criterion(
+            criterion_id="max_runtime_failed_count",
+            observed=runtime_failed_count,
+            required=int(pass_criteria.get("max_runtime_failed_count", 0) or 0),
+            passed=runtime_failed_count
+            <= int(pass_criteria.get("max_runtime_failed_count", 0) or 0),
+        ),
+        bootstrap_smoke_criterion(
+            criterion_id="max_low_yield_count",
+            observed=low_yield_count,
+            required=int(pass_criteria.get("max_low_yield_count", 0) or 0),
+            passed=low_yield_count <= int(pass_criteria.get("max_low_yield_count", 0) or 0),
+        ),
+        bootstrap_smoke_criterion(
+            criterion_id="max_blocked_or_regressed_count",
+            observed=blocked_or_regressed_count,
+            required=int(pass_criteria.get("max_blocked_or_regressed_count", 0) or 0),
+            passed=blocked_or_regressed_count
+            <= int(pass_criteria.get("max_blocked_or_regressed_count", 0) or 0),
+        ),
+        bootstrap_smoke_criterion(
+            criterion_id="min_estimated_final_node_count",
+            observed=estimated_final_node_count,
+            required=int(pass_criteria.get("min_estimated_final_node_count", 0) or 0),
+            passed=estimated_final_node_count
+            >= int(pass_criteria.get("min_estimated_final_node_count", 0) or 0),
+        ),
+        bootstrap_smoke_criterion(
+            criterion_id="terminal_yield_status_allowed",
+            observed=terminal_yield_status or None,
+            required=", ".join(sorted(allowed_terminal_yield_statuses)),
+            passed=bool(
+                terminal_yield_status and terminal_yield_status in allowed_terminal_yield_statuses
+            ),
+        ),
+        bootstrap_smoke_criterion(
+            criterion_id="within_fixed_budget",
+            observed=len(selected_entries),
+            required=max_iterations,
+            passed=bool(max_iterations and len(selected_entries) <= max_iterations),
+        ),
+    ]
+
+    over_fixed_budget = bool(max_iterations and len(selected_entries) > max_iterations)
+
+    if not selected_entries:
+        benchmark_status = "not_run"
+        review_state = "not_observed"
+        next_gap = "run_bootstrap_smoke_benchmark"
+    elif runtime_failed_count > int(pass_criteria.get("max_runtime_failed_count", 0) or 0):
+        benchmark_status = "blocked_by_runtime"
+        review_state = "advisory_fail"
+        next_gap = "repair_bootstrap_runtime"
+    elif over_fixed_budget:
+        benchmark_status = "insufficient_data"
+        review_state = "advisory_fail"
+        next_gap = "rerun_with_fixed_smoke_budget"
+    elif all(bool(result["passed"]) for result in criteria_results):
+        benchmark_status = "passed"
+        review_state = "advisory_pass"
+        next_gap = "none"
+    else:
+        benchmark_status = "failed"
+        review_state = "advisory_fail"
+        next_gap = "inspect_bootstrap_smoke_regression"
+
+    named_filters = {name: [] for name in BOOTSTRAP_SMOKE_BENCHMARK_NAMED_FILTERS}
+    named_filters.setdefault(benchmark_status, []).append(BOOTSTRAP_SMOKE_BENCHMARK_ID)
+    if productive_run_count:
+        named_filters["productive_smoke_runs"].extend(selected_run_ids)
+    if runtime_failed_count:
+        named_filters["runtime_failed_smoke_runs"].extend(
+            str(entry.get("run_id", "")).strip()
+            for entry in selected_entries
+            if str(entry.get("runtime_status", "")).strip() == "runtime_failed"
+        )
+    if low_yield_count:
+        named_filters["low_yield_smoke_runs"].extend(
+            str(entry.get("run_id", "")).strip()
+            for entry in selected_entries
+            if str(entry.get("yield_status", "")).strip() == "low_yield"
+        )
+    if new_child_materialized_count:
+        named_filters["new_child_materialized"].extend(
+            str(entry.get("run_id", "")).strip()
+            for entry in selected_entries
+            if int(entry.get("new_child_materialized_count", 0) or 0) > 0
+        )
+    for key in list(named_filters):
+        named_filters[key] = sorted({item for item in named_filters[key] if str(item).strip()})
+
+    return {
+        "artifact_kind": BOOTSTRAP_SMOKE_BENCHMARK_ARTIFACT_KIND,
+        "schema_version": BOOTSTRAP_SMOKE_BENCHMARK_SCHEMA_VERSION,
+        "generated_at": utc_now_iso(),
+        "policy_reference": bootstrap_smoke_benchmark_policy_reference(),
+        "source_artifacts": {
+            "supervisor_performance_index": {
+                "artifact_path": supervisor_performance_index_path().relative_to(ROOT).as_posix(),
+                "generated_at": supervisor_performance_index.get("generated_at"),
+                "entry_count": supervisor_performance_index.get("entry_count", 0),
+            }
+        },
+        "benchmark_id": BOOTSTRAP_SMOKE_BENCHMARK_ID,
+        "benchmark_status": benchmark_status,
+        "review_state": review_state,
+        "next_gap": next_gap,
+        "seed_fixture": copy.deepcopy(seed_fixture),
+        "fixed_budget": copy.deepcopy(fixed_budget),
+        "run_selection": copy.deepcopy(bootstrap_smoke_benchmark_policy_lookup("run_selection")),
+        "selected_run_count": len(selected_entries),
+        "selected_run_ids": selected_run_ids,
+        "summary": {
+            "productive_run_count": productive_run_count,
+            "runtime_failed_count": runtime_failed_count,
+            "low_yield_count": low_yield_count,
+            "blocked_or_regressed_count": blocked_or_regressed_count,
+            "new_child_materialized_count": new_child_materialized_count,
+            "estimated_final_node_count": estimated_final_node_count,
+            "terminal_yield_status": terminal_yield_status,
+        },
+        "criteria_results": criteria_results,
+        "entries": [
+            {
+                "run_id": str(entry.get("run_id", "")).strip(),
+                "spec_id": str(entry.get("spec_id", "")).strip(),
+                "timestamp_utc": str(entry.get("timestamp_utc", "")).strip(),
+                "run_kind": str(entry.get("run_kind", "")).strip(),
+                "execution_profile": str(entry.get("execution_profile", "")).strip(),
+                "runtime_status": str(entry.get("runtime_status", "")).strip(),
+                "yield_status": str(entry.get("yield_status", "")).strip(),
+                "graph_impact_status": str(entry.get("graph_impact_status", "")).strip(),
+                "productive_run": bool(entry.get("productive_run")),
+                "new_child_materialized_count": int(
+                    entry.get("new_child_materialized_count", 0) or 0
+                ),
+                "benchmark": copy.deepcopy(entry.get("benchmark", {})),
+            }
+            for entry in selected_entries
+        ],
+        "viewer_projection": {
+            "benchmark_status": {
+                benchmark_status: [BOOTSTRAP_SMOKE_BENCHMARK_ID],
+            },
+            "named_filters": {key: value for key, value in sorted(named_filters.items())},
+        },
+    }
+
+
+def write_bootstrap_smoke_benchmark(report: dict[str, Any]) -> Path:
+    RUNS_DIR.mkdir(parents=True, exist_ok=True)
+    path = bootstrap_smoke_benchmark_path()
     with artifact_lock(path):
         atomic_write_json(path, report)
     return path
@@ -21761,6 +22152,7 @@ def main(
     build_metric_signal_index_mode: bool = False,
     build_metric_threshold_proposals_mode: bool = False,
     build_supervisor_performance_index_mode: bool = False,
+    build_bootstrap_smoke_benchmark_mode: bool = False,
     build_graph_dashboard_mode: bool = False,
     build_proposal_lane_overlay_mode: bool = False,
     build_proposal_runtime_index_mode: bool = False,
@@ -21818,6 +22210,7 @@ def main(
         "--build-metric-signal-index": build_metric_signal_index_mode,
         "--build-metric-threshold-proposals": build_metric_threshold_proposals_mode,
         "--build-supervisor-performance-index": build_supervisor_performance_index_mode,
+        "--build-bootstrap-smoke-benchmark": build_bootstrap_smoke_benchmark_mode,
         "--build-graph-dashboard": build_graph_dashboard_mode,
         "--build-proposal-lane-overlay": build_proposal_lane_overlay_mode,
         "--build-proposal-runtime-index": build_proposal_runtime_index_mode,
@@ -22226,6 +22619,7 @@ def main(
                 build_external_consumer_handoffs_mode,
                 build_metric_signal_index_mode,
                 build_metric_threshold_proposals_mode,
+                build_bootstrap_smoke_benchmark_mode,
                 build_graph_dashboard_mode,
                 build_proposal_runtime_index_mode,
                 build_proposal_promotion_index_mode,
@@ -22238,6 +22632,43 @@ def main(
             return 1
         report = build_supervisor_performance_index()
         write_supervisor_performance_index(report)
+        print(json.dumps(report, ensure_ascii=False, indent=2))
+        return 0
+
+    if build_bootstrap_smoke_benchmark_mode:
+        if any(
+            (
+                dry_run,
+                auto_approve,
+                loop,
+                resolve_gate,
+                decision,
+                note,
+                target_spec,
+                split_proposal,
+                apply_split_proposal,
+                operator_note,
+                mutation_budget,
+                run_authority,
+                execution_profile,
+                child_model,
+                child_timeout_seconds,
+                verbose,
+                list_stale_runtime,
+                clean_stale_runtime,
+                observe_graph_health_mode,
+                operator_request_packet_path,
+            )
+        ):
+            print(
+                "--build-bootstrap-smoke-benchmark must be used as a standalone command",
+                file=sys.stderr,
+            )
+            return 1
+        performance_index = build_supervisor_performance_index()
+        write_supervisor_performance_index(performance_index)
+        report = build_bootstrap_smoke_benchmark(performance_index)
+        write_bootstrap_smoke_benchmark(report)
         print(json.dumps(report, ensure_ascii=False, indent=2))
         return 0
 
@@ -23909,6 +24340,14 @@ if __name__ == "__main__":
         ),
     )
     parser.add_argument(
+        "--build-bootstrap-smoke-benchmark",
+        action="store_true",
+        help=(
+            "Build an advisory bootstrap smoke benchmark report from supervisor performance "
+            "signals without comparing exact generated spec text"
+        ),
+    )
+    parser.add_argument(
         "--build-graph-dashboard",
         action="store_true",
         help=(
@@ -24080,6 +24519,7 @@ if __name__ == "__main__":
             build_metric_signal_index_mode=args.build_metric_signal_index,
             build_metric_threshold_proposals_mode=args.build_metric_threshold_proposals,
             build_supervisor_performance_index_mode=args.build_supervisor_performance_index,
+            build_bootstrap_smoke_benchmark_mode=args.build_bootstrap_smoke_benchmark,
             build_graph_dashboard_mode=args.build_graph_dashboard,
             build_proposal_lane_overlay_mode=args.build_proposal_lane_overlay,
             build_proposal_runtime_index_mode=args.build_proposal_runtime_index,

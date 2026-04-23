@@ -136,6 +136,10 @@ Supervisor modes:
   `runs/supervisor_performance_index.json` from historical run logs so runtime
   cleanliness, run yield, and graph impact can be inspected separately over
   time.
+- `--build-bootstrap-smoke-benchmark`: build
+  `runs/bootstrap_smoke_benchmark.json` from the supervisor performance index
+  so minimal-seed bootstrap yield can be inspected structurally without
+  comparing exact generated spec text.
 - `--build-graph-dashboard`: build `runs/graph_dashboard.json` as one
   aggregated viewer-facing dashboard with headline counts from graph health,
   proposal, implementation, evidence, external-consumer, handoff, and metric
@@ -263,6 +267,9 @@ Key derived artifacts:
 - `runs/supervisor_performance_index.json`: derived supervisor measurement
   surface grouped by runtime status, yield status, graph impact, per-profile
   throughput, and repeat-hotspot pressure
+- `runs/bootstrap_smoke_benchmark.json`: advisory benchmark report that
+  evaluates cheap bootstrap-smoke runs from structural yield criteria instead
+  of golden text snapshots
 - `runs/graph_dashboard.json`: aggregated dashboard artifact with headline
   cards and section counts for graph, health, proposals, implementation,
   evidence, external consumers, external handoffs, and metric surfaces
@@ -289,6 +296,9 @@ Key derived artifacts:
 - `tools/supervisor_performance_policy.json`: declarative contract for the
   supervisor performance index, including runtime, yield, graph-impact, and
   repeat-hotspot classifications
+- `tools/bootstrap_smoke_benchmark_policy.json`: declarative contract for the
+  advisory bootstrap smoke benchmark, including seed fixture metadata, run
+  selection, fixed budget, and structural pass criteria
 - `tools/external_consumers.json`: tracked registry of stable and draft
   external consumers, such as `Metrics/SIB` and `Metrics/SIB_FULL`, used by
   the bridge index and bridge-backed metric derivation

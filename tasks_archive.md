@@ -122,6 +122,7 @@ Task numbers are preserved for traceability across commits, PRs, and review thre
 ## Evaluator, Validation, and Benchmarking
 
 56. [done] Record supervisor performance and yield metrics as derived run artifacts so throughput, intervention cost, and graph impact can be inspected over time.
+57. [done] Add a cheap LLM bootstrap smoke benchmark that measures structural yield from a minimal seed without treating exact node text as the oracle.
 
 ## External Consumer Bridge
 

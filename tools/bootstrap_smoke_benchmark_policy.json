@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "repository_layout": {
+    "report_artifact": "runs/bootstrap_smoke_benchmark.json"
+  },
+  "benchmark_contract": {
+    "artifact_kind": "bootstrap_smoke_benchmark",
+    "schema_version": 1,
+    "benchmark_id": "minimal_seed_structural_yield",
+    "benchmark_statuses": [
+      "not_run",
+      "passed",
+      "failed",
+      "blocked_by_runtime",
+      "insufficient_data"
+    ],
+    "review_states": [
+      "advisory_pass",
+      "advisory_fail",
+      "not_observed"
+    ],
+    "named_filters": [
+      "not_run",
+      "passed",
+      "failed",
+      "blocked_by_runtime",
+      "insufficient_data",
+      "productive_smoke_runs",
+      "runtime_failed_smoke_runs",
+      "low_yield_smoke_runs",
+      "new_child_materialized"
+    ]
+  },
+  "seed_fixture": {
+    "fixture_id": "minimal_seed_graph_growth",
+    "root_spec_id": "SG-SPEC-SMOKE-0001",
+    "root_title": "Minimal Bootstrap Smoke Seed",
+    "seed_node_count": 1,
+    "description": "A minimal graph-facing seed used to evaluate whether supervisor can produce structural progress without comparing exact generated prose."
+  },
+  "run_selection": {
+    "run_kind": "bootstrap_smoke",
+    "benchmark_id_field": "benchmark.benchmark_id",
+    "run_id_prefix": "bootstrap-smoke::minimal_seed_structural_yield"
+  },
+  "fixed_budget": {
+    "max_iterations": 5,
+    "recommended_execution_profile": "fast",
+    "advisory_only": true
+  },
+  "pass_criteria": {
+    "min_productive_run_count": 1,
+    "min_new_child_materialized_count": 1,
+    "max_runtime_failed_count": 0,
+    "max_low_yield_count": 2,
+    "max_blocked_or_regressed_count": 0,
+    "min_estimated_final_node_count": 2,
+    "allowed_terminal_yield_statuses": [
+      "accepted_change",
+      "proposal_emitted",
+      "productive_split_required",
+      "review_pending_candidate"
+    ]
+  }
+}

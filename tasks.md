@@ -29,7 +29,6 @@ Task numbers are preserved for traceability across commits and PRs.
 53. [done] Let evaluator choose among refine/propose/rewrite/merge/handoff actions from derived graph-health and authority constraints instead of fixed operator heuristics alone.
 54. [done] Introduce typed validation findings and error classes so YAML, relation, acceptance, authority, and artifact failures stop flowing as ad hoc strings.
 55. [done] Add a safe repair contract that lets supervisor or helper tools propose bounded fixes from structured findings without silently mutating canonical truth.
-57. [todo] Add a cheap LLM bootstrap smoke benchmark that measures structural yield from a minimal seed without treating exact node text as the oracle.
 
 ## Semantic Shape and Handoff
 

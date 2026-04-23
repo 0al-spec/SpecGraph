@@ -11237,6 +11237,10 @@ def test_build_supervisor_performance_index_classifies_runtime_yield_and_graph_i
             "validation_summary": {"finding_count": 0, "by_family": {}},
             "validator_results": {"executor_environment": True, "runtime_artifacts": True},
             "graph_health": {"source_spec_id": "SG-SPEC-0001", "signals": []},
+            "benchmark": {
+                "benchmark_id": "minimal_seed_structural_yield",
+                "batch_id": "batch-1",
+            },
             "decision_inspector": {
                 "queue_effects": {
                     "proposal_queue": {"emitted_ids": [], "updated_ids": [], "cleared_ids": []},
@@ -11387,6 +11391,12 @@ def test_build_supervisor_performance_index_classifies_runtime_yield_and_graph_i
     assert report["artifact_kind"] == supervisor_module.SUPERVISOR_PERFORMANCE_INDEX_ARTIFACT_KIND
     assert report["entry_count"] == 4
     by_run_id = {entry["run_id"]: entry for entry in report["entries"]}
+    assert by_run_id["20260421T100001Z-SG-SPEC-0001-a1b2c3d4"]["benchmark"] == {
+        "benchmark_id": "minimal_seed_structural_yield",
+        "scenario_id": "",
+        "batch_id": "batch-1",
+        "seed_id": "",
+    }
     assert by_run_id["20260421T100001Z-SG-SPEC-0001-a1b2c3d4"]["yield_status"] == "accepted_change"
     assert (
         by_run_id["20260421T100001Z-SG-SPEC-0001-a1b2c3d4"]["graph_impact_status"]
@@ -11480,6 +11490,148 @@ def test_main_builds_supervisor_performance_index_as_standalone_command(
     )
     assert artifact["policy_reference"]["artifact_path"] == (
         "tools/supervisor_performance_policy.json"
+    )
+
+
+def test_build_bootstrap_smoke_benchmark_evaluates_structural_yield(
+    supervisor_module: object,
+) -> None:
+    performance_index = {
+        "artifact_kind": supervisor_module.SUPERVISOR_PERFORMANCE_INDEX_ARTIFACT_KIND,
+        "schema_version": supervisor_module.SUPERVISOR_PERFORMANCE_INDEX_SCHEMA_VERSION,
+        "generated_at": "2026-04-23T10:00:00Z",
+        "entry_count": 3,
+        "entries": [
+            {
+                "run_id": "bootstrap-smoke::minimal_seed_structural_yield::old-1",
+                "spec_id": "SG-SPEC-SMOKE-0001",
+                "timestamp_utc": "2026-04-23T09:00:00Z",
+                "run_kind": "bootstrap_smoke",
+                "execution_profile": "fast",
+                "runtime_status": "runtime_failed",
+                "yield_status": "runtime_blocked",
+                "graph_impact_status": "blocked_or_regressed",
+                "productive_run": False,
+                "new_child_materialized_count": 0,
+                "benchmark": {
+                    "benchmark_id": supervisor_module.BOOTSTRAP_SMOKE_BENCHMARK_ID,
+                    "batch_id": "old",
+                },
+            },
+            {
+                "run_id": "bootstrap-smoke::minimal_seed_structural_yield::latest-1",
+                "spec_id": "SG-SPEC-SMOKE-0001",
+                "timestamp_utc": "2026-04-23T10:00:00Z",
+                "run_kind": "bootstrap_smoke",
+                "execution_profile": "fast",
+                "runtime_status": "runtime_clean",
+                "yield_status": "accepted_change",
+                "graph_impact_status": "canonical_improvement",
+                "productive_run": True,
+                "new_child_materialized_count": 0,
+                "benchmark": {
+                    "benchmark_id": supervisor_module.BOOTSTRAP_SMOKE_BENCHMARK_ID,
+                    "batch_id": "latest",
+                },
+            },
+            {
+                "run_id": "bootstrap-smoke::minimal_seed_structural_yield::latest-2",
+                "spec_id": "SG-SPEC-SMOKE-0001",
+                "timestamp_utc": "2026-04-23T10:05:00Z",
+                "run_kind": "bootstrap_smoke",
+                "execution_profile": "fast",
+                "runtime_status": "runtime_clean",
+                "yield_status": "productive_split_required",
+                "graph_impact_status": "structural_pressure",
+                "productive_run": True,
+                "new_child_materialized_count": 1,
+                "benchmark": {
+                    "benchmark_id": supervisor_module.BOOTSTRAP_SMOKE_BENCHMARK_ID,
+                    "batch_id": "latest",
+                },
+            },
+        ],
+    }
+
+    report = supervisor_module.build_bootstrap_smoke_benchmark(performance_index)
+
+    assert report["artifact_kind"] == supervisor_module.BOOTSTRAP_SMOKE_BENCHMARK_ARTIFACT_KIND
+    assert report["benchmark_status"] == "passed"
+    assert report["review_state"] == "advisory_pass"
+    assert report["selected_run_ids"] == [
+        "bootstrap-smoke::minimal_seed_structural_yield::latest-1",
+        "bootstrap-smoke::minimal_seed_structural_yield::latest-2",
+    ]
+    assert report["summary"]["productive_run_count"] == 2
+    assert report["summary"]["new_child_materialized_count"] == 1
+    assert report["summary"]["estimated_final_node_count"] == 2
+    assert report["viewer_projection"]["named_filters"]["new_child_materialized"] == [
+        "bootstrap-smoke::minimal_seed_structural_yield::latest-2"
+    ]
+    assert all(result["passed"] for result in report["criteria_results"])
+
+
+def test_build_bootstrap_smoke_benchmark_reports_not_run(
+    supervisor_module: object,
+) -> None:
+    report = supervisor_module.build_bootstrap_smoke_benchmark(
+        {
+            "artifact_kind": supervisor_module.SUPERVISOR_PERFORMANCE_INDEX_ARTIFACT_KIND,
+            "schema_version": supervisor_module.SUPERVISOR_PERFORMANCE_INDEX_SCHEMA_VERSION,
+            "generated_at": "2026-04-23T10:00:00Z",
+            "entry_count": 0,
+            "entries": [],
+        }
+    )
+
+    assert report["benchmark_status"] == "not_run"
+    assert report["review_state"] == "not_observed"
+    assert report["next_gap"] == "run_bootstrap_smoke_benchmark"
+    assert report["selected_run_count"] == 0
+
+
+def test_main_builds_bootstrap_smoke_benchmark_as_standalone_command(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    performance_index = {
+        "artifact_kind": supervisor_module.SUPERVISOR_PERFORMANCE_INDEX_ARTIFACT_KIND,
+        "schema_version": supervisor_module.SUPERVISOR_PERFORMANCE_INDEX_SCHEMA_VERSION,
+        "generated_at": "2026-04-23T10:00:00Z",
+        "entry_count": 0,
+        "entries": [],
+        "aggregates": {},
+        "viewer_projection": {},
+    }
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_supervisor_performance_index",
+        lambda: performance_index,
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "load_specs",
+        lambda: (_ for _ in ()).throw(AssertionError("load_specs should not be called")),
+    )
+
+    exit_code = supervisor_module.main(build_bootstrap_smoke_benchmark_mode=True)
+
+    assert exit_code == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["artifact_kind"] == supervisor_module.BOOTSTRAP_SMOKE_BENCHMARK_ARTIFACT_KIND
+    performance_artifact = json.loads(
+        (repo_fixture / "runs" / "supervisor_performance_index.json").read_text(encoding="utf-8")
+    )
+    benchmark_artifact = json.loads(
+        (repo_fixture / "runs" / "bootstrap_smoke_benchmark.json").read_text(encoding="utf-8")
+    )
+    assert performance_artifact["artifact_kind"] == (
+        supervisor_module.SUPERVISOR_PERFORMANCE_INDEX_ARTIFACT_KIND
+    )
+    assert benchmark_artifact["policy_reference"]["artifact_path"] == (
+        "tools/bootstrap_smoke_benchmark_policy.json"
     )
 
 
