@@ -2,13 +2,14 @@ id: SG-SPEC-0039
 title: SpecGraph - Non-Retry Queue-Control Contract Cluster
 kind: spec
 created_at: '2026-04-14T19:05:59Z'
-updated_at: '2026-04-24T21:06:00Z'
+updated_at: '2026-04-24T21:20:14Z'
 status: linked
 maturity: 0.23
 depends_on:
 - SG-SPEC-0037
 - SG-SPEC-0038
 - SG-SPEC-0040
+- SG-SPEC-0056
 refines:
 - SG-SPEC-0034
 inputs:
@@ -16,6 +17,7 @@ inputs:
 - specs/nodes/SG-SPEC-0037.yaml
 - specs/nodes/SG-SPEC-0038.yaml
 - specs/nodes/SG-SPEC-0040.yaml
+- specs/nodes/SG-SPEC-0056.yaml
 - tasks.md
 outputs:
 - specs/nodes/SG-SPEC-0039.yaml
@@ -38,9 +40,10 @@ acceptance_evidence:
 - criterion: Establishes SG-SPEC-0039 as the bounded intermediary while delegating concrete non-retry
     semantics to SG-SPEC-0037, queue-field artifact-shape contracts to SG-SPEC-0038, first-persistence
     and noncanonical-consumption contracts to SG-SPEC-0040, and consumer-chain constraints to SG-SPEC-0056.
-  evidence: depends_on records SG-SPEC-0037, SG-SPEC-0038, and SG-SPEC-0040 as immediate delegated children,
-    while specification.delegation_chain maps concrete semantics, artifact-shape, first-persistence/consumption,
-    and consumer-chain constraints to SG-SPEC-0037, SG-SPEC-0038, SG-SPEC-0040, and SG-SPEC-0056.
+  evidence: depends_on records SG-SPEC-0037, SG-SPEC-0038, SG-SPEC-0040, and SG-SPEC-0056 as immediate
+    delegated children, while specification.delegation_chain maps concrete semantics, artifact-shape,
+    first-persistence/consumption, and consumer-chain constraints to SG-SPEC-0037, SG-SPEC-0038, SG-SPEC-0040,
+    and SG-SPEC-0056.
 - criterion: Keeps retry-condition and active-item precedence behavior in SG-SPEC-0035 and SG-SPEC-0036,
     not in this child.
   evidence: specification.scope.out excludes retry-condition and active-item precedence controls and cites
@@ -58,7 +61,8 @@ specification:
     in:
     - Parent-facing non-retry queue-control cluster for dedupe_key, preempt_direct_update, and proposal_direct_handoff
     - Parent-facing contract boundary such that SG-SPEC-0003 consumes the cluster only through SG-SPEC-0034
-    - Delegation boundary and ownership chain from SG-SPEC-0034 to SG-SPEC-0037, SG-SPEC-0038, and SG-SPEC-0040
+    - Delegation boundary and ownership chain from SG-SPEC-0034 to SG-SPEC-0037, SG-SPEC-0038, SG-SPEC-0040,
+      and SG-SPEC-0056
     - Parent-facing artifact-shape names for proposal_queue and refactor_queue fields
     - Noncanonical persistence and consumer-boundary split delegated to SG-SPEC-0040
     - Consumer-chain boundary constraints and direct-consumer path enforcement delegated to SG-SPEC-0056
@@ -98,8 +102,8 @@ specification:
     constraints are delegated to SG-SPEC-0040.
   parent_integration:
   - SG-SPEC-0034 depends on SG-SPEC-0039 for the bounded non-retry queue-control cluster contract.
-  - SG-SPEC-0039 depends on SG-SPEC-0037, SG-SPEC-0038, and SG-SPEC-0040 as its concrete semantic, artifact-shape,
-    and consumption-boundary children.
+  - SG-SPEC-0039 depends on SG-SPEC-0037, SG-SPEC-0038, SG-SPEC-0040, and SG-SPEC-0056 as its concrete
+    semantic, artifact-shape, consumption-boundary, and consumer-chain children.
   - SG-SPEC-0039 delegates direct-consumer path constraints to SG-SPEC-0056.
   - SG-SPEC-0040 owns the first-persistence and noncanonical-consumption boundary for non-retry queue-control
     fields.
