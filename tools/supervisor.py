@@ -18864,6 +18864,10 @@ def tasks_file_path() -> Path:
     return ROOT / "tasks.md"
 
 
+def tasks_archive_file_path() -> Path:
+    return ROOT / "tasks_archive.md"
+
+
 def load_json_list(path: Path) -> list[dict[str, Any]]:
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
@@ -18895,22 +18899,22 @@ def load_proposal_promotion_registry() -> dict[str, dict[str, Any]]:
 
 
 def load_task_status_index() -> dict[int, dict[str, str]]:
-    path = tasks_file_path()
-    try:
-        lines = path.read_text(encoding="utf-8").splitlines()
-    except OSError:
-        return {}
-
     tasks: dict[int, dict[str, str]] = {}
-    for line in lines:
-        match = TASK_LINE_RE.match(line.strip())
-        if not match:
+    for path in (tasks_archive_file_path(), tasks_file_path()):
+        try:
+            lines = path.read_text(encoding="utf-8").splitlines()
+        except OSError:
             continue
-        task_id = int(match.group("task_id"))
-        tasks[task_id] = {
-            "status": match.group("status"),
-            "body": match.group("body").strip(),
-        }
+
+        for line in lines:
+            match = TASK_LINE_RE.match(line.strip())
+            if not match:
+                continue
+            task_id = int(match.group("task_id"))
+            tasks[task_id] = {
+                "status": match.group("status"),
+                "body": match.group("body").strip(),
+            }
     return tasks
 
 
