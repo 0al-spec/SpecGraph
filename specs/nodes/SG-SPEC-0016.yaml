@@ -2,261 +2,184 @@ id: SG-SPEC-0016
 title: SpecGraph - Linked Readiness and Evidence Policy
 kind: spec
 created_at: '2026-04-11T13:14:21Z'
-updated_at: '2026-04-13T05:38:08Z'
+updated_at: '2026-04-24T20:32:26Z'
 status: linked
 maturity: 1.0
-depends_on: []
+depends_on:
+- SG-SPEC-0055
 relates_to: []
 refines:
 - SG-SPEC-0002
 inputs:
 - specs/nodes/SG-SPEC-0002.yaml
+- specs/nodes/SG-SPEC-0055.yaml
 outputs:
 - specs/nodes/SG-SPEC-0016.yaml
 allowed_paths:
 - specs/nodes/SG-SPEC-0016.yaml
 acceptance:
-- Defines the conditions for moving a spec from specified to linked once descendant specs exist, including
-  semantic unlock, linked-readiness evidence, and narrow ancestor reconciliation
-- Defines how acceptance criteria and acceptance_evidence stay aligned across a refinement chain
-- Defines that linked-readiness checks for a specified ancestor are based on declared dependency existence
-  and refines connectivity, not descendant lifecycle status
+- Defines SG-SPEC-0016 as the specified-to-linked readiness overview beneath SG-SPEC-0002, keeping semantic
+  unlock and core transition gating while delegating parent-side linked_readiness_evidence, ancestor_reconciliation,
+  and refinement-chain evidence_alignment to SG-SPEC-0055
+- Defines that specified-to-linked readiness for an ancestor depends on declared blocking dependency existence
+  and explicit refines connectivity, not descendant lifecycle status
+- Defines the coordination boundary between readiness overview conditions in SG-SPEC-0016 and delegated
+  reconciliation and evidence governance in SG-SPEC-0055
 acceptance_evidence:
-- criterion: Defines the conditions for moving a spec from specified to linked once descendant specs exist,
-    including semantic unlock, linked-readiness evidence, and narrow ancestor reconciliation
-  evidence: 'specification.terminology defines semantic_unlock, ancestor_reconciliation, and linked_readiness_evidence.
-    specification.linkage_rules.specified_to_linked defines the core transition conditions, and specification.linkage_rules.readiness_decision_procedure
-    orders the checks for current specified status, concrete descendant existence, explicit refines-chain
-    connection, reconciled parent evidence, and stale evidence handling before the ancestor may advance.
-    specification.reconciliation_policy then states that descendant unlock creates eligibility for a narrow
-    ancestor reconciliation pass, limited to links, blocker interpretation, acceptance_evidence, prompt
-    wording, and status-readiness rather than broad scope expansion.
-
-    '
-- criterion: Defines how acceptance criteria and acceptance_evidence stay aligned across a refinement
-    chain
-  evidence: 'specification.evidence_policy.rules keeps acceptance and acceptance_evidence 1:1 within each
-    spec, requires linked-readiness parent evidence to cite the concrete descendant specs that satisfy
-    blocking refinement dependencies, allows child citations as supporting context outside status advancement,
-    and keeps child evidence rooted in specification content rather than runtime artifacts. specification.evidence_policy.acceptance_alignment
-    then separates parent and child acceptance lists while allowing parent evidence to cite the child
-    that resolves a delegated parent gap.
-
-    '
-- criterion: Defines that linked-readiness checks for a specified ancestor are based on declared dependency
-    existence and refines connectivity, not descendant lifecycle status
-  evidence: 'specification.terminology and linkage rules define concrete_descendant_spec and semantic_unlock
-    in terms of concrete graph presence and explicit refines-chain connectivity. specification.linkage_rules
-    explicitly requires depends_on coverage and refines connectivity while allowing child status changes
-    to remain outside this readiness gate unless separately declared. specification.readiness_decision_procedure
-    adds no child-status checks and treats existing concrete descendants as potential unlockers as long
-    as the ancestor readiness path remains valid.
-
-    '
-prompt: Refine SG-SPEC-0002 by defining the conditions for moving a spec from specified to linked once
-  concrete descendants exist, including semantic unlock, linked-readiness evidence, narrow ancestor reconciliation,
-  and acceptance evidence alignment across refinement chains.
+- criterion: Defines SG-SPEC-0016 as the specified-to-linked readiness overview beneath SG-SPEC-0002,
+    keeping semantic unlock and core transition gating while delegating parent-side linked_readiness_evidence,
+    ancestor_reconciliation, and refinement-chain evidence_alignment to SG-SPEC-0055
+  evidence: specification.objective and specification.scope.in keep SG-SPEC-0016 at the specified-to-linked
+    readiness overview layer, specification.terminology defines semantic_unlock and the delegated terms,
+    specification.linkage_rules.specified_to_linked keeps only the core readiness gate, and specification.child_governance_map
+    records SG-SPEC-0055 as the child owning the detailed parent-side evidence and reconciliation concern.
+- criterion: Defines that specified-to-linked readiness for an ancestor depends on declared blocking dependency
+    existence and explicit refines connectivity, not descendant lifecycle status
+  evidence: specification.terminology defines concrete_descendant_spec and semantic_unlock in graph-presence
+    terms, while specification.linkage_rules.specified_to_linked and specification.linkage_rules.readiness_decision_procedure
+    require declared blocking dependencies to exist as connected descendants through refines and explicitly
+    exclude descendant lifecycle state as an added readiness prerequisite unless the ancestor states otherwise.
+- criterion: Defines the coordination boundary between readiness overview conditions in SG-SPEC-0016 and
+    delegated reconciliation and evidence governance in SG-SPEC-0055
+  evidence: specification.child_governance_map, specification.readiness_overview, and specification.boundary_rules
+    separate overview readiness gating in SG-SPEC-0016 from the detailed linked_readiness_evidence, ancestor_reconciliation,
+    and refinement-chain evidence_alignment rules delegated to SG-SPEC-0055.
+prompt: Keep SG-SPEC-0016 as the specified-to-linked readiness overview beneath SG-SPEC-0002. Define semantic
+  unlock, concrete descendant connectivity, and the core readiness gate here, while delegating parent-side
+  linked_readiness_evidence, narrow ancestor_reconciliation, and refinement-chain evidence_alignment to
+  SG-SPEC-0055.
 specification:
-  objective: 'Define when concrete descendant specs make an ancestor eligible to move from specified to
-    linked, and define the parent-side evidence and reconciliation needed before that status transition
-    is valid.
+  objective: 'Define the overview conditions under which concrete descendant specs make an ancestor eligible
+    to move from specified to linked, while delegating the detailed parent-side evidence and reconciliation
+    contract to SG-SPEC-0055.
 
     '
   scope:
     in:
-    - Spec-node transition from specified to linked after declared blocking descendants exist
-    - Semantic unlock conditions for refinement chains
-    - Parent-side linked_readiness_evidence
-    - Narrow ancestor reconciliation after descendant unlock
-    - Acceptance and acceptance_evidence alignment across refinement chains
+    - Overview conditions for moving a spec from specified to linked after declared blocking descendants
+      exist
+    - semantic_unlock as the overview readiness threshold for a specified ancestor
+    - Core readiness checks for declared blocking depends_on coverage and explicit refines connectivity
+    - Coordination of delegated child ownership for parent-side linked_readiness_evidence, ancestor_reconciliation,
+      and refinement-chain evidence_alignment in SG-SPEC-0055
     out:
+    - Detailed composition of parent-side linked_readiness_evidence
+    - Step-by-step ancestor_reconciliation procedure and narrow parent mutation rules
+    - Detailed acceptance and acceptance_evidence alignment rules across parent and child specs
     - Initial edge selection rules for refines, depends_on, or relates_to
     - Delegation or atomic decomposition rules before concrete descendants exist
     - Validator implementation, queue behavior, supervisor scheduling, or storage schema design
     - Runtime code, test code, generated artifacts, or downstream implementation completion
   terminology:
     concrete_descendant_spec: 'A spec node that exists in the canonical graph and is connected to an ancestor
-      through an explicit refines chain. A path may be cited as evidence, but the policy concerns the
-      graph fact rather than a storage format. Lifecycle status is not part of the existence criterion.
+      through an explicit refines chain. The policy concerns the graph fact of descendant existence and
+      connectivity rather than any descendant lifecycle state.
 
       '
     semantic_unlock: 'A state in which every declared blocking refinement dependency for a specified ancestor
       is represented by a concrete_descendant_spec connected through refines, making the ancestor eligible
-      for linked-readiness reconciliation.
+      for the parent-side readiness follow-up governed in this subtree.
 
       '
-    linked_readiness_evidence: 'Parent-side acceptance_evidence that cites the concrete descendant spec
-      IDs or paths satisfying each declared blocking refinement dependency and explains why those descendants
-      resolve the ancestor''s delegated linkage gap.
+    linked_readiness_evidence: 'Parent-side acceptance_evidence that cites the concrete descendant specs
+      satisfying each declared blocking refinement dependency. SG-SPEC-0016 keeps only the overview role
+      of this evidence; SG-SPEC-0055 defines the detailed contract.
 
       '
-    ancestor_reconciliation: 'A narrow pass on one ancestor spec after semantic_unlock that aligns the
-      ancestor''s links, blocker interpretation, acceptance_evidence, prompt wording, and status-readiness
-      with the concrete descendant structure.
+    ancestor_reconciliation: 'A narrow parent-side follow-up pass after semantic_unlock that aligns parent
+      evidence and status-readiness with the concrete descendant structure. SG-SPEC-0016 retains only
+      the overview dependency on this pass; SG-SPEC-0055 defines the detailed rules.
 
       '
-    evidence_alignment: 'The requirement that each acceptance criterion in a spec has exactly one matching
-      acceptance_evidence entry, and that cross-spec citations support the local criterion instead of
-      replacing it with a child''s criterion.
+    evidence_alignment: 'The requirement that parent and child specs keep their own local acceptance and
+      acceptance_evidence entries even when a child resolves a delegated parent gap. SG-SPEC-0016 preserves
+      the overview boundary; SG-SPEC-0055 defines the detailed alignment rules.
 
       '
+  child_governance_map:
+  - child_spec: SG-SPEC-0055
+    concern: Parent-side linked_readiness_evidence, ancestor_reconciliation, and refinement-chain evidence_alignment
+    parent_summary:
+    - SG-SPEC-0016 keeps the specified-to-linked readiness overview and semantic_unlock gate for this
+      subtree.
+    - SG-SPEC-0055 owns the detailed parent-side evidence, narrow reconciliation pass, and parent-child
+      evidence alignment rules that must be satisfied after semantic_unlock and before linked advancement.
+    detailed_governance_owned_by_child:
+    - dependency-specific linked_readiness_evidence composition
+    - narrow ancestor_reconciliation scope and update rules
+    - parent-child acceptance and acceptance_evidence alignment across refinement chains
+  readiness_overview:
+    retained_parent_role:
+    - SG-SPEC-0016 defines when a specified ancestor becomes semantically unlocked by concrete descendants.
+    - SG-SPEC-0016 defines only the overview gate from descendant existence and refinement connectivity
+      to linked-readiness eligibility.
+    - SG-SPEC-0016 does not restate the detailed parent-side evidence wording or mutation sequence required
+      after semantic_unlock.
+    delegated_to: SG-SPEC-0055
   linkage_rules:
     specified_to_linked:
-    - A specified spec MAY move to linked only after every spec it declares in depends_on as a blocking
-      refinement dependency exists as a concrete_descendant_spec.
-    - Each blocking depends_on target must be paired with dependency-specific linked_readiness_evidence
-      that cites one or more concrete_descendant_spec IDs or paths that satisfy that target.
+    - A specified spec MAY move to linked only after every declared blocking refinement dependency in
+      depends_on exists as a concrete_descendant_spec.
     - Each blocking descendant MUST connect back into the ancestor refinement chain through refines, either
       by refining the ancestor directly or by refining another spec already in that chain.
     - A depends_on target that is missing, non-spec, or not connected through refines keeps the ancestor
       from semantic_unlock.
-    - Descendant lifecycle state (such as specified, linked, or review_pending) does not add requirements
-      to specified-to-linked readiness unless explicitly introduced in the ancestor's own criteria.
-    - semantic_unlock creates eligibility for linked advancement, but it does not itself change the ancestor
-      status.
-    - The ancestor MUST remain specified until ancestor_reconciliation records linked_readiness_evidence
-      on the parent.
-    - The reconciled parent evidence MUST cite the concrete descendant spec IDs or paths that satisfy
-      each declared blocking refinement dependency.
-    - linked confirms that declared refinement edges are concrete and evidenced; it does not assert that
-      child implementation work, runtime validation, or human review of unrelated work is complete.
-    - A child spec does not need to be linked itself merely to unlock the ancestor, unless a separate
-      acceptance criterion or blocking dependency requires that state.
+    - Descendant lifecycle state does not add requirements to specified-to-linked readiness unless explicitly
+      introduced in the ancestor's own criteria.
+    - semantic_unlock creates eligibility for parent-side linked-readiness follow-up, but it does not
+      itself change the ancestor status.
+    - The ancestor MUST remain below linked until the delegated linked_readiness_evidence and ancestor_reconciliation
+      requirements owned by SG-SPEC-0055 are satisfied.
+    - linked in this overview confirms that the declared blocking refinement path is concrete and that
+      the parent-side readiness path is complete; it does not assert child implementation completion,
+      unrelated review completion, or downstream runtime validation.
     readiness_decision_procedure:
     - Evaluate specified-to-linked readiness from the ancestor's authored status and declared depends_on
       set, not from derived blockers, child work queues, non-blocking related specs, or child lifecycle
       status.
-    - Confirm the ancestor is currently specified; earlier statuses must first satisfy their own lifecycle
-      transitions, and later statuses are outside this policy.
-    - For each declared depends_on entry, confirm the target exists, is a spec node, and is a concrete_descendant_spec
-      connected to the ancestor by an explicit refines chain.
-    - Confirm every declared blocking depends_on entry has corresponding dependency-specific linked_readiness_evidence
-      that cites at least one concrete_descendant_spec resolving that dependency; uncovered dependencies
-      block advancement.
-    - Confirm ancestor_reconciliation has updated the parent acceptance_evidence so every local criterion
-      that depends on child refinement cites the concrete descendant ID or path and states the resolved
-      parent gap.
-    - Confirm linked_readiness_evidence does not cite a removed, renamed, or scope-diverged descendant
-      as if it still satisfied the parent gap.
-    - If all checks pass, the ancestor MAY advance to linked; otherwise the ancestor remains specified
-      and the first missing readiness condition SHOULD be surfaced as the blocker.
+    - Confirm the ancestor is currently specified; earlier and later lifecycle transitions remain outside
+      this policy.
+    - For each declared blocking depends_on entry, confirm the target exists, is a spec node, and is a
+      concrete_descendant_spec connected to the ancestor by an explicit refines chain.
+    - If every declared blocking dependency is concrete and connected, treat the ancestor as semantically
+      unlocked at the overview layer.
+    - Confirm the delegated linked_readiness_evidence and ancestor_reconciliation checks owned by SG-SPEC-0055
+      are satisfied before advancing the ancestor to linked.
+    - If all overview and delegated checks pass, the ancestor MAY advance to linked; otherwise the ancestor
+      remains specified and the first missing readiness condition SHOULD be surfaced as the blocker.
     non_blocking_descendants:
     - A spec that only refines or relates_to an ancestor does not block the ancestor unless the ancestor
       declares it in depends_on.
     - Supporting child citations may appear in parent evidence, but they are not linked-readiness blockers
       unless they correspond to declared depends_on entries.
-  reconciliation_policy:
-    descendant_unlock:
-    - When a declared blocking descendant becomes concrete and connects through refines, the affected
-      ancestor becomes eligible for ancestor_reconciliation.
-    - semantic_unlock eligibility is a derived readiness fact; it MUST NOT be written as a replacement
-      for authored refines or depends_on edges.
-    - One descendant may unlock more than one ancestor in a refinement chain, but each ancestor still
-      requires its own reconciliation pass.
-    ancestor_reconciliation:
-    - Ancestor reconciliation MUST happen one spec node at a time.
-    - The pass SHOULD update only links, blocker interpretation, acceptance_evidence, prompt wording,
-      and status-readiness that directly depend on the unlocked descendants.
-    - The pass MUST preserve stable IDs and inherited terminology unless a separate authorized spec refinement
-      narrows a term.
-    - The pass MUST NOT expand unresolved scope, absorb child detail into the parent, or treat unrelated
-      future work as resolved.
-    - If reconciliation reveals an additional independent unresolved area, the ancestor SHOULD keep its
-      current status and surface the need for a separate child or later refinement instead of widening
-      this pass.
-  evidence_policy:
-    rules:
-    - acceptance and acceptance_evidence MUST remain 1:1 within each spec node.
-    - Each acceptance_evidence entry MUST correspond to one local acceptance criterion and state where
-      the local specification satisfies that criterion.
-    - Parent linked_readiness_evidence MUST cite the concrete descendant spec IDs or paths that satisfy
-      each declared blocking refinement dependency.
-    - Parent evidence MAY cite child specs as supporting context outside status advancement, but those
-      citations do not create blocking semantics without depends_on.
-    - Child evidence SHOULD cite sections inside the child specification rather than runtime artifacts
-      or parent evidence.
-    - A parent MUST NOT use a child acceptance criterion as a substitute for its own acceptance_evidence;
-      the parent evidence must explain the parent-side linkage condition being satisfied.
-    acceptance_alignment:
-    - Parent and child specs keep separate acceptance lists even when the child resolves a delegated parent
-      gap.
-    - When a parent criterion depends on child refinement, the parent evidence cites the child and states
-      the resolved parent gap, while the child evidence proves the child''s local specification content.
-    - If a child no longer satisfies the parent gap it was cited for, ancestor_reconciliation SHOULD update
-      the parent evidence or leave the parent below linked rather than preserving stale linked_readiness_evidence.
+  boundary_rules:
+  - SG-SPEC-0016 defines overview readiness gating and child ownership boundaries, not the detailed wording
+    or mutation sequence of parent-side evidence updates.
+  - SG-SPEC-0016 preserves stable terminology for semantic_unlock, linked_readiness_evidence, ancestor_reconciliation,
+    and evidence_alignment across this refinement area.
+  - Detailed parent-side evidence and reconciliation rules belong in SG-SPEC-0055 rather than being reabsorbed
+    into this overview node.
   examples:
-  - name: Linked readiness after child creation
-    description: 'A specified parent declares depends_on on a child that resolves a delegated refinement
-      gap. Once the child exists and lists refines back into the parent chain, the parent is semantically
-      unlocked. The parent may move to linked only after its own acceptance_evidence cites that child
-      as the concrete descendant satisfying the declared dependency.
+  - name: Semantic unlock before parent evidence follow-up
+    description: 'A specified parent declares one blocking child in depends_on. Once that child exists
+      and connects back through refines, the parent is semantically unlocked at the overview layer, but
+      the parent still remains below linked until the delegated parent-side evidence and reconciliation
+      contract is satisfied through SG-SPEC-0055.
 
       '
-  - name: Evidence remains local
-    description: 'A child spec can prove its own rules in its acceptance_evidence. The parent may cite
-      that child for linked_readiness_evidence, but the parent still needs a local evidence entry explaining
-      which parent acceptance criterion the child resolves.
+  - name: Non-blocking descendant does not control readiness
+    description: 'A descendant that only refines an ancestor without being declared in depends_on may
+      be cited as supporting context, but it does not by itself determine specified-to-linked readiness
+      in this overview policy.
 
       '
-gate_state: split_required
-required_human_action: split spec scope before rerun
-last_outcome: split_required
-last_blocker: ''
-last_run_id: 20260413T052802Z-SG-SPEC-0016
-last_exit_code: 0
-last_changed_files:
-- specs/nodes/SG-SPEC-0016.yaml
-last_run_at: '2026-04-13T05:28:03.787134+00:00'
-last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0016-20260413T052733Z
-last_branch: codex/sg-spec-0016/20260413T052733Z
-last_validator_results:
-  outputs: true
-  allowed_paths: true
-  reconciliation: true
-  atomicity: true
-  transition: true
-  executor_environment: true
-  refinement_acceptance: true
-last_refinement_acceptance:
-  decision: approve
-  change_class: local_refinement
-  checks:
-    content_changed: true
-    hard_validation: true
-    single_spec_scope: true
-    constitutional_diff: false
-    graph_refactor_diff: false
-    atomicity_clear: true
-    within_mutation_budget: true
-  diff_paths:
-  - specification.linkage_rules.readiness_decision_procedure[3]
-  - specification.linkage_rules.readiness_decision_procedure[4]
-  - specification.linkage_rules.readiness_decision_procedure[5]
-  - specification.linkage_rules.readiness_decision_procedure[6]
-  - specification.linkage_rules.specified_to_linked[1]
-  - specification.linkage_rules.specified_to_linked[2]
-  - specification.linkage_rules.specified_to_linked[3]
-  - specification.linkage_rules.specified_to_linked[4]
-  - specification.linkage_rules.specified_to_linked[5]
-  - specification.linkage_rules.specified_to_linked[6]
-  - specification.linkage_rules.specified_to_linked[7]
-  - specification.linkage_rules.specified_to_linked[8]
-  - specification.linkage_rules.specified_to_linked[9]
-  mutation_classes:
-  - policy_text
-  mutation_budget: []
-  budget_exceeded_classes: []
-  changed_spec_files:
-  - specs/nodes/SG-SPEC-0016.yaml
-  review_reasons: []
-  errors: []
-  warnings: []
-last_reconciliation:
-  worktree_spec_count: 23
-  changed_spec_ids:
-  - SG-SPEC-0016
-  semantic_dependencies_resolved: true
-  work_dependencies_ready: true
-  cycles: []
-last_requested_child_materialization: false
-last_materialized_child_paths: []
+gate_state: none
+proposed_status: null
+proposed_maturity: null
+required_human_action: '-'
+last_worktree_path: ''
+last_branch: ''
+last_gate_decision: approve
+last_gate_note: 'Approve child materialization into SG-SPEC-0055: parent remains overview, child owns
+  detailed linked_readiness_evidence, ancestor_reconciliation, and evidence_alignment governance.'
+last_gate_at: '2026-04-24T20:21:34.964670+00:00'
