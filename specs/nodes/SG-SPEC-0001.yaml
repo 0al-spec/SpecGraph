@@ -663,10 +663,10 @@ specification:
       in SG-SPEC-0001.
 
       '
-proposed_status: linked
-proposed_maturity: 1.0
-gate_state: review_pending
-required_human_action: review refinement impact before approval
+proposed_status: null
+proposed_maturity: null
+gate_state: retry_pending
+required_human_action: rerun supervisor
 last_outcome: done
 last_blocker: ''
 last_run_id: 20260417T210751Z-SG-SPEC-0001
@@ -675,8 +675,8 @@ last_changed_files:
 - specs/nodes/SG-SPEC-0001.yaml
 - specs/nodes/SG-SPEC-0054.yaml
 last_run_at: '2026-04-17T21:07:53.179329+00:00'
-last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0001-20260417T210050Z
-last_branch: codex/sg-spec-0001/20260417T210050Z
+last_worktree_path: ''
+last_branch: ''
 last_validator_results:
   outputs: true
   allowed_paths: true
@@ -726,3 +726,7 @@ last_reconciliation:
 last_requested_child_materialization: true
 last_materialized_child_paths:
 - specs/nodes/SG-SPEC-0054.yaml
+last_gate_decision: retry
+last_gate_note: Reject stale review candidate with governance-sensitive residue; rerun through current
+  supervisor flow.
+last_gate_at: '2026-04-24T06:43:19.627213+00:00'
