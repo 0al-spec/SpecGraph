@@ -14277,6 +14277,39 @@ def test_collect_trace_commit_refs_passes_max_count_to_git_log(
     assert calls[1][:3] == ["git", "log", "--max-count=3"]
 
 
+def test_load_task_status_index_reads_archive_when_tasks_md_is_legacy_stub(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    (repo_fixture / "tasks_archive.md").write_text(
+        "81. [done] Archived reflective task.\n",
+        encoding="utf-8",
+    )
+    (repo_fixture / "tasks.md").write_text(
+        "# Deprecated Bootstrap Task Index\n\nUse graph backlog projection.\n",
+        encoding="utf-8",
+    )
+
+    archived_index = supervisor_module.load_task_status_index()
+
+    assert archived_index[81] == {
+        "status": "done",
+        "body": "Archived reflective task.",
+    }
+
+    (repo_fixture / "tasks.md").write_text(
+        "81. [planned] Active compatibility override.\n",
+        encoding="utf-8",
+    )
+
+    override_index = supervisor_module.load_task_status_index()
+
+    assert override_index[81] == {
+        "status": "planned",
+        "body": "Active compatibility override.",
+    }
+
+
 def seed_proposal_runtime_fixture(root: Path, *, include_heuristic_proposal: bool) -> None:
     proposals_dir = root / "docs" / "proposals"
     tools_dir = root / "tools"
