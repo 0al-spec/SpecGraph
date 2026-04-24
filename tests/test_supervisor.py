@@ -4082,6 +4082,7 @@ def test_main_creates_review_gate_and_provenance_metadata(
         node_path = worktree_path / "specs" / "nodes" / "SG-SPEC-0001.yaml"
         data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
         data["acceptance_evidence"] = grounded_acceptance_evidence(data["acceptance"])
+        data["created_at"] = "2099-01-01T00:00:00Z"
         data["prompt"] = "Updated by Codex"
         node_path.write_text(
             supervisor_module.dump_yaml_text(data) + "RUN_OUTCOME: done\nBLOCKER: none\n",
@@ -4104,6 +4105,12 @@ def test_main_creates_review_gate_and_provenance_metadata(
     assert updated["prompt"] == original_prompt
     assert updated.get("acceptance_evidence") == original_data.get("acceptance_evidence")
     assert updated["pending_sync_paths"] == ["specs/nodes/SG-SPEC-0001.yaml"]
+    pending_findings = updated["pending_review_findings"]
+    assert [finding["code"] for finding in pending_findings] == ["immutable_metadata_changed"]
+    assert pending_findings[0]["field"] == "created_at"
+    assert pending_findings[0]["severity"] == "warning"
+    assert pending_findings[0]["details"]["canonical_value"] == "2026-04-18T00:00:00Z"
+    assert pending_findings[0]["details"]["candidate_value"] == "2099-01-01T00:00:00Z"
     assert "RUN_OUTCOME" not in updated
     assert "BLOCKER" not in updated
     assert "RUN_OUTCOME:" not in node_path.read_text(encoding="utf-8")
@@ -4120,6 +4127,10 @@ def test_main_creates_review_gate_and_provenance_metadata(
     assert payload["isolation_mode"] == "git_worktree"
     assert payload["graph_health"]["source_spec_id"] == "SG-SPEC-0001"
     assert payload["graph_health_truth_basis"] == "accepted_canonical"
+    assert [finding["code"] for finding in payload["pending_review_findings"]] == [
+        "immutable_metadata_changed"
+    ]
+    assert payload["validation_findings"] == []
     assert payload["refactor_queue_artifact"].endswith("runs/refactor_queue.json")
     assert payload["proposal_queue_artifact"].endswith("runs/proposal_queue.json")
     assert payload["selected_by_rule"]["selection_mode"] == "default_refine"
@@ -4133,6 +4144,10 @@ def test_main_creates_review_gate_and_provenance_metadata(
     ]
     assert payload["decision_inspector"]["selection"]["mode"] == "default_refine"
     assert payload["decision_inspector"]["gate"]["gate_state"] == "review_pending"
+    assert [
+        finding["code"]
+        for finding in payload["decision_inspector"]["gate"]["pending_review_findings"]
+    ] == ["immutable_metadata_changed"]
     assert payload["decision_inspector"]["diff_classification"]["refinement_decision"] == "approve"
     assert payload["decision_inspector"]["queue_effects"]["proposal_queue"]["after_ids"] == []
     decision_inspector_artifact = Path(payload["decision_inspector_artifact"])

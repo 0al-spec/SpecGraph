@@ -771,12 +771,17 @@
     "runtime_surfaces": [
       "tools/supervisor.py",
       "tests/test_supervisor.py",
+      "tools/validation_findings_policy.json",
       "docs/proposals/0035_immutable_canonical_metadata_guardrails.md"
     ],
     "runtime_markers": [
       {
         "path": "tools/supervisor.py",
         "pattern": "IMMUTABLE_CANONICAL_METADATA_KEYS = "
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def immutable_metadata_review_findings("
       },
       {
         "path": "tools/supervisor.py",
@@ -787,16 +792,20 @@
       {
         "path": "tests/test_supervisor.py",
         "pattern": "def test_resolve_gate_approve_preserves_immutable_canonical_metadata("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "\"immutable_metadata_changed\""
       }
     ],
     "observation_markers": [
       {
         "path": "tools/supervisor.py",
-        "pattern": "sanitize_spec_sync_text("
+        "pattern": "\"pending_review_findings\""
       },
       {
         "path": "tools/supervisor.py",
-        "pattern": "preserve_immutable_canonical_metadata(cleaned, existing_data)"
+        "pattern": "\"candidate_metadata_findings\""
       }
     ]
   }
