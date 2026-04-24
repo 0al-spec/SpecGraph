@@ -2,7 +2,7 @@ id: SG-SPEC-0016
 title: SpecGraph - Linked Readiness and Evidence Policy
 kind: spec
 created_at: '2026-04-11T13:14:21Z'
-updated_at: '2026-04-24T20:15:18Z'
+updated_at: '2026-04-24T20:32:26Z'
 status: linked
 maturity: 1.0
 depends_on:
@@ -17,7 +17,6 @@ outputs:
 - specs/nodes/SG-SPEC-0016.yaml
 allowed_paths:
 - specs/nodes/SG-SPEC-0016.yaml
-- specs/nodes/SG-SPEC-0055.yaml
 acceptance:
 - Defines SG-SPEC-0016 as the specified-to-linked readiness overview beneath SG-SPEC-0002, keeping semantic
   unlock and core transition gating while delegating parent-side linked_readiness_evidence, ancestor_reconciliation,
