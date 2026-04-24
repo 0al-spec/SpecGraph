@@ -1,0 +1,178 @@
+id: SG-SPEC-0055
+title: SpecGraph - Linked Readiness Evidence Reconciliation and Alignment
+kind: spec
+created_at: '2026-04-24T20:15:18Z'
+updated_at: '2026-04-24T20:15:18Z'
+status: linked
+maturity: 0.2
+depends_on: []
+relates_to: []
+refines:
+- SG-SPEC-0016
+inputs:
+- specs/nodes/SG-SPEC-0016.yaml
+outputs:
+- specs/nodes/SG-SPEC-0055.yaml
+allowed_paths:
+- specs/nodes/SG-SPEC-0055.yaml
+acceptance:
+- Defines SG-SPEC-0055 as the bounded child under SG-SPEC-0016 for parent-side linked_readiness_evidence,
+  narrow ancestor_reconciliation, and refinement-chain evidence_alignment
+- Defines how parent-side linked_readiness_evidence cites concrete descendants for each declared blocking
+  refinement dependency after semantic_unlock
+- Defines the narrow ancestor_reconciliation pass that updates only parent-side linkage and readiness
+  content affected by the unlocked descendants
+- Defines how parent and child acceptance criteria and acceptance_evidence remain aligned but non-substitutable
+  across a refinement chain, including stale linked_readiness_evidence handling
+acceptance_evidence:
+- criterion: Defines SG-SPEC-0055 as the bounded child under SG-SPEC-0016 for parent-side linked_readiness_evidence,
+    narrow ancestor_reconciliation, and refinement-chain evidence_alignment
+  evidence: specification.objective, specification.scope.in, and specification.boundary_rules keep SG-SPEC-0055
+    focused on the parent-side evidence and reconciliation concern delegated from SG-SPEC-0016, without
+    replacing the overview readiness gate in the parent.
+- criterion: Defines how parent-side linked_readiness_evidence cites concrete descendants for each declared
+    blocking refinement dependency after semantic_unlock
+  evidence: specification.linked_readiness_evidence_policy.dependency_specific_requirements and specification.linked_readiness_evidence_policy.evidence_content
+    require one parent-side evidence path per declared blocking dependency, citation of the concrete descendant
+    spec IDs or paths satisfying that dependency, and an explicit statement of the resolved parent gap.
+- criterion: Defines the narrow ancestor_reconciliation pass that updates only parent-side linkage and
+    readiness content affected by the unlocked descendants
+  evidence: specification.ancestor_reconciliation_policy.trigger, specification.ancestor_reconciliation_policy.allowed_updates,
+    and specification.ancestor_reconciliation_policy.forbidden_expansion define when the pass occurs,
+    what parent-side fields it may adjust, and which kinds of parent expansion remain forbidden.
+- criterion: Defines how parent and child acceptance criteria and acceptance_evidence remain aligned but
+    non-substitutable across a refinement chain, including stale linked_readiness_evidence handling
+  evidence: specification.evidence_alignment_policy.locality_rules, specification.evidence_alignment_policy.cross_chain_citation_rules,
+    and specification.evidence_alignment_policy.stale_evidence_rules keep parent and child evidence local,
+    allow traceable cross-spec citation without criterion substitution, and require stale linked_readiness_evidence
+    to be updated or treated as insufficient for linked advancement.
+prompt: Define the bounded child beneath SG-SPEC-0016 for parent-side linked_readiness_evidence, narrow
+  ancestor_reconciliation, and acceptance-evidence alignment across refinement chains. Keep the parent
+  specified-to-linked readiness overview in SG-SPEC-0016 and do not restate its core semantic unlock gate
+  here.
+specification:
+  objective: 'Define the detailed parent-side evidence and reconciliation contract that follows semantic_unlock
+    and completes linked readiness without collapsing parent and child evidence into one shared proof
+    surface.
+
+    '
+  scope:
+    in:
+    - Parent-side linked_readiness_evidence for declared blocking refinement dependencies
+    - narrow ancestor_reconciliation after semantic_unlock
+    - Parent-child acceptance and acceptance_evidence alignment across refinement chains
+    - stale linked_readiness_evidence handling when descendant scope or identity changes
+    out:
+    - The core semantic_unlock threshold and concrete descendant existence gate owned by SG-SPEC-0016
+    - Initial edge selection or declared-versus-derived blocking semantics
+    - Delegation or sibling decomposition policy before descendants exist
+    - Validator implementation, queue behavior, supervisor scheduling, or storage schema design
+    - Runtime code, test code, generated artifacts, or downstream implementation completion
+  terminology:
+    dependency_specific_linked_readiness_evidence: 'One parent-side acceptance_evidence claim that names
+      a declared blocking refinement dependency and cites the concrete descendant spec or specs satisfying
+      that dependency.
+
+      '
+    reconciled_parent_gap: 'The specific parent-side readiness gap that was delegated earlier and is now
+      resolved well enough for the parent to cite concrete descendant coverage without absorbing child-local
+      policy text.
+
+      '
+    stale_linked_readiness_evidence: 'A parent-side linked_readiness_evidence citation that still points
+      to a removed, renamed, disconnected, or scope-diverged descendant as if it satisfied the same parent
+      gap.
+
+      '
+    narrow_ancestor_reconciliation: 'A bounded parent update pass after semantic_unlock that aligns only
+      the parent fields directly affected by the newly concrete descendants and does not reopen unrelated
+      scope.
+
+      '
+  linked_readiness_evidence_policy:
+    dependency_specific_requirements:
+    - Each declared blocking refinement dependency satisfied through SG-SPEC-0016's readiness overview
+      MUST have at least one dependency_specific_linked_readiness_evidence entry on the parent.
+    - Each such entry MUST name the blocking dependency being satisfied and cite the concrete descendant
+      spec ID or path that satisfies it.
+    - One concrete descendant MAY satisfy more than one declared blocking dependency, but the parent evidence
+      MUST still identify each resolved dependency separately.
+    evidence_content:
+    - Parent linked_readiness_evidence MUST explain the reconciled_parent_gap being closed, not merely
+      list a child identifier.
+    - Parent linked_readiness_evidence MAY cite more than one descendant when the declared blocking dependency
+      was intentionally decomposed across multiple connected child specs.
+    - Parent linked_readiness_evidence MUST remain local to the parent acceptance criterion it supports;
+      child-local acceptance_evidence is supporting context rather than a replacement proof surface.
+    evidence_failures:
+    - A parent evidence entry that cites a descendant without naming the satisfied blocking dependency
+      is insufficient for linked advancement.
+    - A parent evidence entry that cites a descendant outside the ancestor's explicit refines chain is
+      insufficient for linked advancement.
+    - A parent evidence entry that only says the child exists, without stating the parent-side gap it
+      resolves, is insufficient for linked advancement.
+  ancestor_reconciliation_policy:
+    trigger:
+    - narrow_ancestor_reconciliation becomes eligible only after SG-SPEC-0016's semantic_unlock threshold
+      has been met for the affected ancestor.
+    - Each unlocked ancestor requires its own reconciliation pass even when one descendant contributes
+      to readiness for more than one ancestor.
+    allowed_updates:
+    - The reconciliation pass MAY update parent acceptance_evidence, prompt wording, blocker interpretation,
+      depends_on interpretation notes, and authored status-readiness text that directly depend on the
+      unlocked descendants.
+    - The reconciliation pass MAY remove or replace stale_linked_readiness_evidence that no longer matches
+      the concrete descendant structure.
+    - The reconciliation pass SHOULD preserve stable parent IDs and inherited terminology unless a separately
+      authorized refinement explicitly narrows them.
+    forbidden_expansion:
+    - The reconciliation pass MUST NOT absorb detailed child-local policy into the parent.
+    - The reconciliation pass MUST NOT broaden the parent objective, scope, or acceptance criteria to
+      avoid creating or refining another child spec.
+    - If reconciliation exposes an additional independent unresolved area, the parent SHOULD remain below
+      linked for that area rather than treating this pass as a general parent expansion.
+  evidence_alignment_policy:
+    locality_rules:
+    - acceptance and acceptance_evidence remain 1:1 within each individual spec node.
+    - A parent acceptance criterion MUST be satisfied by parent-side evidence stated in parent terms even
+      when that evidence cites child specs.
+    - A child acceptance criterion MUST be satisfied by child-local evidence stated in child terms rather
+      than by borrowing the parent evidence entry.
+    cross_chain_citation_rules:
+    - Parent evidence MAY cite child specs to identify the concrete descendants that resolve a reconciled_parent_gap.
+    - Child evidence MAY cite parent terminology or parent identifiers for traceability, but it MUST still
+      prove the child's own local specification content.
+    - A parent MUST NOT substitute a child acceptance criterion for its own acceptance_evidence, and a
+      child MUST NOT claim a parent criterion as if it were the child's local acceptance target.
+    stale_evidence_rules:
+    - If a cited descendant no longer satisfies the reconciled_parent_gap it was cited for, the parent
+      evidence MUST be updated or treated as insufficient for linked advancement.
+    - A renamed or superseded descendant MAY remain cited only if the parent evidence is updated to preserve
+      an explicit traceable path to the actual satisfying descendant.
+    - Evidence alignment across the refinement chain preserves traceability through citation, not by collapsing
+      parent and child acceptance lists into one shared list.
+  boundary_rules:
+  - SG-SPEC-0055 defines the detailed parent-side evidence and reconciliation contract delegated by SG-SPEC-0016.
+  - SG-SPEC-0055 does not redefine the semantic_unlock threshold or concrete descendant existence gate
+    owned by SG-SPEC-0016.
+  - SG-SPEC-0055 keeps parent and child proof surfaces aligned and traceable without merging them into
+    one shared acceptance list.
+  examples:
+  - name: Parent cites one child for one blocked gap
+    description: 'A parent declared one blocking dependency on a delegated child concern. After the child
+      exists and connects through refines, the parent adds linked_readiness_evidence naming that dependency,
+      citing the child ID, and stating the parent-side readiness gap now resolved.
+
+      '
+  - name: One child informs two ancestors
+    description: 'A descendant refines an intermediate node and also satisfies a higher ancestor''s declared
+      blocking dependency through the same chain. Each unlocked ancestor still performs its own narrow_ancestor_reconciliation
+      and keeps its own parent-local acceptance_evidence entry.
+
+      '
+  - name: Stale evidence blocks advancement
+    description: 'A parent still cites an older child path after the real satisfying descendant was renamed
+      and moved deeper in the same refinement chain. Until the parent updates that linked_readiness_evidence
+      to the actual satisfying descendant, the citation remains stale and is insufficient for linked advancement.
+
+      '
