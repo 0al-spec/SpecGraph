@@ -1433,6 +1433,35 @@ last_run_id: old-run
     assert sanitized == spec_yaml_module.canonicalize_text(sanitized)
 
 
+def test_sanitize_spec_sync_text_does_not_preserve_invalid_canonical_metadata(
+    supervisor_module: object,
+) -> None:
+    candidate = """id: SG-SPEC-9999
+title: Draft
+kind: spec
+created_at: '2026-04-18T10:00:00Z'
+updated_at: '2026-04-18T12:00:00Z'
+status: outlined
+maturity: 0.1
+prompt: Repair invalid canonical metadata.
+"""
+    existing = """id: null
+title: Draft
+kind: spec
+created_at: null
+updated_at: '2026-04-18T00:00:00Z'
+status: outlined
+maturity: 0.1
+prompt: Existing invalid metadata.
+"""
+
+    sanitized = supervisor_module.sanitize_spec_sync_text(candidate, existing_text=existing)
+    data = supervisor_module.get_yaml_module().safe_load(sanitized)
+
+    assert data["id"] == "SG-SPEC-9999"
+    assert data["created_at"] == "2026-04-18T10:00:00Z"
+
+
 def test_dirty_local_input_spec_paths_filters_to_modified_input_specs(
     supervisor_module: object,
     repo_fixture: Path,

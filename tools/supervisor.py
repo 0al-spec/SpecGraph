@@ -3199,9 +3199,9 @@ def preserve_immutable_canonical_metadata(
     if not isinstance(existing_data, dict):
         return preserved
     for key in IMMUTABLE_CANONICAL_METADATA_KEYS:
-        existing_value = str(existing_data.get(key, "")).strip()
-        if existing_value:
-            preserved[key] = existing_data[key]
+        existing_value = existing_data.get(key)
+        if isinstance(existing_value, str) and existing_value.strip():
+            preserved[key] = existing_value
     return preserved
 
 
