@@ -125,6 +125,35 @@ Task numbers are preserved for traceability across commits, PRs, and review thre
 56. [done] Record supervisor performance and yield metrics as derived run artifacts so throughput, intervention cost, and graph impact can be inspected over time.
 57. [done] Add a cheap LLM bootstrap smoke benchmark that measures structural yield from a minimal seed without treating exact node text as the oracle.
 
+## Deterministic Transitions
+
+68. [done] Define normalized transition packet families such as promotion, proposal, apply, and handoff packets so validators stop inferring transition intent from free-form prose alone.
+69. [done] Define deterministic transition check families for schema, legality, provenance, boundedness, authority, reconciliation, and diff-scope validation.
+70. [done] Introduce a core transition validator that enforces graph-family-independent invariants for governed artifact movement.
+71. [done] Define validator profiles so SpecGraph self-specs, product specs, tech specs, and later trace artifacts can share one transition engine while adding profile-specific rules.
+72. [done] Add structured failure reporting for transition checks so denied promotions and applies can be explained by typed findings rather than ad hoc strings.
+73. [done] Define how product-spec graphs inherit the deterministic transition framework instead of re-implementing promotion and apply semantics per product domain.
+
+## Implementation Trace Plane
+
+74. [done] Define graph-bound trace artifacts that link `spec_id` to code refs, test refs, PRs, commits, verification basis, and acceptance coverage without polluting canonical spec YAML.
+75. [done] Define an implementation-state overlay vocabulary and derivation rules such as `unclaimed`, `planned`, `in_progress`, `implemented`, `verified`, `drifted`, and `blocked`.
+76. [done] Add freshness and drift detection for implementation traces so later code changes can mark a previously verified spec as stale or drifting.
+77. [done] Add viewer or report projections that derive implementation backlog and coverage views from the trace plane instead of relying only on a flat manual `tasks.md`.
+
+## Broadness and Clustering
+
+78. [done] Add a non-blocking refinement fan-out pressure signal that detects when a node is becoming too broad through excessive direct-child spread.
+79. [done] Teach graph-health and proposal flows to distinguish healthy multi-child aggregate roles from broad hubs that are missing intermediate semantic clustering.
+80. [done] Prefer regrouping or intermediate-cluster recommendations over further flat child splitting when fan-out pressure is high.
+
+## Reflective Co-Evolution
+
+81. [done] Define a proposal-processing posture that distinguishes `document_only`, `bounded_runtime_followup`, `synchronous_runtime_slice`, and `deferred_until_canonicalized` for implementation-relevant proposals.
+82. [done] Make backlog generation treat proposal normalization, runtime realization, validation, and re-observation as one connected reflective chain instead of separate planning layers.
+83. [done] Pair implementation-relevant proposal work with bounded `tools/` or `tests/` slices by default where the affected runtime surface already exists.
+84. [done] Add inspection or trace artifacts that show, for each proposal, its runtime realization status, validation closure, and observation coverage.
+
 ## External Consumer Bridge
 
 85. [done] Add a viewer-facing external consumer bridge overlay so sibling repositories such as Metrics expose stable-vs-draft readiness, identity state, and bound metric pressure separately from canonical graph truth.
