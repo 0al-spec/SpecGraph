@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import datetime as dt
 import importlib.util
 import io
 import json
@@ -1460,6 +1461,26 @@ prompt: Existing invalid metadata.
 
     assert data["id"] == "SG-SPEC-9999"
     assert data["created_at"] == "2026-04-18T10:00:00Z"
+
+
+def test_immutable_metadata_review_findings_normalizes_yaml_timestamp_details(
+    supervisor_module: object,
+) -> None:
+    findings = supervisor_module.immutable_metadata_review_findings(
+        canonical_data={"id": "SG-SPEC-0001", "created_at": "2026-04-18T00:00:00Z"},
+        candidate_data={
+            "id": "SG-SPEC-0001",
+            "created_at": dt.datetime(2099, 1, 1, tzinfo=dt.timezone.utc),
+        },
+        spec_id="SG-SPEC-0001",
+        rel_path="specs/nodes/SG-SPEC-0001.yaml",
+        transition_context="review_pending_gate",
+    )
+
+    json.dumps(findings)
+
+    assert [finding["code"] for finding in findings] == ["immutable_metadata_changed"]
+    assert findings[0]["details"]["candidate_value"] == "2099-01-01T00:00:00Z"
 
 
 def test_dirty_local_input_spec_paths_filters_to_modified_input_specs(

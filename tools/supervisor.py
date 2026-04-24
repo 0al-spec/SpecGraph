@@ -3206,6 +3206,20 @@ def preserve_immutable_canonical_metadata(
     return preserved
 
 
+def json_safe_metadata_value(value: Any) -> Any:
+    if value is None or isinstance(value, str | int | float | bool):
+        return value
+    if isinstance(value, dt.datetime):
+        return value.astimezone(dt.timezone.utc).isoformat().replace("+00:00", "Z")
+    if isinstance(value, dt.date):
+        return value.isoformat()
+    if isinstance(value, list):
+        return [json_safe_metadata_value(item) for item in value]
+    if isinstance(value, dict):
+        return {str(key): json_safe_metadata_value(item) for key, item in value.items()}
+    return str(value)
+
+
 def immutable_metadata_review_findings(
     *,
     canonical_data: dict[str, Any],
@@ -3237,8 +3251,8 @@ def immutable_metadata_review_findings(
                     f"{key!r} for {spec_id}; gate approval will preserve the canonical value."
                 ),
                 details={
-                    "canonical_value": canonical_value,
-                    "candidate_value": copy.deepcopy(candidate_value),
+                    "canonical_value": json_safe_metadata_value(canonical_value),
+                    "candidate_value": json_safe_metadata_value(candidate_value),
                     "transition_context": transition_context,
                     "recommended_action": "preserve_canonical_value",
                 },
