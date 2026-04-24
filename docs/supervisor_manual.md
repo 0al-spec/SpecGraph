@@ -127,6 +127,8 @@ particular task.
   `--build-bootstrap-smoke-benchmark`
 - build one aggregated graph dashboard for a viewer or visualizer:
   `--build-graph-dashboard`
+- build a normalized backlog projection from existing derived surfaces:
+  `--build-graph-backlog-projection`
 - build a repository-tracked intent-layer overlay:
   `--build-intent-layer-overlay`
 - build a repository-tracked proposal-lane overlay:
@@ -1056,6 +1058,22 @@ The output includes:
 - source artifact references with generated timestamps so a visualizer can show
   provenance for each number
 
+### Graph backlog projection
+
+```bash
+python3 tools/supervisor.py --build-graph-backlog-projection
+```
+
+Builds `runs/graph_backlog_projection.json` as a normalized work/backlog
+projection over existing derived surfaces. This is not a canonical task list:
+it is a viewer-facing read model that turns graph health, proposal runtime,
+trace, evidence, external-consumer, SpecPM, Metrics, and threshold-proposal
+gaps into concrete rows with `domain`, `subject_id`, `next_gap`, `priority`,
+and source artifact links.
+
+Use it when the dashboard count needs to become a clickable work queue without
+reintroducing `tasks.md` as the source of truth.
+
 ### Proposal-lane overlay
 
 ```bash
@@ -1349,6 +1367,9 @@ path.
   - aggregated dashboard surface with headline cards and numeric section
     summaries for graph, health, proposals, implementation, evidence, external
     consumers, external handoffs, and metrics
+- `runs/graph_backlog_projection.json`
+  - normalized derived backlog surface with concrete next-gap rows grouped by
+    domain, priority, source artifact, and named viewer filters
 - `tools/proposal_lane_policy.json`
   - declarative proposal-lane contract for repository presence, authority-state
     mapping, and overlay/query semantics

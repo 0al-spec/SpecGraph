@@ -34,6 +34,7 @@ Derived artifacts:
 - structured proposal artifacts: `runs/proposals/*.json`
 - supervisor performance index: `runs/supervisor_performance_index.json`
 - graph dashboard: `runs/graph_dashboard.json`
+- graph backlog projection: `runs/graph_backlog_projection.json`
 - intent-layer overlay: `runs/intent_layer_overlay.json`
 - proposal-lane overlay: `runs/proposal_lane_overlay.json`
 - graph health overlay: `runs/graph_health_overlay.json`
@@ -2400,6 +2401,9 @@ SPECGRAPH_CANONICAL_SURFACE_PREFIXES = ("specs/nodes/", "specs/history/")
 GRAPH_HEALTH_OVERLAY_FILENAME = "graph_health_overlay.json"
 GRAPH_HEALTH_TRENDS_FILENAME = "graph_health_trends.json"
 GRAPH_DASHBOARD_FILENAME = "graph_dashboard.json"
+GRAPH_BACKLOG_PROJECTION_FILENAME = "graph_backlog_projection.json"
+GRAPH_BACKLOG_PROJECTION_ARTIFACT_KIND = "graph_backlog_projection"
+GRAPH_BACKLOG_PROJECTION_SCHEMA_VERSION = 1
 SPEC_TRACE_INDEX_FILENAME = "spec_trace_index.json"
 SPEC_TRACE_PROJECTION_FILENAME = "spec_trace_projection.json"
 PROPOSAL_RUNTIME_INDEX_FILENAME = "proposal_runtime_index.json"
@@ -11565,6 +11569,10 @@ def spec_trace_projection_path() -> Path:
     return RUNS_DIR / SPEC_TRACE_PROJECTION_FILENAME
 
 
+def graph_backlog_projection_path() -> Path:
+    return RUNS_DIR / GRAPH_BACKLOG_PROJECTION_FILENAME
+
+
 def spec_trace_registry_path() -> Path:
     return ROOT / "tools" / "spec_trace_registry.json"
 
@@ -19565,6 +19573,633 @@ def dashboard_card(
     }
 
 
+GRAPH_BACKLOG_PRIORITY_RANK = {
+    "high": 0,
+    "medium": 1,
+    "low": 2,
+    "info": 3,
+}
+
+
+def graph_backlog_source_artifact_path(source_artifact: str) -> str:
+    path_by_artifact: dict[str, Callable[[], Path]] = {
+        "graph_health_overlay": graph_health_overlay_path,
+        "proposal_runtime_index": proposal_runtime_index_path,
+        "proposal_promotion_index": proposal_promotion_index_path,
+        "refactor_queue": refactor_queue_path,
+        "proposal_queue": proposal_queue_path,
+        "spec_trace_projection": spec_trace_projection_path,
+        "evidence_plane_overlay": evidence_plane_overlay_path,
+        "external_consumer_overlay": external_consumer_overlay_path,
+        "external_consumer_handoffs": external_consumer_handoff_packets_path,
+        "specpm_delivery_workflow": specpm_delivery_workflow_path,
+        "specpm_feedback_index": specpm_feedback_index_path,
+        "metrics_delivery_workflow": metrics_delivery_workflow_path,
+        "metrics_feedback_index": metrics_feedback_index_path,
+        "metrics_source_promotion_index": metrics_source_promotion_index_path,
+        "metric_threshold_proposals": metric_threshold_proposals_path,
+    }
+    path_builder = path_by_artifact.get(source_artifact)
+    if path_builder is None:
+        return ""
+    return path_builder().relative_to(ROOT).as_posix()
+
+
+def graph_backlog_source_artifact_record(
+    source_artifact: str,
+    payload: dict[str, Any] | list[dict[str, Any]],
+) -> dict[str, Any]:
+    record: dict[str, Any] = {
+        "artifact_path": graph_backlog_source_artifact_path(source_artifact),
+    }
+    if isinstance(payload, dict):
+        record["generated_at"] = payload.get("generated_at")
+        if "entry_count" in payload:
+            record["entry_count"] = payload.get("entry_count")
+    elif isinstance(payload, list):
+        record["entry_count"] = len(payload)
+    return record
+
+
+def graph_backlog_identifier(value: str) -> str:
+    return re.sub(r"[^A-Za-z0-9_.:-]+", "_", value.strip()).strip("_") or "unknown"
+
+
+def graph_backlog_subject_id(item: dict[str, Any], id_fields: tuple[str, ...]) -> str:
+    for field in id_fields:
+        value = str(item.get(field, "")).strip()
+        if value:
+            return value
+    return "unknown"
+
+
+def graph_backlog_status(item: dict[str, Any], status_fields: tuple[str, ...]) -> str:
+    for field in status_fields:
+        value = str(item.get(field, "")).strip()
+        if value:
+            return value
+    return "unclassified"
+
+
+def graph_backlog_priority(
+    *,
+    next_gap: str,
+    status: str,
+    review_state: str,
+    severity: str = "",
+) -> str:
+    severity_priority = {"critical": "high", "high": "high", "medium": "medium", "low": "low"}
+    if severity in severity_priority:
+        return severity_priority[severity]
+    if "blocked" in status or next_gap.startswith("isolate_"):
+        return "high"
+    if review_state in {"ready_for_review", "review_visible", "adoption_visible"}:
+        return "high"
+    if next_gap.startswith("review_") or next_gap in {"resolve_review_gate", "resolve_split_gate"}:
+        return "high"
+    if next_gap in {
+        "attach_trace_contract",
+        "attach_evidence_contract",
+        "attach_promotion_trace",
+        "runtime_realization",
+        "validation_closure",
+        "reobservation",
+    }:
+        return "medium"
+    return "low"
+
+
+def graph_backlog_details(
+    item: dict[str, Any],
+    *,
+    exclude: set[str] | None = None,
+) -> dict[str, Any]:
+    excluded = {
+        "id",
+        "spec_id",
+        "proposal_id",
+        "consumer_id",
+        "package_id",
+        "metric_id",
+        "promotion_id",
+        "title",
+        "next_gap",
+        "review_state",
+    }
+    if exclude:
+        excluded.update(exclude)
+    return {key: copy.deepcopy(value) for key, value in item.items() if key not in excluded}
+
+
+def graph_backlog_entry(
+    *,
+    source_artifact: str,
+    domain: str,
+    subject_kind: str,
+    subject_id: str,
+    next_gap: str,
+    status: str,
+    title: str = "",
+    review_state: str = "",
+    priority: str = "",
+    source_item_id: str = "",
+    details: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    normalized_next_gap = next_gap or "review_backlog_item"
+    normalized_source_id = source_item_id or subject_id
+    backlog_id = "::".join(
+        [
+            graph_backlog_identifier(source_artifact),
+            graph_backlog_identifier(domain),
+            graph_backlog_identifier(normalized_source_id),
+            graph_backlog_identifier(normalized_next_gap),
+        ]
+    )
+    return {
+        "backlog_id": backlog_id,
+        "domain": domain,
+        "source_artifact": source_artifact,
+        "source_artifact_path": graph_backlog_source_artifact_path(source_artifact),
+        "subject_kind": subject_kind,
+        "subject_id": subject_id,
+        "title": title,
+        "status": status,
+        "review_state": review_state,
+        "next_gap": normalized_next_gap,
+        "priority": priority
+        or graph_backlog_priority(
+            next_gap=normalized_next_gap,
+            status=status,
+            review_state=review_state,
+        ),
+        "details": details or {},
+    }
+
+
+def append_backlog_items(
+    entries: list[dict[str, Any]],
+    *,
+    source_artifact: str,
+    domain: str,
+    subject_kind: str,
+    backlog: dict[str, Any],
+    id_fields: tuple[str, ...],
+    status_fields: tuple[str, ...],
+) -> None:
+    raw_items = backlog.get("items", [])
+    if not isinstance(raw_items, list):
+        raw_items = []
+    for item in raw_items:
+        if not isinstance(item, dict):
+            continue
+        subject_id = graph_backlog_subject_id(item, id_fields)
+        next_gap = str(item.get("next_gap", "")).strip() or "review_backlog_item"
+        review_state = str(item.get("review_state", "")).strip()
+        status = graph_backlog_status(item, status_fields)
+        entries.append(
+            graph_backlog_entry(
+                source_artifact=source_artifact,
+                domain=domain,
+                subject_kind=subject_kind,
+                subject_id=subject_id,
+                title=str(item.get("title", "")).strip(),
+                status=status,
+                review_state=review_state,
+                next_gap=next_gap,
+                details=graph_backlog_details(item),
+            )
+        )
+
+
+def append_grouped_backlog_items(
+    entries: list[dict[str, Any]],
+    *,
+    source_artifact: str,
+    domain: str,
+    subject_kind: str,
+    grouped_by_next_gap: dict[str, Any],
+) -> None:
+    for next_gap, raw_subjects in sorted(grouped_by_next_gap.items()):
+        if not isinstance(raw_subjects, list):
+            continue
+        for subject in raw_subjects:
+            subject_id = str(subject).strip()
+            if not subject_id:
+                continue
+            entries.append(
+                graph_backlog_entry(
+                    source_artifact=source_artifact,
+                    domain=domain,
+                    subject_kind=subject_kind,
+                    subject_id=subject_id,
+                    status="next_gap",
+                    next_gap=str(next_gap).strip() or "review_backlog_item",
+                )
+            )
+
+
+def build_graph_backlog_projection_from_surfaces(
+    *,
+    graph_overlay: dict[str, Any],
+    proposal_runtime_index: dict[str, Any],
+    proposal_promotion_index: dict[str, Any],
+    refactor_queue_items: list[dict[str, Any]],
+    proposal_queue_items: list[dict[str, Any]],
+    spec_trace_projection: dict[str, Any],
+    evidence_overlay: dict[str, Any],
+    external_consumer_overlay: dict[str, Any],
+    external_consumer_handoffs: dict[str, Any],
+    specpm_delivery_workflow: dict[str, Any],
+    specpm_feedback_index: dict[str, Any],
+    metrics_delivery_workflow: dict[str, Any],
+    metrics_feedback_index: dict[str, Any],
+    metrics_source_promotion_index: dict[str, Any],
+    metric_threshold_proposals: dict[str, Any],
+) -> dict[str, Any]:
+    entries: list[dict[str, Any]] = []
+
+    for item in graph_overlay.get("entries", []):
+        if not isinstance(item, dict):
+            continue
+        spec_id = str(item.get("spec_id", "")).strip()
+        if not spec_id:
+            continue
+        gate_state = str(item.get("gate_state", "none")).strip() or "none"
+        signals = [str(value).strip() for value in item.get("signals", []) if str(value).strip()]
+        if gate_state == "none" and not signals:
+            continue
+        recommended_actions = [
+            str(value).strip()
+            for value in item.get("recommended_actions", [])
+            if str(value).strip()
+        ]
+        if gate_state == "review_pending":
+            next_gap = "resolve_review_gate"
+        elif gate_state == "split_required":
+            next_gap = "resolve_split_gate"
+        elif recommended_actions:
+            next_gap = recommended_actions[0]
+        else:
+            next_gap = "review_graph_health_signal"
+        entries.append(
+            graph_backlog_entry(
+                source_artifact="graph_health_overlay",
+                domain="health",
+                subject_kind="spec",
+                subject_id=spec_id,
+                title=str(item.get("title", "")).strip(),
+                status=gate_state if gate_state != "none" else "structural_pressure",
+                next_gap=next_gap,
+                priority="high" if gate_state != "none" else "medium",
+                details={
+                    "diagnostic_outcome": item.get("diagnostic_outcome"),
+                    "signals": signals,
+                    "recommended_actions": recommended_actions,
+                    "problem_score": item.get("problem_score"),
+                },
+            )
+        )
+
+    append_backlog_items(
+        entries,
+        source_artifact="proposal_runtime_index",
+        domain="proposals",
+        subject_kind="proposal",
+        backlog=proposal_runtime_index.get("reflective_backlog", {}),
+        id_fields=("proposal_id",),
+        status_fields=("posture", "runtime_realization_status"),
+    )
+
+    promotion_backlog = proposal_promotion_index.get("promotion_backlog", {})
+    promotion_items = (
+        promotion_backlog.get("items") if isinstance(promotion_backlog, dict) else None
+    )
+    if isinstance(promotion_items, list):
+        append_backlog_items(
+            entries,
+            source_artifact="proposal_promotion_index",
+            domain="proposals",
+            subject_kind="proposal",
+            backlog=promotion_backlog,
+            id_fields=("proposal_id",),
+            status_fields=("traceability_status", "status"),
+        )
+    else:
+        append_grouped_backlog_items(
+            entries,
+            source_artifact="proposal_promotion_index",
+            domain="proposals",
+            subject_kind="proposal",
+            grouped_by_next_gap=promotion_backlog.get("grouped_by_next_gap", {})
+            if isinstance(promotion_backlog, dict)
+            else {},
+        )
+
+    for source_artifact, queue_items in (
+        ("refactor_queue", active_queue_items(refactor_queue_items)),
+        ("proposal_queue", active_queue_items(proposal_queue_items)),
+    ):
+        for item in queue_items:
+            if not isinstance(item, dict):
+                continue
+            source_item_id = str(item.get("id", "")).strip()
+            subject_id = (
+                str(item.get("spec_id", "")).strip()
+                or str(item.get("proposal_id", "")).strip()
+                or source_item_id
+                or "unknown"
+            )
+            entries.append(
+                graph_backlog_entry(
+                    source_artifact=source_artifact,
+                    domain="proposals",
+                    subject_kind="queue_item",
+                    subject_id=subject_id,
+                    status=str(item.get("status", "")).strip() or "queued",
+                    next_gap=str(item.get("recommended_action", "")).strip() or "review_queue_item",
+                    source_item_id=source_item_id,
+                    details=graph_backlog_details(item),
+                )
+            )
+
+    append_backlog_items(
+        entries,
+        source_artifact="spec_trace_projection",
+        domain="implementation",
+        subject_kind="spec",
+        backlog=spec_trace_projection.get("implementation_backlog", {}),
+        id_fields=("spec_id",),
+        status_fields=("implementation_state", "freshness_status"),
+    )
+    append_backlog_items(
+        entries,
+        source_artifact="evidence_plane_overlay",
+        domain="evidence",
+        subject_kind="spec",
+        backlog=evidence_overlay.get("evidence_backlog", {}),
+        id_fields=("spec_id",),
+        status_fields=("chain_status", "artifact_stage_status"),
+    )
+    append_backlog_items(
+        entries,
+        source_artifact="external_consumer_overlay",
+        domain="external_consumers",
+        subject_kind="consumer",
+        backlog=external_consumer_overlay.get("external_consumer_backlog", {}),
+        id_fields=("consumer_id",),
+        status_fields=("bridge_state", "contract_status"),
+    )
+    append_backlog_items(
+        entries,
+        source_artifact="external_consumer_handoffs",
+        domain="external_consumers",
+        subject_kind="consumer",
+        backlog=external_consumer_handoffs.get("handoff_backlog", {}),
+        id_fields=("consumer_id",),
+        status_fields=("handoff_status",),
+    )
+    append_backlog_items(
+        entries,
+        source_artifact="specpm_delivery_workflow",
+        domain="specpm",
+        subject_kind="package",
+        backlog=specpm_delivery_workflow.get("delivery_backlog", {}),
+        id_fields=("package_id", "consumer_id"),
+        status_fields=("delivery_status",),
+    )
+    append_backlog_items(
+        entries,
+        source_artifact="specpm_feedback_index",
+        domain="specpm",
+        subject_kind="package",
+        backlog=specpm_feedback_index.get("feedback_backlog", {}),
+        id_fields=("package_id", "consumer_id"),
+        status_fields=("feedback_status",),
+    )
+    append_backlog_items(
+        entries,
+        source_artifact="metrics_delivery_workflow",
+        domain="metrics",
+        subject_kind="consumer",
+        backlog=metrics_delivery_workflow.get("delivery_backlog", {}),
+        id_fields=("consumer_id",),
+        status_fields=("delivery_status",),
+    )
+    append_backlog_items(
+        entries,
+        source_artifact="metrics_feedback_index",
+        domain="metrics",
+        subject_kind="consumer",
+        backlog=metrics_feedback_index.get("feedback_backlog", {}),
+        id_fields=("consumer_id",),
+        status_fields=("feedback_status",),
+    )
+    append_backlog_items(
+        entries,
+        source_artifact="metrics_source_promotion_index",
+        domain="metrics",
+        subject_kind="consumer",
+        backlog=metrics_source_promotion_index.get("promotion_backlog", {}),
+        id_fields=("consumer_id", "promotion_id"),
+        status_fields=("promotion_status",),
+    )
+
+    for item in metric_threshold_proposals.get("entries", []):
+        if not isinstance(item, dict):
+            continue
+        proposal_id = str(item.get("proposal_id", "")).strip()
+        metric_id = str(item.get("metric_id", "")).strip()
+        if not proposal_id or not metric_id:
+            continue
+        severity = str(item.get("severity", "")).strip()
+        entries.append(
+            graph_backlog_entry(
+                source_artifact="metric_threshold_proposals",
+                domain="metrics",
+                subject_kind="metric",
+                subject_id=metric_id,
+                title=str(item.get("title", "")).strip(),
+                status=str(item.get("proposal_kind", "")).strip() or "metric_threshold_proposal",
+                next_gap="review_metric_threshold_proposal",
+                priority=graph_backlog_priority(
+                    next_gap="review_metric_threshold_proposal",
+                    status=str(item.get("proposal_kind", "")).strip(),
+                    review_state="",
+                    severity=severity,
+                ),
+                source_item_id=proposal_id,
+                details=graph_backlog_details(item, exclude={"proposal_id"}),
+            )
+        )
+
+    unique_entries = {entry["backlog_id"]: entry for entry in entries}
+    entries = sorted(
+        unique_entries.values(),
+        key=lambda entry: (
+            GRAPH_BACKLOG_PRIORITY_RANK.get(str(entry.get("priority", "info")), 99),
+            str(entry.get("domain", "")),
+            str(entry.get("next_gap", "")),
+            str(entry.get("subject_id", "")),
+            str(entry.get("backlog_id", "")),
+        ),
+    )
+
+    by_domain: dict[str, list[str]] = {}
+    by_priority: dict[str, list[str]] = {}
+    by_next_gap: dict[str, list[str]] = {}
+    by_source_artifact: dict[str, list[str]] = {}
+    by_subject_kind: dict[str, list[str]] = {}
+    named_filters: dict[str, list[str]] = {
+        "ready_for_review": [],
+        "blocked_by_repo_state": [],
+        "human_review_required": [],
+        "missing_trace_contract": [],
+        "missing_evidence_contract": [],
+        "metric_threshold_pressure": [],
+        "proposal_runtime_realization": [],
+        "promotion_review_ready": [],
+    }
+
+    for entry in entries:
+        backlog_id = str(entry["backlog_id"])
+        domain = str(entry["domain"])
+        priority = str(entry["priority"])
+        next_gap = str(entry["next_gap"])
+        source_artifact = str(entry["source_artifact"])
+        subject_kind = str(entry["subject_kind"])
+        status = str(entry.get("status", ""))
+        review_state = str(entry.get("review_state", ""))
+        by_domain.setdefault(domain, []).append(backlog_id)
+        by_priority.setdefault(priority, []).append(backlog_id)
+        by_next_gap.setdefault(next_gap, []).append(backlog_id)
+        by_source_artifact.setdefault(source_artifact, []).append(backlog_id)
+        by_subject_kind.setdefault(subject_kind, []).append(backlog_id)
+        if review_state == "ready_for_review" or next_gap.startswith("review_"):
+            named_filters["ready_for_review"].append(backlog_id)
+        if "blocked_by_repo_state" in status or next_gap.startswith("isolate_"):
+            named_filters["blocked_by_repo_state"].append(backlog_id)
+        if next_gap in {"resolve_review_gate", "review_handoff_packet"}:
+            named_filters["human_review_required"].append(backlog_id)
+        if next_gap == "attach_trace_contract":
+            named_filters["missing_trace_contract"].append(backlog_id)
+        if next_gap == "attach_evidence_contract":
+            named_filters["missing_evidence_contract"].append(backlog_id)
+        if source_artifact == "metric_threshold_proposals":
+            named_filters["metric_threshold_pressure"].append(backlog_id)
+        if next_gap == "runtime_realization":
+            named_filters["proposal_runtime_realization"].append(backlog_id)
+        if next_gap == "review_metrics_source_promotion":
+            named_filters["promotion_review_ready"].append(backlog_id)
+
+    source_payloads: dict[str, dict[str, Any] | list[dict[str, Any]]] = {
+        "graph_health_overlay": graph_overlay,
+        "proposal_runtime_index": proposal_runtime_index,
+        "proposal_promotion_index": proposal_promotion_index,
+        "refactor_queue": refactor_queue_items,
+        "proposal_queue": proposal_queue_items,
+        "spec_trace_projection": spec_trace_projection,
+        "evidence_plane_overlay": evidence_overlay,
+        "external_consumer_overlay": external_consumer_overlay,
+        "external_consumer_handoffs": external_consumer_handoffs,
+        "specpm_delivery_workflow": specpm_delivery_workflow,
+        "specpm_feedback_index": specpm_feedback_index,
+        "metrics_delivery_workflow": metrics_delivery_workflow,
+        "metrics_feedback_index": metrics_feedback_index,
+        "metrics_source_promotion_index": metrics_source_promotion_index,
+        "metric_threshold_proposals": metric_threshold_proposals,
+    }
+
+    def sorted_groups(groups: dict[str, list[str]]) -> dict[str, list[str]]:
+        return {key: sorted(set(value)) for key, value in sorted(groups.items())}
+
+    return {
+        "artifact_kind": GRAPH_BACKLOG_PROJECTION_ARTIFACT_KIND,
+        "schema_version": GRAPH_BACKLOG_PROJECTION_SCHEMA_VERSION,
+        "generated_at": utc_now_iso(),
+        "source_artifacts": {
+            key: graph_backlog_source_artifact_record(key, value)
+            for key, value in sorted(source_payloads.items())
+        },
+        "entry_count": len(entries),
+        "entries": entries,
+        "summary": {
+            "domain_counts": grouped_identifier_counts(sorted_groups(by_domain)),
+            "priority_counts": grouped_identifier_counts(sorted_groups(by_priority)),
+            "next_gap_counts": grouped_identifier_counts(sorted_groups(by_next_gap)),
+            "source_artifact_counts": grouped_identifier_counts(sorted_groups(by_source_artifact)),
+            "subject_kind_counts": grouped_identifier_counts(sorted_groups(by_subject_kind)),
+        },
+        "viewer_projection": {
+            "domains": sorted_groups(by_domain),
+            "priorities": sorted_groups(by_priority),
+            "next_gap": sorted_groups(by_next_gap),
+            "source_artifacts": sorted_groups(by_source_artifact),
+            "subject_kinds": sorted_groups(by_subject_kind),
+            "named_filters": sorted_groups(named_filters),
+        },
+    }
+
+
+def build_graph_backlog_projection(specs: list[SpecNode]) -> dict[str, Any]:
+    graph_overlay = build_graph_health_overlay(specs)
+    proposal_runtime_index = build_proposal_runtime_index()
+    proposal_promotion_index = build_proposal_promotion_index()
+    spec_trace_index = build_spec_trace_index(specs)
+    spec_trace_projection = build_spec_trace_projection(spec_trace_index)
+    evidence_index = build_evidence_plane_index(specs)
+    evidence_overlay = build_evidence_plane_overlay(evidence_index)
+    external_consumer_index = build_external_consumer_index()
+    metric_signal_index = build_metric_signal_index(specs)
+    external_consumer_overlay = build_external_consumer_overlay(
+        external_consumer_index,
+        metric_signal_index,
+    )
+    metric_threshold_proposals = build_metric_threshold_proposals(metric_signal_index)
+    external_consumer_handoffs = build_external_consumer_handoff_packets(
+        external_consumer_index,
+        external_consumer_overlay,
+        metric_signal_index,
+        metric_threshold_proposals,
+    )
+    metrics_source_promotion_index = build_metrics_source_promotion_index(
+        external_consumer_index,
+        metric_signal_index,
+    )
+    metrics_delivery_workflow = build_metrics_delivery_workflow(external_consumer_handoffs)
+    metrics_feedback_index = build_metrics_feedback_index(metrics_delivery_workflow)
+    specpm_export_preview = build_specpm_export_preview(specs)
+    specpm_delivery_workflow = load_current_specpm_delivery_workflow()
+    specpm_feedback_index = build_specpm_feedback_index(
+        specpm_export_preview,
+        specpm_delivery_workflow,
+    )
+    return build_graph_backlog_projection_from_surfaces(
+        graph_overlay=graph_overlay,
+        proposal_runtime_index=proposal_runtime_index,
+        proposal_promotion_index=proposal_promotion_index,
+        refactor_queue_items=[item for item in load_refactor_queue() if isinstance(item, dict)],
+        proposal_queue_items=[item for item in load_proposal_queue() if isinstance(item, dict)],
+        spec_trace_projection=spec_trace_projection,
+        evidence_overlay=evidence_overlay,
+        external_consumer_overlay=external_consumer_overlay,
+        external_consumer_handoffs=external_consumer_handoffs,
+        specpm_delivery_workflow=specpm_delivery_workflow,
+        specpm_feedback_index=specpm_feedback_index,
+        metrics_delivery_workflow=metrics_delivery_workflow,
+        metrics_feedback_index=metrics_feedback_index,
+        metrics_source_promotion_index=metrics_source_promotion_index,
+        metric_threshold_proposals=metric_threshold_proposals,
+    )
+
+
+def write_graph_backlog_projection(report: dict[str, Any]) -> Path:
+    RUNS_DIR.mkdir(parents=True, exist_ok=True)
+    path = graph_backlog_projection_path()
+    with artifact_lock(path):
+        atomic_write_json(path, report)
+    return path
+
+
 def build_graph_dashboard(specs: list[SpecNode]) -> dict[str, Any]:
     graph_overlay = build_graph_health_overlay(specs)
     graph_trends = build_graph_health_trends(specs, overlay=graph_overlay)
@@ -19605,6 +20240,32 @@ def build_graph_dashboard(specs: list[SpecNode]) -> dict[str, Any]:
     proposal_queue_items = [item for item in load_proposal_queue() if isinstance(item, dict)]
     active_refactor_queue_items = active_queue_items(refactor_queue_items)
     active_proposal_queue_items = active_queue_items(proposal_queue_items)
+    graph_backlog_projection = build_graph_backlog_projection_from_surfaces(
+        graph_overlay=graph_overlay,
+        proposal_runtime_index=proposal_runtime_index,
+        proposal_promotion_index=proposal_promotion_index,
+        refactor_queue_items=refactor_queue_items,
+        proposal_queue_items=proposal_queue_items,
+        spec_trace_projection=spec_trace_projection,
+        evidence_overlay=evidence_overlay,
+        external_consumer_overlay=external_consumer_overlay,
+        external_consumer_handoffs=external_consumer_handoffs,
+        specpm_delivery_workflow=specpm_delivery_workflow,
+        specpm_feedback_index=specpm_feedback_index,
+        metrics_delivery_workflow=metrics_delivery_workflow,
+        metrics_feedback_index=metrics_feedback_index,
+        metrics_source_promotion_index=metrics_source_promotion_index,
+        metric_threshold_proposals=metric_threshold_proposals,
+    )
+    graph_backlog_priority_counts = graph_backlog_projection.get("summary", {}).get(
+        "priority_counts", {}
+    )
+    graph_backlog_domain_counts = graph_backlog_projection.get("summary", {}).get(
+        "domain_counts", {}
+    )
+    graph_backlog_next_gap_counts = graph_backlog_projection.get("summary", {}).get(
+        "next_gap_counts", {}
+    )
 
     total_spec_count = len(specs)
     active_spec_count = sum(1 for spec in specs if not is_historical_spec(spec.data))
@@ -19989,6 +20650,21 @@ def build_graph_dashboard(specs: list[SpecNode]) -> dict[str, Any]:
                 "minimum scores, excluding compatibility alias entries."
             ),
         ),
+        dashboard_card(
+            card_id="graph_backlog_open",
+            title="Graph Backlog Open",
+            value=int(graph_backlog_projection.get("entry_count", 0) or 0),
+            section="backlog",
+            status=(
+                "attention"
+                if int(graph_backlog_projection.get("entry_count", 0) or 0)
+                else "healthy"
+            ),
+            basis=(
+                "Normalized derived backlog items gathered from graph health, proposal, "
+                "implementation, evidence, external consumer, SpecPM, and Metrics surfaces."
+            ),
+        ),
     ]
 
     return {
@@ -20073,6 +20749,10 @@ def build_graph_dashboard(specs: list[SpecNode]) -> dict[str, Any]:
             "metric_threshold_proposals": {
                 "artifact_path": metric_threshold_proposals_path().relative_to(ROOT).as_posix(),
                 "generated_at": metric_threshold_proposals.get("generated_at"),
+            },
+            "graph_backlog_projection": {
+                "artifact_path": graph_backlog_projection_path().relative_to(ROOT).as_posix(),
+                "generated_at": graph_backlog_projection.get("generated_at"),
             },
         },
         "headline_cards": headline_cards,
@@ -20220,6 +20900,12 @@ def build_graph_dashboard(specs: list[SpecNode]) -> dict[str, Any]:
                 "threshold_proposal_kind_counts": metric_threshold_kind_counts,
                 "threshold_proposal_severity_counts": metric_threshold_severity_counts,
             },
+            "backlog": {
+                "backlog_entry_count": int(graph_backlog_projection.get("entry_count", 0) or 0),
+                "priority_counts": graph_backlog_priority_counts,
+                "domain_counts": graph_backlog_domain_counts,
+                "next_gap_counts": graph_backlog_next_gap_counts,
+            },
         },
         "viewer_projection": {
             "headline_card_ids": [card["card_id"] for card in headline_cards],
@@ -20231,6 +20917,7 @@ def build_graph_dashboard(specs: list[SpecNode]) -> dict[str, Any]:
                 "evidence",
                 "external_consumers",
                 "metrics",
+                "backlog",
             ],
             "named_filters": {
                 "gated_specs": graph_named_filter_counts.get("gated_specs", 0),
@@ -20267,6 +20954,7 @@ def build_graph_dashboard(specs: list[SpecNode]) -> dict[str, Any]:
                     0,
                 ),
                 "metrics_below_threshold": len(below_threshold_authoritative_metric_ids),
+                "graph_backlog_open": int(graph_backlog_projection.get("entry_count", 0) or 0),
             },
         },
     }
@@ -23695,6 +24383,7 @@ def main(
     build_supervisor_performance_index_mode: bool = False,
     build_bootstrap_smoke_benchmark_mode: bool = False,
     build_graph_dashboard_mode: bool = False,
+    build_graph_backlog_projection_mode: bool = False,
     build_proposal_lane_overlay_mode: bool = False,
     build_proposal_runtime_index_mode: bool = False,
     build_proposal_promotion_index_mode: bool = False,
@@ -23756,6 +24445,7 @@ def main(
         "--build-supervisor-performance-index": build_supervisor_performance_index_mode,
         "--build-bootstrap-smoke-benchmark": build_bootstrap_smoke_benchmark_mode,
         "--build-graph-dashboard": build_graph_dashboard_mode,
+        "--build-graph-backlog-projection": build_graph_backlog_projection_mode,
         "--build-proposal-lane-overlay": build_proposal_lane_overlay_mode,
         "--build-proposal-runtime-index": build_proposal_runtime_index_mode,
         "--build-proposal-promotion-index": build_proposal_promotion_index_mode,
@@ -25239,6 +25929,41 @@ def main(
         print(json.dumps(report, ensure_ascii=False, indent=2))
         return 0
 
+    if build_graph_backlog_projection_mode:
+        if any(
+            (
+                dry_run,
+                auto_approve,
+                loop,
+                resolve_gate,
+                decision,
+                note,
+                target_spec,
+                split_proposal,
+                apply_split_proposal,
+                operator_note,
+                mutation_budget,
+                run_authority,
+                execution_profile,
+                child_model,
+                child_timeout_seconds,
+                verbose,
+                list_stale_runtime,
+                clean_stale_runtime,
+                observe_graph_health_mode,
+                operator_request_packet_path,
+            )
+        ):
+            print(
+                "--build-graph-backlog-projection must be used as a standalone command",
+                file=sys.stderr,
+            )
+            return 1
+        report = build_graph_backlog_projection(specs)
+        write_graph_backlog_projection(report)
+        print(json.dumps(report, ensure_ascii=False, indent=2))
+        return 0
+
     if build_proposal_runtime_index_mode:
         if any(
             (
@@ -26113,6 +26838,14 @@ if __name__ == "__main__":
         ),
     )
     parser.add_argument(
+        "--build-graph-backlog-projection",
+        action="store_true",
+        help=(
+            "Build a normalized viewer-facing backlog projection from existing derived "
+            "graph, proposal, implementation, evidence, external consumer, and metric surfaces"
+        ),
+    )
+    parser.add_argument(
         "--build-proposal-lane-overlay",
         action="store_true",
         help=(
@@ -26281,6 +27014,7 @@ if __name__ == "__main__":
             build_supervisor_performance_index_mode=args.build_supervisor_performance_index,
             build_bootstrap_smoke_benchmark_mode=args.build_bootstrap_smoke_benchmark,
             build_graph_dashboard_mode=args.build_graph_dashboard,
+            build_graph_backlog_projection_mode=args.build_graph_backlog_projection,
             build_proposal_lane_overlay_mode=args.build_proposal_lane_overlay,
             build_proposal_runtime_index_mode=args.build_proposal_runtime_index,
             build_proposal_promotion_index_mode=args.build_proposal_promotion_index,
