@@ -3148,6 +3148,7 @@ SYNC_STRIPPED_SPEC_KEYS = {
     "pending_run_id",
 }
 DERIVED_SPEC_TRACKING_KEYS = {"created_at", "updated_at", "last_pre_spec_provenance"}
+IMMUTABLE_CANONICAL_METADATA_KEYS = ("id", "created_at")
 DEFAULT_CODEX_HOME = Path(os.environ.get("CODEX_HOME", "~/.codex")).expanduser()
 
 STATUS_PROGRESSION: dict[str, str] = {
@@ -3190,6 +3191,20 @@ def canonical_spec_timestamp_now() -> str:
     return str(get_spec_yaml_module().canonical_timestamp_text(utc_now_iso()))
 
 
+def preserve_immutable_canonical_metadata(
+    data: dict[str, Any],
+    existing_data: dict[str, Any],
+) -> dict[str, Any]:
+    preserved = dict(data)
+    if not isinstance(existing_data, dict):
+        return preserved
+    for key in IMMUTABLE_CANONICAL_METADATA_KEYS:
+        existing_value = str(existing_data.get(key, "")).strip()
+        if existing_value:
+            preserved[key] = existing_data[key]
+    return preserved
+
+
 def prepare_spec_data_for_write(
     *,
     path: Path,
@@ -3209,21 +3224,22 @@ def prepare_spec_data_for_write(
             existing_created_at = str(existing_data.get("created_at", "")).strip()
             existing_updated_at = str(existing_data.get("updated_at", "")).strip()
 
+    data_for_write = preserve_immutable_canonical_metadata(data, existing_data)
     should_touch_updated_at = touch_updated_at
     if should_touch_updated_at and existing_data:
         should_touch_updated_at = canonical_spec_snapshot(existing_data) != canonical_spec_snapshot(
-            data
+            data_for_write
         )
 
     now = canonical_spec_timestamp_now()
-    created_at = str(data.get("created_at", "")).strip() or existing_created_at or now
+    created_at = str(data_for_write.get("created_at", "")).strip() or existing_created_at or now
     updated_at = (
         now
         if should_touch_updated_at
-        else str(data.get("updated_at", "")).strip() or existing_updated_at or created_at
+        else str(data_for_write.get("updated_at", "")).strip() or existing_updated_at or created_at
     )
     return spec_yaml.with_spec_timestamps(
-        dict(data),
+        data_for_write,
         created_at=created_at,
         updated_at=updated_at,
     )
@@ -21779,19 +21795,26 @@ def sync_local_input_specs_into_worktree(
     return synced_paths
 
 
-def sanitize_spec_sync_text(text: str) -> str:
+def sanitize_spec_sync_text(text: str, *, existing_text: str = "") -> str:
     """Remove runtime-only contamination before syncing a spec back to root.
 
     Child agents edit draft spec files inside an isolated worktree, but runtime
     markers such as RUN_OUTCOME/BLOCKER must never become canonical spec data.
     The gatekeeper therefore strips reserved runtime keys and re-renders the file
-    canonically before the root copy is updated.
+    canonically before the root copy is updated. When a canonical file already
+    exists, immutable identity metadata is kept from the canonical copy.
     """
     yaml_module = get_yaml_module()
     data = yaml_module.safe_load(text) or {}
     if not isinstance(data, dict):
         raise ValueError("top-level YAML document must be a mapping")
+    existing_data: dict[str, Any] = {}
+    if existing_text:
+        existing_loaded = yaml_module.safe_load(existing_text) or {}
+        if isinstance(existing_loaded, dict):
+            existing_data = existing_loaded
     cleaned = strip_runtime_sync_data(data)
+    cleaned = preserve_immutable_canonical_metadata(cleaned, existing_data)
     return dump_yaml_text(cleaned)
 
 
@@ -21802,7 +21825,11 @@ def sync_files_from_worktree(worktree_path: Path, rel_paths: list[str]) -> None:
         if src.exists() and src.is_file():
             dst.parent.mkdir(parents=True, exist_ok=True)
             if is_spec_node_path(rel_path):
-                sanitized_text = sanitize_spec_sync_text(src.read_text(encoding="utf-8"))
+                existing_text = dst.read_text(encoding="utf-8") if dst.exists() else ""
+                sanitized_text = sanitize_spec_sync_text(
+                    src.read_text(encoding="utf-8"),
+                    existing_text=existing_text,
+                )
                 dst.write_text(sanitized_text, encoding="utf-8")
             else:
                 shutil.copy2(src, dst)
