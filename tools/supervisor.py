@@ -26575,8 +26575,11 @@ def main(
             process_kwargs["operator_request_context"] = operator_request_context
         if callable_supports_keyword(_process_one_spec, "verbose"):
             process_kwargs["verbose"] = verbose
-        exit_code, _outcome, _completion_status, _gate_state = _process_one_spec(**process_kwargs)
-        return exit_code
+        process_result = _process_one_spec(**process_kwargs)
+        if isinstance(process_result, tuple):
+            exit_code, _outcome, _completion_status, _gate_state = process_result
+            return exit_code
+        return int(process_result)
 
     if loop:
         print(f"Starting autonomous loop mode (max_iterations={max_iterations})")

@@ -2,13 +2,14 @@ id: SG-SPEC-0039
 title: SpecGraph - Non-Retry Queue-Control Contract Cluster
 kind: spec
 created_at: '2026-04-14T19:05:59Z'
-updated_at: '2026-04-14T19:05:59Z'
+updated_at: '2026-04-24T21:20:14Z'
 status: linked
 maturity: 0.23
 depends_on:
 - SG-SPEC-0037
 - SG-SPEC-0038
 - SG-SPEC-0040
+- SG-SPEC-0056
 refines:
 - SG-SPEC-0034
 inputs:
@@ -16,17 +17,19 @@ inputs:
 - specs/nodes/SG-SPEC-0037.yaml
 - specs/nodes/SG-SPEC-0038.yaml
 - specs/nodes/SG-SPEC-0040.yaml
+- specs/nodes/SG-SPEC-0056.yaml
 - tasks.md
 outputs:
 - specs/nodes/SG-SPEC-0039.yaml
 allowed_paths:
 - specs/nodes/SG-SPEC-0039.yaml
+- specs/nodes/SG-SPEC-0056.yaml
 acceptance:
 - Defines the non-retry queue-control cluster contract surface under SG-SPEC-0034 for dedupe_key, preempt_direct_update,
   and proposal_direct_handoff in proposal_queue and refactor_queue artifacts.
 - Establishes SG-SPEC-0039 as the bounded intermediary while delegating concrete non-retry semantics to
-  SG-SPEC-0037, queue-field artifact-shape contracts to SG-SPEC-0038, and first-persistence and noncanonical-consumption
-  contracts to SG-SPEC-0040.
+  SG-SPEC-0037, queue-field artifact-shape contracts to SG-SPEC-0038, first-persistence and noncanonical-consumption
+  contracts to SG-SPEC-0040, and consumer-chain constraints to SG-SPEC-0056.
 - Keeps retry-condition and active-item precedence behavior in SG-SPEC-0035 and SG-SPEC-0036, not in this
   child.
 acceptance_evidence:
@@ -35,11 +38,12 @@ acceptance_evidence:
   evidence: specification.scope.in includes those fields and positions the boundary at SG-SPEC-0039 as
     the intermediary for non-retry queue-control metadata.
 - criterion: Establishes SG-SPEC-0039 as the bounded intermediary while delegating concrete non-retry
-    semantics to SG-SPEC-0037, queue-field artifact-shape contracts to SG-SPEC-0038, and first-persistence
-    and noncanonical-consumption contracts to SG-SPEC-0040.
-  evidence: depends_on records SG-SPEC-0037, SG-SPEC-0038, and SG-SPEC-0040 as immediate delegated children,
-    and specification.delegation_chain maps each concern to SG-SPEC-0037, SG-SPEC-0038, and SG-SPEC-0040
-    respectively.
+    semantics to SG-SPEC-0037, queue-field artifact-shape contracts to SG-SPEC-0038, first-persistence
+    and noncanonical-consumption contracts to SG-SPEC-0040, and consumer-chain constraints to SG-SPEC-0056.
+  evidence: depends_on records SG-SPEC-0037, SG-SPEC-0038, SG-SPEC-0040, and SG-SPEC-0056 as immediate
+    delegated children, while specification.delegation_chain maps concrete semantics, artifact-shape,
+    first-persistence/consumption, and consumer-chain constraints to SG-SPEC-0037, SG-SPEC-0038, SG-SPEC-0040,
+    and SG-SPEC-0056.
 - criterion: Keeps retry-condition and active-item precedence behavior in SG-SPEC-0035 and SG-SPEC-0036,
     not in this child.
   evidence: specification.scope.out excludes retry-condition and active-item precedence controls and cites
@@ -57,9 +61,11 @@ specification:
     in:
     - Parent-facing non-retry queue-control cluster for dedupe_key, preempt_direct_update, and proposal_direct_handoff
     - Parent-facing contract boundary such that SG-SPEC-0003 consumes the cluster only through SG-SPEC-0034
-    - Delegation boundary and ownership chain from SG-SPEC-0034 to SG-SPEC-0037, SG-SPEC-0038, and SG-SPEC-0040
+    - Delegation boundary and ownership chain from SG-SPEC-0034 to SG-SPEC-0037, SG-SPEC-0038, SG-SPEC-0040,
+      and SG-SPEC-0056
     - Parent-facing artifact-shape names for proposal_queue and refactor_queue fields
     - Noncanonical persistence and consumer-boundary split delegated to SG-SPEC-0040
+    - Consumer-chain boundary constraints and direct-consumer path enforcement delegated to SG-SPEC-0056
     out:
     - Retry-condition semantics and retry-gating behavior
     - Active-item precedence semantics and handoff ordering
@@ -73,10 +79,12 @@ specification:
     concrete_non_retry_semantics_contract: SG-SPEC-0037
     field_surface_and_artifact_shape_contract: SG-SPEC-0038
     first_persistence_and_consumption_contract: SG-SPEC-0040
+    consumer_chain_contract: SG-SPEC-0056
     consumer_path:
     - SG-SPEC-0003 -> SG-SPEC-0034 -> SG-SPEC-0039 -> SG-SPEC-0037
     - SG-SPEC-0003 -> SG-SPEC-0034 -> SG-SPEC-0039 -> SG-SPEC-0038
     - SG-SPEC-0003 -> SG-SPEC-0034 -> SG-SPEC-0039 -> SG-SPEC-0040
+    - SG-SPEC-0003 -> SG-SPEC-0034 -> SG-SPEC-0039 -> SG-SPEC-0056
   cluster_contract:
     artifact_targets:
     - proposal_queue
@@ -94,8 +102,9 @@ specification:
     constraints are delegated to SG-SPEC-0040.
   parent_integration:
   - SG-SPEC-0034 depends on SG-SPEC-0039 for the bounded non-retry queue-control cluster contract.
-  - SG-SPEC-0039 depends on SG-SPEC-0037, SG-SPEC-0038, and SG-SPEC-0040 as its concrete semantic, artifact-shape,
-    and consumption-boundary children.
+  - SG-SPEC-0039 depends on SG-SPEC-0037, SG-SPEC-0038, SG-SPEC-0040, and SG-SPEC-0056 as its concrete
+    semantic, artifact-shape, consumption-boundary, and consumer-chain children.
+  - SG-SPEC-0039 delegates direct-consumer path constraints to SG-SPEC-0056.
   - SG-SPEC-0040 owns the first-persistence and noncanonical-consumption boundary for non-retry queue-control
     fields.
   - SG-SPEC-0034 remains the parent-facing non-retry queue boundary; SG-SPEC-0039 owns this intermediary
@@ -111,55 +120,65 @@ proposed_status: null
 proposed_maturity: null
 last_outcome: split_required
 last_blocker: ''
-last_run_id: 20260414T090754Z-SG-SPEC-0039
+last_run_id: 20260424T205954Z-SG-SPEC-0039-ee311892
 last_exit_code: 0
 last_changed_files:
 - specs/nodes/SG-SPEC-0039.yaml
-last_run_at: '2026-04-14T09:07:54.800064+00:00'
-last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0039-20260414T090723Z
-last_branch: codex/sg-spec-0039/20260414T090723Z
+- specs/nodes/SG-SPEC-0056.yaml
+last_run_at: '2026-04-24T21:00:28.725453+00:00'
+last_worktree_path: ''
+last_branch: ''
 last_validator_results:
   outputs: true
   allowed_paths: true
-  reconciliation: true
+  reconciliation: false
   atomicity: true
   transition: true
   executor_environment: true
-  refinement_acceptance: true
+  runtime_artifacts: true
+  refinement_acceptance: false
 last_refinement_acceptance:
-  decision: approve
-  change_class: local_refinement
+  decision: reject
+  change_class: graph_refactor
   checks:
     content_changed: true
-    hard_validation: true
-    single_spec_scope: true
+    hard_validation: false
+    single_spec_scope: false
     constitutional_diff: false
-    graph_refactor_diff: false
+    graph_refactor_diff: true
     atomicity_clear: true
     within_mutation_budget: true
   diff_paths:
-  - specification.consumer_rule[0]
-  - specification.delegation_chain.consumer_path
-  - specification.delegation_chain.consumer_path[0]
-  - specification.delegation_chain.consumer_path[1]
-  - specification.delegation_chain.consumer_path[2]
-  - specification.delegation_chain.parent_boundary_contract
-  - specification.objective
+  - acceptance[1]
+  - acceptance_evidence[1].evidence
+  - specification.delegation_chain.consumer_chain_contract
+  - specification.delegation_chain.consumer_path[3]
+  - specification.parent_integration[2]
+  - specification.parent_integration[3]
+  - specification.parent_integration[4]
+  - specification.scope.in[5]
   mutation_classes:
   - policy_text
   mutation_budget: []
   budget_exceeded_classes: []
   changed_spec_files:
   - specs/nodes/SG-SPEC-0039.yaml
-  review_reasons: []
-  errors: []
+  - specs/nodes/SG-SPEC-0056.yaml
+  review_reasons:
+  - run changed additional spec files beyond the selected source node
+  errors:
+  - 'specs/nodes/SG-SPEC-0039.yaml: acceptance_evidence[2].criterion must match acceptance[2] exactly'
   warnings: []
 last_reconciliation:
-  worktree_spec_count: 34
+  worktree_spec_count: 56
   changed_spec_ids:
   - SG-SPEC-0039
-  semantic_dependencies_resolved: false
-  work_dependencies_ready: false
+  - SG-SPEC-0056
+  semantic_dependencies_resolved: true
+  work_dependencies_ready: true
   cycles: []
-last_requested_child_materialization: false
-last_materialized_child_paths: []
+last_requested_child_materialization: true
+last_materialized_child_paths:
+- specs/nodes/SG-SPEC-0056.yaml
+last_errors:
+- 'specs/nodes/SG-SPEC-0039.yaml: acceptance_evidence[2].criterion must match acceptance[2] exactly'
