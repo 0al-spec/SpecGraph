@@ -3145,6 +3145,7 @@ SYNC_STRIPPED_SPEC_KEYS = {
     "pending_sync_paths",
     "pending_base_digests",
     "pending_candidate_digests",
+    "pending_review_findings",
     "pending_run_id",
 }
 DERIVED_SPEC_TRACKING_KEYS = {"created_at", "updated_at", "last_pre_spec_provenance"}
@@ -3203,6 +3204,101 @@ def preserve_immutable_canonical_metadata(
         if isinstance(existing_value, str) and existing_value.strip():
             preserved[key] = existing_value
     return preserved
+
+
+def json_safe_metadata_value(value: Any) -> Any:
+    if value is None or isinstance(value, str | int | float | bool):
+        return value
+    if isinstance(value, dt.datetime):
+        return value.astimezone(dt.timezone.utc).isoformat().replace("+00:00", "Z")
+    if isinstance(value, dt.date):
+        return value.isoformat()
+    if isinstance(value, list):
+        return [json_safe_metadata_value(item) for item in value]
+    if isinstance(value, dict):
+        return {str(key): json_safe_metadata_value(item) for key, item in value.items()}
+    return str(value)
+
+
+def immutable_metadata_review_findings(
+    *,
+    canonical_data: dict[str, Any],
+    candidate_data: dict[str, Any],
+    spec_id: str,
+    rel_path: str,
+    transition_context: str,
+) -> list[dict[str, Any]]:
+    findings: list[dict[str, Any]] = []
+    for key in IMMUTABLE_CANONICAL_METADATA_KEYS:
+        canonical_value = canonical_data.get(key)
+        if not isinstance(canonical_value, str) or not canonical_value.strip():
+            continue
+        candidate_value = candidate_data.get(key)
+        candidate_text = candidate_value.strip() if isinstance(candidate_value, str) else ""
+        if candidate_text == canonical_value.strip():
+            continue
+        findings.append(
+            validation_finding(
+                code="immutable_metadata_changed",
+                family="metadata",
+                error_class="identity_drift",
+                severity="warning",
+                field=key,
+                path=rel_path,
+                spec_id=spec_id,
+                message=(
+                    f"Candidate attempts to change immutable canonical metadata field "
+                    f"{key!r} for {spec_id}; gate approval will preserve the canonical value."
+                ),
+                details={
+                    "canonical_value": json_safe_metadata_value(canonical_value),
+                    "candidate_value": json_safe_metadata_value(candidate_value),
+                    "transition_context": transition_context,
+                    "recommended_action": "preserve_canonical_value",
+                },
+            )
+        )
+    return findings
+
+
+def pending_review_metadata_findings(
+    *,
+    worktree_path: Path,
+    rel_paths: list[str],
+    transition_context: str,
+) -> list[dict[str, Any]]:
+    yaml_module = get_yaml_module()
+    findings: list[dict[str, Any]] = []
+    for rel_path in rel_paths:
+        if not is_spec_node_path(rel_path):
+            continue
+        canonical_path = ROOT / rel_path
+        candidate_path = worktree_path / rel_path
+        if (
+            not canonical_path.exists()
+            or not canonical_path.is_file()
+            or not candidate_path.exists()
+            or not candidate_path.is_file()
+        ):
+            continue
+        try:
+            canonical_data = yaml_module.safe_load(canonical_path.read_text(encoding="utf-8")) or {}
+            candidate_data = yaml_module.safe_load(candidate_path.read_text(encoding="utf-8")) or {}
+        except Exception:
+            continue
+        if not isinstance(canonical_data, dict) or not isinstance(candidate_data, dict):
+            continue
+        spec_id = str(canonical_data.get("id", "")).strip() or spec_id_from_relpath(rel_path)
+        findings.extend(
+            immutable_metadata_review_findings(
+                canonical_data=canonical_data,
+                candidate_data=candidate_data,
+                spec_id=spec_id,
+                rel_path=rel_path,
+                transition_context=transition_context,
+            )
+        )
+    return coerce_validation_findings(findings)
 
 
 def prepare_spec_data_for_write(
@@ -5793,6 +5889,7 @@ def clear_pending_review_state(node: SpecNode) -> None:
     node.data.pop("pending_sync_paths", None)
     node.data.pop("pending_base_digests", None)
     node.data.pop("pending_candidate_digests", None)
+    node.data.pop("pending_review_findings", None)
     node.data.pop("pending_run_id", None)
 
 
@@ -8908,8 +9005,10 @@ def build_decision_inspector(
     refinement_acceptance: dict[str, Any] | None = None,
     validation_errors: list[str] | None = None,
     validation_findings: list[dict[str, Any]] | None = None,
+    pending_review_findings: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     normalized_validation_findings = coerce_validation_findings(validation_findings)
+    normalized_pending_review_findings = coerce_validation_findings(pending_review_findings)
     if not normalized_validation_findings and validation_errors:
         normalized_validation_findings = string_errors_to_validation_findings(
             validation_errors,
@@ -8970,6 +9069,7 @@ def build_decision_inspector(
             "blocker": blocker,
             "failing_validators": failing_validators,
             "validation_findings": normalized_validation_findings,
+            "pending_review_findings": normalized_pending_review_findings,
             "applied_rules": build_gate_decision_rules(
                 gate_state=gate_state,
                 blocker=blocker,
@@ -23833,6 +23933,11 @@ def _process_one_spec(
         and bool(changed)
     )
     allowed_changes = select_sync_paths(effective_allowed_paths, changed)
+    candidate_metadata_findings = pending_review_metadata_findings(
+        worktree_path=worktree_path,
+        rel_paths=allowed_changes,
+        transition_context="review_pending_gate",
+    )
     split_sync_allowed = productive_split_required and (
         not atomicity_errors
         or executor_requested_split_required
@@ -23892,6 +23997,10 @@ def _process_one_spec(
             node.data["pending_candidate_digests"] = snapshot_sync_digests(
                 allowed_changes, base_dir=worktree_path
             )
+            if candidate_metadata_findings:
+                node.data["pending_review_findings"] = candidate_metadata_findings
+            else:
+                node.data.pop("pending_review_findings", None)
             node.data["pending_run_id"] = run_id
     else:
         if primary_executor_failure:
@@ -24091,6 +24200,7 @@ def _process_one_spec(
         productive_split_required=productive_split_required,
     )
     preserve_run_worktree = node.data.get("gate_state") == "review_pending"
+    pending_review_findings = candidate_metadata_findings if preserve_run_worktree else []
 
     node.data["required_human_action"] = required_human_action
     node.data["last_outcome"] = outcome
@@ -24136,6 +24246,7 @@ def _process_one_spec(
         refactor_queue_before=refactor_queue_before,
         refactor_queue_after=refactor_queue_after,
         refinement_acceptance=refinement_acceptance,
+        pending_review_findings=pending_review_findings,
     )
     evaluator_loop_control = build_evaluator_loop_control(
         run_id=run_id,
@@ -24196,6 +24307,7 @@ def _process_one_spec(
         node.data["last_blocker"] = blocker
         node.data["last_validator_results"] = validator_results
         node.data["last_errors"] = validation_errors
+        pending_review_findings = []
         completion_status = classify_completion_status(
             success=success,
             productive_split_required=productive_split_required,
@@ -24218,6 +24330,7 @@ def _process_one_spec(
             refactor_queue_before=refactor_queue_before,
             refactor_queue_after=refactor_queue_after,
             refinement_acceptance=refinement_acceptance,
+            pending_review_findings=[],
         )
         evaluator_loop_control = build_evaluator_loop_control(
             run_id=run_id,
@@ -24289,6 +24402,8 @@ def _process_one_spec(
         "validation_findings_policy": validation_findings_policy_reference(),
         "validation_findings": validation_findings,
         "validation_summary": validation_summary(validation_findings),
+        "candidate_metadata_findings": candidate_metadata_findings,
+        "pending_review_findings": pending_review_findings,
         "validation_errors": validation_errors,
         "validator_results": validator_results,
         "reconciliation": reconciliation,

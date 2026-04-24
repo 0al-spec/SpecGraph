@@ -10,6 +10,7 @@
     "runtime_protocol": "Nested executor machine protocol failures.",
     "executor_environment": "Transport, timeout, MCP startup, and provider runtime failures.",
     "transition": "Lifecycle and transition validation failures.",
+    "metadata": "Spec identity and lifecycle metadata drift findings.",
     "output": "Declared output contract failures."
   },
   "error_classes": {
@@ -21,6 +22,7 @@
     "protocol_failure": "Executor machine protocol markers are missing or invalid.",
     "runtime_failure": "Executor runtime failed before a trustworthy bounded result.",
     "transition_failure": "Lifecycle transition or status progression is invalid.",
+    "identity_drift": "Immutable canonical identity metadata differs from candidate metadata.",
     "contract_failure": "Declared contract or required surface was violated."
   },
   "severity_levels": [
