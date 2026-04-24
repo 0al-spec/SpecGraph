@@ -725,5 +725,44 @@
         "pattern": "\"artifact_kind\": SPECPM_FEEDBACK_INDEX_ARTIFACT_KIND"
       }
     ]
+  },
+  {
+    "proposal_id": "0034",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "tools/supervisor.py",
+      "tests/test_supervisor.py",
+      "docs/metrics_visualization_guide.md"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def build_graph_backlog_projection("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "GRAPH_BACKLOG_PROJECTION_FILENAME = "
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_graph_backlog_projection_from_surfaces_normalizes_reviewable_gaps("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_main_builds_graph_backlog_projection_as_standalone_command("
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "write_graph_backlog_projection(report)"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "\"artifact_kind\": GRAPH_BACKLOG_PROJECTION_ARTIFACT_KIND"
+      }
+    ]
   }
 ]

@@ -26,11 +26,13 @@ Build:
 
 ```bash
 python3 tools/supervisor.py --build-graph-dashboard
+python3 tools/supervisor.py --build-graph-backlog-projection
 ```
 
 Read:
 
 - `runs/graph_dashboard.json`
+- `runs/graph_backlog_projection.json`
 
 Use this for:
 
@@ -38,14 +40,17 @@ Use this for:
 - sidebar counts
 - filter badges
 - high-level health and progress numbers
+- concrete next-gap queues when counts need to become clickable work items
 
 Most visualizers can treat `graph_dashboard.json` as the default compact report.
+Use `graph_backlog_projection.json` when the UI needs the actual backlog rows
+behind those counts.
 
 The key surfaces are:
 
 - `headline_cards`: ready-to-render summary cards
 - `sections`: grouped counts for `graph`, `health`, `proposals`,
-  `implementation`, `evidence`, `external_consumers`, and `metrics`
+  `implementation`, `evidence`, `external_consumers`, `metrics`, and `backlog`
 - `viewer_projection.named_filters`: compact filter counts for UI chips or
   quick toggles
 
@@ -61,6 +66,13 @@ It also carries Metrics handoff delivery and feedback counts in:
 - `sections.external_consumers.metrics_feedback_status_counts`
 - `viewer_projection.named_filters.metrics_delivery_ready`
 - `viewer_projection.named_filters.metrics_feedback_visible`
+
+It also carries a compact backlog summary in:
+
+- `sections.backlog.backlog_entry_count`
+- `sections.backlog.priority_counts`
+- `sections.backlog.domain_counts`
+- `viewer_projection.named_filters.graph_backlog_open`
 
 ### Global metric panel
 
@@ -211,6 +223,40 @@ Good examples of stable card ids:
 - `metrics_feedback_visible`
 - `metrics_source_promotion_ready`
 - `metrics_below_threshold`
+- `graph_backlog_open`
+
+### `graph_backlog_projection.json`
+
+Best for turning dashboard counts into clickable next-gap rows.
+
+Recommended mappings:
+
+- backlog table: `entries[]`
+- priority tabs: `summary.priority_counts`
+- domain tabs: `summary.domain_counts`
+- next-gap chips: `summary.next_gap_counts`
+- quick filters: `viewer_projection.named_filters`
+
+Each entry has:
+
+- `backlog_id`: stable projection-local row id
+- `domain`: `health`, `proposals`, `implementation`, `evidence`,
+  `external_consumers`, `specpm`, or `metrics`
+- `source_artifact` and `source_artifact_path`
+- `subject_kind` and `subject_id`
+- `status`, `review_state`, `next_gap`, and `priority`
+- `details`: source-specific compact context
+
+Useful filters include:
+
+- `ready_for_review`
+- `blocked_by_repo_state`
+- `human_review_required`
+- `missing_trace_contract`
+- `missing_evidence_contract`
+- `metric_threshold_pressure`
+- `proposal_runtime_realization`
+- `promotion_review_ready`
 
 ### `metric_signal_index.json`
 
@@ -338,6 +384,7 @@ If you want one compact but useful UI, this layout works well:
 6. Bottom sibling-consumer panel from:
    - `external_consumer_overlay.json`
    - `external_consumer_handoff_packets.json`
+7. Work/backlog drawer from `graph_backlog_projection.json`
 
 This keeps node-level and non-node-level data separate.
 
@@ -379,6 +426,11 @@ If you need exactly one file first, use:
 
 - `runs/graph_dashboard.json`
 
+If you need dashboard cards plus concrete work rows, use:
+
+- `runs/graph_dashboard.json`
+- `runs/graph_backlog_projection.json`
+
 If you need one global file plus one node-overlay layer, use:
 
 - `runs/graph_dashboard.json`
@@ -387,6 +439,7 @@ If you need one global file plus one node-overlay layer, use:
 If you need the full but still clean visualization stack, use:
 
 - `runs/graph_dashboard.json`
+- `runs/graph_backlog_projection.json`
 - `runs/metric_signal_index.json`
 - `runs/graph_health_overlay.json`
 - `runs/spec_trace_projection.json`
@@ -407,6 +460,7 @@ python3 tools/supervisor.py --build-external-consumer-handoffs
 python3 tools/supervisor.py --build-metric-signal-index
 python3 tools/supervisor.py --build-supervisor-performance-index
 python3 tools/supervisor.py --build-graph-dashboard
+python3 tools/supervisor.py --build-graph-backlog-projection
 ```
 
 If the UI only needs global cards and metric panels:
@@ -415,6 +469,7 @@ If the UI only needs global cards and metric panels:
 python3 tools/supervisor.py --build-metric-signal-index
 python3 tools/supervisor.py --build-supervisor-performance-index
 python3 tools/supervisor.py --build-graph-dashboard
+python3 tools/supervisor.py --build-graph-backlog-projection
 ```
 
 ## 7. Important Caveats

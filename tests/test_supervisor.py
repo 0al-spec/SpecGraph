@@ -12928,7 +12928,10 @@ def test_build_graph_dashboard_aggregates_runtime_surfaces(
     assert by_card_id["metrics_delivery_ready"]["value"] == 1
     assert by_card_id["metrics_feedback_visible"]["value"] == 1
     assert by_card_id["metrics_source_promotion_ready"]["value"] == 1
+    assert by_card_id["graph_backlog_open"]["value"] == 3
+    assert report["sections"]["backlog"]["domain_counts"] == {"health": 1, "proposals": 2}
     assert report["viewer_projection"]["named_filters"]["retrospective_refactor_candidates"] == 1
+    assert report["viewer_projection"]["named_filters"]["graph_backlog_open"] == 3
 
 
 def test_main_builds_graph_dashboard_as_standalone_command(
@@ -12970,6 +12973,225 @@ def test_main_builds_graph_dashboard_as_standalone_command(
         (repo_fixture / "runs" / "graph_dashboard.json").read_text(encoding="utf-8")
     )
     assert artifact["viewer_projection"]["headline_card_ids"] == ["total_specs"]
+
+
+def test_build_graph_backlog_projection_from_surfaces_normalizes_reviewable_gaps(
+    supervisor_module: object,
+) -> None:
+    report = supervisor_module.build_graph_backlog_projection_from_surfaces(
+        graph_overlay={
+            "generated_at": "2026-04-24T00:00:00Z",
+            "entries": [
+                {
+                    "spec_id": "SG-SPEC-0001",
+                    "title": "Root",
+                    "gate_state": "review_pending",
+                    "signals": ["refinement_fan_out_pressure"],
+                    "recommended_actions": ["regroup_under_intermediate_cluster"],
+                    "problem_score": 2,
+                }
+            ],
+        },
+        proposal_runtime_index={
+            "generated_at": "2026-04-24T00:00:01Z",
+            "entry_count": 1,
+            "reflective_backlog": {
+                "entry_count": 1,
+                "items": [
+                    {
+                        "proposal_id": "0001",
+                        "title": "Runtime proposal",
+                        "posture": "bounded_runtime_followup",
+                        "next_gap": "runtime_realization",
+                        "runtime_realization_status": "untracked",
+                    }
+                ],
+            },
+        },
+        proposal_promotion_index={
+            "generated_at": "2026-04-24T00:00:02Z",
+            "entry_count": 1,
+            "promotion_backlog": {
+                "entry_count": 1,
+                "grouped_by_next_gap": {"attach_promotion_trace": ["0001"]},
+            },
+        },
+        refactor_queue_items=[],
+        proposal_queue_items=[],
+        spec_trace_projection={
+            "generated_at": "2026-04-24T00:00:03Z",
+            "entry_count": 1,
+            "implementation_backlog": {
+                "entry_count": 1,
+                "items": [
+                    {
+                        "spec_id": "SG-SPEC-0002",
+                        "title": "Trace target",
+                        "implementation_state": "unclaimed",
+                        "freshness_status": "not_tracked",
+                        "next_gap": "attach_trace_contract",
+                    }
+                ],
+            },
+        },
+        evidence_overlay={
+            "generated_at": "2026-04-24T00:00:04Z",
+            "entry_count": 1,
+            "evidence_backlog": {
+                "entry_count": 1,
+                "items": [
+                    {
+                        "spec_id": "SG-SPEC-0002",
+                        "title": "Trace target",
+                        "chain_status": "untracked",
+                        "artifact_stage_status": "untracked",
+                        "next_gap": "attach_evidence_contract",
+                    }
+                ],
+            },
+        },
+        external_consumer_overlay={
+            "generated_at": "2026-04-24T00:00:05Z",
+            "entry_count": 1,
+            "external_consumer_backlog": {"entry_count": 0, "items": []},
+        },
+        external_consumer_handoffs={
+            "generated_at": "2026-04-24T00:00:06Z",
+            "entry_count": 1,
+            "handoff_backlog": {
+                "entry_count": 1,
+                "items": [
+                    {
+                        "consumer_id": "metrics_sib",
+                        "handoff_status": "ready_for_handoff",
+                        "review_state": "ready_for_review",
+                        "next_gap": "review_handoff_packet",
+                    }
+                ],
+            },
+        },
+        specpm_delivery_workflow={
+            "generated_at": "2026-04-24T00:00:07Z",
+            "entry_count": 1,
+            "delivery_backlog": {
+                "entry_count": 1,
+                "items": [
+                    {
+                        "package_id": "specgraph.core",
+                        "delivery_status": "blocked_by_repo_state",
+                        "review_state": "not_ready",
+                        "next_gap": "isolate_specpm_checkout_changes",
+                    }
+                ],
+            },
+        },
+        specpm_feedback_index={
+            "generated_at": "2026-04-24T00:00:08Z",
+            "entry_count": 0,
+            "feedback_backlog": {"entry_count": 0, "items": []},
+        },
+        metrics_delivery_workflow={
+            "generated_at": "2026-04-24T00:00:09Z",
+            "entry_count": 0,
+            "delivery_backlog": {"entry_count": 0, "items": []},
+        },
+        metrics_feedback_index={
+            "generated_at": "2026-04-24T00:00:10Z",
+            "entry_count": 0,
+            "feedback_backlog": {"entry_count": 0, "items": []},
+        },
+        metrics_source_promotion_index={
+            "generated_at": "2026-04-24T00:00:11Z",
+            "entry_count": 1,
+            "promotion_backlog": {
+                "entry_count": 1,
+                "items": [
+                    {
+                        "consumer_id": "metrics_sib_full",
+                        "candidate_metric_id": "sib",
+                        "promotion_status": "ready_for_promotion_review",
+                        "review_state": "ready_for_review",
+                        "next_gap": "review_metrics_source_promotion",
+                    }
+                ],
+            },
+        },
+        metric_threshold_proposals={
+            "generated_at": "2026-04-24T00:00:12Z",
+            "entry_count": 1,
+            "entries": [
+                {
+                    "proposal_id": "metric-sib-followup",
+                    "proposal_kind": "metric_threshold_review_proposal",
+                    "title": "Review SIB",
+                    "metric_id": "sib",
+                    "severity": "low",
+                }
+            ],
+        },
+    )
+
+    assert report["artifact_kind"] == supervisor_module.GRAPH_BACKLOG_PROJECTION_ARTIFACT_KIND
+    assert report["entry_count"] == 9
+    assert report["summary"]["domain_counts"] == {
+        "evidence": 1,
+        "external_consumers": 1,
+        "health": 1,
+        "implementation": 1,
+        "metrics": 2,
+        "proposals": 2,
+        "specpm": 1,
+    }
+    assert report["summary"]["priority_counts"]["high"] == 4
+    assert report["summary"]["next_gap_counts"]["attach_trace_contract"] == 1
+    assert report["summary"]["next_gap_counts"]["runtime_realization"] == 1
+    assert report["viewer_projection"]["named_filters"]["missing_trace_contract"]
+    assert report["viewer_projection"]["named_filters"]["missing_evidence_contract"]
+    assert report["viewer_projection"]["named_filters"]["metric_threshold_pressure"]
+    assert report["viewer_projection"]["named_filters"]["promotion_review_ready"]
+    assert report["viewer_projection"]["named_filters"]["blocked_by_repo_state"]
+
+
+def test_main_builds_graph_backlog_projection_as_standalone_command(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    def fake_report(specs: list[object]) -> dict[str, object]:
+        assert len(specs) == 1
+        return {
+            "artifact_kind": supervisor_module.GRAPH_BACKLOG_PROJECTION_ARTIFACT_KIND,
+            "schema_version": supervisor_module.GRAPH_BACKLOG_PROJECTION_SCHEMA_VERSION,
+            "generated_at": "2026-04-24T00:00:00Z",
+            "source_artifacts": {},
+            "entry_count": 1,
+            "entries": [
+                {
+                    "backlog_id": "graph_health_overlay::health::SG-SPEC-0001::resolve_review_gate",
+                    "domain": "health",
+                    "source_artifact": "graph_health_overlay",
+                    "subject_kind": "spec",
+                    "subject_id": "SG-SPEC-0001",
+                    "next_gap": "resolve_review_gate",
+                    "priority": "high",
+                }
+            ],
+            "summary": {"domain_counts": {"health": 1}},
+            "viewer_projection": {"domains": {"health": ["item"]}},
+        }
+
+    monkeypatch.setattr(supervisor_module, "build_graph_backlog_projection", fake_report)
+
+    exit_code = supervisor_module.main(build_graph_backlog_projection_mode=True)
+
+    assert exit_code == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["artifact_kind"] == supervisor_module.GRAPH_BACKLOG_PROJECTION_ARTIFACT_KIND
+    artifact = json.loads(
+        (repo_fixture / "runs" / "graph_backlog_projection.json").read_text(encoding="utf-8")
+    )
+    assert artifact["entry_count"] == 1
 
 
 def test_build_graph_health_overlay_groups_viewer_filters(
