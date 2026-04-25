@@ -2,7 +2,7 @@ id: SG-SPEC-0034
 title: SpecGraph - Proposal and Queue Contracts for Reflective Loop
 kind: spec
 created_at: '2026-04-14T19:05:59Z'
-updated_at: '2026-04-14T19:05:59Z'
+updated_at: '2026-04-25T10:45:34Z'
 status: linked
 maturity: 0.23
 depends_on:
@@ -42,12 +42,12 @@ acceptance_evidence:
     queue-control contract owner, and specification.delegation.queue_control_fields_contract records SG-SPEC-0039
     delegating concrete operational semantics and field-surface/artifact-shape contracts to SG-SPEC-0037
     and SG-SPEC-0038.
-- criterion: Delegates retry-condition control semantics to SG-SPEC-0041, while SG-SPEC-0035 holds concrete
-    retry semantics and SG-SPEC-0036 holds concrete active-item precedence semantics so SG-SPEC-0003 can
-    remain implementation-agnostic for those bounded concerns.
+- criterion: Delegates the parent-facing retry/active-item precedence contract to SG-SPEC-0041 while keeping
+    concrete retry-condition semantics in SG-SPEC-0035 and concrete active-item precedence semantics in
+    SG-SPEC-0036 so SG-SPEC-0003 remains implementation-agnostic for those bounded concerns.
   evidence: specification.delegation.retry_precedence_contract assigns retry/precedence control governance
-    to SG-SPEC-0041, while specification.scope.out keeps runtime details out of SG-SPEC-0034 and SG-SPEC-0035/SG-SPEC-0036
-    are treated as delegated concrete leaves.
+    to SG-SPEC-0041, while specification.scope.out keeps runtime details out of SG-SPEC-0034 and treats
+    SG-SPEC-0035 and SG-SPEC-0036 as delegated concrete leaves.
 - criterion: Keeps queue/control artifacts noncanonical and nonauthoritative.
   evidence: specification.noncanonical_boundary requires queue-control artifacts to remain informational
     metadata only and explicitly states they cannot authorize proposal approval, writeback, or authority
@@ -133,8 +133,12 @@ specification:
   - SG-SPEC-0039 is the bounded child that defines the non-retry queue-control cluster consumed by SG-SPEC-0034.
   - SG-SPEC-0041 is the bounded child that defines the retry-condition and active-item precedence cluster
     consumed by SG-SPEC-0034.
-gate_state: split_required
-required_human_action: split spec scope before rerun
+  gate_reconciliation:
+  - The previous split gate is satisfied by the existing SG-SPEC-0039 non-retry queue-control cluster
+    and SG-SPEC-0041 retry/active-item precedence gateway.
+  - Further decomposition of concrete semantics belongs to those child clusters, not to SG-SPEC-0034.
+gate_state: none
+required_human_action: '-'
 proposed_status: null
 proposed_maturity: null
 last_outcome: split_required
