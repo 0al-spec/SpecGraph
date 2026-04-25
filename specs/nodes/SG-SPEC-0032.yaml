@@ -2,7 +2,7 @@ id: SG-SPEC-0032
 title: SpecGraph - Proposal/Split Mechanics Subcluster
 kind: spec
 created_at: '2026-04-14T05:05:41Z'
-updated_at: '2026-04-14T19:40:20Z'
+updated_at: '2026-04-25T07:10:00Z'
 status: linked
 maturity: 0.69
 depends_on:
@@ -19,70 +19,88 @@ outputs:
 allowed_paths:
 - specs/nodes/SG-SPEC-0032.yaml
 acceptance:
-- Defines SG-SPEC-0032 as the proposal/split mechanics child beneath SG-SPEC-0027.
-- Defines that SG-SPEC-0032 delegates proposal/split mechanics contracts to SG-SPEC-0043, preserving a
-  bounded gateway and keeping SG-SPEC-0029 as the concrete descendant.
-- Defines how SG-SPEC-0026 remains insulated from direct proposal/split child dependencies while depending
-  on SG-SPEC-0027 for reflective execution mechanics.
-- Keeps SG-SPEC-0032 bounded to integration-surface concerns and implementation-agnostic to queue ranking,
-  continuation selection, and runtime orchestration.
+- Defines proposal/split mechanics readiness as one coherent capability region inside reflective execution.
+- Explains how reflective execution can ask whether proposal/split mechanics are ready without reading
+  split payload schemas or proposal-lane runtime details.
+- Keeps continuation selection insulated from proposal/split mechanics detail while preserving reviewable
+  readiness for that mechanics region.
+- 'Applies the topology-prose rule for this branch: graph edges remain metadata, while prose explains
+  runtime readiness and review meaning.'
+- Keeps SG-SPEC-0032 implementation-agnostic to queue ranking, continuation selection, viewer layout,
+  and runtime orchestration.
 acceptance_evidence:
-- criterion: Defines SG-SPEC-0032 as the proposal/split mechanics child beneath SG-SPEC-0027.
-  evidence: specification.cluster_members and specification.cluster_role make SG-SPEC-0032 the proposal/split
-    subcluster node exposed directly under SG-SPEC-0027.
-- criterion: Defines that SG-SPEC-0032 delegates proposal/split mechanics contracts to SG-SPEC-0043, preserving
-    a bounded gateway and keeping SG-SPEC-0029 as the concrete descendant.
-  evidence: depends_on records SG-SPEC-0043 as the bounded gateway-child dependency and specification.cluster_members
-    plus specification.cluster_boundaries identify SG-SPEC-0043 as the gateway while SG-SPEC-0029 is retained
-    as delegated concrete mechanics ownership under SG-SPEC-0043.
-- criterion: Defines how SG-SPEC-0026 remains insulated from direct proposal/split child dependencies
-    while depending on SG-SPEC-0027 for reflective execution mechanics.
-  evidence: specification.parent_contract and specification.cluster_topology require SG-SPEC-0026 to depend
-    on SG-SPEC-0027 only and to avoid direct proposal/split mechanics edges to SG-SPEC-0029 while SG-SPEC-0043
-    is present.
-- criterion: Keeps SG-SPEC-0032 bounded to integration-surface concerns and implementation-agnostic to
-    queue ranking, continuation selection, and runtime orchestration.
-  evidence: specification.scope.out excludes continuation-selection policy, queue ranking formulas, viewer/runtime
-    orchestration while defining proposal/split gateway integration roles in scope.
-prompt: Materialize SG-SPEC-0032 as the bounded proposal/split mechanics child under SG-SPEC-0027 so that
-  SG-SPEC-0026 gets one coherent execution-mechanics dependency and the proposal/split mechanics descendants
-  remain inspectable as an intact subcluster.
+- criterion: Defines proposal/split mechanics readiness as one coherent capability region inside reflective
+    execution.
+  evidence: specification.readiness_region and specification.execution_meaning define proposal/split readiness
+    as the runtime-facing capability that this node contributes.
+- criterion: Explains how reflective execution can ask whether proposal/split mechanics are ready without
+    reading split payload schemas or proposal-lane runtime details.
+  evidence: specification.readiness_query describes the coarse readiness question, while specification.scope.out
+    excludes split payload schemas and proposal-lane runtime detail.
+- criterion: Keeps continuation selection insulated from proposal/split mechanics detail while preserving
+    reviewable readiness for that mechanics region.
+  evidence: specification.continuation_boundary and specification.parent_contract separate continuation
+    selection from proposal/split readiness detail.
+- criterion: 'Applies the topology-prose rule for this branch: graph edges remain metadata, while prose
+    explains runtime readiness and review meaning.'
+  evidence: specification.topology_prose_policy says direct child, edge, and delegation facts are represented
+    by canonical metadata and should not become the main prose of SG-SPEC-0032.
+- criterion: Keeps SG-SPEC-0032 implementation-agnostic to queue ranking, continuation selection, viewer
+    layout, and runtime orchestration.
+  evidence: specification.scope.out excludes queue ranking, continuation-selection policy, viewer layout,
+    and runtime orchestration.
+prompt: Keep SG-SPEC-0032 as the proposal/split mechanics readiness region inside reflective execution.
+  It should explain what readiness means to the runtime and reviewers without narrating graph topology
+  that already exists in metadata.
 specification:
-  objective: Keep SG-SPEC-0032 as the bounded proposal/split subcluster edge under SG-SPEC-0027 while
-    delegating concrete proposal/split mechanics contracts through SG-SPEC-0043.
+  objective: Define proposal/split mechanics readiness as one coherent capability region inside reflective
+    execution, so higher-level continuation logic can reason about availability without inspecting concrete
+    split payloads, queue formulas, or proposal-lane runtime details.
   scope:
     in:
-    - Proposal and split mechanics gateway role beneath SG-SPEC-0027
-    - Delegation of proposal/split readiness through SG-SPEC-0043
-    - Subtree-integration contract between SG-SPEC-0026, SG-SPEC-0027, and this subcluster
-    - Non-bypass proposal/split dependency path via SG-SPEC-0043
+    - Proposal/split mechanics readiness as a runtime capability region
+    - Coarse readiness query exposed to reflective execution
+    - Review boundary between execution readiness and concrete split lifecycle mechanics
+    - Continuation-selection insulation from proposal/split mechanics detail
+    - Topology-prose discipline for this branch
     out:
     - Field-level split artifact schemas already owned by SG-SPEC-0029
     - Continuation-selection policy owned by SG-SPEC-0026
     - Queue ranking formulas, viewer layout, and runtime orchestration
-  cluster_role:
-  - SG-SPEC-0032 is the single proposal/split mechanics child under SG-SPEC-0027.
-  - SG-SPEC-0032 preserves subtree inspectability while keeping proposal/split mechanics contracts delegated
-    through SG-SPEC-0043.
-  cluster_topology:
-  - SG-SPEC-0027 depends on SG-SPEC-0032 as its proposal/split mechanics child.
-  - SG-SPEC-0032 depends on SG-SPEC-0043 as the bounded proposal/split gateway.
-  - SG-SPEC-0043 delegates proposal/split readiness semantics to SG-SPEC-0029.
-  - While SG-SPEC-0032 and SG-SPEC-0043 remain present, SG-SPEC-0026 must not depend directly on SG-SPEC-0029.
-  cluster_members:
-    proposal_gateway:
-    - SG-SPEC-0043 is the bounded proposal/split mechanics gateway under this subcluster.
-    - SG-SPEC-0029 provides concrete mechanics ownership and is delegated from SG-SPEC-0043.
+  readiness_region:
+  - Proposal/split mechanics readiness is the coarse runtime condition that proposal/split behavior can
+    be considered available for reflective execution.
+  - This node keeps that readiness concept readable as a capability region rather than as a chain of graph
+    edges.
+  execution_meaning:
+  - Reflective execution can treat proposal/split readiness as satisfied only when the downstream mechanics
+    boundary can answer the availability question without exposing split payload internals.
+  - This node does not decide which continuation candidate wins and does not rank proposal-lane work.
+  readiness_query:
+  - Is proposal/split mechanics available as a reviewable capability for the current reflective execution
+    context?
+  - If the answer cannot be determined without split payload or queue internals, this node remains too
+    leaky and should be refined around readiness meaning rather than topology.
+  continuation_boundary:
+  - Continuation selection may consume the result of proposal/split readiness indirectly through reflective
+    execution readiness.
+  - Continuation selection must not inspect concrete proposal/split lifecycle fields to choose the next
+    target.
+  topology_prose_policy:
+  - Direct edge, child, and delegation facts for this branch are represented by canonical graph metadata.
+  - SG-SPEC-0032 prose should explain readiness, review meaning, and insulation boundaries rather than
+    restating which spec ID routes to which other spec ID.
   cluster_boundaries:
-  - SG-SPEC-0032 does not redefine SG-SPEC-0043/SG-SPEC-0029 mechanics semantics.
-  - SG-SPEC-0032 does not define continuation-selection rules, viewer behavior, or queue ranking formulas.
+  - SG-SPEC-0032 does not redefine SG-SPEC-0043 or SG-SPEC-0029 mechanics semantics.
+  - SG-SPEC-0032 does not define continuation-selection rules, viewer behavior, queue ranking formulas,
+    or runtime orchestration.
   parent_contract:
-  - SG-SPEC-0027 must consume SG-SPEC-0032 as a single bounded proposal/split mechanics gateway dependency.
-  - SG-SPEC-0032 may not expose SG-SPEC-0029 directly to SG-SPEC-0026 while SG-SPEC-0043 is present.
-  - SG-SPEC-0032 must keep the proposal/split mechanics subcluster inspectable and bounded to gateway-level
-    integration constraints.
-gate_state: split_required
-required_human_action: split spec scope before rerun
+  - SG-SPEC-0027 consumes SG-SPEC-0032 as the proposal/split readiness region within reflective execution.
+  - SG-SPEC-0032 keeps continuation selection separate from concrete proposal/split mechanics detail.
+  - SG-SPEC-0032 should be rewritten or merged rather than split again if the proposed child would only
+    verbalize graph topology.
+gate_state: none
+required_human_action: '-'
 proposed_status: null
 proposed_maturity: null
 last_outcome: split_required
@@ -156,3 +174,6 @@ last_reconciliation:
 last_requested_child_materialization: true
 last_materialized_child_paths:
 - specs/nodes/SG-SPEC-0043.yaml
+last_gate_decision: approve
+last_gate_note: topology-prose cleanup rewrote SG-SPEC-0032 as readiness-region prose
+last_gate_at: '2026-04-25T07:10:00+00:00'

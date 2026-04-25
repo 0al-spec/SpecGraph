@@ -808,5 +808,40 @@
         "pattern": "\"candidate_metadata_findings\""
       }
     ]
+  },
+  {
+    "proposal_id": "0036",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "tools/supervisor.py",
+      "tests/test_supervisor.py",
+      "docs/proposals/0036_topology_facts_are_not_spec_prose.md"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "Treat graph topology as already represented by metadata"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "Do not materialize a child whose main purpose is to verbalize topology"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "Do not make topology self-description the main spec prose"
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "Do not materialize a child whose main purpose is to verbalize topology"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0036_topology_facts_are_not_spec_prose.md",
+        "pattern": "The SG-SPEC-0026 reflective/proposal branch starts moving toward domain-first prose."
+      }
+    ]
   }
 ]

@@ -2,7 +2,7 @@ id: SG-SPEC-0027
 title: SpecGraph - Reflective Execution Mechanics Cluster
 kind: spec
 created_at: '2026-04-13T07:49:44Z'
-updated_at: '2026-04-14T05:19:28Z'
+updated_at: '2026-04-25T07:10:00Z'
 status: linked
 maturity: 0.69
 depends_on:
@@ -20,85 +20,86 @@ outputs:
 allowed_paths:
 - specs/nodes/SG-SPEC-0027.yaml
 acceptance:
-- Defines SG-SPEC-0027 as the bounded execution-mechanics cluster beneath SG-SPEC-0026 with exactly two
-  direct mechanics children (SG-SPEC-0005 and SG-SPEC-0032), so SG-SPEC-0026 receives one coherent execution-mechanics
-  dependency for this subtree and no bypass paths to descendants.
-- Defines how the mechanics descendants remain jointly inspectable as one execution cluster without collapsing
-  their distinct bounded responsibilities.
-- Defines the weakest integration contract by which SG-SPEC-0026 may depend on this cluster while keeping
-  continuation selection separate from concrete execution mechanics.
+- Defines reflective execution readiness as the composed runtime condition that combines retrospective
+  direct-update safety with proposal/split mechanics readiness.
+- Explains how those mechanics remain jointly reviewable as one execution-readiness surface without merging
+  their distinct contracts.
+- Defines the weakest integration contract by which continuation selection can consume execution readiness
+  without inspecting concrete mechanics.
+- Applies the topology-prose rule for this branch so child membership and direct-edge facts remain metadata
+  rather than the main prose.
 - Remains implementation-agnostic about viewer layout, queue ranking formulas, and runtime orchestration.
 acceptance_evidence:
-- criterion: Defines SG-SPEC-0027 as the bounded execution-mechanics cluster beneath SG-SPEC-0026 with
-    exactly two direct mechanics children (SG-SPEC-0005 and SG-SPEC-0032), so SG-SPEC-0026 receives one
-    coherent execution-mechanics dependency for this subtree and no bypass paths to descendants.
-  evidence: specification.cluster_topology and specification.parent_contract require SG-SPEC-0027 to expose
-    exactly SG-SPEC-0005 and SG-SPEC-0032 as direct mechanics children, define SG-SPEC-0026’s single execution-mechanics
-    dependency as SG-SPEC-0027, and disallow direct bypass dependencies.
-- criterion: Defines how the mechanics descendants remain jointly inspectable as one execution cluster
-    without collapsing their distinct bounded responsibilities.
-  evidence: specification.cluster_boundaries states that the child mechanics specs remain individually
-    bounded and refine through SG-SPEC-0027 only for subtree coherence, not because their contracts are
-    merged into one node.
-- criterion: Defines the weakest integration contract by which SG-SPEC-0026 may depend on this cluster
-    while keeping continuation selection separate from concrete execution mechanics.
-  evidence: specification.parent_contract requires SG-SPEC-0026 to consume SG-SPEC-0027 as the single
-    bounded prerequisite for reflective execution readiness, while continuation-selection rules remain
-    owned by SG-SPEC-0026 itself.
+- criterion: Defines reflective execution readiness as the composed runtime condition that combines retrospective
+    direct-update safety with proposal/split mechanics readiness.
+  evidence: specification.execution_readiness_model and specification.mechanics_families define the composed
+    readiness condition and name the two mechanics families it combines.
+- criterion: Explains how those mechanics remain jointly reviewable as one execution-readiness surface
+    without merging their distinct contracts.
+  evidence: specification.review_surface and specification.cluster_boundaries keep the readiness surface
+    coherent while preserving distinct downstream mechanics ownership.
+- criterion: Defines the weakest integration contract by which continuation selection can consume execution
+    readiness without inspecting concrete mechanics.
+  evidence: specification.continuation_contract states that continuation selection consumes only the execution-readiness
+    result and does not inspect direct-update or proposal/split internals.
+- criterion: Applies the topology-prose rule for this branch so child membership and direct-edge facts
+    remain metadata rather than the main prose.
+  evidence: specification.topology_prose_policy says child membership is represented by canonical metadata
+    and this node's prose should explain runtime readiness composition.
 - criterion: Remains implementation-agnostic about viewer layout, queue ranking formulas, and runtime
     orchestration.
   evidence: specification.scope.out excludes viewer layout, queue ranking formulas, and runtime orchestration
     details. SG-SPEC-0027 governs only subtree coherence and integration boundaries.
-prompt: Keep SG-SPEC-0027 as the bounded execution cluster beneath SG-SPEC-0026. It should group retrospective
-  direct-update boundary and one proposal/split mechanics subcluster into one inspectable subtree, preserve
-  their bounded roles, and give SG-SPEC-0026 one coherent dependency instead of several direct mechanics
-  children.
+prompt: Keep SG-SPEC-0027 as the reflective execution-readiness surface. It should explain how retrospective
+  direct-update safety and proposal/split mechanics readiness compose for continuation decisions without
+  turning child membership into the main spec prose.
 specification:
-  objective: Define the bounded execution-mechanics cluster that groups reflective execution descendants
-    beneath SG-SPEC-0026 without merging their distinct mechanics contracts.
+  objective: Define reflective execution readiness as the composed condition that combines direct-update
+    safety and proposal/split mechanics readiness while keeping continuation selection separate from concrete
+    mechanics.
   scope:
     in:
-    - Execution cluster role beneath SG-SPEC-0026
-    - Membership and boundary notes for SG-SPEC-0005 and subordinate proposal/split mechanics subcluster
-      SG-SPEC-0032
-    - Weakest parent integration contract from SG-SPEC-0026 to the cluster
+    - Reflective execution readiness as a composed runtime condition
+    - Joint review surface for direct-update safety and proposal/split mechanics readiness
+    - Weakest integration contract consumed by continuation selection
+    - Topology-prose discipline for this branch
     out:
     - Concrete mechanics semantics already owned by descendant specs
-    - Internal proposal/split membership semantics delegated through SG-SPEC-0032 to SG-SPEC-0029
+    - Internal proposal/split payload, lifecycle, or queue semantics
     - Continuation-selection policy owned by SG-SPEC-0026
     - Viewer layout, queue ranking formulas, and runtime orchestration
-  cluster_role:
-  - SG-SPEC-0027 is the intermediate execution cluster node beneath SG-SPEC-0026.
-  - SG-SPEC-0027 exists to keep reflective execution mechanics structurally coherent without forcing SG-SPEC-0026
-    to exceed its blocking-child atomicity limit.
-  - 'SG-SPEC-0027 exposes exactly two direct execution-mechanics children: SG-SPEC-0005 for retrospective
-    direct-update boundary and SG-SPEC-0032 for the proposal/split mechanics subtree. SG-SPEC-0026 therefore
-    depends on SG-SPEC-0027 as the single execution-mechanics dependency for this cluster.'
-  cluster_topology:
-  - SG-SPEC-0027 depends on exactly SG-SPEC-0005 and SG-SPEC-0032 as direct execution-mechanics descendants.
-  - SG-SPEC-0026 consumes SG-SPEC-0027 as the single execution-mechanics dependency path for this subtree.
-  - While SG-SPEC-0027 exists, SG-SPEC-0026 must not have direct execution-mechanics dependencies to SG-SPEC-0005
-    or SG-SPEC-0029.
-  cluster_members:
+  execution_readiness_model:
+  - Reflective execution readiness is true only when direct-update safety and proposal/split readiness
+    can both be reviewed as coherent mechanics inputs.
+  - This node defines the composed readiness surface, not the field-level mechanics beneath it.
+  mechanics_families:
     retrospective_direct_update_boundary:
     - SG-SPEC-0005 owns retrospective direct-update boundary and application envelope.
-    proposal_and_split_mechanics_subcluster:
-    - SG-SPEC-0032 owns the proposal/split mechanics subcluster gateway and delegates split proposal lifecycle,
-      split mechanics schema, and proposal-lane execution descendants to SG-SPEC-0029.
+    proposal_split_readiness:
+    - SG-SPEC-0032 owns proposal/split mechanics readiness as a coherent capability region.
+  review_surface:
+  - Reviewers inspect this node to understand whether reflective execution has a coherent mechanics readiness
+    surface before continuation selection consumes it.
+  - Review at this level should not require reading split payload schemas, queue ranking formulas, or
+    direct-update application details.
+  continuation_contract:
+  - Continuation selection consumes the execution-readiness result exposed here.
+  - Continuation selection must not inspect concrete mechanics internals to choose or suppress the next
+    target.
+  topology_prose_policy:
+  - Direct child membership is represented by canonical graph metadata.
+  - SG-SPEC-0027 prose should explain the composed execution-readiness role rather than restating that
+    one spec depends on another.
   cluster_boundaries:
-  - Refining through SG-SPEC-0027 does not collapse descendant node identities or their bounded concerns.
+  - This composed readiness surface does not collapse descendant node identities or their bounded concerns.
   - SG-SPEC-0027 does not redefine the mechanics contracts already owned by its descendants.
-  - Cross-descendant consistency is expressed here only at the subtree-integration level.
-  - SG-SPEC-0027 does not restate field-level proposal or split artifact contracts once those are delegated
-    through SG-SPEC-0032 and SG-SPEC-0029.
+  - Cross-mechanics consistency is expressed here only as readiness composition.
+  - SG-SPEC-0027 does not restate field-level proposal or split artifact contracts.
   parent_contract:
-  - SG-SPEC-0026 must depend_on SG-SPEC-0027 as the single bounded prerequisite for reflective execution
-    readiness.
-  - SG-SPEC-0027 must remain narrow enough that SG-SPEC-0026 keeps continuation-selection logic separate
-    from mechanics integration.
-  - SG-SPEC-0027 must expose exactly one subordinate proposal/split mechanics subcluster and it is SG-SPEC-0032.
-  - SG-SPEC-0026 must not depend on any execution-mechanics node other than SG-SPEC-0027 for execution-mechanics
-    readiness while SG-SPEC-0027 remains present.
+  - SG-SPEC-0026 consumes SG-SPEC-0027 as the reflective execution-readiness surface.
+  - SG-SPEC-0027 remains narrow enough that continuation-selection logic stays outside concrete mechanics.
+  - SG-SPEC-0027 should be rewritten or merged rather than split again if a proposed child would only
+    verbalize child membership or edge routing.
 gate_state: none
 proposed_status: null
 proposed_maturity: null

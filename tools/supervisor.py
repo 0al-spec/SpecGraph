@@ -5459,6 +5459,14 @@ Refinement policy:
 - Resolve at most one concrete unresolved area per run.
 - If multiple independent refinement paths are possible, choose one and leave the others unchanged.
 - Prefer creating or refining one child spec over expanding the parent when the topic is separable.
+- Treat graph topology as already represented by metadata (`depends_on`,
+  `refines`, `inputs`, and `outputs`).
+- Do not make topology self-description the main spec prose.
+- Create or materialize a child only when it adds a distinct system-facing
+  role, composed function, or runtime/review-observable invariant.
+- If a candidate child would only name an edge, gateway segment, or
+  handoff segment, or only restate a delegation route, prefer rewriting or
+  merging the existing node, or emit proposal/refactor pressure instead.
 - If decomposition is clearly needed, you may create multiple sibling child specs in one run.
 - If the node remains non-atomic after your edits, end with RUN_OUTCOME: split_required.
 """.rstrip()
@@ -5726,6 +5734,8 @@ Child materialization guidance:
 - Keep the parent update minimal and reviewable.
 - Make the child explicit in the parent refinement/dependency chain only if
   the delegated concern is concrete enough to become a standalone spec now.
+- Do not materialize a child whose main purpose is to verbalize topology
+  already encoded by canonical graph fields.
 - Prefer one child over multiple siblings in this mode.
 - Give the child its own acceptance criteria, prompt, outputs, and allowed_paths.
 - Do not silently widen this into a broad graph refactor.

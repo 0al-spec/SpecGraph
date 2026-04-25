@@ -3851,6 +3851,12 @@ def test_build_prompt_includes_incremental_refinement_policy_for_non_seed_spec(
     )
     assert expected_path_choice in prompt
     assert expected_child_preference in prompt
+    assert "Treat graph topology as already represented by metadata" in prompt
+    assert "Do not make topology self-description the main spec prose" in prompt
+    assert "runtime/review-observable invariant" in prompt
+    assert "gateway segment" in prompt
+    assert "handoff segment" in prompt
+    assert "delegation route" in prompt
     assert expected_split_rule in prompt
     assert "Do not browse the web or external sources" in prompt
     assert "Bootstrap guidance:" not in prompt
@@ -3901,6 +3907,7 @@ def test_build_prompt_includes_child_materialization_guidance_for_targeted_non_r
     assert "Child materialization guidance:" in prompt
     assert "Suggested child spec ID: SG-SPEC-0003" in prompt
     assert "Suggested child spec path: specs/nodes/SG-SPEC-0003.yaml" in prompt
+    assert "Do not materialize a child whose main purpose is to verbalize topology" in prompt
     assert "Prefer one child over multiple siblings in this mode." in prompt
 
 

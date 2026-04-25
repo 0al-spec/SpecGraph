@@ -2,7 +2,7 @@ id: SG-SPEC-0029
 title: SpecGraph - Proposal/Split Mechanics Gateway
 kind: spec
 created_at: '2026-04-13T19:23:30Z'
-updated_at: '2026-04-14T05:05:41Z'
+updated_at: '2026-04-25T07:35:00Z'
 status: linked
 maturity: 0.69
 depends_on: []
@@ -18,83 +18,90 @@ outputs:
 allowed_paths:
 - specs/nodes/SG-SPEC-0029.yaml
 acceptance:
-- Defines SG-SPEC-0029 as the single proposal/split mechanics child of SG-SPEC-0032 so SG-SPEC-0032 keeps
-  one direct proposal/split gateway child and SG-SPEC-0027 does not expose SG-SPEC-0029 directly.
-- Delegates parent-facing proposal/split prerequisite contract details to SG-SPEC-0030 while remaining
-  the gateway boundary under SG-SPEC-0032.
-- Delegates concrete proposal/split mechanics contracts to SG-SPEC-0028 without redefining its field-level
-  payload, queue, or lane semantics.
+- Defines the proposal/split mechanics availability contract used by the readiness branch before concrete
+  split lifecycle details are inspected.
+- Explains how proposal/split mechanics become available only when prerequisite readiness and concrete
+  mechanics ownership are both satisfied.
+- Keeps concrete split lifecycle, proposal-lane execution, payload, and queue semantics owned by SG-SPEC-0028.
+- Applies the topology-prose rule so SG-SPEC-0029 explains availability semantics rather than its position
+  as a gateway child.
 - Remains implementation-agnostic about queue ranking formulas, proposal-lane orchestration, and runtime
   execution behavior.
 acceptance_evidence:
-- criterion: Defines SG-SPEC-0029 as the single proposal/split mechanics child of SG-SPEC-0032 so SG-SPEC-0032
-    keeps one direct proposal/split gateway child and SG-SPEC-0027 does not expose SG-SPEC-0029 directly.
-  evidence: specification.gateway_role defines SG-SPEC-0029 as the proposal/split mechanics child under
-    SG-SPEC-0032, while specification.mechanics_gateway defines SG-SPEC-0029 as the direct descendant
-    channel to proposal/split readiness within the SG-SPEC-0032 subtree.
-- criterion: Delegates parent-facing proposal/split prerequisite contract details to SG-SPEC-0030 while
-    remaining the gateway boundary under SG-SPEC-0032.
-  evidence: specification.mechanics_gateway.readiness_contract and specification.parent_contract both
-    direct parent-facing readiness and non-bypass semantics to SG-SPEC-0030, while SG-SPEC-0029 remains
-    the gateway node beneath SG-SPEC-0032.
-- criterion: Delegates concrete proposal/split mechanics contracts to SG-SPEC-0028 without redefining
-    its field-level payload, queue, or lane semantics.
-  evidence: specification.mechanics_gateway defines SG-SPEC-0029 as a gateway node and specifies that
-    SG-SPEC-0028 owns split proposal lifecycle, split mechanics schema, and proposal-lane execution descendants
-    under this subtree.
+- criterion: Defines the proposal/split mechanics availability contract used by the readiness branch before
+    concrete split lifecycle details are inspected.
+  evidence: specification.availability_contract and specification.readiness_inputs define the availability
+    decision without requiring split payload inspection.
+- criterion: Explains how proposal/split mechanics become available only when prerequisite readiness and
+    concrete mechanics ownership are both satisfied.
+  evidence: specification.availability_conditions requires both SG-SPEC-0030 prerequisite readiness and
+    SG-SPEC-0028 concrete mechanics ownership before availability is considered satisfied.
+- criterion: Keeps concrete split lifecycle, proposal-lane execution, payload, and queue semantics owned
+    by SG-SPEC-0028.
+  evidence: specification.mechanics_ownership and specification.scope.out keep those concrete mechanics
+    out of SG-SPEC-0029.
+- criterion: Applies the topology-prose rule so SG-SPEC-0029 explains availability semantics rather than
+    its position as a gateway child.
+  evidence: specification.topology_prose_policy says graph placement remains metadata and prose must explain
+    availability, prerequisite, and ownership semantics.
 - criterion: Remains implementation-agnostic about queue ranking formulas, proposal-lane orchestration,
     and runtime execution behavior.
-  evidence: specification.scope.out excludes queue ranking formulas, execution orchestration, and implementation
-    mechanics.
-prompt: Keep SG-SPEC-0029 as the bounded proposal/split mechanics gateway under SG-SPEC-0032. It should
-  separate the proposal/split subtree as one inspectable unit from the subcluster-level mechanics boundary
-  while leaving concrete mechanics ownership to SG-SPEC-0028.
+  evidence: specification.scope.out excludes queue ranking formulas, proposal-lane orchestration, runtime
+    execution behavior, and implementation storage layout.
+prompt: Keep SG-SPEC-0029 as the proposal/split mechanics availability contract. It should explain when
+  proposal/split mechanics are available to the readiness branch, while concrete mechanics remain owned
+  by SG-SPEC-0028 and prerequisite readiness remains owned by SG-SPEC-0030.
 specification:
-  objective: Define a bounded proposal/split mechanics gateway under SG-SPEC-0032 so SG-SPEC-0032 remains
-    coupled to one inspectable proposal/split readiness subtree while SG-SPEC-0028 remains the concrete
-    mechanics owner.
+  objective: Define the proposal/split mechanics availability contract that lets the readiness branch
+    know when proposal/split mechanics may be treated as available, without duplicating concrete split
+    lifecycle, queue, or proposal-lane semantics owned downstream.
   scope:
     in:
-    - Proposal/split mechanics gateway role beneath SG-SPEC-0032
-    - Parent-facing prerequisite contract boundary that is delegated to SG-SPEC-0030
-    - Single inspectable gateway edge that preserves a standalone proposal/split mechanics subtree while
-      preventing flattening into SG-SPEC-0032 or neighboring mechanics boundaries.
-    - Parent integration contract that keeps subcluster-level mechanics separate from proposal/split readiness
-      through the SG-SPEC-0032 subtree
-    - Delegation of concrete mechanics ownership to SG-SPEC-0028
+    - Proposal/split mechanics availability semantics.
+    - Prerequisite readiness consumption from SG-SPEC-0030.
+    - Concrete mechanics ownership boundary around SG-SPEC-0028.
+    - Review-facing availability conditions for the readiness branch.
+    - Topology-prose discipline for this branch.
     out:
     - Concrete split payload schema, queue field semantics, or proposal-lane runtime policy details already
       owned by SG-SPEC-0028
     - Continuation-selection policy or retrospective direct-update semantics
     - Viewer UX, persistence implementation, or runtime orchestration decisions
-  gateway_role:
-  - SG-SPEC-0029 is the proposal/split mechanics child beneath SG-SPEC-0032.
-  - SG-SPEC-0029 provides one inspectable boundary edge that keeps direct-update mechanics and proposal/split
-    mechanics as separate atomic concerns.
-  mechanics_gateway:
-    proposal_split_ownership:
-    - SG-SPEC-0028 remains the concrete owner of split proposal lifecycle, split mechanics schema, and
-      proposal-lane execution descendants.
-    integration_surface:
-    - SG-SPEC-0029 is the only direct descendant of SG-SPEC-0032 for proposal/split readiness.
-    - SG-SPEC-0032 must not expose SG-SPEC-0028 directly for proposal/split readiness while SG-SPEC-0029
-      exists as the child-gateway.
-    readiness_contract:
-    - SG-SPEC-0030 formalizes the parent-facing prerequisite and non-bypass semantics for this gateway
-      edge.
-    - SG-SPEC-0032 must reach proposal/split readiness only through SG-SPEC-0029 for this subtree boundary.
+  availability_contract:
+  - Proposal/split mechanics are available only when prerequisite readiness is satisfied and concrete
+    mechanics ownership remains intact.
+  - Availability is a reviewable readiness decision, not an invitation to inspect or duplicate split payload
+    fields.
+  readiness_inputs:
+    prerequisite_readiness:
+    - SG-SPEC-0030 owns parent-facing prerequisite readiness.
+    concrete_mechanics:
+    - SG-SPEC-0028 owns concrete split lifecycle, split mechanics schema, and proposal-lane execution
+      descendants.
+  availability_conditions:
+  - Prerequisite readiness must be satisfied by SG-SPEC-0030.
+  - Concrete mechanics ownership must remain with SG-SPEC-0028.
+  - If either side is missing or ambiguous, proposal/split mechanics availability is not satisfied for
+    the readiness branch.
+  mechanics_ownership:
+  - SG-SPEC-0028 remains the concrete owner of split proposal lifecycle, split mechanics schema, and proposal-lane
+    execution descendants.
+  - SG-SPEC-0029 may reference that ownership but must not restate downstream field-level mechanics.
+  topology_prose_policy:
+  - Direct graph placement around SG-SPEC-0029 is represented by canonical graph metadata.
+  - SG-SPEC-0029 prose should explain availability semantics, not its position as a gateway, child, or
+    edge.
   integration_boundaries:
   - SG-SPEC-0029 may not merge or redefine descendant contracts from SG-SPEC-0028.
   - SG-SPEC-0029 does not add field-level queue, ranking, or runtime orchestration rules.
-  - SG-SPEC-0029 allows SG-SPEC-0032 to keep subcluster-level mechanics and proposal/split concerns as
-    independently bounded predecessors.
-  - SG-SPEC-0029 delegates parent-facing prerequisite semantics to SG-SPEC-0030.
+  - SG-SPEC-0029 keeps prerequisite readiness and concrete mechanics ownership distinct without turning
+    their graph relation into the main prose.
   parent_contract:
-  - SG-SPEC-0032 may consume SG-SPEC-0029 as one bounded prerequisite for proposal/split mechanics.
-  - SG-SPEC-0032’s parent-facing prerequisite semantics are constrained by SG-SPEC-0030.
-  - SG-SPEC-0032 must not depend_on SG-SPEC-0028 directly for proposal/split mechanics while SG-SPEC-0029
-    is present.
-  - Subcluster-level direct-update boundary semantics remain outside SG-SPEC-0029’s scope.
+  - SG-SPEC-0032 consumes SG-SPEC-0029 as the proposal/split mechanics availability contract.
+  - SG-SPEC-0029 preserves SG-SPEC-0030 as prerequisite readiness owner and SG-SPEC-0028 as concrete mechanics
+    owner.
+  - SG-SPEC-0029 should be rewritten or merged rather than split again if a proposed child would only
+    verbalize gateway, edge, or delegation facts.
 gate_state: none
 proposed_status: null
 proposed_maturity: null
