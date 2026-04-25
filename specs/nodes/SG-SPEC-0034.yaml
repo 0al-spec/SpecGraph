@@ -39,15 +39,14 @@ acceptance_evidence:
 - criterion: Delegates the non-retry proposal/refactor queue-control cluster to SG-SPEC-0039, which delegates
     concrete field semantics to SG-SPEC-0037 and field-surface/artifact-shape contracts to SG-SPEC-0038.
   evidence: specification.queue_control_surface_contract sets SG-SPEC-0039 as the parent-facing non-retry
-    queue-control contract owner, and specification.delegation.queue_control_fields_contract records SG-SPEC-0039
-    delegating concrete operational semantics and field-surface/artifact-shape contracts to SG-SPEC-0037
-    and SG-SPEC-0038.
+    queue-control contract owner, and delegation.queue_control_fields_contract records SG-SPEC-0039 delegating
+    concrete operational semantics and field-surface/artifact-shape contracts to SG-SPEC-0037 and SG-SPEC-0038.
 - criterion: Delegates the parent-facing retry/active-item precedence contract to SG-SPEC-0041 while keeping
     concrete retry-condition semantics in SG-SPEC-0035 and concrete active-item precedence semantics in
     SG-SPEC-0036 so SG-SPEC-0003 remains implementation-agnostic for those bounded concerns.
-  evidence: specification.delegation.retry_precedence_contract assigns retry/precedence control governance
-    to SG-SPEC-0041, while specification.scope.out keeps runtime details out of SG-SPEC-0034 and treats
-    SG-SPEC-0035 and SG-SPEC-0036 as delegated concrete leaves.
+  evidence: delegation.retry_precedence_contract assigns retry/precedence control governance to SG-SPEC-0041,
+    while specification.scope.out keeps runtime details out of SG-SPEC-0034 and treats SG-SPEC-0035 and
+    SG-SPEC-0036 as delegated concrete leaves.
 - criterion: Keeps queue/control artifacts noncanonical and nonauthoritative.
   evidence: specification.noncanonical_boundary requires queue-control artifacts to remain informational
     metadata only and explicitly states they cannot authorize proposal approval, writeback, or authority
