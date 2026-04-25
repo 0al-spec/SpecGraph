@@ -6276,6 +6276,27 @@ def test_validate_transition_packet_profile_normalizes_apply_source_refs(
     }
 
 
+def test_validate_transition_packet_profile_rejects_archived_draft_apply_source_refs(
+    supervisor_module: object,
+) -> None:
+    report = supervisor_module.validate_transition_packet_report(
+        {
+            "packet_type": "apply",
+            "transition_intent": "apply one bounded canonical change",
+            "source_refs": ["./docs/archive/proposal_sources/0005_telemetry.md"],
+            "authority_class": "human_reviewed_apply",
+            "target_scope": "./specs/nodes/SG-SPEC-0001.yaml",
+            "motivating_concern": "approved split proposal",
+            "declared_change_surface": ["./specs/nodes/SG-SPEC-0001.yaml"],
+            "required_provenance_links": ["source_draft_ref"],
+        }
+    )
+
+    assert {finding["code"] for finding in report["findings"]} >= {
+        "profile_apply_requires_reviewable_source",
+    }
+
+
 def test_validate_transition_packet_product_spec_accepts_inherited_apply_packet(
     supervisor_module: object,
 ) -> None:
@@ -6361,6 +6382,30 @@ def test_validate_transition_packet_product_spec_rejects_draft_sources(
             "transition_profile": "product_spec",
             "transition_intent": "apply one reviewed product-spec change",
             "source_refs": ["docs/proposals_drafts/0005_telemetry.md"],
+            "authority_class": "human_reviewed_apply",
+            "target_scope": "products/calculator/specs/CALC-SPEC-0001.yaml",
+            "target_artifact_class": "product_spec",
+            "product_graph_root": "products/calculator",
+            "motivating_concern": "approved calculator proposal",
+            "declared_change_surface": ["products/calculator/specs/CALC-SPEC-0001.yaml"],
+            "required_provenance_links": ["product_graph_root", "proposal_artifact"],
+        }
+    )
+
+    assert {finding["code"] for finding in report["findings"]} >= {
+        "profile_apply_requires_reviewable_source",
+    }
+
+
+def test_validate_transition_packet_product_spec_rejects_archived_draft_sources(
+    supervisor_module: object,
+) -> None:
+    report = supervisor_module.validate_transition_packet_report(
+        {
+            "packet_type": "apply",
+            "transition_profile": "product_spec",
+            "transition_intent": "apply one reviewed product-spec change",
+            "source_refs": ["docs/archive/proposal_sources/0005_telemetry.md"],
             "authority_class": "human_reviewed_apply",
             "target_scope": "products/calculator/specs/CALC-SPEC-0001.yaml",
             "target_artifact_class": "product_spec",

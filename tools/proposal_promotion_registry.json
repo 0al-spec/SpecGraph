@@ -1,9 +1,35 @@
 [
   {
+    "proposal_id": "0018",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0005_telemetry.md"
+    ],
+    "motivating_concern": "telemetry evidence plane",
+    "normalized_title": "Telemetry Evidence Plane for SpecGraph",
+    "bounded_scope": "Define telemetry-derived evidence artifacts and viewer-facing overlays without leaking raw runtime payloads into canonical specs.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
+  },
+  {
+    "proposal_id": "0022",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0004_node_fan_out_pressure.md"
+    ],
+    "motivating_concern": "refinement fan-out pressure",
+    "normalized_title": "Refinement Fan-Out Pressure and Intermediate Clustering",
+    "bounded_scope": "Define a non-blocking graph-health signal for overly broad direct refinement fan-out and route follow-up through reviewable clustering recommendations.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
+  },
+  {
     "proposal_id": "0034",
     "source_artifact_class": "working_draft",
     "source_refs": [
-      "docs/proposals_drafts/0034_graph_backlog_projection.md"
+      "docs/archive/proposal_sources/0034_graph_backlog_projection.md"
     ],
     "motivating_concern": "taskless graph-derived work discovery",
     "normalized_title": "Graph Backlog Projection From Derived Surfaces",

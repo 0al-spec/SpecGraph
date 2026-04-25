@@ -17,6 +17,11 @@
       "projection_role": "working_notes_surface"
     },
     {
+      "path_prefix": "docs/archive/proposal_sources/",
+      "default_semantic_artifact_class": "working_draft",
+      "projection_role": "archived_working_notes_surface"
+    },
+    {
       "path_prefix": "docs/proposals/",
       "default_semantic_artifact_class": "reviewable_proposal",
       "projection_role": "reviewable_proposal_surface"
