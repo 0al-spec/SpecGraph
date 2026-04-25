@@ -19,7 +19,20 @@
       "proposal_authority_state",
       "proposal_target_region",
       "proposal_lineage_link"
-    ]
+    ],
+    "timestamp_contract": {
+      "format": "utc_iso8601_offset",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,6})?\\+00:00$",
+      "required_fields": [
+        "created_at",
+        "updated_at"
+      ],
+      "optional_fields": [
+        "runtime_bridge.applied_at",
+        "runtime_bridge.last_queue_sync_at",
+        "canonical_application_event.applied_at"
+      ]
+    }
   },
   "authority_state_mapping": {
     "proposed": "under_review",

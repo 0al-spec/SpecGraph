@@ -3550,6 +3550,7 @@ def test_sync_tracked_proposal_lane_node_records_canonical_application_event(
     supervisor_module: object,
     repo_fixture: Path,
 ) -> None:
+    supervisor_module.utc_now_iso = lambda: "2026-04-19T00:00:01Z"
     synced = supervisor_module.sync_tracked_proposal_lane_node(
         {
             "id": "handoff_proposal::SG-SPEC-0001::techspec_handoff_candidate",
@@ -3572,8 +3573,11 @@ def test_sync_tracked_proposal_lane_node_records_canonical_application_event(
     assert node["canonical_application_event"] == {
         "event_status": "canonical_materialization_recorded",
         "applied_run_id": "RUN-9",
-        "applied_at": "2026-04-19T00:00:00Z",
+        "applied_at": "2026-04-19T00:00:00+00:00",
     }
+    assert node["created_at"] == "2026-04-19T00:00:01+00:00"
+    assert node["updated_at"] == "2026-04-19T00:00:01+00:00"
+    assert node["runtime_bridge"]["applied_at"] == "2026-04-19T00:00:00+00:00"
     assert node["runtime_bridge"]["proposal_queue_status"] == "applied"
 
 
@@ -3616,6 +3620,10 @@ def test_update_proposal_queue_retires_stale_tracked_nodes_for_same_spec(
     assert retired["proposal_authority_state"] == "superseded"
     assert retired["runtime_bridge"]["proposal_queue_status"] == "superseded"
     assert retired["runtime_bridge"]["queue_presence"] == "retired_after_queue_refresh"
+    assert supervisor_module.is_proposal_lane_timestamp_text(retired["updated_at"])
+    assert supervisor_module.is_proposal_lane_timestamp_text(
+        retired["runtime_bridge"]["last_queue_sync_at"]
+    )
     overlay = json.loads(
         (repo_fixture / "runs" / "proposal_lane_overlay.json").read_text(encoding="utf-8")
     )
@@ -13435,13 +13443,83 @@ def test_build_proposal_lane_overlay_marks_invalid_query_contract(
     assert overlay["artifact_kind"] == supervisor_module.PROPOSAL_LANE_OVERLAY_ARTIFACT_KIND
     assert overlay["entry_count"] == 1
     assert overlay["entries"][0]["query_contract"]["status"] == "invalid_review_state"
-    assert overlay["entries"][0]["query_contract"]["findings"] == [
+    assert set(overlay["entries"][0]["query_contract"]["findings"]) == {
         "missing_target_region",
         "missing_lineage_link",
-    ]
+        "invalid_timestamp::created_at",
+        "invalid_timestamp::updated_at",
+    }
     assert overlay["named_filters"]["invalid_query_contract"] == [
         "governance_proposal::SG-SPEC-0001::oversized_spec"
     ]
+
+
+def test_build_proposal_lane_overlay_marks_invalid_timestamp_contract(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    node_path = repo_fixture / "proposal_lane" / "nodes" / "invalid-timestamp.json"
+    node_path.parent.mkdir(parents=True, exist_ok=True)
+    node_path.write_text(
+        json.dumps(
+            {
+                "artifact_kind": supervisor_module.PROPOSAL_LANE_NODE_ARTIFACT_KIND,
+                "schema_version": 1,
+                "title": "Proposal lane node with noncanonical timestamps",
+                "created_at": "2026-04-19T00:00:00+00:00",
+                "updated_at": "2026-04-19T00:00:01Z",
+                "proposal_repository_presence": {
+                    "tracked_presence": "repository_tracked",
+                    "path_class": "proposal_node_path",
+                    "persistence_boundary": "review_visible_repository_separate_from_runtime",
+                    "tracked_path": "proposal_lane/nodes/invalid-timestamp.json",
+                },
+                "proposal_handle": {
+                    "handle_value": "governance_proposal::SG-SPEC-0001::timestamp_drift",
+                    "handle_status": "active",
+                },
+                "proposal_authority_state": "superseded",
+                "proposal_target_region": {
+                    "target_kind": "canonical_node",
+                    "target_reference": "SG-SPEC-0001",
+                    "change_scope": "timestamp_drift",
+                },
+                "proposal_lineage_link": [
+                    {
+                        "lineage_role": "motivated_by",
+                        "source_kind": "canonical_node",
+                        "source_reference": "SG-SPEC-0001",
+                    }
+                ],
+                "runtime_bridge": {
+                    "proposal_queue_status": "superseded",
+                    "last_queue_sync_at": "2026-04-19T00:00:02Z",
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    overlay = supervisor_module.build_proposal_lane_overlay()
+
+    assert overlay["entries"][0]["query_contract"]["status"] == "invalid_review_state"
+    assert overlay["entries"][0]["query_contract"]["findings"] == [
+        "invalid_timestamp::updated_at",
+        "invalid_timestamp::runtime_bridge.last_queue_sync_at",
+    ]
+    assert overlay["named_filters"]["invalid_query_contract"] == [
+        "governance_proposal::SG-SPEC-0001::timestamp_drift"
+    ]
+
+
+def test_committed_proposal_lane_nodes_match_timestamp_contract(
+    supervisor_module: object,
+) -> None:
+    nodes_dir = Path(__file__).resolve().parents[1] / "proposal_lane" / "nodes"
+    for node_path in sorted(nodes_dir.glob("*.json")):
+        node = json.loads(node_path.read_text(encoding="utf-8"))
+        assert supervisor_module.proposal_lane_timestamp_findings(node) == [], node_path.name
+        assert node.get("policy_reference") == supervisor_module.proposal_lane_policy_reference()
 
 
 def test_build_intent_layer_overlay_marks_invalid_query_contract(

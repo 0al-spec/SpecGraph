@@ -1753,6 +1753,15 @@ PROPOSAL_LANE_PRESENCE_CONTRACT = proposal_lane_policy_lookup("node_contract.pre
 PROPOSAL_LANE_REQUIRED_QUERY_FIELDS = list(
     proposal_lane_policy_lookup("node_contract.required_query_fields")
 )
+PROPOSAL_LANE_TIMESTAMP_CONTRACT = proposal_lane_policy_lookup("node_contract.timestamp_contract")
+PROPOSAL_LANE_TIMESTAMP_PATTERN = str(PROPOSAL_LANE_TIMESTAMP_CONTRACT.get("pattern", ""))
+PROPOSAL_LANE_REQUIRED_TIMESTAMP_FIELDS = tuple(
+    str(field) for field in PROPOSAL_LANE_TIMESTAMP_CONTRACT.get("required_fields", [])
+)
+PROPOSAL_LANE_OPTIONAL_TIMESTAMP_FIELDS = tuple(
+    str(field) for field in PROPOSAL_LANE_TIMESTAMP_CONTRACT.get("optional_fields", [])
+)
+PROPOSAL_LANE_TIMESTAMP_RE = re.compile(PROPOSAL_LANE_TIMESTAMP_PATTERN)
 PROPOSAL_LANE_AUTHORITY_STATE_MAPPING = proposal_lane_policy_lookup("authority_state_mapping")
 PROPOSAL_LANE_OVERLAY_ARTIFACT_KIND = str(
     proposal_lane_policy_lookup("overlay_contract.artifact_kind")
@@ -10086,6 +10095,56 @@ def proposal_lane_node_title(proposal_item: dict[str, Any]) -> str:
     return f"{proposal_type.title()} for {target_reference}{suffix}"
 
 
+def proposal_lane_timestamp_text(value: object) -> str:
+    parsed = parse_iso_datetime(value)
+    if parsed is None:
+        raise ValueError(f"invalid proposal-lane timestamp: {value!r}")
+    return parsed.astimezone(dt.timezone.utc).isoformat()
+
+
+def proposal_lane_optional_timestamp_text(value: object) -> str:
+    text = str(value).strip()
+    if not text:
+        return ""
+    return proposal_lane_timestamp_text(text)
+
+
+def proposal_lane_timestamp_now() -> str:
+    return proposal_lane_timestamp_text(utc_now_iso())
+
+
+def is_proposal_lane_timestamp_text(value: object) -> bool:
+    if not isinstance(value, str):
+        return False
+    text = value.strip()
+    if not PROPOSAL_LANE_TIMESTAMP_RE.fullmatch(text):
+        return False
+    return parse_iso_datetime(text) is not None
+
+
+def proposal_lane_timestamp_findings(node: dict[str, Any]) -> list[str]:
+    findings: list[str] = []
+    for field in PROPOSAL_LANE_REQUIRED_TIMESTAMP_FIELDS:
+        if not is_proposal_lane_timestamp_text(node.get(field)):
+            findings.append(f"invalid_timestamp::{field}")
+
+    runtime_bridge = node.get("runtime_bridge")
+    canonical_application_event = node.get("canonical_application_event")
+    optional_contexts = {
+        "runtime_bridge": runtime_bridge if isinstance(runtime_bridge, dict) else {},
+        "canonical_application_event": (
+            canonical_application_event if isinstance(canonical_application_event, dict) else {}
+        ),
+    }
+    for field in PROPOSAL_LANE_OPTIONAL_TIMESTAMP_FIELDS:
+        section_name, _, key = field.partition(".")
+        value = optional_contexts.get(section_name, {}).get(key) if key else node.get(field)
+        if str(value or "").strip() and not is_proposal_lane_timestamp_text(value):
+            findings.append(f"invalid_timestamp::{field}")
+
+    return findings
+
+
 def sync_tracked_proposal_lane_node(
     proposal_item: dict[str, Any],
 ) -> tuple[Path, dict[str, Any]] | None:
@@ -10096,7 +10155,11 @@ def sync_tracked_proposal_lane_node(
     path = proposal_lane_node_path(handle_value)
     tracked_path = path.relative_to(ROOT).as_posix()
     existing = load_json_object(path) if path.exists() else None
-    created_at = str((existing or {}).get("created_at", "")).strip() or utc_now_iso()
+    created_at = proposal_lane_timestamp_text(
+        str((existing or {}).get("created_at", "")).strip() or proposal_lane_timestamp_now()
+    )
+    updated_at = proposal_lane_timestamp_now()
+    applied_at = proposal_lane_optional_timestamp_text(proposal_item.get("applied_at", ""))
     authority_state = proposal_lane_authority_state_for_status(
         str(proposal_item.get("status", "")).strip() or "proposed"
     )
@@ -10107,7 +10170,7 @@ def sync_tracked_proposal_lane_node(
             "schema_version": PROPOSAL_LANE_NODE_SCHEMA_VERSION,
             "title": proposal_lane_node_title(proposal_item),
             "created_at": created_at,
-            "updated_at": utc_now_iso(),
+            "updated_at": updated_at,
             "policy_reference": proposal_lane_policy_reference(),
             "proposal_repository_presence": {
                 **copy.deepcopy(PROPOSAL_LANE_PRESENCE_CONTRACT),
@@ -10149,7 +10212,7 @@ def sync_tracked_proposal_lane_node(
                     proposal_item.get("proposal_artifact_path", "")
                 ).strip(),
                 "applied_run_id": str(proposal_item.get("applied_run_id", "")).strip(),
-                "applied_at": str(proposal_item.get("applied_at", "")).strip(),
+                "applied_at": applied_at,
                 "operator_request_handle": str(
                     proposal_item.get("operator_request_handle", "")
                 ).strip(),
@@ -10160,7 +10223,7 @@ def sync_tracked_proposal_lane_node(
         node["canonical_application_event"] = {
             "event_status": "canonical_materialization_recorded",
             "applied_run_id": str(proposal_item.get("applied_run_id", "")).strip(),
-            "applied_at": str(proposal_item.get("applied_at", "")).strip(),
+            "applied_at": applied_at,
         }
     else:
         node.pop("canonical_application_event", None)
@@ -10208,12 +10271,13 @@ def retire_stale_tracked_proposal_lane_nodes(
             continue
 
         updated_runtime_bridge = dict(runtime_bridge)
+        now = proposal_lane_timestamp_now()
         updated_runtime_bridge["proposal_queue_status"] = "superseded"
         updated_runtime_bridge["queue_presence"] = "retired_after_queue_refresh"
-        updated_runtime_bridge["last_queue_sync_at"] = utc_now_iso()
+        updated_runtime_bridge["last_queue_sync_at"] = now
         node["proposal_authority_state"] = "superseded"
         node["runtime_bridge"] = updated_runtime_bridge
-        node["updated_at"] = utc_now_iso()
+        node["updated_at"] = now
         with artifact_lock(path):
             atomic_write_json(path, node)
         retired_paths.append(path)
@@ -10338,6 +10402,7 @@ def build_proposal_lane_overlay() -> dict[str, Any]:
             query_findings.append("missing_lineage_link")
         if handle_value and handle_counts.get(handle_value, 0) > 1:
             query_findings.append("colliding_active_handle")
+        query_findings.extend(proposal_lane_timestamp_findings(node))
 
         entry = {
             "tracked_path": tracked_path,
