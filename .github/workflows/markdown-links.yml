@@ -32,5 +32,6 @@ jobs:
             docs/
             tools/README.md
           exclude: |
+            docs/archive/
             docs/proposals_drafts/
             .codex/skills/

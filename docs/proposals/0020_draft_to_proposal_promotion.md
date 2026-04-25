@@ -17,9 +17,11 @@ But one important workflow is still mostly implicit:
 
 > How does an informal working draft become a reviewable proposal artifact?
 
-Today, the repository already contains two visible document surfaces:
+Today, the repository can project the distinction through visible document
+surfaces such as:
 
 - `docs/proposals_drafts/`
+- `docs/archive/proposal_sources/`
 - `docs/proposals/`
 
 In practice, the project is already using a real distinction:
@@ -234,6 +236,7 @@ The repository may continue to project this distinction through directories such
 as:
 
 - `docs/proposals_drafts/`
+- `docs/archive/proposal_sources/`
 - `docs/proposals/`
 
 But the folders themselves should not be the only source of meaning.
