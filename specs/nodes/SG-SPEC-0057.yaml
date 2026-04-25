@@ -2,13 +2,12 @@ id: SG-SPEC-0057
 title: SpecGraph - Authority Class Semantic Boundary
 kind: spec
 created_at: '2026-04-25T11:10:14Z'
-updated_at: '2026-04-25T11:10:14Z'
+updated_at: '2026-04-25T14:15:46Z'
 status: linked
 maturity: 0.32
 depends_on:
-- SG-SPEC-0024
-relates_to:
 - SG-SPEC-0019
+- SG-SPEC-0024
 refines:
 - SG-SPEC-0001
 inputs:
