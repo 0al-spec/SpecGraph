@@ -2398,6 +2398,10 @@ TRANSITION_PACKET_TYPE_REQUIRED_FIELDS = {
     for packet_type, definition in TRANSITION_PACKET_FAMILY_DEFINITIONS.items()
 }
 SPECGRAPH_CANONICAL_SURFACE_PREFIXES = ("specs/nodes/", "specs/history/")
+SPECGRAPH_RAW_DRAFT_SOURCE_PREFIXES = (
+    "docs/proposals_drafts/",
+    "docs/archive/proposal_sources/",
+)
 GRAPH_HEALTH_OVERLAY_FILENAME = "graph_health_overlay.json"
 GRAPH_HEALTH_TRENDS_FILENAME = "graph_health_trends.json"
 GRAPH_DASHBOARD_FILENAME = "graph_dashboard.json"
@@ -11414,7 +11418,8 @@ def _validate_transition_packet_profile(context: dict[str, Any]) -> list[dict[st
                 )
             )
         if packet_type == "apply" and any(
-            ref.startswith("docs/proposals_drafts/") for ref in context.get("source_refs", [])
+            _transition_path_matches_any_prefix(ref, SPECGRAPH_RAW_DRAFT_SOURCE_PREFIXES)
+            for ref in context.get("source_refs", [])
         ):
             findings.append(
                 transition_packet_finding(

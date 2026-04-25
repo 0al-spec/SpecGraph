@@ -11,7 +11,8 @@
     "runs/"
   ],
   "forbidden_source_prefixes": [
-    "docs/proposals_drafts/"
+    "docs/proposals_drafts/",
+    "docs/archive/proposal_sources/"
   ],
   "apply_scope_rule": "inside_product_graph_root",
   "notes": "Product-spec graphs inherit the shared deterministic transition engine by binding one product_graph_root and adding product-specific rules around that root instead of redefining promotion/apply semantics."
