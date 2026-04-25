@@ -1,0 +1,63 @@
+{
+  "artifact_kind": "proposal_lane_node",
+  "schema_version": 1,
+  "title": "Governance Proposal for SG-SPEC-0039 (stalled_maturity_candidate)",
+  "created_at": "2026-04-24T20:58:49.200951+00:00",
+  "updated_at": "2026-04-25T18:30:00.394702+00:00",
+  "policy_reference": {
+    "artifact_path": "tools/proposal_lane_policy.json",
+    "artifact_sha256": "8a49088339df3edde8a82062b8bf44ae389a32004cca2cafe3b89744f1c57d17",
+    "version": 1
+  },
+  "proposal_repository_presence": {
+    "tracked_presence": "repository_tracked",
+    "path_class": "proposal_node_path",
+    "persistence_boundary": "review_visible_repository_separate_from_runtime",
+    "tracked_path": "proposal_lane/nodes/governance_proposal--sg-spec-0039--stalled_maturity_candidate--ff25d1cb.json"
+  },
+  "proposal_handle": {
+    "handle_value": "governance_proposal::SG-SPEC-0039::stalled_maturity_candidate",
+    "handle_status": "active"
+  },
+  "proposal_authority_state": "under_review",
+  "proposal_target_region": {
+    "target_kind": "canonical_node",
+    "target_reference": "SG-SPEC-0039",
+    "change_scope": "stalled_maturity_candidate"
+  },
+  "proposal_lineage_link": [
+    {
+      "lineage_role": "motivated_by",
+      "source_kind": "canonical_node",
+      "source_reference": "SG-SPEC-0039"
+    }
+  ],
+  "proposal_artifact_link": [],
+  "proposal_payload": {
+    "proposal_type": "governance_proposal",
+    "trigger": "governance_class_signal",
+    "recommended_action": "review_refinement_strategy",
+    "signal": "stalled_maturity_candidate",
+    "source_work_item_type": "governance_proposal",
+    "execution_policy": "emit_proposal",
+    "transition_profile": "",
+    "packet_type": "",
+    "target_artifact_class": "",
+    "user_intent_handle": "",
+    "operator_request_handle": ""
+  },
+  "runtime_bridge": {
+    "proposal_queue_status": "proposed",
+    "supporting_run_ids": [
+      "20260424T205801Z-SG-SPEC-0039-3360d846",
+      "20260424T205954Z-SG-SPEC-0039-ee311892",
+      "20260425T182644Z-SG-SPEC-0039-5cf65718"
+    ],
+    "occurrence_count": 3,
+    "threshold": 1,
+    "proposal_artifact_path": "",
+    "applied_run_id": "",
+    "applied_at": "",
+    "operator_request_handle": ""
+  }
+}
