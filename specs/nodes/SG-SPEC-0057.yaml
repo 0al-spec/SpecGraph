@@ -2,9 +2,9 @@ id: SG-SPEC-0057
 title: SpecGraph - Authority Class Semantic Boundary
 kind: spec
 created_at: '2026-04-25T11:10:14Z'
-updated_at: '2026-04-25T20:05:01Z'
+updated_at: '2026-04-25T20:11:07Z'
 status: linked
-maturity: 0.72
+maturity: 0.92
 depends_on:
 - SG-SPEC-0019
 - SG-SPEC-0024
@@ -51,8 +51,10 @@ acceptance_evidence:
     and inference
   evidence: specification.terminology.composite_expression defines a mixed-origin governed expression,
     specification.authority_class_contract.selection_rules chooses one class from the canonical act that
-    materially produced the current expression, defines precedence for overlapping authored and inferred
-    signals, and distinguishes distilled compression from inferred new claims.
+    materially produced the current expression, specification.authority_class_contract.preservation_boundary_rules
+    distinguishes semantically preserved imports from materially restated or compressed expressions, defines
+    precedence for overlapping authored and inferred signals, and distinguishes distilled compression
+    from inferred new claims.
 - criterion: Defines how `authority_class` applies across revisions, supersession, and derived projections
     so class changes remain explicit canonical acts rather than inferred viewer state
   evidence: specification.authority_class_contract.lineage_rules requires authority-class changes to flow
@@ -100,6 +102,9 @@ specification:
     composite_expression: A governed subject whose current expression incorporates more than one upstream
       contribution mode or source pattern but is still admitted as one canonical subject carrying exactly
       one authority_class.
+    semantic_preservation: Preservation of an upstream claim or relation assertion without materially
+      changing its operative meaning, despite normalization, transcription, field projection, or other
+      representational reshaping.
     edge_assertion_subject: The governed relation assertion embodied by one explicit canonical edge instance,
       treated as an authority-bearing subject distinct from the authority classes of its endpoint nodes.
     authority_restatement: An explicit canonical revision or supersession that changes the authority_class
@@ -176,6 +181,25 @@ specification:
     - Use distilled when the current governed expression is a governed compression or summary of source
       material and remains semantically narrower than the source set; if the expression instead introduces
       a new latent claim, dependency, or conclusion beyond compression, use inferred rather than distilled.
+    preservation_boundary_rules:
+    - Imported applies only when the current governed expression remains in semantic_preservation with
+      a specific external source claim or relation assertion being canonically admitted.
+    - Normalizing syntax, casing, identifiers, ordering, or local envelope metadata MAY preserve imported
+      classification when those changes do not materially change the source meaning.
+    - Quoting, excerpting, projecting a field, or extracting an explicit relation from an external source
+      remains imported only while the admitted governed expression preserves that source meaning without
+      additional compression, combination, or interpretation.
+    - Once a canonical act materially restates external content, merges multiple source statements into
+      one governed expression, or compresses the source into a shorter governed summary, the result is
+      no longer imported and MUST be classified by the act that produced it, typically authored, distilled,
+      or inferred.
+    - Translation or paraphrase MAY remain imported when canonical intent is still semantic_preservation
+      of the same operative meaning; if the rewrite resolves ambiguity, adds connective conclusions, or
+      changes operative scope, classify the result by the producing act rather than as imported.
+    - For an explicit canonical edge, imported applies only when the external source already makes that
+      relation assertion explicit; constructing the edge from implication, correlation, or interpretive
+      reading is not imported and MUST be classified as authored, distilled, or inferred according to
+      the producing act.
     semantic_rules:
     - Every governed node and every explicit canonical edge MUST carry exactly one authority_class.
     - authority_class classifies origin of the current governed expression; it MUST NOT be used as a synonym
@@ -258,6 +282,10 @@ specification:
     description: A tool suggests a new depends_on edge from graph analysis. The suggestion remains derived
       until a canonical explicit edge is created or revised with `authority_class = inferred` and SG-SPEC-0024-compatible
       provenance.
+  - name: Imported edge preserves an explicit external relation
+    description: An external compliance source explicitly states that requirement A depends on requirement
+      B. Recording that same relation as one canonical depends_on edge may remain `authority_class = imported`
+      if the governed edge preserves the source assertion rather than deriving a new relation from interpretation.
   - name: Authored edge between imported nodes
     description: Two requirement nodes may remain `authority_class = imported` from an external tracker,
       while a reviewer authors a new contradicts edge between them. The edge therefore carries `authority_class
@@ -275,7 +303,6 @@ required_human_action: '-'
 last_worktree_path: ''
 last_branch: ''
 last_gate_decision: approve
-last_gate_note: 'Approve bounded authority_class selection refinement: mixed-origin expressions still
-  resolve to one canonical authority_class, with distillation versus inference separated by compression
-  versus new claim semantics.'
-last_gate_at: '2026-04-25T19:56:09.236748+00:00'
+last_gate_note: 'Approve bounded imported-preservation refinement: semantic_preservation now separates
+  normalized imported content from authored, distilled, or inferred restatements and edge interpretations.'
+last_gate_at: '2026-04-25T20:11:07.873512+00:00'
