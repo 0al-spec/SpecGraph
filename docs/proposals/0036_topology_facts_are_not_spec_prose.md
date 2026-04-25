@@ -147,7 +147,7 @@ A bounded subtree should support a compact book-like projection:
 
 ### Proposal 0017
 
-[0017_role_first_semantic_bias_for_supervisor.md](/Users/egor/Development/GitHub/0AL/SpecGraph/docs/proposals/0017_role_first_semantic_bias_for_supervisor.md)
+[0017_role_first_semantic_bias_for_supervisor.md](0017_role_first_semantic_bias_for_supervisor.md)
 defines role-first semantic bias and `bookkeeping_only_node` pressure.
 
 This proposal sharpens that rule for the specific case where the prose mostly
@@ -155,7 +155,7 @@ verbalizes graph topology.
 
 ### SG-SPEC-0049
 
-[SG-SPEC-0049.yaml](/Users/egor/Development/GitHub/0AL/SpecGraph/specs/nodes/SG-SPEC-0049.yaml)
+[SG-SPEC-0049.yaml](../../specs/nodes/SG-SPEC-0049.yaml)
 already defines subtree-shape and bookkeeping-drift signals.
 
 This proposal gives those signals a clearer operator interpretation: topology
