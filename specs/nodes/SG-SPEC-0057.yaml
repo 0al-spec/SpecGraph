@@ -2,9 +2,9 @@ id: SG-SPEC-0057
 title: SpecGraph - Authority Class Semantic Boundary
 kind: spec
 created_at: '2026-04-25T11:10:14Z'
-updated_at: '2026-04-25T14:44:26Z'
+updated_at: '2026-04-25T20:05:01Z'
 status: linked
-maturity: 0.52
+maturity: 0.72
 depends_on:
 - SG-SPEC-0019
 - SG-SPEC-0024
@@ -25,6 +25,9 @@ acceptance:
   algorithms
 - Defines the semantic contract for the four root classes `authored`, `imported`, `inferred`, and `distilled`,
   including what each class asserts about origin and what it does not assert
+- Defines class-selection rules for mixed-origin governed expressions so exactly one `authority_class`
+  describes the canonical act that produced the current expression, including the boundary between distillation
+  and inference
 - Defines how `authority_class` applies across revisions, supersession, and derived projections so class
   changes remain explicit canonical acts rather than inferred viewer state
 - Keeps provenance field mechanics, storage layout, review policy, and implementation details delegated
@@ -43,6 +46,13 @@ acceptance_evidence:
   evidence: specification.terminology defines authority_class together with authored_subject, imported_subject,
     inferred_subject, and distilled_subject, and specification.authority_class_contract.class_catalog
     gives each class an origin_assertion, non_assertions, and subject examples.
+- criterion: Defines class-selection rules for mixed-origin governed expressions so exactly one `authority_class`
+    describes the canonical act that produced the current expression, including the boundary between distillation
+    and inference
+  evidence: specification.terminology.composite_expression defines a mixed-origin governed expression,
+    specification.authority_class_contract.selection_rules chooses one class from the canonical act that
+    materially produced the current expression, defines precedence for overlapping authored and inferred
+    signals, and distinguishes distilled compression from inferred new claims.
 - criterion: Defines how `authority_class` applies across revisions, supersession, and derived projections
     so class changes remain explicit canonical acts rather than inferred viewer state
   evidence: specification.authority_class_contract.lineage_rules requires authority-class changes to flow
@@ -65,6 +75,7 @@ specification:
     - Semantic meaning of `authority_class` on SG-SPEC-0001 seed node kinds
     - Semantic meaning of `authority_class` on explicit canonical edges
     - Class-specific assertions and non-assertions for authored, imported, inferred, and distilled
+    - Single-class selection semantics for mixed-origin governed expressions
     - Bounded interaction with SG-SPEC-0019 revision and supersession lineage
     - Canonical-versus-derived boundary for authority-class projections and summaries
     out:
@@ -73,6 +84,7 @@ specification:
     - Revision-record schemas, predecessor ordering, and lineage storage mechanics — covered by SG-SPEC-0019
     - Lifecycle status, linked readiness, review approval, or frozen-state policy
     - Trust scoring, ranking heuristics, or automatic promotion behavior
+    - Span-level attribution, weighted multi-class mixtures, or per-fragment authority markup
     - Serialization layout, database schema, index design, viewer badging, or CLI implementation
   terminology:
     authority_class: A canonical origin label that states how the current governed expression of a node
@@ -85,6 +97,9 @@ specification:
       signals by machine reasoning and then explicitly admitted into canonical truth.
     distilled_subject: A governed subject whose current expression is a governed compression or summary
       of other governed or imported material.
+    composite_expression: A governed subject whose current expression incorporates more than one upstream
+      contribution mode or source pattern but is still admitted as one canonical subject carrying exactly
+      one authority_class.
     edge_assertion_subject: The governed relation assertion embodied by one explicit canonical edge instance,
       treated as an authority-bearing subject distinct from the authority classes of its endpoint nodes.
     authority_restatement: An explicit canonical revision or supersession that changes the authority_class
@@ -138,6 +153,29 @@ specification:
       subject_examples:
       - A role pack or glossary node condensed from multiple underlying specs.
       - A summary edge explanation promoted as governed canonical context.
+    selection_rules:
+    - A composite_expression MUST still carry exactly one authority_class chosen from the canonical act
+      that materially produced the current governed expression admitted into the graph.
+    - Formatting normalization, schema migration, mechanical transcription, or clerical copying that preserve
+      the external semantic content do not by themselves change imported content into authored, inferred,
+      or distilled.
+    - Human approval, review, or minor copyediting of an imported, inferred, or distilled expression does
+      not by itself change authority_class; the class changes only when a canonical act materially restates
+      or replaces the current governed expression.
+    - When authored and inferred signals overlap, classify the expression as inferred if machine reasoning
+      materially contributed the substantive new claim being admitted; classify it as authored only after
+      a separate human-authored canonical act materially restates or replaces that claim.
+    - Use authored when accountable human intent materially determines the current governed wording or
+      relation assertion, even if imports, summaries, or machine proposals informed the draft.
+    - Use imported when the current governed expression is semantically preserved from an external source
+      as the content being canonically admitted, even if tooling normalizes representation or wraps it
+      in local metadata.
+    - Use inferred when machine reasoning contributes the substantive new claim, relation assertion, or
+      wording being canonically admitted rather than merely assisting a human-authored or externally preserved
+      expression.
+    - Use distilled when the current governed expression is a governed compression or summary of source
+      material and remains semantically narrower than the source set; if the expression instead introduces
+      a new latent claim, dependency, or conclusion beyond compression, use inferred rather than distilled.
     semantic_rules:
     - Every governed node and every explicit canonical edge MUST carry exactly one authority_class.
     - authority_class classifies origin of the current governed expression; it MUST NOT be used as a synonym
@@ -177,6 +215,8 @@ specification:
     this child governs only class meaning.
   - SG-SPEC-0019 governs how authority-bearing changes are recorded in lineage; this child does not redefine
     predecessor ordering, revision storage, or supersession topology.
+  - This child assigns one authority_class to each governed subject; span-level mixture accounting or
+    weighted multi-class attribution is out of scope.
   - Derived badges, trust views, or class summaries may be useful, but they remain rebuildable interpretations
     rather than canonical facts unless explicitly governed.
   canonical_vs_derived_boundary:
@@ -201,6 +241,10 @@ specification:
   - id: AUT-004
     statement: For an explicit canonical edge, authority_class must classify the edge's governed relation
       assertion itself and must not be inherited mechanically from either endpoint node.
+  - id: AUT-005
+    statement: A mixed-origin governed expression must still resolve to exactly one authority_class based
+      on the canonical act that materially produced the current expression; source mixture, approval,
+      or formatting normalization alone must not create multi-class canonical state.
   examples:
   - name: Authored revision of an imported requirement
     description: An imported requirement is materially rewritten by a human reviewer into a new governed
@@ -219,6 +263,11 @@ specification:
       while a reviewer authors a new contradicts edge between them. The edge therefore carries `authority_class
       = authored` because the governed relation assertion was introduced by a human canonical act, not
       inherited from either imported endpoint.
+  - name: Distilled summary versus inferred conclusion
+    description: A governed node that compresses three imported requirement paragraphs into one shorter
+      restatement remains `authority_class = distilled` if it only summarizes their existing meaning.
+      If a model instead derives a new dependency claim from those paragraphs that was not already present
+      as a compression, the admitted expression is `authority_class = inferred`.
 gate_state: none
 proposed_status: null
 proposed_maturity: null
@@ -226,6 +275,7 @@ required_human_action: '-'
 last_worktree_path: ''
 last_branch: ''
 last_gate_decision: approve
-last_gate_note: Approve edge-level authority_class boundary refinement; explicit canonical edge authority
-  now classifies the relation assertion, not endpoint provenance.
-last_gate_at: '2026-04-25T14:44:26.459194+00:00'
+last_gate_note: 'Approve bounded authority_class selection refinement: mixed-origin expressions still
+  resolve to one canonical authority_class, with distillation versus inference separated by compression
+  versus new claim semantics.'
+last_gate_at: '2026-04-25T19:56:09.236748+00:00'
