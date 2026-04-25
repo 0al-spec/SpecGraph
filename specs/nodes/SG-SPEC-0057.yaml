@@ -1,0 +1,198 @@
+id: SG-SPEC-0057
+title: SpecGraph - Authority Class Semantic Boundary
+kind: spec
+created_at: '2026-04-25T11:10:14Z'
+updated_at: '2026-04-25T11:10:14Z'
+status: linked
+maturity: 0.32
+depends_on:
+- SG-SPEC-0024
+relates_to:
+- SG-SPEC-0019
+refines:
+- SG-SPEC-0001
+inputs:
+- specs/nodes/SG-SPEC-0001.yaml
+- specs/nodes/SG-SPEC-0024.yaml
+- specs/nodes/SG-SPEC-0019.yaml
+- AGENTS.md
+outputs:
+- specs/nodes/SG-SPEC-0057.yaml
+allowed_paths:
+- specs/nodes/SG-SPEC-0057.yaml
+acceptance:
+- Defines the bounded role of `authority_class` as a cross-cutting origin tag for SG-SPEC-0001 nodes and
+  explicit canonical edges without redefining provenance-envelope fields, lifecycle status, or trust-scoring
+  algorithms
+- Defines the semantic contract for the four root classes `authored`, `imported`, `inferred`, and `distilled`,
+  including what each class asserts about origin and what it does not assert
+- Defines how `authority_class` applies across revisions, supersession, and derived projections so class
+  changes remain explicit canonical acts rather than inferred viewer state
+- Keeps provenance field mechanics, storage layout, review policy, and implementation details delegated
+  to SG-SPEC-0024, SG-SPEC-0019, or future children
+acceptance_evidence:
+- criterion: Defines the bounded role of `authority_class` as a cross-cutting origin tag for SG-SPEC-0001
+    nodes and explicit canonical edges without redefining provenance-envelope fields, lifecycle status,
+    or trust-scoring algorithms
+  evidence: specification.scope.in limits this child to authority-class meaning across governed subjects,
+    specification.scope.out excludes provenance-field mechanics, lifecycle, trust scoring, storage, and
+    implementation choices, and specification.boundary_policy states that authority_class is an origin
+    label rather than a review or correctness surrogate.
+- criterion: Defines the semantic contract for the four root classes `authored`, `imported`, `inferred`,
+    and `distilled`, including what each class asserts about origin and what it does not assert
+  evidence: specification.terminology defines authority_class together with authored_subject, imported_subject,
+    inferred_subject, and distilled_subject, and specification.authority_class_contract.class_catalog
+    gives each class an origin_assertion, non_assertions, and subject examples.
+- criterion: Defines how `authority_class` applies across revisions, supersession, and derived projections
+    so class changes remain explicit canonical acts rather than inferred viewer state
+  evidence: specification.authority_class_contract.lineage_rules requires authority-class changes to flow
+    through SG-SPEC-0019-compatible revision or supersession steps, while specification.canonical_vs_derived_boundary
+    keeps projections, guesses, badges, and rollups derived unless a governed subject is explicitly revised.
+- criterion: Keeps provenance field mechanics, storage layout, review policy, and implementation details
+    delegated to SG-SPEC-0024, SG-SPEC-0019, or future children
+  evidence: specification.scope.out delegates provenance field names and source-reference obligations
+    to SG-SPEC-0024, delegates lineage storage and ordering mechanics to SG-SPEC-0019, and excludes review
+    policy, serialization, UI, and tooling implementation concerns from this child.
+prompt: Refine SG-SPEC-0001 by externalizing the detailed `authority_class` semantics for governed nodes
+  and explicit canonical edges. Keep this child implementation-agnostic and distinct from SG-SPEC-0024
+  provenance-envelope field rules.
+specification:
+  objective: Define the cross-cutting semantic contract for `authority_class` so governed subjects can
+    state how their current expression entered canonical truth without collapsing that label into review,
+    correctness, or storage policy.
+  scope:
+    in:
+    - Semantic meaning of `authority_class` on SG-SPEC-0001 seed node kinds
+    - Semantic meaning of `authority_class` on explicit canonical edges
+    - Class-specific assertions and non-assertions for authored, imported, inferred, and distilled
+    - Bounded interaction with SG-SPEC-0019 revision and supersession lineage
+    - Canonical-versus-derived boundary for authority-class projections and summaries
+    out:
+    - actor_id, source_ref, source_confidence, recorded_at, and other provenance-envelope field mechanics
+      — covered by SG-SPEC-0024
+    - Revision-record schemas, predecessor ordering, and lineage storage mechanics — covered by SG-SPEC-0019
+    - Lifecycle status, linked readiness, review approval, or frozen-state policy
+    - Trust scoring, ranking heuristics, or automatic promotion behavior
+    - Serialization layout, database schema, index design, viewer badging, or CLI implementation
+  terminology:
+    authority_class: A canonical origin label that states how the current governed expression of a node
+      or explicit canonical edge entered canonical truth.
+    authored_subject: A governed subject whose current expression was directly written or materially restated
+      under human author intent.
+    imported_subject: A governed subject whose current expression was brought in from an external source
+      system as governed canonical content.
+    inferred_subject: A governed subject whose current expression was synthesized from other available
+      signals by machine reasoning and then explicitly admitted into canonical truth.
+    distilled_subject: A governed subject whose current expression is a governed compression or summary
+      of other governed or imported material.
+    authority_restatement: An explicit canonical revision or supersession that changes the authority_class
+      attached to the current governed expression.
+  authority_class_contract:
+    applies_to:
+    - intent
+    - spec
+    - requirement
+    - decision
+    - constraint
+    - invariant
+    - code_surface
+    - test
+    - release
+    - explicit canonical edges
+    class_catalog:
+    - class: authored
+      origin_assertion: The current governed expression was directly authored or materially restated by
+        a human accountable for the canonical content.
+      non_assertions:
+      - The subject is automatically correct, approved, or reviewed.
+      - No tools, imports, or machine assistance contributed upstream context.
+      subject_examples:
+      - A requirement node drafted directly by a product owner.
+      - A supersedes edge written by a reviewer to record an intentional replacement.
+    - class: imported
+      origin_assertion: The current governed expression is canonically preserved from an external source
+        system with governed import intent.
+      non_assertions:
+      - The external source is automatically trusted, complete, or immutable.
+      - The imported content is exempt from later canonical editing or review.
+      subject_examples:
+      - An issue tracker record admitted into the graph as a requirement.
+      - A release node imported from an external deployment registry.
+    - class: inferred
+      origin_assertion: The current governed expression was machine-derived from available evidence and
+        then explicitly recorded as canonical content.
+      non_assertions:
+      - The inference is automatically approved, correct, or self-justifying.
+      - Uncommitted model output or viewer guesses are canonical by default.
+      subject_examples:
+      - A machine-proposed dependency edge that is explicitly accepted into canonical graph state.
+      - An inferred requirement wording that is promoted into a governed node with provenance.
+    - class: distilled
+      origin_assertion: The current governed expression is a governed compression, synthesis, or summary
+        of other source material while remaining semantically narrower than the full source set.
+      non_assertions:
+      - The distilled subject replaces its source lineage or deletes the underlying artifacts.
+      - Distillation alone authorizes lifecycle progression or trust elevation.
+      subject_examples:
+      - A role pack or glossary node condensed from multiple underlying specs.
+      - A summary edge explanation promoted as governed canonical context.
+    semantic_rules:
+    - Every governed node and every explicit canonical edge MUST carry exactly one authority_class.
+    - authority_class classifies origin of the current governed expression; it MUST NOT be used as a synonym
+      for lifecycle status, review state, correctness, or priority.
+    - authority_class applies to the current expression of the subject, not to the entire upstream history
+      taken as one undifferentiated blob.
+    - If a subject is materially rewritten, re-imported, inferred anew, or newly distilled, the resulting
+      authority_class must describe that new governed expression rather than the predecessor's class by
+      default.
+    lineage_rules:
+    - An in-place revision may preserve or change authority_class, but any resulting class value MUST
+      be explicitly recorded through the canonical revision event rather than inferred from downstream
+      tooling.
+    - A superseding successor may carry a different authority_class from the superseded subject; the successor's
+      class applies only to the successor expression and MUST NOT retroactively rewrite predecessor lineage.
+    - Derived projections may suggest likely authority classes, but they remain advisory until an explicit
+      canonical revision or supersession records the class on the governed subject.
+    - A later imported, inferred, or distilled successor does not erase the fact that an earlier predecessor
+      may have been authored, and vice versa; lineage preserves that sequence.
+  boundary_policy:
+  - authority_class answers how the current governed expression entered canonical truth, not whether the
+    expression is good, complete, or approved.
+  - SG-SPEC-0024 governs provenance-envelope fields and their conditional requirements for each authority_class;
+    this child governs only class meaning.
+  - SG-SPEC-0019 governs how authority-bearing changes are recorded in lineage; this child does not redefine
+    predecessor ordering, revision storage, or supersession topology.
+  - Derived badges, trust views, or class summaries may be useful, but they remain rebuildable interpretations
+    rather than canonical facts unless explicitly governed.
+  canonical_vs_derived_boundary:
+    canonical:
+    - The explicit authority_class value on each governed node
+    - The explicit authority_class value on each explicit canonical edge
+    - Authority-class changes recorded through canonical revision or supersession events
+    derived:
+    - Guessed or classifier-proposed authority labels before governed acceptance
+    - Viewer badges, trust rollups, filters, and dashboards assembled from canonical authority facts
+    - Bulk summaries that collapse multiple lineage steps into one convenience label
+  invariants:
+  - id: AUT-001
+    statement: Every governed node and every explicit canonical edge must carry exactly one canonical
+      authority_class.
+  - id: AUT-002
+    statement: authority_class must classify origin of the current governed expression and must not be
+      reused as a proxy for correctness, review approval, or lifecycle readiness.
+  - id: AUT-003
+    statement: Any authority_class change must be introduced by an explicit canonical revision or supersession
+      event, not by inferred viewer state or derived projection logic alone.
+  examples:
+  - name: Authored revision of an imported requirement
+    description: An imported requirement is materially rewritten by a human reviewer into a new governed
+      expression. The successor or revision may now carry `authority_class = authored`, while SG-SPEC-0019
+      lineage preserves that the predecessor expression had been imported.
+  - name: Derived guess stays non-canonical
+    description: A viewer notices repeated summarization patterns and proposes that a node is distilled.
+      Until a governed canonical revision records `authority_class = distilled`, that guess remains derived
+      UI state only.
+  - name: Inferred edge requires explicit acceptance
+    description: A tool suggests a new depends_on edge from graph analysis. The suggestion remains derived
+      until a canonical explicit edge is created or revised with `authority_class = inferred` and SG-SPEC-0024-compatible
+      provenance.
