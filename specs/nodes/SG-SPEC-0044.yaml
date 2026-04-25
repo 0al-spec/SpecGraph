@@ -2,7 +2,7 @@ id: SG-SPEC-0044
 title: SpecGraph - Proposal/Split Readiness Non-Bypass Path
 kind: spec
 created_at: '2026-04-14T20:59:56Z'
-updated_at: '2026-04-17T07:30:37Z'
+updated_at: '2026-04-25T07:35:00Z'
 status: reviewed
 maturity: 0.72
 depends_on: []
@@ -20,128 +20,118 @@ outputs:
 allowed_paths:
 - specs/nodes/SG-SPEC-0044.yaml
 acceptance:
-- 'Defines the only allowed proposal/split readiness chain for this subtree: SG-SPEC-0026 -> SG-SPEC-0027
-  -> SG-SPEC-0032 -> SG-SPEC-0043 -> SG-SPEC-0029.'
-- Forbids direct or parallel proposal/split readiness bypass edges from SG-SPEC-0026, SG-SPEC-0027, or
-  SG-SPEC-0032 while SG-SPEC-0043 remains the direct gateway boundary.
-- Explains why SG-SPEC-0043 is the human-reviewable direct gateway boundary before concrete mechanics
-  in SG-SPEC-0029.
-- Keeps this node at path-governance scope only; continuation-selection policy, concrete mechanics ownership,
-  queue ranking, runtime orchestration, and bookkeeping-only slice decomposition remain outside this boundary.
+- 'Defines the proposal/split readiness admissibility rule: readiness is valid only when continuation,
+  execution readiness, readiness-region meaning, and mechanics availability all remain reviewable.'
+- Explains which bypass conditions make proposal/split readiness inadmissible without reciting the full
+  graph path as the main prose.
+- Preserves SG-SPEC-0043 as the review boundary and SG-SPEC-0029 as the mechanics availability contract.
+- Applies the topology-prose rule so ordered graph paths stay metadata or derived projection, not the
+  main contract.
+- Keeps this node at readiness-admissibility scope only; continuation-selection policy, concrete mechanics
+  ownership, queue ranking, and runtime orchestration remain outside this boundary.
 acceptance_evidence:
-- criterion: 'Defines the only allowed proposal/split readiness chain for this subtree: SG-SPEC-0026 ->
-    SG-SPEC-0027 -> SG-SPEC-0032 -> SG-SPEC-0043 -> SG-SPEC-0029.'
-  evidence: specification.terminology.readiness_chain and specification.readiness_chain define the exact
-    ordered route and keep SG-SPEC-0043 as the gateway boundary before SG-SPEC-0029 concrete mechanics.
-- criterion: Forbids direct or parallel proposal/split readiness bypass edges from SG-SPEC-0026, SG-SPEC-0027,
-    or SG-SPEC-0032 while SG-SPEC-0043 remains the direct gateway boundary.
-  evidence: specification.forbidden_bypasses names the invalid direct edges from SG-SPEC-0026, SG-SPEC-0027,
-    and SG-SPEC-0032, while specification.invariants makes any shorter or parallel route than the readiness_chain
-    invalid for this subtree.
-- criterion: Explains why SG-SPEC-0043 is the human-reviewable direct gateway boundary before concrete
-    mechanics in SG-SPEC-0029.
-  evidence: specification.direct_gateway_rules requires SG-SPEC-0032 to consume only SG-SPEC-0043 as its
-    direct proposal/split gateway, and specification.gateway_boundary plus specification.gateway_rationale
-    define why review stops at SG-SPEC-0043 before SG-SPEC-0029 concrete mechanics.
-- criterion: Keeps this node at path-governance scope only; continuation-selection policy, concrete mechanics
-    ownership, queue ranking, runtime orchestration, and bookkeeping-only slice decomposition remain outside
-    this boundary.
+- criterion: 'Defines the proposal/split readiness admissibility rule: readiness is valid only when continuation,
+    execution readiness, readiness-region meaning, and mechanics availability all remain reviewable.'
+  evidence: specification.admissibility_rule and specification.required_readiness_meanings define the
+    reviewable meanings that must remain present for readiness to be admissible.
+- criterion: Explains which bypass conditions make proposal/split readiness inadmissible without reciting
+    the full graph path as the main prose.
+  evidence: specification.inadmissible_bypass_conditions names semantic bypasses that skip continuation,
+    execution readiness, readiness-region meaning, or mechanics availability.
+- criterion: Preserves SG-SPEC-0043 as the review boundary and SG-SPEC-0029 as the mechanics availability
+    contract.
+  evidence: specification.review_boundary and specification.mechanics_boundary identify those active roles
+    without using them as a topology narrative.
+- criterion: Applies the topology-prose rule so ordered graph paths stay metadata or derived projection,
+    not the main contract.
+  evidence: specification.topology_prose_policy states that path order is represented by graph metadata
+    and derived views while this node owns the admissibility rule.
+- criterion: Keeps this node at readiness-admissibility scope only; continuation-selection policy, concrete
+    mechanics ownership, queue ranking, and runtime orchestration remain outside this boundary.
   evidence: specification.scope.out and specification.boundaries exclude continuation-selection policy,
-    concrete mechanics, queue ranking, runtime orchestration, and bookkeeping-only decomposition that
-    does not add a new runtime-observable path constraint.
-prompt: Define one human-reviewable no-bypass proposal/split readiness contract under SG-SPEC-0043. The
-  spec should say exactly how readiness moves from SG-SPEC-0026 to SG-SPEC-0029, what bypasses are forbidden,
-  why SG-SPEC-0043 is the direct gateway boundary, and what remains outside this node.
+    concrete mechanics ownership, queue ranking, runtime orchestration, and bookkeeping-only decomposition.
+prompt: Define the proposal/split readiness admissibility contract under SG-SPEC-0043. The spec should
+  say when readiness is reviewable, what semantic bypasses make it invalid, and what remains outside this
+  node without turning the graph path into the main prose.
 specification:
-  objective: 'Define one human-reviewable non-bypass proposal/split readiness contract for this subtree:
-    SG-SPEC-0026 reaches concrete proposal/split mechanics only through SG-SPEC-0027 -> SG-SPEC-0032 ->
-    SG-SPEC-0043 -> SG-SPEC-0029, without shorter or parallel bypass routes.'
+  objective: Define the proposal/split readiness admissibility rule for this subtree so readiness is valid
+    only when continuation, execution readiness, readiness-region meaning, review boundary, and mechanics
+    availability remain reviewable without bypass.
   scope:
     in:
-    - The full proposal/split readiness chain from SG-SPEC-0026 to SG-SPEC-0029 for this subtree.
-    - Direct-gateway and no-bypass rules for SG-SPEC-0026, SG-SPEC-0027, and SG-SPEC-0032 while SG-SPEC-0043
-      is present.
-    - Gateway-boundary semantics that keep SG-SPEC-0043 human-reviewable and SG-SPEC-0029 concrete.
-    - The single readable rule that governs this subtree without splitting it into bookkeeping-only child
-      slices.
+    - Proposal/split readiness admissibility.
+    - Semantic bypass conditions that invalidate readiness.
+    - Review boundary semantics around SG-SPEC-0043.
+    - Mechanics availability semantics around SG-SPEC-0029.
+    - Topology-prose discipline for ordered readiness paths.
     out:
     - Concrete proposal/split mechanics schemas, lifecycle payloads, and readiness semantics owned by
       SG-SPEC-0029.
     - Continuation-selection policy owned by SG-SPEC-0026.
     - Queue ranking formulas and runtime orchestration policy.
-    - Bookkeeping-only child-slice ownership or edge-segment decomposition that does not introduce a new
-      runtime-observable path constraint.
+    - Ordered path narration that duplicates graph metadata without adding readiness meaning.
+    - Bookkeeping-only child-slice ownership or edge-segment decomposition.
   terminology:
-    readiness_contract: The single human-reviewable rule that defines how proposal/split readiness moves
-      through this subtree and which bypasses are forbidden.
-    readiness_chain: The only allowed ordered proposal/split readiness route for this subtree from SG-SPEC-0026
-      to concrete mechanics in SG-SPEC-0029.
-    bypass_edge: Any shorter, parallel, or direct dependency that would let SG-SPEC-0026, SG-SPEC-0027,
-      or SG-SPEC-0032 reach downstream proposal/split mechanics without traversing the full readiness_chain.
-    direct_gateway_dependency: The one immediate proposal/split gateway dependency that SG-SPEC-0032 is
-      allowed to consume while SG-SPEC-0043 remains present.
-    human_reviewable_gateway_boundary: The last parent-facing readiness contract that reviewers inspect
-      before concrete mechanics owned by SG-SPEC-0029 begin.
-  readiness_contract:
-  - For this subtree, proposal/split readiness moves only as SG-SPEC-0026 -> SG-SPEC-0027 -> SG-SPEC-0032
-    -> SG-SPEC-0043 -> SG-SPEC-0029.
-  - Any direct or parallel dependency that reaches downstream proposal/split readiness without traversing
-    that ordered route is a bypass_edge and is forbidden while SG-SPEC-0043 remains present.
-  readiness_chain:
-  - The only allowed readiness_chain for this subtree is SG-SPEC-0026 -> SG-SPEC-0027 -> SG-SPEC-0032
-    -> SG-SPEC-0043 -> SG-SPEC-0029.
-  - SG-SPEC-0026 reaches proposal/split readiness only through SG-SPEC-0027.
-  - SG-SPEC-0027 reaches proposal/split readiness only through SG-SPEC-0032.
-  - SG-SPEC-0032 reaches proposal/split readiness only through SG-SPEC-0043.
-  - SG-SPEC-0043 reaches concrete proposal/split mechanics only through SG-SPEC-0029.
-  direct_gateway_rules:
-  - While SG-SPEC-0043 exists, SG-SPEC-0032 must treat SG-SPEC-0043 as its sole direct gateway dependency
-    for proposal/split readiness in this subtree.
-  - SG-SPEC-0032 must not define a parallel direct proposal/split gateway alongside SG-SPEC-0043 for this
-    subtree.
-  forbidden_bypasses:
-  - SG-SPEC-0026 must not depend on SG-SPEC-0032, SG-SPEC-0043, or SG-SPEC-0029 for proposal/split readiness
-    in this subtree.
-  - SG-SPEC-0027 must not depend on SG-SPEC-0043 or SG-SPEC-0029 for proposal/split readiness in this
-    subtree.
-  - SG-SPEC-0032 must not depend on SG-SPEC-0029 or any parallel direct proposal/split gateway in place
-    of SG-SPEC-0043 for this subtree.
-  - No shorter or parallel route than the readiness_chain is valid while SG-SPEC-0043 remains the active
-    gateway boundary.
-  gateway_boundary:
-  - SG-SPEC-0043 is the human_reviewable_gateway_boundary between proposal/split path governance and concrete
-    mechanics.
-  - SG-SPEC-0029 remains the concrete mechanics leaf and is not exposed as a direct proposal/split readiness
-    dependency above SG-SPEC-0043 in this subtree.
-  gateway_rationale:
-  - SG-SPEC-0043 is the direct gateway boundary because it is the single proposal/split readiness dependency
-    consumed directly by SG-SPEC-0032 in this subtree.
-  - Keeping review at SG-SPEC-0043 lets a human verify chain order and no-bypass conformance without inspecting
-    concrete proposal/split payload or lifecycle mechanics owned by SG-SPEC-0029.
-  - SG-SPEC-0029 remains downstream of the gateway boundary as the concrete mechanics leaf, so it satisfies
-    the gateway contract rather than replacing it as the direct parent-facing readiness surface.
+    readiness_admissibility: The rule that says proposal/split readiness may be trusted only when required
+      upstream meanings and downstream availability remain reviewable.
+    semantic_bypass: Any shortcut that lets proposal/split readiness appear satisfied while skipping a
+      required readiness meaning, review boundary, or mechanics availability decision.
+    review_boundary: The human-reviewable point at which proposal/split readiness is checked before mechanics
+      availability is consumed.
+  admissibility_rule:
+  - Proposal/split readiness is admissible only when continuation state, reflective execution readiness,
+    proposal/split readiness meaning, review boundary, and mechanics availability are all preserved.
+  - A direct or parallel graph edge is not a violation by itself; it becomes a violation when it makes
+    one of those meanings unreviewable or ambiguous.
+  required_readiness_meanings:
+    continuation_state:
+    - Continuation policy must remain separate from proposal/split mechanics readiness.
+    execution_readiness:
+    - Reflective execution readiness must remain reviewable before proposal/split readiness is consumed.
+    proposal_split_readiness:
+    - Proposal/split readiness must remain readable as a capability region.
+    review_boundary:
+    - SG-SPEC-0043 remains the review boundary for this subtree.
+    mechanics_availability:
+    - SG-SPEC-0029 remains the mechanics availability contract before concrete mechanics details.
+  inadmissible_bypass_conditions:
+  - Readiness is inadmissible if continuation selection can treat proposal/split mechanics as available
+    without execution readiness.
+  - Readiness is inadmissible if proposal/split readiness skips the review boundary and consumes concrete
+    mechanics availability directly.
+  - Readiness is inadmissible if mechanics availability is treated as field-level split lifecycle truth
+    rather than a readiness decision.
+  review_boundary:
+  - SG-SPEC-0043 is the review boundary for proposal/split readiness in this subtree.
+  - Review at that boundary checks admissibility of readiness meaning, not the literal text of every graph
+    edge.
+  mechanics_boundary:
+  - SG-SPEC-0029 is the mechanics availability contract consumed after the review boundary.
+  - Concrete proposal/split payload and schema semantics remain outside this admissibility rule.
+  topology_prose_policy:
+  - Ordered paths through SG-SPEC IDs are graph metadata and may be rendered by derived views.
+  - SG-SPEC-0044 prose should explain readiness admissibility and semantic bypass, not recite the path
+    as the main contract.
   boundaries:
-  - SG-SPEC-0044 defines only path governance, direct-gateway rules, gateway-boundary rationale, and bypass
-    behavior for this subtree.
+  - SG-SPEC-0044 defines readiness admissibility and semantic bypass behavior for this subtree.
   - Concrete proposal/split payload and schema semantics remain owned by SG-SPEC-0029.
   - Continuation-selection policy remains owned by SG-SPEC-0026.
   - Queue ranking and runtime orchestration semantics remain outside this contract.
   - This node does not require separate child-slice specs merely to restate upstream, downstream, or direct-edge
-    subsegments of the same readiness_chain unless a new runtime-observable invariant appears.
+    subsegments unless a new runtime-observable invariant appears.
   invariants:
   - id: PSP-0044-1
-    statement: The only allowed proposal/split readiness chain in this subtree is SG-SPEC-0026 -> SG-SPEC-0027
-      -> SG-SPEC-0032 -> SG-SPEC-0043 -> SG-SPEC-0029.
+    statement: Proposal/split readiness is admissible only when continuation state, execution readiness,
+      readiness-region meaning, review boundary, and mechanics availability remain reviewable.
   - id: PSP-0044-2
-    statement: While SG-SPEC-0043 exists, SG-SPEC-0032 consumes SG-SPEC-0043 as its sole direct proposal/split
-      gateway dependency for this subtree.
+    statement: A shortcut is invalid when it makes a required readiness meaning, review boundary, or mechanics
+      availability decision unreviewable or ambiguous.
   - id: PSP-0044-3
-    statement: Direct proposal/split readiness edges from SG-SPEC-0026 to SG-SPEC-0032, SG-SPEC-0043,
-      or SG-SPEC-0029; from SG-SPEC-0027 to SG-SPEC-0043 or SG-SPEC-0029; or from SG-SPEC-0032 to SG-SPEC-0029
-      are invalid in this subtree while SG-SPEC-0043 remains present.
+    statement: SG-SPEC-0043 remains the review boundary and SG-SPEC-0029 remains the mechanics availability
+      contract for this subtree.
   - id: PSP-0044-4
-    statement: Human review of proposal/split readiness conformance for this subtree stops at SG-SPEC-0043;
-      SG-SPEC-0029 remains the downstream concrete mechanics leaf rather than a direct readiness dependency.
+    statement: SG-SPEC-0044 must not be decomposed into topology-only path slices unless a new runtime
+      or review-observable invariant appears.
 gate_state: none
 proposed_status: null
 proposed_maturity: null

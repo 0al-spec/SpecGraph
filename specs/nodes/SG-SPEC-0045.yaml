@@ -2,7 +2,7 @@ id: SG-SPEC-0045
 title: SpecGraph - Proposal/Split Gateway Entry Contract
 kind: spec
 created_at: '2026-04-14T20:59:56Z'
-updated_at: '2026-04-17T21:18:34Z'
+updated_at: '2026-04-25T07:35:00Z'
 status: linked
 maturity: 0.4
 presence:
@@ -28,124 +28,115 @@ outputs:
 allowed_paths:
 - specs/nodes/SG-SPEC-0045.yaml
 acceptance:
-- 'Defines one human-readable upstream gateway-entry chain beneath SG-SPEC-0044: SG-SPEC-0026 -> SG-SPEC-0027
-  -> SG-SPEC-0032 -> SG-SPEC-0043.'
-- Forbids upstream proposal/split bypasses that would let SG-SPEC-0026 or SG-SPEC-0027 reach SG-SPEC-0043
-  or SG-SPEC-0029 by any shorter or parallel route.
-- Explains that this contract stops at SG-SPEC-0043 as the human-reviewable gateway boundary, while SG-SPEC-0043
-  and SG-SPEC-0029 govern the downstream gateway-to-mechanics handoff.
-- Explains why SG-SPEC-0045 stays one readable upstream role instead of re-splitting the same chain into
-  bookkeeping-only child slices.
+- 'Defines the upstream readiness contribution to proposal/split admissibility: continuation and execution
+  readiness must remain reviewable before proposal/split readiness is consumed.'
+- Explains which upstream shortcuts make readiness inadmissible without reciting the upstream graph chain
+  as the main prose.
+- Stops at SG-SPEC-0043 as the review-boundary handoff while leaving mechanics availability to SG-SPEC-0029.
+- Keeps SG-SPEC-0045 as the active readable replacement for the historical SG-SPEC-0046/0047/0048 split
+  attempt.
+- Applies the topology-prose rule so this node is not re-split into upstream edge, segment, or handoff
+  slices.
 acceptance_evidence:
-- criterion: 'Defines one human-readable upstream gateway-entry chain beneath SG-SPEC-0044: SG-SPEC-0026
-    -> SG-SPEC-0027 -> SG-SPEC-0032 -> SG-SPEC-0043.'
-  evidence: specification.terminology.gateway_entry_chain, specification.gateway_entry_contract, and specification.entry_chain_steps
-    define the exact ordered upstream chain that reaches the active SG-SPEC-0043 gateway boundary and
-    stops before the downstream SG-SPEC-0043 -> SG-SPEC-0029 mechanics handoff.
-- criterion: Forbids upstream proposal/split bypasses that would let SG-SPEC-0026 or SG-SPEC-0027 reach
-    SG-SPEC-0043 or SG-SPEC-0029 by any shorter or parallel route.
-  evidence: specification.invalid_shortcuts names the invalid SG-SPEC-0026 -> SG-SPEC-0032/SG-SPEC-0043/SG-SPEC-0029
-    and SG-SPEC-0027 -> SG-SPEC-0043/SG-SPEC-0029 shortcuts, while specification.invariants requires the
-    full gateway_entry_chain before the active SG-SPEC-0043 gateway boundary is reached.
-- criterion: Explains that this contract stops at SG-SPEC-0043 as the human-reviewable gateway boundary,
-    while SG-SPEC-0043 and SG-SPEC-0029 govern the downstream gateway-to-mechanics handoff.
-  evidence: specification.gateway_boundary_reason and specification.boundaries identify SG-SPEC-0043 as
-    the stopping point for this contract while its presence marker is active and explicitly leave the
-    downstream SG-SPEC-0043 -> SG-SPEC-0029 handoff to SG-SPEC-0043 and SG-SPEC-0029.
-- criterion: Explains why SG-SPEC-0045 stays one readable upstream role instead of re-splitting the same
-    chain into bookkeeping-only child slices.
-  evidence: specification.single_role_rationale explains why the full upstream chain is one readable role,
-    specification.boundaries forbids bookkeeping-only re-splitting without a new runtime-observable invariant,
-    and top-level supersedes collapses the prior SG-SPEC-0046/0047/0048 split attempt into this single
-    contract.
-prompt: Define one readable upstream gateway-entry contract beneath SG-SPEC-0044. The spec should say
-  how proposal/split readiness reaches SG-SPEC-0043 from SG-SPEC-0026, which upstream shortcuts are invalid,
-  why the contract stops at the gateway boundary, and why this node stays a single readable role.
-specification:
-  objective: Define SG-SPEC-0045 as the single upstream gateway-entry contract beneath SG-SPEC-0044 so
-    proposal/split readiness reaches SG-SPEC-0043 only as SG-SPEC-0026 -> SG-SPEC-0027 -> SG-SPEC-0032
-    -> SG-SPEC-0043, without re-splitting that same upstream story into bookkeeping-only edge, segment,
+- criterion: 'Defines the upstream readiness contribution to proposal/split admissibility: continuation
+    and execution readiness must remain reviewable before proposal/split readiness is consumed.'
+  evidence: specification.upstream_readiness_contribution and specification.required_upstream_meanings
+    define continuation state, execution readiness, and readiness-region meaning as required upstream
+    inputs.
+- criterion: Explains which upstream shortcuts make readiness inadmissible without reciting the upstream
+    graph chain as the main prose.
+  evidence: specification.inadmissible_upstream_shortcuts defines shortcuts by the readiness meanings
+    they skip rather than by path narration.
+- criterion: Stops at SG-SPEC-0043 as the review-boundary handoff while leaving mechanics availability
+    to SG-SPEC-0029.
+  evidence: specification.review_boundary_handoff and specification.boundaries keep SG-SPEC-0043 as this
+    node's stopping point and leave mechanics availability downstream.
+- criterion: Keeps SG-SPEC-0045 as the active readable replacement for the historical SG-SPEC-0046/0047/0048
+    split attempt.
+  evidence: top-level supersedes records SG-SPEC-0046, SG-SPEC-0047, and SG-SPEC-0048, while specification.lineage_policy
+    keeps them historical.
+- criterion: Applies the topology-prose rule so this node is not re-split into upstream edge, segment,
     or handoff slices.
+  evidence: specification.topology_prose_policy and specification.boundaries forbid topology-only re-splitting
+    without a new runtime or review-observable invariant.
+prompt: Define the upstream readiness contribution beneath SG-SPEC-0044. The spec should explain which
+  upstream meanings must stay reviewable before proposal/split readiness is consumed, why the contract
+  stops at SG-SPEC-0043, and why historical edge slices stay historical.
+specification:
+  objective: Define the upstream readiness contribution to proposal/split admissibility so continuation,
+    execution readiness, and proposal/split readiness meaning remain reviewable before the SG-SPEC-0043
+    review boundary is consumed.
   scope:
     in:
-    - Upstream proposal/split readiness path from SG-SPEC-0026 to the SG-SPEC-0043 gateway boundary.
-    - Upstream no-bypass rules for SG-SPEC-0026 and SG-SPEC-0027 before the active SG-SPEC-0043 gateway
-      boundary is reached.
-    - Human-readable explanation of why this node stops at SG-SPEC-0043 instead of restating downstream
-      concrete mechanics.
-    - The single readable role that keeps the whole upstream chain inspectable without child-slice bookkeeping.
+    - Upstream readiness contribution to proposal/split admissibility.
+    - Required upstream meanings before the SG-SPEC-0043 review boundary is consumed.
+    - Inadmissible upstream shortcuts defined by skipped readiness meaning.
+    - Active-lineage replacement of historical edge/segment slices.
+    - Topology-prose discipline for this branch.
     out:
-    - The downstream SG-SPEC-0043 -> SG-SPEC-0029 gateway-to-mechanics handoff owned by SG-SPEC-0043 and
-      SG-SPEC-0029.
-    - Any alternate routing that would apply only if the SG-SPEC-0043 gateway boundary presence marker
-      were not active.
+    - Downstream mechanics availability owned by SG-SPEC-0029.
+    - Full readiness admissibility across upstream and downstream meanings owned by SG-SPEC-0044.
     - Concrete proposal/split mechanics payloads, lifecycle details, queue ranking, and runtime orchestration.
     - Continuation-selection policy owned by SG-SPEC-0026.
-    - Further slice, segment, or edge bookkeeping unless a new runtime-observable invariant appears.
+    - Further slice, segment, or edge bookkeeping unless a new runtime or review-observable invariant
+      appears.
   terminology:
-    gateway_entry_chain: The only allowed upstream proposal/split readiness route from SG-SPEC-0026 to
-      the human-reviewable gateway boundary at SG-SPEC-0043.
-    upstream_shortcut: Any direct or parallel route that lets SG-SPEC-0026 or SG-SPEC-0027 bypass one
-      or more required nodes in the gateway_entry_chain before reaching SG-SPEC-0043 or SG-SPEC-0029.
-    gateway_boundary: The human-reviewable stopping point at SG-SPEC-0043 where this upstream contract
-      ends while the SG-SPEC-0043 presence marker remains active.
-    gateway_boundary_presence_marker: The explicit SG-SPEC-0043 presence.state marker that keeps the gateway_boundary
-      active for this upstream contract.
-    single_readable_role: The one composed explanatory role that SG-SPEC-0045 serves by keeping the full
-      upstream gateway-entry chain readable in one place.
-  gateway_entry_contract:
-  - For this subtree, upstream proposal/split readiness reaches the gateway_boundary only as SG-SPEC-0026
-    -> SG-SPEC-0027 -> SG-SPEC-0032 -> SG-SPEC-0043.
-  - 'This contract is upstream-only: it explains how readiness arrives at SG-SPEC-0043 while the gateway_boundary_presence_marker
-    remains active and which upstream_shortcuts are invalid before that boundary is reached.'
-  entry_chain_steps:
-  - SG-SPEC-0026 reaches proposal/split readiness for this contract only through SG-SPEC-0027.
-  - SG-SPEC-0027 reaches proposal/split readiness for this contract only through SG-SPEC-0032.
-  - SG-SPEC-0032 reaches proposal/split readiness for this contract only through SG-SPEC-0043.
-  invalid_shortcuts:
-  - SG-SPEC-0026 must not depend on SG-SPEC-0032, SG-SPEC-0043, or SG-SPEC-0029 for proposal/split readiness
-    in this subtree.
-  - SG-SPEC-0027 must not depend on SG-SPEC-0043 or SG-SPEC-0029 for proposal/split readiness in this
-    subtree.
-  - No direct or parallel route may let SG-SPEC-0026 or SG-SPEC-0027 reach SG-SPEC-0043 or SG-SPEC-0029
-    without traversing the full gateway_entry_chain.
-  gateway_boundary_reason:
-  - SG-SPEC-0043 is the gateway_boundary while the gateway_boundary_presence_marker is active because
-    it is the first human-reviewable proposal/split gateway dependency consumed directly by SG-SPEC-0032
-    in this subtree.
-  - SG-SPEC-0045 stops at SG-SPEC-0043 because the downstream SG-SPEC-0043 -> SG-SPEC-0029 handoff belongs
-    to SG-SPEC-0043 and SG-SPEC-0029 rather than to this upstream entry contract.
-  single_role_rationale:
-  - 'SG-SPEC-0045 exists to tell one readable upstream story: how proposal/split readiness moves from
-    SG-SPEC-0026 to SG-SPEC-0043 and which upstream_shortcuts are invalid.'
-  - Re-splitting this node into separate parent, segment, or edge slices would only repartition the same
-    already-ordered gateway_entry_chain without adding a new runtime-observable invariant.
-  - SG-SPEC-0045 therefore supersedes the prior SG-SPEC-0046/SG-SPEC-0047/SG-SPEC-0048 split attempt and
-    remains one single_readable_role.
+    upstream_readiness_contribution: The upstream part of proposal/split admissibility that keeps continuation,
+      execution readiness, and readiness-region meaning reviewable before the review boundary is consumed.
+    upstream_shortcut: Any route or interpretation that skips one of those upstream meanings and therefore
+      makes readiness inadmissible.
+    review_boundary_handoff: The point where upstream readiness contribution stops and SG-SPEC-0043 review
+      boundary takes over.
+  upstream_readiness_contribution:
+  - Proposal/split readiness is upstream-admissible only when continuation state, reflective execution
+    readiness, and proposal/split readiness-region meaning are all reviewable.
+  - This node stops at the SG-SPEC-0043 review boundary and does not define downstream mechanics availability.
+  required_upstream_meanings:
+    continuation_state:
+    - Continuation state must remain separate from proposal/split mechanics detail.
+    execution_readiness:
+    - Reflective execution readiness must remain reviewable before proposal/split readiness is consumed.
+    readiness_region:
+    - Proposal/split readiness must remain readable as a capability region.
+  inadmissible_upstream_shortcuts:
+  - Upstream readiness is inadmissible if continuation state is skipped or hidden by mechanics availability.
+  - Upstream readiness is inadmissible if execution readiness is bypassed before proposal/split readiness
+    is consumed.
+  - Upstream readiness is inadmissible if the readiness region collapses into concrete split lifecycle
+    mechanics.
+  review_boundary_handoff:
+  - SG-SPEC-0045 stops at SG-SPEC-0043 because that boundary owns review of proposal/split readiness before
+    mechanics availability is consumed.
+  - SG-SPEC-0045 does not restate downstream mechanics availability or concrete mechanics ownership.
+  lineage_policy:
+  - SG-SPEC-0045 remains the active readable replacement for SG-SPEC-0046, SG-SPEC-0047, and SG-SPEC-0048.
+  - The superseded nodes remain historical lineage and must not be treated as active readiness roles.
+  topology_prose_policy:
+  - Ordered upstream graph paths are represented by canonical metadata and derived graph views.
+  - SG-SPEC-0045 prose should explain upstream readiness meaning and inadmissible shortcuts, not route
+    narration.
+  - SG-SPEC-0045 must not be re-split into edge, segment, or handoff slices unless a new runtime or review-observable
+    invariant appears.
   boundaries:
-  - SG-SPEC-0045 defines only the upstream gateway-entry contract and its no-bypass rules.
-  - SG-SPEC-0044 remains the fuller parent contract that includes the downstream SG-SPEC-0029 leaf in
-    the complete readiness chain.
-  - SG-SPEC-0043 and SG-SPEC-0029 own the downstream gateway-to-mechanics handoff and concrete mechanics
-    detail beyond this gateway_boundary.
-  - SG-SPEC-0045 does not define a replacement route for cases where the gateway_boundary_presence_marker
-    is not active.
-  - SG-SPEC-0045 must not be re-split into edge, segment, or upstream-handoff slices unless a new runtime-observable
-    invariant appears that is not already captured by this single_readable_role.
+  - SG-SPEC-0045 defines only upstream readiness contribution and inadmissible upstream shortcuts.
+  - SG-SPEC-0044 owns the fuller admissibility rule that includes downstream mechanics availability.
+  - SG-SPEC-0043 owns the review boundary and SG-SPEC-0029 owns mechanics availability downstream.
+  - SG-SPEC-0045 does not define replacement routing for cases where the review boundary changes.
+  - SG-SPEC-0045 must not be re-split into edge, segment, or upstream-handoff slices unless a new runtime
+    or review-observable invariant appears.
   invariants:
   - id: PSP-0045-1
-    statement: The only allowed upstream gateway_entry_chain in this subtree while the gateway_boundary_presence_marker
-      is active is SG-SPEC-0026 -> SG-SPEC-0027 -> SG-SPEC-0032 -> SG-SPEC-0043.
+    statement: Upstream proposal/split readiness is admissible only when continuation state, execution
+      readiness, and readiness-region meaning remain reviewable before SG-SPEC-0043 is consumed.
   - id: PSP-0045-2
-    statement: Direct or parallel upstream_shortcuts from SG-SPEC-0026 to SG-SPEC-0032, SG-SPEC-0043,
-      or SG-SPEC-0029, or from SG-SPEC-0027 to SG-SPEC-0043 or SG-SPEC-0029, are invalid in this subtree.
+    statement: Upstream shortcuts are invalid when they skip or hide continuation state, execution readiness,
+      or readiness-region meaning.
   - id: PSP-0045-3
-    statement: SG-SPEC-0045 stops at SG-SPEC-0043 as the gateway_boundary while the gateway_boundary_presence_marker
-      is active and does not restate the downstream SG-SPEC-0043 -> SG-SPEC-0029 mechanics handoff.
+    statement: SG-SPEC-0045 stops at SG-SPEC-0043 and does not restate downstream mechanics availability
+      or concrete mechanics ownership.
   - id: PSP-0045-4
-    statement: SG-SPEC-0045 remains one single_readable_role for the full upstream gateway_entry_chain
-      and must not be decomposed into bookkeeping-only child slices unless a new runtime-observable invariant
-      appears.
+    statement: SG-SPEC-0045 remains the active readable replacement for SG-SPEC-0046, SG-SPEC-0047, and
+      SG-SPEC-0048, which remain historical lineage.
 gate_state: none
 proposed_status: null
 proposed_maturity: null
