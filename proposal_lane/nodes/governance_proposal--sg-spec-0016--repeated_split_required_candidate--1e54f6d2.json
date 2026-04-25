@@ -3,7 +3,7 @@
   "schema_version": 1,
   "title": "Governance Proposal for SG-SPEC-0016 (repeated_split_required_candidate)",
   "created_at": "2026-04-24T20:18:58.129586+00:00",
-  "updated_at": "2026-04-24T20:18:58.129604+00:00",
+  "updated_at": "2026-04-25T21:08:05Z",
   "policy_reference": {
     "artifact_path": "tools/proposal_lane_policy.json",
     "artifact_sha256": "8a49088339df3edde8a82062b8bf44ae389a32004cca2cafe3b89744f1c57d17",
@@ -19,7 +19,7 @@
     "handle_value": "governance_proposal::SG-SPEC-0016::repeated_split_required_candidate",
     "handle_status": "active"
   },
-  "proposal_authority_state": "under_review",
+  "proposal_authority_state": "superseded",
   "proposal_target_region": {
     "target_kind": "canonical_node",
     "target_reference": "SG-SPEC-0016",
@@ -47,7 +47,7 @@
     "operator_request_handle": ""
   },
   "runtime_bridge": {
-    "proposal_queue_status": "proposed",
+    "proposal_queue_status": "superseded",
     "supporting_run_ids": [
       "20260424T201347Z-SG-SPEC-0016-764c849e"
     ],
@@ -56,6 +56,8 @@
     "proposal_artifact_path": "",
     "applied_run_id": "",
     "applied_at": "",
-    "operator_request_handle": ""
+    "operator_request_handle": "",
+    "queue_presence": "retired_after_queue_refresh",
+    "last_queue_sync_at": "2026-04-25T21:08:05Z"
   }
 }
