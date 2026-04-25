@@ -2,7 +2,7 @@ id: SG-SPEC-0026
 title: SpecGraph - Reflective Mechanics Integration and Continuation Selection
 kind: spec
 created_at: '2026-04-13T07:46:44Z'
-updated_at: '2026-04-14T19:15:56Z'
+updated_at: '2026-04-25T07:10:00Z'
 status: linked
 maturity: 1.0
 depends_on:
@@ -16,6 +16,7 @@ inputs:
 - specs/nodes/SG-SPEC-0005.yaml
 - specs/nodes/SG-SPEC-0006.yaml
 - specs/nodes/SG-SPEC-0025.yaml
+- specs/nodes/SG-SPEC-0027.yaml
 - specs/nodes/SG-SPEC-0033.yaml
 - tasks.md
 outputs:
@@ -23,68 +24,72 @@ outputs:
 allowed_paths:
 - specs/nodes/SG-SPEC-0026.yaml
 acceptance:
-- Defines SG-SPEC-0026 as the bounded continuation-selection integration child beneath SG-SPEC-0003.
-- Delegates concrete continuation candidate derivation, de-duplication, and deterministic tie-break to
-  SG-SPEC-0033, while keeping continuation suppression and handoff as integration behavior.
-- Keeps execution mechanics delegated to SG-SPEC-0027 and avoids scoring formulas, queue-priority engines,
-  and viewer/UX contracts.
-- Keeps continuation artifacts non-canonical until SG-SPEC-0026 applies approved downstream handoff rules.
+- Defines the continuation decision boundary that decides whether a completed reflective run may hand
+  off to another bounded target.
+- 'Separates candidate selection from execution readiness: candidate derivation and tie-break stay in
+  SG-SPEC-0033, while execution readiness is consumed from SG-SPEC-0027.'
+- Defines suppression and handoff behavior for continuation attempts without mutating canonical backlog
+  state directly.
+- Applies the topology-prose rule for this branch so integration prose explains continuation behavior
+  rather than child routing.
+- Avoids scoring formulas, queue-priority engines, viewer/UX contracts, and concrete mechanics payloads.
 acceptance_evidence:
-- criterion: Defines SG-SPEC-0026 as the bounded continuation-selection integration child beneath SG-SPEC-0003.
-  evidence: specification.integration_role identifies SG-SPEC-0026 as the continuation-selection integration
-    child below SG-SPEC-0003, and depends_on records the required integration and delegation children.
-- criterion: Delegates concrete continuation candidate derivation, de-duplication, and deterministic tie-break
-    to SG-SPEC-0033, while keeping continuation suppression and handoff as integration behavior.
-  evidence: specification.delegated_continuation_selection_cluster records SG-SPEC-0033 as the bounded
-    continuation selection cluster and specification.continuation_selection.selection_flow requires a
-    single deterministic winner from that child before handoff.
-- criterion: Keeps execution mechanics delegated to SG-SPEC-0027 and avoids scoring formulas, queue-priority
-    engines, and viewer/UX contracts.
-  evidence: specification.scope.out excludes scoring formulas, queue-priority engines, viewer/UX, and
-    execution-level mechanics while specification.delegated_execution_cluster retains SG-SPEC-0027 for
-    concrete mechanics.
-- criterion: Keeps continuation artifacts non-canonical until SG-SPEC-0026 applies approved downstream
-    handoff rules.
-  evidence: specification.boundary_notes and specification.continuation_selection.handoff require derived
-    continuation artifacts to remain non-canonical unless separately approved.
-prompt: Keep SG-SPEC-0026 as the bounded integration child under SG-SPEC-0003 for reflective execution
-  continuation. It should define deterministic continuation selection, delegate concrete reflective execution
-  mechanics to SG-SPEC-0027, and specify suppression and handoff behavior without drifting into scoring
-  formulas, proposal-lane precedence engines, or viewer design.
+- criterion: Defines the continuation decision boundary that decides whether a completed reflective run
+    may hand off to another bounded target.
+  evidence: specification.continuation_boundary and specification.decision_contract define the decision
+    point and the possible handoff/suppression outcomes.
+- criterion: 'Separates candidate selection from execution readiness: candidate derivation and tie-break
+    stay in SG-SPEC-0033, while execution readiness is consumed from SG-SPEC-0027.'
+  evidence: specification.decision_inputs and specification.boundaries separate candidate selection from
+    execution readiness without embedding either child topology in the prose as the main concern.
+- criterion: Defines suppression and handoff behavior for continuation attempts without mutating canonical
+    backlog state directly.
+  evidence: specification.continuation_selection.suppression and specification.continuation_selection.handoff
+    define derived continuation records and non-canonical persistence expectations.
+- criterion: Applies the topology-prose rule for this branch so integration prose explains continuation
+    behavior rather than child routing.
+  evidence: specification.topology_prose_policy says graph relations are metadata and SG-SPEC-0026 prose
+    should explain the continuation decision semantics.
+- criterion: Avoids scoring formulas, queue-priority engines, viewer/UX contracts, and concrete mechanics
+    payloads.
+  evidence: specification.scope.out excludes scoring formulas, queue-priority engines, viewer/UX contracts,
+    concrete mechanics payloads, and concrete artifact mutation contracts.
+prompt: Keep SG-SPEC-0026 as the continuation decision boundary for reflective execution. It should explain
+  when a completed run may hand off to another bounded target, how candidate selection and execution readiness
+  are consumed, and when continuation is suppressed without turning graph topology into prose.
 specification:
-  objective: Define the bounded continuation-selection integration layer under SG-SPEC-0003 while delegating
-    concrete continuation-selection mechanics to SG-SPEC-0033 and reflective execution mechanics to SG-SPEC-0027.
+  objective: Define the continuation decision boundary that consumes candidate-selection results and reflective
+    execution readiness to decide whether continuation is handed off, suppressed, or kept as a derived
+    artifact.
   scope:
     in:
-    - Integration role between SG-SPEC-0003 and delegated continuation or execution descendants
+    - Continuation decision boundary after a completed reflective run
     - Continuation preconditions, suppression triggers, and canonical handoff behavior
-    - Deterministic continuation candidate selection mechanics delegated to SG-SPEC-0033
+    - Consumption of deterministic continuation candidate selection from SG-SPEC-0033
+    - Consumption of reflective execution readiness from SG-SPEC-0027
     - Non-canonical persistence expectations for continuation artifacts
+    - Topology-prose discipline for this branch
     out:
     - Parent boundary and human-approval policy retained by SG-SPEC-0003
-    - Concrete reflective execution mechanics grouped under SG-SPEC-0027
-    - Concrete candidate derivation, de-duplication, deterministic tie-break, and one-of-n selection delegated
-      to SG-SPEC-0033
+    - Concrete reflective execution mechanics owned by SG-SPEC-0027
+    - Concrete candidate derivation, de-duplication, deterministic tie-break, and one-of-n selection owned
+      by SG-SPEC-0033
     - Scoring formulas, queue ranking engines, and viewer UX
     - Concrete continuation artifact mutation contracts
-  integration_role:
-  - SG-SPEC-0026 is the intermediate child that keeps SG-SPEC-0003 below the blocking-child atomicity
-    limit while preserving explicit continuation-selection governance.
-  - SG-SPEC-0026 may depend_on exactly one bounded execution cluster child when multiple reflective execution
-    mechanics remain jointly required before continuation-aware operation is coherent.
-  - SG-SPEC-0026 delegates deterministic continuation candidate derivation and tie-break selection to
-    SG-SPEC-0033.
-  delegated_execution_cluster:
-  - SG-SPEC-0027 owns the integrated reflective execution mechanics cluster beneath SG-SPEC-0026.
-  - Execution-mechanics descendants that belong to this cluster are refined through SG-SPEC-0027.
-  - SG-SPEC-0026 may depend directly only on SG-SPEC-0027 for execution-readiness; no other direct execution-mechanics
-    dependencies are allowed while this cluster is present.
-  delegated_continuation_selection_cluster:
-  - SG-SPEC-0033 owns deterministic continuation candidate derivation, de-duplication, and selection ordering.
-  - SG-SPEC-0026 consumes SG-SPEC-0033 as the single bounded dependency for continuation candidate selection
-    mechanics.
-  - SG-SPEC-0026 remains responsible for suppression gates and handoff contracts while SG-SPEC-0033 defines
-    selection details.
+  continuation_boundary:
+  - SG-SPEC-0026 decides whether a completed reflective run may continue directly to another bounded target.
+  - The decision is based on normalized candidate-selection output plus execution-readiness state, not
+    on graph topology prose.
+  decision_inputs:
+    candidate_selection:
+    - SG-SPEC-0033 owns deterministic candidate derivation, de-duplication, and selection ordering.
+    execution_readiness:
+    - SG-SPEC-0027 owns the reflective execution-readiness surface consumed by this decision.
+  decision_contract:
+  - Direct continuation is allowed only when candidate selection returns one deterministic result and
+    execution readiness does not leave a blocking gate.
+  - Continuation is suppressed when authority, existing proposals, active gates, or ambiguous selection
+    make direct handoff unsafe.
   continuation_selection:
     preconditions:
     - The current bounded target has no remaining explicit blocked or gated work within current authority.
@@ -103,9 +108,12 @@ specification:
     - Suppressed continuation becomes derived artifact emission or refresh rather than canonical mutation.
     - Continuation records must not set canonical backlog labels, ownership fields, status, or maturity
       directly.
-  boundary_notes:
-  - SG-SPEC-0026 integrates continuation rules and delegated execution clustering but does not redefine
-    parent governance boundaries.
+  topology_prose_policy:
+  - Canonical graph fields already represent which specs provide candidate selection and execution readiness.
+  - SG-SPEC-0026 prose should explain the continuation decision semantics rather than restating child
+    routing.
+  boundaries:
+  - SG-SPEC-0026 does not redefine parent governance boundaries.
   - Continuation records and delegated mechanics outputs remain non-canonical until separately authorized
     execution or approval paths apply them.
 gate_state: none
