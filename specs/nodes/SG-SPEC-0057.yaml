@@ -2,7 +2,7 @@ id: SG-SPEC-0057
 title: SpecGraph - Authority Class Semantic Boundary
 kind: spec
 created_at: '2026-04-25T11:10:14Z'
-updated_at: '2026-04-25T19:56:09Z'
+updated_at: '2026-04-25T20:05:01Z'
 status: linked
 maturity: 0.72
 depends_on:
@@ -51,8 +51,8 @@ acceptance_evidence:
     and inference
   evidence: specification.terminology.composite_expression defines a mixed-origin governed expression,
     specification.authority_class_contract.selection_rules chooses one class from the canonical act that
-    materially produced the current expression, and the same rules distinguish distilled compression from
-    inferred new claims.
+    materially produced the current expression, defines precedence for overlapping authored and inferred
+    signals, and distinguishes distilled compression from inferred new claims.
 - criterion: Defines how `authority_class` applies across revisions, supersession, and derived projections
     so class changes remain explicit canonical acts rather than inferred viewer state
   evidence: specification.authority_class_contract.lineage_rules requires authority-class changes to flow
@@ -162,6 +162,9 @@ specification:
     - Human approval, review, or minor copyediting of an imported, inferred, or distilled expression does
       not by itself change authority_class; the class changes only when a canonical act materially restates
       or replaces the current governed expression.
+    - When authored and inferred signals overlap, classify the expression as inferred if machine reasoning
+      materially contributed the substantive new claim being admitted; classify it as authored only after
+      a separate human-authored canonical act materially restates or replaces that claim.
     - Use authored when accountable human intent materially determines the current governed wording or
       relation assertion, even if imports, summaries, or machine proposals informed the draft.
     - Use imported when the current governed expression is semantically preserved from an external source
