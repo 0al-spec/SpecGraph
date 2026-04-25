@@ -12,5 +12,6 @@ build/
 
 # Supervisor runtime scratch state and generated run artifacts are local by default.
 .worktrees/
+canonical_json/
 runs/*
 !runs/.gitkeep
