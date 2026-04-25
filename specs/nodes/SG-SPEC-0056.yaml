@@ -1,16 +1,20 @@
 id: SG-SPEC-0056
-title: SpecGraph - Non-Retry Queue-Control Consumer-Chain Boundary
+title: SpecGraph - Historical Non-Retry Consumer-Chain Boundary
 kind: spec
 created_at: '2026-04-24T21:06:00Z'
-updated_at: '2026-04-24T21:06:00Z'
-status: linked
+updated_at: '2026-04-25T18:31:32Z'
+status: reviewed
 maturity: 0.23
+presence:
+  state: historical
+  lineage_basis: superseded_lineage
 depends_on:
 - SG-SPEC-0040
 refines:
-- SG-SPEC-0039
+- SG-SPEC-0040
+superseded_by:
+- SG-SPEC-0040
 inputs:
-- specs/nodes/SG-SPEC-0039.yaml
 - specs/nodes/SG-SPEC-0040.yaml
 - tasks.md
 outputs:
@@ -18,70 +22,60 @@ outputs:
 allowed_paths:
 - specs/nodes/SG-SPEC-0056.yaml
 acceptance:
-- Defines the non-retry consumer-chain constraints for dedupe_key, preempt_direct_update, and proposal_direct_handoff
-  in proposal_queue and refactor_queue metadata.
-- Constrains SG-SPEC-0003, SG-SPEC-0034, and SG-SPEC-0039 consumption as a bounded hop chain and forbids
-  direct SG-SPEC-0003 consumer contracts from SG-SPEC-0037, SG-SPEC-0038, and SG-SPEC-0040 for those fields.
-- Preserves SG-SPEC-0056 implementation-agnostic scope by excluding concrete routing semantics, artifact-shape
-  details, and canonical authority behavior.
+- Records SG-SPEC-0056 as a superseded consumer-chain split artifact whose active role is now carried
+  by SG-SPEC-0040.
+- Preserves inspectable lineage for the earlier SG-SPEC-0039 consumer-chain split without keeping SG-SPEC-0056
+  in active readiness topology.
+- Keeps concrete non-retry queue-control consumption semantics active through SG-SPEC-0040 rather than
+  through this historical child.
 acceptance_evidence:
-- criterion: Defines the non-retry consumer-chain constraints for dedupe_key, preempt_direct_update, and
-    proposal_direct_handoff in proposal_queue and refactor_queue metadata.
-  evidence: specification.scope.in binds this node to proposal_queue and refactor_queue field_set membership
-    and the consumer-chain constraint scope.
-- criterion: Constrains SG-SPEC-0003, SG-SPEC-0034, and SG-SPEC-0039 consumption as a bounded hop chain
-    and forbids direct SG-SPEC-0003 consumer contracts from SG-SPEC-0037, SG-SPEC-0038, and SG-SPEC-0040
-    for those fields.
-  evidence: specification.consumer_chain.path_anchor requires SG-SPEC-0003 <- SG-SPEC-0034 <- SG-SPEC-0039
-    <- SG-SPEC-0056 and specification.consumer_chain.consumer_rule explicitly prohibits direct SG-SPEC-0003
-    consumption from SG-SPEC-0037, SG-SPEC-0038, and SG-SPEC-0040 for dedupe_key, preempt_direct_update,
-    and proposal_direct_handoff.
-- criterion: Preserves SG-SPEC-0056 implementation-agnostic scope by excluding concrete routing semantics,
-    artifact-shape details, and canonical authority behavior.
-  evidence: specification.scope.out excludes routing semantics, artifact-shape definition, and authority
-    transitions, and specification.noncanonical_boundary marks constraints as derived advisory consumer-boundary
-    rules only.
-prompt: Materialize SG-SPEC-0056 as the bounded child under SG-SPEC-0039 that holds non-retry consumer-chain
-  hop constraints for proposal_queue/refactor_queue queue-control fields, leaving concrete semantics to
-  SG-SPEC-0037, surface contracts to SG-SPEC-0038, and persistence framing to SG-SPEC-0040.
+- criterion: Records SG-SPEC-0056 as a superseded consumer-chain split artifact whose active role is now
+    carried by SG-SPEC-0040.
+  evidence: top-level presence marks SG-SPEC-0056 historical, superseded_by points to SG-SPEC-0040, and
+    specification.historical_status states that SG-SPEC-0040 is the active first-persistence and noncanonical-consumption
+    boundary.
+- criterion: Preserves inspectable lineage for the earlier SG-SPEC-0039 consumer-chain split without keeping
+    SG-SPEC-0056 in active readiness topology.
+  evidence: specification.lineage_contract preserves the supersession relation to SG-SPEC-0040, while
+    specification.inactive_rules prevents SG-SPEC-0056 from satisfying active readiness or direct consumer-chain
+    dependency checks.
+- criterion: Keeps concrete non-retry queue-control consumption semantics active through SG-SPEC-0040
+    rather than through this historical child.
+  evidence: specification.active_successor_boundary names SG-SPEC-0040 as the active owner of first-persistence,
+    noncanonical-consumption, and consumer-rule semantics for dedupe_key, preempt_direct_update, and proposal_direct_handoff.
+prompt: Preserve SG-SPEC-0056 only as inspectable lineage for a superseded consumer-chain split beneath
+  SG-SPEC-0039. Active first-persistence and noncanonical-consumption semantics now live in SG-SPEC-0040.
 specification:
-  objective: Define a bounded consumer-chain constraint spec for non-retry queue-control metadata so SG-SPEC-0003
-    consumes dedupe_key, preempt_direct_update, and proposal_direct_handoff only through the bounded path
-    of SG-SPEC-0034 and SG-SPEC-0039.
+  objective: Preserve SG-SPEC-0056 as historical lineage for a superseded consumer-chain split while keeping
+    the active non-retry queue-control consumption boundary in SG-SPEC-0040.
   scope:
     in:
-    - Bounded consumer-path and hop constraints for proposal_queue/refactor_queue non-retry queue-control
-      metadata fields.
-    - Explicit prohibition of direct SG-SPEC-0003 consumer contracts from SG-SPEC-0037, SG-SPEC-0038,
-      and SG-SPEC-0040.
-    - Alignment of SG-SPEC-0056 with SG-SPEC-0040's first-persistence framing without defining its semantics.
+    - Historical lineage for the earlier SG-SPEC-0039 consumer-chain split.
+    - Explicit superseded_by relation to SG-SPEC-0040.
+    - Inactive-child rules for active readiness and graph-health inspection.
     out:
-    - Concrete non-retry routing semantics for preempt_direct_update or proposal_direct_handoff.
-    - Artifact surface-key path definitions.
-    - Retry-condition and active-item precedence semantics.
-    - Canonical authority transitions or writeback policy.
-  consumer_chain:
-    path_anchor:
-    - SG-SPEC-0003 <- SG-SPEC-0034 <- SG-SPEC-0039 <- SG-SPEC-0056
-    field_set:
-    - dedupe_key
-    - preempt_direct_update
-    - proposal_direct_handoff
-    artifact_scope:
-    - proposal_queue
-    - refactor_queue
-    consumer_rule:
-    - SG-SPEC-0003 may consume these fields only via SG-SPEC-0034.
-    - SG-SPEC-0003 MUST NOT consume these fields directly from SG-SPEC-0037, SG-SPEC-0038, or SG-SPEC-0040.
-    - SG-SPEC-0037 and SG-SPEC-0038 MUST NOT publish a direct consumer contract for SG-SPEC-0003 for these
-      fields.
-  parent_integration:
-  - SG-SPEC-0039 consumes this node as the dedicated consumer-chain constraint boundary.
-  - SG-SPEC-0003 receives non-retry queue-control fields only through SG-SPEC-0034 and its bounded intermediary
-    chain via SG-SPEC-0039/SG-SPEC-0056.
-  - SG-SPEC-0056 remains noncanonical and advisory; concrete routing or governance logic remains with
-    SG-SPEC-0037, SG-SPEC-0038, and SG-SPEC-0040 as delegated children in the broader chain.
-  - SG-SPEC-0040 contributes first-persistence framing inputs to this consumer-chain constraint slice.
-  noncanonical_boundary:
-  - SG-SPEC-0056 governs only consumer-chain constraints and does not authorize any direct proposal writeback
-    or authority transitions.
+    - Active consumer-chain semantics for non-retry queue-control metadata.
+    - Concrete non-retry routing semantics, artifact-shape contracts, retry-condition behavior, or authority
+      transitions.
+    - Any new child materialization or decomposition authority.
+  historical_status:
+  - SG-SPEC-0056 records a prior attempt to isolate non-retry consumer-chain constraints as a separate
+    child beneath SG-SPEC-0039.
+  - SG-SPEC-0056 is superseded by SG-SPEC-0040 and remains inspectable lineage only.
+  lineage_contract:
+  - SG-SPEC-0040 supersedes SG-SPEC-0056 as the active first-persistence and noncanonical-consumption
+    boundary for this cluster.
+  - SG-SPEC-0056 refines SG-SPEC-0040 only as historical lineage, not as an active child for continued
+    splitting.
+  active_successor_boundary:
+  - SG-SPEC-0040 owns active first-persistence and noncanonical-consumption semantics for dedupe_key,
+    preempt_direct_update, and proposal_direct_handoff.
+  - SG-SPEC-0039 consumes SG-SPEC-0040 as the active child for the noncanonical consumption boundary.
+  inactive_rules:
+  - Graph-health inspection must exclude SG-SPEC-0056 from the active SG-SPEC-0039 subtree while superseded_by
+    points to SG-SPEC-0040.
+  - Future refinement should target SG-SPEC-0040 for this concern unless a later reviewed supersession
+    changes lineage again.
+  boundaries:
+  - SG-SPEC-0056 no longer defines an active node_role, composed_function, or downstream contract.
+  - This node exists only to preserve inspectable lineage for the superseded consumer-chain split.

@@ -4,6 +4,7 @@ See [CONSTITUTION.md](/Users/egor/Development/GitHub/0AL/SpecGraph/CONSTITUTION.
 
 ## Repository rules
 - Merge in main branch ONLY  via Pull (Merge) Request on GitHub
+- Deliver feature changes through a dedicated branch and Pull Request; do not land feature work directly on `main`.
 - Work on one spec node at a time.
 - Refine specifications, not runtime code.
 - Preserve stable spec IDs and terminology.
