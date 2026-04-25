@@ -2,9 +2,9 @@ id: SG-SPEC-0057
 title: SpecGraph - Authority Class Semantic Boundary
 kind: spec
 created_at: '2026-04-25T11:10:14Z'
-updated_at: '2026-04-25T14:15:46Z'
+updated_at: '2026-04-25T14:44:26Z'
 status: linked
-maturity: 0.32
+maturity: 0.52
 depends_on:
 - SG-SPEC-0019
 - SG-SPEC-0024
@@ -35,8 +35,9 @@ acceptance_evidence:
     or trust-scoring algorithms
   evidence: specification.scope.in limits this child to authority-class meaning across governed subjects,
     specification.scope.out excludes provenance-field mechanics, lifecycle, trust scoring, storage, and
-    implementation choices, and specification.boundary_policy states that authority_class is an origin
-    label rather than a review or correctness surrogate.
+    implementation choices, specification.terminology.edge_assertion_subject names the authority-bearing
+    meaning of an explicit canonical edge, and specification.boundary_policy states that authority_class
+    is an origin label rather than a review or correctness surrogate.
 - criterion: Defines the semantic contract for the four root classes `authored`, `imported`, `inferred`,
     and `distilled`, including what each class asserts about origin and what it does not assert
   evidence: specification.terminology defines authority_class together with authored_subject, imported_subject,
@@ -84,6 +85,8 @@ specification:
       signals by machine reasoning and then explicitly admitted into canonical truth.
     distilled_subject: A governed subject whose current expression is a governed compression or summary
       of other governed or imported material.
+    edge_assertion_subject: The governed relation assertion embodied by one explicit canonical edge instance,
+      treated as an authority-bearing subject distinct from the authority classes of its endpoint nodes.
     authority_restatement: An explicit canonical revision or supersession that changes the authority_class
       attached to the current governed expression.
   authority_class_contract:
@@ -144,6 +147,17 @@ specification:
     - If a subject is materially rewritten, re-imported, inferred anew, or newly distilled, the resulting
       authority_class must describe that new governed expression rather than the predecessor's class by
       default.
+    edge_boundary_rules:
+    - For an explicit canonical edge, authority_class classifies the origin of the governed relation assertion
+      made by that edge instance, not the origin of either endpoint node.
+    - An explicit canonical edge MAY carry a different authority_class from its source node, target node,
+      or both, without creating a semantic contradiction.
+    - Repointing an explicit canonical edge, changing its edge kind, or materially restating the governed
+      relation assertion produces a new edge expression whose authority_class MUST describe that edge-level
+      canonical act.
+    - Endpoint lineage, node authorship, or graph-analysis heuristics MAY inform an editor, but they MUST
+      NOT mechanically assign authority_class to an explicit canonical edge without an explicit canonical
+      act.
     lineage_rules:
     - An in-place revision may preserve or change authority_class, but any resulting class value MUST
       be explicitly recorded through the canonical revision event rather than inferred from downstream
@@ -157,6 +171,8 @@ specification:
   boundary_policy:
   - authority_class answers how the current governed expression entered canonical truth, not whether the
     expression is good, complete, or approved.
+  - For explicit canonical edges, the governed subject is the relation assertion itself; endpoint node
+    provenance does not automatically determine the edge's authority_class.
   - SG-SPEC-0024 governs provenance-envelope fields and their conditional requirements for each authority_class;
     this child governs only class meaning.
   - SG-SPEC-0019 governs how authority-bearing changes are recorded in lineage; this child does not redefine
@@ -182,6 +198,9 @@ specification:
   - id: AUT-003
     statement: Any authority_class change must be introduced by an explicit canonical revision or supersession
       event, not by inferred viewer state or derived projection logic alone.
+  - id: AUT-004
+    statement: For an explicit canonical edge, authority_class must classify the edge's governed relation
+      assertion itself and must not be inherited mechanically from either endpoint node.
   examples:
   - name: Authored revision of an imported requirement
     description: An imported requirement is materially rewritten by a human reviewer into a new governed
@@ -195,3 +214,18 @@ specification:
     description: A tool suggests a new depends_on edge from graph analysis. The suggestion remains derived
       until a canonical explicit edge is created or revised with `authority_class = inferred` and SG-SPEC-0024-compatible
       provenance.
+  - name: Authored edge between imported nodes
+    description: Two requirement nodes may remain `authority_class = imported` from an external tracker,
+      while a reviewer authors a new contradicts edge between them. The edge therefore carries `authority_class
+      = authored` because the governed relation assertion was introduced by a human canonical act, not
+      inherited from either imported endpoint.
+gate_state: none
+proposed_status: null
+proposed_maturity: null
+required_human_action: '-'
+last_worktree_path: ''
+last_branch: ''
+last_gate_decision: approve
+last_gate_note: Approve edge-level authority_class boundary refinement; explicit canonical edge authority
+  now classifies the relation assertion, not endpoint provenance.
+last_gate_at: '2026-04-25T14:44:26.459194+00:00'
