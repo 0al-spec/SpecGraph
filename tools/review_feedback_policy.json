@@ -16,7 +16,8 @@
       "verification",
       "residual_risk"
     ],
-    "minimum_closure_rule": "actionable_review_threads_require_prevention_action_or_accepted_risk",
+    "minimum_closure_rule": "actionable_review_threads_require_prevention_action_value",
+    "accepted_risk_action": "accepted_risk_recorded",
     "thread_reply_expectation": "reply_should_name_fix_and_prevention_path_when_available"
   },
   "root_cause_classes": [

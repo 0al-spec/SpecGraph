@@ -22,8 +22,9 @@ def test_review_feedback_policy_defines_learning_loop_contract() -> None:
     contract = policy["learning_loop_contract"]
     assert isinstance(contract, dict)
     assert contract["minimum_closure_rule"] == (
-        "actionable_review_threads_require_prevention_action_or_accepted_risk"
+        "actionable_review_threads_require_prevention_action_value"
     )
+    assert contract["accepted_risk_action"] == "accepted_risk_recorded"
     required_fields = set(contract["required_closure_fields"])
     assert {
         "source_thread_url",
@@ -84,6 +85,7 @@ def test_agents_requires_review_feedback_root_cause_loop() -> None:
     agents = (REPO_ROOT / "AGENTS.md").read_text(encoding="utf-8")
 
     assert "tools/review_feedback_policy.json" in agents
+    assert "](/Users/" not in agents
     assert "classify the root cause" in agents
     assert "prevention action" in agents
     assert "accepted risk" in agents

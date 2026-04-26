@@ -118,8 +118,9 @@ Initial prevention action types:
 - `documentation_rule_added`
 - `accepted_risk_recorded`
 
-At least one prevention action should be attached unless the team explicitly
-records an accepted risk.
+At least one `prevention_action` value should be attached. If prevention is
+intentionally deferred, use `accepted_risk_recorded` as the prevention-action
+value and record the residual risk.
 
 ## Boundaries
 
@@ -162,7 +163,7 @@ Phase 3:
 - Review-thread fixes must no longer be treated as symptom patches only.
 - The repo has a stable policy vocabulary for root causes and prevention
   actions.
-- Review closure requires either a prevention action or an explicit accepted
-  risk.
+- Review closure requires a prevention action value; accepted risk is recorded
+  explicitly through the `accepted_risk_recorded` prevention-action value.
 - Future runtime work can derive review-feedback indexes without redefining the
   process semantics.
