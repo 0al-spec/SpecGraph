@@ -16,7 +16,8 @@ def test_review_feedback_policy_defines_learning_loop_contract() -> None:
     assert policy["artifact_kind"] == "review_feedback_policy"
     assert policy["schema_version"] == 1
     assert policy["repository_layout"] == {
-        "future_index_artifact": "runs/review_feedback_index.json"
+        "records_artifact": "tools/review_feedback_records.json",
+        "future_index_artifact": "runs/review_feedback_index.json",
     }
 
     contract = policy["learning_loop_contract"]
@@ -79,6 +80,22 @@ def test_review_feedback_policy_has_next_gap_for_each_status() -> None:
         "artifact_contract_validation_gap",
         "scope_isolation_gap",
     }
+
+
+def test_review_feedback_records_file_matches_policy_vocabularies() -> None:
+    policy = load_review_feedback_policy()
+    records_path = REPO_ROOT / str(policy["repository_layout"]["records_artifact"])
+    records = json.loads(records_path.read_text(encoding="utf-8"))
+
+    assert isinstance(records, list)
+    assert records
+    root_causes = set(policy["root_cause_classes"])
+    prevention_actions = set(policy["prevention_actions"])
+    verification_kinds = set(policy["verification_kinds"])
+    for record in records:
+        assert record["root_cause_class"] in root_causes
+        assert record["prevention_action"] in prevention_actions
+        assert set(record["verification"]) <= verification_kinds
 
 
 def test_agents_requires_review_feedback_root_cause_loop() -> None:

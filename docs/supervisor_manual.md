@@ -113,6 +113,8 @@ particular task.
   `--build-specpm-import-preview`
 - build a reviewable `SpecPM` delivery workflow from local materialized bundles:
   `--build-specpm-delivery-workflow`
+- build a review-feedback learning-loop index from tracked records:
+  `--build-review-feedback-index`
 - build a derived `SpecPM` feedback index from current delivery state and
   downstream checkout observations:
   `--build-specpm-feedback-index`

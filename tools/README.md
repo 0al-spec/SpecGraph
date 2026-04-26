@@ -184,6 +184,10 @@ Supervisor modes:
 - `--build-implementation-work-index`: build
   `runs/implementation_work_index.json` from the latest implementation delta
   snapshot, turning delta entries into bounded reviewable work items.
+- `--build-review-feedback-index`: build `runs/review_feedback_index.json`
+  from tracked `tools/review_feedback_records.json`, turning handled review
+  comments into grouped root-cause, prevention-action, verification, and
+  next-gap process evidence.
 - `--build-vocabulary-index`: build `runs/vocabulary_index.json` from
   `tools/specgraph_vocabulary.json`, flattening canonical terms, aliases,
   deprecated aliases, families, and contexts into one shared machine-readable
@@ -248,6 +252,9 @@ Key derived artifacts:
 - `runs/implementation_work_index.json`: bounded Implementation Work items
   generated from the latest delta snapshot, grouped by readiness, next gap, and
   viewer filters for review before any coding-agent handoff
+- `runs/review_feedback_index.json`: derived review-feedback learning-loop
+  surface built from tracked records, grouped by status, root cause, prevention
+  action, verification kind, and next gap
 - `runs/pre_spec_semantics_index.json`: derived pre-spec semantic index linking
   tracked intent-layer artifacts to downstream proposal-lane nodes and
   canonical specs, with queryability and provenance findings
@@ -368,8 +375,9 @@ Key derived artifacts:
   without automatic threshold authority
 - `tools/review_feedback_policy.json`: declarative contract for treating
   actionable PR review comments as process evidence, including root-cause
-  vocabulary, prevention actions, verification kinds, and future
-  `runs/review_feedback_index.json` semantics
+  vocabulary, prevention actions, verification kinds, tracked
+  `tools/review_feedback_records.json`, and `runs/review_feedback_index.json`
+  semantics
 - `tools/metric_signal_policy.json`: declarative thresholds, score mappings,
   metric identities, and proposal-first threshold semantics for the derived
   metric signal layer

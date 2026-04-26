@@ -39,6 +39,7 @@ Derived artifacts:
 - exploration preview: `runs/exploration_preview.json`
 - implementation delta snapshot: `runs/implementation_delta_snapshot.json`
 - implementation work index: `runs/implementation_work_index.json`
+- review feedback index: `runs/review_feedback_index.json`
 - proposal-lane overlay: `runs/proposal_lane_overlay.json`
 - graph health overlay: `runs/graph_health_overlay.json`
 - external consumer index: `runs/external_consumer_index.json`
@@ -110,6 +111,7 @@ SPECGRAPH_VOCABULARY_RELATIVE_PATH = "tools/specgraph_vocabulary.json"
 PRE_SPEC_SEMANTICS_POLICY_RELATIVE_PATH = "tools/pre_spec_semantics_policy.json"
 EXPLORATION_PREVIEW_POLICY_RELATIVE_PATH = "tools/exploration_preview_policy.json"
 IMPLEMENTATION_DELTA_POLICY_RELATIVE_PATH = "tools/implementation_delta_policy.json"
+REVIEW_FEEDBACK_POLICY_RELATIVE_PATH = "tools/review_feedback_policy.json"
 VALIDATION_FINDINGS_POLICY_RELATIVE_PATH = "tools/validation_findings_policy.json"
 SAFE_REPAIR_POLICY_RELATIVE_PATH = "tools/safe_repair_policy.json"
 EVALUATOR_LOOP_POLICY_RELATIVE_PATH = "tools/evaluator_loop_policy.json"
@@ -173,6 +175,14 @@ def exploration_preview_policy_path() -> Path:
 
 def implementation_delta_policy_path() -> Path:
     return TOOLS_DIR / "implementation_delta_policy.json"
+
+
+def review_feedback_policy_path() -> Path:
+    return TOOLS_DIR / "review_feedback_policy.json"
+
+
+def review_feedback_records_path() -> Path:
+    return ROOT / REVIEW_FEEDBACK_RECORDS_RELATIVE_PATH
 
 
 def validation_findings_policy_path() -> Path:
@@ -582,6 +592,46 @@ def load_implementation_delta_policy() -> tuple[dict[str, Any], str]:
 
 
 IMPLEMENTATION_DELTA_POLICY, IMPLEMENTATION_DELTA_POLICY_SHA256 = load_implementation_delta_policy()
+
+
+def load_review_feedback_policy() -> tuple[dict[str, Any], str]:
+    path = review_feedback_policy_path()
+    try:
+        raw_text = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise RuntimeError(
+            f"failed to read review feedback policy artifact: {path.as_posix()} ({exc})"
+        ) from exc
+    try:
+        payload = json.loads(raw_text)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(
+            f"malformed review feedback policy artifact: {path.as_posix()} ({exc})"
+        ) from exc
+    if not isinstance(payload, dict):
+        raise RuntimeError(
+            "malformed review feedback policy artifact: "
+            f"{path.as_posix()} must contain a JSON object"
+        )
+    required_sections = (
+        "repository_layout",
+        "learning_loop_contract",
+        "root_cause_classes",
+        "prevention_actions",
+        "verification_kinds",
+        "review_feedback_index_contract",
+        "next_gap_defaults",
+    )
+    missing = [section for section in required_sections if section not in payload]
+    if missing:
+        raise RuntimeError(
+            "malformed review feedback policy artifact: missing top-level section(s): "
+            + ", ".join(missing)
+        )
+    return payload, hashlib.sha256(raw_text.encode("utf-8")).hexdigest()
+
+
+REVIEW_FEEDBACK_POLICY, REVIEW_FEEDBACK_POLICY_SHA256 = load_review_feedback_policy()
 
 
 def load_validation_findings_policy() -> tuple[dict[str, Any], str]:
@@ -1565,6 +1615,15 @@ def implementation_delta_policy_lookup(policy_path: str) -> Any:
     return copy.deepcopy(current)
 
 
+def review_feedback_policy_lookup(policy_path: str) -> Any:
+    current: Any = REVIEW_FEEDBACK_POLICY
+    for part in policy_path.split("."):
+        if not isinstance(current, dict) or part not in current:
+            raise KeyError(policy_path)
+        current = current[part]
+    return copy.deepcopy(current)
+
+
 def evidence_plane_policy_lookup(policy_path: str) -> Any:
     current: Any = EVIDENCE_PLANE_POLICY
     for part in policy_path.split("."):
@@ -1748,6 +1807,14 @@ def implementation_delta_policy_reference() -> dict[str, Any]:
         "artifact_path": IMPLEMENTATION_DELTA_POLICY_RELATIVE_PATH,
         "artifact_sha256": IMPLEMENTATION_DELTA_POLICY_SHA256,
         "version": IMPLEMENTATION_DELTA_POLICY.get("version"),
+    }
+
+
+def review_feedback_policy_reference() -> dict[str, Any]:
+    return {
+        "artifact_path": REVIEW_FEEDBACK_POLICY_RELATIVE_PATH,
+        "artifact_sha256": REVIEW_FEEDBACK_POLICY_SHA256,
+        "version": REVIEW_FEEDBACK_POLICY.get("version"),
     }
 
 
@@ -2054,6 +2121,47 @@ IMPLEMENTATION_WORK_INDEX_STATUS_VALUES = list(
 )
 IMPLEMENTATION_WORK_INDEX_NAMED_FILTERS = list(
     implementation_delta_policy_lookup("work_index_contract.named_filters")
+)
+REVIEW_FEEDBACK_RECORDS_RELATIVE_PATH = str(
+    review_feedback_policy_lookup("repository_layout.records_artifact")
+)
+REVIEW_FEEDBACK_INDEX_FILENAME = Path(
+    str(review_feedback_policy_lookup("repository_layout.future_index_artifact"))
+).name
+REVIEW_FEEDBACK_INDEX_ARTIFACT_KIND = str(
+    review_feedback_policy_lookup("review_feedback_index_contract.artifact_kind")
+)
+REVIEW_FEEDBACK_INDEX_SCHEMA_VERSION = int(
+    review_feedback_policy_lookup("review_feedback_index_contract.schema_version")
+)
+REVIEW_FEEDBACK_INDEX_STATUS_VALUES = list(
+    review_feedback_policy_lookup("review_feedback_index_contract.status_values")
+)
+REVIEW_FEEDBACK_INDEX_NAMED_FILTERS = list(
+    review_feedback_policy_lookup("review_feedback_index_contract.named_filters")
+)
+REVIEW_FEEDBACK_ROOT_CAUSE_CLASSES = {
+    str(item).strip()
+    for item in review_feedback_policy_lookup("root_cause_classes")
+    if str(item).strip()
+}
+REVIEW_FEEDBACK_PREVENTION_ACTIONS = {
+    str(item).strip()
+    for item in review_feedback_policy_lookup("prevention_actions")
+    if str(item).strip()
+}
+REVIEW_FEEDBACK_VERIFICATION_KINDS = {
+    str(item).strip()
+    for item in review_feedback_policy_lookup("verification_kinds")
+    if str(item).strip()
+}
+REVIEW_FEEDBACK_REQUIRED_CLOSURE_FIELDS = [
+    str(item).strip()
+    for item in review_feedback_policy_lookup("learning_loop_contract.required_closure_fields")
+    if str(item).strip()
+]
+REVIEW_FEEDBACK_ACCEPTED_RISK_ACTION = str(
+    review_feedback_policy_lookup("learning_loop_contract.accepted_risk_action")
 )
 EVIDENCE_PLANE_INDEX_FILENAME = Path(
     str(evidence_plane_policy_lookup("repository_layout.index_artifact"))
@@ -8073,6 +8181,10 @@ def implementation_work_index_path() -> Path:
     return RUNS_DIR / IMPLEMENTATION_WORK_INDEX_FILENAME
 
 
+def review_feedback_index_path() -> Path:
+    return RUNS_DIR / REVIEW_FEEDBACK_INDEX_FILENAME
+
+
 def vocabulary_index_path() -> Path:
     return RUNS_DIR / "vocabulary_index.json"
 
@@ -11700,6 +11812,219 @@ def build_implementation_work_index(
 def write_implementation_work_index(index: dict[str, Any]) -> Path:
     RUNS_DIR.mkdir(parents=True, exist_ok=True)
     path = implementation_work_index_path()
+    with artifact_lock(path):
+        atomic_write_json(path, index)
+    return path
+
+
+def load_review_feedback_records() -> list[dict[str, Any]]:
+    records, error = load_json_list_report(
+        review_feedback_records_path(),
+        artifact_kind="review feedback records",
+    )
+    if records is None:
+        raise RuntimeError(error or "review feedback records are missing")
+    return records
+
+
+def review_feedback_next_gap(status: str) -> str:
+    normalized = status.strip()
+    try:
+        value = review_feedback_policy_lookup(f"next_gap_defaults.{normalized}")
+    except KeyError:
+        return "repair_review_feedback_record"
+    return str(value).strip() or "repair_review_feedback_record"
+
+
+def normalize_review_feedback_verification(value: object) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    return sorted({str(item).strip() for item in value if str(item).strip()})
+
+
+def derive_review_feedback_status(record: dict[str, Any]) -> tuple[str, list[str]]:
+    findings: list[str] = []
+    missing_fields = [
+        field for field in REVIEW_FEEDBACK_REQUIRED_CLOSURE_FIELDS if field not in record
+    ]
+    if missing_fields:
+        findings.extend(f"missing_required_field::{field}" for field in missing_fields)
+
+    for field in REVIEW_FEEDBACK_REQUIRED_CLOSURE_FIELDS:
+        if field in {"residual_risk", "verification"}:
+            continue
+        if field in record and not str(record.get(field, "")).strip():
+            findings.append(f"blank_required_field::{field}")
+
+    root_cause_class = str(record.get("root_cause_class", "")).strip()
+    prevention_action = str(record.get("prevention_action", "")).strip()
+    verification = normalize_review_feedback_verification(record.get("verification"))
+    residual_risk = str(record.get("residual_risk", "")).strip()
+    recorded_at = str(record.get("recorded_at", "")).strip()
+
+    if recorded_at and parse_iso_datetime(recorded_at) is None:
+        findings.append("invalid_recorded_at")
+    if root_cause_class and root_cause_class not in REVIEW_FEEDBACK_ROOT_CAUSE_CLASSES:
+        findings.append(f"unknown_root_cause_class::{root_cause_class}")
+    if prevention_action and prevention_action not in REVIEW_FEEDBACK_PREVENTION_ACTIONS:
+        findings.append(f"unknown_prevention_action::{prevention_action}")
+    invalid_verification = [
+        item for item in verification if item not in REVIEW_FEEDBACK_VERIFICATION_KINDS
+    ]
+    findings.extend(f"unknown_verification_kind::{item}" for item in invalid_verification)
+    if record.get("verification") is not None and not isinstance(record.get("verification"), list):
+        findings.append("verification_must_be_list")
+    if prevention_action == REVIEW_FEEDBACK_ACCEPTED_RISK_ACTION and not residual_risk:
+        findings.append("accepted_risk_requires_residual_risk")
+
+    if not root_cause_class:
+        return "missing_root_cause", sorted(findings)
+    if not prevention_action:
+        return "missing_prevention_action", sorted(findings)
+    if not verification:
+        return "missing_verification", sorted(findings)
+    if findings:
+        return "invalid_feedback_record", sorted(findings)
+    if prevention_action == REVIEW_FEEDBACK_ACCEPTED_RISK_ACTION:
+        return "accepted_risk_recorded", []
+    return "prevention_recorded", []
+
+
+def review_feedback_entry_id(record: dict[str, Any], index: int) -> str:
+    raw_id = str(record.get("feedback_id", "")).strip()
+    if raw_id:
+        return raw_id
+    thread_url = str(record.get("source_thread_url", "")).strip()
+    if thread_url:
+        digest = hashlib.sha256(thread_url.encode("utf-8")).hexdigest()[:12]
+        return f"review_feedback::{digest}"
+    return f"review_feedback::record_{index + 1}"
+
+
+def build_review_feedback_index(
+    records: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    if records is None:
+        records = load_review_feedback_records()
+
+    entries: list[dict[str, Any]] = []
+    status_groups: dict[str, list[str]] = {}
+    root_cause_groups: dict[str, list[str]] = {}
+    prevention_groups: dict[str, list[str]] = {}
+    verification_groups: dict[str, list[str]] = {}
+    next_gap_groups: dict[str, list[str]] = {}
+    backlog_next_gap_groups: dict[str, list[str]] = {}
+    named_filters: dict[str, list[str]] = {name: [] for name in REVIEW_FEEDBACK_INDEX_NAMED_FILTERS}
+    backlog_items: list[dict[str, Any]] = []
+
+    for index, record in enumerate(records):
+        feedback_id = review_feedback_entry_id(record, index)
+        root_cause_class = str(record.get("root_cause_class", "")).strip()
+        prevention_action = str(record.get("prevention_action", "")).strip()
+        verification = normalize_review_feedback_verification(record.get("verification"))
+        status, findings = derive_review_feedback_status(record)
+        next_gap = review_feedback_next_gap(status)
+
+        entry = {
+            "feedback_id": feedback_id,
+            "source_pr": record.get("source_pr"),
+            "source_thread_url": str(record.get("source_thread_url", "")).strip(),
+            "reviewer": str(record.get("reviewer", "")).strip(),
+            "review_comment_summary": str(record.get("review_comment_summary", "")).strip(),
+            "fix_summary": str(record.get("fix_summary", "")).strip(),
+            "root_cause_class": root_cause_class,
+            "prevention_action": prevention_action,
+            "verification": verification,
+            "residual_risk": str(record.get("residual_risk", "")).strip(),
+            "resolved_commit": str(record.get("resolved_commit", "")).strip(),
+            "recorded_at": str(record.get("recorded_at", "")).strip(),
+            "status": status,
+            "next_gap": next_gap,
+            "findings": findings,
+        }
+        entries.append(entry)
+
+        status_groups.setdefault(status, []).append(feedback_id)
+        if root_cause_class:
+            root_cause_groups.setdefault(root_cause_class, []).append(feedback_id)
+            if root_cause_class in named_filters:
+                named_filters[root_cause_class].append(feedback_id)
+        if prevention_action:
+            prevention_groups.setdefault(prevention_action, []).append(feedback_id)
+        for verification_kind in verification:
+            verification_groups.setdefault(verification_kind, []).append(feedback_id)
+        next_gap_groups.setdefault(next_gap, []).append(feedback_id)
+        if status in named_filters:
+            named_filters[status].append(feedback_id)
+        if status != "prevention_recorded":
+            backlog_items.append(
+                {
+                    "feedback_id": feedback_id,
+                    "status": status,
+                    "root_cause_class": root_cause_class,
+                    "prevention_action": prevention_action,
+                    "next_gap": next_gap,
+                }
+            )
+            backlog_next_gap_groups.setdefault(next_gap, []).append(feedback_id)
+
+    for bucket in (
+        status_groups,
+        root_cause_groups,
+        prevention_groups,
+        verification_groups,
+        next_gap_groups,
+        backlog_next_gap_groups,
+        named_filters,
+    ):
+        for key in list(bucket):
+            bucket[key] = sorted(set(bucket[key]))
+
+    return {
+        "artifact_kind": REVIEW_FEEDBACK_INDEX_ARTIFACT_KIND,
+        "schema_version": REVIEW_FEEDBACK_INDEX_SCHEMA_VERSION,
+        "generated_at": utc_now_iso(),
+        "policy_reference": review_feedback_policy_reference(),
+        "source_artifacts": {
+            "review_feedback_records": {
+                "artifact_path": REVIEW_FEEDBACK_RECORDS_RELATIVE_PATH,
+                "record_count": len(records),
+            }
+        },
+        "semantic_boundary": str(
+            review_feedback_policy_lookup("learning_loop_contract.semantic_boundary")
+        ),
+        "entry_count": len(entries),
+        "entries": entries,
+        "viewer_projection": {
+            "status": {key: sorted(value) for key, value in sorted(status_groups.items())},
+            "root_cause_class": {
+                key: sorted(value) for key, value in sorted(root_cause_groups.items())
+            },
+            "prevention_action": {
+                key: sorted(value) for key, value in sorted(prevention_groups.items())
+            },
+            "verification_kind": {
+                key: sorted(value) for key, value in sorted(verification_groups.items())
+            },
+            "next_gap": {key: sorted(value) for key, value in sorted(next_gap_groups.items())},
+            "named_filters": {key: sorted(value) for key, value in sorted(named_filters.items())},
+        },
+        "review_feedback_backlog": {
+            "entry_count": len(backlog_items),
+            "items": backlog_items,
+            "grouped_by_next_gap": {
+                key: sorted(value) for key, value in sorted(backlog_next_gap_groups.items())
+            },
+        },
+        "canonical_mutations_allowed": False,
+        "runtime_code_mutations_allowed": False,
+    }
+
+
+def write_review_feedback_index(index: dict[str, Any]) -> Path:
+    RUNS_DIR.mkdir(parents=True, exist_ok=True)
+    path = review_feedback_index_path()
     with artifact_lock(path):
         atomic_write_json(path, index)
     return path
@@ -26145,6 +26470,7 @@ def main(
     implementation_target_spec_ids: str | tuple[str, ...] | list[str] | None = None,
     implementation_operator_intent: str | None = None,
     build_implementation_work_index_mode: bool = False,
+    build_review_feedback_index_mode: bool = False,
     build_vocabulary_index_mode: bool = False,
     build_vocabulary_drift_report_mode: bool = False,
     build_pre_spec_semantics_index_mode: bool = False,
@@ -26211,6 +26537,7 @@ def main(
         "--build-exploration-preview": build_exploration_preview_mode,
         "--build-implementation-delta-snapshot": build_implementation_delta_snapshot_mode,
         "--build-implementation-work-index": build_implementation_work_index_mode,
+        "--build-review-feedback-index": build_review_feedback_index_mode,
         "--build-vocabulary-index": build_vocabulary_index_mode,
         "--build-vocabulary-drift-report": build_vocabulary_drift_report_mode,
         "--build-pre-spec-semantics-index": build_pre_spec_semantics_index_mode,
@@ -26522,6 +26849,45 @@ def main(
             print(str(exc), file=sys.stderr)
             return 1
         write_implementation_work_index(index)
+        print(json.dumps(index, ensure_ascii=False, indent=2))
+        return 0
+
+    if build_review_feedback_index_mode:
+        if any(
+            (
+                dry_run,
+                auto_approve,
+                loop,
+                resolve_gate,
+                decision,
+                note,
+                target_spec,
+                split_proposal,
+                apply_split_proposal,
+                operator_note,
+                mutation_budget,
+                run_authority,
+                execution_profile,
+                child_model,
+                child_timeout_seconds,
+                verbose,
+                list_stale_runtime,
+                clean_stale_runtime,
+                observe_graph_health_mode,
+                operator_request_packet_path,
+            )
+        ):
+            print(
+                "--build-review-feedback-index must be used as a standalone command",
+                file=sys.stderr,
+            )
+            return 1
+        try:
+            index = build_review_feedback_index()
+        except RuntimeError as exc:
+            print(str(exc), file=sys.stderr)
+            return 1
+        write_review_feedback_index(index)
         print(json.dumps(index, ensure_ascii=False, indent=2))
         return 0
 
@@ -28667,6 +29033,14 @@ if __name__ == "__main__":
         ),
     )
     parser.add_argument(
+        "--build-review-feedback-index",
+        action="store_true",
+        help=(
+            "Build a derived review feedback learning-loop index from tracked review "
+            "feedback records without reading GitHub"
+        ),
+    )
+    parser.add_argument(
         "--build-vocabulary-index",
         action="store_true",
         help=(
@@ -29047,6 +29421,7 @@ if __name__ == "__main__":
             implementation_target_spec_ids=args.target_spec_ids,
             implementation_operator_intent=args.operator_intent,
             build_implementation_work_index_mode=args.build_implementation_work_index,
+            build_review_feedback_index_mode=args.build_review_feedback_index,
             build_vocabulary_index_mode=args.build_vocabulary_index,
             build_vocabulary_drift_report_mode=args.build_vocabulary_drift_report,
             build_pre_spec_semantics_index_mode=args.build_pre_spec_semantics_index,

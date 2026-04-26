@@ -14112,6 +14112,25 @@ def write_implementation_source_artifacts(repo_fixture: Path) -> None:
     )
 
 
+def sample_review_feedback_record(**overrides: object) -> dict[str, object]:
+    record: dict[str, object] = {
+        "feedback_id": "pr-999-sample-feedback",
+        "source_pr": 999,
+        "source_thread_url": "https://github.com/0al-spec/SpecGraph/pull/999#discussion_r1",
+        "reviewer": "review-bot",
+        "review_comment_summary": "A malformed artifact path could hide a contract gap.",
+        "fix_summary": "Added explicit contract validation before derived artifact access.",
+        "root_cause_class": "artifact_contract_validation_gap",
+        "prevention_action": "regression_test_added",
+        "verification": ["targeted_test", "full_test_suite"],
+        "residual_risk": "",
+        "resolved_commit": "abc123",
+        "recorded_at": "2026-04-26T00:00:00Z",
+    }
+    record.update(overrides)
+    return record
+
+
 def test_build_implementation_delta_snapshot_uses_explicit_target_scope(
     supervisor_module: object,
     repo_fixture: Path,
@@ -14345,6 +14364,109 @@ def test_main_rejects_combined_implementation_delta_and_target_refinement(
     assert "--build-implementation-delta-snapshot must be used as a standalone command" in (
         captured.err
     )
+
+
+def test_build_review_feedback_index_groups_prevention_records(
+    supervisor_module: object,
+) -> None:
+    index = supervisor_module.build_review_feedback_index(
+        [
+            sample_review_feedback_record(feedback_id="review-feedback-1"),
+            sample_review_feedback_record(
+                feedback_id="review-feedback-2",
+                root_cause_class="scope_isolation_gap",
+            ),
+        ]
+    )
+
+    assert index["artifact_kind"] == supervisor_module.REVIEW_FEEDBACK_INDEX_ARTIFACT_KIND
+    assert index["entry_count"] == 2
+    assert index["viewer_projection"]["status"]["prevention_recorded"] == [
+        "review-feedback-1",
+        "review-feedback-2",
+    ]
+    assert index["viewer_projection"]["root_cause_class"]["scope_isolation_gap"] == [
+        "review-feedback-2"
+    ]
+    assert index["viewer_projection"]["named_filters"]["artifact_contract_validation_gap"] == [
+        "review-feedback-1"
+    ]
+    assert index["review_feedback_backlog"]["entry_count"] == 0
+    assert index["canonical_mutations_allowed"] is False
+    assert index["runtime_code_mutations_allowed"] is False
+
+
+def test_build_review_feedback_index_flags_missing_prevention_action(
+    supervisor_module: object,
+) -> None:
+    record = sample_review_feedback_record(feedback_id="review-feedback-missing-action")
+    record.pop("prevention_action")
+
+    index = supervisor_module.build_review_feedback_index([record])
+
+    entry = index["entries"][0]
+    assert entry["status"] == "missing_prevention_action"
+    assert entry["next_gap"] == "attach_review_feedback_prevention_action"
+    assert "missing_required_field::prevention_action" in entry["findings"]
+    assert index["review_feedback_backlog"]["entry_count"] == 1
+
+
+def test_build_review_feedback_index_requires_residual_risk_for_accepted_risk(
+    supervisor_module: object,
+) -> None:
+    index = supervisor_module.build_review_feedback_index(
+        [
+            sample_review_feedback_record(
+                feedback_id="review-feedback-accepted-risk",
+                root_cause_class="accepted_design_tradeoff",
+                prevention_action="accepted_risk_recorded",
+                verification=["accepted_risk_review"],
+                residual_risk="",
+            )
+        ]
+    )
+
+    entry = index["entries"][0]
+    assert entry["status"] == "invalid_feedback_record"
+    assert "accepted_risk_requires_residual_risk" in entry["findings"]
+
+
+def test_main_builds_review_feedback_index_as_standalone_command(
+    supervisor_module: object,
+    repo_fixture: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    records_path = repo_fixture / "tools" / "review_feedback_records.json"
+    records_path.parent.mkdir(parents=True, exist_ok=True)
+    records_path.write_text(
+        json.dumps([sample_review_feedback_record(feedback_id="review-feedback-main")]),
+        encoding="utf-8",
+    )
+
+    exit_code = supervisor_module.main(build_review_feedback_index_mode=True)
+
+    assert exit_code == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["artifact_kind"] == supervisor_module.REVIEW_FEEDBACK_INDEX_ARTIFACT_KIND
+    persisted = json.loads(
+        (repo_fixture / "runs" / "review_feedback_index.json").read_text(encoding="utf-8")
+    )
+    assert persisted["entry_count"] == 1
+    assert persisted["entries"][0]["feedback_id"] == "review-feedback-main"
+
+
+def test_main_rejects_combined_review_feedback_index_and_target_refinement(
+    supervisor_module: object,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    exit_code = supervisor_module.main(
+        build_review_feedback_index_mode=True,
+        target_spec="SG-SPEC-0001",
+    )
+
+    assert exit_code == 1
+    captured = capsys.readouterr()
+    assert "--build-review-feedback-index must be used as a standalone command" in captured.err
 
 
 def test_build_intent_layer_overlay_flags_cross_layer_masquerade(
