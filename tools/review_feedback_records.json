@@ -142,5 +142,41 @@
     "residual_risk": "",
     "resolved_commit": "ac141909cc473d3532a608ce46617a095314e25c",
     "recorded_at": "2026-04-26T12:52:00Z"
+  },
+  {
+    "feedback_id": "pr-151-accepted-risk-urgency-filter",
+    "source_pr": 151,
+    "source_thread_url": "https://github.com/0al-spec/SpecGraph/pull/151#discussion_r3143979052",
+    "reviewer": "chatgpt-codex-connector",
+    "review_comment_summary": "Accepted-risk review-feedback follow-ups were visible as review_* next gaps and therefore became immediate ready_for_review, high-priority backlog items.",
+    "fix_summary": "Special-cased accepted_risk_recorded review-feedback follow-ups so they remain visible as info-priority items without entering the urgent ready_for_review filter.",
+    "root_cause_class": "policy_runtime_drift",
+    "prevention_action": "regression_test_added",
+    "verification": [
+      "targeted_test",
+      "full_test_suite",
+      "lint_or_format_check"
+    ],
+    "residual_risk": "",
+    "resolved_commit": "ac9ef419c3d811b8f761eea0c612c10b00ecf517",
+    "recorded_at": "2026-04-26T19:45:00Z"
+  },
+  {
+    "feedback_id": "pr-151-dashboard-filter-key-mismatch",
+    "source_pr": 151,
+    "source_thread_url": "https://github.com/0al-spec/SpecGraph/pull/151#discussion_r3144033403",
+    "reviewer": "copilot-pull-request-reviewer",
+    "review_comment_summary": "Dashboard review-feedback named filters used keys that did not match the backlog projection filter names, breaking dashboard-to-backlog drill-down expectations.",
+    "fix_summary": "Aligned dashboard named filter keys with backlog projection keys: review_feedback_invalid and review_feedback_accepted_risk.",
+    "root_cause_class": "viewer_contract_gap",
+    "prevention_action": "regression_test_added",
+    "verification": [
+      "targeted_test",
+      "full_test_suite",
+      "lint_or_format_check"
+    ],
+    "residual_risk": "",
+    "resolved_commit": "ac9ef419c3d811b8f761eea0c612c10b00ecf517",
+    "recorded_at": "2026-04-26T19:46:00Z"
   }
 ]
