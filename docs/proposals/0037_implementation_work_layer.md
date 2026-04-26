@@ -312,6 +312,14 @@ Phase 3:
 - Generate bounded implementation work items from the delta snapshot.
 - Feed headline counts into dashboard/backlog projection.
 
+Runtime realization note:
+
+- `implementation_work_index.implementation_backlog.items[]` is the normalized
+  row source used by `graph_backlog_projection`.
+- `graph_dashboard` surfaces Implementation Work counts in the implementation
+  section and headline cards, but does not choose a target scope or create work
+  items on its own.
+
 Phase 4:
 
 - Add ContextBuilder viewer support for implementation delta and work item

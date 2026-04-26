@@ -254,7 +254,9 @@ Key derived artifacts:
   runtime code mutation
 - `runs/implementation_work_index.json`: bounded Implementation Work items
   generated from the latest delta snapshot, grouped by readiness, next gap, and
-  viewer filters for review before any coding-agent handoff
+  viewer filters for review before any coding-agent handoff; its
+  `implementation_backlog.items[]` rows also feed the graph backlog/dashboard
+  surfaces
 - `runs/review_feedback_index.json`: derived review-feedback learning-loop
   surface built from tracked records, grouped by status, root cause, prevention
   action, verification kind, and next gap
@@ -343,11 +345,12 @@ Key derived artifacts:
 - `runs/graph_dashboard.json`: aggregated dashboard artifact with headline
   cards and section counts for graph, health, retrospective refactor candidates,
   proposals, implementation, evidence, external consumers, external handoffs,
-  metric surfaces, and review-feedback learning-loop health
+  metric surfaces, Implementation Work items, and review-feedback learning-loop
+  health
 - `runs/graph_backlog_projection.json`: normalized work/backlog projection with
   concrete `entries[]` grouped by domain, priority, next gap, source artifact,
-  and named filters, including process-feedback gaps, so viewers do not need
-  `tasks.md` as a work queue
+  and named filters, including Implementation Work and process-feedback gaps,
+  so viewers do not need `tasks.md` as a work queue
 - `tools/spec_trace_registry.json`: explicit strong trace contracts used to
   derive conservative `implementation_state` overlays such as `planned`,
   `implemented`, `verified`, `drifted`, and `blocked`

@@ -13076,6 +13076,32 @@ def test_build_graph_dashboard_aggregates_runtime_surfaces(
     )
     monkeypatch.setattr(
         supervisor_module,
+        "load_current_implementation_work_index",
+        lambda: {
+            "generated_at": "2026-04-19T00:00:07Z",
+            "entry_count": 1,
+            "viewer_projection": {
+                "readiness": {"blocked_by_trace_gap": ["implementation-work-1"]},
+                "next_gap": {"attach_trace_baseline": ["implementation-work-1"]},
+                "named_filters": {"blocked_by_trace_gap": ["implementation-work-1"]},
+            },
+            "implementation_backlog": {
+                "entry_count": 1,
+                "items": [
+                    {
+                        "work_item_id": "implementation-work-1",
+                        "affected_spec_ids": ["SG-SPEC-0001"],
+                        "implementation_reason": "changed_acceptance",
+                        "readiness": "blocked_by_trace_gap",
+                        "blockers": ["trace_baseline_gap"],
+                        "next_gap": "attach_trace_baseline",
+                    }
+                ],
+            },
+        },
+    )
+    monkeypatch.setattr(
+        supervisor_module,
         "build_evidence_plane_index",
         lambda specs: {"generated_at": "2026-04-19T00:00:08Z", "entries": []},
     )
@@ -13331,6 +13357,11 @@ def test_build_graph_dashboard_aggregates_runtime_surfaces(
         "drifted": 1,
         "verified": 1,
     }
+    assert report["sections"]["implementation"]["work_index_entry_count"] == 1
+    assert report["sections"]["implementation"]["work_index_backlog_count"] == 1
+    assert report["sections"]["implementation"]["work_index_readiness_counts"] == {
+        "blocked_by_trace_gap": 1
+    }
     assert report["sections"]["evidence"]["chain_status_counts"] == {
         "chain_complete": 1,
         "observation_backed": 1,
@@ -13364,6 +13395,7 @@ def test_build_graph_dashboard_aggregates_runtime_surfaces(
     assert report["sections"]["metrics"]["below_threshold_metric_ids"] == ["process_observability"]
     by_card_id = {entry["card_id"]: entry for entry in report["headline_cards"]}
     assert by_card_id["metrics_below_threshold"]["value"] == 1
+    assert by_card_id["implementation_work_open"]["value"] == 1
     assert by_card_id["structural_pressure_specs"]["value"] == 1
     assert by_card_id["retrospective_refactor_candidates"]["value"] == 1
     assert by_card_id["stable_bridges_ready"]["value"] == 1
@@ -13373,17 +13405,23 @@ def test_build_graph_dashboard_aggregates_runtime_surfaces(
     assert by_card_id["metrics_feedback_visible"]["value"] == 1
     assert by_card_id["metrics_source_promotion_ready"]["value"] == 1
     assert by_card_id["review_feedback_open"]["value"] == 1
-    assert by_card_id["graph_backlog_open"]["value"] == 4
+    assert by_card_id["graph_backlog_open"]["value"] == 5
     assert report["sections"]["backlog"]["domain_counts"] == {
         "health": 1,
+        "implementation": 1,
         "process_feedback": 1,
         "proposals": 2,
     }
+    assert report["viewer_projection"]["named_filters"]["implementation_work_open"] == 1
+    assert (
+        report["viewer_projection"]["named_filters"]["implementation_work_blocked_by_trace_gap"]
+        == 1
+    )
     assert report["viewer_projection"]["named_filters"]["retrospective_refactor_candidates"] == 1
     assert report["viewer_projection"]["named_filters"]["review_feedback_open"] == 1
     assert report["viewer_projection"]["named_filters"]["review_feedback_invalid"] == 1
     assert report["viewer_projection"]["named_filters"]["review_feedback_accepted_risk"] == 1
-    assert report["viewer_projection"]["named_filters"]["graph_backlog_open"] == 4
+    assert report["viewer_projection"]["named_filters"]["graph_backlog_open"] == 5
 
 
 def test_main_builds_graph_dashboard_as_standalone_command(
@@ -13482,6 +13520,23 @@ def test_build_graph_backlog_projection_from_surfaces_normalizes_reviewable_gaps
                         "implementation_state": "unclaimed",
                         "freshness_status": "not_tracked",
                         "next_gap": "attach_trace_contract",
+                    }
+                ],
+            },
+        },
+        implementation_work_index={
+            "generated_at": "2026-04-24T00:00:03Z",
+            "entry_count": 1,
+            "implementation_backlog": {
+                "entry_count": 1,
+                "items": [
+                    {
+                        "work_item_id": "implementation_work::SG-SPEC-0002::changed_acceptance",
+                        "affected_spec_ids": ["SG-SPEC-0002"],
+                        "implementation_reason": "changed_acceptance",
+                        "readiness": "blocked_by_trace_gap",
+                        "blockers": ["trace_baseline_gap"],
+                        "next_gap": "attach_trace_baseline",
                     }
                 ],
             },
@@ -13607,20 +13662,22 @@ def test_build_graph_backlog_projection_from_surfaces_normalizes_reviewable_gaps
     )
 
     assert report["artifact_kind"] == supervisor_module.GRAPH_BACKLOG_PROJECTION_ARTIFACT_KIND
-    assert report["entry_count"] == 11
+    assert report["entry_count"] == 12
     assert report["summary"]["domain_counts"] == {
         "evidence": 1,
         "external_consumers": 1,
         "health": 1,
-        "implementation": 1,
+        "implementation": 2,
         "metrics": 2,
         "process_feedback": 2,
         "proposals": 2,
         "specpm": 1,
     }
-    assert report["summary"]["priority_counts"]["high"] == 4
+    assert report["summary"]["priority_counts"]["high"] == 5
     assert report["summary"]["priority_counts"]["info"] == 1
+    assert report["summary"]["source_artifact_counts"]["implementation_work_index"] == 1
     assert report["summary"]["next_gap_counts"]["attach_trace_contract"] == 1
+    assert report["summary"]["next_gap_counts"]["attach_trace_baseline"] == 1
     assert report["summary"]["next_gap_counts"]["runtime_realization"] == 1
     assert report["viewer_projection"]["named_filters"]["missing_trace_contract"]
     assert report["viewer_projection"]["named_filters"]["missing_evidence_contract"]
@@ -14449,6 +14506,19 @@ def test_build_implementation_work_index_from_delta_snapshot(
         "implementation_work::SG-SPEC-0001::changed_acceptance"
         in index["viewer_projection"]["named_filters"]["blocked_by_trace_gap"]
     )
+    assert index["implementation_backlog"]["items"] == [
+        {
+            "work_item_id": "implementation_work::SG-SPEC-0001::changed_acceptance",
+            "affected_spec_ids": ["SG-SPEC-0001"],
+            "implementation_reason": "changed_acceptance",
+            "readiness": "blocked_by_trace_gap",
+            "blockers": ["trace_baseline_gap", "evidence_baseline_gap"],
+            "next_gap": "attach_trace_baseline",
+            "required_tests": ["SG-SPEC-0001:acceptance:1:test_required"],
+            "expected_evidence": ["implementation_evidence::SG-SPEC-0001"],
+            "likely_code_refs": [],
+        }
+    ]
     assert index["canonical_mutations_allowed"] is False
     assert index["runtime_code_mutations_allowed"] is False
 

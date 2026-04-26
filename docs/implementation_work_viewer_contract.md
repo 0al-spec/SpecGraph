@@ -35,6 +35,10 @@ Planned read models:
 
 - `runs/implementation_delta_snapshot.json`
 - `runs/implementation_work_index.json`
+- `runs/graph_backlog_projection.json` for normalized backlog rows sourced
+  from `implementation_work_index.implementation_backlog.items[]`
+- `runs/graph_dashboard.json` for headline and section-level Implementation
+  Work counts
 
 These artifacts are derived supervisor outputs. They are rebuildable planning
 surfaces, not canonical spec truth and not runtime code.

@@ -1126,9 +1126,9 @@ python3 tools/supervisor.py --build-graph-backlog-projection
 Builds `runs/graph_backlog_projection.json` as a normalized work/backlog
 projection over existing derived surfaces. This is not a canonical task list:
 it is a viewer-facing read model that turns graph health, proposal runtime,
-trace, evidence, external-consumer, SpecPM, Metrics, threshold-proposal, and
-review-feedback gaps into concrete rows with `domain`, `subject_id`,
-`next_gap`, `priority`, and source artifact links.
+trace, Implementation Work, evidence, external-consumer, SpecPM, Metrics,
+threshold-proposal, and review-feedback gaps into concrete rows with `domain`,
+`subject_id`, `next_gap`, `priority`, and source artifact links.
 
 Use it when the dashboard count needs to become a clickable work queue without
 reintroducing `tasks.md` as the source of truth.
@@ -1429,11 +1429,12 @@ path.
 - `runs/graph_dashboard.json`
   - aggregated dashboard surface with headline cards and numeric section
     summaries for graph, health, proposals, implementation, evidence, external
-    consumers, external handoffs, metrics, and process feedback
+    consumers, external handoffs, metrics, Implementation Work items, and
+    process feedback
 - `runs/graph_backlog_projection.json`
   - normalized derived backlog surface with concrete next-gap rows grouped by
     domain, priority, source artifact, and named viewer filters, including
-    review-feedback gaps
+    Implementation Work and review-feedback gaps
 - `tools/proposal_lane_policy.json`
   - declarative proposal-lane contract for repository presence, authority-state
     mapping, and overlay/query semantics
