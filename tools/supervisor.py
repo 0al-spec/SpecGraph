@@ -11336,6 +11336,7 @@ def build_implementation_delta_snapshot(
     required_test_refs: list[str] = []
     evidence_gap_refs: list[str] = []
     likely_affected_code_refs: list[str] = []
+    likely_affected_code_refs_by_spec: dict[str, list[str]] = {}
     target_diagnostics: list[dict[str, Any]] = []
 
     for spec in target_specs:
@@ -11361,7 +11362,9 @@ def build_implementation_delta_snapshot(
             missing_trace_refs.append(f"trace::{spec.id}")
         if evidence_chain_status in {"unknown", "untracked", "contract_only"}:
             evidence_gap_refs.append(f"evidence::{spec.id}")
-        likely_affected_code_refs.extend(implementation_likely_code_refs_for_spec(spec))
+        spec_likely_code_refs = implementation_likely_code_refs_for_spec(spec)
+        likely_affected_code_refs.extend(spec_likely_code_refs)
+        likely_affected_code_refs_by_spec[spec.id] = spec_likely_code_refs
         target_diagnostics.append(
             {
                 "spec_id": spec.id,
@@ -11380,10 +11383,16 @@ def build_implementation_delta_snapshot(
     elif quality_blockers:
         status = "blocked_by_spec_quality"
         review_state = "blocked"
-    elif trace_summary["status"] != "available":
+    elif trace_summary["status"] != "available" and bool(
+        IMPLEMENTATION_DELTA_POLICY["eligibility_contract"].get("blocks_on_missing_trace_baseline")
+    ):
         status = "blocked_by_trace_gap"
         review_state = "blocked"
-    elif evidence_summary["status"] != "available":
+    elif evidence_summary["status"] != "available" and bool(
+        IMPLEMENTATION_DELTA_POLICY["eligibility_contract"].get(
+            "blocks_on_missing_evidence_baseline"
+        )
+    ):
         status = "blocked_by_evidence_gap"
         review_state = "blocked"
     elif not any(
@@ -11457,6 +11466,10 @@ def build_implementation_delta_snapshot(
             "required_test_refs": sorted(set(required_test_refs)),
             "evidence_gap_refs": sorted(set(evidence_gap_refs)),
             "likely_affected_code_refs": sorted(set(likely_affected_code_refs)),
+            "likely_affected_code_refs_by_spec": {
+                spec_id: sorted(set(refs))
+                for spec_id, refs in sorted(likely_affected_code_refs_by_spec.items())
+            },
             "spec_quality_blocker_ids": quality_blockers,
         },
         "status": status,
@@ -11519,6 +11532,8 @@ def build_implementation_work_index(
 
     delta = snapshot.get("delta", {})
     target = snapshot.get("target", {})
+    if not isinstance(target, dict):
+        raise RuntimeError("malformed implementation delta snapshot: target must be an object")
     target_spec_ids = [
         str(spec_id).strip()
         for spec_id in target.get("valid_target_spec_ids", target.get("target_spec_ids", []))
@@ -11550,6 +11565,14 @@ def build_implementation_work_index(
         for item in delta.get("likely_affected_code_refs", [])
         if str(item).strip()
     ]
+    raw_likely_code_refs_by_spec = delta.get("likely_affected_code_refs_by_spec", {})
+    likely_code_refs_by_spec: dict[str, list[str]] = {}
+    if isinstance(raw_likely_code_refs_by_spec, dict):
+        for spec_id, refs in raw_likely_code_refs_by_spec.items():
+            if isinstance(refs, list):
+                likely_code_refs_by_spec[str(spec_id).strip()] = sorted(
+                    {str(ref).strip() for ref in refs if str(ref).strip()}
+                )
 
     entries: list[dict[str, Any]] = []
     readiness_groups: dict[str, list[str]] = {}
@@ -11569,6 +11592,9 @@ def build_implementation_work_index(
             spec_required_tests = [
                 ref for ref in required_test_refs if ref.startswith(f"{spec_id}:")
             ]
+            spec_likely_code_refs = likely_code_refs_by_spec.get(spec_id, [])
+            if not spec_likely_code_refs and len(target_spec_ids) == 1:
+                spec_likely_code_refs = likely_code_refs
             spec_trace_gap = f"trace::{spec_id}" in delta_sets["missing_trace_refs"]
             spec_evidence_gap = f"evidence::{spec_id}" in delta_sets["evidence_gap_refs"]
             spec_quality_gap = spec_id in delta_sets["spec_quality_blocker_ids"]
@@ -11628,7 +11654,7 @@ def build_implementation_work_index(
                 "delta_refs": sorted(delta_refs),
                 "required_tests": sorted(spec_required_tests),
                 "expected_evidence": [f"implementation_evidence::{spec_id}"],
-                "likely_code_refs": likely_code_refs,
+                "likely_code_refs": spec_likely_code_refs,
                 "readiness": readiness,
                 "blockers": blockers,
                 "next_gap": next_gap,
@@ -26236,7 +26262,7 @@ def main(
         or implementation_operator_intent
     ) and not build_implementation_delta_snapshot_mode:
         print(
-            "--target-scope-kind, --target-spec-ids, and --operator-intent require "
+            "--target-scope-kind/--target-spec-ids/--operator-intent require "
             "--build-implementation-delta-snapshot",
             file=sys.stderr,
         )

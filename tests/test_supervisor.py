@@ -14162,6 +14162,84 @@ def test_build_implementation_delta_snapshot_marks_invalid_target_scope(
     }
 
 
+def test_build_implementation_delta_snapshot_missing_baselines_are_nonblocking(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    snapshot = supervisor_module.build_implementation_delta_snapshot(
+        target_scope_kind="spec",
+        target_spec_ids="SG-SPEC-0001",
+        operator_intent="Plan implementation despite missing derived baselines.",
+    )
+
+    assert snapshot["baseline"]["trace_baseline_status"] == "missing"
+    assert snapshot["baseline"]["evidence_baseline_status"] == "missing"
+    assert snapshot["status"] == "ready_for_planning"
+    assert snapshot["review_state"] == "ready_for_planning"
+    assert snapshot["delta"]["missing_trace_refs"] == ["trace::SG-SPEC-0001"]
+    assert snapshot["delta"]["evidence_gap_refs"] == ["evidence::SG-SPEC-0001"]
+
+
+def test_build_implementation_work_index_scopes_likely_code_refs_per_spec(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    node1_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    node1 = json.loads(node1_path.read_text(encoding="utf-8"))
+    node1["outputs"] = ["tools/first.py"]
+    node1["allowed_paths"] = ["tools/first.py"]
+    node1_path.write_text(json.dumps(node1), encoding="utf-8")
+    (repo_fixture / "specs" / "nodes" / "SG-SPEC-0002.yaml").write_text(
+        json.dumps(
+            {
+                "id": "SG-SPEC-0002",
+                "title": "Second Implementation Target",
+                "kind": "spec",
+                "created_at": "2026-04-18T00:00:00Z",
+                "updated_at": "2026-04-18T00:00:00Z",
+                "status": "outlined",
+                "maturity": 0.2,
+                "depends_on": [],
+                "relates_to": [],
+                "inputs": [],
+                "outputs": ["tools/second.py"],
+                "allowed_paths": ["tools/second.py"],
+                "acceptance": ["second kept"],
+                "prompt": "Refine this node.",
+            }
+        ),
+        encoding="utf-8",
+    )
+    snapshot = supervisor_module.build_implementation_delta_snapshot(
+        target_scope_kind="spec",
+        target_spec_ids="SG-SPEC-0001,SG-SPEC-0002",
+        operator_intent="Plan implementation for two specs.",
+    )
+
+    index = supervisor_module.build_implementation_work_index(snapshot)
+
+    refs_by_spec = {
+        entry["affected_spec_ids"][0]: entry["likely_code_refs"] for entry in index["entries"]
+    }
+    assert refs_by_spec["SG-SPEC-0001"] == ["tools/first.py"]
+    assert refs_by_spec["SG-SPEC-0002"] == ["tools/second.py"]
+
+
+def test_build_implementation_work_index_rejects_malformed_target(
+    supervisor_module: object,
+) -> None:
+    snapshot = {
+        "artifact_kind": supervisor_module.IMPLEMENTATION_DELTA_SNAPSHOT_ARTIFACT_KIND,
+        "target": [],
+        "delta": {},
+    }
+
+    with pytest.raises(RuntimeError) as exc_info:
+        supervisor_module.build_implementation_work_index(snapshot)
+
+    assert "target must be an object" in str(exc_info.value)
+
+
 def test_build_implementation_work_index_from_delta_snapshot(
     supervisor_module: object,
     repo_fixture: Path,
