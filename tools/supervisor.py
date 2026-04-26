@@ -46,6 +46,7 @@ Derived artifacts:
 - SpecPM import handoff packets: `runs/specpm_import_handoff_packets.json`
 - SpecPM delivery workflow: `runs/specpm_delivery_workflow.json`
 - SpecPM feedback index: `runs/specpm_feedback_index.json`
+- SpecPM public registry index: `runs/specpm_public_registry_index.json`
 - Metrics delivery workflow: `runs/metrics_delivery_workflow.json`
 - Metrics feedback index: `runs/metrics_feedback_index.json`
 - Metrics source promotion index: `runs/metrics_source_promotion_index.json`
@@ -68,11 +69,15 @@ import os
 import re
 import secrets
 import shutil
+import string
 import subprocess
 import sys
 import tempfile
 import threading
 import time
+import urllib.error
+import urllib.parse
+import urllib.request
 from collections.abc import Callable
 from contextlib import contextmanager
 from dataclasses import asdict, dataclass
@@ -120,6 +125,7 @@ SPECPM_IMPORT_POLICY_RELATIVE_PATH = "tools/specpm_import_policy.json"
 SPECPM_IMPORT_HANDOFF_POLICY_RELATIVE_PATH = "tools/specpm_import_handoff_policy.json"
 SPECPM_DELIVERY_POLICY_RELATIVE_PATH = "tools/specpm_delivery_policy.json"
 SPECPM_FEEDBACK_POLICY_RELATIVE_PATH = "tools/specpm_feedback_policy.json"
+SPECPM_PUBLIC_REGISTRY_POLICY_RELATIVE_PATH = "tools/specpm_public_registry_policy.json"
 METRICS_DELIVERY_POLICY_RELATIVE_PATH = "tools/metrics_delivery_policy.json"
 METRICS_FEEDBACK_POLICY_RELATIVE_PATH = "tools/metrics_feedback_policy.json"
 METRICS_SOURCE_PROMOTION_POLICY_RELATIVE_PATH = "tools/metrics_source_promotion_policy.json"
@@ -232,6 +238,10 @@ def specpm_delivery_policy_path() -> Path:
 
 def specpm_feedback_policy_path() -> Path:
     return TOOLS_DIR / "specpm_feedback_policy.json"
+
+
+def specpm_public_registry_policy_path() -> Path:
+    return TOOLS_DIR / "specpm_public_registry_policy.json"
 
 
 def metrics_delivery_policy_path() -> Path:
@@ -1213,6 +1223,46 @@ def load_specpm_feedback_policy() -> tuple[dict[str, Any], str]:
 SPECPM_FEEDBACK_POLICY, SPECPM_FEEDBACK_POLICY_SHA256 = load_specpm_feedback_policy()
 
 
+def load_specpm_public_registry_policy() -> tuple[dict[str, Any], str]:
+    path = specpm_public_registry_policy_path()
+    try:
+        raw_text = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise RuntimeError(
+            f"failed to read SpecPM public registry policy artifact: {path.as_posix()} ({exc})"
+        ) from exc
+    try:
+        payload = json.loads(raw_text)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(
+            f"malformed SpecPM public registry policy artifact: {path.as_posix()} ({exc})"
+        ) from exc
+    if not isinstance(payload, dict):
+        raise RuntimeError(
+            "malformed SpecPM public registry policy artifact: "
+            f"{path.as_posix()} must contain a JSON object"
+        )
+    required_sections = (
+        "repository_layout",
+        "registry_contract",
+        "endpoint_templates",
+        "probe_defaults",
+        "next_gap_defaults",
+    )
+    missing = [section for section in required_sections if section not in payload]
+    if missing:
+        raise RuntimeError(
+            "malformed SpecPM public registry policy artifact: "
+            "missing top-level section(s): " + ", ".join(missing)
+        )
+    return payload, hashlib.sha256(raw_text.encode("utf-8")).hexdigest()
+
+
+SPECPM_PUBLIC_REGISTRY_POLICY, SPECPM_PUBLIC_REGISTRY_POLICY_SHA256 = (
+    load_specpm_public_registry_policy()
+)
+
+
 def load_metrics_delivery_policy() -> tuple[dict[str, Any], str]:
     path = metrics_delivery_policy_path()
     try:
@@ -1408,6 +1458,15 @@ def specpm_delivery_policy_lookup(policy_path: str) -> Any:
 
 def specpm_feedback_policy_lookup(policy_path: str) -> Any:
     current: Any = SPECPM_FEEDBACK_POLICY
+    for part in policy_path.split("."):
+        if not isinstance(current, dict) or part not in current:
+            raise KeyError(policy_path)
+        current = current[part]
+    return copy.deepcopy(current)
+
+
+def specpm_public_registry_policy_lookup(policy_path: str) -> Any:
+    current: Any = SPECPM_PUBLIC_REGISTRY_POLICY
     for part in policy_path.split("."):
         if not isinstance(current, dict) or part not in current:
             raise KeyError(policy_path)
@@ -1738,6 +1797,14 @@ def specpm_feedback_policy_reference() -> dict[str, Any]:
         "artifact_path": SPECPM_FEEDBACK_POLICY_RELATIVE_PATH,
         "artifact_sha256": SPECPM_FEEDBACK_POLICY_SHA256,
         "version": SPECPM_FEEDBACK_POLICY.get("version"),
+    }
+
+
+def specpm_public_registry_policy_reference() -> dict[str, Any]:
+    return {
+        "artifact_path": SPECPM_PUBLIC_REGISTRY_POLICY_RELATIVE_PATH,
+        "artifact_sha256": SPECPM_PUBLIC_REGISTRY_POLICY_SHA256,
+        "version": SPECPM_PUBLIC_REGISTRY_POLICY.get("version"),
     }
 
 
@@ -2099,6 +2166,27 @@ SPECPM_FEEDBACK_REVIEW_STATES = list(
 )
 SPECPM_FEEDBACK_NAMED_FILTERS = list(
     specpm_feedback_policy_lookup("feedback_contract.named_filters")
+)
+SPECPM_PUBLIC_REGISTRY_INDEX_FILENAME = Path(
+    str(specpm_public_registry_policy_lookup("repository_layout.artifact"))
+).name
+SPECPM_PUBLIC_REGISTRY_INDEX_ARTIFACT_KIND = str(
+    specpm_public_registry_policy_lookup("registry_contract.artifact_kind")
+)
+SPECPM_PUBLIC_REGISTRY_INDEX_SCHEMA_VERSION = int(
+    specpm_public_registry_policy_lookup("registry_contract.schema_version")
+)
+SPECPM_PUBLIC_REGISTRY_STATUSES = list(
+    specpm_public_registry_policy_lookup("registry_contract.registry_statuses")
+)
+SPECPM_PUBLIC_REGISTRY_ENTRY_STATUSES = list(
+    specpm_public_registry_policy_lookup("registry_contract.entry_statuses")
+)
+SPECPM_PUBLIC_REGISTRY_REVIEW_STATES = list(
+    specpm_public_registry_policy_lookup("registry_contract.review_states")
+)
+SPECPM_PUBLIC_REGISTRY_NAMED_FILTERS = list(
+    specpm_public_registry_policy_lookup("registry_contract.named_filters")
 )
 METRICS_DELIVERY_WORKFLOW_FILENAME = Path(
     str(metrics_delivery_policy_lookup("repository_layout.artifact"))
@@ -12045,6 +12133,10 @@ def specpm_feedback_index_path() -> Path:
     return RUNS_DIR / SPECPM_FEEDBACK_INDEX_FILENAME
 
 
+def specpm_public_registry_index_path() -> Path:
+    return RUNS_DIR / SPECPM_PUBLIC_REGISTRY_INDEX_FILENAME
+
+
 def metrics_delivery_workflow_path() -> Path:
     return RUNS_DIR / METRICS_DELIVERY_WORKFLOW_FILENAME
 
@@ -13533,6 +13625,7 @@ def build_external_consumer_index() -> dict[str, Any]:
             },
             "artifacts": artifact_reports,
             "metric_bindings": metric_bindings,
+            "registry": copy.deepcopy(consumer.get("registry", {})),
             "notes": str(consumer.get("notes", "")).strip(),
         }
         entries.append(entry)
@@ -16659,6 +16752,566 @@ def build_specpm_feedback_index(
 def write_specpm_feedback_index(report: dict[str, Any]) -> Path:
     RUNS_DIR.mkdir(parents=True, exist_ok=True)
     path = specpm_feedback_index_path()
+    with artifact_lock(path):
+        atomic_write_json(path, report)
+    return path
+
+
+def specpm_public_registry_endpoint_url(
+    *,
+    base_url: str,
+    endpoint_template: str,
+    values: dict[str, str],
+) -> str:
+    encoded_values = {key: urllib.parse.quote(str(value), safe="") for key, value in values.items()}
+    endpoint = str(endpoint_template).strip()
+    if not endpoint.startswith("/"):
+        endpoint = "/" + endpoint
+    return str(base_url).strip().rstrip("/") + endpoint.format(**encoded_values)
+
+
+def fetch_specpm_public_registry_json(
+    url: str,
+    *,
+    timeout_seconds: float,
+) -> dict[str, Any]:
+    request = urllib.request.Request(
+        url,
+        headers={"Accept": "application/json", "User-Agent": "SpecGraph-supervisor/1"},
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=timeout_seconds) as response:
+            body = response.read().decode("utf-8")
+            status_code = int(response.getcode() or 0)
+    except urllib.error.HTTPError as exc:
+        status = "missing" if exc.code == 404 else "http_error"
+        return {
+            "fetch_status": status,
+            "http_status": exc.code,
+            "error": str(exc),
+        }
+    except (urllib.error.URLError, TimeoutError, OSError) as exc:
+        return {
+            "fetch_status": "unavailable",
+            "http_status": None,
+            "error": str(exc),
+        }
+
+    if status_code < 200 or status_code >= 300:
+        return {
+            "fetch_status": "http_error",
+            "http_status": status_code,
+            "error": f"unexpected HTTP status {status_code}",
+        }
+
+    try:
+        payload = json.loads(body)
+    except json.JSONDecodeError as exc:
+        return {
+            "fetch_status": "invalid_json",
+            "http_status": status_code,
+            "error": str(exc),
+        }
+    return {
+        "fetch_status": "ok",
+        "http_status": status_code,
+        "payload": payload,
+        "payload_kind": type(payload).__name__,
+    }
+
+
+def json_payload_contains_string(payload: Any, expected: str) -> bool:
+    expected_text = str(expected).strip()
+    if not expected_text:
+        return True
+    if isinstance(payload, str):
+        return payload == expected_text
+    if isinstance(payload, dict):
+        return any(
+            json_payload_contains_string(key, expected_text)
+            or json_payload_contains_string(value, expected_text)
+            for key, value in payload.items()
+        )
+    if isinstance(payload, list):
+        return any(json_payload_contains_string(item, expected_text) for item in payload)
+    return str(payload) == expected_text
+
+
+def probe_specpm_public_registry_endpoint(
+    *,
+    url: str,
+    expected_values: list[str],
+    timeout_seconds: float,
+) -> dict[str, Any]:
+    result = fetch_specpm_public_registry_json(url, timeout_seconds=timeout_seconds)
+    fetch_status = str(result.get("fetch_status", "")).strip()
+    if fetch_status == "ok":
+        payload = result.get("payload")
+        missing_values = [
+            value
+            for value in expected_values
+            if str(value).strip() and not json_payload_contains_string(payload, str(value).strip())
+        ]
+        probe_status = "visible" if not missing_values else "drift"
+        return {
+            "url": url,
+            "probe_status": probe_status,
+            "http_status": result.get("http_status"),
+            "payload_kind": str(result.get("payload_kind", "")).strip(),
+            "expected_values": sorted(set(expected_values)),
+            "missing_values": sorted(set(missing_values)),
+        }
+    if fetch_status == "missing":
+        return {
+            "url": url,
+            "probe_status": "missing",
+            "http_status": result.get("http_status"),
+            "payload_kind": "",
+            "expected_values": sorted(set(expected_values)),
+            "missing_values": sorted(set(expected_values)),
+            "error": str(result.get("error", "")).strip(),
+        }
+    if fetch_status == "unavailable":
+        return {
+            "url": url,
+            "probe_status": "unavailable",
+            "http_status": result.get("http_status"),
+            "payload_kind": "",
+            "expected_values": sorted(set(expected_values)),
+            "missing_values": sorted(set(expected_values)),
+            "error": str(result.get("error", "")).strip(),
+        }
+    return {
+        "url": url,
+        "probe_status": "invalid_response",
+        "http_status": result.get("http_status"),
+        "payload_kind": "",
+        "expected_values": sorted(set(expected_values)),
+        "missing_values": sorted(set(expected_values)),
+        "error": str(result.get("error", "")).strip(),
+    }
+
+
+def find_specpm_consumer_entry(external_consumer_index: dict[str, Any]) -> dict[str, Any]:
+    required_consumer_id = str(
+        specpm_public_registry_policy_lookup("registry_contract.required_consumer_id")
+    ).strip()
+    for entry in external_consumer_index.get("entries", []):
+        if not isinstance(entry, dict):
+            continue
+        if str(entry.get("consumer_id", "")).strip() == required_consumer_id:
+            return copy.deepcopy(entry)
+    return {}
+
+
+SPECPM_PUBLIC_REGISTRY_ENDPOINT_PLACEHOLDERS = {
+    "package": {"package_id"},
+    "version": {"package_id", "version"},
+    "capability_search": {"capability_id"},
+}
+
+
+def specpm_public_registry_endpoint_template_errors(
+    endpoint_name: str,
+    endpoint_template: str,
+) -> list[str]:
+    required_placeholders = SPECPM_PUBLIC_REGISTRY_ENDPOINT_PLACEHOLDERS[endpoint_name]
+    try:
+        parsed_fields = [
+            str(field_name).split(".", 1)[0].split("[", 1)[0]
+            for _literal, field_name, _format_spec, _conversion in string.Formatter().parse(
+                endpoint_template
+            )
+            if field_name is not None
+        ]
+    except ValueError:
+        return [f"malformed_{endpoint_name}_endpoint_template"]
+
+    observed_placeholders = {field for field in parsed_fields if field}
+    errors: list[str] = []
+    for placeholder in sorted(required_placeholders - observed_placeholders):
+        errors.append(f"{endpoint_name}_endpoint_missing_placeholder_{placeholder}")
+    for placeholder in sorted(observed_placeholders - required_placeholders):
+        errors.append(f"{endpoint_name}_endpoint_unknown_placeholder_{placeholder}")
+    return errors
+
+
+def normalize_specpm_public_registry_config(
+    specpm_consumer: dict[str, Any],
+) -> tuple[dict[str, Any], list[str]]:
+    registry = specpm_consumer.get("registry", {})
+    if not isinstance(registry, dict):
+        return {}, ["missing_registry_contract"]
+
+    required_profile = str(
+        specpm_public_registry_policy_lookup("registry_contract.required_registry_profile")
+    ).strip()
+    required_api_version = str(
+        specpm_public_registry_policy_lookup("registry_contract.required_api_version")
+    ).strip()
+    required_authority = str(
+        specpm_public_registry_policy_lookup("registry_contract.required_authority")
+    ).strip()
+    default_endpoints = specpm_public_registry_policy_lookup("endpoint_templates")
+    endpoints = registry.get("endpoints", default_endpoints)
+    if not isinstance(endpoints, dict):
+        endpoints = {}
+
+    errors: list[str] = []
+    profile = str(registry.get("profile", "")).strip()
+    api_version = str(registry.get("api_version", "")).strip()
+    authority = str(registry.get("authority", "")).strip()
+    base_url = str(registry.get("local_dev_url", "")).strip().rstrip("/")
+    if profile != required_profile:
+        errors.append("wrong_registry_profile")
+    if api_version != required_api_version:
+        errors.append("wrong_registry_api_version")
+    if authority != required_authority:
+        errors.append("wrong_registry_authority")
+    if not base_url:
+        errors.append("missing_registry_base_url")
+    if base_url.endswith("/v0"):
+        errors.append("registry_base_url_must_not_include_api_prefix")
+    for endpoint_name in ("package", "version", "capability_search"):
+        endpoint = str(endpoints.get(endpoint_name, "")).strip()
+        if not endpoint:
+            errors.append(f"missing_{endpoint_name}_endpoint")
+        elif "/v0/" not in endpoint:
+            errors.append(f"{endpoint_name}_endpoint_missing_api_prefix")
+        else:
+            errors.extend(specpm_public_registry_endpoint_template_errors(endpoint_name, endpoint))
+
+    return {
+        "profile": profile,
+        "api_version": api_version,
+        "authority": authority,
+        "base_url": base_url,
+        "endpoints": {key: str(value).strip() for key, value in endpoints.items()},
+    }, sorted(set(errors))
+
+
+def expected_specpm_public_registry_entries(
+    materialization_report: dict[str, Any],
+) -> list[dict[str, Any]]:
+    registry_entries = {
+        str(item.get("package_id", "")).strip(): item
+        for item in load_specpm_export_registry().get("entries", [])
+        if isinstance(item, dict) and str(item.get("package_id", "")).strip()
+    }
+    materialized_statuses = {"draft_materialized", "materialized_for_review"}
+    entries: list[dict[str, Any]] = []
+    for raw_entry in materialization_report.get("entries", []):
+        if not isinstance(raw_entry, dict):
+            continue
+        if str(raw_entry.get("consumer_id", "")).strip() != "specpm":
+            continue
+        materialization_status = str(raw_entry.get("materialization_status", "")).strip()
+        if materialization_status not in materialized_statuses:
+            continue
+        package_identity = raw_entry.get("package_identity", {})
+        if not isinstance(package_identity, dict):
+            continue
+        package_id = str(package_identity.get("package_id", "")).strip()
+        package_version = str(package_identity.get("package_version", "")).strip()
+        if not package_id or not package_version:
+            continue
+        registry_entry = registry_entries.get(package_id, {})
+        provides_capabilities = [
+            str(item).strip()
+            for item in registry_entry.get("provides_capabilities", [])
+            if str(item).strip()
+        ]
+        entries.append(
+            {
+                "export_id": str(raw_entry.get("export_id", "")).strip(),
+                "package_id": package_id,
+                "package_name": str(package_identity.get("package_name", "")).strip(),
+                "package_version": package_version,
+                "materialization_status": materialization_status,
+                "bundle_root": str(raw_entry.get("bundle_root", "")).strip(),
+                "provides_capabilities": sorted(set(provides_capabilities)),
+            }
+        )
+    return entries
+
+
+def derive_specpm_public_registry_next_gap(status: str) -> str:
+    try:
+        value = specpm_public_registry_policy_lookup(f"next_gap_defaults.{status}")
+    except KeyError:
+        return "review_specpm_public_registry_observation"
+    return str(value).strip() or "none"
+
+
+def derive_specpm_public_registry_entry_status(
+    *,
+    probes: list[dict[str, Any]],
+) -> str:
+    probe_statuses = {str(probe.get("probe_status", "")).strip() for probe in probes}
+    if "unavailable" in probe_statuses:
+        return "registry_unavailable"
+    if "invalid_response" in probe_statuses:
+        return "invalid_registry_response"
+    if "missing" in probe_statuses:
+        return "registry_missing"
+    if "drift" in probe_statuses:
+        return "registry_drift"
+    return "registry_visible"
+
+
+def build_specpm_public_registry_index(
+    materialization_report: dict[str, Any],
+    external_consumer_index: dict[str, Any],
+) -> dict[str, Any]:
+    specpm_consumer = find_specpm_consumer_entry(external_consumer_index)
+    registry_config, registry_errors = normalize_specpm_public_registry_config(specpm_consumer)
+    expected_entries = expected_specpm_public_registry_entries(materialization_report)
+    timeout_seconds = float(specpm_public_registry_policy_lookup("probe_defaults.timeout_seconds"))
+
+    status_groups: dict[str, list[str]] = {}
+    review_state_groups: dict[str, list[str]] = {}
+    named_filters = {name: [] for name in SPECPM_PUBLIC_REGISTRY_NAMED_FILTERS}
+    backlog_items: list[dict[str, Any]] = []
+    grouped_backlog: dict[str, list[str]] = {}
+    entries: list[dict[str, Any]] = []
+
+    registry_status = "registry_available"
+    registry_review_state = "registry_visible"
+    registry_next_gap = derive_specpm_public_registry_next_gap("registry_available")
+    if registry_errors:
+        registry_status = "invalid_registry_contract"
+        registry_review_state = "not_observed"
+        registry_next_gap = derive_specpm_public_registry_next_gap(registry_status)
+    elif not expected_entries:
+        registry_status = "blocked_by_materialization_gap"
+        registry_review_state = "not_observed"
+        registry_next_gap = derive_specpm_public_registry_next_gap(registry_status)
+
+    if not registry_errors:
+        for expected in expected_entries:
+            package_id = str(expected.get("package_id", "")).strip()
+            package_version = str(expected.get("package_version", "")).strip()
+            capability_ids = [
+                str(item).strip()
+                for item in expected.get("provides_capabilities", [])
+                if str(item).strip()
+            ]
+            endpoints = registry_config.get("endpoints", {})
+            base_url = str(registry_config.get("base_url", "")).strip()
+            package_probe = probe_specpm_public_registry_endpoint(
+                url=specpm_public_registry_endpoint_url(
+                    base_url=base_url,
+                    endpoint_template=str(endpoints.get("package", "")),
+                    values={"package_id": package_id},
+                ),
+                expected_values=[package_id],
+                timeout_seconds=timeout_seconds,
+            )
+            version_probe = probe_specpm_public_registry_endpoint(
+                url=specpm_public_registry_endpoint_url(
+                    base_url=base_url,
+                    endpoint_template=str(endpoints.get("version", "")),
+                    values={"package_id": package_id, "version": package_version},
+                ),
+                expected_values=[package_id, package_version],
+                timeout_seconds=timeout_seconds,
+            )
+            capability_probes = [
+                {
+                    "capability_id": capability_id,
+                    **probe_specpm_public_registry_endpoint(
+                        url=specpm_public_registry_endpoint_url(
+                            base_url=base_url,
+                            endpoint_template=str(endpoints.get("capability_search", "")),
+                            values={"capability_id": capability_id},
+                        ),
+                        expected_values=[package_id],
+                        timeout_seconds=timeout_seconds,
+                    ),
+                }
+                for capability_id in capability_ids
+            ]
+            probes = [package_probe, version_probe, *capability_probes]
+            entry_status = derive_specpm_public_registry_entry_status(probes=probes)
+            review_state = (
+                "registry_visible" if entry_status == "registry_visible" else "registry_gap"
+            )
+            next_gap = derive_specpm_public_registry_next_gap(entry_status)
+            drift_findings = [
+                {
+                    "probe": probe_name,
+                    "missing_values": probe.get("missing_values", []),
+                    "probe_status": probe.get("probe_status"),
+                }
+                for probe_name, probe in (
+                    ("package", package_probe),
+                    ("version", version_probe),
+                )
+                if str(probe.get("probe_status", "")).strip() in {"missing", "drift"}
+            ]
+            drift_findings.extend(
+                {
+                    "probe": "capability_search",
+                    "capability_id": str(probe.get("capability_id", "")).strip(),
+                    "missing_values": probe.get("missing_values", []),
+                    "probe_status": probe.get("probe_status"),
+                }
+                for probe in capability_probes
+                if str(probe.get("probe_status", "")).strip() in {"missing", "drift"}
+            )
+            entry = {
+                "package_id": package_id,
+                "package_version": package_version,
+                "export_id": str(expected.get("export_id", "")).strip(),
+                "registry_status": entry_status,
+                "review_state": review_state,
+                "next_gap": next_gap,
+                "authority": str(registry_config.get("authority", "")).strip(),
+                "expected": {
+                    "materialization_status": str(
+                        expected.get("materialization_status", "")
+                    ).strip(),
+                    "bundle_root": str(expected.get("bundle_root", "")).strip(),
+                    "provides_capabilities": capability_ids,
+                },
+                "probes": {
+                    "package": package_probe,
+                    "version": version_probe,
+                    "capabilities": capability_probes,
+                },
+                "drift_findings": drift_findings,
+            }
+            entries.append(entry)
+            status_groups.setdefault(entry_status, []).append(package_id)
+            review_state_groups.setdefault(review_state, []).append(package_id)
+            if next_gap != "none":
+                backlog_items.append(
+                    {
+                        "package_id": package_id,
+                        "package_version": package_version,
+                        "registry_status": entry_status,
+                        "review_state": review_state,
+                        "next_gap": next_gap,
+                    }
+                )
+                grouped_backlog.setdefault(next_gap, []).append(package_id)
+            if package_probe.get("probe_status") == "visible":
+                named_filters["registry_available"].append(package_id)
+            if version_probe.get("probe_status") == "visible":
+                named_filters["visible_package_versions"].append(package_id)
+            if version_probe.get("probe_status") in {"missing", "drift"}:
+                named_filters["missing_package_versions"].append(package_id)
+            if any(probe.get("probe_status") == "visible" for probe in capability_probes):
+                named_filters["searchable_capabilities"].append(package_id)
+            if any(
+                probe.get("probe_status") in {"missing", "drift"} for probe in capability_probes
+            ):
+                named_filters["missing_capabilities"].append(package_id)
+            if entry_status == "registry_drift":
+                named_filters["registry_drift"].append(package_id)
+            if entry_status == "registry_unavailable":
+                named_filters["registry_unavailable"].append(package_id)
+
+    if entries:
+        entry_statuses = {str(entry.get("registry_status", "")).strip() for entry in entries}
+        if "registry_unavailable" in entry_statuses:
+            registry_status = "registry_unavailable"
+            registry_review_state = "not_observed"
+            registry_next_gap = derive_specpm_public_registry_next_gap(registry_status)
+        elif "invalid_registry_response" in entry_statuses:
+            registry_status = "invalid_registry_response"
+            registry_review_state = "registry_gap"
+            registry_next_gap = derive_specpm_public_registry_next_gap(registry_status)
+        elif entry_statuses == {"registry_visible"}:
+            registry_status = "registry_available"
+            registry_review_state = "registry_visible"
+            registry_next_gap = derive_specpm_public_registry_next_gap(registry_status)
+        else:
+            registry_status = "registry_available"
+            registry_review_state = "registry_gap"
+            registry_next_gap = derive_specpm_public_registry_next_gap("registry_drift")
+
+    if str(registry_config.get("authority", "")).strip() == "dev_observation_only":
+        for entry in entries:
+            package_id = str(entry.get("package_id", "")).strip()
+            if package_id:
+                named_filters["dev_observation_only"].append(package_id)
+
+    if registry_next_gap != "none" and not entries:
+        backlog_items.append(
+            {
+                "package_id": "specpm_registry",
+                "package_version": "",
+                "registry_status": registry_status,
+                "review_state": registry_review_state,
+                "next_gap": registry_next_gap,
+            }
+        )
+        grouped_backlog.setdefault(registry_next_gap, []).append("specpm_registry")
+    for bucket in (status_groups, review_state_groups, named_filters, grouped_backlog):
+        for key in list(bucket):
+            bucket[key] = sorted(set(bucket[key]))
+
+    return {
+        "artifact_kind": SPECPM_PUBLIC_REGISTRY_INDEX_ARTIFACT_KIND,
+        "schema_version": SPECPM_PUBLIC_REGISTRY_INDEX_SCHEMA_VERSION,
+        "generated_at": utc_now_iso(),
+        "policy_reference": specpm_public_registry_policy_reference(),
+        "source_artifacts": {
+            "external_consumer_index": {
+                "artifact_path": external_consumer_index_path().relative_to(ROOT).as_posix(),
+                "generated_at": external_consumer_index.get("generated_at"),
+            },
+            "specpm_materialization_report": {
+                "artifact_path": specpm_materialization_report_path().relative_to(ROOT).as_posix(),
+                "generated_at": materialization_report.get("generated_at"),
+            },
+            "specpm_export_registry": {
+                "artifact_path": SPECPM_EXPORT_REGISTRY_RELATIVE_PATH,
+                "version": int(load_specpm_export_registry().get("version", 1) or 1),
+            },
+        },
+        "registry": {
+            "consumer_id": "specpm",
+            "profile": str(registry_config.get("profile", "")).strip(),
+            "api_version": str(registry_config.get("api_version", "")).strip(),
+            "base_url": str(registry_config.get("base_url", "")).strip(),
+            "authority": str(registry_config.get("authority", "")).strip(),
+            "endpoints": copy.deepcopy(registry_config.get("endpoints", {})),
+            "registry_status": registry_status,
+            "review_state": registry_review_state,
+            "next_gap": registry_next_gap,
+            "contract_errors": registry_errors,
+            "notes": [
+                "This is read-only public registry observation, not publication authority.",
+                (
+                    "The registry base URL must not include /v0; endpoint templates carry "
+                    "the API prefix."
+                ),
+            ],
+        },
+        "entry_count": len(entries),
+        "entries": entries,
+        "viewer_projection": {
+            "registry_status": {key: sorted(value) for key, value in sorted(status_groups.items())},
+            "review_state": {
+                key: sorted(value) for key, value in sorted(review_state_groups.items())
+            },
+            "named_filters": {key: sorted(value) for key, value in sorted(named_filters.items())},
+        },
+        "registry_backlog": {
+            "entry_count": len(backlog_items),
+            "items": backlog_items,
+            "grouped_by_next_gap": {
+                key: sorted(value) for key, value in sorted(grouped_backlog.items())
+            },
+        },
+    }
+
+
+def write_specpm_public_registry_index(report: dict[str, Any]) -> Path:
+    RUNS_DIR.mkdir(parents=True, exist_ok=True)
+    path = specpm_public_registry_index_path()
     with artifact_lock(path):
         atomic_write_json(path, report)
     return path
@@ -20022,6 +20675,7 @@ def graph_backlog_source_artifact_path(source_artifact: str) -> str:
         "external_consumer_handoffs": external_consumer_handoff_packets_path,
         "specpm_delivery_workflow": specpm_delivery_workflow_path,
         "specpm_feedback_index": specpm_feedback_index_path,
+        "specpm_public_registry_index": specpm_public_registry_index_path,
         "metrics_delivery_workflow": metrics_delivery_workflow_path,
         "metrics_feedback_index": metrics_feedback_index_path,
         "metrics_source_promotion_index": metrics_source_promotion_index_path,
@@ -24831,6 +25485,7 @@ def main(
     build_specpm_import_handoff_packets_mode: bool = False,
     build_specpm_delivery_workflow_mode: bool = False,
     build_specpm_feedback_index_mode: bool = False,
+    build_specpm_public_registry_index_mode: bool = False,
     build_metrics_delivery_workflow_mode: bool = False,
     build_metrics_feedback_index_mode: bool = False,
     build_metrics_source_promotion_index_mode: bool = False,
@@ -24894,6 +25549,7 @@ def main(
         "--build-specpm-import-handoff-packets": build_specpm_import_handoff_packets_mode,
         "--build-specpm-delivery-workflow": build_specpm_delivery_workflow_mode,
         "--build-specpm-feedback-index": build_specpm_feedback_index_mode,
+        "--build-specpm-public-registry-index": build_specpm_public_registry_index_mode,
         "--build-metrics-delivery-workflow": build_metrics_delivery_workflow_mode,
         "--build-metrics-feedback-index": build_metrics_feedback_index_mode,
         "--build-metrics-source-promotion-index": build_metrics_source_promotion_index_mode,
@@ -26129,6 +26785,78 @@ def main(
         print(json.dumps(feedback_index, ensure_ascii=False, indent=2))
         return 0
 
+    if build_specpm_public_registry_index_mode:
+        if any(
+            (
+                dry_run,
+                auto_approve,
+                loop,
+                resolve_gate,
+                decision,
+                note,
+                target_spec,
+                split_proposal,
+                apply_split_proposal,
+                operator_note,
+                mutation_budget,
+                run_authority,
+                execution_profile,
+                child_model,
+                child_timeout_seconds,
+                verbose,
+                list_stale_runtime,
+                clean_stale_runtime,
+                observe_graph_health_mode,
+                operator_request_packet_path,
+                build_intent_layer_overlay_mode,
+                build_vocabulary_index_mode,
+                build_vocabulary_drift_report_mode,
+                build_pre_spec_semantics_index_mode,
+                build_graph_health_overlay_mode,
+                build_graph_health_trends_mode,
+                build_spec_trace_index_mode,
+                build_spec_trace_projection_mode,
+                build_evidence_plane_index_mode,
+                build_evidence_plane_overlay_mode,
+                build_external_consumer_overlay_mode,
+                build_external_consumer_handoffs_mode,
+                build_specpm_export_preview_mode,
+                build_specpm_handoff_packets_mode,
+                materialize_specpm_export_bundles_mode,
+                build_specpm_import_preview_mode,
+                build_specpm_import_handoff_packets_mode,
+                build_specpm_delivery_workflow_mode,
+                build_specpm_feedback_index_mode,
+                build_metric_signal_index_mode,
+                build_metric_threshold_proposals_mode,
+                build_supervisor_performance_index_mode,
+                build_graph_dashboard_mode,
+                build_proposal_lane_overlay_mode,
+                build_proposal_runtime_index_mode,
+                build_proposal_promotion_index_mode,
+            )
+        ):
+            print(
+                "--build-specpm-public-registry-index must be used as a standalone command",
+                file=sys.stderr,
+            )
+            return 1
+        consumer_index = build_external_consumer_index()
+        write_external_consumer_index(consumer_index)
+        materialization_report = load_json_object(specpm_materialization_report_path())
+        if not isinstance(materialization_report, dict):
+            materialization_report = {
+                "artifact_kind": SPECPM_MATERIALIZATION_REPORT_ARTIFACT_KIND,
+                "schema_version": SPECPM_MATERIALIZATION_REPORT_SCHEMA_VERSION,
+                "generated_at": None,
+                "entry_count": 0,
+                "entries": [],
+            }
+        index = build_specpm_public_registry_index(materialization_report, consumer_index)
+        write_specpm_public_registry_index(index)
+        print(json.dumps(index, ensure_ascii=False, indent=2))
+        return 0
+
     if build_metrics_delivery_workflow_mode:
         if any(
             (
@@ -27286,6 +28014,14 @@ if __name__ == "__main__":
         ),
     )
     parser.add_argument(
+        "--build-specpm-public-registry-index",
+        action="store_true",
+        help=(
+            "Build a read-only SpecPM public registry observation index from the current "
+            "materialization report and configured local dev registry URL"
+        ),
+    )
+    parser.add_argument(
         "--build-metrics-delivery-workflow",
         action="store_true",
         help=(
@@ -27520,6 +28256,7 @@ if __name__ == "__main__":
             build_specpm_import_handoff_packets_mode=args.build_specpm_import_handoff_packets,
             build_specpm_delivery_workflow_mode=args.build_specpm_delivery_workflow,
             build_specpm_feedback_index_mode=args.build_specpm_feedback_index,
+            build_specpm_public_registry_index_mode=args.build_specpm_public_registry_index,
             build_metrics_delivery_workflow_mode=args.build_metrics_delivery_workflow,
             build_metrics_feedback_index_mode=args.build_metrics_feedback_index,
             build_metrics_source_promotion_index_mode=args.build_metrics_source_promotion_index,

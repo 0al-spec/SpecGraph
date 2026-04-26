@@ -116,6 +116,9 @@ particular task.
 - build a derived `SpecPM` feedback index from current delivery state and
   downstream checkout observations:
   `--build-specpm-feedback-index`
+- build a read-only `SpecPM` public registry observation index from current
+  materialization state and the local-dev registry endpoint:
+  `--build-specpm-public-registry-index`
 - build a reviewable `Metrics` delivery workflow from sibling-consumer handoffs:
   `--build-metrics-delivery-workflow`
 - build a derived `Metrics` feedback index from current delivery state and
@@ -859,6 +862,47 @@ Use it when you want to review:
 - which next follow-up gap should be surfaced without treating downstream
   state as automatic canonical acceptance
 
+### SpecPM public registry observation
+
+```bash
+python3 tools/supervisor.py --build-specpm-public-registry-index
+```
+
+Builds `runs/specpm_public_registry_index.json` from:
+
+- `tools/external_consumers.json`, specifically the `specpm.registry` contract
+- the current `runs/specpm_materialization_report.json`
+- `tools/specpm_export_registry.json` for expected capability IDs
+- read-only HTTP probes against the configured local-dev registry base URL
+
+The registry base URL is `http://localhost:8081` in dev mode. Do not configure
+it as `http://localhost:8081/v0`; endpoint templates carry the `/v0/...`
+prefix.
+
+This layer does not publish packages, mutate `SpecPM`, or mutate canonical
+`SpecGraph` specs. If the local registry service is unavailable, the artifact
+reports `registry_unavailable` as an observation gap rather than a lifecycle
+blocker.
+
+It emits:
+
+- one registry entry per materialized SpecPM package identity
+- package/version probes for `/v0/packages/{package_id}` and
+  `/v0/packages/{package_id}/versions/{version}`
+- capability-search probes for `/v0/capabilities/{capability_id}/packages`
+- `registry_visible`, `registry_missing`, `registry_drift`, or
+  `registry_unavailable` package statuses
+- viewer filters for `visible_package_versions`, `searchable_capabilities`,
+  `registry_drift`, and `dev_observation_only`
+
+Use it when you want to review:
+
+- whether a materialized local draft bundle is visible through the SpecPM
+  static registry service
+- whether expected package versions or capabilities are missing from `/v0`
+- whether registry payloads drift from the current SpecGraph materialization
+  expectations
+
 ### Metrics delivery workflow
 
 ```bash
@@ -1351,6 +1395,10 @@ path.
   - derived downstream feedback surface for `SpecPM`, including observed review
     activity, local adoption visibility, and source-spec linkage without
     automatic canonical acceptance
+- `runs/specpm_public_registry_index.json`
+  - read-only SpecPM static registry observation surface, including
+    registry-visible package versions, capability search visibility, and drift
+    against current materialization expectations
 - `runs/metrics_delivery_workflow.json`
   - reviewable downstream delivery workflow for Metrics/SIB handoff packets,
     including checkout state, metric binding, branch/commit/PR scaffold, and

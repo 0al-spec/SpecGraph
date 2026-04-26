@@ -129,6 +129,17 @@
       "profile": "boundary_package_consumer",
       "repo_url": "https://github.com/0al-spec/SpecPM",
       "local_checkout_hint": "/Users/egor/Development/GitHub/0AL/SpecPM",
+      "registry": {
+        "profile": "public_static_index",
+        "api_version": "v0",
+        "local_dev_url": "http://localhost:8081",
+        "authority": "dev_observation_only",
+        "endpoints": {
+          "package": "/v0/packages/{package_id}",
+          "version": "/v0/packages/{package_id}/versions/{version}",
+          "capability_search": "/v0/capabilities/{capability_id}/packages"
+        }
+      },
       "metric_bindings": [],
       "declared_artifacts": [
         {
