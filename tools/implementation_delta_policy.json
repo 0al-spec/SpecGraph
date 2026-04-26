@@ -1,0 +1,142 @@
+{
+  "artifact_kind": "implementation_delta_policy",
+  "version": 1,
+  "repository_layout": {
+    "delta_snapshot_artifact": "runs/implementation_delta_snapshot.json",
+    "work_index_artifact": "runs/implementation_work_index.json"
+  },
+  "layer_contract": {
+    "layer_name": "implementation_work",
+    "layer_order": 2,
+    "canonical_mutations_allowed": false,
+    "tracked_artifacts_written": false,
+    "runtime_code_mutations_allowed": false,
+    "review_boundary": "planning_only_until_human_or_operator_handoff"
+  },
+  "source_layers": [
+    "exploration",
+    "specification",
+    "trace",
+    "evidence",
+    "graph_health",
+    "proposal_lane"
+  ],
+  "required_source_artifacts": [
+    "specs/nodes",
+    "runs/spec_trace_projection.json",
+    "runs/evidence_plane_overlay.json",
+    "runs/graph_health_overlay.json"
+  ],
+  "optional_source_artifacts": [
+    "runs/graph_dashboard.json",
+    "runs/graph_backlog_projection.json",
+    "runs/proposal_runtime_index.json",
+    "runs/proposal_promotion_index.json",
+    "runs/techspec_handoff_packets.json"
+  ],
+  "eligibility_contract": {
+    "requires_explicit_operator_intent": true,
+    "requires_target_scope": true,
+    "requires_baseline_reference": true,
+    "blocks_on_active_spec_quality_gates": true,
+    "blocks_on_missing_trace_baseline": false,
+    "blocks_on_missing_evidence_baseline": false
+  },
+  "delta_snapshot_contract": {
+    "artifact_kind": "implementation_delta_snapshot",
+    "schema_version": 1,
+    "review_states": [
+      "ready_for_planning",
+      "blocked",
+      "needs_human_scope_review"
+    ],
+    "status_values": [
+      "ready_for_planning",
+      "blocked_by_trace_gap",
+      "blocked_by_evidence_gap",
+      "blocked_by_spec_quality",
+      "empty_delta",
+      "invalid_target_scope"
+    ],
+    "required_top_level_fields": [
+      "artifact_kind",
+      "schema_version",
+      "generated_at",
+      "policy_reference",
+      "layer",
+      "baseline",
+      "target",
+      "delta",
+      "review_state",
+      "next_gap",
+      "canonical_mutations_allowed",
+      "runtime_code_mutations_allowed"
+    ],
+    "baseline_fields": [
+      "git_commit",
+      "graph_version",
+      "implemented_spec_ids",
+      "trace_baseline_status",
+      "evidence_baseline_status"
+    ],
+    "target_fields": [
+      "target_scope_kind",
+      "target_spec_ids",
+      "target_git_commit",
+      "operator_intent"
+    ],
+    "delta_fields": [
+      "new_spec_ids",
+      "changed_spec_ids",
+      "changed_contract_refs",
+      "changed_acceptance_refs",
+      "missing_trace_refs",
+      "required_test_refs",
+      "evidence_gap_refs",
+      "likely_affected_code_refs"
+    ]
+  },
+  "work_index_contract": {
+    "artifact_kind": "implementation_work_index",
+    "schema_version": 1,
+    "status_values": [
+      "ready_for_planning",
+      "blocked_by_trace_gap",
+      "blocked_by_evidence_gap",
+      "blocked_by_spec_quality",
+      "ready_for_coding_agent",
+      "in_progress",
+      "implemented_pending_evidence",
+      "implemented"
+    ],
+    "required_entry_fields": [
+      "work_item_id",
+      "affected_spec_ids",
+      "implementation_reason",
+      "delta_refs",
+      "required_tests",
+      "expected_evidence",
+      "likely_code_refs",
+      "readiness",
+      "blockers",
+      "next_gap"
+    ],
+    "named_filters": [
+      "ready_for_planning",
+      "ready_for_coding_agent",
+      "blocked_by_trace_gap",
+      "blocked_by_evidence_gap",
+      "blocked_by_spec_quality",
+      "implemented_pending_evidence"
+    ]
+  },
+  "next_gap_defaults": {
+    "ready_for_planning": "review_implementation_delta",
+    "blocked_by_trace_gap": "attach_trace_baseline",
+    "blocked_by_evidence_gap": "attach_evidence_baseline",
+    "blocked_by_spec_quality": "resolve_spec_quality_gate",
+    "ready_for_coding_agent": "handoff_to_coding_agent",
+    "implemented_pending_evidence": "collect_implementation_evidence",
+    "implemented": "observe_runtime_feedback"
+  }
+}
