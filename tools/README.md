@@ -6,6 +6,10 @@ For a visualizer-facing compact report and overlay guide, see
 [docs/metrics_visualization_guide.md](../docs/metrics_visualization_guide.md).
 For the dedicated `SpecPM` preview/materialization/import viewer contract, see
 [docs/specpm_viewer_contract.md](../docs/specpm_viewer_contract.md).
+For the ContextBuilder exploration/assumption-mode viewer contract, see
+[docs/exploration_preview_viewer_contract.md](../docs/exploration_preview_viewer_contract.md).
+For the planned Implementation Work layer and delta/work-index viewer contract,
+see [docs/implementation_work_viewer_contract.md](../docs/implementation_work_viewer_contract.md).
 
 ## Minimal Spec-Node Supervisor MVP
 
@@ -164,6 +168,10 @@ Supervisor modes:
   repository-tracked intent-layer nodes under `intent_layer/nodes/`, so
   pre-canonical user intent and operator-request artifacts can be inspected as
   a separate mediation layer.
+- `--build-exploration-preview`: build `runs/exploration_preview.json` from an
+  optional inline `--exploration-intent TEXT`, producing a review-only
+  assumption-mode placeholder graph without mutating canonical specs or tracked
+  intent/proposal artifacts.
 - `--build-vocabulary-index`: build `runs/vocabulary_index.json` from
   `tools/specgraph_vocabulary.json`, flattening canonical terms, aliases,
   deprecated aliases, families, and contexts into one shared machine-readable
@@ -218,6 +226,9 @@ Key derived artifacts:
 - `runs/intent_layer_overlay.json`: intent-layer viewer/report surface grouped
   by artifact kind, mediation state, explicit distinction contracts, and
   invalid query-contract findings
+- `runs/exploration_preview.json`: review-only assumption-mode preview graph
+  with intent, assumption, hypothesis, proposal, and human-review placeholder
+  nodes; no canonical or tracked artifact mutations are allowed by this artifact
 - `runs/pre_spec_semantics_index.json`: derived pre-spec semantic index linking
   tracked intent-layer artifacts to downstream proposal-lane nodes and
   canonical specs, with queryability and provenance findings
@@ -386,6 +397,12 @@ Key derived artifacts:
 - `tools/intent_layer_policy.json`: declarative repository contract for the
   tracked intent layer, including kind separation, mediation-state vocabulary,
   and overlay semantics
+- `tools/exploration_preview_policy.json`: declarative contract for
+  assumption-mode exploration previews, including allowed placeholder node
+  kinds, edge kinds, promotion targets, and the preview-only mutation boundary
+- `tools/implementation_delta_policy.json`: planned declarative contract for
+  Implementation Work delta snapshots and work indexes, including baseline,
+  target, delta, readiness, and derived-only mutation boundaries
 - `tools/specgraph_vocabulary.json`: shared machine-readable vocabulary layer
   for canonical terms, aliases, deprecated aliases, and cross-artifact
   ontology families

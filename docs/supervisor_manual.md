@@ -16,6 +16,10 @@ For a compact artifact map aimed at dashboards and graph visualizers, see
 [metrics_visualization_guide.md](./metrics_visualization_guide.md).
 For the dedicated `SpecPM` package/export/import viewer contract, see
 [specpm_viewer_contract.md](./specpm_viewer_contract.md).
+For the ContextBuilder exploration/assumption-mode viewer contract, see
+[exploration_preview_viewer_contract.md](./exploration_preview_viewer_contract.md).
+For the planned Implementation Work delta/work-index viewer contract, see
+[implementation_work_viewer_contract.md](./implementation_work_viewer_contract.md).
 
 ## 1. Supervisor Role
 
@@ -131,6 +135,8 @@ particular task.
   `--build-graph-backlog-projection`
 - build a repository-tracked intent-layer overlay:
   `--build-intent-layer-overlay`
+- build a review-only assumption-mode exploration preview from root intent text:
+  `--build-exploration-preview --exploration-intent "..."`
 - build a repository-tracked proposal-lane overlay:
   `--build-proposal-lane-overlay`
 - build a derived proposal runtime index:

@@ -36,6 +36,7 @@ Derived artifacts:
 - graph dashboard: `runs/graph_dashboard.json`
 - graph backlog projection: `runs/graph_backlog_projection.json`
 - intent-layer overlay: `runs/intent_layer_overlay.json`
+- exploration preview: `runs/exploration_preview.json`
 - proposal-lane overlay: `runs/proposal_lane_overlay.json`
 - graph health overlay: `runs/graph_health_overlay.json`
 - external consumer index: `runs/external_consumer_index.json`
@@ -100,6 +101,7 @@ INTENT_LAYER_POLICY_RELATIVE_PATH = "tools/intent_layer_policy.json"
 OPERATOR_REQUEST_BRIDGE_POLICY_RELATIVE_PATH = "tools/operator_request_bridge_policy.json"
 SPECGRAPH_VOCABULARY_RELATIVE_PATH = "tools/specgraph_vocabulary.json"
 PRE_SPEC_SEMANTICS_POLICY_RELATIVE_PATH = "tools/pre_spec_semantics_policy.json"
+EXPLORATION_PREVIEW_POLICY_RELATIVE_PATH = "tools/exploration_preview_policy.json"
 VALIDATION_FINDINGS_POLICY_RELATIVE_PATH = "tools/validation_findings_policy.json"
 SAFE_REPAIR_POLICY_RELATIVE_PATH = "tools/safe_repair_policy.json"
 EVALUATOR_LOOP_POLICY_RELATIVE_PATH = "tools/evaluator_loop_policy.json"
@@ -154,6 +156,10 @@ def external_consumers_registry_path() -> Path:
 
 def pre_spec_semantics_policy_path() -> Path:
     return TOOLS_DIR / "pre_spec_semantics_policy.json"
+
+
+def exploration_preview_policy_path() -> Path:
+    return TOOLS_DIR / "exploration_preview_policy.json"
 
 
 def validation_findings_policy_path() -> Path:
@@ -483,6 +489,43 @@ def load_pre_spec_semantics_policy() -> tuple[dict[str, Any], str]:
 
 
 PRE_SPEC_SEMANTICS_POLICY, PRE_SPEC_SEMANTICS_POLICY_SHA256 = load_pre_spec_semantics_policy()
+
+
+def load_exploration_preview_policy() -> tuple[dict[str, Any], str]:
+    path = exploration_preview_policy_path()
+    try:
+        raw_text = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise RuntimeError(
+            f"failed to read exploration preview policy artifact: {path.as_posix()} ({exc})"
+        ) from exc
+    try:
+        payload = json.loads(raw_text)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(
+            f"malformed exploration preview policy artifact: {path.as_posix()} ({exc})"
+        ) from exc
+    if not isinstance(payload, dict):
+        raise RuntimeError(
+            "malformed exploration preview policy artifact: "
+            f"{path.as_posix()} must contain a JSON object"
+        )
+    required_sections = (
+        "repository_layout",
+        "mode_contract",
+        "preview_contract",
+        "viewer_contract",
+    )
+    missing = [section for section in required_sections if section not in payload]
+    if missing:
+        raise RuntimeError(
+            "malformed exploration preview policy artifact: missing top-level section(s): "
+            + ", ".join(missing)
+        )
+    return payload, hashlib.sha256(raw_text.encode("utf-8")).hexdigest()
+
+
+EXPLORATION_PREVIEW_POLICY, EXPLORATION_PREVIEW_POLICY_SHA256 = load_exploration_preview_policy()
 
 
 def load_validation_findings_policy() -> tuple[dict[str, Any], str]:
@@ -1578,6 +1621,14 @@ def pre_spec_semantics_policy_reference() -> dict[str, Any]:
     }
 
 
+def exploration_preview_policy_reference() -> dict[str, Any]:
+    return {
+        "artifact_path": EXPLORATION_PREVIEW_POLICY_RELATIVE_PATH,
+        "artifact_sha256": EXPLORATION_PREVIEW_POLICY_SHA256,
+        "version": EXPLORATION_PREVIEW_POLICY.get("version"),
+    }
+
+
 def evidence_plane_policy_reference() -> dict[str, Any]:
     return {
         "artifact_path": EVIDENCE_PLANE_POLICY_RELATIVE_PATH,
@@ -1831,6 +1882,18 @@ PRE_SPEC_RESERVED_PRIMARY_KINDS = list(
     pre_spec_semantics_policy_lookup("artifact_classes.reserved_primary_kinds")
 )
 PRE_SPEC_REQUIRED_AXES = list(pre_spec_semantics_policy_lookup("axes_contract.required_axes"))
+EXPLORATION_PREVIEW_FILENAME = Path(
+    str(EXPLORATION_PREVIEW_POLICY["repository_layout"]["preview_artifact"])
+).name
+EXPLORATION_PREVIEW_ARTIFACT_KIND = str(
+    EXPLORATION_PREVIEW_POLICY["preview_contract"]["artifact_kind"]
+)
+EXPLORATION_PREVIEW_SCHEMA_VERSION = int(
+    EXPLORATION_PREVIEW_POLICY["preview_contract"]["schema_version"]
+)
+EXPLORATION_PREVIEW_MODE_NAME = str(EXPLORATION_PREVIEW_POLICY["mode_contract"]["mode_name"])
+EXPLORATION_PREVIEW_NODE_KINDS = list(EXPLORATION_PREVIEW_POLICY["preview_contract"]["node_kinds"])
+EXPLORATION_PREVIEW_EDGE_KINDS = list(EXPLORATION_PREVIEW_POLICY["preview_contract"]["edge_kinds"])
 EVIDENCE_PLANE_INDEX_FILENAME = Path(
     str(evidence_plane_policy_lookup("repository_layout.index_artifact"))
 ).name
@@ -7803,6 +7866,10 @@ def pre_spec_semantics_index_path() -> Path:
     return RUNS_DIR / PRE_SPEC_SEMANTICS_INDEX_FILENAME
 
 
+def exploration_preview_path() -> Path:
+    return RUNS_DIR / EXPLORATION_PREVIEW_FILENAME
+
+
 def vocabulary_index_path() -> Path:
     return RUNS_DIR / "vocabulary_index.json"
 
@@ -10714,6 +10781,165 @@ def write_pre_spec_semantics_index(index: dict[str, Any]) -> Path:
     path = pre_spec_semantics_index_path()
     with artifact_lock(path):
         atomic_write_json(path, index)
+    return path
+
+
+def exploration_label_from_text(text: str) -> str:
+    normalized = " ".join(text.split())
+    if len(normalized) <= 96:
+        return normalized
+    return normalized[:93].rstrip() + "..."
+
+
+def validate_exploration_preview_contract(
+    nodes: list[dict[str, Any]], edges: list[dict[str, str]]
+) -> None:
+    allowed_node_kinds = {str(kind) for kind in EXPLORATION_PREVIEW_NODE_KINDS}
+    allowed_edge_kinds = {str(kind) for kind in EXPLORATION_PREVIEW_EDGE_KINDS}
+    invalid_node_kinds = sorted(
+        {
+            str(node.get("kind", ""))
+            for node in nodes
+            if str(node.get("kind", "")) not in allowed_node_kinds
+        }
+    )
+    invalid_edge_kinds = sorted(
+        {
+            str(edge.get("edge_kind", ""))
+            for edge in edges
+            if str(edge.get("edge_kind", "")) not in allowed_edge_kinds
+        }
+    )
+    findings: list[str] = []
+    if invalid_node_kinds:
+        findings.append("invalid node kind(s): " + ", ".join(invalid_node_kinds))
+    if invalid_edge_kinds:
+        findings.append("invalid edge kind(s): " + ", ".join(invalid_edge_kinds))
+    if findings:
+        raise RuntimeError("exploration preview policy/artifact drift: " + "; ".join(findings))
+
+
+def build_exploration_preview(root_intent_text: str | None = None) -> dict[str, Any]:
+    intent_text = str(root_intent_text or "").strip()
+    input_status = "root_intent_provided" if intent_text else "missing_root_intent"
+    text_sha256 = hashlib.sha256(intent_text.encode("utf-8")).hexdigest() if intent_text else ""
+    nodes: list[dict[str, Any]] = []
+    edges: list[dict[str, str]] = []
+
+    if intent_text:
+        root_id = f"exploration:{text_sha256[:12]}:intent"
+        assumption_id = f"exploration:{text_sha256[:12]}:assumptions"
+        hypothesis_id = f"exploration:{text_sha256[:12]}:hypotheses"
+        proposal_id = f"exploration:{text_sha256[:12]}:proposals"
+        review_id = f"exploration:{text_sha256[:12]}:review"
+        nodes = [
+            {
+                "id": root_id,
+                "kind": "intent",
+                "label": exploration_label_from_text(intent_text),
+                "text": intent_text,
+                "status": "captured",
+                "authority": "operator",
+                "confidence": "explicit",
+                "layer": "intent",
+            },
+            {
+                "id": assumption_id,
+                "kind": "assumption_cluster",
+                "label": "Unclaimed assumptions",
+                "text": "Placeholder for assumptions that must be made explicit before promotion.",
+                "status": "placeholder",
+                "authority": "supervisor_assumption_mode",
+                "confidence": "unclaimed",
+                "layer": "hypothesis",
+            },
+            {
+                "id": hypothesis_id,
+                "kind": "hypothesis_cluster",
+                "label": "Candidate hypotheses",
+                "text": "Placeholder for candidate interpretations of the root intent.",
+                "status": "placeholder",
+                "authority": "supervisor_assumption_mode",
+                "confidence": "planned",
+                "layer": "hypothesis",
+            },
+            {
+                "id": proposal_id,
+                "kind": "proposal_cluster",
+                "label": "Possible proposal moves",
+                "text": (
+                    "Placeholder for reviewable proposal directions derived from the exploration."
+                ),
+                "status": "placeholder",
+                "authority": "supervisor_assumption_mode",
+                "confidence": "planned",
+                "layer": "proposal",
+            },
+            {
+                "id": review_id,
+                "kind": "review_gate",
+                "label": "Human review before promotion",
+                "text": "No exploration preview node is canonical until a human promotes it.",
+                "status": "review_required",
+                "authority": "human",
+                "confidence": "required",
+                "layer": "review",
+            },
+        ]
+        edges = [
+            {"source": root_id, "target": assumption_id, "edge_kind": "structures_assumptions"},
+            {"source": root_id, "target": hypothesis_id, "edge_kind": "raises_hypotheses"},
+            {"source": hypothesis_id, "target": proposal_id, "edge_kind": "suggests_proposals"},
+            {"source": proposal_id, "target": review_id, "edge_kind": "requires_human_review"},
+        ]
+
+    validate_exploration_preview_contract(nodes, edges)
+    mode_contract = copy.deepcopy(EXPLORATION_PREVIEW_POLICY["mode_contract"])
+    canonical_mutations_allowed = mode_contract.get("canonical_mutations_allowed")
+    tracked_artifacts_written = mode_contract.get("tracked_artifacts_written")
+    if not isinstance(canonical_mutations_allowed, bool) or not isinstance(
+        tracked_artifacts_written, bool
+    ):
+        raise RuntimeError(
+            "malformed exploration preview mode contract: mutation flags must be booleans"
+        )
+
+    return {
+        "artifact_kind": EXPLORATION_PREVIEW_ARTIFACT_KIND,
+        "schema_version": EXPLORATION_PREVIEW_SCHEMA_VERSION,
+        "generated_at": utc_now_iso(),
+        "policy_reference": exploration_preview_policy_reference(),
+        "mode": EXPLORATION_PREVIEW_MODE_NAME,
+        "mode_contract": mode_contract,
+        "input": {
+            "source_kind": "inline_operator_intent" if intent_text else "none",
+            "text": intent_text,
+            "text_sha256": text_sha256,
+            "input_status": input_status,
+        },
+        "review_state": "preview_only" if intent_text else "blocked",
+        "next_gap": "human_review_before_promotion" if intent_text else "provide_root_intent_text",
+        "canonical_mutations_allowed": canonical_mutations_allowed,
+        "tracked_artifacts_written": tracked_artifacts_written,
+        "node_count": len(nodes),
+        "edge_count": len(edges),
+        "nodes": nodes,
+        "edges": edges,
+        "promotion_candidates": [
+            {"target_kind": target_kind, "review_required": True, "auto_promote": False}
+            for target_kind in EXPLORATION_PREVIEW_POLICY["preview_contract"]["promotion_targets"]
+        ]
+        if intent_text
+        else [],
+        "viewer_contract": copy.deepcopy(EXPLORATION_PREVIEW_POLICY["viewer_contract"]),
+    }
+
+
+def write_exploration_preview(preview: dict[str, Any]) -> Path:
+    RUNS_DIR.mkdir(parents=True, exist_ok=True)
+    path = exploration_preview_path()
+    with artifact_lock(path):
+        atomic_write_json(path, preview)
     return path
 
 
@@ -24584,6 +24810,8 @@ def main(
     transition_profile: str | None = None,
     operator_request_packet_path: str | None = None,
     build_intent_layer_overlay_mode: bool = False,
+    build_exploration_preview_mode: bool = False,
+    exploration_intent_text: str | None = None,
     build_vocabulary_index_mode: bool = False,
     build_vocabulary_drift_report_mode: bool = False,
     build_pre_spec_semantics_index_mode: bool = False,
@@ -24646,6 +24874,7 @@ def main(
     standalone_modes = {
         "--validate-transition-packet": bool(validate_transition_packet_path),
         "--build-intent-layer-overlay": build_intent_layer_overlay_mode,
+        "--build-exploration-preview": build_exploration_preview_mode,
         "--build-vocabulary-index": build_vocabulary_index_mode,
         "--build-vocabulary-drift-report": build_vocabulary_drift_report_mode,
         "--build-pre-spec-semantics-index": build_pre_spec_semantics_index_mode,
@@ -24684,6 +24913,10 @@ def main(
             "standalone commands cannot be combined: " + ", ".join(enabled_standalone_modes),
             file=sys.stderr,
         )
+        return 1
+
+    if exploration_intent_text and not build_exploration_preview_mode:
+        print("--exploration-intent requires --build-exploration-preview", file=sys.stderr)
         return 1
 
     if validate_transition_packet_path:
@@ -24828,6 +25061,41 @@ def main(
         overlay = build_intent_layer_overlay()
         write_intent_layer_overlay(overlay)
         print(json.dumps(overlay, ensure_ascii=False, indent=2))
+        return 0
+
+    if build_exploration_preview_mode:
+        if any(
+            (
+                dry_run,
+                auto_approve,
+                loop,
+                resolve_gate,
+                decision,
+                note,
+                target_spec,
+                split_proposal,
+                apply_split_proposal,
+                operator_note,
+                mutation_budget,
+                run_authority,
+                execution_profile,
+                child_model,
+                child_timeout_seconds,
+                verbose,
+                list_stale_runtime,
+                clean_stale_runtime,
+                observe_graph_health_mode,
+                operator_request_packet_path,
+            )
+        ):
+            print(
+                "--build-exploration-preview must be used as a standalone command",
+                file=sys.stderr,
+            )
+            return 1
+        preview = build_exploration_preview(exploration_intent_text)
+        write_exploration_preview(preview)
+        print(json.dumps(preview, ensure_ascii=False, indent=2))
         return 0
 
     if build_external_consumer_index_mode:
@@ -26853,6 +27121,19 @@ if __name__ == "__main__":
         ),
     )
     parser.add_argument(
+        "--build-exploration-preview",
+        action="store_true",
+        help=(
+            "Build a review-only exploration preview from an optional root intent text "
+            "without mutating canonical specs or tracked intent/proposal artifacts"
+        ),
+    )
+    parser.add_argument(
+        "--exploration-intent",
+        metavar="TEXT",
+        help="Root intent text used by --build-exploration-preview",
+    )
+    parser.add_argument(
         "--build-vocabulary-index",
         action="store_true",
         help=(
@@ -27218,6 +27499,8 @@ if __name__ == "__main__":
             transition_profile=args.transition_profile,
             operator_request_packet_path=args.operator_request_packet,
             build_intent_layer_overlay_mode=args.build_intent_layer_overlay,
+            build_exploration_preview_mode=args.build_exploration_preview,
+            exploration_intent_text=args.exploration_intent,
             build_vocabulary_index_mode=args.build_vocabulary_index,
             build_vocabulary_drift_report_mode=args.build_vocabulary_drift_report,
             build_pre_spec_semantics_index_mode=args.build_pre_spec_semantics_index,

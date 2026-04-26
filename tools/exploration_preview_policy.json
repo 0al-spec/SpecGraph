@@ -1,0 +1,54 @@
+{
+  "artifact_kind": "exploration_preview_policy",
+  "version": 1,
+  "repository_layout": {
+    "preview_artifact": "runs/exploration_preview.json"
+  },
+  "mode_contract": {
+    "mode_name": "assumption",
+    "canonical_mutations_allowed": false,
+    "tracked_artifacts_written": false,
+    "review_boundary": "preview_only_until_human_promotion"
+  },
+  "preview_contract": {
+    "artifact_kind": "exploration_preview",
+    "schema_version": 1,
+    "node_kinds": [
+      "intent",
+      "assumption_cluster",
+      "hypothesis_cluster",
+      "proposal_cluster",
+      "review_gate"
+    ],
+    "edge_kinds": [
+      "structures_assumptions",
+      "raises_hypotheses",
+      "suggests_proposals",
+      "requires_human_review"
+    ],
+    "promotion_targets": [
+      "intent_layer.user_intent",
+      "operator_request_packet",
+      "proposal_lane.candidate"
+    ]
+  },
+  "viewer_contract": {
+    "summary_fields": [
+      "input_status",
+      "review_state",
+      "node_count",
+      "edge_count",
+      "next_gap"
+    ],
+    "node_fields": [
+      "id",
+      "kind",
+      "label",
+      "text",
+      "status",
+      "authority",
+      "confidence",
+      "layer"
+    ]
+  }
+}
