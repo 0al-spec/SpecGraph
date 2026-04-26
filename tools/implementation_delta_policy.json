@@ -84,6 +84,7 @@
       "baseline",
       "target",
       "delta",
+      "status",
       "review_state",
       "next_gap",
       "canonical_mutations_allowed",

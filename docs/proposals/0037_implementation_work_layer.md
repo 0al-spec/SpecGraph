@@ -153,7 +153,13 @@ The snapshot should include:
 - required tests;
 - evidence gaps;
 - likely affected files when known;
+- `status` from the delta snapshot status vocabulary;
+- coarse `review_state`;
 - readiness and blockers.
+
+`status` carries the precise implementation-planning state such as
+`blocked_by_trace_gap`, `empty_delta`, or `invalid_target_scope`.
+`review_state` remains the coarser UI/review grouping.
 
 The artifact is derived and review-only. It must not mutate canonical specs,
 proposal-lane nodes, implementation files, or downstream repositories.

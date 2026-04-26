@@ -47,12 +47,21 @@ Planned commands:
 ```bash
 python3 tools/supervisor.py \
   --build-implementation-delta-snapshot \
-  --implementation-target-spec SG-SPEC-0001
+  --target-scope-kind spec \
+  --target-spec-ids SG-SPEC-0001
 
 python3 tools/supervisor.py --build-implementation-work-index
 ```
 
 Both commands should be standalone derived-artifact modes.
+
+The CLI should map directly onto the JSON target contract:
+
+- `--target-scope-kind spec` -> `target.target_scope_kind = "spec"`
+- `--target-spec-ids SG-SPEC-0001,SG-SPEC-0002` ->
+  `target.target_spec_ids = ["SG-SPEC-0001", "SG-SPEC-0002"]`
+- future region scopes should use the same `target_scope_kind` vocabulary
+  rather than introducing a second target model.
 
 They must reject ordinary refinement flags unless a future
 operator-request-packet contract explicitly authorizes the combination.
@@ -128,6 +137,7 @@ Viewer code should treat these fields as stable:
 - `baseline`
 - `target`
 - `delta`
+- `status`
 - `review_state`
 - `next_gap`
 - `canonical_mutations_allowed`
@@ -163,6 +173,7 @@ Expected top-level shape:
     "evidence_gap_refs": [],
     "likely_affected_code_refs": []
   },
+  "status": "ready_for_planning",
   "review_state": "ready_for_planning",
   "next_gap": "review_implementation_delta",
   "canonical_mutations_allowed": false,
