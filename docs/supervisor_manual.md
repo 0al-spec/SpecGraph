@@ -140,6 +140,10 @@ particular task.
   `--build-intent-layer-overlay`
 - build a review-only assumption-mode exploration preview from root intent text:
   `--build-exploration-preview --exploration-intent "..."`
+- build a derived implementation delta snapshot from an explicit target scope:
+  `--build-implementation-delta-snapshot --target-scope-kind spec --target-spec-ids SG-SPEC-0001 --operator-intent "..."`
+- build bounded implementation work items from the latest delta snapshot:
+  `--build-implementation-work-index`
 - build a repository-tracked proposal-lane overlay:
   `--build-proposal-lane-overlay`
 - build a derived proposal runtime index:

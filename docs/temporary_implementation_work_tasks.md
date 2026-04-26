@@ -66,12 +66,13 @@ discovery through derived surfaces, not a permanent markdown task queue.
 
 ## Supervisor Commands
 
-- [ ] Add `--build-implementation-delta-snapshot`.
-- [ ] Add a way to pass explicit target scope:
-  single spec id, multiple spec ids, or graph region.
-- [ ] Add `--build-implementation-work-index`.
-- [ ] Make both commands standalone derived-artifact modes.
-- [ ] Reject combinations with ordinary refinement flags unless an explicit
+- [x] Add `--build-implementation-delta-snapshot`.
+- [x] Add a way to pass explicit target scope for single or multiple spec ids.
+- [ ] Add graph-region target scope once the viewer/operator contract names a
+  stable region selector vocabulary.
+- [x] Add `--build-implementation-work-index`.
+- [x] Make both commands standalone derived-artifact modes.
+- [x] Reject combinations with ordinary refinement flags unless an explicit
   operator-request packet contract supports them.
 
 ## Viewer Contract

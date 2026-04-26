@@ -111,7 +111,8 @@
       "missing_trace_refs",
       "required_test_refs",
       "evidence_gap_refs",
-      "likely_affected_code_refs"
+      "likely_affected_code_refs",
+      "likely_affected_code_refs_by_spec"
     ]
   },
   "work_index_contract": {
