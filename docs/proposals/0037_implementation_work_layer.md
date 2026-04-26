@@ -158,6 +158,20 @@ The snapshot should include:
 The artifact is derived and review-only. It must not mutate canonical specs,
 proposal-lane nodes, implementation files, or downstream repositories.
 
+### Baseline Gaps
+
+The snapshot needs a baseline reference, but that baseline does not have to be
+fully traced and evidenced before the artifact can be emitted.
+
+A git commit or graph version can establish the comparison point while missing
+trace or evidence surfaces become explicit delta gaps:
+
+- `blocked_by_trace_gap`
+- `blocked_by_evidence_gap`
+
+This keeps the operator visible to the real blocker without preventing the
+viewer from showing the implementation planning state.
+
 ## Implementation Work Index
 
 Add a second derived artifact:
@@ -220,6 +234,7 @@ The implementation work layer builds on:
 - `runs/evidence_plane_overlay.json`
 - `runs/graph_health_overlay.json`
 - `runs/graph_dashboard.json`
+- `runs/external_consumer_handoff_packets.json`
 - proposal-lane and promotion surfaces
 - TechSpec handoff concepts
 

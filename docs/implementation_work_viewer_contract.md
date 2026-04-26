@@ -102,6 +102,10 @@ The server should validate:
 - `target_spec_ids` is non-empty for `spec` scope;
 - `operator_intent` is non-empty.
 
+Missing trace or evidence baselines should not prevent a delta snapshot from
+being displayed. They should surface as readiness states such as
+`blocked_by_trace_gap` or `blocked_by_evidence_gap`.
+
 ### `GET /api/implementation-work-index`
 
 Reads `SpecGraph/runs/implementation_work_index.json`.
@@ -232,6 +236,11 @@ Recommended tones:
 - `in_progress`: active/blue
 - `implemented_pending_evidence`: amber
 - `implemented`: muted green
+
+Special delta-only states:
+
+- `empty_delta`: neutral; nothing new to implement for the selected target.
+- `invalid_target_scope`: red; target input must be repaired before planning.
 
 ## 8. Recommended UI
 

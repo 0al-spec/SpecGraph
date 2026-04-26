@@ -22,17 +22,34 @@
     "proposal_lane"
   ],
   "required_source_artifacts": [
-    "specs/nodes",
-    "runs/spec_trace_projection.json",
-    "runs/evidence_plane_overlay.json",
-    "runs/graph_health_overlay.json"
+    "specs/nodes"
   ],
   "optional_source_artifacts": [
+    "runs/spec_trace_projection.json",
+    "runs/evidence_plane_overlay.json",
+    "runs/graph_health_overlay.json",
     "runs/graph_dashboard.json",
     "runs/graph_backlog_projection.json",
     "runs/proposal_runtime_index.json",
     "runs/proposal_promotion_index.json",
-    "runs/techspec_handoff_packets.json"
+    "runs/external_consumer_handoff_packets.json"
+  ],
+  "source_gap_behavior": [
+    {
+      "source_artifact": "runs/spec_trace_projection.json",
+      "missing_behavior": "emit_trace_baseline_gap",
+      "blocking": false
+    },
+    {
+      "source_artifact": "runs/evidence_plane_overlay.json",
+      "missing_behavior": "emit_evidence_baseline_gap",
+      "blocking": false
+    },
+    {
+      "source_artifact": "runs/graph_health_overlay.json",
+      "missing_behavior": "emit_graph_health_unknown",
+      "blocking": false
+    }
   ],
   "eligibility_contract": {
     "requires_explicit_operator_intent": true,
@@ -135,7 +152,10 @@
     "blocked_by_trace_gap": "attach_trace_baseline",
     "blocked_by_evidence_gap": "attach_evidence_baseline",
     "blocked_by_spec_quality": "resolve_spec_quality_gate",
+    "empty_delta": "no_implementation_delta",
+    "invalid_target_scope": "repair_implementation_target_scope",
     "ready_for_coding_agent": "handoff_to_coding_agent",
+    "in_progress": "observe_implementation_progress",
     "implemented_pending_evidence": "collect_implementation_evidence",
     "implemented": "observe_runtime_feedback"
   }
