@@ -366,6 +366,10 @@ Key derived artifacts:
 - `tools/metrics_source_promotion_policy.json`: declarative contract for
   reviewable promotion of draft sibling metric sources such as `Metrics/SIB_FULL`
   without automatic threshold authority
+- `tools/review_feedback_policy.json`: declarative contract for treating
+  actionable PR review comments as process evidence, including root-cause
+  vocabulary, prevention actions, verification kinds, and future
+  `runs/review_feedback_index.json` semantics
 - `tools/metric_signal_policy.json`: declarative thresholds, score mappings,
   metric identities, and proposal-first threshold semantics for the derived
   metric signal layer

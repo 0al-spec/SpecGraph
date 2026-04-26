@@ -1,0 +1,80 @@
+{
+  "artifact_kind": "review_feedback_policy",
+  "schema_version": 1,
+  "repository_layout": {
+    "future_index_artifact": "runs/review_feedback_index.json"
+  },
+  "learning_loop_contract": {
+    "semantic_boundary": "review_feedback_is_process_evidence_not_canonical_spec_truth",
+    "required_closure_fields": [
+      "source_thread_url",
+      "reviewer",
+      "review_comment_summary",
+      "fix_summary",
+      "root_cause_class",
+      "prevention_action",
+      "verification",
+      "residual_risk"
+    ],
+    "minimum_closure_rule": "actionable_review_threads_require_prevention_action_value",
+    "accepted_risk_action": "accepted_risk_recorded",
+    "thread_reply_expectation": "reply_should_name_fix_and_prevention_path_when_available"
+  },
+  "root_cause_classes": [
+    "scope_isolation_gap",
+    "artifact_contract_validation_gap",
+    "policy_runtime_drift",
+    "diagnostic_wording_gap",
+    "test_coverage_gap",
+    "viewer_contract_gap",
+    "process_rule_gap",
+    "accepted_design_tradeoff"
+  ],
+  "prevention_actions": [
+    "regression_test_added",
+    "validator_added",
+    "policy_rule_added",
+    "agent_instruction_added",
+    "viewer_contract_updated",
+    "documentation_rule_added",
+    "accepted_risk_recorded"
+  ],
+  "verification_kinds": [
+    "targeted_test",
+    "full_test_suite",
+    "lint_or_format_check",
+    "manual_contract_review",
+    "accepted_risk_review"
+  ],
+  "review_feedback_index_contract": {
+    "artifact_kind": "review_feedback_index",
+    "schema_version": 1,
+    "status_values": [
+      "prevention_recorded",
+      "accepted_risk_recorded",
+      "missing_root_cause",
+      "missing_prevention_action",
+      "missing_verification",
+      "invalid_feedback_record"
+    ],
+    "named_filters": [
+      "prevention_recorded",
+      "accepted_risk_recorded",
+      "missing_root_cause",
+      "missing_prevention_action",
+      "missing_verification",
+      "policy_runtime_drift",
+      "artifact_contract_validation_gap",
+      "scope_isolation_gap",
+      "process_rule_gap"
+    ]
+  },
+  "next_gap_defaults": {
+    "prevention_recorded": "observe_review_feedback_recurrence",
+    "accepted_risk_recorded": "review_accepted_risk_when_context_changes",
+    "missing_root_cause": "classify_review_feedback_root_cause",
+    "missing_prevention_action": "attach_review_feedback_prevention_action",
+    "missing_verification": "attach_review_feedback_verification",
+    "invalid_feedback_record": "repair_review_feedback_record"
+  }
+}
