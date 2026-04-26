@@ -181,7 +181,9 @@ Supervisor modes:
   `runs/implementation_delta_snapshot.json` from explicit
   `--target-scope-kind`, `--target-spec-ids`, and `--operator-intent` values,
   producing a derived planning snapshot without mutating canonical specs or
-  runtime code.
+  runtime code. Supported scope kinds are `spec` for an exact spec list and
+  `active_subtree` for an active `refines` graph-region expansion from the
+  selected root specs.
 - `--build-implementation-work-index`: build
   `runs/implementation_work_index.json` from the latest implementation delta
   snapshot, turning delta entries into bounded reviewable work items.

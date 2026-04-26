@@ -14246,6 +14246,86 @@ def test_build_implementation_delta_snapshot_uses_explicit_target_scope(
     assert snapshot["runtime_code_mutations_allowed"] is False
 
 
+def test_build_implementation_delta_snapshot_expands_active_subtree_scope(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    specs_dir = repo_fixture / "specs" / "nodes"
+    (specs_dir / "SG-SPEC-0002.yaml").write_text(
+        json.dumps(
+            {
+                "id": "SG-SPEC-0002",
+                "title": "Active Child Implementation Target",
+                "kind": "spec",
+                "created_at": "2026-04-18T00:00:00Z",
+                "updated_at": "2026-04-18T00:00:00Z",
+                "status": "outlined",
+                "maturity": 0.2,
+                "depends_on": [],
+                "refines": ["SG-SPEC-0001"],
+                "relates_to": [],
+                "inputs": ["specs/nodes/SG-SPEC-0001.yaml"],
+                "outputs": ["tools/child.py"],
+                "allowed_paths": ["tools/child.py"],
+                "acceptance": ["child kept"],
+                "prompt": "Refine this child node.",
+            }
+        ),
+        encoding="utf-8",
+    )
+    (specs_dir / "SG-SPEC-0003.yaml").write_text(
+        json.dumps(
+            {
+                "id": "SG-SPEC-0003",
+                "title": "Historical Child",
+                "kind": "spec",
+                "created_at": "2026-04-18T00:00:00Z",
+                "updated_at": "2026-04-18T00:00:00Z",
+                "status": "linked",
+                "maturity": 1.0,
+                "presence": {"state": "historical"},
+                "depends_on": [],
+                "refines": ["SG-SPEC-0002"],
+                "relates_to": [],
+                "inputs": ["specs/nodes/SG-SPEC-0002.yaml"],
+                "outputs": ["tools/historical.py"],
+                "allowed_paths": ["tools/historical.py"],
+                "acceptance": ["historical kept"],
+                "prompt": "Historical only.",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    snapshot = supervisor_module.build_implementation_delta_snapshot(
+        target_scope_kind="active_subtree",
+        target_spec_ids="SG-SPEC-0001",
+        operator_intent="Plan implementation for the active subtree.",
+    )
+    index = supervisor_module.build_implementation_work_index(snapshot)
+
+    assert snapshot["target"]["target_scope_kind"] == "active_subtree"
+    assert snapshot["target"]["target_spec_ids"] == ["SG-SPEC-0001"]
+    assert snapshot["target"]["valid_target_spec_ids"] == ["SG-SPEC-0001"]
+    assert snapshot["target"]["resolved_target_spec_ids"] == [
+        "SG-SPEC-0001",
+        "SG-SPEC-0002",
+    ]
+    assert snapshot["target"]["scope_resolution"] == {
+        "selector": "active_refines_subtree",
+        "expanded": True,
+        "root_spec_ids": ["SG-SPEC-0001"],
+        "resolved_count": 2,
+        "excludes_historical_or_superseded": True,
+    }
+    assert snapshot["delta"]["new_spec_ids"] == ["SG-SPEC-0001", "SG-SPEC-0002"]
+    assert "SG-SPEC-0003" not in snapshot["delta"]["new_spec_ids"]
+    assert [entry["affected_spec_ids"][0] for entry in index["entries"]] == [
+        "SG-SPEC-0001",
+        "SG-SPEC-0002",
+    ]
+
+
 def test_build_implementation_delta_snapshot_marks_invalid_target_scope(
     supervisor_module: object,
     repo_fixture: Path,

@@ -2110,6 +2110,11 @@ IMPLEMENTATION_DELTA_STATUS_VALUES = list(
 IMPLEMENTATION_DELTA_REVIEW_STATES = list(
     implementation_delta_policy_lookup("delta_snapshot_contract.review_states")
 )
+IMPLEMENTATION_TARGET_SCOPE_KINDS = {
+    str(item).strip()
+    for item in implementation_delta_policy_lookup("target_scope_contract.scope_kinds")
+    if str(item).strip()
+}
 IMPLEMENTATION_WORK_INDEX_ARTIFACT_KIND = str(
     implementation_delta_policy_lookup("work_index_contract.artifact_kind")
 )
@@ -11287,6 +11292,45 @@ def parse_implementation_target_spec_ids(
     return spec_ids
 
 
+def resolve_implementation_target_scope(
+    *,
+    scope_kind: str,
+    requested_spec_ids: list[str],
+    specs: list[SpecNode],
+    spec_index: dict[str, SpecNode],
+) -> dict[str, Any]:
+    missing_target_spec_ids = sorted(
+        spec_id for spec_id in requested_spec_ids if spec_id not in spec_index
+    )
+    valid_target_spec_ids = [spec_id for spec_id in requested_spec_ids if spec_id in spec_index]
+    resolved_target_spec_ids: list[str] = []
+    selector = "none"
+    if scope_kind == "spec":
+        selector = "exact_spec_list"
+        resolved_target_spec_ids = list(valid_target_spec_ids)
+    elif scope_kind == "active_subtree":
+        selector = "active_refines_subtree"
+        seen: set[str] = set()
+        for root_spec_id in valid_target_spec_ids:
+            for spec in active_subtree_nodes(spec_index[root_spec_id], specs):
+                if spec.id and spec.id not in seen:
+                    seen.add(spec.id)
+                    resolved_target_spec_ids.append(spec.id)
+
+    return {
+        "valid_target_spec_ids": valid_target_spec_ids,
+        "missing_target_spec_ids": missing_target_spec_ids,
+        "resolved_target_spec_ids": resolved_target_spec_ids,
+        "scope_resolution": {
+            "selector": selector,
+            "expanded": scope_kind == "active_subtree",
+            "root_spec_ids": valid_target_spec_ids,
+            "resolved_count": len(resolved_target_spec_ids),
+            "excludes_historical_or_superseded": scope_kind == "active_subtree",
+        },
+    }
+
+
 def implementation_source_artifact_summary(
     path: Path,
     *,
@@ -11406,13 +11450,20 @@ def build_implementation_delta_snapshot(
     )
 
     validation_findings: list[str] = []
-    if scope_kind != "spec":
+    if scope_kind not in IMPLEMENTATION_TARGET_SCOPE_KINDS:
         validation_findings.append("unsupported_or_missing_target_scope_kind")
     if not requested_spec_ids:
         validation_findings.append("missing_target_spec_ids")
-    missing_target_spec_ids = sorted(
-        spec_id for spec_id in requested_spec_ids if spec_id not in spec_index
+    target_scope = resolve_implementation_target_scope(
+        scope_kind=scope_kind,
+        requested_spec_ids=requested_spec_ids,
+        specs=specs,
+        spec_index=spec_index,
     )
+    valid_target_spec_ids = target_scope["valid_target_spec_ids"]
+    missing_target_spec_ids = target_scope["missing_target_spec_ids"]
+    resolved_target_spec_ids = target_scope["resolved_target_spec_ids"]
+    scope_resolution = target_scope["scope_resolution"]
     if missing_target_spec_ids:
         validation_findings.extend(
             f"unknown_target_spec_id::{spec_id}" for spec_id in missing_target_spec_ids
@@ -11420,7 +11471,6 @@ def build_implementation_delta_snapshot(
     if not intent_text:
         validation_findings.append("missing_operator_intent")
 
-    valid_target_spec_ids = [spec_id for spec_id in requested_spec_ids if spec_id in spec_index]
     implemented_spec_ids = sorted(
         str(item)
         for item in (trace_projection or {})
@@ -11431,7 +11481,7 @@ def build_implementation_delta_snapshot(
     )
     implemented_set = set(implemented_spec_ids)
 
-    target_specs = [spec_index[spec_id] for spec_id in valid_target_spec_ids]
+    target_specs = [spec_index[spec_id] for spec_id in resolved_target_spec_ids]
     quality_blockers = sorted(
         {
             spec.id
@@ -11564,9 +11614,11 @@ def build_implementation_delta_snapshot(
             "target_scope_kind": scope_kind,
             "target_spec_ids": requested_spec_ids,
             "valid_target_spec_ids": valid_target_spec_ids,
+            "resolved_target_spec_ids": resolved_target_spec_ids,
             "missing_target_spec_ids": missing_target_spec_ids,
             "target_git_commit": current_commit,
             "operator_intent": intent_text,
+            "scope_resolution": scope_resolution,
             "target_diagnostics": target_diagnostics,
         },
         "delta": {
@@ -11648,7 +11700,10 @@ def build_implementation_work_index(
         raise RuntimeError("malformed implementation delta snapshot: target must be an object")
     target_spec_ids = [
         str(spec_id).strip()
-        for spec_id in target.get("valid_target_spec_ids", target.get("target_spec_ids", []))
+        for spec_id in target.get(
+            "resolved_target_spec_ids",
+            target.get("valid_target_spec_ids", target.get("target_spec_ids", [])),
+        )
         if str(spec_id).strip()
     ]
     if not isinstance(delta, dict):
@@ -29148,7 +29203,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--target-scope-kind",
         metavar="KIND",
-        help="Implementation delta target scope kind, initially: spec",
+        help="Implementation delta target scope kind: spec or active_subtree",
     )
     parser.add_argument(
         "--target-spec-ids",
