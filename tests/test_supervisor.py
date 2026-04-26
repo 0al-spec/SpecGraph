@@ -10282,6 +10282,36 @@ def test_build_specpm_public_registry_index_marks_unavailable_as_observation_gap
     assert report["registry_backlog"]["entry_count"] == 1
 
 
+def test_build_specpm_public_registry_index_reports_bad_endpoint_template(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    consumer_index = specpm_registry_consumer_index()
+    specpm_entry = consumer_index["entries"][0]
+    specpm_entry["registry"]["endpoints"]["package"] = "/v0/packages/{pkg}"
+
+    def fake_fetch(url: str, *, timeout_seconds: float) -> dict[str, object]:
+        _ = (url, timeout_seconds)
+        raise AssertionError("bad endpoint templates must not be probed")
+
+    monkeypatch.setattr(supervisor_module, "fetch_specpm_public_registry_json", fake_fetch)
+
+    report = supervisor_module.build_specpm_public_registry_index(
+        specpm_materialization_report(),
+        consumer_index,
+    )
+
+    assert report["registry"]["registry_status"] == "invalid_registry_contract"
+    assert report["registry"]["next_gap"] == "repair_specpm_public_registry_contract"
+    assert "package_endpoint_unknown_placeholder_pkg" in report["registry"]["contract_errors"]
+    assert (
+        "package_endpoint_missing_placeholder_package_id" in report["registry"]["contract_errors"]
+    )
+    assert report["entry_count"] == 0
+    assert report["registry_backlog"]["entry_count"] == 1
+
+
 def test_build_specpm_public_registry_index_reports_capability_drift(
     supervisor_module: object,
     repo_fixture: Path,

@@ -69,6 +69,7 @@ import os
 import re
 import secrets
 import shutil
+import string
 import subprocess
 import sys
 import tempfile
@@ -16903,6 +16904,38 @@ def find_specpm_consumer_entry(external_consumer_index: dict[str, Any]) -> dict[
     return {}
 
 
+SPECPM_PUBLIC_REGISTRY_ENDPOINT_PLACEHOLDERS = {
+    "package": {"package_id"},
+    "version": {"package_id", "version"},
+    "capability_search": {"capability_id"},
+}
+
+
+def specpm_public_registry_endpoint_template_errors(
+    endpoint_name: str,
+    endpoint_template: str,
+) -> list[str]:
+    required_placeholders = SPECPM_PUBLIC_REGISTRY_ENDPOINT_PLACEHOLDERS[endpoint_name]
+    try:
+        parsed_fields = [
+            str(field_name).split(".", 1)[0].split("[", 1)[0]
+            for _literal, field_name, _format_spec, _conversion in string.Formatter().parse(
+                endpoint_template
+            )
+            if field_name is not None
+        ]
+    except ValueError:
+        return [f"malformed_{endpoint_name}_endpoint_template"]
+
+    observed_placeholders = {field for field in parsed_fields if field}
+    errors: list[str] = []
+    for placeholder in sorted(required_placeholders - observed_placeholders):
+        errors.append(f"{endpoint_name}_endpoint_missing_placeholder_{placeholder}")
+    for placeholder in sorted(observed_placeholders - required_placeholders):
+        errors.append(f"{endpoint_name}_endpoint_unknown_placeholder_{placeholder}")
+    return errors
+
+
 def normalize_specpm_public_registry_config(
     specpm_consumer: dict[str, Any],
 ) -> tuple[dict[str, Any], list[str]]:
@@ -16945,6 +16978,8 @@ def normalize_specpm_public_registry_config(
             errors.append(f"missing_{endpoint_name}_endpoint")
         elif "/v0/" not in endpoint:
             errors.append(f"{endpoint_name}_endpoint_missing_api_prefix")
+        else:
+            errors.extend(specpm_public_registry_endpoint_template_errors(endpoint_name, endpoint))
 
     return {
         "profile": profile,
