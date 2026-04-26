@@ -10,58 +10,58 @@ discovery through derived surfaces, not a permanent markdown task queue.
 
 ## Layer Model To Capture
 
-- [ ] Define the layered model explicitly:
+- [x] Define the layered model explicitly:
   `Layer 0 Exploration -> Layer 1 Specification -> Layer 2 Implementation Work -> Layer 3 Runtime/Evidence`.
-- [ ] Clarify that `Exploration` contains raw intent, assumptions, hypotheses,
+- [x] Clarify that `Exploration` contains raw intent, assumptions, hypotheses,
   and preview/mindmap surfaces, but is not canonical.
-- [ ] Clarify that `Specification` is canonical SpecGraph: contracts,
+- [x] Clarify that `Specification` is canonical SpecGraph: contracts,
   invariants, acceptance criteria, lifecycle, and quality gates.
-- [ ] Clarify that `Implementation Work` is a reviewable bridge layer, not code
+- [x] Clarify that `Implementation Work` is a reviewable bridge layer, not code
   and not canonical spec truth.
-- [ ] Clarify that `Runtime/Evidence` contains code changes, PRs, tests,
+- [x] Clarify that `Runtime/Evidence` contains code changes, PRs, tests,
   telemetry/evidence, and trace links back to specs.
 
 ## Proposal Work
 
-- [ ] Add proposal `0037_implementation_work_layer.md`.
-- [ ] In the proposal, define when a spec is eligible to move toward
+- [x] Add proposal `0037_implementation_work_layer.md`.
+- [x] In the proposal, define when a spec is eligible to move toward
   implementation work: quality metrics satisfied, trace/evidence baseline known,
   and human/operator intent to implement is explicit.
-- [ ] In the proposal, define why the agent should not jump directly from
+- [x] In the proposal, define why the agent should not jump directly from
   `spec -> code`; it should first emit reviewable work packets or handoff
   artifacts.
-- [ ] In the proposal, define the operator action: "move this graph/spec region
+- [x] In the proposal, define the operator action: "move this graph/spec region
   to implementation" as a request to build an implementation delta snapshot.
 
 ## Delta Snapshot
 
-- [ ] Add `tools/implementation_delta_policy.json`.
-- [ ] Define `runs/implementation_delta_snapshot.json`.
-- [ ] Define the baseline fields:
+- [x] Add `tools/implementation_delta_policy.json`.
+- [x] Define `runs/implementation_delta_snapshot.json`.
+- [x] Define the baseline fields:
   graph version or git commit SHA, implemented specs, implementation evidence,
   trace coverage, and freshness/drift status.
-- [ ] Define the target fields:
+- [x] Define the target fields:
   selected spec ids or graph region, target graph version, requested quality
   gates, and operator intent.
-- [ ] Define the delta fields:
+- [x] Define the delta fields:
   new specs, changed specs, changed contracts, changed acceptance criteria,
   missing traces, required tests, evidence gaps, likely affected files, and
   implementation readiness.
-- [ ] Ensure the snapshot is derived and review-only; it must not mutate
+- [x] Ensure the snapshot is derived and review-only; it must not mutate
   canonical specs, proposal-lane nodes, or implementation files.
 
 ## Implementation Work Index
 
-- [ ] Define `runs/implementation_work_index.json`.
-- [ ] Convert delta entries into bounded work items with stable ids.
-- [ ] Include work item fields:
+- [x] Define `runs/implementation_work_index.json`.
+- [x] Convert delta entries into bounded work items with stable ids.
+- [x] Include work item fields:
   affected specs, implementation reason, required tests, expected evidence,
   likely code areas, readiness, blockers, and next gap.
-- [ ] Define status vocabulary:
+- [x] Define status vocabulary:
   `ready_for_planning`, `blocked_by_trace_gap`, `blocked_by_evidence_gap`,
   `blocked_by_spec_quality`, `ready_for_coding_agent`, `in_progress`,
   `implemented_pending_evidence`, `implemented`.
-- [ ] Keep this layer distinct from canonical specs and from actual runtime
+- [x] Keep this layer distinct from canonical specs and from actual runtime
   code changes.
 
 ## Supervisor Commands
@@ -76,14 +76,14 @@ discovery through derived surfaces, not a permanent markdown task queue.
 
 ## Viewer Contract
 
-- [ ] Add `docs/implementation_work_viewer_contract.md`.
-- [ ] Define ContextBuilder panels for:
+- [x] Add `docs/implementation_work_viewer_contract.md`.
+- [x] Define ContextBuilder panels for:
   implementation delta summary, changed specs, work items, blockers, required
   tests, and evidence gaps.
-- [ ] Define badges for readiness and blockers.
-- [ ] Define links from work items back to canonical specs, trace refs, evidence
+- [x] Define badges for readiness and blockers.
+- [x] Define links from work items back to canonical specs, trace refs, evidence
   refs, and likely code refs.
-- [ ] Make the viewer show that this is an implementation planning surface, not
+- [x] Make the viewer show that this is an implementation planning surface, not
   a canonical graph mutation.
 
 ## Later, Only If Stable

@@ -8,6 +8,8 @@ For the dedicated `SpecPM` preview/materialization/import viewer contract, see
 [docs/specpm_viewer_contract.md](../docs/specpm_viewer_contract.md).
 For the ContextBuilder exploration/assumption-mode viewer contract, see
 [docs/exploration_preview_viewer_contract.md](../docs/exploration_preview_viewer_contract.md).
+For the planned Implementation Work layer and delta/work-index viewer contract,
+see [docs/implementation_work_viewer_contract.md](../docs/implementation_work_viewer_contract.md).
 
 ## Minimal Spec-Node Supervisor MVP
 
@@ -398,6 +400,9 @@ Key derived artifacts:
 - `tools/exploration_preview_policy.json`: declarative contract for
   assumption-mode exploration previews, including allowed placeholder node
   kinds, edge kinds, promotion targets, and the preview-only mutation boundary
+- `tools/implementation_delta_policy.json`: planned declarative contract for
+  Implementation Work delta snapshots and work indexes, including baseline,
+  target, delta, readiness, and derived-only mutation boundaries
 - `tools/specgraph_vocabulary.json`: shared machine-readable vocabulary layer
   for canonical terms, aliases, deprecated aliases, and cross-artifact
   ontology families
