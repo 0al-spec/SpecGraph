@@ -6,6 +6,8 @@ For a visualizer-facing compact report and overlay guide, see
 [docs/metrics_visualization_guide.md](../docs/metrics_visualization_guide.md).
 For the dedicated `SpecPM` preview/materialization/import viewer contract, see
 [docs/specpm_viewer_contract.md](../docs/specpm_viewer_contract.md).
+For the ContextBuilder exploration/assumption-mode viewer contract, see
+[docs/exploration_preview_viewer_contract.md](../docs/exploration_preview_viewer_contract.md).
 
 ## Minimal Spec-Node Supervisor MVP
 
