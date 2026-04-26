@@ -131,6 +131,8 @@ particular task.
   `--build-graph-backlog-projection`
 - build a repository-tracked intent-layer overlay:
   `--build-intent-layer-overlay`
+- build a review-only assumption-mode exploration preview from root intent text:
+  `--build-exploration-preview --exploration-intent "..."`
 - build a repository-tracked proposal-lane overlay:
   `--build-proposal-lane-overlay`
 - build a derived proposal runtime index:

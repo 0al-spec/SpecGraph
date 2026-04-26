@@ -164,6 +164,10 @@ Supervisor modes:
   repository-tracked intent-layer nodes under `intent_layer/nodes/`, so
   pre-canonical user intent and operator-request artifacts can be inspected as
   a separate mediation layer.
+- `--build-exploration-preview`: build `runs/exploration_preview.json` from an
+  optional inline `--exploration-intent TEXT`, producing a review-only
+  assumption-mode placeholder graph without mutating canonical specs or tracked
+  intent/proposal artifacts.
 - `--build-vocabulary-index`: build `runs/vocabulary_index.json` from
   `tools/specgraph_vocabulary.json`, flattening canonical terms, aliases,
   deprecated aliases, families, and contexts into one shared machine-readable
@@ -218,6 +222,9 @@ Key derived artifacts:
 - `runs/intent_layer_overlay.json`: intent-layer viewer/report surface grouped
   by artifact kind, mediation state, explicit distinction contracts, and
   invalid query-contract findings
+- `runs/exploration_preview.json`: review-only assumption-mode preview graph
+  with intent, assumption, hypothesis, proposal, and human-review placeholder
+  nodes; no canonical or tracked artifact mutations are allowed by this artifact
 - `runs/pre_spec_semantics_index.json`: derived pre-spec semantic index linking
   tracked intent-layer artifacts to downstream proposal-lane nodes and
   canonical specs, with queryability and provenance findings
@@ -386,6 +393,9 @@ Key derived artifacts:
 - `tools/intent_layer_policy.json`: declarative repository contract for the
   tracked intent layer, including kind separation, mediation-state vocabulary,
   and overlay semantics
+- `tools/exploration_preview_policy.json`: declarative contract for
+  assumption-mode exploration previews, including allowed placeholder node
+  kinds, edge kinds, promotion targets, and the preview-only mutation boundary
 - `tools/specgraph_vocabulary.json`: shared machine-readable vocabulary layer
   for canonical terms, aliases, deprecated aliases, and cross-artifact
   ontology families

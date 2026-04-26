@@ -13673,6 +13673,111 @@ def test_main_builds_intent_layer_overlay_without_loading_specs(
     assert report["artifact_kind"] == supervisor_module.INTENT_LAYER_OVERLAY_ARTIFACT_KIND
 
 
+def test_build_exploration_preview_blocks_without_root_intent(
+    supervisor_module: object,
+) -> None:
+    preview = supervisor_module.build_exploration_preview("")
+
+    assert preview["artifact_kind"] == supervisor_module.EXPLORATION_PREVIEW_ARTIFACT_KIND
+    assert preview["schema_version"] == supervisor_module.EXPLORATION_PREVIEW_SCHEMA_VERSION
+    assert preview["input"]["input_status"] == "missing_root_intent"
+    assert preview["review_state"] == "blocked"
+    assert preview["next_gap"] == "provide_root_intent_text"
+    assert preview["canonical_mutations_allowed"] is False
+    assert preview["tracked_artifacts_written"] is False
+    assert preview["node_count"] == 0
+    assert preview["edge_count"] == 0
+    assert preview["nodes"] == []
+    assert preview["edges"] == []
+    assert preview["promotion_candidates"] == []
+
+
+def test_build_exploration_preview_creates_review_only_placeholder_graph(
+    supervisor_module: object,
+) -> None:
+    intent_text = "Build a visual exploration canvas for SpecGraph."
+
+    preview = supervisor_module.build_exploration_preview(intent_text)
+
+    assert preview["artifact_kind"] == supervisor_module.EXPLORATION_PREVIEW_ARTIFACT_KIND
+    assert preview["mode"] == "assumption"
+    assert preview["input"]["text"] == intent_text
+    assert preview["input"]["input_status"] == "root_intent_provided"
+    assert preview["input"]["text_sha256"]
+    assert preview["review_state"] == "preview_only"
+    assert preview["next_gap"] == "human_review_before_promotion"
+    assert preview["canonical_mutations_allowed"] is False
+    assert preview["tracked_artifacts_written"] is False
+    assert preview["node_count"] == 5
+    assert preview["edge_count"] == 4
+    assert [node["kind"] for node in preview["nodes"]] == [
+        "intent",
+        "assumption_cluster",
+        "hypothesis_cluster",
+        "proposal_cluster",
+        "review_gate",
+    ]
+    assert {edge["edge_kind"] for edge in preview["edges"]} == set(
+        supervisor_module.EXPLORATION_PREVIEW_EDGE_KINDS
+    )
+    assert preview["nodes"][0]["text"] == intent_text
+    assert {candidate["target_kind"] for candidate in preview["promotion_candidates"]} == set(
+        supervisor_module.EXPLORATION_PREVIEW_POLICY["preview_contract"]["promotion_targets"]
+    )
+    assert all(
+        candidate["review_required"] is True for candidate in preview["promotion_candidates"]
+    )
+    assert all(candidate["auto_promote"] is False for candidate in preview["promotion_candidates"])
+
+
+def test_main_builds_exploration_preview_as_standalone_command(
+    supervisor_module: object,
+    repo_fixture: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    exit_code = supervisor_module.main(
+        build_exploration_preview_mode=True,
+        exploration_intent_text="Explore SpecGraph canvas layers.",
+    )
+
+    assert exit_code == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["artifact_kind"] == supervisor_module.EXPLORATION_PREVIEW_ARTIFACT_KIND
+    assert report["input"]["input_status"] == "root_intent_provided"
+    persisted = json.loads(
+        (repo_fixture / "runs" / "exploration_preview.json").read_text(encoding="utf-8")
+    )
+    assert persisted["artifact_kind"] == supervisor_module.EXPLORATION_PREVIEW_ARTIFACT_KIND
+    assert persisted["canonical_mutations_allowed"] is False
+    assert persisted["tracked_artifacts_written"] is False
+
+
+def test_main_rejects_combined_exploration_preview_and_target_spec(
+    supervisor_module: object,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    exit_code = supervisor_module.main(
+        build_exploration_preview_mode=True,
+        exploration_intent_text="Explore SpecGraph canvas layers.",
+        target_spec="SG-SPEC-0001",
+    )
+
+    assert exit_code == 1
+    captured = capsys.readouterr()
+    assert "--build-exploration-preview must be used as a standalone command" in captured.err
+
+
+def test_main_rejects_exploration_intent_without_preview_mode(
+    supervisor_module: object,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    exit_code = supervisor_module.main(exploration_intent_text="Explore SpecGraph canvas layers.")
+
+    assert exit_code == 1
+    captured = capsys.readouterr()
+    assert "--exploration-intent requires --build-exploration-preview" in captured.err
+
+
 def test_build_intent_layer_overlay_flags_cross_layer_masquerade(
     supervisor_module: object,
     repo_fixture: Path,

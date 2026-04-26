@@ -116,6 +116,7 @@ The following are derived runtime artifacts:
 
 - graph health observations
 - graph health signals
+- exploration previews
 - refactor queue items
 - proposal queue items
 - run logs
