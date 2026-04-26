@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import datetime as dt
 import importlib.util
 import io
@@ -13706,8 +13707,22 @@ def test_build_exploration_preview_creates_review_only_placeholder_graph(
     assert preview["input"]["text_sha256"]
     assert preview["review_state"] == "preview_only"
     assert preview["next_gap"] == "human_review_before_promotion"
-    assert preview["canonical_mutations_allowed"] is False
-    assert preview["tracked_artifacts_written"] is False
+    assert (
+        preview["canonical_mutations_allowed"]
+        == preview["mode_contract"]["canonical_mutations_allowed"]
+        == supervisor_module.EXPLORATION_PREVIEW_POLICY["mode_contract"][
+            "canonical_mutations_allowed"
+        ]
+        is False
+    )
+    assert (
+        preview["tracked_artifacts_written"]
+        == preview["mode_contract"]["tracked_artifacts_written"]
+        == supervisor_module.EXPLORATION_PREVIEW_POLICY["mode_contract"][
+            "tracked_artifacts_written"
+        ]
+        is False
+    )
     assert preview["node_count"] == 5
     assert preview["edge_count"] == 4
     assert [node["kind"] for node in preview["nodes"]] == [
@@ -13728,6 +13743,42 @@ def test_build_exploration_preview_creates_review_only_placeholder_graph(
         candidate["review_required"] is True for candidate in preview["promotion_candidates"]
     )
     assert all(candidate["auto_promote"] is False for candidate in preview["promotion_candidates"])
+
+
+def test_build_exploration_preview_rejects_policy_artifact_kind_drift(
+    supervisor_module: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(supervisor_module, "EXPLORATION_PREVIEW_NODE_KINDS", ["intent"])
+    monkeypatch.setattr(
+        supervisor_module,
+        "EXPLORATION_PREVIEW_EDGE_KINDS",
+        ["structures_assumptions", "raises_hypotheses"],
+    )
+
+    with pytest.raises(RuntimeError) as exc_info:
+        supervisor_module.build_exploration_preview("Build a visual exploration canvas.")
+
+    message = str(exc_info.value)
+    assert "exploration preview policy/artifact drift" in message
+    assert "invalid node kind(s)" in message
+    assert "assumption_cluster" in message
+    assert "invalid edge kind(s)" in message
+    assert "suggests_proposals" in message
+
+
+def test_build_exploration_preview_rejects_non_boolean_mode_contract_flags(
+    supervisor_module: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    policy = copy.deepcopy(supervisor_module.EXPLORATION_PREVIEW_POLICY)
+    policy["mode_contract"]["canonical_mutations_allowed"] = "false"
+    monkeypatch.setattr(supervisor_module, "EXPLORATION_PREVIEW_POLICY", policy)
+
+    with pytest.raises(RuntimeError) as exc_info:
+        supervisor_module.build_exploration_preview("Build a visual exploration canvas.")
+
+    assert "mutation flags must be booleans" in str(exc_info.value)
 
 
 def test_main_builds_exploration_preview_as_standalone_command(

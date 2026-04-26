@@ -10791,6 +10791,34 @@ def exploration_label_from_text(text: str) -> str:
     return normalized[:93].rstrip() + "..."
 
 
+def validate_exploration_preview_contract(
+    nodes: list[dict[str, Any]], edges: list[dict[str, str]]
+) -> None:
+    allowed_node_kinds = {str(kind) for kind in EXPLORATION_PREVIEW_NODE_KINDS}
+    allowed_edge_kinds = {str(kind) for kind in EXPLORATION_PREVIEW_EDGE_KINDS}
+    invalid_node_kinds = sorted(
+        {
+            str(node.get("kind", ""))
+            for node in nodes
+            if str(node.get("kind", "")) not in allowed_node_kinds
+        }
+    )
+    invalid_edge_kinds = sorted(
+        {
+            str(edge.get("edge_kind", ""))
+            for edge in edges
+            if str(edge.get("edge_kind", "")) not in allowed_edge_kinds
+        }
+    )
+    findings: list[str] = []
+    if invalid_node_kinds:
+        findings.append("invalid node kind(s): " + ", ".join(invalid_node_kinds))
+    if invalid_edge_kinds:
+        findings.append("invalid edge kind(s): " + ", ".join(invalid_edge_kinds))
+    if findings:
+        raise RuntimeError("exploration preview policy/artifact drift: " + "; ".join(findings))
+
+
 def build_exploration_preview(root_intent_text: str | None = None) -> dict[str, Any]:
     intent_text = str(root_intent_text or "").strip()
     input_status = "root_intent_provided" if intent_text else "missing_root_intent"
@@ -10865,13 +10893,24 @@ def build_exploration_preview(root_intent_text: str | None = None) -> dict[str, 
             {"source": proposal_id, "target": review_id, "edge_kind": "requires_human_review"},
         ]
 
+    validate_exploration_preview_contract(nodes, edges)
+    mode_contract = copy.deepcopy(EXPLORATION_PREVIEW_POLICY["mode_contract"])
+    canonical_mutations_allowed = mode_contract.get("canonical_mutations_allowed")
+    tracked_artifacts_written = mode_contract.get("tracked_artifacts_written")
+    if not isinstance(canonical_mutations_allowed, bool) or not isinstance(
+        tracked_artifacts_written, bool
+    ):
+        raise RuntimeError(
+            "malformed exploration preview mode contract: mutation flags must be booleans"
+        )
+
     return {
         "artifact_kind": EXPLORATION_PREVIEW_ARTIFACT_KIND,
         "schema_version": EXPLORATION_PREVIEW_SCHEMA_VERSION,
         "generated_at": utc_now_iso(),
         "policy_reference": exploration_preview_policy_reference(),
         "mode": EXPLORATION_PREVIEW_MODE_NAME,
-        "mode_contract": copy.deepcopy(EXPLORATION_PREVIEW_POLICY["mode_contract"]),
+        "mode_contract": mode_contract,
         "input": {
             "source_kind": "inline_operator_intent" if intent_text else "none",
             "text": intent_text,
@@ -10880,8 +10919,8 @@ def build_exploration_preview(root_intent_text: str | None = None) -> dict[str, 
         },
         "review_state": "preview_only" if intent_text else "blocked",
         "next_gap": "human_review_before_promotion" if intent_text else "provide_root_intent_text",
-        "canonical_mutations_allowed": False,
-        "tracked_artifacts_written": False,
+        "canonical_mutations_allowed": canonical_mutations_allowed,
+        "tracked_artifacts_written": tracked_artifacts_written,
         "node_count": len(nodes),
         "edge_count": len(edges),
         "nodes": nodes,
