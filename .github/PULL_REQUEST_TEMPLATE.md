@@ -1,6 +1,14 @@
 ## Summary
-- What changed and why?
+- What changed?
 - Link related issue/task (if any):
+
+## Motivation
+- Why is this change needed?
+- What problem, gap, or user need does it address?
+
+## Goals
+- What should this PR achieve?
+- What is intentionally out of scope?
 
 ## Changes
 - 
