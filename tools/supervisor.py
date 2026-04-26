@@ -10103,6 +10103,8 @@ def proposal_lane_timestamp_text(value: object) -> str:
 
 
 def proposal_lane_optional_timestamp_text(value: object) -> str:
+    if value is None:
+        return ""
     text = str(value).strip()
     if not text:
         return ""

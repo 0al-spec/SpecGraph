@@ -3581,6 +3581,34 @@ def test_sync_tracked_proposal_lane_node_records_canonical_application_event(
     assert node["runtime_bridge"]["proposal_queue_status"] == "applied"
 
 
+def test_sync_tracked_proposal_lane_node_treats_null_optional_timestamp_as_absent(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    supervisor_module.utc_now_iso = lambda: "2026-04-19T00:00:01Z"
+
+    synced = supervisor_module.sync_tracked_proposal_lane_node(
+        {
+            "id": "governance_proposal::SG-SPEC-0001::timestamp_drift",
+            "proposal_type": "governance_proposal",
+            "spec_id": "SG-SPEC-0001",
+            "signal": "timestamp_drift",
+            "status": "proposed",
+            "trigger": "manual_review",
+            "execution_policy": "emit_proposal",
+            "applied_at": None,
+        }
+    )
+
+    assert synced is not None
+    node_path, _node = synced
+    node = json.loads(node_path.read_text(encoding="utf-8"))
+
+    assert node["runtime_bridge"]["applied_at"] == ""
+    assert "canonical_application_event" not in node
+    assert supervisor_module.proposal_lane_timestamp_findings(node) == []
+
+
 def test_update_proposal_queue_retires_stale_tracked_nodes_for_same_spec(
     supervisor_module: object,
     repo_fixture: Path,
