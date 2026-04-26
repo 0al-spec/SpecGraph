@@ -49,6 +49,12 @@ python3 tools/supervisor.py \
   --target-scope-kind spec \
   --target-spec-ids SG-SPEC-0001
 
+python3 tools/supervisor.py \
+  --build-implementation-delta-snapshot \
+  --target-scope-kind active_subtree \
+  --target-spec-ids SG-SPEC-0001 \
+  --operator-intent "Plan implementation work for this active region."
+
 python3 tools/supervisor.py --build-implementation-work-index
 ```
 
@@ -59,8 +65,19 @@ The CLI should map directly onto the JSON target contract:
 - `--target-scope-kind spec` -> `target.target_scope_kind = "spec"`
 - `--target-spec-ids SG-SPEC-0001,SG-SPEC-0002` ->
   `target.target_spec_ids = ["SG-SPEC-0001", "SG-SPEC-0002"]`
-- future region scopes should use the same `target_scope_kind` vocabulary
-  rather than introducing a second target model.
+- `--target-scope-kind active_subtree` treats `target_spec_ids` as region roots
+  and expands `target.resolved_target_spec_ids` through active `refines`
+  descendants.
+
+Supported target scopes:
+
+- `spec`: exact list of canonical spec ids.
+- `active_subtree`: graph-region selector; includes each requested root spec
+  plus active descendants connected by `refines` edges, excluding historical or
+  superseded descendant specs.
+
+Region scopes use the same `target_scope_kind` vocabulary rather than a second
+target model.
 
 They must reject ordinary refinement flags unless a future
 operator-request-packet contract explicitly authorizes the combination.
@@ -108,6 +125,8 @@ The server should validate:
 
 - `target_scope_kind` is supported;
 - `target_spec_ids` is non-empty for `spec` scope;
+- `target_spec_ids` is non-empty and names valid root specs for
+  `active_subtree` scope;
 - `operator_intent` is non-empty.
 
 Missing trace or evidence baselines should not prevent a delta snapshot from
@@ -159,8 +178,18 @@ Expected top-level shape:
   "target": {
     "target_scope_kind": "spec",
     "target_spec_ids": ["SG-SPEC-0042"],
+    "valid_target_spec_ids": ["SG-SPEC-0042"],
+    "resolved_target_spec_ids": ["SG-SPEC-0042"],
+    "missing_target_spec_ids": [],
     "target_git_commit": "def456",
-    "operator_intent": "Plan implementation work for this ready spec."
+    "operator_intent": "Plan implementation work for this ready spec.",
+    "scope_resolution": {
+      "selector": "exact_spec_list",
+      "expanded": false,
+      "root_spec_ids": ["SG-SPEC-0042"],
+      "resolved_count": 1,
+      "excludes_historical_or_superseded": false
+    }
   },
   "delta": {
     "new_spec_ids": [],
@@ -262,6 +291,9 @@ First slice:
 - Add an `Implementation Work` panel.
 - Add target input by spec id.
 - Show the selected target scope.
+- For `active_subtree`, show both root spec ids and
+  `resolved_target_spec_ids` so the user can inspect the expanded region before
+  any coding-agent handoff.
 - Show baseline summary.
 - Show delta counts:
   changed specs, new specs, changed contracts, changed acceptance, missing

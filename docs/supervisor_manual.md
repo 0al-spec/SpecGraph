@@ -144,6 +144,8 @@ particular task.
   `--build-exploration-preview --exploration-intent "..."`
 - build a derived implementation delta snapshot from an explicit target scope:
   `--build-implementation-delta-snapshot --target-scope-kind spec --target-spec-ids SG-SPEC-0001 --operator-intent "..."`
+  Use `--target-scope-kind active_subtree` when the selected spec ids are graph
+  region roots that should expand through active `refines` descendants.
 - build bounded implementation work items from the latest delta snapshot:
   `--build-implementation-work-index`
 - build a repository-tracked proposal-lane overlay:

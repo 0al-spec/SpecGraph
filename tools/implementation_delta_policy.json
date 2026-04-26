@@ -59,6 +59,29 @@
     "blocks_on_missing_trace_baseline": false,
     "blocks_on_missing_evidence_baseline": false
   },
+  "target_scope_contract": {
+    "scope_kinds": [
+      "spec",
+      "active_subtree"
+    ],
+    "graph_region_selectors": [
+      {
+        "target_scope_kind": "active_subtree",
+        "input_field": "target_spec_ids",
+        "selector": "active_refines_subtree",
+        "expansion_field": "resolved_target_spec_ids",
+        "includes": "each requested root spec plus active descendants connected by refines edges",
+        "excludes": "historical or superseded descendant specs"
+      }
+    ],
+    "resolution_fields": [
+      "target_spec_ids",
+      "valid_target_spec_ids",
+      "resolved_target_spec_ids",
+      "missing_target_spec_ids",
+      "scope_resolution"
+    ]
+  },
   "delta_snapshot_contract": {
     "artifact_kind": "implementation_delta_snapshot",
     "schema_version": 1,
@@ -100,8 +123,12 @@
     "target_fields": [
       "target_scope_kind",
       "target_spec_ids",
+      "valid_target_spec_ids",
+      "resolved_target_spec_ids",
+      "missing_target_spec_ids",
       "target_git_commit",
-      "operator_intent"
+      "operator_intent",
+      "scope_resolution"
     ],
     "delta_fields": [
       "new_spec_ids",

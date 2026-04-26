@@ -161,6 +161,17 @@ The snapshot should include:
 `blocked_by_trace_gap`, `empty_delta`, or `invalid_target_scope`.
 `review_state` remains the coarser UI/review grouping.
 
+Initial target scope vocabulary:
+
+- `spec`: exact list of canonical spec ids.
+- `active_subtree`: graph-region selector that treats the selected spec ids as
+  roots and expands through active `refines` descendants, excluding historical
+  or superseded descendant specs.
+
+Region expansion is recorded in `target.resolved_target_spec_ids` and
+`target.scope_resolution` so a viewer can show the exact implementation region
+before any coding-agent handoff.
+
 The artifact is derived and review-only. It must not mutate canonical specs,
 proposal-lane nodes, implementation files, or downstream repositories.
 
@@ -307,6 +318,15 @@ Phase 4:
   panels.
 - Consider tracked `implementation_lane/nodes/*.json` only if the derived
   artifacts prove stable.
+
+Deferred follow-ups:
+
+- Define promotion from an implementation work item to an actual coding-agent PR
+  workflow after the derived work index is stable.
+- Feed completed implementation evidence back into trace/evidence surfaces
+  without letting code mutations rewrite canonical specs directly.
+- Only introduce tracked `implementation_lane/nodes/*.json` if the derived
+  artifacts prove that a durable lane is needed.
 
 ## Acceptance Criteria
 
