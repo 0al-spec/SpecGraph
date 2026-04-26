@@ -21782,6 +21782,11 @@ def graph_backlog_priority(
     severity_priority = {"critical": "high", "high": "high", "medium": "medium", "low": "low"}
     if severity in severity_priority:
         return severity_priority[severity]
+    if (
+        status == "accepted_risk_recorded"
+        or next_gap == "review_accepted_risk_when_context_changes"
+    ):
+        return "info"
     if "blocked" in status or next_gap.startswith("isolate_"):
         return "high"
     if review_state in {"ready_for_review", "review_visible", "adoption_visible"}:
@@ -22221,7 +22226,13 @@ def build_graph_backlog_projection_from_surfaces(
         by_next_gap.setdefault(next_gap, []).append(backlog_id)
         by_source_artifact.setdefault(source_artifact, []).append(backlog_id)
         by_subject_kind.setdefault(subject_kind, []).append(backlog_id)
-        if review_state == "ready_for_review" or next_gap.startswith("review_"):
+        is_accepted_risk_followup = source_artifact == "review_feedback_index" and (
+            status == "accepted_risk_recorded"
+            or next_gap == "review_accepted_risk_when_context_changes"
+        )
+        if not is_accepted_risk_followup and (
+            review_state == "ready_for_review" or next_gap.startswith("review_")
+        ):
             named_filters["ready_for_review"].append(backlog_id)
         if "blocked_by_repo_state" in status or next_gap.startswith("isolate_"):
             named_filters["blocked_by_repo_state"].append(backlog_id)
@@ -23154,11 +23165,11 @@ def build_graph_dashboard(specs: list[SpecNode]) -> dict[str, Any]:
                     0,
                 ),
                 "review_feedback_open": review_feedback_backlog_count,
-                "review_feedback_invalid_records": review_feedback_status_counts.get(
+                "review_feedback_invalid": review_feedback_status_counts.get(
                     "invalid_feedback_record",
                     0,
                 ),
-                "review_feedback_accepted_risks": review_feedback_status_counts.get(
+                "review_feedback_accepted_risk": review_feedback_status_counts.get(
                     "accepted_risk_recorded",
                     0,
                 ),
