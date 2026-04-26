@@ -317,5 +317,5 @@ Phase 4:
   declared.
 - The proposal explicitly prevents direct `spec -> code` jumps from becoming
   the default supervisor behavior.
-- Later runtime work can implement snapshot/index builders without redefining
-  the architecture.
+- Runtime snapshot/index builders can evolve without redefining the
+  architecture.

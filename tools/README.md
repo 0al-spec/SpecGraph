@@ -176,6 +176,14 @@ Supervisor modes:
   optional inline `--exploration-intent TEXT`, producing a review-only
   assumption-mode placeholder graph without mutating canonical specs or tracked
   intent/proposal artifacts.
+- `--build-implementation-delta-snapshot`: build
+  `runs/implementation_delta_snapshot.json` from explicit
+  `--target-scope-kind`, `--target-spec-ids`, and `--operator-intent` values,
+  producing a derived planning snapshot without mutating canonical specs or
+  runtime code.
+- `--build-implementation-work-index`: build
+  `runs/implementation_work_index.json` from the latest implementation delta
+  snapshot, turning delta entries into bounded reviewable work items.
 - `--build-vocabulary-index`: build `runs/vocabulary_index.json` from
   `tools/specgraph_vocabulary.json`, flattening canonical terms, aliases,
   deprecated aliases, families, and contexts into one shared machine-readable
@@ -233,6 +241,13 @@ Key derived artifacts:
 - `runs/exploration_preview.json`: review-only assumption-mode preview graph
   with intent, assumption, hypothesis, proposal, and human-review placeholder
   nodes; no canonical or tracked artifact mutations are allowed by this artifact
+- `runs/implementation_delta_snapshot.json`: derived Implementation Work
+  planning snapshot that captures baseline, explicit target scope, delta fields,
+  source-artifact availability, readiness, and next gap without canonical or
+  runtime code mutation
+- `runs/implementation_work_index.json`: bounded Implementation Work items
+  generated from the latest delta snapshot, grouped by readiness, next gap, and
+  viewer filters for review before any coding-agent handoff
 - `runs/pre_spec_semantics_index.json`: derived pre-spec semantic index linking
   tracked intent-layer artifacts to downstream proposal-lane nodes and
   canonical specs, with queryability and provenance findings
@@ -410,7 +425,7 @@ Key derived artifacts:
 - `tools/exploration_preview_policy.json`: declarative contract for
   assumption-mode exploration previews, including allowed placeholder node
   kinds, edge kinds, promotion targets, and the preview-only mutation boundary
-- `tools/implementation_delta_policy.json`: planned declarative contract for
+- `tools/implementation_delta_policy.json`: declarative contract for
   Implementation Work delta snapshots and work indexes, including baseline,
   target, delta, readiness, and derived-only mutation boundaries
 - `tools/specgraph_vocabulary.json`: shared machine-readable vocabulary layer

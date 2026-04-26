@@ -14078,6 +14078,197 @@ def test_main_rejects_exploration_intent_without_preview_mode(
     assert "--exploration-intent requires --build-exploration-preview" in captured.err
 
 
+def write_implementation_source_artifacts(repo_fixture: Path) -> None:
+    (repo_fixture / "runs" / "spec_trace_projection.json").write_text(
+        json.dumps(
+            {
+                "artifact_kind": "spec_trace_projection",
+                "generated_at": "2026-04-26T00:00:00Z",
+                "entry_count": 1,
+                "viewer_projection": {
+                    "implementation_state": {
+                        "implemented": [],
+                        "unclaimed": ["SG-SPEC-0001"],
+                    }
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    (repo_fixture / "runs" / "evidence_plane_overlay.json").write_text(
+        json.dumps(
+            {
+                "artifact_kind": "evidence_plane_overlay",
+                "generated_at": "2026-04-26T00:00:01Z",
+                "entry_count": 1,
+                "viewer_projection": {
+                    "chain_status": {
+                        "untracked": ["SG-SPEC-0001"],
+                    }
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+
+def test_build_implementation_delta_snapshot_uses_explicit_target_scope(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    write_implementation_source_artifacts(repo_fixture)
+
+    snapshot = supervisor_module.build_implementation_delta_snapshot(
+        target_scope_kind="spec",
+        target_spec_ids="SG-SPEC-0001",
+        operator_intent="Plan implementation for the golden path spec.",
+    )
+
+    assert (
+        snapshot["artifact_kind"] == supervisor_module.IMPLEMENTATION_DELTA_SNAPSHOT_ARTIFACT_KIND
+    )
+    assert snapshot["layer"] == "implementation_work"
+    assert snapshot["target"]["target_scope_kind"] == "spec"
+    assert snapshot["target"]["target_spec_ids"] == ["SG-SPEC-0001"]
+    assert snapshot["target"]["valid_target_spec_ids"] == ["SG-SPEC-0001"]
+    assert snapshot["status"] == "ready_for_planning"
+    assert snapshot["review_state"] == "ready_for_planning"
+    assert snapshot["next_gap"] == "review_implementation_delta"
+    assert snapshot["delta"]["changed_spec_ids"] == ["SG-SPEC-0001"]
+    assert snapshot["delta"]["missing_trace_refs"] == ["trace::SG-SPEC-0001"]
+    assert snapshot["delta"]["evidence_gap_refs"] == ["evidence::SG-SPEC-0001"]
+    assert snapshot["canonical_mutations_allowed"] is False
+    assert snapshot["tracked_artifacts_written"] is False
+    assert snapshot["runtime_code_mutations_allowed"] is False
+
+
+def test_build_implementation_delta_snapshot_marks_invalid_target_scope(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    snapshot = supervisor_module.build_implementation_delta_snapshot(
+        target_scope_kind="region",
+        target_spec_ids="SG-SPEC-9999",
+        operator_intent="Plan implementation for an invalid region.",
+    )
+
+    assert snapshot["status"] == "invalid_target_scope"
+    assert snapshot["review_state"] == "needs_human_scope_review"
+    assert snapshot["next_gap"] == "repair_implementation_target_scope"
+    assert snapshot["target"]["missing_target_spec_ids"] == ["SG-SPEC-9999"]
+    assert set(snapshot["validation_findings"]) == {
+        "unsupported_or_missing_target_scope_kind",
+        "unknown_target_spec_id::SG-SPEC-9999",
+    }
+
+
+def test_build_implementation_work_index_from_delta_snapshot(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    write_implementation_source_artifacts(repo_fixture)
+    snapshot = supervisor_module.build_implementation_delta_snapshot(
+        target_scope_kind="spec",
+        target_spec_ids="SG-SPEC-0001",
+        operator_intent="Plan implementation for the golden path spec.",
+    )
+
+    index = supervisor_module.build_implementation_work_index(snapshot)
+
+    assert index["artifact_kind"] == supervisor_module.IMPLEMENTATION_WORK_INDEX_ARTIFACT_KIND
+    assert index["source_delta_snapshot"]["status"] == "ready_for_planning"
+    assert index["entry_count"] == 1
+    entry = index["entries"][0]
+    assert entry["work_item_id"] == "implementation_work::SG-SPEC-0001::changed_acceptance"
+    assert entry["affected_spec_ids"] == ["SG-SPEC-0001"]
+    assert entry["readiness"] == "blocked_by_trace_gap"
+    assert entry["blockers"] == ["trace_baseline_gap", "evidence_baseline_gap"]
+    assert (
+        "implementation_work::SG-SPEC-0001::changed_acceptance"
+        in index["viewer_projection"]["named_filters"]["blocked_by_trace_gap"]
+    )
+    assert index["canonical_mutations_allowed"] is False
+    assert index["runtime_code_mutations_allowed"] is False
+
+
+def test_main_builds_implementation_delta_snapshot_as_standalone_command(
+    supervisor_module: object,
+    repo_fixture: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    write_implementation_source_artifacts(repo_fixture)
+
+    exit_code = supervisor_module.main(
+        build_implementation_delta_snapshot_mode=True,
+        implementation_target_scope_kind="spec",
+        implementation_target_spec_ids="SG-SPEC-0001",
+        implementation_operator_intent="Plan implementation for the golden path spec.",
+    )
+
+    assert exit_code == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["artifact_kind"] == supervisor_module.IMPLEMENTATION_DELTA_SNAPSHOT_ARTIFACT_KIND
+    persisted = json.loads(
+        (repo_fixture / "runs" / "implementation_delta_snapshot.json").read_text(encoding="utf-8")
+    )
+    assert persisted["target"]["target_spec_ids"] == ["SG-SPEC-0001"]
+
+
+def test_main_builds_implementation_work_index_from_latest_snapshot(
+    supervisor_module: object,
+    repo_fixture: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    write_implementation_source_artifacts(repo_fixture)
+    snapshot = supervisor_module.build_implementation_delta_snapshot(
+        target_scope_kind="spec",
+        target_spec_ids="SG-SPEC-0001",
+        operator_intent="Plan implementation for the golden path spec.",
+    )
+    supervisor_module.write_implementation_delta_snapshot(snapshot)
+
+    exit_code = supervisor_module.main(build_implementation_work_index_mode=True)
+
+    assert exit_code == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["artifact_kind"] == supervisor_module.IMPLEMENTATION_WORK_INDEX_ARTIFACT_KIND
+    persisted = json.loads(
+        (repo_fixture / "runs" / "implementation_work_index.json").read_text(encoding="utf-8")
+    )
+    assert persisted["entry_count"] == 1
+
+
+def test_main_rejects_implementation_target_args_without_delta_mode(
+    supervisor_module: object,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    exit_code = supervisor_module.main(implementation_target_scope_kind="spec")
+
+    assert exit_code == 1
+    captured = capsys.readouterr()
+    assert "--target-scope-kind" in captured.err
+    assert "--build-implementation-delta-snapshot" in captured.err
+
+
+def test_main_rejects_combined_implementation_delta_and_target_refinement(
+    supervisor_module: object,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    exit_code = supervisor_module.main(
+        build_implementation_delta_snapshot_mode=True,
+        implementation_target_scope_kind="spec",
+        implementation_target_spec_ids="SG-SPEC-0001",
+        implementation_operator_intent="Plan implementation.",
+        target_spec="SG-SPEC-0001",
+    )
+
+    assert exit_code == 1
+    captured = capsys.readouterr()
+    assert "--build-implementation-delta-snapshot must be used as a standalone command" in (
+        captured.err
+    )
+
+
 def test_build_intent_layer_overlay_flags_cross_layer_masquerade(
     supervisor_module: object,
     repo_fixture: Path,

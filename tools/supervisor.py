@@ -37,6 +37,8 @@ Derived artifacts:
 - graph backlog projection: `runs/graph_backlog_projection.json`
 - intent-layer overlay: `runs/intent_layer_overlay.json`
 - exploration preview: `runs/exploration_preview.json`
+- implementation delta snapshot: `runs/implementation_delta_snapshot.json`
+- implementation work index: `runs/implementation_work_index.json`
 - proposal-lane overlay: `runs/proposal_lane_overlay.json`
 - graph health overlay: `runs/graph_health_overlay.json`
 - external consumer index: `runs/external_consumer_index.json`
@@ -107,6 +109,7 @@ OPERATOR_REQUEST_BRIDGE_POLICY_RELATIVE_PATH = "tools/operator_request_bridge_po
 SPECGRAPH_VOCABULARY_RELATIVE_PATH = "tools/specgraph_vocabulary.json"
 PRE_SPEC_SEMANTICS_POLICY_RELATIVE_PATH = "tools/pre_spec_semantics_policy.json"
 EXPLORATION_PREVIEW_POLICY_RELATIVE_PATH = "tools/exploration_preview_policy.json"
+IMPLEMENTATION_DELTA_POLICY_RELATIVE_PATH = "tools/implementation_delta_policy.json"
 VALIDATION_FINDINGS_POLICY_RELATIVE_PATH = "tools/validation_findings_policy.json"
 SAFE_REPAIR_POLICY_RELATIVE_PATH = "tools/safe_repair_policy.json"
 EVALUATOR_LOOP_POLICY_RELATIVE_PATH = "tools/evaluator_loop_policy.json"
@@ -166,6 +169,10 @@ def pre_spec_semantics_policy_path() -> Path:
 
 def exploration_preview_policy_path() -> Path:
     return TOOLS_DIR / "exploration_preview_policy.json"
+
+
+def implementation_delta_policy_path() -> Path:
+    return TOOLS_DIR / "implementation_delta_policy.json"
 
 
 def validation_findings_policy_path() -> Path:
@@ -536,6 +543,45 @@ def load_exploration_preview_policy() -> tuple[dict[str, Any], str]:
 
 
 EXPLORATION_PREVIEW_POLICY, EXPLORATION_PREVIEW_POLICY_SHA256 = load_exploration_preview_policy()
+
+
+def load_implementation_delta_policy() -> tuple[dict[str, Any], str]:
+    path = implementation_delta_policy_path()
+    try:
+        raw_text = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise RuntimeError(
+            f"failed to read implementation delta policy artifact: {path.as_posix()} ({exc})"
+        ) from exc
+    try:
+        payload = json.loads(raw_text)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(
+            f"malformed implementation delta policy artifact: {path.as_posix()} ({exc})"
+        ) from exc
+    if not isinstance(payload, dict):
+        raise RuntimeError(
+            "malformed implementation delta policy artifact: "
+            f"{path.as_posix()} must contain a JSON object"
+        )
+    required_sections = (
+        "repository_layout",
+        "layer_contract",
+        "eligibility_contract",
+        "delta_snapshot_contract",
+        "work_index_contract",
+        "next_gap_defaults",
+    )
+    missing = [section for section in required_sections if section not in payload]
+    if missing:
+        raise RuntimeError(
+            "malformed implementation delta policy artifact: missing top-level section(s): "
+            + ", ".join(missing)
+        )
+    return payload, hashlib.sha256(raw_text.encode("utf-8")).hexdigest()
+
+
+IMPLEMENTATION_DELTA_POLICY, IMPLEMENTATION_DELTA_POLICY_SHA256 = load_implementation_delta_policy()
 
 
 def load_validation_findings_policy() -> tuple[dict[str, Any], str]:
@@ -1510,6 +1556,15 @@ def pre_spec_semantics_policy_lookup(policy_path: str) -> Any:
     return copy.deepcopy(current)
 
 
+def implementation_delta_policy_lookup(policy_path: str) -> Any:
+    current: Any = IMPLEMENTATION_DELTA_POLICY
+    for part in policy_path.split("."):
+        if not isinstance(current, dict) or part not in current:
+            raise KeyError(policy_path)
+        current = current[part]
+    return copy.deepcopy(current)
+
+
 def evidence_plane_policy_lookup(policy_path: str) -> Any:
     current: Any = EVIDENCE_PLANE_POLICY
     for part in policy_path.split("."):
@@ -1685,6 +1740,14 @@ def exploration_preview_policy_reference() -> dict[str, Any]:
         "artifact_path": EXPLORATION_PREVIEW_POLICY_RELATIVE_PATH,
         "artifact_sha256": EXPLORATION_PREVIEW_POLICY_SHA256,
         "version": EXPLORATION_PREVIEW_POLICY.get("version"),
+    }
+
+
+def implementation_delta_policy_reference() -> dict[str, Any]:
+    return {
+        "artifact_path": IMPLEMENTATION_DELTA_POLICY_RELATIVE_PATH,
+        "artifact_sha256": IMPLEMENTATION_DELTA_POLICY_SHA256,
+        "version": IMPLEMENTATION_DELTA_POLICY.get("version"),
     }
 
 
@@ -1961,6 +2024,37 @@ EXPLORATION_PREVIEW_SCHEMA_VERSION = int(
 EXPLORATION_PREVIEW_MODE_NAME = str(EXPLORATION_PREVIEW_POLICY["mode_contract"]["mode_name"])
 EXPLORATION_PREVIEW_NODE_KINDS = list(EXPLORATION_PREVIEW_POLICY["preview_contract"]["node_kinds"])
 EXPLORATION_PREVIEW_EDGE_KINDS = list(EXPLORATION_PREVIEW_POLICY["preview_contract"]["edge_kinds"])
+IMPLEMENTATION_DELTA_SNAPSHOT_FILENAME = Path(
+    str(implementation_delta_policy_lookup("repository_layout.delta_snapshot_artifact"))
+).name
+IMPLEMENTATION_WORK_INDEX_FILENAME = Path(
+    str(implementation_delta_policy_lookup("repository_layout.work_index_artifact"))
+).name
+IMPLEMENTATION_LAYER_NAME = str(implementation_delta_policy_lookup("layer_contract.layer_name"))
+IMPLEMENTATION_DELTA_SNAPSHOT_ARTIFACT_KIND = str(
+    implementation_delta_policy_lookup("delta_snapshot_contract.artifact_kind")
+)
+IMPLEMENTATION_DELTA_SNAPSHOT_SCHEMA_VERSION = int(
+    implementation_delta_policy_lookup("delta_snapshot_contract.schema_version")
+)
+IMPLEMENTATION_DELTA_STATUS_VALUES = list(
+    implementation_delta_policy_lookup("delta_snapshot_contract.status_values")
+)
+IMPLEMENTATION_DELTA_REVIEW_STATES = list(
+    implementation_delta_policy_lookup("delta_snapshot_contract.review_states")
+)
+IMPLEMENTATION_WORK_INDEX_ARTIFACT_KIND = str(
+    implementation_delta_policy_lookup("work_index_contract.artifact_kind")
+)
+IMPLEMENTATION_WORK_INDEX_SCHEMA_VERSION = int(
+    implementation_delta_policy_lookup("work_index_contract.schema_version")
+)
+IMPLEMENTATION_WORK_INDEX_STATUS_VALUES = list(
+    implementation_delta_policy_lookup("work_index_contract.status_values")
+)
+IMPLEMENTATION_WORK_INDEX_NAMED_FILTERS = list(
+    implementation_delta_policy_lookup("work_index_contract.named_filters")
+)
 EVIDENCE_PLANE_INDEX_FILENAME = Path(
     str(evidence_plane_policy_lookup("repository_layout.index_artifact"))
 ).name
@@ -4529,6 +4623,19 @@ def git_status_changed_files(cwd: Path = ROOT) -> list[str]:
                 candidate = candidate.split(" -> ", 1)[1].strip()
             changed.append(candidate)
     return changed
+
+
+def git_head_commit(cwd: Path = ROOT) -> str:
+    result = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=cwd,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if result.returncode != 0:
+        return ""
+    return result.stdout.strip()
 
 
 def snapshot_file_digests(paths: list[str], base_dir: Path) -> dict[str, str | None]:
@@ -7958,6 +8065,14 @@ def exploration_preview_path() -> Path:
     return RUNS_DIR / EXPLORATION_PREVIEW_FILENAME
 
 
+def implementation_delta_snapshot_path() -> Path:
+    return RUNS_DIR / IMPLEMENTATION_DELTA_SNAPSHOT_FILENAME
+
+
+def implementation_work_index_path() -> Path:
+    return RUNS_DIR / IMPLEMENTATION_WORK_INDEX_FILENAME
+
+
 def vocabulary_index_path() -> Path:
     return RUNS_DIR / "vocabulary_index.json"
 
@@ -11028,6 +11143,539 @@ def write_exploration_preview(preview: dict[str, Any]) -> Path:
     path = exploration_preview_path()
     with artifact_lock(path):
         atomic_write_json(path, preview)
+    return path
+
+
+def implementation_policy_next_gap(status: str) -> str:
+    normalized = str(status).strip()
+    if not normalized:
+        normalized = "ready_for_planning"
+    try:
+        return str(implementation_delta_policy_lookup(f"next_gap_defaults.{normalized}")).strip()
+    except KeyError:
+        return "review_implementation_delta"
+
+
+def parse_implementation_target_spec_ids(
+    value: str | tuple[str, ...] | list[str] | None,
+) -> list[str]:
+    raw_items: list[str] = []
+    if isinstance(value, str):
+        raw_items = value.split(",")
+    elif isinstance(value, (tuple, list)):
+        for item in value:
+            raw_items.extend(str(item).split(","))
+    seen: set[str] = set()
+    spec_ids: list[str] = []
+    for item in raw_items:
+        spec_id = str(item).strip()
+        if spec_id and spec_id not in seen:
+            seen.add(spec_id)
+            spec_ids.append(spec_id)
+    return spec_ids
+
+
+def implementation_source_artifact_summary(
+    path: Path,
+    *,
+    artifact_kind: str,
+) -> tuple[dict[str, Any] | None, dict[str, Any]]:
+    artifact_path = path.relative_to(ROOT).as_posix()
+    if not path.exists():
+        return None, {
+            "artifact_path": artifact_path,
+            "status": "missing",
+            "generated_at": "",
+            "error": "",
+        }
+    payload, error = load_json_object_report(path, artifact_kind=artifact_kind)
+    if payload is None:
+        return None, {
+            "artifact_path": artifact_path,
+            "status": "malformed",
+            "generated_at": "",
+            "error": error,
+        }
+    return payload, {
+        "artifact_path": artifact_path,
+        "status": "available",
+        "generated_at": str(payload.get("generated_at", "")).strip(),
+        "error": "",
+    }
+
+
+def implementation_projection_group(
+    artifact: dict[str, Any] | None,
+    *,
+    projection_key: str,
+    spec_id: str,
+) -> str:
+    if not isinstance(artifact, dict):
+        return "unknown"
+    projection = artifact.get("viewer_projection", {})
+    if not isinstance(projection, dict):
+        return "unknown"
+    groups = projection.get(projection_key, {})
+    if not isinstance(groups, dict):
+        return "unknown"
+    for group_name, raw_spec_ids in groups.items():
+        if isinstance(raw_spec_ids, list) and spec_id in {str(item) for item in raw_spec_ids}:
+            return str(group_name).strip() or "unknown"
+    return "unknown"
+
+
+def implementation_contract_refs_for_spec(spec: SpecNode) -> list[str]:
+    refs: list[str] = []
+    for idx, output in enumerate(spec.outputs, start=1):
+        normalized = str(output).strip()
+        if normalized:
+            refs.append(f"{spec.id}:outputs:{idx}:{normalized}")
+    return refs
+
+
+def implementation_acceptance_refs_for_spec(spec: SpecNode) -> list[str]:
+    raw_acceptance = spec.data.get("acceptance", [])
+    if not isinstance(raw_acceptance, list):
+        return []
+    refs: list[str] = []
+    for idx, criterion in enumerate(raw_acceptance, start=1):
+        text = " ".join(str(criterion).split())
+        if len(text) > 96:
+            text = text[:93].rstrip() + "..."
+        refs.append(f"{spec.id}:acceptance:{idx}:{text}")
+    return refs
+
+
+def implementation_required_tests_for_spec(spec: SpecNode) -> list[str]:
+    raw_acceptance = spec.data.get("acceptance", [])
+    if not isinstance(raw_acceptance, list):
+        return []
+    return [
+        f"{spec.id}:acceptance:{idx}:test_required" for idx, _item in enumerate(raw_acceptance, 1)
+    ]
+
+
+def implementation_likely_code_refs_for_spec(spec: SpecNode) -> list[str]:
+    refs: list[str] = []
+    for raw_path in [*spec.allowed_paths, *spec.outputs]:
+        path_text = str(raw_path).strip()
+        if not path_text:
+            continue
+        if path_text.startswith(("specs/", "docs/proposals/", "runs/")):
+            continue
+        refs.append(path_text)
+    return sorted(set(refs))
+
+
+def build_implementation_delta_snapshot(
+    *,
+    target_scope_kind: str | None = None,
+    target_spec_ids: str | tuple[str, ...] | list[str] | None = None,
+    operator_intent: str | None = None,
+) -> dict[str, Any]:
+    scope_kind = str(target_scope_kind or "").strip()
+    requested_spec_ids = parse_implementation_target_spec_ids(target_spec_ids)
+    intent_text = str(operator_intent or "").strip()
+    specs = load_specs()
+    spec_index = index_specs(specs)
+    current_commit = git_head_commit()
+
+    trace_projection, trace_summary = implementation_source_artifact_summary(
+        spec_trace_projection_path(),
+        artifact_kind="spec trace projection",
+    )
+    evidence_overlay, evidence_summary = implementation_source_artifact_summary(
+        evidence_plane_overlay_path(),
+        artifact_kind="evidence plane overlay",
+    )
+    graph_health_overlay, graph_health_summary = implementation_source_artifact_summary(
+        graph_health_overlay_path(),
+        artifact_kind="graph health overlay",
+    )
+
+    validation_findings: list[str] = []
+    if scope_kind != "spec":
+        validation_findings.append("unsupported_or_missing_target_scope_kind")
+    if not requested_spec_ids:
+        validation_findings.append("missing_target_spec_ids")
+    missing_target_spec_ids = sorted(
+        spec_id for spec_id in requested_spec_ids if spec_id not in spec_index
+    )
+    if missing_target_spec_ids:
+        validation_findings.extend(
+            f"unknown_target_spec_id::{spec_id}" for spec_id in missing_target_spec_ids
+        )
+    if not intent_text:
+        validation_findings.append("missing_operator_intent")
+
+    valid_target_spec_ids = [spec_id for spec_id in requested_spec_ids if spec_id in spec_index]
+    implemented_spec_ids = sorted(
+        str(item)
+        for item in (trace_projection or {})
+        .get("viewer_projection", {})
+        .get("implementation_state", {})
+        .get("implemented", [])
+        if str(item).strip()
+    )
+    implemented_set = set(implemented_spec_ids)
+
+    target_specs = [spec_index[spec_id] for spec_id in valid_target_spec_ids]
+    quality_blockers = sorted(
+        {
+            spec.id
+            for spec in target_specs
+            if spec.gate_state not in {"", "none"} or spec.status in {"blocked", "review_pending"}
+        }
+    )
+
+    new_spec_ids: list[str] = []
+    changed_spec_ids: list[str] = []
+    changed_contract_refs: list[str] = []
+    changed_acceptance_refs: list[str] = []
+    missing_trace_refs: list[str] = []
+    required_test_refs: list[str] = []
+    evidence_gap_refs: list[str] = []
+    likely_affected_code_refs: list[str] = []
+    target_diagnostics: list[dict[str, Any]] = []
+
+    for spec in target_specs:
+        implementation_state = implementation_projection_group(
+            trace_projection,
+            projection_key="implementation_state",
+            spec_id=spec.id,
+        )
+        evidence_chain_status = implementation_projection_group(
+            evidence_overlay,
+            projection_key="chain_status",
+            spec_id=spec.id,
+        )
+        if spec.id not in implemented_set:
+            if implementation_state == "unknown":
+                new_spec_ids.append(spec.id)
+            else:
+                changed_spec_ids.append(spec.id)
+            changed_contract_refs.extend(implementation_contract_refs_for_spec(spec))
+            changed_acceptance_refs.extend(implementation_acceptance_refs_for_spec(spec))
+            required_test_refs.extend(implementation_required_tests_for_spec(spec))
+        if implementation_state in {"unknown", "unclaimed", "not_tracked", "planned"}:
+            missing_trace_refs.append(f"trace::{spec.id}")
+        if evidence_chain_status in {"unknown", "untracked", "contract_only"}:
+            evidence_gap_refs.append(f"evidence::{spec.id}")
+        likely_affected_code_refs.extend(implementation_likely_code_refs_for_spec(spec))
+        target_diagnostics.append(
+            {
+                "spec_id": spec.id,
+                "title": spec.title,
+                "status": spec.status,
+                "gate_state": spec.gate_state,
+                "maturity": spec.maturity,
+                "implementation_state": implementation_state,
+                "evidence_chain_status": evidence_chain_status,
+            }
+        )
+
+    if validation_findings:
+        status = "invalid_target_scope"
+        review_state = "needs_human_scope_review"
+    elif quality_blockers:
+        status = "blocked_by_spec_quality"
+        review_state = "blocked"
+    elif trace_summary["status"] != "available":
+        status = "blocked_by_trace_gap"
+        review_state = "blocked"
+    elif evidence_summary["status"] != "available":
+        status = "blocked_by_evidence_gap"
+        review_state = "blocked"
+    elif not any(
+        (
+            new_spec_ids,
+            changed_spec_ids,
+            changed_contract_refs,
+            changed_acceptance_refs,
+            missing_trace_refs,
+            required_test_refs,
+            evidence_gap_refs,
+            likely_affected_code_refs,
+        )
+    ):
+        status = "empty_delta"
+        review_state = "ready_for_planning"
+    else:
+        status = "ready_for_planning"
+        review_state = "ready_for_planning"
+
+    next_gap = implementation_policy_next_gap(status)
+    layer_contract = copy.deepcopy(IMPLEMENTATION_DELTA_POLICY["layer_contract"])
+    canonical_mutations_allowed = layer_contract.get("canonical_mutations_allowed")
+    tracked_artifacts_written = layer_contract.get("tracked_artifacts_written")
+    runtime_code_mutations_allowed = layer_contract.get("runtime_code_mutations_allowed")
+    if not all(
+        isinstance(flag, bool)
+        for flag in (
+            canonical_mutations_allowed,
+            tracked_artifacts_written,
+            runtime_code_mutations_allowed,
+        )
+    ):
+        raise RuntimeError(
+            "malformed implementation delta layer contract: mutation flags must be booleans"
+        )
+
+    return {
+        "artifact_kind": IMPLEMENTATION_DELTA_SNAPSHOT_ARTIFACT_KIND,
+        "schema_version": IMPLEMENTATION_DELTA_SNAPSHOT_SCHEMA_VERSION,
+        "generated_at": utc_now_iso(),
+        "policy_reference": implementation_delta_policy_reference(),
+        "layer": IMPLEMENTATION_LAYER_NAME,
+        "source_artifacts": {
+            "spec_trace_projection": trace_summary,
+            "evidence_plane_overlay": evidence_summary,
+            "graph_health_overlay": graph_health_summary,
+        },
+        "baseline": {
+            "git_commit": current_commit,
+            "graph_version": current_commit,
+            "implemented_spec_ids": implemented_spec_ids,
+            "trace_baseline_status": trace_summary["status"],
+            "evidence_baseline_status": evidence_summary["status"],
+        },
+        "target": {
+            "target_scope_kind": scope_kind,
+            "target_spec_ids": requested_spec_ids,
+            "valid_target_spec_ids": valid_target_spec_ids,
+            "missing_target_spec_ids": missing_target_spec_ids,
+            "target_git_commit": current_commit,
+            "operator_intent": intent_text,
+            "target_diagnostics": target_diagnostics,
+        },
+        "delta": {
+            "new_spec_ids": sorted(set(new_spec_ids)),
+            "changed_spec_ids": sorted(set(changed_spec_ids)),
+            "changed_contract_refs": sorted(set(changed_contract_refs)),
+            "changed_acceptance_refs": sorted(set(changed_acceptance_refs)),
+            "missing_trace_refs": sorted(set(missing_trace_refs)),
+            "required_test_refs": sorted(set(required_test_refs)),
+            "evidence_gap_refs": sorted(set(evidence_gap_refs)),
+            "likely_affected_code_refs": sorted(set(likely_affected_code_refs)),
+            "spec_quality_blocker_ids": quality_blockers,
+        },
+        "status": status,
+        "review_state": review_state,
+        "next_gap": next_gap,
+        "validation_findings": validation_findings,
+        "canonical_mutations_allowed": canonical_mutations_allowed,
+        "tracked_artifacts_written": tracked_artifacts_written,
+        "runtime_code_mutations_allowed": runtime_code_mutations_allowed,
+        "layer_contract": layer_contract,
+    }
+
+
+def write_implementation_delta_snapshot(snapshot: dict[str, Any]) -> Path:
+    RUNS_DIR.mkdir(parents=True, exist_ok=True)
+    path = implementation_delta_snapshot_path()
+    with artifact_lock(path):
+        atomic_write_json(path, snapshot)
+    return path
+
+
+def implementation_work_item_readiness(
+    *,
+    snapshot_status: str,
+    has_quality_blocker: bool,
+    has_trace_gap: bool,
+    has_evidence_gap: bool,
+) -> tuple[str, list[str]]:
+    blockers: list[str] = []
+    if has_quality_blocker or snapshot_status == "blocked_by_spec_quality":
+        blockers.append("spec_quality_gate")
+    if has_trace_gap or snapshot_status == "blocked_by_trace_gap":
+        blockers.append("trace_baseline_gap")
+    if has_evidence_gap or snapshot_status == "blocked_by_evidence_gap":
+        blockers.append("evidence_baseline_gap")
+    if "spec_quality_gate" in blockers:
+        return "blocked_by_spec_quality", blockers
+    if "trace_baseline_gap" in blockers:
+        return "blocked_by_trace_gap", blockers
+    if "evidence_baseline_gap" in blockers:
+        return "blocked_by_evidence_gap", blockers
+    return "ready_for_planning", blockers
+
+
+def build_implementation_work_index(
+    snapshot: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    if snapshot is None:
+        snapshot, error = load_json_object_report(
+            implementation_delta_snapshot_path(),
+            artifact_kind="implementation delta snapshot",
+        )
+        if snapshot is None:
+            raise RuntimeError(error or "implementation delta snapshot is missing")
+    if (
+        str(snapshot.get("artifact_kind", "")).strip()
+        != IMPLEMENTATION_DELTA_SNAPSHOT_ARTIFACT_KIND
+    ):
+        raise RuntimeError("implementation work index requires implementation_delta_snapshot input")
+
+    delta = snapshot.get("delta", {})
+    target = snapshot.get("target", {})
+    target_spec_ids = [
+        str(spec_id).strip()
+        for spec_id in target.get("valid_target_spec_ids", target.get("target_spec_ids", []))
+        if str(spec_id).strip()
+    ]
+    if not isinstance(delta, dict):
+        delta = {}
+    delta_sets = {
+        key: {str(item).strip() for item in delta.get(key, []) if str(item).strip()}
+        for key in (
+            "new_spec_ids",
+            "changed_spec_ids",
+            "missing_trace_refs",
+            "evidence_gap_refs",
+            "spec_quality_blocker_ids",
+        )
+    }
+    changed_contract_refs = [
+        str(item).strip() for item in delta.get("changed_contract_refs", []) if str(item).strip()
+    ]
+    changed_acceptance_refs = [
+        str(item).strip() for item in delta.get("changed_acceptance_refs", []) if str(item).strip()
+    ]
+    required_test_refs = [
+        str(item).strip() for item in delta.get("required_test_refs", []) if str(item).strip()
+    ]
+    likely_code_refs = [
+        str(item).strip()
+        for item in delta.get("likely_affected_code_refs", [])
+        if str(item).strip()
+    ]
+
+    entries: list[dict[str, Any]] = []
+    readiness_groups: dict[str, list[str]] = {}
+    next_gap_groups: dict[str, list[str]] = {}
+    named_filters: dict[str, list[str]] = {
+        name: [] for name in IMPLEMENTATION_WORK_INDEX_NAMED_FILTERS
+    }
+
+    if str(snapshot.get("status", "")).strip() != "invalid_target_scope":
+        for spec_id in target_spec_ids:
+            spec_contract_refs = [
+                ref for ref in changed_contract_refs if ref.startswith(f"{spec_id}:")
+            ]
+            spec_acceptance_refs = [
+                ref for ref in changed_acceptance_refs if ref.startswith(f"{spec_id}:")
+            ]
+            spec_required_tests = [
+                ref for ref in required_test_refs if ref.startswith(f"{spec_id}:")
+            ]
+            spec_trace_gap = f"trace::{spec_id}" in delta_sets["missing_trace_refs"]
+            spec_evidence_gap = f"evidence::{spec_id}" in delta_sets["evidence_gap_refs"]
+            spec_quality_gap = spec_id in delta_sets["spec_quality_blocker_ids"]
+            if not any(
+                (
+                    spec_id in delta_sets["new_spec_ids"],
+                    spec_id in delta_sets["changed_spec_ids"],
+                    spec_contract_refs,
+                    spec_acceptance_refs,
+                    spec_required_tests,
+                    spec_trace_gap,
+                    spec_evidence_gap,
+                    spec_quality_gap,
+                )
+            ):
+                continue
+
+            readiness, blockers = implementation_work_item_readiness(
+                snapshot_status=str(snapshot.get("status", "")),
+                has_quality_blocker=spec_quality_gap,
+                has_trace_gap=spec_trace_gap,
+                has_evidence_gap=spec_evidence_gap,
+            )
+            next_gap = implementation_policy_next_gap(readiness)
+            if spec_id in delta_sets["new_spec_ids"]:
+                implementation_reason = "new_spec"
+            elif spec_acceptance_refs:
+                implementation_reason = "changed_acceptance"
+            elif spec_contract_refs:
+                implementation_reason = "changed_contract"
+            elif spec_trace_gap:
+                implementation_reason = "missing_trace_baseline"
+            elif spec_evidence_gap:
+                implementation_reason = "missing_evidence_baseline"
+            else:
+                implementation_reason = "changed_spec"
+
+            work_item_id = f"implementation_work::{spec_id}::{implementation_reason}"
+            delta_refs = []
+            if spec_id in delta_sets["new_spec_ids"]:
+                delta_refs.append(f"new_spec_ids::{spec_id}")
+            if spec_id in delta_sets["changed_spec_ids"]:
+                delta_refs.append(f"changed_spec_ids::{spec_id}")
+            delta_refs.extend(f"changed_contract_refs::{ref}" for ref in spec_contract_refs)
+            delta_refs.extend(f"changed_acceptance_refs::{ref}" for ref in spec_acceptance_refs)
+            if spec_trace_gap:
+                delta_refs.append(f"missing_trace_refs::trace::{spec_id}")
+            if spec_evidence_gap:
+                delta_refs.append(f"evidence_gap_refs::evidence::{spec_id}")
+            if spec_quality_gap:
+                delta_refs.append(f"spec_quality_blocker_ids::{spec_id}")
+
+            entry = {
+                "work_item_id": work_item_id,
+                "affected_spec_ids": [spec_id],
+                "implementation_reason": implementation_reason,
+                "delta_refs": sorted(delta_refs),
+                "required_tests": sorted(spec_required_tests),
+                "expected_evidence": [f"implementation_evidence::{spec_id}"],
+                "likely_code_refs": likely_code_refs,
+                "readiness": readiness,
+                "blockers": blockers,
+                "next_gap": next_gap,
+            }
+            entries.append(entry)
+            readiness_groups.setdefault(readiness, []).append(work_item_id)
+            next_gap_groups.setdefault(next_gap, []).append(work_item_id)
+            if readiness in named_filters:
+                named_filters[readiness].append(work_item_id)
+
+    return {
+        "artifact_kind": IMPLEMENTATION_WORK_INDEX_ARTIFACT_KIND,
+        "schema_version": IMPLEMENTATION_WORK_INDEX_SCHEMA_VERSION,
+        "generated_at": utc_now_iso(),
+        "policy_reference": implementation_delta_policy_reference(),
+        "source_delta_snapshot": {
+            "artifact_path": implementation_delta_snapshot_path().relative_to(ROOT).as_posix(),
+            "generated_at": str(snapshot.get("generated_at", "")).strip(),
+            "status": str(snapshot.get("status", "")).strip(),
+            "review_state": str(snapshot.get("review_state", "")).strip(),
+            "next_gap": str(snapshot.get("next_gap", "")).strip(),
+        },
+        "entry_count": len(entries),
+        "entries": entries,
+        "viewer_projection": {
+            "readiness": {key: sorted(value) for key, value in sorted(readiness_groups.items())},
+            "next_gap": {key: sorted(value) for key, value in sorted(next_gap_groups.items())},
+            "named_filters": {key: sorted(value) for key, value in sorted(named_filters.items())},
+        },
+        "implementation_backlog": {
+            "entry_count": sum(1 for entry in entries if entry["next_gap"] != "none"),
+            "grouped_by_next_gap": {
+                key: sorted(value)
+                for key, value in sorted(next_gap_groups.items())
+                if key != "none"
+            },
+        },
+        "canonical_mutations_allowed": False,
+        "runtime_code_mutations_allowed": False,
+    }
+
+
+def write_implementation_work_index(index: dict[str, Any]) -> Path:
+    RUNS_DIR.mkdir(parents=True, exist_ok=True)
+    path = implementation_work_index_path()
+    with artifact_lock(path):
+        atomic_write_json(path, index)
     return path
 
 
@@ -25466,6 +26114,11 @@ def main(
     build_intent_layer_overlay_mode: bool = False,
     build_exploration_preview_mode: bool = False,
     exploration_intent_text: str | None = None,
+    build_implementation_delta_snapshot_mode: bool = False,
+    implementation_target_scope_kind: str | None = None,
+    implementation_target_spec_ids: str | tuple[str, ...] | list[str] | None = None,
+    implementation_operator_intent: str | None = None,
+    build_implementation_work_index_mode: bool = False,
     build_vocabulary_index_mode: bool = False,
     build_vocabulary_drift_report_mode: bool = False,
     build_pre_spec_semantics_index_mode: bool = False,
@@ -25530,6 +26183,8 @@ def main(
         "--validate-transition-packet": bool(validate_transition_packet_path),
         "--build-intent-layer-overlay": build_intent_layer_overlay_mode,
         "--build-exploration-preview": build_exploration_preview_mode,
+        "--build-implementation-delta-snapshot": build_implementation_delta_snapshot_mode,
+        "--build-implementation-work-index": build_implementation_work_index_mode,
         "--build-vocabulary-index": build_vocabulary_index_mode,
         "--build-vocabulary-drift-report": build_vocabulary_drift_report_mode,
         "--build-pre-spec-semantics-index": build_pre_spec_semantics_index_mode,
@@ -25573,6 +26228,18 @@ def main(
 
     if exploration_intent_text and not build_exploration_preview_mode:
         print("--exploration-intent requires --build-exploration-preview", file=sys.stderr)
+        return 1
+
+    if (
+        implementation_target_scope_kind
+        or implementation_target_spec_ids
+        or implementation_operator_intent
+    ) and not build_implementation_delta_snapshot_mode:
+        print(
+            "--target-scope-kind, --target-spec-ids, and --operator-intent require "
+            "--build-implementation-delta-snapshot",
+            file=sys.stderr,
+        )
         return 1
 
     if validate_transition_packet_path:
@@ -25752,6 +26419,84 @@ def main(
         preview = build_exploration_preview(exploration_intent_text)
         write_exploration_preview(preview)
         print(json.dumps(preview, ensure_ascii=False, indent=2))
+        return 0
+
+    if build_implementation_delta_snapshot_mode:
+        if any(
+            (
+                dry_run,
+                auto_approve,
+                loop,
+                resolve_gate,
+                decision,
+                note,
+                target_spec,
+                split_proposal,
+                apply_split_proposal,
+                operator_note,
+                mutation_budget,
+                run_authority,
+                execution_profile,
+                child_model,
+                child_timeout_seconds,
+                verbose,
+                list_stale_runtime,
+                clean_stale_runtime,
+                observe_graph_health_mode,
+                operator_request_packet_path,
+            )
+        ):
+            print(
+                "--build-implementation-delta-snapshot must be used as a standalone command",
+                file=sys.stderr,
+            )
+            return 1
+        snapshot = build_implementation_delta_snapshot(
+            target_scope_kind=implementation_target_scope_kind,
+            target_spec_ids=implementation_target_spec_ids,
+            operator_intent=implementation_operator_intent,
+        )
+        write_implementation_delta_snapshot(snapshot)
+        print(json.dumps(snapshot, ensure_ascii=False, indent=2))
+        return 0
+
+    if build_implementation_work_index_mode:
+        if any(
+            (
+                dry_run,
+                auto_approve,
+                loop,
+                resolve_gate,
+                decision,
+                note,
+                target_spec,
+                split_proposal,
+                apply_split_proposal,
+                operator_note,
+                mutation_budget,
+                run_authority,
+                execution_profile,
+                child_model,
+                child_timeout_seconds,
+                verbose,
+                list_stale_runtime,
+                clean_stale_runtime,
+                observe_graph_health_mode,
+                operator_request_packet_path,
+            )
+        ):
+            print(
+                "--build-implementation-work-index must be used as a standalone command",
+                file=sys.stderr,
+            )
+            return 1
+        try:
+            index = build_implementation_work_index()
+        except RuntimeError as exc:
+            print(str(exc), file=sys.stderr)
+            return 1
+        write_implementation_work_index(index)
+        print(json.dumps(index, ensure_ascii=False, indent=2))
         return 0
 
     if build_external_consumer_index_mode:
@@ -27862,6 +28607,40 @@ if __name__ == "__main__":
         help="Root intent text used by --build-exploration-preview",
     )
     parser.add_argument(
+        "--build-implementation-delta-snapshot",
+        action="store_true",
+        help=(
+            "Build a derived implementation delta snapshot for an explicit target scope "
+            "without mutating canonical specs or runtime code"
+        ),
+    )
+    parser.add_argument(
+        "--target-scope-kind",
+        metavar="KIND",
+        help="Implementation delta target scope kind, initially: spec",
+    )
+    parser.add_argument(
+        "--target-spec-ids",
+        metavar="SPEC_IDS",
+        help=(
+            "Comma-separated canonical spec ids used by --build-implementation-delta-snapshot, "
+            "for example: SG-SPEC-0001,SG-SPEC-0002"
+        ),
+    )
+    parser.add_argument(
+        "--operator-intent",
+        metavar="TEXT",
+        help="Explicit operator intent used by --build-implementation-delta-snapshot",
+    )
+    parser.add_argument(
+        "--build-implementation-work-index",
+        action="store_true",
+        help=(
+            "Build a derived implementation work index from the latest implementation "
+            "delta snapshot"
+        ),
+    )
+    parser.add_argument(
         "--build-vocabulary-index",
         action="store_true",
         help=(
@@ -28237,6 +29016,11 @@ if __name__ == "__main__":
             build_intent_layer_overlay_mode=args.build_intent_layer_overlay,
             build_exploration_preview_mode=args.build_exploration_preview,
             exploration_intent_text=args.exploration_intent,
+            build_implementation_delta_snapshot_mode=args.build_implementation_delta_snapshot,
+            implementation_target_scope_kind=args.target_scope_kind,
+            implementation_target_spec_ids=args.target_spec_ids,
+            implementation_operator_intent=args.operator_intent,
+            build_implementation_work_index_mode=args.build_implementation_work_index,
             build_vocabulary_index_mode=args.build_vocabulary_index,
             build_vocabulary_drift_report_mode=args.build_vocabulary_drift_report,
             build_pre_spec_semantics_index_mode=args.build_pre_spec_semantics_index,

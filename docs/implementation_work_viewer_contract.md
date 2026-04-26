@@ -36,13 +36,12 @@ Planned read models:
 - `runs/implementation_delta_snapshot.json`
 - `runs/implementation_work_index.json`
 
-These artifacts do not exist as runtime outputs until the supervisor builder
-commands are implemented. This document fixes the intended contract before
-runtime work starts.
+These artifacts are derived supervisor outputs. They are rebuildable planning
+surfaces, not canonical spec truth and not runtime code.
 
 ## 3. Planned Supervisor Commands
 
-Planned commands:
+Commands:
 
 ```bash
 python3 tools/supervisor.py \
