@@ -163,11 +163,12 @@ Supervisor modes:
 - `--build-graph-dashboard`: build `runs/graph_dashboard.json` as one
   aggregated viewer-facing dashboard with headline counts from graph health,
   proposal, implementation, evidence, external-consumer, handoff, and metric
-  surfaces.
+  surfaces, including review-feedback learning-loop health.
 - `--build-graph-backlog-projection`: build
   `runs/graph_backlog_projection.json` as a normalized viewer-facing backlog
   projection from existing derived graph, proposal, implementation, evidence,
-  external-consumer, SpecPM, Metrics, and threshold-proposal surfaces.
+  external-consumer, SpecPM, Metrics, threshold-proposal, and review-feedback
+  surfaces.
 - `--build-intent-layer-overlay`: build `runs/intent_layer_overlay.json` from
   repository-tracked intent-layer nodes under `intent_layer/nodes/`, so
   pre-canonical user intent and operator-request artifacts can be inspected as
@@ -340,10 +341,11 @@ Key derived artifacts:
 - `runs/graph_dashboard.json`: aggregated dashboard artifact with headline
   cards and section counts for graph, health, retrospective refactor candidates,
   proposals, implementation, evidence, external consumers, external handoffs,
-  and metric surfaces
+  metric surfaces, and review-feedback learning-loop health
 - `runs/graph_backlog_projection.json`: normalized work/backlog projection with
   concrete `entries[]` grouped by domain, priority, next gap, source artifact,
-  and named filters so viewers do not need `tasks.md` as a work queue
+  and named filters, including process-feedback gaps, so viewers do not need
+  `tasks.md` as a work queue
 - `tools/spec_trace_registry.json`: explicit strong trace contracts used to
   derive conservative `implementation_state` overlays such as `planned`,
   `implemented`, `verified`, `drifted`, and `blocked`

@@ -13269,6 +13269,39 @@ def test_build_graph_dashboard_aggregates_runtime_surfaces(
     )
     monkeypatch.setattr(
         supervisor_module,
+        "build_review_feedback_index",
+        lambda: {
+            "generated_at": "2026-04-19T00:00:10Z",
+            "entry_count": 3,
+            "viewer_projection": {
+                "status": {
+                    "prevention_recorded": ["review-feedback-1", "review-feedback-2"],
+                    "invalid_feedback_record": ["review-feedback-3"],
+                },
+                "root_cause_class": {
+                    "artifact_contract_validation_gap": ["review-feedback-1"],
+                    "test_coverage_gap": ["review-feedback-3"],
+                },
+                "prevention_action": {"regression_test_added": ["review-feedback-1"]},
+                "verification_kind": {"targeted_test": ["review-feedback-1"]},
+                "named_filters": {"invalid_feedback_record": ["review-feedback-3"]},
+            },
+            "review_feedback_backlog": {
+                "entry_count": 1,
+                "items": [
+                    {
+                        "feedback_id": "review-feedback-3",
+                        "status": "invalid_feedback_record",
+                        "root_cause_class": "test_coverage_gap",
+                        "prevention_action": "regression_test_added",
+                        "next_gap": "repair_review_feedback_record",
+                    }
+                ],
+            },
+        },
+    )
+    monkeypatch.setattr(
+        supervisor_module,
         "build_metric_threshold_proposals",
         lambda index: {
             "generated_at": "2026-04-19T00:00:11Z",
@@ -13320,6 +13353,12 @@ def test_build_graph_dashboard_aggregates_runtime_surfaces(
     assert report["sections"]["external_consumers"]["metrics_source_promotion_status_counts"] == {
         "ready_for_promotion_review": 1
     }
+    assert report["sections"]["process_feedback"]["review_feedback_entry_count"] == 3
+    assert report["sections"]["process_feedback"]["review_feedback_backlog_count"] == 1
+    assert report["sections"]["process_feedback"]["review_feedback_status_counts"] == {
+        "invalid_feedback_record": 1,
+        "prevention_recorded": 2,
+    }
     assert report["sections"]["metrics"]["below_threshold_metric_ids"] == ["process_observability"]
     by_card_id = {entry["card_id"]: entry for entry in report["headline_cards"]}
     assert by_card_id["metrics_below_threshold"]["value"] == 1
@@ -13331,10 +13370,17 @@ def test_build_graph_dashboard_aggregates_runtime_surfaces(
     assert by_card_id["metrics_delivery_ready"]["value"] == 1
     assert by_card_id["metrics_feedback_visible"]["value"] == 1
     assert by_card_id["metrics_source_promotion_ready"]["value"] == 1
-    assert by_card_id["graph_backlog_open"]["value"] == 3
-    assert report["sections"]["backlog"]["domain_counts"] == {"health": 1, "proposals": 2}
+    assert by_card_id["review_feedback_open"]["value"] == 1
+    assert by_card_id["graph_backlog_open"]["value"] == 4
+    assert report["sections"]["backlog"]["domain_counts"] == {
+        "health": 1,
+        "process_feedback": 1,
+        "proposals": 2,
+    }
     assert report["viewer_projection"]["named_filters"]["retrospective_refactor_candidates"] == 1
-    assert report["viewer_projection"]["named_filters"]["graph_backlog_open"] == 3
+    assert report["viewer_projection"]["named_filters"]["review_feedback_open"] == 1
+    assert report["viewer_projection"]["named_filters"]["review_feedback_invalid_records"] == 1
+    assert report["viewer_projection"]["named_filters"]["graph_backlog_open"] == 4
 
 
 def test_main_builds_graph_dashboard_as_standalone_command(
@@ -13532,16 +13578,33 @@ def test_build_graph_backlog_projection_from_surfaces_normalizes_reviewable_gaps
                 }
             ],
         },
+        review_feedback_index={
+            "generated_at": "2026-04-24T00:00:13Z",
+            "entry_count": 1,
+            "review_feedback_backlog": {
+                "entry_count": 1,
+                "items": [
+                    {
+                        "feedback_id": "review-feedback-1",
+                        "status": "invalid_feedback_record",
+                        "root_cause_class": "artifact_contract_validation_gap",
+                        "prevention_action": "regression_test_added",
+                        "next_gap": "repair_review_feedback_record",
+                    }
+                ],
+            },
+        },
     )
 
     assert report["artifact_kind"] == supervisor_module.GRAPH_BACKLOG_PROJECTION_ARTIFACT_KIND
-    assert report["entry_count"] == 9
+    assert report["entry_count"] == 10
     assert report["summary"]["domain_counts"] == {
         "evidence": 1,
         "external_consumers": 1,
         "health": 1,
         "implementation": 1,
         "metrics": 2,
+        "process_feedback": 1,
         "proposals": 2,
         "specpm": 1,
     }
@@ -13553,6 +13616,8 @@ def test_build_graph_backlog_projection_from_surfaces_normalizes_reviewable_gaps
     assert report["viewer_projection"]["named_filters"]["metric_threshold_pressure"]
     assert report["viewer_projection"]["named_filters"]["promotion_review_ready"]
     assert report["viewer_projection"]["named_filters"]["blocked_by_repo_state"]
+    assert report["viewer_projection"]["named_filters"]["review_feedback_open"]
+    assert report["viewer_projection"]["named_filters"]["review_feedback_invalid"]
 
 
 def test_main_builds_graph_backlog_projection_as_standalone_command(

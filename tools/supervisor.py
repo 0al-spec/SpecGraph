@@ -21728,6 +21728,7 @@ def graph_backlog_source_artifact_path(source_artifact: str) -> str:
         "metrics_feedback_index": metrics_feedback_index_path,
         "metrics_source_promotion_index": metrics_source_promotion_index_path,
         "metric_threshold_proposals": metric_threshold_proposals_path,
+        "review_feedback_index": review_feedback_index_path,
     }
     path_builder = path_by_artifact.get(source_artifact)
     if path_builder is None:
@@ -21794,7 +21795,10 @@ def graph_backlog_priority(
         "runtime_realization",
         "validation_closure",
         "reobservation",
+        "repair_review_feedback_record",
     }:
+        return "medium"
+    if next_gap.startswith("attach_review_feedback"):
         return "medium"
     return "low"
 
@@ -21945,6 +21949,7 @@ def build_graph_backlog_projection_from_surfaces(
     metrics_feedback_index: dict[str, Any],
     metrics_source_promotion_index: dict[str, Any],
     metric_threshold_proposals: dict[str, Any],
+    review_feedback_index: dict[str, Any],
 ) -> dict[str, Any]:
     entries: list[dict[str, Any]] = []
 
@@ -22133,6 +22138,15 @@ def build_graph_backlog_projection_from_surfaces(
         id_fields=("consumer_id", "promotion_id"),
         status_fields=("promotion_status",),
     )
+    append_backlog_items(
+        entries,
+        source_artifact="review_feedback_index",
+        domain="process_feedback",
+        subject_kind="review_thread",
+        backlog=review_feedback_index.get("review_feedback_backlog", {}),
+        id_fields=("feedback_id",),
+        status_fields=("status", "root_cause_class"),
+    )
 
     for item in metric_threshold_proposals.get("entries", []):
         if not isinstance(item, dict):
@@ -22188,6 +22202,9 @@ def build_graph_backlog_projection_from_surfaces(
         "metric_threshold_pressure": [],
         "proposal_runtime_realization": [],
         "promotion_review_ready": [],
+        "review_feedback_open": [],
+        "review_feedback_invalid": [],
+        "review_feedback_accepted_risk": [],
     }
 
     for entry in entries:
@@ -22220,6 +22237,12 @@ def build_graph_backlog_projection_from_surfaces(
             named_filters["proposal_runtime_realization"].append(backlog_id)
         if next_gap == "review_metrics_source_promotion":
             named_filters["promotion_review_ready"].append(backlog_id)
+        if source_artifact == "review_feedback_index":
+            named_filters["review_feedback_open"].append(backlog_id)
+        if source_artifact == "review_feedback_index" and status == "invalid_feedback_record":
+            named_filters["review_feedback_invalid"].append(backlog_id)
+        if source_artifact == "review_feedback_index" and status == "accepted_risk_recorded":
+            named_filters["review_feedback_accepted_risk"].append(backlog_id)
 
     source_payloads: dict[str, dict[str, Any] | list[dict[str, Any]]] = {
         "graph_health_overlay": graph_overlay,
@@ -22237,6 +22260,7 @@ def build_graph_backlog_projection_from_surfaces(
         "metrics_feedback_index": metrics_feedback_index,
         "metrics_source_promotion_index": metrics_source_promotion_index,
         "metric_threshold_proposals": metric_threshold_proposals,
+        "review_feedback_index": review_feedback_index,
     }
 
     def sorted_groups(groups: dict[str, list[str]]) -> dict[str, list[str]]:
@@ -22303,6 +22327,7 @@ def build_graph_backlog_projection(specs: list[SpecNode]) -> dict[str, Any]:
         specpm_export_preview,
         specpm_delivery_workflow,
     )
+    review_feedback_index = build_review_feedback_index()
     return build_graph_backlog_projection_from_surfaces(
         graph_overlay=graph_overlay,
         proposal_runtime_index=proposal_runtime_index,
@@ -22319,6 +22344,7 @@ def build_graph_backlog_projection(specs: list[SpecNode]) -> dict[str, Any]:
         metrics_feedback_index=metrics_feedback_index,
         metrics_source_promotion_index=metrics_source_promotion_index,
         metric_threshold_proposals=metric_threshold_proposals,
+        review_feedback_index=review_feedback_index,
     )
 
 
@@ -22366,6 +22392,7 @@ def build_graph_dashboard(specs: list[SpecNode]) -> dict[str, Any]:
         specpm_export_preview,
         specpm_delivery_workflow,
     )
+    review_feedback_index = build_review_feedback_index()
     refactor_queue_items = [item for item in load_refactor_queue() if isinstance(item, dict)]
     proposal_queue_items = [item for item in load_proposal_queue() if isinstance(item, dict)]
     active_refactor_queue_items = active_queue_items(refactor_queue_items)
@@ -22386,6 +22413,7 @@ def build_graph_dashboard(specs: list[SpecNode]) -> dict[str, Any]:
         metrics_feedback_index=metrics_feedback_index,
         metrics_source_promotion_index=metrics_source_promotion_index,
         metric_threshold_proposals=metric_threshold_proposals,
+        review_feedback_index=review_feedback_index,
     )
     graph_backlog_priority_counts = graph_backlog_projection.get("summary", {}).get(
         "priority_counts", {}
@@ -22566,6 +22594,21 @@ def build_graph_dashboard(specs: list[SpecNode]) -> dict[str, Any]:
     )
     metrics_source_promotion_named_filter_counts = grouped_identifier_counts(
         metrics_source_promotion_index.get("viewer_projection", {}).get("named_filters", {})
+    )
+    review_feedback_status_counts = grouped_identifier_counts(
+        review_feedback_index.get("viewer_projection", {}).get("status", {})
+    )
+    review_feedback_root_cause_counts = grouped_identifier_counts(
+        review_feedback_index.get("viewer_projection", {}).get("root_cause_class", {})
+    )
+    review_feedback_prevention_counts = grouped_identifier_counts(
+        review_feedback_index.get("viewer_projection", {}).get("prevention_action", {})
+    )
+    review_feedback_verification_counts = grouped_identifier_counts(
+        review_feedback_index.get("viewer_projection", {}).get("verification_kind", {})
+    )
+    review_feedback_backlog_count = int(
+        review_feedback_index.get("review_feedback_backlog", {}).get("entry_count", 0) or 0
     )
 
     metric_entries = [
@@ -22770,6 +22813,17 @@ def build_graph_dashboard(specs: list[SpecNode]) -> dict[str, Any]:
             ),
         ),
         dashboard_card(
+            card_id="review_feedback_open",
+            title="Review Feedback Open",
+            value=review_feedback_backlog_count,
+            section="process_feedback",
+            status="attention" if review_feedback_backlog_count > 0 else "healthy",
+            basis=(
+                "Review-feedback records that still need root-cause, prevention, "
+                "verification, or accepted-risk follow-up."
+            ),
+        ),
+        dashboard_card(
             card_id="metrics_below_threshold",
             title="Metrics Below Threshold",
             value=len(below_threshold_authoritative_metric_ids),
@@ -22792,7 +22846,8 @@ def build_graph_dashboard(specs: list[SpecNode]) -> dict[str, Any]:
             ),
             basis=(
                 "Normalized derived backlog items gathered from graph health, proposal, "
-                "implementation, evidence, external consumer, SpecPM, and Metrics surfaces."
+                "implementation, evidence, external consumer, SpecPM, Metrics, and "
+                "review-feedback surfaces."
             ),
         ),
     ]
@@ -22879,6 +22934,10 @@ def build_graph_dashboard(specs: list[SpecNode]) -> dict[str, Any]:
             "metric_threshold_proposals": {
                 "artifact_path": metric_threshold_proposals_path().relative_to(ROOT).as_posix(),
                 "generated_at": metric_threshold_proposals.get("generated_at"),
+            },
+            "review_feedback_index": {
+                "artifact_path": review_feedback_index_path().relative_to(ROOT).as_posix(),
+                "generated_at": review_feedback_index.get("generated_at"),
             },
             "graph_backlog_projection": {
                 "artifact_path": graph_backlog_projection_path().relative_to(ROOT).as_posix(),
@@ -23030,6 +23089,16 @@ def build_graph_dashboard(specs: list[SpecNode]) -> dict[str, Any]:
                 "threshold_proposal_kind_counts": metric_threshold_kind_counts,
                 "threshold_proposal_severity_counts": metric_threshold_severity_counts,
             },
+            "process_feedback": {
+                "review_feedback_entry_count": int(
+                    review_feedback_index.get("entry_count", 0) or 0
+                ),
+                "review_feedback_backlog_count": review_feedback_backlog_count,
+                "review_feedback_status_counts": review_feedback_status_counts,
+                "review_feedback_root_cause_counts": review_feedback_root_cause_counts,
+                "review_feedback_prevention_counts": review_feedback_prevention_counts,
+                "review_feedback_verification_counts": review_feedback_verification_counts,
+            },
             "backlog": {
                 "backlog_entry_count": int(graph_backlog_projection.get("entry_count", 0) or 0),
                 "priority_counts": graph_backlog_priority_counts,
@@ -23047,6 +23116,7 @@ def build_graph_dashboard(specs: list[SpecNode]) -> dict[str, Any]:
                 "evidence",
                 "external_consumers",
                 "metrics",
+                "process_feedback",
                 "backlog",
             ],
             "named_filters": {
@@ -23081,6 +23151,15 @@ def build_graph_dashboard(specs: list[SpecNode]) -> dict[str, Any]:
                 ),
                 "metrics_source_promotion_ready": metrics_source_promotion_status_counts.get(
                     "ready_for_promotion_review",
+                    0,
+                ),
+                "review_feedback_open": review_feedback_backlog_count,
+                "review_feedback_invalid_records": review_feedback_status_counts.get(
+                    "invalid_feedback_record",
+                    0,
+                ),
+                "review_feedback_accepted_risks": review_feedback_status_counts.get(
+                    "accepted_risk_recorded",
                     0,
                 ),
                 "metrics_below_threshold": len(below_threshold_authoritative_metric_ids),
