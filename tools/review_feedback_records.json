@@ -1,0 +1,146 @@
+[
+  {
+    "feedback_id": "pr-148-likely-code-refs-scope",
+    "source_pr": 148,
+    "source_thread_url": "https://github.com/0al-spec/SpecGraph/pull/148#discussion_r3143326386",
+    "reviewer": "chatgpt-codex-connector",
+    "review_comment_summary": "Implementation Work index copied global likely_code_refs into every per-spec work item, which could over-scope coding agents.",
+    "fix_summary": "Added per-spec likely_affected_code_refs_by_spec in the delta snapshot and scoped work item code refs from that map.",
+    "root_cause_class": "scope_isolation_gap",
+    "prevention_action": "regression_test_added",
+    "verification": [
+      "targeted_test",
+      "full_test_suite",
+      "lint_or_format_check"
+    ],
+    "residual_risk": "",
+    "resolved_commit": "1205dbdfee995f6984e449202415f58c0310e794",
+    "recorded_at": "2026-04-26T08:20:00Z"
+  },
+  {
+    "feedback_id": "pr-148-malformed-target-contract",
+    "source_pr": 148,
+    "source_thread_url": "https://github.com/0al-spec/SpecGraph/pull/148#discussion_r3143390802",
+    "reviewer": "copilot-pull-request-reviewer",
+    "review_comment_summary": "Malformed implementation delta snapshots could crash when target was not an object.",
+    "fix_summary": "Added explicit target type validation before work-index field access.",
+    "root_cause_class": "artifact_contract_validation_gap",
+    "prevention_action": "regression_test_added",
+    "verification": [
+      "targeted_test",
+      "full_test_suite",
+      "lint_or_format_check"
+    ],
+    "residual_risk": "",
+    "resolved_commit": "1205dbdfee995f6984e449202415f58c0310e794",
+    "recorded_at": "2026-04-26T08:21:00Z"
+  },
+  {
+    "feedback_id": "pr-148-policy-runtime-drift",
+    "source_pr": 148,
+    "source_thread_url": "https://github.com/0al-spec/SpecGraph/pull/148#discussion_r3143390814",
+    "reviewer": "copilot-pull-request-reviewer",
+    "review_comment_summary": "Implementation delta status ignored policy flags that made missing trace/evidence baselines non-blocking.",
+    "fix_summary": "Derived readiness now honors blocks_on_missing_trace and blocks_on_missing_evidence policy flags.",
+    "root_cause_class": "policy_runtime_drift",
+    "prevention_action": "regression_test_added",
+    "verification": [
+      "targeted_test",
+      "full_test_suite",
+      "lint_or_format_check"
+    ],
+    "residual_risk": "",
+    "resolved_commit": "1205dbdfee995f6984e449202415f58c0310e794",
+    "recorded_at": "2026-04-26T08:22:00Z"
+  },
+  {
+    "feedback_id": "pr-149-agents-absolute-links",
+    "source_pr": 149,
+    "source_thread_url": "https://github.com/0al-spec/SpecGraph/pull/149#discussion_r3143428902",
+    "reviewer": "chatgpt-codex-connector",
+    "review_comment_summary": "AGENTS.md introduced absolute local markdown links that would be broken outside one workstation.",
+    "fix_summary": "Replaced local absolute links with repository-relative links and added a regression assertion against /Users markdown links.",
+    "root_cause_class": "process_rule_gap",
+    "prevention_action": "regression_test_added",
+    "verification": [
+      "targeted_test",
+      "full_test_suite",
+      "lint_or_format_check"
+    ],
+    "residual_risk": "",
+    "resolved_commit": "f9829b18b73a8dc9692d2e39796aee62151f148e",
+    "recorded_at": "2026-04-26T09:05:00Z"
+  },
+  {
+    "feedback_id": "pr-149-accepted-risk-contract",
+    "source_pr": 149,
+    "source_thread_url": "https://github.com/0al-spec/SpecGraph/pull/149#discussion_r3143428908",
+    "reviewer": "chatgpt-codex-connector",
+    "review_comment_summary": "The policy allowed accepted risk as a closure path but did not make the residual-risk requirement explicit enough.",
+    "fix_summary": "Added an explicit accepted_risk_action contract and test coverage that accepted risk requires residual risk recording.",
+    "root_cause_class": "artifact_contract_validation_gap",
+    "prevention_action": "regression_test_added",
+    "verification": [
+      "targeted_test",
+      "full_test_suite",
+      "lint_or_format_check"
+    ],
+    "residual_risk": "",
+    "resolved_commit": "f9829b18b73a8dc9692d2e39796aee62151f148e",
+    "recorded_at": "2026-04-26T09:06:00Z"
+  },
+  {
+    "feedback_id": "pr-150-required-string-type-validation",
+    "source_pr": 150,
+    "source_thread_url": "https://github.com/0al-spec/SpecGraph/pull/150#discussion_r3143490045",
+    "reviewer": "copilot-pull-request-reviewer",
+    "review_comment_summary": "Required string fields could pass validation when JSON records used null or non-string values because str(None) produced a non-blank value.",
+    "fix_summary": "Added strict required-string validation with invalid_field_type and blank_required_field findings for non-string required closure fields.",
+    "root_cause_class": "artifact_contract_validation_gap",
+    "prevention_action": "regression_test_added",
+    "verification": [
+      "targeted_test",
+      "full_test_suite",
+      "lint_or_format_check"
+    ],
+    "residual_risk": "",
+    "resolved_commit": "ac141909cc473d3532a608ce46617a095314e25c",
+    "recorded_at": "2026-04-26T12:50:00Z"
+  },
+  {
+    "feedback_id": "pr-150-non-list-verification-status",
+    "source_pr": 150,
+    "source_thread_url": "https://github.com/0al-spec/SpecGraph/pull/150#discussion_r3143490053",
+    "reviewer": "copilot-pull-request-reviewer",
+    "review_comment_summary": "Non-list verification values produced verification_must_be_list findings but were classified as missing_verification, sending the wrong next_gap.",
+    "fix_summary": "Prioritized invalid contract findings before missing-field statuses so non-list verification becomes invalid_feedback_record.",
+    "root_cause_class": "artifact_contract_validation_gap",
+    "prevention_action": "regression_test_added",
+    "verification": [
+      "targeted_test",
+      "full_test_suite",
+      "lint_or_format_check"
+    ],
+    "residual_risk": "",
+    "resolved_commit": "ac141909cc473d3532a608ce46617a095314e25c",
+    "recorded_at": "2026-04-26T12:51:00Z"
+  },
+  {
+    "feedback_id": "pr-150-empty-records-file-contract",
+    "source_pr": 150,
+    "source_thread_url": "https://github.com/0al-spec/SpecGraph/pull/150#discussion_r3143490064",
+    "reviewer": "copilot-pull-request-reviewer",
+    "review_comment_summary": "The policy test required review_feedback_records.json to be non-empty even though an empty list is a valid artifact state.",
+    "fix_summary": "Removed the non-empty assertion while keeping vocabulary validation for any records that are present.",
+    "root_cause_class": "test_coverage_gap",
+    "prevention_action": "regression_test_added",
+    "verification": [
+      "targeted_test",
+      "full_test_suite",
+      "lint_or_format_check"
+    ],
+    "residual_risk": "",
+    "resolved_commit": "ac141909cc473d3532a608ce46617a095314e25c",
+    "recorded_at": "2026-04-26T12:52:00Z"
+  }
+]

@@ -62,20 +62,20 @@ before closure:
 - what prevention action was added or explicitly deferred;
 - what verification proves the fix and prevention path.
 
-The first slice adds:
+The first slice added:
 
 - `tools/review_feedback_policy.json`
 - a repository rule in `AGENTS.md`
 - tests that keep the policy and operational rule present
 
-The future derived artifact is:
+The runtime realization adds:
 
 ```text
 runs/review_feedback_index.json
 ```
 
-That artifact should eventually summarize review comments, root causes,
-prevention actions, and recurring defect families.
+That artifact summarizes explicit review-feedback records, root causes,
+prevention actions, verification status, and recurring defect families.
 
 ## Required Closure Fields
 
@@ -147,8 +147,8 @@ Phase 1:
 Phase 2:
 
 - Add `runs/review_feedback_index.json`.
-- Add a standalone builder that can consume explicit review-feedback records or
-  GitHub review thread metadata.
+- Add a standalone builder that consumes explicit tracked review-feedback
+  records.
 - Group entries by root cause, prevention action, verification status, and
   next gap.
 

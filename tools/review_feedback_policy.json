@@ -2,6 +2,7 @@
   "artifact_kind": "review_feedback_policy",
   "schema_version": 1,
   "repository_layout": {
+    "records_artifact": "tools/review_feedback_records.json",
     "future_index_artifact": "runs/review_feedback_index.json"
   },
   "learning_loop_contract": {
