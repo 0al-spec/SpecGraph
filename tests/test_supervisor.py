@@ -14431,6 +14431,37 @@ def test_build_review_feedback_index_requires_residual_risk_for_accepted_risk(
     assert "accepted_risk_requires_residual_risk" in entry["findings"]
 
 
+def test_build_review_feedback_index_flags_null_required_string_as_invalid(
+    supervisor_module: object,
+) -> None:
+    index = supervisor_module.build_review_feedback_index(
+        [sample_review_feedback_record(feedback_id="review-feedback-null", reviewer=None)]
+    )
+
+    entry = index["entries"][0]
+    assert entry["status"] == "invalid_feedback_record"
+    assert "invalid_field_type::reviewer" in entry["findings"]
+    assert "blank_required_field::reviewer" in entry["findings"]
+
+
+def test_build_review_feedback_index_flags_non_list_verification_as_invalid(
+    supervisor_module: object,
+) -> None:
+    index = supervisor_module.build_review_feedback_index(
+        [
+            sample_review_feedback_record(
+                feedback_id="review-feedback-bad-verification",
+                verification="targeted_test",
+            )
+        ]
+    )
+
+    entry = index["entries"][0]
+    assert entry["status"] == "invalid_feedback_record"
+    assert entry["next_gap"] == "repair_review_feedback_record"
+    assert "verification_must_be_list" in entry["findings"]
+
+
 def test_main_builds_review_feedback_index_as_standalone_command(
     supervisor_module: object,
     repo_fixture: Path,

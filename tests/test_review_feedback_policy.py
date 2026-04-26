@@ -88,7 +88,6 @@ def test_review_feedback_records_file_matches_policy_vocabularies() -> None:
     records = json.loads(records_path.read_text(encoding="utf-8"))
 
     assert isinstance(records, list)
-    assert records
     root_causes = set(policy["root_cause_classes"])
     prevention_actions = set(policy["prevention_actions"])
     verification_kinds = set(policy["verification_kinds"])

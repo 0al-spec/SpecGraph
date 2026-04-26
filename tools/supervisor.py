@@ -11842,6 +11842,27 @@ def normalize_review_feedback_verification(value: object) -> list[str]:
     return sorted({str(item).strip() for item in value if str(item).strip()})
 
 
+def review_feedback_required_string(
+    record: dict[str, Any],
+    field: str,
+    findings: list[str],
+    *,
+    allow_blank: bool = False,
+) -> str:
+    if field not in record:
+        return ""
+    value = record.get(field)
+    if not isinstance(value, str):
+        findings.append(f"invalid_field_type::{field}")
+        if not allow_blank:
+            findings.append(f"blank_required_field::{field}")
+        return ""
+    text = value.strip()
+    if not text and not allow_blank:
+        findings.append(f"blank_required_field::{field}")
+    return text
+
+
 def derive_review_feedback_status(record: dict[str, Any]) -> tuple[str, list[str]]:
     findings: list[str] = []
     missing_fields = [
@@ -11850,17 +11871,26 @@ def derive_review_feedback_status(record: dict[str, Any]) -> tuple[str, list[str
     if missing_fields:
         findings.extend(f"missing_required_field::{field}" for field in missing_fields)
 
-    for field in REVIEW_FEEDBACK_REQUIRED_CLOSURE_FIELDS:
-        if field in {"residual_risk", "verification"}:
-            continue
-        if field in record and not str(record.get(field, "")).strip():
-            findings.append(f"blank_required_field::{field}")
-
-    root_cause_class = str(record.get("root_cause_class", "")).strip()
-    prevention_action = str(record.get("prevention_action", "")).strip()
+    string_values = {
+        field: review_feedback_required_string(
+            record,
+            field,
+            findings,
+            allow_blank=field == "residual_risk",
+        )
+        for field in REVIEW_FEEDBACK_REQUIRED_CLOSURE_FIELDS
+        if field != "verification"
+    }
+    root_cause_class = string_values.get("root_cause_class", "")
+    prevention_action = string_values.get("prevention_action", "")
     verification = normalize_review_feedback_verification(record.get("verification"))
-    residual_risk = str(record.get("residual_risk", "")).strip()
-    recorded_at = str(record.get("recorded_at", "")).strip()
+    residual_risk = string_values.get("residual_risk", "")
+    recorded_at = review_feedback_required_string(
+        record,
+        "recorded_at",
+        findings,
+        allow_blank=True,
+    )
 
     if recorded_at and parse_iso_datetime(recorded_at) is None:
         findings.append("invalid_recorded_at")
@@ -11877,6 +11907,25 @@ def derive_review_feedback_status(record: dict[str, Any]) -> tuple[str, list[str
     if prevention_action == REVIEW_FEEDBACK_ACCEPTED_RISK_ACTION and not residual_risk:
         findings.append("accepted_risk_requires_residual_risk")
 
+    invalid_contract = any(
+        finding.startswith(
+            (
+                "invalid_field_type::",
+                "unknown_root_cause_class::",
+                "unknown_prevention_action::",
+                "unknown_verification_kind::",
+            )
+        )
+        or finding
+        in {
+            "accepted_risk_requires_residual_risk",
+            "invalid_recorded_at",
+            "verification_must_be_list",
+        }
+        for finding in findings
+    )
+    if invalid_contract:
+        return "invalid_feedback_record", sorted(findings)
     if not root_cause_class:
         return "missing_root_cause", sorted(findings)
     if not prevention_action:
