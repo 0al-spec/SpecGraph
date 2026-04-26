@@ -1103,14 +1103,15 @@ The dashboard is explicitly derived-only. It pulls fresh counts from:
 - implementation trace projection
 - evidence-plane overlay
 - metric signal and threshold-proposal artifacts
+- review-feedback learning-loop index
 
 The output includes:
 
 - headline cards for quick counts such as total specs, gated specs, structural
   pressure regions, retrospective refactor candidates, verified specs, complete
-  evidence chains, and metrics below threshold
+  evidence chains, review-feedback gaps, and metrics below threshold
 - section-level counts for graph, health, proposals, implementation, evidence,
-  and metrics
+  metrics, and process feedback
 - source artifact references with generated timestamps so a visualizer can show
   provenance for each number
 
@@ -1123,9 +1124,9 @@ python3 tools/supervisor.py --build-graph-backlog-projection
 Builds `runs/graph_backlog_projection.json` as a normalized work/backlog
 projection over existing derived surfaces. This is not a canonical task list:
 it is a viewer-facing read model that turns graph health, proposal runtime,
-trace, evidence, external-consumer, SpecPM, Metrics, and threshold-proposal
-gaps into concrete rows with `domain`, `subject_id`, `next_gap`, `priority`,
-and source artifact links.
+trace, evidence, external-consumer, SpecPM, Metrics, threshold-proposal, and
+review-feedback gaps into concrete rows with `domain`, `subject_id`,
+`next_gap`, `priority`, and source artifact links.
 
 Use it when the dashboard count needs to become a clickable work queue without
 reintroducing `tasks.md` as the source of truth.
@@ -1426,10 +1427,11 @@ path.
 - `runs/graph_dashboard.json`
   - aggregated dashboard surface with headline cards and numeric section
     summaries for graph, health, proposals, implementation, evidence, external
-    consumers, external handoffs, and metrics
+    consumers, external handoffs, metrics, and process feedback
 - `runs/graph_backlog_projection.json`
   - normalized derived backlog surface with concrete next-gap rows grouped by
-    domain, priority, source artifact, and named viewer filters
+    domain, priority, source artifact, and named viewer filters, including
+    review-feedback gaps
 - `tools/proposal_lane_policy.json`
   - declarative proposal-lane contract for repository presence, authority-state
     mapping, and overlay/query semantics

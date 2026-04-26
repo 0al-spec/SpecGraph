@@ -154,7 +154,7 @@ Phase 2:
 
 Phase 3:
 
-- Surface review-feedback trends in dashboard/backlog projection.
+- Surface review-feedback gaps in dashboard/backlog projection.
 - Use recurring root-cause groups to propose validators, tests, or process
   rules.
 
