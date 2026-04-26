@@ -128,6 +128,10 @@ Supervisor modes:
   `runs/specpm_feedback_index.json` from the current `SpecPM`
   delivery workflow plus downstream checkout observations so local review or
   adoption signals become visible without turning them into canonical truth.
+- `--build-specpm-public-registry-index`: build
+  `runs/specpm_public_registry_index.json` from the current materialization
+  report plus the configured local-dev SpecPM registry, using read-only `/v0`
+  probes so registry visibility and drift become observable without publishing.
 - `--build-metrics-delivery-workflow`: build
   `runs/metrics_delivery_workflow.json` from current Metrics/SIB handoff
   packets so downstream branch, commit, and PR scaffolding becomes reviewable
@@ -284,6 +288,9 @@ Key derived artifacts:
 - `runs/specpm_feedback_index.json`: derived `SpecPM` downstream feedback
   surface, grouped by observed review/adoption status, checkout signals, and
   next-gap backlog without auto-accepting that downstream state as canonical
+- `runs/specpm_public_registry_index.json`: read-only `SpecPM` public registry
+  observation surface, grouped by registry visibility, missing package versions,
+  searchable capabilities, and drift against materialized package identities
 - `runs/metrics_delivery_workflow.json`: reviewable outbound `Metrics`
   delivery workflow surface, grouped by delivery status, review state, git
   checkout state, metric binding, and next-gap backlog before downstream commit
@@ -332,6 +339,9 @@ Key derived artifacts:
 - `tools/specpm_feedback_policy.json`: declarative contract for downstream
   `SpecPM` feedback observation, including status vocabulary, branch/adoption
   heuristics, and review-safe next-gap defaults
+- `tools/specpm_public_registry_policy.json`: declarative contract for
+  read-only `SpecPM` public registry observation, including local-dev base URL
+  rules, endpoint template validation, and drift next-gap defaults
 - `tools/metrics_delivery_policy.json`: declarative contract for reviewable
   `SpecGraph -> Metrics` handoff delivery workflow, including eligibility, git
   state checks, and downstream branch/commit/PR scaffolding

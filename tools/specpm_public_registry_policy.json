@@ -1,0 +1,63 @@
+{
+  "artifact_kind": "specpm_public_registry_policy",
+  "version": 1,
+  "repository_layout": {
+    "artifact": "runs/specpm_public_registry_index.json"
+  },
+  "registry_contract": {
+    "artifact_kind": "specpm_public_registry_index",
+    "schema_version": 1,
+    "required_consumer_id": "specpm",
+    "required_registry_profile": "public_static_index",
+    "required_api_version": "v0",
+    "required_authority": "dev_observation_only",
+    "registry_statuses": [
+      "registry_available",
+      "registry_unavailable",
+      "invalid_registry_contract",
+      "invalid_registry_response",
+      "blocked_by_materialization_gap"
+    ],
+    "entry_statuses": [
+      "registry_visible",
+      "registry_drift",
+      "registry_missing",
+      "registry_unavailable",
+      "invalid_registry_response",
+      "blocked_by_materialization_gap"
+    ],
+    "review_states": [
+      "registry_visible",
+      "registry_gap",
+      "not_observed"
+    ],
+    "named_filters": [
+      "registry_available",
+      "registry_unavailable",
+      "visible_package_versions",
+      "missing_package_versions",
+      "searchable_capabilities",
+      "missing_capabilities",
+      "registry_drift",
+      "dev_observation_only"
+    ]
+  },
+  "endpoint_templates": {
+    "package": "/v0/packages/{package_id}",
+    "version": "/v0/packages/{package_id}/versions/{version}",
+    "capability_search": "/v0/capabilities/{capability_id}/packages"
+  },
+  "probe_defaults": {
+    "timeout_seconds": 5
+  },
+  "next_gap_defaults": {
+    "registry_available": "review_specpm_public_registry_visibility",
+    "registry_unavailable": "start_specpm_public_index_service",
+    "invalid_registry_contract": "repair_specpm_public_registry_contract",
+    "blocked_by_materialization_gap": "materialize_specpm_export_bundle",
+    "registry_visible": "none",
+    "registry_drift": "review_specpm_registry_drift",
+    "registry_missing": "publish_or_regenerate_specpm_public_index",
+    "invalid_registry_response": "repair_specpm_registry_payload"
+  }
+}

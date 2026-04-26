@@ -10147,6 +10147,225 @@ def test_main_builds_specpm_feedback_index_as_standalone_command(
     assert feedback_artifact["generated_at"] == "2026-04-23T11:00:02Z"
 
 
+def specpm_registry_consumer_index() -> dict[str, object]:
+    return {
+        "artifact_kind": "external_consumer_index",
+        "schema_version": 1,
+        "generated_at": "2026-04-23T12:00:00Z",
+        "entries": [
+            {
+                "consumer_id": "specpm",
+                "profile": "boundary_package_consumer",
+                "registry": {
+                    "profile": "public_static_index",
+                    "api_version": "v0",
+                    "local_dev_url": "http://localhost:8081",
+                    "authority": "dev_observation_only",
+                    "endpoints": {
+                        "package": "/v0/packages/{package_id}",
+                        "version": "/v0/packages/{package_id}/versions/{version}",
+                        "capability_search": "/v0/capabilities/{capability_id}/packages",
+                    },
+                },
+            }
+        ],
+    }
+
+
+def specpm_materialization_report() -> dict[str, object]:
+    return {
+        "artifact_kind": "specpm_materialization_report",
+        "schema_version": 1,
+        "generated_at": "2026-04-23T12:00:01Z",
+        "entry_count": 1,
+        "entries": [
+            {
+                "export_id": "specgraph_core_repository_facade",
+                "handoff_id": "specpm_handoff::specgraph_core_repository_facade",
+                "consumer_id": "specpm",
+                "materialization_status": "draft_materialized",
+                "review_state": "draft_materialized",
+                "next_gap": "review_draft_materialized_bundle",
+                "bundle_root": "/tmp/SpecPM/.specgraph_exports/specgraph.core_repository_facade",
+                "package_identity": {
+                    "package_id": "specgraph.core_repository_facade",
+                    "package_name": "SpecGraph Core Repository Facade",
+                    "package_version": "0.1.0",
+                },
+            }
+        ],
+    }
+
+
+def test_build_specpm_public_registry_index_reports_visible_package(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fake_fetch(url: str, *, timeout_seconds: float) -> dict[str, object]:
+        assert timeout_seconds == 5
+        if url.endswith("/v0/packages/specgraph.core_repository_facade"):
+            return {
+                "fetch_status": "ok",
+                "http_status": 200,
+                "payload_kind": "dict",
+                "payload": {"package_id": "specgraph.core_repository_facade"},
+            }
+        if url.endswith("/v0/packages/specgraph.core_repository_facade/versions/0.1.0"):
+            return {
+                "fetch_status": "ok",
+                "http_status": 200,
+                "payload_kind": "dict",
+                "payload": {
+                    "package_id": "specgraph.core_repository_facade",
+                    "version": "0.1.0",
+                },
+            }
+        if url.endswith("/v0/capabilities/specgraph.repository_facade/packages"):
+            return {
+                "fetch_status": "ok",
+                "http_status": 200,
+                "payload_kind": "list",
+                "payload": [{"package_id": "specgraph.core_repository_facade"}],
+            }
+        raise AssertionError(f"unexpected URL: {url}")
+
+    monkeypatch.setattr(supervisor_module, "fetch_specpm_public_registry_json", fake_fetch)
+
+    report = supervisor_module.build_specpm_public_registry_index(
+        specpm_materialization_report(),
+        specpm_registry_consumer_index(),
+    )
+
+    assert report["artifact_kind"] == supervisor_module.SPECPM_PUBLIC_REGISTRY_INDEX_ARTIFACT_KIND
+    assert report["registry"]["base_url"] == "http://localhost:8081"
+    assert report["registry"]["registry_status"] == "registry_available"
+    entry = report["entries"][0]
+    assert entry["registry_status"] == "registry_visible"
+    assert entry["next_gap"] == "none"
+    assert report["viewer_projection"]["named_filters"]["visible_package_versions"] == [
+        "specgraph.core_repository_facade"
+    ]
+    assert report["viewer_projection"]["named_filters"]["searchable_capabilities"] == [
+        "specgraph.core_repository_facade"
+    ]
+    assert report["viewer_projection"]["named_filters"]["dev_observation_only"] == [
+        "specgraph.core_repository_facade"
+    ]
+
+
+def test_build_specpm_public_registry_index_marks_unavailable_as_observation_gap(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fake_fetch(url: str, *, timeout_seconds: float) -> dict[str, object]:
+        _ = (url, timeout_seconds)
+        return {
+            "fetch_status": "unavailable",
+            "http_status": None,
+            "error": "connection refused",
+        }
+
+    monkeypatch.setattr(supervisor_module, "fetch_specpm_public_registry_json", fake_fetch)
+
+    report = supervisor_module.build_specpm_public_registry_index(
+        specpm_materialization_report(),
+        specpm_registry_consumer_index(),
+    )
+
+    assert report["registry"]["registry_status"] == "registry_unavailable"
+    assert report["registry"]["next_gap"] == "start_specpm_public_index_service"
+    entry = report["entries"][0]
+    assert entry["registry_status"] == "registry_unavailable"
+    assert entry["review_state"] == "registry_gap"
+    assert report["registry_backlog"]["entry_count"] == 1
+
+
+def test_build_specpm_public_registry_index_reports_capability_drift(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fake_fetch(url: str, *, timeout_seconds: float) -> dict[str, object]:
+        _ = timeout_seconds
+        if "/v0/capabilities/" in url:
+            return {
+                "fetch_status": "ok",
+                "http_status": 200,
+                "payload_kind": "list",
+                "payload": [],
+            }
+        payload = {
+            "package_id": "specgraph.core_repository_facade",
+            "version": "0.1.0",
+        }
+        return {
+            "fetch_status": "ok",
+            "http_status": 200,
+            "payload_kind": "dict",
+            "payload": payload,
+        }
+
+    monkeypatch.setattr(supervisor_module, "fetch_specpm_public_registry_json", fake_fetch)
+
+    report = supervisor_module.build_specpm_public_registry_index(
+        specpm_materialization_report(),
+        specpm_registry_consumer_index(),
+    )
+
+    entry = report["entries"][0]
+    assert entry["registry_status"] == "registry_drift"
+    assert entry["next_gap"] == "review_specpm_registry_drift"
+    assert report["registry"]["registry_status"] == "registry_available"
+    assert report["viewer_projection"]["named_filters"]["missing_capabilities"] == [
+        "specgraph.core_repository_facade"
+    ]
+    assert entry["drift_findings"][0]["probe"] == "capability_search"
+
+
+def test_main_builds_specpm_public_registry_index_as_standalone_command(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    materialization_report = specpm_materialization_report()
+    (repo_fixture / "runs" / "specpm_materialization_report.json").write_text(
+        json.dumps(materialization_report),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_external_consumer_index",
+        specpm_registry_consumer_index,
+    )
+
+    def fake_fetch(url: str, *, timeout_seconds: float) -> dict[str, object]:
+        _ = (url, timeout_seconds)
+        return {
+            "fetch_status": "ok",
+            "http_status": 200,
+            "payload_kind": "dict",
+            "payload": {
+                "package_id": "specgraph.core_repository_facade",
+                "version": "0.1.0",
+            },
+        }
+
+    monkeypatch.setattr(supervisor_module, "fetch_specpm_public_registry_json", fake_fetch)
+
+    exit_code = supervisor_module.main(build_specpm_public_registry_index_mode=True)
+
+    assert exit_code == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["artifact_kind"] == supervisor_module.SPECPM_PUBLIC_REGISTRY_INDEX_ARTIFACT_KIND
+    artifact = json.loads(
+        (repo_fixture / "runs" / "specpm_public_registry_index.json").read_text(encoding="utf-8")
+    )
+    assert artifact["registry"]["registry_status"] == "registry_available"
+
+
 def test_build_metrics_delivery_workflow_emits_ready_draft_and_blocked_entries(
     supervisor_module: object,
     repo_fixture: Path,

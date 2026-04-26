@@ -3,8 +3,8 @@
 This document fixes the viewer-facing JSON contract for the current
 `SpecGraph -> SpecPM -> SpecGraph` review loop.
 
-It does not introduce a new artifact family. The contract is a stable field
-subset over already existing derived artifacts under `runs/`.
+The contract is a stable field subset over the derived SpecPM artifacts under
+`runs/`, including the read-only public registry observation surface.
 
 Use this document when implementing:
 
@@ -15,6 +15,7 @@ Use this document when implementing:
 - local materialization status
 - import review status
 - downstream feedback status
+- public registry observation status
 
 ## 1. Lifecycle Overview
 
@@ -25,6 +26,7 @@ The current downstream loop is:
 3. materialize local draft bundle into sibling `SpecPM`
 4. build import preview from local bundle inbox
 5. observe downstream review or local adoption feedback from `SpecPM`
+6. observe local-dev public registry visibility through read-only `/v0` probes
 
 The corresponding artifacts are:
 
@@ -33,6 +35,7 @@ The corresponding artifacts are:
 - `runs/specpm_materialization_report.json`
 - `runs/specpm_import_preview.json`
 - `runs/specpm_feedback_index.json`
+- `runs/specpm_public_registry_index.json`
 
 Recommended rebuild order for a viewer button group:
 
@@ -42,11 +45,12 @@ python3 tools/supervisor.py --build-specpm-handoff-packets
 python3 tools/supervisor.py --materialize-specpm-export-bundles
 python3 tools/supervisor.py --build-specpm-import-preview
 python3 tools/supervisor.py --build-specpm-feedback-index
+python3 tools/supervisor.py --build-specpm-public-registry-index
 ```
 
 ## 2. Stable Top-Level Contract
 
-All five artifacts should be consumed with the same top-level assumptions:
+All six artifacts should be consumed with the same top-level assumptions:
 
 - `artifact_kind`
 - `schema_version`
@@ -323,10 +327,84 @@ Current status vocabulary:
 - `blocked_by_delivery_gap`
 - `invalid_feedback_contract`
 
-## 8. Recommended Viewer Model
+## 8. Public Registry Observation Contract
+
+Read:
+
+- `runs/specpm_public_registry_index.json`
+
+This artifact observes the local SpecPM static registry service in read-only
+mode. It does not publish packages, mutate `SpecPM`, or block the lifecycle
+when the dev service is down.
+
+Registry base URL contract:
+
+- use `registry.base_url` as the base, for example `http://localhost:8081`
+- do not append `/v0` to the base URL
+- endpoint templates under `registry.endpoints` include `/v0/...`
+
+Global registry panel fields:
+
+- `registry.consumer_id`
+- `registry.profile`
+- `registry.api_version`
+- `registry.base_url`
+- `registry.authority`
+- `registry.registry_status`
+- `registry.review_state`
+- `registry.next_gap`
+- `registry.contract_errors`
+
+Package card fields:
+
+- `package_id`
+- `package_version`
+- `export_id`
+- `registry_status`
+- `review_state`
+- `next_gap`
+- `authority`
+- `expected.materialization_status`
+- `expected.bundle_root`
+- `expected.provides_capabilities`
+- `probes.package`
+- `probes.version`
+- `probes.capabilities`
+- `drift_findings`
+
+Current registry status vocabulary:
+
+- `registry_available`
+- `registry_unavailable`
+- `invalid_registry_contract`
+- `invalid_registry_response`
+- `blocked_by_materialization_gap`
+
+Current package status vocabulary:
+
+- `registry_visible`
+- `registry_drift`
+- `registry_missing`
+- `registry_unavailable`
+- `invalid_registry_response`
+- `blocked_by_materialization_gap`
+
+Recommended badges:
+
+- `registry available`: `registry.registry_status == "registry_available"`
+- `visible in /v0`: package `registry_status == "registry_visible"`
+- `registry drift`: package `registry_status == "registry_drift"`
+- `dev observation only`: `registry.authority == "dev_observation_only"`
+
+Recommended copy:
+
+- use `registry-visible package versions`, not `published packages`
+- treat `registry_unavailable` as an observation gap, not as a lifecycle failure
+
+## 9. Recommended Viewer Model
 
 The viewer should not invent a separate persistence format yet. It should build
-one in-memory adapter from the five artifacts.
+one in-memory adapter from the six artifacts.
 
 Recommended normalized package-lifecycle shape:
 
@@ -358,6 +436,12 @@ Recommended normalized package-lifecycle shape:
     "status": "downstream_unobserved",
     "review_state": "not_observed",
     "next_gap": "observe_specpm_downstream_review"
+  },
+  "registry": {
+    "status": "registry_visible",
+    "review_state": "registry_visible",
+    "next_gap": "none",
+    "authority": "dev_observation_only"
   }
 }
 ```
@@ -369,14 +453,16 @@ Recommended join keys:
 - materialization side: `package_identity.package_id`
 - import side: `manifest_summary.package_id`
 - feedback side: `package_id`
+- registry side: `package_id`
 
 If a join key is missing, fall back to:
 
 - export/handoff/materialization: `export_id`
 - import: `bundle_id`
 - feedback: `export_id`
+- registry: `export_id`
 
-## 9. Recommended Buttons
+## 10. Recommended Buttons
 
 ### `Build Export Preview`
 
@@ -432,7 +518,24 @@ Then read:
 
 - `runs/specpm_feedback_index.json`
 
-## 10. Current Live Mock
+### `Build Public Registry Observation`
+
+Run:
+
+```bash
+python3 tools/supervisor.py --build-specpm-public-registry-index
+```
+
+Then read:
+
+- `runs/specpm_public_registry_index.json`
+
+Prerequisite for a non-empty live observation:
+
+- SpecPM public index service is available at `http://localhost:8081`
+- the local materialization report already contains at least one draft bundle
+
+## 11. Current Live Mock
 
 At the time this document was written, a live local mock exists for:
 
@@ -446,6 +549,9 @@ Observed state:
 - import: `draft_visible`
 - feedback: `downstream_unobserved` or a blocked downstream status depending on
   current checkout state
+- registry: `registry_visible` when the local SpecPM public index service exposes
+  the package through `/v0`; otherwise `registry_unavailable` or
+  `blocked_by_materialization_gap`
 - suggested target: `handoff_candidate`
 
 This is enough for a viewer to render:
@@ -454,9 +560,10 @@ This is enough for a viewer to render:
 - export/import preview panels
 - local materialization status
 - downstream feedback status
+- public registry visibility status
 - next-gap badges
 
-## 11. Non-Goals For The Viewer
+## 12. Non-Goals For The Viewer
 
 Do not assume yet:
 
@@ -464,6 +571,8 @@ Do not assume yet:
 - automatic import into canonical `SpecGraph` specs
 - cross-repo PR creation
 - stable package publication semantics
+- a global package index endpoint
+- a canonical public authority URL
 
 Current UI should stay honest and use labels such as:
 
@@ -471,3 +580,4 @@ Current UI should stay honest and use labels such as:
 - `Handoff Preview`
 - `Local Draft Bundle`
 - `Import Preview`
+- `Registry Observation`
