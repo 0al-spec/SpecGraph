@@ -268,5 +268,22 @@
     "residual_risk": "",
     "resolved_commit": "d89fbd66612231528b2a4c95c10e69779f9577d6",
     "recorded_at": "2026-04-27T21:03:08Z"
+  },
+  {
+    "feedback_id": "pr-157-sg-spec-0043-gate-timestamp-drift",
+    "source_pr": 157,
+    "source_thread_url": "https://github.com/0al-spec/SpecGraph/pull/157#discussion_r3150312823",
+    "reviewer": "copilot-pull-request-reviewer",
+    "review_comment_summary": "SG-SPEC-0043 updated_at reflected the 2026-04-27 refinement, but last_gate_at still pointed to an older approval timestamp.",
+    "fix_summary": "Refreshed SG-SPEC-0043 last_gate_at so the approved gate timestamp no longer predates the current contents.",
+    "root_cause_class": "process_rule_gap",
+    "prevention_action": "accepted_risk_recorded",
+    "verification": [
+      "lint_or_format_check",
+      "manual_contract_review"
+    ],
+    "residual_risk": "A repository-wide timestamp freshness validator is intentionally deferred because many legacy spec nodes still carry older last_gate_at values; this PR fixes only the reviewed SG-SPEC-0043 drift.",
+    "resolved_commit": "9de37a27f5acd1539b48816a16f4b538209113d6",
+    "recorded_at": "2026-04-27T21:36:44Z"
   }
 ]

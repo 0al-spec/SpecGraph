@@ -2,9 +2,9 @@ id: SG-SPEC-0028
 title: SpecGraph - Proposal/Split Mechanics Coordination
 kind: spec
 created_at: '2026-04-13T07:55:45Z'
-updated_at: '2026-04-25T10:10:00Z'
+updated_at: '2026-04-27T21:14:36Z'
 status: linked
-maturity: 0.69
+maturity: 0.89
 depends_on:
 - SG-SPEC-0006
 - SG-SPEC-0025
@@ -36,8 +36,9 @@ acceptance_evidence:
     coordination role without exposing descendant payload or queue fields.
 - criterion: Keeps proposal-lane execution and split mechanics jointly reviewable as separate required
     capabilities without turning their graph placement into the main contract.
-  evidence: specification.required_capabilities keeps proposal-lane execution and split mechanics separate,
-    while specification.topology_prose_policy says their graph placement remains metadata.
+  evidence: specification.joint_reviewability_conditions requires separate review outcomes for proposal-lane
+    execution and split mechanics, while specification.topology_prose_policy says their graph placement
+    remains metadata.
 - criterion: Preserves concrete ownership boundaries where SG-SPEC-0006 owns proposal-lane execution,
     SG-SPEC-0025 owns split mechanics and payload semantics, SG-SPEC-0004 remains the split lifecycle
     anchor, and SG-SPEC-0030 owns parent-facing prerequisite semantics.
@@ -78,6 +79,16 @@ specification:
   readiness_question:
   - Are proposal-lane execution and split mechanics both available as reviewable capabilities for reflective
     execution without collapsing their ownership boundaries?
+  joint_reviewability_conditions:
+  - Proposal/split mechanics are jointly reviewable only when proposal-lane execution and split mechanics
+    can each receive an independent review outcome before reflective execution treats the capability set
+    as ready.
+  - A review finding against proposal-lane execution must name the proposal-lane capability as unresolved
+    without implying that split mechanics failed.
+  - A review finding against split mechanics must name the split mechanics capability as unresolved without
+    implying that proposal-lane execution failed.
+  - A readiness conclusion must explain the capability-level coordination result without narrating child
+    placement, edge shape, route order, queue ordering, or runtime scheduling.
   required_capabilities:
     proposal_lane_execution:
     - SG-SPEC-0006 owns proposal-lane execution semantics, tracked proposal identity, and execution-lane
@@ -116,69 +127,11 @@ specification:
   - SG-SPEC-0027 must not read SG-SPEC-0028 as a proxy for SG-SPEC-0005; direct-update semantics remain
     a separately consumed concern.
 gate_state: none
-required_human_action: '-'
 proposed_status: null
 proposed_maturity: null
-last_outcome: split_required
-last_blocker: ''
-last_run_id: 20260413T211421Z-SG-SPEC-0028
-last_exit_code: 0
-last_changed_files:
-- specs/nodes/SG-SPEC-0028.yaml
-- specs/nodes/SG-SPEC-0030.yaml
-last_run_at: '2026-04-13T21:14:22.405195+00:00'
-last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0028-20260413T211336Z
-last_branch: codex/sg-spec-0028/20260413T211336Z
-last_validator_results:
-  outputs: true
-  allowed_paths: true
-  reconciliation: true
-  atomicity: true
-  transition: true
-  executor_environment: true
-  refinement_acceptance: true
-last_refinement_acceptance:
-  decision: review_required
-  change_class: graph_refactor
-  checks:
-    content_changed: true
-    hard_validation: true
-    single_spec_scope: false
-    constitutional_diff: false
-    graph_refactor_diff: true
-    atomicity_clear: true
-    within_mutation_budget: true
-  diff_paths:
-  - acceptance[2]
-  - acceptance_evidence[2].criterion
-  - acceptance_evidence[2].evidence
-  - prompt
-  - specification.parent_contract[2]
-  - specification.scope.in[3]
-  - specification.subcluster_boundaries[3]
-  - specification.subcluster_boundaries[4]
-  - specification.subcluster_members.proposal_split_prerequisite_contract
-  - specification.subcluster_members.proposal_split_prerequisite_contract[0]
-  - specification.subcluster_topology[0]
-  mutation_classes:
-  - policy_text
-  mutation_budget: []
-  budget_exceeded_classes: []
-  changed_spec_files:
-  - specs/nodes/SG-SPEC-0028.yaml
-  - specs/nodes/SG-SPEC-0030.yaml
-  review_reasons:
-  - run changed additional spec files beyond the selected source node
-  errors: []
-  warnings: []
-last_reconciliation:
-  worktree_spec_count: 30
-  changed_spec_ids:
-  - SG-SPEC-0028
-  - SG-SPEC-0030
-  semantic_dependencies_resolved: true
-  work_dependencies_ready: false
-  cycles: []
-last_requested_child_materialization: true
-last_materialized_child_paths:
-- specs/nodes/SG-SPEC-0030.yaml
+required_human_action: '-'
+last_worktree_path: ''
+last_branch: ''
+last_gate_decision: approve
+last_gate_note: ''
+last_gate_at: '2026-04-27T21:14:36.668095+00:00'
