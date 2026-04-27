@@ -13465,6 +13465,56 @@ def test_main_builds_graph_dashboard_as_standalone_command(
     assert artifact["viewer_projection"]["headline_card_ids"] == ["total_specs"]
 
 
+def test_main_builds_viewer_surfaces_as_standalone_command(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    def fake_backlog(specs: list[object]) -> dict[str, object]:
+        assert len(specs) == 1
+        return {
+            "artifact_kind": supervisor_module.GRAPH_BACKLOG_PROJECTION_ARTIFACT_KIND,
+            "schema_version": supervisor_module.GRAPH_BACKLOG_PROJECTION_SCHEMA_VERSION,
+            "generated_at": "2026-04-27T00:00:00Z",
+            "entry_count": 1,
+            "entries": [],
+            "summary": {},
+            "viewer_projection": {},
+        }
+
+    def fake_dashboard(specs: list[object]) -> dict[str, object]:
+        assert len(specs) == 1
+        return {
+            "artifact_kind": "graph_dashboard",
+            "schema_version": 1,
+            "generated_at": "2026-04-27T00:00:01Z",
+            "headline_cards": [{"card_id": "total_specs"}],
+            "sections": {"graph": {}},
+            "viewer_projection": {"headline_card_ids": ["total_specs"]},
+        }
+
+    monkeypatch.setattr(supervisor_module, "build_graph_backlog_projection", fake_backlog)
+    monkeypatch.setattr(supervisor_module, "build_graph_dashboard", fake_dashboard)
+
+    exit_code = supervisor_module.main(build_viewer_surfaces_mode=True)
+
+    assert exit_code == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["artifact_kind"] == "viewer_surfaces_build_report"
+    assert report["written_artifacts"]["graph_backlog_projection"]["entry_count"] == 1
+    assert report["written_artifacts"]["graph_dashboard"]["headline_count"] == 1
+    assert (
+        json.loads(
+            (repo_fixture / "runs" / "graph_backlog_projection.json").read_text(encoding="utf-8")
+        )["entry_count"]
+        == 1
+    )
+    assert json.loads((repo_fixture / "runs" / "graph_dashboard.json").read_text(encoding="utf-8"))[
+        "viewer_projection"
+    ]["headline_card_ids"] == ["total_specs"]
+
+
 def test_build_graph_backlog_projection_from_surfaces_normalizes_reviewable_gaps(
     supervisor_module: object,
 ) -> None:

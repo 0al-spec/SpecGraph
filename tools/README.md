@@ -160,6 +160,11 @@ Supervisor modes:
   `runs/bootstrap_smoke_benchmark.json` from the supervisor performance index
   so minimal-seed bootstrap yield can be inspected structurally without
   comparing exact generated spec text.
+- `--build-viewer-surfaces`: refresh local viewer-facing generated artifacts by
+  writing `runs/graph_backlog_projection.json` and `runs/graph_dashboard.json`
+  in one standalone pass. This is safe for local hooks, CI smoke checks, or
+  ContextBuilder build buttons because it does not choose implementation target
+  scope or create new implementation work items.
 - `--build-graph-dashboard`: build `runs/graph_dashboard.json` as one
   aggregated viewer-facing dashboard with headline counts from graph health,
   proposal, implementation, evidence, external-consumer, handoff, and metric

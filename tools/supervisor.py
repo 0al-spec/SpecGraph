@@ -23427,6 +23427,38 @@ def write_graph_dashboard(report: dict[str, Any]) -> Path:
     return path
 
 
+def build_viewer_surfaces(specs: list[SpecNode]) -> dict[str, Any]:
+    backlog_projection = build_graph_backlog_projection(specs)
+    backlog_path = write_graph_backlog_projection(backlog_projection)
+    dashboard = build_graph_dashboard(specs)
+    dashboard_path = write_graph_dashboard(dashboard)
+    return {
+        "artifact_kind": "viewer_surfaces_build_report",
+        "schema_version": 1,
+        "generated_at": utc_now_iso(),
+        "written_artifacts": {
+            "graph_backlog_projection": {
+                "artifact_path": backlog_path.relative_to(ROOT).as_posix(),
+                "generated_at": backlog_projection.get("generated_at"),
+                "entry_count": backlog_projection.get("entry_count"),
+            },
+            "graph_dashboard": {
+                "artifact_path": dashboard_path.relative_to(ROOT).as_posix(),
+                "generated_at": dashboard.get("generated_at"),
+                "headline_count": len(dashboard.get("headline_cards", [])),
+                "section_count": len(dashboard.get("sections", {})),
+            },
+        },
+        "notes": [
+            (
+                "This command refreshes viewer-facing generated surfaces only; "
+                "it does not choose implementation target scope or create new "
+                "implementation work items."
+            )
+        ],
+    }
+
+
 def acceptance_reference_indexes(
     references: Any,
     *,
@@ -26876,6 +26908,7 @@ def main(
     build_metric_threshold_proposals_mode: bool = False,
     build_supervisor_performance_index_mode: bool = False,
     build_bootstrap_smoke_benchmark_mode: bool = False,
+    build_viewer_surfaces_mode: bool = False,
     build_graph_dashboard_mode: bool = False,
     build_graph_backlog_projection_mode: bool = False,
     build_proposal_lane_overlay_mode: bool = False,
@@ -26943,6 +26976,7 @@ def main(
         "--build-metric-threshold-proposals": build_metric_threshold_proposals_mode,
         "--build-supervisor-performance-index": build_supervisor_performance_index_mode,
         "--build-bootstrap-smoke-benchmark": build_bootstrap_smoke_benchmark_mode,
+        "--build-viewer-surfaces": build_viewer_surfaces_mode,
         "--build-graph-dashboard": build_graph_dashboard_mode,
         "--build-graph-backlog-projection": build_graph_backlog_projection_mode,
         "--build-proposal-lane-overlay": build_proposal_lane_overlay_mode,
@@ -28668,6 +28702,40 @@ def main(
         print(json.dumps(report, ensure_ascii=False, indent=2))
         return 0
 
+    if build_viewer_surfaces_mode:
+        if any(
+            (
+                dry_run,
+                auto_approve,
+                loop,
+                resolve_gate,
+                decision,
+                note,
+                target_spec,
+                split_proposal,
+                apply_split_proposal,
+                operator_note,
+                mutation_budget,
+                run_authority,
+                execution_profile,
+                child_model,
+                child_timeout_seconds,
+                verbose,
+                list_stale_runtime,
+                clean_stale_runtime,
+                observe_graph_health_mode,
+                operator_request_packet_path,
+            )
+        ):
+            print(
+                "--build-viewer-surfaces must be used as a standalone command",
+                file=sys.stderr,
+            )
+            return 1
+        report = build_viewer_surfaces(specs)
+        print(json.dumps(report, ensure_ascii=False, indent=2))
+        return 0
+
     if build_graph_backlog_projection_mode:
         if any(
             (
@@ -29635,6 +29703,14 @@ if __name__ == "__main__":
         ),
     )
     parser.add_argument(
+        "--build-viewer-surfaces",
+        action="store_true",
+        help=(
+            "Refresh viewer-facing generated surfaces by writing graph backlog projection "
+            "and graph dashboard artifacts without choosing implementation target scope"
+        ),
+    )
+    parser.add_argument(
         "--build-graph-dashboard",
         action="store_true",
         help=(
@@ -29827,6 +29903,7 @@ if __name__ == "__main__":
             build_metric_threshold_proposals_mode=args.build_metric_threshold_proposals,
             build_supervisor_performance_index_mode=args.build_supervisor_performance_index,
             build_bootstrap_smoke_benchmark_mode=args.build_bootstrap_smoke_benchmark,
+            build_viewer_surfaces_mode=args.build_viewer_surfaces,
             build_graph_dashboard_mode=args.build_graph_dashboard,
             build_graph_backlog_projection_mode=args.build_graph_backlog_projection,
             build_proposal_lane_overlay_mode=args.build_proposal_lane_overlay,

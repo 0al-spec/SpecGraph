@@ -134,6 +134,8 @@ particular task.
   `--build-supervisor-performance-index`
 - build an advisory minimal-seed bootstrap smoke benchmark report:
   `--build-bootstrap-smoke-benchmark`
+- refresh local viewer-facing generated surfaces in one pass:
+  `--build-viewer-surfaces`
 - build one aggregated graph dashboard for a viewer or visualizer:
   `--build-graph-dashboard`
 - build a normalized backlog projection from existing derived surfaces:
@@ -1087,6 +1089,26 @@ The report is intentionally structural:
 The first benchmark contract is `minimal_seed_structural_yield`. It is
 advisory and suitable for manual or scheduled observation before becoming a
 blocking CI gate.
+
+### Viewer surfaces refresh
+
+```bash
+python3 tools/supervisor.py --build-viewer-surfaces
+```
+
+Writes the local viewer-facing generated surfaces that ContextBuilder commonly
+reads:
+
+- `runs/graph_backlog_projection.json`
+- `runs/graph_dashboard.json`
+
+This mode is intended for local `post-merge` / `post-checkout` hooks, CI smoke
+checks, and viewer build buttons. It refreshes existing read models only: it
+does not choose an Implementation Work target scope, create new implementation
+work items, mutate canonical specs, or stage generated JSON for commit.
+
+Use this when the viewer needs a current local snapshot after the graph or
+derived runtime surfaces changed.
 
 ### Graph dashboard
 
