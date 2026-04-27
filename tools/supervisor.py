@@ -23502,6 +23502,11 @@ def supervisor_output_summary(payload: dict[str, Any]) -> dict[str, Any]:
     if summary["artifact_kind"] == "transition_packet_validation":
         findings = payload.get("findings", [])
         summary["finding_count"] = len(findings) if isinstance(findings, list) else 0
+        if isinstance(findings, list):
+            summary["findings"] = copy.deepcopy(findings)
+        findings_by_family = payload.get("findings_by_family")
+        if isinstance(findings_by_family, dict):
+            summary["findings_by_family"] = copy.deepcopy(findings_by_family)
     if summary["artifact_kind"] == "graph_health_observation":
         subtree_spec_ids = payload.get("subtree_spec_ids", [])
         historical_descendant_ids = payload.get("historical_descendant_ids", [])
@@ -23513,6 +23518,11 @@ def supervisor_output_summary(payload: dict[str, Any]) -> dict[str, Any]:
             summary["historical_descendant_count"] = len(historical_descendant_ids)
         graph_health = payload.get("graph_health")
         if isinstance(graph_health, dict):
+            summary["graph_health"] = copy.deepcopy(graph_health)
+            observations = graph_health.get("observations", [])
+            summary["observation_count"] = (
+                len(observations) if isinstance(observations, list) else 0
+            )
             for field in ("signals", "recommended_actions", "required_human_action"):
                 if field in graph_health:
                     summary[field] = copy.deepcopy(graph_health[field])
@@ -29812,8 +29822,8 @@ if __name__ == "__main__":
         choices=sorted(SUPERVISOR_OUTPUT_MODES),
         default="summary",
         help=(
-            "Supervisor JSON stdout mode for standalone artifact commands. "
-            "Default summary prints compact reports; full prints complete artifacts."
+            "Supervisor JSON stdout mode for JSON-emitting supervisor commands. "
+            "Default summary prints compact diagnostic reports; full prints complete payloads."
         ),
     )
     parser.add_argument(

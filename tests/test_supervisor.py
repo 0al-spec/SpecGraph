@@ -6572,6 +6572,29 @@ def test_main_validates_transition_packet_with_profile_override(
     assert out["transition_profile"] == "implementation_trace"
 
 
+def test_main_transition_packet_summary_preserves_validation_findings(
+    supervisor_module: object,
+    repo_fixture: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    packet_path = repo_fixture / "transition-packet.json"
+    packet_path.write_text(json.dumps({"packet_type": "proposal"}), encoding="utf-8")
+
+    exit_code = supervisor_module.main(
+        validate_transition_packet_path=packet_path.as_posix(),
+    )
+
+    assert exit_code == 1
+    out = json.loads(capsys.readouterr().out)
+    assert out["artifact_kind"] == "transition_packet_validation"
+    assert out["ok"] is False
+    assert out["finding_count"] == len(out["findings"])
+    assert {finding["code"] for finding in out["findings"]} >= {
+        "missing_transition_intent",
+        "missing_source_refs",
+    }
+
+
 def test_build_vocabulary_index_flattens_terms_aliases_and_contexts(
     supervisor_module: object,
 ) -> None:
@@ -19024,6 +19047,8 @@ def test_main_observe_graph_health_prints_subtree_report(
     out = capsys.readouterr().out
     assert "=== graph-health observation mode ===" in out
     assert "Subtree nodes: SG-SPEC-0001, SG-SPEC-0002, SG-SPEC-0003" in out
+    assert '"graph_health": {' in out
+    assert '"observations": [' in out
     assert '"role_obscured_node"' in out
     assert '"bookkeeping_only_node"' in out
 
