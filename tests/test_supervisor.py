@@ -918,10 +918,12 @@ def test_run_codex_allows_child_model_override(
     assert cmd[cmd.index("--model") + 1] == child_model
 
 
-def test_run_codex_allows_quiet_grace_windows_for_xhigh_reasoning(
+@pytest.mark.parametrize("reasoning_effort", ["medium", "xhigh"])
+def test_run_codex_allows_quiet_grace_windows_for_default_and_xhigh_reasoning(
     supervisor_module: object,
     repo_fixture: Path,
     monkeypatch: pytest.MonkeyPatch,
+    reasoning_effort: str,
 ) -> None:
     class FakeProcess:
         def __init__(self) -> None:
@@ -948,7 +950,7 @@ def test_run_codex_allows_quiet_grace_windows_for_xhigh_reasoning(
     profile = supervisor_module.ExecutionProfile(
         name="standard",
         model=supervisor_module.CHILD_EXECUTOR_MODEL,
-        reasoning_effort="xhigh",
+        reasoning_effort=reasoning_effort,
         timeout_seconds=1,
         disabled_features=supervisor_module.CHILD_EXECUTOR_DISABLED_FEATURES,
     )

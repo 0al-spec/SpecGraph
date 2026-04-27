@@ -551,6 +551,8 @@ Timeout rule:
 - `supervisor` uses the larger of the profile's base timeout and the minimum timeout floor implied by
   the profile's reasoning effort
 - this keeps heavier reasoning modes from inheriting the same timeout budget as lighter reasoning modes
+- `medium` and `xhigh` runs retain progress/quiet grace windows after the base timeout so a still-advancing
+  child executor is not killed immediately at the timeout boundary
 - `fast` means heuristic profile selection, not low-quality reasoning; it still uses the shared `medium`
   reasoning default with a bounded but non-trivial timeout so useful split signals are not lost to
   premature executor termination
