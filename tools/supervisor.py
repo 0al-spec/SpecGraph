@@ -23459,6 +23459,94 @@ def build_viewer_surfaces(specs: list[SpecNode]) -> dict[str, Any]:
     }
 
 
+SUPERVISOR_OUTPUT_MODES = {"summary", "full"}
+
+
+def supervisor_payload_kind(payload: dict[str, Any]) -> str:
+    artifact_kind = str(payload.get("artifact_kind", "")).strip()
+    if artifact_kind:
+        return artifact_kind
+    if "ok" in payload and "packet_type" in payload and "transition_profile" in payload:
+        return "transition_packet_validation"
+    if "source_spec_id" in payload and isinstance(payload.get("graph_health"), dict):
+        return "graph_health_observation"
+    return "unknown"
+
+
+def supervisor_output_summary(payload: dict[str, Any]) -> dict[str, Any]:
+    summary: dict[str, Any] = {
+        "output_mode": "summary",
+        "artifact_kind": supervisor_payload_kind(payload),
+    }
+    for field in (
+        "schema_version",
+        "generated_at",
+        "entry_count",
+        "node_count",
+        "edge_count",
+        "status",
+        "review_state",
+        "next_gap",
+        "canonical_mutations_allowed",
+        "tracked_artifacts_written",
+        "runtime_code_mutations_allowed",
+        "ok",
+        "packet_type",
+        "transition_profile",
+        "source_spec_id",
+        "source_title",
+        "diagnostic_outcome",
+    ):
+        if field in payload:
+            summary[field] = copy.deepcopy(payload[field])
+    if summary["artifact_kind"] == "transition_packet_validation":
+        findings = payload.get("findings", [])
+        summary["finding_count"] = len(findings) if isinstance(findings, list) else 0
+    if summary["artifact_kind"] == "graph_health_observation":
+        subtree_spec_ids = payload.get("subtree_spec_ids", [])
+        historical_descendant_ids = payload.get("historical_descendant_ids", [])
+        if isinstance(subtree_spec_ids, list):
+            summary["subtree_spec_ids"] = copy.deepcopy(subtree_spec_ids)
+            summary["subtree_spec_count"] = len(subtree_spec_ids)
+        if isinstance(historical_descendant_ids, list):
+            summary["historical_descendant_ids"] = copy.deepcopy(historical_descendant_ids)
+            summary["historical_descendant_count"] = len(historical_descendant_ids)
+        graph_health = payload.get("graph_health")
+        if isinstance(graph_health, dict):
+            for field in ("signals", "recommended_actions", "required_human_action"):
+                if field in graph_health:
+                    summary[field] = copy.deepcopy(graph_health[field])
+    policy_reference = payload.get("policy_reference")
+    if isinstance(policy_reference, dict):
+        artifact_path = str(policy_reference.get("artifact_path", "")).strip()
+        if artifact_path:
+            summary["policy_artifact_path"] = artifact_path
+    if isinstance(payload.get("summary"), dict):
+        summary["summary"] = copy.deepcopy(payload["summary"])
+    if isinstance(payload.get("source_delta_snapshot"), dict):
+        summary["source_delta_snapshot"] = copy.deepcopy(payload["source_delta_snapshot"])
+    if isinstance(payload.get("written_artifacts"), dict):
+        summary["written_artifacts"] = copy.deepcopy(payload["written_artifacts"])
+    if summary["artifact_kind"] == "graph_dashboard":
+        headline_cards = payload.get("headline_cards", [])
+        sections = payload.get("sections", {})
+        summary["headline_count"] = len(headline_cards) if isinstance(headline_cards, list) else 0
+        summary["section_count"] = len(sections) if isinstance(sections, dict) else 0
+    if summary["artifact_kind"] == GRAPH_BACKLOG_PROJECTION_ARTIFACT_KIND:
+        source_counts = payload.get("summary", {}).get("source_artifact_counts", {})
+        if isinstance(source_counts, dict):
+            summary["source_artifact_counts"] = copy.deepcopy(source_counts)
+    return summary
+
+
+def emit_supervisor_json(payload: dict[str, Any], *, output_mode: str) -> None:
+    if output_mode == "full":
+        output = payload
+    else:
+        output = supervisor_output_summary(payload)
+    print(json.dumps(output, ensure_ascii=False, indent=2))
+
+
 def acceptance_reference_indexes(
     references: Any,
     *,
@@ -26914,6 +27002,7 @@ def main(
     build_proposal_lane_overlay_mode: bool = False,
     build_proposal_runtime_index_mode: bool = False,
     build_proposal_promotion_index_mode: bool = False,
+    output_mode: str = "summary",
 ) -> int:
     """Entry point for CLI and tests.
 
@@ -26927,6 +27016,14 @@ def main(
     """
     if executor is None:
         executor = run_codex
+
+    normalized_output_mode = str(output_mode or "summary").strip()
+    if normalized_output_mode not in SUPERVISOR_OUTPUT_MODES:
+        print(
+            "--output-mode must be one of: " + ", ".join(sorted(SUPERVISOR_OUTPUT_MODES)),
+            file=sys.stderr,
+        )
+        return 1
 
     try:
         if execution_profile is not None:
@@ -27054,7 +27151,7 @@ def main(
             Path(validate_transition_packet_path),
             validator_profile=transition_profile,
         )
-        print(json.dumps(report, ensure_ascii=False, indent=2))
+        emit_supervisor_json(report, output_mode=normalized_output_mode)
         return 0 if report["ok"] else 1
 
     if build_vocabulary_index_mode:
@@ -27101,7 +27198,7 @@ def main(
             return 1
         index = build_vocabulary_index()
         write_vocabulary_index(index)
-        print(json.dumps(index, ensure_ascii=False, indent=2))
+        emit_supervisor_json(index, output_mode=normalized_output_mode)
         return 0
 
     if build_intent_layer_overlay_mode:
@@ -27148,7 +27245,7 @@ def main(
             return 1
         overlay = build_intent_layer_overlay()
         write_intent_layer_overlay(overlay)
-        print(json.dumps(overlay, ensure_ascii=False, indent=2))
+        emit_supervisor_json(overlay, output_mode=normalized_output_mode)
         return 0
 
     if build_exploration_preview_mode:
@@ -27183,7 +27280,7 @@ def main(
             return 1
         preview = build_exploration_preview(exploration_intent_text)
         write_exploration_preview(preview)
-        print(json.dumps(preview, ensure_ascii=False, indent=2))
+        emit_supervisor_json(preview, output_mode=normalized_output_mode)
         return 0
 
     if build_implementation_delta_snapshot_mode:
@@ -27222,7 +27319,7 @@ def main(
             operator_intent=implementation_operator_intent,
         )
         write_implementation_delta_snapshot(snapshot)
-        print(json.dumps(snapshot, ensure_ascii=False, indent=2))
+        emit_supervisor_json(snapshot, output_mode=normalized_output_mode)
         return 0
 
     if build_implementation_work_index_mode:
@@ -27261,7 +27358,7 @@ def main(
             print(str(exc), file=sys.stderr)
             return 1
         write_implementation_work_index(index)
-        print(json.dumps(index, ensure_ascii=False, indent=2))
+        emit_supervisor_json(index, output_mode=normalized_output_mode)
         return 0
 
     if build_review_feedback_index_mode:
@@ -27300,7 +27397,7 @@ def main(
             print(str(exc), file=sys.stderr)
             return 1
         write_review_feedback_index(index)
-        print(json.dumps(index, ensure_ascii=False, indent=2))
+        emit_supervisor_json(index, output_mode=normalized_output_mode)
         return 0
 
     if build_external_consumer_index_mode:
@@ -27347,7 +27444,7 @@ def main(
             return 1
         index = build_external_consumer_index()
         write_external_consumer_index(index)
-        print(json.dumps(index, ensure_ascii=False, indent=2))
+        emit_supervisor_json(index, output_mode=normalized_output_mode)
         return 0
 
     if build_specpm_import_preview_mode:
@@ -27408,7 +27505,7 @@ def main(
         write_external_consumer_index(consumer_index)
         preview = build_specpm_import_preview(consumer_index)
         write_specpm_import_preview(preview)
-        print(json.dumps(preview, ensure_ascii=False, indent=2))
+        emit_supervisor_json(preview, output_mode=normalized_output_mode)
         return 0
 
     if build_specpm_import_handoff_packets_mode:
@@ -27471,7 +27568,7 @@ def main(
         write_specpm_import_preview(preview)
         handoff_packets = build_specpm_import_handoff_packets(preview)
         write_specpm_import_handoff_packets(handoff_packets)
-        print(json.dumps(handoff_packets, ensure_ascii=False, indent=2))
+        emit_supervisor_json(handoff_packets, output_mode=normalized_output_mode)
         return 0
 
     if build_proposal_lane_overlay_mode:
@@ -27513,7 +27610,7 @@ def main(
             return 1
         overlay = build_proposal_lane_overlay()
         write_proposal_lane_overlay(overlay)
-        print(json.dumps(overlay, ensure_ascii=False, indent=2))
+        emit_supervisor_json(overlay, output_mode=normalized_output_mode)
         return 0
 
     if build_supervisor_performance_index_mode:
@@ -27567,7 +27664,7 @@ def main(
             return 1
         report = build_supervisor_performance_index()
         write_supervisor_performance_index(report)
-        print(json.dumps(report, ensure_ascii=False, indent=2))
+        emit_supervisor_json(report, output_mode=normalized_output_mode)
         return 0
 
     if build_bootstrap_smoke_benchmark_mode:
@@ -27604,7 +27701,7 @@ def main(
         write_supervisor_performance_index(performance_index)
         report = build_bootstrap_smoke_benchmark(performance_index)
         write_bootstrap_smoke_benchmark(report)
-        print(json.dumps(report, ensure_ascii=False, indent=2))
+        emit_supervisor_json(report, output_mode=normalized_output_mode)
         return 0
 
     try:
@@ -27660,7 +27757,7 @@ def main(
             return 1
         report = build_vocabulary_drift_report(specs)
         write_vocabulary_drift_report(report)
-        print(json.dumps(report, ensure_ascii=False, indent=2))
+        emit_supervisor_json(report, output_mode=normalized_output_mode)
         return 0
 
     if build_pre_spec_semantics_index_mode:
@@ -27708,7 +27805,7 @@ def main(
         refresh_vocabulary_artifacts(specs)
         index = build_pre_spec_semantics_index(specs)
         write_pre_spec_semantics_index(index)
-        print(json.dumps(index, ensure_ascii=False, indent=2))
+        emit_supervisor_json(index, output_mode=normalized_output_mode)
         return 0
 
     if build_graph_health_overlay_mode:
@@ -27754,7 +27851,7 @@ def main(
             return 1
         overlay = build_graph_health_overlay(specs)
         write_graph_health_overlay(overlay)
-        print(json.dumps(overlay, ensure_ascii=False, indent=2))
+        emit_supervisor_json(overlay, output_mode=normalized_output_mode)
         return 0
 
     if build_graph_health_trends_mode:
@@ -27802,7 +27899,7 @@ def main(
         write_graph_health_overlay(overlay)
         trends = build_graph_health_trends(specs, overlay=overlay)
         write_graph_health_trends(trends)
-        print(json.dumps(trends, ensure_ascii=False, indent=2))
+        emit_supervisor_json(trends, output_mode=normalized_output_mode)
         return 0
 
     if build_spec_trace_index_mode:
@@ -27846,7 +27943,7 @@ def main(
             return 1
         index = build_spec_trace_index(specs)
         write_spec_trace_index(index)
-        print(json.dumps(index, ensure_ascii=False, indent=2))
+        emit_supervisor_json(index, output_mode=normalized_output_mode)
         return 0
 
     if build_spec_trace_projection_mode:
@@ -27889,7 +27986,7 @@ def main(
         write_spec_trace_index(index)
         projection = build_spec_trace_projection(index)
         write_spec_trace_projection(projection)
-        print(json.dumps(projection, ensure_ascii=False, indent=2))
+        emit_supervisor_json(projection, output_mode=normalized_output_mode)
         return 0
 
     if build_evidence_plane_index_mode:
@@ -27933,7 +28030,7 @@ def main(
             return 1
         index = build_evidence_plane_index(specs)
         write_evidence_plane_index(index)
-        print(json.dumps(index, ensure_ascii=False, indent=2))
+        emit_supervisor_json(index, output_mode=normalized_output_mode)
         return 0
 
     if build_evidence_plane_overlay_mode:
@@ -27979,7 +28076,7 @@ def main(
         write_evidence_plane_index(index)
         overlay = build_evidence_plane_overlay(index)
         write_evidence_plane_overlay(overlay)
-        print(json.dumps(overlay, ensure_ascii=False, indent=2))
+        emit_supervisor_json(overlay, output_mode=normalized_output_mode)
         return 0
 
     if build_external_consumer_overlay_mode:
@@ -28031,7 +28128,7 @@ def main(
         write_metric_signal_index(metric_index)
         overlay = build_external_consumer_overlay(consumer_index, metric_index)
         write_external_consumer_overlay(overlay)
-        print(json.dumps(overlay, ensure_ascii=False, indent=2))
+        emit_supervisor_json(overlay, output_mode=normalized_output_mode)
         return 0
 
     if build_external_consumer_handoffs_mode:
@@ -28092,7 +28189,7 @@ def main(
             threshold_proposals,
         )
         write_external_consumer_handoff_packets(handoff_packets)
-        print(json.dumps(handoff_packets, ensure_ascii=False, indent=2))
+        emit_supervisor_json(handoff_packets, output_mode=normalized_output_mode)
         return 0
 
     if build_specpm_export_preview_mode:
@@ -28127,7 +28224,7 @@ def main(
             return 1
         preview = build_specpm_export_preview(specs)
         write_specpm_export_preview(preview)
-        print(json.dumps(preview, ensure_ascii=False, indent=2))
+        emit_supervisor_json(preview, output_mode=normalized_output_mode)
         return 0
 
     if build_specpm_handoff_packets_mode:
@@ -28166,7 +28263,7 @@ def main(
         write_external_consumer_index(consumer_index)
         handoff_packets = build_specpm_handoff_packets(preview, consumer_index)
         write_specpm_handoff_packets(handoff_packets)
-        print(json.dumps(handoff_packets, ensure_ascii=False, indent=2))
+        emit_supervisor_json(handoff_packets, output_mode=normalized_output_mode)
         return 0
 
     if materialize_specpm_export_bundles_mode:
@@ -28207,7 +28304,7 @@ def main(
         write_specpm_handoff_packets(handoff_packets)
         report = materialize_specpm_export_bundles(handoff_packets)
         write_specpm_materialization_report(report)
-        print(json.dumps(report, ensure_ascii=False, indent=2))
+        emit_supervisor_json(report, output_mode=normalized_output_mode)
         return 0
 
     if build_specpm_delivery_workflow_mode:
@@ -28271,7 +28368,7 @@ def main(
         write_specpm_materialization_report(materialization_report)
         delivery_workflow = build_specpm_delivery_workflow(materialization_report)
         write_specpm_delivery_workflow(delivery_workflow)
-        print(json.dumps(delivery_workflow, ensure_ascii=False, indent=2))
+        emit_supervisor_json(delivery_workflow, output_mode=normalized_output_mode)
         return 0
 
     if build_specpm_feedback_index_mode:
@@ -28331,7 +28428,7 @@ def main(
         write_specpm_delivery_workflow(delivery_workflow)
         feedback_index = build_specpm_feedback_index(preview, delivery_workflow)
         write_specpm_feedback_index(feedback_index)
-        print(json.dumps(feedback_index, ensure_ascii=False, indent=2))
+        emit_supervisor_json(feedback_index, output_mode=normalized_output_mode)
         return 0
 
     if build_specpm_public_registry_index_mode:
@@ -28403,7 +28500,7 @@ def main(
             }
         index = build_specpm_public_registry_index(materialization_report, consumer_index)
         write_specpm_public_registry_index(index)
-        print(json.dumps(index, ensure_ascii=False, indent=2))
+        emit_supervisor_json(index, output_mode=normalized_output_mode)
         return 0
 
     if build_metrics_delivery_workflow_mode:
@@ -28474,7 +28571,7 @@ def main(
         write_external_consumer_handoff_packets(handoff_packets)
         delivery_workflow = build_metrics_delivery_workflow(handoff_packets)
         write_metrics_delivery_workflow(delivery_workflow)
-        print(json.dumps(delivery_workflow, ensure_ascii=False, indent=2))
+        emit_supervisor_json(delivery_workflow, output_mode=normalized_output_mode)
         return 0
 
     if build_metrics_feedback_index_mode:
@@ -28532,7 +28629,7 @@ def main(
         write_metrics_delivery_workflow(delivery_workflow)
         feedback_index = build_metrics_feedback_index(delivery_workflow)
         write_metrics_feedback_index(feedback_index)
-        print(json.dumps(feedback_index, ensure_ascii=False, indent=2))
+        emit_supervisor_json(feedback_index, output_mode=normalized_output_mode)
         return 0
 
     if build_metrics_source_promotion_index_mode:
@@ -28592,7 +28689,7 @@ def main(
         write_metric_signal_index(metric_index)
         promotion_index = build_metrics_source_promotion_index(consumer_index, metric_index)
         write_metrics_source_promotion_index(promotion_index)
-        print(json.dumps(promotion_index, ensure_ascii=False, indent=2))
+        emit_supervisor_json(promotion_index, output_mode=normalized_output_mode)
         return 0
 
     if build_metric_signal_index_mode:
@@ -28627,7 +28724,7 @@ def main(
             return 1
         index = build_metric_signal_index(specs)
         write_metric_signal_index(index)
-        print(json.dumps(index, ensure_ascii=False, indent=2))
+        emit_supervisor_json(index, output_mode=normalized_output_mode)
         return 0
 
     if build_metric_threshold_proposals_mode:
@@ -28664,7 +28761,7 @@ def main(
         write_metric_signal_index(index)
         report = build_metric_threshold_proposals(index)
         write_metric_threshold_proposals(report)
-        print(json.dumps(report, ensure_ascii=False, indent=2))
+        emit_supervisor_json(report, output_mode=normalized_output_mode)
         return 0
 
     if build_graph_dashboard_mode:
@@ -28699,7 +28796,7 @@ def main(
             return 1
         report = build_graph_dashboard(specs)
         write_graph_dashboard(report)
-        print(json.dumps(report, ensure_ascii=False, indent=2))
+        emit_supervisor_json(report, output_mode=normalized_output_mode)
         return 0
 
     if build_viewer_surfaces_mode:
@@ -28733,7 +28830,7 @@ def main(
             )
             return 1
         report = build_viewer_surfaces(specs)
-        print(json.dumps(report, ensure_ascii=False, indent=2))
+        emit_supervisor_json(report, output_mode=normalized_output_mode)
         return 0
 
     if build_graph_backlog_projection_mode:
@@ -28768,7 +28865,7 @@ def main(
             return 1
         report = build_graph_backlog_projection(specs)
         write_graph_backlog_projection(report)
-        print(json.dumps(report, ensure_ascii=False, indent=2))
+        emit_supervisor_json(report, output_mode=normalized_output_mode)
         return 0
 
     if build_proposal_runtime_index_mode:
@@ -28810,7 +28907,7 @@ def main(
             return 1
         index = build_proposal_runtime_index()
         write_proposal_runtime_index(index)
-        print(json.dumps(index, ensure_ascii=False, indent=2))
+        emit_supervisor_json(index, output_mode=normalized_output_mode)
         return 0
 
     if build_proposal_promotion_index_mode:
@@ -28851,7 +28948,7 @@ def main(
             return 1
         index = build_proposal_promotion_index()
         write_proposal_promotion_index(index)
-        print(json.dumps(index, ensure_ascii=False, indent=2))
+        emit_supervisor_json(index, output_mode=normalized_output_mode)
         return 0
 
     if list_stale_runtime and clean_stale_runtime:
@@ -28992,7 +29089,7 @@ def main(
                 "Historical descendants excluded: "
                 + ", ".join(str(spec_id) for spec_id in snapshot["historical_descendant_ids"])
             )
-        print(json.dumps(snapshot, ensure_ascii=False, indent=2))
+        emit_supervisor_json(snapshot, output_mode=normalized_output_mode)
         return 0
 
     if resolve_gate:
@@ -29711,6 +29808,15 @@ if __name__ == "__main__":
         ),
     )
     parser.add_argument(
+        "--output-mode",
+        choices=sorted(SUPERVISOR_OUTPUT_MODES),
+        default="summary",
+        help=(
+            "Supervisor JSON stdout mode for standalone artifact commands. "
+            "Default summary prints compact reports; full prints complete artifacts."
+        ),
+    )
+    parser.add_argument(
         "--build-graph-dashboard",
         action="store_true",
         help=(
@@ -29909,5 +30015,6 @@ if __name__ == "__main__":
             build_proposal_lane_overlay_mode=args.build_proposal_lane_overlay,
             build_proposal_runtime_index_mode=args.build_proposal_runtime_index,
             build_proposal_promotion_index_mode=args.build_proposal_promotion_index,
+            output_mode=args.output_mode,
         )
     )

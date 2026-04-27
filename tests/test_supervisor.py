@@ -7080,7 +7080,7 @@ def test_main_builds_spec_trace_index_as_standalone_command(
     (tools_dir / "impl.py").write_text("SPEC = 'SG-SPEC-0001'\n", encoding="utf-8")
     (tests_dir / "test_impl.py").write_text("SPEC = 'SG-SPEC-0001'\n", encoding="utf-8")
 
-    exit_code = supervisor_module.main(build_spec_trace_index_mode=True)
+    exit_code = supervisor_module.main(build_spec_trace_index_mode=True, output_mode="full")
 
     assert exit_code == 0
     report = json.loads(capsys.readouterr().out)
@@ -11212,7 +11212,10 @@ def test_main_builds_specpm_import_preview_as_standalone_command(
         },
     )
 
-    exit_code = supervisor_module.main(build_specpm_import_preview_mode=True)
+    exit_code = supervisor_module.main(
+        build_specpm_import_preview_mode=True,
+        output_mode="full",
+    )
 
     assert exit_code == 0
     report = json.loads(capsys.readouterr().out)
@@ -11293,7 +11296,10 @@ def test_main_builds_specpm_import_preview_reuses_written_consumer_index(
         fake_build_specpm_import_preview,
     )
 
-    exit_code = supervisor_module.main(build_specpm_import_preview_mode=True)
+    exit_code = supervisor_module.main(
+        build_specpm_import_preview_mode=True,
+        output_mode="full",
+    )
 
     assert exit_code == 0
     assert call_count == 1
@@ -14230,6 +14236,7 @@ def test_main_builds_exploration_preview_as_standalone_command(
     exit_code = supervisor_module.main(
         build_exploration_preview_mode=True,
         exploration_intent_text="Explore SpecGraph canvas layers.",
+        output_mode="full",
     )
 
     assert exit_code == 0
@@ -15325,7 +15332,7 @@ def test_main_builds_graph_health_overlay_as_standalone_command(
 
     monkeypatch.setattr(supervisor_module, "build_graph_health_overlay", fake_overlay)
 
-    exit_code = supervisor_module.main(build_graph_health_overlay_mode=True)
+    exit_code = supervisor_module.main(build_graph_health_overlay_mode=True, output_mode="full")
 
     assert exit_code == 0
     report = json.loads(capsys.readouterr().out)
@@ -15503,7 +15510,7 @@ def test_main_builds_graph_health_trends_as_standalone_command(
     monkeypatch.setattr(supervisor_module, "build_graph_health_overlay", fake_overlay)
     monkeypatch.setattr(supervisor_module, "build_graph_health_trends", fake_trends)
 
-    exit_code = supervisor_module.main(build_graph_health_trends_mode=True)
+    exit_code = supervisor_module.main(build_graph_health_trends_mode=True, output_mode="full")
 
     assert exit_code == 0
     report = json.loads(capsys.readouterr().out)
@@ -15548,7 +15555,7 @@ def test_main_builds_spec_trace_projection_as_standalone_command(
     (tools_dir / "impl.py").write_text("SPEC = 'SG-SPEC-0001'\n", encoding="utf-8")
     (tests_dir / "test_impl.py").write_text("SPEC = 'SG-SPEC-0001'\n", encoding="utf-8")
 
-    exit_code = supervisor_module.main(build_spec_trace_projection_mode=True)
+    exit_code = supervisor_module.main(build_spec_trace_projection_mode=True, output_mode="full")
 
     assert exit_code == 0
     report = json.loads(capsys.readouterr().out)
@@ -16005,7 +16012,7 @@ def test_main_builds_proposal_runtime_index_as_standalone_command(
 ) -> None:
     seed_proposal_runtime_fixture(repo_fixture, include_heuristic_proposal=False)
 
-    exit_code = supervisor_module.main(build_proposal_runtime_index_mode=True)
+    exit_code = supervisor_module.main(build_proposal_runtime_index_mode=True, output_mode="full")
 
     assert exit_code == 0
     report = json.loads(capsys.readouterr().out)
