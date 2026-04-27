@@ -874,7 +874,7 @@ def test_run_codex_allows_child_model_override(
             return 0
 
     captured: dict[str, object] = {}
-    child_model = "gpt-5.3-codex-spark"
+    child_model = "gpt-5.4"
 
     def fake_create_child_codex_home(
         *,

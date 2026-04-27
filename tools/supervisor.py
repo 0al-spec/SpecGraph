@@ -29928,7 +29928,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--child-model",
-        help="Optional model override for nested child runs, for example: gpt-5.3-codex-spark",
+        help="Optional model override for nested child runs when explicitly comparing models",
     )
     parser.add_argument(
         "--split-proposal",

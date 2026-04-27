@@ -570,7 +570,8 @@ runtime drift.
 
 Command-line overrides for nested runs:
 
-- `--child-model` sets an explicit model for the nested codex run (for example `gpt-5.3-codex-spark`).
+- `--child-model` sets an explicit model for the nested codex run when an operator intentionally
+  compares a bounded run against the default profile model.
 - `--child-timeout` sets an explicit timeout in seconds for nested child runs.
 - Explicitly targeting a seed/root-like spec (`--target-spec`) without `--child-timeout` uses a 1200s default.
 

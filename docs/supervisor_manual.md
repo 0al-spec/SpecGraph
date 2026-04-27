@@ -1354,7 +1354,6 @@ or exceptional runtime diagnosis.
 ```bash
 python3 tools/supervisor.py \
   --target-spec SG-SPEC-0003 \
-  --child-model gpt-5.3-codex-spark \
   --child-timeout 1200
 ```
 
