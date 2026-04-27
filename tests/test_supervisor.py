@@ -14523,6 +14523,106 @@ def test_build_implementation_work_index_from_delta_snapshot(
     assert index["runtime_code_mutations_allowed"] is False
 
 
+def test_load_current_implementation_work_index_normalizes_legacy_entries(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    legacy_index = {
+        "artifact_kind": supervisor_module.IMPLEMENTATION_WORK_INDEX_ARTIFACT_KIND,
+        "schema_version": supervisor_module.IMPLEMENTATION_WORK_INDEX_SCHEMA_VERSION,
+        "generated_at": "2026-04-26T00:00:00Z",
+        "entry_count": 1,
+        "entries": [
+            {
+                "work_item_id": "implementation_work::SG-SPEC-0001::changed_acceptance",
+                "affected_spec_ids": ["SG-SPEC-0001"],
+                "implementation_reason": "changed_acceptance",
+                "readiness": "blocked_by_trace_gap",
+                "blockers": ["trace_baseline_gap"],
+                "next_gap": "attach_trace_baseline",
+                "required_tests": ["SG-SPEC-0001:acceptance:1:test_required"],
+                "expected_evidence": ["implementation_evidence::SG-SPEC-0001"],
+                "likely_code_refs": ["tools/supervisor.py"],
+            }
+        ],
+        "viewer_projection": {
+            "readiness": {
+                "blocked_by_trace_gap": ["implementation_work::SG-SPEC-0001::changed_acceptance"]
+            },
+            "next_gap": {
+                "attach_trace_baseline": ["implementation_work::SG-SPEC-0001::changed_acceptance"]
+            },
+        },
+        "implementation_backlog": {
+            "entry_count": 1,
+            "grouped_by_next_gap": {
+                "attach_trace_baseline": ["implementation_work::SG-SPEC-0001::changed_acceptance"]
+            },
+        },
+    }
+    (repo_fixture / "runs" / "implementation_work_index.json").write_text(
+        json.dumps(legacy_index),
+        encoding="utf-8",
+    )
+
+    normalized = supervisor_module.load_current_implementation_work_index()
+
+    assert normalized["implementation_backlog"]["entry_count"] == 1
+    assert normalized["implementation_backlog"]["items"] == [
+        {
+            "work_item_id": "implementation_work::SG-SPEC-0001::changed_acceptance",
+            "affected_spec_ids": ["SG-SPEC-0001"],
+            "implementation_reason": "changed_acceptance",
+            "readiness": "blocked_by_trace_gap",
+            "blockers": ["trace_baseline_gap"],
+            "next_gap": "attach_trace_baseline",
+            "required_tests": ["SG-SPEC-0001:acceptance:1:test_required"],
+            "expected_evidence": ["implementation_evidence::SG-SPEC-0001"],
+            "likely_code_refs": ["tools/supervisor.py"],
+        }
+    ]
+
+
+def test_load_current_implementation_work_index_falls_back_to_grouped_legacy_backlog(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    legacy_index = {
+        "artifact_kind": supervisor_module.IMPLEMENTATION_WORK_INDEX_ARTIFACT_KIND,
+        "schema_version": supervisor_module.IMPLEMENTATION_WORK_INDEX_SCHEMA_VERSION,
+        "generated_at": "2026-04-26T00:00:00Z",
+        "entry_count": 1,
+        "entries": [],
+        "viewer_projection": {
+            "readiness": {"blocked_by_trace_gap": ["implementation-work-1"]},
+        },
+        "implementation_backlog": {
+            "entry_count": 1,
+            "grouped_by_next_gap": {"attach_trace_baseline": ["implementation-work-1"]},
+        },
+    }
+    (repo_fixture / "runs" / "implementation_work_index.json").write_text(
+        json.dumps(legacy_index),
+        encoding="utf-8",
+    )
+
+    normalized = supervisor_module.load_current_implementation_work_index()
+
+    assert normalized["implementation_backlog"]["items"] == [
+        {
+            "work_item_id": "implementation-work-1",
+            "affected_spec_ids": [],
+            "implementation_reason": "",
+            "readiness": "blocked_by_trace_gap",
+            "blockers": [],
+            "next_gap": "attach_trace_baseline",
+            "required_tests": [],
+            "expected_evidence": [],
+            "likely_code_refs": [],
+        }
+    ]
+
+
 def test_main_builds_implementation_delta_snapshot_as_standalone_command(
     supervisor_module: object,
     repo_fixture: Path,

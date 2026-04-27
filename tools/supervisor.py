@@ -11678,6 +11678,104 @@ def implementation_work_item_readiness(
     return "ready_for_planning", blockers
 
 
+def implementation_work_backlog_item(entry: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "work_item_id": str(entry.get("work_item_id", "")).strip(),
+        "affected_spec_ids": [
+            str(spec_id).strip()
+            for spec_id in entry.get("affected_spec_ids", [])
+            if str(spec_id).strip()
+        ],
+        "implementation_reason": str(entry.get("implementation_reason", "")).strip(),
+        "readiness": str(entry.get("readiness", "")).strip(),
+        "blockers": [
+            str(blocker).strip() for blocker in entry.get("blockers", []) if str(blocker).strip()
+        ],
+        "next_gap": str(entry.get("next_gap", "")).strip() or "review_implementation_delta",
+        "required_tests": [
+            str(test_ref).strip()
+            for test_ref in entry.get("required_tests", [])
+            if str(test_ref).strip()
+        ],
+        "expected_evidence": [
+            str(evidence_ref).strip()
+            for evidence_ref in entry.get("expected_evidence", [])
+            if str(evidence_ref).strip()
+        ],
+        "likely_code_refs": [
+            str(code_ref).strip()
+            for code_ref in entry.get("likely_code_refs", [])
+            if str(code_ref).strip()
+        ],
+    }
+
+
+def implementation_work_backlog_items_from_entries(
+    entries: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    return [
+        implementation_work_backlog_item(entry)
+        for entry in entries
+        if str(entry.get("work_item_id", "")).strip()
+        and str(entry.get("next_gap", "")).strip() != "none"
+    ]
+
+
+def normalize_implementation_work_index_backlog(index: dict[str, Any]) -> dict[str, Any]:
+    normalized = copy.deepcopy(index)
+    backlog = normalized.get("implementation_backlog", {})
+    if not isinstance(backlog, dict):
+        backlog = {}
+    if isinstance(backlog.get("items"), list):
+        return normalized
+
+    raw_entries = normalized.get("entries", [])
+    entries = (
+        [entry for entry in raw_entries if isinstance(entry, dict)]
+        if isinstance(raw_entries, list)
+        else []
+    )
+    items = implementation_work_backlog_items_from_entries(entries)
+
+    grouped_by_next_gap = backlog.get("grouped_by_next_gap", {})
+    if not items and isinstance(grouped_by_next_gap, dict):
+        readiness_projection = normalized.get("viewer_projection", {}).get("readiness", {})
+        readiness_by_work_item: dict[str, str] = {}
+        if isinstance(readiness_projection, dict):
+            for readiness, raw_ids in readiness_projection.items():
+                if not isinstance(raw_ids, list):
+                    continue
+                for raw_id in raw_ids:
+                    work_item_id = str(raw_id).strip()
+                    if work_item_id:
+                        readiness_by_work_item[work_item_id] = str(readiness).strip()
+        for next_gap, raw_ids in sorted(grouped_by_next_gap.items()):
+            if not isinstance(raw_ids, list):
+                continue
+            for raw_id in raw_ids:
+                work_item_id = str(raw_id).strip()
+                if not work_item_id:
+                    continue
+                items.append(
+                    {
+                        "work_item_id": work_item_id,
+                        "affected_spec_ids": [],
+                        "implementation_reason": "",
+                        "readiness": readiness_by_work_item.get(work_item_id, ""),
+                        "blockers": [],
+                        "next_gap": str(next_gap).strip() or "review_implementation_delta",
+                        "required_tests": [],
+                        "expected_evidence": [],
+                        "likely_code_refs": [],
+                    }
+                )
+
+    backlog["items"] = items
+    backlog["entry_count"] = len(items)
+    normalized["implementation_backlog"] = backlog
+    return normalized
+
+
 def build_implementation_work_index(
     snapshot: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
@@ -11832,42 +11930,7 @@ def build_implementation_work_index(
             if readiness in named_filters:
                 named_filters[readiness].append(work_item_id)
 
-    backlog_items = [
-        {
-            "work_item_id": str(entry.get("work_item_id", "")).strip(),
-            "affected_spec_ids": [
-                str(spec_id).strip()
-                for spec_id in entry.get("affected_spec_ids", [])
-                if str(spec_id).strip()
-            ],
-            "implementation_reason": str(entry.get("implementation_reason", "")).strip(),
-            "readiness": str(entry.get("readiness", "")).strip(),
-            "blockers": [
-                str(blocker).strip()
-                for blocker in entry.get("blockers", [])
-                if str(blocker).strip()
-            ],
-            "next_gap": str(entry.get("next_gap", "")).strip() or "review_implementation_delta",
-            "required_tests": [
-                str(test_ref).strip()
-                for test_ref in entry.get("required_tests", [])
-                if str(test_ref).strip()
-            ],
-            "expected_evidence": [
-                str(evidence_ref).strip()
-                for evidence_ref in entry.get("expected_evidence", [])
-                if str(evidence_ref).strip()
-            ],
-            "likely_code_refs": [
-                str(code_ref).strip()
-                for code_ref in entry.get("likely_code_refs", [])
-                if str(code_ref).strip()
-            ],
-        }
-        for entry in entries
-        if str(entry.get("work_item_id", "")).strip()
-        and str(entry.get("next_gap", "")).strip() != "none"
-    ]
+    backlog_items = implementation_work_backlog_items_from_entries(entries)
 
     return {
         "artifact_kind": IMPLEMENTATION_WORK_INDEX_ARTIFACT_KIND,
@@ -11913,7 +11976,7 @@ def write_implementation_work_index(index: dict[str, Any]) -> Path:
 def load_current_implementation_work_index() -> dict[str, Any]:
     existing = load_json_object(implementation_work_index_path())
     if isinstance(existing, dict):
-        return existing
+        return normalize_implementation_work_index_backlog(existing)
     return {
         "artifact_kind": IMPLEMENTATION_WORK_INDEX_ARTIFACT_KIND,
         "schema_version": IMPLEMENTATION_WORK_INDEX_SCHEMA_VERSION,
