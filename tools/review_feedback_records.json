@@ -250,5 +250,23 @@
     "residual_risk": "",
     "resolved_commit": "c59bfa2210abfb5c11c20f11c837bfb8a4f57856",
     "recorded_at": "2026-04-27T20:07:08Z"
+  },
+  {
+    "feedback_id": "pr-156-medium-timeout-grace",
+    "source_pr": 156,
+    "source_thread_url": "https://github.com/0al-spec/SpecGraph/pull/156#discussion_r3150083491",
+    "reviewer": "chatgpt-codex-connector",
+    "review_comment_summary": "Changing default supervisor reasoning from xhigh to medium removed post-timeout quiet/progress grace from default child runs.",
+    "fix_summary": "Allowed medium reasoning to use the same quiet/progress grace windows as xhigh and added parameterized regression coverage.",
+    "root_cause_class": "policy_runtime_drift",
+    "prevention_action": "regression_test_added",
+    "verification": [
+      "targeted_test",
+      "full_test_suite",
+      "lint_or_format_check"
+    ],
+    "residual_risk": "",
+    "resolved_commit": "d89fbd66612231528b2a4c95c10e69779f9577d6",
+    "recorded_at": "2026-04-27T21:03:08Z"
   }
 ]

@@ -533,27 +533,29 @@ Nested `codex exec` runs are intentionally constrained and deterministic. `super
 execution profiles instead of one implicit child runtime:
 
 - `standard`
-  - model: `gpt-5.4`
-  - reasoning effort: `xhigh`
-  - timeout: `420s` base and effective timeout floor for `xhigh`
+  - model: `gpt-5.5`
+  - reasoning effort: `medium`
+  - timeout: `420s`
 - `materialize`
-  - model: `gpt-5.4`
-  - reasoning effort: `xhigh`
+  - model: `gpt-5.5`
+  - reasoning effort: `medium`
   - timeout: `720s`
   - auto-selected when run authority includes sanctioned child materialization
 - `fast`
-  - model: `gpt-5.4`
-  - reasoning effort: `xhigh`
-  - timeout: `420s` effective timeout floor for heuristic ordinary refinement runs
+  - model: `gpt-5.5`
+  - reasoning effort: `medium`
+  - timeout: `420s` for heuristic ordinary refinement runs
 
 Timeout rule:
 
 - `supervisor` uses the larger of the profile's base timeout and the minimum timeout floor implied by
   the profile's reasoning effort
-- this keeps `xhigh` targeted refinements from inheriting the same timeout budget as lighter reasoning
-  modes
-- `fast` means heuristic profile selection, not low-effort reasoning; it still uses `xhigh` and a bounded
-  but non-trivial timeout so useful split signals are not lost to premature executor termination
+- this keeps heavier reasoning modes from inheriting the same timeout budget as lighter reasoning modes
+- `medium` and `xhigh` runs retain progress/quiet grace windows after the base timeout so a still-advancing
+  child executor is not killed immediately at the timeout boundary
+- `fast` means heuristic profile selection, not low-quality reasoning; it still uses the shared `medium`
+  reasoning default with a bounded but non-trivial timeout so useful split signals are not lost to
+  premature executor termination
 
 Shared child-runtime constraints:
 
@@ -570,7 +572,8 @@ runtime drift.
 
 Command-line overrides for nested runs:
 
-- `--child-model` sets an explicit model for the nested codex run (for example `gpt-5.3-codex-spark`).
+- `--child-model` sets an explicit model for the nested codex run when an operator intentionally
+  compares a bounded run against the default profile model.
 - `--child-timeout` sets an explicit timeout in seconds for nested child runs.
 - Explicitly targeting a seed/root-like spec (`--target-spec`) without `--child-timeout` uses a 1200s default.
 

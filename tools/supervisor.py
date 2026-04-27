@@ -2961,6 +2961,7 @@ ROOT_REFACTOR_TIMEOUT_SECONDS = int(
 )
 EXECUTOR_PROGRESS_POLL_SECONDS = 30
 XHIGH_QUIET_PROGRESS_WINDOWS = 3
+QUIET_PROGRESS_REASONING_EFFORTS = {"medium", "xhigh"}
 LINKED_CONTINUATION_MATURITY_THRESHOLD = float(
     policy_lookup("thresholds.linked_continuation_maturity")
 )
@@ -5529,8 +5530,8 @@ def effective_child_executor_timeout_seconds(
 
 
 def quiet_progress_windows_for_reasoning(reasoning_effort: str) -> int:
-    """Allow extra quiet windows for long-form deliberation on heavier reasoning modes."""
-    if reasoning_effort == "xhigh":
+    """Allow extra quiet windows for default and long-form reasoning modes."""
+    if reasoning_effort in QUIET_PROGRESS_REASONING_EFFORTS:
         return XHIGH_QUIET_PROGRESS_WINDOWS
     return 0
 
@@ -29928,7 +29929,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--child-model",
-        help="Optional model override for nested child runs, for example: gpt-5.3-codex-spark",
+        help="Optional model override for nested child runs when explicitly comparing models",
     )
     parser.add_argument(
         "--split-proposal",

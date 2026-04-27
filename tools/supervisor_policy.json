@@ -145,7 +145,7 @@
     "auto_heuristic_profile": "fast",
     "auto_child_materialization_profile": "materialize",
     "shared": {
-      "model": "gpt-5.4",
+      "model": "gpt-5.5",
       "approval_policy": "never",
       "sandbox": "workspace-write",
       "disabled_features": [
@@ -157,15 +157,15 @@
     },
     "profiles": {
       "fast": {
-        "reasoning_effort": "xhigh",
+        "reasoning_effort": "medium",
         "timeout_seconds": 420
       },
       "standard": {
-        "reasoning_effort": "xhigh",
+        "reasoning_effort": "medium",
         "timeout_seconds": 420
       },
       "materialize": {
-        "reasoning_effort": "xhigh",
+        "reasoning_effort": "medium",
         "timeout_seconds": 720
       }
     },

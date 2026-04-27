@@ -39,12 +39,6 @@ One targeted refinement:
 python3 tools/supervisor.py --target-spec SG-SPEC-0003 --execution-profile standard
 ```
 
-Targeted refinement with model override:
-
-```bash
-python3 tools/supervisor.py --target-spec SG-SPEC-0003 --execution-profile standard --child-model gpt-5.3-codex-spark
-```
-
 Explicit child materialization:
 
 ```bash

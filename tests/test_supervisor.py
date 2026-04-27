@@ -551,8 +551,8 @@ def test_create_child_codex_home_writes_minimal_config_and_copies_auth(
     child_home = supervisor_module.create_child_codex_home(source_codex_home=source_home)
     try:
         config_text = (child_home / "config.toml").read_text(encoding="utf-8")
-        assert 'model = "gpt-5.4"' in config_text
-        assert 'model_reasoning_effort = "high"' in config_text
+        assert 'model = "gpt-5.5"' in config_text
+        assert 'model_reasoning_effort = "medium"' in config_text
         assert 'approval_policy = "never"' in config_text
         assert 'sandbox_mode = "workspace-write"' in config_text
         assert "shell_snapshot = false" in config_text
@@ -874,7 +874,7 @@ def test_run_codex_allows_child_model_override(
             return 0
 
     captured: dict[str, object] = {}
-    child_model = "gpt-5.3-codex-spark"
+    child_model = "gpt-5.4"
 
     def fake_create_child_codex_home(
         *,
@@ -918,10 +918,12 @@ def test_run_codex_allows_child_model_override(
     assert cmd[cmd.index("--model") + 1] == child_model
 
 
-def test_run_codex_allows_quiet_grace_windows_for_xhigh_reasoning(
+@pytest.mark.parametrize("reasoning_effort", ["medium", "xhigh"])
+def test_run_codex_allows_quiet_grace_windows_for_default_and_xhigh_reasoning(
     supervisor_module: object,
     repo_fixture: Path,
     monkeypatch: pytest.MonkeyPatch,
+    reasoning_effort: str,
 ) -> None:
     class FakeProcess:
         def __init__(self) -> None:
@@ -948,7 +950,7 @@ def test_run_codex_allows_quiet_grace_windows_for_xhigh_reasoning(
     profile = supervisor_module.ExecutionProfile(
         name="standard",
         model=supervisor_module.CHILD_EXECUTOR_MODEL,
-        reasoning_effort="xhigh",
+        reasoning_effort=reasoning_effort,
         timeout_seconds=1,
         disabled_features=supervisor_module.CHILD_EXECUTOR_DISABLED_FEATURES,
     )
