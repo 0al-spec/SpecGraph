@@ -178,5 +178,23 @@
     "residual_risk": "",
     "resolved_commit": "ac9ef419c3d811b8f761eea0c612c10b00ecf517",
     "recorded_at": "2026-04-26T19:46:00Z"
+  },
+  {
+    "feedback_id": "pr-154-legacy-implementation-index-normalization",
+    "source_pr": 154,
+    "source_thread_url": "https://github.com/0al-spec/SpecGraph/pull/154#discussion_r3144206455",
+    "reviewer": "chatgpt-codex-connector",
+    "review_comment_summary": "Legacy implementation_work_index artifacts without implementation_backlog.items could produce dashboard counts while adding no normalized graph backlog rows.",
+    "fix_summary": "Added compatibility normalization when loading existing implementation work indexes, rebuilding backlog items from entries or grouped legacy next-gap data.",
+    "root_cause_class": "artifact_contract_validation_gap",
+    "prevention_action": "regression_test_added",
+    "verification": [
+      "targeted_test",
+      "full_test_suite",
+      "lint_or_format_check"
+    ],
+    "residual_risk": "",
+    "resolved_commit": "07b37c12c53bec4fda9d3f77abfe5c115819c9de",
+    "recorded_at": "2026-04-27T16:58:48Z"
   }
 ]
