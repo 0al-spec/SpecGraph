@@ -2,9 +2,9 @@ id: SG-SPEC-0034
 title: SpecGraph - Proposal and Queue Contracts for Reflective Loop
 kind: spec
 created_at: '2026-04-14T19:05:59Z'
-updated_at: '2026-04-25T10:45:34Z'
-status: linked
-maturity: 0.23
+updated_at: '2026-04-27T21:19:32Z'
+status: reviewed
+maturity: 0.43
 depends_on:
 - SG-SPEC-0039
 - SG-SPEC-0041
@@ -44,9 +44,10 @@ acceptance_evidence:
 - criterion: Delegates the parent-facing retry/active-item precedence contract to SG-SPEC-0041 while keeping
     concrete retry-condition semantics in SG-SPEC-0035 and concrete active-item precedence semantics in
     SG-SPEC-0036 so SG-SPEC-0003 remains implementation-agnostic for those bounded concerns.
-  evidence: delegation.retry_precedence_contract assigns retry/precedence control governance to SG-SPEC-0041,
-    while specification.scope.out keeps runtime details out of SG-SPEC-0034 and treats SG-SPEC-0035 and
-    SG-SPEC-0036 as delegated concrete leaves.
+  evidence: delegation.retry_precedence_contract and specification.gateway_consumption_boundary assign
+    retry/active-item precedence control governance to SG-SPEC-0041, require SG-SPEC-0034 and SG-SPEC-0003
+    to consume concrete retry-condition and active-item precedence semantics through that gateway, and
+    keep SG-SPEC-0035 and SG-SPEC-0036 as delegated concrete leaves.
 - criterion: Keeps queue/control artifacts noncanonical and nonauthoritative.
   evidence: specification.noncanonical_boundary requires queue-control artifacts to remain informational
     metadata only and explicitly states they cannot authorize proposal approval, writeback, or authority
@@ -64,7 +65,7 @@ delegation:
 specification:
   objective: Define the concrete, bounded control contract for proposal and refactor queue behavior in
     the reflective loop as a parent-facing predecessor, while delegating the non-retry queue-control cluster
-    to SG-SPEC-0039 and retry/active-item precedence contracts to SG-SPEC-0035/SG-SPEC-0036.
+    to SG-SPEC-0039 and the retry/active-item precedence cluster to SG-SPEC-0041.
   scope:
     in:
     - Parent-facing derived queue-control contract for proposal_queue and refactor_queue artifacts
@@ -77,6 +78,8 @@ specification:
     - Canonical ontology or policy changes
     - Retry-condition and active-item-precedence field definitions owned by SG-SPEC-0041 and concretized
       by SG-SPEC-0035/SG-SPEC-0036
+    - Direct SG-SPEC-0034 or SG-SPEC-0003 consumption of SG-SPEC-0035 or SG-SPEC-0036 that bypasses SG-SPEC-0041
+      for retry/active-item precedence concerns
     - Concrete queue-field surface and artifact-shape definitions owned by SG-SPEC-0038 via SG-SPEC-0039
     - Concrete dedupe_key, preempt_direct_update, and proposal_direct_handoff semantics owned by SG-SPEC-0037
       via SG-SPEC-0039
@@ -108,6 +111,15 @@ specification:
     SG-SPEC-0038.
   - Retry-condition and active-item precedence control metadata is coordinated by SG-SPEC-0041; none of
     these fields can authorize canonical writeback or expand supervisor authority in SG-SPEC-0034.
+  gateway_consumption_boundary:
+  - SG-SPEC-0041 is the only parent-facing retry/active-item precedence gateway under SG-SPEC-0034.
+  - SG-SPEC-0034 may name SG-SPEC-0035 and SG-SPEC-0036 only as concrete leaves delegated by SG-SPEC-0041;
+    it must not consume those leaves directly for retry-condition or active-item precedence semantics.
+  - SG-SPEC-0003 receives retry-condition and active-item precedence readiness from SG-SPEC-0034 through
+    SG-SPEC-0041 and must not treat SG-SPEC-0035 or SG-SPEC-0036 as independent parent-facing queue-control
+    contracts.
+  - This gateway rule is review-observable because a refinement that routes retry/active-item precedence
+    semantics around SG-SPEC-0041 violates SG-SPEC-0034 even if the leaf semantics themselves remain unchanged.
   noncanonical_boundary:
   - All queue control artifacts in SG-SPEC-0034 are first persisted in run payloads, derived summaries,
     and queue artifacts; they are not canonical facts.
@@ -137,55 +149,11 @@ specification:
     and SG-SPEC-0041 retry/active-item precedence gateway.
   - Further decomposition of concrete semantics belongs to those child clusters, not to SG-SPEC-0034.
 gate_state: none
-required_human_action: '-'
 proposed_status: null
 proposed_maturity: null
-last_outcome: split_required
-last_blocker: ''
-last_run_id: 20260414T090337Z-SG-SPEC-0034
-last_exit_code: 0
-last_changed_files:
-- specs/nodes/SG-SPEC-0034.yaml
-last_run_at: '2026-04-14T09:03:38.338691+00:00'
-last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0034-20260414T090320Z
-last_branch: codex/sg-spec-0034/20260414T090320Z
-last_validator_results:
-  outputs: true
-  allowed_paths: true
-  reconciliation: true
-  atomicity: true
-  transition: true
-  executor_environment: true
-  refinement_acceptance: true
-last_refinement_acceptance:
-  decision: approve
-  change_class: local_refinement
-  checks:
-    content_changed: true
-    hard_validation: true
-    single_spec_scope: true
-    constitutional_diff: false
-    graph_refactor_diff: false
-    atomicity_clear: true
-    within_mutation_budget: true
-  diff_paths:
-  - acceptance[2]
-  - delegation.retry_precedence_contract
-  mutation_classes:
-  - policy_text
-  mutation_budget: []
-  budget_exceeded_classes: []
-  changed_spec_files:
-  - specs/nodes/SG-SPEC-0034.yaml
-  review_reasons: []
-  errors: []
-  warnings: []
-last_reconciliation:
-  worktree_spec_count: 34
-  changed_spec_ids:
-  - SG-SPEC-0034
-  semantic_dependencies_resolved: false
-  work_dependencies_ready: false
-  cycles: []
-last_requested_child_materialization: false
-last_materialized_child_paths: []
+required_human_action: '-'
+last_worktree_path: ''
+last_branch: ''
+last_gate_decision: approve
+last_gate_note: ''
+last_gate_at: '2026-04-27T21:23:18.719576+00:00'
