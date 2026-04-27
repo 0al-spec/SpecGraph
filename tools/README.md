@@ -165,6 +165,9 @@ Supervisor modes:
   in one standalone pass. This is safe for local hooks, CI smoke checks, or
   ContextBuilder build buttons because it does not choose implementation target
   scope or create new implementation work items.
+- Standalone artifact commands print compact JSON summaries by default. Use
+  `--output-mode full` only when the complete artifact is needed on stdout; the
+  canonical generated artifact is still written under `runs/`.
 - `--build-graph-dashboard`: build `runs/graph_dashboard.json` as one
   aggregated viewer-facing dashboard with headline counts from graph health,
   proposal, implementation, evidence, external-consumer, handoff, and metric

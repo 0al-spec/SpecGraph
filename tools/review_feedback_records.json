@@ -196,5 +196,59 @@
     "residual_risk": "",
     "resolved_commit": "07b37c12c53bec4fda9d3f77abfe5c115819c9de",
     "recorded_at": "2026-04-27T16:58:48Z"
+  },
+  {
+    "feedback_id": "pr-155-transition-summary-findings",
+    "source_pr": 155,
+    "source_thread_url": "https://github.com/0al-spec/SpecGraph/pull/155#discussion_r3149816214",
+    "reviewer": "chatgpt-codex-connector",
+    "review_comment_summary": "Transition packet validation summary output kept only finding_count, losing the actual findings on non-zero validation failures.",
+    "fix_summary": "Preserved findings and findings_by_family in transition_packet_validation summary output.",
+    "root_cause_class": "diagnostic_wording_gap",
+    "prevention_action": "regression_test_added",
+    "verification": [
+      "targeted_test",
+      "full_test_suite",
+      "lint_or_format_check"
+    ],
+    "residual_risk": "",
+    "resolved_commit": "c59bfa2210abfb5c11c20f11c837bfb8a4f57856",
+    "recorded_at": "2026-04-27T20:07:08Z"
+  },
+  {
+    "feedback_id": "pr-155-output-mode-help-scope",
+    "source_pr": 155,
+    "source_thread_url": "https://github.com/0al-spec/SpecGraph/pull/155#discussion_r3149837013",
+    "reviewer": "copilot-pull-request-reviewer",
+    "review_comment_summary": "--output-mode help text said standalone artifact commands even though the implementation also affects graph-health observation JSON output.",
+    "fix_summary": "Updated argparse help to describe JSON-emitting supervisor commands and compact diagnostic summaries.",
+    "root_cause_class": "diagnostic_wording_gap",
+    "prevention_action": "documentation_rule_added",
+    "verification": [
+      "manual_contract_review",
+      "full_test_suite",
+      "lint_or_format_check"
+    ],
+    "residual_risk": "",
+    "resolved_commit": "c59bfa2210abfb5c11c20f11c837bfb8a4f57856",
+    "recorded_at": "2026-04-27T20:07:08Z"
+  },
+  {
+    "feedback_id": "pr-155-observe-graph-health-summary",
+    "source_pr": 155,
+    "source_thread_url": "https://github.com/0al-spec/SpecGraph/pull/155#discussion_r3149837046",
+    "reviewer": "copilot-pull-request-reviewer",
+    "review_comment_summary": "Graph-health observation summary mode omitted the detailed graph_health observations that operators use for diagnosis.",
+    "fix_summary": "Kept the full graph_health diagnostic payload and observation_count in graph_health_observation summary output.",
+    "root_cause_class": "diagnostic_wording_gap",
+    "prevention_action": "regression_test_added",
+    "verification": [
+      "targeted_test",
+      "full_test_suite",
+      "lint_or_format_check"
+    ],
+    "residual_risk": "",
+    "resolved_commit": "c59bfa2210abfb5c11c20f11c837bfb8a4f57856",
+    "recorded_at": "2026-04-27T20:07:08Z"
   }
 ]

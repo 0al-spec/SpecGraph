@@ -1093,7 +1093,7 @@ blocking CI gate.
 ### Viewer surfaces refresh
 
 ```bash
-python3 tools/supervisor.py --build-viewer-surfaces
+make viewer-surfaces
 ```
 
 Writes the local viewer-facing generated surfaces that ContextBuilder commonly
@@ -1110,10 +1110,20 @@ work items, mutate canonical specs, or stage generated JSON for commit.
 Use this when the viewer needs a current local snapshot after the graph or
 derived runtime surfaces changed.
 
+Equivalent direct command:
+
+```bash
+python3 tools/supervisor.py --build-viewer-surfaces
+```
+
+Standalone artifact commands print compact JSON summaries by default. Use
+`--output-mode full` only when the full generated artifact is needed on stdout.
+The artifact files under `runs/` are written either way.
+
 ### Graph dashboard
 
 ```bash
-python3 tools/supervisor.py --build-graph-dashboard
+make dashboard
 ```
 
 Builds `runs/graph_dashboard.json` as one aggregated dashboard artifact for a

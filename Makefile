@@ -1,0 +1,43 @@
+PYTHON ?= python3
+SUPERVISOR ?= tools/supervisor.py
+PYTEST ?= $(PYTHON) -m pytest
+
+.PHONY: help
+help:
+	@printf '%s\n' \
+		'SpecGraph shortcuts:' \
+		'  make viewer-surfaces          Refresh graph backlog + dashboard JSON' \
+		'  make dashboard                Refresh graph dashboard JSON only' \
+		'  make backlog                  Refresh graph backlog projection JSON only' \
+		'  make implementation-work      Refresh latest implementation work index' \
+		'  make review-feedback          Refresh review feedback index' \
+		'  make test                     Run full Python test suite quietly' \
+		'  make test-supervisor          Run supervisor tests quietly'
+
+.PHONY: viewer-surfaces
+viewer-surfaces:
+	@$(PYTHON) $(SUPERVISOR) --build-viewer-surfaces
+
+.PHONY: dashboard
+dashboard:
+	@$(PYTHON) $(SUPERVISOR) --build-graph-dashboard
+
+.PHONY: backlog
+backlog:
+	@$(PYTHON) $(SUPERVISOR) --build-graph-backlog-projection
+
+.PHONY: implementation-work
+implementation-work:
+	@$(PYTHON) $(SUPERVISOR) --build-implementation-work-index
+
+.PHONY: review-feedback
+review-feedback:
+	@$(PYTHON) $(SUPERVISOR) --build-review-feedback-index
+
+.PHONY: test
+test:
+	@$(PYTEST) -q
+
+.PHONY: test-supervisor
+test-supervisor:
+	@$(PYTEST) -q tests/test_supervisor.py

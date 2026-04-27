@@ -6572,6 +6572,29 @@ def test_main_validates_transition_packet_with_profile_override(
     assert out["transition_profile"] == "implementation_trace"
 
 
+def test_main_transition_packet_summary_preserves_validation_findings(
+    supervisor_module: object,
+    repo_fixture: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    packet_path = repo_fixture / "transition-packet.json"
+    packet_path.write_text(json.dumps({"packet_type": "proposal"}), encoding="utf-8")
+
+    exit_code = supervisor_module.main(
+        validate_transition_packet_path=packet_path.as_posix(),
+    )
+
+    assert exit_code == 1
+    out = json.loads(capsys.readouterr().out)
+    assert out["artifact_kind"] == "transition_packet_validation"
+    assert out["ok"] is False
+    assert out["finding_count"] == len(out["findings"])
+    assert {finding["code"] for finding in out["findings"]} >= {
+        "missing_transition_intent",
+        "missing_source_refs",
+    }
+
+
 def test_build_vocabulary_index_flattens_terms_aliases_and_contexts(
     supervisor_module: object,
 ) -> None:
@@ -7080,7 +7103,7 @@ def test_main_builds_spec_trace_index_as_standalone_command(
     (tools_dir / "impl.py").write_text("SPEC = 'SG-SPEC-0001'\n", encoding="utf-8")
     (tests_dir / "test_impl.py").write_text("SPEC = 'SG-SPEC-0001'\n", encoding="utf-8")
 
-    exit_code = supervisor_module.main(build_spec_trace_index_mode=True)
+    exit_code = supervisor_module.main(build_spec_trace_index_mode=True, output_mode="full")
 
     assert exit_code == 0
     report = json.loads(capsys.readouterr().out)
@@ -11212,7 +11235,10 @@ def test_main_builds_specpm_import_preview_as_standalone_command(
         },
     )
 
-    exit_code = supervisor_module.main(build_specpm_import_preview_mode=True)
+    exit_code = supervisor_module.main(
+        build_specpm_import_preview_mode=True,
+        output_mode="full",
+    )
 
     assert exit_code == 0
     report = json.loads(capsys.readouterr().out)
@@ -11293,7 +11319,10 @@ def test_main_builds_specpm_import_preview_reuses_written_consumer_index(
         fake_build_specpm_import_preview,
     )
 
-    exit_code = supervisor_module.main(build_specpm_import_preview_mode=True)
+    exit_code = supervisor_module.main(
+        build_specpm_import_preview_mode=True,
+        output_mode="full",
+    )
 
     assert exit_code == 0
     assert call_count == 1
@@ -14230,6 +14259,7 @@ def test_main_builds_exploration_preview_as_standalone_command(
     exit_code = supervisor_module.main(
         build_exploration_preview_mode=True,
         exploration_intent_text="Explore SpecGraph canvas layers.",
+        output_mode="full",
     )
 
     assert exit_code == 0
@@ -15325,7 +15355,7 @@ def test_main_builds_graph_health_overlay_as_standalone_command(
 
     monkeypatch.setattr(supervisor_module, "build_graph_health_overlay", fake_overlay)
 
-    exit_code = supervisor_module.main(build_graph_health_overlay_mode=True)
+    exit_code = supervisor_module.main(build_graph_health_overlay_mode=True, output_mode="full")
 
     assert exit_code == 0
     report = json.loads(capsys.readouterr().out)
@@ -15503,7 +15533,7 @@ def test_main_builds_graph_health_trends_as_standalone_command(
     monkeypatch.setattr(supervisor_module, "build_graph_health_overlay", fake_overlay)
     monkeypatch.setattr(supervisor_module, "build_graph_health_trends", fake_trends)
 
-    exit_code = supervisor_module.main(build_graph_health_trends_mode=True)
+    exit_code = supervisor_module.main(build_graph_health_trends_mode=True, output_mode="full")
 
     assert exit_code == 0
     report = json.loads(capsys.readouterr().out)
@@ -15548,7 +15578,7 @@ def test_main_builds_spec_trace_projection_as_standalone_command(
     (tools_dir / "impl.py").write_text("SPEC = 'SG-SPEC-0001'\n", encoding="utf-8")
     (tests_dir / "test_impl.py").write_text("SPEC = 'SG-SPEC-0001'\n", encoding="utf-8")
 
-    exit_code = supervisor_module.main(build_spec_trace_projection_mode=True)
+    exit_code = supervisor_module.main(build_spec_trace_projection_mode=True, output_mode="full")
 
     assert exit_code == 0
     report = json.loads(capsys.readouterr().out)
@@ -16005,7 +16035,7 @@ def test_main_builds_proposal_runtime_index_as_standalone_command(
 ) -> None:
     seed_proposal_runtime_fixture(repo_fixture, include_heuristic_proposal=False)
 
-    exit_code = supervisor_module.main(build_proposal_runtime_index_mode=True)
+    exit_code = supervisor_module.main(build_proposal_runtime_index_mode=True, output_mode="full")
 
     assert exit_code == 0
     report = json.loads(capsys.readouterr().out)
@@ -19017,6 +19047,8 @@ def test_main_observe_graph_health_prints_subtree_report(
     out = capsys.readouterr().out
     assert "=== graph-health observation mode ===" in out
     assert "Subtree nodes: SG-SPEC-0001, SG-SPEC-0002, SG-SPEC-0003" in out
+    assert '"graph_health": {' in out
+    assert '"observations": [' in out
     assert '"role_obscured_node"' in out
     assert '"bookkeeping_only_node"' in out
 
