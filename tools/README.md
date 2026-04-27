@@ -533,27 +533,27 @@ Nested `codex exec` runs are intentionally constrained and deterministic. `super
 execution profiles instead of one implicit child runtime:
 
 - `standard`
-  - model: `gpt-5.4`
-  - reasoning effort: `xhigh`
-  - timeout: `420s` base and effective timeout floor for `xhigh`
+  - model: `gpt-5.5`
+  - reasoning effort: `medium`
+  - timeout: `420s`
 - `materialize`
-  - model: `gpt-5.4`
-  - reasoning effort: `xhigh`
+  - model: `gpt-5.5`
+  - reasoning effort: `medium`
   - timeout: `720s`
   - auto-selected when run authority includes sanctioned child materialization
 - `fast`
-  - model: `gpt-5.4`
-  - reasoning effort: `xhigh`
-  - timeout: `420s` effective timeout floor for heuristic ordinary refinement runs
+  - model: `gpt-5.5`
+  - reasoning effort: `medium`
+  - timeout: `420s` for heuristic ordinary refinement runs
 
 Timeout rule:
 
 - `supervisor` uses the larger of the profile's base timeout and the minimum timeout floor implied by
   the profile's reasoning effort
-- this keeps `xhigh` targeted refinements from inheriting the same timeout budget as lighter reasoning
-  modes
-- `fast` means heuristic profile selection, not low-effort reasoning; it still uses `xhigh` and a bounded
-  but non-trivial timeout so useful split signals are not lost to premature executor termination
+- this keeps heavier reasoning modes from inheriting the same timeout budget as lighter reasoning modes
+- `fast` means heuristic profile selection, not low-quality reasoning; it still uses the shared `medium`
+  reasoning default with a bounded but non-trivial timeout so useful split signals are not lost to
+  premature executor termination
 
 Shared child-runtime constraints:
 

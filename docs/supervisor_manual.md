@@ -1347,6 +1347,10 @@ Use `materialize` when the run is expected to create a new child or do a heavier
 
 ### Child model and timeout
 
+Default child runs use `gpt-5.5` with `medium` reasoning through the shared
+execution profile policy. Use explicit overrides only for bounded comparison
+or exceptional runtime diagnosis.
+
 ```bash
 python3 tools/supervisor.py \
   --target-spec SG-SPEC-0003 \
