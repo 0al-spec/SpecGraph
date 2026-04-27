@@ -11678,6 +11678,104 @@ def implementation_work_item_readiness(
     return "ready_for_planning", blockers
 
 
+def implementation_work_backlog_item(entry: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "work_item_id": str(entry.get("work_item_id", "")).strip(),
+        "affected_spec_ids": [
+            str(spec_id).strip()
+            for spec_id in entry.get("affected_spec_ids", [])
+            if str(spec_id).strip()
+        ],
+        "implementation_reason": str(entry.get("implementation_reason", "")).strip(),
+        "readiness": str(entry.get("readiness", "")).strip(),
+        "blockers": [
+            str(blocker).strip() for blocker in entry.get("blockers", []) if str(blocker).strip()
+        ],
+        "next_gap": str(entry.get("next_gap", "")).strip() or "review_implementation_delta",
+        "required_tests": [
+            str(test_ref).strip()
+            for test_ref in entry.get("required_tests", [])
+            if str(test_ref).strip()
+        ],
+        "expected_evidence": [
+            str(evidence_ref).strip()
+            for evidence_ref in entry.get("expected_evidence", [])
+            if str(evidence_ref).strip()
+        ],
+        "likely_code_refs": [
+            str(code_ref).strip()
+            for code_ref in entry.get("likely_code_refs", [])
+            if str(code_ref).strip()
+        ],
+    }
+
+
+def implementation_work_backlog_items_from_entries(
+    entries: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    return [
+        implementation_work_backlog_item(entry)
+        for entry in entries
+        if str(entry.get("work_item_id", "")).strip()
+        and str(entry.get("next_gap", "")).strip() != "none"
+    ]
+
+
+def normalize_implementation_work_index_backlog(index: dict[str, Any]) -> dict[str, Any]:
+    normalized = copy.deepcopy(index)
+    backlog = normalized.get("implementation_backlog", {})
+    if not isinstance(backlog, dict):
+        backlog = {}
+    if isinstance(backlog.get("items"), list):
+        return normalized
+
+    raw_entries = normalized.get("entries", [])
+    entries = (
+        [entry for entry in raw_entries if isinstance(entry, dict)]
+        if isinstance(raw_entries, list)
+        else []
+    )
+    items = implementation_work_backlog_items_from_entries(entries)
+
+    grouped_by_next_gap = backlog.get("grouped_by_next_gap", {})
+    if not items and isinstance(grouped_by_next_gap, dict):
+        readiness_projection = normalized.get("viewer_projection", {}).get("readiness", {})
+        readiness_by_work_item: dict[str, str] = {}
+        if isinstance(readiness_projection, dict):
+            for readiness, raw_ids in readiness_projection.items():
+                if not isinstance(raw_ids, list):
+                    continue
+                for raw_id in raw_ids:
+                    work_item_id = str(raw_id).strip()
+                    if work_item_id:
+                        readiness_by_work_item[work_item_id] = str(readiness).strip()
+        for next_gap, raw_ids in sorted(grouped_by_next_gap.items()):
+            if not isinstance(raw_ids, list):
+                continue
+            for raw_id in raw_ids:
+                work_item_id = str(raw_id).strip()
+                if not work_item_id:
+                    continue
+                items.append(
+                    {
+                        "work_item_id": work_item_id,
+                        "affected_spec_ids": [],
+                        "implementation_reason": "",
+                        "readiness": readiness_by_work_item.get(work_item_id, ""),
+                        "blockers": [],
+                        "next_gap": str(next_gap).strip() or "review_implementation_delta",
+                        "required_tests": [],
+                        "expected_evidence": [],
+                        "likely_code_refs": [],
+                    }
+                )
+
+    backlog["items"] = items
+    backlog["entry_count"] = len(items)
+    normalized["implementation_backlog"] = backlog
+    return normalized
+
+
 def build_implementation_work_index(
     snapshot: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
@@ -11832,6 +11930,8 @@ def build_implementation_work_index(
             if readiness in named_filters:
                 named_filters[readiness].append(work_item_id)
 
+    backlog_items = implementation_work_backlog_items_from_entries(entries)
+
     return {
         "artifact_kind": IMPLEMENTATION_WORK_INDEX_ARTIFACT_KIND,
         "schema_version": IMPLEMENTATION_WORK_INDEX_SCHEMA_VERSION,
@@ -11852,7 +11952,8 @@ def build_implementation_work_index(
             "named_filters": {key: sorted(value) for key, value in sorted(named_filters.items())},
         },
         "implementation_backlog": {
-            "entry_count": sum(1 for entry in entries if entry["next_gap"] != "none"),
+            "entry_count": len(backlog_items),
+            "items": backlog_items,
             "grouped_by_next_gap": {
                 key: sorted(value)
                 for key, value in sorted(next_gap_groups.items())
@@ -11870,6 +11971,33 @@ def write_implementation_work_index(index: dict[str, Any]) -> Path:
     with artifact_lock(path):
         atomic_write_json(path, index)
     return path
+
+
+def load_current_implementation_work_index() -> dict[str, Any]:
+    existing = load_json_object(implementation_work_index_path())
+    if isinstance(existing, dict):
+        return normalize_implementation_work_index_backlog(existing)
+    return {
+        "artifact_kind": IMPLEMENTATION_WORK_INDEX_ARTIFACT_KIND,
+        "schema_version": IMPLEMENTATION_WORK_INDEX_SCHEMA_VERSION,
+        "generated_at": utc_now_iso(),
+        "policy_reference": implementation_delta_policy_reference(),
+        "source_delta_snapshot": {},
+        "entry_count": 0,
+        "entries": [],
+        "viewer_projection": {
+            "readiness": {},
+            "next_gap": {},
+            "named_filters": {name: [] for name in IMPLEMENTATION_WORK_INDEX_NAMED_FILTERS},
+        },
+        "implementation_backlog": {
+            "entry_count": 0,
+            "items": [],
+            "grouped_by_next_gap": {},
+        },
+        "canonical_mutations_allowed": False,
+        "runtime_code_mutations_allowed": False,
+    }
 
 
 def load_review_feedback_records() -> list[dict[str, Any]]:
@@ -21773,6 +21901,7 @@ def graph_backlog_source_artifact_path(source_artifact: str) -> str:
         "refactor_queue": refactor_queue_path,
         "proposal_queue": proposal_queue_path,
         "spec_trace_projection": spec_trace_projection_path,
+        "implementation_work_index": implementation_work_index_path,
         "evidence_plane_overlay": evidence_plane_overlay_path,
         "external_consumer_overlay": external_consumer_overlay_path,
         "external_consumer_handoffs": external_consumer_handoff_packets_path,
@@ -22000,6 +22129,7 @@ def build_graph_backlog_projection_from_surfaces(
     refactor_queue_items: list[dict[str, Any]],
     proposal_queue_items: list[dict[str, Any]],
     spec_trace_projection: dict[str, Any],
+    implementation_work_index: dict[str, Any],
     evidence_overlay: dict[str, Any],
     external_consumer_overlay: dict[str, Any],
     external_consumer_handoffs: dict[str, Any],
@@ -22125,6 +22255,15 @@ def build_graph_backlog_projection_from_surfaces(
         backlog=spec_trace_projection.get("implementation_backlog", {}),
         id_fields=("spec_id",),
         status_fields=("implementation_state", "freshness_status"),
+    )
+    append_backlog_items(
+        entries,
+        source_artifact="implementation_work_index",
+        domain="implementation",
+        subject_kind="implementation_work_item",
+        backlog=implementation_work_index.get("implementation_backlog", {}),
+        id_fields=("work_item_id",),
+        status_fields=("readiness", "implementation_reason"),
     )
     append_backlog_items(
         entries,
@@ -22317,6 +22456,7 @@ def build_graph_backlog_projection_from_surfaces(
         "refactor_queue": refactor_queue_items,
         "proposal_queue": proposal_queue_items,
         "spec_trace_projection": spec_trace_projection,
+        "implementation_work_index": implementation_work_index,
         "evidence_plane_overlay": evidence_overlay,
         "external_consumer_overlay": external_consumer_overlay,
         "external_consumer_handoffs": external_consumer_handoffs,
@@ -22366,6 +22506,7 @@ def build_graph_backlog_projection(specs: list[SpecNode]) -> dict[str, Any]:
     proposal_promotion_index = build_proposal_promotion_index()
     spec_trace_index = build_spec_trace_index(specs)
     spec_trace_projection = build_spec_trace_projection(spec_trace_index)
+    implementation_work_index = load_current_implementation_work_index()
     evidence_index = build_evidence_plane_index(specs)
     evidence_overlay = build_evidence_plane_overlay(evidence_index)
     external_consumer_index = build_external_consumer_index()
@@ -22401,6 +22542,7 @@ def build_graph_backlog_projection(specs: list[SpecNode]) -> dict[str, Any]:
         refactor_queue_items=[item for item in load_refactor_queue() if isinstance(item, dict)],
         proposal_queue_items=[item for item in load_proposal_queue() if isinstance(item, dict)],
         spec_trace_projection=spec_trace_projection,
+        implementation_work_index=implementation_work_index,
         evidence_overlay=evidence_overlay,
         external_consumer_overlay=external_consumer_overlay,
         external_consumer_handoffs=external_consumer_handoffs,
@@ -22431,6 +22573,7 @@ def build_graph_dashboard(specs: list[SpecNode]) -> dict[str, Any]:
     proposal_promotion_index = build_proposal_promotion_index()
     spec_trace_index = build_spec_trace_index(specs)
     spec_trace_projection = build_spec_trace_projection(spec_trace_index)
+    implementation_work_index = load_current_implementation_work_index()
     evidence_index = build_evidence_plane_index(specs)
     evidence_overlay = build_evidence_plane_overlay(evidence_index)
     external_consumer_index = build_external_consumer_index()
@@ -22470,6 +22613,7 @@ def build_graph_dashboard(specs: list[SpecNode]) -> dict[str, Any]:
         refactor_queue_items=refactor_queue_items,
         proposal_queue_items=proposal_queue_items,
         spec_trace_projection=spec_trace_projection,
+        implementation_work_index=implementation_work_index,
         evidence_overlay=evidence_overlay,
         external_consumer_overlay=external_consumer_overlay,
         external_consumer_handoffs=external_consumer_handoffs,
@@ -22599,6 +22743,18 @@ def build_graph_dashboard(specs: list[SpecNode]) -> dict[str, Any]:
     )
     trace_named_filter_counts = grouped_identifier_counts(
         spec_trace_projection.get("viewer_projection", {}).get("named_filters", {})
+    )
+    implementation_work_readiness_counts = grouped_identifier_counts(
+        implementation_work_index.get("viewer_projection", {}).get("readiness", {})
+    )
+    implementation_work_next_gap_counts = grouped_identifier_counts(
+        implementation_work_index.get("viewer_projection", {}).get("next_gap", {})
+    )
+    implementation_work_named_filter_counts = grouped_identifier_counts(
+        implementation_work_index.get("viewer_projection", {}).get("named_filters", {})
+    )
+    implementation_work_backlog_count = int(
+        implementation_work_index.get("implementation_backlog", {}).get("entry_count", 0) or 0
     )
 
     evidence_chain_counts = grouped_identifier_counts(
@@ -22768,6 +22924,17 @@ def build_graph_dashboard(specs: list[SpecNode]) -> dict[str, Any]:
             section="implementation",
             status="info",
             basis="Specs whose trace plane currently observes both declared code and test anchors.",
+        ),
+        dashboard_card(
+            card_id="implementation_work_open",
+            title="Implementation Work Open",
+            value=implementation_work_backlog_count,
+            section="implementation",
+            status="attention" if implementation_work_backlog_count else "healthy",
+            basis=(
+                "Reviewable Implementation Work items from the latest explicit "
+                "implementation work index."
+            ),
         ),
         dashboard_card(
             card_id="complete_evidence_chains",
@@ -22959,6 +23126,11 @@ def build_graph_dashboard(specs: list[SpecNode]) -> dict[str, Any]:
                 "artifact_path": spec_trace_projection_path().relative_to(ROOT).as_posix(),
                 "generated_at": spec_trace_projection.get("generated_at"),
             },
+            "implementation_work_index": {
+                "artifact_path": implementation_work_index_path().relative_to(ROOT).as_posix(),
+                "generated_at": implementation_work_index.get("generated_at"),
+                "entry_count": implementation_work_index.get("entry_count"),
+            },
             "evidence_plane_overlay": {
                 "artifact_path": evidence_plane_overlay_path().relative_to(ROOT).as_posix(),
                 "generated_at": evidence_overlay.get("generated_at"),
@@ -23067,6 +23239,11 @@ def build_graph_dashboard(specs: list[SpecNode]) -> dict[str, Any]:
                     spec_trace_projection.get("implementation_backlog", {}).get("entry_count", 0)
                     or 0
                 ),
+                "work_index_entry_count": int(implementation_work_index.get("entry_count", 0) or 0),
+                "work_index_backlog_count": implementation_work_backlog_count,
+                "work_index_readiness_counts": implementation_work_readiness_counts,
+                "work_index_next_gap_counts": implementation_work_next_gap_counts,
+                "work_index_named_filter_counts": implementation_work_named_filter_counts,
             },
             "evidence": {
                 "evidence_entry_count": int(evidence_overlay.get("entry_count", 0) or 0),
@@ -23194,6 +23371,13 @@ def build_graph_dashboard(specs: list[SpecNode]) -> dict[str, Any]:
                 "proposal_promotion_missing_trace": proposal_promotion_traceability_counts.get(
                     "missing_trace", 0
                 ),
+                "implementation_work_open": implementation_work_backlog_count,
+                "implementation_work_ready_for_planning": implementation_work_readiness_counts.get(
+                    "ready_for_planning", 0
+                ),
+                "implementation_work_blocked_by_trace_gap": (
+                    implementation_work_readiness_counts.get("blocked_by_trace_gap", 0)
+                ),
                 "retrospective_refactor_candidates": len(retrospective_refactor_spec_ids),
                 "drifted_specs": trace_impl_counts.get("drifted", 0),
                 "complete_evidence_chain_specs": evidence_named_filter_counts.get(
@@ -23241,6 +23425,38 @@ def write_graph_dashboard(report: dict[str, Any]) -> Path:
     with artifact_lock(path):
         atomic_write_json(path, report)
     return path
+
+
+def build_viewer_surfaces(specs: list[SpecNode]) -> dict[str, Any]:
+    backlog_projection = build_graph_backlog_projection(specs)
+    backlog_path = write_graph_backlog_projection(backlog_projection)
+    dashboard = build_graph_dashboard(specs)
+    dashboard_path = write_graph_dashboard(dashboard)
+    return {
+        "artifact_kind": "viewer_surfaces_build_report",
+        "schema_version": 1,
+        "generated_at": utc_now_iso(),
+        "written_artifacts": {
+            "graph_backlog_projection": {
+                "artifact_path": backlog_path.relative_to(ROOT).as_posix(),
+                "generated_at": backlog_projection.get("generated_at"),
+                "entry_count": backlog_projection.get("entry_count"),
+            },
+            "graph_dashboard": {
+                "artifact_path": dashboard_path.relative_to(ROOT).as_posix(),
+                "generated_at": dashboard.get("generated_at"),
+                "headline_count": len(dashboard.get("headline_cards", [])),
+                "section_count": len(dashboard.get("sections", {})),
+            },
+        },
+        "notes": [
+            (
+                "This command refreshes viewer-facing generated surfaces only; "
+                "it does not choose implementation target scope or create new "
+                "implementation work items."
+            )
+        ],
+    }
 
 
 def acceptance_reference_indexes(
@@ -26692,6 +26908,7 @@ def main(
     build_metric_threshold_proposals_mode: bool = False,
     build_supervisor_performance_index_mode: bool = False,
     build_bootstrap_smoke_benchmark_mode: bool = False,
+    build_viewer_surfaces_mode: bool = False,
     build_graph_dashboard_mode: bool = False,
     build_graph_backlog_projection_mode: bool = False,
     build_proposal_lane_overlay_mode: bool = False,
@@ -26759,6 +26976,7 @@ def main(
         "--build-metric-threshold-proposals": build_metric_threshold_proposals_mode,
         "--build-supervisor-performance-index": build_supervisor_performance_index_mode,
         "--build-bootstrap-smoke-benchmark": build_bootstrap_smoke_benchmark_mode,
+        "--build-viewer-surfaces": build_viewer_surfaces_mode,
         "--build-graph-dashboard": build_graph_dashboard_mode,
         "--build-graph-backlog-projection": build_graph_backlog_projection_mode,
         "--build-proposal-lane-overlay": build_proposal_lane_overlay_mode,
@@ -28484,6 +28702,40 @@ def main(
         print(json.dumps(report, ensure_ascii=False, indent=2))
         return 0
 
+    if build_viewer_surfaces_mode:
+        if any(
+            (
+                dry_run,
+                auto_approve,
+                loop,
+                resolve_gate,
+                decision,
+                note,
+                target_spec,
+                split_proposal,
+                apply_split_proposal,
+                operator_note,
+                mutation_budget,
+                run_authority,
+                execution_profile,
+                child_model,
+                child_timeout_seconds,
+                verbose,
+                list_stale_runtime,
+                clean_stale_runtime,
+                observe_graph_health_mode,
+                operator_request_packet_path,
+            )
+        ):
+            print(
+                "--build-viewer-surfaces must be used as a standalone command",
+                file=sys.stderr,
+            )
+            return 1
+        report = build_viewer_surfaces(specs)
+        print(json.dumps(report, ensure_ascii=False, indent=2))
+        return 0
+
     if build_graph_backlog_projection_mode:
         if any(
             (
@@ -29451,6 +29703,14 @@ if __name__ == "__main__":
         ),
     )
     parser.add_argument(
+        "--build-viewer-surfaces",
+        action="store_true",
+        help=(
+            "Refresh viewer-facing generated surfaces by writing graph backlog projection "
+            "and graph dashboard artifacts without choosing implementation target scope"
+        ),
+    )
+    parser.add_argument(
         "--build-graph-dashboard",
         action="store_true",
         help=(
@@ -29643,6 +29903,7 @@ if __name__ == "__main__":
             build_metric_threshold_proposals_mode=args.build_metric_threshold_proposals,
             build_supervisor_performance_index_mode=args.build_supervisor_performance_index,
             build_bootstrap_smoke_benchmark_mode=args.build_bootstrap_smoke_benchmark,
+            build_viewer_surfaces_mode=args.build_viewer_surfaces,
             build_graph_dashboard_mode=args.build_graph_dashboard,
             build_graph_backlog_projection_mode=args.build_graph_backlog_projection,
             build_proposal_lane_overlay_mode=args.build_proposal_lane_overlay,

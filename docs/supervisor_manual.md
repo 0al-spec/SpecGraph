@@ -134,6 +134,8 @@ particular task.
   `--build-supervisor-performance-index`
 - build an advisory minimal-seed bootstrap smoke benchmark report:
   `--build-bootstrap-smoke-benchmark`
+- refresh local viewer-facing generated surfaces in one pass:
+  `--build-viewer-surfaces`
 - build one aggregated graph dashboard for a viewer or visualizer:
   `--build-graph-dashboard`
 - build a normalized backlog projection from existing derived surfaces:
@@ -1088,6 +1090,26 @@ The first benchmark contract is `minimal_seed_structural_yield`. It is
 advisory and suitable for manual or scheduled observation before becoming a
 blocking CI gate.
 
+### Viewer surfaces refresh
+
+```bash
+python3 tools/supervisor.py --build-viewer-surfaces
+```
+
+Writes the local viewer-facing generated surfaces that ContextBuilder commonly
+reads:
+
+- `runs/graph_backlog_projection.json`
+- `runs/graph_dashboard.json`
+
+This mode is intended for local `post-merge` / `post-checkout` hooks, CI smoke
+checks, and viewer build buttons. It refreshes existing read models only: it
+does not choose an Implementation Work target scope, create new implementation
+work items, mutate canonical specs, or stage generated JSON for commit.
+
+Use this when the viewer needs a current local snapshot after the graph or
+derived runtime surfaces changed.
+
 ### Graph dashboard
 
 ```bash
@@ -1126,9 +1148,9 @@ python3 tools/supervisor.py --build-graph-backlog-projection
 Builds `runs/graph_backlog_projection.json` as a normalized work/backlog
 projection over existing derived surfaces. This is not a canonical task list:
 it is a viewer-facing read model that turns graph health, proposal runtime,
-trace, evidence, external-consumer, SpecPM, Metrics, threshold-proposal, and
-review-feedback gaps into concrete rows with `domain`, `subject_id`,
-`next_gap`, `priority`, and source artifact links.
+trace, Implementation Work, evidence, external-consumer, SpecPM, Metrics,
+threshold-proposal, and review-feedback gaps into concrete rows with `domain`,
+`subject_id`, `next_gap`, `priority`, and source artifact links.
 
 Use it when the dashboard count needs to become a clickable work queue without
 reintroducing `tasks.md` as the source of truth.
@@ -1429,11 +1451,12 @@ path.
 - `runs/graph_dashboard.json`
   - aggregated dashboard surface with headline cards and numeric section
     summaries for graph, health, proposals, implementation, evidence, external
-    consumers, external handoffs, metrics, and process feedback
+    consumers, external handoffs, metrics, Implementation Work items, and
+    process feedback
 - `runs/graph_backlog_projection.json`
   - normalized derived backlog surface with concrete next-gap rows grouped by
     domain, priority, source artifact, and named viewer filters, including
-    review-feedback gaps
+    Implementation Work and review-feedback gaps
 - `tools/proposal_lane_policy.json`
   - declarative proposal-lane contract for repository presence, authority-state
     mapping, and overlay/query semantics
