@@ -6,6 +6,8 @@ visualizers.
 
 For the dedicated `SpecPM` package-export/import viewer contract, see
 [specpm_viewer_contract.md](./specpm_viewer_contract.md).
+For the dedicated graph backlog drill-down viewer contract, see
+[graph_backlog_projection_viewer_contract.md](./graph_backlog_projection_viewer_contract.md).
 
 The important boundary is:
 

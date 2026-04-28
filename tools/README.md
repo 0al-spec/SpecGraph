@@ -8,6 +8,8 @@ For the dedicated `SpecPM` preview/materialization/import viewer contract, see
 [docs/specpm_viewer_contract.md](../docs/specpm_viewer_contract.md).
 For the ContextBuilder exploration/assumption-mode viewer contract, see
 [docs/exploration_preview_viewer_contract.md](../docs/exploration_preview_viewer_contract.md).
+For the ContextBuilder graph backlog drill-down viewer contract, see
+[docs/graph_backlog_projection_viewer_contract.md](../docs/graph_backlog_projection_viewer_contract.md).
 For the planned Implementation Work layer and delta/work-index viewer contract,
 see [docs/implementation_work_viewer_contract.md](../docs/implementation_work_viewer_contract.md).
 
@@ -358,7 +360,9 @@ Key derived artifacts:
 - `runs/graph_backlog_projection.json`: normalized work/backlog projection with
   concrete `entries[]` grouped by domain, priority, next gap, source artifact,
   and named filters, including Implementation Work and process-feedback gaps,
-  so viewers do not need `tasks.md` as a work queue
+  so viewers do not need `tasks.md` as a work queue. See
+  [docs/graph_backlog_projection_viewer_contract.md](../docs/graph_backlog_projection_viewer_contract.md)
+  for the stable viewer-facing field subset.
 - `tools/spec_trace_registry.json`: explicit strong trace contracts used to
   derive conservative `implementation_state` overlays such as `planned`,
   `implemented`, `verified`, `drifted`, and `blocked`

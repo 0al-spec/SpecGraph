@@ -13744,6 +13744,8 @@ def test_build_graph_backlog_projection_from_surfaces_normalizes_reviewable_gaps
 
     assert report["artifact_kind"] == supervisor_module.GRAPH_BACKLOG_PROJECTION_ARTIFACT_KIND
     assert report["entry_count"] == 12
+    assert report["summary"]["entry_count"] == report["entry_count"]
+    assert report["summary"]["entry_count"] == len(report["entries"])
     assert report["summary"]["domain_counts"] == {
         "evidence": 1,
         "external_consumers": 1,
