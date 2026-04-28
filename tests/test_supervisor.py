@@ -14725,6 +14725,36 @@ def test_build_graph_next_moves_prefers_ready_branch_rewrite_preview(
     assert report["tracked_artifacts_written"] is False
 
 
+def test_build_graph_next_moves_treats_malformed_branch_preview_counts_as_repairable(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    write_ready_branch_rewrite_preview_artifact(supervisor_module, repo_fixture)
+    preview_path = repo_fixture / "runs" / "branch_rewrite_preview.json"
+    preview = json.loads(preview_path.read_text(encoding="utf-8"))
+    preview["candidate_count"] = "many"
+    preview["node_count"] = "two"
+    preview_path.write_text(json.dumps(preview), encoding="utf-8")
+
+    report = supervisor_module.build_graph_next_moves(
+        [],
+        backlog_projection=fake_graph_next_moves_backlog(supervisor_module, entry_count=0),
+        proposal_runtime_index=fake_graph_next_moves_proposal_runtime(supervisor_module),
+    )
+
+    assert report["current_scene"] == "source_artifact_blocked"
+    assert report["recommended_next_move_kind"] == "repair_source_artifact"
+    assert report["source_facts"]["branch_rewrite_preview"]["status"] == "malformed"
+    assert (
+        "candidate_count must be a non-negative integer"
+        in report["source_facts"]["branch_rewrite_preview"]["error"]
+    )
+    assert (
+        "node_count must be a non-negative integer"
+        in report["source_facts"]["branch_rewrite_preview"]["error"]
+    )
+
+
 def test_build_graph_next_moves_falls_back_to_high_priority_backlog(
     supervisor_module: object,
     repo_fixture: Path,

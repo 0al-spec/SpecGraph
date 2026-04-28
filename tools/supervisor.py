@@ -23195,6 +23195,24 @@ def validate_graph_next_moves_contract(current_scene: str, move_kind: str) -> No
         raise RuntimeError("graph next moves policy/artifact drift: " + "; ".join(findings))
 
 
+def graph_next_moves_nonnegative_int_field(
+    payload: dict[str, Any],
+    field_name: str,
+) -> tuple[int, str]:
+    raw_value = payload.get(field_name, 0)
+    if raw_value is None or raw_value == "":
+        return 0, ""
+    if isinstance(raw_value, bool):
+        return 0, f"{field_name} must be a non-negative integer"
+    try:
+        value = int(raw_value)
+    except (TypeError, ValueError):
+        return 0, f"{field_name} must be a non-negative integer"
+    if value < 0:
+        return 0, f"{field_name} must be a non-negative integer"
+    return value, ""
+
+
 def load_current_branch_rewrite_preview_summary() -> tuple[dict[str, Any] | None, dict[str, Any]]:
     path = branch_rewrite_preview_path()
     artifact_path = path.relative_to(ROOT).as_posix()
@@ -23224,6 +23242,17 @@ def load_current_branch_rewrite_preview_summary() -> tuple[dict[str, Any] | None
             "generated_at": payload.get("generated_at"),
             "error": f"expected {BRANCH_REWRITE_PREVIEW_ARTIFACT_KIND}, got {artifact_kind}",
         }
+    candidate_count, candidate_error = graph_next_moves_nonnegative_int_field(
+        payload, "candidate_count"
+    )
+    node_count, node_error = graph_next_moves_nonnegative_int_field(payload, "node_count")
+    if candidate_error or node_error:
+        return None, {
+            "artifact_path": artifact_path,
+            "status": "malformed",
+            "generated_at": payload.get("generated_at"),
+            "error": "; ".join(error for error in (candidate_error, node_error) if error),
+        }
     return payload, {
         "artifact_path": artifact_path,
         "status": "available",
@@ -23234,8 +23263,8 @@ def load_current_branch_rewrite_preview_summary() -> tuple[dict[str, Any] | None
         "root_spec_id": payload.get("target", {}).get("root_spec_id")
         if isinstance(payload.get("target"), dict)
         else "",
-        "candidate_count": int(payload.get("candidate_count", 0) or 0),
-        "node_count": int(payload.get("node_count", 0) or 0),
+        "candidate_count": candidate_count,
+        "node_count": node_count,
     }
 
 
