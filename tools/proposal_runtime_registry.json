@@ -887,5 +887,49 @@
         "pattern": "\"artifact_kind\": BRANCH_REWRITE_PREVIEW_ARTIFACT_KIND"
       }
     ]
+  },
+  {
+    "proposal_id": "0041",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "tools/supervisor.py",
+      "tests/test_supervisor.py",
+      "tools/graph_next_moves_policy.json",
+      "docs/proposals/0041_graph_next_moves_game_master_surface.md"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def build_graph_next_moves("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "GRAPH_NEXT_MOVES_ARTIFACT_KIND"
+      },
+      {
+        "path": "tools/graph_next_moves_policy.json",
+        "pattern": "\"artifact_kind\": \"graph_next_moves_policy\""
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_graph_next_moves_prefers_ready_branch_rewrite_preview("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_main_builds_graph_next_moves_as_standalone_command("
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "write_graph_next_moves(report)"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "\"artifact_kind\": GRAPH_NEXT_MOVES_ARTIFACT_KIND"
+      }
+    ]
   }
 ]

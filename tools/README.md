@@ -163,10 +163,11 @@ Supervisor modes:
   so minimal-seed bootstrap yield can be inspected structurally without
   comparing exact generated spec text.
 - `--build-viewer-surfaces`: refresh local viewer-facing generated artifacts by
-  writing `runs/graph_backlog_projection.json` and `runs/graph_dashboard.json`
-  in one standalone pass. This is safe for local hooks, CI smoke checks, or
-  ContextBuilder build buttons because it does not choose implementation target
-  scope or create new implementation work items.
+  writing `runs/graph_backlog_projection.json`, `runs/graph_dashboard.json`,
+  and `runs/graph_next_moves.json` in one standalone pass. This is safe for
+  local hooks, CI smoke checks, or ContextBuilder build buttons because it does
+  not choose implementation target scope or create new implementation work
+  items.
 - Standalone artifact commands print compact JSON summaries by default. Use
   `--output-mode full` only when the complete artifact is needed on stdout; the
   canonical generated artifact is still written under `runs/`.
@@ -179,6 +180,10 @@ Supervisor modes:
   projection from existing derived graph, proposal, implementation, evidence,
   external-consumer, SpecPM, Metrics, threshold-proposal, and review-feedback
   surfaces.
+- `--build-graph-next-moves`: build `runs/graph_next_moves.json` as a
+  read-only advisory "next move" surface that selects one bounded recommended
+  operator move from branch rewrite preview, graph backlog, and proposal
+  runtime state.
 - `--build-intent-layer-overlay`: build `runs/intent_layer_overlay.json` from
   repository-tracked intent-layer nodes under `intent_layer/nodes/`, so
   pre-canonical user intent and operator-request artifacts can be inspected as
@@ -370,6 +375,10 @@ Key derived artifacts:
   so viewers do not need `tasks.md` as a work queue. See
   [docs/graph_backlog_projection_viewer_contract.md](../docs/graph_backlog_projection_viewer_contract.md)
   for the stable viewer-facing field subset.
+- `runs/graph_next_moves.json`: advisory game-master surface with
+  `current_scene`, one `recommended_next_move`, alternatives, blocked moves, and
+  compact source facts for a viewer "what should I do next?" panel. It is
+  derived-only and cannot mutate canonical specs.
 - `tools/spec_trace_registry.json`: explicit strong trace contracts used to
   derive conservative `implementation_state` overlays such as `planned`,
   `implemented`, `verified`, `drifted`, and `blocked`

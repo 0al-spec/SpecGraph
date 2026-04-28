@@ -35,6 +35,7 @@ Derived artifacts:
 - supervisor performance index: `runs/supervisor_performance_index.json`
 - graph dashboard: `runs/graph_dashboard.json`
 - graph backlog projection: `runs/graph_backlog_projection.json`
+- graph next moves: `runs/graph_next_moves.json`
 - intent-layer overlay: `runs/intent_layer_overlay.json`
 - exploration preview: `runs/exploration_preview.json`
 - branch rewrite preview: `runs/branch_rewrite_preview.json`
@@ -113,6 +114,7 @@ SPECGRAPH_VOCABULARY_RELATIVE_PATH = "tools/specgraph_vocabulary.json"
 PRE_SPEC_SEMANTICS_POLICY_RELATIVE_PATH = "tools/pre_spec_semantics_policy.json"
 EXPLORATION_PREVIEW_POLICY_RELATIVE_PATH = "tools/exploration_preview_policy.json"
 BRANCH_REWRITE_PREVIEW_POLICY_RELATIVE_PATH = "tools/branch_rewrite_preview_policy.json"
+GRAPH_NEXT_MOVES_POLICY_RELATIVE_PATH = "tools/graph_next_moves_policy.json"
 IMPLEMENTATION_DELTA_POLICY_RELATIVE_PATH = "tools/implementation_delta_policy.json"
 REVIEW_FEEDBACK_POLICY_RELATIVE_PATH = "tools/review_feedback_policy.json"
 VALIDATION_FINDINGS_POLICY_RELATIVE_PATH = "tools/validation_findings_policy.json"
@@ -178,6 +180,10 @@ def exploration_preview_policy_path() -> Path:
 
 def branch_rewrite_preview_policy_path() -> Path:
     return TOOLS_DIR / "branch_rewrite_preview_policy.json"
+
+
+def graph_next_moves_policy_path() -> Path:
+    return TOOLS_DIR / "graph_next_moves_policy.json"
 
 
 def implementation_delta_policy_path() -> Path:
@@ -601,6 +607,44 @@ def load_branch_rewrite_preview_policy() -> tuple[dict[str, Any], str]:
 BRANCH_REWRITE_PREVIEW_POLICY, BRANCH_REWRITE_PREVIEW_POLICY_SHA256 = (
     load_branch_rewrite_preview_policy()
 )
+
+
+def load_graph_next_moves_policy() -> tuple[dict[str, Any], str]:
+    path = graph_next_moves_policy_path()
+    try:
+        raw_text = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise RuntimeError(
+            f"failed to read graph next moves policy artifact: {path.as_posix()} ({exc})"
+        ) from exc
+    try:
+        payload = json.loads(raw_text)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(
+            f"malformed graph next moves policy artifact: {path.as_posix()} ({exc})"
+        ) from exc
+    if not isinstance(payload, dict):
+        raise RuntimeError(
+            "malformed graph next moves policy artifact: "
+            f"{path.as_posix()} must contain a JSON object"
+        )
+    required_sections = (
+        "repository_layout",
+        "mode_contract",
+        "move_contract",
+        "scene_priority",
+        "viewer_contract",
+    )
+    missing = [section for section in required_sections if section not in payload]
+    if missing:
+        raise RuntimeError(
+            "malformed graph next moves policy artifact: missing top-level section(s): "
+            + ", ".join(missing)
+        )
+    return payload, hashlib.sha256(raw_text.encode("utf-8")).hexdigest()
+
+
+GRAPH_NEXT_MOVES_POLICY, GRAPH_NEXT_MOVES_POLICY_SHA256 = load_graph_next_moves_policy()
 
 
 def load_implementation_delta_policy() -> tuple[dict[str, Any], str]:
@@ -1663,6 +1707,15 @@ def branch_rewrite_preview_policy_lookup(policy_path: str) -> Any:
     return copy.deepcopy(current)
 
 
+def graph_next_moves_policy_lookup(policy_path: str) -> Any:
+    current: Any = GRAPH_NEXT_MOVES_POLICY
+    for part in policy_path.split("."):
+        if not isinstance(current, dict) or part not in current:
+            raise KeyError(policy_path)
+        current = current[part]
+    return copy.deepcopy(current)
+
+
 def implementation_delta_policy_lookup(policy_path: str) -> Any:
     current: Any = IMPLEMENTATION_DELTA_POLICY
     for part in policy_path.split("."):
@@ -1864,6 +1917,14 @@ def branch_rewrite_preview_policy_reference() -> dict[str, Any]:
         "artifact_path": BRANCH_REWRITE_PREVIEW_POLICY_RELATIVE_PATH,
         "artifact_sha256": BRANCH_REWRITE_PREVIEW_POLICY_SHA256,
         "version": BRANCH_REWRITE_PREVIEW_POLICY.get("version"),
+    }
+
+
+def graph_next_moves_policy_reference() -> dict[str, Any]:
+    return {
+        "artifact_path": GRAPH_NEXT_MOVES_POLICY_RELATIVE_PATH,
+        "artifact_sha256": GRAPH_NEXT_MOVES_POLICY_SHA256,
+        "version": GRAPH_NEXT_MOVES_POLICY.get("version"),
     }
 
 
@@ -2179,6 +2240,20 @@ BRANCH_REWRITE_REWRITE_CLASSES = list(
 )
 BRANCH_REWRITE_SUGGESTED_ACTIONS = list(
     branch_rewrite_preview_policy_lookup("preview_contract.suggested_actions")
+)
+GRAPH_NEXT_MOVES_FILENAME = Path(
+    str(graph_next_moves_policy_lookup("repository_layout.next_moves_artifact"))
+).name
+GRAPH_NEXT_MOVES_ARTIFACT_KIND = str(graph_next_moves_policy_lookup("move_contract.artifact_kind"))
+GRAPH_NEXT_MOVES_SCHEMA_VERSION = int(
+    graph_next_moves_policy_lookup("move_contract.schema_version")
+)
+GRAPH_NEXT_MOVES_MODE_NAME = str(graph_next_moves_policy_lookup("mode_contract.mode_name"))
+GRAPH_NEXT_MOVES_SCENE_VALUES = list(
+    graph_next_moves_policy_lookup("move_contract.current_scene_values")
+)
+GRAPH_NEXT_MOVES_MOVE_KIND_VALUES = list(
+    graph_next_moves_policy_lookup("move_contract.move_kind_values")
 )
 IMPLEMENTATION_DELTA_SNAPSHOT_FILENAME = Path(
     str(implementation_delta_policy_lookup("repository_layout.delta_snapshot_artifact"))
@@ -8270,6 +8345,10 @@ def exploration_preview_path() -> Path:
 
 def branch_rewrite_preview_path() -> Path:
     return RUNS_DIR / BRANCH_REWRITE_PREVIEW_FILENAME
+
+
+def graph_next_moves_path() -> Path:
+    return RUNS_DIR / GRAPH_NEXT_MOVES_FILENAME
 
 
 def implementation_delta_snapshot_path() -> Path:
@@ -23091,6 +23170,392 @@ def write_graph_backlog_projection(report: dict[str, Any]) -> Path:
     return path
 
 
+def validate_graph_next_moves_mode_contract() -> dict[str, Any]:
+    mode_contract = copy.deepcopy(GRAPH_NEXT_MOVES_POLICY["mode_contract"])
+    canonical_mutations_allowed = mode_contract.get("canonical_mutations_allowed")
+    tracked_artifacts_written = mode_contract.get("tracked_artifacts_written")
+    if canonical_mutations_allowed is not False or tracked_artifacts_written is not False:
+        raise RuntimeError("malformed graph next moves mode contract: mutation flags must be false")
+    return mode_contract
+
+
+def validate_graph_next_moves_contract(current_scene: str, move_kind: str) -> None:
+    allowed_scenes = {
+        str(value).strip() for value in GRAPH_NEXT_MOVES_SCENE_VALUES if str(value).strip()
+    }
+    allowed_move_kinds = {
+        str(value).strip() for value in GRAPH_NEXT_MOVES_MOVE_KIND_VALUES if str(value).strip()
+    }
+    findings: list[str] = []
+    if current_scene not in allowed_scenes:
+        findings.append(f"invalid current_scene: {current_scene}")
+    if move_kind not in allowed_move_kinds:
+        findings.append(f"invalid move kind: {move_kind}")
+    if findings:
+        raise RuntimeError("graph next moves policy/artifact drift: " + "; ".join(findings))
+
+
+def load_current_branch_rewrite_preview_summary() -> tuple[dict[str, Any] | None, dict[str, Any]]:
+    path = branch_rewrite_preview_path()
+    artifact_path = path.relative_to(ROOT).as_posix()
+    if not path.exists():
+        return None, {
+            "artifact_path": artifact_path,
+            "status": "missing",
+            "generated_at": "",
+            "error": "",
+        }
+    payload, error = load_json_object_report(
+        path,
+        artifact_kind=BRANCH_REWRITE_PREVIEW_ARTIFACT_KIND,
+    )
+    if payload is None:
+        return None, {
+            "artifact_path": artifact_path,
+            "status": "malformed",
+            "generated_at": "",
+            "error": error,
+        }
+    artifact_kind = str(payload.get("artifact_kind", "")).strip()
+    if artifact_kind != BRANCH_REWRITE_PREVIEW_ARTIFACT_KIND:
+        return None, {
+            "artifact_path": artifact_path,
+            "status": "invalid_kind",
+            "generated_at": payload.get("generated_at"),
+            "error": f"expected {BRANCH_REWRITE_PREVIEW_ARTIFACT_KIND}, got {artifact_kind}",
+        }
+    return payload, {
+        "artifact_path": artifact_path,
+        "status": "available",
+        "generated_at": payload.get("generated_at"),
+        "preview_status": payload.get("preview_status"),
+        "review_state": payload.get("review_state"),
+        "next_gap": payload.get("next_gap"),
+        "root_spec_id": payload.get("target", {}).get("root_spec_id")
+        if isinstance(payload.get("target"), dict)
+        else "",
+        "candidate_count": int(payload.get("candidate_count", 0) or 0),
+        "node_count": int(payload.get("node_count", 0) or 0),
+    }
+
+
+def graph_next_move_record(
+    *,
+    move_id: str,
+    kind: str,
+    title: str,
+    reason: str,
+    next_gap: str,
+    source_artifacts: list[str],
+    bounded_scope: list[str] | None = None,
+    subject: dict[str, Any] | None = None,
+    command_hint: str = "",
+    success_condition: str = "",
+    review_required: bool = True,
+    blocked_by: list[str] | None = None,
+) -> dict[str, Any]:
+    return {
+        "move_id": move_id,
+        "kind": kind,
+        "title": title,
+        "reason": reason,
+        "next_gap": next_gap,
+        "source_artifacts": source_artifacts,
+        "bounded_scope": bounded_scope or [],
+        "subject": subject or {},
+        "command_hint": command_hint,
+        "success_condition": success_condition,
+        "review_required": review_required,
+        "blocked_by": blocked_by or [],
+    }
+
+
+def graph_next_moves_top_backlog_entry(
+    backlog_projection: dict[str, Any],
+) -> dict[str, Any] | None:
+    entries = [item for item in backlog_projection.get("entries", []) if isinstance(item, dict)]
+    if not entries:
+        return None
+    by_id = {str(item.get("backlog_id", "")): item for item in entries}
+    priorities = (
+        backlog_projection.get("viewer_projection", {}).get("priorities", {})
+        if isinstance(backlog_projection.get("viewer_projection"), dict)
+        else {}
+    )
+    if isinstance(priorities, dict):
+        for priority in ("high", "medium", "low", "info"):
+            backlog_ids = priorities.get(priority, [])
+            if not isinstance(backlog_ids, list):
+                continue
+            for backlog_id in backlog_ids:
+                entry = by_id.get(str(backlog_id))
+                if entry is not None:
+                    return entry
+    return entries[0]
+
+
+def graph_next_moves_from_branch_preview(
+    branch_preview: dict[str, Any],
+    branch_summary: dict[str, Any],
+) -> dict[str, Any] | None:
+    preview_status = str(branch_preview.get("preview_status", "")).strip()
+    candidate_count = int(branch_preview.get("candidate_count", 0) or 0)
+    if preview_status != "ready_for_review" or candidate_count <= 0:
+        return None
+    target = branch_preview.get("target", {})
+    resolved_spec_ids = (
+        [str(item).strip() for item in target.get("resolved_spec_ids", []) if str(item).strip()]
+        if isinstance(target, dict)
+        else []
+    )
+    root_spec_id = str(branch_summary.get("root_spec_id", "")).strip()
+    return graph_next_move_record(
+        move_id="next_move::branch_rewrite_preview::project",
+        kind="project_branch_rewrite_preview",
+        title="Project branch rewrite preview into visible work",
+        reason=(
+            "A branch rewrite preview is ready for human review, but its candidates are not "
+            "yet projected into a first-class dashboard/backlog decision surface."
+        ),
+        next_gap="project_branch_rewrite_preview",
+        source_artifacts=[branch_summary["artifact_path"]],
+        bounded_scope=resolved_spec_ids,
+        subject={
+            "root_spec_id": root_spec_id,
+            "candidate_count": candidate_count,
+            "preview_status": preview_status,
+            "review_state": branch_preview.get("review_state"),
+        },
+        command_hint=(
+            "Review runs/branch_rewrite_preview.json, then implement a bounded projection "
+            "or follow-up proposal for accepted candidates."
+        ),
+        success_condition=(
+            "Branch rewrite candidates are visible as grouped next gaps without mutating "
+            "canonical spec nodes."
+        ),
+    )
+
+
+def graph_next_moves_from_backlog_entry(entry: dict[str, Any]) -> dict[str, Any]:
+    source_artifact = str(entry.get("source_artifact", "")).strip()
+    subject_id = str(entry.get("subject_id", "")).strip()
+    next_gap = str(entry.get("next_gap", "")).strip() or "review_backlog_item"
+    title = str(entry.get("title", "")).strip() or subject_id or "Backlog item"
+    return graph_next_move_record(
+        move_id=f"next_move::backlog::{graph_backlog_identifier(str(entry.get('backlog_id', '')))}",
+        kind="review_backlog_item",
+        title=f"Review backlog item: {title}",
+        reason=(
+            "The graph backlog projection has an actionable item with the highest current "
+            "priority ordering."
+        ),
+        next_gap=next_gap,
+        source_artifacts=[str(entry.get("source_artifact_path", "")).strip()]
+        if str(entry.get("source_artifact_path", "")).strip()
+        else [graph_backlog_source_artifact_path(source_artifact)],
+        bounded_scope=[subject_id] if subject_id else [],
+        subject=copy.deepcopy(entry),
+        command_hint="Open the backlog projection entry and take one bounded follow-up action.",
+        success_condition="The selected backlog entry is resolved, reclassified, or promoted.",
+    )
+
+
+def graph_next_moves_from_runtime_backlog(
+    proposal_runtime_index: dict[str, Any],
+) -> dict[str, Any] | None:
+    backlog = proposal_runtime_index.get("reflective_backlog", {})
+    if not isinstance(backlog, dict) or int(backlog.get("entry_count", 0) or 0) <= 0:
+        return None
+    grouped = backlog.get("grouped_by_next_gap", {})
+    proposal_ids: list[str] = []
+    if isinstance(grouped, dict):
+        proposal_ids = [
+            str(item).strip()
+            for item in grouped.get("runtime_realization", [])
+            if str(item).strip()
+        ]
+    if not proposal_ids:
+        return None
+    return graph_next_move_record(
+        move_id="next_move::proposal_runtime::realize",
+        kind="realize_proposal_runtime_slice",
+        title="Realize the next proposal-runtime slice",
+        reason=(
+            "A proposal is marked implementation-relevant but still lacks a bounded runtime "
+            "realization slice."
+        ),
+        next_gap="runtime_realization",
+        source_artifacts=[proposal_runtime_index_path().relative_to(ROOT).as_posix()],
+        bounded_scope=proposal_ids[:1],
+        subject={"proposal_id": proposal_ids[0], "candidate_proposal_ids": proposal_ids},
+        command_hint=(
+            "Pick the first proposal-runtime backlog item and implement one bounded slice."
+        ),
+        success_condition="The proposal runtime index moves the selected proposal out of backlog.",
+    )
+
+
+def build_graph_next_moves(
+    specs: list[SpecNode],
+    *,
+    backlog_projection: dict[str, Any] | None = None,
+    proposal_runtime_index: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    mode_contract = validate_graph_next_moves_mode_contract()
+    if backlog_projection is None:
+        backlog_projection = build_graph_backlog_projection(specs)
+    if proposal_runtime_index is None:
+        proposal_runtime_index = build_proposal_runtime_index()
+    branch_preview, branch_summary = load_current_branch_rewrite_preview_summary()
+
+    alternatives: list[dict[str, Any]] = []
+    blocked_moves: list[dict[str, Any]] = []
+    branch_move = (
+        graph_next_moves_from_branch_preview(branch_preview, branch_summary)
+        if branch_preview is not None
+        else None
+    )
+    backlog_entry = graph_next_moves_top_backlog_entry(backlog_projection)
+    backlog_move = graph_next_moves_from_backlog_entry(backlog_entry) if backlog_entry else None
+    runtime_move = graph_next_moves_from_runtime_backlog(proposal_runtime_index)
+
+    if branch_summary.get("status") in {"malformed", "invalid_kind"}:
+        current_scene = "source_artifact_blocked"
+        scene_confidence = "high"
+        recommended_move = graph_next_move_record(
+            move_id="next_move::branch_rewrite_preview::repair_source",
+            kind="repair_source_artifact",
+            title="Repair branch rewrite preview artifact",
+            reason=(
+                "The existing branch rewrite preview artifact cannot be trusted as a source "
+                "surface for next-move guidance."
+            ),
+            next_gap="repair_source_artifact",
+            source_artifacts=[str(branch_summary.get("artifact_path", ""))],
+            subject=copy.deepcopy(branch_summary),
+            command_hint=(
+                "Regenerate or repair runs/branch_rewrite_preview.json before acting on it."
+            ),
+            success_condition="The branch rewrite preview loads with the expected artifact kind.",
+            blocked_by=[str(branch_summary.get("status", ""))],
+        )
+    elif branch_move is not None:
+        current_scene = "branch_rewrite_preview_ready"
+        scene_confidence = "high"
+        recommended_move = branch_move
+        if backlog_move is not None:
+            alternatives.append(backlog_move)
+        if runtime_move is not None:
+            alternatives.append(runtime_move)
+    elif backlog_move is not None:
+        current_scene = "high_priority_backlog"
+        scene_confidence = "medium"
+        recommended_move = backlog_move
+        if runtime_move is not None:
+            alternatives.append(runtime_move)
+    elif runtime_move is not None:
+        current_scene = "runtime_realization_backlog"
+        scene_confidence = "medium"
+        recommended_move = runtime_move
+    else:
+        current_scene = "steady_state"
+        scene_confidence = "low"
+        recommended_move = graph_next_move_record(
+            move_id="next_move::steady_state",
+            kind=str(graph_next_moves_policy_lookup("move_contract.default_done_move_kind")),
+            title="No immediate graph move detected",
+            reason="No ready preview, high-priority backlog, or runtime-realization gap was found.",
+            next_gap="none",
+            source_artifacts=[],
+            command_hint="Run viewer surface refreshes after new graph changes land.",
+            success_condition="No immediate action required.",
+            review_required=False,
+        )
+
+    if branch_summary.get("status") == "missing":
+        blocked_moves.append(
+            graph_next_move_record(
+                move_id="next_move::branch_rewrite_preview::missing",
+                kind="project_branch_rewrite_preview",
+                title="Project branch rewrite preview",
+                reason="No branch rewrite preview artifact exists yet.",
+                next_gap="build_branch_rewrite_preview",
+                source_artifacts=[str(branch_summary.get("artifact_path", ""))],
+                command_hint=(
+                    "Run python3 tools/supervisor.py --build-branch-rewrite-preview "
+                    "--target-spec SG-SPEC-XXXX after choosing a branch root."
+                ),
+                success_condition=(
+                    "runs/branch_rewrite_preview.json exists and is ready for review."
+                ),
+                blocked_by=["missing_branch_rewrite_preview"],
+            )
+        )
+
+    max_alternatives = int(graph_next_moves_policy_lookup("move_contract.max_alternatives"))
+    alternatives = alternatives[:max_alternatives]
+    blocked_moves = blocked_moves[
+        : int(graph_next_moves_policy_lookup("move_contract.max_blocked_moves"))
+    ]
+    recommended_move_kind = str(recommended_move.get("kind", "")).strip()
+    validate_graph_next_moves_contract(current_scene, recommended_move_kind)
+
+    return {
+        "artifact_kind": GRAPH_NEXT_MOVES_ARTIFACT_KIND,
+        "schema_version": GRAPH_NEXT_MOVES_SCHEMA_VERSION,
+        "generated_at": utc_now_iso(),
+        "policy_reference": graph_next_moves_policy_reference(),
+        "mode": GRAPH_NEXT_MOVES_MODE_NAME,
+        "mode_contract": mode_contract,
+        "current_scene": current_scene,
+        "scene_confidence": scene_confidence,
+        "recommended_next_move_kind": recommended_move_kind,
+        "recommended_next_move": recommended_move,
+        "alternatives": alternatives,
+        "blocked_moves": blocked_moves,
+        "source_facts": {
+            "branch_rewrite_preview": branch_summary,
+            "graph_backlog_projection": {
+                "artifact_path": graph_backlog_projection_path().relative_to(ROOT).as_posix(),
+                "generated_at": backlog_projection.get("generated_at"),
+                "entry_count": int(backlog_projection.get("entry_count", 0) or 0),
+                "priority_counts": copy.deepcopy(
+                    backlog_projection.get("summary", {}).get("priority_counts", {})
+                    if isinstance(backlog_projection.get("summary"), dict)
+                    else {}
+                ),
+                "next_gap_counts": copy.deepcopy(
+                    backlog_projection.get("summary", {}).get("next_gap_counts", {})
+                    if isinstance(backlog_projection.get("summary"), dict)
+                    else {}
+                ),
+            },
+            "proposal_runtime_index": {
+                "artifact_path": proposal_runtime_index_path().relative_to(ROOT).as_posix(),
+                "generated_at": proposal_runtime_index.get("generated_at"),
+                "entry_count": int(proposal_runtime_index.get("entry_count", 0) or 0),
+                "reflective_backlog_count": int(
+                    proposal_runtime_index.get("reflective_backlog", {}).get("entry_count", 0)
+                    if isinstance(proposal_runtime_index.get("reflective_backlog"), dict)
+                    else 0
+                ),
+            },
+        },
+        "canonical_mutations_allowed": False,
+        "tracked_artifacts_written": False,
+        "viewer_contract": copy.deepcopy(GRAPH_NEXT_MOVES_POLICY["viewer_contract"]),
+    }
+
+
+def write_graph_next_moves(report: dict[str, Any]) -> Path:
+    RUNS_DIR.mkdir(parents=True, exist_ok=True)
+    path = graph_next_moves_path()
+    with artifact_lock(path):
+        atomic_write_json(path, report)
+    return path
+
+
 def build_graph_dashboard(specs: list[SpecNode]) -> dict[str, Any]:
     graph_overlay = build_graph_health_overlay(specs)
     graph_trends = build_graph_health_trends(specs, overlay=graph_overlay)
@@ -23959,6 +24424,8 @@ def build_viewer_surfaces(specs: list[SpecNode]) -> dict[str, Any]:
     backlog_path = write_graph_backlog_projection(backlog_projection)
     dashboard = build_graph_dashboard(specs)
     dashboard_path = write_graph_dashboard(dashboard)
+    next_moves = build_graph_next_moves(specs, backlog_projection=backlog_projection)
+    next_moves_path = write_graph_next_moves(next_moves)
     return {
         "artifact_kind": "viewer_surfaces_build_report",
         "schema_version": 1,
@@ -23974,6 +24441,12 @@ def build_viewer_surfaces(specs: list[SpecNode]) -> dict[str, Any]:
                 "generated_at": dashboard.get("generated_at"),
                 "headline_count": len(dashboard.get("headline_cards", [])),
                 "section_count": len(dashboard.get("sections", {})),
+            },
+            "graph_next_moves": {
+                "artifact_path": next_moves_path.relative_to(ROOT).as_posix(),
+                "generated_at": next_moves.get("generated_at"),
+                "current_scene": next_moves.get("current_scene"),
+                "recommended_next_move_kind": next_moves.get("recommended_next_move_kind"),
             },
         },
         "notes": [
@@ -24016,6 +24489,9 @@ def supervisor_output_summary(payload: dict[str, Any]) -> dict[str, Any]:
         "preview_status",
         "review_state",
         "next_gap",
+        "current_scene",
+        "scene_confidence",
+        "recommended_next_move_kind",
         "canonical_mutations_allowed",
         "tracked_artifacts_written",
         "runtime_code_mutations_allowed",
@@ -27539,6 +28015,7 @@ def main(
     build_viewer_surfaces_mode: bool = False,
     build_graph_dashboard_mode: bool = False,
     build_graph_backlog_projection_mode: bool = False,
+    build_graph_next_moves_mode: bool = False,
     build_proposal_lane_overlay_mode: bool = False,
     build_proposal_runtime_index_mode: bool = False,
     build_proposal_promotion_index_mode: bool = False,
@@ -27617,6 +28094,7 @@ def main(
         "--build-viewer-surfaces": build_viewer_surfaces_mode,
         "--build-graph-dashboard": build_graph_dashboard_mode,
         "--build-graph-backlog-projection": build_graph_backlog_projection_mode,
+        "--build-graph-next-moves": build_graph_next_moves_mode,
         "--build-proposal-lane-overlay": build_proposal_lane_overlay_mode,
         "--build-proposal-runtime-index": build_proposal_runtime_index_mode,
         "--build-proposal-promotion-index": build_proposal_promotion_index_mode,
@@ -29447,6 +29925,41 @@ def main(
         emit_supervisor_json(report, output_mode=normalized_output_mode)
         return 0
 
+    if build_graph_next_moves_mode:
+        if any(
+            (
+                dry_run,
+                auto_approve,
+                loop,
+                resolve_gate,
+                decision,
+                note,
+                target_spec,
+                split_proposal,
+                apply_split_proposal,
+                operator_note,
+                mutation_budget,
+                run_authority,
+                execution_profile,
+                child_model,
+                child_timeout_seconds,
+                verbose,
+                list_stale_runtime,
+                clean_stale_runtime,
+                observe_graph_health_mode,
+                operator_request_packet_path,
+            )
+        ):
+            print(
+                "--build-graph-next-moves must be used as a standalone command",
+                file=sys.stderr,
+            )
+            return 1
+        report = build_graph_next_moves(specs)
+        write_graph_next_moves(report)
+        emit_supervisor_json(report, output_mode=normalized_output_mode)
+        return 0
+
     if build_proposal_runtime_index_mode:
         if any(
             (
@@ -30420,6 +30933,14 @@ if __name__ == "__main__":
         ),
     )
     parser.add_argument(
+        "--build-graph-next-moves",
+        action="store_true",
+        help=(
+            "Build a read-only graph next-moves surface that recommends one bounded "
+            "operator move from current derived graph state"
+        ),
+    )
+    parser.add_argument(
         "--build-proposal-lane-overlay",
         action="store_true",
         help=(
@@ -30600,6 +31121,7 @@ if __name__ == "__main__":
             build_viewer_surfaces_mode=args.build_viewer_surfaces,
             build_graph_dashboard_mode=args.build_graph_dashboard,
             build_graph_backlog_projection_mode=args.build_graph_backlog_projection,
+            build_graph_next_moves_mode=args.build_graph_next_moves,
             build_proposal_lane_overlay_mode=args.build_proposal_lane_overlay,
             build_proposal_runtime_index_mode=args.build_proposal_runtime_index,
             build_proposal_promotion_index_mode=args.build_proposal_promotion_index,

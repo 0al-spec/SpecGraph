@@ -13525,8 +13525,30 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
             "viewer_projection": {"headline_card_ids": ["total_specs"]},
         }
 
+    def fake_next_moves(
+        specs: list[object],
+        *,
+        backlog_projection: dict[str, object] | None = None,
+        proposal_runtime_index: dict[str, object] | None = None,
+    ) -> dict[str, object]:
+        assert len(specs) == 1
+        assert backlog_projection is not None
+        assert proposal_runtime_index is None
+        return {
+            "artifact_kind": supervisor_module.GRAPH_NEXT_MOVES_ARTIFACT_KIND,
+            "schema_version": supervisor_module.GRAPH_NEXT_MOVES_SCHEMA_VERSION,
+            "generated_at": "2026-04-27T00:00:02Z",
+            "current_scene": "steady_state",
+            "scene_confidence": "low",
+            "recommended_next_move_kind": "none",
+            "recommended_next_move": {"kind": "none"},
+            "canonical_mutations_allowed": False,
+            "tracked_artifacts_written": False,
+        }
+
     monkeypatch.setattr(supervisor_module, "build_graph_backlog_projection", fake_backlog)
     monkeypatch.setattr(supervisor_module, "build_graph_dashboard", fake_dashboard)
+    monkeypatch.setattr(supervisor_module, "build_graph_next_moves", fake_next_moves)
 
     exit_code = supervisor_module.main(build_viewer_surfaces_mode=True)
 
@@ -13535,6 +13557,7 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
     assert report["artifact_kind"] == "viewer_surfaces_build_report"
     assert report["written_artifacts"]["graph_backlog_projection"]["entry_count"] == 1
     assert report["written_artifacts"]["graph_dashboard"]["headline_count"] == 1
+    assert report["written_artifacts"]["graph_next_moves"]["current_scene"] == "steady_state"
     assert (
         json.loads(
             (repo_fixture / "runs" / "graph_backlog_projection.json").read_text(encoding="utf-8")
@@ -13544,6 +13567,12 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
     assert json.loads((repo_fixture / "runs" / "graph_dashboard.json").read_text(encoding="utf-8"))[
         "viewer_projection"
     ]["headline_card_ids"] == ["total_specs"]
+    assert (
+        json.loads((repo_fixture / "runs" / "graph_next_moves.json").read_text(encoding="utf-8"))[
+            "recommended_next_move_kind"
+        ]
+        == "none"
+    )
 
 
 def test_build_graph_backlog_projection_from_surfaces_normalizes_reviewable_gaps(
@@ -14577,6 +14606,204 @@ def test_main_rejects_combined_branch_rewrite_preview_and_refinement_flags(
     assert exit_code == 1
     captured = capsys.readouterr()
     assert "--build-branch-rewrite-preview must be used as a standalone command" in (captured.err)
+
+
+def write_ready_branch_rewrite_preview_artifact(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    (repo_fixture / "runs" / "branch_rewrite_preview.json").write_text(
+        json.dumps(
+            {
+                "artifact_kind": supervisor_module.BRANCH_REWRITE_PREVIEW_ARTIFACT_KIND,
+                "schema_version": supervisor_module.BRANCH_REWRITE_PREVIEW_SCHEMA_VERSION,
+                "generated_at": "2026-04-28T00:00:00Z",
+                "preview_status": "ready_for_review",
+                "review_state": "preview_only",
+                "next_gap": "human_review_before_apply",
+                "target": {
+                    "root_spec_id": "SG-SPEC-0001",
+                    "resolved_spec_ids": ["SG-SPEC-0001", "SG-SPEC-0002"],
+                },
+                "candidate_count": 2,
+                "node_count": 2,
+            }
+        ),
+        encoding="utf-8",
+    )
+
+
+def fake_graph_next_moves_backlog(
+    supervisor_module: object,
+    *,
+    entry_count: int = 1,
+) -> dict[str, object]:
+    if entry_count <= 0:
+        return {
+            "artifact_kind": supervisor_module.GRAPH_BACKLOG_PROJECTION_ARTIFACT_KIND,
+            "schema_version": supervisor_module.GRAPH_BACKLOG_PROJECTION_SCHEMA_VERSION,
+            "generated_at": "2026-04-28T00:00:01Z",
+            "entry_count": 0,
+            "entries": [],
+            "summary": {"priority_counts": {}, "next_gap_counts": {}},
+            "viewer_projection": {"priorities": {}},
+        }
+    backlog_id = "graph_health_overlay::health::SG-SPEC-0001::resolve_review_gate"
+    return {
+        "artifact_kind": supervisor_module.GRAPH_BACKLOG_PROJECTION_ARTIFACT_KIND,
+        "schema_version": supervisor_module.GRAPH_BACKLOG_PROJECTION_SCHEMA_VERSION,
+        "generated_at": "2026-04-28T00:00:01Z",
+        "entry_count": 1,
+        "entries": [
+            {
+                "backlog_id": backlog_id,
+                "domain": "health",
+                "source_artifact": "graph_health_overlay",
+                "source_artifact_path": "runs/graph_health_overlay.json",
+                "subject_kind": "spec",
+                "subject_id": "SG-SPEC-0001",
+                "title": "Golden Path Node",
+                "status": "review_pending",
+                "review_state": "ready_for_review",
+                "next_gap": "resolve_review_gate",
+                "priority": "high",
+                "details": {},
+            }
+        ],
+        "summary": {
+            "priority_counts": {"high": 1},
+            "next_gap_counts": {"resolve_review_gate": 1},
+        },
+        "viewer_projection": {"priorities": {"high": [backlog_id]}},
+    }
+
+
+def fake_graph_next_moves_proposal_runtime(
+    supervisor_module: object,
+    *,
+    backlog_count: int = 0,
+) -> dict[str, object]:
+    return {
+        "artifact_kind": "proposal_runtime_index",
+        "schema_version": 1,
+        "generated_at": "2026-04-28T00:00:02Z",
+        "entry_count": 1 if backlog_count else 0,
+        "entries": [],
+        "reflective_backlog": {
+            "entry_count": backlog_count,
+            "grouped_by_next_gap": {"runtime_realization": ["0041"]} if backlog_count else {},
+        },
+    }
+
+
+def test_build_graph_next_moves_prefers_ready_branch_rewrite_preview(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    write_ready_branch_rewrite_preview_artifact(supervisor_module, repo_fixture)
+
+    report = supervisor_module.build_graph_next_moves(
+        supervisor_module.load_specs(),
+        backlog_projection=fake_graph_next_moves_backlog(supervisor_module),
+        proposal_runtime_index=fake_graph_next_moves_proposal_runtime(
+            supervisor_module,
+            backlog_count=1,
+        ),
+    )
+
+    assert report["artifact_kind"] == supervisor_module.GRAPH_NEXT_MOVES_ARTIFACT_KIND
+    assert report["current_scene"] == "branch_rewrite_preview_ready"
+    assert report["scene_confidence"] == "high"
+    assert report["recommended_next_move_kind"] == "project_branch_rewrite_preview"
+    assert report["recommended_next_move"]["subject"]["root_spec_id"] == "SG-SPEC-0001"
+    assert report["recommended_next_move"]["bounded_scope"] == [
+        "SG-SPEC-0001",
+        "SG-SPEC-0002",
+    ]
+    assert report["alternatives"][0]["kind"] == "review_backlog_item"
+    assert report["canonical_mutations_allowed"] is False
+    assert report["tracked_artifacts_written"] is False
+
+
+def test_build_graph_next_moves_falls_back_to_high_priority_backlog(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    _ = repo_fixture
+    report = supervisor_module.build_graph_next_moves(
+        [],
+        backlog_projection=fake_graph_next_moves_backlog(supervisor_module),
+        proposal_runtime_index=fake_graph_next_moves_proposal_runtime(supervisor_module),
+    )
+
+    assert report["current_scene"] == "high_priority_backlog"
+    assert report["recommended_next_move_kind"] == "review_backlog_item"
+    assert report["recommended_next_move"]["subject"]["subject_id"] == "SG-SPEC-0001"
+    assert report["blocked_moves"][0]["blocked_by"] == ["missing_branch_rewrite_preview"]
+
+
+def test_build_graph_next_moves_reports_steady_state_when_no_gap_is_visible(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    _ = repo_fixture
+    report = supervisor_module.build_graph_next_moves(
+        [],
+        backlog_projection=fake_graph_next_moves_backlog(supervisor_module, entry_count=0),
+        proposal_runtime_index=fake_graph_next_moves_proposal_runtime(supervisor_module),
+    )
+
+    assert report["current_scene"] == "steady_state"
+    assert report["recommended_next_move_kind"] == "none"
+    assert report["recommended_next_move"]["review_required"] is False
+
+
+def test_main_builds_graph_next_moves_as_standalone_command(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    def fake_report(specs: list[object]) -> dict[str, object]:
+        assert len(specs) == 1
+        return {
+            "artifact_kind": supervisor_module.GRAPH_NEXT_MOVES_ARTIFACT_KIND,
+            "schema_version": supervisor_module.GRAPH_NEXT_MOVES_SCHEMA_VERSION,
+            "generated_at": "2026-04-28T00:00:00Z",
+            "current_scene": "steady_state",
+            "scene_confidence": "low",
+            "recommended_next_move_kind": "none",
+            "recommended_next_move": {"kind": "none"},
+            "canonical_mutations_allowed": False,
+            "tracked_artifacts_written": False,
+        }
+
+    monkeypatch.setattr(supervisor_module, "build_graph_next_moves", fake_report)
+
+    exit_code = supervisor_module.main(build_graph_next_moves_mode=True)
+
+    assert exit_code == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["artifact_kind"] == supervisor_module.GRAPH_NEXT_MOVES_ARTIFACT_KIND
+    assert report["current_scene"] == "steady_state"
+    persisted = json.loads(
+        (repo_fixture / "runs" / "graph_next_moves.json").read_text(encoding="utf-8")
+    )
+    assert persisted["recommended_next_move_kind"] == "none"
+
+
+def test_main_rejects_combined_graph_next_moves_and_target_spec(
+    supervisor_module: object,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    exit_code = supervisor_module.main(
+        build_graph_next_moves_mode=True,
+        target_spec="SG-SPEC-0001",
+    )
+
+    assert exit_code == 1
+    captured = capsys.readouterr()
+    assert "--build-graph-next-moves must be used as a standalone command" in captured.err
 
 
 def write_implementation_source_artifacts(repo_fixture: Path) -> None:

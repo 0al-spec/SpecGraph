@@ -142,6 +142,8 @@ particular task.
   `--build-graph-dashboard`
 - build a normalized backlog projection from existing derived surfaces:
   `--build-graph-backlog-projection`
+- build a read-only advisory next-move surface:
+  `--build-graph-next-moves`
 - build a repository-tracked intent-layer overlay:
   `--build-intent-layer-overlay`
 - build a review-only assumption-mode exploration preview from root intent text:
@@ -1105,6 +1107,7 @@ reads:
 
 - `runs/graph_backlog_projection.json`
 - `runs/graph_dashboard.json`
+- `runs/graph_next_moves.json`
 
 This mode is intended for local `post-merge` / `post-checkout` hooks, CI smoke
 checks, and viewer build buttons. It refreshes existing read models only: it
@@ -1168,6 +1171,30 @@ threshold-proposal, and review-feedback gaps into concrete rows with `domain`,
 
 Use it when the dashboard count needs to become a clickable work queue without
 reintroducing `tasks.md` as the source of truth.
+
+### Graph next moves
+
+```bash
+make next-move
+```
+
+Builds `runs/graph_next_moves.json` as a read-only advisory surface that
+answers "what should I do next?" from current graph-derived state.
+
+The artifact is intentionally game-master-like: it describes the current scene,
+selects one bounded recommended move, and keeps alternatives or blocked moves
+visible without applying them.
+
+Initial source priority is:
+
+- malformed source artifact repair
+- ready branch rewrite preview
+- highest-priority graph backlog entry
+- proposal runtime realization backlog
+- steady state
+
+The command never mutates canonical specs, proposal-lane nodes, intent-layer
+nodes, queues, or downstream repositories.
 
 ### Proposal-lane overlay
 
@@ -1474,6 +1501,9 @@ path.
   - normalized derived backlog surface with concrete next-gap rows grouped by
     domain, priority, source artifact, and named viewer filters, including
     Implementation Work and review-feedback gaps
+- `runs/graph_next_moves.json`
+  - advisory derived surface with `current_scene`, one recommended bounded move,
+    alternatives, blocked moves, and compact source facts for viewer guidance
 - `tools/proposal_lane_policy.json`
   - declarative proposal-lane contract for repository presence, authority-state
     mapping, and overlay/query semantics
