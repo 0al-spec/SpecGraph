@@ -11628,7 +11628,6 @@ def test_build_metric_signal_index_reports_threshold_breaches(
         ),
         encoding="utf-8",
     )
-
     monkeypatch.setattr(
         supervisor_module,
         "build_spec_trace_index",
@@ -12967,6 +12966,7 @@ def test_build_graph_dashboard_aggregates_runtime_surfaces(
         ),
         encoding="utf-8",
     )
+    write_ready_branch_rewrite_preview_artifact(supervisor_module, repo_fixture)
 
     monkeypatch.setattr(
         supervisor_module,
@@ -13382,6 +13382,12 @@ def test_build_graph_dashboard_aggregates_runtime_surfaces(
     assert report["sections"]["health"]["retrospective_refactor_candidate_spec_ids"] == [
         "SG-SPEC-0001"
     ]
+    assert report["sections"]["health"]["branch_rewrite_preview_status"] == "ready_for_review"
+    assert report["sections"]["health"]["branch_rewrite_candidate_count"] == 2
+    assert report["sections"]["health"]["branch_rewrite_candidate_spec_ids"] == [
+        "SG-SPEC-0001",
+        "SG-SPEC-0002",
+    ]
     assert report["sections"]["proposals"]["retrospective_refactor_queue_count"] == 1
     assert report["sections"]["proposals"]["retrospective_refactor_proposal_count"] == 1
     assert report["sections"]["implementation"]["implementation_state_counts"] == {
@@ -13429,6 +13435,7 @@ def test_build_graph_dashboard_aggregates_runtime_surfaces(
     assert by_card_id["implementation_work_open"]["value"] == 1
     assert by_card_id["structural_pressure_specs"]["value"] == 1
     assert by_card_id["retrospective_refactor_candidates"]["value"] == 1
+    assert by_card_id["branch_rewrite_candidates"]["value"] == 2
     assert by_card_id["stable_bridges_ready"]["value"] == 1
     assert by_card_id["ready_external_handoffs"]["value"] == 1
     assert by_card_id["specpm_adoption_visible"]["value"] == 1
@@ -13436,8 +13443,9 @@ def test_build_graph_dashboard_aggregates_runtime_surfaces(
     assert by_card_id["metrics_feedback_visible"]["value"] == 1
     assert by_card_id["metrics_source_promotion_ready"]["value"] == 1
     assert by_card_id["review_feedback_open"]["value"] == 1
-    assert by_card_id["graph_backlog_open"]["value"] == 5
+    assert by_card_id["graph_backlog_open"]["value"] == 7
     assert report["sections"]["backlog"]["domain_counts"] == {
+        "branch_rewrite": 2,
         "health": 1,
         "implementation": 1,
         "process_feedback": 1,
@@ -13449,10 +13457,11 @@ def test_build_graph_dashboard_aggregates_runtime_surfaces(
         == 1
     )
     assert report["viewer_projection"]["named_filters"]["retrospective_refactor_candidates"] == 1
+    assert report["viewer_projection"]["named_filters"]["branch_rewrite_candidates"] == 2
     assert report["viewer_projection"]["named_filters"]["review_feedback_open"] == 1
     assert report["viewer_projection"]["named_filters"]["review_feedback_invalid"] == 1
     assert report["viewer_projection"]["named_filters"]["review_feedback_accepted_risk"] == 1
-    assert report["viewer_projection"]["named_filters"]["graph_backlog_open"] == 5
+    assert report["viewer_projection"]["named_filters"]["graph_backlog_open"] == 7
 
 
 def test_main_builds_graph_dashboard_as_standalone_command(
@@ -13769,13 +13778,46 @@ def test_build_graph_backlog_projection_from_surfaces_normalizes_reviewable_gaps
                 ],
             },
         },
+        branch_rewrite_preview={
+            "artifact_kind": supervisor_module.BRANCH_REWRITE_PREVIEW_ARTIFACT_KIND,
+            "generated_at": "2026-04-24T00:00:00Z",
+            "preview_status": "ready_for_review",
+            "review_state": "preview_only",
+            "target": {"root_spec_id": "SG-SPEC-0001"},
+            "branch_story": {"story_gaps": ["SG-SPEC-0001", "SG-SPEC-0002"]},
+            "node_rewrite_candidates": [
+                {
+                    "spec_id": "SG-SPEC-0001",
+                    "title": "Root",
+                    "suggested_action": "rewrite_node_role_boundary",
+                    "risk_level": "medium",
+                    "rewrite_classes": ["remove_graph_topology_prose"],
+                    "findings": ["role_obscured"],
+                    "rewrite_recommendation": "Rewrite in domain-first prose.",
+                    "current_role_summary": "Current root summary",
+                    "proposed_summary": "Proposed root summary",
+                },
+                {
+                    "spec_id": "SG-SPEC-0002",
+                    "title": "Trace target",
+                    "suggested_action": "rewrite_node_role_boundary",
+                    "risk_level": "medium",
+                    "rewrite_classes": ["clarify_boundary"],
+                    "findings": ["role_obscured"],
+                    "rewrite_recommendation": "Clarify boundary.",
+                    "current_role_summary": "Current child summary",
+                    "proposed_summary": "Proposed child summary",
+                },
+            ],
+        },
     )
 
     assert report["artifact_kind"] == supervisor_module.GRAPH_BACKLOG_PROJECTION_ARTIFACT_KIND
-    assert report["entry_count"] == 12
+    assert report["entry_count"] == 14
     assert report["summary"]["entry_count"] == report["entry_count"]
     assert report["summary"]["entry_count"] == len(report["entries"])
     assert report["summary"]["domain_counts"] == {
+        "branch_rewrite": 2,
         "evidence": 1,
         "external_consumers": 1,
         "health": 1,
@@ -13785,9 +13827,11 @@ def test_build_graph_backlog_projection_from_surfaces_normalizes_reviewable_gaps
         "proposals": 2,
         "specpm": 1,
     }
-    assert report["summary"]["priority_counts"]["high"] == 5
+    assert report["summary"]["priority_counts"]["high"] == 7
     assert report["summary"]["priority_counts"]["info"] == 1
+    assert report["summary"]["source_artifact_counts"]["branch_rewrite_preview"] == 2
     assert report["summary"]["source_artifact_counts"]["implementation_work_index"] == 1
+    assert report["summary"]["next_gap_counts"]["review_branch_rewrite_candidate"] == 2
     assert report["summary"]["next_gap_counts"]["attach_trace_contract"] == 1
     assert report["summary"]["next_gap_counts"]["attach_trace_baseline"] == 1
     assert report["summary"]["next_gap_counts"]["runtime_realization"] == 1
@@ -13795,6 +13839,8 @@ def test_build_graph_backlog_projection_from_surfaces_normalizes_reviewable_gaps
     assert report["viewer_projection"]["named_filters"]["missing_evidence_contract"]
     assert report["viewer_projection"]["named_filters"]["metric_threshold_pressure"]
     assert report["viewer_projection"]["named_filters"]["promotion_review_ready"]
+    assert report["viewer_projection"]["named_filters"]["branch_rewrite_candidates"]
+    assert report["viewer_projection"]["named_filters"]["branch_rewrite_ready"]
     assert report["viewer_projection"]["named_filters"]["blocked_by_repo_state"]
     assert report["viewer_projection"]["named_filters"]["review_feedback_open"]
     assert report["viewer_projection"]["named_filters"]["review_feedback_invalid"]
@@ -14625,8 +14671,37 @@ def write_ready_branch_rewrite_preview_artifact(
                     "root_spec_id": "SG-SPEC-0001",
                     "resolved_spec_ids": ["SG-SPEC-0001", "SG-SPEC-0002"],
                 },
+                "branch_story": {
+                    "story_gaps": ["SG-SPEC-0001", "SG-SPEC-0002"],
+                },
                 "candidate_count": 2,
                 "node_count": 2,
+                "node_rewrite_candidates": [
+                    {
+                        "spec_id": "SG-SPEC-0001",
+                        "title": "Golden Path Node",
+                        "suggested_action": "rewrite_node_role_boundary",
+                        "risk_level": "medium",
+                        "rewrite_classes": ["remove_graph_topology_prose"],
+                        "findings": ["node_role_is_obscured_by_topology_or_neighbor_references"],
+                        "rewrite_recommendation": "Rewrite in domain-first prose.",
+                        "current_role_summary": "Current summary",
+                        "proposed_summary": "Proposed role boundary",
+                        "proposed_patch_preview": [],
+                    },
+                    {
+                        "spec_id": "SG-SPEC-0002",
+                        "title": "Child Path Node",
+                        "suggested_action": "rewrite_node_role_boundary",
+                        "risk_level": "medium",
+                        "rewrite_classes": ["clarify_boundary"],
+                        "findings": ["node_role_is_obscured_by_topology_or_neighbor_references"],
+                        "rewrite_recommendation": "Clarify the role boundary.",
+                        "current_role_summary": "Current child summary",
+                        "proposed_summary": "Proposed child boundary",
+                        "proposed_patch_preview": [],
+                    },
+                ],
             }
         ),
         encoding="utf-8",
@@ -14723,6 +14798,57 @@ def test_build_graph_next_moves_prefers_ready_branch_rewrite_preview(
     assert report["alternatives"][0]["kind"] == "review_backlog_item"
     assert report["canonical_mutations_allowed"] is False
     assert report["tracked_artifacts_written"] is False
+
+
+def test_build_graph_next_moves_stops_projecting_after_branch_preview_reaches_backlog(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    write_ready_branch_rewrite_preview_artifact(supervisor_module, repo_fixture)
+    backlog_id = (
+        "branch_rewrite_preview::branch_rewrite::SG-SPEC-0001::review_branch_rewrite_candidate"
+    )
+    backlog_projection = {
+        "artifact_kind": supervisor_module.GRAPH_BACKLOG_PROJECTION_ARTIFACT_KIND,
+        "schema_version": supervisor_module.GRAPH_BACKLOG_PROJECTION_SCHEMA_VERSION,
+        "generated_at": "2026-04-28T00:00:01Z",
+        "entry_count": 2,
+        "entries": [
+            {
+                "backlog_id": backlog_id,
+                "domain": "branch_rewrite",
+                "source_artifact": "branch_rewrite_preview",
+                "source_artifact_path": "runs/branch_rewrite_preview.json",
+                "subject_kind": "spec",
+                "subject_id": "SG-SPEC-0001",
+                "title": "Golden Path Node",
+                "status": "rewrite_node_role_boundary",
+                "review_state": "preview_only",
+                "next_gap": "review_branch_rewrite_candidate",
+                "priority": "high",
+                "details": {},
+            }
+        ],
+        "summary": {
+            "source_artifact_counts": {"branch_rewrite_preview": 2},
+            "priority_counts": {"high": 2},
+            "next_gap_counts": {"review_branch_rewrite_candidate": 2},
+        },
+        "viewer_projection": {"priorities": {"high": [backlog_id]}},
+    }
+
+    report = supervisor_module.build_graph_next_moves(
+        supervisor_module.load_specs(),
+        backlog_projection=backlog_projection,
+        proposal_runtime_index=fake_graph_next_moves_proposal_runtime(supervisor_module),
+    )
+
+    assert report["current_scene"] == "high_priority_backlog"
+    assert report["recommended_next_move_kind"] == "review_backlog_item"
+    assert report["recommended_next_move"]["subject"]["source_artifact"] == (
+        "branch_rewrite_preview"
+    )
+    assert report["recommended_next_move"]["next_gap"] == "review_branch_rewrite_candidate"
 
 
 def test_build_graph_next_moves_treats_malformed_branch_preview_counts_as_repairable(

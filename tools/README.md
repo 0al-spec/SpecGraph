@@ -179,7 +179,8 @@ Supervisor modes:
   `runs/graph_backlog_projection.json` as a normalized viewer-facing backlog
   projection from existing derived graph, proposal, implementation, evidence,
   external-consumer, SpecPM, Metrics, threshold-proposal, and review-feedback
-  surfaces.
+  surfaces, including reviewable branch rewrite preview candidates when a
+  current preview is ready.
 - `--build-graph-next-moves`: build `runs/graph_next_moves.json` as a
   read-only advisory "next move" surface that selects one bounded recommended
   operator move from branch rewrite preview, graph backlog, and proposal
@@ -269,7 +270,8 @@ Key derived artifacts:
   nodes; no canonical or tracked artifact mutations are allowed by this artifact
 - `runs/branch_rewrite_preview.json`: review-only branch rewrite preview for
   one active `refines` subtree, including branch-story summary, per-node
-  rewrite candidates, status mapping, risk, and explicit mutation boundary
+  rewrite candidates, status mapping, risk, explicit mutation boundary, and
+  backlog/dashboard projection when candidates are ready for review
 - `runs/implementation_delta_snapshot.json`: derived Implementation Work
   planning snapshot that captures baseline, explicit target scope, delta fields,
   source-artifact availability, readiness, and next gap without canonical or
@@ -371,8 +373,9 @@ Key derived artifacts:
   health
 - `runs/graph_backlog_projection.json`: normalized work/backlog projection with
   concrete `entries[]` grouped by domain, priority, next gap, source artifact,
-  and named filters, including Implementation Work and process-feedback gaps,
-  so viewers do not need `tasks.md` as a work queue. See
+  and named filters, including branch rewrite candidates, Implementation Work,
+  and process-feedback gaps, so viewers do not need `tasks.md` as a work queue.
+  See
   [docs/graph_backlog_projection_viewer_contract.md](../docs/graph_backlog_projection_viewer_contract.md)
   for the stable viewer-facing field subset.
 - `runs/graph_next_moves.json`: advisory game-master surface with

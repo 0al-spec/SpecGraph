@@ -201,6 +201,7 @@ review-feedback follow-up.
 
 Current domains:
 
+- `branch_rewrite`
 - `health`
 - `proposals`
 - `implementation`
@@ -246,6 +247,8 @@ Each group value is a list of `backlog_id` strings.
 Known named filters:
 
 - `ready_for_review`
+- `branch_rewrite_candidates`
+- `branch_rewrite_ready`
 - `blocked_by_repo_state`
 - `human_review_required`
 - `missing_trace_contract`
@@ -258,6 +261,23 @@ Known named filters:
 - `review_feedback_accepted_risk`
 
 Future named filters are allowed.
+
+### Branch Rewrite Rows
+
+When `runs/branch_rewrite_preview.json` is present and `preview_status` is
+`ready_for_review`, each actionable node rewrite candidate is projected as a
+backlog entry with:
+
+- `source_artifact: "branch_rewrite_preview"`
+- `domain: "branch_rewrite"`
+- `subject_kind: "spec"`
+- `next_gap: "review_branch_rewrite_candidate"`
+- `priority: "high"`
+
+The `details` object includes the preview root, risk level, rewrite classes,
+findings, current/proposed role summaries, and whether the candidate is part of
+the branch story gap list. Viewers should render these rows as review-first
+decisions, not as applied canonical rewrites.
 
 ## 9. Dashboard Relationship
 
