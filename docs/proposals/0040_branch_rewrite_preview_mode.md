@@ -1,6 +1,8 @@
 # Branch Rewrite Preview Mode
 
-Status: Draft proposal
+## Status
+
+Draft proposal
 
 ## Context
 
@@ -71,7 +73,7 @@ Add a supervisor mode:
 ```bash
 python3 tools/supervisor.py \
   --build-branch-rewrite-preview \
-  --branch-rewrite-root SG-SPEC-0026
+  --target-spec SG-SPEC-0026
 ```
 
 The mode builds a derived, review-only artifact:
@@ -103,7 +105,8 @@ This first slice is preview-only.
 
 Initial inputs:
 
-- `root_spec_id`: required active branch root.
+- `root_spec_id`: required active branch root, supplied through the existing
+  `--target-spec` selector.
 - `max_depth`: optional depth limit, default bounded by policy.
 - `include_historical`: optional boolean, default `false`.
 - `include_descendants`: optional traversal mode, default active `refines`
@@ -120,6 +123,28 @@ The supervisor should reject or degrade gracefully when:
 Invalid input should produce a structured artifact with `preview_status` such as
 `invalid_root`, `branch_too_large`, or `blocked_by_unresolved_gate`, not a crash.
 
+### Status Mapping
+
+`preview_status`, `review_state`, and `next_gap` should be derived together so
+viewers do not need to infer blocked states.
+
+Initial mapping:
+
+- `ready_for_review` -> `review_state: preview_only`,
+  `next_gap: human_review_before_apply`
+- `no_candidates` -> `review_state: preview_only`,
+  `next_gap: no_branch_rewrite_needed`
+- `invalid_root` -> `review_state: blocked`,
+  `next_gap: repair_branch_rewrite_target`
+- `branch_too_large` -> `review_state: blocked`,
+  `next_gap: narrow_branch_rewrite_scope`
+- `blocked_by_unresolved_gate` -> `review_state: blocked`,
+  `next_gap: resolve_branch_gate_before_preview`
+- `broken_reference` -> `review_state: blocked`,
+  `next_gap: repair_graph_reference`
+- `empty_branch` -> `review_state: blocked`,
+  `next_gap: choose_nonempty_branch`
+
 ## Output Contract
 
 The artifact should include:
@@ -131,13 +156,25 @@ The artifact should include:
   "generated_at": "...",
   "preview_status": "ready_for_review",
   "review_state": "preview_only",
-  "mutation_boundary": {
-    "canonical_mutations_allowed": false,
-    "tracked_artifacts_written": false
-  },
+  "canonical_mutations_allowed": false,
+  "tracked_artifacts_written": false,
   "target": {
     "root_spec_id": "SG-SPEC-0026",
     "resolved_spec_ids": []
+  },
+  "provenance": {
+    "source_graph_ref": "",
+    "source_git_commit": "",
+    "selected_spec_ids": [],
+    "inspected_edges": [],
+    "policy_refs": [
+      "docs/proposals/0036_topology_facts_are_not_spec_prose.md"
+    ]
+  },
+  "review_evidence": {
+    "candidate_class_counts": {},
+    "recommendation_basis": [],
+    "blocked_by": []
   },
   "branch_story": {
     "current_summary": "",
@@ -199,12 +236,16 @@ choose one of the follow-up paths:
 
 The preview should therefore preserve enough evidence for review:
 
-- source graph version;
-- selected spec IDs;
-- inspected edges;
-- candidate classes;
-- why each node is or is not recommended for rewrite;
-- whether the recommendation follows proposal 0036 topology-prose guidance.
+- `provenance.source_graph_ref` and `provenance.source_git_commit` for the
+  source graph version;
+- `provenance.selected_spec_ids` for the selected branch;
+- `provenance.inspected_edges` for inspected topology;
+- `review_evidence.candidate_class_counts` plus each candidate's
+  `rewrite_classes` for candidate classes;
+- each candidate's `findings`, `rewrite_recommendation`, and `blocked_by` for
+  why the node is or is not recommended for rewrite;
+- `provenance.policy_refs` and `review_evidence.recommendation_basis` for
+  whether the recommendation follows proposal 0036 topology-prose guidance.
 
 ## Viewer Surface
 
@@ -285,4 +326,3 @@ Phase 4:
   rewrite candidates.
 - Future runtime work can implement the preview without redefining authority,
   input, or output semantics.
-
