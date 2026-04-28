@@ -9,6 +9,7 @@ help:
 		'  make viewer-surfaces          Refresh graph backlog + dashboard JSON' \
 		'  make dashboard                Refresh graph dashboard JSON only' \
 		'  make backlog                  Refresh graph backlog projection JSON only' \
+		'  make next-move                Refresh advisory graph next-moves JSON only' \
 		'  make implementation-work      Refresh latest implementation work index' \
 		'  make review-feedback          Refresh review feedback index' \
 		'  make test                     Run full Python test suite quietly' \
@@ -25,6 +26,10 @@ dashboard:
 .PHONY: backlog
 backlog:
 	@$(PYTHON) $(SUPERVISOR) --build-graph-backlog-projection
+
+.PHONY: next-move
+next-move:
+	@$(PYTHON) $(SUPERVISOR) --build-graph-next-moves
 
 .PHONY: implementation-work
 implementation-work:

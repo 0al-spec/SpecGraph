@@ -465,5 +465,22 @@
     "residual_risk": "",
     "resolved_commit": "598540f9b09f984addfb286a51c76354af8cc318",
     "recorded_at": "2026-04-28T20:45:00Z"
+  },
+  {
+    "feedback_id": "pr-161-next-moves-branch-preview-counts",
+    "source_pr": 161,
+    "source_thread_url": "https://github.com/0al-spec/SpecGraph/pull/161#discussion_r3157412238",
+    "reviewer": "chatgpt-codex-connector",
+    "review_comment_summary": "Graph next-moves loading coerced branch rewrite preview candidate_count and node_count with int(), so malformed local generated artifacts could crash viewer-surface refresh instead of producing repair guidance.",
+    "fix_summary": "Added safe non-negative integer parsing for branch rewrite preview summary counts and converted invalid count fields into a malformed source artifact state that recommends repair_source_artifact.",
+    "root_cause_class": "artifact_contract_validation_gap",
+    "prevention_action": "regression_test_added",
+    "verification": [
+      "targeted_test",
+      "lint_or_format_check"
+    ],
+    "residual_risk": "",
+    "resolved_commit": "49d652851bbb4fa0b78cbeb93058997e13ebe351",
+    "recorded_at": "2026-04-28T21:52:15Z"
   }
 ]

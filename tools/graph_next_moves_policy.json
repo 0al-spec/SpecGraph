@@ -1,0 +1,108 @@
+{
+  "artifact_kind": "graph_next_moves_policy",
+  "version": 1,
+  "repository_layout": {
+    "next_moves_artifact": "runs/graph_next_moves.json",
+    "source_artifacts": [
+      "runs/branch_rewrite_preview.json",
+      "runs/graph_backlog_projection.json",
+      "runs/proposal_runtime_index.json"
+    ]
+  },
+  "mode_contract": {
+    "mode_name": "graph_next_moves",
+    "canonical_mutations_allowed": false,
+    "tracked_artifacts_written": false,
+    "review_boundary": "advisory_until_human_chooses_bounded_move"
+  },
+  "move_contract": {
+    "artifact_kind": "graph_next_moves",
+    "schema_version": 1,
+    "current_scene_values": [
+      "source_artifact_blocked",
+      "branch_rewrite_preview_ready",
+      "high_priority_backlog",
+      "runtime_realization_backlog",
+      "steady_state"
+    ],
+    "move_kind_values": [
+      "repair_source_artifact",
+      "project_branch_rewrite_preview",
+      "review_backlog_item",
+      "realize_proposal_runtime_slice",
+      "none"
+    ],
+    "default_done_move_kind": "none",
+    "max_alternatives": 5,
+    "max_blocked_moves": 5
+  },
+  "scene_priority": [
+    {
+      "scene": "source_artifact_blocked",
+      "move_kind": "repair_source_artifact",
+      "priority": 0
+    },
+    {
+      "scene": "branch_rewrite_preview_ready",
+      "move_kind": "project_branch_rewrite_preview",
+      "priority": 10
+    },
+    {
+      "scene": "high_priority_backlog",
+      "move_kind": "review_backlog_item",
+      "priority": 20
+    },
+    {
+      "scene": "runtime_realization_backlog",
+      "move_kind": "realize_proposal_runtime_slice",
+      "priority": 30
+    },
+    {
+      "scene": "steady_state",
+      "move_kind": "none",
+      "priority": 100
+    }
+  ],
+  "viewer_contract": {
+    "summary_fields": [
+      "current_scene",
+      "scene_confidence",
+      "recommended_next_move_kind",
+      "recommended_next_move.title",
+      "recommended_next_move.next_gap"
+    ],
+    "move_fields": [
+      "move_id",
+      "kind",
+      "title",
+      "reason",
+      "next_gap",
+      "source_artifacts",
+      "bounded_scope",
+      "subject",
+      "command_hint",
+      "success_condition",
+      "review_required",
+      "blocked_by"
+    ],
+    "source_fact_fields": [
+      "branch_rewrite_preview.status",
+      "branch_rewrite_preview.preview_status",
+      "branch_rewrite_preview.candidate_count",
+      "graph_backlog_projection.entry_count",
+      "graph_backlog_projection.priority_counts",
+      "proposal_runtime_index.reflective_backlog_count"
+    ],
+    "ux_copy": {
+      "panel_title": "Next Moves",
+      "subtitle": "Advisory game-master surface; not canonical",
+      "boundary_notice": "This surface recommends one bounded next move and never mutates canonical specs."
+    }
+  },
+  "policy_refs": [
+    "docs/proposals/0034_graph_backlog_projection.md",
+    "docs/proposals/0039_review_feedback_learning_loop.md",
+    "docs/proposals/0040_branch_rewrite_preview_mode.md",
+    "docs/proposals/0041_graph_next_moves_game_master_surface.md"
+  ]
+}
