@@ -37,6 +37,7 @@ Derived artifacts:
 - graph backlog projection: `runs/graph_backlog_projection.json`
 - intent-layer overlay: `runs/intent_layer_overlay.json`
 - exploration preview: `runs/exploration_preview.json`
+- branch rewrite preview: `runs/branch_rewrite_preview.json`
 - implementation delta snapshot: `runs/implementation_delta_snapshot.json`
 - implementation work index: `runs/implementation_work_index.json`
 - review feedback index: `runs/review_feedback_index.json`
@@ -110,6 +111,7 @@ OPERATOR_REQUEST_BRIDGE_POLICY_RELATIVE_PATH = "tools/operator_request_bridge_po
 SPECGRAPH_VOCABULARY_RELATIVE_PATH = "tools/specgraph_vocabulary.json"
 PRE_SPEC_SEMANTICS_POLICY_RELATIVE_PATH = "tools/pre_spec_semantics_policy.json"
 EXPLORATION_PREVIEW_POLICY_RELATIVE_PATH = "tools/exploration_preview_policy.json"
+BRANCH_REWRITE_PREVIEW_POLICY_RELATIVE_PATH = "tools/branch_rewrite_preview_policy.json"
 IMPLEMENTATION_DELTA_POLICY_RELATIVE_PATH = "tools/implementation_delta_policy.json"
 REVIEW_FEEDBACK_POLICY_RELATIVE_PATH = "tools/review_feedback_policy.json"
 VALIDATION_FINDINGS_POLICY_RELATIVE_PATH = "tools/validation_findings_policy.json"
@@ -171,6 +173,10 @@ def pre_spec_semantics_policy_path() -> Path:
 
 def exploration_preview_policy_path() -> Path:
     return TOOLS_DIR / "exploration_preview_policy.json"
+
+
+def branch_rewrite_preview_policy_path() -> Path:
+    return TOOLS_DIR / "branch_rewrite_preview_policy.json"
 
 
 def implementation_delta_policy_path() -> Path:
@@ -553,6 +559,47 @@ def load_exploration_preview_policy() -> tuple[dict[str, Any], str]:
 
 
 EXPLORATION_PREVIEW_POLICY, EXPLORATION_PREVIEW_POLICY_SHA256 = load_exploration_preview_policy()
+
+
+def load_branch_rewrite_preview_policy() -> tuple[dict[str, Any], str]:
+    path = branch_rewrite_preview_policy_path()
+    try:
+        raw_text = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise RuntimeError(
+            f"failed to read branch rewrite preview policy artifact: {path.as_posix()} ({exc})"
+        ) from exc
+    try:
+        payload = json.loads(raw_text)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(
+            f"malformed branch rewrite preview policy artifact: {path.as_posix()} ({exc})"
+        ) from exc
+    if not isinstance(payload, dict):
+        raise RuntimeError(
+            "malformed branch rewrite preview policy artifact: "
+            f"{path.as_posix()} must contain a JSON object"
+        )
+    required_sections = (
+        "repository_layout",
+        "mode_contract",
+        "selection_contract",
+        "preview_contract",
+        "status_mapping",
+        "viewer_contract",
+    )
+    missing = [section for section in required_sections if section not in payload]
+    if missing:
+        raise RuntimeError(
+            "malformed branch rewrite preview policy artifact: missing top-level section(s): "
+            + ", ".join(missing)
+        )
+    return payload, hashlib.sha256(raw_text.encode("utf-8")).hexdigest()
+
+
+BRANCH_REWRITE_PREVIEW_POLICY, BRANCH_REWRITE_PREVIEW_POLICY_SHA256 = (
+    load_branch_rewrite_preview_policy()
+)
 
 
 def load_implementation_delta_policy() -> tuple[dict[str, Any], str]:
@@ -1606,6 +1653,15 @@ def pre_spec_semantics_policy_lookup(policy_path: str) -> Any:
     return copy.deepcopy(current)
 
 
+def branch_rewrite_preview_policy_lookup(policy_path: str) -> Any:
+    current: Any = BRANCH_REWRITE_PREVIEW_POLICY
+    for part in policy_path.split("."):
+        if not isinstance(current, dict) or part not in current:
+            raise KeyError(policy_path)
+        current = current[part]
+    return copy.deepcopy(current)
+
+
 def implementation_delta_policy_lookup(policy_path: str) -> Any:
     current: Any = IMPLEMENTATION_DELTA_POLICY
     for part in policy_path.split("."):
@@ -1799,6 +1855,14 @@ def exploration_preview_policy_reference() -> dict[str, Any]:
         "artifact_path": EXPLORATION_PREVIEW_POLICY_RELATIVE_PATH,
         "artifact_sha256": EXPLORATION_PREVIEW_POLICY_SHA256,
         "version": EXPLORATION_PREVIEW_POLICY.get("version"),
+    }
+
+
+def branch_rewrite_preview_policy_reference() -> dict[str, Any]:
+    return {
+        "artifact_path": BRANCH_REWRITE_PREVIEW_POLICY_RELATIVE_PATH,
+        "artifact_sha256": BRANCH_REWRITE_PREVIEW_POLICY_SHA256,
+        "version": BRANCH_REWRITE_PREVIEW_POLICY.get("version"),
     }
 
 
@@ -2091,6 +2155,30 @@ EXPLORATION_PREVIEW_SCHEMA_VERSION = int(
 EXPLORATION_PREVIEW_MODE_NAME = str(EXPLORATION_PREVIEW_POLICY["mode_contract"]["mode_name"])
 EXPLORATION_PREVIEW_NODE_KINDS = list(EXPLORATION_PREVIEW_POLICY["preview_contract"]["node_kinds"])
 EXPLORATION_PREVIEW_EDGE_KINDS = list(EXPLORATION_PREVIEW_POLICY["preview_contract"]["edge_kinds"])
+BRANCH_REWRITE_PREVIEW_FILENAME = Path(
+    str(branch_rewrite_preview_policy_lookup("repository_layout.preview_artifact"))
+).name
+BRANCH_REWRITE_PREVIEW_ARTIFACT_KIND = str(
+    branch_rewrite_preview_policy_lookup("preview_contract.artifact_kind")
+)
+BRANCH_REWRITE_PREVIEW_SCHEMA_VERSION = int(
+    branch_rewrite_preview_policy_lookup("preview_contract.schema_version")
+)
+BRANCH_REWRITE_PREVIEW_MODE_NAME = str(
+    branch_rewrite_preview_policy_lookup("mode_contract.mode_name")
+)
+BRANCH_REWRITE_PREVIEW_STATUS_VALUES = list(
+    branch_rewrite_preview_policy_lookup("preview_contract.preview_status_values")
+)
+BRANCH_REWRITE_REVIEW_STATE_VALUES = list(
+    branch_rewrite_preview_policy_lookup("preview_contract.review_state_values")
+)
+BRANCH_REWRITE_REWRITE_CLASSES = list(
+    branch_rewrite_preview_policy_lookup("preview_contract.rewrite_classes")
+)
+BRANCH_REWRITE_SUGGESTED_ACTIONS = list(
+    branch_rewrite_preview_policy_lookup("preview_contract.suggested_actions")
+)
 IMPLEMENTATION_DELTA_SNAPSHOT_FILENAME = Path(
     str(implementation_delta_policy_lookup("repository_layout.delta_snapshot_artifact"))
 ).name
@@ -8179,6 +8267,10 @@ def exploration_preview_path() -> Path:
     return RUNS_DIR / EXPLORATION_PREVIEW_FILENAME
 
 
+def branch_rewrite_preview_path() -> Path:
+    return RUNS_DIR / BRANCH_REWRITE_PREVIEW_FILENAME
+
+
 def implementation_delta_snapshot_path() -> Path:
     return RUNS_DIR / IMPLEMENTATION_DELTA_SNAPSHOT_FILENAME
 
@@ -11259,6 +11351,412 @@ def build_exploration_preview(root_intent_text: str | None = None) -> dict[str, 
 def write_exploration_preview(preview: dict[str, Any]) -> Path:
     RUNS_DIR.mkdir(parents=True, exist_ok=True)
     path = exploration_preview_path()
+    with artifact_lock(path):
+        atomic_write_json(path, preview)
+    return path
+
+
+def branch_rewrite_status_mapping(preview_status: str) -> tuple[str, str]:
+    normalized = str(preview_status).strip()
+    try:
+        mapping = branch_rewrite_preview_policy_lookup(f"status_mapping.{normalized}")
+    except KeyError:
+        return "blocked", "repair_branch_rewrite_preview_policy"
+    if not isinstance(mapping, dict):
+        return "blocked", "repair_branch_rewrite_preview_policy"
+    review_state = str(mapping.get("review_state", "")).strip() or "blocked"
+    next_gap = str(mapping.get("next_gap", "")).strip() or "repair_branch_rewrite_preview_policy"
+    return review_state, next_gap
+
+
+def validate_branch_rewrite_mode_contract() -> dict[str, Any]:
+    mode_contract = copy.deepcopy(BRANCH_REWRITE_PREVIEW_POLICY["mode_contract"])
+    canonical_mutations_allowed = mode_contract.get("canonical_mutations_allowed")
+    tracked_artifacts_written = mode_contract.get("tracked_artifacts_written")
+    if canonical_mutations_allowed is not False or tracked_artifacts_written is not False:
+        raise RuntimeError(
+            "malformed branch rewrite preview mode contract: mutation flags must be false"
+        )
+    return mode_contract
+
+
+def branch_rewrite_presence_state(spec: SpecNode) -> str:
+    state = presence_state(spec.data)
+    if state:
+        return state
+    if is_historical_spec(spec.data):
+        return "historical"
+    return "active"
+
+
+def branch_rewrite_resolve_branch(
+    *,
+    root: SpecNode,
+    specs: list[SpecNode],
+    max_depth: int,
+    include_historical: bool,
+) -> tuple[list[SpecNode], list[dict[str, str]]]:
+    index = index_specs(specs)
+    selected: list[SpecNode] = []
+    inspected_edges: list[dict[str, str]] = []
+    seen: set[str] = set()
+    queue: list[tuple[SpecNode, int]] = [(root, 0)]
+
+    while queue:
+        current, depth = queue.pop(0)
+        if not current.id or current.id in seen:
+            continue
+        seen.add(current.id)
+        selected.append(current)
+        if depth >= max_depth:
+            continue
+        children = (
+            refining_child_specs(current, specs)
+            if include_historical
+            else active_refining_child_specs(current, specs)
+        )
+        for child in children:
+            if not child.id:
+                continue
+            inspected_edges.append(
+                {"source": current.id, "target": child.id, "edge_kind": "refines"}
+            )
+            queue.append((index.get(child.id, child), depth + 1))
+
+    return selected, inspected_edges
+
+
+def branch_rewrite_missing_relation_refs(
+    selected_specs: list[SpecNode], all_specs: list[SpecNode]
+) -> list[dict[str, str]]:
+    index = index_specs(all_specs)
+    missing_refs: list[dict[str, str]] = []
+    for spec in selected_specs:
+        for field in ("depends_on", "relates_to", "refines"):
+            for ref in relation_ids(spec.data, field):
+                if SPEC_ID_PATTERN.match(ref) and ref not in index:
+                    missing_refs.append(
+                        {
+                            "source": spec.id,
+                            "field": field,
+                            "target": ref,
+                            "finding": "missing_spec_reference",
+                        }
+                    )
+    return sorted(missing_refs, key=lambda item: (item["source"], item["field"], item["target"]))
+
+
+def branch_rewrite_role_summary(spec: SpecNode) -> str:
+    candidates: list[str] = [spec.prompt, str(spec.data.get("objective", "")).strip()]
+    acceptance = spec.data.get("acceptance")
+    if isinstance(acceptance, list):
+        candidates.extend(str(item).strip() for item in acceptance[:2])
+    specification = spec.data.get("specification")
+    if isinstance(specification, dict):
+        candidates.append(json.dumps(specification, ensure_ascii=False, sort_keys=True))
+    summary = " ".join(part for part in candidates if part)
+    summary = " ".join(summary.split())
+    if len(summary) > 220:
+        return summary[:217].rstrip() + "..."
+    return summary
+
+
+def branch_rewrite_topology_pressure(profile: dict[str, Any]) -> bool:
+    bookkeeping_hits = int(profile.get("bookkeeping_hits", 0) or 0)
+    role_hits = int(profile.get("role_hits", 0) or 0)
+    unique_refs = int(profile.get("unique_spec_references", 0) or 0)
+    return (
+        bookkeeping_hits >= 3
+        and unique_refs >= ROLE_OBSCURED_SPEC_REFERENCE_THRESHOLD
+        and bookkeeping_hits > max(role_hits, 1)
+    )
+
+
+def branch_rewrite_candidate_for_spec(
+    spec: SpecNode,
+    *,
+    graph_health_entry: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    presence = branch_rewrite_presence_state(spec)
+    profile = node_role_legibility_profile(spec)
+    signals = set()
+    recommended_actions = set()
+    if isinstance(graph_health_entry, dict):
+        signals = {
+            str(item).strip() for item in graph_health_entry.get("signals", []) if str(item).strip()
+        }
+        recommended_actions = {
+            str(item).strip()
+            for item in graph_health_entry.get("recommended_actions", [])
+            if str(item).strip()
+        }
+
+    rewrite_classes: list[str] = []
+    findings: list[str] = []
+    suggested_action = "no_change"
+    risk_level = "none"
+
+    if presence in {"historical", "historical_lineage_only"}:
+        rewrite_classes.append("archive_historical_semantics")
+        findings.append("historical_lineage_should_be_visually_deemphasized")
+        suggested_action = "deemphasize_historical_lineage"
+        risk_level = "low"
+    if bool(profile.get("bookkeeping_only")) or "bookkeeping_only_node" in signals:
+        rewrite_classes.extend(["remove_graph_topology_prose", "merge_bookkeeping_slice"])
+        findings.append("bookkeeping_or_topology_prose_dominates_role_text")
+        suggested_action = "merge_bookkeeping_slice"
+        risk_level = "medium"
+    elif (
+        bool(profile.get("role_obscured"))
+        or "role_obscured_node" in signals
+        or branch_rewrite_topology_pressure(profile)
+    ):
+        rewrite_classes.extend(["remove_graph_topology_prose", "clarify_boundary"])
+        findings.append("node_role_is_obscured_by_topology_or_neighbor_references")
+        suggested_action = "rewrite_node_role_boundary"
+        risk_level = "medium"
+    elif "split_required" in {str(spec.data.get("last_outcome", "")).strip(), spec.gate_state}:
+        rewrite_classes.append("split_needed")
+        findings.append("node_has_split_pressure")
+        suggested_action = "emit_split_proposal"
+        risk_level = "medium"
+    elif "preserve_boundary_contract" in recommended_actions:
+        rewrite_classes.append("preserve_boundary_contract")
+        findings.append("boundary_contract_has_system_facing_role")
+        suggested_action = "preserve_as_boundary_contract"
+        risk_level = "low"
+
+    if not rewrite_classes:
+        rewrite_classes = ["no_change"]
+
+    rewrite_classes = [
+        item for item in dict.fromkeys(rewrite_classes) if item in BRANCH_REWRITE_REWRITE_CLASSES
+    ]
+    if suggested_action not in BRANCH_REWRITE_SUGGESTED_ACTIONS:
+        suggested_action = "no_change"
+
+    role_summary = branch_rewrite_role_summary(spec)
+    if suggested_action == "no_change":
+        recommendation = "No branch rewrite pressure detected for this node."
+        proposed_summary = role_summary
+        patch_preview: list[dict[str, str]] = []
+    elif suggested_action == "merge_bookkeeping_slice":
+        recommendation = (
+            "Review whether this node carries a distinct system-facing contract or mostly "
+            "bookkeeps graph topology."
+        )
+        proposed_summary = (
+            "Merge or rewrite the bookkeeping slice so the remaining prose states the "
+            "system-facing role before graph-routing details."
+        )
+        patch_preview = [
+            {
+                "field": "prompt",
+                "recommendation": "Replace topology narration with a role-first boundary summary.",
+            }
+        ]
+    elif suggested_action == "emit_split_proposal":
+        recommendation = "Escalate the non-atomic concern through split proposal flow."
+        proposed_summary = "Use proposal-first decomposition before canonical branch rewrite."
+        patch_preview = []
+    elif suggested_action == "deemphasize_historical_lineage":
+        recommendation = "Keep historical lineage inspectable but visually de-emphasized."
+        proposed_summary = "Treat this node as historical context rather than active branch prose."
+        patch_preview = []
+    elif suggested_action == "preserve_as_boundary_contract":
+        recommendation = "Preserve this boundary if its contract remains system-facing."
+        proposed_summary = role_summary
+        patch_preview = []
+    else:
+        recommendation = "Rewrite the node in domain-first prose before restating graph topology."
+        proposed_summary = (
+            "Start from the capability, invariant, or review boundary this node owns; "
+            "leave edge placement to graph metadata."
+        )
+        patch_preview = [
+            {
+                "field": "prompt",
+                "recommendation": "Move SG-SPEC routing facts out of the primary prose.",
+            }
+        ]
+
+    return {
+        "spec_id": spec.id,
+        "title": spec.title,
+        "presence_state": presence,
+        "status": spec.status,
+        "gate_state": spec.gate_state,
+        "current_role_summary": role_summary,
+        "rewrite_recommendation": recommendation,
+        "rewrite_classes": rewrite_classes,
+        "findings": sorted(set(findings)),
+        "suggested_action": suggested_action,
+        "risk_level": risk_level,
+        "proposed_summary": proposed_summary,
+        "proposed_patch_preview": patch_preview,
+        "blocked_by": [f"gate_state::{spec.gate_state}"] if spec.gate_state != "none" else [],
+        "role_legibility_profile": profile,
+    }
+
+
+def build_branch_rewrite_preview(target_spec_id: str | None = None) -> dict[str, Any]:
+    requested_root = str(target_spec_id or "").strip()
+    mode_contract = validate_branch_rewrite_mode_contract()
+    specs = load_specs()
+    spec_index = index_specs(specs)
+    selection_contract = copy.deepcopy(BRANCH_REWRITE_PREVIEW_POLICY["selection_contract"])
+    max_depth = int(selection_contract.get("default_max_depth", 3) or 3)
+    node_limit = int(selection_contract.get("default_node_limit", 24) or 24)
+    include_historical = bool(selection_contract.get("include_historical_default", False))
+    source_git_commit = git_head_commit()
+
+    selected_specs: list[SpecNode] = []
+    inspected_edges: list[dict[str, str]] = []
+    missing_target_spec_ids: list[str] = []
+    blocked_by: list[dict[str, Any]] = []
+
+    if not requested_root or requested_root not in spec_index:
+        preview_status = "invalid_root"
+        missing_target_spec_ids = [requested_root] if requested_root else []
+    else:
+        selected_specs, inspected_edges = branch_rewrite_resolve_branch(
+            root=spec_index[requested_root],
+            specs=specs,
+            max_depth=max_depth,
+            include_historical=include_historical,
+        )
+        if not selected_specs:
+            preview_status = "empty_branch"
+        elif len(selected_specs) > node_limit:
+            preview_status = "branch_too_large"
+            blocked_by.append(
+                {
+                    "blocker": "branch_too_large",
+                    "node_count": len(selected_specs),
+                    "node_limit": node_limit,
+                }
+            )
+        else:
+            selected_missing_refs = branch_rewrite_missing_relation_refs(selected_specs, specs)
+            gated_specs = [
+                {"spec_id": spec.id, "gate_state": spec.gate_state}
+                for spec in selected_specs
+                if spec.gate_state != "none"
+            ]
+            if selected_missing_refs:
+                preview_status = "broken_reference"
+                blocked_by.extend(selected_missing_refs)
+            elif gated_specs:
+                preview_status = "blocked_by_unresolved_gate"
+                blocked_by.extend(gated_specs)
+            else:
+                preview_status = "ready_for_review"
+
+    graph_health = build_graph_health_overlay(specs) if selected_specs else {}
+    graph_health_by_spec = {
+        str(entry.get("spec_id", "")): entry
+        for entry in graph_health.get("entries", [])
+        if isinstance(entry, dict)
+    }
+    candidates = [
+        branch_rewrite_candidate_for_spec(
+            spec,
+            graph_health_entry=graph_health_by_spec.get(spec.id),
+        )
+        for spec in selected_specs
+    ]
+    actionable_candidates = [
+        candidate
+        for candidate in candidates
+        if str(candidate.get("suggested_action", "")) != "no_change"
+    ]
+    if preview_status == "ready_for_review" and not actionable_candidates:
+        preview_status = "no_candidates"
+
+    review_state, next_gap = branch_rewrite_status_mapping(preview_status)
+    candidate_class_counts: dict[str, int] = {}
+    action_counts: dict[str, int] = {}
+    for candidate in candidates:
+        for rewrite_class in candidate.get("rewrite_classes", []):
+            rewrite_class = str(rewrite_class).strip()
+            if rewrite_class:
+                candidate_class_counts[rewrite_class] = (
+                    candidate_class_counts.get(rewrite_class, 0) + 1
+                )
+        action = str(candidate.get("suggested_action", "")).strip()
+        if action:
+            action_counts[action] = action_counts.get(action, 0) + 1
+
+    selected_spec_ids = [spec.id for spec in selected_specs if spec.id]
+    current_story_titles = [f"{spec.id}: {spec.title}" for spec in selected_specs]
+    if actionable_candidates:
+        proposed_summary = (
+            f"{len(actionable_candidates)} node(s) need review-first rewrite pressure before "
+            "the branch reads as domain-first prose."
+        )
+    elif selected_specs:
+        proposed_summary = "No branch rewrite candidates were detected by the first-slice rules."
+    else:
+        proposed_summary = "No branch story could be built for the requested root."
+
+    return {
+        "artifact_kind": BRANCH_REWRITE_PREVIEW_ARTIFACT_KIND,
+        "schema_version": BRANCH_REWRITE_PREVIEW_SCHEMA_VERSION,
+        "generated_at": utc_now_iso(),
+        "policy_reference": branch_rewrite_preview_policy_reference(),
+        "mode": BRANCH_REWRITE_PREVIEW_MODE_NAME,
+        "mode_contract": mode_contract,
+        "preview_status": preview_status,
+        "review_state": review_state,
+        "next_gap": next_gap,
+        "canonical_mutations_allowed": False,
+        "tracked_artifacts_written": False,
+        "target": {
+            "root_spec_id": requested_root,
+            "missing_target_spec_ids": missing_target_spec_ids,
+            "resolved_spec_ids": selected_spec_ids,
+            "selector": str(selection_contract.get("selector", "active_refines_subtree")),
+            "max_depth": max_depth,
+            "node_limit": node_limit,
+            "include_historical": include_historical,
+        },
+        "provenance": {
+            "source_graph_ref": source_git_commit,
+            "source_git_commit": source_git_commit,
+            "selected_spec_ids": selected_spec_ids,
+            "inspected_edges": inspected_edges,
+            "policy_refs": copy.deepcopy(BRANCH_REWRITE_PREVIEW_POLICY.get("policy_refs", [])),
+        },
+        "review_evidence": {
+            "candidate_class_counts": dict(sorted(candidate_class_counts.items())),
+            "suggested_action_counts": dict(sorted(action_counts.items())),
+            "recommendation_basis": [
+                "proposal_0036_topology_facts_are_not_spec_prose",
+                "proposal_0017_role_first_semantic_bias",
+                "graph_health_role_legibility_signals",
+            ],
+            "blocked_by": blocked_by,
+        },
+        "branch_story": {
+            "current_summary": " | ".join(current_story_titles),
+            "proposed_summary": proposed_summary,
+            "story_gaps": [
+                str(candidate.get("spec_id", ""))
+                for candidate in actionable_candidates
+                if str(candidate.get("spec_id", "")).strip()
+            ],
+        },
+        "node_count": len(selected_specs),
+        "edge_count": len(inspected_edges),
+        "candidate_count": len(actionable_candidates),
+        "node_rewrite_candidates": candidates,
+        "viewer_contract": copy.deepcopy(BRANCH_REWRITE_PREVIEW_POLICY["viewer_contract"]),
+    }
+
+
+def write_branch_rewrite_preview(preview: dict[str, Any]) -> Path:
+    RUNS_DIR.mkdir(parents=True, exist_ok=True)
+    path = branch_rewrite_preview_path()
     with artifact_lock(path):
         atomic_write_json(path, preview)
     return path
@@ -23486,7 +23984,9 @@ def supervisor_output_summary(payload: dict[str, Any]) -> dict[str, Any]:
         "entry_count",
         "node_count",
         "edge_count",
+        "candidate_count",
         "status",
+        "preview_status",
         "review_state",
         "next_gap",
         "canonical_mutations_allowed",
@@ -26975,6 +27475,7 @@ def main(
     build_intent_layer_overlay_mode: bool = False,
     build_exploration_preview_mode: bool = False,
     exploration_intent_text: str | None = None,
+    build_branch_rewrite_preview_mode: bool = False,
     build_implementation_delta_snapshot_mode: bool = False,
     implementation_target_scope_kind: str | None = None,
     implementation_target_spec_ids: str | tuple[str, ...] | list[str] | None = None,
@@ -27055,6 +27556,7 @@ def main(
         "--validate-transition-packet": bool(validate_transition_packet_path),
         "--build-intent-layer-overlay": build_intent_layer_overlay_mode,
         "--build-exploration-preview": build_exploration_preview_mode,
+        "--build-branch-rewrite-preview": build_branch_rewrite_preview_mode,
         "--build-implementation-delta-snapshot": build_implementation_delta_snapshot_mode,
         "--build-implementation-work-index": build_implementation_work_index_mode,
         "--build-review-feedback-index": build_review_feedback_index_mode,
@@ -27292,6 +27794,44 @@ def main(
             return 1
         preview = build_exploration_preview(exploration_intent_text)
         write_exploration_preview(preview)
+        emit_supervisor_json(preview, output_mode=normalized_output_mode)
+        return 0
+
+    if build_branch_rewrite_preview_mode:
+        if not target_spec:
+            print("--build-branch-rewrite-preview requires --target-spec", file=sys.stderr)
+            return 1
+        if any(
+            (
+                dry_run,
+                auto_approve,
+                loop,
+                resolve_gate,
+                decision,
+                note,
+                split_proposal,
+                apply_split_proposal,
+                operator_note,
+                mutation_budget,
+                run_authority,
+                execution_profile,
+                child_model,
+                child_timeout_seconds,
+                verbose,
+                list_stale_runtime,
+                clean_stale_runtime,
+                observe_graph_health_mode,
+                operator_request_packet_path,
+            )
+        ):
+            print(
+                "--build-branch-rewrite-preview must be used as a standalone command "
+                "with --target-spec only",
+                file=sys.stderr,
+            )
+            return 1
+        preview = build_branch_rewrite_preview(target_spec)
+        write_branch_rewrite_preview(preview)
         emit_supervisor_json(preview, output_mode=normalized_output_mode)
         return 0
 
@@ -29554,6 +30094,14 @@ if __name__ == "__main__":
         help="Root intent text used by --build-exploration-preview",
     )
     parser.add_argument(
+        "--build-branch-rewrite-preview",
+        action="store_true",
+        help=(
+            "Build a review-only branch rewrite preview for --target-spec and its bounded "
+            "active refines subtree without mutating canonical specs"
+        ),
+    )
+    parser.add_argument(
         "--build-implementation-delta-snapshot",
         action="store_true",
         help=(
@@ -29988,6 +30536,7 @@ if __name__ == "__main__":
             build_intent_layer_overlay_mode=args.build_intent_layer_overlay,
             build_exploration_preview_mode=args.build_exploration_preview,
             exploration_intent_text=args.exploration_intent,
+            build_branch_rewrite_preview_mode=args.build_branch_rewrite_preview,
             build_implementation_delta_snapshot_mode=args.build_implementation_delta_snapshot,
             implementation_target_scope_kind=args.target_scope_kind,
             implementation_target_spec_ids=args.target_spec_ids,

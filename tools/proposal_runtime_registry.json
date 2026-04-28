@@ -843,5 +843,49 @@
         "pattern": "The SG-SPEC-0026 reflective/proposal branch starts moving toward domain-first prose."
       }
     ]
+  },
+  {
+    "proposal_id": "0040",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "tools/supervisor.py",
+      "tests/test_supervisor.py",
+      "tools/branch_rewrite_preview_policy.json",
+      "docs/proposals/0040_branch_rewrite_preview_mode.md"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def build_branch_rewrite_preview("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "BRANCH_REWRITE_PREVIEW_ARTIFACT_KIND"
+      },
+      {
+        "path": "tools/branch_rewrite_preview_policy.json",
+        "pattern": "\"artifact_kind\": \"branch_rewrite_preview_policy\""
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_branch_rewrite_preview_emits_review_only_candidates_from_active_subtree("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_main_builds_branch_rewrite_preview_as_standalone_command("
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "write_branch_rewrite_preview(preview)"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "\"artifact_kind\": BRANCH_REWRITE_PREVIEW_ARTIFACT_KIND"
+      }
+    ]
   }
 ]
