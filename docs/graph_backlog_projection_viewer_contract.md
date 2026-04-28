@@ -50,7 +50,26 @@ Server behavior:
 - return `404` when the artifact has not been built;
 - return `422` when the JSON cannot be parsed;
 - return `503` when the server is not configured with a SpecGraph root;
-- return the artifact as-is without server-side transformation.
+- return the same metadata envelope shape used by the other viewer endpoints,
+  with the unmodified artifact under `data`.
+
+Recommended success response:
+
+```json
+{
+  "path": "/abs/path/to/SpecGraph/runs/graph_backlog_projection.json",
+  "mtime": 1777396728.0,
+  "mtime_iso": "2026-04-28T17:18:48+00:00",
+  "data": {
+    "artifact_kind": "graph_backlog_projection",
+    "entry_count": 204
+  }
+}
+```
+
+`data` is the artifact as written by SpecGraph. The server may add endpoint
+metadata such as `path`, `mtime`, and `mtime_iso` around it, but should not
+rewrite fields inside `data`.
 
 Capability detection is optional. If the server has a configured SpecGraph
 root, the endpoint may be present even before the artifact exists.
@@ -291,4 +310,3 @@ Recommended UI states:
   show a warning but allow inspection.
 - `count_mismatch`: `entry_count`, `summary.entry_count`, and `entries.length`
   disagree; show a warning and prefer `entries.length` for rendered row count.
-
