@@ -393,5 +393,77 @@
     "residual_risk": "",
     "resolved_commit": "6a51e76b1395cb37d6362159a01b3f6e0d6b86bc",
     "recorded_at": "2026-04-28T18:14:15Z"
+  },
+  {
+    "feedback_id": "pr-160-branch-rewrite-active-root",
+    "source_pr": 160,
+    "source_thread_url": "https://github.com/0al-spec/SpecGraph/pull/160#discussion_r3156588961",
+    "reviewer": "chatgpt-codex-connector",
+    "review_comment_summary": "Branch rewrite preview accepted historical lineage nodes as roots even though the mode is scoped to active refines subtrees.",
+    "fix_summary": "Added a non-active root guard that returns invalid_root with blocked review evidence when the requested root is historical.",
+    "root_cause_class": "scope_isolation_gap",
+    "prevention_action": "regression_test_added",
+    "verification": [
+      "targeted_test",
+      "full_test_suite",
+      "lint_or_format_check"
+    ],
+    "residual_risk": "",
+    "resolved_commit": "598540f9b09f984addfb286a51c76354af8cc318",
+    "recorded_at": "2026-04-28T20:45:00Z"
+  },
+  {
+    "feedback_id": "pr-160-branch-rewrite-status-vocab-validation",
+    "source_pr": 160,
+    "source_thread_url": "https://github.com/0al-spec/SpecGraph/pull/160#discussion_r3156671099",
+    "reviewer": "copilot-pull-request-reviewer",
+    "review_comment_summary": "Branch rewrite preview loaded policy-declared preview_status and review_state vocabularies but did not validate generated artifacts against them.",
+    "fix_summary": "Added branch rewrite status contract validation and regression coverage for invalid preview_status and mapped review_state drift.",
+    "root_cause_class": "artifact_contract_validation_gap",
+    "prevention_action": "validator_added",
+    "verification": [
+      "targeted_test",
+      "full_test_suite",
+      "lint_or_format_check"
+    ],
+    "residual_risk": "",
+    "resolved_commit": "598540f9b09f984addfb286a51c76354af8cc318",
+    "recorded_at": "2026-04-28T20:45:00Z"
+  },
+  {
+    "feedback_id": "pr-160-branch-rewrite-bfs-queue",
+    "source_pr": 160,
+    "source_thread_url": "https://github.com/0al-spec/SpecGraph/pull/160#discussion_r3156671120",
+    "reviewer": "copilot-pull-request-reviewer",
+    "review_comment_summary": "Branch rewrite subtree traversal used list pop(0), making FIFO traversal O(n^2) if subtree policy limits grow.",
+    "fix_summary": "Switched branch rewrite traversal to collections.deque with popleft while preserving traversal behavior.",
+    "root_cause_class": "process_rule_gap",
+    "prevention_action": "regression_test_added",
+    "verification": [
+      "targeted_test",
+      "full_test_suite",
+      "lint_or_format_check"
+    ],
+    "residual_risk": "",
+    "resolved_commit": "598540f9b09f984addfb286a51c76354af8cc318",
+    "recorded_at": "2026-04-28T20:45:00Z"
+  },
+  {
+    "feedback_id": "pr-160-branch-rewrite-historical-action",
+    "source_pr": 160,
+    "source_thread_url": "https://github.com/0al-spec/SpecGraph/pull/160#discussion_r3156671137",
+    "reviewer": "copilot-pull-request-reviewer",
+    "review_comment_summary": "Historical candidate classification could be overwritten by later bookkeeping or topology-prose heuristics.",
+    "fix_summary": "Made historical candidate handling mutually exclusive so historical lineage keeps deemphasize_historical_lineage as the suggested action.",
+    "root_cause_class": "policy_runtime_drift",
+    "prevention_action": "regression_test_added",
+    "verification": [
+      "targeted_test",
+      "full_test_suite",
+      "lint_or_format_check"
+    ],
+    "residual_risk": "",
+    "resolved_commit": "598540f9b09f984addfb286a51c76354af8cc318",
+    "recorded_at": "2026-04-28T20:45:00Z"
   }
 ]

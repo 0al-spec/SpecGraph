@@ -146,6 +146,8 @@ particular task.
   `--build-intent-layer-overlay`
 - build a review-only assumption-mode exploration preview from root intent text:
   `--build-exploration-preview --exploration-intent "..."`
+- build a review-only branch rewrite preview from one bounded active subtree:
+  `--build-branch-rewrite-preview --target-spec SG-SPEC-0026`
 - build a derived implementation delta snapshot from an explicit target scope:
   `--build-implementation-delta-snapshot --target-scope-kind spec --target-spec-ids SG-SPEC-0001 --operator-intent "..."`
   Use `--target-scope-kind active_subtree` when the selected spec ids are graph

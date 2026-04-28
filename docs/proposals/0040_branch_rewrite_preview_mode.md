@@ -2,7 +2,19 @@
 
 ## Status
 
-Draft proposal
+Initial runtime slice implemented
+
+Runtime realization:
+
+- `tools/branch_rewrite_preview_policy.json` defines the preview-only mode
+  contract, status mapping, selection limits, and viewer-facing fields.
+- `tools/supervisor.py` exposes `--build-branch-rewrite-preview --target-spec
+  SG-SPEC-XXXX` and writes only `runs/branch_rewrite_preview.json`.
+- `tests/test_supervisor.py` covers input validation, mutation boundary,
+  node-limit handling, malformed references, gate blocking, and standalone CLI
+  dispatch.
+- `tools/proposal_runtime_registry.json` links this proposal to its first
+  synchronous runtime slice.
 
 ## Context
 
@@ -304,6 +316,8 @@ Phase 2:
 - Emit `runs/branch_rewrite_preview.json`.
 - Add tests for input validation, mutation boundary, node-limit handling, and
   malformed graph references.
+
+Status: implemented as the first preview-only runtime slice.
 
 Phase 3:
 

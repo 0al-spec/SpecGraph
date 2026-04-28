@@ -14304,6 +14304,281 @@ def test_main_rejects_exploration_intent_without_preview_mode(
     assert "--exploration-intent requires --build-exploration-preview" in captured.err
 
 
+def write_branch_rewrite_child(repo_fixture: Path, **overrides: object) -> None:
+    child: dict[str, object] = {
+        "id": "SG-SPEC-0002",
+        "title": "Proposal Split Topology Segment",
+        "kind": "spec",
+        "created_at": "2026-04-18T00:00:00Z",
+        "updated_at": "2026-04-18T00:00:00Z",
+        "status": "outlined",
+        "maturity": 0.2,
+        "depends_on": [],
+        "relates_to": [],
+        "refines": ["SG-SPEC-0001"],
+        "inputs": ["specs/nodes/SG-SPEC-0001.yaml"],
+        "outputs": ["specs/nodes/SG-SPEC-0002.yaml"],
+        "allowed_paths": ["specs/nodes/SG-SPEC-0002.yaml"],
+        "acceptance": [
+            (
+                "Keep SG-SPEC-0002 as the gateway segment from SG-SPEC-0001 to "
+                "SG-SPEC-0003 and SG-SPEC-0004 through topology edge bookkeeping."
+            )
+        ],
+        "prompt": (
+            "SG-SPEC-0002 delegates from SG-SPEC-0001 to SG-SPEC-0003 through a "
+            "topology gateway segment toward SG-SPEC-0004 and owns edge bookkeeping "
+            "for the child route."
+        ),
+    }
+    child.update(overrides)
+    (repo_fixture / "specs" / "nodes" / "SG-SPEC-0002.yaml").write_text(
+        json.dumps(child),
+        encoding="utf-8",
+    )
+
+
+def test_build_branch_rewrite_preview_marks_invalid_root(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    preview = supervisor_module.build_branch_rewrite_preview("SG-SPEC-9999")
+
+    assert preview["artifact_kind"] == supervisor_module.BRANCH_REWRITE_PREVIEW_ARTIFACT_KIND
+    assert preview["schema_version"] == supervisor_module.BRANCH_REWRITE_PREVIEW_SCHEMA_VERSION
+    assert preview["preview_status"] == "invalid_root"
+    assert preview["review_state"] == "blocked"
+    assert preview["next_gap"] == "repair_branch_rewrite_target"
+    assert preview["canonical_mutations_allowed"] is False
+    assert preview["tracked_artifacts_written"] is False
+    assert preview["target"]["missing_target_spec_ids"] == ["SG-SPEC-9999"]
+    assert preview["node_count"] == 0
+    assert preview["candidate_count"] == 0
+
+
+def test_build_branch_rewrite_preview_rejects_historical_root(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    root_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    root = json.loads(root_path.read_text(encoding="utf-8"))
+    root["presence"] = {"state": "historical"}
+    root_path.write_text(json.dumps(root), encoding="utf-8")
+
+    preview = supervisor_module.build_branch_rewrite_preview("SG-SPEC-0001")
+
+    assert preview["preview_status"] == "invalid_root"
+    assert preview["review_state"] == "blocked"
+    assert preview["next_gap"] == "repair_branch_rewrite_target"
+    assert preview["target"]["resolved_spec_ids"] == []
+    assert preview["review_evidence"]["blocked_by"] == [
+        {
+            "blocker": "non_active_root",
+            "root_spec_id": "SG-SPEC-0001",
+            "presence_state": "historical",
+        }
+    ]
+
+
+def test_build_branch_rewrite_preview_rejects_status_vocab_drift(
+    supervisor_module: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        supervisor_module,
+        "BRANCH_REWRITE_PREVIEW_STATUS_VALUES",
+        ["ready_for_review"],
+    )
+
+    with pytest.raises(RuntimeError) as exc_info:
+        supervisor_module.build_branch_rewrite_preview("SG-SPEC-9999")
+
+    assert "branch rewrite preview policy/artifact drift" in str(exc_info.value)
+    assert "invalid preview_status: invalid_root" in str(exc_info.value)
+
+
+def test_build_branch_rewrite_preview_rejects_review_state_vocab_drift(
+    supervisor_module: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    policy = copy.deepcopy(supervisor_module.BRANCH_REWRITE_PREVIEW_POLICY)
+    policy["status_mapping"]["invalid_root"]["review_state"] = "needs_reviewer_guesswork"
+    monkeypatch.setattr(supervisor_module, "BRANCH_REWRITE_PREVIEW_POLICY", policy)
+
+    with pytest.raises(RuntimeError) as exc_info:
+        supervisor_module.build_branch_rewrite_preview("SG-SPEC-9999")
+
+    assert "branch rewrite preview policy/artifact drift" in str(exc_info.value)
+    assert "invalid review_state: needs_reviewer_guesswork" in str(exc_info.value)
+
+
+def test_build_branch_rewrite_preview_emits_review_only_candidates_from_active_subtree(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    write_branch_rewrite_child(repo_fixture)
+
+    preview = supervisor_module.build_branch_rewrite_preview("SG-SPEC-0001")
+
+    assert preview["artifact_kind"] == supervisor_module.BRANCH_REWRITE_PREVIEW_ARTIFACT_KIND
+    assert preview["mode"] == "branch_rewrite_preview"
+    assert preview["preview_status"] == "ready_for_review"
+    assert preview["review_state"] == "preview_only"
+    assert preview["next_gap"] == "human_review_before_apply"
+    assert preview["canonical_mutations_allowed"] is False
+    assert preview["tracked_artifacts_written"] is False
+    assert preview["target"]["resolved_spec_ids"] == ["SG-SPEC-0001", "SG-SPEC-0002"]
+    assert preview["node_count"] == 2
+    assert preview["edge_count"] == 1
+    assert preview["candidate_count"] >= 1
+    candidates_by_id = {
+        candidate["spec_id"]: candidate for candidate in preview["node_rewrite_candidates"]
+    }
+    assert candidates_by_id["SG-SPEC-0002"]["suggested_action"] in {
+        "rewrite_node_role_boundary",
+        "merge_bookkeeping_slice",
+    }
+    assert "remove_graph_topology_prose" in candidates_by_id["SG-SPEC-0002"]["rewrite_classes"]
+    assert preview["viewer_contract"]["candidate_fields"]
+
+
+def test_branch_rewrite_candidate_preserves_historical_action(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    node = supervisor_module.SpecNode(
+        path=repo_fixture / "specs" / "nodes" / "SG-SPEC-0002.yaml",
+        data={
+            "id": "SG-SPEC-0002",
+            "title": "Historical Topology Segment",
+            "status": "outlined",
+            "presence": {"state": "historical"},
+            "depends_on": [],
+            "refines": ["SG-SPEC-0001"],
+            "relates_to": [],
+            "prompt": (
+                "SG-SPEC-0002 delegates SG-SPEC-0001 to SG-SPEC-0003 through "
+                "SG-SPEC-0004 and SG-SPEC-0005 as a topology gateway segment."
+            ),
+            "acceptance": [],
+        },
+    )
+
+    candidate = supervisor_module.branch_rewrite_candidate_for_spec(node)
+
+    assert candidate["presence_state"] == "historical"
+    assert candidate["suggested_action"] == "deemphasize_historical_lineage"
+    assert candidate["risk_level"] == "low"
+    assert candidate["rewrite_classes"] == ["archive_historical_semantics"]
+
+
+def test_build_branch_rewrite_preview_blocks_on_unresolved_gate(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    write_branch_rewrite_child(repo_fixture, gate_state="review_pending")
+
+    preview = supervisor_module.build_branch_rewrite_preview("SG-SPEC-0001")
+
+    assert preview["preview_status"] == "blocked_by_unresolved_gate"
+    assert preview["review_state"] == "blocked"
+    assert preview["next_gap"] == "resolve_branch_gate_before_preview"
+    assert preview["review_evidence"]["blocked_by"] == [
+        {"spec_id": "SG-SPEC-0002", "gate_state": "review_pending"}
+    ]
+
+
+def test_build_branch_rewrite_preview_blocks_on_broken_reference(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    write_branch_rewrite_child(repo_fixture, depends_on=["SG-SPEC-9999"])
+
+    preview = supervisor_module.build_branch_rewrite_preview("SG-SPEC-0001")
+
+    assert preview["preview_status"] == "broken_reference"
+    assert preview["review_state"] == "blocked"
+    assert preview["next_gap"] == "repair_graph_reference"
+    assert preview["review_evidence"]["blocked_by"] == [
+        {
+            "source": "SG-SPEC-0002",
+            "field": "depends_on",
+            "target": "SG-SPEC-9999",
+            "finding": "missing_spec_reference",
+        }
+    ]
+
+
+def test_build_branch_rewrite_preview_respects_node_limit(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    write_branch_rewrite_child(repo_fixture)
+    policy = copy.deepcopy(supervisor_module.BRANCH_REWRITE_PREVIEW_POLICY)
+    policy["selection_contract"]["default_node_limit"] = 1
+    monkeypatch.setattr(supervisor_module, "BRANCH_REWRITE_PREVIEW_POLICY", policy)
+
+    preview = supervisor_module.build_branch_rewrite_preview("SG-SPEC-0001")
+
+    assert preview["preview_status"] == "branch_too_large"
+    assert preview["review_state"] == "blocked"
+    assert preview["next_gap"] == "narrow_branch_rewrite_scope"
+    assert preview["review_evidence"]["blocked_by"] == [
+        {"blocker": "branch_too_large", "node_count": 2, "node_limit": 1}
+    ]
+
+
+def test_main_builds_branch_rewrite_preview_as_standalone_command(
+    supervisor_module: object,
+    repo_fixture: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    write_branch_rewrite_child(repo_fixture)
+
+    exit_code = supervisor_module.main(
+        build_branch_rewrite_preview_mode=True,
+        target_spec="SG-SPEC-0001",
+        output_mode="full",
+    )
+
+    assert exit_code == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["artifact_kind"] == supervisor_module.BRANCH_REWRITE_PREVIEW_ARTIFACT_KIND
+    persisted = json.loads(
+        (repo_fixture / "runs" / "branch_rewrite_preview.json").read_text(encoding="utf-8")
+    )
+    assert persisted["artifact_kind"] == supervisor_module.BRANCH_REWRITE_PREVIEW_ARTIFACT_KIND
+    assert persisted["canonical_mutations_allowed"] is False
+    assert persisted["tracked_artifacts_written"] is False
+
+
+def test_main_rejects_branch_rewrite_preview_without_target_spec(
+    supervisor_module: object,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    exit_code = supervisor_module.main(build_branch_rewrite_preview_mode=True)
+
+    assert exit_code == 1
+    captured = capsys.readouterr()
+    assert "--build-branch-rewrite-preview requires --target-spec" in captured.err
+
+
+def test_main_rejects_combined_branch_rewrite_preview_and_refinement_flags(
+    supervisor_module: object,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    exit_code = supervisor_module.main(
+        build_branch_rewrite_preview_mode=True,
+        target_spec="SG-SPEC-0001",
+        split_proposal=True,
+    )
+
+    assert exit_code == 1
+    captured = capsys.readouterr()
+    assert "--build-branch-rewrite-preview must be used as a standalone command" in (captured.err)
+
+
 def write_implementation_source_artifacts(repo_fixture: Path) -> None:
     (repo_fixture / "runs" / "spec_trace_projection.json").write_text(
         json.dumps(

@@ -187,6 +187,10 @@ Supervisor modes:
   optional inline `--exploration-intent TEXT`, producing a review-only
   assumption-mode placeholder graph without mutating canonical specs or tracked
   intent/proposal artifacts.
+- `--build-branch-rewrite-preview --target-spec SG-SPEC-XXXX`: build
+  `runs/branch_rewrite_preview.json` for one bounded active `refines` subtree,
+  surfacing topology-prose and role-legibility rewrite pressure without
+  mutating canonical specs or tracked proposal/intent artifacts.
 - `--build-implementation-delta-snapshot`: build
   `runs/implementation_delta_snapshot.json` from explicit
   `--target-scope-kind`, `--target-spec-ids`, and `--operator-intent` values,
@@ -258,6 +262,9 @@ Key derived artifacts:
 - `runs/exploration_preview.json`: review-only assumption-mode preview graph
   with intent, assumption, hypothesis, proposal, and human-review placeholder
   nodes; no canonical or tracked artifact mutations are allowed by this artifact
+- `runs/branch_rewrite_preview.json`: review-only branch rewrite preview for
+  one active `refines` subtree, including branch-story summary, per-node
+  rewrite candidates, status mapping, risk, and explicit mutation boundary
 - `runs/implementation_delta_snapshot.json`: derived Implementation Work
   planning snapshot that captures baseline, explicit target scope, delta fields,
   source-artifact availability, readiness, and next gap without canonical or
@@ -456,6 +463,9 @@ Key derived artifacts:
 - `tools/exploration_preview_policy.json`: declarative contract for
   assumption-mode exploration previews, including allowed placeholder node
   kinds, edge kinds, promotion targets, and the preview-only mutation boundary
+- `tools/branch_rewrite_preview_policy.json`: declarative contract for
+  branch rewrite previews, including selection limits, preview statuses,
+  candidate classes, suggested actions, and viewer fields
 - `tools/implementation_delta_policy.json`: declarative contract for
   Implementation Work delta snapshots and work indexes, including baseline,
   target, delta, readiness, and derived-only mutation boundaries

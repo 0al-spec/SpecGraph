@@ -1,0 +1,118 @@
+{
+  "artifact_kind": "branch_rewrite_preview_policy",
+  "version": 1,
+  "repository_layout": {
+    "preview_artifact": "runs/branch_rewrite_preview.json"
+  },
+  "mode_contract": {
+    "mode_name": "branch_rewrite_preview",
+    "canonical_mutations_allowed": false,
+    "tracked_artifacts_written": false,
+    "review_boundary": "preview_only_until_human_approved_rewrite"
+  },
+  "selection_contract": {
+    "selector": "active_refines_subtree",
+    "edge_kind": "refines",
+    "default_max_depth": 3,
+    "default_node_limit": 24,
+    "include_historical_default": false
+  },
+  "preview_contract": {
+    "artifact_kind": "branch_rewrite_preview",
+    "schema_version": 1,
+    "preview_status_values": [
+      "ready_for_review",
+      "no_candidates",
+      "invalid_root",
+      "branch_too_large",
+      "blocked_by_unresolved_gate",
+      "broken_reference",
+      "empty_branch"
+    ],
+    "review_state_values": [
+      "preview_only",
+      "blocked"
+    ],
+    "rewrite_classes": [
+      "remove_graph_topology_prose",
+      "clarify_boundary",
+      "archive_historical_semantics",
+      "merge_bookkeeping_slice",
+      "preserve_boundary_contract",
+      "split_needed",
+      "no_change"
+    ],
+    "suggested_actions": [
+      "rewrite_node_role_boundary",
+      "merge_bookkeeping_slice",
+      "emit_split_proposal",
+      "preserve_as_boundary_contract",
+      "deemphasize_historical_lineage",
+      "no_change"
+    ]
+  },
+  "status_mapping": {
+    "ready_for_review": {
+      "review_state": "preview_only",
+      "next_gap": "human_review_before_apply"
+    },
+    "no_candidates": {
+      "review_state": "preview_only",
+      "next_gap": "no_branch_rewrite_needed"
+    },
+    "invalid_root": {
+      "review_state": "blocked",
+      "next_gap": "repair_branch_rewrite_target"
+    },
+    "branch_too_large": {
+      "review_state": "blocked",
+      "next_gap": "narrow_branch_rewrite_scope"
+    },
+    "blocked_by_unresolved_gate": {
+      "review_state": "blocked",
+      "next_gap": "resolve_branch_gate_before_preview"
+    },
+    "broken_reference": {
+      "review_state": "blocked",
+      "next_gap": "repair_graph_reference"
+    },
+    "empty_branch": {
+      "review_state": "blocked",
+      "next_gap": "choose_nonempty_branch"
+    }
+  },
+  "viewer_contract": {
+    "summary_fields": [
+      "target.root_spec_id",
+      "preview_status",
+      "review_state",
+      "node_count",
+      "candidate_count",
+      "next_gap"
+    ],
+    "story_fields": [
+      "branch_story.current_summary",
+      "branch_story.proposed_summary",
+      "branch_story.story_gaps"
+    ],
+    "candidate_fields": [
+      "spec_id",
+      "title",
+      "presence_state",
+      "current_role_summary",
+      "rewrite_recommendation",
+      "rewrite_classes",
+      "findings",
+      "suggested_action",
+      "risk_level",
+      "proposed_summary",
+      "proposed_patch_preview",
+      "blocked_by"
+    ]
+  },
+  "policy_refs": [
+    "docs/proposals/0017_role_first_semantic_bias_for_supervisor.md",
+    "docs/proposals/0036_topology_facts_are_not_spec_prose.md",
+    "docs/proposals/0040_branch_rewrite_preview_mode.md"
+  ]
+}
