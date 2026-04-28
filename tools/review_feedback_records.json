@@ -375,5 +375,23 @@
     "residual_risk": "",
     "resolved_commit": "d7d6e8cc2501ff466dabb5fe1b4b51fce81c682c",
     "recorded_at": "2026-04-28T16:51:05Z"
+  },
+  {
+    "feedback_id": "pr-159-backlog-endpoint-envelope",
+    "source_pr": 159,
+    "source_thread_url": "https://github.com/0al-spec/SpecGraph/pull/159#discussion_r3156121045",
+    "reviewer": "copilot-pull-request-reviewer",
+    "review_comment_summary": "The graph backlog viewer contract recommended returning raw artifact JSON while also asking viewers to show file mtime, unlike the envelope pattern used by other viewer endpoints.",
+    "fix_summary": "Updated the endpoint contract to return the standard viewer metadata envelope with path, mtime, mtime_iso, and the unmodified artifact under data.",
+    "root_cause_class": "viewer_contract_gap",
+    "prevention_action": "documentation_rule_added",
+    "verification": [
+      "manual_contract_review",
+      "full_test_suite",
+      "lint_or_format_check"
+    ],
+    "residual_risk": "",
+    "resolved_commit": "6a51e76b1395cb37d6362159a01b3f6e0d6b86bc",
+    "recorded_at": "2026-04-28T18:14:15Z"
   }
 ]
