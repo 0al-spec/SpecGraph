@@ -14356,6 +14356,62 @@ def test_build_branch_rewrite_preview_marks_invalid_root(
     assert preview["candidate_count"] == 0
 
 
+def test_build_branch_rewrite_preview_rejects_historical_root(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    root_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    root = json.loads(root_path.read_text(encoding="utf-8"))
+    root["presence"] = {"state": "historical"}
+    root_path.write_text(json.dumps(root), encoding="utf-8")
+
+    preview = supervisor_module.build_branch_rewrite_preview("SG-SPEC-0001")
+
+    assert preview["preview_status"] == "invalid_root"
+    assert preview["review_state"] == "blocked"
+    assert preview["next_gap"] == "repair_branch_rewrite_target"
+    assert preview["target"]["resolved_spec_ids"] == []
+    assert preview["review_evidence"]["blocked_by"] == [
+        {
+            "blocker": "non_active_root",
+            "root_spec_id": "SG-SPEC-0001",
+            "presence_state": "historical",
+        }
+    ]
+
+
+def test_build_branch_rewrite_preview_rejects_status_vocab_drift(
+    supervisor_module: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        supervisor_module,
+        "BRANCH_REWRITE_PREVIEW_STATUS_VALUES",
+        ["ready_for_review"],
+    )
+
+    with pytest.raises(RuntimeError) as exc_info:
+        supervisor_module.build_branch_rewrite_preview("SG-SPEC-9999")
+
+    assert "branch rewrite preview policy/artifact drift" in str(exc_info.value)
+    assert "invalid preview_status: invalid_root" in str(exc_info.value)
+
+
+def test_build_branch_rewrite_preview_rejects_review_state_vocab_drift(
+    supervisor_module: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    policy = copy.deepcopy(supervisor_module.BRANCH_REWRITE_PREVIEW_POLICY)
+    policy["status_mapping"]["invalid_root"]["review_state"] = "needs_reviewer_guesswork"
+    monkeypatch.setattr(supervisor_module, "BRANCH_REWRITE_PREVIEW_POLICY", policy)
+
+    with pytest.raises(RuntimeError) as exc_info:
+        supervisor_module.build_branch_rewrite_preview("SG-SPEC-9999")
+
+    assert "branch rewrite preview policy/artifact drift" in str(exc_info.value)
+    assert "invalid review_state: needs_reviewer_guesswork" in str(exc_info.value)
+
+
 def test_build_branch_rewrite_preview_emits_review_only_candidates_from_active_subtree(
     supervisor_module: object,
     repo_fixture: Path,
@@ -14384,6 +14440,36 @@ def test_build_branch_rewrite_preview_emits_review_only_candidates_from_active_s
     }
     assert "remove_graph_topology_prose" in candidates_by_id["SG-SPEC-0002"]["rewrite_classes"]
     assert preview["viewer_contract"]["candidate_fields"]
+
+
+def test_branch_rewrite_candidate_preserves_historical_action(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    node = supervisor_module.SpecNode(
+        path=repo_fixture / "specs" / "nodes" / "SG-SPEC-0002.yaml",
+        data={
+            "id": "SG-SPEC-0002",
+            "title": "Historical Topology Segment",
+            "status": "outlined",
+            "presence": {"state": "historical"},
+            "depends_on": [],
+            "refines": ["SG-SPEC-0001"],
+            "relates_to": [],
+            "prompt": (
+                "SG-SPEC-0002 delegates SG-SPEC-0001 to SG-SPEC-0003 through "
+                "SG-SPEC-0004 and SG-SPEC-0005 as a topology gateway segment."
+            ),
+            "acceptance": [],
+        },
+    )
+
+    candidate = supervisor_module.branch_rewrite_candidate_for_spec(node)
+
+    assert candidate["presence_state"] == "historical"
+    assert candidate["suggested_action"] == "deemphasize_historical_lineage"
+    assert candidate["risk_level"] == "low"
+    assert candidate["rewrite_classes"] == ["archive_historical_semantics"]
 
 
 def test_build_branch_rewrite_preview_blocks_on_unresolved_gate(

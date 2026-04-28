@@ -82,6 +82,7 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+from collections import deque
 from collections.abc import Callable
 from contextlib import contextmanager
 from dataclasses import asdict, dataclass
@@ -11369,6 +11370,22 @@ def branch_rewrite_status_mapping(preview_status: str) -> tuple[str, str]:
     return review_state, next_gap
 
 
+def validate_branch_rewrite_status_contract(preview_status: str, review_state: str) -> None:
+    allowed_statuses = {
+        str(item).strip() for item in BRANCH_REWRITE_PREVIEW_STATUS_VALUES if str(item).strip()
+    }
+    allowed_review_states = {
+        str(item).strip() for item in BRANCH_REWRITE_REVIEW_STATE_VALUES if str(item).strip()
+    }
+    findings: list[str] = []
+    if str(preview_status).strip() not in allowed_statuses:
+        findings.append(f"invalid preview_status: {preview_status}")
+    if str(review_state).strip() not in allowed_review_states:
+        findings.append(f"invalid review_state: {review_state}")
+    if findings:
+        raise RuntimeError("branch rewrite preview policy/artifact drift: " + "; ".join(findings))
+
+
 def validate_branch_rewrite_mode_contract() -> dict[str, Any]:
     mode_contract = copy.deepcopy(BRANCH_REWRITE_PREVIEW_POLICY["mode_contract"])
     canonical_mutations_allowed = mode_contract.get("canonical_mutations_allowed")
@@ -11400,10 +11417,10 @@ def branch_rewrite_resolve_branch(
     selected: list[SpecNode] = []
     inspected_edges: list[dict[str, str]] = []
     seen: set[str] = set()
-    queue: list[tuple[SpecNode, int]] = [(root, 0)]
+    queue: deque[tuple[SpecNode, int]] = deque([(root, 0)])
 
     while queue:
-        current, depth = queue.pop(0)
+        current, depth = queue.popleft()
         if not current.id or current.id in seen:
             continue
         seen.add(current.id)
@@ -11501,7 +11518,7 @@ def branch_rewrite_candidate_for_spec(
         findings.append("historical_lineage_should_be_visually_deemphasized")
         suggested_action = "deemphasize_historical_lineage"
         risk_level = "low"
-    if bool(profile.get("bookkeeping_only")) or "bookkeeping_only_node" in signals:
+    elif bool(profile.get("bookkeeping_only")) or "bookkeeping_only_node" in signals:
         rewrite_classes.extend(["remove_graph_topology_prose", "merge_bookkeeping_slice"])
         findings.append("bookkeeping_or_topology_prose_dominates_role_text")
         suggested_action = "merge_bookkeeping_slice"
@@ -11618,6 +11635,15 @@ def build_branch_rewrite_preview(target_spec_id: str | None = None) -> dict[str,
     if not requested_root or requested_root not in spec_index:
         preview_status = "invalid_root"
         missing_target_spec_ids = [requested_root] if requested_root else []
+    elif is_historical_spec(spec_index[requested_root].data):
+        preview_status = "invalid_root"
+        blocked_by.append(
+            {
+                "blocker": "non_active_root",
+                "root_spec_id": requested_root,
+                "presence_state": branch_rewrite_presence_state(spec_index[requested_root]),
+            }
+        )
     else:
         selected_specs, inspected_edges = branch_rewrite_resolve_branch(
             root=spec_index[requested_root],
@@ -11674,6 +11700,7 @@ def build_branch_rewrite_preview(target_spec_id: str | None = None) -> dict[str,
         preview_status = "no_candidates"
 
     review_state, next_gap = branch_rewrite_status_mapping(preview_status)
+    validate_branch_rewrite_status_contract(preview_status, review_state)
     candidate_class_counts: dict[str, int] = {}
     action_counts: dict[str, int] = {}
     for candidate in candidates:
