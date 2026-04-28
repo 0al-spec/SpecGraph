@@ -285,5 +285,95 @@
     "residual_risk": "A repository-wide timestamp freshness validator is intentionally deferred because many legacy spec nodes still carry older last_gate_at values; this PR fixes only the reviewed SG-SPEC-0043 drift.",
     "resolved_commit": "9de37a27f5acd1539b48816a16f4b538209113d6",
     "recorded_at": "2026-04-27T21:36:44Z"
+  },
+  {
+    "feedback_id": "pr-158-parseable-proposal-status",
+    "source_pr": 158,
+    "source_thread_url": "https://github.com/0al-spec/SpecGraph/pull/158#discussion_r3150355044",
+    "reviewer": "chatgpt-codex-connector",
+    "review_comment_summary": "Proposal 0040 used inline status text that parse_proposal_document would not treat as machine-readable proposal status.",
+    "fix_summary": "Converted the inline status line into a parseable ## Status section and verified proposal_runtime_index reports status Draft proposal for 0040.",
+    "root_cause_class": "artifact_contract_validation_gap",
+    "prevention_action": "documentation_rule_added",
+    "verification": [
+      "manual_contract_review",
+      "full_test_suite",
+      "lint_or_format_check"
+    ],
+    "residual_risk": "",
+    "resolved_commit": "d7d6e8cc2501ff466dabb5fe1b4b51fce81c682c",
+    "recorded_at": "2026-04-28T16:51:05Z"
+  },
+  {
+    "feedback_id": "pr-158-branch-rewrite-target-selector",
+    "source_pr": 158,
+    "source_thread_url": "https://github.com/0al-spec/SpecGraph/pull/158#discussion_r3150381871",
+    "reviewer": "copilot-pull-request-reviewer",
+    "review_comment_summary": "Proposal 0040 introduced a new --branch-rewrite-root selector instead of reusing the supervisor's existing --target-spec selector.",
+    "fix_summary": "Changed the proposal command and input contract to use --target-spec as the branch root selector.",
+    "root_cause_class": "diagnostic_wording_gap",
+    "prevention_action": "documentation_rule_added",
+    "verification": [
+      "manual_contract_review",
+      "full_test_suite",
+      "lint_or_format_check"
+    ],
+    "residual_risk": "",
+    "resolved_commit": "d7d6e8cc2501ff466dabb5fe1b4b51fce81c682c",
+    "recorded_at": "2026-04-28T16:51:05Z"
+  },
+  {
+    "feedback_id": "pr-158-branch-rewrite-top-level-mutation-flags",
+    "source_pr": 158,
+    "source_thread_url": "https://github.com/0al-spec/SpecGraph/pull/158#discussion_r3150381901",
+    "reviewer": "copilot-pull-request-reviewer",
+    "review_comment_summary": "Proposal 0040 nested canonical_mutations_allowed and tracked_artifacts_written under mutation_boundary, unlike existing derived artifact contracts.",
+    "fix_summary": "Moved canonical_mutations_allowed and tracked_artifacts_written to top-level fields in the output contract example.",
+    "root_cause_class": "artifact_contract_validation_gap",
+    "prevention_action": "documentation_rule_added",
+    "verification": [
+      "manual_contract_review",
+      "full_test_suite",
+      "lint_or_format_check"
+    ],
+    "residual_risk": "",
+    "resolved_commit": "d7d6e8cc2501ff466dabb5fe1b4b51fce81c682c",
+    "recorded_at": "2026-04-28T16:51:05Z"
+  },
+  {
+    "feedback_id": "pr-158-branch-rewrite-status-mapping",
+    "source_pr": 158,
+    "source_thread_url": "https://github.com/0al-spec/SpecGraph/pull/158#discussion_r3150381919",
+    "reviewer": "copilot-pull-request-reviewer",
+    "review_comment_summary": "Proposal 0040 defined preview_status values without specifying corresponding review_state and next_gap behavior for blocked states.",
+    "fix_summary": "Added an explicit Status Mapping section that maps ready, no-candidate, invalid, too-large, unresolved-gate, broken-reference, and empty-branch statuses to review_state and next_gap values.",
+    "root_cause_class": "viewer_contract_gap",
+    "prevention_action": "documentation_rule_added",
+    "verification": [
+      "manual_contract_review",
+      "full_test_suite",
+      "lint_or_format_check"
+    ],
+    "residual_risk": "",
+    "resolved_commit": "d7d6e8cc2501ff466dabb5fe1b4b51fce81c682c",
+    "recorded_at": "2026-04-28T16:51:05Z"
+  },
+  {
+    "feedback_id": "pr-158-branch-rewrite-review-evidence-fields",
+    "source_pr": 158,
+    "source_thread_url": "https://github.com/0al-spec/SpecGraph/pull/158#discussion_r3150381835",
+    "reviewer": "copilot-pull-request-reviewer",
+    "review_comment_summary": "Proposal 0040 required review evidence such as source graph version and inspected edges but did not show where those fields live in the output contract.",
+    "fix_summary": "Added provenance and review_evidence fields to the output contract and mapped each review-boundary evidence requirement to those fields.",
+    "root_cause_class": "artifact_contract_validation_gap",
+    "prevention_action": "documentation_rule_added",
+    "verification": [
+      "manual_contract_review",
+      "full_test_suite",
+      "lint_or_format_check"
+    ],
+    "residual_risk": "",
+    "resolved_commit": "d7d6e8cc2501ff466dabb5fe1b4b51fce81c682c",
+    "recorded_at": "2026-04-28T16:51:05Z"
   }
 ]
