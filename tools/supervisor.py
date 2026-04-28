@@ -22484,6 +22484,7 @@ def build_graph_backlog_projection_from_surfaces(
         "entry_count": len(entries),
         "entries": entries,
         "summary": {
+            "entry_count": len(entries),
             "domain_counts": grouped_identifier_counts(sorted_groups(by_domain)),
             "priority_counts": grouped_identifier_counts(sorted_groups(by_priority)),
             "next_gap_counts": grouped_identifier_counts(sorted_groups(by_next_gap)),

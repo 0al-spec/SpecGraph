@@ -18,6 +18,8 @@ For the dedicated `SpecPM` package/export/import viewer contract, see
 [specpm_viewer_contract.md](./specpm_viewer_contract.md).
 For the ContextBuilder exploration/assumption-mode viewer contract, see
 [exploration_preview_viewer_contract.md](./exploration_preview_viewer_contract.md).
+For the ContextBuilder graph backlog drill-down viewer contract, see
+[graph_backlog_projection_viewer_contract.md](./graph_backlog_projection_viewer_contract.md).
 For the planned Implementation Work delta/work-index viewer contract, see
 [implementation_work_viewer_contract.md](./implementation_work_viewer_contract.md).
 
