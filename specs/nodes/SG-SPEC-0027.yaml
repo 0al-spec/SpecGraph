@@ -2,7 +2,7 @@ id: SG-SPEC-0027
 title: SpecGraph - Reflective Execution Mechanics Cluster
 kind: spec
 created_at: '2026-04-13T07:49:44Z'
-updated_at: '2026-04-25T07:10:00Z'
+updated_at: '2026-04-29T22:29:29Z'
 status: linked
 maturity: 0.69
 depends_on:
@@ -49,8 +49,8 @@ acceptance_evidence:
 - criterion: Remains implementation-agnostic about viewer layout, queue ranking formulas, and runtime
     orchestration.
   evidence: specification.scope.out excludes viewer layout, queue ranking formulas, and runtime orchestration
-    details. SG-SPEC-0027 governs only subtree coherence and integration boundaries.
-prompt: Keep SG-SPEC-0027 as the reflective execution-readiness surface. It should explain how retrospective
+    details. This node governs only readiness-surface coherence and integration boundaries.
+prompt: Keep this node as the reflective execution-readiness surface. It should explain how retrospective
   direct-update safety and proposal/split mechanics readiness compose for continuation decisions without
   turning child membership into the main spec prose.
 specification:
@@ -66,7 +66,7 @@ specification:
     out:
     - Concrete mechanics semantics already owned by descendant specs
     - Internal proposal/split payload, lifecycle, or queue semantics
-    - Continuation-selection policy owned by SG-SPEC-0026
+    - Continuation-selection policy
     - Viewer layout, queue ranking formulas, and runtime orchestration
   execution_readiness_model:
   - Reflective execution readiness is true only when direct-update safety and proposal/split readiness
@@ -74,9 +74,15 @@ specification:
   - This node defines the composed readiness surface, not the field-level mechanics beneath it.
   mechanics_families:
     retrospective_direct_update_boundary:
-    - SG-SPEC-0005 owns retrospective direct-update boundary and application envelope.
+    - The retrospective direct-update input provides the direct-update boundary and application envelope.
     proposal_split_readiness:
-    - SG-SPEC-0032 owns proposal/split mechanics readiness as a coherent capability region.
+    - The proposal/split readiness input provides the coherent capability-region readiness signal.
+  role_boundary:
+  - This node owns only the composed execution-readiness surface consumed by continuation selection.
+  - This node does not own direct-update mechanics, proposal/split mechanics, continuation-selection policy,
+    viewer layout, queue ranking, or runtime orchestration.
+  - Graph placement is represented by metadata edges; prose should describe readiness composition semantics
+    rather than restating provider routes.
   review_surface:
   - Reviewers inspect this node to understand whether reflective execution has a coherent mechanics readiness
     surface before continuation selection consumes it.
@@ -88,18 +94,18 @@ specification:
     target.
   topology_prose_policy:
   - Direct child membership is represented by canonical graph metadata.
-  - SG-SPEC-0027 prose should explain the composed execution-readiness role rather than restating that
+  - This node's prose should explain the composed execution-readiness role rather than restating that
     one spec depends on another.
   cluster_boundaries:
   - This composed readiness surface does not collapse descendant node identities or their bounded concerns.
-  - SG-SPEC-0027 does not redefine the mechanics contracts already owned by its descendants.
+  - This node does not redefine mechanics contracts owned by downstream bounded concerns.
   - Cross-mechanics consistency is expressed here only as readiness composition.
-  - SG-SPEC-0027 does not restate field-level proposal or split artifact contracts.
+  - This node does not restate field-level proposal or split artifact contracts.
   parent_contract:
-  - SG-SPEC-0026 consumes SG-SPEC-0027 as the reflective execution-readiness surface.
-  - SG-SPEC-0027 remains narrow enough that continuation-selection logic stays outside concrete mechanics.
-  - SG-SPEC-0027 should be rewritten or merged rather than split again if a proposed child would only
-    verbalize child membership or edge routing.
+  - The parent continuation-selection layer consumes this node as the reflective execution-readiness surface.
+  - This node remains narrow enough that continuation-selection logic stays outside concrete mechanics.
+  - This node should be rewritten or merged rather than split again if a proposed child would only verbalize
+    child membership or edge routing.
 gate_state: none
 proposed_status: null
 proposed_maturity: null
