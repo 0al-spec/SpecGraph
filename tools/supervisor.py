@@ -22501,6 +22501,7 @@ GRAPH_BACKLOG_PRIORITY_RANK = {
 def graph_backlog_source_artifact_path(source_artifact: str) -> str:
     path_by_artifact: dict[str, Callable[[], Path]] = {
         "graph_health_overlay": graph_health_overlay_path,
+        "branch_rewrite_preview": branch_rewrite_preview_path,
         "proposal_runtime_index": proposal_runtime_index_path,
         "proposal_promotion_index": proposal_promotion_index_path,
         "refactor_queue": refactor_queue_path,
@@ -22534,6 +22535,16 @@ def graph_backlog_source_artifact_record(
     }
     if isinstance(payload, dict):
         record["generated_at"] = payload.get("generated_at")
+        for field in (
+            "status",
+            "preview_status",
+            "review_state",
+            "next_gap",
+            "candidate_count",
+            "node_count",
+        ):
+            if field in payload:
+                record[field] = copy.deepcopy(payload[field])
         if "entry_count" in payload:
             record["entry_count"] = payload.get("entry_count")
     elif isinstance(payload, list):
@@ -22726,6 +22737,80 @@ def append_grouped_backlog_items(
             )
 
 
+def branch_rewrite_preview_story_gap_ids(
+    branch_rewrite_preview: dict[str, Any] | None,
+) -> list[str]:
+    if not isinstance(branch_rewrite_preview, dict):
+        return []
+    branch_story = branch_rewrite_preview.get("branch_story", {})
+    if not isinstance(branch_story, dict):
+        return []
+    raw_story_gaps = branch_story.get("story_gaps", [])
+    if not isinstance(raw_story_gaps, list):
+        return []
+    seen: set[str] = set()
+    normalized: list[str] = []
+    for item in raw_story_gaps:
+        spec_id = str(item).strip()
+        if spec_id and spec_id not in seen:
+            seen.add(spec_id)
+            normalized.append(spec_id)
+    return normalized
+
+
+def append_branch_rewrite_preview_backlog_items(
+    entries: list[dict[str, Any]],
+    *,
+    branch_rewrite_preview: dict[str, Any] | None,
+) -> None:
+    if not isinstance(branch_rewrite_preview, dict):
+        return
+    preview_status = str(branch_rewrite_preview.get("preview_status", "")).strip()
+    review_state = str(branch_rewrite_preview.get("review_state", "")).strip()
+    if preview_status != "ready_for_review":
+        return
+    target = branch_rewrite_preview.get("target", {})
+    root_spec_id = str(target.get("root_spec_id", "")).strip() if isinstance(target, dict) else ""
+    story_gap_ids = set(branch_rewrite_preview_story_gap_ids(branch_rewrite_preview))
+    raw_candidates = branch_rewrite_preview.get("node_rewrite_candidates", [])
+    candidates = raw_candidates if isinstance(raw_candidates, list) else []
+    for candidate in candidates:
+        if not isinstance(candidate, dict):
+            continue
+        spec_id = str(candidate.get("spec_id", "")).strip()
+        suggested_action = str(candidate.get("suggested_action", "")).strip()
+        if not spec_id or suggested_action == "no_change":
+            continue
+        entries.append(
+            graph_backlog_entry(
+                source_artifact="branch_rewrite_preview",
+                domain="branch_rewrite",
+                subject_kind="spec",
+                subject_id=spec_id,
+                title=str(candidate.get("title", "")).strip(),
+                status=suggested_action or "branch_rewrite_candidate",
+                review_state=review_state or "preview_only",
+                next_gap="review_branch_rewrite_candidate",
+                priority="high",
+                source_item_id=f"{root_spec_id}::{spec_id}::{suggested_action}",
+                details={
+                    "root_spec_id": root_spec_id,
+                    "preview_status": preview_status,
+                    "risk_level": candidate.get("risk_level"),
+                    "rewrite_classes": copy.deepcopy(candidate.get("rewrite_classes", [])),
+                    "findings": copy.deepcopy(candidate.get("findings", [])),
+                    "rewrite_recommendation": candidate.get("rewrite_recommendation"),
+                    "current_role_summary": candidate.get("current_role_summary"),
+                    "proposed_summary": candidate.get("proposed_summary"),
+                    "proposed_patch_preview": copy.deepcopy(
+                        candidate.get("proposed_patch_preview", [])
+                    ),
+                    "story_gap": spec_id in story_gap_ids,
+                },
+            )
+        )
+
+
 def build_graph_backlog_projection_from_surfaces(
     *,
     graph_overlay: dict[str, Any],
@@ -22745,6 +22830,7 @@ def build_graph_backlog_projection_from_surfaces(
     metrics_source_promotion_index: dict[str, Any],
     metric_threshold_proposals: dict[str, Any],
     review_feedback_index: dict[str, Any],
+    branch_rewrite_preview: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     entries: list[dict[str, Any]] = []
 
@@ -22789,6 +22875,11 @@ def build_graph_backlog_projection_from_surfaces(
                 },
             )
         )
+
+    append_branch_rewrite_preview_backlog_items(
+        entries,
+        branch_rewrite_preview=branch_rewrite_preview,
+    )
 
     append_backlog_items(
         entries,
@@ -22999,6 +23090,8 @@ def build_graph_backlog_projection_from_surfaces(
     by_subject_kind: dict[str, list[str]] = {}
     named_filters: dict[str, list[str]] = {
         "ready_for_review": [],
+        "branch_rewrite_candidates": [],
+        "branch_rewrite_ready": [],
         "blocked_by_repo_state": [],
         "human_review_required": [],
         "missing_trace_contract": [],
@@ -23033,9 +23126,20 @@ def build_graph_backlog_projection_from_surfaces(
             review_state == "ready_for_review" or next_gap.startswith("review_")
         ):
             named_filters["ready_for_review"].append(backlog_id)
+        if source_artifact == "branch_rewrite_preview":
+            named_filters["branch_rewrite_candidates"].append(backlog_id)
+        if (
+            source_artifact == "branch_rewrite_preview"
+            and next_gap == "review_branch_rewrite_candidate"
+        ):
+            named_filters["branch_rewrite_ready"].append(backlog_id)
         if "blocked_by_repo_state" in status or next_gap.startswith("isolate_"):
             named_filters["blocked_by_repo_state"].append(backlog_id)
-        if next_gap in {"resolve_review_gate", "review_handoff_packet"}:
+        if next_gap in {
+            "resolve_review_gate",
+            "review_handoff_packet",
+            "review_branch_rewrite_candidate",
+        }:
             named_filters["human_review_required"].append(backlog_id)
         if next_gap == "attach_trace_contract":
             named_filters["missing_trace_contract"].append(backlog_id)
@@ -23056,6 +23160,7 @@ def build_graph_backlog_projection_from_surfaces(
 
     source_payloads: dict[str, dict[str, Any] | list[dict[str, Any]]] = {
         "graph_health_overlay": graph_overlay,
+        "branch_rewrite_preview": branch_rewrite_preview or {},
         "proposal_runtime_index": proposal_runtime_index,
         "proposal_promotion_index": proposal_promotion_index,
         "refactor_queue": refactor_queue_items,
@@ -23108,6 +23213,7 @@ def build_graph_backlog_projection_from_surfaces(
 
 def build_graph_backlog_projection(specs: list[SpecNode]) -> dict[str, Any]:
     graph_overlay = build_graph_health_overlay(specs)
+    branch_rewrite_preview, _branch_rewrite_summary = load_current_branch_rewrite_preview_summary()
     proposal_runtime_index = build_proposal_runtime_index()
     proposal_promotion_index = build_proposal_promotion_index()
     spec_trace_index = build_spec_trace_index(specs)
@@ -23159,6 +23265,7 @@ def build_graph_backlog_projection(specs: list[SpecNode]) -> dict[str, Any]:
         metrics_source_promotion_index=metrics_source_promotion_index,
         metric_threshold_proposals=metric_threshold_proposals,
         review_feedback_index=review_feedback_index,
+        branch_rewrite_preview=branch_rewrite_preview,
     )
 
 
@@ -23323,6 +23430,19 @@ def graph_next_moves_top_backlog_entry(
     return entries[0]
 
 
+def graph_next_moves_branch_preview_projected(
+    branch_preview: dict[str, Any],
+    backlog_projection: dict[str, Any],
+) -> bool:
+    candidate_count = int(branch_preview.get("candidate_count", 0) or 0)
+    summary = backlog_projection.get("summary", {})
+    source_counts = summary.get("source_artifact_counts", {}) if isinstance(summary, dict) else {}
+    if not isinstance(source_counts, dict):
+        source_counts = {}
+    projected_count = int(source_counts.get("branch_rewrite_preview", 0) or 0)
+    return candidate_count > 0 and projected_count >= candidate_count
+
+
 def graph_next_moves_from_branch_preview(
     branch_preview: dict[str, Any],
     branch_summary: dict[str, Any],
@@ -23443,6 +23563,7 @@ def build_graph_next_moves(
     branch_move = (
         graph_next_moves_from_branch_preview(branch_preview, branch_summary)
         if branch_preview is not None
+        and not graph_next_moves_branch_preview_projected(branch_preview, backlog_projection)
         else None
     )
     backlog_entry = graph_next_moves_top_backlog_entry(backlog_projection)
@@ -23588,6 +23709,7 @@ def write_graph_next_moves(report: dict[str, Any]) -> Path:
 def build_graph_dashboard(specs: list[SpecNode]) -> dict[str, Any]:
     graph_overlay = build_graph_health_overlay(specs)
     graph_trends = build_graph_health_trends(specs, overlay=graph_overlay)
+    branch_rewrite_preview, branch_rewrite_summary = load_current_branch_rewrite_preview_summary()
     intent_overlay = build_intent_layer_overlay()
     proposal_lane_overlay = build_proposal_lane_overlay()
     proposal_runtime_index = build_proposal_runtime_index()
@@ -23645,6 +23767,7 @@ def build_graph_dashboard(specs: list[SpecNode]) -> dict[str, Any]:
         metrics_source_promotion_index=metrics_source_promotion_index,
         metric_threshold_proposals=metric_threshold_proposals,
         review_feedback_index=review_feedback_index,
+        branch_rewrite_preview=branch_rewrite_preview,
     )
     graph_backlog_priority_counts = graph_backlog_projection.get("summary", {}).get(
         "priority_counts", {}
@@ -23655,6 +23778,27 @@ def build_graph_dashboard(specs: list[SpecNode]) -> dict[str, Any]:
     graph_backlog_next_gap_counts = graph_backlog_projection.get("summary", {}).get(
         "next_gap_counts", {}
     )
+    graph_backlog_summary = graph_backlog_projection.get("summary", {})
+    graph_backlog_source_artifact_counts = (
+        graph_backlog_summary.get("source_artifact_counts", {})
+        if isinstance(graph_backlog_summary, dict)
+        else {}
+    )
+    if not isinstance(graph_backlog_source_artifact_counts, dict):
+        graph_backlog_source_artifact_counts = {}
+    branch_rewrite_candidate_count = int(
+        graph_backlog_source_artifact_counts.get("branch_rewrite_preview", 0) or 0
+    )
+    branch_rewrite_candidate_spec_ids = sorted(
+        {
+            str(entry.get("subject_id", "")).strip()
+            for entry in graph_backlog_projection.get("entries", [])
+            if isinstance(entry, dict)
+            and str(entry.get("source_artifact", "")).strip() == "branch_rewrite_preview"
+            and str(entry.get("subject_id", "")).strip()
+        }
+    )
+    branch_rewrite_story_gap_spec_ids = branch_rewrite_preview_story_gap_ids(branch_rewrite_preview)
 
     total_spec_count = len(specs)
     active_spec_count = sum(1 for spec in specs if not is_historical_spec(spec.data))
@@ -23931,6 +24075,17 @@ def build_graph_dashboard(specs: list[SpecNode]) -> dict[str, Any]:
             ),
         ),
         dashboard_card(
+            card_id="branch_rewrite_candidates",
+            title="Branch Rewrite Candidates",
+            value=branch_rewrite_candidate_count,
+            section="health",
+            status="attention" if branch_rewrite_candidate_count else "healthy",
+            basis=(
+                "Specs from the current branch rewrite preview that need review-first "
+                "role-boundary rewrite decisions."
+            ),
+        ),
+        dashboard_card(
             card_id="proposal_lane_active",
             title="Active Proposal Lane Nodes",
             value=proposal_lane_active_count,
@@ -24119,6 +24274,14 @@ def build_graph_dashboard(specs: list[SpecNode]) -> dict[str, Any]:
                 "artifact_path": graph_health_trends_path().relative_to(ROOT).as_posix(),
                 "generated_at": graph_trends.get("generated_at"),
             },
+            "branch_rewrite_preview": {
+                "artifact_path": branch_rewrite_preview_path().relative_to(ROOT).as_posix(),
+                "generated_at": branch_rewrite_summary.get("generated_at"),
+                "status": branch_rewrite_summary.get("status"),
+                "preview_status": branch_rewrite_summary.get("preview_status"),
+                "candidate_count": branch_rewrite_summary.get("candidate_count"),
+                "node_count": branch_rewrite_summary.get("node_count"),
+            },
             "intent_layer_overlay": {
                 "artifact_path": intent_layer_overlay_path().relative_to(ROOT).as_posix(),
                 "generated_at": intent_overlay.get("generated_at"),
@@ -24220,6 +24383,12 @@ def build_graph_dashboard(specs: list[SpecNode]) -> dict[str, Any]:
                 "structural_pressure_spec_ids": structural_pressure_spec_ids,
                 "retrospective_refactor_candidate_spec_ids": retrospective_refactor_spec_ids,
                 "retrospective_refactor_signal_spec_ids": retrospective_signal_spec_ids,
+                "branch_rewrite_preview_status": branch_rewrite_summary.get("preview_status")
+                or branch_rewrite_summary.get("status"),
+                "branch_rewrite_root_spec_id": branch_rewrite_summary.get("root_spec_id"),
+                "branch_rewrite_candidate_count": branch_rewrite_candidate_count,
+                "branch_rewrite_candidate_spec_ids": branch_rewrite_candidate_spec_ids,
+                "branch_rewrite_story_gap_spec_ids": branch_rewrite_story_gap_spec_ids,
                 "hotspot_region_count": len(graph_overlay.get("hotspot_regions", [])),
             },
             "proposals": {
@@ -24400,6 +24569,7 @@ def build_graph_dashboard(specs: list[SpecNode]) -> dict[str, Any]:
                     implementation_work_readiness_counts.get("blocked_by_trace_gap", 0)
                 ),
                 "retrospective_refactor_candidates": len(retrospective_refactor_spec_ids),
+                "branch_rewrite_candidates": branch_rewrite_candidate_count,
                 "drifted_specs": trace_impl_counts.get("drifted", 0),
                 "complete_evidence_chain_specs": evidence_named_filter_counts.get(
                     "complete_chain", 0

@@ -931,5 +931,49 @@
         "pattern": "\"artifact_kind\": GRAPH_NEXT_MOVES_ARTIFACT_KIND"
       }
     ]
+  },
+  {
+    "proposal_id": "0042",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "tools/supervisor.py",
+      "tests/test_supervisor.py",
+      "docs/graph_backlog_projection_viewer_contract.md",
+      "docs/proposals/0042_branch_rewrite_preview_projection.md"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def append_branch_rewrite_preview_backlog_items("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "\"branch_rewrite_preview\": branch_rewrite_preview_path"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "branch_rewrite_candidate_count"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "\"source_artifact_counts\"][\"branch_rewrite_preview\"] == 2"
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_graph_next_moves_stops_projecting_after_branch_preview_reaches_backlog("
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/graph_backlog_projection_viewer_contract.md",
+        "pattern": "source_artifact: \"branch_rewrite_preview\""
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "\"branch_rewrite_candidates\": branch_rewrite_candidate_count"
+      }
+    ]
   }
 ]
