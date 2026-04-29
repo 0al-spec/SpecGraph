@@ -2,7 +2,7 @@ id: SG-SPEC-0028
 title: SpecGraph - Proposal/Split Mechanics Coordination
 kind: spec
 created_at: '2026-04-13T07:55:45Z'
-updated_at: '2026-04-27T21:14:36Z'
+updated_at: '2026-04-29T22:35:31Z'
 status: linked
 maturity: 0.89
 depends_on:
@@ -24,10 +24,9 @@ acceptance:
   proposal-lane or split payload details are inspected.
 - Keeps proposal-lane execution and split mechanics jointly reviewable as separate required capabilities
   without turning their graph placement into the main contract.
-- Preserves concrete ownership boundaries where SG-SPEC-0006 owns proposal-lane execution, SG-SPEC-0025
-  owns split mechanics and payload semantics, SG-SPEC-0004 remains the split lifecycle anchor, and SG-SPEC-0030
-  owns parent-facing prerequisite semantics.
-- Separates proposal/split mechanics readiness from retrospective direct-update semantics owned by SG-SPEC-0005.
+- Preserves concrete capability boundaries between proposal-lane execution, split mechanics, split lifecycle
+  anchoring, and parent-facing prerequisite semantics.
+- Separates proposal/split mechanics readiness from retrospective direct-update semantics.
 - Remains implementation-agnostic about proposal storage layout, queue ranking formulas, and runtime orchestration.
 acceptance_evidence:
 - criterion: Defines the proposal/split mechanics coordination surface consumed by reflective execution
@@ -39,20 +38,18 @@ acceptance_evidence:
   evidence: specification.joint_reviewability_conditions requires separate review outcomes for proposal-lane
     execution and split mechanics, while specification.topology_prose_policy says their graph placement
     remains metadata.
-- criterion: Preserves concrete ownership boundaries where SG-SPEC-0006 owns proposal-lane execution,
-    SG-SPEC-0025 owns split mechanics and payload semantics, SG-SPEC-0004 remains the split lifecycle
-    anchor, and SG-SPEC-0030 owns parent-facing prerequisite semantics.
-  evidence: specification.ownership_boundaries names each concrete owner and limits SG-SPEC-0028 to coordination
-    semantics.
-- criterion: Separates proposal/split mechanics readiness from retrospective direct-update semantics owned
-    by SG-SPEC-0005.
-  evidence: specification.integration_invariants and specification.boundaries state that SG-SPEC-0005
-    direct-update semantics are not implied by this coordination surface.
+- criterion: Preserves concrete capability boundaries between proposal-lane execution, split mechanics,
+    split lifecycle anchoring, and parent-facing prerequisite semantics.
+  evidence: specification.ownership_boundaries names each capability boundary and limits this node to
+    coordination semantics.
+- criterion: Separates proposal/split mechanics readiness from retrospective direct-update semantics.
+  evidence: specification.integration_invariants and specification.boundaries state that direct-update
+    semantics are not implied by this coordination surface.
 - criterion: Remains implementation-agnostic about proposal storage layout, queue ranking formulas, and
     runtime orchestration.
   evidence: specification.scope.out excludes proposal storage layout, queue ranking formulas, and runtime
-    orchestration details. SG-SPEC-0028 governs only coordination and ownership boundaries.
-prompt: Keep SG-SPEC-0028 as the proposal/split mechanics coordination surface for reflective execution.
+    orchestration details. This node governs only coordination and capability boundaries.
+prompt: Keep this node as the proposal/split mechanics coordination surface for reflective execution.
   It should explain how proposal-lane execution and split mechanics stay jointly reviewable without narrating
   child placement, edge shape, route narration, or queue/runtime implementation detail.
 specification:
@@ -63,12 +60,13 @@ specification:
     in:
     - Proposal/split mechanics coordination for reflective execution.
     - Joint reviewability of proposal-lane execution and split mechanics.
-    - Ownership boundaries for SG-SPEC-0006, SG-SPEC-0025, SG-SPEC-0004, and SG-SPEC-0030.
-    - Separation from retrospective direct-update semantics owned by SG-SPEC-0005.
+    - Capability boundaries for proposal-lane execution, split mechanics, split lifecycle anchoring, and
+      parent-facing prerequisite semantics.
+    - Separation from retrospective direct-update semantics.
     - Topology-prose discipline for this mechanics region.
     out:
-    - Concrete mechanics semantics already owned by descendant specs.
-    - Retrospective direct-update boundary semantics owned by SG-SPEC-0005.
+    - Concrete mechanics semantics owned by downstream bounded concerns.
+    - Retrospective direct-update boundary semantics.
     - Viewer layout, queue ranking formulas, proposal storage layout, and runtime orchestration.
     - Prose whose main purpose is to restate edge order, child placement, or route narration.
   coordination_surface:
@@ -91,41 +89,47 @@ specification:
     placement, edge shape, route order, queue ordering, or runtime scheduling.
   required_capabilities:
     proposal_lane_execution:
-    - SG-SPEC-0006 owns proposal-lane execution semantics, tracked proposal identity, and execution-lane
-      behavior.
+    - The proposal-lane execution capability provides tracked proposal identity and execution-lane behavior.
     split_mechanics:
-    - SG-SPEC-0025 owns split mechanics, split payload semantics, and split queue mechanics.
+    - The split mechanics capability provides split payload semantics and split queue mechanics.
     split_lifecycle_anchor:
-    - SG-SPEC-0004 remains the deterministic split proposal lifecycle anchor cited through split mechanics.
+    - The split lifecycle anchor preserves deterministic split proposal lifecycle semantics.
     parent_prerequisite_contract:
-    - SG-SPEC-0030 owns parent-facing prerequisite semantics for consuming this coordination surface.
+    - The parent-facing prerequisite contract defines when consumers may treat this coordination surface
+      as admissible readiness.
   ownership_boundaries:
-  - SG-SPEC-0028 may cite SG-SPEC-0006 and SG-SPEC-0025 as required mechanics capabilities, but it must
-    not restate their concrete payload, queue, or execution contracts.
-  - SG-SPEC-0028 may cite SG-SPEC-0004 as the split lifecycle anchor, but it must not redefine lifecycle
-    transitions.
-  - SG-SPEC-0030 owns the consumer-facing prerequisite rule; SG-SPEC-0028 owns only the coordinated mechanics
-    meaning consumed by that rule.
+  - This node may require proposal-lane execution and split mechanics capabilities, but it must not restate
+    their concrete payload, queue, or execution contracts.
+  - This node may require a split lifecycle anchor, but it must not redefine lifecycle transitions.
+  - The prerequisite contract owns consumer-facing admissibility rules; this node owns only the coordinated
+    mechanics meaning consumed by those rules.
+  role_boundary:
+  - This node owns only the coordination meaning that lets reflective execution treat proposal-lane execution
+    and split mechanics as one reviewable capability set.
+  - This node does not own concrete proposal-lane execution, split payloads, split lifecycle transitions,
+    prerequisite admissibility policy, retrospective direct-update authority, viewer layout, queue ranking,
+    or runtime orchestration.
+  - Graph placement is represented by metadata edges; prose should describe coordination semantics rather
+    than restating provider routes.
   integration_invariants:
   - Proposal-lane execution must not be treated as a substitute for split mechanics.
   - Split mechanics must not be treated as a substitute for proposal-lane execution.
-  - Proposal/split readiness must not imply retrospective direct-update authority from SG-SPEC-0005.
+  - Proposal/split readiness must not imply retrospective direct-update authority.
   topology_prose_policy:
-  - Direct graph relations around SG-SPEC-0028 are represented by canonical fields and derived graph views.
-  - SG-SPEC-0028 prose should explain coordination, ownership, and readiness meaning rather than child
+  - Direct graph relations around this node are represented by canonical fields and derived graph views.
+  - This node's prose should explain coordination, ownership, and readiness meaning rather than child
     placement, edge order, or route narration.
   boundaries:
-  - SG-SPEC-0028 does not collapse descendant node identities or their bounded concerns.
+  - This node does not collapse downstream node identities or their bounded concerns.
   - Cross-capability consistency is expressed here only at the proposal/split mechanics coordination level.
   - If a future refinement would only verbalize a direct edge, route, or delegation fact, prefer rewrite,
     merge, regrouping, or proposal pressure instead of a new canonical child.
   parent_contract:
-  - SG-SPEC-0027 consumes SG-SPEC-0028 as the proposal/split mechanics coordination surface for reflective
-    execution readiness.
-  - Parent-facing prerequisite semantics are owned by SG-SPEC-0030 and should not be duplicated here as
-    edge-order prose.
-  - SG-SPEC-0027 must not read SG-SPEC-0028 as a proxy for SG-SPEC-0005; direct-update semantics remain
-    a separately consumed concern.
+  - The reflective execution-readiness layer consumes this node as the proposal/split mechanics coordination
+    surface.
+  - Parent-facing prerequisite semantics should not be duplicated here as edge-order prose.
+  - Consumers must not read this node as a proxy for direct-update semantics; direct-update semantics
+    remain a separately consumed concern.
 gate_state: none
 proposed_status: null
 proposed_maturity: null
