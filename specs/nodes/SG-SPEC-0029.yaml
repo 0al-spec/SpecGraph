@@ -2,7 +2,7 @@ id: SG-SPEC-0029
 title: SpecGraph - Proposal/Split Mechanics Gateway
 kind: spec
 created_at: '2026-04-13T19:23:30Z'
-updated_at: '2026-04-25T07:35:00Z'
+updated_at: '2026-04-29T22:38:43Z'
 status: linked
 maturity: 0.69
 depends_on: []
@@ -22,8 +22,9 @@ acceptance:
   split lifecycle details are inspected.
 - Explains how proposal/split mechanics become available only when prerequisite readiness and concrete
   mechanics ownership are both satisfied.
-- Keeps concrete split lifecycle, proposal-lane execution, payload, and queue semantics owned by SG-SPEC-0028.
-- Applies the topology-prose rule so SG-SPEC-0029 explains availability semantics rather than its position
+- Keeps concrete split lifecycle, proposal-lane execution, payload, and queue semantics outside this availability
+  contract.
+- Applies the topology-prose rule so this node explains availability semantics rather than its position
   as a gateway child.
 - Remains implementation-agnostic about queue ranking formulas, proposal-lane orchestration, and runtime
   execution behavior.
@@ -34,13 +35,13 @@ acceptance_evidence:
     decision without requiring split payload inspection.
 - criterion: Explains how proposal/split mechanics become available only when prerequisite readiness and
     concrete mechanics ownership are both satisfied.
-  evidence: specification.availability_conditions requires both SG-SPEC-0030 prerequisite readiness and
-    SG-SPEC-0028 concrete mechanics ownership before availability is considered satisfied.
-- criterion: Keeps concrete split lifecycle, proposal-lane execution, payload, and queue semantics owned
-    by SG-SPEC-0028.
+  evidence: specification.availability_conditions requires both prerequisite readiness and concrete mechanics
+    ownership before availability is considered satisfied.
+- criterion: Keeps concrete split lifecycle, proposal-lane execution, payload, and queue semantics outside
+    this availability contract.
   evidence: specification.mechanics_ownership and specification.scope.out keep those concrete mechanics
-    out of SG-SPEC-0029.
-- criterion: Applies the topology-prose rule so SG-SPEC-0029 explains availability semantics rather than
+    out of this node.
+- criterion: Applies the topology-prose rule so this node explains availability semantics rather than
     its position as a gateway child.
   evidence: specification.topology_prose_policy says graph placement remains metadata and prose must explain
     availability, prerequisite, and ownership semantics.
@@ -48,23 +49,23 @@ acceptance_evidence:
     and runtime execution behavior.
   evidence: specification.scope.out excludes queue ranking formulas, proposal-lane orchestration, runtime
     execution behavior, and implementation storage layout.
-prompt: Keep SG-SPEC-0029 as the proposal/split mechanics availability contract. It should explain when
-  proposal/split mechanics are available to the readiness branch, while concrete mechanics remain owned
-  by SG-SPEC-0028 and prerequisite readiness remains owned by SG-SPEC-0030.
+prompt: Keep this node as the proposal/split mechanics availability contract. It should explain when proposal/split
+  mechanics are available to the readiness branch, while concrete mechanics and prerequisite readiness
+  remain separate inputs.
 specification:
   objective: Define the proposal/split mechanics availability contract that lets the readiness branch
     know when proposal/split mechanics may be treated as available, without duplicating concrete split
-    lifecycle, queue, or proposal-lane semantics owned downstream.
+    lifecycle, queue, or proposal-lane semantics.
   scope:
     in:
     - Proposal/split mechanics availability semantics.
-    - Prerequisite readiness consumption from SG-SPEC-0030.
-    - Concrete mechanics ownership boundary around SG-SPEC-0028.
+    - Prerequisite readiness consumption.
+    - Concrete mechanics ownership boundary.
     - Review-facing availability conditions for the readiness branch.
     - Topology-prose discipline for this branch.
     out:
     - Concrete split payload schema, queue field semantics, or proposal-lane runtime policy details already
-      owned by SG-SPEC-0028
+      owned by downstream mechanics contracts
     - Continuation-selection policy or retrospective direct-update semantics
     - Viewer UX, persistence implementation, or runtime orchestration decisions
   availability_contract:
@@ -74,34 +75,40 @@ specification:
     fields.
   readiness_inputs:
     prerequisite_readiness:
-    - SG-SPEC-0030 owns parent-facing prerequisite readiness.
+    - The prerequisite readiness input provides parent-facing admissibility semantics.
     concrete_mechanics:
-    - SG-SPEC-0028 owns concrete split lifecycle, split mechanics schema, and proposal-lane execution
-      descendants.
+    - The concrete mechanics input provides split lifecycle, split mechanics schema, and proposal-lane
+      execution semantics.
   availability_conditions:
-  - Prerequisite readiness must be satisfied by SG-SPEC-0030.
-  - Concrete mechanics ownership must remain with SG-SPEC-0028.
+  - Prerequisite readiness must be satisfied by the prerequisite input.
+  - Concrete mechanics ownership must remain with the concrete mechanics input.
   - If either side is missing or ambiguous, proposal/split mechanics availability is not satisfied for
     the readiness branch.
   mechanics_ownership:
-  - SG-SPEC-0028 remains the concrete owner of split proposal lifecycle, split mechanics schema, and proposal-lane
-    execution descendants.
-  - SG-SPEC-0029 may reference that ownership but must not restate downstream field-level mechanics.
+  - The concrete mechanics surface remains responsible for split proposal lifecycle, split mechanics schema,
+    and proposal-lane execution descendants.
+  - This node may reference that ownership boundary but must not restate downstream field-level mechanics.
   topology_prose_policy:
-  - Direct graph placement around SG-SPEC-0029 is represented by canonical graph metadata.
-  - SG-SPEC-0029 prose should explain availability semantics, not its position as a gateway, child, or
+  - Direct graph placement around this node is represented by canonical graph metadata.
+  - This node's prose should explain availability semantics, not its position as a gateway, child, or
     edge.
   integration_boundaries:
-  - SG-SPEC-0029 may not merge or redefine descendant contracts from SG-SPEC-0028.
-  - SG-SPEC-0029 does not add field-level queue, ranking, or runtime orchestration rules.
-  - SG-SPEC-0029 keeps prerequisite readiness and concrete mechanics ownership distinct without turning
-    their graph relation into the main prose.
+  - This node may not merge or redefine downstream concrete mechanics contracts.
+  - This node does not add field-level queue, ranking, or runtime orchestration rules.
+  - This node keeps prerequisite readiness and concrete mechanics ownership distinct without turning their
+    graph relation into the main prose.
+  role_boundary:
+  - This node owns only the availability decision that combines prerequisite readiness with concrete mechanics
+    ownership.
+  - This node does not own prerequisite admissibility policy, concrete split lifecycle, proposal-lane
+    execution, payload fields, queue semantics, ranking, or runtime orchestration.
+  - Graph placement is represented by metadata edges; prose should describe availability semantics rather
+    than restating provider routes.
   parent_contract:
-  - SG-SPEC-0032 consumes SG-SPEC-0029 as the proposal/split mechanics availability contract.
-  - SG-SPEC-0029 preserves SG-SPEC-0030 as prerequisite readiness owner and SG-SPEC-0028 as concrete mechanics
-    owner.
-  - SG-SPEC-0029 should be rewritten or merged rather than split again if a proposed child would only
-    verbalize gateway, edge, or delegation facts.
+  - The readiness-region layer consumes this node as the proposal/split mechanics availability contract.
+  - This node preserves prerequisite readiness and concrete mechanics ownership as separate inputs.
+  - This node should be rewritten or merged rather than split again if a proposed child would only verbalize
+    gateway, edge, or delegation facts.
 gate_state: none
 proposed_status: null
 proposed_maturity: null
