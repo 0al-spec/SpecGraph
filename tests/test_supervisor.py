@@ -12172,6 +12172,8 @@ def test_build_metrics_source_promotion_index_keeps_sib_full_review_first(
         "metrics_sib_full_partial"
     ]
     ready = next(entry for entry in report["entries"] if entry["consumer_id"] == "metrics_sib_full")
+    assert ready["metric_id"] == "sib"
+    assert ready["candidate_metric_id"] == "sib"
     assert ready["review_state"] == "ready_for_review"
     assert ready["authority_state"] == "promotion_candidate"
     assert ready["guardrails"]["requires_human_review"] is True
@@ -13555,9 +13557,55 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
             "tracked_artifacts_written": False,
         }
 
+    def fake_external_consumer_index() -> dict[str, object]:
+        return {
+            "artifact_kind": supervisor_module.EXTERNAL_CONSUMER_INDEX_ARTIFACT_KIND,
+            "schema_version": supervisor_module.EXTERNAL_CONSUMER_INDEX_SCHEMA_VERSION,
+            "generated_at": "2026-04-27T00:00:03Z",
+            "entry_count": 0,
+            "entries": [],
+            "viewer_projection": {},
+        }
+
+    def fake_metric_signal_index(specs: list[object]) -> dict[str, object]:
+        assert len(specs) == 1
+        return {
+            "artifact_kind": supervisor_module.METRIC_SIGNAL_INDEX_ARTIFACT_KIND,
+            "schema_version": supervisor_module.METRIC_SIGNAL_INDEX_SCHEMA_VERSION,
+            "generated_at": "2026-04-27T00:00:04Z",
+            "metrics": [],
+            "active_signals": [],
+            "viewer_projection": {},
+        }
+
+    def fake_metrics_source_promotion_index(
+        consumer_index: dict[str, object],
+        metric_signal_index: dict[str, object],
+    ) -> dict[str, object]:
+        assert consumer_index["generated_at"] == "2026-04-27T00:00:03Z"
+        assert metric_signal_index["generated_at"] == "2026-04-27T00:00:04Z"
+        return {
+            "artifact_kind": supervisor_module.METRICS_SOURCE_PROMOTION_INDEX_ARTIFACT_KIND,
+            "schema_version": supervisor_module.METRICS_SOURCE_PROMOTION_INDEX_SCHEMA_VERSION,
+            "generated_at": "2026-04-27T00:00:05Z",
+            "entry_count": 1,
+            "entries": [{"promotion_id": "metrics_source_promotion::metrics::sib_full"}],
+            "promotion_backlog": {"entry_count": 1, "items": [], "grouped_by_next_gap": {}},
+            "viewer_projection": {"named_filters": {"ready_for_promotion_review": []}},
+        }
+
     monkeypatch.setattr(supervisor_module, "build_graph_backlog_projection", fake_backlog)
     monkeypatch.setattr(supervisor_module, "build_graph_dashboard", fake_dashboard)
     monkeypatch.setattr(supervisor_module, "build_graph_next_moves", fake_next_moves)
+    monkeypatch.setattr(
+        supervisor_module, "build_external_consumer_index", fake_external_consumer_index
+    )
+    monkeypatch.setattr(supervisor_module, "build_metric_signal_index", fake_metric_signal_index)
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_metrics_source_promotion_index",
+        fake_metrics_source_promotion_index,
+    )
 
     exit_code = supervisor_module.main(build_viewer_surfaces_mode=True)
 
@@ -13567,6 +13615,11 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
     assert report["written_artifacts"]["graph_backlog_projection"]["entry_count"] == 1
     assert report["written_artifacts"]["graph_dashboard"]["headline_count"] == 1
     assert report["written_artifacts"]["graph_next_moves"]["current_scene"] == "steady_state"
+    assert report["written_artifacts"]["metrics_source_promotion_index"]["entry_count"] == 1
+    assert (
+        report["written_artifacts"]["metrics_source_promotion_index"]["promotion_backlog_count"]
+        == 1
+    )
     assert (
         json.loads(
             (repo_fixture / "runs" / "graph_backlog_projection.json").read_text(encoding="utf-8")
@@ -13581,6 +13634,14 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
             "recommended_next_move_kind"
         ]
         == "none"
+    )
+    assert (
+        json.loads(
+            (repo_fixture / "runs" / "metrics_source_promotion_index.json").read_text(
+                encoding="utf-8"
+            )
+        )["entry_count"]
+        == 1
     )
 
 

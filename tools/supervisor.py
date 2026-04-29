@@ -20638,6 +20638,7 @@ def build_metrics_source_promotion_index(
             "promotion_id": f"metrics_source_promotion::{consumer_id}::{candidate_metric_id}",
             "consumer_id": consumer_id,
             "title": str(raw_entry.get("title", "")).strip(),
+            "metric_id": candidate_metric_id,
             "candidate_metric_id": candidate_metric_id,
             "legacy_metric_ids": sorted(legacy_metric_ids),
             "promotion_status": promotion_status,
@@ -24625,6 +24626,24 @@ def build_viewer_surfaces(specs: list[SpecNode]) -> dict[str, Any]:
     dashboard_path = write_graph_dashboard(dashboard)
     next_moves = build_graph_next_moves(specs, backlog_projection=backlog_projection)
     next_moves_path = write_graph_next_moves(next_moves)
+    consumer_index = build_external_consumer_index()
+    metric_signal_index = build_metric_signal_index(specs)
+    metrics_source_promotion_index = build_metrics_source_promotion_index(
+        consumer_index,
+        metric_signal_index,
+    )
+    metrics_source_promotion_path = write_metrics_source_promotion_index(
+        metrics_source_promotion_index
+    )
+    metrics_source_promotion_backlog = metrics_source_promotion_index.get(
+        "promotion_backlog",
+        {},
+    )
+    metrics_source_promotion_backlog_count = (
+        metrics_source_promotion_backlog.get("entry_count", 0)
+        if isinstance(metrics_source_promotion_backlog, dict)
+        else 0
+    )
     return {
         "artifact_kind": "viewer_surfaces_build_report",
         "schema_version": 1,
@@ -24646,6 +24665,12 @@ def build_viewer_surfaces(specs: list[SpecNode]) -> dict[str, Any]:
                 "generated_at": next_moves.get("generated_at"),
                 "current_scene": next_moves.get("current_scene"),
                 "recommended_next_move_kind": next_moves.get("recommended_next_move_kind"),
+            },
+            "metrics_source_promotion_index": {
+                "artifact_path": metrics_source_promotion_path.relative_to(ROOT).as_posix(),
+                "generated_at": metrics_source_promotion_index.get("generated_at"),
+                "entry_count": metrics_source_promotion_index.get("entry_count"),
+                "promotion_backlog_count": metrics_source_promotion_backlog_count,
             },
         },
         "notes": [

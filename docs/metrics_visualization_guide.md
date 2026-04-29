@@ -175,6 +175,11 @@ python3 tools/supervisor.py --build-metrics-feedback-index
 python3 tools/supervisor.py --build-metrics-source-promotion-index
 ```
 
+For the normal ContextBuilder dashboard refresh, `make viewer-surfaces` also
+writes `runs/metrics_source_promotion_index.json` so the Source Promotion
+overlay can expose its drill-down button without a separate manual command.
+Use `make metrics-source-promotion` when only this artifact needs refreshing.
+
 Read:
 
 - `runs/external_consumer_index.json`
@@ -279,6 +284,29 @@ Notes:
 - `sib_proxy` remains as an alias-only compatibility entry with
   `alias_of = "sib"` and `threshold_authority_state = "alias_only"`; avoid
   counting it as a second threshold-authoritative metric
+
+### `metrics_source_promotion_index.json`
+
+Best for the Source Promotion drill-down overlay.
+
+Recommended table columns:
+
+- Metric: `entries[].metric_id`
+- Status: `entries[].promotion_status`
+- Authority: `entries[].authority_state`
+- Review: `entries[].review_state`
+- Next Gap: `entries[].next_gap`
+- Legacy: `entries[].legacy_metric_ids`
+
+Notes:
+
+- show a review-required badge when
+  `entries[].guardrails.requires_human_review == true`
+- `entries[].candidate_metric_id` remains as the explicit promotion candidate
+  field; `entries[].metric_id` is the compact viewer-facing alias for the same
+  metric family
+- draft sources with `authority_state = "promotion_candidate"` are not
+  threshold authority until a human review records that transition
 
 ### `graph_health_overlay.json`
 

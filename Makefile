@@ -10,6 +10,7 @@ help:
 		'  make dashboard                Refresh graph dashboard JSON only' \
 		'  make backlog                  Refresh graph backlog projection JSON only' \
 		'  make next-move                Refresh advisory graph next-moves JSON only' \
+		'  make metrics-source-promotion Refresh Metrics source promotion candidates JSON' \
 		'  make implementation-work      Refresh latest implementation work index' \
 		'  make review-feedback          Refresh review feedback index' \
 		'  make test                     Run full Python test suite quietly' \
@@ -30,6 +31,10 @@ backlog:
 .PHONY: next-move
 next-move:
 	@$(PYTHON) $(SUPERVISOR) --build-graph-next-moves
+
+.PHONY: metrics-source-promotion
+metrics-source-promotion:
+	@$(PYTHON) $(SUPERVISOR) --build-metrics-source-promotion-index
 
 .PHONY: implementation-work
 implementation-work:
