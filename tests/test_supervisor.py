@@ -14805,8 +14805,11 @@ def test_build_graph_next_moves_stops_projecting_after_branch_preview_reaches_ba
     repo_fixture: Path,
 ) -> None:
     write_ready_branch_rewrite_preview_artifact(supervisor_module, repo_fixture)
-    backlog_id = (
+    first_backlog_id = (
         "branch_rewrite_preview::branch_rewrite::SG-SPEC-0001::review_branch_rewrite_candidate"
+    )
+    second_backlog_id = (
+        "branch_rewrite_preview::branch_rewrite::SG-SPEC-0002::review_branch_rewrite_candidate"
     )
     backlog_projection = {
         "artifact_kind": supervisor_module.GRAPH_BACKLOG_PROJECTION_ARTIFACT_KIND,
@@ -14815,7 +14818,7 @@ def test_build_graph_next_moves_stops_projecting_after_branch_preview_reaches_ba
         "entry_count": 2,
         "entries": [
             {
-                "backlog_id": backlog_id,
+                "backlog_id": first_backlog_id,
                 "domain": "branch_rewrite",
                 "source_artifact": "branch_rewrite_preview",
                 "source_artifact_path": "runs/branch_rewrite_preview.json",
@@ -14827,14 +14830,28 @@ def test_build_graph_next_moves_stops_projecting_after_branch_preview_reaches_ba
                 "next_gap": "review_branch_rewrite_candidate",
                 "priority": "high",
                 "details": {},
-            }
+            },
+            {
+                "backlog_id": second_backlog_id,
+                "domain": "branch_rewrite",
+                "source_artifact": "branch_rewrite_preview",
+                "source_artifact_path": "runs/branch_rewrite_preview.json",
+                "subject_kind": "spec",
+                "subject_id": "SG-SPEC-0002",
+                "title": "Second Golden Path Node",
+                "status": "rewrite_node_role_boundary",
+                "review_state": "preview_only",
+                "next_gap": "review_branch_rewrite_candidate",
+                "priority": "high",
+                "details": {},
+            },
         ],
         "summary": {
             "source_artifact_counts": {"branch_rewrite_preview": 2},
             "priority_counts": {"high": 2},
             "next_gap_counts": {"review_branch_rewrite_candidate": 2},
         },
-        "viewer_projection": {"priorities": {"high": [backlog_id]}},
+        "viewer_projection": {"priorities": {"high": [first_backlog_id, second_backlog_id]}},
     }
 
     report = supervisor_module.build_graph_next_moves(
@@ -14849,6 +14866,63 @@ def test_build_graph_next_moves_stops_projecting_after_branch_preview_reaches_ba
         "branch_rewrite_preview"
     )
     assert report["recommended_next_move"]["next_gap"] == "review_branch_rewrite_candidate"
+
+
+def test_branch_rewrite_preview_projection_tolerates_malformed_optional_lists(
+    supervisor_module: object,
+) -> None:
+    assert (
+        supervisor_module.branch_rewrite_preview_story_gap_ids(
+            {"branch_story": {"story_gaps": None}}
+        )
+        == []
+    )
+    assert supervisor_module.branch_rewrite_preview_story_gap_ids(
+        {"branch_story": {"story_gaps": ["SG-SPEC-0001", "SG-SPEC-0001", ""]}}
+    ) == ["SG-SPEC-0001"]
+
+    entries: list[dict[str, object]] = []
+    supervisor_module.append_branch_rewrite_preview_backlog_items(
+        entries,
+        branch_rewrite_preview={
+            "preview_status": "ready_for_review",
+            "review_state": "preview_only",
+            "branch_story": {"story_gaps": None},
+            "node_rewrite_candidates": None,
+        },
+    )
+    assert entries == []
+
+    supervisor_module.append_branch_rewrite_preview_backlog_items(
+        entries,
+        branch_rewrite_preview={
+            "preview_status": "ready_for_review",
+            "review_state": "preview_only",
+            "branch_story": {"story_gaps": None},
+            "node_rewrite_candidates": [
+                {
+                    "spec_id": "SG-SPEC-0001",
+                    "title": "Golden Path Node",
+                    "suggested_action": "rewrite_node_role_boundary",
+                }
+            ],
+        },
+    )
+    assert len(entries) == 1
+    assert entries[0]["subject_id"] == "SG-SPEC-0001"
+    assert entries[0]["details"]["story_gap"] is False
+
+
+def test_graph_next_moves_branch_preview_projected_tolerates_malformed_source_counts(
+    supervisor_module: object,
+) -> None:
+    assert (
+        supervisor_module.graph_next_moves_branch_preview_projected(
+            {"candidate_count": 2},
+            {"summary": {"source_artifact_counts": None}},
+        )
+        is False
+    )
 
 
 def test_build_graph_next_moves_treats_malformed_branch_preview_counts_as_repairable(

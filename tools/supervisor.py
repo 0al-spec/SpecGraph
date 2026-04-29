@@ -22737,6 +22737,27 @@ def append_grouped_backlog_items(
             )
 
 
+def branch_rewrite_preview_story_gap_ids(
+    branch_rewrite_preview: dict[str, Any] | None,
+) -> list[str]:
+    if not isinstance(branch_rewrite_preview, dict):
+        return []
+    branch_story = branch_rewrite_preview.get("branch_story", {})
+    if not isinstance(branch_story, dict):
+        return []
+    raw_story_gaps = branch_story.get("story_gaps", [])
+    if not isinstance(raw_story_gaps, list):
+        return []
+    seen: set[str] = set()
+    normalized: list[str] = []
+    for item in raw_story_gaps:
+        spec_id = str(item).strip()
+        if spec_id and spec_id not in seen:
+            seen.add(spec_id)
+            normalized.append(spec_id)
+    return normalized
+
+
 def append_branch_rewrite_preview_backlog_items(
     entries: list[dict[str, Any]],
     *,
@@ -22750,13 +22771,10 @@ def append_branch_rewrite_preview_backlog_items(
         return
     target = branch_rewrite_preview.get("target", {})
     root_spec_id = str(target.get("root_spec_id", "")).strip() if isinstance(target, dict) else ""
-    branch_story = branch_rewrite_preview.get("branch_story", {})
-    story_gaps = (
-        [str(item).strip() for item in branch_story.get("story_gaps", []) if str(item).strip()]
-        if isinstance(branch_story, dict)
-        else []
-    )
-    for candidate in branch_rewrite_preview.get("node_rewrite_candidates", []):
+    story_gap_ids = set(branch_rewrite_preview_story_gap_ids(branch_rewrite_preview))
+    raw_candidates = branch_rewrite_preview.get("node_rewrite_candidates", [])
+    candidates = raw_candidates if isinstance(raw_candidates, list) else []
+    for candidate in candidates:
         if not isinstance(candidate, dict):
             continue
         spec_id = str(candidate.get("spec_id", "")).strip()
@@ -22787,7 +22805,7 @@ def append_branch_rewrite_preview_backlog_items(
                     "proposed_patch_preview": copy.deepcopy(
                         candidate.get("proposed_patch_preview", [])
                     ),
-                    "story_gap": spec_id in set(story_gaps),
+                    "story_gap": spec_id in story_gap_ids,
                 },
             )
         )
@@ -23417,11 +23435,10 @@ def graph_next_moves_branch_preview_projected(
     backlog_projection: dict[str, Any],
 ) -> bool:
     candidate_count = int(branch_preview.get("candidate_count", 0) or 0)
-    source_counts = (
-        backlog_projection.get("summary", {}).get("source_artifact_counts", {})
-        if isinstance(backlog_projection.get("summary"), dict)
-        else {}
-    )
+    summary = backlog_projection.get("summary", {})
+    source_counts = summary.get("source_artifact_counts", {}) if isinstance(summary, dict) else {}
+    if not isinstance(source_counts, dict):
+        source_counts = {}
     projected_count = int(source_counts.get("branch_rewrite_preview", 0) or 0)
     return candidate_count > 0 and projected_count >= candidate_count
 
@@ -23761,9 +23778,14 @@ def build_graph_dashboard(specs: list[SpecNode]) -> dict[str, Any]:
     graph_backlog_next_gap_counts = graph_backlog_projection.get("summary", {}).get(
         "next_gap_counts", {}
     )
-    graph_backlog_source_artifact_counts = graph_backlog_projection.get("summary", {}).get(
-        "source_artifact_counts", {}
+    graph_backlog_summary = graph_backlog_projection.get("summary", {})
+    graph_backlog_source_artifact_counts = (
+        graph_backlog_summary.get("source_artifact_counts", {})
+        if isinstance(graph_backlog_summary, dict)
+        else {}
     )
+    if not isinstance(graph_backlog_source_artifact_counts, dict):
+        graph_backlog_source_artifact_counts = {}
     branch_rewrite_candidate_count = int(
         graph_backlog_source_artifact_counts.get("branch_rewrite_preview", 0) or 0
     )
@@ -23776,16 +23798,7 @@ def build_graph_dashboard(specs: list[SpecNode]) -> dict[str, Any]:
             and str(entry.get("subject_id", "")).strip()
         }
     )
-    branch_rewrite_story_gap_spec_ids = (
-        [
-            str(item).strip()
-            for item in branch_rewrite_preview.get("branch_story", {}).get("story_gaps", [])
-            if str(item).strip()
-        ]
-        if isinstance(branch_rewrite_preview, dict)
-        and isinstance(branch_rewrite_preview.get("branch_story"), dict)
-        else []
-    )
+    branch_rewrite_story_gap_spec_ids = branch_rewrite_preview_story_gap_ids(branch_rewrite_preview)
 
     total_spec_count = len(specs)
     active_spec_count = sum(1 for spec in specs if not is_historical_spec(spec.data))
