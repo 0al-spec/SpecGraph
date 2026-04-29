@@ -16775,7 +16775,7 @@ def test_build_proposal_runtime_index_reports_reflective_chain(
     assert index["reflective_backlog"]["grouped_by_next_gap"]["runtime_realization"] == ["0017"]
 
 
-def test_implemented_proposal_without_registry_entry_is_untracked(
+def test_implemented_proposal_without_registry_entry_is_not_required(
     supervisor_module: object,
     repo_fixture: Path,
 ) -> None:
@@ -16809,9 +16809,8 @@ def test_implemented_proposal_without_registry_entry_is_untracked(
 
     by_id = {e["proposal_id"]: e for e in index["entries"]}
     entry = by_id["0099"]
-    # Without registry markers the realization status must NOT be "implemented"
-    assert entry["runtime_realization"]["status"] != "implemented", (
-        "Proposal 0099 has no registry entry but was reported as implemented"
+    assert entry["runtime_realization"]["status"] == "not_required", (
+        "Proposal 0099 has no registry entry but was not reported as not_required"
     )
 
 
@@ -16847,10 +16846,10 @@ def test_implemented_proposal_with_missing_marker_files_is_not_implemented(
             "runtime_surfaces": ["tools/supervisor.py"],
             "task_ids": [],
             "runtime_markers": [
-                {"path": "tools/supervisor.py", "pattern": "def nonexistent_function("},
+                {"path": "tools/missing_supervisor.py", "pattern": "def nonexistent_function("},
             ],
             "validation_markers": [
-                {"path": "tests/test_supervisor.py", "pattern": "def test_nonexistent("},
+                {"path": "tests/missing_test_supervisor.py", "pattern": "def test_nonexistent("},
             ],
             "observation_markers": [],
         }
@@ -16858,9 +16857,7 @@ def test_implemented_proposal_with_missing_marker_files_is_not_implemented(
     (tools_dir / "proposal_runtime_registry.json").write_text(
         json.dumps(registry), encoding="utf-8"
     )
-    # supervisor.py and test file exist but DON'T contain the required patterns
-    (tools_dir / "supervisor.py").write_text("# stub\n", encoding="utf-8")
-    (tests_dir / "test_supervisor.py").write_text("# stub\n", encoding="utf-8")
+    # Marker files are intentionally absent.
 
     index = supervisor_module.build_proposal_runtime_index()
 
@@ -16889,6 +16886,8 @@ def test_implemented_proposals_0008_and_0017_have_full_marker_coverage(
         entry = by_id[pid]
         rr = entry["runtime_realization"]
         vc = entry["validation_closure"]
+        oc = entry["observation_coverage"]
+        chain = entry["reflective_chain"]
         assert rr["status"] == "implemented", (
             f"Proposal {pid} runtime_realization.status={rr['status']!r}; expected 'implemented'"
         )
@@ -16901,6 +16900,15 @@ def test_implemented_proposals_0008_and_0017_have_full_marker_coverage(
         assert vc["missing_markers"] == [], (
             f"Proposal {pid} has missing validation markers: {vc['missing_markers']}"
         )
+        assert oc["status"] == "covered", (
+            f"Proposal {pid} observation_coverage.status={oc['status']!r}; expected 'covered'"
+        )
+        assert oc["missing_markers"] == [], (
+            f"Proposal {pid} has missing observation markers: {oc['missing_markers']}"
+        )
+        assert chain["next_gap"] == "none", (
+            f"Proposal {pid} reflective_chain.next_gap={chain['next_gap']!r}; expected 'none'"
+        )
 
 
 def test_all_implemented_proposals_have_registry_entries() -> None:
@@ -16912,8 +16920,11 @@ def test_all_implemented_proposals_have_registry_entries() -> None:
 
         pytest.skip("proposal_runtime_registry.json or docs/proposals not available")
 
+    raw_registry = json.loads(registry_path.read_text(encoding="utf-8"))
     registry = {
-        str(e["proposal_id"]): e for e in json.loads(registry_path.read_text(encoding="utf-8"))
+        str(entry.get("proposal_id")): entry
+        for entry in raw_registry
+        if isinstance(entry, dict) and str(entry.get("proposal_id", "")).strip()
     }
 
     violations: list[str] = []
@@ -16956,16 +16967,11 @@ def test_all_implemented_proposals_have_registry_entries() -> None:
     )
 
 
-def test_closure_audit_task_17_is_in_archive_as_done() -> None:
+def test_closure_audit_task_17_is_in_archive_as_done(supervisor_module: object) -> None:
     """Task 17 must be present in tasks_archive.md and marked [done]."""
-    archive = SPECGRAPH_ROOT / "tasks_archive.md"
-    if not archive.exists():
-        import pytest
-
-        pytest.skip("tasks_archive.md not present")
-    text = archive.read_text(encoding="utf-8")
-    assert "17. [done]" in text, (
-        "Task 17 not found as [done] in tasks_archive.md — closure audit failed"
+    task_status = supervisor_module.load_task_status_index()
+    assert task_status.get(17, {}).get("status") == "done", (
+        "Task 17 not found as [done] through task status parser — closure audit failed"
     )
 
 
@@ -17065,6 +17071,8 @@ def test_closure_audit_fixture_shows_complete_lifecycle(
     assert entry["runtime_realization"]["missing_markers"] == []
     assert entry["validation_closure"]["status"] == "covered"
     assert entry["validation_closure"]["missing_markers"] == []
+    assert entry["observation_coverage"]["status"] == "covered"
+    assert entry["observation_coverage"]["missing_markers"] == []
     assert entry["reflective_chain"]["next_gap"] == "none"
 
 
