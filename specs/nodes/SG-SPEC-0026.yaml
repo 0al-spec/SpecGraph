@@ -2,7 +2,7 @@ id: SG-SPEC-0026
 title: SpecGraph - Reflective Mechanics Integration and Continuation Selection
 kind: spec
 created_at: '2026-04-13T07:46:44Z'
-updated_at: '2026-04-25T07:10:00Z'
+updated_at: '2026-04-29T22:18:00Z'
 status: linked
 maturity: 1.0
 depends_on:
@@ -26,8 +26,8 @@ allowed_paths:
 acceptance:
 - Defines the continuation decision boundary that decides whether a completed reflective run may hand
   off to another bounded target.
-- 'Separates candidate selection from execution readiness: candidate derivation and tie-break stay in
-  SG-SPEC-0033, while execution readiness is consumed from SG-SPEC-0027.'
+- Separates candidate selection from execution readiness so candidate derivation, tie-break behavior,
+  and execution-readiness signals remain distinct inputs to the continuation decision.
 - Defines suppression and handoff behavior for continuation attempts without mutating canonical backlog
   state directly.
 - Applies the topology-prose rule for this branch so integration prose explains continuation behavior
@@ -38,8 +38,8 @@ acceptance_evidence:
     may hand off to another bounded target.
   evidence: specification.continuation_boundary and specification.decision_contract define the decision
     point and the possible handoff/suppression outcomes.
-- criterion: 'Separates candidate selection from execution readiness: candidate derivation and tie-break
-    stay in SG-SPEC-0033, while execution readiness is consumed from SG-SPEC-0027.'
+- criterion: Separates candidate selection from execution readiness so candidate derivation, tie-break
+    behavior, and execution-readiness signals remain distinct inputs to the continuation decision.
   evidence: specification.decision_inputs and specification.boundaries separate candidate selection from
     execution readiness without embedding either child topology in the prose as the main concern.
 - criterion: Defines suppression and handoff behavior for continuation attempts without mutating canonical
@@ -65,26 +65,34 @@ specification:
     in:
     - Continuation decision boundary after a completed reflective run
     - Continuation preconditions, suppression triggers, and canonical handoff behavior
-    - Consumption of deterministic continuation candidate selection from SG-SPEC-0033
-    - Consumption of reflective execution readiness from SG-SPEC-0027
+    - Consumption of deterministic continuation candidate selection output
+    - Consumption of reflective execution readiness state
     - Non-canonical persistence expectations for continuation artifacts
     - Topology-prose discipline for this branch
     out:
-    - Parent boundary and human-approval policy retained by SG-SPEC-0003
-    - Concrete reflective execution mechanics owned by SG-SPEC-0027
-    - Concrete candidate derivation, de-duplication, deterministic tie-break, and one-of-n selection owned
-      by SG-SPEC-0033
+    - Parent governance boundary and human-approval policy
+    - Concrete reflective execution mechanics
+    - Concrete candidate derivation, de-duplication, deterministic tie-break, and one-of-n selection mechanics
     - Scoring formulas, queue ranking engines, and viewer UX
     - Concrete continuation artifact mutation contracts
   continuation_boundary:
-  - SG-SPEC-0026 decides whether a completed reflective run may continue directly to another bounded target.
+  - This node decides whether a completed reflective run may continue directly to another bounded target.
   - The decision is based on normalized candidate-selection output plus execution-readiness state, not
     on graph topology prose.
   decision_inputs:
     candidate_selection:
-    - SG-SPEC-0033 owns deterministic candidate derivation, de-duplication, and selection ordering.
+    - The candidate-selection input provides deterministic candidate derivation, de-duplication, and selection
+      ordering.
     execution_readiness:
-    - SG-SPEC-0027 owns the reflective execution-readiness surface consumed by this decision.
+    - The execution-readiness input provides gate state and reflective execution safety signals consumed
+      by this decision.
+  role_boundary:
+  - This node owns only the integration decision that combines candidate-selection output with execution-readiness
+    state.
+  - This node does not own candidate derivation, execution mechanics, queue ranking, scoring formulas,
+    viewer layout, or canonical artifact mutation.
+  - Graph placement is represented by metadata edges; prose should describe continuation decision semantics
+    rather than restating provider routes.
   decision_contract:
   - Direct continuation is allowed only when candidate selection returns one deterministic result and
     execution readiness does not leave a blocking gate.
@@ -94,12 +102,13 @@ specification:
     preconditions:
     - The current bounded target has no remaining explicit blocked or gated work within current authority.
     - Continuation selection does not run as a bypass for an active operator_target override.
-    - Continuation selection flow is delegated to SG-SPEC-0033 and bounded to one selected result if available.
+    - Continuation selection flow is delegated to the candidate-selection input and bounded to one selected
+      result if available.
     selection_flow:
-    - SG-SPEC-0026 invokes SG-SPEC-0033 with normalized bounded context to retrieve at most one deterministic
-      continuation selection result for handoff.
-    - If SG-SPEC-0033 returns no valid deterministic selection (including tie ambiguity or missing ordering),
-      SG-SPEC-0026 treats continuation as suppressed and emits no direct continuation mutation.
+    - This node consumes normalized bounded context and at most one deterministic continuation selection
+      result for handoff.
+    - If no valid deterministic selection is available, including tie ambiguity or missing ordering, this
+      node treats continuation as suppressed and emits no direct continuation mutation.
     suppression:
     - Do not select direct continuation when required authority exceeds the current continuation envelope.
     - Do not select direct continuation when an active proposal already owns the exact target region.
@@ -110,10 +119,9 @@ specification:
       directly.
   topology_prose_policy:
   - Canonical graph fields already represent which specs provide candidate selection and execution readiness.
-  - SG-SPEC-0026 prose should explain the continuation decision semantics rather than restating child
-    routing.
+  - This node's prose should explain the continuation decision semantics rather than restating child routing.
   boundaries:
-  - SG-SPEC-0026 does not redefine parent governance boundaries.
+  - This node does not redefine parent governance boundaries.
   - Continuation records and delegated mechanics outputs remain non-canonical until separately authorized
     execution or approval paths apply them.
 gate_state: none
