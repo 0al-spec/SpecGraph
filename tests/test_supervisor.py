@@ -13513,8 +13513,19 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    def fake_backlog(specs: list[object]) -> dict[str, object]:
+    surface_calls = {"external": 0, "metric": 0, "promotion": 0}
+
+    def fake_backlog(
+        specs: list[object],
+        *,
+        external_consumer_index: dict[str, object] | None = None,
+        metric_signal_index: dict[str, object] | None = None,
+        metrics_source_promotion_index: dict[str, object] | None = None,
+    ) -> dict[str, object]:
         assert len(specs) == 1
+        assert external_consumer_index is not None
+        assert metric_signal_index is not None
+        assert metrics_source_promotion_index is not None
         return {
             "artifact_kind": supervisor_module.GRAPH_BACKLOG_PROJECTION_ARTIFACT_KIND,
             "schema_version": supervisor_module.GRAPH_BACKLOG_PROJECTION_SCHEMA_VERSION,
@@ -13525,8 +13536,19 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
             "viewer_projection": {},
         }
 
-    def fake_dashboard(specs: list[object]) -> dict[str, object]:
+    def fake_dashboard(
+        specs: list[object],
+        *,
+        external_consumer_index: dict[str, object] | None = None,
+        metric_signal_index: dict[str, object] | None = None,
+        metrics_source_promotion_index: dict[str, object] | None = None,
+        graph_backlog_projection: dict[str, object] | None = None,
+    ) -> dict[str, object]:
         assert len(specs) == 1
+        assert external_consumer_index is not None
+        assert metric_signal_index is not None
+        assert metrics_source_promotion_index is not None
+        assert graph_backlog_projection is not None
         return {
             "artifact_kind": "graph_dashboard",
             "schema_version": 1,
@@ -13558,6 +13580,7 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
         }
 
     def fake_external_consumer_index() -> dict[str, object]:
+        surface_calls["external"] += 1
         return {
             "artifact_kind": supervisor_module.EXTERNAL_CONSUMER_INDEX_ARTIFACT_KIND,
             "schema_version": supervisor_module.EXTERNAL_CONSUMER_INDEX_SCHEMA_VERSION,
@@ -13568,6 +13591,7 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
         }
 
     def fake_metric_signal_index(specs: list[object]) -> dict[str, object]:
+        surface_calls["metric"] += 1
         assert len(specs) == 1
         return {
             "artifact_kind": supervisor_module.METRIC_SIGNAL_INDEX_ARTIFACT_KIND,
@@ -13582,6 +13606,7 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
         consumer_index: dict[str, object],
         metric_signal_index: dict[str, object],
     ) -> dict[str, object]:
+        surface_calls["promotion"] += 1
         assert consumer_index["generated_at"] == "2026-04-27T00:00:03Z"
         assert metric_signal_index["generated_at"] == "2026-04-27T00:00:04Z"
         return {
@@ -13620,6 +13645,7 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
         report["written_artifacts"]["metrics_source_promotion_index"]["promotion_backlog_count"]
         == 1
     )
+    assert surface_calls == {"external": 1, "metric": 1, "promotion": 1}
     assert (
         json.loads(
             (repo_fixture / "runs" / "graph_backlog_projection.json").read_text(encoding="utf-8")
