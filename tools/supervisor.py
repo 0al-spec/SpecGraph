@@ -23418,10 +23418,59 @@ def graph_next_move_record(
 
 def graph_next_moves_top_backlog_entry(
     backlog_projection: dict[str, Any],
+    proposal_lane_overlay: dict[str, Any] | None = None,
 ) -> dict[str, Any] | None:
     entries = [item for item in backlog_projection.get("entries", []) if isinstance(item, dict)]
     if not entries:
         return None
+    proposal_covered_split_subjects: set[str] = set()
+    for entry in entries:
+        if str(entry.get("domain", "")).strip() != "proposals":
+            continue
+        if str(entry.get("source_artifact", "")).strip() not in {
+            "proposal_queue",
+            "refactor_queue",
+        }:
+            continue
+        if str(entry.get("status", "")).strip() not in {
+            "proposed",
+            "review_pending",
+            "pending_review",
+        }:
+            continue
+        details = entry.get("details", {})
+        signal = str(details.get("signal", "")).strip() if isinstance(details, dict) else ""
+        if signal not in {"repeated_split_required_candidate", "stalled_maturity_candidate"}:
+            continue
+        subject_id = str(entry.get("subject_id", "")).strip()
+        if subject_id:
+            proposal_covered_split_subjects.add(subject_id)
+    if isinstance(proposal_lane_overlay, dict):
+        for entry in proposal_lane_overlay.get("entries", []):
+            if not isinstance(entry, dict):
+                continue
+            if str(entry.get("proposal_authority_state", "")).strip() != "under_review":
+                continue
+            target_region = entry.get("target_region", {})
+            if not isinstance(target_region, dict):
+                continue
+            change_scope = str(target_region.get("change_scope", "")).strip()
+            if change_scope not in {
+                "repeated_split_required_candidate",
+                "stalled_maturity_candidate",
+            }:
+                continue
+            target_reference = str(target_region.get("target_reference", "")).strip()
+            if target_reference:
+                proposal_covered_split_subjects.add(target_reference)
+
+    def is_covered_branch_split_candidate(entry: dict[str, Any]) -> bool:
+        if str(entry.get("source_artifact", "")).strip() != "branch_rewrite_preview":
+            return False
+        if str(entry.get("status", "")).strip() != "emit_split_proposal":
+            return False
+        return str(entry.get("subject_id", "")).strip() in proposal_covered_split_subjects
+
     by_id = {str(item.get("backlog_id", "")): item for item in entries}
     priorities = (
         backlog_projection.get("viewer_projection", {}).get("priorities", {})
@@ -23435,9 +23484,12 @@ def graph_next_moves_top_backlog_entry(
                 continue
             for backlog_id in backlog_ids:
                 entry = by_id.get(str(backlog_id))
-                if entry is not None:
+                if entry is not None and not is_covered_branch_split_candidate(entry):
                     return entry
-    return entries[0]
+    for entry in entries:
+        if not is_covered_branch_split_candidate(entry):
+            return entry
+    return None
 
 
 def graph_next_moves_branch_preview_projected(
@@ -23560,12 +23612,15 @@ def build_graph_next_moves(
     *,
     backlog_projection: dict[str, Any] | None = None,
     proposal_runtime_index: dict[str, Any] | None = None,
+    proposal_lane_overlay: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     mode_contract = validate_graph_next_moves_mode_contract()
     if backlog_projection is None:
         backlog_projection = build_graph_backlog_projection(specs)
     if proposal_runtime_index is None:
         proposal_runtime_index = build_proposal_runtime_index()
+    if proposal_lane_overlay is None:
+        proposal_lane_overlay = build_proposal_lane_overlay()
     branch_preview, branch_summary = load_current_branch_rewrite_preview_summary()
 
     alternatives: list[dict[str, Any]] = []
@@ -23576,7 +23631,10 @@ def build_graph_next_moves(
         and not graph_next_moves_branch_preview_projected(branch_preview, backlog_projection)
         else None
     )
-    backlog_entry = graph_next_moves_top_backlog_entry(backlog_projection)
+    backlog_entry = graph_next_moves_top_backlog_entry(
+        backlog_projection,
+        proposal_lane_overlay=proposal_lane_overlay,
+    )
     backlog_move = graph_next_moves_from_backlog_entry(backlog_entry) if backlog_entry else None
     runtime_move = graph_next_moves_from_runtime_backlog(proposal_runtime_index)
 
@@ -23699,6 +23757,16 @@ def build_graph_next_moves(
                     proposal_runtime_index.get("reflective_backlog", {}).get("entry_count", 0)
                     if isinstance(proposal_runtime_index.get("reflective_backlog"), dict)
                     else 0
+                ),
+            },
+            "proposal_lane_overlay": {
+                "artifact_path": proposal_lane_overlay_path().relative_to(ROOT).as_posix(),
+                "generated_at": proposal_lane_overlay.get("generated_at"),
+                "entry_count": int(proposal_lane_overlay.get("entry_count", 0) or 0),
+                "under_review_count": len(
+                    proposal_lane_overlay.get("named_filters", {}).get("under_review", [])
+                    if isinstance(proposal_lane_overlay.get("named_filters"), dict)
+                    else []
                 ),
             },
         },

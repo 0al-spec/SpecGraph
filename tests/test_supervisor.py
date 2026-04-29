@@ -14955,6 +14955,159 @@ def test_build_graph_next_moves_stops_projecting_after_branch_preview_reaches_ba
     assert report["recommended_next_move"]["next_gap"] == "review_branch_rewrite_candidate"
 
 
+def test_build_graph_next_moves_prefers_active_split_proposal_over_branch_preview_residue(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    write_ready_branch_rewrite_preview_artifact(supervisor_module, repo_fixture)
+    branch_backlog_id = (
+        "branch_rewrite_preview::branch_rewrite::SG-SPEC-0001::emit_split_proposal::"
+        "review_branch_rewrite_candidate"
+    )
+    proposal_backlog_id = (
+        "proposal_queue::proposals::governance_proposal::SG-SPEC-0001::"
+        "repeated_split_required_candidate::review_decomposition_policy"
+    )
+    backlog_projection = {
+        "artifact_kind": supervisor_module.GRAPH_BACKLOG_PROJECTION_ARTIFACT_KIND,
+        "schema_version": supervisor_module.GRAPH_BACKLOG_PROJECTION_SCHEMA_VERSION,
+        "generated_at": "2026-04-28T00:00:01Z",
+        "entry_count": 2,
+        "entries": [
+            {
+                "backlog_id": branch_backlog_id,
+                "domain": "branch_rewrite",
+                "source_artifact": "branch_rewrite_preview",
+                "source_artifact_path": "runs/branch_rewrite_preview.json",
+                "subject_kind": "spec",
+                "subject_id": "SG-SPEC-0001",
+                "title": "Golden Path Node",
+                "status": "emit_split_proposal",
+                "review_state": "preview_only",
+                "next_gap": "review_branch_rewrite_candidate",
+                "priority": "high",
+                "details": {
+                    "rewrite_classes": ["split_needed"],
+                    "findings": ["node_has_split_pressure"],
+                },
+            },
+            {
+                "backlog_id": proposal_backlog_id,
+                "domain": "proposals",
+                "source_artifact": "proposal_queue",
+                "source_artifact_path": "runs/proposal_queue.json",
+                "subject_kind": "queue_item",
+                "subject_id": "SG-SPEC-0001",
+                "title": "",
+                "status": "proposed",
+                "review_state": "",
+                "next_gap": "review_decomposition_policy",
+                "priority": "high",
+                "details": {
+                    "proposal_type": "governance_proposal",
+                    "signal": "repeated_split_required_candidate",
+                    "recommended_action": "review_decomposition_policy",
+                },
+            },
+        ],
+        "summary": {
+            "source_artifact_counts": {
+                "branch_rewrite_preview": 2,
+                "proposal_queue": 1,
+            },
+            "priority_counts": {"high": 2},
+            "next_gap_counts": {
+                "review_branch_rewrite_candidate": 1,
+                "review_decomposition_policy": 1,
+            },
+        },
+        "viewer_projection": {
+            "priorities": {"high": [branch_backlog_id, proposal_backlog_id]},
+        },
+    }
+
+    report = supervisor_module.build_graph_next_moves(
+        supervisor_module.load_specs(),
+        backlog_projection=backlog_projection,
+        proposal_runtime_index=fake_graph_next_moves_proposal_runtime(supervisor_module),
+    )
+
+    assert report["current_scene"] == "high_priority_backlog"
+    assert report["recommended_next_move_kind"] == "review_backlog_item"
+    assert report["recommended_next_move"]["subject"]["source_artifact"] == "proposal_queue"
+    assert report["recommended_next_move"]["next_gap"] == "review_decomposition_policy"
+
+
+def test_build_graph_next_moves_uses_tracked_proposal_lane_to_cover_split_residue(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    write_ready_branch_rewrite_preview_artifact(supervisor_module, repo_fixture)
+    branch_backlog_id = (
+        "branch_rewrite_preview::branch_rewrite::SG-SPEC-0001::emit_split_proposal::"
+        "review_branch_rewrite_candidate"
+    )
+    backlog_projection = {
+        "artifact_kind": supervisor_module.GRAPH_BACKLOG_PROJECTION_ARTIFACT_KIND,
+        "schema_version": supervisor_module.GRAPH_BACKLOG_PROJECTION_SCHEMA_VERSION,
+        "generated_at": "2026-04-28T00:00:01Z",
+        "entry_count": 1,
+        "entries": [
+            {
+                "backlog_id": branch_backlog_id,
+                "domain": "branch_rewrite",
+                "source_artifact": "branch_rewrite_preview",
+                "source_artifact_path": "runs/branch_rewrite_preview.json",
+                "subject_kind": "spec",
+                "subject_id": "SG-SPEC-0001",
+                "title": "Golden Path Node",
+                "status": "emit_split_proposal",
+                "review_state": "preview_only",
+                "next_gap": "review_branch_rewrite_candidate",
+                "priority": "high",
+                "details": {
+                    "rewrite_classes": ["split_needed"],
+                    "findings": ["node_has_split_pressure"],
+                },
+            }
+        ],
+        "summary": {
+            "source_artifact_counts": {"branch_rewrite_preview": 2},
+            "priority_counts": {"high": 1},
+            "next_gap_counts": {"review_branch_rewrite_candidate": 1},
+        },
+        "viewer_projection": {"priorities": {"high": [branch_backlog_id]}},
+    }
+    proposal_lane_overlay = {
+        "artifact_kind": "proposal_lane_overlay",
+        "schema_version": 1,
+        "generated_at": "2026-04-28T00:00:02Z",
+        "entry_count": 1,
+        "entries": [
+            {
+                "proposal_authority_state": "under_review",
+                "target_region": {
+                    "target_kind": "canonical_node",
+                    "target_reference": "SG-SPEC-0001",
+                    "change_scope": "repeated_split_required_candidate",
+                },
+            }
+        ],
+        "named_filters": {"under_review": ["governance_proposal::SG-SPEC-0001"]},
+    }
+
+    report = supervisor_module.build_graph_next_moves(
+        supervisor_module.load_specs(),
+        backlog_projection=backlog_projection,
+        proposal_runtime_index=fake_graph_next_moves_proposal_runtime(supervisor_module),
+        proposal_lane_overlay=proposal_lane_overlay,
+    )
+
+    assert report["current_scene"] == "steady_state"
+    assert report["recommended_next_move_kind"] == "none"
+    assert report["source_facts"]["proposal_lane_overlay"]["under_review_count"] == 1
+
+
 def test_branch_rewrite_preview_projection_tolerates_malformed_optional_lists(
     supervisor_module: object,
 ) -> None:
