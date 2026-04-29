@@ -1108,6 +1108,7 @@ reads:
 - `runs/graph_backlog_projection.json`
 - `runs/graph_dashboard.json`
 - `runs/graph_next_moves.json`
+- `runs/metrics_source_promotion_index.json`
 
 This mode is intended for local `post-merge` / `post-checkout` hooks, CI smoke
 checks, and viewer build buttons. It refreshes existing read models only: it
@@ -1121,6 +1122,13 @@ Equivalent direct command:
 
 ```bash
 python3 tools/supervisor.py --build-viewer-surfaces
+```
+
+Use the narrower Metrics-only shortcut when only the Source Promotion overlay
+needs its drill-down artifact:
+
+```bash
+make metrics-source-promotion
 ```
 
 Standalone artifact commands print compact JSON summaries by default. Use
