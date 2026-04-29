@@ -2,7 +2,7 @@ id: SG-SPEC-0025
 title: SpecGraph - Split Proposal Mechanics and Artifact Schema
 kind: spec
 created_at: '2026-04-13T07:28:14Z'
-updated_at: '2026-04-13T08:12:45Z'
+updated_at: '2026-04-29T05:16:10Z'
 status: linked
 maturity: 0.87
 depends_on:
@@ -59,13 +59,12 @@ acceptance_evidence:
     only, forbids direct canonical writes during the split pass, enumerates disallowed operations outside
     split_refactor scope, and constrains invalid payload handling to advisory validation outcomes rather
     than proposal-lane state changes.
-prompt: 'Refine SG-SPEC-0003 by formalizing the concrete split proposal mechanics it delegates here: split
-  payload schema, queue trace fields, deterministic split-pass emission and refresh behavior, and first-pass
-  split-specific validation boundaries.'
+prompt: 'Define the concrete split proposal mechanics boundary: split payload schema, queue trace fields,
+  deterministic split-pass emission and refresh behavior, and first-pass split-specific validation boundaries.
+  Keep graph placement and neighboring-node routing outside the primary prose.'
 specification:
-  objective: Define the concrete split_oversized_spec proposal machinery delegated by SG-SPEC-0003 so
-    split passes emit bounded, validated, refreshable artifacts and queue metadata without mutating canonical
-    specs directly.
+  objective: Define the concrete split_oversized_spec proposal machinery so split passes emit bounded,
+    validated, refreshable artifacts and queue metadata without mutating canonical specs directly.
   scope:
     in:
     - Concrete schema and field-level requirements for split_oversized_spec proposal payload artifacts
@@ -97,10 +96,15 @@ specification:
       or out-of-scope payloads.
     split_lifecycle_anchor: The subordinate deterministic apply-path spec that materializes one approved
       split proposal input after proposal/split mechanics have already emitted a bounded payload.
-  delegated_child_relation:
-  - SG-SPEC-0025 owns the split proposal mechanics parent contract inside SG-SPEC-0028.
-  - SG-SPEC-0004 refines SG-SPEC-0025 as the deterministic split proposal lifecycle anchor that consumes
-    one approved split artifact after SG-SPEC-0025 has already defined the payload and queue contract.
+  role_boundary:
+  - 'This node owns the split mechanics contract: payload shape, queue traceability, deterministic emission,
+    refresh behavior, and validation boundaries for split_oversized_spec passes.'
+  - This node does not own proposal-lane adjudication, canonical split application, merge behavior, reparenting,
+    generalized relinking, viewer UX, repository layout, or score/threshold policy.
+  - Apply-path consumers may use the derived split payload only after human review approves a concrete
+    split proposal; this contract does not convert advisory payloads into canonical graph mutations.
+  - Graph placement is represented by metadata edges. The prose should describe the owned capability and
+    invariants rather than restating neighboring-node routes.
   split_payload_schema:
     required_components:
     - component: parent_target
