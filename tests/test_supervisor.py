@@ -14999,7 +14999,7 @@ def test_build_graph_next_moves_prefers_active_split_proposal_over_branch_previe
                 "subject_kind": "queue_item",
                 "subject_id": "SG-SPEC-0001",
                 "title": "",
-                "status": "proposed",
+                "status": "approved",
                 "review_state": "",
                 "next_gap": "review_decomposition_policy",
                 "priority": "high",
@@ -15085,7 +15085,7 @@ def test_build_graph_next_moves_uses_tracked_proposal_lane_to_cover_split_residu
         "entry_count": 1,
         "entries": [
             {
-                "proposal_authority_state": "under_review",
+                "proposal_authority_state": "approved_for_application",
                 "target_region": {
                     "target_kind": "canonical_node",
                     "target_reference": "SG-SPEC-0001",
@@ -15093,7 +15093,7 @@ def test_build_graph_next_moves_uses_tracked_proposal_lane_to_cover_split_residu
                 },
             }
         ],
-        "named_filters": {"under_review": ["governance_proposal::SG-SPEC-0001"]},
+        "named_filters": {"approved_for_application": ["governance_proposal::SG-SPEC-0001"]},
     }
 
     report = supervisor_module.build_graph_next_moves(
@@ -15105,7 +15105,7 @@ def test_build_graph_next_moves_uses_tracked_proposal_lane_to_cover_split_residu
 
     assert report["current_scene"] == "steady_state"
     assert report["recommended_next_move_kind"] == "none"
-    assert report["source_facts"]["proposal_lane_overlay"]["under_review_count"] == 1
+    assert report["source_facts"]["proposal_lane_overlay"]["entry_count"] == 1
 
 
 def test_branch_rewrite_preview_projection_tolerates_malformed_optional_lists(

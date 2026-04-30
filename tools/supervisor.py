@@ -23432,11 +23432,7 @@ def graph_next_moves_top_backlog_entry(
             "refactor_queue",
         }:
             continue
-        if str(entry.get("status", "")).strip() not in {
-            "proposed",
-            "review_pending",
-            "pending_review",
-        }:
+        if str(entry.get("status", "")).strip() not in APPLICABLE_PROPOSAL_STATUSES:
             continue
         details = entry.get("details", {})
         signal = str(details.get("signal", "")).strip() if isinstance(details, dict) else ""
@@ -23449,7 +23445,10 @@ def graph_next_moves_top_backlog_entry(
         for entry in proposal_lane_overlay.get("entries", []):
             if not isinstance(entry, dict):
                 continue
-            if str(entry.get("proposal_authority_state", "")).strip() != "under_review":
+            if str(entry.get("proposal_authority_state", "")).strip() not in {
+                "under_review",
+                "approved_for_application",
+            }:
                 continue
             target_region = entry.get("target_region", {})
             if not isinstance(target_region, dict):
