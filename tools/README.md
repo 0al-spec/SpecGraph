@@ -359,7 +359,8 @@ Key derived artifacts:
   guardrail, metric binding, and next-gap backlog
 - `runs/metric_pack_index.json`: read-only metric-pack registry projection,
   grouped by pack status, review state, source reference state, authority state,
-  missing inputs, and viewer-friendly named filters
+  missing inputs, and viewer-friendly named filters. See
+  `docs/metric_pack_viewer_contract.md` for the ContextBuilder-facing contract
 - `runs/metric_signal_index.json`: derived metric surface for
   `Specification Verifiability`, `Process Observability`,
   `Structural Observability`, bridge-native `SIB`, and the alias-only
