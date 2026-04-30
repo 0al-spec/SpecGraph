@@ -2,7 +2,7 @@ id: SG-SPEC-0032
 title: SpecGraph - Proposal/Split Mechanics Subcluster
 kind: spec
 created_at: '2026-04-14T05:05:41Z'
-updated_at: '2026-04-25T07:10:00Z'
+updated_at: '2026-04-29T22:36:53Z'
 status: linked
 maturity: 0.69
 depends_on:
@@ -26,8 +26,8 @@ acceptance:
   readiness for that mechanics region.
 - 'Applies the topology-prose rule for this branch: graph edges remain metadata, while prose explains
   runtime readiness and review meaning.'
-- Keeps SG-SPEC-0032 implementation-agnostic to queue ranking, continuation selection, viewer layout,
-  and runtime orchestration.
+- Keeps this node implementation-agnostic to queue ranking, continuation selection, viewer layout, and
+  runtime orchestration.
 acceptance_evidence:
 - criterion: Defines proposal/split mechanics readiness as one coherent capability region inside reflective
     execution.
@@ -44,14 +44,14 @@ acceptance_evidence:
 - criterion: 'Applies the topology-prose rule for this branch: graph edges remain metadata, while prose
     explains runtime readiness and review meaning.'
   evidence: specification.topology_prose_policy says direct child, edge, and delegation facts are represented
-    by canonical metadata and should not become the main prose of SG-SPEC-0032.
-- criterion: Keeps SG-SPEC-0032 implementation-agnostic to queue ranking, continuation selection, viewer
+    by canonical metadata and should not become the main prose of this node.
+- criterion: Keeps this node implementation-agnostic to queue ranking, continuation selection, viewer
     layout, and runtime orchestration.
   evidence: specification.scope.out excludes queue ranking, continuation-selection policy, viewer layout,
     and runtime orchestration.
-prompt: Keep SG-SPEC-0032 as the proposal/split mechanics readiness region inside reflective execution.
-  It should explain what readiness means to the runtime and reviewers without narrating graph topology
-  that already exists in metadata.
+prompt: Keep this node as the proposal/split mechanics readiness region inside reflective execution. It
+  should explain what readiness means to the runtime and reviewers without narrating graph topology that
+  already exists in metadata.
 specification:
   objective: Define proposal/split mechanics readiness as one coherent capability region inside reflective
     execution, so higher-level continuation logic can reason about availability without inspecting concrete
@@ -64,8 +64,8 @@ specification:
     - Continuation-selection insulation from proposal/split mechanics detail
     - Topology-prose discipline for this branch
     out:
-    - Field-level split artifact schemas already owned by SG-SPEC-0029
-    - Continuation-selection policy owned by SG-SPEC-0026
+    - Field-level split artifact schemas owned by downstream mechanics contracts
+    - Continuation-selection policy
     - Queue ranking formulas, viewer layout, and runtime orchestration
   readiness_region:
   - Proposal/split mechanics readiness is the coarse runtime condition that proposal/split behavior can
@@ -88,17 +88,23 @@ specification:
     target.
   topology_prose_policy:
   - Direct edge, child, and delegation facts for this branch are represented by canonical graph metadata.
-  - SG-SPEC-0032 prose should explain readiness, review meaning, and insulation boundaries rather than
+  - This node's prose should explain readiness, review meaning, and insulation boundaries rather than
     restating which spec ID routes to which other spec ID.
   cluster_boundaries:
-  - SG-SPEC-0032 does not redefine SG-SPEC-0043 or SG-SPEC-0029 mechanics semantics.
-  - SG-SPEC-0032 does not define continuation-selection rules, viewer behavior, queue ranking formulas,
-    or runtime orchestration.
+  - This node does not redefine downstream mechanics semantics.
+  - This node does not define continuation-selection rules, viewer behavior, queue ranking formulas, or
+    runtime orchestration.
+  role_boundary:
+  - This node owns only the coarse proposal/split readiness region exposed to reflective execution.
+  - This node does not own concrete mechanics semantics, split payload schemas, continuation-selection
+    policy, viewer behavior, queue ranking, or runtime orchestration.
+  - Graph placement is represented by metadata edges; prose should describe readiness semantics rather
+    than restating provider routes.
   parent_contract:
-  - SG-SPEC-0027 consumes SG-SPEC-0032 as the proposal/split readiness region within reflective execution.
-  - SG-SPEC-0032 keeps continuation selection separate from concrete proposal/split mechanics detail.
-  - SG-SPEC-0032 should be rewritten or merged rather than split again if the proposed child would only
-    verbalize graph topology.
+  - The reflective execution-readiness layer consumes this node as the proposal/split readiness region.
+  - This node keeps continuation selection separate from concrete proposal/split mechanics detail.
+  - This node should be rewritten or merged rather than split again if the proposed child would only verbalize
+    graph topology.
 gate_state: none
 required_human_action: '-'
 proposed_status: null

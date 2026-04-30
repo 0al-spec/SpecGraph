@@ -2,7 +2,7 @@ id: SG-SPEC-0030
 title: SpecGraph - Proposal/Split Prerequisite Contract
 kind: spec
 created_at: '2026-04-13T21:41:41Z'
-updated_at: '2026-04-25T10:10:00Z'
+updated_at: '2026-04-30T04:58:14Z'
 status: linked
 depends_on:
 - SG-SPEC-0005
@@ -21,29 +21,29 @@ outputs:
 allowed_paths:
 - specs/nodes/SG-SPEC-0030.yaml
 acceptance:
-- Defines the parent-facing prerequisite contract for consuming SG-SPEC-0028 as proposal/split mechanics
-  readiness without inspecting concrete proposal-lane or split payload details first.
+- Defines the parent-facing prerequisite contract for consuming proposal/split mechanics coordination
+  as readiness without inspecting concrete proposal-lane or split payload details first.
 - Defines semantic non-bypass conditions where readiness is invalid if proposal-lane execution, split
   mechanics, or direct-update separation becomes unreviewable or ambiguous.
-- Preserves SG-SPEC-0005 direct-update boundary semantics as a distinct concern that is not implied by
-  SG-SPEC-0028 proposal/split readiness.
+- Preserves direct-update boundary semantics as a distinct concern that is not implied by proposal/split
+  readiness.
 - Remains implementation-agnostic about queue ranking formulas, proposal-lane execution timing, and runtime
   orchestration.
 - Applies the topology-prose rule so prerequisite prose explains readiness consumption and semantic bypass,
   not direct edge lists or route narration.
 acceptance_evidence:
-- criterion: Defines the parent-facing prerequisite contract for consuming SG-SPEC-0028 as proposal/split
-    mechanics readiness without inspecting concrete proposal-lane or split payload details first.
-  evidence: specification.prerequisite_contract and specification.consumer_guidance define SG-SPEC-0028
-    as the capability-level readiness surface while leaving concrete mechanics inspection downstream.
+- criterion: Defines the parent-facing prerequisite contract for consuming proposal/split mechanics coordination
+    as readiness without inspecting concrete proposal-lane or split payload details first.
+  evidence: specification.prerequisite_contract and specification.consumer_guidance define the coordination
+    surface as capability-level readiness while leaving concrete mechanics inspection downstream.
 - criterion: Defines semantic non-bypass conditions where readiness is invalid if proposal-lane execution,
     split mechanics, or direct-update separation becomes unreviewable or ambiguous.
   evidence: specification.required_readiness_meanings and specification.inadmissible_bypass_conditions
     define the required meanings and the conditions that make readiness inadmissible.
-- criterion: Preserves SG-SPEC-0005 direct-update boundary semantics as a distinct concern that is not
-    implied by SG-SPEC-0028 proposal/split readiness.
-  evidence: specification.boundary_separation states that SG-SPEC-0005 is outside this prerequisite contract,
-    and SG-SPEC-0027 must not treat SG-SPEC-0028 as a proxy for direct-update semantics.
+- criterion: Preserves direct-update boundary semantics as a distinct concern that is not implied by proposal/split
+    readiness.
+  evidence: specification.boundary_separation states that direct-update authority is outside this prerequisite
+    contract, and consumers must not treat proposal/split readiness as a proxy for direct-update semantics.
 - criterion: Remains implementation-agnostic about queue ranking formulas, proposal-lane execution timing,
     and runtime orchestration.
   evidence: specification.scope.out excludes queue ranking formulas, proposal-lane timing/orchestration
@@ -52,19 +52,19 @@ acceptance_evidence:
     semantic bypass, not direct edge lists or route narration.
   evidence: specification.topology_prose_policy states that graph relations stay in canonical metadata
     while this node explains prerequisite meaning and semantic bypass behavior.
-prompt: Define the parent-facing prerequisite contract for SG-SPEC-0028 in domain-first terms. The spec
-  should say when proposal/split readiness is admissible for consumers, what semantic bypasses invalidate
-  it, and why SG-SPEC-0005 direct-update semantics remain separate.
+prompt: Define the parent-facing prerequisite contract for proposal/split readiness in domain-first terms.
+  The spec should say when proposal/split readiness is admissible for consumers, what semantic bypasses
+  invalidate it, and why direct-update semantics remain separate.
 specification:
-  objective: Define the parent-facing prerequisite contract that governs when consumers may treat SG-SPEC-0028
-    as admissible proposal/split mechanics readiness without bypassing proposal-lane execution, split
-    mechanics, or direct-update separation.
+  objective: Define the parent-facing prerequisite contract that governs when consumers may treat proposal/split
+    coordination as admissible mechanics readiness without bypassing proposal-lane execution, split mechanics,
+    or direct-update separation.
   scope:
     in:
     - Parent-facing prerequisite contract for proposal/split mechanics readiness.
-    - Semantic non-bypass conditions for consumers of SG-SPEC-0028.
+    - Semantic non-bypass conditions for consumers of proposal/split readiness.
     - Required readiness meanings for proposal-lane execution, split mechanics, and direct-update separation.
-    - Separation between proposal/split readiness and SG-SPEC-0005 retrospective direct-update boundaries.
+    - Separation between proposal/split readiness and retrospective direct-update boundaries.
     - Topology-prose discipline for prerequisite contracts.
     out:
     - Split payload schema and proposal queue field-level contracts.
@@ -72,52 +72,57 @@ specification:
     - Runtime orchestration, ranking formulas, or implementation storage layout.
     - Direct edge-list narration whose only purpose is to restate graph metadata.
   terminology:
-    prerequisite_contract: The consumer-facing rule that says when SG-SPEC-0028 may be treated as admissible
-      proposal/split readiness.
+    prerequisite_contract: The consumer-facing rule that says when proposal/split readiness may be treated
+      as admissible mechanics readiness.
     semantic_bypass: A shortcut that makes proposal/split readiness appear satisfied while proposal-lane
       execution, split mechanics, or direct-update separation is not reviewable.
     readiness_meaning: A required system meaning that must remain inspectable for readiness to be trusted.
   prerequisite_contract:
-  - A parent may treat SG-SPEC-0028 as proposal/split readiness only when the required readiness meanings
+  - A parent may treat proposal/split coordination as readiness only when the required readiness meanings
     remain reviewable.
-  - This contract answers whether SG-SPEC-0028 is admissible as a capability-level readiness input; it
-    does not define concrete proposal-lane execution or split payload behavior.
+  - This contract answers whether proposal/split readiness is admissible as a capability-level readiness
+    input; it does not define concrete proposal-lane execution or split payload behavior.
   required_readiness_meanings:
     proposal_lane_execution:
-    - SG-SPEC-0006 must remain reviewable as the owner of proposal-lane execution semantics.
+    - Proposal-lane execution semantics must remain reviewable as a distinct capability.
     split_mechanics:
-    - SG-SPEC-0025 must remain reviewable as the owner of split mechanics and payload semantics.
+    - Split mechanics and payload semantics must remain reviewable as a distinct capability.
     split_lifecycle_anchor:
-    - SG-SPEC-0004 remains the deterministic split lifecycle anchor cited through split mechanics.
+    - The deterministic split lifecycle anchor must remain reviewable through split mechanics.
     direct_update_separation:
-    - SG-SPEC-0005 direct-update boundary semantics remain separate from proposal/split mechanics readiness.
+    - Direct-update boundary semantics remain separate from proposal/split mechanics readiness.
   inadmissible_bypass_conditions:
   - Readiness is inadmissible if a consumer treats proposal/split mechanics as ready while proposal-lane
     execution ownership is missing, unreviewed, or ambiguous.
   - Readiness is inadmissible if a consumer treats proposal/split mechanics as ready while split mechanics
     ownership is missing, unreviewed, or ambiguous.
-  - Readiness is inadmissible if proposal/split readiness is used as a proxy for SG-SPEC-0005 direct-update
-    semantics.
+  - Readiness is inadmissible if proposal/split readiness is used as a proxy for direct-update semantics.
   consumer_guidance:
-  - Consumers should cite SG-SPEC-0028 for the capability-level proposal/split readiness question.
-  - Consumers that need field-level split or proposal-lane details should inspect SG-SPEC-0025 or SG-SPEC-0006
-    as concrete owners rather than duplicating those contracts in parent prose.
+  - Consumers should use the coordination surface for the capability-level proposal/split readiness question.
+  - Consumers that need field-level split or proposal-lane details should inspect concrete mechanics surfaces
+    rather than duplicating those contracts in parent prose.
   - Consumer prose should explain required readiness meanings instead of narrating edge order.
   boundary_separation:
-  - SG-SPEC-0005 remains independently consumed for retrospective direct-update boundary semantics.
-  - SG-SPEC-0027 must not treat SG-SPEC-0028 as a proxy for SG-SPEC-0005.
-  - SG-SPEC-0005 is out of scope for this prerequisite contract.
+  - Retrospective direct-update boundary semantics remain independently consumed.
+  - Consumers must not treat proposal/split readiness as a proxy for direct-update semantics.
+  - Direct-update authority is out of scope for this prerequisite contract.
   topology_prose_policy:
   - Direct graph relations around this prerequisite contract are represented by canonical metadata and
     derived graph views.
   - This node should explain readiness consumption and semantic bypass, not route narration, direct edge
     lists, or child placement.
   boundaries:
-  - SG-SPEC-0030 does not own split payload schema, proposal queue semantics, proposal-lane execution
-    transitions, or runtime orchestration.
-  - SG-SPEC-0030 does not create direct-update authority and does not weaken SG-SPEC-0005 boundaries.
+  - This node does not own split payload schema, proposal queue semantics, proposal-lane execution transitions,
+    or runtime orchestration.
+  - This node does not create direct-update authority and does not weaken direct-update boundaries.
   - If a future refinement would only verbalize which neighboring spec IDs connect to this contract, prefer
     rewrite, merge, regrouping, or proposal pressure instead of a new canonical child.
+  role_boundary:
+  - This node owns only parent-facing prerequisite semantics for proposal/split readiness.
+  - This node does not own proposal-lane execution, split mechanics, split lifecycle semantics, direct-update
+    authority, queue ranking, storage layout, or runtime orchestration.
+  - Graph placement is represented by metadata edges; prose should describe admissibility and semantic
+    bypass rather than restating provider routes.
 maturity: 0.58
 gate_state: none
 proposed_status: null

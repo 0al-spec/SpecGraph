@@ -2,7 +2,7 @@ id: SG-SPEC-0043
 title: SpecGraph - Proposal/Split Gateway Boundary
 kind: spec
 created_at: '2026-04-14T19:40:20Z'
-updated_at: '2026-04-27T20:50:57Z'
+updated_at: '2026-04-30T04:58:14Z'
 status: linked
 maturity: 0.62
 depends_on:
@@ -23,12 +23,12 @@ acceptance:
 - Defines the proposal/split readiness boundary that tells reflective execution when proposal/split mechanics
   are available without exposing split payload details.
 - Preserves a single parent-facing readiness surface for proposal/split mechanics while keeping concrete
-  split lifecycle ownership downstream in SG-SPEC-0029.
-- Delegates the readable no-bypass readiness-chain explanation to SG-SPEC-0044 instead of restating graph
-  topology in this node.
+  split lifecycle ownership downstream.
+- Keeps readable no-bypass readiness-chain explanation separate instead of restating graph topology in
+  this node.
 - Treats direct edge, handoff, and delegation facts as graph metadata unless they add a distinct runtime
   or review-observable invariant.
-- Keeps SG-SPEC-0043 implementation-agnostic to queue ranking, continuation-selection policy, and runtime
+- Keeps this node implementation-agnostic to queue ranking, continuation-selection policy, and runtime
   orchestration.
 acceptance_evidence:
 - criterion: Defines the proposal/split readiness boundary that tells reflective execution when proposal/split
@@ -37,46 +37,44 @@ acceptance_evidence:
     readiness contract, while specification.invariants.PSP-0043-1 explicitly excludes split payload and
     lifecycle field semantics from the readiness decision.
 - criterion: Preserves a single parent-facing readiness surface for proposal/split mechanics while keeping
-    concrete split lifecycle ownership downstream in SG-SPEC-0029.
-  evidence: depends_on retains SG-SPEC-0029 as the downstream mechanics dependency, while specification.mechanics_boundary
-    and specification.invariants.PSP-0043-2 keep concrete lifecycle ownership there instead of duplicating
-    it in SG-SPEC-0043.
-- criterion: Delegates the readable no-bypass readiness-chain explanation to SG-SPEC-0044 instead of restating
-    graph topology in this node.
-  evidence: depends_on retains SG-SPEC-0044, while specification.topology_prose_policy says SG-SPEC-0043
-    should not verbalize the full chain already represented by graph metadata, and specification.invariants.PSP-0043-3
-    preserves SG-SPEC-0044 as the dedicated chain contract.
+    concrete split lifecycle ownership downstream.
+  evidence: specification.mechanics_boundary and specification.invariants.PSP-0043-2 keep concrete lifecycle
+    ownership downstream instead of duplicating it in this node.
+- criterion: Keeps readable no-bypass readiness-chain explanation separate instead of restating graph
+    topology in this node.
+  evidence: specification.topology_prose_policy says this node should not verbalize the full chain already
+    represented by graph metadata, and specification.invariants.PSP-0043-3 preserves that chain explanation
+    as a separate concern.
 - criterion: Treats direct edge, handoff, and delegation facts as graph metadata unless they add a distinct
     runtime or review-observable invariant.
   evidence: specification.topology_prose_policy defines the rule for this boundary and specification.cluster_boundaries
     keeps edge or handoff descriptions out of prose unless they change review or runtime behavior; specification.invariants.PSP-0043-4
     makes that child-creation constraint review-observable.
-- criterion: Keeps SG-SPEC-0043 implementation-agnostic to queue ranking, continuation-selection policy,
+- criterion: Keeps this node implementation-agnostic to queue ranking, continuation-selection policy,
     and runtime orchestration.
   evidence: specification.scope.out and specification.cluster_boundaries exclude queue ranking formulas,
-    continuation-selection policy, and runtime orchestration from the SG-SPEC-0043 gateway boundary.
-prompt: Keep SG-SPEC-0043 as the proposal/split readiness boundary that exposes proposal/split mechanics
-  to reflective execution without turning graph topology into prose. It should preserve SG-SPEC-0029 as
-  the concrete mechanics owner, rely on SG-SPEC-0044 for the readable no-bypass chain, and avoid new topology-only
+    continuation-selection policy, and runtime orchestration from this gateway boundary.
+prompt: Keep this node as the proposal/split readiness boundary that exposes proposal/split mechanics
+  to reflective execution without turning graph topology into prose. It should preserve concrete mechanics
+  ownership downstream, keep the readable no-bypass chain as a separate concern, and avoid new topology-only
   child slices.
 specification:
   objective: Define the proposal/split readiness boundary that lets reflective execution consume proposal/split
     mechanics as one reviewable capability while concrete split lifecycle detail remains owned downstream
-    by SG-SPEC-0029 and chain-level no-bypass explanation remains owned by SG-SPEC-0044.
+    and chain-level no-bypass explanation remains separate.
   scope:
     in:
     - Proposal/split readiness boundary exposed to reflective execution.
     - Reviewable availability of proposal/split mechanics without split payload inspection.
-    - Preservation of SG-SPEC-0029 as the concrete mechanics owner.
-    - Delegation of the full no-bypass readiness-chain contract to SG-SPEC-0044.
+    - Preservation of downstream concrete mechanics ownership.
+    - Separation of the full no-bypass readiness-chain contract.
     - Topology-prose discipline for this branch.
     - Boundary isolation from queue ranking, continuation-selection policy, and runtime orchestration.
     out:
-    - Concrete split lifecycle field-level semantics and payloads owned by SG-SPEC-0029.
-    - Continuation-selection policy owned by SG-SPEC-0026.
+    - Concrete split lifecycle field-level semantics and payloads.
+    - Continuation-selection policy.
     - Queue ranking formulas, ranking-engine policy, viewer layout, and runtime orchestration.
-    - Full no-bypass chain composition, bypass prohibitions, and parent-level routing details owned by
-      SG-SPEC-0044.
+    - Full no-bypass chain composition, bypass prohibitions, and parent-level routing details.
     - Direct edge, handoff, or route narration that duplicates graph metadata without adding behavior.
   readiness_boundary:
   - Reflective execution treats this node as the reviewable availability boundary for proposal/split mechanics.
@@ -88,36 +86,42 @@ specification:
   - Reviewers should be able to read this node as a capability boundary without reconstructing a chain
     of neighboring spec IDs.
   mechanics_boundary:
-  - SG-SPEC-0029 remains the owner of concrete proposal/split lifecycle and mechanics detail.
-  - SG-SPEC-0043 may reference SG-SPEC-0029 as the downstream mechanics owner, but it must not duplicate
-    SG-SPEC-0029 field-level contracts.
+  - Downstream concrete mechanics contracts remain responsible for proposal/split lifecycle and mechanics
+    detail.
+  - This node may reference that ownership boundary, but it must not duplicate field-level mechanics contracts.
   topology_prose_policy:
-  - The direct graph relations around SG-SPEC-0043 are already represented by canonical metadata and derived
+  - The direct graph relations around this node are already represented by canonical metadata and derived
     graph artifacts.
   - This spec must not create or require a child whose main purpose is to verbalize an edge, route, handoff
     segment, or delegation path.
   - A new child under this branch is justified only when it adds a separately nameable runtime behavior,
     review rule, policy, protocol, or evidence invariant.
   cluster_boundaries:
-  - SG-SPEC-0043 does not redefine field-level split artifact schemas, queue ranking formulas, continuation-selection
+  - This node does not redefine field-level split artifact schemas, queue ranking formulas, continuation-selection
     policy, or runtime orchestration.
-  - SG-SPEC-0043 explains the domain role of the proposal/split readiness boundary and leaves topology
-    bookkeeping to structured graph fields.
-  - SG-SPEC-0043 does not restate SG-SPEC-0029 field-level mechanics beyond identifying it as the downstream
-    mechanics owner.
+  - This node explains the domain role of the proposal/split readiness boundary and leaves topology bookkeeping
+    to structured graph fields.
+  - This node does not restate downstream field-level mechanics beyond identifying the ownership boundary.
+  role_boundary:
+  - This node owns only the parent-facing proposal/split readiness boundary exposed to reflective execution.
+  - This node does not own concrete lifecycle fields, split payloads, no-bypass chain composition, continuation-selection
+    policy, queue ranking, viewer layout, or runtime orchestration.
+  - Graph placement is represented by metadata edges; prose should describe readiness-boundary semantics
+    rather than restating provider routes.
   parent_contract:
-  - SG-SPEC-0032 consumes SG-SPEC-0043 as the proposal/split readiness boundary for this mechanics region.
-  - SG-SPEC-0043 preserves SG-SPEC-0029 as the concrete mechanics owner and SG-SPEC-0044 as the readable
-    no-bypass chain contract.
-  - SG-SPEC-0043 must not split again solely to name direct edge, handoff, or delegation facts already
-    represented by graph metadata.
+  - The readiness-region layer consumes this node as the proposal/split readiness boundary for this mechanics
+    region.
+  - This node preserves concrete mechanics ownership and readable no-bypass chain explanation as separate
+    concerns.
+  - This node must not split again solely to name direct edge, handoff, or delegation facts already represented
+    by graph metadata.
   invariants:
-    PSP-0043-1: Reflective execution may consume SG-SPEC-0043 only as a readiness decision for proposal/split
+    PSP-0043-1: Reflective execution may consume this node only as a readiness decision for proposal/split
       mechanics, not as authority for split payload or lifecycle field semantics.
-    PSP-0043-2: SG-SPEC-0029 remains the downstream mechanics owner whenever SG-SPEC-0043 is read as the
-      parent-facing readiness surface.
-    PSP-0043-3: SG-SPEC-0044 remains the readable no-bypass chain contract; SG-SPEC-0043 may name that
-      role but must not reproduce the chain explanation.
+    PSP-0043-2: The downstream mechanics surface remains the concrete owner whenever this node is read
+      as the parent-facing readiness surface.
+    PSP-0043-3: The readable no-bypass chain contract remains separate; this node may name that role but
+      must not reproduce the chain explanation.
     PSP-0043-4: A proposed child under this branch is valid only if it adds a distinct runtime behavior,
       review rule, policy, protocol, or evidence invariant beyond edge, handoff, or delegation narration.
 gate_state: none
