@@ -103,7 +103,7 @@ The source is provenance, not authority by itself.
 A metric pack contract is a machine-readable declaration of:
 
 - `metric_pack_id`
-- `source_reference_state`
+- `reference_state`
 - `pack_authority_state`
 - source provenance
 - required inputs
@@ -123,7 +123,7 @@ Example shape:
     "repository": "0al-spec/Metrics",
     "path": "SIB_FULL/sib_full_metrics.tex"
   },
-  "source_reference_state": "draft_reference",
+  "reference_state": "draft_reference",
   "pack_authority_state": "not_threshold_authority",
   "inputs": [
     "spec_graph",
@@ -183,7 +183,7 @@ Future metric-execution shape:
     "registry_hash": "sha256:...",
     "source_git_commit": "..."
   },
-  "source_reference_state": "draft_reference",
+  "reference_state": "draft_reference",
   "pack_authority_state": "not_threshold_authority",
   "review_state": "draft_visible",
   "next_gap": "review_draft_metric_source",
@@ -196,9 +196,14 @@ Future metric-execution shape:
     }
   ],
   "canonical_mutations_allowed": false,
-  "derived_artifacts_written": ["runs/metric_pack_runs.json"]
+  "tracked_artifacts_written": false
 }
 ```
+
+Runtime output paths for future metric execution should be declared outside the
+run payload, such as in derived-artifact policy or supervisor build
+configuration. The run payload itself must keep the standard read-only boundary
+flags.
 
 Initial computability states:
 
@@ -230,9 +235,13 @@ Metric packs must not introduce a parallel authority system.
 
 They should reuse the existing bridge and source-promotion vocabulary:
 
+`reference_state` is the same field used by `tools/external_consumers.json`.
+Metric pack declarations should reference or mirror that field rather than
+introduce a separate `source_reference_state` alias.
+
 | Layer | Field | Values | Meaning |
 | --- | --- | --- | --- |
-| External source availability | `source_reference_state` | `draft_reference`, `stable_reference` | Existing external-consumer source state. |
+| External source availability | `reference_state` | `draft_reference`, `stable_reference` | Existing external-consumer source state from `tools/external_consumers.json`. |
 | Metric pack authority | `pack_authority_state` | `not_threshold_authority`, `promotion_candidate`, `operational_source_after_review` | Existing Metrics source-promotion authority state. |
 | Lifecycle compatibility | `lifecycle_state` | `active`, `deprecated` | Compatibility marker only; not threshold authority. |
 
@@ -458,7 +467,7 @@ The first index should include:
   },
   "entries": [],
   "canonical_mutations_allowed": false,
-  "derived_artifacts_written": ["runs/metric_pack_index.json"]
+  "tracked_artifacts_written": false
 }
 ```
 
@@ -520,7 +529,7 @@ Validation failures include:
 
 - missing `metric_pack_id`
 - unknown `consumer_id`
-- unknown `source_reference_state`
+- unknown `reference_state`
 - unknown `pack_authority_state`
 - draft source declaring threshold authority
 - missing required input declarations
