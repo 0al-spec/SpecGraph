@@ -146,6 +146,10 @@ Supervisor modes:
   `runs/metrics_source_promotion_index.json` so draft Metrics/SIB_FULL sources
   can become reviewable promotion candidates without receiving threshold
   authority automatically.
+- `--build-metric-pack-index`: build `runs/metric_pack_index.json` from
+  `tools/metric_pack_registry.json` and external-consumer observations so
+  metric-pack source availability, authority state, missing inputs, and next
+  gaps become visible without executing metric packs.
 - `--build-metric-signal-index`: build `runs/metric_signal_index.json` from
   trace, evidence, graph-health, and proposal-runtime surfaces so metric-driven
   advisory signals remain derived rather than canonical facts. `sib` is the
@@ -353,6 +357,9 @@ Key derived artifacts:
 - `runs/metrics_source_promotion_index.json`: reviewable `Metrics/SIB_FULL`
   promotion surface, grouped by promotion status, review state, authority
   guardrail, metric binding, and next-gap backlog
+- `runs/metric_pack_index.json`: read-only metric-pack registry projection,
+  grouped by pack status, review state, source reference state, authority state,
+  missing inputs, and viewer-friendly named filters
 - `runs/metric_signal_index.json`: derived metric surface for
   `Specification Verifiability`, `Process Observability`,
   `Structural Observability`, bridge-native `SIB`, and the alias-only
@@ -411,6 +418,10 @@ Key derived artifacts:
 - `tools/metrics_source_promotion_policy.json`: declarative contract for
   reviewable promotion of draft sibling metric sources such as `Metrics/SIB_FULL`
   without automatic threshold authority
+- `tools/metric_pack_registry.json`: declarative metric-pack registry for
+  plugin-style metric lenses such as `sib`, `sib_full`, and
+  `sib_economic_observability`; this is source metadata, not runtime policy
+  authority
 - `tools/review_feedback_policy.json`: declarative contract for treating
   actionable PR review comments as process evidence, including root-cause
   vocabulary, prevention actions, verification kinds, tracked
