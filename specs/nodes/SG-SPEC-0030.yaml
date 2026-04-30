@@ -2,7 +2,7 @@ id: SG-SPEC-0030
 title: SpecGraph - Proposal/Split Prerequisite Contract
 kind: spec
 created_at: '2026-04-13T21:41:41Z'
-updated_at: '2026-04-29T22:37:38Z'
+updated_at: '2026-04-30T04:58:14Z'
 status: linked
 depends_on:
 - SG-SPEC-0005
@@ -73,7 +73,7 @@ specification:
     - Direct edge-list narration whose only purpose is to restate graph metadata.
   terminology:
     prerequisite_contract: The consumer-facing rule that says when proposal/split readiness may be treated
-      as admissible readiness.
+      as admissible mechanics readiness.
     semantic_bypass: A shortcut that makes proposal/split readiness appear satisfied while proposal-lane
       execution, split mechanics, or direct-update separation is not reviewable.
     readiness_meaning: A required system meaning that must remain inspectable for readiness to be trusted.
