@@ -24,6 +24,12 @@ It now contains multiple metric methods:
 - future metric families such as trace health, review fatigue, security, or
   product-value overlays.
 
+Its current `README.md` also points to `METRIC_PACKS.md` as the repository's
+plugin-style interpretation contract. SpecGraph should treat that document as
+source material for metric-pack ingestion while still normalizing all runtime
+authority through SpecGraph's own external-consumer and source-promotion
+surfaces.
+
 SpecGraph should not hard-code any one metric family as the single truth.
 Instead, it should treat metrics as read-only interpretive plugins over stable
 SpecGraph core state.
@@ -88,6 +94,8 @@ A metric source records where the method came from.
 
 Examples:
 
+- `0al-spec/Metrics:METRIC_PACKS.md` as the source repository's pack registry
+  and interpretation contract;
 - `0al-spec/Metrics:SIB`
 - `0al-spec/Metrics:SIB_FULL`
 - `0al-spec/Metrics:SIB_ECONOMIC_OBSERVABILITY`
@@ -97,6 +105,19 @@ Examples:
   conversation-archive excerpt.
 
 The source is provenance, not authority by itself.
+
+Current Metrics repository alignment:
+
+| `metric_pack_id` | Source path | Initial interpretation |
+| --- | --- | --- |
+| `sib` | `SIB/metrics.tex` | Compact baseline and existing bridge-backed reference. |
+| `sib_full` | `SIB_FULL/sib_full_metrics.tex` | Broader draft diagnostic framework. |
+| `sib_economic_observability` | `SIB_ECONOMIC_OBSERVABILITY/sib_economic_observability.tex` | Economic observability lens for inference, verification, build, and structural cost proxies. |
+
+The compiled PDFs linked by the Metrics `README.md` are useful human-readable
+references. The `.tex` files remain the first machine-verifiable source paths
+because existing external-consumer checks already validate source-document
+markers.
 
 ### 2. Metric Pack Contract
 
@@ -264,6 +285,17 @@ Any transition from draft visibility to threshold-affecting behavior requires:
 - human review;
 - a promotion artifact such as `runs/metrics_source_promotion_index.json`;
 - a separate policy proposal before enforcement or threshold semantics change.
+
+The Metrics repository's `METRIC_PACKS.md` currently uses its own
+source-declared `authority_state` values. SpecGraph should map them into its
+existing runtime states instead of importing them as policy authority:
+
+| Metrics `authority_state` | SpecGraph interpretation |
+| --- | --- |
+| `draft_reference` | `reference_state: draft_reference`, `pack_authority_state: not_threshold_authority`. |
+| `validated_reference` | Eligible for `reference_state: stable_reference`, but still `not_threshold_authority` until SpecGraph source-promotion review. |
+| `operational` | Source-declared operational intent only; requires SpecGraph promotion evidence before `operational_source_after_review`. |
+| `deprecated` | `lifecycle_state: deprecated`, not threshold authority. |
 
 ## Interpretation Contract
 
@@ -545,12 +577,14 @@ It should:
 1. Add a declarative metric pack registry.
 2. Register only metadata for `sib`, `sib_full`, and
    `sib_economic_observability`.
-3. Reference existing external-consumer IDs where possible.
-4. Preserve `sib_full` as `draft_reference` and
+3. Mirror the current Metrics `README.md` / `METRIC_PACKS.md` pack IDs and
+   source paths.
+4. Reference existing external-consumer IDs where possible.
+5. Preserve `sib_full` as `draft_reference` and
    `not_threshold_authority`.
-5. Preserve economic observability as a separate lens, not a replacement for
+6. Preserve economic observability as a separate lens, not a replacement for
    SIB.
-6. Add `runs/metric_pack_index.json` that validates pack metadata and reports
+7. Add `runs/metric_pack_index.json` that validates pack metadata and reports
    gaps.
 
 Dashboard projection, metric execution, pricing real inference events,
