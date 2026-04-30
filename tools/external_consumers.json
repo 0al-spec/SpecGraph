@@ -123,6 +123,45 @@
       "notes": "Draft extended reference. Visible to the bridge index and promotion path, but not threshold-driving authority for the SIB metric family yet."
     },
     {
+      "consumer_id": "metrics_sib_economic_observability",
+      "title": "Metrics / SIB Economic Observability",
+      "reference_state": "draft_reference",
+      "profile": "sibling_metric_consumer",
+      "repo_url": "https://github.com/0al-spec/Metrics",
+      "local_checkout_hint": "/Users/egor/Development/GitHub/0AL/Metrics",
+      "metric_bindings": [],
+      "declared_artifacts": [
+        {
+          "artifact_id": "sib_economic_observability_readme",
+          "path": "SIB_ECONOMIC_OBSERVABILITY/README.md",
+          "kind": "consumer_readme",
+          "required": true,
+          "markers": [
+            "# SIB Economic Observability",
+            "non-normative observability signals"
+          ]
+        },
+        {
+          "artifact_id": "sib_economic_observability_tex",
+          "path": "SIB_ECONOMIC_OBSERVABILITY/sib_economic_observability.tex",
+          "kind": "source_document",
+          "required": true,
+          "markers": [
+            "\\section{Economic Observability}",
+            "\\subsection{Node Inference Cost}"
+          ]
+        },
+        {
+          "artifact_id": "sib_economic_observability_pdf",
+          "path": "SIB_ECONOMIC_OBSERVABILITY/sib_economic_observability.pdf",
+          "kind": "compiled_document",
+          "required": false,
+          "markers": []
+        }
+      ],
+      "notes": "Draft economic observability lens for inference, verification, build, and structural cost proxies. Visible as diagnostic source material only."
+    },
+    {
       "consumer_id": "specpm",
       "title": "SpecPM / Boundary Package Consumer",
       "reference_state": "draft_reference",
