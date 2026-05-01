@@ -2279,6 +2279,18 @@ EXPLORATION_PREVIEW_EDGE_KINDS = list(EXPLORATION_PREVIEW_POLICY["preview_contra
 CONVERSATION_MEMORY_INDEX_FILENAME = Path(
     str(CONVERSATION_MEMORY_POLICY["repository_layout"]["index_artifact"])
 ).name
+CONVERSATION_MEMORY_SOURCES_RELATIVE_DIR = str(
+    CONVERSATION_MEMORY_POLICY["repository_layout"].get(
+        "source_dir",
+        "conversation_memory/sources",
+    )
+).strip()
+CONVERSATION_MEMORY_NOTES_RELATIVE_DIR = str(
+    CONVERSATION_MEMORY_POLICY["repository_layout"].get(
+        "note_dir",
+        "conversation_memory/notes",
+    )
+).strip()
 CONVERSATION_MEMORY_INDEX_ARTIFACT_KIND = str(
     CONVERSATION_MEMORY_POLICY["index_contract"]["artifact_kind"]
 )
@@ -8434,6 +8446,14 @@ def conversation_memory_index_path() -> Path:
     return RUNS_DIR / CONVERSATION_MEMORY_INDEX_FILENAME
 
 
+def conversation_memory_sources_dir_path() -> Path:
+    return ROOT / CONVERSATION_MEMORY_SOURCES_RELATIVE_DIR
+
+
+def conversation_memory_notes_dir_path() -> Path:
+    return ROOT / CONVERSATION_MEMORY_NOTES_RELATIVE_DIR
+
+
 def branch_rewrite_preview_path() -> Path:
     return RUNS_DIR / BRANCH_REWRITE_PREVIEW_FILENAME
 
@@ -11540,6 +11560,129 @@ def conversation_memory_policy_override_reference(policy: dict[str, Any]) -> dic
     }
 
 
+def conversation_memory_storage_errors(record: dict[str, Any]) -> list[str]:
+    raw_errors = record.get("_storage_errors", [])
+    if raw_errors in (None, ""):
+        return []
+    if not isinstance(raw_errors, list):
+        return ["invalid_storage_errors_shape"]
+    return [str(error).strip() for error in raw_errors if str(error).strip()]
+
+
+def conversation_memory_storage_dir(relative_dir: str, fallback: str) -> Path:
+    normalized = str(relative_dir or fallback).strip() or fallback
+    return ROOT / normalized
+
+
+def load_conversation_memory_source_records(
+    source_dir_relative: str | None = None,
+) -> list[dict[str, Any]]:
+    source_dir = conversation_memory_storage_dir(
+        source_dir_relative or CONVERSATION_MEMORY_SOURCES_RELATIVE_DIR,
+        CONVERSATION_MEMORY_SOURCES_RELATIVE_DIR,
+    )
+    if not source_dir.exists():
+        return []
+    records: list[dict[str, Any]] = []
+    for path in sorted(source_dir.glob("*.json")):
+        relative_path = path.relative_to(ROOT).as_posix()
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except OSError:
+            records.append(
+                {
+                    "source_id": f"invalid_source_file_{path.stem}",
+                    "source_type": "",
+                    "source_state": "missing",
+                    "source_ref": "",
+                    "_storage_path": relative_path,
+                    "_storage_errors": ["unreadable_source_json"],
+                }
+            )
+            continue
+        except json.JSONDecodeError:
+            records.append(
+                {
+                    "source_id": f"invalid_source_file_{path.stem}",
+                    "source_type": "",
+                    "source_state": "declared",
+                    "source_ref": "",
+                    "_storage_path": relative_path,
+                    "_storage_errors": ["malformed_source_json"],
+                }
+            )
+            continue
+        raw_items = payload if isinstance(payload, list) else [payload]
+        for index, raw_item in enumerate(raw_items, start=1):
+            item = copy.deepcopy(raw_item) if isinstance(raw_item, dict) else {}
+            if not isinstance(raw_item, dict):
+                item["_storage_errors"] = ["invalid_source_record_shape"]
+            item["_storage_path"] = relative_path
+            if len(raw_items) > 1:
+                item["_storage_index"] = index
+            records.append(item)
+    return records
+
+
+def parse_conversation_memory_note_frontmatter(path: Path) -> tuple[dict[str, Any], str, list[str]]:
+    errors: list[str] = []
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError:
+        return {}, "", ["unreadable_note_markdown"]
+    lines = text.splitlines(keepends=True)
+    if not lines or lines[0].strip() != "---":
+        return {}, text, ["missing_frontmatter"]
+    closing_index = next(
+        (index for index, line in enumerate(lines[1:], start=1) if line.strip() == "---"),
+        None,
+    )
+    if closing_index is None:
+        return {}, text, ["unterminated_frontmatter"]
+    raw_frontmatter = "".join(lines[1:closing_index]).strip()
+    body = "".join(lines[closing_index + 1 :]).strip()
+    try:
+        if yaml is None:
+            payload = json.loads(raw_frontmatter) if raw_frontmatter else {}
+        else:
+            payload = yaml.safe_load(raw_frontmatter) if raw_frontmatter else {}
+    except Exception as exc:
+        return {}, body, [f"malformed_frontmatter: {exc}"]
+    if not isinstance(payload, dict):
+        return {}, body, ["invalid_frontmatter_shape"]
+    return payload, body, errors
+
+
+def conversation_memory_summary_from_body(body: str) -> str:
+    normalized = " ".join(line.strip() for line in body.splitlines() if line.strip())
+    if len(normalized) <= 240:
+        return normalized
+    return normalized[:237].rstrip() + "..."
+
+
+def load_conversation_memory_note_records(
+    note_dir_relative: str | None = None,
+) -> list[dict[str, Any]]:
+    note_dir = conversation_memory_storage_dir(
+        note_dir_relative or CONVERSATION_MEMORY_NOTES_RELATIVE_DIR,
+        CONVERSATION_MEMORY_NOTES_RELATIVE_DIR,
+    )
+    if not note_dir.exists():
+        return []
+    records: list[dict[str, Any]] = []
+    for path in sorted(note_dir.glob("*.md")):
+        relative_path = path.relative_to(ROOT).as_posix()
+        metadata, body, errors = parse_conversation_memory_note_frontmatter(path)
+        note = copy.deepcopy(metadata)
+        note["_storage_path"] = relative_path
+        if errors:
+            note["_storage_errors"] = errors
+        if body and not str(note.get("summary", "")).strip():
+            note["summary"] = conversation_memory_summary_from_body(body)
+        records.append(note)
+    return records
+
+
 def conversation_memory_review_state(
     *,
     note_status: str,
@@ -11623,6 +11766,8 @@ def conversation_memory_note_errors(
 
 def build_conversation_memory_index(
     policy: dict[str, Any] | None = None,
+    *,
+    include_storage: bool = True,
 ) -> dict[str, Any]:
     active_policy = copy.deepcopy(policy or CONVERSATION_MEMORY_POLICY)
     policy_reference = (
@@ -11634,6 +11779,17 @@ def build_conversation_memory_index(
     note_contract = active_policy.get("note_contract", {})
     index_contract = active_policy.get("index_contract", {})
     layer_boundary = active_policy.get("layer_boundary", {})
+    repository_layout = active_policy.get("repository_layout", {})
+    if not isinstance(repository_layout, dict):
+        repository_layout = {}
+    source_dir_relative = (
+        str(repository_layout.get("source_dir", CONVERSATION_MEMORY_SOURCES_RELATIVE_DIR)).strip()
+        or CONVERSATION_MEMORY_SOURCES_RELATIVE_DIR
+    )
+    note_dir_relative = (
+        str(repository_layout.get("note_dir", CONVERSATION_MEMORY_NOTES_RELATIVE_DIR)).strip()
+        or CONVERSATION_MEMORY_NOTES_RELATIVE_DIR
+    )
     allowed_source_types = {
         str(item).strip()
         for item in source_contract.get("source_types", CONVERSATION_MEMORY_SOURCE_TYPES)
@@ -11664,7 +11820,11 @@ def build_conversation_memory_index(
     }
 
     raw_sources = source_contract.get("sources", [])
-    sources = raw_sources if isinstance(raw_sources, list) else []
+    policy_sources = raw_sources if isinstance(raw_sources, list) else []
+    storage_sources = (
+        load_conversation_memory_source_records(source_dir_relative) if include_storage else []
+    )
+    sources = [*policy_sources, *storage_sources]
     source_entries: list[dict[str, Any]] = []
     source_ids: set[str] = set()
     source_type_groups: dict[str, list[str]] = {}
@@ -11676,7 +11836,8 @@ def build_conversation_memory_index(
         source_id = str(source.get("source_id", "")).strip() or f"invalid_source_{index}"
         source_type = str(source.get("source_type", "")).strip()
         source_state = str(source.get("source_state", "")).strip() or "declared"
-        errors = conversation_memory_source_errors(
+        storage_errors = conversation_memory_storage_errors(source)
+        errors = storage_errors + conversation_memory_source_errors(
             {**source, "source_state": source_state},
             allowed_source_types=allowed_source_types,
             allowed_source_states=allowed_source_states,
@@ -11691,6 +11852,7 @@ def build_conversation_memory_index(
                 "captured_at": str(source.get("captured_at", "")).strip(),
                 "selection_rationale": str(source.get("selection_rationale", "")).strip(),
                 "source_boundary": str(source.get("source_boundary", "")).strip(),
+                "storage_path": str(source.get("_storage_path", "")).strip(),
                 "contract_errors": errors,
             }
         )
@@ -11700,7 +11862,11 @@ def build_conversation_memory_index(
             source_error_groups.setdefault(error, []).append(source_id)
 
     raw_notes = note_contract.get("notes", [])
-    notes = raw_notes if isinstance(raw_notes, list) else []
+    policy_notes = raw_notes if isinstance(raw_notes, list) else []
+    storage_notes = (
+        load_conversation_memory_note_records(note_dir_relative) if include_storage else []
+    )
+    notes = [*policy_notes, *storage_notes]
     entries: list[dict[str, Any]] = []
     note_kind_groups: dict[str, list[str]] = {}
     note_status_groups: dict[str, list[str]] = {}
@@ -11727,7 +11893,8 @@ def build_conversation_memory_index(
             if isinstance(raw_source_refs, list)
             else []
         )
-        errors = conversation_memory_note_errors(
+        storage_errors = conversation_memory_storage_errors(note)
+        errors = storage_errors + conversation_memory_note_errors(
             {**note, "promotion_state": promotion_state, "source_refs": source_refs},
             source_ids=source_ids,
             allowed_note_kinds=allowed_note_kinds,
@@ -11762,6 +11929,7 @@ def build_conversation_memory_index(
             if isinstance(note.get("links", {}), dict)
             else {},
             "staleness": str(note.get("staleness", "")).strip() or "current",
+            "storage_path": str(note.get("_storage_path", "")).strip(),
             "summary": str(note.get("summary", "")).strip(),
             "contract_errors": errors,
         }
@@ -11802,6 +11970,14 @@ def build_conversation_memory_index(
         "schema_version": CONVERSATION_MEMORY_INDEX_SCHEMA_VERSION,
         "generated_at": utc_now_iso(),
         "policy_reference": policy_reference,
+        "source_snapshot": {
+            "source_dir": source_dir_relative,
+            "note_dir": note_dir_relative,
+            "policy_source_count": len(policy_sources),
+            "policy_note_count": len(policy_notes),
+            "storage_source_count": len(storage_sources),
+            "storage_note_count": len(storage_notes),
+        },
         "layer_boundary": copy.deepcopy(layer_boundary),
         "review_state": review_state,
         "next_gap": next_gap,
