@@ -84,12 +84,17 @@ Promotion trace is derived from the proposal-promotion registry, policy, and
 promotion index.
 
 It is the authoritative surface for proposal promotion/provenance state when
-present:
+present, but the current proposal-promotion artifacts do not themselves encode
+proposal-to-spec relation kinds or explicit canonical spec target fields:
 
 - `authority: promotion_trace`;
-- relation kind may be `promotes_to`, `motivates`, `refines`, or `supersedes`;
+- current artifacts provide proposal promotion provenance and traceability
+  state;
 - `trace_status` should reflect the derived promotion state, such as
-  `missing_trace`, `declared`, or `bounded`.
+  `missing_trace`, `incomplete`, `invalid`, or `bounded`;
+- relation kinds such as `promotes_to`, `motivates`, `refines`, or
+  `supersedes` are normalized semantics for a later derived artifact, such as
+  `runs/proposal_spec_trace_index.json`, once explicit source evidence exists.
 
 When promotion trace is missing, a viewer should show a trace gap rather than
 silently substituting markdown mentions.
@@ -132,9 +137,13 @@ Initial trace statuses:
 - `inferred`;
 - `declared`;
 - `bounded`;
+- `incomplete`;
+- `invalid`;
 - `ambiguous`.
 
-Unknown future values should remain renderable as neutral values by consumers.
+Consumers should render `missing_trace`, `incomplete`, `invalid`, and
+`ambiguous` as warning or review-needed states. Unknown future values should
+remain renderable as neutral values by consumers.
 
 ## Viewer Contract
 

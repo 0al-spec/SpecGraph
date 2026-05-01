@@ -88,9 +88,13 @@ Known `trace_status` values:
 - `inferred`
 - `declared`
 - `bounded`
+- `incomplete`
+- `invalid`
 - `ambiguous`
 
-Unknown future values should render as neutral chips, not as errors.
+Render `missing_trace`, `incomplete`, `invalid`, and `ambiguous` as warning or
+review-needed states. Unknown future values should render as neutral chips, not
+as errors.
 
 ## Mentioned Specs
 
@@ -117,9 +121,13 @@ Viewer guidance:
 
 - treat `promotion_traceability.status` as the primary trace state when present;
 - show `missing_trace` as a gap, not as a broken graph edge;
+- show `incomplete` and `invalid` as actionable promotion-provenance gaps;
 - show `source_refs` and provenance links when available;
-- do not infer a target `SG-SPEC-*` from prose when the promotion trace is
-  missing.
+- do not treat `runs/proposal_promotion_index.json` itself as a proposal-to-spec
+  edge source, because it currently reports proposal promotion provenance rather
+  than a canonical spec target field;
+- do not infer a target `SG-SPEC-*` from prose when promotion provenance is
+  missing or incomplete.
 
 Promotion trace is stronger than textual references because it is a derived
 SpecGraph surface tied to proposal promotion policy.
@@ -131,12 +139,21 @@ Lane targets should be read from `runs/proposal_lane_overlay.json`.
 Viewer guidance:
 
 - use `proposal_handle` as the lane proposal identity;
-- use `target_region.target_reference` when it is an `SG-SPEC-*` id;
+- use `target_region.target_reference` when it is an `SG-SPEC-*` id and
+  `target_region.target_kind` marks a canonical node;
 - mark the relation as:
   - `relation_kind: "targets"`;
   - `authority: "lane_overlay"`;
-  - `trace_status: "declared"` unless the lane entry reports a blocked or
-    ambiguous state.
+  - `trace_status: "declared"` only when `query_contract.status` is
+    `queryable` and the target is canonical;
+  - `trace_status: "ambiguous"` when `query_contract.findings` shows the lane
+    target is invalid, incomplete, or otherwise requires review before it can
+    be treated as canonical trace;
+  - `trace_status: "missing_trace"` when `query_contract.findings` shows that
+    no canonical target can be resolved from the lane entry.
+
+Show `proposal_authority_state` as lane/governance state, but do not treat it as
+a substitute for `trace_status`.
 
 Lane targets are not the same namespace as markdown proposal ids. Do not merge
 `proposal_handle` and `proposal_id` without an explicit bridge.
@@ -151,12 +168,28 @@ For a proposal detail panel, show:
 
 For each relation, show:
 
-- `spec_id`;
-- `relation_kind`;
-- `authority`;
-- `trace_status`;
-- `next_gap`;
-- `source_refs`.
+- `Mentioned specs`:
+  - `spec_id`;
+  - `relation_kind`;
+  - `authority`;
+  - `trace_status`;
+  - `source_refs`.
+- `Promotion trace`:
+  - `proposal_id` or `proposal_path`;
+  - `authority`;
+  - `promotion_traceability.status`;
+  - `next_gap`;
+  - `source_refs`.
+- `Lane targets`:
+  - `spec_id`;
+  - `relation_kind`;
+  - `authority`;
+  - `trace_status`;
+  - `proposal_authority_state`;
+  - `source_refs`.
+
+`spec_id` is optional at the panel level and should only be shown for relation
+groups that currently emit or derive a canonical spec reference.
 
 Recommended visual treatment:
 
@@ -164,6 +197,8 @@ Recommended visual treatment:
 - promotion trace: primary trace chip;
 - lane targets: lane/governance chip;
 - `missing_trace`: warning chip;
+- `incomplete`: warning chip;
+- `invalid`: warning chip;
 - `ambiguous`: warning chip requiring review.
 
 ## Guardrails
