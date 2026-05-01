@@ -396,6 +396,22 @@ promotion, canonical spec mutation, or autonomous proposal creation. Candidate
 promotion pressure is visible for review, but the dedicated
 `conversation_memory_promotion_pressure.json` artifact remains a later slice.
 
+## Fourth Slice Realization
+
+The fourth bounded runtime slice adds an explicit promotion-pressure review
+queue:
+
+- `runs/conversation_memory_promotion_pressure.json`;
+- `--build-conversation-memory-promotion-pressure`;
+- `make conversation-memory-pressure`;
+- inclusion in `make viewer-surfaces`;
+- pressure entries with target kind, source memory notes, source refs, rationale,
+  review state, status, and next gap.
+
+This is still derived-only. It turns map-level candidates into a viewer-ready
+review queue, but it does not create proposal files, mutate canonical specs, or
+skip proposal-lane mediation.
+
 ## Acceptance Criteria
 
 - SpecGraph has a proposal-level architecture for conversation-derived memory

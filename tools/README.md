@@ -160,6 +160,10 @@ Supervisor modes:
   `runs/conversation_memory_map.json` from the current conversation-memory
   index so clusters, links, source coverage, promotion candidates, and review
   blockers become inspectable without mutating canonical specs.
+- `--build-conversation-memory-promotion-pressure`: build
+  `runs/conversation_memory_promotion_pressure.json` from the current
+  conversation-memory map so reviewable promotion candidates are visible
+  without creating proposals or mutating canonical specs.
 - `--build-metric-signal-index`: build `runs/metric_signal_index.json` from
   trace, evidence, graph-health, and proposal-runtime surfaces so metric-driven
   advisory signals remain derived rather than canonical facts. `sib` is the
@@ -180,7 +184,9 @@ Supervisor modes:
   writing `runs/graph_backlog_projection.json`, `runs/graph_dashboard.json`,
   `runs/graph_next_moves.json`, `runs/metrics_source_promotion_index.json`,
   `runs/metric_pack_index.json`, `runs/conversation_memory_index.json`, and
-  `runs/conversation_memory_map.json` in one standalone pass. This is safe for local
+  `runs/conversation_memory_map.json`, and
+  `runs/conversation_memory_promotion_pressure.json` in one standalone pass.
+  This is safe for local
   hooks, CI smoke checks, or ContextBuilder build buttons because it does not
   choose implementation target scope or create new implementation work items.
 - Standalone artifact commands print compact JSON summaries by default. Use

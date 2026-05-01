@@ -606,6 +606,7 @@ def load_conversation_memory_policy() -> tuple[dict[str, Any], str]:
         "note_contract",
         "index_contract",
         "map_contract",
+        "promotion_pressure_contract",
         "viewer_contract",
     )
     missing = [section for section in required_sections if section not in payload]
@@ -615,8 +616,21 @@ def load_conversation_memory_policy() -> tuple[dict[str, Any], str]:
             + ", ".join(missing)
         )
     required_fields = {
-        "repository_layout": ("index_artifact", "map_artifact", "source_dir", "note_dir"),
+        "repository_layout": (
+            "index_artifact",
+            "map_artifact",
+            "promotion_pressure_artifact",
+            "source_dir",
+            "note_dir",
+        ),
         "map_contract": ("artifact_kind", "schema_version", "named_filters"),
+        "promotion_pressure_contract": (
+            "artifact_kind",
+            "schema_version",
+            "target_kinds",
+            "pressure_statuses",
+            "named_filters",
+        ),
     }
     missing_fields: list[str] = []
     for section, fields in required_fields.items():
@@ -631,6 +645,27 @@ def load_conversation_memory_policy() -> tuple[dict[str, Any], str]:
         raise RuntimeError(
             "malformed conversation memory policy artifact: missing required field(s): "
             + ", ".join(missing_fields)
+        )
+    list_fields = {
+        "map_contract": ("named_filters",),
+        "promotion_pressure_contract": ("target_kinds", "pressure_statuses", "named_filters"),
+    }
+    invalid_list_fields: list[str] = []
+    for section, fields in list_fields.items():
+        section_payload = payload.get(section)
+        if not isinstance(section_payload, dict):
+            continue
+        for field in fields:
+            raw_value = section_payload.get(field)
+            if not isinstance(raw_value, list) or not any(str(item).strip() for item in raw_value):
+                invalid_list_fields.append(f"{section}.{field}")
+                continue
+            if any(not isinstance(item, str) or not item.strip() for item in raw_value):
+                invalid_list_fields.append(f"{section}.{field}")
+    if invalid_list_fields:
+        raise RuntimeError(
+            "malformed conversation memory policy artifact: invalid list field(s): "
+            + ", ".join(invalid_list_fields)
         )
     return payload, hashlib.sha256(raw_text.encode("utf-8")).hexdigest()
 
@@ -2301,6 +2336,9 @@ CONVERSATION_MEMORY_INDEX_FILENAME = Path(
 CONVERSATION_MEMORY_MAP_FILENAME = Path(
     str(CONVERSATION_MEMORY_POLICY["repository_layout"]["map_artifact"])
 ).name
+CONVERSATION_MEMORY_PROMOTION_PRESSURE_FILENAME = Path(
+    str(CONVERSATION_MEMORY_POLICY["repository_layout"]["promotion_pressure_artifact"])
+).name
 CONVERSATION_MEMORY_SOURCES_RELATIVE_DIR = str(
     CONVERSATION_MEMORY_POLICY["repository_layout"].get(
         "source_dir",
@@ -2348,6 +2386,15 @@ CONVERSATION_MEMORY_MAP_SCHEMA_VERSION = int(
 )
 CONVERSATION_MEMORY_MAP_NAMED_FILTERS = list(
     CONVERSATION_MEMORY_POLICY["map_contract"]["named_filters"]
+)
+CONVERSATION_MEMORY_PROMOTION_PRESSURE_ARTIFACT_KIND = str(
+    CONVERSATION_MEMORY_POLICY["promotion_pressure_contract"]["artifact_kind"]
+)
+CONVERSATION_MEMORY_PROMOTION_PRESSURE_SCHEMA_VERSION = int(
+    CONVERSATION_MEMORY_POLICY["promotion_pressure_contract"]["schema_version"]
+)
+CONVERSATION_MEMORY_PROMOTION_PRESSURE_NAMED_FILTERS = list(
+    CONVERSATION_MEMORY_POLICY["promotion_pressure_contract"]["named_filters"]
 )
 BRANCH_REWRITE_PREVIEW_FILENAME = Path(
     str(branch_rewrite_preview_policy_lookup("repository_layout.preview_artifact"))
@@ -8486,6 +8533,10 @@ def conversation_memory_map_path() -> Path:
     return RUNS_DIR / CONVERSATION_MEMORY_MAP_FILENAME
 
 
+def conversation_memory_promotion_pressure_path() -> Path:
+    return RUNS_DIR / CONVERSATION_MEMORY_PROMOTION_PRESSURE_FILENAME
+
+
 def conversation_memory_sources_dir_path() -> Path:
     return ROOT / CONVERSATION_MEMORY_SOURCES_RELATIVE_DIR
 
@@ -12388,6 +12439,153 @@ def write_conversation_memory_map(memory_map: dict[str, Any]) -> Path:
     path = conversation_memory_map_path()
     with artifact_lock(path):
         atomic_write_json(path, memory_map)
+    return path
+
+
+def conversation_memory_pressure_named_filter(target_kind: str) -> str:
+    mapping = {
+        "intent_fragment": "intent_fragment_candidates",
+        "proposal_candidate": "proposal_candidates",
+        "pre_spec_draft": "pre_spec_draft_candidates",
+        "operator_question": "operator_questions",
+    }
+    return mapping.get(str(target_kind).strip(), "")
+
+
+def build_conversation_memory_promotion_pressure(
+    memory_map: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    source_map = (
+        copy.deepcopy(memory_map)
+        if isinstance(memory_map, dict)
+        else build_conversation_memory_map()
+    )
+    candidate_block = source_map.get("candidate_proposal_pressure", {})
+    raw_candidates = candidate_block.get("entries", []) if isinstance(candidate_block, dict) else []
+    if not isinstance(raw_candidates, list):
+        raw_candidates = []
+    blocker_block = source_map.get("review_blockers", {})
+    map_blocker_count = (
+        int(blocker_block.get("entry_count", 0) or 0) if isinstance(blocker_block, dict) else 0
+    )
+    allowed_target_kinds = {
+        str(kind).strip()
+        for kind in CONVERSATION_MEMORY_POLICY["promotion_pressure_contract"]["target_kinds"]
+        if str(kind).strip()
+    }
+    named_filters: dict[str, list[str]] = {
+        str(name).strip(): []
+        for name in CONVERSATION_MEMORY_PROMOTION_PRESSURE_NAMED_FILTERS
+        if str(name).strip()
+    }
+    entries: list[dict[str, Any]] = []
+    target_kind_groups: dict[str, list[str]] = {}
+    pressure_status_groups: dict[str, list[str]] = {}
+
+    for raw_candidate in raw_candidates:
+        if not isinstance(raw_candidate, dict):
+            continue
+        candidate_id = str(raw_candidate.get("candidate_id", "")).strip()
+        target_kind = str(raw_candidate.get("target_kind", "")).strip()
+        if not candidate_id or target_kind not in allowed_target_kinds:
+            continue
+        pressure_id = f"conversation_memory_pressure::{candidate_id}"
+        pressure_status = (
+            "blocked_by_map_review" if map_blocker_count else "ready_for_promotion_review"
+        )
+        review_state = "blocked" if map_blocker_count else "promotion_review_required"
+        next_gap = (
+            "repair_conversation_memory_map_blockers"
+            if map_blocker_count
+            else "review_memory_promotion_pressure"
+        )
+        source_memory_notes = conversation_memory_unique_string_list(
+            raw_candidate.get("source_memory_notes", [])
+        )
+        source_refs = conversation_memory_unique_string_list(raw_candidate.get("source_refs", []))
+        entry = {
+            "pressure_id": pressure_id,
+            "candidate_id": candidate_id,
+            "target_kind": target_kind,
+            "promotion_state": str(raw_candidate.get("promotion_state", "")).strip(),
+            "pressure_status": pressure_status,
+            "review_state": review_state,
+            "next_gap": next_gap,
+            "source_memory_notes": source_memory_notes,
+            "source_refs": source_refs,
+            "rationale": str(raw_candidate.get("rationale", "")).strip(),
+            "map_candidate": copy.deepcopy(raw_candidate),
+        }
+        entries.append(entry)
+        target_kind_groups.setdefault(target_kind, []).append(pressure_id)
+        pressure_status_groups.setdefault(pressure_status, []).append(pressure_id)
+        named_filters.setdefault(pressure_status, []).append(pressure_id)
+        target_filter = conversation_memory_pressure_named_filter(target_kind)
+        if target_filter:
+            named_filters.setdefault(target_filter, []).append(pressure_id)
+        if map_blocker_count:
+            named_filters.setdefault("blocked_by_map_review", []).append(pressure_id)
+
+    if map_blocker_count:
+        review_state = "blocked"
+        next_gap = "repair_conversation_memory_map_blockers"
+    elif entries:
+        review_state = "ready_for_review"
+        next_gap = "review_memory_promotion_pressure"
+    else:
+        review_state = "not_ready"
+        next_gap = source_map.get("next_gap", "capture_conversation_memory_source")
+
+    def sorted_groups(groups: dict[str, list[str]]) -> dict[str, list[str]]:
+        return {key: sorted(set(value)) for key, value in sorted(groups.items())}
+
+    sorted_named_filters = sorted_groups(named_filters)
+
+    return {
+        "artifact_kind": CONVERSATION_MEMORY_PROMOTION_PRESSURE_ARTIFACT_KIND,
+        "schema_version": CONVERSATION_MEMORY_PROMOTION_PRESSURE_SCHEMA_VERSION,
+        "generated_at": utc_now_iso(),
+        "policy_reference": copy.deepcopy(source_map.get("policy_reference", {})),
+        "map_reference": {
+            "artifact_kind": source_map.get("artifact_kind"),
+            "schema_version": source_map.get("schema_version"),
+            "generated_at": source_map.get("generated_at"),
+            "cluster_count": source_map.get("cluster_count", 0),
+            "link_count": source_map.get("link_count", 0),
+            "next_gap": source_map.get("next_gap"),
+        },
+        "index_reference": copy.deepcopy(source_map.get("index_reference", {})),
+        "source_snapshot": copy.deepcopy(source_map.get("source_snapshot", {})),
+        "layer_boundary": copy.deepcopy(source_map.get("layer_boundary", {})),
+        "review_state": review_state,
+        "next_gap": next_gap,
+        "entry_count": len(entries),
+        "entries": sorted(entries, key=lambda item: item["pressure_id"]),
+        "review_blocker_count": map_blocker_count,
+        "summary": {
+            "entry_count": len(entries),
+            "target_kind_counts": grouped_identifier_counts(sorted_groups(target_kind_groups)),
+            "pressure_status_counts": grouped_identifier_counts(
+                sorted_groups(pressure_status_groups)
+            ),
+            "review_blocker_count": map_blocker_count,
+        },
+        "viewer_projection": {
+            "target_kind": sorted_groups(target_kind_groups),
+            "pressure_status": sorted_groups(pressure_status_groups),
+            "named_filters": sorted_named_filters,
+        },
+        "canonical_mutations_allowed": bool(source_map.get("canonical_mutations_allowed")),
+        "tracked_artifacts_written": bool(source_map.get("tracked_artifacts_written")),
+        "viewer_contract": copy.deepcopy(source_map.get("viewer_contract", {})),
+    }
+
+
+def write_conversation_memory_promotion_pressure(pressure: dict[str, Any]) -> Path:
+    RUNS_DIR.mkdir(parents=True, exist_ok=True)
+    path = conversation_memory_promotion_pressure_path()
+    with artifact_lock(path):
+        atomic_write_json(path, pressure)
     return path
 
 
@@ -23854,6 +24052,7 @@ def graph_backlog_source_artifact_path(source_artifact: str) -> str:
         "metric_pack_index": metric_pack_index_path,
         "conversation_memory_index": conversation_memory_index_path,
         "conversation_memory_map": conversation_memory_map_path,
+        "conversation_memory_promotion_pressure": conversation_memory_promotion_pressure_path,
         "metric_threshold_proposals": metric_threshold_proposals_path,
         "review_feedback_index": review_feedback_index_path,
     }
@@ -26164,6 +26363,12 @@ def build_viewer_surfaces(specs: list[SpecNode]) -> dict[str, Any]:
     conversation_memory_path = write_conversation_memory_index(conversation_memory_index)
     conversation_memory_map = build_conversation_memory_map(conversation_memory_index)
     conversation_memory_map_path_result = write_conversation_memory_map(conversation_memory_map)
+    conversation_memory_pressure = build_conversation_memory_promotion_pressure(
+        conversation_memory_map
+    )
+    conversation_memory_pressure_path_result = write_conversation_memory_promotion_pressure(
+        conversation_memory_pressure
+    )
     metrics_source_promotion_backlog = metrics_source_promotion_index.get(
         "promotion_backlog",
         {},
@@ -26224,6 +26429,15 @@ def build_viewer_surfaces(specs: list[SpecNode]) -> dict[str, Any]:
                 "cluster_count": conversation_memory_map.get("cluster_count"),
                 "link_count": conversation_memory_map.get("link_count"),
                 "next_gap": conversation_memory_map.get("next_gap"),
+            },
+            "conversation_memory_promotion_pressure": {
+                "artifact_path": conversation_memory_pressure_path_result.relative_to(
+                    ROOT
+                ).as_posix(),
+                "generated_at": conversation_memory_pressure.get("generated_at"),
+                "entry_count": conversation_memory_pressure.get("entry_count"),
+                "review_state": conversation_memory_pressure.get("review_state"),
+                "next_gap": conversation_memory_pressure.get("next_gap"),
             },
         },
         "notes": [
@@ -29788,6 +30002,7 @@ def main(
     build_metric_pack_index_mode: bool = False,
     build_conversation_memory_index_mode: bool = False,
     build_conversation_memory_map_mode: bool = False,
+    build_conversation_memory_promotion_pressure_mode: bool = False,
     build_metric_signal_index_mode: bool = False,
     build_metric_threshold_proposals_mode: bool = False,
     build_supervisor_performance_index_mode: bool = False,
@@ -29870,6 +30085,9 @@ def main(
         "--build-metric-pack-index": build_metric_pack_index_mode,
         "--build-conversation-memory-index": build_conversation_memory_index_mode,
         "--build-conversation-memory-map": build_conversation_memory_map_mode,
+        "--build-conversation-memory-promotion-pressure": (
+            build_conversation_memory_promotion_pressure_mode
+        ),
         "--build-metric-signal-index": build_metric_signal_index_mode,
         "--build-metric-threshold-proposals": build_metric_threshold_proposals_mode,
         "--build-supervisor-performance-index": build_supervisor_performance_index_mode,
@@ -31664,6 +31882,46 @@ def main(
         emit_supervisor_json(memory_map, output_mode=normalized_output_mode)
         return 0
 
+    if build_conversation_memory_promotion_pressure_mode:
+        if any(
+            (
+                dry_run,
+                auto_approve,
+                loop,
+                resolve_gate,
+                decision,
+                note,
+                target_spec,
+                split_proposal,
+                apply_split_proposal,
+                operator_note,
+                mutation_budget,
+                run_authority,
+                execution_profile,
+                child_model,
+                child_timeout_seconds,
+                verbose,
+                list_stale_runtime,
+                clean_stale_runtime,
+                observe_graph_health_mode,
+                operator_request_packet_path,
+            )
+        ):
+            print(
+                "--build-conversation-memory-promotion-pressure must be used as "
+                "a standalone command",
+                file=sys.stderr,
+            )
+            return 1
+        index = build_conversation_memory_index()
+        write_conversation_memory_index(index)
+        memory_map = build_conversation_memory_map(index)
+        write_conversation_memory_map(memory_map)
+        pressure = build_conversation_memory_promotion_pressure(memory_map)
+        write_conversation_memory_promotion_pressure(pressure)
+        emit_supervisor_json(pressure, output_mode=normalized_output_mode)
+        return 0
+
     if build_metric_signal_index_mode:
         if any(
             (
@@ -32807,6 +33065,14 @@ if __name__ == "__main__":
         ),
     )
     parser.add_argument(
+        "--build-conversation-memory-promotion-pressure",
+        action="store_true",
+        help=(
+            "Build a read-only conversation memory promotion-pressure queue from the "
+            "current exploration map without creating proposals or canonical specs"
+        ),
+    )
+    parser.add_argument(
         "--build-metric-signal-index",
         action="store_true",
         help=(
@@ -33056,6 +33322,9 @@ if __name__ == "__main__":
             build_metric_pack_index_mode=args.build_metric_pack_index,
             build_conversation_memory_index_mode=args.build_conversation_memory_index,
             build_conversation_memory_map_mode=args.build_conversation_memory_map,
+            build_conversation_memory_promotion_pressure_mode=(
+                args.build_conversation_memory_promotion_pressure
+            ),
             build_metric_signal_index_mode=args.build_metric_signal_index,
             build_metric_threshold_proposals_mode=args.build_metric_threshold_proposals,
             build_supervisor_performance_index_mode=args.build_supervisor_performance_index,

@@ -13,6 +13,7 @@ ContextBuilder should treat this as a read-only SpecGraph artifact:
 | --- | --- | --- |
 | `runs/conversation_memory_index.json` | `make conversation-memory` or `make viewer-surfaces` | Conversation-memory panel, source/note counts, reviewable pre-canonical gaps. |
 | `runs/conversation_memory_map.json` | `make conversation-memory-map` or `make viewer-surfaces` | Exploration map projection, clusters, links, source coverage, promotion candidates, review blockers. |
+| `runs/conversation_memory_promotion_pressure.json` | `make conversation-memory-pressure` or `make viewer-surfaces` | Explicit promotion-review queue derived from the map, without creating proposals/specs. |
 
 The index is built from:
 
@@ -415,3 +416,123 @@ Recommended map UI:
 - promotion candidate list labeled "review required";
 - review blocker list with `next_gap` and `contract_errors`;
 - no canonical promotion action.
+
+## Promotion Pressure Artifact
+
+`runs/conversation_memory_promotion_pressure.json` is a derived review queue
+built from the current map. It makes memory-derived promotion pressure visible
+without creating proposal files or canonical specs:
+
+```json
+{
+  "artifact_kind": "conversation_memory_promotion_pressure",
+  "schema_version": 1,
+  "generated_at": "2026-05-01T00:00:00Z",
+  "policy_reference": {
+    "artifact_path": "tools/conversation_memory_policy.json",
+    "artifact_sha256": "...",
+    "version": 1
+  },
+  "map_reference": {
+    "artifact_kind": "conversation_memory_map",
+    "schema_version": 1,
+    "generated_at": "2026-05-01T00:00:00Z",
+    "cluster_count": 4,
+    "link_count": 3,
+    "next_gap": "review_memory_promotion_pressure"
+  },
+  "index_reference": {
+    "artifact_kind": "conversation_memory_index",
+    "schema_version": 1
+  },
+  "review_state": "ready_for_review",
+  "next_gap": "review_memory_promotion_pressure",
+  "entry_count": 1,
+  "entries": [
+    {
+      "pressure_id": "conversation_memory_pressure::cmem-2026-05-01-0001",
+      "candidate_id": "cmem-2026-05-01-0001",
+      "target_kind": "proposal_candidate",
+      "promotion_state": "proposal_pressure_candidate",
+      "pressure_status": "ready_for_promotion_review",
+      "review_state": "promotion_review_required",
+      "next_gap": "review_memory_promotion_pressure",
+      "source_memory_notes": ["cmem-2026-05-01-0001"],
+      "source_refs": ["pageindex-chat-2026-05-01"],
+      "rationale": "Metric-pack execution should wait for adapter computability gaps."
+    }
+  ],
+  "review_blocker_count": 0,
+  "summary": {
+    "entry_count": 1,
+    "target_kind_counts": {
+      "proposal_candidate": 1
+    },
+    "pressure_status_counts": {
+      "ready_for_promotion_review": 1
+    },
+    "review_blocker_count": 0
+  },
+  "viewer_projection": {
+    "target_kind": {
+      "proposal_candidate": ["conversation_memory_pressure::cmem-2026-05-01-0001"]
+    },
+    "pressure_status": {
+      "ready_for_promotion_review": ["conversation_memory_pressure::cmem-2026-05-01-0001"]
+    },
+    "named_filters": {
+      "ready_for_promotion_review": ["conversation_memory_pressure::cmem-2026-05-01-0001"],
+      "proposal_candidates": ["conversation_memory_pressure::cmem-2026-05-01-0001"]
+    }
+  },
+  "canonical_mutations_allowed": false,
+  "tracked_artifacts_written": false
+}
+```
+
+Viewer guardrails:
+
+- Render only when `artifact_kind == "conversation_memory_promotion_pressure"`.
+- Treat a missing artifact as "not built yet".
+- Show a boundary warning if `canonical_mutations_allowed !== false` or
+  `tracked_artifacts_written !== false`.
+- Label all entries as review-only; do not offer direct proposal/spec mutation.
+
+Each `entries[]` item is one reviewable pressure candidate:
+
+```json
+{
+  "pressure_id": "conversation_memory_pressure::cmem-2026-05-01-0001",
+  "candidate_id": "cmem-2026-05-01-0001",
+  "target_kind": "proposal_candidate",
+  "promotion_state": "proposal_pressure_candidate",
+  "pressure_status": "ready_for_promotion_review",
+  "review_state": "promotion_review_required",
+  "next_gap": "review_memory_promotion_pressure",
+  "source_memory_notes": ["cmem-2026-05-01-0001"],
+  "source_refs": ["pageindex-chat-2026-05-01"],
+  "rationale": "Metric-pack execution should wait for adapter computability gaps."
+}
+```
+
+Known `target_kind` values:
+
+- `intent_fragment`
+- `proposal_candidate`
+- `pre_spec_draft`
+- `operator_question`
+
+Known `pressure_status` values:
+
+- `ready_for_promotion_review`
+- `blocked_by_map_review`
+- `not_ready`
+
+Recommended pressure UI:
+
+- summary chips for `entry_count`, `review_state`, `next_gap`, and
+  `review_blocker_count`;
+- grouped candidate table by `target_kind` and `pressure_status`;
+- source-memory/source-ref chips per row;
+- guardrail note when `pressure_status == "blocked_by_map_review"`;
+- no direct mutation action.

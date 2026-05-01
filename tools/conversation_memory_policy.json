@@ -4,6 +4,7 @@
   "repository_layout": {
     "index_artifact": "runs/conversation_memory_index.json",
     "map_artifact": "runs/conversation_memory_map.json",
+    "promotion_pressure_artifact": "runs/conversation_memory_promotion_pressure.json",
     "source_dir": "conversation_memory/sources",
     "note_dir": "conversation_memory/notes"
   },
@@ -114,10 +115,34 @@
       "linked_proposals"
     ]
   },
+  "promotion_pressure_contract": {
+    "artifact_kind": "conversation_memory_promotion_pressure",
+    "schema_version": 1,
+    "target_kinds": [
+      "intent_fragment",
+      "proposal_candidate",
+      "pre_spec_draft",
+      "operator_question"
+    ],
+    "pressure_statuses": [
+      "ready_for_promotion_review",
+      "blocked_by_map_review",
+      "not_ready"
+    ],
+    "named_filters": [
+      "ready_for_promotion_review",
+      "intent_fragment_candidates",
+      "proposal_candidates",
+      "pre_spec_draft_candidates",
+      "operator_questions",
+      "blocked_by_map_review"
+    ]
+  },
   "viewer_contract": {
     "contract_doc": "docs/conversation_memory_viewer_contract.md",
     "primary_artifact": "runs/conversation_memory_index.json",
     "map_artifact": "runs/conversation_memory_map.json",
+    "promotion_pressure_artifact": "runs/conversation_memory_promotion_pressure.json",
     "boundary_label": "Structured exploration memory, not canonical",
     "recommended_first_panel": "Conversation Memory",
     "read_only": true
