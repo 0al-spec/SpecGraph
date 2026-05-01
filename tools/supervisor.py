@@ -624,7 +624,13 @@ def load_conversation_memory_policy() -> tuple[dict[str, Any], str]:
             "note_dir",
         ),
         "map_contract": ("artifact_kind", "schema_version", "named_filters"),
-        "promotion_pressure_contract": ("artifact_kind", "schema_version", "named_filters"),
+        "promotion_pressure_contract": (
+            "artifact_kind",
+            "schema_version",
+            "target_kinds",
+            "pressure_statuses",
+            "named_filters",
+        ),
     }
     missing_fields: list[str] = []
     for section, fields in required_fields.items():
@@ -639,6 +645,27 @@ def load_conversation_memory_policy() -> tuple[dict[str, Any], str]:
         raise RuntimeError(
             "malformed conversation memory policy artifact: missing required field(s): "
             + ", ".join(missing_fields)
+        )
+    list_fields = {
+        "map_contract": ("named_filters",),
+        "promotion_pressure_contract": ("target_kinds", "pressure_statuses", "named_filters"),
+    }
+    invalid_list_fields: list[str] = []
+    for section, fields in list_fields.items():
+        section_payload = payload.get(section)
+        if not isinstance(section_payload, dict):
+            continue
+        for field in fields:
+            raw_value = section_payload.get(field)
+            if not isinstance(raw_value, list) or not any(str(item).strip() for item in raw_value):
+                invalid_list_fields.append(f"{section}.{field}")
+                continue
+            if any(not isinstance(item, str) or not item.strip() for item in raw_value):
+                invalid_list_fields.append(f"{section}.{field}")
+    if invalid_list_fields:
+        raise RuntimeError(
+            "malformed conversation memory policy artifact: invalid list field(s): "
+            + ", ".join(invalid_list_fields)
         )
     return payload, hashlib.sha256(raw_text.encode("utf-8")).hexdigest()
 

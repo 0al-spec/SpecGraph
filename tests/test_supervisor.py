@@ -12415,6 +12415,26 @@ def test_load_conversation_memory_policy_requires_promotion_pressure_contract(
         supervisor_module.load_conversation_memory_policy()
 
 
+def test_load_conversation_memory_policy_validates_promotion_pressure_lists(
+    supervisor_module: object,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    policy = copy.deepcopy(supervisor_module.CONVERSATION_MEMORY_POLICY)
+    policy["promotion_pressure_contract"]["target_kinds"] = []
+    policy["promotion_pressure_contract"]["pressure_statuses"] = [""]
+    policy_path = tmp_path / "conversation_memory_policy.json"
+    policy_path.write_text(json.dumps(policy), encoding="utf-8")
+    monkeypatch.setattr(supervisor_module, "conversation_memory_policy_path", lambda: policy_path)
+
+    with pytest.raises(RuntimeError) as exc_info:
+        supervisor_module.load_conversation_memory_policy()
+
+    message = str(exc_info.value)
+    assert "promotion_pressure_contract.pressure_statuses" in message
+    assert "promotion_pressure_contract.target_kinds" in message
+
+
 def test_build_conversation_memory_index_reports_empty_policy_surface(
     supervisor_module: object,
 ) -> None:

@@ -448,10 +448,43 @@ without creating proposal files or canonical specs:
   "review_state": "ready_for_review",
   "next_gap": "review_memory_promotion_pressure",
   "entry_count": 1,
-  "entries": [],
+  "entries": [
+    {
+      "pressure_id": "conversation_memory_pressure::cmem-2026-05-01-0001",
+      "candidate_id": "cmem-2026-05-01-0001",
+      "target_kind": "proposal_candidate",
+      "promotion_state": "proposal_pressure_candidate",
+      "pressure_status": "ready_for_promotion_review",
+      "review_state": "promotion_review_required",
+      "next_gap": "review_memory_promotion_pressure",
+      "source_memory_notes": ["cmem-2026-05-01-0001"],
+      "source_refs": ["pageindex-chat-2026-05-01"],
+      "rationale": "Metric-pack execution should wait for adapter computability gaps."
+    }
+  ],
   "review_blocker_count": 0,
-  "summary": {},
-  "viewer_projection": {},
+  "summary": {
+    "entry_count": 1,
+    "target_kind_counts": {
+      "proposal_candidate": 1
+    },
+    "pressure_status_counts": {
+      "ready_for_promotion_review": 1
+    },
+    "review_blocker_count": 0
+  },
+  "viewer_projection": {
+    "target_kind": {
+      "proposal_candidate": ["conversation_memory_pressure::cmem-2026-05-01-0001"]
+    },
+    "pressure_status": {
+      "ready_for_promotion_review": ["conversation_memory_pressure::cmem-2026-05-01-0001"]
+    },
+    "named_filters": {
+      "ready_for_promotion_review": ["conversation_memory_pressure::cmem-2026-05-01-0001"],
+      "proposal_candidates": ["conversation_memory_pressure::cmem-2026-05-01-0001"]
+    }
+  },
   "canonical_mutations_allowed": false,
   "tracked_artifacts_written": false
 }
