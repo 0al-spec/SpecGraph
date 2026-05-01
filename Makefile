@@ -13,6 +13,7 @@ help:
 		'  make proposal-spec-trace      Refresh proposal-to-spec trace index JSON' \
 		'  make metrics-source-promotion Refresh Metrics source promotion candidates JSON' \
 		'  make metric-packs             Refresh metric pack index JSON only' \
+		'  make metric-pack-drift        Refresh metric pack registry drift JSON only' \
 		'  make conversation-memory      Refresh conversation memory index JSON only' \
 		'  make conversation-memory-map  Refresh conversation memory map JSON only' \
 		'  make conversation-memory-pressure Refresh conversation memory promotion pressure JSON' \
@@ -48,6 +49,10 @@ metrics-source-promotion:
 .PHONY: metric-packs
 metric-packs:
 	@$(PYTHON) $(SUPERVISOR) --build-metric-pack-index
+
+.PHONY: metric-pack-drift
+metric-pack-drift:
+	@$(PYTHON) $(SUPERVISOR) --build-metric-pack-registry-drift
 
 .PHONY: conversation-memory
 conversation-memory:

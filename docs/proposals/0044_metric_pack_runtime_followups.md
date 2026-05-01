@@ -133,6 +133,16 @@ Candidate artifact:
 runs/metric_pack_registry_drift.json
 ```
 
+This first follow-up is now represented as a read-only runtime surface:
+
+```text
+tools/supervisor.py --build-metric-pack-registry-drift
+make metric-pack-drift
+```
+
+The artifact reports drift without editing either `tools/metric_pack_registry.json`
+or the sibling Metrics `METRIC_PACKS.md` contract.
+
 ### 2. Adapter Contract Layer
 
 Metric packs currently expose required inputs but do not define how SpecGraph

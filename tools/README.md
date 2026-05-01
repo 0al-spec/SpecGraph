@@ -150,6 +150,11 @@ Supervisor modes:
   `tools/metric_pack_registry.json` and external-consumer observations so
   metric-pack source availability, authority state, missing inputs, and next
   gaps become visible without executing metric packs.
+- `--build-metric-pack-registry-drift`: build
+  `runs/metric_pack_registry_drift.json` by comparing
+  `tools/metric_pack_registry.json` with the sibling Metrics
+  `METRIC_PACKS.md` contract so source registry drift is observable without
+  auto-syncing either repository.
 - `--build-conversation-memory-index`: build
   `runs/conversation_memory_index.json` from
   `tools/conversation_memory_policy.json`,
@@ -382,6 +387,10 @@ Key derived artifacts:
   grouped by pack status, review state, source reference state, authority state,
   missing inputs, and viewer-friendly named filters. See
   `docs/metric_pack_viewer_contract.md` for the ContextBuilder-facing contract
+- `runs/metric_pack_registry_drift.json`: read-only drift report comparing the
+  SpecGraph metric-pack registry with the sibling Metrics `METRIC_PACKS.md`
+  contract, including missing checkout/contract, pack-id drift, source-path
+  mismatches, and missing source artifacts
 - `runs/metric_signal_index.json`: derived metric surface for
   `Specification Verifiability`, `Process Observability`,
   `Structural Observability`, bridge-native `SIB`, and the alias-only

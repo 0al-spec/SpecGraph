@@ -1012,6 +1012,23 @@ Use it when you want to review whether `Metrics/SIB_FULL` is ready to graduate
 from draft reference to operational input without silently changing metric
 threshold authority.
 
+### Metric-pack registry drift
+
+```bash
+python3 tools/supervisor.py --build-metric-pack-registry-drift
+```
+
+Builds `runs/metric_pack_registry_drift.json` by comparing:
+
+- `tools/metric_pack_registry.json` in SpecGraph
+- `METRIC_PACKS.md` in the sibling Metrics checkout
+- the current external-consumer checkout observations
+
+This is an observation surface only. It can report missing checkout, missing
+Metrics contract, pack ID drift, source path mismatch, display-name mismatch,
+and missing Metrics source artifacts, but it does not rewrite either repository
+and does not execute metric packs.
+
 ### Metric-threshold proposals
 
 ```bash
@@ -1550,6 +1567,10 @@ path.
   - reviewable promotion surface for draft sibling metric sources such as
     `Metrics/SIB_FULL`, including authority guardrails and promotion backlog
     without automatic threshold authority
+- `runs/metric_pack_registry_drift.json`
+  - read-only comparison between SpecGraph's metric-pack registry and the
+    sibling Metrics `METRIC_PACKS.md` source contract, without auto-syncing
+    either repository
 - `runs/supervisor_performance_index.json`
   - derived measurement surface for runtime cleanliness, run yield, graph
     impact, and same-spec repeat hotspots over time

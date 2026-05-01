@@ -14576,6 +14576,7 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
         "metric": 0,
         "promotion": 0,
         "pack": 0,
+        "pack_drift": 0,
         "lane": 0,
         "runtime": 0,
         "proposal_promotion": 0,
@@ -14728,6 +14729,27 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
             "tracked_artifacts_written": False,
         }
 
+    def fake_metric_pack_registry_drift(
+        registry: dict[str, object],
+        consumer_index: dict[str, object],
+    ) -> dict[str, object]:
+        surface_calls["pack_drift"] += 1
+        assert registry["packs"] == []
+        assert consumer_index["generated_at"] == "2026-04-27T00:00:03Z"
+        return {
+            "artifact_kind": supervisor_module.METRIC_PACK_REGISTRY_DRIFT_ARTIFACT_KIND,
+            "schema_version": supervisor_module.METRIC_PACK_REGISTRY_DRIFT_SCHEMA_VERSION,
+            "generated_at": "2026-04-27T00:00:06.500000Z",
+            "review_state": "clean",
+            "next_gap": "none",
+            "entry_count": 0,
+            "entries": [],
+            "summary": {"drift_count": 0, "status_counts": {}, "severity_counts": {}},
+            "viewer_projection": {"named_filters": {"in_sync": ["metrics"]}},
+            "canonical_mutations_allowed": False,
+            "tracked_artifacts_written": False,
+        }
+
     def fake_proposal_lane_overlay() -> dict[str, object]:
         surface_calls["lane"] += 1
         return {
@@ -14796,6 +14818,11 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
     monkeypatch.setattr(supervisor_module, "load_metric_pack_registry", lambda: {"packs": []})
     monkeypatch.setattr(supervisor_module, "build_metric_pack_index", fake_metric_pack_index)
     monkeypatch.setattr(
+        supervisor_module,
+        "build_metric_pack_registry_drift",
+        fake_metric_pack_registry_drift,
+    )
+    monkeypatch.setattr(
         supervisor_module, "build_proposal_lane_overlay", fake_proposal_lane_overlay
     )
     monkeypatch.setattr(
@@ -14818,6 +14845,8 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
     assert report["written_artifacts"]["graph_next_moves"]["current_scene"] == "steady_state"
     assert report["written_artifacts"]["metrics_source_promotion_index"]["entry_count"] == 1
     assert report["written_artifacts"]["metric_pack_index"]["entry_count"] == 1
+    assert report["written_artifacts"]["metric_pack_registry_drift"]["entry_count"] == 0
+    assert report["written_artifacts"]["metric_pack_registry_drift"]["next_gap"] == "none"
     assert report["written_artifacts"]["proposal_spec_trace_index"]["entry_count"] == 1
     assert report["written_artifacts"]["metric_pack_index"]["ready_for_index_review_count"] == 1
     assert report["written_artifacts"]["conversation_memory_map"]["cluster_count"] == 0
@@ -14836,6 +14865,7 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
         "metric": 1,
         "promotion": 1,
         "pack": 1,
+        "pack_drift": 1,
         "lane": 1,
         "runtime": 1,
         "proposal_promotion": 1,
@@ -14869,6 +14899,12 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
             "entry_count"
         ]
         == 1
+    )
+    assert (
+        json.loads(
+            (repo_fixture / "runs" / "metric_pack_registry_drift.json").read_text(encoding="utf-8")
+        )["artifact_kind"]
+        == supervisor_module.METRIC_PACK_REGISTRY_DRIFT_ARTIFACT_KIND
     )
     assert (
         json.loads(
