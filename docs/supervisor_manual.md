@@ -1112,6 +1112,7 @@ reads:
 - `runs/metric_pack_index.json`
 - `runs/conversation_memory_index.json`
 - `runs/conversation_memory_map.json`
+- `runs/conversation_memory_promotion_pressure.json`
 
 This mode is intended for local `post-merge` / `post-checkout` hooks, CI smoke
 checks, and viewer build buttons. It refreshes existing read models only: it
@@ -1156,6 +1157,18 @@ That command refreshes `runs/conversation_memory_index.json` and then writes
 `runs/conversation_memory_map.json` with clusters, links, source coverage,
 candidate proposal pressure, and review blockers. It remains read-only and does
 not promote memory records into proposals or specs.
+
+Use the pressure shortcut when the viewer needs the explicit promotion-review
+queue:
+
+```bash
+make conversation-memory-pressure
+```
+
+That command refreshes the index and map, then writes
+`runs/conversation_memory_promotion_pressure.json`. It exposes reviewable
+promotion candidates and map blockers, but it does not create proposal files or
+mutate canonical specs.
 
 Standalone artifact commands print compact JSON summaries by default. Use
 `--output-mode full` only when the full generated artifact is needed on stdout.
