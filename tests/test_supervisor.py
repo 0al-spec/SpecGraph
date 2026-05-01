@@ -15245,6 +15245,15 @@ def test_build_graph_backlog_projection_from_surfaces_normalizes_reviewable_gaps
     assert report["summary"]["source_artifact_counts"]["implementation_work_index"] == 1
     assert report["summary"]["source_artifact_counts"]["metric_pack_adapter_index"] == 1
     assert report["summary"]["source_artifact_counts"]["metric_pack_index"] == 1
+    assert report["source_artifacts"]["metric_pack_adapter_index"]["artifact_path"] == (
+        "runs/metric_pack_adapter_index.json"
+    )
+    adapter_entry = next(
+        entry
+        for entry in report["entries"]
+        if entry["source_artifact"] == "metric_pack_adapter_index"
+    )
+    assert adapter_entry["source_artifact_path"] == "runs/metric_pack_adapter_index.json"
     assert report["summary"]["next_gap_counts"]["review_branch_rewrite_candidate"] == 2
     assert report["summary"]["next_gap_counts"]["attach_trace_contract"] == 1
     assert report["summary"]["next_gap_counts"]["attach_trace_baseline"] == 1

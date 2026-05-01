@@ -25041,6 +25041,7 @@ def graph_backlog_source_artifact_path(source_artifact: str) -> str:
         "metrics_feedback_index": metrics_feedback_index_path,
         "metrics_source_promotion_index": metrics_source_promotion_index_path,
         "metric_pack_index": metric_pack_index_path,
+        "metric_pack_adapter_index": metric_pack_adapter_index_path,
         "conversation_memory_index": conversation_memory_index_path,
         "conversation_memory_map": conversation_memory_map_path,
         "conversation_memory_promotion_pressure": conversation_memory_promotion_pressure_path,
