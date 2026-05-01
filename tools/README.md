@@ -150,6 +150,10 @@ Supervisor modes:
   `tools/metric_pack_registry.json` and external-consumer observations so
   metric-pack source availability, authority state, missing inputs, and next
   gaps become visible without executing metric packs.
+- `--build-conversation-memory-index`: build
+  `runs/conversation_memory_index.json` from
+  `tools/conversation_memory_policy.json` so structured exploration memory has
+  a read-only viewer surface before any archive mining or proposal promotion.
 - `--build-metric-signal-index`: build `runs/metric_signal_index.json` from
   trace, evidence, graph-health, and proposal-runtime surfaces so metric-driven
   advisory signals remain derived rather than canonical facts. `sib` is the
@@ -168,8 +172,9 @@ Supervisor modes:
   comparing exact generated spec text.
 - `--build-viewer-surfaces`: refresh local viewer-facing generated artifacts by
   writing `runs/graph_backlog_projection.json`, `runs/graph_dashboard.json`,
-  `runs/graph_next_moves.json`, `runs/metrics_source_promotion_index.json`, and
-  `runs/metric_pack_index.json` in one standalone pass. This is safe for local
+  `runs/graph_next_moves.json`, `runs/metrics_source_promotion_index.json`,
+  `runs/metric_pack_index.json`, and `runs/conversation_memory_index.json` in
+  one standalone pass. This is safe for local
   hooks, CI smoke checks, or ContextBuilder build buttons because it does not
   choose implementation target scope or create new implementation work items.
 - Standalone artifact commands print compact JSON summaries by default. Use

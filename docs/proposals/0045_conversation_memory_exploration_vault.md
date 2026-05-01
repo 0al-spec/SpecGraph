@@ -350,6 +350,22 @@ It should:
 This gives the graph a place to grow without pretending that archive mining is
 already solved.
 
+## First Slice Realization
+
+The first bounded runtime slice is realized by:
+
+- `tools/conversation_memory_policy.json`;
+- `--build-conversation-memory-index`;
+- `make conversation-memory`;
+- `runs/conversation_memory_index.json`;
+- `docs/conversation_memory_viewer_contract.md`;
+- inclusion in `make viewer-surfaces`.
+
+This slice remains read-only. It defines vocabulary, validates declared source
+references and non-canonical promotion states, and exposes an empty or
+fixture-backed index surface. It still does not mine PageIndex, import chat
+archives, create canonical specs, or emit promotion-pressure artifacts.
+
 ## Acceptance Criteria
 
 - SpecGraph has a proposal-level architecture for conversation-derived memory
