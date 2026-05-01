@@ -1109,6 +1109,8 @@ reads:
 - `runs/graph_dashboard.json`
 - `runs/graph_next_moves.json`
 - `runs/metrics_source_promotion_index.json`
+- `runs/metric_pack_index.json`
+- `runs/conversation_memory_index.json`
 
 This mode is intended for local `post-merge` / `post-checkout` hooks, CI smoke
 checks, and viewer build buttons. It refreshes existing read models only: it
@@ -1129,6 +1131,13 @@ needs its drill-down artifact:
 
 ```bash
 make metrics-source-promotion
+```
+
+Use the narrower conversation-memory shortcut when only the Layer 0 structured
+memory surface needs refresh:
+
+```bash
+make conversation-memory
 ```
 
 Standalone artifact commands print compact JSON summaries by default. Use

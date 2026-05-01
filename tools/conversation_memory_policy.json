@@ -1,0 +1,97 @@
+{
+  "artifact_kind": "conversation_memory_policy",
+  "version": 1,
+  "repository_layout": {
+    "index_artifact": "runs/conversation_memory_index.json"
+  },
+  "layer_boundary": {
+    "layer_name": "conversation_memory",
+    "layer_phase": "exploration",
+    "canonical_mutations_allowed": false,
+    "tracked_artifacts_written": false,
+    "promotion_requires_review": true,
+    "raw_sources_are_canonical": false,
+    "structured_notes_are_canonical": false,
+    "promotion_pressure_is_canonical": false
+  },
+  "source_contract": {
+    "source_types": [
+      "pageindex_conversation",
+      "local_markdown_transcript",
+      "chatgpt_export_json",
+      "compiled_markdown",
+      "session_capture",
+      "operator_excerpt",
+      "external_note_system"
+    ],
+    "source_states": [
+      "declared",
+      "available",
+      "missing",
+      "curated"
+    ],
+    "sources": []
+  },
+  "note_contract": {
+    "note_kinds": [
+      "claim",
+      "assumption",
+      "decision",
+      "question",
+      "pattern",
+      "constraint",
+      "source_summary"
+    ],
+    "note_statuses": [
+      "structured",
+      "invalid_memory_note",
+      "blocked_by_promotion_boundary"
+    ],
+    "promotion_states": [
+      "not_promoted",
+      "proposal_pressure_candidate",
+      "intent_fragment_candidate",
+      "pre_spec_draft_candidate",
+      "operator_question"
+    ],
+    "canonical_promotion_states": [
+      "promoted_to_spec",
+      "promoted_to_policy",
+      "promoted_to_implementation_work"
+    ],
+    "review_states": [
+      "not_ready",
+      "structured_reviewable",
+      "promotion_review_required",
+      "blocked"
+    ],
+    "next_gaps": [
+      "capture_conversation_memory_source",
+      "review_structured_memory_note",
+      "review_memory_promotion_pressure",
+      "repair_conversation_memory_note_attribution",
+      "repair_conversation_memory_note_contract",
+      "block_direct_canonical_promotion"
+    ],
+    "notes": []
+  },
+  "index_contract": {
+    "artifact_kind": "conversation_memory_index",
+    "schema_version": 1,
+    "named_filters": [
+      "structured_reviewable",
+      "promotion_review_required",
+      "missing_attribution",
+      "stale_notes",
+      "invalid_notes",
+      "source_summaries"
+    ]
+  },
+  "viewer_contract": {
+    "contract_doc": "docs/conversation_memory_viewer_contract.md",
+    "primary_artifact": "runs/conversation_memory_index.json",
+    "boundary_label": "Structured exploration memory, not canonical",
+    "recommended_first_panel": "Conversation Memory",
+    "read_only": true
+  }
+}

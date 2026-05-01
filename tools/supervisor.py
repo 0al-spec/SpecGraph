@@ -38,6 +38,7 @@ Derived artifacts:
 - graph next moves: `runs/graph_next_moves.json`
 - intent-layer overlay: `runs/intent_layer_overlay.json`
 - exploration preview: `runs/exploration_preview.json`
+- conversation memory index: `runs/conversation_memory_index.json`
 - branch rewrite preview: `runs/branch_rewrite_preview.json`
 - implementation delta snapshot: `runs/implementation_delta_snapshot.json`
 - implementation work index: `runs/implementation_work_index.json`
@@ -114,6 +115,7 @@ OPERATOR_REQUEST_BRIDGE_POLICY_RELATIVE_PATH = "tools/operator_request_bridge_po
 SPECGRAPH_VOCABULARY_RELATIVE_PATH = "tools/specgraph_vocabulary.json"
 PRE_SPEC_SEMANTICS_POLICY_RELATIVE_PATH = "tools/pre_spec_semantics_policy.json"
 EXPLORATION_PREVIEW_POLICY_RELATIVE_PATH = "tools/exploration_preview_policy.json"
+CONVERSATION_MEMORY_POLICY_RELATIVE_PATH = "tools/conversation_memory_policy.json"
 BRANCH_REWRITE_PREVIEW_POLICY_RELATIVE_PATH = "tools/branch_rewrite_preview_policy.json"
 GRAPH_NEXT_MOVES_POLICY_RELATIVE_PATH = "tools/graph_next_moves_policy.json"
 IMPLEMENTATION_DELTA_POLICY_RELATIVE_PATH = "tools/implementation_delta_policy.json"
@@ -182,6 +184,10 @@ def pre_spec_semantics_policy_path() -> Path:
 
 def exploration_preview_policy_path() -> Path:
     return TOOLS_DIR / "exploration_preview_policy.json"
+
+
+def conversation_memory_policy_path() -> Path:
+    return TOOLS_DIR / "conversation_memory_policy.json"
 
 
 def branch_rewrite_preview_policy_path() -> Path:
@@ -572,6 +578,45 @@ def load_exploration_preview_policy() -> tuple[dict[str, Any], str]:
 
 
 EXPLORATION_PREVIEW_POLICY, EXPLORATION_PREVIEW_POLICY_SHA256 = load_exploration_preview_policy()
+
+
+def load_conversation_memory_policy() -> tuple[dict[str, Any], str]:
+    path = conversation_memory_policy_path()
+    try:
+        raw_text = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise RuntimeError(
+            f"failed to read conversation memory policy artifact: {path.as_posix()} ({exc})"
+        ) from exc
+    try:
+        payload = json.loads(raw_text)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(
+            f"malformed conversation memory policy artifact: {path.as_posix()} ({exc})"
+        ) from exc
+    if not isinstance(payload, dict):
+        raise RuntimeError(
+            "malformed conversation memory policy artifact: "
+            f"{path.as_posix()} must contain a JSON object"
+        )
+    required_sections = (
+        "repository_layout",
+        "layer_boundary",
+        "source_contract",
+        "note_contract",
+        "index_contract",
+        "viewer_contract",
+    )
+    missing = [section for section in required_sections if section not in payload]
+    if missing:
+        raise RuntimeError(
+            "malformed conversation memory policy artifact: missing top-level section(s): "
+            + ", ".join(missing)
+        )
+    return payload, hashlib.sha256(raw_text.encode("utf-8")).hexdigest()
+
+
+CONVERSATION_MEMORY_POLICY, CONVERSATION_MEMORY_POLICY_SHA256 = load_conversation_memory_policy()
 
 
 def load_branch_rewrite_preview_policy() -> tuple[dict[str, Any], str]:
@@ -1918,6 +1963,14 @@ def exploration_preview_policy_reference() -> dict[str, Any]:
     }
 
 
+def conversation_memory_policy_reference() -> dict[str, Any]:
+    return {
+        "artifact_path": CONVERSATION_MEMORY_POLICY_RELATIVE_PATH,
+        "artifact_sha256": CONVERSATION_MEMORY_POLICY_SHA256,
+        "version": CONVERSATION_MEMORY_POLICY.get("version"),
+    }
+
+
 def branch_rewrite_preview_policy_reference() -> dict[str, Any]:
     return {
         "artifact_path": BRANCH_REWRITE_PREVIEW_POLICY_RELATIVE_PATH,
@@ -2223,6 +2276,31 @@ EXPLORATION_PREVIEW_SCHEMA_VERSION = int(
 EXPLORATION_PREVIEW_MODE_NAME = str(EXPLORATION_PREVIEW_POLICY["mode_contract"]["mode_name"])
 EXPLORATION_PREVIEW_NODE_KINDS = list(EXPLORATION_PREVIEW_POLICY["preview_contract"]["node_kinds"])
 EXPLORATION_PREVIEW_EDGE_KINDS = list(EXPLORATION_PREVIEW_POLICY["preview_contract"]["edge_kinds"])
+CONVERSATION_MEMORY_INDEX_FILENAME = Path(
+    str(CONVERSATION_MEMORY_POLICY["repository_layout"]["index_artifact"])
+).name
+CONVERSATION_MEMORY_INDEX_ARTIFACT_KIND = str(
+    CONVERSATION_MEMORY_POLICY["index_contract"]["artifact_kind"]
+)
+CONVERSATION_MEMORY_INDEX_SCHEMA_VERSION = int(
+    CONVERSATION_MEMORY_POLICY["index_contract"]["schema_version"]
+)
+CONVERSATION_MEMORY_SOURCE_TYPES = list(
+    CONVERSATION_MEMORY_POLICY["source_contract"]["source_types"]
+)
+CONVERSATION_MEMORY_SOURCE_STATES = list(
+    CONVERSATION_MEMORY_POLICY["source_contract"]["source_states"]
+)
+CONVERSATION_MEMORY_NOTE_KINDS = list(CONVERSATION_MEMORY_POLICY["note_contract"]["note_kinds"])
+CONVERSATION_MEMORY_PROMOTION_STATES = list(
+    CONVERSATION_MEMORY_POLICY["note_contract"]["promotion_states"]
+)
+CONVERSATION_MEMORY_CANONICAL_PROMOTION_STATES = list(
+    CONVERSATION_MEMORY_POLICY["note_contract"]["canonical_promotion_states"]
+)
+CONVERSATION_MEMORY_NAMED_FILTERS = list(
+    CONVERSATION_MEMORY_POLICY["index_contract"]["named_filters"]
+)
 BRANCH_REWRITE_PREVIEW_FILENAME = Path(
     str(branch_rewrite_preview_policy_lookup("repository_layout.preview_artifact"))
 ).name
@@ -8352,6 +8430,10 @@ def exploration_preview_path() -> Path:
     return RUNS_DIR / EXPLORATION_PREVIEW_FILENAME
 
 
+def conversation_memory_index_path() -> Path:
+    return RUNS_DIR / CONVERSATION_MEMORY_INDEX_FILENAME
+
+
 def branch_rewrite_preview_path() -> Path:
     return RUNS_DIR / BRANCH_REWRITE_PREVIEW_FILENAME
 
@@ -11442,6 +11524,312 @@ def write_exploration_preview(preview: dict[str, Any]) -> Path:
     path = exploration_preview_path()
     with artifact_lock(path):
         atomic_write_json(path, preview)
+    return path
+
+
+def conversation_memory_policy_hash(policy: dict[str, Any]) -> str:
+    canonical = json.dumps(policy, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def conversation_memory_review_state(
+    *,
+    note_status: str,
+    promotion_state: str,
+) -> str:
+    if note_status == "blocked_by_promotion_boundary":
+        return "blocked"
+    if note_status == "invalid_memory_note":
+        return "not_ready"
+    if promotion_state == "not_promoted":
+        return "structured_reviewable"
+    return "promotion_review_required"
+
+
+def conversation_memory_next_gap(
+    *,
+    note_status: str,
+    promotion_state: str,
+    errors: list[str],
+) -> str:
+    if note_status == "blocked_by_promotion_boundary":
+        return "block_direct_canonical_promotion"
+    if any(error in errors for error in ("missing_source_refs", "undeclared_source_ref")):
+        return "repair_conversation_memory_note_attribution"
+    if note_status == "invalid_memory_note":
+        return "repair_conversation_memory_note_contract"
+    if promotion_state == "not_promoted":
+        return "review_structured_memory_note"
+    return "review_memory_promotion_pressure"
+
+
+def conversation_memory_source_errors(
+    source: dict[str, Any],
+    *,
+    allowed_source_types: set[str],
+    allowed_source_states: set[str],
+) -> list[str]:
+    errors: list[str] = []
+    if not str(source.get("source_id", "")).strip():
+        errors.append("missing_source_id")
+    source_type = str(source.get("source_type", "")).strip()
+    if source_type not in allowed_source_types:
+        errors.append("unknown_source_type")
+    source_state = str(source.get("source_state", "")).strip()
+    if source_state not in allowed_source_states:
+        errors.append("unknown_source_state")
+    if not str(source.get("source_ref", "")).strip():
+        errors.append("missing_source_ref")
+    return errors
+
+
+def conversation_memory_note_errors(
+    note: dict[str, Any],
+    *,
+    source_ids: set[str],
+    allowed_note_kinds: set[str],
+    allowed_promotion_states: set[str],
+    canonical_promotion_states: set[str],
+) -> list[str]:
+    errors: list[str] = []
+    if not str(note.get("memory_note_id", "")).strip():
+        errors.append("missing_memory_note_id")
+    note_kind = str(note.get("note_kind", "")).strip()
+    if note_kind not in allowed_note_kinds:
+        errors.append("unknown_note_kind")
+    promotion_state = str(note.get("promotion_state", "")).strip() or "not_promoted"
+    if promotion_state in canonical_promotion_states:
+        errors.append("canonical_promotion_state")
+    elif promotion_state not in allowed_promotion_states:
+        errors.append("unknown_promotion_state")
+
+    raw_source_refs = note.get("source_refs", [])
+    source_refs = raw_source_refs if isinstance(raw_source_refs, list) else []
+    normalized_source_refs = [str(item).strip() for item in source_refs if str(item).strip()]
+    if not normalized_source_refs:
+        errors.append("missing_source_refs")
+    elif any(source_ref not in source_ids for source_ref in normalized_source_refs):
+        errors.append("undeclared_source_ref")
+    return errors
+
+
+def build_conversation_memory_index(
+    policy: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    active_policy = copy.deepcopy(policy or CONVERSATION_MEMORY_POLICY)
+    source_contract = active_policy.get("source_contract", {})
+    note_contract = active_policy.get("note_contract", {})
+    layer_boundary = active_policy.get("layer_boundary", {})
+    allowed_source_types = {
+        str(item).strip()
+        for item in source_contract.get("source_types", CONVERSATION_MEMORY_SOURCE_TYPES)
+        if str(item).strip()
+    }
+    allowed_source_states = {
+        str(item).strip()
+        for item in source_contract.get("source_states", CONVERSATION_MEMORY_SOURCE_STATES)
+        if str(item).strip()
+    }
+    allowed_note_kinds = {
+        str(item).strip()
+        for item in note_contract.get("note_kinds", CONVERSATION_MEMORY_NOTE_KINDS)
+        if str(item).strip()
+    }
+    allowed_promotion_states = {
+        str(item).strip()
+        for item in note_contract.get("promotion_states", CONVERSATION_MEMORY_PROMOTION_STATES)
+        if str(item).strip()
+    }
+    canonical_promotion_states = {
+        str(item).strip()
+        for item in note_contract.get(
+            "canonical_promotion_states",
+            CONVERSATION_MEMORY_CANONICAL_PROMOTION_STATES,
+        )
+        if str(item).strip()
+    }
+
+    raw_sources = source_contract.get("sources", [])
+    sources = raw_sources if isinstance(raw_sources, list) else []
+    source_entries: list[dict[str, Any]] = []
+    source_ids: set[str] = set()
+    source_type_groups: dict[str, list[str]] = {}
+    source_state_groups: dict[str, list[str]] = {}
+    source_error_groups: dict[str, list[str]] = {}
+
+    for index, raw_source in enumerate(sources, start=1):
+        source = copy.deepcopy(raw_source) if isinstance(raw_source, dict) else {}
+        source_id = str(source.get("source_id", "")).strip() or f"invalid_source_{index}"
+        source_type = str(source.get("source_type", "")).strip()
+        source_state = str(source.get("source_state", "")).strip() or "declared"
+        errors = conversation_memory_source_errors(
+            {**source, "source_state": source_state},
+            allowed_source_types=allowed_source_types,
+            allowed_source_states=allowed_source_states,
+        )
+        source_ids.add(source_id)
+        source_entries.append(
+            {
+                "source_id": source_id,
+                "source_type": source_type,
+                "source_state": source_state,
+                "source_ref": str(source.get("source_ref", "")).strip(),
+                "captured_at": str(source.get("captured_at", "")).strip(),
+                "selection_rationale": str(source.get("selection_rationale", "")).strip(),
+                "source_boundary": str(source.get("source_boundary", "")).strip(),
+                "contract_errors": errors,
+            }
+        )
+        source_type_groups.setdefault(source_type or "unknown", []).append(source_id)
+        source_state_groups.setdefault(source_state or "unknown", []).append(source_id)
+        for error in errors:
+            source_error_groups.setdefault(error, []).append(source_id)
+
+    raw_notes = note_contract.get("notes", [])
+    notes = raw_notes if isinstance(raw_notes, list) else []
+    entries: list[dict[str, Any]] = []
+    note_kind_groups: dict[str, list[str]] = {}
+    note_status_groups: dict[str, list[str]] = {}
+    promotion_state_groups: dict[str, list[str]] = {}
+    review_state_groups: dict[str, list[str]] = {}
+    next_gap_groups: dict[str, list[str]] = {}
+    named_filters: dict[str, list[str]] = {name: [] for name in CONVERSATION_MEMORY_NAMED_FILTERS}
+
+    for index, raw_note in enumerate(notes, start=1):
+        note = copy.deepcopy(raw_note) if isinstance(raw_note, dict) else {}
+        memory_note_id = (
+            str(note.get("memory_note_id", "")).strip() or f"invalid_memory_note_{index}"
+        )
+        note_kind = str(note.get("note_kind", "")).strip()
+        promotion_state = str(note.get("promotion_state", "")).strip() or "not_promoted"
+        raw_source_refs = note.get("source_refs", [])
+        source_refs = (
+            [str(item).strip() for item in raw_source_refs if str(item).strip()]
+            if isinstance(raw_source_refs, list)
+            else []
+        )
+        errors = conversation_memory_note_errors(
+            {**note, "promotion_state": promotion_state, "source_refs": source_refs},
+            source_ids=source_ids,
+            allowed_note_kinds=allowed_note_kinds,
+            allowed_promotion_states=allowed_promotion_states,
+            canonical_promotion_states=canonical_promotion_states,
+        )
+        if "canonical_promotion_state" in errors:
+            note_status = "blocked_by_promotion_boundary"
+        elif errors:
+            note_status = "invalid_memory_note"
+        else:
+            note_status = "structured"
+        review_state = conversation_memory_review_state(
+            note_status=note_status,
+            promotion_state=promotion_state,
+        )
+        next_gap = conversation_memory_next_gap(
+            note_status=note_status,
+            promotion_state=promotion_state,
+            errors=errors,
+        )
+        entry = {
+            "memory_note_id": memory_note_id,
+            "note_kind": note_kind,
+            "title": str(note.get("title", "")).strip(),
+            "status": note_status,
+            "promotion_state": promotion_state,
+            "review_state": review_state,
+            "next_gap": next_gap,
+            "source_refs": source_refs,
+            "links": copy.deepcopy(note.get("links", {}))
+            if isinstance(note.get("links", {}), dict)
+            else {},
+            "staleness": str(note.get("staleness", "")).strip() or "current",
+            "summary": str(note.get("summary", "")).strip(),
+            "contract_errors": errors,
+        }
+        entries.append(entry)
+
+        note_kind_groups.setdefault(note_kind or "unknown", []).append(memory_note_id)
+        note_status_groups.setdefault(note_status, []).append(memory_note_id)
+        promotion_state_groups.setdefault(promotion_state or "unknown", []).append(memory_note_id)
+        review_state_groups.setdefault(review_state, []).append(memory_note_id)
+        next_gap_groups.setdefault(next_gap, []).append(memory_note_id)
+        if review_state == "structured_reviewable":
+            named_filters["structured_reviewable"].append(memory_note_id)
+        if review_state == "promotion_review_required":
+            named_filters["promotion_review_required"].append(memory_note_id)
+        if any(error in errors for error in ("missing_source_refs", "undeclared_source_ref")):
+            named_filters["missing_attribution"].append(memory_note_id)
+        if entry["staleness"] == "stale":
+            named_filters["stale_notes"].append(memory_note_id)
+        if note_status == "invalid_memory_note":
+            named_filters["invalid_notes"].append(memory_note_id)
+        if note_kind == "source_summary":
+            named_filters["source_summaries"].append(memory_note_id)
+
+    def sorted_groups(groups: dict[str, list[str]]) -> dict[str, list[str]]:
+        return {key: sorted(set(value)) for key, value in sorted(groups.items())}
+
+    canonical_mutations_allowed = bool(layer_boundary.get("canonical_mutations_allowed"))
+    tracked_artifacts_written = bool(layer_boundary.get("tracked_artifacts_written"))
+    if entries:
+        review_state = "ready_for_review"
+        next_gap = "review_conversation_memory_index"
+    else:
+        review_state = "not_ready"
+        next_gap = "capture_conversation_memory_source"
+
+    return {
+        "artifact_kind": CONVERSATION_MEMORY_INDEX_ARTIFACT_KIND,
+        "schema_version": CONVERSATION_MEMORY_INDEX_SCHEMA_VERSION,
+        "generated_at": utc_now_iso(),
+        "policy_reference": {
+            "artifact_path": CONVERSATION_MEMORY_POLICY_RELATIVE_PATH,
+            "artifact_sha256": conversation_memory_policy_hash(active_policy),
+            "version": active_policy.get("version"),
+        },
+        "layer_boundary": copy.deepcopy(layer_boundary),
+        "review_state": review_state,
+        "next_gap": next_gap,
+        "source_count": len(source_entries),
+        "structured_note_count": len(entries),
+        "sources": source_entries,
+        "entries": entries,
+        "summary": {
+            "source_count": len(source_entries),
+            "structured_note_count": len(entries),
+            "note_kind_counts": grouped_identifier_counts(sorted_groups(note_kind_groups)),
+            "promotion_state_counts": grouped_identifier_counts(
+                sorted_groups(promotion_state_groups)
+            ),
+            "review_state_counts": grouped_identifier_counts(sorted_groups(review_state_groups)),
+            "missing_attribution_count": len(named_filters["missing_attribution"]),
+            "stale_note_count": len(named_filters["stale_notes"]),
+            "next_gap_counts": grouped_identifier_counts(sorted_groups(next_gap_groups)),
+            "source_type_counts": grouped_identifier_counts(sorted_groups(source_type_groups)),
+            "source_state_counts": grouped_identifier_counts(sorted_groups(source_state_groups)),
+            "source_error_counts": grouped_identifier_counts(sorted_groups(source_error_groups)),
+        },
+        "viewer_projection": {
+            "note_kind": sorted_groups(note_kind_groups),
+            "note_status": sorted_groups(note_status_groups),
+            "promotion_state": sorted_groups(promotion_state_groups),
+            "review_state": sorted_groups(review_state_groups),
+            "next_gap": sorted_groups(next_gap_groups),
+            "source_type": sorted_groups(source_type_groups),
+            "source_state": sorted_groups(source_state_groups),
+            "named_filters": sorted_groups(named_filters),
+        },
+        "canonical_mutations_allowed": canonical_mutations_allowed,
+        "tracked_artifacts_written": tracked_artifacts_written,
+        "viewer_contract": copy.deepcopy(active_policy.get("viewer_contract", {})),
+    }
+
+
+def write_conversation_memory_index(index: dict[str, Any]) -> Path:
+    RUNS_DIR.mkdir(parents=True, exist_ok=True)
+    path = conversation_memory_index_path()
+    with artifact_lock(path):
+        atomic_write_json(path, index)
     return path
 
 
@@ -22906,6 +23294,7 @@ def graph_backlog_source_artifact_path(source_artifact: str) -> str:
         "metrics_feedback_index": metrics_feedback_index_path,
         "metrics_source_promotion_index": metrics_source_promotion_index_path,
         "metric_pack_index": metric_pack_index_path,
+        "conversation_memory_index": conversation_memory_index_path,
         "metric_threshold_proposals": metric_threshold_proposals_path,
         "review_feedback_index": review_feedback_index_path,
     }
@@ -25212,6 +25601,8 @@ def build_viewer_surfaces(specs: list[SpecNode]) -> dict[str, Any]:
     next_moves_path = write_graph_next_moves(next_moves)
     promotion_path = write_metrics_source_promotion_index(metrics_source_promotion_index)
     metric_pack_path = write_metric_pack_index(metric_pack_index)
+    conversation_memory_index = build_conversation_memory_index()
+    conversation_memory_path = write_conversation_memory_index(conversation_memory_index)
     metrics_source_promotion_backlog = metrics_source_promotion_index.get(
         "promotion_backlog",
         {},
@@ -25258,6 +25649,13 @@ def build_viewer_surfaces(specs: list[SpecNode]) -> dict[str, Any]:
                     .get("status_counts", {})
                     .get("ready_for_index_review", 0)
                 ),
+            },
+            "conversation_memory_index": {
+                "artifact_path": conversation_memory_path.relative_to(ROOT).as_posix(),
+                "generated_at": conversation_memory_index.get("generated_at"),
+                "source_count": conversation_memory_index.get("source_count"),
+                "structured_note_count": conversation_memory_index.get("structured_note_count"),
+                "next_gap": conversation_memory_index.get("next_gap"),
             },
         },
         "notes": [
@@ -28820,6 +29218,7 @@ def main(
     build_metrics_feedback_index_mode: bool = False,
     build_metrics_source_promotion_index_mode: bool = False,
     build_metric_pack_index_mode: bool = False,
+    build_conversation_memory_index_mode: bool = False,
     build_metric_signal_index_mode: bool = False,
     build_metric_threshold_proposals_mode: bool = False,
     build_supervisor_performance_index_mode: bool = False,
@@ -28900,6 +29299,7 @@ def main(
         "--build-metrics-feedback-index": build_metrics_feedback_index_mode,
         "--build-metrics-source-promotion-index": build_metrics_source_promotion_index_mode,
         "--build-metric-pack-index": build_metric_pack_index_mode,
+        "--build-conversation-memory-index": build_conversation_memory_index_mode,
         "--build-metric-signal-index": build_metric_signal_index_mode,
         "--build-metric-threshold-proposals": build_metric_threshold_proposals_mode,
         "--build-supervisor-performance-index": build_supervisor_performance_index_mode,
@@ -30622,6 +31022,41 @@ def main(
         emit_supervisor_json(metric_pack_index, output_mode=normalized_output_mode)
         return 0
 
+    if build_conversation_memory_index_mode:
+        if any(
+            (
+                dry_run,
+                auto_approve,
+                loop,
+                resolve_gate,
+                decision,
+                note,
+                target_spec,
+                split_proposal,
+                apply_split_proposal,
+                operator_note,
+                mutation_budget,
+                run_authority,
+                execution_profile,
+                child_model,
+                child_timeout_seconds,
+                verbose,
+                list_stale_runtime,
+                clean_stale_runtime,
+                observe_graph_health_mode,
+                operator_request_packet_path,
+            )
+        ):
+            print(
+                "--build-conversation-memory-index must be used as a standalone command",
+                file=sys.stderr,
+            )
+            return 1
+        index = build_conversation_memory_index()
+        write_conversation_memory_index(index)
+        emit_supervisor_json(index, output_mode=normalized_output_mode)
+        return 0
+
     if build_metric_signal_index_mode:
         if any(
             (
@@ -31749,6 +32184,14 @@ if __name__ == "__main__":
         ),
     )
     parser.add_argument(
+        "--build-conversation-memory-index",
+        action="store_true",
+        help=(
+            "Build a read-only conversation memory index from the declared policy without "
+            "mining archives or mutating canonical specs"
+        ),
+    )
+    parser.add_argument(
         "--build-metric-signal-index",
         action="store_true",
         help=(
@@ -31996,6 +32439,7 @@ if __name__ == "__main__":
             build_metrics_feedback_index_mode=args.build_metrics_feedback_index,
             build_metrics_source_promotion_index_mode=args.build_metrics_source_promotion_index,
             build_metric_pack_index_mode=args.build_metric_pack_index,
+            build_conversation_memory_index_mode=args.build_conversation_memory_index,
             build_metric_signal_index_mode=args.build_metric_signal_index,
             build_metric_threshold_proposals_mode=args.build_metric_threshold_proposals,
             build_supervisor_performance_index_mode=args.build_supervisor_performance_index,

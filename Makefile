@@ -6,12 +6,13 @@ PYTEST ?= $(PYTHON) -m pytest
 help:
 	@printf '%s\n' \
 		'SpecGraph shortcuts:' \
-		'  make viewer-surfaces          Refresh graph backlog + dashboard JSON' \
+		'  make viewer-surfaces          Refresh common viewer-facing JSON surfaces' \
 		'  make dashboard                Refresh graph dashboard JSON only' \
 		'  make backlog                  Refresh graph backlog projection JSON only' \
 		'  make next-move                Refresh advisory graph next-moves JSON only' \
 		'  make metrics-source-promotion Refresh Metrics source promotion candidates JSON' \
 		'  make metric-packs             Refresh metric pack index JSON only' \
+		'  make conversation-memory      Refresh conversation memory index JSON only' \
 		'  make implementation-work      Refresh latest implementation work index' \
 		'  make review-feedback          Refresh review feedback index' \
 		'  make test                     Run full Python test suite quietly' \
@@ -40,6 +41,10 @@ metrics-source-promotion:
 .PHONY: metric-packs
 metric-packs:
 	@$(PYTHON) $(SUPERVISOR) --build-metric-pack-index
+
+.PHONY: conversation-memory
+conversation-memory:
+	@$(PYTHON) $(SUPERVISOR) --build-conversation-memory-index
 
 .PHONY: implementation-work
 implementation-work:

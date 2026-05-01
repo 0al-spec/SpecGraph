@@ -12361,6 +12361,155 @@ def test_build_metric_pack_index_handles_non_list_metrics_as_invalid_entry(
     assert entry["metrics"] == []
 
 
+def test_conversation_memory_policy_declares_noncanonical_boundary(
+    supervisor_module: object,
+) -> None:
+    policy = supervisor_module.CONVERSATION_MEMORY_POLICY
+
+    assert policy["artifact_kind"] == "conversation_memory_policy"
+    assert policy["layer_boundary"]["canonical_mutations_allowed"] is False
+    assert policy["layer_boundary"]["tracked_artifacts_written"] is False
+    assert "assumption" in policy["note_contract"]["note_kinds"]
+    assert "pageindex_conversation" in policy["source_contract"]["source_types"]
+
+
+def test_build_conversation_memory_index_reports_empty_policy_surface(
+    supervisor_module: object,
+) -> None:
+    report = supervisor_module.build_conversation_memory_index()
+
+    assert report["artifact_kind"] == supervisor_module.CONVERSATION_MEMORY_INDEX_ARTIFACT_KIND
+    assert report["schema_version"] == supervisor_module.CONVERSATION_MEMORY_INDEX_SCHEMA_VERSION
+    assert report["source_count"] == 0
+    assert report["structured_note_count"] == 0
+    assert report["review_state"] == "not_ready"
+    assert report["next_gap"] == "capture_conversation_memory_source"
+    assert report["summary"]["missing_attribution_count"] == 0
+    assert report["canonical_mutations_allowed"] is False
+    assert report["tracked_artifacts_written"] is False
+    assert report["viewer_projection"]["named_filters"]["missing_attribution"] == []
+
+
+def test_build_conversation_memory_index_groups_sources_and_notes(
+    supervisor_module: object,
+) -> None:
+    policy = copy.deepcopy(supervisor_module.CONVERSATION_MEMORY_POLICY)
+    policy["source_contract"]["sources"] = [
+        {
+            "source_id": "chat-1",
+            "source_type": "pageindex_conversation",
+            "source_state": "available",
+            "source_ref": "pageindex://chatgpt/example",
+        }
+    ]
+    policy["note_contract"]["notes"] = [
+        {
+            "memory_note_id": "cmem-1",
+            "note_kind": "assumption",
+            "title": "Adapters before execution",
+            "promotion_state": "proposal_pressure_candidate",
+            "source_refs": ["chat-1"],
+            "summary": "Metric packs need adapter computability gaps first.",
+        }
+    ]
+
+    report = supervisor_module.build_conversation_memory_index(policy)
+
+    assert report["source_count"] == 1
+    assert report["structured_note_count"] == 1
+    assert report["review_state"] == "ready_for_review"
+    assert report["next_gap"] == "review_conversation_memory_index"
+    assert report["summary"]["note_kind_counts"] == {"assumption": 1}
+    assert report["summary"]["promotion_state_counts"] == {"proposal_pressure_candidate": 1}
+    assert report["viewer_projection"]["source_type"]["pageindex_conversation"] == ["chat-1"]
+    assert report["viewer_projection"]["review_state"]["promotion_review_required"] == ["cmem-1"]
+    assert report["viewer_projection"]["named_filters"]["promotion_review_required"] == ["cmem-1"]
+
+
+def test_build_conversation_memory_index_blocks_missing_attribution_and_canonical_promotion(
+    supervisor_module: object,
+) -> None:
+    policy = copy.deepcopy(supervisor_module.CONVERSATION_MEMORY_POLICY)
+    policy["source_contract"]["sources"] = []
+    policy["note_contract"]["notes"] = [
+        {
+            "memory_note_id": "cmem-missing-source",
+            "note_kind": "claim",
+            "promotion_state": "not_promoted",
+            "source_refs": ["missing-source"],
+        },
+        {
+            "memory_note_id": "cmem-canonical",
+            "note_kind": "decision",
+            "promotion_state": "promoted_to_spec",
+            "source_refs": ["missing-source"],
+        },
+    ]
+
+    report = supervisor_module.build_conversation_memory_index(policy)
+    by_id = {entry["memory_note_id"]: entry for entry in report["entries"]}
+
+    missing_source = by_id["cmem-missing-source"]
+    assert missing_source["status"] == "invalid_memory_note"
+    assert missing_source["next_gap"] == "repair_conversation_memory_note_attribution"
+    assert "undeclared_source_ref" in missing_source["contract_errors"]
+    canonical = by_id["cmem-canonical"]
+    assert canonical["status"] == "blocked_by_promotion_boundary"
+    assert canonical["review_state"] == "blocked"
+    assert canonical["next_gap"] == "block_direct_canonical_promotion"
+    assert "canonical_promotion_state" in canonical["contract_errors"]
+    assert report["viewer_projection"]["named_filters"]["missing_attribution"] == [
+        "cmem-canonical",
+        "cmem-missing-source",
+    ]
+
+
+def test_main_builds_conversation_memory_index_as_standalone_command(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_conversation_memory_index",
+        lambda: {
+            "artifact_kind": supervisor_module.CONVERSATION_MEMORY_INDEX_ARTIFACT_KIND,
+            "schema_version": supervisor_module.CONVERSATION_MEMORY_INDEX_SCHEMA_VERSION,
+            "generated_at": "2026-05-01T00:00:00Z",
+            "source_count": 0,
+            "structured_note_count": 0,
+            "entries": [],
+            "viewer_projection": {"named_filters": {}},
+            "canonical_mutations_allowed": False,
+            "tracked_artifacts_written": False,
+        },
+    )
+
+    exit_code = supervisor_module.main(build_conversation_memory_index_mode=True)
+
+    assert exit_code == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["artifact_kind"] == supervisor_module.CONVERSATION_MEMORY_INDEX_ARTIFACT_KIND
+    artifact = json.loads(
+        (repo_fixture / "runs" / "conversation_memory_index.json").read_text(encoding="utf-8")
+    )
+    assert artifact["generated_at"] == "2026-05-01T00:00:00Z"
+
+
+def test_main_build_conversation_memory_index_rejects_other_build_modes(
+    supervisor_module: object,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    exit_code = supervisor_module.main(
+        build_conversation_memory_index_mode=True,
+        build_metric_pack_index_mode=True,
+    )
+
+    assert exit_code == 1
+    assert "standalone commands cannot be combined" in capsys.readouterr().err
+
+
 def test_main_builds_metric_pack_index_as_standalone_command(
     supervisor_module: object,
     repo_fixture: Path,
