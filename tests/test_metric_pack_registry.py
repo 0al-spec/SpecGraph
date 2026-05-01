@@ -153,6 +153,10 @@ def test_metric_pack_registry_drift_reports_in_sync_contract(
     assert report["review_state"] == "clean"
     assert report["next_gap"] == "none"
     assert report["entry_count"] == 0
+    assert (
+        report["source_snapshot"]["artifact_path"]
+        == supervisor_module.METRIC_PACK_REGISTRY_DRIFT_RELATIVE_PATH
+    )
     assert report["viewer_projection"]["named_filters"]["in_sync"] == ["0al-spec/Metrics"]
     assert report["canonical_mutations_allowed"] is False
     assert report["tracked_artifacts_written"] is False
