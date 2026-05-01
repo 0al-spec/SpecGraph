@@ -12,6 +12,7 @@ ContextBuilder should treat this as a read-only SpecGraph artifact:
 | Artifact | Producer | Consumer Use |
 | --- | --- | --- |
 | `runs/conversation_memory_index.json` | `make conversation-memory` or `make viewer-surfaces` | Conversation-memory panel, source/note counts, reviewable pre-canonical gaps. |
+| `runs/conversation_memory_map.json` | `make conversation-memory-map` or `make viewer-surfaces` | Exploration map projection, clusters, links, source coverage, promotion candidates, review blockers. |
 
 The index is built from:
 
@@ -43,7 +44,7 @@ Viewer guardrails:
   `tracked_artifacts_written !== false`.
 - Do not expose "promote to spec" as a direct action from this artifact.
 
-## Primary Artifact
+## Index Artifact
 
 `runs/conversation_memory_index.json` has this stable top-level shape:
 
@@ -221,10 +222,196 @@ Recommended first panel:
 - warning chips for `missing_attribution`, `stale_notes`, and `invalid_notes`;
 - copy that clearly says "structured exploration memory, not canonical".
 
-Out of scope for this first viewer slice:
+Out of scope for current viewer slices:
 
 - archive mining;
 - semantic search UI;
 - editing memory notes;
 - one-click promotion to proposal/spec;
 - merging memory notes into the main force graph.
+
+## Map Artifact
+
+`runs/conversation_memory_map.json` is a derived projection built from the
+current index. It is still read-only and pre-canonical:
+
+```json
+{
+  "artifact_kind": "conversation_memory_map",
+  "schema_version": 1,
+  "generated_at": "2026-05-01T00:00:00Z",
+  "policy_reference": {
+    "artifact_path": "tools/conversation_memory_policy.json",
+    "artifact_sha256": "...",
+    "version": 1
+  },
+  "index_reference": {
+    "artifact_kind": "conversation_memory_index",
+    "schema_version": 1,
+    "generated_at": "2026-05-01T00:00:00Z",
+    "source_count": 1,
+    "structured_note_count": 2,
+    "next_gap": "review_conversation_memory_index"
+  },
+  "source_snapshot": {
+    "source_dir": "conversation_memory/sources",
+    "note_dir": "conversation_memory/notes",
+    "policy_source_count": 0,
+    "policy_note_count": 0,
+    "storage_source_count": 1,
+    "storage_note_count": 2
+  },
+  "layer_boundary": {
+    "layer_name": "conversation_memory",
+    "canonical_mutations_allowed": false,
+    "tracked_artifacts_written": false
+  },
+  "review_state": "ready_for_review",
+  "next_gap": "review_memory_promotion_pressure",
+  "cluster_count": 4,
+  "link_count": 3,
+  "clusters": [],
+  "links": [],
+  "source_coverage": {},
+  "related_specs": {},
+  "related_proposals": {},
+  "candidate_proposal_pressure": {},
+  "review_blockers": {},
+  "summary": {},
+  "viewer_projection": {},
+  "canonical_mutations_allowed": false,
+  "tracked_artifacts_written": false,
+  "viewer_contract": {
+    "contract_doc": "docs/conversation_memory_viewer_contract.md",
+    "read_only": true
+  }
+}
+```
+
+Viewer guardrails are the same as the index artifact:
+
+- Render only when `artifact_kind == "conversation_memory_map"`.
+- Treat a missing artifact as "not built yet".
+- Show a boundary warning if `canonical_mutations_allowed !== false` or
+  `tracked_artifacts_written !== false`.
+- Do not expose direct "promote to spec" or "create implementation work" actions.
+
+### Clusters
+
+Each `clusters[]` item groups memory notes by a derived dimension:
+
+```json
+{
+  "cluster_id": "note_kind::assumption",
+  "cluster_kind": "note_kind",
+  "label": "assumption",
+  "member_note_ids": ["cmem-2026-05-01-0001"],
+  "member_count": 1
+}
+```
+
+Known `cluster_kind` values:
+
+- `note_kind`
+- `source`
+- `related_spec`
+- `related_proposal`
+- `review_blocker`
+
+Unknown future values should render as neutral map groups.
+
+### Links
+
+Each `links[]` item is a derived edge between a memory note and a source or
+declared relation:
+
+```json
+{
+  "link_id": "cmem-2026-05-01-0001::related_spec::SG-SPEC-0045",
+  "link_kind": "related_spec",
+  "from_id": "cmem-2026-05-01-0001",
+  "from_type": "memory_note",
+  "to_id": "SG-SPEC-0045",
+  "to_type": "spec_node"
+}
+```
+
+Known `link_kind` values:
+
+- `source_ref`
+- `related_spec`
+- `related_proposal`
+- `related_memory_note`
+
+### Source Coverage
+
+`source_coverage` summarizes attribution quality:
+
+```json
+{
+  "declared_source_count": 1,
+  "structured_note_count": 2,
+  "source_refs_note_count": 2,
+  "attributed_note_count": 1,
+  "missing_attribution_count": 1,
+  "missing_attribution_note_ids": ["cmem-missing-source"],
+  "source_ref_counts": {
+    "pageindex-chat-2026-05-01": 1
+  }
+}
+```
+
+Use this for attribution warning chips and source-coverage summaries.
+`source_refs_note_count` means the note has at least one source ref field.
+`attributed_note_count` means all refs on the note resolve to declared sources.
+
+### Promotion Candidates
+
+`candidate_proposal_pressure.entries[]` is a review queue, not a mutation queue:
+
+```json
+{
+  "candidate_id": "cmem-2026-05-01-0001",
+  "target_kind": "proposal_candidate",
+  "promotion_state": "proposal_pressure_candidate",
+  "source_memory_notes": ["cmem-2026-05-01-0001"],
+  "source_refs": ["pageindex-chat-2026-05-01"],
+  "rationale": "Metric-pack execution should wait for adapter computability gaps.",
+  "review_state": "promotion_review_required",
+  "next_gap": "review_memory_promotion_pressure"
+}
+```
+
+Known `target_kind` values:
+
+- `proposal_candidate`
+- `intent_fragment`
+- `pre_spec_draft`
+- `operator_question`
+- `unknown`
+
+### Review Blockers
+
+`review_blockers.entries[]` identifies notes that must be repaired before the
+map should be treated as clean:
+
+```json
+{
+  "memory_note_id": "cmem-missing-source",
+  "status": "invalid_memory_note",
+  "review_state": "not_ready",
+  "next_gap": "repair_conversation_memory_note_attribution",
+  "contract_errors": ["undeclared_source_ref"]
+}
+```
+
+Recommended map UI:
+
+- map-level summary chips for `cluster_count`, `link_count`, `review_state`,
+  `next_gap`;
+- grouped cluster browser by `cluster_kind`;
+- link table grouped by `link_kind`;
+- source-coverage warning when `missing_attribution_count > 0`;
+- promotion candidate list labeled "review required";
+- review blocker list with `next_gap` and `contract_errors`;
+- no canonical promotion action.

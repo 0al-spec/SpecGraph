@@ -12371,8 +12371,25 @@ def test_conversation_memory_policy_declares_noncanonical_boundary(
     assert policy["layer_boundary"]["tracked_artifacts_written"] is False
     assert policy["repository_layout"]["source_dir"] == "conversation_memory/sources"
     assert policy["repository_layout"]["note_dir"] == "conversation_memory/notes"
+    assert policy["repository_layout"]["map_artifact"] == "runs/conversation_memory_map.json"
     assert "assumption" in policy["note_contract"]["note_kinds"]
     assert "pageindex_conversation" in policy["source_contract"]["source_types"]
+    assert policy["map_contract"]["artifact_kind"] == "conversation_memory_map"
+
+
+def test_load_conversation_memory_policy_requires_map_contract(
+    supervisor_module: object,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    policy = copy.deepcopy(supervisor_module.CONVERSATION_MEMORY_POLICY)
+    policy.pop("map_contract")
+    policy_path = tmp_path / "conversation_memory_policy.json"
+    policy_path.write_text(json.dumps(policy), encoding="utf-8")
+    monkeypatch.setattr(supervisor_module, "conversation_memory_policy_path", lambda: policy_path)
+
+    with pytest.raises(RuntimeError, match="map_contract"):
+        supervisor_module.load_conversation_memory_policy()
 
 
 def test_build_conversation_memory_index_reports_empty_policy_surface(
@@ -12697,6 +12714,192 @@ def test_build_conversation_memory_index_blocks_missing_attribution_and_canonica
     ]
 
 
+def test_build_conversation_memory_map_reports_empty_index(
+    supervisor_module: object,
+) -> None:
+    index = supervisor_module.build_conversation_memory_index()
+
+    report = supervisor_module.build_conversation_memory_map(index)
+
+    assert report["artifact_kind"] == supervisor_module.CONVERSATION_MEMORY_MAP_ARTIFACT_KIND
+    assert report["schema_version"] == supervisor_module.CONVERSATION_MEMORY_MAP_SCHEMA_VERSION
+    assert report["cluster_count"] == 0
+    assert report["link_count"] == 0
+    assert report["source_coverage"]["structured_note_count"] == 0
+    assert report["candidate_proposal_pressure"]["entry_count"] == 0
+    assert report["review_blockers"]["entry_count"] == 0
+    assert report["next_gap"] == "capture_conversation_memory_source"
+    assert report["canonical_mutations_allowed"] is False
+    assert report["tracked_artifacts_written"] is False
+
+
+def test_build_conversation_memory_map_groups_links_and_candidates(
+    supervisor_module: object,
+) -> None:
+    policy = copy.deepcopy(supervisor_module.CONVERSATION_MEMORY_POLICY)
+    policy["source_contract"]["sources"] = [
+        {
+            "source_id": "chat-1",
+            "source_type": "pageindex_conversation",
+            "source_state": "available",
+            "source_ref": "pageindex://chatgpt/example",
+        }
+    ]
+    policy["note_contract"]["notes"] = [
+        {
+            "memory_note_id": "cmem-1",
+            "note_kind": "assumption",
+            "title": "Map projection",
+            "promotion_state": "proposal_pressure_candidate",
+            "source_refs": ["chat-1"],
+            "summary": "Conversation memory map should expose proposal pressure.",
+            "links": {
+                "related_specs": ["SG-SPEC-0045"],
+                "related_proposals": ["0045"],
+                "related_memory_notes": ["cmem-2"],
+            },
+        },
+        {
+            "memory_note_id": "cmem-2",
+            "note_kind": "decision",
+            "promotion_state": "not_promoted",
+            "source_refs": ["chat-1"],
+            "links": {"related_specs": ["SG-SPEC-0045"]},
+        },
+    ]
+    index = supervisor_module.build_conversation_memory_index(policy)
+
+    report = supervisor_module.build_conversation_memory_map(index)
+
+    clusters_by_kind = report["viewer_projection"]["clusters_by_kind"]
+    assert clusters_by_kind["note_kind"] == ["note_kind::assumption", "note_kind::decision"]
+    assert clusters_by_kind["source"] == ["source::chat-1"]
+    assert clusters_by_kind["related_spec"] == ["related_spec::SG-SPEC-0045"]
+    assert report["related_specs"] == {"SG-SPEC-0045": ["cmem-1", "cmem-2"]}
+    assert report["related_proposals"] == {"0045": ["cmem-1"]}
+    assert report["source_coverage"]["source_ref_counts"] == {"chat-1": 2}
+    assert report["source_coverage"]["source_refs_note_count"] == 2
+    assert report["source_coverage"]["attributed_note_count"] == 2
+    assert report["summary"]["candidate_pressure_count"] == 1
+    candidate = report["candidate_proposal_pressure"]["entries"][0]
+    assert candidate["candidate_id"] == "cmem-1"
+    assert candidate["target_kind"] == "proposal_candidate"
+    assert candidate["next_gap"] == "review_memory_promotion_pressure"
+    link_kinds = report["summary"]["link_kind_counts"]
+    assert link_kinds["source_ref"] == 2
+    assert link_kinds["related_spec"] == 2
+    assert link_kinds["related_proposal"] == 1
+    assert link_kinds["related_memory_note"] == 1
+    assert report["viewer_projection"]["named_filters"]["promotion_candidates"] == ["cmem-1"]
+    assert report["viewer_projection"]["named_filters"]["linked_specs"] == ["cmem-1", "cmem-2"]
+    assert report["viewer_projection"]["named_filters"]["linked_proposals"] == ["cmem-1"]
+
+
+def test_build_conversation_memory_map_deduplicates_relation_links(
+    supervisor_module: object,
+) -> None:
+    policy = copy.deepcopy(supervisor_module.CONVERSATION_MEMORY_POLICY)
+    policy["source_contract"]["sources"] = [
+        {
+            "source_id": "chat-1",
+            "source_type": "pageindex_conversation",
+            "source_state": "available",
+            "source_ref": "pageindex://chatgpt/example",
+        }
+    ]
+    policy["note_contract"]["notes"] = [
+        {
+            "memory_note_id": "cmem-1",
+            "note_kind": "claim",
+            "promotion_state": "proposal_pressure_candidate",
+            "source_refs": ["chat-1", "chat-1"],
+            "links": {
+                "related_specs": ["SG-SPEC-0045", "SG-SPEC-0045"],
+                "related_proposals": ["0045", "0045"],
+                "related_memory_notes": ["cmem-2", "cmem-2"],
+            },
+        }
+    ]
+    index = supervisor_module.build_conversation_memory_index(policy)
+
+    report = supervisor_module.build_conversation_memory_map(index)
+
+    link_ids = [link["link_id"] for link in report["links"]]
+    assert len(link_ids) == len(set(link_ids))
+    assert report["link_count"] == 4
+    assert report["summary"]["link_kind_counts"] == {
+        "related_memory_note": 1,
+        "related_proposal": 1,
+        "related_spec": 1,
+        "source_ref": 1,
+    }
+    assert report["source_coverage"]["source_ref_counts"] == {"chat-1": 1}
+
+
+def test_build_conversation_memory_map_excludes_invalid_promotion_candidates(
+    supervisor_module: object,
+) -> None:
+    policy = copy.deepcopy(supervisor_module.CONVERSATION_MEMORY_POLICY)
+    policy["source_contract"]["sources"] = []
+    policy["note_contract"]["notes"] = [
+        {
+            "memory_note_id": "cmem-canonical",
+            "note_kind": "decision",
+            "promotion_state": "promoted_to_spec",
+            "source_refs": ["missing-source"],
+        },
+        {
+            "memory_note_id": "cmem-unknown",
+            "note_kind": "claim",
+            "promotion_state": "unknown_candidate",
+            "source_refs": [],
+        },
+    ]
+    index = supervisor_module.build_conversation_memory_index(policy)
+
+    report = supervisor_module.build_conversation_memory_map(index)
+
+    assert report["candidate_proposal_pressure"]["entry_count"] == 0
+    assert report["summary"]["candidate_pressure_count"] == 0
+    assert report["viewer_projection"]["named_filters"]["promotion_candidates"] == []
+    assert report["review_blockers"]["entry_count"] == 2
+
+
+def test_build_conversation_memory_map_reports_review_blockers_for_attribution(
+    supervisor_module: object,
+) -> None:
+    policy = copy.deepcopy(supervisor_module.CONVERSATION_MEMORY_POLICY)
+    policy["source_contract"]["sources"] = []
+    policy["note_contract"]["notes"] = [
+        {
+            "memory_note_id": "cmem-missing-source",
+            "note_kind": "claim",
+            "promotion_state": "not_promoted",
+            "source_refs": ["missing-source"],
+        }
+    ]
+    index = supervisor_module.build_conversation_memory_index(policy)
+
+    report = supervisor_module.build_conversation_memory_map(index)
+
+    assert report["review_state"] == "blocked"
+    assert report["next_gap"] == "repair_conversation_memory_map_blockers"
+    assert report["review_blockers"]["entry_count"] == 1
+    blocker = report["review_blockers"]["entries"][0]
+    assert blocker["memory_note_id"] == "cmem-missing-source"
+    assert blocker["next_gap"] == "repair_conversation_memory_note_attribution"
+    assert "undeclared_source_ref" in blocker["contract_errors"]
+    assert report["source_coverage"]["source_refs_note_count"] == 1
+    assert report["source_coverage"]["attributed_note_count"] == 0
+    assert report["source_coverage"]["missing_attribution_note_ids"] == ["cmem-missing-source"]
+    assert report["viewer_projection"]["named_filters"]["has_review_blockers"] == [
+        "cmem-missing-source"
+    ]
+    assert report["viewer_projection"]["named_filters"]["missing_source_coverage"] == [
+        "cmem-missing-source"
+    ]
+
+
 def test_main_builds_conversation_memory_index_as_standalone_command(
     supervisor_module: object,
     repo_fixture: Path,
@@ -12741,6 +12944,41 @@ def test_main_build_conversation_memory_index_rejects_other_build_modes(
 
     assert exit_code == 1
     assert "standalone commands cannot be combined" in capsys.readouterr().err
+
+
+def test_main_builds_conversation_memory_map_as_standalone_command(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    index = {
+        "artifact_kind": supervisor_module.CONVERSATION_MEMORY_INDEX_ARTIFACT_KIND,
+        "schema_version": supervisor_module.CONVERSATION_MEMORY_INDEX_SCHEMA_VERSION,
+        "generated_at": "2026-05-01T00:00:00Z",
+        "source_count": 0,
+        "structured_note_count": 0,
+        "entries": [],
+        "sources": [],
+        "viewer_projection": {"named_filters": {}},
+        "canonical_mutations_allowed": False,
+        "tracked_artifacts_written": False,
+    }
+    monkeypatch.setattr(supervisor_module, "build_conversation_memory_index", lambda: index)
+
+    exit_code = supervisor_module.main(build_conversation_memory_map_mode=True)
+
+    assert exit_code == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["artifact_kind"] == supervisor_module.CONVERSATION_MEMORY_MAP_ARTIFACT_KIND
+    map_artifact = json.loads(
+        (repo_fixture / "runs" / "conversation_memory_map.json").read_text(encoding="utf-8")
+    )
+    index_artifact = json.loads(
+        (repo_fixture / "runs" / "conversation_memory_index.json").read_text(encoding="utf-8")
+    )
+    assert map_artifact["index_reference"]["generated_at"] == "2026-05-01T00:00:00Z"
+    assert index_artifact["generated_at"] == "2026-05-01T00:00:00Z"
 
 
 def test_main_builds_metric_pack_index_as_standalone_command(
@@ -14290,6 +14528,8 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
     assert report["written_artifacts"]["metrics_source_promotion_index"]["entry_count"] == 1
     assert report["written_artifacts"]["metric_pack_index"]["entry_count"] == 1
     assert report["written_artifacts"]["metric_pack_index"]["ready_for_index_review_count"] == 1
+    assert report["written_artifacts"]["conversation_memory_map"]["cluster_count"] == 0
+    assert report["written_artifacts"]["conversation_memory_map"]["link_count"] == 0
     assert (
         report["written_artifacts"]["metrics_source_promotion_index"]["promotion_backlog_count"]
         == 1
@@ -14323,6 +14563,12 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
             "entry_count"
         ]
         == 1
+    )
+    assert (
+        json.loads(
+            (repo_fixture / "runs" / "conversation_memory_map.json").read_text(encoding="utf-8")
+        )["artifact_kind"]
+        == supervisor_module.CONVERSATION_MEMORY_MAP_ARTIFACT_KIND
     )
 
 

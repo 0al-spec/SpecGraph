@@ -380,6 +380,22 @@ place to write curated Layer 0 memory records, but it still does not mine
 PageIndex, import full chat archives, create canonical specs, or emit
 promotion-pressure artifacts automatically.
 
+## Third Slice Realization
+
+The third bounded runtime slice adds a derived exploration map projection:
+
+- `runs/conversation_memory_map.json`;
+- `--build-conversation-memory-map`;
+- `make conversation-memory-map`;
+- inclusion in `make viewer-surfaces`;
+- map clusters, links, source coverage, related specs/proposals, candidate
+  proposal pressure, and review blockers.
+
+This remains read-only and index-backed. It does not add archive mining, direct
+promotion, canonical spec mutation, or autonomous proposal creation. Candidate
+promotion pressure is visible for review, but the dedicated
+`conversation_memory_promotion_pressure.json` artifact remains a later slice.
+
 ## Acceptance Criteria
 
 - SpecGraph has a proposal-level architecture for conversation-derived memory
