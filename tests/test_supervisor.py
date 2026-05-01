@@ -14571,7 +14571,16 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    surface_calls = {"external": 0, "metric": 0, "promotion": 0, "pack": 0, "trace": 0}
+    surface_calls = {
+        "external": 0,
+        "metric": 0,
+        "promotion": 0,
+        "pack": 0,
+        "lane": 0,
+        "runtime": 0,
+        "proposal_promotion": 0,
+        "trace": 0,
+    }
 
     def fake_backlog(
         specs: list[object],
@@ -14580,12 +14589,16 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
         metric_signal_index: dict[str, object] | None = None,
         metrics_source_promotion_index: dict[str, object] | None = None,
         metric_pack_index: dict[str, object] | None = None,
+        proposal_runtime_index: dict[str, object] | None = None,
+        proposal_promotion_index: dict[str, object] | None = None,
     ) -> dict[str, object]:
         assert len(specs) == 1
         assert external_consumer_index is not None
         assert metric_signal_index is not None
         assert metrics_source_promotion_index is not None
         assert metric_pack_index is not None
+        assert proposal_runtime_index is not None
+        assert proposal_promotion_index is not None
         return {
             "artifact_kind": supervisor_module.GRAPH_BACKLOG_PROJECTION_ARTIFACT_KIND,
             "schema_version": supervisor_module.GRAPH_BACKLOG_PROJECTION_SCHEMA_VERSION,
@@ -14604,6 +14617,9 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
         metrics_source_promotion_index: dict[str, object] | None = None,
         metric_pack_index: dict[str, object] | None = None,
         graph_backlog_projection: dict[str, object] | None = None,
+        proposal_lane_overlay: dict[str, object] | None = None,
+        proposal_runtime_index: dict[str, object] | None = None,
+        proposal_promotion_index: dict[str, object] | None = None,
     ) -> dict[str, object]:
         assert len(specs) == 1
         assert external_consumer_index is not None
@@ -14611,6 +14627,9 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
         assert metrics_source_promotion_index is not None
         assert metric_pack_index is not None
         assert graph_backlog_projection is not None
+        assert proposal_lane_overlay is not None
+        assert proposal_runtime_index is not None
+        assert proposal_promotion_index is not None
         return {
             "artifact_kind": "graph_dashboard",
             "schema_version": 1,
@@ -14625,10 +14644,12 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
         *,
         backlog_projection: dict[str, object] | None = None,
         proposal_runtime_index: dict[str, object] | None = None,
+        proposal_lane_overlay: dict[str, object] | None = None,
     ) -> dict[str, object]:
         assert len(specs) == 1
         assert backlog_projection is not None
-        assert proposal_runtime_index is None
+        assert proposal_runtime_index is not None
+        assert proposal_lane_overlay is not None
         return {
             "artifact_kind": supervisor_module.GRAPH_NEXT_MOVES_ARTIFACT_KIND,
             "schema_version": supervisor_module.GRAPH_NEXT_MOVES_SCHEMA_VERSION,
@@ -14707,6 +14728,37 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
             "tracked_artifacts_written": False,
         }
 
+    def fake_proposal_lane_overlay() -> dict[str, object]:
+        surface_calls["lane"] += 1
+        return {
+            "artifact_kind": supervisor_module.PROPOSAL_LANE_OVERLAY_ARTIFACT_KIND,
+            "schema_version": supervisor_module.PROPOSAL_LANE_OVERLAY_SCHEMA_VERSION,
+            "generated_at": "2026-04-27T00:00:07Z",
+            "entry_count": 0,
+            "entries": [],
+            "named_filters": {},
+        }
+
+    def fake_proposal_runtime_index() -> dict[str, object]:
+        surface_calls["runtime"] += 1
+        return {
+            "artifact_kind": "proposal_runtime_index",
+            "generated_at": "2026-04-27T00:00:08Z",
+            "entry_count": 0,
+            "entries": [],
+            "reflective_backlog": {"entry_count": 0},
+        }
+
+    def fake_proposal_promotion_index() -> dict[str, object]:
+        surface_calls["proposal_promotion"] += 1
+        return {
+            "artifact_kind": "proposal_promotion_index",
+            "generated_at": "2026-04-27T00:00:09Z",
+            "entry_count": 0,
+            "entries": [],
+            "viewer_projection": {},
+        }
+
     def fake_proposal_spec_trace_index(
         *,
         proposal_promotion_index: dict[str, object] | None = None,
@@ -14718,7 +14770,7 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
         return {
             "artifact_kind": supervisor_module.PROPOSAL_SPEC_TRACE_INDEX_ARTIFACT_KIND,
             "schema_version": supervisor_module.PROPOSAL_SPEC_TRACE_INDEX_SCHEMA_VERSION,
-            "generated_at": "2026-04-27T00:00:07Z",
+            "generated_at": "2026-04-27T00:00:10Z",
             "entry_count": 1,
             "entries": [],
             "lane_ref_count": 0,
@@ -14743,6 +14795,15 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
     )
     monkeypatch.setattr(supervisor_module, "load_metric_pack_registry", lambda: {"packs": []})
     monkeypatch.setattr(supervisor_module, "build_metric_pack_index", fake_metric_pack_index)
+    monkeypatch.setattr(
+        supervisor_module, "build_proposal_lane_overlay", fake_proposal_lane_overlay
+    )
+    monkeypatch.setattr(
+        supervisor_module, "build_proposal_runtime_index", fake_proposal_runtime_index
+    )
+    monkeypatch.setattr(
+        supervisor_module, "build_proposal_promotion_index", fake_proposal_promotion_index
+    )
     monkeypatch.setattr(
         supervisor_module, "build_proposal_spec_trace_index", fake_proposal_spec_trace_index
     )
@@ -14770,7 +14831,16 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
         report["written_artifacts"]["metrics_source_promotion_index"]["promotion_backlog_count"]
         == 1
     )
-    assert surface_calls == {"external": 1, "metric": 1, "promotion": 1, "pack": 1, "trace": 1}
+    assert surface_calls == {
+        "external": 1,
+        "metric": 1,
+        "promotion": 1,
+        "pack": 1,
+        "lane": 1,
+        "runtime": 1,
+        "proposal_promotion": 1,
+        "trace": 1,
+    }
     assert (
         json.loads(
             (repo_fixture / "runs" / "graph_backlog_projection.json").read_text(encoding="utf-8")
@@ -18557,10 +18627,13 @@ def test_build_proposal_spec_trace_index_separates_relation_authority(
         and ref["trace_status"] == "bounded"
         for ref in spec_refs
     )
+    assert by_id["0018"]["next_gap"] == "none"
     assert index["lane_refs"] == [
         {
+            "lane_ref_id": "governance_proposal::SG-SPEC-0001::trace_target",
             "proposal_handle": "governance_proposal::SG-SPEC-0001::trace_target",
             "target_spec_id": "SG-SPEC-0001",
+            "target_reference": "SG-SPEC-0001",
             "relation_kind": "targets",
             "authority": "lane_overlay",
             "trace_status": "declared",
@@ -18579,6 +18652,68 @@ def test_build_proposal_spec_trace_index_separates_relation_authority(
     assert (
         "governance_proposal::SG-SPEC-0001::trace_target"
         in index["viewer_projection"]["named_filters"]["lane_targets"]
+    )
+
+
+def test_build_proposal_spec_trace_index_preserves_incomplete_promotion_status(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    seed_proposal_promotion_fixture(repo_fixture)
+    registry_path = repo_fixture / "tools" / "proposal_promotion_registry.json"
+    registry = json.loads(registry_path.read_text(encoding="utf-8"))
+    registry[0].pop("normalized_title")
+    registry_path.write_text(json.dumps(registry), encoding="utf-8")
+
+    index = supervisor_module.build_proposal_spec_trace_index()
+
+    by_id = {entry["proposal_id"]: entry for entry in index["entries"]}
+    assert by_id["0018"]["promotion_trace"]["trace_status"] == "incomplete"
+    assert by_id["0018"]["next_gap"] == "record_normalized_title"
+    assert index["summary"]["trace_status_counts"]["incomplete"] == 1
+
+
+def test_build_proposal_spec_trace_index_keeps_lane_missing_trace_ref(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    seed_proposal_promotion_fixture(repo_fixture)
+    seed_proposal_spec_trace_lane_fixture(repo_fixture)
+    node_path = repo_fixture / "proposal_lane" / "nodes" / "trace-target.json"
+    node = json.loads(node_path.read_text(encoding="utf-8"))
+    node["proposal_handle"]["handle_value"] = ""
+    node["proposal_target_region"]["target_reference"] = "pre_spec::candidate"
+    node_path.write_text(json.dumps(node), encoding="utf-8")
+
+    index = supervisor_module.build_proposal_spec_trace_index()
+
+    assert index["lane_refs"] == [
+        {
+            "lane_ref_id": "proposal_lane/nodes/trace-target.json",
+            "proposal_handle": "",
+            "target_spec_id": "",
+            "target_reference": "pre_spec::candidate",
+            "relation_kind": "targets",
+            "authority": "lane_overlay",
+            "trace_status": "missing_trace",
+            "authority_state": "under_review",
+            "target_region": {
+                "target_kind": "canonical_node",
+                "target_reference": "pre_spec::candidate",
+                "change_scope": "localized",
+            },
+            "source_refs": ["proposal_lane/nodes/trace-target.json"],
+            "next_gap": "attach_lane_target_trace",
+        }
+    ]
+    assert "pre_spec::candidate" not in index["viewer_projection"]["spec_id"]
+    assert (
+        "proposal_lane/nodes/trace-target.json"
+        in index["viewer_projection"]["named_filters"]["missing_trace"]
+    )
+    assert (
+        "proposal_lane/nodes/trace-target.json"
+        in index["viewer_projection"]["trace_status"]["missing_trace"]
     )
 
 

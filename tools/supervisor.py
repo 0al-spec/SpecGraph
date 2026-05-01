@@ -24011,12 +24011,8 @@ def proposal_spec_relation_record(
 
 def proposal_spec_trace_status_from_promotion(status: str) -> str:
     normalized = str(status).strip()
-    if normalized == "bounded":
-        return "bounded"
-    if normalized == "missing_trace":
-        return "missing_trace"
-    if normalized in {"incomplete", "invalid"}:
-        return "ambiguous"
+    if normalized in {"bounded", "missing_trace", "incomplete", "invalid"}:
+        return normalized
     return normalized or "missing_trace"
 
 
@@ -24027,7 +24023,12 @@ def proposal_spec_trace_next_gap(
     promotion_next_gap = str(promotion_traceability.get("next_gap", "")).strip()
     if promotion_next_gap and promotion_next_gap != "none":
         return promotion_next_gap
-    if any(str(relation.get("trace_status", "")).strip() == "inferred" for relation in relations):
+    promotion_trace_status = proposal_spec_trace_status_from_promotion(
+        str(promotion_traceability.get("status", "")).strip()
+    )
+    if promotion_trace_status in {"missing_trace", "incomplete", "invalid", "ambiguous"} and any(
+        str(relation.get("trace_status", "")).strip() == "inferred" for relation in relations
+    ):
         return "attach_promotion_trace"
     return "none"
 
@@ -24131,9 +24132,12 @@ def build_proposal_spec_trace_index(
                 named_filters["declared_or_bounded"].append(trace_entry_id)
             if relation["trace_status"] == "ambiguous":
                 named_filters["ambiguous"].append(trace_entry_id)
-        if promotion_trace_status == "missing_trace":
-            trace_status_groups.setdefault("missing_trace", []).append(trace_entry_id)
-            named_filters["missing_trace"].append(trace_entry_id)
+        if promotion_trace_status in {"missing_trace", "incomplete", "invalid", "ambiguous"}:
+            trace_status_groups.setdefault(promotion_trace_status, []).append(trace_entry_id)
+            if promotion_trace_status == "missing_trace":
+                named_filters["missing_trace"].append(trace_entry_id)
+            if promotion_trace_status == "ambiguous":
+                named_filters["ambiguous"].append(trace_entry_id)
 
         entries.append(
             {
@@ -24160,38 +24164,68 @@ def build_proposal_spec_trace_index(
         if not isinstance(entry, dict):
             continue
         proposal_handle = str(entry.get("proposal_handle", "")).strip()
+        tracked_path = str(entry.get("tracked_path", "")).strip()
         target_region = entry.get("target_region", {})
         if not isinstance(target_region, dict):
-            continue
-        target_spec_id = str(target_region.get("target_reference", "")).strip()
-        if not SPEC_ID_CANONICAL_RE.fullmatch(target_spec_id):
-            continue
+            target_region = {}
+        target_kind = str(target_region.get("target_kind", "")).strip()
+        target_reference = str(target_region.get("target_reference", "")).strip()
+        target_spec_id = (
+            target_reference if SPEC_ID_CANONICAL_RE.fullmatch(target_reference) else ""
+        )
+        lane_ref_id = (
+            proposal_handle or tracked_path or target_reference or f"lane_ref::{len(lane_refs) + 1}"
+        )
         authority_state = str(entry.get("proposal_authority_state", "")).strip()
         query_contract = entry.get("query_contract", {})
-        trace_status = "declared"
-        if isinstance(query_contract, dict) and query_contract.get("findings"):
+        query_findings = (
+            query_contract.get("findings", [])
+            if isinstance(query_contract, dict) and isinstance(query_contract.get("findings"), list)
+            else []
+        )
+        query_status = (
+            str(query_contract.get("status", "")).strip()
+            if isinstance(query_contract, dict)
+            else ""
+        )
+        canonical_target = bool(target_spec_id and target_kind == "canonical_node")
+        if not canonical_target:
+            trace_status = "missing_trace"
+        elif query_status == "queryable" and not query_findings:
+            trace_status = "declared"
+        else:
             trace_status = "ambiguous"
         lane_ref = {
+            "lane_ref_id": lane_ref_id,
             "proposal_handle": proposal_handle,
             "target_spec_id": target_spec_id,
+            "target_reference": target_reference,
             "relation_kind": "targets",
             "authority": "lane_overlay",
             "trace_status": trace_status,
             "authority_state": authority_state,
             "target_region": copy.deepcopy(target_region),
-            "source_refs": [str(entry.get("tracked_path", "")).strip()],
-            "next_gap": "review_lane_target" if trace_status == "ambiguous" else "none",
+            "source_refs": [tracked_path] if tracked_path else [],
+            "next_gap": (
+                "attach_lane_target_trace"
+                if trace_status == "missing_trace"
+                else "review_lane_target"
+                if trace_status == "ambiguous"
+                else "none"
+            ),
         }
         lane_refs.append(lane_ref)
-        lane_key = proposal_handle or str(entry.get("tracked_path", "")).strip() or target_spec_id
-        spec_ref_groups.setdefault(target_spec_id, []).append(lane_key)
-        authority_groups.setdefault("lane_overlay", []).append(lane_key)
-        trace_status_groups.setdefault(trace_status, []).append(lane_key)
-        named_filters["lane_targets"].append(lane_key)
-        if trace_status == "ambiguous":
-            named_filters["ambiguous"].append(lane_key)
+        if target_spec_id:
+            spec_ref_groups.setdefault(target_spec_id, []).append(lane_ref_id)
+        authority_groups.setdefault("lane_overlay", []).append(lane_ref_id)
+        trace_status_groups.setdefault(trace_status, []).append(lane_ref_id)
+        named_filters["lane_targets"].append(lane_ref_id)
+        if trace_status == "missing_trace":
+            named_filters["missing_trace"].append(lane_ref_id)
+        elif trace_status == "ambiguous":
+            named_filters["ambiguous"].append(lane_ref_id)
         else:
-            named_filters["declared_or_bounded"].append(lane_key)
+            named_filters["declared_or_bounded"].append(lane_ref_id)
 
     def sorted_groups(groups: dict[str, list[str]]) -> dict[str, list[str]]:
         return {key: sorted(set(value)) for key, value in sorted(groups.items())}
@@ -24216,7 +24250,7 @@ def build_proposal_spec_trace_index(
         "entry_count": len(entries),
         "entries": sorted(entries, key=lambda item: item["proposal_id"]),
         "lane_ref_count": len(lane_refs),
-        "lane_refs": sorted(lane_refs, key=lambda item: item["proposal_handle"]),
+        "lane_refs": sorted(lane_refs, key=lambda item: item["lane_ref_id"]),
         "summary": {
             "entry_count": len(entries),
             "lane_ref_count": len(lane_refs),
@@ -25051,11 +25085,15 @@ def build_graph_backlog_projection(
     metric_signal_index: dict[str, Any] | None = None,
     metrics_source_promotion_index: dict[str, Any] | None = None,
     metric_pack_index: dict[str, Any] | None = None,
+    proposal_runtime_index: dict[str, Any] | None = None,
+    proposal_promotion_index: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     graph_overlay = build_graph_health_overlay(specs)
     branch_rewrite_preview, _branch_rewrite_summary = load_current_branch_rewrite_preview_summary()
-    proposal_runtime_index = build_proposal_runtime_index()
-    proposal_promotion_index = build_proposal_promotion_index()
+    if proposal_runtime_index is None:
+        proposal_runtime_index = build_proposal_runtime_index()
+    if proposal_promotion_index is None:
+        proposal_promotion_index = build_proposal_promotion_index()
     spec_trace_index = build_spec_trace_index(specs)
     spec_trace_projection = build_spec_trace_projection(spec_trace_index)
     implementation_work_index = load_current_implementation_work_index()
@@ -25630,14 +25668,20 @@ def build_graph_dashboard(
     metrics_source_promotion_index: dict[str, Any] | None = None,
     metric_pack_index: dict[str, Any] | None = None,
     graph_backlog_projection: dict[str, Any] | None = None,
+    proposal_lane_overlay: dict[str, Any] | None = None,
+    proposal_runtime_index: dict[str, Any] | None = None,
+    proposal_promotion_index: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     graph_overlay = build_graph_health_overlay(specs)
     graph_trends = build_graph_health_trends(specs, overlay=graph_overlay)
     branch_rewrite_preview, branch_rewrite_summary = load_current_branch_rewrite_preview_summary()
     intent_overlay = build_intent_layer_overlay()
-    proposal_lane_overlay = build_proposal_lane_overlay()
-    proposal_runtime_index = build_proposal_runtime_index()
-    proposal_promotion_index = build_proposal_promotion_index()
+    if proposal_lane_overlay is None:
+        proposal_lane_overlay = build_proposal_lane_overlay()
+    if proposal_runtime_index is None:
+        proposal_runtime_index = build_proposal_runtime_index()
+    if proposal_promotion_index is None:
+        proposal_promotion_index = build_proposal_promotion_index()
     spec_trace_index = build_spec_trace_index(specs)
     spec_trace_projection = build_spec_trace_projection(spec_trace_index)
     implementation_work_index = load_current_implementation_work_index()
@@ -26607,12 +26651,17 @@ def build_viewer_surfaces(specs: list[SpecNode]) -> dict[str, Any]:
         load_metric_pack_registry(),
         consumer_index,
     )
+    proposal_lane_overlay = build_proposal_lane_overlay()
+    proposal_runtime_index = build_proposal_runtime_index()
+    proposal_promotion_index = build_proposal_promotion_index()
     backlog_projection = build_graph_backlog_projection(
         specs,
         external_consumer_index=consumer_index,
         metric_signal_index=metric_signal_index,
         metrics_source_promotion_index=metrics_source_promotion_index,
         metric_pack_index=metric_pack_index,
+        proposal_runtime_index=proposal_runtime_index,
+        proposal_promotion_index=proposal_promotion_index,
     )
     backlog_path = write_graph_backlog_projection(backlog_projection)
     dashboard = build_graph_dashboard(
@@ -26622,12 +26671,18 @@ def build_viewer_surfaces(specs: list[SpecNode]) -> dict[str, Any]:
         metrics_source_promotion_index=metrics_source_promotion_index,
         metric_pack_index=metric_pack_index,
         graph_backlog_projection=backlog_projection,
+        proposal_lane_overlay=proposal_lane_overlay,
+        proposal_runtime_index=proposal_runtime_index,
+        proposal_promotion_index=proposal_promotion_index,
     )
     dashboard_path = write_graph_dashboard(dashboard)
-    next_moves = build_graph_next_moves(specs, backlog_projection=backlog_projection)
+    next_moves = build_graph_next_moves(
+        specs,
+        backlog_projection=backlog_projection,
+        proposal_runtime_index=proposal_runtime_index,
+        proposal_lane_overlay=proposal_lane_overlay,
+    )
     next_moves_path = write_graph_next_moves(next_moves)
-    proposal_lane_overlay = build_proposal_lane_overlay()
-    proposal_promotion_index = build_proposal_promotion_index()
     proposal_spec_trace_index = build_proposal_spec_trace_index(
         proposal_promotion_index=proposal_promotion_index,
         proposal_lane_overlay=proposal_lane_overlay,
