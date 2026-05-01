@@ -1140,6 +1140,11 @@ memory surface needs refresh:
 make conversation-memory
 ```
 
+That command reads curated source records from
+`conversation_memory/sources/*.json` and structured markdown notes from
+`conversation_memory/notes/*.md`. It does not mine PageIndex or promote memory
+records into canonical specs.
+
 Standalone artifact commands print compact JSON summaries by default. Use
 `--output-mode full` only when the full generated artifact is needed on stdout.
 The artifact files under `runs/` are written either way.

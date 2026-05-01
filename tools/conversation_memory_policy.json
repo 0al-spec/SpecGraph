@@ -2,7 +2,9 @@
   "artifact_kind": "conversation_memory_policy",
   "version": 1,
   "repository_layout": {
-    "index_artifact": "runs/conversation_memory_index.json"
+    "index_artifact": "runs/conversation_memory_index.json",
+    "source_dir": "conversation_memory/sources",
+    "note_dir": "conversation_memory/notes"
   },
   "layer_boundary": {
     "layer_name": "conversation_memory",

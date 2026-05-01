@@ -12369,6 +12369,8 @@ def test_conversation_memory_policy_declares_noncanonical_boundary(
     assert policy["artifact_kind"] == "conversation_memory_policy"
     assert policy["layer_boundary"]["canonical_mutations_allowed"] is False
     assert policy["layer_boundary"]["tracked_artifacts_written"] is False
+    assert policy["repository_layout"]["source_dir"] == "conversation_memory/sources"
+    assert policy["repository_layout"]["note_dir"] == "conversation_memory/notes"
     assert "assumption" in policy["note_contract"]["note_kinds"]
     assert "pageindex_conversation" in policy["source_contract"]["source_types"]
 
@@ -12462,6 +12464,81 @@ def test_build_conversation_memory_index_honors_policy_override_named_filters(
     assert named_filters["promotion_review_required"] == ["cmem-1"]
     assert report["summary"]["missing_attribution_count"] == 0
     assert report["summary"]["stale_note_count"] == 0
+
+
+def test_build_conversation_memory_index_reads_storage_sources_and_notes(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    source_dir = repo_fixture / "conversation_memory" / "sources"
+    note_dir = repo_fixture / "conversation_memory" / "notes"
+    source_dir.mkdir(parents=True)
+    note_dir.mkdir(parents=True)
+    (source_dir / "chat-1.json").write_text(
+        json.dumps(
+            {
+                "source_id": "chat-1",
+                "source_type": "pageindex_conversation",
+                "source_state": "available",
+                "source_ref": "pageindex://chatgpt/example",
+                "captured_at": "2026-05-01T00:00:00Z",
+            }
+        ),
+        encoding="utf-8",
+    )
+    (note_dir / "cmem-1.md").write_text(
+        """---
+memory_note_id: cmem-1
+note_kind: assumption
+title: Adapter gaps before execution
+promotion_state: proposal_pressure_candidate
+source_refs:
+  - chat-1
+links:
+  related_specs: []
+  related_proposals: []
+  related_memory_notes: []
+---
+
+Metric-pack execution should wait for adapter computability gaps.
+""",
+        encoding="utf-8",
+    )
+
+    report = supervisor_module.build_conversation_memory_index()
+
+    assert report["source_snapshot"]["storage_source_count"] == 1
+    assert report["source_snapshot"]["storage_note_count"] == 1
+    assert report["source_count"] == 1
+    assert report["structured_note_count"] == 1
+    assert report["sources"][0]["storage_path"] == "conversation_memory/sources/chat-1.json"
+    entry = report["entries"][0]
+    assert entry["memory_note_id"] == "cmem-1"
+    assert entry["storage_path"] == "conversation_memory/notes/cmem-1.md"
+    assert entry["summary"] == "Metric-pack execution should wait for adapter computability gaps."
+    assert entry["review_state"] == "promotion_review_required"
+
+
+def test_build_conversation_memory_index_reports_malformed_storage_note(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    note_dir = repo_fixture / "conversation_memory" / "notes"
+    note_dir.mkdir(parents=True)
+    (note_dir / "broken.md").write_text("No frontmatter here.", encoding="utf-8")
+
+    report = supervisor_module.build_conversation_memory_index()
+
+    assert report["structured_note_count"] == 1
+    entry = report["entries"][0]
+    assert entry["memory_note_id"] == "invalid_memory_note_1"
+    assert entry["status"] == "invalid_memory_note"
+    assert "missing_frontmatter" in entry["contract_errors"]
+    assert "missing_source_refs" in entry["contract_errors"]
+    assert entry["storage_path"] == "conversation_memory/notes/broken.md"
+    assert report["viewer_projection"]["named_filters"]["invalid_notes"] == [
+        "invalid_memory_note_1"
+    ]
 
 
 def test_build_conversation_memory_index_blocks_missing_attribution_and_canonical_promotion(

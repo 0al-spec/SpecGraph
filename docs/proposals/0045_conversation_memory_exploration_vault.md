@@ -366,6 +366,20 @@ references and non-canonical promotion states, and exposes an empty or
 fixture-backed index surface. It still does not mine PageIndex, import chat
 archives, create canonical specs, or emit promotion-pressure artifacts.
 
+## Second Slice Realization
+
+The second bounded runtime slice adds tracked storage ingestion:
+
+- `conversation_memory/sources/*.json` for declared source boundaries;
+- `conversation_memory/notes/*.md` for structured memory notes with frontmatter;
+- `source_snapshot` counts in `runs/conversation_memory_index.json`;
+- `storage_path` traceability for loaded sources and notes.
+
+This still remains read-only and manual. It gives operators and future tools a
+place to write curated Layer 0 memory records, but it still does not mine
+PageIndex, import full chat archives, create canonical specs, or emit
+promotion-pressure artifacts automatically.
+
 ## Acceptance Criteria
 
 - SpecGraph has a proposal-level architecture for conversation-derived memory

@@ -152,8 +152,10 @@ Supervisor modes:
   gaps become visible without executing metric packs.
 - `--build-conversation-memory-index`: build
   `runs/conversation_memory_index.json` from
-  `tools/conversation_memory_policy.json` so structured exploration memory has
-  a read-only viewer surface before any archive mining or proposal promotion.
+  `tools/conversation_memory_policy.json`,
+  `conversation_memory/sources/*.json`, and `conversation_memory/notes/*.md`
+  so structured exploration memory has a read-only viewer surface before any
+  archive mining or proposal promotion.
 - `--build-metric-signal-index`: build `runs/metric_signal_index.json` from
   trace, evidence, graph-health, and proposal-runtime surfaces so metric-driven
   advisory signals remain derived rather than canonical facts. `sib` is the

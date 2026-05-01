@@ -13,6 +13,13 @@ ContextBuilder should treat this as a read-only SpecGraph artifact:
 | --- | --- | --- |
 | `runs/conversation_memory_index.json` | `make conversation-memory` or `make viewer-surfaces` | Conversation-memory panel, source/note counts, reviewable pre-canonical gaps. |
 
+The index is built from:
+
+- `tools/conversation_memory_policy.json`;
+- `conversation_memory/sources/*.json`;
+- `conversation_memory/notes/*.md`;
+- optional fixture records supplied by tests or future tools.
+
 No ContextBuilder write path is implied by this contract.
 
 ## Boundary
@@ -50,6 +57,14 @@ Viewer guardrails:
     "artifact_sha256": "...",
     "version": 1
   },
+  "source_snapshot": {
+    "source_dir": "conversation_memory/sources",
+    "note_dir": "conversation_memory/notes",
+    "policy_source_count": 0,
+    "policy_note_count": 0,
+    "storage_source_count": 0,
+    "storage_note_count": 0
+  },
   "layer_boundary": {
     "layer_name": "conversation_memory",
     "canonical_mutations_allowed": false,
@@ -85,6 +100,7 @@ Each `sources[]` item describes a declared source boundary:
   "captured_at": "2026-05-01T00:00:00Z",
   "selection_rationale": "operator-selected discussion",
   "source_boundary": "curated excerpt",
+  "storage_path": "conversation_memory/sources/pageindex-chat-2026-05-01.json",
   "contract_errors": []
 }
 ```
@@ -128,10 +144,14 @@ Each `entries[]` item describes one structured memory note:
     "related_memory_notes": []
   },
   "staleness": "current",
+  "storage_path": "conversation_memory/notes/cmem-2026-05-01-0001.md",
   "summary": "Metric-pack execution should wait for adapter computability gaps.",
   "contract_errors": []
 }
 ```
+
+`storage_path` is optional for policy/fixture-provided records and present for
+records loaded from `conversation_memory/`.
 
 Known `note_kind` values:
 
