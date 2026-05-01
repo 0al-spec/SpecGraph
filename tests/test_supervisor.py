@@ -13531,6 +13531,31 @@ def test_build_graph_dashboard_aggregates_runtime_surfaces(
     )
     monkeypatch.setattr(
         supervisor_module,
+        "build_metric_pack_index",
+        lambda registry, consumer_index: {
+            "generated_at": "2026-04-19T00:00:10Z",
+            "entry_count": 1,
+            "entries": [
+                {
+                    "metric_pack_id": "sib",
+                    "pack_status": "ready_for_index_review",
+                    "review_state": "ready_for_review",
+                    "next_gap": "",
+                }
+            ],
+            "viewer_projection": {
+                "pack_status": {"ready_for_index_review": ["sib"]},
+                "review_state": {"ready_for_review": ["sib"]},
+                "authority_state": {"operational_source_after_review": ["sib"]},
+                "reference_state": {"stable_reference": ["sib"]},
+                "missing_inputs": {},
+                "named_filters": {"ready_for_index_review": ["sib"]},
+            },
+        },
+    )
+    monkeypatch.setattr(supervisor_module, "load_metric_pack_registry", lambda: {"packs": []})
+    monkeypatch.setattr(
+        supervisor_module,
         "build_review_feedback_index",
         lambda: {
             "generated_at": "2026-04-19T00:00:10Z",
@@ -13627,6 +13652,10 @@ def test_build_graph_dashboard_aggregates_runtime_surfaces(
     assert report["sections"]["external_consumers"]["metrics_source_promotion_status_counts"] == {
         "ready_for_promotion_review": 1
     }
+    assert report["sections"]["metrics"]["metric_pack_entry_count"] == 1
+    assert report["sections"]["metrics"]["metric_pack_status_counts"] == {
+        "ready_for_index_review": 1
+    }
     assert report["sections"]["process_feedback"]["review_feedback_entry_count"] == 4
     assert report["sections"]["process_feedback"]["review_feedback_backlog_count"] == 1
     assert report["sections"]["process_feedback"]["review_feedback_status_counts"] == {
@@ -13647,6 +13676,7 @@ def test_build_graph_dashboard_aggregates_runtime_surfaces(
     assert by_card_id["metrics_delivery_ready"]["value"] == 1
     assert by_card_id["metrics_feedback_visible"]["value"] == 1
     assert by_card_id["metrics_source_promotion_ready"]["value"] == 1
+    assert by_card_id["metric_packs_review_ready"]["value"] == 1
     assert by_card_id["review_feedback_open"]["value"] == 1
     assert by_card_id["graph_backlog_open"]["value"] == 7
     assert report["sections"]["backlog"]["domain_counts"] == {
@@ -13716,7 +13746,7 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    surface_calls = {"external": 0, "metric": 0, "promotion": 0}
+    surface_calls = {"external": 0, "metric": 0, "promotion": 0, "pack": 0}
 
     def fake_backlog(
         specs: list[object],
@@ -13724,11 +13754,13 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
         external_consumer_index: dict[str, object] | None = None,
         metric_signal_index: dict[str, object] | None = None,
         metrics_source_promotion_index: dict[str, object] | None = None,
+        metric_pack_index: dict[str, object] | None = None,
     ) -> dict[str, object]:
         assert len(specs) == 1
         assert external_consumer_index is not None
         assert metric_signal_index is not None
         assert metrics_source_promotion_index is not None
+        assert metric_pack_index is not None
         return {
             "artifact_kind": supervisor_module.GRAPH_BACKLOG_PROJECTION_ARTIFACT_KIND,
             "schema_version": supervisor_module.GRAPH_BACKLOG_PROJECTION_SCHEMA_VERSION,
@@ -13745,12 +13777,14 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
         external_consumer_index: dict[str, object] | None = None,
         metric_signal_index: dict[str, object] | None = None,
         metrics_source_promotion_index: dict[str, object] | None = None,
+        metric_pack_index: dict[str, object] | None = None,
         graph_backlog_projection: dict[str, object] | None = None,
     ) -> dict[str, object]:
         assert len(specs) == 1
         assert external_consumer_index is not None
         assert metric_signal_index is not None
         assert metrics_source_promotion_index is not None
+        assert metric_pack_index is not None
         assert graph_backlog_projection is not None
         return {
             "artifact_kind": "graph_dashboard",
@@ -13822,6 +13856,32 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
             "viewer_projection": {"named_filters": {"ready_for_promotion_review": []}},
         }
 
+    def fake_metric_pack_index(
+        registry: dict[str, object],
+        consumer_index: dict[str, object],
+    ) -> dict[str, object]:
+        surface_calls["pack"] += 1
+        assert registry["packs"] == []
+        assert consumer_index["generated_at"] == "2026-04-27T00:00:03Z"
+        return {
+            "artifact_kind": supervisor_module.METRIC_PACK_INDEX_ARTIFACT_KIND,
+            "schema_version": supervisor_module.METRIC_PACK_INDEX_SCHEMA_VERSION,
+            "generated_at": "2026-04-27T00:00:06Z",
+            "entry_count": 1,
+            "entries": [{"metric_pack_id": "sib", "pack_status": "ready_for_index_review"}],
+            "summary": {"status_counts": {"ready_for_index_review": 1}},
+            "viewer_projection": {
+                "pack_status": {"ready_for_index_review": ["sib"]},
+                "review_state": {"ready_for_review": ["sib"]},
+                "authority_state": {"operational_source_after_review": ["sib"]},
+                "reference_state": {"stable_reference": ["sib"]},
+                "missing_inputs": {},
+                "named_filters": {"ready_for_index_review": ["sib"]},
+            },
+            "canonical_mutations_allowed": False,
+            "tracked_artifacts_written": False,
+        }
+
     monkeypatch.setattr(supervisor_module, "build_graph_backlog_projection", fake_backlog)
     monkeypatch.setattr(supervisor_module, "build_graph_dashboard", fake_dashboard)
     monkeypatch.setattr(supervisor_module, "build_graph_next_moves", fake_next_moves)
@@ -13834,6 +13894,8 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
         "build_metrics_source_promotion_index",
         fake_metrics_source_promotion_index,
     )
+    monkeypatch.setattr(supervisor_module, "load_metric_pack_registry", lambda: {"packs": []})
+    monkeypatch.setattr(supervisor_module, "build_metric_pack_index", fake_metric_pack_index)
 
     exit_code = supervisor_module.main(build_viewer_surfaces_mode=True)
 
@@ -13844,11 +13906,13 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
     assert report["written_artifacts"]["graph_dashboard"]["headline_count"] == 1
     assert report["written_artifacts"]["graph_next_moves"]["current_scene"] == "steady_state"
     assert report["written_artifacts"]["metrics_source_promotion_index"]["entry_count"] == 1
+    assert report["written_artifacts"]["metric_pack_index"]["entry_count"] == 1
+    assert report["written_artifacts"]["metric_pack_index"]["ready_for_index_review_count"] == 1
     assert (
         report["written_artifacts"]["metrics_source_promotion_index"]["promotion_backlog_count"]
         == 1
     )
-    assert surface_calls == {"external": 1, "metric": 1, "promotion": 1}
+    assert surface_calls == {"external": 1, "metric": 1, "promotion": 1, "pack": 1}
     assert (
         json.loads(
             (repo_fixture / "runs" / "graph_backlog_projection.json").read_text(encoding="utf-8")
@@ -13870,6 +13934,12 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
                 encoding="utf-8"
             )
         )["entry_count"]
+        == 1
+    )
+    assert (
+        json.loads((repo_fixture / "runs" / "metric_pack_index.json").read_text(encoding="utf-8"))[
+            "entry_count"
+        ]
         == 1
     )
 
@@ -14032,6 +14102,19 @@ def test_build_graph_backlog_projection_from_surfaces_normalizes_reviewable_gaps
                 ],
             },
         },
+        metric_pack_index={
+            "generated_at": "2026-04-24T00:00:11Z",
+            "entry_count": 1,
+            "entries": [
+                {
+                    "metric_pack_id": "sib",
+                    "title": "SIB",
+                    "pack_status": "ready_for_index_review",
+                    "review_state": "ready_for_review",
+                    "next_gap": "review_metric_pack_index",
+                }
+            ],
+        },
         metric_threshold_proposals={
             "generated_at": "2026-04-24T00:00:12Z",
             "entry_count": 1,
@@ -14103,7 +14186,7 @@ def test_build_graph_backlog_projection_from_surfaces_normalizes_reviewable_gaps
     )
 
     assert report["artifact_kind"] == supervisor_module.GRAPH_BACKLOG_PROJECTION_ARTIFACT_KIND
-    assert report["entry_count"] == 14
+    assert report["entry_count"] == 15
     assert report["summary"]["entry_count"] == report["entry_count"]
     assert report["summary"]["entry_count"] == len(report["entries"])
     assert report["summary"]["domain_counts"] == {
@@ -14112,15 +14195,16 @@ def test_build_graph_backlog_projection_from_surfaces_normalizes_reviewable_gaps
         "external_consumers": 1,
         "health": 1,
         "implementation": 2,
-        "metrics": 2,
+        "metrics": 3,
         "process_feedback": 2,
         "proposals": 2,
         "specpm": 1,
     }
-    assert report["summary"]["priority_counts"]["high"] == 7
+    assert report["summary"]["priority_counts"]["high"] == 8
     assert report["summary"]["priority_counts"]["info"] == 1
     assert report["summary"]["source_artifact_counts"]["branch_rewrite_preview"] == 2
     assert report["summary"]["source_artifact_counts"]["implementation_work_index"] == 1
+    assert report["summary"]["source_artifact_counts"]["metric_pack_index"] == 1
     assert report["summary"]["next_gap_counts"]["review_branch_rewrite_candidate"] == 2
     assert report["summary"]["next_gap_counts"]["attach_trace_contract"] == 1
     assert report["summary"]["next_gap_counts"]["attach_trace_baseline"] == 1
@@ -14128,6 +14212,8 @@ def test_build_graph_backlog_projection_from_surfaces_normalizes_reviewable_gaps
     assert report["viewer_projection"]["named_filters"]["missing_trace_contract"]
     assert report["viewer_projection"]["named_filters"]["missing_evidence_contract"]
     assert report["viewer_projection"]["named_filters"]["metric_threshold_pressure"]
+    assert report["viewer_projection"]["named_filters"]["metric_pack_review_ready"]
+    assert report["viewer_projection"]["named_filters"]["metric_pack_draft_visible"] == []
     assert report["viewer_projection"]["named_filters"]["promotion_review_ready"]
     assert report["viewer_projection"]["named_filters"]["branch_rewrite_candidates"]
     assert report["viewer_projection"]["named_filters"]["branch_rewrite_ready"]

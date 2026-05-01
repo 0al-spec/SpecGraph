@@ -22905,6 +22905,7 @@ def graph_backlog_source_artifact_path(source_artifact: str) -> str:
         "metrics_delivery_workflow": metrics_delivery_workflow_path,
         "metrics_feedback_index": metrics_feedback_index_path,
         "metrics_source_promotion_index": metrics_source_promotion_index_path,
+        "metric_pack_index": metric_pack_index_path,
         "metric_threshold_proposals": metric_threshold_proposals_path,
         "review_feedback_index": review_feedback_index_path,
     }
@@ -23216,6 +23217,7 @@ def build_graph_backlog_projection_from_surfaces(
     metrics_delivery_workflow: dict[str, Any],
     metrics_feedback_index: dict[str, Any],
     metrics_source_promotion_index: dict[str, Any],
+    metric_pack_index: dict[str, Any],
     metric_threshold_proposals: dict[str, Any],
     review_feedback_index: dict[str, Any],
     branch_rewrite_preview: dict[str, Any] | None = None,
@@ -23421,6 +23423,26 @@ def build_graph_backlog_projection_from_surfaces(
         id_fields=("consumer_id", "promotion_id"),
         status_fields=("promotion_status",),
     )
+    for item in metric_pack_index.get("entries", []):
+        if not isinstance(item, dict):
+            continue
+        metric_pack_id = str(item.get("metric_pack_id", "")).strip()
+        next_gap = str(item.get("next_gap", "")).strip()
+        if not metric_pack_id or not next_gap or next_gap == "none":
+            continue
+        entries.append(
+            graph_backlog_entry(
+                source_artifact="metric_pack_index",
+                domain="metrics",
+                subject_kind="metric_pack",
+                subject_id=metric_pack_id,
+                title=str(item.get("title", "")).strip(),
+                status=str(item.get("pack_status", "")).strip() or "metric_pack_gap",
+                review_state=str(item.get("review_state", "")).strip(),
+                next_gap=next_gap,
+                details=graph_backlog_details(item, exclude={"metric_pack_id"}),
+            )
+        )
     append_backlog_items(
         entries,
         source_artifact="review_feedback_index",
@@ -23485,6 +23507,8 @@ def build_graph_backlog_projection_from_surfaces(
         "missing_trace_contract": [],
         "missing_evidence_contract": [],
         "metric_threshold_pressure": [],
+        "metric_pack_review_ready": [],
+        "metric_pack_draft_visible": [],
         "proposal_runtime_realization": [],
         "promotion_review_ready": [],
         "review_feedback_open": [],
@@ -23539,6 +23563,10 @@ def build_graph_backlog_projection_from_surfaces(
             named_filters["proposal_runtime_realization"].append(backlog_id)
         if next_gap == "review_metrics_source_promotion":
             named_filters["promotion_review_ready"].append(backlog_id)
+        if source_artifact == "metric_pack_index" and next_gap == "review_metric_pack_index":
+            named_filters["metric_pack_review_ready"].append(backlog_id)
+        if source_artifact == "metric_pack_index" and status == "draft_visible_only":
+            named_filters["metric_pack_draft_visible"].append(backlog_id)
         if source_artifact == "review_feedback_index":
             named_filters["review_feedback_open"].append(backlog_id)
         if source_artifact == "review_feedback_index" and status == "invalid_feedback_record":
@@ -23563,6 +23591,7 @@ def build_graph_backlog_projection_from_surfaces(
         "metrics_delivery_workflow": metrics_delivery_workflow,
         "metrics_feedback_index": metrics_feedback_index,
         "metrics_source_promotion_index": metrics_source_promotion_index,
+        "metric_pack_index": metric_pack_index,
         "metric_threshold_proposals": metric_threshold_proposals,
         "review_feedback_index": review_feedback_index,
     }
@@ -23605,6 +23634,7 @@ def build_graph_backlog_projection(
     external_consumer_index: dict[str, Any] | None = None,
     metric_signal_index: dict[str, Any] | None = None,
     metrics_source_promotion_index: dict[str, Any] | None = None,
+    metric_pack_index: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     graph_overlay = build_graph_health_overlay(specs)
     branch_rewrite_preview, _branch_rewrite_summary = load_current_branch_rewrite_preview_summary()
@@ -23635,6 +23665,11 @@ def build_graph_backlog_projection(
             external_consumer_index,
             metric_signal_index,
         )
+    if metric_pack_index is None:
+        metric_pack_index = build_metric_pack_index(
+            load_metric_pack_registry(),
+            external_consumer_index,
+        )
     metrics_delivery_workflow = build_metrics_delivery_workflow(external_consumer_handoffs)
     metrics_feedback_index = build_metrics_feedback_index(metrics_delivery_workflow)
     specpm_export_preview = build_specpm_export_preview(specs)
@@ -23660,6 +23695,7 @@ def build_graph_backlog_projection(
         metrics_delivery_workflow=metrics_delivery_workflow,
         metrics_feedback_index=metrics_feedback_index,
         metrics_source_promotion_index=metrics_source_promotion_index,
+        metric_pack_index=metric_pack_index,
         metric_threshold_proposals=metric_threshold_proposals,
         review_feedback_index=review_feedback_index,
         branch_rewrite_preview=branch_rewrite_preview,
@@ -24176,6 +24212,7 @@ def build_graph_dashboard(
     external_consumer_index: dict[str, Any] | None = None,
     metric_signal_index: dict[str, Any] | None = None,
     metrics_source_promotion_index: dict[str, Any] | None = None,
+    metric_pack_index: dict[str, Any] | None = None,
     graph_backlog_projection: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     graph_overlay = build_graph_health_overlay(specs)
@@ -24210,6 +24247,11 @@ def build_graph_dashboard(
             external_consumer_index,
             metric_signal_index,
         )
+    if metric_pack_index is None:
+        metric_pack_index = build_metric_pack_index(
+            load_metric_pack_registry(),
+            external_consumer_index,
+        )
     metrics_delivery_workflow = build_metrics_delivery_workflow(external_consumer_handoffs)
     metrics_feedback_index = build_metrics_feedback_index(metrics_delivery_workflow)
     specpm_export_preview = build_specpm_export_preview(specs)
@@ -24240,6 +24282,7 @@ def build_graph_dashboard(
             metrics_delivery_workflow=metrics_delivery_workflow,
             metrics_feedback_index=metrics_feedback_index,
             metrics_source_promotion_index=metrics_source_promotion_index,
+            metric_pack_index=metric_pack_index,
             metric_threshold_proposals=metric_threshold_proposals,
             review_feedback_index=review_feedback_index,
             branch_rewrite_preview=branch_rewrite_preview,
@@ -24456,6 +24499,18 @@ def build_graph_dashboard(
     )
     metrics_source_promotion_named_filter_counts = grouped_identifier_counts(
         metrics_source_promotion_index.get("viewer_projection", {}).get("named_filters", {})
+    )
+    metric_pack_status_counts = grouped_identifier_counts(
+        metric_pack_index.get("viewer_projection", {}).get("pack_status", {})
+    )
+    metric_pack_review_state_counts = grouped_identifier_counts(
+        metric_pack_index.get("viewer_projection", {}).get("review_state", {})
+    )
+    metric_pack_authority_counts = grouped_identifier_counts(
+        metric_pack_index.get("viewer_projection", {}).get("authority_state", {})
+    )
+    metric_pack_named_filter_counts = grouped_identifier_counts(
+        metric_pack_index.get("viewer_projection", {}).get("named_filters", {})
     )
     review_feedback_status_counts = grouped_identifier_counts(
         review_feedback_index.get("viewer_projection", {}).get("status", {})
@@ -24697,6 +24752,21 @@ def build_graph_dashboard(
             ),
         ),
         dashboard_card(
+            card_id="metric_packs_review_ready",
+            title="Metric Packs Review Ready",
+            value=metric_pack_status_counts.get("ready_for_index_review", 0),
+            section="metrics",
+            status=(
+                "attention"
+                if metric_pack_status_counts.get("ready_for_index_review", 0) > 0
+                else "healthy"
+            ),
+            basis=(
+                "Metric packs with source and authority state ready for derived "
+                "index review. This does not execute metric packs."
+            ),
+        ),
+        dashboard_card(
             card_id="review_feedback_open",
             title="Review Feedback Open",
             value=review_feedback_backlog_count,
@@ -24823,6 +24893,10 @@ def build_graph_dashboard(
             "metrics_source_promotion_index": {
                 "artifact_path": metrics_source_promotion_index_path().relative_to(ROOT).as_posix(),
                 "generated_at": metrics_source_promotion_index.get("generated_at"),
+            },
+            "metric_pack_index": {
+                "artifact_path": metric_pack_index_path().relative_to(ROOT).as_posix(),
+                "generated_at": metric_pack_index.get("generated_at"),
             },
             "metric_signal_index": {
                 "artifact_path": metric_signal_index_path().relative_to(ROOT).as_posix(),
@@ -24985,6 +25059,11 @@ def build_graph_dashboard(
             },
             "metrics": {
                 "metric_count": len(metric_entries),
+                "metric_pack_entry_count": int(metric_pack_index.get("entry_count", 0) or 0),
+                "metric_pack_status_counts": metric_pack_status_counts,
+                "metric_pack_review_state_counts": metric_pack_review_state_counts,
+                "metric_pack_authority_counts": metric_pack_authority_counts,
+                "metric_pack_named_filter_counts": metric_pack_named_filter_counts,
                 "metric_status_counts": metric_status_counts,
                 "metric_scores": metric_scores,
                 "below_threshold_metric_ids": sorted(below_threshold_metric_ids),
@@ -25069,6 +25148,14 @@ def build_graph_dashboard(
                     "ready_for_promotion_review",
                     0,
                 ),
+                "metric_packs_review_ready": metric_pack_status_counts.get(
+                    "ready_for_index_review",
+                    0,
+                ),
+                "metric_packs_draft_visible": metric_pack_status_counts.get(
+                    "draft_visible_only",
+                    0,
+                ),
                 "review_feedback_open": review_feedback_backlog_count,
                 "review_feedback_invalid": review_feedback_status_counts.get(
                     "invalid_feedback_record",
@@ -25100,11 +25187,16 @@ def build_viewer_surfaces(specs: list[SpecNode]) -> dict[str, Any]:
         consumer_index,
         metric_signal_index,
     )
+    metric_pack_index = build_metric_pack_index(
+        load_metric_pack_registry(),
+        consumer_index,
+    )
     backlog_projection = build_graph_backlog_projection(
         specs,
         external_consumer_index=consumer_index,
         metric_signal_index=metric_signal_index,
         metrics_source_promotion_index=metrics_source_promotion_index,
+        metric_pack_index=metric_pack_index,
     )
     backlog_path = write_graph_backlog_projection(backlog_projection)
     dashboard = build_graph_dashboard(
@@ -25112,12 +25204,14 @@ def build_viewer_surfaces(specs: list[SpecNode]) -> dict[str, Any]:
         external_consumer_index=consumer_index,
         metric_signal_index=metric_signal_index,
         metrics_source_promotion_index=metrics_source_promotion_index,
+        metric_pack_index=metric_pack_index,
         graph_backlog_projection=backlog_projection,
     )
     dashboard_path = write_graph_dashboard(dashboard)
     next_moves = build_graph_next_moves(specs, backlog_projection=backlog_projection)
     next_moves_path = write_graph_next_moves(next_moves)
     promotion_path = write_metrics_source_promotion_index(metrics_source_promotion_index)
+    metric_pack_path = write_metric_pack_index(metric_pack_index)
     metrics_source_promotion_backlog = metrics_source_promotion_index.get(
         "promotion_backlog",
         {},
@@ -25154,6 +25248,16 @@ def build_viewer_surfaces(specs: list[SpecNode]) -> dict[str, Any]:
                 "generated_at": metrics_source_promotion_index.get("generated_at"),
                 "entry_count": metrics_source_promotion_index.get("entry_count"),
                 "promotion_backlog_count": metrics_source_promotion_backlog_count,
+            },
+            "metric_pack_index": {
+                "artifact_path": metric_pack_path.relative_to(ROOT).as_posix(),
+                "generated_at": metric_pack_index.get("generated_at"),
+                "entry_count": metric_pack_index.get("entry_count"),
+                "ready_for_index_review_count": (
+                    metric_pack_index.get("summary", {})
+                    .get("status_counts", {})
+                    .get("ready_for_index_review", 0)
+                ),
             },
         },
         "notes": [
