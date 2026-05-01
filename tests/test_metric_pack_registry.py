@@ -43,6 +43,7 @@ def test_metric_pack_registry_declares_current_metrics_packs() -> None:
 
     assert sorted(by_id) == ["sib", "sib_economic_observability", "sib_full"]
     assert by_id["sib"]["source"]["path"] == "SIB/metrics.tex"
+    assert "spec_graph" in by_id["sib"]["inputs"]
     assert by_id["sib_full"]["source"]["path"] == "SIB_FULL/sib_full_metrics.tex"
     assert (
         by_id["sib_economic_observability"]["source"]["path"]
@@ -268,3 +269,105 @@ def test_main_builds_metric_pack_registry_drift_as_standalone_command(
     assert report["entry_count"] == 1
     artifact = json.loads((runs_dir / "metric_pack_registry_drift.json").read_text())
     assert artifact["entries"][0]["drift_status"] == "missing_checkout"
+
+
+def test_metric_pack_adapter_index_maps_available_and_missing_inputs(
+    supervisor_module: object,
+) -> None:
+    report = supervisor_module.build_metric_pack_adapter_index(
+        {
+            "artifact_kind": "metric_pack_index",
+            "generated_at": "2026-05-01T00:00:00Z",
+            "entry_count": 2,
+            "entries": [
+                {
+                    "metric_pack_id": "sib",
+                    "title": "SIB",
+                    "pack_status": "ready_for_index_review",
+                    "pack_authority_state": "operational_source_after_review",
+                    "reference_state": "stable_reference",
+                    "metric_count": 1,
+                    "inputs": ["spec_graph", "implementation_work", "runtime_events"],
+                    "metrics": [
+                        {
+                            "metric_id": "sib",
+                            "requires": ["specification_signal", "implementation_signal"],
+                        }
+                    ],
+                },
+                {
+                    "metric_pack_id": "sib_full",
+                    "title": "SIB Full Metrics",
+                    "pack_status": "draft_visible_only",
+                    "pack_authority_state": "not_threshold_authority",
+                    "reference_state": "draft_reference",
+                    "metric_count": 1,
+                    "inputs": ["spec_graph", "trace_plane", "implementation_work"],
+                    "metrics": [
+                        {
+                            "metric_id": "sib_eff_star",
+                            "requires": [
+                                "intent_atoms",
+                                "expected_implementation_potential",
+                            ],
+                        }
+                    ],
+                },
+            ],
+        }
+    )
+
+    assert report["artifact_kind"] == "metric_pack_adapter_index"
+    assert report["schema_version"] == 1
+    assert report["entry_count"] == 2
+    assert report["canonical_mutations_allowed"] is False
+    assert report["tracked_artifacts_written"] is False
+    by_id = {entry["metric_pack_id"]: entry for entry in report["entries"]}
+
+    assert by_id["sib"]["adapter_status"] == "ready_for_adapter_review"
+    assert by_id["sib"]["missing_input_count"] == 0
+    assert by_id["sib"]["adapter_execution"] == {
+        "status": "deferred",
+        "next_gap": "add_metric_pack_execution_runtime",
+    }
+
+    assert by_id["sib_full"]["adapter_status"] == "missing_input_adapters"
+    assert by_id["sib_full"]["missing_inputs"] == [
+        "expected_implementation_potential",
+        "intent_atoms",
+    ]
+    assert report["adapter_backlog"]["entry_count"] == 2
+    assert report["summary"]["status_counts"] == {
+        "missing_input_adapters": 1,
+        "ready_for_adapter_review": 1,
+    }
+    assert report["viewer_projection"]["missing_inputs"] == {
+        "expected_implementation_potential": ["sib_full"],
+        "intent_atoms": ["sib_full"],
+    }
+
+
+def test_main_builds_metric_pack_adapter_index_as_standalone_command(
+    supervisor_module: object,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    runs_dir = tmp_path / "runs"
+    runs_dir.mkdir()
+    monkeypatch.setattr(supervisor_module, "ROOT", tmp_path)
+    monkeypatch.setattr(supervisor_module, "RUNS_DIR", runs_dir)
+    monkeypatch.setattr(supervisor_module, "load_metric_pack_registry", lambda: {"packs": []})
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_external_consumer_index",
+        lambda: {"generated_at": "2026-05-01T00:00:00Z", "entries": []},
+    )
+
+    exit_code = supervisor_module.main(build_metric_pack_adapter_index_mode=True)
+
+    assert exit_code == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["artifact_kind"] == "metric_pack_adapter_index"
+    artifact = json.loads((runs_dir / "metric_pack_adapter_index.json").read_text())
+    assert artifact["artifact_kind"] == "metric_pack_adapter_index"

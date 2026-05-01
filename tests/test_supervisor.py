@@ -14576,6 +14576,7 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
         "metric": 0,
         "promotion": 0,
         "pack": 0,
+        "pack_adapter": 0,
         "pack_drift": 0,
         "lane": 0,
         "runtime": 0,
@@ -14590,6 +14591,7 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
         metric_signal_index: dict[str, object] | None = None,
         metrics_source_promotion_index: dict[str, object] | None = None,
         metric_pack_index: dict[str, object] | None = None,
+        metric_pack_adapter_index: dict[str, object] | None = None,
         proposal_runtime_index: dict[str, object] | None = None,
         proposal_promotion_index: dict[str, object] | None = None,
     ) -> dict[str, object]:
@@ -14598,6 +14600,7 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
         assert metric_signal_index is not None
         assert metrics_source_promotion_index is not None
         assert metric_pack_index is not None
+        assert metric_pack_adapter_index is not None
         assert proposal_runtime_index is not None
         assert proposal_promotion_index is not None
         return {
@@ -14617,6 +14620,7 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
         metric_signal_index: dict[str, object] | None = None,
         metrics_source_promotion_index: dict[str, object] | None = None,
         metric_pack_index: dict[str, object] | None = None,
+        metric_pack_adapter_index: dict[str, object] | None = None,
         graph_backlog_projection: dict[str, object] | None = None,
         proposal_lane_overlay: dict[str, object] | None = None,
         proposal_runtime_index: dict[str, object] | None = None,
@@ -14627,6 +14631,7 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
         assert metric_signal_index is not None
         assert metrics_source_promotion_index is not None
         assert metric_pack_index is not None
+        assert metric_pack_adapter_index is not None
         assert graph_backlog_projection is not None
         assert proposal_lane_overlay is not None
         assert proposal_runtime_index is not None
@@ -14729,6 +14734,24 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
             "tracked_artifacts_written": False,
         }
 
+    def fake_metric_pack_adapter_index(
+        metric_pack_index: dict[str, object],
+    ) -> dict[str, object]:
+        surface_calls["pack_adapter"] += 1
+        assert metric_pack_index["generated_at"] == "2026-04-27T00:00:06Z"
+        return {
+            "artifact_kind": supervisor_module.METRIC_PACK_ADAPTER_INDEX_ARTIFACT_KIND,
+            "schema_version": supervisor_module.METRIC_PACK_ADAPTER_INDEX_SCHEMA_VERSION,
+            "generated_at": "2026-04-27T00:00:06.250000Z",
+            "entry_count": 1,
+            "entries": [{"metric_pack_id": "sib", "adapter_status": "ready_for_adapter_review"}],
+            "summary": {"status_counts": {"ready_for_adapter_review": 1}},
+            "adapter_backlog": {"entry_count": 0, "items": [], "grouped_by_next_gap": {}},
+            "viewer_projection": {"adapter_status": {"ready_for_adapter_review": ["sib"]}},
+            "canonical_mutations_allowed": False,
+            "tracked_artifacts_written": False,
+        }
+
     def fake_metric_pack_registry_drift(
         registry: dict[str, object],
         consumer_index: dict[str, object],
@@ -14819,6 +14842,11 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
     monkeypatch.setattr(supervisor_module, "build_metric_pack_index", fake_metric_pack_index)
     monkeypatch.setattr(
         supervisor_module,
+        "build_metric_pack_adapter_index",
+        fake_metric_pack_adapter_index,
+    )
+    monkeypatch.setattr(
+        supervisor_module,
         "build_metric_pack_registry_drift",
         fake_metric_pack_registry_drift,
     )
@@ -14845,6 +14873,8 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
     assert report["written_artifacts"]["graph_next_moves"]["current_scene"] == "steady_state"
     assert report["written_artifacts"]["metrics_source_promotion_index"]["entry_count"] == 1
     assert report["written_artifacts"]["metric_pack_index"]["entry_count"] == 1
+    assert report["written_artifacts"]["metric_pack_adapter_index"]["entry_count"] == 1
+    assert report["written_artifacts"]["metric_pack_adapter_index"]["adapter_backlog_count"] == 0
     assert report["written_artifacts"]["metric_pack_registry_drift"]["entry_count"] == 0
     assert report["written_artifacts"]["metric_pack_registry_drift"]["next_gap"] == "none"
     assert report["written_artifacts"]["proposal_spec_trace_index"]["entry_count"] == 1
@@ -14865,6 +14895,7 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
         "metric": 1,
         "promotion": 1,
         "pack": 1,
+        "pack_adapter": 1,
         "pack_drift": 1,
         "lane": 1,
         "runtime": 1,
@@ -14905,6 +14936,12 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
             (repo_fixture / "runs" / "metric_pack_registry_drift.json").read_text(encoding="utf-8")
         )["artifact_kind"]
         == supervisor_module.METRIC_PACK_REGISTRY_DRIFT_ARTIFACT_KIND
+    )
+    assert (
+        json.loads(
+            (repo_fixture / "runs" / "metric_pack_adapter_index.json").read_text(encoding="utf-8")
+        )["artifact_kind"]
+        == supervisor_module.METRIC_PACK_ADAPTER_INDEX_ARTIFACT_KIND
     )
     assert (
         json.loads(
@@ -15099,6 +15136,24 @@ def test_build_graph_backlog_projection_from_surfaces_normalizes_reviewable_gaps
                 }
             ],
         },
+        metric_pack_adapter_index={
+            "generated_at": "2026-04-24T00:00:11.500000Z",
+            "entry_count": 1,
+            "adapter_backlog": {
+                "entry_count": 1,
+                "items": [
+                    {
+                        "adapter_backlog_id": "metric_pack_adapter::sib_full::intent_atoms",
+                        "metric_pack_id": "sib_full",
+                        "title": "SIB Full Metrics",
+                        "input_id": "intent_atoms",
+                        "computability": "not_computable",
+                        "review_state": "ready_for_review",
+                        "next_gap": "define_intent_atom_extraction",
+                    }
+                ],
+            },
+        },
         metric_threshold_proposals={
             "generated_at": "2026-04-24T00:00:12Z",
             "entry_count": 1,
@@ -15170,7 +15225,7 @@ def test_build_graph_backlog_projection_from_surfaces_normalizes_reviewable_gaps
     )
 
     assert report["artifact_kind"] == supervisor_module.GRAPH_BACKLOG_PROJECTION_ARTIFACT_KIND
-    assert report["entry_count"] == 15
+    assert report["entry_count"] == 16
     assert report["summary"]["entry_count"] == report["entry_count"]
     assert report["summary"]["entry_count"] == len(report["entries"])
     assert report["summary"]["domain_counts"] == {
@@ -15179,16 +15234,26 @@ def test_build_graph_backlog_projection_from_surfaces_normalizes_reviewable_gaps
         "external_consumers": 1,
         "health": 1,
         "implementation": 2,
-        "metrics": 3,
+        "metrics": 4,
         "process_feedback": 2,
         "proposals": 2,
         "specpm": 1,
     }
-    assert report["summary"]["priority_counts"]["high"] == 8
+    assert report["summary"]["priority_counts"]["high"] == 9
     assert report["summary"]["priority_counts"]["info"] == 1
     assert report["summary"]["source_artifact_counts"]["branch_rewrite_preview"] == 2
     assert report["summary"]["source_artifact_counts"]["implementation_work_index"] == 1
+    assert report["summary"]["source_artifact_counts"]["metric_pack_adapter_index"] == 1
     assert report["summary"]["source_artifact_counts"]["metric_pack_index"] == 1
+    assert report["source_artifacts"]["metric_pack_adapter_index"]["artifact_path"] == (
+        "runs/metric_pack_adapter_index.json"
+    )
+    adapter_entry = next(
+        entry
+        for entry in report["entries"]
+        if entry["source_artifact"] == "metric_pack_adapter_index"
+    )
+    assert adapter_entry["source_artifact_path"] == "runs/metric_pack_adapter_index.json"
     assert report["summary"]["next_gap_counts"]["review_branch_rewrite_candidate"] == 2
     assert report["summary"]["next_gap_counts"]["attach_trace_contract"] == 1
     assert report["summary"]["next_gap_counts"]["attach_trace_baseline"] == 1

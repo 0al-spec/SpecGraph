@@ -58,6 +58,7 @@ Derived artifacts:
 - Metrics source promotion index: `runs/metrics_source_promotion_index.json`
 - Metric pack index: `runs/metric_pack_index.json`
 - Metric pack registry drift: `runs/metric_pack_registry_drift.json`
+- Metric pack adapter index: `runs/metric_pack_adapter_index.json`
 - bootstrap smoke benchmark: `runs/bootstrap_smoke_benchmark.json`
 - spec trace index: `runs/spec_trace_index.json`
 - spec trace projection: `runs/spec_trace_projection.json`
@@ -145,6 +146,7 @@ METRICS_FEEDBACK_POLICY_RELATIVE_PATH = "tools/metrics_feedback_policy.json"
 METRICS_SOURCE_PROMOTION_POLICY_RELATIVE_PATH = "tools/metrics_source_promotion_policy.json"
 METRIC_PACK_REGISTRY_RELATIVE_PATH = "tools/metric_pack_registry.json"
 METRIC_PACK_REGISTRY_DRIFT_RELATIVE_PATH = "runs/metric_pack_registry_drift.json"
+METRIC_PACK_ADAPTER_INDEX_RELATIVE_PATH = "runs/metric_pack_adapter_index.json"
 SPECPM_EXPORT_REGISTRY_RELATIVE_PATH = "tools/specpm_export_registry.json"
 
 
@@ -2838,6 +2840,9 @@ METRIC_PACK_INDEX_SCHEMA_VERSION = 1
 METRIC_PACK_REGISTRY_DRIFT_FILENAME = Path(METRIC_PACK_REGISTRY_DRIFT_RELATIVE_PATH).name
 METRIC_PACK_REGISTRY_DRIFT_ARTIFACT_KIND = "metric_pack_registry_drift"
 METRIC_PACK_REGISTRY_DRIFT_SCHEMA_VERSION = 1
+METRIC_PACK_ADAPTER_INDEX_FILENAME = Path(METRIC_PACK_ADAPTER_INDEX_RELATIVE_PATH).name
+METRIC_PACK_ADAPTER_INDEX_ARTIFACT_KIND = "metric_pack_adapter_index"
+METRIC_PACK_ADAPTER_INDEX_SCHEMA_VERSION = 1
 SUPERVISOR_PERFORMANCE_INDEX_FILENAME = Path(
     str(supervisor_performance_policy_lookup("repository_layout.index_artifact"))
 ).name
@@ -15170,6 +15175,10 @@ def metric_pack_registry_drift_path() -> Path:
     return RUNS_DIR / METRIC_PACK_REGISTRY_DRIFT_FILENAME
 
 
+def metric_pack_adapter_index_path() -> Path:
+    return RUNS_DIR / METRIC_PACK_ADAPTER_INDEX_FILENAME
+
+
 def supervisor_performance_index_path() -> Path:
     return RUNS_DIR / SUPERVISOR_PERFORMANCE_INDEX_FILENAME
 
@@ -22224,6 +22233,9 @@ def build_metric_pack_index(
                 "next_gap": "add_metric_pack_adapter",
             },
             "metric_count": len(metrics),
+            "inputs": copy.deepcopy(pack.get("inputs", []))
+            if isinstance(pack.get("inputs", []), list)
+            else [],
             "metrics": copy.deepcopy(metrics),
             "missing_inputs": missing_inputs,
             "contract_errors": contract_errors,
@@ -22664,6 +22676,313 @@ def build_metric_pack_registry_drift(
 def write_metric_pack_registry_drift(report: dict[str, Any]) -> Path:
     RUNS_DIR.mkdir(parents=True, exist_ok=True)
     path = metric_pack_registry_drift_path()
+    with artifact_lock(path):
+        atomic_write_json(path, report)
+    return path
+
+
+METRIC_PACK_ADAPTER_INPUT_CATALOG: dict[str, dict[str, str]] = {
+    "spec_graph": {
+        "computability": "available",
+        "source_artifact": "specs/nodes",
+        "source_field": "canonical_specs",
+        "next_gap": "none",
+    },
+    "specification_signal": {
+        "computability": "available",
+        "source_artifact": "runs/metric_signal_index.json",
+        "source_field": "metrics.specification_verifiability",
+        "next_gap": "none",
+    },
+    "implementation_signal": {
+        "computability": "available",
+        "source_artifact": "runs/metric_signal_index.json",
+        "source_field": "metrics.sib",
+        "next_gap": "none",
+    },
+    "trace_plane": {
+        "computability": "available",
+        "source_artifact": "runs/spec_trace_projection.json",
+        "source_field": "entries",
+        "next_gap": "none",
+    },
+    "implementation_work": {
+        "computability": "available",
+        "source_artifact": "runs/implementation_work_index.json",
+        "source_field": "entries",
+        "next_gap": "none",
+    },
+    "review_feedback": {
+        "computability": "available",
+        "source_artifact": "runs/review_feedback_index.json",
+        "source_field": "records",
+        "next_gap": "none",
+    },
+    "runtime_events": {
+        "computability": "available",
+        "source_artifact": "runs/supervisor_performance_index.json",
+        "source_field": "runs",
+        "next_gap": "none",
+    },
+}
+
+METRIC_PACK_ADAPTER_INPUT_GAP_DEFAULTS: dict[str, str] = {
+    "intent_atoms": "define_intent_atom_extraction",
+    "spec_verifiability_coverage": "define_spec_verifiability_coverage_adapter",
+    "expected_implementation_potential": "define_expected_implementation_potential_adapter",
+    "defect_root": "define_defect_root_adapter",
+    "effective_sib": "define_effective_sib_adapter",
+    "model_usage": "define_model_usage_adapter",
+    "pricing_surface": "define_pricing_surface_provenance",
+    "node_scope": "define_metric_node_scope_adapter",
+    "verification_runs": "define_verification_runs_adapter",
+}
+
+
+def metric_pack_entry_required_inputs(pack_entry: dict[str, Any]) -> dict[str, list[str]]:
+    required_by_metric: dict[str, list[str]] = {}
+    for item in pack_entry.get("inputs", []):
+        input_id = str(item).strip()
+        if input_id:
+            required_by_metric.setdefault(input_id, []).append("__pack__")
+    for metric in pack_entry.get("metrics", []):
+        if not isinstance(metric, dict):
+            continue
+        metric_id = str(metric.get("metric_id", "")).strip() or "unknown_metric"
+        for item in metric_pack_metric_requires(metric):
+            input_id = str(item).strip()
+            if input_id:
+                required_by_metric.setdefault(input_id, []).append(metric_id)
+    return {
+        input_id: sorted(set(metric_ids))
+        for input_id, metric_ids in sorted(required_by_metric.items())
+    }
+
+
+def metric_pack_adapter_input_record(input_id: str, metric_ids: list[str]) -> dict[str, Any]:
+    catalog_entry = METRIC_PACK_ADAPTER_INPUT_CATALOG.get(input_id)
+    if catalog_entry:
+        computability = str(catalog_entry.get("computability", "")).strip() or "available"
+        source_artifact = str(catalog_entry.get("source_artifact", "")).strip()
+        source_field = str(catalog_entry.get("source_field", "")).strip()
+        next_gap = str(catalog_entry.get("next_gap", "")).strip() or "none"
+    else:
+        computability = "not_computable"
+        source_artifact = ""
+        source_field = ""
+        next_gap = METRIC_PACK_ADAPTER_INPUT_GAP_DEFAULTS.get(
+            input_id,
+            "define_metric_pack_input_adapter",
+        )
+    return {
+        "input_id": input_id,
+        "computability": computability,
+        "source_artifact": source_artifact,
+        "source_field": source_field,
+        "required_by_metric_ids": [item for item in metric_ids if item != "__pack__"],
+        "required_by_pack": "__pack__" in metric_ids,
+        "next_gap": next_gap,
+    }
+
+
+def metric_pack_adapter_status(input_records: list[dict[str, Any]]) -> str:
+    if not input_records:
+        return "invalid_pack_contract"
+    if any(
+        str(item.get("computability", "")).strip() == "not_computable" for item in input_records
+    ):
+        return "missing_input_adapters"
+    if any(str(item.get("computability", "")).strip() == "stale" for item in input_records):
+        return "stale_input_adapters"
+    return "ready_for_adapter_review"
+
+
+def metric_pack_adapter_next_gap(adapter_status: str, input_records: list[dict[str, Any]]) -> str:
+    for item in input_records:
+        computability = str(item.get("computability", "")).strip()
+        next_gap = str(item.get("next_gap", "")).strip()
+        if computability != "available" and next_gap and next_gap != "none":
+            return next_gap
+    mapping = {
+        "ready_for_adapter_review": "review_metric_pack_adapter_index",
+        "missing_input_adapters": "define_metric_pack_input_adapter",
+        "stale_input_adapters": "refresh_metric_pack_input_adapter",
+        "invalid_pack_contract": "repair_metric_pack_contract",
+    }
+    return mapping.get(adapter_status, "review_metric_pack_adapter_index")
+
+
+def metric_pack_adapter_backlog_item(
+    *,
+    metric_pack_id: str,
+    title: str,
+    input_record: dict[str, Any],
+) -> dict[str, Any]:
+    input_id = str(input_record.get("input_id", "")).strip()
+    next_gap = str(input_record.get("next_gap", "")).strip() or "define_metric_pack_input_adapter"
+    return {
+        "adapter_backlog_id": f"metric_pack_adapter::{metric_pack_id}::{input_id}",
+        "metric_pack_id": metric_pack_id,
+        "title": title,
+        "input_id": input_id,
+        "computability": str(input_record.get("computability", "")).strip(),
+        "source_artifact": str(input_record.get("source_artifact", "")).strip(),
+        "required_by_metric_ids": copy.deepcopy(
+            input_record.get("required_by_metric_ids", []),
+        ),
+        "review_state": "ready_for_review",
+        "next_gap": next_gap,
+    }
+
+
+def build_metric_pack_adapter_index(metric_pack_index: dict[str, Any]) -> dict[str, Any]:
+    entries: list[dict[str, Any]] = []
+    backlog_items: list[dict[str, Any]] = []
+    status_groups: dict[str, list[str]] = {}
+    computability_groups: dict[str, list[str]] = {}
+    missing_input_groups: dict[str, list[str]] = {}
+    next_gap_groups: dict[str, list[str]] = {}
+    named_filters: dict[str, list[str]] = {
+        "ready_for_adapter_review": [],
+        "missing_input_adapters": [],
+        "not_computable_inputs": [],
+        "execution_deferred": [],
+    }
+
+    for item in metric_pack_index.get("entries", []):
+        if not isinstance(item, dict):
+            continue
+        metric_pack_id = str(item.get("metric_pack_id", "")).strip()
+        if not metric_pack_id:
+            continue
+        title = str(item.get("title", "")).strip()
+        required_inputs = metric_pack_entry_required_inputs(item)
+        input_records = [
+            metric_pack_adapter_input_record(input_id, metric_ids)
+            for input_id, metric_ids in required_inputs.items()
+        ]
+        adapter_status = metric_pack_adapter_status(input_records)
+        next_gap = metric_pack_adapter_next_gap(adapter_status, input_records)
+        review_state = "ready_for_review" if input_records else "not_ready"
+        missing_inputs = sorted(
+            str(record.get("input_id", "")).strip()
+            for record in input_records
+            if str(record.get("computability", "")).strip() == "not_computable"
+            and str(record.get("input_id", "")).strip()
+        )
+        for record in input_records:
+            computability = str(record.get("computability", "")).strip() or "unknown"
+            input_id = str(record.get("input_id", "")).strip()
+            computability_groups.setdefault(computability, []).append(
+                f"{metric_pack_id}::{input_id}",
+            )
+            if computability == "not_computable":
+                missing_input_groups.setdefault(input_id, []).append(metric_pack_id)
+                backlog_items.append(
+                    metric_pack_adapter_backlog_item(
+                        metric_pack_id=metric_pack_id,
+                        title=title,
+                        input_record=record,
+                    )
+                )
+        status_groups.setdefault(adapter_status, []).append(metric_pack_id)
+        next_gap_groups.setdefault(next_gap, []).append(metric_pack_id)
+        if adapter_status in named_filters:
+            named_filters[adapter_status].append(metric_pack_id)
+        if missing_inputs:
+            named_filters["not_computable_inputs"].append(metric_pack_id)
+        if adapter_status == "ready_for_adapter_review":
+            named_filters["execution_deferred"].append(metric_pack_id)
+        entries.append(
+            {
+                "metric_pack_id": metric_pack_id,
+                "title": title,
+                "adapter_status": adapter_status,
+                "review_state": review_state,
+                "next_gap": next_gap,
+                "pack_status": str(item.get("pack_status", "")).strip(),
+                "pack_authority_state": str(item.get("pack_authority_state", "")).strip(),
+                "reference_state": str(item.get("reference_state", "")).strip(),
+                "metric_count": int(item.get("metric_count", 0) or 0),
+                "input_count": len(input_records),
+                "missing_input_count": len(missing_inputs),
+                "missing_inputs": missing_inputs,
+                "inputs": input_records,
+                "adapter_execution": {
+                    "status": "deferred",
+                    "next_gap": "add_metric_pack_execution_runtime",
+                },
+            }
+        )
+
+    for bucket in (
+        status_groups,
+        computability_groups,
+        missing_input_groups,
+        next_gap_groups,
+        named_filters,
+    ):
+        for key in list(bucket):
+            bucket[key] = sorted(set(bucket[key]))
+    grouped_backlog: dict[str, list[str]] = {}
+    for item in backlog_items:
+        next_gap = str(item.get("next_gap", "")).strip() or "define_metric_pack_input_adapter"
+        backlog_id = str(item.get("adapter_backlog_id", "")).strip()
+        if backlog_id:
+            grouped_backlog.setdefault(next_gap, []).append(backlog_id)
+    for key in list(grouped_backlog):
+        grouped_backlog[key] = sorted(set(grouped_backlog[key]))
+
+    return {
+        "artifact_kind": METRIC_PACK_ADAPTER_INDEX_ARTIFACT_KIND,
+        "schema_version": METRIC_PACK_ADAPTER_INDEX_SCHEMA_VERSION,
+        "generated_at": utc_now_iso(),
+        "review_state": "ready_for_review" if entries else "not_ready",
+        "next_gap": "review_metric_pack_adapter_index"
+        if entries
+        else "declare_metric_pack_registry",
+        "source_snapshot": {
+            "artifact_path": METRIC_PACK_ADAPTER_INDEX_RELATIVE_PATH,
+            "metric_pack_index": {
+                "artifact_path": metric_pack_index_path().relative_to(ROOT).as_posix(),
+                "generated_at": metric_pack_index.get("generated_at"),
+                "entry_count": metric_pack_index.get("entry_count"),
+            },
+            "input_catalog_version": 1,
+        },
+        "summary": {
+            "pack_count": len(entries),
+            "input_binding_count": sum(int(entry.get("input_count", 0) or 0) for entry in entries),
+            "status_counts": {key: len(value) for key, value in sorted(status_groups.items())},
+            "computability_counts": {
+                key: len(value) for key, value in sorted(computability_groups.items())
+            },
+            "missing_input_counts": {
+                key: len(value) for key, value in sorted(missing_input_groups.items())
+            },
+        },
+        "entry_count": len(entries),
+        "entries": entries,
+        "adapter_backlog": {
+            "entry_count": len(backlog_items),
+            "items": backlog_items,
+            "grouped_by_next_gap": {key: value for key, value in sorted(grouped_backlog.items())},
+        },
+        "viewer_projection": {
+            "adapter_status": {key: value for key, value in sorted(status_groups.items())},
+            "computability": {key: value for key, value in sorted(computability_groups.items())},
+            "missing_inputs": {key: value for key, value in sorted(missing_input_groups.items())},
+            "next_gap": {key: value for key, value in sorted(next_gap_groups.items())},
+            "named_filters": {key: value for key, value in sorted(named_filters.items())},
+        },
+        "canonical_mutations_allowed": False,
+        "tracked_artifacts_written": False,
+    }
+
+
+def write_metric_pack_adapter_index(report: dict[str, Any]) -> Path:
+    RUNS_DIR.mkdir(parents=True, exist_ok=True)
+    path = metric_pack_adapter_index_path()
     with artifact_lock(path):
         atomic_write_json(path, report)
     return path
@@ -24722,6 +25041,7 @@ def graph_backlog_source_artifact_path(source_artifact: str) -> str:
         "metrics_feedback_index": metrics_feedback_index_path,
         "metrics_source_promotion_index": metrics_source_promotion_index_path,
         "metric_pack_index": metric_pack_index_path,
+        "metric_pack_adapter_index": metric_pack_adapter_index_path,
         "conversation_memory_index": conversation_memory_index_path,
         "conversation_memory_map": conversation_memory_map_path,
         "conversation_memory_promotion_pressure": conversation_memory_promotion_pressure_path,
@@ -25037,6 +25357,7 @@ def build_graph_backlog_projection_from_surfaces(
     metrics_feedback_index: dict[str, Any],
     metrics_source_promotion_index: dict[str, Any],
     metric_pack_index: dict[str, Any],
+    metric_pack_adapter_index: dict[str, Any],
     metric_threshold_proposals: dict[str, Any],
     review_feedback_index: dict[str, Any],
     branch_rewrite_preview: dict[str, Any] | None = None,
@@ -25264,6 +25585,15 @@ def build_graph_backlog_projection_from_surfaces(
         )
     append_backlog_items(
         entries,
+        source_artifact="metric_pack_adapter_index",
+        domain="metrics",
+        subject_kind="metric_pack_input",
+        backlog=metric_pack_adapter_index.get("adapter_backlog", {}),
+        id_fields=("adapter_backlog_id", "input_id"),
+        status_fields=("computability",),
+    )
+    append_backlog_items(
+        entries,
         source_artifact="review_feedback_index",
         domain="process_feedback",
         subject_kind="review_thread",
@@ -25411,6 +25741,7 @@ def build_graph_backlog_projection_from_surfaces(
         "metrics_feedback_index": metrics_feedback_index,
         "metrics_source_promotion_index": metrics_source_promotion_index,
         "metric_pack_index": metric_pack_index,
+        "metric_pack_adapter_index": metric_pack_adapter_index,
         "metric_threshold_proposals": metric_threshold_proposals,
         "review_feedback_index": review_feedback_index,
     }
@@ -25454,6 +25785,7 @@ def build_graph_backlog_projection(
     metric_signal_index: dict[str, Any] | None = None,
     metrics_source_promotion_index: dict[str, Any] | None = None,
     metric_pack_index: dict[str, Any] | None = None,
+    metric_pack_adapter_index: dict[str, Any] | None = None,
     proposal_runtime_index: dict[str, Any] | None = None,
     proposal_promotion_index: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
@@ -25493,6 +25825,8 @@ def build_graph_backlog_projection(
             load_metric_pack_registry(),
             external_consumer_index,
         )
+    if metric_pack_adapter_index is None:
+        metric_pack_adapter_index = build_metric_pack_adapter_index(metric_pack_index)
     metrics_delivery_workflow = build_metrics_delivery_workflow(external_consumer_handoffs)
     metrics_feedback_index = build_metrics_feedback_index(metrics_delivery_workflow)
     specpm_export_preview = build_specpm_export_preview(specs)
@@ -25519,6 +25853,7 @@ def build_graph_backlog_projection(
         metrics_feedback_index=metrics_feedback_index,
         metrics_source_promotion_index=metrics_source_promotion_index,
         metric_pack_index=metric_pack_index,
+        metric_pack_adapter_index=metric_pack_adapter_index,
         metric_threshold_proposals=metric_threshold_proposals,
         review_feedback_index=review_feedback_index,
         branch_rewrite_preview=branch_rewrite_preview,
@@ -26036,6 +26371,7 @@ def build_graph_dashboard(
     metric_signal_index: dict[str, Any] | None = None,
     metrics_source_promotion_index: dict[str, Any] | None = None,
     metric_pack_index: dict[str, Any] | None = None,
+    metric_pack_adapter_index: dict[str, Any] | None = None,
     graph_backlog_projection: dict[str, Any] | None = None,
     proposal_lane_overlay: dict[str, Any] | None = None,
     proposal_runtime_index: dict[str, Any] | None = None,
@@ -26081,6 +26417,8 @@ def build_graph_dashboard(
             load_metric_pack_registry(),
             external_consumer_index,
         )
+    if metric_pack_adapter_index is None:
+        metric_pack_adapter_index = build_metric_pack_adapter_index(metric_pack_index)
     metrics_delivery_workflow = build_metrics_delivery_workflow(external_consumer_handoffs)
     metrics_feedback_index = build_metrics_feedback_index(metrics_delivery_workflow)
     specpm_export_preview = build_specpm_export_preview(specs)
@@ -26112,6 +26450,7 @@ def build_graph_dashboard(
             metrics_feedback_index=metrics_feedback_index,
             metrics_source_promotion_index=metrics_source_promotion_index,
             metric_pack_index=metric_pack_index,
+            metric_pack_adapter_index=metric_pack_adapter_index,
             metric_threshold_proposals=metric_threshold_proposals,
             review_feedback_index=review_feedback_index,
             branch_rewrite_preview=branch_rewrite_preview,
@@ -26340,6 +26679,18 @@ def build_graph_dashboard(
     )
     metric_pack_named_filter_counts = grouped_identifier_counts(
         metric_pack_index.get("viewer_projection", {}).get("named_filters", {})
+    )
+    metric_pack_adapter_status_counts = grouped_identifier_counts(
+        metric_pack_adapter_index.get("viewer_projection", {}).get("adapter_status", {})
+    )
+    metric_pack_adapter_computability_counts = grouped_identifier_counts(
+        metric_pack_adapter_index.get("viewer_projection", {}).get("computability", {})
+    )
+    metric_pack_adapter_named_filter_counts = grouped_identifier_counts(
+        metric_pack_adapter_index.get("viewer_projection", {}).get("named_filters", {})
+    )
+    metric_pack_adapter_backlog_count = int(
+        metric_pack_adapter_index.get("adapter_backlog", {}).get("entry_count", 0) or 0
     )
     review_feedback_status_counts = grouped_identifier_counts(
         review_feedback_index.get("viewer_projection", {}).get("status", {})
@@ -26596,6 +26947,17 @@ def build_graph_dashboard(
             ),
         ),
         dashboard_card(
+            card_id="metric_pack_adapter_gaps",
+            title="Metric Pack Adapter Gaps",
+            value=metric_pack_adapter_backlog_count,
+            section="metrics",
+            status="attention" if metric_pack_adapter_backlog_count else "healthy",
+            basis=(
+                "Declared metric-pack inputs that are not yet computable through "
+                "SpecGraph source artifacts. This does not execute metric packs."
+            ),
+        ),
+        dashboard_card(
             card_id="review_feedback_open",
             title="Review Feedback Open",
             value=review_feedback_backlog_count,
@@ -26726,6 +27088,10 @@ def build_graph_dashboard(
             "metric_pack_index": {
                 "artifact_path": metric_pack_index_path().relative_to(ROOT).as_posix(),
                 "generated_at": metric_pack_index.get("generated_at"),
+            },
+            "metric_pack_adapter_index": {
+                "artifact_path": metric_pack_adapter_index_path().relative_to(ROOT).as_posix(),
+                "generated_at": metric_pack_adapter_index.get("generated_at"),
             },
             "metric_signal_index": {
                 "artifact_path": metric_signal_index_path().relative_to(ROOT).as_posix(),
@@ -26893,6 +27259,15 @@ def build_graph_dashboard(
                 "metric_pack_review_state_counts": metric_pack_review_state_counts,
                 "metric_pack_authority_counts": metric_pack_authority_counts,
                 "metric_pack_named_filter_counts": metric_pack_named_filter_counts,
+                "metric_pack_adapter_entry_count": int(
+                    metric_pack_adapter_index.get("entry_count", 0) or 0
+                ),
+                "metric_pack_adapter_status_counts": metric_pack_adapter_status_counts,
+                "metric_pack_adapter_computability_counts": (
+                    metric_pack_adapter_computability_counts
+                ),
+                "metric_pack_adapter_named_filter_counts": metric_pack_adapter_named_filter_counts,
+                "metric_pack_adapter_backlog_count": metric_pack_adapter_backlog_count,
                 "metric_status_counts": metric_status_counts,
                 "metric_scores": metric_scores,
                 "below_threshold_metric_ids": sorted(below_threshold_metric_ids),
@@ -26985,6 +27360,7 @@ def build_graph_dashboard(
                     "draft_visible_only",
                     0,
                 ),
+                "metric_pack_adapter_gaps": metric_pack_adapter_backlog_count,
                 "review_feedback_open": review_feedback_backlog_count,
                 "review_feedback_invalid": review_feedback_status_counts.get(
                     "invalid_feedback_record",
@@ -27021,6 +27397,7 @@ def build_viewer_surfaces(specs: list[SpecNode]) -> dict[str, Any]:
         metric_pack_registry,
         consumer_index,
     )
+    metric_pack_adapter_index = build_metric_pack_adapter_index(metric_pack_index)
     metric_pack_registry_drift = build_metric_pack_registry_drift(
         metric_pack_registry,
         consumer_index,
@@ -27034,6 +27411,7 @@ def build_viewer_surfaces(specs: list[SpecNode]) -> dict[str, Any]:
         metric_signal_index=metric_signal_index,
         metrics_source_promotion_index=metrics_source_promotion_index,
         metric_pack_index=metric_pack_index,
+        metric_pack_adapter_index=metric_pack_adapter_index,
         proposal_runtime_index=proposal_runtime_index,
         proposal_promotion_index=proposal_promotion_index,
     )
@@ -27044,6 +27422,7 @@ def build_viewer_surfaces(specs: list[SpecNode]) -> dict[str, Any]:
         metric_signal_index=metric_signal_index,
         metrics_source_promotion_index=metrics_source_promotion_index,
         metric_pack_index=metric_pack_index,
+        metric_pack_adapter_index=metric_pack_adapter_index,
         graph_backlog_projection=backlog_projection,
         proposal_lane_overlay=proposal_lane_overlay,
         proposal_runtime_index=proposal_runtime_index,
@@ -27064,6 +27443,7 @@ def build_viewer_surfaces(specs: list[SpecNode]) -> dict[str, Any]:
     proposal_spec_trace_path = write_proposal_spec_trace_index(proposal_spec_trace_index)
     promotion_path = write_metrics_source_promotion_index(metrics_source_promotion_index)
     metric_pack_path = write_metric_pack_index(metric_pack_index)
+    metric_pack_adapter_path = write_metric_pack_adapter_index(metric_pack_adapter_index)
     metric_pack_registry_drift_path_result = write_metric_pack_registry_drift(
         metric_pack_registry_drift,
     )
@@ -27137,6 +27517,14 @@ def build_viewer_surfaces(specs: list[SpecNode]) -> dict[str, Any]:
                 "generated_at": metric_pack_registry_drift.get("generated_at"),
                 "entry_count": metric_pack_registry_drift.get("entry_count"),
                 "next_gap": metric_pack_registry_drift.get("next_gap"),
+            },
+            "metric_pack_adapter_index": {
+                "artifact_path": metric_pack_adapter_path.relative_to(ROOT).as_posix(),
+                "generated_at": metric_pack_adapter_index.get("generated_at"),
+                "entry_count": metric_pack_adapter_index.get("entry_count"),
+                "adapter_backlog_count": (
+                    metric_pack_adapter_index.get("adapter_backlog", {}).get("entry_count", 0)
+                ),
             },
             "conversation_memory_index": {
                 "artifact_path": conversation_memory_path.relative_to(ROOT).as_posix(),
@@ -30723,6 +31111,7 @@ def main(
     build_metrics_source_promotion_index_mode: bool = False,
     build_metric_pack_index_mode: bool = False,
     build_metric_pack_registry_drift_mode: bool = False,
+    build_metric_pack_adapter_index_mode: bool = False,
     build_conversation_memory_index_mode: bool = False,
     build_conversation_memory_map_mode: bool = False,
     build_conversation_memory_promotion_pressure_mode: bool = False,
@@ -30808,6 +31197,7 @@ def main(
         "--build-metrics-source-promotion-index": build_metrics_source_promotion_index_mode,
         "--build-metric-pack-index": build_metric_pack_index_mode,
         "--build-metric-pack-registry-drift": build_metric_pack_registry_drift_mode,
+        "--build-metric-pack-adapter-index": build_metric_pack_adapter_index_mode,
         "--build-conversation-memory-index": build_conversation_memory_index_mode,
         "--build-conversation-memory-map": build_conversation_memory_map_mode,
         "--build-conversation-memory-promotion-pressure": (
@@ -32575,6 +32965,47 @@ def main(
         emit_supervisor_json(drift_report, output_mode=normalized_output_mode)
         return 0
 
+    if build_metric_pack_adapter_index_mode:
+        if any(
+            (
+                dry_run,
+                auto_approve,
+                loop,
+                resolve_gate,
+                decision,
+                note,
+                target_spec,
+                split_proposal,
+                apply_split_proposal,
+                operator_note,
+                mutation_budget,
+                run_authority,
+                execution_profile,
+                child_model,
+                child_timeout_seconds,
+                verbose,
+                list_stale_runtime,
+                clean_stale_runtime,
+                observe_graph_health_mode,
+                operator_request_packet_path,
+            )
+        ):
+            print(
+                "--build-metric-pack-adapter-index must be used as a standalone command",
+                file=sys.stderr,
+            )
+            return 1
+        consumer_index = build_external_consumer_index()
+        metric_pack_index = build_metric_pack_index(
+            load_metric_pack_registry(),
+            consumer_index,
+        )
+        write_metric_pack_index(metric_pack_index)
+        adapter_index = build_metric_pack_adapter_index(metric_pack_index)
+        write_metric_pack_adapter_index(adapter_index)
+        emit_supervisor_json(adapter_index, output_mode=normalized_output_mode)
+        return 0
+
     if build_conversation_memory_index_mode:
         if any(
             (
@@ -33871,6 +34302,14 @@ if __name__ == "__main__":
         ),
     )
     parser.add_argument(
+        "--build-metric-pack-adapter-index",
+        action="store_true",
+        help=(
+            "Build a read-only metric pack adapter index that maps declared pack inputs "
+            "to SpecGraph source artifacts and computability gaps without running packs"
+        ),
+    )
+    parser.add_argument(
         "--build-conversation-memory-index",
         action="store_true",
         help=(
@@ -34151,6 +34590,7 @@ if __name__ == "__main__":
             build_metrics_source_promotion_index_mode=args.build_metrics_source_promotion_index,
             build_metric_pack_index_mode=args.build_metric_pack_index,
             build_metric_pack_registry_drift_mode=args.build_metric_pack_registry_drift,
+            build_metric_pack_adapter_index_mode=args.build_metric_pack_adapter_index,
             build_conversation_memory_index_mode=args.build_conversation_memory_index,
             build_conversation_memory_map_mode=args.build_conversation_memory_map,
             build_conversation_memory_promotion_pressure_mode=(

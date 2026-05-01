@@ -174,6 +174,17 @@ Candidate artifact:
 runs/metric_pack_adapter_index.json
 ```
 
+This follow-up is now represented as a read-only adapter/computability surface:
+
+```text
+tools/supervisor.py --build-metric-pack-adapter-index
+make metric-pack-adapters
+```
+
+The artifact maps known inputs to existing SpecGraph source artifacts and
+reports unknown or immature inputs as `not_computable` backlog items. It does
+not execute packs.
+
 ### 3. Metric Run Artifact
 
 Once at least one adapter can compute inputs, SpecGraph may add a run artifact.
