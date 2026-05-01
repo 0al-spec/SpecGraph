@@ -2279,6 +2279,9 @@ EXPLORATION_PREVIEW_EDGE_KINDS = list(EXPLORATION_PREVIEW_POLICY["preview_contra
 CONVERSATION_MEMORY_INDEX_FILENAME = Path(
     str(CONVERSATION_MEMORY_POLICY["repository_layout"]["index_artifact"])
 ).name
+CONVERSATION_MEMORY_MAP_FILENAME = Path(
+    str(CONVERSATION_MEMORY_POLICY["repository_layout"]["map_artifact"])
+).name
 CONVERSATION_MEMORY_SOURCES_RELATIVE_DIR = str(
     CONVERSATION_MEMORY_POLICY["repository_layout"].get(
         "source_dir",
@@ -2312,6 +2315,15 @@ CONVERSATION_MEMORY_CANONICAL_PROMOTION_STATES = list(
 )
 CONVERSATION_MEMORY_NAMED_FILTERS = list(
     CONVERSATION_MEMORY_POLICY["index_contract"]["named_filters"]
+)
+CONVERSATION_MEMORY_MAP_ARTIFACT_KIND = str(
+    CONVERSATION_MEMORY_POLICY["map_contract"]["artifact_kind"]
+)
+CONVERSATION_MEMORY_MAP_SCHEMA_VERSION = int(
+    CONVERSATION_MEMORY_POLICY["map_contract"]["schema_version"]
+)
+CONVERSATION_MEMORY_MAP_NAMED_FILTERS = list(
+    CONVERSATION_MEMORY_POLICY["map_contract"]["named_filters"]
 )
 BRANCH_REWRITE_PREVIEW_FILENAME = Path(
     str(branch_rewrite_preview_policy_lookup("repository_layout.preview_artifact"))
@@ -8446,6 +8458,10 @@ def conversation_memory_index_path() -> Path:
     return RUNS_DIR / CONVERSATION_MEMORY_INDEX_FILENAME
 
 
+def conversation_memory_map_path() -> Path:
+    return RUNS_DIR / CONVERSATION_MEMORY_MAP_FILENAME
+
+
 def conversation_memory_sources_dir_path() -> Path:
     return ROOT / CONVERSATION_MEMORY_SOURCES_RELATIVE_DIR
 
@@ -12021,6 +12037,320 @@ def write_conversation_memory_index(index: dict[str, Any]) -> Path:
     path = conversation_memory_index_path()
     with artifact_lock(path):
         atomic_write_json(path, index)
+    return path
+
+
+def conversation_memory_promotion_target_kind(promotion_state: str) -> str:
+    mapping = {
+        "proposal_pressure_candidate": "proposal_candidate",
+        "intent_fragment_candidate": "intent_fragment",
+        "pre_spec_draft_candidate": "pre_spec_draft",
+        "operator_question": "operator_question",
+    }
+    return mapping.get(str(promotion_state).strip(), "unknown")
+
+
+def conversation_memory_entry_has_missing_attribution(entry: dict[str, Any]) -> bool:
+    contract_errors = entry.get("contract_errors", [])
+    if not isinstance(contract_errors, list):
+        return False
+    return any(
+        str(error).strip() in {"missing_source_refs", "undeclared_source_ref"}
+        for error in contract_errors
+    )
+
+
+def conversation_memory_entry_is_review_blocked(entry: dict[str, Any]) -> bool:
+    if str(entry.get("status", "")).strip() != "structured":
+        return True
+    review_state = str(entry.get("review_state", "")).strip()
+    return review_state in {
+        "blocked",
+        "not_ready",
+    } or conversation_memory_entry_has_missing_attribution(entry)
+
+
+def build_conversation_memory_map(index: dict[str, Any] | None = None) -> dict[str, Any]:
+    source_index = (
+        copy.deepcopy(index) if isinstance(index, dict) else build_conversation_memory_index()
+    )
+    entries = source_index.get("entries", [])
+    if not isinstance(entries, list):
+        entries = []
+    sources = source_index.get("sources", [])
+    if not isinstance(sources, list):
+        sources = []
+
+    source_ids = {
+        str(source.get("source_id", "")).strip()
+        for source in sources
+        if isinstance(source, dict) and str(source.get("source_id", "")).strip()
+    }
+    cluster_members: dict[tuple[str, str], set[str]] = {}
+    links: list[dict[str, Any]] = []
+    related_specs: dict[str, set[str]] = {}
+    related_proposals: dict[str, set[str]] = {}
+    source_ref_counts: dict[str, set[str]] = {}
+    missing_attribution_note_ids: list[str] = []
+    candidate_pressure: list[dict[str, Any]] = []
+    review_blockers: list[dict[str, Any]] = []
+    named_filters: dict[str, list[str]] = {
+        str(name).strip(): [] for name in CONVERSATION_MEMORY_MAP_NAMED_FILTERS if str(name).strip()
+    }
+
+    for raw_entry in entries:
+        if not isinstance(raw_entry, dict):
+            continue
+        entry = copy.deepcopy(raw_entry)
+        memory_note_id = str(entry.get("memory_note_id", "")).strip()
+        if not memory_note_id:
+            continue
+        note_kind = str(entry.get("note_kind", "")).strip() or "unknown"
+        cluster_members.setdefault(("note_kind", note_kind), set()).add(memory_note_id)
+
+        source_refs = entry.get("source_refs", [])
+        if not isinstance(source_refs, list):
+            source_refs = []
+        normalized_source_refs = [str(item).strip() for item in source_refs if str(item).strip()]
+        if normalized_source_refs:
+            for source_ref in normalized_source_refs:
+                cluster_members.setdefault(("source", source_ref), set()).add(memory_note_id)
+                source_ref_counts.setdefault(source_ref, set()).add(memory_note_id)
+                links.append(
+                    {
+                        "link_id": f"{memory_note_id}::source_ref::{source_ref}",
+                        "link_kind": "source_ref",
+                        "from_id": memory_note_id,
+                        "from_type": "memory_note",
+                        "to_id": source_ref,
+                        "to_type": "conversation_source"
+                        if source_ref in source_ids
+                        else "undeclared_source",
+                    }
+                )
+        else:
+            missing_attribution_note_ids.append(memory_note_id)
+
+        links_record = entry.get("links", {})
+        if not isinstance(links_record, dict):
+            links_record = {}
+        related_specs_raw = links_record.get("related_specs", [])
+        related_proposals_raw = links_record.get("related_proposals", [])
+        related_notes_raw = links_record.get("related_memory_notes", [])
+        related_specs_list = (
+            [str(item).strip() for item in related_specs_raw if str(item).strip()]
+            if isinstance(related_specs_raw, list)
+            else []
+        )
+        related_proposals_list = (
+            [str(item).strip() for item in related_proposals_raw if str(item).strip()]
+            if isinstance(related_proposals_raw, list)
+            else []
+        )
+        related_notes_list = (
+            [str(item).strip() for item in related_notes_raw if str(item).strip()]
+            if isinstance(related_notes_raw, list)
+            else []
+        )
+        for spec_id in related_specs_list:
+            cluster_members.setdefault(("related_spec", spec_id), set()).add(memory_note_id)
+            related_specs.setdefault(spec_id, set()).add(memory_note_id)
+            links.append(
+                {
+                    "link_id": f"{memory_note_id}::related_spec::{spec_id}",
+                    "link_kind": "related_spec",
+                    "from_id": memory_note_id,
+                    "from_type": "memory_note",
+                    "to_id": spec_id,
+                    "to_type": "spec_node",
+                }
+            )
+        for proposal_id in related_proposals_list:
+            cluster_members.setdefault(("related_proposal", proposal_id), set()).add(memory_note_id)
+            related_proposals.setdefault(proposal_id, set()).add(memory_note_id)
+            links.append(
+                {
+                    "link_id": f"{memory_note_id}::related_proposal::{proposal_id}",
+                    "link_kind": "related_proposal",
+                    "from_id": memory_note_id,
+                    "from_type": "memory_note",
+                    "to_id": proposal_id,
+                    "to_type": "proposal",
+                }
+            )
+        for related_note_id in related_notes_list:
+            links.append(
+                {
+                    "link_id": f"{memory_note_id}::related_memory_note::{related_note_id}",
+                    "link_kind": "related_memory_note",
+                    "from_id": memory_note_id,
+                    "from_type": "memory_note",
+                    "to_id": related_note_id,
+                    "to_type": "memory_note",
+                }
+            )
+
+        promotion_state = str(entry.get("promotion_state", "")).strip() or "not_promoted"
+        if promotion_state != "not_promoted":
+            target_kind = conversation_memory_promotion_target_kind(promotion_state)
+            candidate_pressure.append(
+                {
+                    "candidate_id": memory_note_id,
+                    "target_kind": target_kind,
+                    "promotion_state": promotion_state,
+                    "source_memory_notes": [memory_note_id],
+                    "source_refs": sorted(set(normalized_source_refs)),
+                    "rationale": str(entry.get("summary", "")).strip(),
+                    "review_state": str(entry.get("review_state", "")).strip(),
+                    "next_gap": str(entry.get("next_gap", "")).strip(),
+                }
+            )
+            named_filters.setdefault("promotion_candidates", []).append(memory_note_id)
+
+        if conversation_memory_entry_is_review_blocked(entry):
+            blocker_errors = entry.get("contract_errors", [])
+            if not isinstance(blocker_errors, list):
+                blocker_errors = []
+            review_blockers.append(
+                {
+                    "memory_note_id": memory_note_id,
+                    "status": str(entry.get("status", "")).strip(),
+                    "review_state": str(entry.get("review_state", "")).strip(),
+                    "next_gap": str(entry.get("next_gap", "")).strip(),
+                    "contract_errors": [
+                        str(error).strip() for error in blocker_errors if str(error).strip()
+                    ],
+                }
+            )
+            cluster_members.setdefault(("review_blocker", "blocked_notes"), set()).add(
+                memory_note_id
+            )
+            named_filters.setdefault("has_review_blockers", []).append(memory_note_id)
+        if conversation_memory_entry_has_missing_attribution(entry):
+            if memory_note_id not in missing_attribution_note_ids:
+                missing_attribution_note_ids.append(memory_note_id)
+            named_filters.setdefault("missing_source_coverage", []).append(memory_note_id)
+        if related_specs_list:
+            named_filters.setdefault("linked_specs", []).append(memory_note_id)
+        if related_proposals_list:
+            named_filters.setdefault("linked_proposals", []).append(memory_note_id)
+
+    clusters: list[dict[str, Any]] = []
+    for (cluster_kind, cluster_value), member_ids in sorted(cluster_members.items()):
+        normalized_members = sorted(member_ids)
+        if not normalized_members:
+            continue
+        clusters.append(
+            {
+                "cluster_id": f"{cluster_kind}::{cluster_value}",
+                "cluster_kind": cluster_kind,
+                "label": cluster_value,
+                "member_note_ids": normalized_members,
+                "member_count": len(normalized_members),
+            }
+        )
+
+    def sorted_group_counts(groups: dict[str, set[str]]) -> dict[str, int]:
+        return {key: len(value) for key, value in sorted(groups.items())}
+
+    sorted_named_filters = {key: sorted(set(value)) for key, value in sorted(named_filters.items())}
+    layer_boundary = source_index.get("layer_boundary", {})
+    if not isinstance(layer_boundary, dict):
+        layer_boundary = {}
+    canonical_mutations_allowed = bool(source_index.get("canonical_mutations_allowed"))
+    tracked_artifacts_written = bool(source_index.get("tracked_artifacts_written"))
+    review_state = "blocked" if review_blockers else source_index.get("review_state", "not_ready")
+    if review_blockers:
+        next_gap = "repair_conversation_memory_map_blockers"
+    elif candidate_pressure:
+        next_gap = "review_memory_promotion_pressure"
+    else:
+        next_gap = source_index.get("next_gap", "capture_conversation_memory_source")
+
+    return {
+        "artifact_kind": CONVERSATION_MEMORY_MAP_ARTIFACT_KIND,
+        "schema_version": CONVERSATION_MEMORY_MAP_SCHEMA_VERSION,
+        "generated_at": utc_now_iso(),
+        "policy_reference": copy.deepcopy(source_index.get("policy_reference", {})),
+        "index_reference": {
+            "artifact_kind": source_index.get("artifact_kind"),
+            "schema_version": source_index.get("schema_version"),
+            "generated_at": source_index.get("generated_at"),
+            "source_count": source_index.get("source_count", 0),
+            "structured_note_count": source_index.get("structured_note_count", 0),
+            "next_gap": source_index.get("next_gap"),
+        },
+        "source_snapshot": copy.deepcopy(source_index.get("source_snapshot", {})),
+        "layer_boundary": copy.deepcopy(layer_boundary),
+        "review_state": review_state,
+        "next_gap": next_gap,
+        "cluster_count": len(clusters),
+        "link_count": len(links),
+        "clusters": clusters,
+        "links": sorted(links, key=lambda item: str(item.get("link_id", ""))),
+        "source_coverage": {
+            "declared_source_count": len(source_ids),
+            "structured_note_count": len([entry for entry in entries if isinstance(entry, dict)]),
+            "attributed_note_count": len(
+                [entry for entry in entries if isinstance(entry, dict) and entry.get("source_refs")]
+            ),
+            "missing_attribution_count": len(set(missing_attribution_note_ids)),
+            "missing_attribution_note_ids": sorted(set(missing_attribution_note_ids)),
+            "source_ref_counts": sorted_group_counts(source_ref_counts),
+        },
+        "related_specs": {key: sorted(value) for key, value in sorted(related_specs.items())},
+        "related_proposals": {
+            key: sorted(value) for key, value in sorted(related_proposals.items())
+        },
+        "candidate_proposal_pressure": {
+            "entry_count": len(candidate_pressure),
+            "entries": sorted(candidate_pressure, key=lambda item: item["candidate_id"]),
+        },
+        "review_blockers": {
+            "entry_count": len(review_blockers),
+            "entries": sorted(review_blockers, key=lambda item: item["memory_note_id"]),
+        },
+        "summary": {
+            "cluster_kind_counts": grouped_identifier_counts(
+                {
+                    key: [
+                        cluster["cluster_id"]
+                        for cluster in clusters
+                        if cluster["cluster_kind"] == key
+                    ]
+                    for key in {cluster["cluster_kind"] for cluster in clusters}
+                }
+            ),
+            "link_kind_counts": grouped_identifier_counts(
+                {
+                    key: [link["link_id"] for link in links if link["link_kind"] == key]
+                    for key in {link["link_kind"] for link in links}
+                }
+            ),
+            "candidate_pressure_count": len(candidate_pressure),
+            "review_blocker_count": len(review_blockers),
+            "missing_source_coverage_count": len(set(missing_attribution_note_ids)),
+        },
+        "viewer_projection": {
+            "clusters_by_kind": {
+                key: sorted(
+                    cluster["cluster_id"] for cluster in clusters if cluster["cluster_kind"] == key
+                )
+                for key in sorted({cluster["cluster_kind"] for cluster in clusters})
+            },
+            "named_filters": sorted_named_filters,
+        },
+        "canonical_mutations_allowed": canonical_mutations_allowed,
+        "tracked_artifacts_written": tracked_artifacts_written,
+        "viewer_contract": copy.deepcopy(source_index.get("viewer_contract", {})),
+    }
+
+
+def write_conversation_memory_map(memory_map: dict[str, Any]) -> Path:
+    RUNS_DIR.mkdir(parents=True, exist_ok=True)
+    path = conversation_memory_map_path()
+    with artifact_lock(path):
+        atomic_write_json(path, memory_map)
     return path
 
 
@@ -23486,6 +23816,7 @@ def graph_backlog_source_artifact_path(source_artifact: str) -> str:
         "metrics_source_promotion_index": metrics_source_promotion_index_path,
         "metric_pack_index": metric_pack_index_path,
         "conversation_memory_index": conversation_memory_index_path,
+        "conversation_memory_map": conversation_memory_map_path,
         "metric_threshold_proposals": metric_threshold_proposals_path,
         "review_feedback_index": review_feedback_index_path,
     }
@@ -25794,6 +26125,8 @@ def build_viewer_surfaces(specs: list[SpecNode]) -> dict[str, Any]:
     metric_pack_path = write_metric_pack_index(metric_pack_index)
     conversation_memory_index = build_conversation_memory_index()
     conversation_memory_path = write_conversation_memory_index(conversation_memory_index)
+    conversation_memory_map = build_conversation_memory_map(conversation_memory_index)
+    conversation_memory_map_path_result = write_conversation_memory_map(conversation_memory_map)
     metrics_source_promotion_backlog = metrics_source_promotion_index.get(
         "promotion_backlog",
         {},
@@ -25847,6 +26180,13 @@ def build_viewer_surfaces(specs: list[SpecNode]) -> dict[str, Any]:
                 "source_count": conversation_memory_index.get("source_count"),
                 "structured_note_count": conversation_memory_index.get("structured_note_count"),
                 "next_gap": conversation_memory_index.get("next_gap"),
+            },
+            "conversation_memory_map": {
+                "artifact_path": conversation_memory_map_path_result.relative_to(ROOT).as_posix(),
+                "generated_at": conversation_memory_map.get("generated_at"),
+                "cluster_count": conversation_memory_map.get("cluster_count"),
+                "link_count": conversation_memory_map.get("link_count"),
+                "next_gap": conversation_memory_map.get("next_gap"),
             },
         },
         "notes": [
@@ -29410,6 +29750,7 @@ def main(
     build_metrics_source_promotion_index_mode: bool = False,
     build_metric_pack_index_mode: bool = False,
     build_conversation_memory_index_mode: bool = False,
+    build_conversation_memory_map_mode: bool = False,
     build_metric_signal_index_mode: bool = False,
     build_metric_threshold_proposals_mode: bool = False,
     build_supervisor_performance_index_mode: bool = False,
@@ -29491,6 +29832,7 @@ def main(
         "--build-metrics-source-promotion-index": build_metrics_source_promotion_index_mode,
         "--build-metric-pack-index": build_metric_pack_index_mode,
         "--build-conversation-memory-index": build_conversation_memory_index_mode,
+        "--build-conversation-memory-map": build_conversation_memory_map_mode,
         "--build-metric-signal-index": build_metric_signal_index_mode,
         "--build-metric-threshold-proposals": build_metric_threshold_proposals_mode,
         "--build-supervisor-performance-index": build_supervisor_performance_index_mode,
@@ -31248,6 +31590,43 @@ def main(
         emit_supervisor_json(index, output_mode=normalized_output_mode)
         return 0
 
+    if build_conversation_memory_map_mode:
+        if any(
+            (
+                dry_run,
+                auto_approve,
+                loop,
+                resolve_gate,
+                decision,
+                note,
+                target_spec,
+                split_proposal,
+                apply_split_proposal,
+                operator_note,
+                mutation_budget,
+                run_authority,
+                execution_profile,
+                child_model,
+                child_timeout_seconds,
+                verbose,
+                list_stale_runtime,
+                clean_stale_runtime,
+                observe_graph_health_mode,
+                operator_request_packet_path,
+            )
+        ):
+            print(
+                "--build-conversation-memory-map must be used as a standalone command",
+                file=sys.stderr,
+            )
+            return 1
+        index = build_conversation_memory_index()
+        write_conversation_memory_index(index)
+        memory_map = build_conversation_memory_map(index)
+        write_conversation_memory_map(memory_map)
+        emit_supervisor_json(memory_map, output_mode=normalized_output_mode)
+        return 0
+
     if build_metric_signal_index_mode:
         if any(
             (
@@ -32383,6 +32762,14 @@ if __name__ == "__main__":
         ),
     )
     parser.add_argument(
+        "--build-conversation-memory-map",
+        action="store_true",
+        help=(
+            "Build a read-only conversation memory exploration map from the current "
+            "structured memory index without promoting notes into canonical specs"
+        ),
+    )
+    parser.add_argument(
         "--build-metric-signal-index",
         action="store_true",
         help=(
@@ -32631,6 +33018,7 @@ if __name__ == "__main__":
             build_metrics_source_promotion_index_mode=args.build_metrics_source_promotion_index,
             build_metric_pack_index_mode=args.build_metric_pack_index,
             build_conversation_memory_index_mode=args.build_conversation_memory_index,
+            build_conversation_memory_map_mode=args.build_conversation_memory_map,
             build_metric_signal_index_mode=args.build_metric_signal_index,
             build_metric_threshold_proposals_mode=args.build_metric_threshold_proposals,
             build_supervisor_performance_index_mode=args.build_supervisor_performance_index,

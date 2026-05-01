@@ -1111,6 +1111,7 @@ reads:
 - `runs/metrics_source_promotion_index.json`
 - `runs/metric_pack_index.json`
 - `runs/conversation_memory_index.json`
+- `runs/conversation_memory_map.json`
 
 This mode is intended for local `post-merge` / `post-checkout` hooks, CI smoke
 checks, and viewer build buttons. It refreshes existing read models only: it
@@ -1144,6 +1145,17 @@ That command reads curated source records from
 `conversation_memory/sources/*.json` and structured markdown notes from
 `conversation_memory/notes/*.md`. It does not mine PageIndex or promote memory
 records into canonical specs.
+
+Use the map shortcut when the viewer needs the derived exploration projection:
+
+```bash
+make conversation-memory-map
+```
+
+That command refreshes `runs/conversation_memory_index.json` and then writes
+`runs/conversation_memory_map.json` with clusters, links, source coverage,
+candidate proposal pressure, and review blockers. It remains read-only and does
+not promote memory records into proposals or specs.
 
 Standalone artifact commands print compact JSON summaries by default. Use
 `--output-mode full` only when the full generated artifact is needed on stdout.

@@ -13,6 +13,7 @@ help:
 		'  make metrics-source-promotion Refresh Metrics source promotion candidates JSON' \
 		'  make metric-packs             Refresh metric pack index JSON only' \
 		'  make conversation-memory      Refresh conversation memory index JSON only' \
+		'  make conversation-memory-map  Refresh conversation memory map JSON only' \
 		'  make implementation-work      Refresh latest implementation work index' \
 		'  make review-feedback          Refresh review feedback index' \
 		'  make test                     Run full Python test suite quietly' \
@@ -45,6 +46,10 @@ metric-packs:
 .PHONY: conversation-memory
 conversation-memory:
 	@$(PYTHON) $(SUPERVISOR) --build-conversation-memory-index
+
+.PHONY: conversation-memory-map
+conversation-memory-map:
+	@$(PYTHON) $(SUPERVISOR) --build-conversation-memory-map
 
 .PHONY: implementation-work
 implementation-work:
