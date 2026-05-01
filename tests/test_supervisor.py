@@ -14213,6 +14213,7 @@ def test_build_graph_backlog_projection_from_surfaces_normalizes_reviewable_gaps
     assert report["viewer_projection"]["named_filters"]["missing_evidence_contract"]
     assert report["viewer_projection"]["named_filters"]["metric_threshold_pressure"]
     assert report["viewer_projection"]["named_filters"]["metric_pack_review_ready"]
+    assert report["viewer_projection"]["named_filters"]["metric_pack_draft_visible"] == []
     assert report["viewer_projection"]["named_filters"]["promotion_review_ready"]
     assert report["viewer_projection"]["named_filters"]["branch_rewrite_candidates"]
     assert report["viewer_projection"]["named_filters"]["branch_rewrite_ready"]

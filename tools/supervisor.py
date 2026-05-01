@@ -23507,6 +23507,8 @@ def build_graph_backlog_projection_from_surfaces(
         "missing_trace_contract": [],
         "missing_evidence_contract": [],
         "metric_threshold_pressure": [],
+        "metric_pack_review_ready": [],
+        "metric_pack_draft_visible": [],
         "proposal_runtime_realization": [],
         "promotion_review_ready": [],
         "review_feedback_open": [],
@@ -23562,9 +23564,9 @@ def build_graph_backlog_projection_from_surfaces(
         if next_gap == "review_metrics_source_promotion":
             named_filters["promotion_review_ready"].append(backlog_id)
         if source_artifact == "metric_pack_index" and next_gap == "review_metric_pack_index":
-            named_filters.setdefault("metric_pack_review_ready", []).append(backlog_id)
+            named_filters["metric_pack_review_ready"].append(backlog_id)
         if source_artifact == "metric_pack_index" and status == "draft_visible_only":
-            named_filters.setdefault("metric_pack_draft_visible", []).append(backlog_id)
+            named_filters["metric_pack_draft_visible"].append(backlog_id)
         if source_artifact == "review_feedback_index":
             named_filters["review_feedback_open"].append(backlog_id)
         if source_artifact == "review_feedback_index" and status == "invalid_feedback_record":
