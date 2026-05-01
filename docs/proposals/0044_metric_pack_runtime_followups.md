@@ -210,6 +210,18 @@ The run artifact should preserve:
 
 Metric run artifacts are derived evidence, not canonical graph state.
 
+The first baseline run surface is now represented as a read-only runtime
+snapshot:
+
+```text
+tools/supervisor.py --build-metric-pack-runs
+make metric-pack-runs
+```
+
+This computes only values that can be sourced from existing SpecGraph metric
+signals, leaves missing adapters as `not_computable` gaps, and keeps
+finding/proposal projection deferred.
+
 ### 4. Economic Pricing Provenance
 
 Economic observability must not show cost-like numbers without a pricing
@@ -266,8 +278,8 @@ Recommended next PR sequence:
 1. `metric_pack_registry_drift.json`
 2. adapter contract and adapter index
 3. first non-computable adapter report for `sib_full`
-4. pricing provenance contract for economic observability
-5. `metric_pack_runs.json` for one computable baseline pack
+4. `metric_pack_runs.json` for one computable baseline pack
+5. pricing provenance contract for economic observability
 6. proposal-pressure artifact from metric-pack findings
 
 This ordering keeps observation before execution and execution before proposal

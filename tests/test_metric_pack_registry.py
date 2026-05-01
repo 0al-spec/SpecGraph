@@ -347,6 +347,103 @@ def test_metric_pack_adapter_index_maps_available_and_missing_inputs(
     }
 
 
+def test_metric_pack_runs_computes_available_signal_and_preserves_gaps(
+    supervisor_module: object,
+) -> None:
+    metric_pack_index = {
+        "artifact_kind": "metric_pack_index",
+        "generated_at": "2026-05-01T00:00:00Z",
+        "entry_count": 2,
+        "entries": [
+            {
+                "metric_pack_id": "sib",
+                "title": "SIB",
+                "pack_status": "ready_for_index_review",
+                "pack_authority_state": "operational_source_after_review",
+                "reference_state": "stable_reference",
+                "metrics": [{"metric_id": "sib", "label": "SIB", "kind": "diagnostic"}],
+            },
+            {
+                "metric_pack_id": "sib_full",
+                "title": "SIB Full Metrics",
+                "pack_status": "draft_visible_only",
+                "pack_authority_state": "not_threshold_authority",
+                "reference_state": "draft_reference",
+                "metrics": [{"metric_id": "sib_eff_star", "label": "Effective SIB"}],
+            },
+        ],
+    }
+    adapter_index = {
+        "artifact_kind": "metric_pack_adapter_index",
+        "generated_at": "2026-05-01T00:00:01Z",
+        "entry_count": 2,
+        "entries": [
+            {
+                "metric_pack_id": "sib",
+                "adapter_status": "ready_for_adapter_review",
+                "inputs": [{"input_id": "spec_graph", "computability": "available"}],
+                "missing_inputs": [],
+                "next_gap": "review_metric_pack_adapter_index",
+            },
+            {
+                "metric_pack_id": "sib_full",
+                "adapter_status": "missing_input_adapters",
+                "inputs": [{"input_id": "intent_atoms", "computability": "not_computable"}],
+                "missing_inputs": ["intent_atoms"],
+                "next_gap": "define_intent_atom_extraction",
+            },
+        ],
+    }
+    metric_signal_index = {
+        "artifact_kind": "metric_signal_index",
+        "generated_at": "2026-05-01T00:00:02Z",
+        "entry_count": 1,
+        "metrics": [
+            {
+                "metric_id": "sib",
+                "score": 0.82,
+                "minimum_score": 0.7,
+                "threshold_gap": 0.0,
+                "status": "healthy",
+                "signal_emitted": False,
+                "threshold_authority_state": "canonical_threshold_authority",
+            }
+        ],
+    }
+
+    report = supervisor_module.build_metric_pack_runs(
+        metric_pack_index,
+        adapter_index,
+        metric_signal_index,
+    )
+
+    assert report["artifact_kind"] == "metric_pack_runs"
+    assert report["schema_version"] == 1
+    assert report["canonical_mutations_allowed"] is False
+    assert report["tracked_artifacts_written"] is False
+    assert report["summary"] == {
+        "pack_count": 2,
+        "run_status_counts": {"computed": 1, "not_computable": 1},
+        "computed_value_count": 1,
+        "gap_count": 1,
+    }
+    by_id = {entry["metric_pack_id"]: entry for entry in report["entries"]}
+    assert by_id["sib"]["run_status"] == "computed"
+    assert by_id["sib"]["computed_values"][0]["metric_id"] == "sib"
+    assert by_id["sib"]["computed_values"][0]["score"] == 0.82
+    assert by_id["sib"]["finding_projection"] == {
+        "status": "deferred",
+        "next_gap": "add_metric_pack_finding_index",
+    }
+    assert by_id["sib_full"]["run_status"] == "not_computable"
+    assert by_id["sib_full"]["gaps"][0]["gap_status"] == "missing_input_adapter"
+    assert report["viewer_projection"]["run_status"]["computed"] == ["sib"]
+    assert report["viewer_projection"]["named_filters"]["proposal_pressure_deferred"] == [
+        "sib",
+        "sib_full",
+    ]
+
+
 def test_main_builds_metric_pack_adapter_index_as_standalone_command(
     supervisor_module: object,
     tmp_path: Path,
@@ -371,3 +468,55 @@ def test_main_builds_metric_pack_adapter_index_as_standalone_command(
     assert report["artifact_kind"] == "metric_pack_adapter_index"
     artifact = json.loads((runs_dir / "metric_pack_adapter_index.json").read_text())
     assert artifact["artifact_kind"] == "metric_pack_adapter_index"
+
+
+def test_main_builds_metric_pack_runs_as_standalone_command(
+    supervisor_module: object,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    runs_dir = tmp_path / "runs"
+    runs_dir.mkdir()
+    monkeypatch.setattr(supervisor_module, "ROOT", tmp_path)
+    monkeypatch.setattr(supervisor_module, "RUNS_DIR", runs_dir)
+    monkeypatch.setattr(supervisor_module, "load_specs", lambda: [object()])
+    monkeypatch.setattr(supervisor_module, "build_external_consumer_index", lambda: {})
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_metric_signal_index",
+        lambda specs: {
+            "artifact_kind": "metric_signal_index",
+            "generated_at": "2026-05-01T00:00:00Z",
+            "entry_count": 1,
+            "metrics": [{"metric_id": "sib", "score": 0.9, "status": "healthy"}],
+        },
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "load_metric_pack_registry",
+        lambda: {
+            "packs": [
+                {
+                    "metric_pack_id": "sib",
+                    "title": "SIB",
+                    "consumer_id": "metrics_sib",
+                    "reference_state": "stable_reference",
+                    "pack_authority_state": "operational_source_after_review",
+                    "lifecycle_state": "active",
+                    "source": {"path": "SIB/metrics.tex"},
+                    "inputs": ["spec_graph"],
+                    "metrics": [{"metric_id": "sib", "requires": ["specification_signal"]}],
+                }
+            ]
+        },
+    )
+
+    exit_code = supervisor_module.main(build_metric_pack_runs_mode=True)
+
+    assert exit_code == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["artifact_kind"] == "metric_pack_runs"
+    assert report["summary"]["computed_value_count"] == 1
+    artifact = json.loads((runs_dir / "metric_pack_runs.json").read_text())
+    assert artifact["entries"][0]["metric_pack_id"] == "sib"

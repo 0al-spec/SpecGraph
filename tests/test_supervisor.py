@@ -14577,6 +14577,7 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
         "promotion": 0,
         "pack": 0,
         "pack_adapter": 0,
+        "pack_runs": 0,
         "pack_drift": 0,
         "lane": 0,
         "runtime": 0,
@@ -14752,6 +14753,27 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
             "tracked_artifacts_written": False,
         }
 
+    def fake_metric_pack_runs(
+        metric_pack_index: dict[str, object],
+        metric_pack_adapter_index: dict[str, object],
+        metric_signal_index: dict[str, object],
+    ) -> dict[str, object]:
+        surface_calls["pack_runs"] += 1
+        assert metric_pack_index["generated_at"] == "2026-04-27T00:00:06Z"
+        assert metric_pack_adapter_index["generated_at"] == "2026-04-27T00:00:06.250000Z"
+        assert metric_signal_index["generated_at"] == "2026-04-27T00:00:04Z"
+        return {
+            "artifact_kind": supervisor_module.METRIC_PACK_RUNS_ARTIFACT_KIND,
+            "schema_version": supervisor_module.METRIC_PACK_RUNS_SCHEMA_VERSION,
+            "generated_at": "2026-04-27T00:00:06.350000Z",
+            "entry_count": 1,
+            "entries": [{"metric_pack_id": "sib", "run_status": "computed"}],
+            "summary": {"computed_value_count": 1, "gap_count": 0},
+            "viewer_projection": {"run_status": {"computed": ["sib"]}},
+            "canonical_mutations_allowed": False,
+            "tracked_artifacts_written": False,
+        }
+
     def fake_metric_pack_registry_drift(
         registry: dict[str, object],
         consumer_index: dict[str, object],
@@ -14845,6 +14867,7 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
         "build_metric_pack_adapter_index",
         fake_metric_pack_adapter_index,
     )
+    monkeypatch.setattr(supervisor_module, "build_metric_pack_runs", fake_metric_pack_runs)
     monkeypatch.setattr(
         supervisor_module,
         "build_metric_pack_registry_drift",
@@ -14875,6 +14898,9 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
     assert report["written_artifacts"]["metric_pack_index"]["entry_count"] == 1
     assert report["written_artifacts"]["metric_pack_adapter_index"]["entry_count"] == 1
     assert report["written_artifacts"]["metric_pack_adapter_index"]["adapter_backlog_count"] == 0
+    assert report["written_artifacts"]["metric_pack_runs"]["entry_count"] == 1
+    assert report["written_artifacts"]["metric_pack_runs"]["computed_value_count"] == 1
+    assert report["written_artifacts"]["metric_pack_runs"]["gap_count"] == 0
     assert report["written_artifacts"]["metric_pack_registry_drift"]["entry_count"] == 0
     assert report["written_artifacts"]["metric_pack_registry_drift"]["next_gap"] == "none"
     assert report["written_artifacts"]["proposal_spec_trace_index"]["entry_count"] == 1
@@ -14896,6 +14922,7 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
         "promotion": 1,
         "pack": 1,
         "pack_adapter": 1,
+        "pack_runs": 1,
         "pack_drift": 1,
         "lane": 1,
         "runtime": 1,

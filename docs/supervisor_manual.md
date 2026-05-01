@@ -1048,6 +1048,30 @@ This is the computability layer before metric execution:
 Use it when `metric_pack_index` shows packs as visible but you need to know
 which inputs still block future `metric_pack_runs.json`.
 
+### Metric-pack runs
+
+```bash
+python3 tools/supervisor.py --build-metric-pack-runs
+```
+
+Builds `runs/metric_pack_runs.json` from:
+
+- the current metric-pack index;
+- the current metric-pack adapter index;
+- the current metric-signal index.
+
+This is a derived run snapshot only:
+
+- packs with computable inputs and existing metric signals can expose read-only
+  `computed_values`;
+- packs with missing adapters remain `not_computable`;
+- missing metric value adapters become explicit gaps;
+- finding/proposal projection remains deferred;
+- canonical specs, thresholds, and policies are not changed.
+
+Use it after `metric-pack-adapters` when you want to inspect whether at least
+one metric pack can produce a reviewable run surface.
+
 ### Metric-threshold proposals
 
 ```bash
@@ -1594,6 +1618,9 @@ path.
   - read-only computability surface for metric-pack inputs, grouped by adapter
     status, input computability, missing inputs, and next-gap backlog before any
     metric-pack execution
+- `runs/metric_pack_runs.json`
+  - read-only metric-pack run snapshot, grouped by run status and metric values,
+    with non-computable gaps and deferred finding/proposal projection
 - `runs/supervisor_performance_index.json`
   - derived measurement surface for runtime cleanliness, run yield, graph
     impact, and same-spec repeat hotspots over time
