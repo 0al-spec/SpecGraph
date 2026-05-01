@@ -1,0 +1,163 @@
+{
+  "artifact_kind": "metric_pack_registry",
+  "version": 1,
+  "repository_layout": {
+    "index_artifact": "runs/metric_pack_index.json"
+  },
+  "source_registry": {
+    "repository_id": "metrics",
+    "repository": "0al-spec/Metrics",
+    "contract_path": "METRIC_PACKS.md",
+    "readme_path": "README.md"
+  },
+  "reference_states": [
+    "stable_reference",
+    "draft_reference"
+  ],
+  "pack_authority_states": [
+    "not_threshold_authority",
+    "promotion_candidate",
+    "operational_source_after_review"
+  ],
+  "lifecycle_states": [
+    "active",
+    "deprecated"
+  ],
+  "pack_statuses": [
+    "ready_for_index_review",
+    "draft_visible_only",
+    "missing_external_consumer",
+    "missing_source_artifact",
+    "invalid_pack_contract",
+    "adapter_missing",
+    "blocked_by_authority_state"
+  ],
+  "packs": [
+    {
+      "metric_pack_id": "sib",
+      "title": "SIB",
+      "consumer_id": "metrics_sib",
+      "reference_state": "stable_reference",
+      "pack_authority_state": "operational_source_after_review",
+      "lifecycle_state": "active",
+      "source": {
+        "repository": "0al-spec/Metrics",
+        "path": "SIB/metrics.tex",
+        "compiled_path": "SIB/metrics.pdf"
+      },
+      "inputs": [
+        "spec_graph",
+        "implementation_work",
+        "runtime_events"
+      ],
+      "metrics": [
+        {
+          "metric_id": "sib",
+          "label": "Specification-Implementation Balance",
+          "kind": "diagnostic",
+          "phase": "cross_phase",
+          "requires": [
+            "specification_signal",
+            "implementation_signal"
+          ]
+        }
+      ],
+      "projection_hints": {
+        "lens": "compact_balance",
+        "show_as_baseline": true
+      }
+    },
+    {
+      "metric_pack_id": "sib_full",
+      "title": "SIB Full Metrics",
+      "consumer_id": "metrics_sib_full",
+      "reference_state": "draft_reference",
+      "pack_authority_state": "not_threshold_authority",
+      "lifecycle_state": "active",
+      "source": {
+        "repository": "0al-spec/Metrics",
+        "path": "SIB_FULL/sib_full_metrics.tex",
+        "compiled_path": "SIB_FULL/sib_full_metrics.pdf"
+      },
+      "inputs": [
+        "spec_graph",
+        "trace_plane",
+        "implementation_work",
+        "review_feedback"
+      ],
+      "metrics": [
+        {
+          "metric_id": "sib_eff_star",
+          "label": "Effective Pre-Implementation SIB",
+          "kind": "diagnostic",
+          "phase": "pre_implementation",
+          "requires": [
+            "intent_atoms",
+            "spec_verifiability_coverage",
+            "expected_implementation_potential"
+          ]
+        },
+        {
+          "metric_id": "defect_balance_at_root",
+          "label": "Defect Balance at Root",
+          "kind": "retrospective",
+          "phase": "post_defect",
+          "requires": [
+            "defect_root",
+            "effective_sib"
+          ]
+        }
+      ],
+      "projection_hints": {
+        "lens": "extended_diagnostic",
+        "show_as_baseline": false
+      }
+    },
+    {
+      "metric_pack_id": "sib_economic_observability",
+      "title": "SIB Economic Observability",
+      "consumer_id": "metrics_sib_economic_observability",
+      "reference_state": "draft_reference",
+      "pack_authority_state": "not_threshold_authority",
+      "lifecycle_state": "active",
+      "source": {
+        "repository": "0al-spec/Metrics",
+        "path": "SIB_ECONOMIC_OBSERVABILITY/sib_economic_observability.tex",
+        "compiled_path": "SIB_ECONOMIC_OBSERVABILITY/sib_economic_observability.pdf"
+      },
+      "inputs": [
+        "runtime_events",
+        "implementation_work",
+        "review_feedback",
+        "pricing_surface"
+      ],
+      "metrics": [
+        {
+          "metric_id": "node_inference_cost",
+          "label": "Node Inference Cost",
+          "kind": "economic_observability",
+          "phase": "runtime_observation",
+          "requires": [
+            "model_usage",
+            "pricing_surface",
+            "node_scope"
+          ]
+        },
+        {
+          "metric_id": "verification_cost",
+          "label": "Verification Cost",
+          "kind": "economic_observability",
+          "phase": "verification",
+          "requires": [
+            "verification_runs",
+            "pricing_surface"
+          ]
+        }
+      ],
+      "projection_hints": {
+        "lens": "economic_observability",
+        "show_as_baseline": false
+      }
+    }
+  ]
+}
