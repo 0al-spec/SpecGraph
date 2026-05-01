@@ -12313,7 +12313,8 @@ def test_build_metric_pack_index_keeps_invalid_contracts_as_entries(
                 "pack_authority_state": "not_threshold_authority",
                 "lifecycle_state": "active",
                 "source": {"path": "BAD/metrics.tex"},
-                "metrics": [],
+                "metrics": [{"metric_id": "bad", "requires": None}],
+                "projection_hints": "bad",
             }
         ],
     }
@@ -12326,7 +12327,9 @@ def test_build_metric_pack_index_keeps_invalid_contracts_as_entries(
     assert entry["next_gap"] == "repair_metric_pack_contract"
     assert "missing_metric_pack_id" in entry["contract_errors"]
     assert "unknown_reference_state" in entry["contract_errors"]
-    assert "missing_metric_declarations" in entry["contract_errors"]
+    assert "invalid_metric_requires" in entry["contract_errors"]
+    assert "invalid_projection_hints" in entry["contract_errors"]
+    assert entry["projection_hints"] == {}
 
 
 def test_main_builds_metric_pack_index_as_standalone_command(

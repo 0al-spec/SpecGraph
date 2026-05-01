@@ -20861,6 +20861,11 @@ def external_consumer_artifact_status_for_path(
     return "missing"
 
 
+def metric_pack_metric_requires(metric: dict[str, Any]) -> list[Any]:
+    raw_requires = metric.get("requires", [])
+    return raw_requires if isinstance(raw_requires, list) else []
+
+
 def metric_pack_contract_errors(
     pack: dict[str, Any],
     *,
@@ -20887,6 +20892,14 @@ def metric_pack_contract_errors(
     metrics = pack.get("metrics", [])
     if not isinstance(metrics, list) or not metrics:
         errors.append("missing_metric_declarations")
+    elif any(
+        isinstance(metric, dict) and not isinstance(metric.get("requires", []), list)
+        for metric in metrics
+    ):
+        errors.append("invalid_metric_requires")
+    projection_hints = pack.get("projection_hints", {})
+    if projection_hints and not isinstance(projection_hints, dict):
+        errors.append("invalid_projection_hints")
     return errors
 
 
@@ -20997,11 +21010,14 @@ def build_metric_pack_index(
         review_state = metric_pack_review_state(pack_status)
         next_gap = metric_pack_next_gap(pack_status)
         metrics = [item for item in pack.get("metrics", []) if isinstance(item, dict)]
+        projection_hints = pack.get("projection_hints", {})
+        if not isinstance(projection_hints, dict):
+            projection_hints = {}
         missing_inputs = sorted(
             {
                 str(required).strip()
                 for metric in metrics
-                for required in metric.get("requires", [])
+                for required in metric_pack_metric_requires(metric)
                 if str(required).strip()
                 and str(required).strip()
                 not in {
@@ -21050,7 +21066,7 @@ def build_metric_pack_index(
             "metrics": copy.deepcopy(metrics),
             "missing_inputs": missing_inputs,
             "contract_errors": contract_errors,
-            "projection_hints": copy.deepcopy(pack.get("projection_hints", {})),
+            "projection_hints": copy.deepcopy(projection_hints),
         }
         entries.append(entry)
 
@@ -21067,10 +21083,7 @@ def build_metric_pack_index(
             named_filters["needs_repair"].append(key)
         if pack_authority_state == "not_threshold_authority":
             named_filters["non_authoritative"].append(key)
-        if (
-            str(pack.get("projection_hints", {}).get("lens", "")).strip()
-            == "economic_observability"
-        ):
+        if str(projection_hints.get("lens", "")).strip() == "economic_observability":
             named_filters["economic_observability"].append(key)
 
     for bucket in (
