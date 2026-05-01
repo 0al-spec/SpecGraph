@@ -20890,7 +20890,9 @@ def metric_pack_contract_errors(
     if lifecycle_state not in allowed_lifecycle_states:
         errors.append("unknown_lifecycle_state")
     metrics = pack.get("metrics", [])
-    if not isinstance(metrics, list) or not metrics:
+    if not isinstance(metrics, list):
+        errors.append("invalid_metrics_shape")
+    elif not metrics:
         errors.append("missing_metric_declarations")
     elif any(
         isinstance(metric, dict) and not isinstance(metric.get("requires", []), list)
@@ -21009,7 +21011,10 @@ def build_metric_pack_index(
 
         review_state = metric_pack_review_state(pack_status)
         next_gap = metric_pack_next_gap(pack_status)
-        metrics = [item for item in pack.get("metrics", []) if isinstance(item, dict)]
+        raw_metrics = pack.get("metrics", [])
+        if not isinstance(raw_metrics, list):
+            raw_metrics = []
+        metrics = [item for item in raw_metrics if isinstance(item, dict)]
         projection_hints = pack.get("projection_hints", {})
         if not isinstance(projection_hints, dict):
             projection_hints = {}
@@ -21104,7 +21109,7 @@ def build_metric_pack_index(
         "review_state": "ready_for_review" if entries else "not_ready",
         "next_gap": "review_metric_pack_index" if entries else "declare_metric_pack_registry",
         "source_snapshot": {
-            "registry_path": metric_pack_registry_path().relative_to(ROOT).as_posix(),
+            "registry_path": METRIC_PACK_REGISTRY_RELATIVE_PATH,
             "registry_hash": metric_pack_registry_hash(metric_pack_registry),
             "external_consumer_index": {
                 "artifact_path": external_consumer_index_path().relative_to(ROOT).as_posix(),
@@ -28994,6 +28999,27 @@ def main(
                 clean_stale_runtime,
                 observe_graph_health_mode,
                 operator_request_packet_path,
+                build_intent_layer_overlay_mode,
+                build_vocabulary_index_mode,
+                build_vocabulary_drift_report_mode,
+                build_pre_spec_semantics_index_mode,
+                build_graph_health_overlay_mode,
+                build_graph_health_trends_mode,
+                build_spec_trace_index_mode,
+                build_spec_trace_projection_mode,
+                build_evidence_plane_index_mode,
+                build_evidence_plane_overlay_mode,
+                build_external_consumer_overlay_mode,
+                build_external_consumer_handoffs_mode,
+                build_specpm_import_preview_mode,
+                build_specpm_import_handoff_packets_mode,
+                build_metric_signal_index_mode,
+                build_metric_threshold_proposals_mode,
+                build_supervisor_performance_index_mode,
+                build_graph_dashboard_mode,
+                build_proposal_lane_overlay_mode,
+                build_proposal_runtime_index_mode,
+                build_proposal_promotion_index_mode,
             )
         ):
             print(
@@ -30484,7 +30510,6 @@ def main(
             )
             return 1
         consumer_index = build_external_consumer_index()
-        write_external_consumer_index(consumer_index)
         metric_pack_index = build_metric_pack_index(
             load_metric_pack_registry(),
             consumer_index,

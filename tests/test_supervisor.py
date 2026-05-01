@@ -12332,6 +12332,35 @@ def test_build_metric_pack_index_keeps_invalid_contracts_as_entries(
     assert entry["projection_hints"] == {}
 
 
+def test_build_metric_pack_index_handles_non_list_metrics_as_invalid_entry(
+    supervisor_module: object,
+) -> None:
+    registry = {
+        "reference_states": ["stable_reference"],
+        "pack_authority_states": ["operational_source_after_review"],
+        "lifecycle_states": ["active"],
+        "packs": [
+            {
+                "metric_pack_id": "bad_metrics",
+                "consumer_id": "metrics_bad",
+                "reference_state": "stable_reference",
+                "pack_authority_state": "operational_source_after_review",
+                "lifecycle_state": "active",
+                "source": {"path": "BAD/metrics.tex"},
+                "metrics": None,
+            }
+        ],
+    }
+
+    report = supervisor_module.build_metric_pack_index(registry, {"entries": []})
+
+    entry = report["entries"][0]
+    assert entry["metric_pack_id"] == "bad_metrics"
+    assert entry["pack_status"] == "invalid_pack_contract"
+    assert "invalid_metrics_shape" in entry["contract_errors"]
+    assert entry["metrics"] == []
+
+
 def test_main_builds_metric_pack_index_as_standalone_command(
     supervisor_module: object,
     repo_fixture: Path,
@@ -12375,14 +12404,24 @@ def test_main_builds_metric_pack_index_as_standalone_command(
     assert exit_code == 0
     report = json.loads(capsys.readouterr().out)
     assert report["artifact_kind"] == supervisor_module.METRIC_PACK_INDEX_ARTIFACT_KIND
-    consumer_index_artifact = json.loads(
-        (repo_fixture / "runs" / "external_consumer_index.json").read_text(encoding="utf-8")
-    )
-    assert consumer_index_artifact["generated_at"] == "2026-04-30T12:00:00Z"
+    assert not (repo_fixture / "runs" / "external_consumer_index.json").exists()
     pack_index_artifact = json.loads(
         (repo_fixture / "runs" / "metric_pack_index.json").read_text(encoding="utf-8")
     )
     assert pack_index_artifact["generated_at"] == "2026-04-30T12:02:00Z"
+
+
+def test_main_build_metric_pack_index_rejects_other_build_modes(
+    supervisor_module: object,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    exit_code = supervisor_module.main(
+        build_metric_pack_index_mode=True,
+        build_graph_dashboard_mode=True,
+    )
+
+    assert exit_code == 1
+    assert "standalone commands cannot be combined" in capsys.readouterr().err
 
 
 def test_main_builds_metrics_source_promotion_index_as_standalone_command(
