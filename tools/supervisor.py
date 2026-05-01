@@ -23015,6 +23015,8 @@ def metric_pack_run_status(
 
 
 def metric_pack_run_next_gap(run_status: str, gap_records: list[dict[str, Any]]) -> str:
+    if run_status == "invalid_pack_contract":
+        return "repair_metric_pack_contract"
     if gap_records:
         for gap in gap_records:
             next_gap = str(gap.get("next_gap", "")).strip()
@@ -23063,6 +23065,7 @@ def metric_pack_run_gap_records(
     gaps: list[dict[str, Any]] = []
     adapter_status = str(adapter_entry.get("adapter_status", "")).strip()
     if adapter_status != "ready_for_adapter_review":
+        adapter_next_gap = str(adapter_entry.get("next_gap", "")).strip()
         for input_id in adapter_entry.get("missing_inputs", []):
             normalized_input_id = str(input_id).strip()
             if not normalized_input_id:
@@ -23083,6 +23086,17 @@ def metric_pack_run_gap_records(
             )
         if gaps:
             return gaps
+        gap_status = adapter_status or "adapter_not_ready"
+        gaps.append(
+            {
+                "gap_id": f"{adapter_entry.get('metric_pack_id', '')}::adapter::{gap_status}",
+                "gap_status": gap_status,
+                "input_id": "",
+                "metric_id": "",
+                "next_gap": adapter_next_gap or metric_pack_adapter_next_gap(adapter_status, []),
+            }
+        )
+        return gaps
 
     for metric in metric_definitions:
         metric_id = str(metric.get("metric_id", "")).strip()
@@ -23136,15 +23150,18 @@ def build_metric_pack_runs(
 
     for metric_pack_id, pack_entry in sorted(pack_entries.items()):
         adapter_entry = adapter_entries.get(metric_pack_id, {})
+        adapter_status = str(adapter_entry.get("adapter_status", "")).strip()
         metric_definitions = [
             item for item in pack_entry.get("metrics", []) if isinstance(item, dict)
         ]
-        value_records = [
-            metric_pack_run_value_record(metric, metric_signal_by_id[metric_id])
-            for metric in metric_definitions
-            if (metric_id := str(metric.get("metric_id", "")).strip())
-            and metric_id in metric_signal_by_id
-        ]
+        value_records: list[dict[str, Any]] = []
+        if adapter_status == "ready_for_adapter_review":
+            value_records = [
+                metric_pack_run_value_record(metric, metric_signal_by_id[metric_id])
+                for metric in metric_definitions
+                if (metric_id := str(metric.get("metric_id", "")).strip())
+                and metric_id in metric_signal_by_id
+            ]
         gap_records = metric_pack_run_gap_records(
             adapter_entry={**adapter_entry, "metric_pack_id": metric_pack_id},
             metric_definitions=metric_definitions,

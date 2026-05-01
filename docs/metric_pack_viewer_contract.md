@@ -46,7 +46,14 @@ No ContextBuilder write path is implied by this contract.
     "missing_input_counts": {}
   },
   "entry_count": 3,
-  "entries": [],
+  "entries": [
+    {"metric_pack_id": "sib", "run_status": "computed"},
+    {"metric_pack_id": "sib_full", "run_status": "not_computable"},
+    {
+      "metric_pack_id": "sib_economic_observability",
+      "run_status": "not_computable"
+    }
+  ],
   "viewer_projection": {},
   "canonical_mutations_allowed": false,
   "tracked_artifacts_written": false

@@ -397,7 +397,7 @@ def test_metric_pack_runs_computes_available_signal_and_preserves_gaps(
     metric_signal_index = {
         "artifact_kind": "metric_signal_index",
         "generated_at": "2026-05-01T00:00:02Z",
-        "entry_count": 1,
+        "entry_count": 2,
         "metrics": [
             {
                 "metric_id": "sib",
@@ -407,7 +407,16 @@ def test_metric_pack_runs_computes_available_signal_and_preserves_gaps(
                 "status": "healthy",
                 "signal_emitted": False,
                 "threshold_authority_state": "canonical_threshold_authority",
-            }
+            },
+            {
+                "metric_id": "sib_eff_star",
+                "score": 0.4,
+                "minimum_score": 0.7,
+                "threshold_gap": 0.3,
+                "status": "below_threshold",
+                "signal_emitted": True,
+                "threshold_authority_state": "not_threshold_authority",
+            },
         ],
     }
 
@@ -436,12 +445,65 @@ def test_metric_pack_runs_computes_available_signal_and_preserves_gaps(
         "next_gap": "add_metric_pack_finding_index",
     }
     assert by_id["sib_full"]["run_status"] == "not_computable"
+    assert by_id["sib_full"]["computed_values"] == []
     assert by_id["sib_full"]["gaps"][0]["gap_status"] == "missing_input_adapter"
     assert report["viewer_projection"]["run_status"]["computed"] == ["sib"]
     assert report["viewer_projection"]["named_filters"]["proposal_pressure_deferred"] == [
         "sib",
         "sib_full",
     ]
+
+
+def test_metric_pack_runs_keep_adapter_root_cause_for_non_ready_contracts(
+    supervisor_module: object,
+) -> None:
+    report = supervisor_module.build_metric_pack_runs(
+        {
+            "entries": [
+                {
+                    "metric_pack_id": "broken_pack",
+                    "title": "Broken Pack",
+                    "metrics": [{"metric_id": "missing_metric"}],
+                },
+                {
+                    "metric_pack_id": "stale_pack",
+                    "title": "Stale Pack",
+                    "metrics": [{"metric_id": "stale_metric"}],
+                },
+            ],
+        },
+        {
+            "entries": [
+                {
+                    "metric_pack_id": "broken_pack",
+                    "adapter_status": "invalid_pack_contract",
+                    "missing_inputs": [],
+                    "next_gap": "repair_metric_pack_contract",
+                },
+                {
+                    "metric_pack_id": "stale_pack",
+                    "adapter_status": "stale_input_adapters",
+                    "missing_inputs": [],
+                    "next_gap": "refresh_metric_pack_input_adapter",
+                },
+            ],
+        },
+        {
+            "metrics": [
+                {"metric_id": "stale_metric", "score": 0.5},
+            ],
+        },
+    )
+
+    by_id = {entry["metric_pack_id"]: entry for entry in report["entries"]}
+    assert by_id["broken_pack"]["run_status"] == "invalid_pack_contract"
+    assert by_id["broken_pack"]["next_gap"] == "repair_metric_pack_contract"
+    assert by_id["broken_pack"]["gaps"][0]["gap_status"] == "invalid_pack_contract"
+    assert by_id["stale_pack"]["run_status"] == "not_computable"
+    assert by_id["stale_pack"]["next_gap"] == "refresh_metric_pack_input_adapter"
+    assert by_id["stale_pack"]["computed_values"] == []
+    assert by_id["stale_pack"]["gaps"][0]["gap_status"] == "stale_input_adapters"
+    assert report["summary"]["computed_value_count"] == 0
 
 
 def test_main_builds_metric_pack_adapter_index_as_standalone_command(
