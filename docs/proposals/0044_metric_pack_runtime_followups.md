@@ -59,7 +59,12 @@ runs/metric_pack_index.json
         |
         +--> runs/graph_dashboard.json
         +--> runs/graph_backlog_projection.json
-        +--> docs/metric_pack_viewer_contract.md
+```
+
+Documented by the static viewer contract:
+
+```text
+docs/metric_pack_viewer_contract.md
 ```
 
 This boundary is complete enough for viewer observation:
@@ -104,8 +109,12 @@ SpecGraph should compare `tools/metric_pack_registry.json` against the sibling
 Metrics repository contract:
 
 ```text
-/Users/egor/Development/GitHub/0AL/Metrics/METRIC_PACKS.md
+<metrics_repo>/METRIC_PACKS.md
 ```
+
+The Metrics repository checkout path must come from runtime configuration such as
+the external consumer registry or a local development override. This proposal does
+not assume a developer-specific absolute filesystem path.
 
 The first drift artifact should report:
 
