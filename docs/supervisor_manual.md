@@ -162,6 +162,8 @@ particular task.
   `--build-proposal-lane-overlay`
 - build a derived proposal runtime index:
   `--build-proposal-runtime-index`
+- build a derived proposal-to-spec trace index:
+  `--build-proposal-spec-trace-index` or `make proposal-spec-trace`
 - inspect stale review/runtime residue without refinement:
   `--list-stale-runtime`
 - clean stale review/runtime residue:
@@ -1346,6 +1348,18 @@ Use it when you want to inspect, for each promoted proposal:
 - motivating concern, normalized title, and bounded scope coverage
 - next promotion-provenance gap such as `attach_promotion_trace`,
   `record_source_refs`, or `record_bounded_scope`
+
+### Proposal spec trace index
+
+```bash
+python3 tools/supervisor.py --build-proposal-spec-trace-index
+make proposal-spec-trace
+```
+
+Builds `runs/proposal_spec_trace_index.json` from proposal markdown references,
+proposal-promotion traceability, and proposal-lane target regions. Textual
+mentions stay `inferred`; only promotion traces and proposal-lane targets become
+bounded or declared relations for viewer overlays.
 
 ### Gate resolution
 

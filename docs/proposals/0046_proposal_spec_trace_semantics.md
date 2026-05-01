@@ -50,14 +50,13 @@ Without explicit semantics:
 - Define proposal-to-spec trace semantics for SpecGraph.
 - Separate textual mentions, promotion trace, and lane targets.
 - Give ContextBuilder stable consumer guidance for current artifacts.
-- Prepare a later derived artifact that normalizes these relations.
+- Provide a derived artifact that normalizes these relations.
 - Preserve review-first promotion boundaries.
 - Make missing or ambiguous proposal trace visible as graph work, not viewer
   guesswork.
 
 ## Non-Goals
 
-- Creating the runtime `proposal_spec_trace_index.json` in this proposal.
 - Mutating canonical specs based on proposal markdown references.
 - Backfilling all missing proposal promotion trace.
 - Merging markdown proposal ids with proposal-lane handles.
@@ -162,15 +161,15 @@ ContextBuilder should show proposal-to-spec relations in three groups:
 It should label each relation by authority and status. It should not collapse
 all relations into one proposal/spec edge.
 
-## Planned Derived Artifact
+## Derived Artifact
 
-The next runtime slice should introduce:
+The runtime slice introduces:
 
 ```text
 runs/proposal_spec_trace_index.json
 ```
 
-The artifact should normalize current sources into entries shaped around:
+The artifact normalizes current sources into entries shaped around:
 
 - `proposal_id`;
 - `proposal_path`;
@@ -183,8 +182,17 @@ The artifact should normalize current sources into entries shaped around:
 - `source_refs`;
 - provenance back to source artifacts.
 
-This artifact should be derived-only. It should not create canonical specs,
+This artifact is derived-only. It should not create canonical specs,
 proposal-lane nodes, or promotion records.
+
+Build commands:
+
+```bash
+make proposal-spec-trace
+python3 tools/supervisor.py --build-proposal-spec-trace-index
+```
+
+`make viewer-surfaces` also refreshes this surface for consumers.
 
 ## Acceptance Criteria
 
@@ -194,5 +202,6 @@ proposal-lane nodes, or promotion records.
 - Proposal-lane targets remain separate from markdown proposal ids.
 - ContextBuilder has a current viewer contract before the unified runtime
   artifact exists.
-- The next runtime slice is clearly scoped to
-  `runs/proposal_spec_trace_index.json`.
+- The runtime slice is scoped to `runs/proposal_spec_trace_index.json`.
+- `runs/proposal_spec_trace_index.json` stays read-only and reports
+  `canonical_mutations_allowed: false` and `tracked_artifacts_written: false`.

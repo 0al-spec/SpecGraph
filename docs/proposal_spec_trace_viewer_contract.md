@@ -17,8 +17,9 @@ with different authority levels:
 - `runs/proposal_promotion_index.json`;
 - `runs/proposal_lane_overlay.json`.
 
-These sources must stay visually and semantically distinct until SpecGraph
-emits a unified proposal/spec trace index.
+These sources must stay visually and semantically distinct. SpecGraph also emits
+a unified proposal/spec trace index for consumers that want one normalized
+read-only surface.
 
 ## Source Artifacts
 
@@ -28,9 +29,9 @@ emits a unified proposal/spec trace index.
 | `runs/proposal_promotion_index.json` | Derived promotion/provenance state for proposal markdown. | `promotion_trace` |
 | `runs/proposal_lane_overlay.json` | Derived proposal-lane entries targeting canonical regions. | `lane_overlay` |
 
-The planned second slice will add:
+The normalized runtime surface is:
 
-| Artifact | Planned Role | Authority |
+| Artifact | Role | Authority |
 | --- | --- | --- |
 | `runs/proposal_spec_trace_index.json` | Unified derived proposal-to-spec trace projection. | mixed, per relation |
 
@@ -210,15 +211,22 @@ Recommended visual treatment:
 - Lane proposal handles and markdown proposal ids are separate identifiers until
   SpecGraph emits an explicit bridge.
 
-## Planned Backend Surface
+## Backend Surface
 
-The next implementation slice should add:
+SpecGraph builds:
 
 ```text
 runs/proposal_spec_trace_index.json
 ```
 
-That artifact should normalize:
+Use either:
+
+```bash
+make proposal-spec-trace
+python3 tools/supervisor.py --build-proposal-spec-trace-index
+```
+
+The artifact normalizes:
 
 - markdown proposal ids;
 - textual spec mentions;
@@ -227,5 +235,6 @@ That artifact should normalize:
 - authority and status vocabulary;
 - `next_gap` values for missing or ambiguous trace.
 
-Until that artifact exists, this contract is the consumer guidance for reading
-the existing proposal surfaces without conflating relation strength.
+It is also included in `make viewer-surfaces`. The artifact is derived-only:
+`canonical_mutations_allowed` and `tracked_artifacts_written` must both remain
+`false`.

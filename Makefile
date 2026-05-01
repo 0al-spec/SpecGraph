@@ -10,6 +10,7 @@ help:
 		'  make dashboard                Refresh graph dashboard JSON only' \
 		'  make backlog                  Refresh graph backlog projection JSON only' \
 		'  make next-move                Refresh advisory graph next-moves JSON only' \
+		'  make proposal-spec-trace      Refresh proposal-to-spec trace index JSON' \
 		'  make metrics-source-promotion Refresh Metrics source promotion candidates JSON' \
 		'  make metric-packs             Refresh metric pack index JSON only' \
 		'  make conversation-memory      Refresh conversation memory index JSON only' \
@@ -35,6 +36,10 @@ backlog:
 .PHONY: next-move
 next-move:
 	@$(PYTHON) $(SUPERVISOR) --build-graph-next-moves
+
+.PHONY: proposal-spec-trace
+proposal-spec-trace:
+	@$(PYTHON) $(SUPERVISOR) --build-proposal-spec-trace-index
 
 .PHONY: metrics-source-promotion
 metrics-source-promotion:
