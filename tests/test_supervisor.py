@@ -12384,6 +12384,7 @@ def test_build_conversation_memory_index_reports_empty_policy_surface(
     assert report["structured_note_count"] == 0
     assert report["review_state"] == "not_ready"
     assert report["next_gap"] == "capture_conversation_memory_source"
+    assert report["policy_reference"] == supervisor_module.conversation_memory_policy_reference()
     assert report["summary"]["missing_attribution_count"] == 0
     assert report["canonical_mutations_allowed"] is False
     assert report["tracked_artifacts_written"] is False
@@ -12415,6 +12416,12 @@ def test_build_conversation_memory_index_groups_sources_and_notes(
 
     report = supervisor_module.build_conversation_memory_index(policy)
 
+    assert report["policy_reference"]["artifact_path"] == (
+        "inline://conversation_memory_policy_override"
+    )
+    assert report["policy_reference"]["artifact_sha256"] == (
+        supervisor_module.conversation_memory_policy_hash(policy)
+    )
     assert report["source_count"] == 1
     assert report["structured_note_count"] == 1
     assert report["review_state"] == "ready_for_review"
@@ -12424,6 +12431,37 @@ def test_build_conversation_memory_index_groups_sources_and_notes(
     assert report["viewer_projection"]["source_type"]["pageindex_conversation"] == ["chat-1"]
     assert report["viewer_projection"]["review_state"]["promotion_review_required"] == ["cmem-1"]
     assert report["viewer_projection"]["named_filters"]["promotion_review_required"] == ["cmem-1"]
+
+
+def test_build_conversation_memory_index_honors_policy_override_named_filters(
+    supervisor_module: object,
+) -> None:
+    policy = copy.deepcopy(supervisor_module.CONVERSATION_MEMORY_POLICY)
+    policy["index_contract"]["named_filters"] = ["custom_filter"]
+    policy["source_contract"]["sources"] = [
+        {
+            "source_id": "chat-1",
+            "source_type": "pageindex_conversation",
+            "source_state": "available",
+            "source_ref": "pageindex://chatgpt/example",
+        }
+    ]
+    policy["note_contract"]["notes"] = [
+        {
+            "memory_note_id": "cmem-1",
+            "note_kind": "assumption",
+            "promotion_state": "proposal_pressure_candidate",
+            "source_refs": ["chat-1"],
+        }
+    ]
+
+    report = supervisor_module.build_conversation_memory_index(policy)
+
+    named_filters = report["viewer_projection"]["named_filters"]
+    assert named_filters["custom_filter"] == []
+    assert named_filters["promotion_review_required"] == ["cmem-1"]
+    assert report["summary"]["missing_attribution_count"] == 0
+    assert report["summary"]["stale_note_count"] == 0
 
 
 def test_build_conversation_memory_index_blocks_missing_attribution_and_canonical_promotion(

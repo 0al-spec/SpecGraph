@@ -172,7 +172,7 @@ Supervisor modes:
   comparing exact generated spec text.
 - `--build-viewer-surfaces`: refresh local viewer-facing generated artifacts by
   writing `runs/graph_backlog_projection.json`, `runs/graph_dashboard.json`,
-  `runs/graph_next_moves.json`, `runs/metrics_source_promotion_index.json`, and
+  `runs/graph_next_moves.json`, `runs/metrics_source_promotion_index.json`,
   `runs/metric_pack_index.json`, and `runs/conversation_memory_index.json` in
   one standalone pass. This is safe for local
   hooks, CI smoke checks, or ContextBuilder build buttons because it does not

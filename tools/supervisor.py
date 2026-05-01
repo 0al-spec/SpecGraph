@@ -11532,6 +11532,14 @@ def conversation_memory_policy_hash(policy: dict[str, Any]) -> str:
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
+def conversation_memory_policy_override_reference(policy: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "artifact_path": "inline://conversation_memory_policy_override",
+        "artifact_sha256": conversation_memory_policy_hash(policy),
+        "version": policy.get("version"),
+    }
+
+
 def conversation_memory_review_state(
     *,
     note_status: str,
@@ -11617,8 +11625,14 @@ def build_conversation_memory_index(
     policy: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     active_policy = copy.deepcopy(policy or CONVERSATION_MEMORY_POLICY)
+    policy_reference = (
+        conversation_memory_policy_reference()
+        if policy is None
+        else conversation_memory_policy_override_reference(active_policy)
+    )
     source_contract = active_policy.get("source_contract", {})
     note_contract = active_policy.get("note_contract", {})
+    index_contract = active_policy.get("index_contract", {})
     layer_boundary = active_policy.get("layer_boundary", {})
     allowed_source_types = {
         str(item).strip()
@@ -11693,7 +11707,12 @@ def build_conversation_memory_index(
     promotion_state_groups: dict[str, list[str]] = {}
     review_state_groups: dict[str, list[str]] = {}
     next_gap_groups: dict[str, list[str]] = {}
-    named_filters: dict[str, list[str]] = {name: [] for name in CONVERSATION_MEMORY_NAMED_FILTERS}
+    active_named_filters = index_contract.get("named_filters", CONVERSATION_MEMORY_NAMED_FILTERS)
+    if not isinstance(active_named_filters, list):
+        active_named_filters = CONVERSATION_MEMORY_NAMED_FILTERS
+    named_filters: dict[str, list[str]] = {
+        str(name).strip(): [] for name in active_named_filters if str(name).strip()
+    }
 
     for index, raw_note in enumerate(notes, start=1):
         note = copy.deepcopy(raw_note) if isinstance(raw_note, dict) else {}
@@ -11754,17 +11773,17 @@ def build_conversation_memory_index(
         review_state_groups.setdefault(review_state, []).append(memory_note_id)
         next_gap_groups.setdefault(next_gap, []).append(memory_note_id)
         if review_state == "structured_reviewable":
-            named_filters["structured_reviewable"].append(memory_note_id)
+            named_filters.setdefault("structured_reviewable", []).append(memory_note_id)
         if review_state == "promotion_review_required":
-            named_filters["promotion_review_required"].append(memory_note_id)
+            named_filters.setdefault("promotion_review_required", []).append(memory_note_id)
         if any(error in errors for error in ("missing_source_refs", "undeclared_source_ref")):
-            named_filters["missing_attribution"].append(memory_note_id)
+            named_filters.setdefault("missing_attribution", []).append(memory_note_id)
         if entry["staleness"] == "stale":
-            named_filters["stale_notes"].append(memory_note_id)
+            named_filters.setdefault("stale_notes", []).append(memory_note_id)
         if note_status == "invalid_memory_note":
-            named_filters["invalid_notes"].append(memory_note_id)
+            named_filters.setdefault("invalid_notes", []).append(memory_note_id)
         if note_kind == "source_summary":
-            named_filters["source_summaries"].append(memory_note_id)
+            named_filters.setdefault("source_summaries", []).append(memory_note_id)
 
     def sorted_groups(groups: dict[str, list[str]]) -> dict[str, list[str]]:
         return {key: sorted(set(value)) for key, value in sorted(groups.items())}
@@ -11782,11 +11801,7 @@ def build_conversation_memory_index(
         "artifact_kind": CONVERSATION_MEMORY_INDEX_ARTIFACT_KIND,
         "schema_version": CONVERSATION_MEMORY_INDEX_SCHEMA_VERSION,
         "generated_at": utc_now_iso(),
-        "policy_reference": {
-            "artifact_path": CONVERSATION_MEMORY_POLICY_RELATIVE_PATH,
-            "artifact_sha256": conversation_memory_policy_hash(active_policy),
-            "version": active_policy.get("version"),
-        },
+        "policy_reference": policy_reference,
         "layer_boundary": copy.deepcopy(layer_boundary),
         "review_state": review_state,
         "next_gap": next_gap,
@@ -11802,8 +11817,8 @@ def build_conversation_memory_index(
                 sorted_groups(promotion_state_groups)
             ),
             "review_state_counts": grouped_identifier_counts(sorted_groups(review_state_groups)),
-            "missing_attribution_count": len(named_filters["missing_attribution"]),
-            "stale_note_count": len(named_filters["stale_notes"]),
+            "missing_attribution_count": len(named_filters.get("missing_attribution", [])),
+            "stale_note_count": len(named_filters.get("stale_notes", [])),
             "next_gap_counts": grouped_identifier_counts(sorted_groups(next_gap_groups)),
             "source_type_counts": grouped_identifier_counts(sorted_groups(source_type_groups)),
             "source_state_counts": grouped_identifier_counts(sorted_groups(source_state_groups)),
