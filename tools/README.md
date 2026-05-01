@@ -265,6 +265,10 @@ Supervisor modes:
   `docs/proposals/`, `tools/proposal_promotion_registry.json`, and
   `tools/proposal_promotion_policy.json` to inspect bounded promotion
   traceability and next provenance gaps for promoted proposals.
+- `--build-proposal-spec-trace-index`: build `runs/proposal_spec_trace_index.json` from
+  proposal markdown references, proposal-promotion traceability, and
+  proposal-lane target regions. The artifact is read-only and normalizes
+  textual mentions separately from bounded promotion traces.
 - `--list-stale-runtime` / `--clean-stale-runtime`: inspect or clean stale gate/worktree residue.
 
 Key derived artifacts:
