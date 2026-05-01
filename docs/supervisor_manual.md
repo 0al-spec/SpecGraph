@@ -1029,6 +1029,25 @@ Metrics contract, pack ID drift, source path mismatch, display-name mismatch,
 and missing Metrics source artifacts, but it does not rewrite either repository
 and does not execute metric packs.
 
+### Metric-pack adapter index
+
+```bash
+python3 tools/supervisor.py --build-metric-pack-adapter-index
+```
+
+Builds `runs/metric_pack_adapter_index.json` from the current metric-pack index.
+
+This is the computability layer before metric execution:
+
+- declared pack inputs are mapped to existing SpecGraph source artifacts where
+  a binding exists;
+- missing inputs become `not_computable` adapter gaps;
+- adapter backlog items point to the next narrow input-contract work;
+- metric packs are not executed and thresholds are not changed.
+
+Use it when `metric_pack_index` shows packs as visible but you need to know
+which inputs still block future `metric_pack_runs.json`.
+
 ### Metric-threshold proposals
 
 ```bash
@@ -1571,6 +1590,10 @@ path.
   - read-only comparison between SpecGraph's metric-pack registry and the
     sibling Metrics `METRIC_PACKS.md` source contract, without auto-syncing
     either repository
+- `runs/metric_pack_adapter_index.json`
+  - read-only computability surface for metric-pack inputs, grouped by adapter
+    status, input computability, missing inputs, and next-gap backlog before any
+    metric-pack execution
 - `runs/supervisor_performance_index.json`
   - derived measurement surface for runtime cleanliness, run yield, graph
     impact, and same-spec repeat hotspots over time
