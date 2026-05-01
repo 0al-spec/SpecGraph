@@ -12377,6 +12377,21 @@ def test_conversation_memory_policy_declares_noncanonical_boundary(
     assert policy["map_contract"]["artifact_kind"] == "conversation_memory_map"
 
 
+def test_load_conversation_memory_policy_requires_map_contract(
+    supervisor_module: object,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    policy = copy.deepcopy(supervisor_module.CONVERSATION_MEMORY_POLICY)
+    policy.pop("map_contract")
+    policy_path = tmp_path / "conversation_memory_policy.json"
+    policy_path.write_text(json.dumps(policy), encoding="utf-8")
+    monkeypatch.setattr(supervisor_module, "conversation_memory_policy_path", lambda: policy_path)
+
+    with pytest.raises(RuntimeError, match="map_contract"):
+        supervisor_module.load_conversation_memory_policy()
+
+
 def test_build_conversation_memory_index_reports_empty_policy_surface(
     supervisor_module: object,
 ) -> None:
@@ -12763,6 +12778,8 @@ def test_build_conversation_memory_map_groups_links_and_candidates(
     assert report["related_specs"] == {"SG-SPEC-0045": ["cmem-1", "cmem-2"]}
     assert report["related_proposals"] == {"0045": ["cmem-1"]}
     assert report["source_coverage"]["source_ref_counts"] == {"chat-1": 2}
+    assert report["source_coverage"]["source_refs_note_count"] == 2
+    assert report["source_coverage"]["attributed_note_count"] == 2
     assert report["summary"]["candidate_pressure_count"] == 1
     candidate = report["candidate_proposal_pressure"]["entries"][0]
     assert candidate["candidate_id"] == "cmem-1"
@@ -12776,6 +12793,76 @@ def test_build_conversation_memory_map_groups_links_and_candidates(
     assert report["viewer_projection"]["named_filters"]["promotion_candidates"] == ["cmem-1"]
     assert report["viewer_projection"]["named_filters"]["linked_specs"] == ["cmem-1", "cmem-2"]
     assert report["viewer_projection"]["named_filters"]["linked_proposals"] == ["cmem-1"]
+
+
+def test_build_conversation_memory_map_deduplicates_relation_links(
+    supervisor_module: object,
+) -> None:
+    policy = copy.deepcopy(supervisor_module.CONVERSATION_MEMORY_POLICY)
+    policy["source_contract"]["sources"] = [
+        {
+            "source_id": "chat-1",
+            "source_type": "pageindex_conversation",
+            "source_state": "available",
+            "source_ref": "pageindex://chatgpt/example",
+        }
+    ]
+    policy["note_contract"]["notes"] = [
+        {
+            "memory_note_id": "cmem-1",
+            "note_kind": "claim",
+            "promotion_state": "proposal_pressure_candidate",
+            "source_refs": ["chat-1", "chat-1"],
+            "links": {
+                "related_specs": ["SG-SPEC-0045", "SG-SPEC-0045"],
+                "related_proposals": ["0045", "0045"],
+                "related_memory_notes": ["cmem-2", "cmem-2"],
+            },
+        }
+    ]
+    index = supervisor_module.build_conversation_memory_index(policy)
+
+    report = supervisor_module.build_conversation_memory_map(index)
+
+    link_ids = [link["link_id"] for link in report["links"]]
+    assert len(link_ids) == len(set(link_ids))
+    assert report["link_count"] == 4
+    assert report["summary"]["link_kind_counts"] == {
+        "related_memory_note": 1,
+        "related_proposal": 1,
+        "related_spec": 1,
+        "source_ref": 1,
+    }
+    assert report["source_coverage"]["source_ref_counts"] == {"chat-1": 1}
+
+
+def test_build_conversation_memory_map_excludes_invalid_promotion_candidates(
+    supervisor_module: object,
+) -> None:
+    policy = copy.deepcopy(supervisor_module.CONVERSATION_MEMORY_POLICY)
+    policy["source_contract"]["sources"] = []
+    policy["note_contract"]["notes"] = [
+        {
+            "memory_note_id": "cmem-canonical",
+            "note_kind": "decision",
+            "promotion_state": "promoted_to_spec",
+            "source_refs": ["missing-source"],
+        },
+        {
+            "memory_note_id": "cmem-unknown",
+            "note_kind": "claim",
+            "promotion_state": "unknown_candidate",
+            "source_refs": [],
+        },
+    ]
+    index = supervisor_module.build_conversation_memory_index(policy)
+
+    report = supervisor_module.build_conversation_memory_map(index)
+
+    assert report["candidate_proposal_pressure"]["entry_count"] == 0
+    assert report["summary"]["candidate_pressure_count"] == 0
+    assert report["viewer_projection"]["named_filters"]["promotion_candidates"] == []
+    assert report["review_blockers"]["entry_count"] == 2
 
 
 def test_build_conversation_memory_map_reports_review_blockers_for_attribution(
@@ -12802,6 +12889,8 @@ def test_build_conversation_memory_map_reports_review_blockers_for_attribution(
     assert blocker["memory_note_id"] == "cmem-missing-source"
     assert blocker["next_gap"] == "repair_conversation_memory_note_attribution"
     assert "undeclared_source_ref" in blocker["contract_errors"]
+    assert report["source_coverage"]["source_refs_note_count"] == 1
+    assert report["source_coverage"]["attributed_note_count"] == 0
     assert report["source_coverage"]["missing_attribution_note_ids"] == ["cmem-missing-source"]
     assert report["viewer_projection"]["named_filters"]["has_review_blockers"] == [
         "cmem-missing-source"

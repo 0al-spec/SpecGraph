@@ -240,6 +240,11 @@ current index. It is still read-only and pre-canonical:
   "artifact_kind": "conversation_memory_map",
   "schema_version": 1,
   "generated_at": "2026-05-01T00:00:00Z",
+  "policy_reference": {
+    "artifact_path": "tools/conversation_memory_policy.json",
+    "artifact_sha256": "...",
+    "version": 1
+  },
   "index_reference": {
     "artifact_kind": "conversation_memory_index",
     "schema_version": 1,
@@ -247,6 +252,19 @@ current index. It is still read-only and pre-canonical:
     "source_count": 1,
     "structured_note_count": 2,
     "next_gap": "review_conversation_memory_index"
+  },
+  "source_snapshot": {
+    "source_dir": "conversation_memory/sources",
+    "note_dir": "conversation_memory/notes",
+    "policy_source_count": 0,
+    "policy_note_count": 0,
+    "storage_source_count": 1,
+    "storage_note_count": 2
+  },
+  "layer_boundary": {
+    "layer_name": "conversation_memory",
+    "canonical_mutations_allowed": false,
+    "tracked_artifacts_written": false
   },
   "review_state": "ready_for_review",
   "next_gap": "review_memory_promotion_pressure",
@@ -262,7 +280,11 @@ current index. It is still read-only and pre-canonical:
   "summary": {},
   "viewer_projection": {},
   "canonical_mutations_allowed": false,
-  "tracked_artifacts_written": false
+  "tracked_artifacts_written": false,
+  "viewer_contract": {
+    "contract_doc": "docs/conversation_memory_viewer_contract.md",
+    "read_only": true
+  }
 }
 ```
 
@@ -329,6 +351,7 @@ Known `link_kind` values:
 {
   "declared_source_count": 1,
   "structured_note_count": 2,
+  "source_refs_note_count": 2,
   "attributed_note_count": 1,
   "missing_attribution_count": 1,
   "missing_attribution_note_ids": ["cmem-missing-source"],
@@ -339,6 +362,8 @@ Known `link_kind` values:
 ```
 
 Use this for attribution warning chips and source-coverage summaries.
+`source_refs_note_count` means the note has at least one source ref field.
+`attributed_note_count` means all refs on the note resolve to declared sources.
 
 ### Promotion Candidates
 

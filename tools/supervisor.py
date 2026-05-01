@@ -605,6 +605,7 @@ def load_conversation_memory_policy() -> tuple[dict[str, Any], str]:
         "source_contract",
         "note_contract",
         "index_contract",
+        "map_contract",
         "viewer_contract",
     )
     missing = [section for section in required_sections if section not in payload]
@@ -612,6 +613,24 @@ def load_conversation_memory_policy() -> tuple[dict[str, Any], str]:
         raise RuntimeError(
             "malformed conversation memory policy artifact: missing top-level section(s): "
             + ", ".join(missing)
+        )
+    required_fields = {
+        "repository_layout": ("index_artifact", "map_artifact", "source_dir", "note_dir"),
+        "map_contract": ("artifact_kind", "schema_version", "named_filters"),
+    }
+    missing_fields: list[str] = []
+    for section, fields in required_fields.items():
+        section_payload = payload.get(section)
+        if not isinstance(section_payload, dict):
+            missing_fields.append(section)
+            continue
+        missing_fields.extend(
+            f"{section}.{field}" for field in fields if field not in section_payload
+        )
+    if missing_fields:
+        raise RuntimeError(
+            "malformed conversation memory policy artifact: missing required field(s): "
+            + ", ".join(missing_fields)
         )
     return payload, hashlib.sha256(raw_text.encode("utf-8")).hexdigest()
 
@@ -2310,6 +2329,11 @@ CONVERSATION_MEMORY_NOTE_KINDS = list(CONVERSATION_MEMORY_POLICY["note_contract"
 CONVERSATION_MEMORY_PROMOTION_STATES = list(
     CONVERSATION_MEMORY_POLICY["note_contract"]["promotion_states"]
 )
+CONVERSATION_MEMORY_PROMOTION_CANDIDATE_STATES = {
+    str(state).strip()
+    for state in CONVERSATION_MEMORY_PROMOTION_STATES
+    if str(state).strip() and str(state).strip() != "not_promoted"
+}
 CONVERSATION_MEMORY_CANONICAL_PROMOTION_STATES = list(
     CONVERSATION_MEMORY_POLICY["note_contract"]["canonical_promotion_states"]
 )
@@ -12070,6 +12094,29 @@ def conversation_memory_entry_is_review_blocked(entry: dict[str, Any]) -> bool:
     } or conversation_memory_entry_has_missing_attribution(entry)
 
 
+def conversation_memory_entry_is_promotion_candidate(entry: dict[str, Any]) -> bool:
+    promotion_state = str(entry.get("promotion_state", "")).strip()
+    return (
+        str(entry.get("status", "")).strip() == "structured"
+        and promotion_state in CONVERSATION_MEMORY_PROMOTION_CANDIDATE_STATES
+        and not conversation_memory_entry_has_missing_attribution(entry)
+    )
+
+
+def conversation_memory_unique_string_list(value: Any) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    result: list[str] = []
+    seen: set[str] = set()
+    for item in value:
+        normalized = str(item).strip()
+        if not normalized or normalized in seen:
+            continue
+        seen.add(normalized)
+        result.append(normalized)
+    return result
+
+
 def build_conversation_memory_map(index: dict[str, Any] | None = None) -> dict[str, Any]:
     source_index = (
         copy.deepcopy(index) if isinstance(index, dict) else build_conversation_memory_index()
@@ -12092,6 +12139,8 @@ def build_conversation_memory_map(index: dict[str, Any] | None = None) -> dict[s
     related_proposals: dict[str, set[str]] = {}
     source_ref_counts: dict[str, set[str]] = {}
     missing_attribution_note_ids: list[str] = []
+    attributed_note_ids: list[str] = []
+    source_refs_note_ids: list[str] = []
     candidate_pressure: list[dict[str, Any]] = []
     review_blockers: list[dict[str, Any]] = []
     named_filters: dict[str, list[str]] = {
@@ -12109,10 +12158,11 @@ def build_conversation_memory_map(index: dict[str, Any] | None = None) -> dict[s
         cluster_members.setdefault(("note_kind", note_kind), set()).add(memory_note_id)
 
         source_refs = entry.get("source_refs", [])
-        if not isinstance(source_refs, list):
-            source_refs = []
-        normalized_source_refs = [str(item).strip() for item in source_refs if str(item).strip()]
+        normalized_source_refs = conversation_memory_unique_string_list(source_refs)
         if normalized_source_refs:
+            source_refs_note_ids.append(memory_note_id)
+            if all(source_ref in source_ids for source_ref in normalized_source_refs):
+                attributed_note_ids.append(memory_note_id)
             for source_ref in normalized_source_refs:
                 cluster_members.setdefault(("source", source_ref), set()).add(memory_note_id)
                 source_ref_counts.setdefault(source_ref, set()).add(memory_note_id)
@@ -12137,21 +12187,9 @@ def build_conversation_memory_map(index: dict[str, Any] | None = None) -> dict[s
         related_specs_raw = links_record.get("related_specs", [])
         related_proposals_raw = links_record.get("related_proposals", [])
         related_notes_raw = links_record.get("related_memory_notes", [])
-        related_specs_list = (
-            [str(item).strip() for item in related_specs_raw if str(item).strip()]
-            if isinstance(related_specs_raw, list)
-            else []
-        )
-        related_proposals_list = (
-            [str(item).strip() for item in related_proposals_raw if str(item).strip()]
-            if isinstance(related_proposals_raw, list)
-            else []
-        )
-        related_notes_list = (
-            [str(item).strip() for item in related_notes_raw if str(item).strip()]
-            if isinstance(related_notes_raw, list)
-            else []
-        )
+        related_specs_list = conversation_memory_unique_string_list(related_specs_raw)
+        related_proposals_list = conversation_memory_unique_string_list(related_proposals_raw)
+        related_notes_list = conversation_memory_unique_string_list(related_notes_raw)
         for spec_id in related_specs_list:
             cluster_members.setdefault(("related_spec", spec_id), set()).add(memory_note_id)
             related_specs.setdefault(spec_id, set()).add(memory_note_id)
@@ -12191,7 +12229,7 @@ def build_conversation_memory_map(index: dict[str, Any] | None = None) -> dict[s
             )
 
         promotion_state = str(entry.get("promotion_state", "")).strip() or "not_promoted"
-        if promotion_state != "not_promoted":
+        if conversation_memory_entry_is_promotion_candidate(entry):
             target_kind = conversation_memory_promotion_target_kind(promotion_state)
             candidate_pressure.append(
                 {
@@ -12291,9 +12329,8 @@ def build_conversation_memory_map(index: dict[str, Any] | None = None) -> dict[s
         "source_coverage": {
             "declared_source_count": len(source_ids),
             "structured_note_count": len([entry for entry in entries if isinstance(entry, dict)]),
-            "attributed_note_count": len(
-                [entry for entry in entries if isinstance(entry, dict) and entry.get("source_refs")]
-            ),
+            "source_refs_note_count": len(set(source_refs_note_ids)),
+            "attributed_note_count": len(set(attributed_note_ids)),
             "missing_attribution_count": len(set(missing_attribution_note_ids)),
             "missing_attribution_note_ids": sorted(set(missing_attribution_note_ids)),
             "source_ref_counts": sorted_group_counts(source_ref_counts),
