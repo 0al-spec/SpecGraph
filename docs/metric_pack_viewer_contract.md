@@ -209,6 +209,7 @@ Top-level shape:
   "review_state": "clean",
   "next_gap": "none",
   "source_snapshot": {
+    "artifact_path": "runs/metric_pack_registry_drift.json",
     "registry_path": "tools/metric_pack_registry.json",
     "registry_hash": "...",
     "source_registry": {
@@ -216,7 +217,12 @@ Top-level shape:
       "contract_path": "METRIC_PACKS.md",
       "checkout_status": "available",
       "repo_revision": "...",
-      "contract_status": "parsed"
+      "contract_status": "parsed",
+      "contract_error": ""
+    },
+    "external_consumer_index": {
+      "artifact_path": "runs/external_consumer_index.json",
+      "generated_at": "..."
     }
   },
   "summary": {

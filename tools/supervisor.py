@@ -2835,7 +2835,7 @@ METRICS_SOURCE_PROMOTION_NAMED_FILTERS = list(
 METRIC_PACK_INDEX_FILENAME = "metric_pack_index.json"
 METRIC_PACK_INDEX_ARTIFACT_KIND = "metric_pack_index"
 METRIC_PACK_INDEX_SCHEMA_VERSION = 1
-METRIC_PACK_REGISTRY_DRIFT_FILENAME = "metric_pack_registry_drift.json"
+METRIC_PACK_REGISTRY_DRIFT_FILENAME = Path(METRIC_PACK_REGISTRY_DRIFT_RELATIVE_PATH).name
 METRIC_PACK_REGISTRY_DRIFT_ARTIFACT_KIND = "metric_pack_registry_drift"
 METRIC_PACK_REGISTRY_DRIFT_SCHEMA_VERSION = 1
 SUPERVISOR_PERFORMANCE_INDEX_FILENAME = Path(
@@ -22525,65 +22525,67 @@ def build_metric_pack_registry_drift(
         for pack in metric_pack_registry.get("packs", [])
         if isinstance(pack, dict) and str(pack.get("metric_pack_id", "")).strip()
     }
-    specgraph_ids = set(specgraph_packs)
-    metrics_ids = set(metrics_contract_packs)
 
-    for metric_pack_id in sorted(specgraph_ids - metrics_ids):
-        pack = specgraph_packs[metric_pack_id]
-        entries.append(
-            metric_pack_registry_drift_entry(
-                drift_status="missing_in_metrics_contract",
-                subject_id=metric_pack_id,
-                subject_kind="metric_pack",
-                next_gap="review_metric_pack_registry_drift",
-                specgraph_value=metric_pack_registry_source_path(pack),
-                metrics_value=None,
-            )
-        )
+    if contract_status == "parsed" and metrics_contract_packs:
+        specgraph_ids = set(specgraph_packs)
+        metrics_ids = set(metrics_contract_packs)
 
-    for metric_pack_id in sorted(metrics_ids - specgraph_ids):
-        metrics_pack = metrics_contract_packs[metric_pack_id]
-        entries.append(
-            metric_pack_registry_drift_entry(
-                drift_status="missing_in_specgraph_registry",
-                subject_id=metric_pack_id,
-                subject_kind="metric_pack",
-                next_gap="review_metric_pack_registry_drift",
-                specgraph_value=None,
-                metrics_value=metrics_pack["source_path"],
-            )
-        )
-
-    for metric_pack_id in sorted(specgraph_ids & metrics_ids):
-        specgraph_pack = specgraph_packs[metric_pack_id]
-        metrics_pack = metrics_contract_packs[metric_pack_id]
-        specgraph_source_path = metric_pack_registry_source_path(specgraph_pack)
-        metrics_source_path = metrics_pack["source_path"]
-        if specgraph_source_path != metrics_source_path:
+        for metric_pack_id in sorted(specgraph_ids - metrics_ids):
+            pack = specgraph_packs[metric_pack_id]
             entries.append(
                 metric_pack_registry_drift_entry(
-                    drift_status="source_path_mismatch",
+                    drift_status="missing_in_metrics_contract",
                     subject_id=metric_pack_id,
                     subject_kind="metric_pack",
                     next_gap="review_metric_pack_registry_drift",
-                    specgraph_value=specgraph_source_path,
-                    metrics_value=metrics_source_path,
+                    specgraph_value=metric_pack_registry_source_path(pack),
+                    metrics_value=None,
                 )
             )
-        specgraph_title = str(specgraph_pack.get("title", "")).strip()
-        metrics_display_name = metrics_pack["display_name"]
-        if specgraph_title and metrics_display_name and specgraph_title != metrics_display_name:
+
+        for metric_pack_id in sorted(metrics_ids - specgraph_ids):
+            metrics_pack = metrics_contract_packs[metric_pack_id]
             entries.append(
                 metric_pack_registry_drift_entry(
-                    drift_status="display_name_mismatch",
+                    drift_status="missing_in_specgraph_registry",
                     subject_id=metric_pack_id,
                     subject_kind="metric_pack",
                     next_gap="review_metric_pack_registry_drift",
-                    specgraph_value=specgraph_title,
-                    metrics_value=metrics_display_name,
-                    severity="low",
+                    specgraph_value=None,
+                    metrics_value=metrics_pack["source_path"],
                 )
             )
+
+        for metric_pack_id in sorted(specgraph_ids & metrics_ids):
+            specgraph_pack = specgraph_packs[metric_pack_id]
+            metrics_pack = metrics_contract_packs[metric_pack_id]
+            specgraph_source_path = metric_pack_registry_source_path(specgraph_pack)
+            metrics_source_path = metrics_pack["source_path"]
+            if specgraph_source_path != metrics_source_path:
+                entries.append(
+                    metric_pack_registry_drift_entry(
+                        drift_status="source_path_mismatch",
+                        subject_id=metric_pack_id,
+                        subject_kind="metric_pack",
+                        next_gap="review_metric_pack_registry_drift",
+                        specgraph_value=specgraph_source_path,
+                        metrics_value=metrics_source_path,
+                    )
+                )
+            specgraph_title = str(specgraph_pack.get("title", "")).strip()
+            metrics_display_name = metrics_pack["display_name"]
+            if specgraph_title and metrics_display_name and specgraph_title != metrics_display_name:
+                entries.append(
+                    metric_pack_registry_drift_entry(
+                        drift_status="display_name_mismatch",
+                        subject_id=metric_pack_id,
+                        subject_kind="metric_pack",
+                        next_gap="review_metric_pack_registry_drift",
+                        specgraph_value=specgraph_title,
+                        metrics_value=metrics_display_name,
+                        severity="low",
+                    )
+                )
 
     status_groups: dict[str, list[str]] = {}
     severity_groups: dict[str, list[str]] = {}
@@ -22626,6 +22628,7 @@ def build_metric_pack_registry_drift(
         "review_state": review_state,
         "next_gap": next_gap,
         "source_snapshot": {
+            "artifact_path": METRIC_PACK_REGISTRY_DRIFT_RELATIVE_PATH,
             "registry_path": METRIC_PACK_REGISTRY_RELATIVE_PATH,
             "registry_hash": metric_pack_registry_hash(metric_pack_registry),
             "source_registry": {

@@ -218,7 +218,13 @@ def test_metric_pack_registry_drift_reports_missing_checkout(
                 "repository": "0al-spec/Metrics",
                 "contract_path": "METRIC_PACKS.md",
             },
-            "packs": [],
+            "packs": [
+                {
+                    "metric_pack_id": "sib",
+                    "title": "SIB",
+                    "source": {"path": "SIB/metrics.tex"},
+                }
+            ],
         },
         {"entries": []},
     )
@@ -226,6 +232,7 @@ def test_metric_pack_registry_drift_reports_missing_checkout(
     assert report["entry_count"] == 1
     assert report["entries"][0]["drift_status"] == "missing_checkout"
     assert report["entries"][0]["next_gap"] == "provide_metrics_checkout"
+    assert report["summary"]["status_counts"] == {"missing_checkout": 1}
 
 
 def test_main_builds_metric_pack_registry_drift_as_standalone_command(
