@@ -15,6 +15,7 @@ surfaces:
 | `runs/metric_pack_registry_drift.json` | `make metric-pack-drift` or `make viewer-surfaces` | Optional drift panel comparing SpecGraph's registry with Metrics `METRIC_PACKS.md`. |
 | `runs/metric_pack_adapter_index.json` | `make metric-pack-adapters` or `make viewer-surfaces` | Optional adapter/computability panel for metric-pack inputs. |
 | `runs/metric_pack_runs.json` | `make metric-pack-runs` or `make viewer-surfaces` | Optional read-only run snapshot for computable pack values and gaps. |
+| `runs/model_usage_telemetry_index.json` | `make model-usage`, `make metric-pricing`, or `make viewer-surfaces` | Optional model-usage telemetry surface for economic observability inputs. |
 | `runs/metric_pricing_provenance.json` | `make metric-pricing` or `make viewer-surfaces` | Optional pricing provenance surface for economic observability guardrails. |
 | `runs/graph_dashboard.json` | `make dashboard` or `make viewer-surfaces` | Summary counts and headline card source. |
 | `runs/graph_backlog_projection.json` | `make backlog` or `make viewer-surfaces` | Reviewable metric-pack gaps in global backlog. |
@@ -303,7 +304,7 @@ Top-level shape:
   },
   "summary": {
     "pack_count": 3,
-    "input_binding_count": 18,
+    "input_binding_count": 21,
     "status_counts": {},
     "computability_counts": {},
     "missing_input_counts": {}
@@ -331,7 +332,7 @@ Each `entries[]` item describes one pack adapter surface:
   "review_state": "ready_for_review",
   "next_gap": "define_intent_atom_extraction",
   "input_count": 6,
-  "missing_input_count": 3,
+  "missing_input_count": 2,
   "missing_inputs": ["expected_implementation_potential", "intent_atoms"],
   "inputs": [
     {
@@ -465,6 +466,72 @@ Viewer guidance:
 - Use `computed_values[].threshold_authority_state` only as provenance; this
   artifact itself never grants authority.
 
+## Model Usage Telemetry Artifact
+
+`runs/model_usage_telemetry_index.json` is the read-only usage adapter surface
+for economic observability. It does not compute spend. It only exposes which
+supervisor execution profiles have observable run-log proxies and whether
+token-level usage was captured.
+
+Top-level shape:
+
+```json
+{
+  "artifact_kind": "model_usage_telemetry_index",
+  "schema_version": 1,
+  "generated_at": "...",
+  "review_state": "ready_for_review",
+  "next_gap": "review_model_usage_telemetry",
+  "summary": {
+    "model_usage_surface_count": 3,
+    "run_count": 5,
+    "telemetry_status_counts": {
+      "configured_not_observed": 2,
+      "usage_proxy_available": 1
+    },
+    "token_usage_status_counts": {"not_observed": 3}
+  },
+  "entry_count": 3,
+  "model_usage_surfaces": [],
+  "viewer_projection": {},
+  "canonical_mutations_allowed": false,
+  "tracked_artifacts_written": false
+}
+```
+
+Each `model_usage_surfaces[]` item describes one supervisor execution profile:
+
+```json
+{
+  "model_usage_surface_id": "codex_supervisor_profile_fast",
+  "provider": "openai",
+  "model": "gpt-5.5",
+  "tool": "codex_supervisor",
+  "execution_profile": "fast",
+  "reasoning_effort": "medium",
+  "source_kind": "supervisor_run_logs",
+  "telemetry_status": "usage_proxy_available",
+  "run_count": 5,
+  "usage_proxy": {"status": "available", "unit": "supervisor_run", "value": 5},
+  "token_usage": {
+    "status": "not_observed",
+    "observed_record_count": 0,
+    "input_tokens": null,
+    "output_tokens": null,
+    "total_tokens": null,
+    "missing_behavior": "report_observation_gap"
+  },
+  "review_state": "ready_for_review",
+  "next_gap": "connect_token_usage_capture"
+}
+```
+
+Viewer guidance:
+
+- Show `usage_proxy_available` as observed model usage, not as token spend.
+- Show `token_usage.status == "not_observed"` as a telemetry gap, not an error.
+- Do not display cost-like values from this artifact alone.
+
 ## Pricing Provenance Artifact
 
 `runs/metric_pricing_provenance.json` is the guardrail surface for economic
@@ -479,12 +546,13 @@ Top-level shape:
   "schema_version": 1,
   "generated_at": "...",
   "review_state": "ready_for_review",
-  "next_gap": "connect_model_usage_telemetry",
+  "next_gap": "connect_price_source",
   "summary": {
     "pricing_surface_count": 1,
     "status_counts": {"missing_price_source": 1},
     "observed_spend_count": 0,
-    "derived_proxy_count": 0
+    "derived_proxy_count": 0,
+    "model_usage_binding_counts": {"model_usage_surface_available": 1}
   },
   "entry_count": 1,
   "pricing_surfaces": [],
@@ -511,9 +579,17 @@ Each `pricing_surfaces[]` item describes one pricing source:
   "derived_proxy": null,
   "price_status": "missing_price_source",
   "spend_status": "not_observed",
+  "model_usage_binding": {
+    "status": "model_usage_surface_available",
+    "artifact_path": "runs/model_usage_telemetry_index.json",
+    "model_usage_surface_id": "codex_supervisor_default_model",
+    "run_count": 0,
+    "telemetry_status": "configured_not_observed",
+    "token_usage_status": "not_observed"
+  },
   "missing_price_behavior": "report_observation_gap",
   "review_state": "ready_for_review",
-  "next_gap": "connect_model_usage_telemetry"
+  "next_gap": "connect_price_source"
 }
 ```
 
@@ -539,6 +615,10 @@ metric-pack support, ContextBuilder may read:
     "metric_pack_adapter_index": {
       "artifact_path": "runs/metric_pack_adapter_index.json",
       "generated_at": "..."
+    },
+    "model_usage_telemetry": {
+      "artifact_path": "runs/model_usage_telemetry_index.json",
+      "generated_at": "..."
     }
   },
   "sections": {
@@ -552,14 +632,14 @@ metric-pack support, ContextBuilder may read:
       "metric_pack_adapter_status_counts": {},
       "metric_pack_adapter_computability_counts": {},
       "metric_pack_adapter_named_filter_counts": {},
-      "metric_pack_adapter_backlog_count": 0
+      "metric_pack_adapter_backlog_count": 7
     }
   },
   "viewer_projection": {
     "named_filters": {
       "metric_packs_review_ready": 1,
       "metric_packs_draft_visible": 2,
-      "metric_pack_adapter_gaps": 0
+      "metric_pack_adapter_gaps": 7
     }
   }
 }

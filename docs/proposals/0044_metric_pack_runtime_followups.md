@@ -248,8 +248,22 @@ make metric-pricing
 ```
 
 The artifact makes `pricing_surface` an explicit adapter input while keeping
-observed spend, model usage, node scope, and verification-run adapters as
-separate follow-up gaps before economic metric values can become computable.
+observed spend, token-level price source, node scope, and verification-run
+adapters as separate follow-up gaps before economic metric values can become
+computable.
+
+The `model_usage` adapter is now represented separately as a read-only
+telemetry surface:
+
+```text
+tools/supervisor.py --build-model-usage-telemetry
+make model-usage
+```
+
+`runs/model_usage_telemetry_index.json` observes supervisor run-log proxies by
+execution profile and records token-level usage as an explicit observation gap
+when exact token counters are unavailable. This closes the adapter-contract gap
+without pretending that proxy run counts are spend.
 
 ### 5. Proposal Pressure From Pack Findings
 
@@ -291,7 +305,8 @@ Recommended next PR sequence:
 3. first non-computable adapter report for `sib_full`
 4. `metric_pack_runs.json` for one computable baseline pack
 5. pricing provenance contract for economic observability
-6. proposal-pressure artifact from metric-pack findings
+6. model-usage telemetry adapter for economic observability
+7. proposal-pressure artifact from metric-pack findings
 
 This ordering keeps observation before execution and execution before proposal
 pressure.
