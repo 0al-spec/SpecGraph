@@ -11,6 +11,7 @@ help:
 		'  make backlog                  Refresh graph backlog projection JSON only' \
 		'  make next-move                Refresh advisory graph next-moves JSON only' \
 		'  make metrics-source-promotion Refresh Metrics source promotion candidates JSON' \
+		'  make metric-packs             Refresh metric pack index JSON only' \
 		'  make implementation-work      Refresh latest implementation work index' \
 		'  make review-feedback          Refresh review feedback index' \
 		'  make test                     Run full Python test suite quietly' \
@@ -35,6 +36,10 @@ next-move:
 .PHONY: metrics-source-promotion
 metrics-source-promotion:
 	@$(PYTHON) $(SUPERVISOR) --build-metrics-source-promotion-index
+
+.PHONY: metric-packs
+metric-packs:
+	@$(PYTHON) $(SUPERVISOR) --build-metric-pack-index
 
 .PHONY: implementation-work
 implementation-work:
