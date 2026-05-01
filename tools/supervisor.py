@@ -60,6 +60,7 @@ Derived artifacts:
 - Metric pack registry drift: `runs/metric_pack_registry_drift.json`
 - Metric pack adapter index: `runs/metric_pack_adapter_index.json`
 - Metric pack runs: `runs/metric_pack_runs.json`
+- Metric pricing provenance: `runs/metric_pricing_provenance.json`
 - bootstrap smoke benchmark: `runs/bootstrap_smoke_benchmark.json`
 - spec trace index: `runs/spec_trace_index.json`
 - spec trace projection: `runs/spec_trace_projection.json`
@@ -149,6 +150,7 @@ METRIC_PACK_REGISTRY_RELATIVE_PATH = "tools/metric_pack_registry.json"
 METRIC_PACK_REGISTRY_DRIFT_RELATIVE_PATH = "runs/metric_pack_registry_drift.json"
 METRIC_PACK_ADAPTER_INDEX_RELATIVE_PATH = "runs/metric_pack_adapter_index.json"
 METRIC_PACK_RUNS_RELATIVE_PATH = "runs/metric_pack_runs.json"
+METRIC_PRICING_PROVENANCE_RELATIVE_PATH = "runs/metric_pricing_provenance.json"
 SPECPM_EXPORT_REGISTRY_RELATIVE_PATH = "tools/specpm_export_registry.json"
 
 
@@ -2848,6 +2850,9 @@ METRIC_PACK_ADAPTER_INDEX_SCHEMA_VERSION = 1
 METRIC_PACK_RUNS_FILENAME = Path(METRIC_PACK_RUNS_RELATIVE_PATH).name
 METRIC_PACK_RUNS_ARTIFACT_KIND = "metric_pack_runs"
 METRIC_PACK_RUNS_SCHEMA_VERSION = 1
+METRIC_PRICING_PROVENANCE_FILENAME = Path(METRIC_PRICING_PROVENANCE_RELATIVE_PATH).name
+METRIC_PRICING_PROVENANCE_ARTIFACT_KIND = "metric_pricing_provenance"
+METRIC_PRICING_PROVENANCE_SCHEMA_VERSION = 1
 SUPERVISOR_PERFORMANCE_INDEX_FILENAME = Path(
     str(supervisor_performance_policy_lookup("repository_layout.index_artifact"))
 ).name
@@ -15188,6 +15193,10 @@ def metric_pack_runs_path() -> Path:
     return RUNS_DIR / METRIC_PACK_RUNS_FILENAME
 
 
+def metric_pricing_provenance_path() -> Path:
+    return RUNS_DIR / METRIC_PRICING_PROVENANCE_FILENAME
+
+
 def supervisor_performance_index_path() -> Path:
     return RUNS_DIR / SUPERVISOR_PERFORMANCE_INDEX_FILENAME
 
@@ -22690,6 +22699,89 @@ def write_metric_pack_registry_drift(report: dict[str, Any]) -> Path:
     return path
 
 
+def infer_metric_pricing_provider(model: str) -> str:
+    normalized = model.strip().lower()
+    if normalized.startswith("gpt-") or normalized.startswith("o"):
+        return "openai"
+    if normalized:
+        return "unknown"
+    return "unspecified"
+
+
+def build_metric_pricing_provenance() -> dict[str, Any]:
+    profile = EXECUTION_PROFILES.get(DEFAULT_EXECUTION_PROFILE_NAME)
+    model = profile.model if profile is not None else CHILD_EXECUTOR_MODEL
+    reasoning_effort = (
+        profile.reasoning_effort if profile is not None else CHILD_EXECUTOR_REASONING_EFFORT
+    )
+    surface_id = "codex_supervisor_default_model"
+    pricing_surface = {
+        "pricing_surface_id": surface_id,
+        "provider": infer_metric_pricing_provider(model),
+        "model": model,
+        "tool": "codex_supervisor",
+        "execution_profile": DEFAULT_EXECUTION_PROFILE_NAME,
+        "reasoning_effort": reasoning_effort,
+        "unit_convention": "model_token_usage",
+        "currency": "internal_proxy_unit",
+        "pricing_version": "unpriced_dev_v1",
+        "time_window": {
+            "kind": "snapshot",
+            "observed_at": utc_now_iso(),
+        },
+        "observed_spend": None,
+        "derived_proxy": None,
+        "price_status": "missing_price_source",
+        "spend_status": "not_observed",
+        "missing_price_behavior": "report_observation_gap",
+        "review_state": "ready_for_review",
+        "next_gap": "connect_model_usage_telemetry",
+    }
+    status_groups = {"missing_price_source": [surface_id]}
+    named_filters = {
+        "ready_for_review": [surface_id],
+        "missing_price_source": [surface_id],
+        "dev_proxy_only": [surface_id],
+    }
+    return {
+        "artifact_kind": METRIC_PRICING_PROVENANCE_ARTIFACT_KIND,
+        "schema_version": METRIC_PRICING_PROVENANCE_SCHEMA_VERSION,
+        "generated_at": utc_now_iso(),
+        "review_state": "ready_for_review",
+        "next_gap": "connect_model_usage_telemetry",
+        "source_snapshot": {
+            "artifact_path": METRIC_PRICING_PROVENANCE_RELATIVE_PATH,
+            "supervisor_policy": {
+                "artifact_path": SUPERVISOR_POLICY_RELATIVE_PATH,
+                "version": SUPERVISOR_POLICY.get("version"),
+                "default_execution_profile": DEFAULT_EXECUTION_PROFILE_NAME,
+            },
+        },
+        "summary": {
+            "pricing_surface_count": 1,
+            "status_counts": {key: len(value) for key, value in sorted(status_groups.items())},
+            "observed_spend_count": 0,
+            "derived_proxy_count": 0,
+        },
+        "entry_count": 1,
+        "pricing_surfaces": [pricing_surface],
+        "viewer_projection": {
+            "price_status": {key: value for key, value in sorted(status_groups.items())},
+            "named_filters": {key: value for key, value in sorted(named_filters.items())},
+        },
+        "canonical_mutations_allowed": False,
+        "tracked_artifacts_written": False,
+    }
+
+
+def write_metric_pricing_provenance(report: dict[str, Any]) -> Path:
+    RUNS_DIR.mkdir(parents=True, exist_ok=True)
+    path = metric_pricing_provenance_path()
+    with artifact_lock(path):
+        atomic_write_json(path, report)
+    return path
+
+
 METRIC_PACK_ADAPTER_INPUT_CATALOG: dict[str, dict[str, str]] = {
     "spec_graph": {
         "computability": "available",
@@ -22732,6 +22824,12 @@ METRIC_PACK_ADAPTER_INPUT_CATALOG: dict[str, dict[str, str]] = {
         "source_artifact": "runs/supervisor_performance_index.json",
         "source_field": "runs",
         "next_gap": "none",
+    },
+    "pricing_surface": {
+        "computability": "available",
+        "source_artifact": "runs/metric_pricing_provenance.json",
+        "source_field": "pricing_surfaces",
+        "next_gap": "review_metric_pricing_provenance",
     },
 }
 
@@ -27679,6 +27777,7 @@ def build_viewer_surfaces(specs: list[SpecNode]) -> dict[str, Any]:
         metric_pack_registry,
         consumer_index,
     )
+    metric_pricing_provenance = build_metric_pricing_provenance()
     metric_pack_adapter_index = build_metric_pack_adapter_index(metric_pack_index)
     metric_pack_runs = build_metric_pack_runs(
         metric_pack_index,
@@ -27730,6 +27829,7 @@ def build_viewer_surfaces(specs: list[SpecNode]) -> dict[str, Any]:
     proposal_spec_trace_path = write_proposal_spec_trace_index(proposal_spec_trace_index)
     promotion_path = write_metrics_source_promotion_index(metrics_source_promotion_index)
     metric_pack_path = write_metric_pack_index(metric_pack_index)
+    metric_pricing_path = write_metric_pricing_provenance(metric_pricing_provenance)
     metric_pack_adapter_path = write_metric_pack_adapter_index(metric_pack_adapter_index)
     metric_pack_runs_path_result = write_metric_pack_runs(metric_pack_runs)
     metric_pack_registry_drift_path_result = write_metric_pack_registry_drift(
@@ -27797,6 +27897,12 @@ def build_viewer_surfaces(specs: list[SpecNode]) -> dict[str, Any]:
                     .get("status_counts", {})
                     .get("ready_for_index_review", 0)
                 ),
+            },
+            "metric_pricing_provenance": {
+                "artifact_path": metric_pricing_path.relative_to(ROOT).as_posix(),
+                "generated_at": metric_pricing_provenance.get("generated_at"),
+                "entry_count": metric_pricing_provenance.get("entry_count"),
+                "next_gap": metric_pricing_provenance.get("next_gap"),
             },
             "metric_pack_registry_drift": {
                 "artifact_path": metric_pack_registry_drift_path_result.relative_to(
@@ -31410,6 +31516,7 @@ def main(
     build_metric_pack_registry_drift_mode: bool = False,
     build_metric_pack_adapter_index_mode: bool = False,
     build_metric_pack_runs_mode: bool = False,
+    build_metric_pricing_provenance_mode: bool = False,
     build_conversation_memory_index_mode: bool = False,
     build_conversation_memory_map_mode: bool = False,
     build_conversation_memory_promotion_pressure_mode: bool = False,
@@ -31497,6 +31604,7 @@ def main(
         "--build-metric-pack-registry-drift": build_metric_pack_registry_drift_mode,
         "--build-metric-pack-adapter-index": build_metric_pack_adapter_index_mode,
         "--build-metric-pack-runs": build_metric_pack_runs_mode,
+        "--build-metric-pricing-provenance": build_metric_pricing_provenance_mode,
         "--build-conversation-memory-index": build_conversation_memory_index_mode,
         "--build-conversation-memory-map": build_conversation_memory_map_mode,
         "--build-conversation-memory-promotion-pressure": (
@@ -33354,6 +33462,41 @@ def main(
         emit_supervisor_json(metric_pack_runs, output_mode=normalized_output_mode)
         return 0
 
+    if build_metric_pricing_provenance_mode:
+        if any(
+            (
+                dry_run,
+                auto_approve,
+                loop,
+                resolve_gate,
+                decision,
+                note,
+                target_spec,
+                split_proposal,
+                apply_split_proposal,
+                operator_note,
+                mutation_budget,
+                run_authority,
+                execution_profile,
+                child_model,
+                child_timeout_seconds,
+                verbose,
+                list_stale_runtime,
+                clean_stale_runtime,
+                observe_graph_health_mode,
+                operator_request_packet_path,
+            )
+        ):
+            print(
+                "--build-metric-pricing-provenance must be used as a standalone command",
+                file=sys.stderr,
+            )
+            return 1
+        pricing = build_metric_pricing_provenance()
+        write_metric_pricing_provenance(pricing)
+        emit_supervisor_json(pricing, output_mode=normalized_output_mode)
+        return 0
+
     if build_conversation_memory_index_mode:
         if any(
             (
@@ -34666,6 +34809,14 @@ if __name__ == "__main__":
         ),
     )
     parser.add_argument(
+        "--build-metric-pricing-provenance",
+        action="store_true",
+        help=(
+            "Build a read-only pricing provenance surface for economic observability "
+            "without calculating cost-like metric values"
+        ),
+    )
+    parser.add_argument(
         "--build-conversation-memory-index",
         action="store_true",
         help=(
@@ -34948,6 +35099,7 @@ if __name__ == "__main__":
             build_metric_pack_registry_drift_mode=args.build_metric_pack_registry_drift,
             build_metric_pack_adapter_index_mode=args.build_metric_pack_adapter_index,
             build_metric_pack_runs_mode=args.build_metric_pack_runs,
+            build_metric_pricing_provenance_mode=args.build_metric_pricing_provenance,
             build_conversation_memory_index_mode=args.build_conversation_memory_index,
             build_conversation_memory_map_mode=args.build_conversation_memory_map,
             build_conversation_memory_promotion_pressure_mode=(

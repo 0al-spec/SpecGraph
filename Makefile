@@ -16,6 +16,7 @@ help:
 		'  make metric-pack-drift        Refresh metric pack registry drift JSON only' \
 		'  make metric-pack-adapters     Refresh metric pack adapter index JSON only' \
 		'  make metric-pack-runs         Refresh metric pack run snapshot JSON only' \
+		'  make metric-pricing           Refresh metric pricing provenance JSON only' \
 		'  make conversation-memory      Refresh conversation memory index JSON only' \
 		'  make conversation-memory-map  Refresh conversation memory map JSON only' \
 		'  make conversation-memory-pressure Refresh conversation memory promotion pressure JSON' \
@@ -63,6 +64,10 @@ metric-pack-adapters:
 .PHONY: metric-pack-runs
 metric-pack-runs:
 	@$(PYTHON) $(SUPERVISOR) --build-metric-pack-runs
+
+.PHONY: metric-pricing
+metric-pricing:
+	@$(PYTHON) $(SUPERVISOR) --build-metric-pricing-provenance
 
 .PHONY: conversation-memory
 conversation-memory:

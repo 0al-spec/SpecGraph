@@ -1072,6 +1072,27 @@ This is a derived run snapshot only:
 Use it after `metric-pack-adapters` when you want to inspect whether at least
 one metric pack can produce a reviewable run surface.
 
+### Metric pricing provenance
+
+```bash
+python3 tools/supervisor.py --build-metric-pricing-provenance
+```
+
+Builds `runs/metric_pricing_provenance.json`.
+
+This is the economic-observability guardrail before cost-like metric values:
+
+- records provider, model, tool, execution profile, unit convention, currency
+  convention, and pricing version;
+- records missing observed spend and missing derived proxy explicitly;
+- defines missing-price behavior as an observation gap;
+- does not compute economic metric values;
+- does not mutate thresholds, policy, or canonical specs.
+
+Use it before making `sib_economic_observability` operational. The artifact can
+make `pricing_surface` available as an adapter input while keeping model usage,
+node scope, and verification run adapters separate follow-up gaps.
+
 ### Metric-threshold proposals
 
 ```bash
@@ -1621,6 +1642,10 @@ path.
 - `runs/metric_pack_runs.json`
   - read-only metric-pack run snapshot, grouped by run status and metric values,
     with non-computable gaps and deferred finding/proposal projection
+- `runs/metric_pricing_provenance.json`
+  - read-only pricing provenance surface for economic observability, including
+    model/tool identity, pricing version, unit convention, missing-price
+    behavior, and spend/proxy gaps
 - `runs/supervisor_performance_index.json`
   - derived measurement surface for runtime cleanliness, run yield, graph
     impact, and same-spec repeat hotspots over time
