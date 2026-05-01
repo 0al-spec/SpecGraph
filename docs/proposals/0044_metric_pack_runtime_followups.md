@@ -240,6 +240,17 @@ contract:
 
 This keeps provider-price drift separate from structural project drift.
 
+This follow-up is now represented as a read-only provenance surface:
+
+```text
+tools/supervisor.py --build-metric-pricing-provenance
+make metric-pricing
+```
+
+The artifact makes `pricing_surface` an explicit adapter input while keeping
+observed spend, model usage, node scope, and verification-run adapters as
+separate follow-up gaps before economic metric values can become computable.
+
 ### 5. Proposal Pressure From Pack Findings
 
 Metric-pack findings may eventually feed the proposal lane, but only through a

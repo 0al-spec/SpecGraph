@@ -347,6 +347,87 @@ def test_metric_pack_adapter_index_maps_available_and_missing_inputs(
     }
 
 
+def test_metric_pricing_provenance_declares_economic_guardrail(
+    supervisor_module: object,
+) -> None:
+    report = supervisor_module.build_metric_pricing_provenance()
+
+    assert report["artifact_kind"] == "metric_pricing_provenance"
+    assert report["schema_version"] == 1
+    assert report["canonical_mutations_allowed"] is False
+    assert report["tracked_artifacts_written"] is False
+    assert report["summary"]["status_counts"] == {"missing_price_source": 1}
+    surface = report["pricing_surfaces"][0]
+    assert surface["pricing_surface_id"] == "codex_supervisor_default_model"
+    assert surface["model"] == supervisor_module.CHILD_EXECUTOR_MODEL
+    assert surface["unit_convention"] == "model_token_usage"
+    assert surface["currency"] == "internal_proxy_unit"
+    assert surface["pricing_version"] == (
+        supervisor_module.METRIC_PRICING_PROVENANCE_DEFAULT_VERSION
+    )
+    assert surface["missing_price_behavior"] == "report_observation_gap"
+    assert surface["next_gap"] == "connect_model_usage_telemetry"
+
+
+@pytest.mark.parametrize(
+    ("model", "provider"),
+    [
+        ("gpt-5.5", "openai"),
+        ("chatgpt-5", "openai"),
+        ("openai/gpt-5.5", "openai"),
+        ("o1", "openai"),
+        ("o3-mini", "openai"),
+        ("o4.1", "openai"),
+        ("ollama/llama3", "unknown"),
+        ("openrouter/gpt-oss-20b", "unknown"),
+        ("opus-4", "unknown"),
+        ("", "unspecified"),
+    ],
+)
+def test_infer_metric_pricing_provider_uses_known_openai_patterns(
+    supervisor_module: object,
+    model: str,
+    provider: str,
+) -> None:
+    assert supervisor_module.infer_metric_pricing_provider(model) == provider
+
+
+def test_metric_pack_adapter_index_maps_pricing_surface_to_provenance(
+    supervisor_module: object,
+) -> None:
+    report = supervisor_module.build_metric_pack_adapter_index(
+        {
+            "artifact_kind": "metric_pack_index",
+            "generated_at": "2026-05-01T00:00:00Z",
+            "entry_count": 1,
+            "entries": [
+                {
+                    "metric_pack_id": "sib_economic_observability",
+                    "title": "SIB Economic Observability",
+                    "pack_status": "draft_visible_only",
+                    "pack_authority_state": "not_threshold_authority",
+                    "reference_state": "draft_reference",
+                    "metric_count": 1,
+                    "inputs": ["pricing_surface"],
+                    "metrics": [
+                        {
+                            "metric_id": "node_inference_cost",
+                            "requires": ["model_usage", "pricing_surface"],
+                        }
+                    ],
+                }
+            ],
+        }
+    )
+
+    entry = report["entries"][0]
+    by_input = {item["input_id"]: item for item in entry["inputs"]}
+    assert by_input["pricing_surface"]["computability"] == "available"
+    assert by_input["pricing_surface"]["source_artifact"] == "runs/metric_pricing_provenance.json"
+    assert by_input["model_usage"]["computability"] == "not_computable"
+    assert entry["missing_inputs"] == ["model_usage"]
+
+
 def test_metric_pack_runs_computes_available_signal_and_preserves_gaps(
     supervisor_module: object,
 ) -> None:
@@ -582,3 +663,23 @@ def test_main_builds_metric_pack_runs_as_standalone_command(
     assert report["summary"]["computed_value_count"] == 1
     artifact = json.loads((runs_dir / "metric_pack_runs.json").read_text())
     assert artifact["entries"][0]["metric_pack_id"] == "sib"
+
+
+def test_main_builds_metric_pricing_provenance_as_standalone_command(
+    supervisor_module: object,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    runs_dir = tmp_path / "runs"
+    runs_dir.mkdir()
+    monkeypatch.setattr(supervisor_module, "ROOT", tmp_path)
+    monkeypatch.setattr(supervisor_module, "RUNS_DIR", runs_dir)
+
+    exit_code = supervisor_module.main(build_metric_pricing_provenance_mode=True)
+
+    assert exit_code == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["artifact_kind"] == "metric_pricing_provenance"
+    artifact = json.loads((runs_dir / "metric_pricing_provenance.json").read_text())
+    assert artifact["pricing_surfaces"][0]["missing_price_behavior"] == "report_observation_gap"

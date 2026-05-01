@@ -163,6 +163,9 @@ Supervisor modes:
   current metric-pack index, adapter index, and metric-signal index so already
   computable pack values are visible as read-only snapshots without promoting
   findings.
+- `--build-metric-pricing-provenance`: build
+  `runs/metric_pricing_provenance.json` so economic observability has a
+  versioned pricing surface before cost-like metric values are calculated.
 - `--build-conversation-memory-index`: build
   `runs/conversation_memory_index.json` from
   `tools/conversation_memory_policy.json`,
@@ -405,6 +408,9 @@ Key derived artifacts:
 - `runs/metric_pack_runs.json`: read-only metric-pack run snapshot, including
   computed values from existing metric signals, not-computable gaps, source
   snapshots, and deferred finding/proposal projection
+- `runs/metric_pricing_provenance.json`: read-only pricing provenance surface
+  for economic observability, including model/tool identity, unit convention,
+  pricing version, missing-price behavior, and observed-spend gaps
 - `runs/metric_signal_index.json`: derived metric surface for
   `Specification Verifiability`, `Process Observability`,
   `Structural Observability`, bridge-native `SIB`, and the alias-only

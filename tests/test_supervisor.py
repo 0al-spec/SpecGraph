@@ -14576,6 +14576,7 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
         "metric": 0,
         "promotion": 0,
         "pack": 0,
+        "pricing": 0,
         "pack_adapter": 0,
         "pack_runs": 0,
         "pack_drift": 0,
@@ -14753,6 +14754,26 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
             "tracked_artifacts_written": False,
         }
 
+    def fake_metric_pricing_provenance() -> dict[str, object]:
+        surface_calls["pricing"] += 1
+        return {
+            "artifact_kind": supervisor_module.METRIC_PRICING_PROVENANCE_ARTIFACT_KIND,
+            "schema_version": supervisor_module.METRIC_PRICING_PROVENANCE_SCHEMA_VERSION,
+            "generated_at": "2026-04-27T00:00:06.300000Z",
+            "entry_count": 1,
+            "summary": {"status_counts": {"missing_price_source": 1}},
+            "pricing_surfaces": [
+                {
+                    "pricing_surface_id": "codex_supervisor_default_model",
+                    "price_status": "missing_price_source",
+                }
+            ],
+            "next_gap": "connect_model_usage_telemetry",
+            "viewer_projection": {"named_filters": {"missing_price_source": []}},
+            "canonical_mutations_allowed": False,
+            "tracked_artifacts_written": False,
+        }
+
     def fake_metric_pack_runs(
         metric_pack_index: dict[str, object],
         metric_pack_adapter_index: dict[str, object],
@@ -14864,6 +14885,11 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
     monkeypatch.setattr(supervisor_module, "build_metric_pack_index", fake_metric_pack_index)
     monkeypatch.setattr(
         supervisor_module,
+        "build_metric_pricing_provenance",
+        fake_metric_pricing_provenance,
+    )
+    monkeypatch.setattr(
+        supervisor_module,
         "build_metric_pack_adapter_index",
         fake_metric_pack_adapter_index,
     )
@@ -14896,6 +14922,11 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
     assert report["written_artifacts"]["graph_next_moves"]["current_scene"] == "steady_state"
     assert report["written_artifacts"]["metrics_source_promotion_index"]["entry_count"] == 1
     assert report["written_artifacts"]["metric_pack_index"]["entry_count"] == 1
+    assert report["written_artifacts"]["metric_pricing_provenance"]["entry_count"] == 1
+    assert (
+        report["written_artifacts"]["metric_pricing_provenance"]["next_gap"]
+        == "connect_model_usage_telemetry"
+    )
     assert report["written_artifacts"]["metric_pack_adapter_index"]["entry_count"] == 1
     assert report["written_artifacts"]["metric_pack_adapter_index"]["adapter_backlog_count"] == 0
     assert report["written_artifacts"]["metric_pack_runs"]["entry_count"] == 1
@@ -14921,6 +14952,7 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
         "metric": 1,
         "promotion": 1,
         "pack": 1,
+        "pricing": 1,
         "pack_adapter": 1,
         "pack_runs": 1,
         "pack_drift": 1,

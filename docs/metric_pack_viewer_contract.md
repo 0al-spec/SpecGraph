@@ -15,6 +15,7 @@ surfaces:
 | `runs/metric_pack_registry_drift.json` | `make metric-pack-drift` or `make viewer-surfaces` | Optional drift panel comparing SpecGraph's registry with Metrics `METRIC_PACKS.md`. |
 | `runs/metric_pack_adapter_index.json` | `make metric-pack-adapters` or `make viewer-surfaces` | Optional adapter/computability panel for metric-pack inputs. |
 | `runs/metric_pack_runs.json` | `make metric-pack-runs` or `make viewer-surfaces` | Optional read-only run snapshot for computable pack values and gaps. |
+| `runs/metric_pricing_provenance.json` | `make metric-pricing` or `make viewer-surfaces` | Optional pricing provenance surface for economic observability guardrails. |
 | `runs/graph_dashboard.json` | `make dashboard` or `make viewer-surfaces` | Summary counts and headline card source. |
 | `runs/graph_backlog_projection.json` | `make backlog` or `make viewer-surfaces` | Reviewable metric-pack gaps in global backlog. |
 
@@ -463,6 +464,65 @@ Viewer guidance:
 - Do not expose promote/apply/threshold buttons from this artifact.
 - Use `computed_values[].threshold_authority_state` only as provenance; this
   artifact itself never grants authority.
+
+## Pricing Provenance Artifact
+
+`runs/metric_pricing_provenance.json` is the guardrail surface for economic
+observability. It defines pricing/source provenance before any cost-like metric
+values are shown.
+
+Top-level shape:
+
+```json
+{
+  "artifact_kind": "metric_pricing_provenance",
+  "schema_version": 1,
+  "generated_at": "...",
+  "review_state": "ready_for_review",
+  "next_gap": "connect_model_usage_telemetry",
+  "summary": {
+    "pricing_surface_count": 1,
+    "status_counts": {"missing_price_source": 1},
+    "observed_spend_count": 0,
+    "derived_proxy_count": 0
+  },
+  "entry_count": 1,
+  "pricing_surfaces": [],
+  "viewer_projection": {},
+  "canonical_mutations_allowed": false,
+  "tracked_artifacts_written": false
+}
+```
+
+Each `pricing_surfaces[]` item describes one pricing source:
+
+```json
+{
+  "pricing_surface_id": "codex_supervisor_default_model",
+  "provider": "openai",
+  "model": "gpt-5.5",
+  "tool": "codex_supervisor",
+  "execution_profile": "standard",
+  "reasoning_effort": "medium",
+  "unit_convention": "model_token_usage",
+  "currency": "internal_proxy_unit",
+  "pricing_version": "unpriced_dev_v1",
+  "observed_spend": null,
+  "derived_proxy": null,
+  "price_status": "missing_price_source",
+  "spend_status": "not_observed",
+  "missing_price_behavior": "report_observation_gap",
+  "review_state": "ready_for_review",
+  "next_gap": "connect_model_usage_telemetry"
+}
+```
+
+Viewer guidance:
+
+- Show this as provenance/guardrail, not as cost total.
+- Treat `missing_price_source` as an observation gap.
+- Do not display economic cost-like metric values unless their run entry cites a
+  reviewed pricing surface.
 
 ## Dashboard Additions
 
