@@ -1,0 +1,273 @@
+# Metric Pack Viewer Contract
+
+## Status
+
+Draft viewer contract for the metric-pack surfaces introduced by proposal 0043.
+
+## Source Artifacts
+
+ContextBuilder should treat these SpecGraph artifacts as read-only JSON
+surfaces:
+
+| Artifact | Producer | Consumer Use |
+| --- | --- | --- |
+| `runs/metric_pack_index.json` | `make metric-packs` or `make viewer-surfaces` | Primary metric-pack overlay and browse panel source. |
+| `runs/graph_dashboard.json` | `make dashboard` or `make viewer-surfaces` | Summary counts and headline card source. |
+| `runs/graph_backlog_projection.json` | `make backlog` or `make viewer-surfaces` | Reviewable metric-pack gaps in global backlog. |
+
+No ContextBuilder write path is implied by this contract.
+
+## Primary Artifact
+
+`runs/metric_pack_index.json` has this stable top-level shape:
+
+```json
+{
+  "artifact_kind": "metric_pack_index",
+  "schema_version": 1,
+  "generated_at": "2026-04-30T23:03:06.642914+00:00",
+  "review_state": "ready_for_review",
+  "next_gap": "review_metric_pack_index",
+  "source_snapshot": {
+    "registry_path": "tools/metric_pack_registry.json",
+    "registry_hash": "...",
+    "external_consumer_index": {
+      "artifact_path": "runs/external_consumer_index.json",
+      "generated_at": "..."
+    }
+  },
+  "summary": {
+    "pack_count": 3,
+    "status_counts": {},
+    "authority_state_counts": {},
+    "missing_input_counts": {}
+  },
+  "entry_count": 3,
+  "entries": [],
+  "viewer_projection": {},
+  "canonical_mutations_allowed": false,
+  "tracked_artifacts_written": false
+}
+```
+
+`source_snapshot` and `summary` are structured metadata. Consumers may render
+the documented keys above, but should treat additional nested fields as
+pass-through metadata because producer-side provenance can grow over time.
+
+Viewer guardrails:
+
+- Render only when `artifact_kind == "metric_pack_index"`.
+- Treat any missing artifact as "not built yet", not as graph failure.
+- Treat `canonical_mutations_allowed !== false` or
+  `tracked_artifacts_written !== false` as a boundary warning.
+- Do not infer threshold authority from pack labels or source paths.
+
+## Entry Contract
+
+Each `entries[]` item describes one metric pack:
+
+```json
+{
+  "metric_pack_id": "sib_full",
+  "title": "SIB Full Metrics",
+  "consumer_id": "metrics_sib_full",
+  "pack_status": "draft_visible_only",
+  "review_state": "draft_visible",
+  "next_gap": "review_draft_metric_pack",
+  "reference_state": "draft_reference",
+  "consumer_reference_state": "draft_reference",
+  "pack_authority_state": "not_threshold_authority",
+  "lifecycle_state": "active",
+  "source": {
+    "repository": "0al-spec/Metrics",
+    "path": "SIB_FULL/sib_full_metrics.tex",
+    "compiled_path": "SIB_FULL/sib_full_metrics.pdf"
+  },
+  "source_availability": {
+    "consumer_found": true,
+    "consumer_contract_status": "ready",
+    "checkout_status": "available",
+    "source_artifact_status": "verified"
+  },
+  "adapter": {
+    "status": "deferred",
+    "next_gap": "add_metric_pack_adapter"
+  },
+  "metric_count": 2,
+  "metrics": [
+    {
+      "metric_id": "sib_eff_star",
+      "label": "Effective Pre-Implementation SIB",
+      "kind": "diagnostic",
+      "phase": "pre_implementation",
+      "requires": [
+        "intent_atoms",
+        "expected_implementation_potential"
+      ]
+    }
+  ],
+  "missing_inputs": ["intent_atoms"],
+  "contract_errors": [],
+  "projection_hints": {
+    "lens": "extended_diagnostic",
+    "show_as_baseline": false
+  }
+}
+```
+
+`metrics[]` is a normalized list of metric declarations from the source pack.
+For compact tables, prefer `metric_count`; use `metrics[]` only for detail
+drawers or expanded rows. Unknown metric fields should pass through without
+breaking the table.
+
+Recommended columns for a first browse panel:
+
+| Column | Field |
+| --- | --- |
+| Pack | `metric_pack_id` + `title` |
+| Status | `pack_status` |
+| Review | `review_state` |
+| Authority | `pack_authority_state` |
+| Source | `source.path` |
+| Next Gap | `next_gap` |
+| Missing Inputs | `missing_inputs.length` |
+
+## Status Vocabulary
+
+Known `pack_status` values:
+
+- `ready_for_index_review`: source and authority state are coherent; human can
+  review the index entry.
+- `draft_visible_only`: draft source is visible but not threshold authority.
+- `missing_external_consumer`: registry references a consumer not visible in
+  `external_consumer_index`.
+- `missing_source_artifact`: source path is missing or not verified in the
+  sibling checkout.
+- `invalid_pack_contract`: malformed metric-pack registry entry.
+- `adapter_missing`: pack requires an adapter before execution.
+- `blocked_by_authority_state`: source authority state requires review before
+  stronger use.
+
+Known `review_state` values:
+
+- `ready_for_review`
+- `draft_visible`
+- `not_ready`
+
+Known `pack_authority_state` values:
+
+- `not_threshold_authority`
+- `promotion_candidate`
+- `operational_source_after_review`
+
+Unknown future values should render as neutral chips and pass through raw text.
+
+## Viewer Projection
+
+`viewer_projection` groups pack IDs by stable dimensions:
+
+```json
+{
+  "pack_status": {
+    "draft_visible_only": ["sib_full"],
+    "ready_for_index_review": ["sib"]
+  },
+  "review_state": {},
+  "authority_state": {},
+  "reference_state": {},
+  "missing_inputs": {},
+  "named_filters": {
+    "ready_for_index_review": ["sib"],
+    "draft_visible_only": ["sib_full"],
+    "non_authoritative": ["sib_full"],
+    "economic_observability": ["sib_economic_observability"],
+    "needs_repair": []
+  }
+}
+```
+
+Use `viewer_projection` for counts and filters. Use `entries[]` for row data.
+Known named filters may be present with empty arrays to keep zero-count UI
+states stable. Unknown future named filters should be treated as neutral
+pass-through filters, not as rendering errors.
+
+## Dashboard Additions
+
+When `runs/graph_dashboard.json` is generated by a SpecGraph version with
+metric-pack support, ContextBuilder may read:
+
+```json
+{
+  "source_artifacts": {
+    "metric_pack_index": {
+      "artifact_path": "runs/metric_pack_index.json",
+      "generated_at": "..."
+    }
+  },
+  "sections": {
+    "metrics": {
+      "metric_pack_entry_count": 3,
+      "metric_pack_status_counts": {},
+      "metric_pack_review_state_counts": {},
+      "metric_pack_authority_counts": {},
+      "metric_pack_named_filter_counts": {}
+    }
+  },
+  "viewer_projection": {
+    "named_filters": {
+      "metric_packs_review_ready": 1,
+      "metric_packs_draft_visible": 2
+    }
+  }
+}
+```
+
+Headline card:
+
+- `card_id: "metric_packs_review_ready"`
+- `section: "metrics"`
+- `value`: count of `ready_for_index_review` packs
+
+## Backlog Projection Additions
+
+`runs/graph_backlog_projection.json` may include entries where:
+
+```json
+{
+  "source_artifact": "metric_pack_index",
+  "domain": "metrics",
+  "subject_kind": "metric_pack",
+  "subject_id": "sib_full",
+  "status": "draft_visible_only",
+  "review_state": "draft_visible",
+  "next_gap": "review_draft_metric_pack"
+}
+```
+
+Viewer affordance:
+
+- Show these in the existing backlog overlay under the `metrics` domain.
+- Group by `next_gap` the same way as other backlog entries.
+- Prefer amber/review styling for `review_*` gaps.
+- `status` is populated from the metric pack's `pack_status`.
+- Do not style draft packs as errors unless `status` is
+  `invalid_pack_contract`, `missing_external_consumer`, or
+  `missing_source_artifact`.
+
+## Suggested UI
+
+First useful viewer slice:
+
+- Add a "Metric Packs" section under Graph Dashboard metrics.
+- Add a "Browse packs" button when `runs/metric_pack_index.json` is present.
+- Render one row per `entries[]` item.
+- Add chips for `pack_status`, `pack_authority_state`, and `reference_state`.
+- Add a guardrail note: "Metric packs are diagnostic lenses; they do not grant
+  threshold authority by themselves."
+
+Out of scope for the first viewer slice:
+
+- Running metric packs.
+- Editing `tools/metric_pack_registry.json`.
+- Promoting draft sources.
+- Turning missing inputs into canonical intents automatically.
