@@ -28,8 +28,20 @@ No ContextBuilder write path is implied by this contract.
   "generated_at": "2026-04-30T23:03:06.642914+00:00",
   "review_state": "ready_for_review",
   "next_gap": "review_metric_pack_index",
-  "source_snapshot": {},
-  "summary": {},
+  "source_snapshot": {
+    "registry_path": "tools/metric_pack_registry.json",
+    "registry_hash": "...",
+    "external_consumer_index": {
+      "artifact_path": "runs/external_consumer_index.json",
+      "generated_at": "..."
+    }
+  },
+  "summary": {
+    "pack_count": 3,
+    "status_counts": {},
+    "authority_state_counts": {},
+    "missing_input_counts": {}
+  },
   "entry_count": 3,
   "entries": [],
   "viewer_projection": {},
@@ -37,6 +49,10 @@ No ContextBuilder write path is implied by this contract.
   "tracked_artifacts_written": false
 }
 ```
+
+`source_snapshot` and `summary` are structured metadata. Consumers may render
+the documented keys above, but should treat additional nested fields as
+pass-through metadata because producer-side provenance can grow over time.
 
 Viewer guardrails:
 
@@ -78,6 +94,18 @@ Each `entries[]` item describes one metric pack:
     "next_gap": "add_metric_pack_adapter"
   },
   "metric_count": 2,
+  "metrics": [
+    {
+      "metric_id": "sib_eff_star",
+      "label": "Effective Pre-Implementation SIB",
+      "kind": "diagnostic",
+      "phase": "pre_implementation",
+      "requires": [
+        "intent_atoms",
+        "expected_implementation_potential"
+      ]
+    }
+  ],
   "missing_inputs": ["intent_atoms"],
   "contract_errors": [],
   "projection_hints": {
@@ -86,6 +114,11 @@ Each `entries[]` item describes one metric pack:
   }
 }
 ```
+
+`metrics[]` is a normalized list of metric declarations from the source pack.
+For compact tables, prefer `metric_count`; use `metrics[]` only for detail
+drawers or expanded rows. Unknown metric fields should pass through without
+breaking the table.
 
 Recommended columns for a first browse panel:
 
@@ -147,12 +180,16 @@ Unknown future values should render as neutral chips and pass through raw text.
     "ready_for_index_review": ["sib"],
     "draft_visible_only": ["sib_full"],
     "non_authoritative": ["sib_full"],
-    "economic_observability": ["sib_economic_observability"]
+    "economic_observability": ["sib_economic_observability"],
+    "needs_repair": []
   }
 }
 ```
 
 Use `viewer_projection` for counts and filters. Use `entries[]` for row data.
+Known named filters may be present with empty arrays to keep zero-count UI
+states stable. Unknown future named filters should be treated as neutral
+pass-through filters, not as rendering errors.
 
 ## Dashboard Additions
 
@@ -212,7 +249,8 @@ Viewer affordance:
 - Show these in the existing backlog overlay under the `metrics` domain.
 - Group by `next_gap` the same way as other backlog entries.
 - Prefer amber/review styling for `review_*` gaps.
-- Do not style draft packs as errors unless `pack_status` is
+- `status` is populated from the metric pack's `pack_status`.
+- Do not style draft packs as errors unless `status` is
   `invalid_pack_contract`, `missing_external_consumer`, or
   `missing_source_artifact`.
 
