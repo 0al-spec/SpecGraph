@@ -14,9 +14,9 @@ def test_metric_pack_registry_declares_current_metrics_packs() -> None:
     registry = load_json("tools/metric_pack_registry.json")
 
     assert registry["artifact_kind"] == "metric_pack_registry"
-    assert registry["schema_version"] == 1
+    assert registry["version"] == 1
     assert registry["source_registry"] == {
-        "consumer_id": "metrics",
+        "repository_id": "metrics",
         "repository": "0al-spec/Metrics",
         "contract_path": "METRIC_PACKS.md",
         "readme_path": "README.md",

@@ -1,11 +1,11 @@
 {
   "artifact_kind": "metric_pack_registry",
-  "schema_version": 1,
+  "version": 1,
   "repository_layout": {
     "index_artifact": "runs/metric_pack_index.json"
   },
   "source_registry": {
-    "consumer_id": "metrics",
+    "repository_id": "metrics",
     "repository": "0al-spec/Metrics",
     "contract_path": "METRIC_PACKS.md",
     "readme_path": "README.md"
