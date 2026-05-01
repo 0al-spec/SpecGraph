@@ -362,8 +362,34 @@ def test_metric_pricing_provenance_declares_economic_guardrail(
     assert surface["model"] == supervisor_module.CHILD_EXECUTOR_MODEL
     assert surface["unit_convention"] == "model_token_usage"
     assert surface["currency"] == "internal_proxy_unit"
+    assert surface["pricing_version"] == (
+        supervisor_module.METRIC_PRICING_PROVENANCE_DEFAULT_VERSION
+    )
     assert surface["missing_price_behavior"] == "report_observation_gap"
     assert surface["next_gap"] == "connect_model_usage_telemetry"
+
+
+@pytest.mark.parametrize(
+    ("model", "provider"),
+    [
+        ("gpt-5.5", "openai"),
+        ("chatgpt-5", "openai"),
+        ("openai/gpt-5.5", "openai"),
+        ("o1", "openai"),
+        ("o3-mini", "openai"),
+        ("o4.1", "openai"),
+        ("ollama/llama3", "unknown"),
+        ("openrouter/gpt-oss-20b", "unknown"),
+        ("opus-4", "unknown"),
+        ("", "unspecified"),
+    ],
+)
+def test_infer_metric_pricing_provider_uses_known_openai_patterns(
+    supervisor_module: object,
+    model: str,
+    provider: str,
+) -> None:
+    assert supervisor_module.infer_metric_pricing_provider(model) == provider
 
 
 def test_metric_pack_adapter_index_maps_pricing_surface_to_provenance(
@@ -656,4 +682,4 @@ def test_main_builds_metric_pricing_provenance_as_standalone_command(
     report = json.loads(capsys.readouterr().out)
     assert report["artifact_kind"] == "metric_pricing_provenance"
     artifact = json.loads((runs_dir / "metric_pricing_provenance.json").read_text())
-    assert artifact["pricing_surfaces"][0]["missing_price_behavior"] == ("report_observation_gap")
+    assert artifact["pricing_surfaces"][0]["missing_price_behavior"] == "report_observation_gap"

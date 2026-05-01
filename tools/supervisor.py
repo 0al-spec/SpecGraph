@@ -2853,6 +2853,7 @@ METRIC_PACK_RUNS_SCHEMA_VERSION = 1
 METRIC_PRICING_PROVENANCE_FILENAME = Path(METRIC_PRICING_PROVENANCE_RELATIVE_PATH).name
 METRIC_PRICING_PROVENANCE_ARTIFACT_KIND = "metric_pricing_provenance"
 METRIC_PRICING_PROVENANCE_SCHEMA_VERSION = 1
+METRIC_PRICING_PROVENANCE_DEFAULT_VERSION = "unpriced_dev_v1"
 SUPERVISOR_PERFORMANCE_INDEX_FILENAME = Path(
     str(supervisor_performance_policy_lookup("repository_layout.index_artifact"))
 ).name
@@ -22701,7 +22702,9 @@ def write_metric_pack_registry_drift(report: dict[str, Any]) -> Path:
 
 def infer_metric_pricing_provider(model: str) -> str:
     normalized = model.strip().lower()
-    if normalized.startswith("gpt-") or normalized.startswith("o"):
+    if normalized.startswith(("gpt-", "chatgpt-", "openai/")):
+        return "openai"
+    if re.fullmatch(r"o[1-9](?:[.-].*)?", normalized):
         return "openai"
     if normalized:
         return "unknown"
@@ -22724,7 +22727,7 @@ def build_metric_pricing_provenance() -> dict[str, Any]:
         "reasoning_effort": reasoning_effort,
         "unit_convention": "model_token_usage",
         "currency": "internal_proxy_unit",
-        "pricing_version": "unpriced_dev_v1",
+        "pricing_version": METRIC_PRICING_PROVENANCE_DEFAULT_VERSION,
         "time_window": {
             "kind": "snapshot",
             "observed_at": utc_now_iso(),
