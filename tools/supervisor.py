@@ -55,6 +55,7 @@ Derived artifacts:
 - Metrics delivery workflow: `runs/metrics_delivery_workflow.json`
 - Metrics feedback index: `runs/metrics_feedback_index.json`
 - Metrics source promotion index: `runs/metrics_source_promotion_index.json`
+- Metric pack index: `runs/metric_pack_index.json`
 - bootstrap smoke benchmark: `runs/bootstrap_smoke_benchmark.json`
 - spec trace index: `runs/spec_trace_index.json`
 - spec trace projection: `runs/spec_trace_projection.json`
@@ -139,6 +140,7 @@ SPECPM_PUBLIC_REGISTRY_POLICY_RELATIVE_PATH = "tools/specpm_public_registry_poli
 METRICS_DELIVERY_POLICY_RELATIVE_PATH = "tools/metrics_delivery_policy.json"
 METRICS_FEEDBACK_POLICY_RELATIVE_PATH = "tools/metrics_feedback_policy.json"
 METRICS_SOURCE_PROMOTION_POLICY_RELATIVE_PATH = "tools/metrics_source_promotion_policy.json"
+METRIC_PACK_REGISTRY_RELATIVE_PATH = "tools/metric_pack_registry.json"
 SPECPM_EXPORT_REGISTRY_RELATIVE_PATH = "tools/specpm_export_registry.json"
 
 
@@ -168,6 +170,10 @@ def specgraph_vocabulary_path() -> Path:
 
 def external_consumers_registry_path() -> Path:
     return ROOT / "tools" / "external_consumers.json"
+
+
+def metric_pack_registry_path() -> Path:
+    return ROOT / "tools" / "metric_pack_registry.json"
 
 
 def pre_spec_semantics_policy_path() -> Path:
@@ -2651,6 +2657,9 @@ METRICS_SOURCE_PROMOTION_AUTHORITY_STATES = list(
 METRICS_SOURCE_PROMOTION_NAMED_FILTERS = list(
     metrics_source_promotion_policy_lookup("promotion_contract.named_filters")
 )
+METRIC_PACK_INDEX_FILENAME = "metric_pack_index.json"
+METRIC_PACK_INDEX_ARTIFACT_KIND = "metric_pack_index"
+METRIC_PACK_INDEX_SCHEMA_VERSION = 1
 SUPERVISOR_PERFORMANCE_INDEX_FILENAME = Path(
     str(supervisor_performance_policy_lookup("repository_layout.index_artifact"))
 ).name
@@ -14001,6 +14010,10 @@ def metrics_source_promotion_index_path() -> Path:
     return RUNS_DIR / METRICS_SOURCE_PROMOTION_INDEX_FILENAME
 
 
+def metric_pack_index_path() -> Path:
+    return RUNS_DIR / METRIC_PACK_INDEX_FILENAME
+
+
 def supervisor_performance_index_path() -> Path:
     return RUNS_DIR / SUPERVISOR_PERFORMANCE_INDEX_FILENAME
 
@@ -14116,6 +14129,40 @@ def load_external_consumers_registry() -> dict[str, Any]:
             raise RuntimeError(
                 "malformed external consumer registry: "
                 f"entry {index} in {path.as_posix()} missing consumer_id"
+            )
+    return payload
+
+
+def load_metric_pack_registry() -> dict[str, Any]:
+    path = metric_pack_registry_path()
+    if not path.exists():
+        return {
+            "artifact_kind": "metric_pack_registry",
+            "schema_version": 1,
+            "packs": [],
+        }
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except OSError as exc:
+        raise RuntimeError(
+            f"failed to read metric pack registry: {path.as_posix()} ({exc})"
+        ) from exc
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(f"malformed metric pack registry: {path.as_posix()} ({exc})") from exc
+    if not isinstance(payload, dict):
+        raise RuntimeError(
+            f"malformed metric pack registry: {path.as_posix()} must contain a JSON object"
+        )
+    raw_packs = payload.get("packs", [])
+    if not isinstance(raw_packs, list):
+        raise RuntimeError(
+            f"malformed metric pack registry: {path.as_posix()} packs must be a JSON list"
+        )
+    for index, item in enumerate(raw_packs, start=1):
+        if not isinstance(item, dict):
+            raise RuntimeError(
+                "malformed metric pack registry: "
+                f"entry {index} in {path.as_posix()} must be an object"
             )
     return payload
 
@@ -20761,6 +20808,346 @@ def build_metrics_source_promotion_index(
 def write_metrics_source_promotion_index(report: dict[str, Any]) -> Path:
     RUNS_DIR.mkdir(parents=True, exist_ok=True)
     path = metrics_source_promotion_index_path()
+    with artifact_lock(path):
+        atomic_write_json(path, report)
+    return path
+
+
+def metric_pack_registry_hash(registry: dict[str, Any]) -> str:
+    canonical = json.dumps(registry, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def metric_pack_next_gap(pack_status: str) -> str:
+    mapping = {
+        "ready_for_index_review": "review_metric_pack_index",
+        "draft_visible_only": "review_draft_metric_pack",
+        "missing_external_consumer": "declare_external_consumer",
+        "missing_source_artifact": "repair_metric_source_reference",
+        "invalid_pack_contract": "repair_metric_pack_contract",
+        "adapter_missing": "add_metric_pack_adapter",
+        "blocked_by_authority_state": "review_metric_source_promotion",
+    }
+    return mapping.get(str(pack_status).strip(), "review_metric_pack_index")
+
+
+def metric_pack_review_state(pack_status: str) -> str:
+    mapping = {
+        "ready_for_index_review": "ready_for_review",
+        "draft_visible_only": "draft_visible",
+        "missing_external_consumer": "not_ready",
+        "missing_source_artifact": "not_ready",
+        "invalid_pack_contract": "not_ready",
+        "adapter_missing": "not_ready",
+        "blocked_by_authority_state": "not_ready",
+    }
+    return mapping.get(str(pack_status).strip(), "not_ready")
+
+
+def external_consumer_artifact_status_for_path(
+    consumer_entry: dict[str, Any] | None,
+    source_path: str,
+) -> str:
+    if not consumer_entry:
+        return "unavailable"
+    source_path = str(source_path).strip()
+    if not source_path:
+        return "missing"
+    for artifact in consumer_entry.get("artifacts", []):
+        if not isinstance(artifact, dict):
+            continue
+        if str(artifact.get("path", "")).strip() == source_path:
+            return str(artifact.get("status", "")).strip() or "missing"
+    return "missing"
+
+
+def metric_pack_metric_requires(metric: dict[str, Any]) -> list[Any]:
+    raw_requires = metric.get("requires", [])
+    return raw_requires if isinstance(raw_requires, list) else []
+
+
+def metric_pack_contract_errors(
+    pack: dict[str, Any],
+    *,
+    allowed_reference_states: set[str],
+    allowed_authority_states: set[str],
+    allowed_lifecycle_states: set[str],
+) -> list[str]:
+    errors: list[str] = []
+    metric_pack_id = str(pack.get("metric_pack_id", "")).strip()
+    if not metric_pack_id:
+        errors.append("missing_metric_pack_id")
+    source = pack.get("source", {})
+    if not isinstance(source, dict) or not str(source.get("path", "")).strip():
+        errors.append("missing_source_path")
+    reference_state = str(pack.get("reference_state", "")).strip()
+    if reference_state not in allowed_reference_states:
+        errors.append("unknown_reference_state")
+    pack_authority_state = str(pack.get("pack_authority_state", "")).strip()
+    if pack_authority_state not in allowed_authority_states:
+        errors.append("unknown_pack_authority_state")
+    lifecycle_state = str(pack.get("lifecycle_state", "")).strip()
+    if lifecycle_state not in allowed_lifecycle_states:
+        errors.append("unknown_lifecycle_state")
+    metrics = pack.get("metrics", [])
+    if not isinstance(metrics, list):
+        errors.append("invalid_metrics_shape")
+    elif not metrics:
+        errors.append("missing_metric_declarations")
+    elif any(
+        isinstance(metric, dict) and not isinstance(metric.get("requires", []), list)
+        for metric in metrics
+    ):
+        errors.append("invalid_metric_requires")
+    projection_hints = pack.get("projection_hints", {})
+    if projection_hints and not isinstance(projection_hints, dict):
+        errors.append("invalid_projection_hints")
+    return errors
+
+
+def build_metric_pack_index(
+    metric_pack_registry: dict[str, Any],
+    external_consumer_index: dict[str, Any],
+) -> dict[str, Any]:
+    allowed_reference_states = {
+        str(item).strip()
+        for item in metric_pack_registry.get("reference_states", [])
+        if str(item).strip()
+    }
+    if not allowed_reference_states:
+        allowed_reference_states = {
+            str(item).strip()
+            for item in external_consumer_index.get("available_reference_states", [])
+            if str(item).strip()
+        }
+    allowed_authority_states = {
+        str(item).strip()
+        for item in metric_pack_registry.get("pack_authority_states", [])
+        if str(item).strip()
+    }
+    allowed_lifecycle_states = {
+        str(item).strip()
+        for item in metric_pack_registry.get("lifecycle_states", [])
+        if str(item).strip()
+    }
+    if not allowed_authority_states:
+        allowed_authority_states = {
+            "not_threshold_authority",
+            "promotion_candidate",
+            "operational_source_after_review",
+        }
+    if not allowed_lifecycle_states:
+        allowed_lifecycle_states = {"active", "deprecated"}
+
+    consumers_by_id = {
+        str(entry.get("consumer_id", "")).strip(): entry
+        for entry in external_consumer_index.get("entries", [])
+        if isinstance(entry, dict) and str(entry.get("consumer_id", "")).strip()
+    }
+
+    entries: list[dict[str, Any]] = []
+    status_groups: dict[str, list[str]] = {}
+    review_state_groups: dict[str, list[str]] = {}
+    authority_state_groups: dict[str, list[str]] = {}
+    reference_state_groups: dict[str, list[str]] = {}
+    missing_input_groups: dict[str, list[str]] = {}
+    named_filters: dict[str, list[str]] = {
+        "ready_for_index_review": [],
+        "draft_visible_only": [],
+        "needs_repair": [],
+        "non_authoritative": [],
+        "economic_observability": [],
+    }
+
+    raw_packs = metric_pack_registry.get("packs", [])
+    if not isinstance(raw_packs, list):
+        raw_packs = []
+
+    for index, raw_pack in enumerate(raw_packs, start=1):
+        if not isinstance(raw_pack, dict):
+            raw_pack = {}
+        pack = copy.deepcopy(raw_pack)
+        metric_pack_id = str(pack.get("metric_pack_id", "")).strip() or f"invalid_pack_{index}"
+        consumer_id = str(pack.get("consumer_id", "")).strip()
+        source = pack.get("source", {})
+        source_path = str(source.get("path", "")).strip() if isinstance(source, dict) else ""
+        reference_state = str(pack.get("reference_state", "")).strip()
+        pack_authority_state = str(pack.get("pack_authority_state", "")).strip()
+        lifecycle_state = str(pack.get("lifecycle_state", "")).strip()
+        contract_errors = metric_pack_contract_errors(
+            pack,
+            allowed_reference_states=allowed_reference_states,
+            allowed_authority_states=allowed_authority_states,
+            allowed_lifecycle_states=allowed_lifecycle_states,
+        )
+
+        consumer_entry = consumers_by_id.get(consumer_id)
+        consumer_reference_state = (
+            str(consumer_entry.get("reference_state", "")).strip() if consumer_entry else ""
+        )
+        source_artifact_status = external_consumer_artifact_status_for_path(
+            consumer_entry,
+            source_path,
+        )
+
+        if contract_errors:
+            pack_status = "invalid_pack_contract"
+        elif not consumer_entry:
+            pack_status = "missing_external_consumer"
+        elif consumer_reference_state and consumer_reference_state != reference_state:
+            pack_status = "invalid_pack_contract"
+            contract_errors.append("reference_state_mismatch")
+        elif source_artifact_status != "verified":
+            pack_status = "missing_source_artifact"
+        elif (
+            reference_state == "draft_reference"
+            and pack_authority_state != "not_threshold_authority"
+        ):
+            pack_status = "blocked_by_authority_state"
+        elif pack_authority_state == "not_threshold_authority":
+            pack_status = "draft_visible_only"
+        else:
+            pack_status = "ready_for_index_review"
+
+        review_state = metric_pack_review_state(pack_status)
+        next_gap = metric_pack_next_gap(pack_status)
+        raw_metrics = pack.get("metrics", [])
+        if not isinstance(raw_metrics, list):
+            raw_metrics = []
+        metrics = [item for item in raw_metrics if isinstance(item, dict)]
+        projection_hints = pack.get("projection_hints", {})
+        if not isinstance(projection_hints, dict):
+            projection_hints = {}
+        missing_inputs = sorted(
+            {
+                str(required).strip()
+                for metric in metrics
+                for required in metric_pack_metric_requires(metric)
+                if str(required).strip()
+                and str(required).strip()
+                not in {
+                    "specification_signal",
+                    "implementation_signal",
+                    "spec_graph",
+                    "trace_plane",
+                    "implementation_work",
+                    "review_feedback",
+                    "runtime_events",
+                }
+            }
+        )
+
+        entry = {
+            "metric_pack_id": metric_pack_id,
+            "title": str(pack.get("title", "")).strip(),
+            "consumer_id": consumer_id,
+            "pack_status": pack_status,
+            "review_state": review_state,
+            "next_gap": next_gap,
+            "reference_state": reference_state,
+            "consumer_reference_state": consumer_reference_state,
+            "pack_authority_state": pack_authority_state,
+            "lifecycle_state": lifecycle_state,
+            "source": copy.deepcopy(source) if isinstance(source, dict) else {},
+            "source_availability": {
+                "consumer_found": consumer_entry is not None,
+                "consumer_contract_status": (
+                    str(consumer_entry.get("contract_status", "")).strip()
+                    if consumer_entry
+                    else "unavailable"
+                ),
+                "checkout_status": (
+                    str(consumer_entry.get("local_checkout", {}).get("status", "")).strip()
+                    if consumer_entry
+                    else "missing"
+                ),
+                "source_artifact_status": source_artifact_status,
+            },
+            "adapter": {
+                "status": "deferred",
+                "next_gap": "add_metric_pack_adapter",
+            },
+            "metric_count": len(metrics),
+            "metrics": copy.deepcopy(metrics),
+            "missing_inputs": missing_inputs,
+            "contract_errors": contract_errors,
+            "projection_hints": copy.deepcopy(projection_hints),
+        }
+        entries.append(entry)
+
+        key = metric_pack_id
+        status_groups.setdefault(pack_status, []).append(key)
+        review_state_groups.setdefault(review_state, []).append(key)
+        authority_state_groups.setdefault(pack_authority_state or "unknown", []).append(key)
+        reference_state_groups.setdefault(reference_state or "unknown", []).append(key)
+        for missing_input in missing_inputs:
+            missing_input_groups.setdefault(missing_input, []).append(key)
+        if pack_status in {"ready_for_index_review", "draft_visible_only"}:
+            named_filters.setdefault(pack_status, []).append(key)
+        if pack_status not in {"ready_for_index_review", "draft_visible_only"}:
+            named_filters["needs_repair"].append(key)
+        if pack_authority_state == "not_threshold_authority":
+            named_filters["non_authoritative"].append(key)
+        if str(projection_hints.get("lens", "")).strip() == "economic_observability":
+            named_filters["economic_observability"].append(key)
+
+    for bucket in (
+        status_groups,
+        review_state_groups,
+        authority_state_groups,
+        reference_state_groups,
+        missing_input_groups,
+        named_filters,
+    ):
+        for key in list(bucket):
+            bucket[key] = sorted(set(bucket[key]))
+
+    return {
+        "artifact_kind": METRIC_PACK_INDEX_ARTIFACT_KIND,
+        "schema_version": METRIC_PACK_INDEX_SCHEMA_VERSION,
+        "generated_at": utc_now_iso(),
+        "review_state": "ready_for_review" if entries else "not_ready",
+        "next_gap": "review_metric_pack_index" if entries else "declare_metric_pack_registry",
+        "source_snapshot": {
+            "registry_path": METRIC_PACK_REGISTRY_RELATIVE_PATH,
+            "registry_hash": metric_pack_registry_hash(metric_pack_registry),
+            "external_consumer_index": {
+                "artifact_path": external_consumer_index_path().relative_to(ROOT).as_posix(),
+                "generated_at": external_consumer_index.get("generated_at"),
+            },
+        },
+        "summary": {
+            "pack_count": len(entries),
+            "status_counts": {key: len(value) for key, value in sorted(status_groups.items())},
+            "authority_state_counts": {
+                key: len(value) for key, value in sorted(authority_state_groups.items())
+            },
+            "missing_input_counts": {
+                key: len(value) for key, value in sorted(missing_input_groups.items())
+            },
+        },
+        "entry_count": len(entries),
+        "entries": entries,
+        "viewer_projection": {
+            "pack_status": {key: value for key, value in sorted(status_groups.items())},
+            "review_state": {key: value for key, value in sorted(review_state_groups.items())},
+            "authority_state": {
+                key: value for key, value in sorted(authority_state_groups.items())
+            },
+            "reference_state": {
+                key: value for key, value in sorted(reference_state_groups.items())
+            },
+            "missing_inputs": {key: value for key, value in sorted(missing_input_groups.items())},
+            "named_filters": {key: value for key, value in sorted(named_filters.items())},
+        },
+        "canonical_mutations_allowed": False,
+        "tracked_artifacts_written": False,
+    }
+
+
+def write_metric_pack_index(report: dict[str, Any]) -> Path:
+    RUNS_DIR.mkdir(parents=True, exist_ok=True)
+    path = metric_pack_index_path()
     with artifact_lock(path):
         atomic_write_json(path, report)
     return path
@@ -28328,6 +28715,7 @@ def main(
     build_metrics_delivery_workflow_mode: bool = False,
     build_metrics_feedback_index_mode: bool = False,
     build_metrics_source_promotion_index_mode: bool = False,
+    build_metric_pack_index_mode: bool = False,
     build_metric_signal_index_mode: bool = False,
     build_metric_threshold_proposals_mode: bool = False,
     build_supervisor_performance_index_mode: bool = False,
@@ -28407,6 +28795,7 @@ def main(
         "--build-metrics-delivery-workflow": build_metrics_delivery_workflow_mode,
         "--build-metrics-feedback-index": build_metrics_feedback_index_mode,
         "--build-metrics-source-promotion-index": build_metrics_source_promotion_index_mode,
+        "--build-metric-pack-index": build_metric_pack_index_mode,
         "--build-metric-signal-index": build_metric_signal_index_mode,
         "--build-metric-threshold-proposals": build_metric_threshold_proposals_mode,
         "--build-supervisor-performance-index": build_supervisor_performance_index_mode,
@@ -28610,6 +28999,27 @@ def main(
                 clean_stale_runtime,
                 observe_graph_health_mode,
                 operator_request_packet_path,
+                build_intent_layer_overlay_mode,
+                build_vocabulary_index_mode,
+                build_vocabulary_drift_report_mode,
+                build_pre_spec_semantics_index_mode,
+                build_graph_health_overlay_mode,
+                build_graph_health_trends_mode,
+                build_spec_trace_index_mode,
+                build_spec_trace_projection_mode,
+                build_evidence_plane_index_mode,
+                build_evidence_plane_overlay_mode,
+                build_external_consumer_overlay_mode,
+                build_external_consumer_handoffs_mode,
+                build_specpm_import_preview_mode,
+                build_specpm_import_handoff_packets_mode,
+                build_metric_signal_index_mode,
+                build_metric_threshold_proposals_mode,
+                build_supervisor_performance_index_mode,
+                build_graph_dashboard_mode,
+                build_proposal_lane_overlay_mode,
+                build_proposal_runtime_index_mode,
+                build_proposal_promotion_index_mode,
             )
         ):
             print(
@@ -30069,6 +30479,45 @@ def main(
         emit_supervisor_json(promotion_index, output_mode=normalized_output_mode)
         return 0
 
+    if build_metric_pack_index_mode:
+        if any(
+            (
+                dry_run,
+                auto_approve,
+                loop,
+                resolve_gate,
+                decision,
+                note,
+                target_spec,
+                split_proposal,
+                apply_split_proposal,
+                operator_note,
+                mutation_budget,
+                run_authority,
+                execution_profile,
+                child_model,
+                child_timeout_seconds,
+                verbose,
+                list_stale_runtime,
+                clean_stale_runtime,
+                observe_graph_health_mode,
+                operator_request_packet_path,
+            )
+        ):
+            print(
+                "--build-metric-pack-index must be used as a standalone command",
+                file=sys.stderr,
+            )
+            return 1
+        consumer_index = build_external_consumer_index()
+        metric_pack_index = build_metric_pack_index(
+            load_metric_pack_registry(),
+            consumer_index,
+        )
+        write_metric_pack_index(metric_pack_index)
+        emit_supervisor_json(metric_pack_index, output_mode=normalized_output_mode)
+        return 0
+
     if build_metric_signal_index_mode:
         if any(
             (
@@ -31188,6 +31637,14 @@ if __name__ == "__main__":
         ),
     )
     parser.add_argument(
+        "--build-metric-pack-index",
+        action="store_true",
+        help=(
+            "Build a read-only metric pack index from the metric pack registry and "
+            "external consumer observations without executing metric packs"
+        ),
+    )
+    parser.add_argument(
         "--build-metric-signal-index",
         action="store_true",
         help=(
@@ -31434,6 +31891,7 @@ if __name__ == "__main__":
             build_metrics_delivery_workflow_mode=args.build_metrics_delivery_workflow,
             build_metrics_feedback_index_mode=args.build_metrics_feedback_index,
             build_metrics_source_promotion_index_mode=args.build_metrics_source_promotion_index,
+            build_metric_pack_index_mode=args.build_metric_pack_index,
             build_metric_signal_index_mode=args.build_metric_signal_index,
             build_metric_threshold_proposals_mode=args.build_metric_threshold_proposals,
             build_supervisor_performance_index_mode=args.build_supervisor_performance_index,

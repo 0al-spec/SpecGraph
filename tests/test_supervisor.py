@@ -12221,6 +12221,209 @@ def test_build_metrics_source_promotion_index_blocks_without_stable_sib_anchor(
     assert entry["next_gap"] == "establish_stable_sib_family_anchor"
 
 
+def test_build_metric_pack_index_reports_pack_statuses(supervisor_module: object) -> None:
+    registry = {
+        "artifact_kind": "metric_pack_registry",
+        "schema_version": 1,
+        "reference_states": ["stable_reference", "draft_reference"],
+        "pack_authority_states": [
+            "not_threshold_authority",
+            "promotion_candidate",
+            "operational_source_after_review",
+        ],
+        "lifecycle_states": ["active", "deprecated"],
+        "packs": [
+            {
+                "metric_pack_id": "sib",
+                "title": "SIB",
+                "consumer_id": "metrics_sib",
+                "reference_state": "stable_reference",
+                "pack_authority_state": "operational_source_after_review",
+                "lifecycle_state": "active",
+                "source": {"path": "SIB/metrics.tex"},
+                "metrics": [
+                    {
+                        "metric_id": "sib",
+                        "requires": ["specification_signal", "implementation_signal"],
+                    }
+                ],
+            },
+            {
+                "metric_pack_id": "sib_full",
+                "title": "SIB Full",
+                "consumer_id": "metrics_sib_full",
+                "reference_state": "draft_reference",
+                "pack_authority_state": "not_threshold_authority",
+                "lifecycle_state": "active",
+                "source": {"path": "SIB_FULL/sib_full_metrics.tex"},
+                "metrics": [{"metric_id": "sib_eff_star", "requires": ["intent_atoms"]}],
+            },
+        ],
+    }
+    external_consumer_index = {
+        "generated_at": "2026-04-30T12:00:00Z",
+        "entries": [
+            {
+                "consumer_id": "metrics_sib",
+                "reference_state": "stable_reference",
+                "contract_status": "ready",
+                "local_checkout": {"status": "available"},
+                "artifacts": [{"path": "SIB/metrics.tex", "status": "verified"}],
+            },
+            {
+                "consumer_id": "metrics_sib_full",
+                "reference_state": "draft_reference",
+                "contract_status": "ready",
+                "local_checkout": {"status": "available"},
+                "artifacts": [{"path": "SIB_FULL/sib_full_metrics.tex", "status": "verified"}],
+            },
+        ],
+    }
+
+    report = supervisor_module.build_metric_pack_index(registry, external_consumer_index)
+
+    assert report["artifact_kind"] == supervisor_module.METRIC_PACK_INDEX_ARTIFACT_KIND
+    assert report["entry_count"] == 2
+    by_id = {entry["metric_pack_id"]: entry for entry in report["entries"]}
+    assert by_id["sib"]["pack_status"] == "ready_for_index_review"
+    assert by_id["sib"]["review_state"] == "ready_for_review"
+    assert by_id["sib_full"]["pack_status"] == "draft_visible_only"
+    assert by_id["sib_full"]["missing_inputs"] == ["intent_atoms"]
+    assert report["viewer_projection"]["pack_status"]["ready_for_index_review"] == ["sib"]
+    assert report["viewer_projection"]["pack_status"]["draft_visible_only"] == ["sib_full"]
+    assert report["summary"]["status_counts"] == {
+        "draft_visible_only": 1,
+        "ready_for_index_review": 1,
+    }
+    assert report["canonical_mutations_allowed"] is False
+    assert report["tracked_artifacts_written"] is False
+
+
+def test_build_metric_pack_index_keeps_invalid_contracts_as_entries(
+    supervisor_module: object,
+) -> None:
+    registry = {
+        "reference_states": ["stable_reference", "draft_reference"],
+        "pack_authority_states": ["not_threshold_authority"],
+        "lifecycle_states": ["active"],
+        "packs": [
+            {
+                "consumer_id": "metrics_bad",
+                "reference_state": "future_reference",
+                "pack_authority_state": "not_threshold_authority",
+                "lifecycle_state": "active",
+                "source": {"path": "BAD/metrics.tex"},
+                "metrics": [{"metric_id": "bad", "requires": None}],
+                "projection_hints": "bad",
+            }
+        ],
+    }
+
+    report = supervisor_module.build_metric_pack_index(registry, {"entries": []})
+
+    entry = report["entries"][0]
+    assert entry["metric_pack_id"] == "invalid_pack_1"
+    assert entry["pack_status"] == "invalid_pack_contract"
+    assert entry["next_gap"] == "repair_metric_pack_contract"
+    assert "missing_metric_pack_id" in entry["contract_errors"]
+    assert "unknown_reference_state" in entry["contract_errors"]
+    assert "invalid_metric_requires" in entry["contract_errors"]
+    assert "invalid_projection_hints" in entry["contract_errors"]
+    assert entry["projection_hints"] == {}
+
+
+def test_build_metric_pack_index_handles_non_list_metrics_as_invalid_entry(
+    supervisor_module: object,
+) -> None:
+    registry = {
+        "reference_states": ["stable_reference"],
+        "pack_authority_states": ["operational_source_after_review"],
+        "lifecycle_states": ["active"],
+        "packs": [
+            {
+                "metric_pack_id": "bad_metrics",
+                "consumer_id": "metrics_bad",
+                "reference_state": "stable_reference",
+                "pack_authority_state": "operational_source_after_review",
+                "lifecycle_state": "active",
+                "source": {"path": "BAD/metrics.tex"},
+                "metrics": None,
+            }
+        ],
+    }
+
+    report = supervisor_module.build_metric_pack_index(registry, {"entries": []})
+
+    entry = report["entries"][0]
+    assert entry["metric_pack_id"] == "bad_metrics"
+    assert entry["pack_status"] == "invalid_pack_contract"
+    assert "invalid_metrics_shape" in entry["contract_errors"]
+    assert entry["metrics"] == []
+
+
+def test_main_builds_metric_pack_index_as_standalone_command(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_external_consumer_index",
+        lambda: {"generated_at": "2026-04-30T12:00:00Z", "entries": []},
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "load_metric_pack_registry",
+        lambda: {"generated_at": "2026-04-30T12:01:00Z", "packs": []},
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_metric_pack_index",
+        lambda registry, consumer_index: {
+            "artifact_kind": supervisor_module.METRIC_PACK_INDEX_ARTIFACT_KIND,
+            "schema_version": supervisor_module.METRIC_PACK_INDEX_SCHEMA_VERSION,
+            "generated_at": "2026-04-30T12:02:00Z",
+            "entry_count": 0,
+            "entries": [],
+            "viewer_projection": {
+                "pack_status": {},
+                "review_state": {},
+                "authority_state": {},
+                "reference_state": {},
+                "missing_inputs": {},
+                "named_filters": {},
+            },
+            "canonical_mutations_allowed": False,
+            "tracked_artifacts_written": False,
+        },
+    )
+
+    exit_code = supervisor_module.main(build_metric_pack_index_mode=True)
+
+    assert exit_code == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["artifact_kind"] == supervisor_module.METRIC_PACK_INDEX_ARTIFACT_KIND
+    assert not (repo_fixture / "runs" / "external_consumer_index.json").exists()
+    pack_index_artifact = json.loads(
+        (repo_fixture / "runs" / "metric_pack_index.json").read_text(encoding="utf-8")
+    )
+    assert pack_index_artifact["generated_at"] == "2026-04-30T12:02:00Z"
+
+
+def test_main_build_metric_pack_index_rejects_other_build_modes(
+    supervisor_module: object,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    exit_code = supervisor_module.main(
+        build_metric_pack_index_mode=True,
+        build_graph_dashboard_mode=True,
+    )
+
+    assert exit_code == 1
+    assert "standalone commands cannot be combined" in capsys.readouterr().err
+
+
 def test_main_builds_metrics_source_promotion_index_as_standalone_command(
     supervisor_module: object,
     repo_fixture: Path,
