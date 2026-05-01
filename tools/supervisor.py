@@ -57,6 +57,7 @@ Derived artifacts:
 - Metrics feedback index: `runs/metrics_feedback_index.json`
 - Metrics source promotion index: `runs/metrics_source_promotion_index.json`
 - Metric pack index: `runs/metric_pack_index.json`
+- Metric pack registry drift: `runs/metric_pack_registry_drift.json`
 - bootstrap smoke benchmark: `runs/bootstrap_smoke_benchmark.json`
 - spec trace index: `runs/spec_trace_index.json`
 - spec trace projection: `runs/spec_trace_projection.json`
@@ -143,6 +144,7 @@ METRICS_DELIVERY_POLICY_RELATIVE_PATH = "tools/metrics_delivery_policy.json"
 METRICS_FEEDBACK_POLICY_RELATIVE_PATH = "tools/metrics_feedback_policy.json"
 METRICS_SOURCE_PROMOTION_POLICY_RELATIVE_PATH = "tools/metrics_source_promotion_policy.json"
 METRIC_PACK_REGISTRY_RELATIVE_PATH = "tools/metric_pack_registry.json"
+METRIC_PACK_REGISTRY_DRIFT_RELATIVE_PATH = "runs/metric_pack_registry_drift.json"
 SPECPM_EXPORT_REGISTRY_RELATIVE_PATH = "tools/specpm_export_registry.json"
 
 
@@ -2833,6 +2835,9 @@ METRICS_SOURCE_PROMOTION_NAMED_FILTERS = list(
 METRIC_PACK_INDEX_FILENAME = "metric_pack_index.json"
 METRIC_PACK_INDEX_ARTIFACT_KIND = "metric_pack_index"
 METRIC_PACK_INDEX_SCHEMA_VERSION = 1
+METRIC_PACK_REGISTRY_DRIFT_FILENAME = Path(METRIC_PACK_REGISTRY_DRIFT_RELATIVE_PATH).name
+METRIC_PACK_REGISTRY_DRIFT_ARTIFACT_KIND = "metric_pack_registry_drift"
+METRIC_PACK_REGISTRY_DRIFT_SCHEMA_VERSION = 1
 SUPERVISOR_PERFORMANCE_INDEX_FILENAME = Path(
     str(supervisor_performance_policy_lookup("repository_layout.index_artifact"))
 ).name
@@ -15161,6 +15166,10 @@ def metric_pack_index_path() -> Path:
     return RUNS_DIR / METRIC_PACK_INDEX_FILENAME
 
 
+def metric_pack_registry_drift_path() -> Path:
+    return RUNS_DIR / METRIC_PACK_REGISTRY_DRIFT_FILENAME
+
+
 def supervisor_performance_index_path() -> Path:
     return RUNS_DIR / SUPERVISOR_PERFORMANCE_INDEX_FILENAME
 
@@ -22300,6 +22309,366 @@ def write_metric_pack_index(report: dict[str, Any]) -> Path:
     return path
 
 
+def markdown_table_cell_text(value: str) -> str:
+    text = str(value).strip()
+    if text.startswith("`") and text.endswith("`") and len(text) >= 2:
+        text = text[1:-1].strip()
+    if text.startswith("**") and text.endswith("**") and len(text) >= 4:
+        text = text[2:-2].strip()
+    return text
+
+
+def parse_metric_pack_contract_packs(markdown_text: str) -> dict[str, dict[str, str]]:
+    packs: dict[str, dict[str, str]] = {}
+    in_pack_table = False
+    for raw_line in str(markdown_text).splitlines():
+        line = raw_line.strip()
+        if not line.startswith("|"):
+            if in_pack_table:
+                break
+            continue
+        cells = [markdown_table_cell_text(cell) for cell in line.strip("|").split("|")]
+        normalized_cells = [cell.lower().replace("`", "").strip() for cell in cells]
+        if not in_pack_table:
+            if "metric_pack_id" in normalized_cells and "source path" in normalized_cells:
+                in_pack_table = True
+            continue
+        if all(not re.search(r"[A-Za-z0-9_]", cell) for cell in cells):
+            continue
+        if len(cells) < 3:
+            continue
+        metric_pack_id = cells[0].strip()
+        display_name = cells[1].strip()
+        source_path = cells[2].strip()
+        if not metric_pack_id or metric_pack_id == "metric_pack_id":
+            continue
+        packs[metric_pack_id] = {
+            "metric_pack_id": metric_pack_id,
+            "display_name": display_name,
+            "source_path": source_path,
+        }
+    return packs
+
+
+def metric_pack_registry_source_consumer_entry(
+    metric_pack_registry: dict[str, Any],
+    external_consumer_index: dict[str, Any],
+) -> dict[str, Any] | None:
+    source_registry = metric_pack_registry.get("source_registry", {})
+    repository = (
+        str(source_registry.get("repository", "")).strip()
+        if isinstance(source_registry, dict)
+        else ""
+    )
+    if not repository:
+        return None
+    repository_suffix = repository.lower()
+    candidates: list[dict[str, Any]] = []
+    for entry in external_consumer_index.get("entries", []):
+        if not isinstance(entry, dict):
+            continue
+        repo_url = str(entry.get("repo_url", "")).strip().lower()
+        if repository_suffix in repo_url:
+            candidates.append(entry)
+    if not candidates:
+        return None
+    available = [
+        entry
+        for entry in candidates
+        if str(entry.get("local_checkout", {}).get("status", "")).strip() == "available"
+    ]
+    return available[0] if available else candidates[0]
+
+
+def metric_pack_registry_source_path(pack: dict[str, Any]) -> str:
+    source = pack.get("source", {})
+    if not isinstance(source, dict):
+        return ""
+    return str(source.get("path", "")).strip()
+
+
+def metric_pack_registry_drift_entry(
+    *,
+    drift_status: str,
+    subject_id: str,
+    subject_kind: str,
+    next_gap: str,
+    specgraph_value: Any = None,
+    metrics_value: Any = None,
+    severity: str = "medium",
+    details: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    return {
+        "drift_id": f"metric_pack_registry_drift::{drift_status}::{subject_id}",
+        "drift_status": drift_status,
+        "subject_kind": subject_kind,
+        "subject_id": subject_id,
+        "severity": severity,
+        "review_state": "ready_for_review",
+        "next_gap": next_gap,
+        "specgraph_value": specgraph_value,
+        "metrics_value": metrics_value,
+        "details": details or {},
+    }
+
+
+def build_metric_pack_registry_drift(
+    metric_pack_registry: dict[str, Any],
+    external_consumer_index: dict[str, Any],
+) -> dict[str, Any]:
+    source_registry = metric_pack_registry.get("source_registry", {})
+    if not isinstance(source_registry, dict):
+        source_registry = {}
+    repository = str(source_registry.get("repository", "")).strip()
+    contract_path = str(source_registry.get("contract_path", "")).strip() or "METRIC_PACKS.md"
+    source_consumer = metric_pack_registry_source_consumer_entry(
+        metric_pack_registry,
+        external_consumer_index,
+    )
+    local_checkout = (
+        source_consumer.get("local_checkout", {}) if isinstance(source_consumer, dict) else {}
+    )
+    if not isinstance(local_checkout, dict):
+        local_checkout = {}
+    checkout_status = str(local_checkout.get("status", "")).strip() or "missing"
+    repo_revision = str(local_checkout.get("repo_revision", "")).strip()
+
+    entries: list[dict[str, Any]] = []
+    metrics_contract_packs: dict[str, dict[str, str]] = {}
+    contract_status = "unread"
+    contract_error = ""
+
+    if source_consumer is None or checkout_status != "available":
+        contract_status = "unavailable"
+        entries.append(
+            metric_pack_registry_drift_entry(
+                drift_status="missing_checkout",
+                subject_id=repository or "metric_source_registry",
+                subject_kind="source_registry",
+                next_gap="provide_metrics_checkout",
+                specgraph_value={"repository": repository, "contract_path": contract_path},
+                severity="high",
+                details={
+                    "checkout_status": checkout_status,
+                    "reason": "Metrics source registry checkout is not available.",
+                },
+            )
+        )
+    else:
+        checkout_path = Path(str(local_checkout.get("checkout_path", "")).strip())
+        contract_file = checkout_path / contract_path
+        if not contract_file.exists():
+            contract_status = "missing_contract"
+            entries.append(
+                metric_pack_registry_drift_entry(
+                    drift_status="missing_metrics_contract",
+                    subject_id=contract_path,
+                    subject_kind="source_contract",
+                    next_gap="restore_metrics_pack_contract",
+                    specgraph_value={"contract_path": contract_path},
+                    metrics_value=None,
+                    severity="high",
+                    details={"repository": repository},
+                )
+            )
+        else:
+            try:
+                metrics_contract_packs = parse_metric_pack_contract_packs(
+                    contract_file.read_text(encoding="utf-8")
+                )
+                contract_status = "parsed"
+            except OSError as exc:
+                contract_status = "unreadable_contract"
+                contract_error = str(exc)
+                entries.append(
+                    metric_pack_registry_drift_entry(
+                        drift_status="unreadable_metrics_contract",
+                        subject_id=contract_path,
+                        subject_kind="source_contract",
+                        next_gap="repair_metrics_pack_contract",
+                        specgraph_value={"contract_path": contract_path},
+                        severity="high",
+                        details={"error": contract_error},
+                    )
+                )
+            if contract_status == "parsed" and not metrics_contract_packs:
+                entries.append(
+                    metric_pack_registry_drift_entry(
+                        drift_status="empty_metrics_contract",
+                        subject_id=contract_path,
+                        subject_kind="source_contract",
+                        next_gap="repair_metrics_pack_contract",
+                        specgraph_value={"contract_path": contract_path},
+                        severity="high",
+                        details={"reason": "No metric_pack_id rows found in Pack Registry table."},
+                    )
+                )
+
+            if metrics_contract_packs:
+                for metric_pack_id, metrics_pack in sorted(metrics_contract_packs.items()):
+                    source_path = metrics_pack["source_path"]
+                    if source_path and not (checkout_path / source_path).exists():
+                        entries.append(
+                            metric_pack_registry_drift_entry(
+                                drift_status="missing_source_artifact",
+                                subject_id=metric_pack_id,
+                                subject_kind="metric_pack",
+                                next_gap="repair_metric_source_reference",
+                                metrics_value=source_path,
+                                severity="high",
+                                details={"contract_path": contract_path},
+                            )
+                        )
+
+    specgraph_packs = {
+        str(pack.get("metric_pack_id", "")).strip(): pack
+        for pack in metric_pack_registry.get("packs", [])
+        if isinstance(pack, dict) and str(pack.get("metric_pack_id", "")).strip()
+    }
+
+    if contract_status == "parsed" and metrics_contract_packs:
+        specgraph_ids = set(specgraph_packs)
+        metrics_ids = set(metrics_contract_packs)
+
+        for metric_pack_id in sorted(specgraph_ids - metrics_ids):
+            pack = specgraph_packs[metric_pack_id]
+            entries.append(
+                metric_pack_registry_drift_entry(
+                    drift_status="missing_in_metrics_contract",
+                    subject_id=metric_pack_id,
+                    subject_kind="metric_pack",
+                    next_gap="review_metric_pack_registry_drift",
+                    specgraph_value=metric_pack_registry_source_path(pack),
+                    metrics_value=None,
+                )
+            )
+
+        for metric_pack_id in sorted(metrics_ids - specgraph_ids):
+            metrics_pack = metrics_contract_packs[metric_pack_id]
+            entries.append(
+                metric_pack_registry_drift_entry(
+                    drift_status="missing_in_specgraph_registry",
+                    subject_id=metric_pack_id,
+                    subject_kind="metric_pack",
+                    next_gap="review_metric_pack_registry_drift",
+                    specgraph_value=None,
+                    metrics_value=metrics_pack["source_path"],
+                )
+            )
+
+        for metric_pack_id in sorted(specgraph_ids & metrics_ids):
+            specgraph_pack = specgraph_packs[metric_pack_id]
+            metrics_pack = metrics_contract_packs[metric_pack_id]
+            specgraph_source_path = metric_pack_registry_source_path(specgraph_pack)
+            metrics_source_path = metrics_pack["source_path"]
+            if specgraph_source_path != metrics_source_path:
+                entries.append(
+                    metric_pack_registry_drift_entry(
+                        drift_status="source_path_mismatch",
+                        subject_id=metric_pack_id,
+                        subject_kind="metric_pack",
+                        next_gap="review_metric_pack_registry_drift",
+                        specgraph_value=specgraph_source_path,
+                        metrics_value=metrics_source_path,
+                    )
+                )
+            specgraph_title = str(specgraph_pack.get("title", "")).strip()
+            metrics_display_name = metrics_pack["display_name"]
+            if specgraph_title and metrics_display_name and specgraph_title != metrics_display_name:
+                entries.append(
+                    metric_pack_registry_drift_entry(
+                        drift_status="display_name_mismatch",
+                        subject_id=metric_pack_id,
+                        subject_kind="metric_pack",
+                        next_gap="review_metric_pack_registry_drift",
+                        specgraph_value=specgraph_title,
+                        metrics_value=metrics_display_name,
+                        severity="low",
+                    )
+                )
+
+    status_groups: dict[str, list[str]] = {}
+    severity_groups: dict[str, list[str]] = {}
+    named_filters: dict[str, list[str]] = {
+        "missing_checkout": [],
+        "contract_unavailable": [],
+        "source_path_mismatch": [],
+        "missing_source_artifact": [],
+        "needs_review": [],
+        "in_sync": [],
+    }
+    for entry in entries:
+        subject_id = str(entry.get("subject_id", "")).strip()
+        drift_status = str(entry.get("drift_status", "")).strip()
+        severity = str(entry.get("severity", "")).strip()
+        status_groups.setdefault(drift_status, []).append(subject_id)
+        severity_groups.setdefault(severity, []).append(subject_id)
+        if drift_status in named_filters:
+            named_filters[drift_status].append(subject_id)
+        if drift_status in {
+            "missing_metrics_contract",
+            "unreadable_metrics_contract",
+            "empty_metrics_contract",
+        }:
+            named_filters["contract_unavailable"].append(subject_id)
+        named_filters["needs_review"].append(subject_id)
+    if not entries:
+        named_filters["in_sync"].append(repository or "metric_source_registry")
+
+    for bucket in (status_groups, severity_groups, named_filters):
+        for key in list(bucket):
+            bucket[key] = sorted(set(bucket[key]))
+
+    review_state = "ready_for_review" if entries else "clean"
+    next_gap = "review_metric_pack_registry_drift" if entries else "none"
+    return {
+        "artifact_kind": METRIC_PACK_REGISTRY_DRIFT_ARTIFACT_KIND,
+        "schema_version": METRIC_PACK_REGISTRY_DRIFT_SCHEMA_VERSION,
+        "generated_at": utc_now_iso(),
+        "review_state": review_state,
+        "next_gap": next_gap,
+        "source_snapshot": {
+            "artifact_path": METRIC_PACK_REGISTRY_DRIFT_RELATIVE_PATH,
+            "registry_path": METRIC_PACK_REGISTRY_RELATIVE_PATH,
+            "registry_hash": metric_pack_registry_hash(metric_pack_registry),
+            "source_registry": {
+                "repository": repository,
+                "contract_path": contract_path,
+                "checkout_status": checkout_status,
+                "repo_revision": repo_revision,
+                "contract_status": contract_status,
+                "contract_error": contract_error,
+            },
+            "external_consumer_index": {
+                "artifact_path": external_consumer_index_path().relative_to(ROOT).as_posix(),
+                "generated_at": external_consumer_index.get("generated_at"),
+            },
+        },
+        "summary": {
+            "drift_count": len(entries),
+            "status_counts": {key: len(value) for key, value in sorted(status_groups.items())},
+            "severity_counts": {key: len(value) for key, value in sorted(severity_groups.items())},
+        },
+        "entry_count": len(entries),
+        "entries": entries,
+        "viewer_projection": {
+            "drift_status": {key: value for key, value in sorted(status_groups.items())},
+            "severity": {key: value for key, value in sorted(severity_groups.items())},
+            "named_filters": {key: value for key, value in sorted(named_filters.items())},
+        },
+        "canonical_mutations_allowed": False,
+        "tracked_artifacts_written": False,
+    }
+
+
+def write_metric_pack_registry_drift(report: dict[str, Any]) -> Path:
+    RUNS_DIR.mkdir(parents=True, exist_ok=True)
+    path = metric_pack_registry_drift_path()
+    with artifact_lock(path):
+        atomic_write_json(path, report)
+    return path
+
+
 def _iso_or_empty(value: dt.datetime | None) -> str:
     if value is None:
         return ""
@@ -26647,8 +27016,13 @@ def build_viewer_surfaces(specs: list[SpecNode]) -> dict[str, Any]:
         consumer_index,
         metric_signal_index,
     )
+    metric_pack_registry = load_metric_pack_registry()
     metric_pack_index = build_metric_pack_index(
-        load_metric_pack_registry(),
+        metric_pack_registry,
+        consumer_index,
+    )
+    metric_pack_registry_drift = build_metric_pack_registry_drift(
+        metric_pack_registry,
         consumer_index,
     )
     proposal_lane_overlay = build_proposal_lane_overlay()
@@ -26690,6 +27064,9 @@ def build_viewer_surfaces(specs: list[SpecNode]) -> dict[str, Any]:
     proposal_spec_trace_path = write_proposal_spec_trace_index(proposal_spec_trace_index)
     promotion_path = write_metrics_source_promotion_index(metrics_source_promotion_index)
     metric_pack_path = write_metric_pack_index(metric_pack_index)
+    metric_pack_registry_drift_path_result = write_metric_pack_registry_drift(
+        metric_pack_registry_drift,
+    )
     conversation_memory_index = build_conversation_memory_index()
     conversation_memory_path = write_conversation_memory_index(conversation_memory_index)
     conversation_memory_map = build_conversation_memory_map(conversation_memory_index)
@@ -26752,6 +27129,14 @@ def build_viewer_surfaces(specs: list[SpecNode]) -> dict[str, Any]:
                     .get("status_counts", {})
                     .get("ready_for_index_review", 0)
                 ),
+            },
+            "metric_pack_registry_drift": {
+                "artifact_path": metric_pack_registry_drift_path_result.relative_to(
+                    ROOT
+                ).as_posix(),
+                "generated_at": metric_pack_registry_drift.get("generated_at"),
+                "entry_count": metric_pack_registry_drift.get("entry_count"),
+                "next_gap": metric_pack_registry_drift.get("next_gap"),
             },
             "conversation_memory_index": {
                 "artifact_path": conversation_memory_path.relative_to(ROOT).as_posix(),
@@ -30337,6 +30722,7 @@ def main(
     build_metrics_feedback_index_mode: bool = False,
     build_metrics_source_promotion_index_mode: bool = False,
     build_metric_pack_index_mode: bool = False,
+    build_metric_pack_registry_drift_mode: bool = False,
     build_conversation_memory_index_mode: bool = False,
     build_conversation_memory_map_mode: bool = False,
     build_conversation_memory_promotion_pressure_mode: bool = False,
@@ -30421,6 +30807,7 @@ def main(
         "--build-metrics-feedback-index": build_metrics_feedback_index_mode,
         "--build-metrics-source-promotion-index": build_metrics_source_promotion_index_mode,
         "--build-metric-pack-index": build_metric_pack_index_mode,
+        "--build-metric-pack-registry-drift": build_metric_pack_registry_drift_mode,
         "--build-conversation-memory-index": build_conversation_memory_index_mode,
         "--build-conversation-memory-map": build_conversation_memory_map_mode,
         "--build-conversation-memory-promotion-pressure": (
@@ -32149,6 +32536,45 @@ def main(
         emit_supervisor_json(metric_pack_index, output_mode=normalized_output_mode)
         return 0
 
+    if build_metric_pack_registry_drift_mode:
+        if any(
+            (
+                dry_run,
+                auto_approve,
+                loop,
+                resolve_gate,
+                decision,
+                note,
+                target_spec,
+                split_proposal,
+                apply_split_proposal,
+                operator_note,
+                mutation_budget,
+                run_authority,
+                execution_profile,
+                child_model,
+                child_timeout_seconds,
+                verbose,
+                list_stale_runtime,
+                clean_stale_runtime,
+                observe_graph_health_mode,
+                operator_request_packet_path,
+            )
+        ):
+            print(
+                "--build-metric-pack-registry-drift must be used as a standalone command",
+                file=sys.stderr,
+            )
+            return 1
+        consumer_index = build_external_consumer_index()
+        drift_report = build_metric_pack_registry_drift(
+            load_metric_pack_registry(),
+            consumer_index,
+        )
+        write_metric_pack_registry_drift(drift_report)
+        emit_supervisor_json(drift_report, output_mode=normalized_output_mode)
+        return 0
+
     if build_conversation_memory_index_mode:
         if any(
             (
@@ -33437,6 +33863,14 @@ if __name__ == "__main__":
         ),
     )
     parser.add_argument(
+        "--build-metric-pack-registry-drift",
+        action="store_true",
+        help=(
+            "Build a read-only drift report between the SpecGraph metric pack registry "
+            "and the sibling Metrics repository contract"
+        ),
+    )
+    parser.add_argument(
         "--build-conversation-memory-index",
         action="store_true",
         help=(
@@ -33716,6 +34150,7 @@ if __name__ == "__main__":
             build_metrics_feedback_index_mode=args.build_metrics_feedback_index,
             build_metrics_source_promotion_index_mode=args.build_metrics_source_promotion_index,
             build_metric_pack_index_mode=args.build_metric_pack_index,
+            build_metric_pack_registry_drift_mode=args.build_metric_pack_registry_drift,
             build_conversation_memory_index_mode=args.build_conversation_memory_index,
             build_conversation_memory_map_mode=args.build_conversation_memory_map,
             build_conversation_memory_promotion_pressure_mode=(

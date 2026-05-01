@@ -12,6 +12,7 @@ surfaces:
 | Artifact | Producer | Consumer Use |
 | --- | --- | --- |
 | `runs/metric_pack_index.json` | `make metric-packs` or `make viewer-surfaces` | Primary metric-pack overlay and browse panel source. |
+| `runs/metric_pack_registry_drift.json` | `make metric-pack-drift` or `make viewer-surfaces` | Optional drift panel comparing SpecGraph's registry with Metrics `METRIC_PACKS.md`. |
 | `runs/graph_dashboard.json` | `make dashboard` or `make viewer-surfaces` | Summary counts and headline card source. |
 | `runs/graph_backlog_projection.json` | `make backlog` or `make viewer-surfaces` | Reviewable metric-pack gaps in global backlog. |
 
@@ -190,6 +191,80 @@ Use `viewer_projection` for counts and filters. Use `entries[]` for row data.
 Known named filters may be present with empty arrays to keep zero-count UI
 states stable. Unknown future named filters should be treated as neutral
 pass-through filters, not as rendering errors.
+
+## Registry Drift Artifact
+
+`runs/metric_pack_registry_drift.json` is a read-only observation artifact. It
+compares SpecGraph's `tools/metric_pack_registry.json` with the sibling Metrics
+`METRIC_PACKS.md` contract. It is intended to surface source registry drift, not
+to sync either repository automatically.
+
+Top-level shape:
+
+```json
+{
+  "artifact_kind": "metric_pack_registry_drift",
+  "schema_version": 1,
+  "generated_at": "...",
+  "review_state": "clean",
+  "next_gap": "none",
+  "source_snapshot": {
+    "artifact_path": "runs/metric_pack_registry_drift.json",
+    "registry_path": "tools/metric_pack_registry.json",
+    "registry_hash": "...",
+    "source_registry": {
+      "repository": "0al-spec/Metrics",
+      "contract_path": "METRIC_PACKS.md",
+      "checkout_status": "available",
+      "repo_revision": "...",
+      "contract_status": "parsed",
+      "contract_error": ""
+    },
+    "external_consumer_index": {
+      "artifact_path": "runs/external_consumer_index.json",
+      "generated_at": "..."
+    }
+  },
+  "summary": {
+    "drift_count": 0,
+    "status_counts": {},
+    "severity_counts": {}
+  },
+  "entry_count": 0,
+  "entries": [],
+  "viewer_projection": {
+    "drift_status": {},
+    "severity": {},
+    "named_filters": {
+      "in_sync": ["0al-spec/Metrics"],
+      "needs_review": []
+    }
+  },
+  "canonical_mutations_allowed": false,
+  "tracked_artifacts_written": false
+}
+```
+
+Known `entries[].drift_status` values:
+
+- `missing_checkout`: the Metrics checkout is not locally observable.
+- `missing_metrics_contract`: `METRIC_PACKS.md` is absent in the Metrics checkout.
+- `unreadable_metrics_contract`: the contract file could not be read.
+- `empty_metrics_contract`: no `metric_pack_id` rows were found in the Pack Registry table.
+- `missing_in_metrics_contract`: SpecGraph declares a pack that Metrics does not list.
+- `missing_in_specgraph_registry`: Metrics lists a pack that SpecGraph does not declare.
+- `source_path_mismatch`: both sides list a pack, but source paths differ.
+- `display_name_mismatch`: both sides list a pack, but display names differ.
+- `missing_source_artifact`: Metrics lists a source path that is absent locally.
+
+Viewer guidance:
+
+- Render the artifact only when `artifact_kind == "metric_pack_registry_drift"`.
+- Treat missing artifact as "drift not built yet".
+- Treat `entry_count == 0` as green/neutral "in sync".
+- Treat `severity == "high"` as review-needed, not as policy failure.
+- Do not expose local checkout paths; use `repo_revision`, `contract_path`, and
+  pack IDs for display.
 
 ## Dashboard Additions
 
