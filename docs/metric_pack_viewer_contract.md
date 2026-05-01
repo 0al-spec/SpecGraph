@@ -14,6 +14,7 @@ surfaces:
 | `runs/metric_pack_index.json` | `make metric-packs` or `make viewer-surfaces` | Primary metric-pack overlay and browse panel source. |
 | `runs/metric_pack_registry_drift.json` | `make metric-pack-drift` or `make viewer-surfaces` | Optional drift panel comparing SpecGraph's registry with Metrics `METRIC_PACKS.md`. |
 | `runs/metric_pack_adapter_index.json` | `make metric-pack-adapters` or `make viewer-surfaces` | Optional adapter/computability panel for metric-pack inputs. |
+| `runs/metric_pack_runs.json` | `make metric-pack-runs` or `make viewer-surfaces` | Optional read-only run snapshot for computable pack values and gaps. |
 | `runs/graph_dashboard.json` | `make dashboard` or `make viewer-surfaces` | Summary counts and headline card source. |
 | `runs/graph_backlog_projection.json` | `make backlog` or `make viewer-surfaces` | Reviewable metric-pack gaps in global backlog. |
 
@@ -45,7 +46,14 @@ No ContextBuilder write path is implied by this contract.
     "missing_input_counts": {}
   },
   "entry_count": 3,
-  "entries": [],
+  "entries": [
+    {"metric_pack_id": "sib", "run_status": "computed"},
+    {"metric_pack_id": "sib_full", "run_status": "not_computable"},
+    {
+      "metric_pack_id": "sib_economic_observability",
+      "run_status": "not_computable"
+    }
+  ],
   "viewer_projection": {},
   "canonical_mutations_allowed": false,
   "tracked_artifacts_written": false
@@ -362,8 +370,99 @@ Viewer guidance:
 - Use `adapter_backlog.items[]` for "what input do we need to define next?"
   overlays.
 - Treat `adapter_execution.status == "deferred"` as a guardrail, not a failure.
-- Do not add "Run metric pack" UI until a future `metric_pack_runs.json`
-  contract exists.
+- Do not add external execution UI; `metric_pack_runs.json` is a read-only
+  snapshot, not a command surface.
+
+## Run Snapshot Artifact
+
+`runs/metric_pack_runs.json` is the first read-only run surface. It does not
+execute external code; it projects metric-pack values that can already be
+derived from existing SpecGraph metric signals and records gaps for the rest.
+
+Top-level shape:
+
+```json
+{
+  "artifact_kind": "metric_pack_runs",
+  "schema_version": 1,
+  "generated_at": "...",
+  "review_state": "ready_for_review",
+  "next_gap": "review_metric_pack_runs",
+  "source_snapshot": {
+    "artifact_path": "runs/metric_pack_runs.json",
+    "metric_pack_index": {"artifact_path": "runs/metric_pack_index.json"},
+    "metric_pack_adapter_index": {
+      "artifact_path": "runs/metric_pack_adapter_index.json"
+    },
+    "metric_signal_index": {"artifact_path": "runs/metric_signal_index.json"}
+  },
+  "summary": {
+    "pack_count": 3,
+    "run_status_counts": {"computed": 1, "not_computable": 2},
+    "computed_value_count": 1,
+    "gap_count": 9
+  },
+  "entry_count": 3,
+  "entries": [],
+  "viewer_projection": {},
+  "canonical_mutations_allowed": false,
+  "tracked_artifacts_written": false
+}
+```
+
+Each `entries[]` item describes one pack snapshot:
+
+```json
+{
+  "run_id": "metric_pack_run::sib::latest",
+  "metric_pack_id": "sib",
+  "title": "SIB",
+  "run_status": "computed",
+  "review_state": "ready_for_review",
+  "next_gap": "review_metric_pack_run_snapshot",
+  "adapter_status": "ready_for_adapter_review",
+  "input_snapshot": {
+    "adapter_inputs": [],
+    "missing_inputs": [],
+    "adapter_next_gap": "review_metric_pack_adapter_index"
+  },
+  "computed_values": [
+    {
+      "metric_id": "sib",
+      "value_status": "computed_from_existing_signal",
+      "score": 0.82,
+      "status": "healthy",
+      "threshold_authority_state": "canonical_threshold_authority"
+    }
+  ],
+  "gaps": [],
+  "finding_projection": {
+    "status": "deferred",
+    "next_gap": "add_metric_pack_finding_index"
+  },
+  "threshold_authority_granted": false,
+  "canonical_mutations_allowed": false,
+  "tracked_artifacts_written": false
+}
+```
+
+Known `run_status` values:
+
+- `computed`: at least one value is projected and no run gaps remain.
+- `partial`: values exist, but some metric value adapters are still missing.
+- `not_computable`: missing input adapters or missing value adapters prevent a
+  useful run snapshot.
+- `invalid_pack_contract`: the pack has no usable adapter contract.
+
+Viewer guidance:
+
+- Render this as "Run snapshot" or "Computed preview", not as executable
+  runtime.
+- Treat `finding_projection.status == "deferred"` as the guardrail that pack
+  findings are not yet proposal pressure.
+- Do not expose promote/apply/threshold buttons from this artifact.
+- Use `computed_values[].threshold_authority_state` only as provenance; this
+  artifact itself never grants authority.
 
 ## Dashboard Additions
 

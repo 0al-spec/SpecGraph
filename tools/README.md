@@ -159,6 +159,10 @@ Supervisor modes:
   `runs/metric_pack_adapter_index.json` from the current metric-pack index so
   declared pack inputs are mapped to existing SpecGraph source artifacts or
   surfaced as computability gaps without executing metric packs.
+- `--build-metric-pack-runs`: build `runs/metric_pack_runs.json` from the
+  current metric-pack index, adapter index, and metric-signal index so already
+  computable pack values are visible as read-only snapshots without promoting
+  findings.
 - `--build-conversation-memory-index`: build
   `runs/conversation_memory_index.json` from
   `tools/conversation_memory_policy.json`,
@@ -398,6 +402,9 @@ Key derived artifacts:
 - `runs/metric_pack_adapter_index.json`: read-only adapter/computability report
   for metric-pack inputs, including available source-artifact bindings,
   not-computable inputs, and adapter backlog items before any metric execution
+- `runs/metric_pack_runs.json`: read-only metric-pack run snapshot, including
+  computed values from existing metric signals, not-computable gaps, source
+  snapshots, and deferred finding/proposal projection
 - `runs/metric_signal_index.json`: derived metric surface for
   `Specification Verifiability`, `Process Observability`,
   `Structural Observability`, bridge-native `SIB`, and the alias-only

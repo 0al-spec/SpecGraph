@@ -59,6 +59,7 @@ Derived artifacts:
 - Metric pack index: `runs/metric_pack_index.json`
 - Metric pack registry drift: `runs/metric_pack_registry_drift.json`
 - Metric pack adapter index: `runs/metric_pack_adapter_index.json`
+- Metric pack runs: `runs/metric_pack_runs.json`
 - bootstrap smoke benchmark: `runs/bootstrap_smoke_benchmark.json`
 - spec trace index: `runs/spec_trace_index.json`
 - spec trace projection: `runs/spec_trace_projection.json`
@@ -147,6 +148,7 @@ METRICS_SOURCE_PROMOTION_POLICY_RELATIVE_PATH = "tools/metrics_source_promotion_
 METRIC_PACK_REGISTRY_RELATIVE_PATH = "tools/metric_pack_registry.json"
 METRIC_PACK_REGISTRY_DRIFT_RELATIVE_PATH = "runs/metric_pack_registry_drift.json"
 METRIC_PACK_ADAPTER_INDEX_RELATIVE_PATH = "runs/metric_pack_adapter_index.json"
+METRIC_PACK_RUNS_RELATIVE_PATH = "runs/metric_pack_runs.json"
 SPECPM_EXPORT_REGISTRY_RELATIVE_PATH = "tools/specpm_export_registry.json"
 
 
@@ -2843,6 +2845,9 @@ METRIC_PACK_REGISTRY_DRIFT_SCHEMA_VERSION = 1
 METRIC_PACK_ADAPTER_INDEX_FILENAME = Path(METRIC_PACK_ADAPTER_INDEX_RELATIVE_PATH).name
 METRIC_PACK_ADAPTER_INDEX_ARTIFACT_KIND = "metric_pack_adapter_index"
 METRIC_PACK_ADAPTER_INDEX_SCHEMA_VERSION = 1
+METRIC_PACK_RUNS_FILENAME = Path(METRIC_PACK_RUNS_RELATIVE_PATH).name
+METRIC_PACK_RUNS_ARTIFACT_KIND = "metric_pack_runs"
+METRIC_PACK_RUNS_SCHEMA_VERSION = 1
 SUPERVISOR_PERFORMANCE_INDEX_FILENAME = Path(
     str(supervisor_performance_policy_lookup("repository_layout.index_artifact"))
 ).name
@@ -15179,6 +15184,10 @@ def metric_pack_adapter_index_path() -> Path:
     return RUNS_DIR / METRIC_PACK_ADAPTER_INDEX_FILENAME
 
 
+def metric_pack_runs_path() -> Path:
+    return RUNS_DIR / METRIC_PACK_RUNS_FILENAME
+
+
 def supervisor_performance_index_path() -> Path:
     return RUNS_DIR / SUPERVISOR_PERFORMANCE_INDEX_FILENAME
 
@@ -22988,6 +22997,279 @@ def write_metric_pack_adapter_index(report: dict[str, Any]) -> Path:
     return path
 
 
+def metric_pack_run_status(
+    adapter_entry: dict[str, Any],
+    value_records: list[dict[str, Any]],
+    gap_records: list[dict[str, Any]],
+) -> str:
+    adapter_status = str(adapter_entry.get("adapter_status", "")).strip()
+    if adapter_status == "invalid_pack_contract":
+        return "invalid_pack_contract"
+    if adapter_status != "ready_for_adapter_review":
+        return "not_computable"
+    if value_records and gap_records:
+        return "partial"
+    if value_records:
+        return "computed"
+    return "not_computable"
+
+
+def metric_pack_run_next_gap(run_status: str, gap_records: list[dict[str, Any]]) -> str:
+    if run_status == "invalid_pack_contract":
+        return "repair_metric_pack_contract"
+    if gap_records:
+        for gap in gap_records:
+            next_gap = str(gap.get("next_gap", "")).strip()
+            if next_gap and next_gap != "none":
+                return next_gap
+    mapping = {
+        "computed": "review_metric_pack_run_snapshot",
+        "partial": "define_metric_value_adapter",
+        "not_computable": "define_metric_pack_input_adapter",
+        "invalid_pack_contract": "repair_metric_pack_contract",
+    }
+    return mapping.get(run_status, "review_metric_pack_run_snapshot")
+
+
+def metric_pack_run_value_record(
+    metric_definition: dict[str, Any],
+    metric_signal_entry: dict[str, Any],
+) -> dict[str, Any]:
+    metric_id = str(metric_definition.get("metric_id", "")).strip()
+    return {
+        "metric_id": metric_id,
+        "label": str(metric_definition.get("label", "")).strip(),
+        "kind": str(metric_definition.get("kind", "")).strip(),
+        "phase": str(metric_definition.get("phase", "")).strip(),
+        "value_status": "computed_from_existing_signal",
+        "source_metric_id": str(metric_signal_entry.get("metric_id", "")).strip(),
+        "score": copy.deepcopy(metric_signal_entry.get("score")),
+        "minimum_score": copy.deepcopy(metric_signal_entry.get("minimum_score")),
+        "threshold_gap": copy.deepcopy(metric_signal_entry.get("threshold_gap")),
+        "status": str(metric_signal_entry.get("status", "")).strip(),
+        "signal_emitted": bool(metric_signal_entry.get("signal_emitted", False)),
+        "derivation_mode": str(metric_signal_entry.get("derivation_mode", "")).strip(),
+        "threshold_authority_state": str(
+            metric_signal_entry.get("threshold_authority_state", "")
+        ).strip(),
+        "basis": str(metric_signal_entry.get("basis", "")).strip(),
+    }
+
+
+def metric_pack_run_gap_records(
+    *,
+    adapter_entry: dict[str, Any],
+    metric_definitions: list[dict[str, Any]],
+    metric_signal_by_id: dict[str, dict[str, Any]],
+) -> list[dict[str, Any]]:
+    gaps: list[dict[str, Any]] = []
+    adapter_status = str(adapter_entry.get("adapter_status", "")).strip()
+    if adapter_status != "ready_for_adapter_review":
+        adapter_next_gap = str(adapter_entry.get("next_gap", "")).strip()
+        for input_id in adapter_entry.get("missing_inputs", []):
+            normalized_input_id = str(input_id).strip()
+            if not normalized_input_id:
+                continue
+            gaps.append(
+                {
+                    "gap_id": (
+                        f"{adapter_entry.get('metric_pack_id', '')}::input::{normalized_input_id}"
+                    ),
+                    "gap_status": "missing_input_adapter",
+                    "input_id": normalized_input_id,
+                    "metric_id": "",
+                    "next_gap": METRIC_PACK_ADAPTER_INPUT_GAP_DEFAULTS.get(
+                        normalized_input_id,
+                        "define_metric_pack_input_adapter",
+                    ),
+                }
+            )
+        if gaps:
+            return gaps
+        gap_status = adapter_status or "adapter_not_ready"
+        gaps.append(
+            {
+                "gap_id": f"{adapter_entry.get('metric_pack_id', '')}::adapter::{gap_status}",
+                "gap_status": gap_status,
+                "input_id": "",
+                "metric_id": "",
+                "next_gap": adapter_next_gap or metric_pack_adapter_next_gap(adapter_status, []),
+            }
+        )
+        return gaps
+
+    for metric in metric_definitions:
+        metric_id = str(metric.get("metric_id", "")).strip()
+        if not metric_id or metric_id in metric_signal_by_id:
+            continue
+        gaps.append(
+            {
+                "gap_id": f"{adapter_entry.get('metric_pack_id', '')}::metric::{metric_id}",
+                "gap_status": "missing_metric_signal_adapter",
+                "input_id": "",
+                "metric_id": metric_id,
+                "next_gap": "define_metric_value_adapter",
+            }
+        )
+    return gaps
+
+
+def build_metric_pack_runs(
+    metric_pack_index: dict[str, Any],
+    metric_pack_adapter_index: dict[str, Any],
+    metric_signal_index: dict[str, Any],
+) -> dict[str, Any]:
+    pack_entries = {
+        str(item.get("metric_pack_id", "")).strip(): item
+        for item in metric_pack_index.get("entries", [])
+        if isinstance(item, dict) and str(item.get("metric_pack_id", "")).strip()
+    }
+    adapter_entries = {
+        str(item.get("metric_pack_id", "")).strip(): item
+        for item in metric_pack_adapter_index.get("entries", [])
+        if isinstance(item, dict) and str(item.get("metric_pack_id", "")).strip()
+    }
+    metric_signal_by_id = {
+        str(item.get("metric_id", "")).strip(): item
+        for item in metric_signal_index.get("metrics", [])
+        if isinstance(item, dict) and str(item.get("metric_id", "")).strip()
+    }
+
+    entries: list[dict[str, Any]] = []
+    run_status_groups: dict[str, list[str]] = {}
+    metric_value_groups: dict[str, list[str]] = {}
+    named_filters: dict[str, list[str]] = {
+        "computed": [],
+        "partial": [],
+        "not_computable": [],
+        "missing_metric_signal_adapter": [],
+        "proposal_pressure_deferred": [],
+    }
+    value_count = 0
+    gap_count = 0
+
+    for metric_pack_id, pack_entry in sorted(pack_entries.items()):
+        adapter_entry = adapter_entries.get(metric_pack_id, {})
+        adapter_status = str(adapter_entry.get("adapter_status", "")).strip()
+        metric_definitions = [
+            item for item in pack_entry.get("metrics", []) if isinstance(item, dict)
+        ]
+        value_records: list[dict[str, Any]] = []
+        if adapter_status == "ready_for_adapter_review":
+            value_records = [
+                metric_pack_run_value_record(metric, metric_signal_by_id[metric_id])
+                for metric in metric_definitions
+                if (metric_id := str(metric.get("metric_id", "")).strip())
+                and metric_id in metric_signal_by_id
+            ]
+        gap_records = metric_pack_run_gap_records(
+            adapter_entry={**adapter_entry, "metric_pack_id": metric_pack_id},
+            metric_definitions=metric_definitions,
+            metric_signal_by_id=metric_signal_by_id,
+        )
+        run_status = metric_pack_run_status(adapter_entry, value_records, gap_records)
+        next_gap = metric_pack_run_next_gap(run_status, gap_records)
+        run_id = f"metric_pack_run::{metric_pack_id}::latest"
+        value_count += len(value_records)
+        gap_count += len(gap_records)
+        run_status_groups.setdefault(run_status, []).append(metric_pack_id)
+        if run_status in named_filters:
+            named_filters[run_status].append(metric_pack_id)
+        named_filters["proposal_pressure_deferred"].append(metric_pack_id)
+        if any(
+            str(gap.get("gap_status", "")).strip() == "missing_metric_signal_adapter"
+            for gap in gap_records
+        ):
+            named_filters["missing_metric_signal_adapter"].append(metric_pack_id)
+        for value in value_records:
+            metric_id = str(value.get("metric_id", "")).strip()
+            if metric_id:
+                metric_value_groups.setdefault(metric_id, []).append(metric_pack_id)
+        entries.append(
+            {
+                "run_id": run_id,
+                "metric_pack_id": metric_pack_id,
+                "title": str(pack_entry.get("title", "")).strip(),
+                "run_status": run_status,
+                "review_state": "ready_for_review",
+                "next_gap": next_gap,
+                "pack_status": str(pack_entry.get("pack_status", "")).strip(),
+                "pack_authority_state": str(pack_entry.get("pack_authority_state", "")).strip(),
+                "reference_state": str(pack_entry.get("reference_state", "")).strip(),
+                "adapter_status": str(adapter_entry.get("adapter_status", "")).strip(),
+                "input_snapshot": {
+                    "adapter_inputs": copy.deepcopy(adapter_entry.get("inputs", [])),
+                    "missing_inputs": copy.deepcopy(adapter_entry.get("missing_inputs", [])),
+                    "adapter_next_gap": str(adapter_entry.get("next_gap", "")).strip(),
+                },
+                "computed_values": value_records,
+                "gaps": gap_records,
+                "finding_projection": {
+                    "status": "deferred",
+                    "next_gap": "add_metric_pack_finding_index",
+                },
+                "threshold_authority_granted": False,
+                "canonical_mutations_allowed": False,
+                "tracked_artifacts_written": False,
+            }
+        )
+
+    for bucket in (run_status_groups, metric_value_groups, named_filters):
+        for key in list(bucket):
+            bucket[key] = sorted(set(bucket[key]))
+
+    return {
+        "artifact_kind": METRIC_PACK_RUNS_ARTIFACT_KIND,
+        "schema_version": METRIC_PACK_RUNS_SCHEMA_VERSION,
+        "generated_at": utc_now_iso(),
+        "review_state": "ready_for_review" if entries else "not_ready",
+        "next_gap": "review_metric_pack_runs" if entries else "declare_metric_pack_registry",
+        "source_snapshot": {
+            "artifact_path": METRIC_PACK_RUNS_RELATIVE_PATH,
+            "metric_pack_index": {
+                "artifact_path": metric_pack_index_path().relative_to(ROOT).as_posix(),
+                "generated_at": metric_pack_index.get("generated_at"),
+                "entry_count": metric_pack_index.get("entry_count"),
+            },
+            "metric_pack_adapter_index": {
+                "artifact_path": metric_pack_adapter_index_path().relative_to(ROOT).as_posix(),
+                "generated_at": metric_pack_adapter_index.get("generated_at"),
+                "entry_count": metric_pack_adapter_index.get("entry_count"),
+            },
+            "metric_signal_index": {
+                "artifact_path": metric_signal_index_path().relative_to(ROOT).as_posix(),
+                "generated_at": metric_signal_index.get("generated_at"),
+                "entry_count": metric_signal_index.get("entry_count"),
+            },
+        },
+        "summary": {
+            "pack_count": len(entries),
+            "run_status_counts": {
+                key: len(value) for key, value in sorted(run_status_groups.items())
+            },
+            "computed_value_count": value_count,
+            "gap_count": gap_count,
+        },
+        "entry_count": len(entries),
+        "entries": entries,
+        "viewer_projection": {
+            "run_status": {key: value for key, value in sorted(run_status_groups.items())},
+            "metric_values": {key: value for key, value in sorted(metric_value_groups.items())},
+            "named_filters": {key: value for key, value in sorted(named_filters.items())},
+        },
+        "canonical_mutations_allowed": False,
+        "tracked_artifacts_written": False,
+    }
+
+
+def write_metric_pack_runs(report: dict[str, Any]) -> Path:
+    RUNS_DIR.mkdir(parents=True, exist_ok=True)
+    path = metric_pack_runs_path()
+    with artifact_lock(path):
+        atomic_write_json(path, report)
+    return path
+
+
 def _iso_or_empty(value: dt.datetime | None) -> str:
     if value is None:
         return ""
@@ -27398,6 +27680,11 @@ def build_viewer_surfaces(specs: list[SpecNode]) -> dict[str, Any]:
         consumer_index,
     )
     metric_pack_adapter_index = build_metric_pack_adapter_index(metric_pack_index)
+    metric_pack_runs = build_metric_pack_runs(
+        metric_pack_index,
+        metric_pack_adapter_index,
+        metric_signal_index,
+    )
     metric_pack_registry_drift = build_metric_pack_registry_drift(
         metric_pack_registry,
         consumer_index,
@@ -27444,6 +27731,7 @@ def build_viewer_surfaces(specs: list[SpecNode]) -> dict[str, Any]:
     promotion_path = write_metrics_source_promotion_index(metrics_source_promotion_index)
     metric_pack_path = write_metric_pack_index(metric_pack_index)
     metric_pack_adapter_path = write_metric_pack_adapter_index(metric_pack_adapter_index)
+    metric_pack_runs_path_result = write_metric_pack_runs(metric_pack_runs)
     metric_pack_registry_drift_path_result = write_metric_pack_registry_drift(
         metric_pack_registry_drift,
     )
@@ -27525,6 +27813,15 @@ def build_viewer_surfaces(specs: list[SpecNode]) -> dict[str, Any]:
                 "adapter_backlog_count": (
                     metric_pack_adapter_index.get("adapter_backlog", {}).get("entry_count", 0)
                 ),
+            },
+            "metric_pack_runs": {
+                "artifact_path": metric_pack_runs_path_result.relative_to(ROOT).as_posix(),
+                "generated_at": metric_pack_runs.get("generated_at"),
+                "entry_count": metric_pack_runs.get("entry_count"),
+                "computed_value_count": (
+                    metric_pack_runs.get("summary", {}).get("computed_value_count", 0)
+                ),
+                "gap_count": metric_pack_runs.get("summary", {}).get("gap_count", 0),
             },
             "conversation_memory_index": {
                 "artifact_path": conversation_memory_path.relative_to(ROOT).as_posix(),
@@ -31112,6 +31409,7 @@ def main(
     build_metric_pack_index_mode: bool = False,
     build_metric_pack_registry_drift_mode: bool = False,
     build_metric_pack_adapter_index_mode: bool = False,
+    build_metric_pack_runs_mode: bool = False,
     build_conversation_memory_index_mode: bool = False,
     build_conversation_memory_map_mode: bool = False,
     build_conversation_memory_promotion_pressure_mode: bool = False,
@@ -31198,6 +31496,7 @@ def main(
         "--build-metric-pack-index": build_metric_pack_index_mode,
         "--build-metric-pack-registry-drift": build_metric_pack_registry_drift_mode,
         "--build-metric-pack-adapter-index": build_metric_pack_adapter_index_mode,
+        "--build-metric-pack-runs": build_metric_pack_runs_mode,
         "--build-conversation-memory-index": build_conversation_memory_index_mode,
         "--build-conversation-memory-map": build_conversation_memory_map_mode,
         "--build-conversation-memory-promotion-pressure": (
@@ -33006,6 +33305,55 @@ def main(
         emit_supervisor_json(adapter_index, output_mode=normalized_output_mode)
         return 0
 
+    if build_metric_pack_runs_mode:
+        if any(
+            (
+                dry_run,
+                auto_approve,
+                loop,
+                resolve_gate,
+                decision,
+                note,
+                target_spec,
+                split_proposal,
+                apply_split_proposal,
+                operator_note,
+                mutation_budget,
+                run_authority,
+                execution_profile,
+                child_model,
+                child_timeout_seconds,
+                verbose,
+                list_stale_runtime,
+                clean_stale_runtime,
+                observe_graph_health_mode,
+                operator_request_packet_path,
+            )
+        ):
+            print(
+                "--build-metric-pack-runs must be used as a standalone command",
+                file=sys.stderr,
+            )
+            return 1
+        consumer_index = build_external_consumer_index()
+        metric_signal_index = build_metric_signal_index(specs)
+        write_metric_signal_index(metric_signal_index)
+        metric_pack_index = build_metric_pack_index(
+            load_metric_pack_registry(),
+            consumer_index,
+        )
+        write_metric_pack_index(metric_pack_index)
+        adapter_index = build_metric_pack_adapter_index(metric_pack_index)
+        write_metric_pack_adapter_index(adapter_index)
+        metric_pack_runs = build_metric_pack_runs(
+            metric_pack_index,
+            adapter_index,
+            metric_signal_index,
+        )
+        write_metric_pack_runs(metric_pack_runs)
+        emit_supervisor_json(metric_pack_runs, output_mode=normalized_output_mode)
+        return 0
+
     if build_conversation_memory_index_mode:
         if any(
             (
@@ -34310,6 +34658,14 @@ if __name__ == "__main__":
         ),
     )
     parser.add_argument(
+        "--build-metric-pack-runs",
+        action="store_true",
+        help=(
+            "Build a read-only metric pack run snapshot from computable adapter inputs "
+            "and existing metric signals without promoting findings"
+        ),
+    )
+    parser.add_argument(
         "--build-conversation-memory-index",
         action="store_true",
         help=(
@@ -34591,6 +34947,7 @@ if __name__ == "__main__":
             build_metric_pack_index_mode=args.build_metric_pack_index,
             build_metric_pack_registry_drift_mode=args.build_metric_pack_registry_drift,
             build_metric_pack_adapter_index_mode=args.build_metric_pack_adapter_index,
+            build_metric_pack_runs_mode=args.build_metric_pack_runs,
             build_conversation_memory_index_mode=args.build_conversation_memory_index,
             build_conversation_memory_map_mode=args.build_conversation_memory_map,
             build_conversation_memory_promotion_pressure_mode=(
