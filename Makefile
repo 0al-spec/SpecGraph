@@ -16,7 +16,7 @@ help:
 		'  make metric-pack-drift        Refresh metric pack registry drift JSON only' \
 		'  make metric-pack-adapters     Refresh metric pack adapter index JSON only' \
 		'  make metric-pack-runs         Refresh metric pack run snapshot JSON only' \
-		'  make metric-pricing           Refresh metric pricing provenance JSON only' \
+		'  make metric-pricing           Refresh pricing provenance + model usage JSON' \
 		'  make model-usage              Refresh model usage telemetry JSON only' \
 		'  make conversation-memory      Refresh conversation memory index JSON only' \
 		'  make conversation-memory-map  Refresh conversation memory map JSON only' \

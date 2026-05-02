@@ -22720,11 +22720,36 @@ def infer_metric_pricing_provider(model: str) -> str:
     return "unspecified"
 
 
-def model_usage_surface_id(profile_name: str) -> str:
+def model_usage_surface_id(profile_name: str, model_key: str = "") -> str:
     normalized = re.sub(r"[^a-z0-9]+", "_", profile_name.strip().lower()).strip("_")
+    model_slug = re.sub(r"[^a-z0-9]+", "_", model_key.strip().lower()).strip("_")
     if not normalized or profile_name == DEFAULT_EXECUTION_PROFILE_NAME:
-        return "codex_supervisor_default_model"
-    return f"codex_supervisor_profile_{normalized}"
+        base = "codex_supervisor_default_model"
+    else:
+        base = f"codex_supervisor_profile_{normalized}"
+    return f"{base}_model_{model_slug}" if model_slug else base
+
+
+def model_usage_payload_model_identity(
+    payload: dict[str, Any],
+    profile: ExecutionProfile | None,
+) -> tuple[str, str, str]:
+    explicit = performance_child_model(payload)
+    if explicit:
+        return explicit, explicit, "run_log_child_model"
+    # Historical run logs did not persist the effective profile model. Keep
+    # those runs separate from current profile config to avoid relabeling old
+    # usage after a policy model change.
+    configured = profile.model if profile is not None else CHILD_EXECUTOR_MODEL
+    return "", "unrecorded_profile_model", f"not_recorded_current_profile_model:{configured}"
+
+
+def model_usage_token_status(token_record_count: int, run_count: int) -> str:
+    if token_record_count <= 0:
+        return "not_observed"
+    if token_record_count < run_count:
+        return "partially_observed"
+    return "observed"
 
 
 def model_usage_token_record(payload: dict[str, Any]) -> dict[str, int] | None:
@@ -22770,12 +22795,21 @@ def build_model_usage_telemetry_index(
     else:
         skipped_invalid_run_logs = []
 
-    grouped_payloads: dict[str, list[dict[str, Any]]] = {
-        name: [] for name in sorted(EXECUTION_PROFILES)
-    }
+    grouped_payloads: dict[tuple[str, str], list[dict[str, Any]]] = {}
+    configured_groups: set[tuple[str, str]] = set()
+    model_identity_by_group: dict[tuple[str, str], tuple[str, str]] = {}
+    for profile_name, profile in sorted(EXECUTION_PROFILES.items()):
+        group_key = (profile_name, "")
+        grouped_payloads[group_key] = []
+        configured_groups.add(group_key)
+        model_identity_by_group[group_key] = (profile.model, "current_profile_config")
     for payload in run_payloads:
         profile_name = performance_execution_profile(payload) or DEFAULT_EXECUTION_PROFILE_NAME
-        grouped_payloads.setdefault(profile_name, []).append(payload)
+        profile = EXECUTION_PROFILES.get(profile_name)
+        model, model_key, model_source = model_usage_payload_model_identity(payload, profile)
+        group_key = (profile_name, model_key)
+        grouped_payloads.setdefault(group_key, []).append(payload)
+        model_identity_by_group[group_key] = (model, model_source)
 
     surfaces: list[dict[str, Any]] = []
     telemetry_status_groups: dict[str, list[str]] = {}
@@ -22784,21 +22818,21 @@ def build_model_usage_telemetry_index(
         "usage_proxy_available": [],
         "configured_not_observed": [],
         "token_usage_missing": [],
+        "token_usage_partial": [],
         "token_usage_observed": [],
     }
 
-    for profile_name, payloads in sorted(grouped_payloads.items()):
+    for (profile_name, model_key), payloads in sorted(grouped_payloads.items()):
         profile = EXECUTION_PROFILES.get(profile_name)
-        explicit_models = sorted(
-            {model for payload in payloads if (model := performance_child_model(payload))}
-        )
-        model = (
-            explicit_models[0]
-            if explicit_models
-            else (profile.model if profile is not None else CHILD_EXECUTOR_MODEL)
+        model, model_source = model_identity_by_group.get(
+            (profile_name, model_key),
+            (
+                profile.model if profile is not None else CHILD_EXECUTOR_MODEL,
+                "current_profile_config",
+            ),
         )
         reasoning_effort = profile.reasoning_effort if profile is not None else ""
-        surface_id = model_usage_surface_id(profile_name)
+        surface_id = model_usage_surface_id(profile_name, model_key)
         timestamps = [
             timestamp
             for payload in payloads
@@ -22819,8 +22853,14 @@ def build_model_usage_telemetry_index(
             "output_tokens": sum(record.get("output_tokens", 0) for record in token_records),
             "total_tokens": sum(record.get("total_tokens", 0) for record in token_records),
         }
-        token_usage_status = "observed" if token_records else "not_observed"
-        telemetry_status = "usage_proxy_available" if payloads else "configured_not_observed"
+        token_usage_status = model_usage_token_status(len(token_records), len(payloads))
+        telemetry_status = (
+            "usage_proxy_available"
+            if payloads
+            else "configured_not_observed"
+            if (profile_name, model_key) in configured_groups
+            else "not_observed"
+        )
         run_ids = sorted(
             {
                 str(payload.get("run_id", "")).strip()
@@ -22839,14 +22879,19 @@ def build_model_usage_telemetry_index(
         token_usage_status_groups.setdefault(token_usage_status, []).append(surface_id)
         if telemetry_status in named_filters:
             named_filters[telemetry_status].append(surface_id)
-        named_filters["token_usage_observed" if token_records else "token_usage_missing"].append(
-            surface_id
-        )
+        if token_usage_status == "observed":
+            named_filters["token_usage_observed"].append(surface_id)
+        elif token_usage_status == "partially_observed":
+            named_filters["token_usage_partial"].append(surface_id)
+        else:
+            named_filters["token_usage_missing"].append(surface_id)
         surfaces.append(
             {
                 "model_usage_surface_id": surface_id,
                 "provider": infer_metric_pricing_provider(model),
                 "model": model,
+                "model_source": model_source,
+                "configured_profile_model": profile.model if profile is not None else "",
                 "tool": "codex_supervisor",
                 "execution_profile": profile_name,
                 "reasoning_effort": reasoning_effort,
@@ -22875,7 +22920,7 @@ def build_model_usage_telemetry_index(
                 },
                 "review_state": "ready_for_review",
                 "next_gap": "connect_token_usage_capture"
-                if payloads and not token_records
+                if payloads and token_usage_status != "observed"
                 else "review_model_usage_telemetry",
             }
         )
@@ -22883,13 +22928,24 @@ def build_model_usage_telemetry_index(
     for bucket in (telemetry_status_groups, token_usage_status_groups, named_filters):
         for key in list(bucket):
             bucket[key] = sorted(set(bucket[key]))
+    surface_next_gaps = {
+        str(surface.get("next_gap", "")).strip()
+        for surface in surfaces
+        if str(surface.get("next_gap", "")).strip()
+    }
+    if not surfaces:
+        next_gap = "collect_model_usage_events"
+    elif "connect_token_usage_capture" in surface_next_gaps:
+        next_gap = "connect_token_usage_capture"
+    else:
+        next_gap = "review_model_usage_telemetry"
 
     return {
         "artifact_kind": MODEL_USAGE_TELEMETRY_ARTIFACT_KIND,
         "schema_version": MODEL_USAGE_TELEMETRY_SCHEMA_VERSION,
         "generated_at": utc_now_iso(),
         "review_state": "ready_for_review" if surfaces else "not_ready",
-        "next_gap": "review_model_usage_telemetry" if surfaces else "collect_model_usage_events",
+        "next_gap": next_gap,
         "source_snapshot": {
             "artifact_path": MODEL_USAGE_TELEMETRY_RELATIVE_PATH,
             "run_log_glob": "runs/*-SG-SPEC-*.json",
@@ -27046,6 +27102,7 @@ def build_graph_dashboard(
     metrics_source_promotion_index: dict[str, Any] | None = None,
     metric_pack_index: dict[str, Any] | None = None,
     metric_pack_adapter_index: dict[str, Any] | None = None,
+    model_usage_telemetry: dict[str, Any] | None = None,
     graph_backlog_projection: dict[str, Any] | None = None,
     proposal_lane_overlay: dict[str, Any] | None = None,
     proposal_runtime_index: dict[str, Any] | None = None,
@@ -27093,6 +27150,8 @@ def build_graph_dashboard(
         )
     if metric_pack_adapter_index is None:
         metric_pack_adapter_index = build_metric_pack_adapter_index(metric_pack_index)
+    if model_usage_telemetry is None:
+        model_usage_telemetry = build_model_usage_telemetry_index()
     metrics_delivery_workflow = build_metrics_delivery_workflow(external_consumer_handoffs)
     metrics_feedback_index = build_metrics_feedback_index(metrics_delivery_workflow)
     specpm_export_preview = build_specpm_export_preview(specs)
@@ -27767,6 +27826,10 @@ def build_graph_dashboard(
                 "artifact_path": metric_pack_adapter_index_path().relative_to(ROOT).as_posix(),
                 "generated_at": metric_pack_adapter_index.get("generated_at"),
             },
+            "model_usage_telemetry": {
+                "artifact_path": model_usage_telemetry_path().relative_to(ROOT).as_posix(),
+                "generated_at": model_usage_telemetry.get("generated_at"),
+            },
             "metric_signal_index": {
                 "artifact_path": metric_signal_index_path().relative_to(ROOT).as_posix(),
                 "generated_at": metric_signal_index.get("generated_at"),
@@ -28104,6 +28167,7 @@ def build_viewer_surfaces(specs: list[SpecNode]) -> dict[str, Any]:
         metrics_source_promotion_index=metrics_source_promotion_index,
         metric_pack_index=metric_pack_index,
         metric_pack_adapter_index=metric_pack_adapter_index,
+        model_usage_telemetry=model_usage_telemetry,
         graph_backlog_projection=backlog_projection,
         proposal_lane_overlay=proposal_lane_overlay,
         proposal_runtime_index=proposal_runtime_index,

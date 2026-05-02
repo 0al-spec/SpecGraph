@@ -415,23 +415,50 @@ def test_model_usage_telemetry_index_reports_profile_usage_proxy(
                 "child_model": "gpt-5.5",
                 "finished_at_utc": "2026-05-01T12:05:00Z",
             },
+            {
+                "run_id": "run-3",
+                "spec_id": "SG-SPEC-0045",
+                "execution_profile": "fast",
+                "child_model": "gpt-4.1",
+                "finished_at_utc": "2026-05-01T12:10:00Z",
+                "token_usage": {"total_tokens": 50},
+            },
+            {
+                "run_id": "run-4",
+                "spec_id": "SG-SPEC-0046",
+                "execution_profile": "fast",
+                "finished_at_utc": "2026-05-01T12:15:00Z",
+            },
         ]
     )
 
     assert report["artifact_kind"] == "model_usage_telemetry_index"
+    assert report["next_gap"] == "connect_token_usage_capture"
     assert report["canonical_mutations_allowed"] is False
     assert report["tracked_artifacts_written"] is False
     by_id = {item["model_usage_surface_id"]: item for item in report["model_usage_surfaces"]}
-    fast_surface = by_id["codex_supervisor_profile_fast"]
+    fast_surface = by_id["codex_supervisor_profile_fast_model_gpt_5_5"]
     assert fast_surface["telemetry_status"] == "usage_proxy_available"
     assert fast_surface["run_count"] == 2
+    assert fast_surface["model"] == "gpt-5.5"
+    assert fast_surface["model_source"] == "run_log_child_model"
     assert fast_surface["usage_proxy"] == {
         "status": "available",
         "unit": "supervisor_run",
         "value": 2,
     }
-    assert fast_surface["token_usage"]["status"] == "observed"
+    assert fast_surface["token_usage"]["status"] == "partially_observed"
     assert fast_surface["token_usage"]["total_tokens"] == 125
+    assert fast_surface["next_gap"] == "connect_token_usage_capture"
+    other_model_surface = by_id["codex_supervisor_profile_fast_model_gpt_4_1"]
+    assert other_model_surface["model"] == "gpt-4.1"
+    assert other_model_surface["run_count"] == 1
+    assert other_model_surface["token_usage"]["status"] == "observed"
+    unrecorded_surface = by_id["codex_supervisor_profile_fast_model_unrecorded_profile_model"]
+    assert unrecorded_surface["model"] == ""
+    assert unrecorded_surface["configured_profile_model"] == supervisor_module.CHILD_EXECUTOR_MODEL
+    assert unrecorded_surface["model_source"].startswith("not_recorded_current_profile_model:")
+    assert unrecorded_surface["run_count"] == 1
 
 
 def test_metric_pricing_provenance_binds_model_usage_telemetry(

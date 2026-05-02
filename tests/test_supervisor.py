@@ -14624,6 +14624,7 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
         metrics_source_promotion_index: dict[str, object] | None = None,
         metric_pack_index: dict[str, object] | None = None,
         metric_pack_adapter_index: dict[str, object] | None = None,
+        model_usage_telemetry: dict[str, object] | None = None,
         graph_backlog_projection: dict[str, object] | None = None,
         proposal_lane_overlay: dict[str, object] | None = None,
         proposal_runtime_index: dict[str, object] | None = None,
@@ -14635,6 +14636,7 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
         assert metrics_source_promotion_index is not None
         assert metric_pack_index is not None
         assert metric_pack_adapter_index is not None
+        assert model_usage_telemetry is not None
         assert graph_backlog_projection is not None
         assert proposal_lane_overlay is not None
         assert proposal_runtime_index is not None

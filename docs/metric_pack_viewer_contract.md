@@ -481,17 +481,20 @@ Top-level shape:
   "schema_version": 1,
   "generated_at": "...",
   "review_state": "ready_for_review",
-  "next_gap": "review_model_usage_telemetry",
+  "next_gap": "connect_token_usage_capture",
   "summary": {
-    "model_usage_surface_count": 3,
+    "model_usage_surface_count": 4,
     "run_count": 5,
     "telemetry_status_counts": {
-      "configured_not_observed": 2,
+      "configured_not_observed": 3,
       "usage_proxy_available": 1
     },
-    "token_usage_status_counts": {"not_observed": 3}
+    "token_usage_status_counts": {
+      "not_observed": 3,
+      "partially_observed": 1
+    }
   },
-  "entry_count": 3,
+  "entry_count": 4,
   "model_usage_surfaces": [],
   "viewer_projection": {},
   "canonical_mutations_allowed": false,
@@ -503,9 +506,11 @@ Each `model_usage_surfaces[]` item describes one supervisor execution profile:
 
 ```json
 {
-  "model_usage_surface_id": "codex_supervisor_profile_fast",
+  "model_usage_surface_id": "codex_supervisor_profile_fast_model_gpt_5_5",
   "provider": "openai",
   "model": "gpt-5.5",
+  "model_source": "run_log_child_model",
+  "configured_profile_model": "gpt-5.5",
   "tool": "codex_supervisor",
   "execution_profile": "fast",
   "reasoning_effort": "medium",
@@ -514,11 +519,11 @@ Each `model_usage_surfaces[]` item describes one supervisor execution profile:
   "run_count": 5,
   "usage_proxy": {"status": "available", "unit": "supervisor_run", "value": 5},
   "token_usage": {
-    "status": "not_observed",
-    "observed_record_count": 0,
-    "input_tokens": null,
-    "output_tokens": null,
-    "total_tokens": null,
+    "status": "partially_observed",
+    "observed_record_count": 2,
+    "input_tokens": 1000,
+    "output_tokens": 250,
+    "total_tokens": 1250,
     "missing_behavior": "report_observation_gap"
   },
   "review_state": "ready_for_review",
@@ -529,7 +534,11 @@ Each `model_usage_surfaces[]` item describes one supervisor execution profile:
 Viewer guidance:
 
 - Show `usage_proxy_available` as observed model usage, not as token spend.
-- Show `token_usage.status == "not_observed"` as a telemetry gap, not an error.
+- Treat `model_source` as provenance. `run_log_child_model` is model-specific;
+  `not_recorded_current_profile_model:*` means historical run logs lacked an
+  effective model value and must not be priced as the current profile model.
+- Show `token_usage.status == "not_observed"` or `partially_observed` as a
+  telemetry gap, not an error.
 - Do not display cost-like values from this artifact alone.
 
 ## Pricing Provenance Artifact

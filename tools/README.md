@@ -165,7 +165,9 @@ Supervisor modes:
   findings.
 - `--build-metric-pricing-provenance`: build
   `runs/metric_pricing_provenance.json` so economic observability has a
-  versioned pricing surface before cost-like metric values are calculated.
+  versioned pricing surface before cost-like metric values are calculated. This
+  command also refreshes `runs/model_usage_telemetry_index.json` because pricing
+  provenance binds to that source artifact.
 - `--build-model-usage-telemetry`: build
   `runs/model_usage_telemetry_index.json` from supervisor run logs so model
   usage becomes a reviewable metric-pack input adapter before token-level spend
