@@ -300,7 +300,7 @@ Top-level shape:
       "generated_at": "...",
       "entry_count": 3
     },
-    "input_catalog_version": 1
+    "input_catalog_version": 2
   },
   "summary": {
     "pack_count": 3,
@@ -365,6 +365,12 @@ Known `inputs[].computability` values:
 - `available`: SpecGraph has a source-artifact binding for this input.
 - `not_computable`: no adapter/source contract exists yet.
 - `stale`: reserved for future freshness checks.
+
+Catalog v2 adds `node_scope` as an available economic-observability input backed
+by `runs/spec_trace_projection.json` and
+`source_field: "viewer_projection.implementation_state.*[]"`, which points to
+the existing grouped spec-node IDs in the trace projection. `verification_runs`
+remains not computable until a dedicated verification-run adapter is defined.
 
 Viewer guidance:
 

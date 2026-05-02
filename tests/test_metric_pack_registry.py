@@ -474,7 +474,7 @@ def test_metric_pricing_provenance_binds_model_usage_telemetry(
     assert binding["artifact_path"] == "runs/model_usage_telemetry_index.json"
 
 
-def test_metric_pack_adapter_index_maps_pricing_surface_to_provenance(
+def test_metric_pack_adapter_index_maps_economic_inputs_to_existing_surfaces(
     supervisor_module: object,
 ) -> None:
     report = supervisor_module.build_metric_pack_adapter_index(
@@ -494,7 +494,7 @@ def test_metric_pack_adapter_index_maps_pricing_surface_to_provenance(
                     "metrics": [
                         {
                             "metric_id": "node_inference_cost",
-                            "requires": ["model_usage", "pricing_surface"],
+                            "requires": ["model_usage", "node_scope", "pricing_surface"],
                         }
                     ],
                 }
@@ -508,6 +508,9 @@ def test_metric_pack_adapter_index_maps_pricing_surface_to_provenance(
     assert by_input["pricing_surface"]["source_artifact"] == "runs/metric_pricing_provenance.json"
     assert by_input["model_usage"]["computability"] == "available"
     assert by_input["model_usage"]["source_artifact"] == "runs/model_usage_telemetry_index.json"
+    assert by_input["node_scope"]["computability"] == "available"
+    assert by_input["node_scope"]["source_artifact"] == "runs/spec_trace_projection.json"
+    assert by_input["node_scope"]["source_field"] == "viewer_projection.implementation_state.*[]"
     assert entry["adapter_status"] == "ready_for_adapter_review"
     assert entry["missing_inputs"] == []
 

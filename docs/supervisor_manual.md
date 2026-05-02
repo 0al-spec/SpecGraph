@@ -1090,8 +1090,10 @@ This is the economic-observability guardrail before cost-like metric values:
 - does not mutate thresholds, policy, or canonical specs.
 
 Use it before making `sib_economic_observability` operational. The artifact can
-make `pricing_surface` available as an adapter input while keeping model usage,
-node scope, and verification run adapters separate follow-up gaps.
+make `pricing_surface` available as an adapter input while model usage is
+observed through `runs/model_usage_telemetry_index.json` and node scope is
+mapped through `runs/spec_trace_projection.json`. Verification run adapters
+remain a separate follow-up gap.
 
 ### Metric-threshold proposals
 

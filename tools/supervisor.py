@@ -23181,6 +23181,12 @@ METRIC_PACK_ADAPTER_INPUT_CATALOG: dict[str, dict[str, str]] = {
         "source_field": "model_usage_surfaces",
         "next_gap": "review_model_usage_telemetry",
     },
+    "node_scope": {
+        "computability": "available",
+        "source_artifact": "runs/spec_trace_projection.json",
+        "source_field": "viewer_projection.implementation_state.*[]",
+        "next_gap": "review_metric_node_scope_adapter",
+    },
 }
 
 METRIC_PACK_ADAPTER_INPUT_GAP_DEFAULTS: dict[str, str] = {
@@ -23405,7 +23411,7 @@ def build_metric_pack_adapter_index(metric_pack_index: dict[str, Any]) -> dict[s
                 "generated_at": metric_pack_index.get("generated_at"),
                 "entry_count": metric_pack_index.get("entry_count"),
             },
-            "input_catalog_version": 1,
+            "input_catalog_version": 2,
         },
         "summary": {
             "pack_count": len(entries),
