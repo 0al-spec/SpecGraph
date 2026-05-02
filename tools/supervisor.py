@@ -25942,12 +25942,15 @@ def append_backlog_items(
     backlog: dict[str, Any],
     id_fields: tuple[str, ...],
     status_fields: tuple[str, ...],
+    skip_item: Callable[[dict[str, Any]], bool] | None = None,
 ) -> None:
     raw_items = backlog.get("items", [])
     if not isinstance(raw_items, list):
         raw_items = []
     for item in raw_items:
         if not isinstance(item, dict):
+            continue
+        if skip_item is not None and skip_item(item):
             continue
         subject_id = graph_backlog_subject_id(item, id_fields)
         next_gap = str(item.get("next_gap", "")).strip() or "review_backlog_item"
@@ -25966,6 +25969,29 @@ def append_backlog_items(
                 details=graph_backlog_details(item),
             )
         )
+
+
+def metrics_feedback_adopted_consumer_ids(metrics_feedback_index: dict[str, Any]) -> set[str]:
+    adopted: set[str] = set()
+    for raw_entry in metrics_feedback_index.get("entries", []):
+        if not isinstance(raw_entry, dict):
+            continue
+        consumer_id = str(raw_entry.get("consumer_id", "")).strip()
+        if not consumer_id:
+            continue
+        feedback_status = str(raw_entry.get("feedback_status", "")).strip()
+        review_state = str(raw_entry.get("review_state", "")).strip()
+        checkout_feedback = raw_entry.get("observed_checkout_feedback", {})
+        adoption_candidate = (
+            bool(checkout_feedback.get("adoption_candidate"))
+            if isinstance(checkout_feedback, dict)
+            else False
+        )
+        if feedback_status == "adoption_observed_locally" or (
+            review_state == "adoption_visible" and adoption_candidate
+        ):
+            adopted.add(consumer_id)
+    return adopted
 
 
 def append_grouped_backlog_items(
@@ -26093,6 +26119,11 @@ def build_graph_backlog_projection_from_surfaces(
     branch_rewrite_preview: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     entries: list[dict[str, Any]] = []
+    adopted_metrics_consumer_ids = metrics_feedback_adopted_consumer_ids(metrics_feedback_index)
+
+    def metrics_consumer_is_adopted(item: dict[str, Any]) -> bool:
+        consumer_id = str(item.get("consumer_id", "")).strip()
+        return bool(consumer_id and consumer_id in adopted_metrics_consumer_ids)
 
     for item in graph_overlay.get("entries", []):
         if not isinstance(item, dict):
@@ -26247,6 +26278,7 @@ def build_graph_backlog_projection_from_surfaces(
         backlog=external_consumer_handoffs.get("handoff_backlog", {}),
         id_fields=("consumer_id",),
         status_fields=("handoff_status",),
+        skip_item=metrics_consumer_is_adopted,
     )
     append_backlog_items(
         entries,
@@ -26274,6 +26306,7 @@ def build_graph_backlog_projection_from_surfaces(
         backlog=metrics_delivery_workflow.get("delivery_backlog", {}),
         id_fields=("consumer_id",),
         status_fields=("delivery_status",),
+        skip_item=metrics_consumer_is_adopted,
     )
     append_backlog_items(
         entries,
