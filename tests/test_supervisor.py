@@ -14523,6 +14523,14 @@ def test_build_graph_dashboard_aggregates_runtime_surfaces(
     assert report["viewer_projection"]["named_filters"]["review_feedback_accepted_risk"] == 1
     assert report["viewer_projection"]["named_filters"]["graph_backlog_open"] == 7
 
+    partial_injection_report = supervisor_module.build_graph_dashboard(
+        supervisor_module.load_specs(),
+        branch_rewrite_preview={"branch_story": {"story_gaps": ["SG-SPEC-CUSTOM"]}},
+    )
+    assert partial_injection_report["sections"]["health"]["branch_rewrite_story_gap_spec_ids"] == [
+        "SG-SPEC-CUSTOM"
+    ]
+
 
 def test_main_builds_graph_dashboard_as_standalone_command(
     supervisor_module: object,
@@ -14620,6 +14628,7 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
         metrics_feedback_index: dict[str, object] | None = None,
         metric_pack_index: dict[str, object] | None = None,
         metric_pack_adapter_index: dict[str, object] | None = None,
+        specpm_export_preview: dict[str, object] | None = None,
         specpm_delivery_workflow: dict[str, object] | None = None,
         specpm_feedback_index: dict[str, object] | None = None,
         review_feedback_index: dict[str, object] | None = None,
@@ -14642,6 +14651,7 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
         assert metrics_feedback_index is not None
         assert metric_pack_index is not None
         assert metric_pack_adapter_index is not None
+        assert specpm_export_preview is not None
         assert specpm_delivery_workflow is not None
         assert specpm_feedback_index is not None
         assert review_feedback_index is not None
@@ -14679,6 +14689,7 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
         metric_pack_index: dict[str, object] | None = None,
         metric_pack_adapter_index: dict[str, object] | None = None,
         model_usage_telemetry: dict[str, object] | None = None,
+        specpm_export_preview: dict[str, object] | None = None,
         specpm_delivery_workflow: dict[str, object] | None = None,
         specpm_feedback_index: dict[str, object] | None = None,
         review_feedback_index: dict[str, object] | None = None,
@@ -14707,6 +14718,7 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
         assert metric_pack_index is not None
         assert metric_pack_adapter_index is not None
         assert model_usage_telemetry is not None
+        assert specpm_export_preview is not None
         assert specpm_delivery_workflow is not None
         assert specpm_feedback_index is not None
         assert review_feedback_index is not None
@@ -15363,6 +15375,8 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
     )
     assert report["written_artifacts"]["metric_signal_index"]["metric_count"] == 0
     assert report["written_artifacts"]["metric_threshold_proposals"]["entry_count"] == 1
+    assert report["written_artifacts"]["specpm_export_preview"]["entry_count"] == 0
+    assert report["written_artifacts"]["specpm_delivery_workflow"]["entry_count"] == 0
     assert report["written_artifacts"]["specpm_feedback_index"]["entry_count"] == 0
     assert report["written_artifacts"]["metrics_delivery_workflow"]["entry_count"] == 1
     assert report["written_artifacts"]["metrics_feedback_index"]["entry_count"] == 1
@@ -15484,6 +15498,18 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
             (repo_fixture / "runs" / "metrics_feedback_index.json").read_text(encoding="utf-8")
         )["entry_count"]
         == 1
+    )
+    assert (
+        json.loads(
+            (repo_fixture / "runs" / "specpm_export_preview.json").read_text(encoding="utf-8")
+        )["entry_count"]
+        == 0
+    )
+    assert (
+        json.loads(
+            (repo_fixture / "runs" / "specpm_delivery_workflow.json").read_text(encoding="utf-8")
+        )["entry_count"]
+        == 0
     )
     assert (
         json.loads(

@@ -26526,6 +26526,7 @@ def build_graph_backlog_projection(
     metrics_feedback_index: dict[str, Any] | None = None,
     metric_pack_index: dict[str, Any] | None = None,
     metric_pack_adapter_index: dict[str, Any] | None = None,
+    specpm_export_preview: dict[str, Any] | None = None,
     specpm_delivery_workflow: dict[str, Any] | None = None,
     specpm_feedback_index: dict[str, Any] | None = None,
     review_feedback_index: dict[str, Any] | None = None,
@@ -26587,7 +26588,8 @@ def build_graph_backlog_projection(
     if specpm_delivery_workflow is None:
         specpm_delivery_workflow = load_current_specpm_delivery_workflow()
     if specpm_feedback_index is None:
-        specpm_export_preview = build_specpm_export_preview(specs)
+        if specpm_export_preview is None:
+            specpm_export_preview = build_specpm_export_preview(specs)
         specpm_feedback_index = build_specpm_feedback_index(
             specpm_export_preview,
             specpm_delivery_workflow,
@@ -27144,6 +27146,7 @@ def build_graph_dashboard(
     metric_pack_index: dict[str, Any] | None = None,
     metric_pack_adapter_index: dict[str, Any] | None = None,
     model_usage_telemetry: dict[str, Any] | None = None,
+    specpm_export_preview: dict[str, Any] | None = None,
     specpm_delivery_workflow: dict[str, Any] | None = None,
     specpm_feedback_index: dict[str, Any] | None = None,
     review_feedback_index: dict[str, Any] | None = None,
@@ -27157,9 +27160,11 @@ def build_graph_dashboard(
     if graph_trends is None:
         graph_trends = build_graph_health_trends(specs, overlay=graph_overlay)
     if branch_rewrite_preview is None or branch_rewrite_summary is None:
-        branch_rewrite_preview, branch_rewrite_summary = (
-            load_current_branch_rewrite_preview_summary()
-        )
+        loaded_preview, loaded_summary = load_current_branch_rewrite_preview_summary()
+        if branch_rewrite_preview is None:
+            branch_rewrite_preview = loaded_preview
+        if branch_rewrite_summary is None:
+            branch_rewrite_summary = loaded_summary
     if intent_overlay is None:
         intent_overlay = build_intent_layer_overlay()
     if proposal_lane_overlay is None:
@@ -27215,7 +27220,8 @@ def build_graph_dashboard(
     if specpm_delivery_workflow is None:
         specpm_delivery_workflow = load_current_specpm_delivery_workflow()
     if specpm_feedback_index is None:
-        specpm_export_preview = build_specpm_export_preview(specs)
+        if specpm_export_preview is None:
+            specpm_export_preview = build_specpm_export_preview(specs)
         specpm_feedback_index = build_specpm_feedback_index(
             specpm_export_preview,
             specpm_delivery_workflow,
@@ -28256,6 +28262,7 @@ def build_viewer_surfaces(specs: list[SpecNode]) -> dict[str, Any]:
         metrics_feedback_index=metrics_feedback_index,
         metric_pack_index=metric_pack_index,
         metric_pack_adapter_index=metric_pack_adapter_index,
+        specpm_export_preview=specpm_export_preview,
         specpm_delivery_workflow=specpm_delivery_workflow,
         specpm_feedback_index=specpm_feedback_index,
         review_feedback_index=review_feedback_index,
@@ -28284,6 +28291,7 @@ def build_viewer_surfaces(specs: list[SpecNode]) -> dict[str, Any]:
         metric_pack_index=metric_pack_index,
         metric_pack_adapter_index=metric_pack_adapter_index,
         model_usage_telemetry=model_usage_telemetry,
+        specpm_export_preview=specpm_export_preview,
         specpm_delivery_workflow=specpm_delivery_workflow,
         specpm_feedback_index=specpm_feedback_index,
         review_feedback_index=review_feedback_index,
@@ -28326,6 +28334,8 @@ def build_viewer_surfaces(specs: list[SpecNode]) -> dict[str, Any]:
     metric_threshold_proposals_path_result = write_metric_threshold_proposals(
         metric_threshold_proposals,
     )
+    specpm_export_path = write_specpm_export_preview(specpm_export_preview)
+    specpm_delivery_path = write_specpm_delivery_workflow(specpm_delivery_workflow)
     specpm_feedback_path = write_specpm_feedback_index(specpm_feedback_index)
     metrics_delivery_path = write_metrics_delivery_workflow(metrics_delivery_workflow)
     metrics_feedback_path = write_metrics_feedback_index(metrics_feedback_index)
@@ -28465,6 +28475,16 @@ def build_viewer_surfaces(specs: list[SpecNode]) -> dict[str, Any]:
                 ).as_posix(),
                 "generated_at": metric_threshold_proposals.get("generated_at"),
                 "entry_count": metric_threshold_proposals.get("entry_count"),
+            },
+            "specpm_export_preview": {
+                "artifact_path": specpm_export_path.relative_to(ROOT).as_posix(),
+                "generated_at": specpm_export_preview.get("generated_at"),
+                "entry_count": specpm_export_preview.get("entry_count"),
+            },
+            "specpm_delivery_workflow": {
+                "artifact_path": specpm_delivery_path.relative_to(ROOT).as_posix(),
+                "generated_at": specpm_delivery_workflow.get("generated_at"),
+                "entry_count": specpm_delivery_workflow.get("entry_count"),
             },
             "specpm_feedback_index": {
                 "artifact_path": specpm_feedback_path.relative_to(ROOT).as_posix(),

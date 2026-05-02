@@ -54,7 +54,6 @@ proposal-spec-trace:
 
 .PHONY: external-consumers
 external-consumers:
-	@$(PYTHON) $(SUPERVISOR) --build-external-consumer-index
 	@$(PYTHON) $(SUPERVISOR) --build-external-consumer-overlay
 
 .PHONY: external-handoffs
