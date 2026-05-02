@@ -26511,40 +26511,63 @@ def build_graph_backlog_projection_from_surfaces(
 def build_graph_backlog_projection(
     specs: list[SpecNode],
     *,
+    graph_overlay: dict[str, Any] | None = None,
+    branch_rewrite_preview: dict[str, Any] | None = None,
+    spec_trace_projection: dict[str, Any] | None = None,
+    implementation_work_index: dict[str, Any] | None = None,
+    evidence_overlay: dict[str, Any] | None = None,
     external_consumer_index: dict[str, Any] | None = None,
+    external_consumer_overlay: dict[str, Any] | None = None,
+    external_consumer_handoffs: dict[str, Any] | None = None,
     metric_signal_index: dict[str, Any] | None = None,
+    metric_threshold_proposals: dict[str, Any] | None = None,
     metrics_source_promotion_index: dict[str, Any] | None = None,
+    metrics_delivery_workflow: dict[str, Any] | None = None,
+    metrics_feedback_index: dict[str, Any] | None = None,
     metric_pack_index: dict[str, Any] | None = None,
     metric_pack_adapter_index: dict[str, Any] | None = None,
+    specpm_delivery_workflow: dict[str, Any] | None = None,
+    specpm_feedback_index: dict[str, Any] | None = None,
+    review_feedback_index: dict[str, Any] | None = None,
     proposal_runtime_index: dict[str, Any] | None = None,
     proposal_promotion_index: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    graph_overlay = build_graph_health_overlay(specs)
-    branch_rewrite_preview, _branch_rewrite_summary = load_current_branch_rewrite_preview_summary()
+    if graph_overlay is None:
+        graph_overlay = build_graph_health_overlay(specs)
+    if branch_rewrite_preview is None:
+        branch_rewrite_preview, _branch_rewrite_summary = (
+            load_current_branch_rewrite_preview_summary()
+        )
     if proposal_runtime_index is None:
         proposal_runtime_index = build_proposal_runtime_index()
     if proposal_promotion_index is None:
         proposal_promotion_index = build_proposal_promotion_index()
-    spec_trace_index = build_spec_trace_index(specs)
-    spec_trace_projection = build_spec_trace_projection(spec_trace_index)
-    implementation_work_index = load_current_implementation_work_index()
-    evidence_index = build_evidence_plane_index(specs)
-    evidence_overlay = build_evidence_plane_overlay(evidence_index)
+    if spec_trace_projection is None:
+        spec_trace_index = build_spec_trace_index(specs)
+        spec_trace_projection = build_spec_trace_projection(spec_trace_index)
+    if implementation_work_index is None:
+        implementation_work_index = load_current_implementation_work_index()
+    if evidence_overlay is None:
+        evidence_index = build_evidence_plane_index(specs)
+        evidence_overlay = build_evidence_plane_overlay(evidence_index)
     if external_consumer_index is None:
         external_consumer_index = build_external_consumer_index()
     if metric_signal_index is None:
         metric_signal_index = build_metric_signal_index(specs)
-    external_consumer_overlay = build_external_consumer_overlay(
-        external_consumer_index,
-        metric_signal_index,
-    )
-    metric_threshold_proposals = build_metric_threshold_proposals(metric_signal_index)
-    external_consumer_handoffs = build_external_consumer_handoff_packets(
-        external_consumer_index,
-        external_consumer_overlay,
-        metric_signal_index,
-        metric_threshold_proposals,
-    )
+    if external_consumer_overlay is None:
+        external_consumer_overlay = build_external_consumer_overlay(
+            external_consumer_index,
+            metric_signal_index,
+        )
+    if metric_threshold_proposals is None:
+        metric_threshold_proposals = build_metric_threshold_proposals(metric_signal_index)
+    if external_consumer_handoffs is None:
+        external_consumer_handoffs = build_external_consumer_handoff_packets(
+            external_consumer_index,
+            external_consumer_overlay,
+            metric_signal_index,
+            metric_threshold_proposals,
+        )
     if metrics_source_promotion_index is None:
         metrics_source_promotion_index = build_metrics_source_promotion_index(
             external_consumer_index,
@@ -26557,15 +26580,20 @@ def build_graph_backlog_projection(
         )
     if metric_pack_adapter_index is None:
         metric_pack_adapter_index = build_metric_pack_adapter_index(metric_pack_index)
-    metrics_delivery_workflow = build_metrics_delivery_workflow(external_consumer_handoffs)
-    metrics_feedback_index = build_metrics_feedback_index(metrics_delivery_workflow)
-    specpm_export_preview = build_specpm_export_preview(specs)
-    specpm_delivery_workflow = load_current_specpm_delivery_workflow()
-    specpm_feedback_index = build_specpm_feedback_index(
-        specpm_export_preview,
-        specpm_delivery_workflow,
-    )
-    review_feedback_index = build_review_feedback_index()
+    if metrics_delivery_workflow is None:
+        metrics_delivery_workflow = build_metrics_delivery_workflow(external_consumer_handoffs)
+    if metrics_feedback_index is None:
+        metrics_feedback_index = build_metrics_feedback_index(metrics_delivery_workflow)
+    if specpm_delivery_workflow is None:
+        specpm_delivery_workflow = load_current_specpm_delivery_workflow()
+    if specpm_feedback_index is None:
+        specpm_export_preview = build_specpm_export_preview(specs)
+        specpm_feedback_index = build_specpm_feedback_index(
+            specpm_export_preview,
+            specpm_delivery_workflow,
+        )
+    if review_feedback_index is None:
+        review_feedback_index = build_review_feedback_index()
     return build_graph_backlog_projection_from_surfaces(
         graph_overlay=graph_overlay,
         proposal_runtime_index=proposal_runtime_index,
@@ -27097,47 +27125,75 @@ def write_graph_next_moves(report: dict[str, Any]) -> Path:
 def build_graph_dashboard(
     specs: list[SpecNode],
     *,
+    graph_overlay: dict[str, Any] | None = None,
+    graph_trends: dict[str, Any] | None = None,
+    branch_rewrite_preview: dict[str, Any] | None = None,
+    branch_rewrite_summary: dict[str, Any] | None = None,
+    intent_overlay: dict[str, Any] | None = None,
+    spec_trace_projection: dict[str, Any] | None = None,
+    implementation_work_index: dict[str, Any] | None = None,
+    evidence_overlay: dict[str, Any] | None = None,
     external_consumer_index: dict[str, Any] | None = None,
+    external_consumer_overlay: dict[str, Any] | None = None,
+    external_consumer_handoffs: dict[str, Any] | None = None,
     metric_signal_index: dict[str, Any] | None = None,
+    metric_threshold_proposals: dict[str, Any] | None = None,
     metrics_source_promotion_index: dict[str, Any] | None = None,
+    metrics_delivery_workflow: dict[str, Any] | None = None,
+    metrics_feedback_index: dict[str, Any] | None = None,
     metric_pack_index: dict[str, Any] | None = None,
     metric_pack_adapter_index: dict[str, Any] | None = None,
     model_usage_telemetry: dict[str, Any] | None = None,
+    specpm_delivery_workflow: dict[str, Any] | None = None,
+    specpm_feedback_index: dict[str, Any] | None = None,
+    review_feedback_index: dict[str, Any] | None = None,
     graph_backlog_projection: dict[str, Any] | None = None,
     proposal_lane_overlay: dict[str, Any] | None = None,
     proposal_runtime_index: dict[str, Any] | None = None,
     proposal_promotion_index: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    graph_overlay = build_graph_health_overlay(specs)
-    graph_trends = build_graph_health_trends(specs, overlay=graph_overlay)
-    branch_rewrite_preview, branch_rewrite_summary = load_current_branch_rewrite_preview_summary()
-    intent_overlay = build_intent_layer_overlay()
+    if graph_overlay is None:
+        graph_overlay = build_graph_health_overlay(specs)
+    if graph_trends is None:
+        graph_trends = build_graph_health_trends(specs, overlay=graph_overlay)
+    if branch_rewrite_preview is None or branch_rewrite_summary is None:
+        branch_rewrite_preview, branch_rewrite_summary = (
+            load_current_branch_rewrite_preview_summary()
+        )
+    if intent_overlay is None:
+        intent_overlay = build_intent_layer_overlay()
     if proposal_lane_overlay is None:
         proposal_lane_overlay = build_proposal_lane_overlay()
     if proposal_runtime_index is None:
         proposal_runtime_index = build_proposal_runtime_index()
     if proposal_promotion_index is None:
         proposal_promotion_index = build_proposal_promotion_index()
-    spec_trace_index = build_spec_trace_index(specs)
-    spec_trace_projection = build_spec_trace_projection(spec_trace_index)
-    implementation_work_index = load_current_implementation_work_index()
-    evidence_index = build_evidence_plane_index(specs)
-    evidence_overlay = build_evidence_plane_overlay(evidence_index)
+    if spec_trace_projection is None:
+        spec_trace_index = build_spec_trace_index(specs)
+        spec_trace_projection = build_spec_trace_projection(spec_trace_index)
+    if implementation_work_index is None:
+        implementation_work_index = load_current_implementation_work_index()
+    if evidence_overlay is None:
+        evidence_index = build_evidence_plane_index(specs)
+        evidence_overlay = build_evidence_plane_overlay(evidence_index)
     if external_consumer_index is None:
         external_consumer_index = build_external_consumer_index()
     if metric_signal_index is None:
         metric_signal_index = build_metric_signal_index(specs)
-    external_consumer_overlay = build_external_consumer_overlay(
-        external_consumer_index,
-        metric_signal_index,
-    )
-    metric_threshold_proposals = build_metric_threshold_proposals(metric_signal_index)
-    external_consumer_handoffs = build_external_consumer_handoff_packets(
-        external_consumer_index,
-        external_consumer_overlay,
-        metric_signal_index,
-        metric_threshold_proposals,
-    )
+    if external_consumer_overlay is None:
+        external_consumer_overlay = build_external_consumer_overlay(
+            external_consumer_index,
+            metric_signal_index,
+        )
+    if metric_threshold_proposals is None:
+        metric_threshold_proposals = build_metric_threshold_proposals(metric_signal_index)
+    if external_consumer_handoffs is None:
+        external_consumer_handoffs = build_external_consumer_handoff_packets(
+            external_consumer_index,
+            external_consumer_overlay,
+            metric_signal_index,
+            metric_threshold_proposals,
+        )
     if metrics_source_promotion_index is None:
         metrics_source_promotion_index = build_metrics_source_promotion_index(
             external_consumer_index,
@@ -27152,15 +27208,20 @@ def build_graph_dashboard(
         metric_pack_adapter_index = build_metric_pack_adapter_index(metric_pack_index)
     if model_usage_telemetry is None:
         model_usage_telemetry = build_model_usage_telemetry_index()
-    metrics_delivery_workflow = build_metrics_delivery_workflow(external_consumer_handoffs)
-    metrics_feedback_index = build_metrics_feedback_index(metrics_delivery_workflow)
-    specpm_export_preview = build_specpm_export_preview(specs)
-    specpm_delivery_workflow = load_current_specpm_delivery_workflow()
-    specpm_feedback_index = build_specpm_feedback_index(
-        specpm_export_preview,
-        specpm_delivery_workflow,
-    )
-    review_feedback_index = build_review_feedback_index()
+    if metrics_delivery_workflow is None:
+        metrics_delivery_workflow = build_metrics_delivery_workflow(external_consumer_handoffs)
+    if metrics_feedback_index is None:
+        metrics_feedback_index = build_metrics_feedback_index(metrics_delivery_workflow)
+    if specpm_delivery_workflow is None:
+        specpm_delivery_workflow = load_current_specpm_delivery_workflow()
+    if specpm_feedback_index is None:
+        specpm_export_preview = build_specpm_export_preview(specs)
+        specpm_feedback_index = build_specpm_feedback_index(
+            specpm_export_preview,
+            specpm_delivery_workflow,
+        )
+    if review_feedback_index is None:
+        review_feedback_index = build_review_feedback_index()
     refactor_queue_items = [item for item in load_refactor_queue() if isinstance(item, dict)]
     proposal_queue_items = [item for item in load_proposal_queue() if isinstance(item, dict)]
     active_refactor_queue_items = active_queue_items(refactor_queue_items)
@@ -28123,8 +28184,37 @@ def write_graph_dashboard(report: dict[str, Any]) -> Path:
 
 
 def build_viewer_surfaces(specs: list[SpecNode]) -> dict[str, Any]:
+    graph_overlay = build_graph_health_overlay(specs)
+    graph_trends = build_graph_health_trends(specs, overlay=graph_overlay)
+    branch_rewrite_preview, branch_rewrite_summary = load_current_branch_rewrite_preview_summary()
+    intent_overlay = build_intent_layer_overlay()
+    spec_trace_index = build_spec_trace_index(specs)
+    spec_trace_projection = build_spec_trace_projection(spec_trace_index)
+    implementation_work_index = load_current_implementation_work_index()
+    evidence_index = build_evidence_plane_index(specs)
+    evidence_overlay = build_evidence_plane_overlay(evidence_index)
     consumer_index = build_external_consumer_index()
     metric_signal_index = build_metric_signal_index(specs)
+    external_consumer_overlay = build_external_consumer_overlay(
+        consumer_index,
+        metric_signal_index,
+    )
+    metric_threshold_proposals = build_metric_threshold_proposals(metric_signal_index)
+    external_consumer_handoffs = build_external_consumer_handoff_packets(
+        consumer_index,
+        external_consumer_overlay,
+        metric_signal_index,
+        metric_threshold_proposals,
+    )
+    metrics_delivery_workflow = build_metrics_delivery_workflow(external_consumer_handoffs)
+    metrics_feedback_index = build_metrics_feedback_index(metrics_delivery_workflow)
+    specpm_delivery_workflow = load_current_specpm_delivery_workflow()
+    specpm_export_preview = build_specpm_export_preview(specs)
+    specpm_feedback_index = build_specpm_feedback_index(
+        specpm_export_preview,
+        specpm_delivery_workflow,
+    )
+    review_feedback_index = build_review_feedback_index()
     metrics_source_promotion_index = build_metrics_source_promotion_index(
         consumer_index,
         metric_signal_index,
@@ -28151,23 +28241,52 @@ def build_viewer_surfaces(specs: list[SpecNode]) -> dict[str, Any]:
     proposal_promotion_index = build_proposal_promotion_index()
     backlog_projection = build_graph_backlog_projection(
         specs,
+        graph_overlay=graph_overlay,
+        branch_rewrite_preview=branch_rewrite_preview,
+        spec_trace_projection=spec_trace_projection,
+        implementation_work_index=implementation_work_index,
+        evidence_overlay=evidence_overlay,
         external_consumer_index=consumer_index,
+        external_consumer_overlay=external_consumer_overlay,
+        external_consumer_handoffs=external_consumer_handoffs,
         metric_signal_index=metric_signal_index,
+        metric_threshold_proposals=metric_threshold_proposals,
         metrics_source_promotion_index=metrics_source_promotion_index,
+        metrics_delivery_workflow=metrics_delivery_workflow,
+        metrics_feedback_index=metrics_feedback_index,
         metric_pack_index=metric_pack_index,
         metric_pack_adapter_index=metric_pack_adapter_index,
+        specpm_delivery_workflow=specpm_delivery_workflow,
+        specpm_feedback_index=specpm_feedback_index,
+        review_feedback_index=review_feedback_index,
         proposal_runtime_index=proposal_runtime_index,
         proposal_promotion_index=proposal_promotion_index,
     )
     backlog_path = write_graph_backlog_projection(backlog_projection)
     dashboard = build_graph_dashboard(
         specs,
+        graph_overlay=graph_overlay,
+        graph_trends=graph_trends,
+        branch_rewrite_preview=branch_rewrite_preview,
+        branch_rewrite_summary=branch_rewrite_summary,
+        intent_overlay=intent_overlay,
+        spec_trace_projection=spec_trace_projection,
+        implementation_work_index=implementation_work_index,
+        evidence_overlay=evidence_overlay,
         external_consumer_index=consumer_index,
+        external_consumer_overlay=external_consumer_overlay,
+        external_consumer_handoffs=external_consumer_handoffs,
         metric_signal_index=metric_signal_index,
+        metric_threshold_proposals=metric_threshold_proposals,
         metrics_source_promotion_index=metrics_source_promotion_index,
+        metrics_delivery_workflow=metrics_delivery_workflow,
+        metrics_feedback_index=metrics_feedback_index,
         metric_pack_index=metric_pack_index,
         metric_pack_adapter_index=metric_pack_adapter_index,
         model_usage_telemetry=model_usage_telemetry,
+        specpm_delivery_workflow=specpm_delivery_workflow,
+        specpm_feedback_index=specpm_feedback_index,
+        review_feedback_index=review_feedback_index,
         graph_backlog_projection=backlog_projection,
         proposal_lane_overlay=proposal_lane_overlay,
         proposal_runtime_index=proposal_runtime_index,
@@ -28186,6 +28305,31 @@ def build_viewer_surfaces(specs: list[SpecNode]) -> dict[str, Any]:
         proposal_lane_overlay=proposal_lane_overlay,
     )
     proposal_spec_trace_path = write_proposal_spec_trace_index(proposal_spec_trace_index)
+    graph_overlay_path = write_graph_health_overlay(graph_overlay)
+    graph_trends_path_result = write_graph_health_trends(graph_trends)
+    intent_overlay_path_result = write_intent_layer_overlay(intent_overlay)
+    proposal_lane_path = write_proposal_lane_overlay(proposal_lane_overlay)
+    proposal_runtime_path = write_proposal_runtime_index(proposal_runtime_index)
+    proposal_promotion_path = write_proposal_promotion_index(proposal_promotion_index)
+    spec_trace_index_path_result = write_spec_trace_index(spec_trace_index)
+    spec_trace_projection_path_result = write_spec_trace_projection(spec_trace_projection)
+    evidence_index_path_result = write_evidence_plane_index(evidence_index)
+    evidence_overlay_path_result = write_evidence_plane_overlay(evidence_overlay)
+    external_consumer_index_path_result = write_external_consumer_index(consumer_index)
+    external_consumer_overlay_path_result = write_external_consumer_overlay(
+        external_consumer_overlay,
+    )
+    external_consumer_handoffs_path = write_external_consumer_handoff_packets(
+        external_consumer_handoffs,
+    )
+    metric_signal_path = write_metric_signal_index(metric_signal_index)
+    metric_threshold_proposals_path_result = write_metric_threshold_proposals(
+        metric_threshold_proposals,
+    )
+    specpm_feedback_path = write_specpm_feedback_index(specpm_feedback_index)
+    metrics_delivery_path = write_metrics_delivery_workflow(metrics_delivery_workflow)
+    metrics_feedback_path = write_metrics_feedback_index(metrics_feedback_index)
+    review_feedback_path = write_review_feedback_index(review_feedback_index)
     promotion_path = write_metrics_source_promotion_index(metrics_source_promotion_index)
     metric_pack_path = write_metric_pack_index(metric_pack_index)
     model_usage_path = write_model_usage_telemetry_index(model_usage_telemetry)
@@ -28214,6 +28358,11 @@ def build_viewer_surfaces(specs: list[SpecNode]) -> dict[str, Any]:
         if isinstance(metrics_source_promotion_backlog, dict)
         else 0
     )
+    ready_external_handoff_count = len(
+        external_consumer_handoffs.get("viewer_projection", {})
+        .get("handoff_status", {})
+        .get("ready_for_handoff", [])
+    )
     return {
         "artifact_kind": "viewer_surfaces_build_report",
         "schema_version": 1,
@@ -28235,6 +28384,107 @@ def build_viewer_surfaces(specs: list[SpecNode]) -> dict[str, Any]:
                 "generated_at": next_moves.get("generated_at"),
                 "current_scene": next_moves.get("current_scene"),
                 "recommended_next_move_kind": next_moves.get("recommended_next_move_kind"),
+            },
+            "graph_health_overlay": {
+                "artifact_path": graph_overlay_path.relative_to(ROOT).as_posix(),
+                "generated_at": graph_overlay.get("generated_at"),
+                "entry_count": len(graph_overlay.get("entries", [])),
+            },
+            "graph_health_trends": {
+                "artifact_path": graph_trends_path_result.relative_to(ROOT).as_posix(),
+                "generated_at": graph_trends.get("generated_at"),
+                "entry_count": len(graph_trends.get("entries", [])),
+            },
+            "intent_layer_overlay": {
+                "artifact_path": intent_overlay_path_result.relative_to(ROOT).as_posix(),
+                "generated_at": intent_overlay.get("generated_at"),
+                "entry_count": intent_overlay.get("entry_count"),
+            },
+            "proposal_lane_overlay": {
+                "artifact_path": proposal_lane_path.relative_to(ROOT).as_posix(),
+                "generated_at": proposal_lane_overlay.get("generated_at"),
+                "entry_count": proposal_lane_overlay.get("entry_count"),
+            },
+            "proposal_runtime_index": {
+                "artifact_path": proposal_runtime_path.relative_to(ROOT).as_posix(),
+                "generated_at": proposal_runtime_index.get("generated_at"),
+                "entry_count": proposal_runtime_index.get("entry_count"),
+                "reflective_backlog_count": (
+                    proposal_runtime_index.get("reflective_backlog", {}).get("entry_count", 0)
+                ),
+            },
+            "proposal_promotion_index": {
+                "artifact_path": proposal_promotion_path.relative_to(ROOT).as_posix(),
+                "generated_at": proposal_promotion_index.get("generated_at"),
+                "entry_count": proposal_promotion_index.get("entry_count"),
+            },
+            "spec_trace_index": {
+                "artifact_path": spec_trace_index_path_result.relative_to(ROOT).as_posix(),
+                "generated_at": spec_trace_index.get("generated_at"),
+                "entry_count": spec_trace_index.get("entry_count"),
+            },
+            "spec_trace_projection": {
+                "artifact_path": spec_trace_projection_path_result.relative_to(ROOT).as_posix(),
+                "generated_at": spec_trace_projection.get("generated_at"),
+                "entry_count": spec_trace_projection.get("entry_count"),
+            },
+            "evidence_plane_index": {
+                "artifact_path": evidence_index_path_result.relative_to(ROOT).as_posix(),
+                "generated_at": evidence_index.get("generated_at"),
+                "entry_count": evidence_index.get("entry_count"),
+            },
+            "evidence_plane_overlay": {
+                "artifact_path": evidence_overlay_path_result.relative_to(ROOT).as_posix(),
+                "generated_at": evidence_overlay.get("generated_at"),
+                "entry_count": evidence_overlay.get("entry_count"),
+            },
+            "external_consumer_index": {
+                "artifact_path": external_consumer_index_path_result.relative_to(ROOT).as_posix(),
+                "generated_at": consumer_index.get("generated_at"),
+                "entry_count": consumer_index.get("entry_count"),
+            },
+            "external_consumer_overlay": {
+                "artifact_path": external_consumer_overlay_path_result.relative_to(ROOT).as_posix(),
+                "generated_at": external_consumer_overlay.get("generated_at"),
+                "entry_count": external_consumer_overlay.get("entry_count"),
+            },
+            "external_consumer_handoff_packets": {
+                "artifact_path": external_consumer_handoffs_path.relative_to(ROOT).as_posix(),
+                "generated_at": external_consumer_handoffs.get("generated_at"),
+                "entry_count": external_consumer_handoffs.get("entry_count"),
+                "ready_for_handoff_count": ready_external_handoff_count,
+            },
+            "metric_signal_index": {
+                "artifact_path": metric_signal_path.relative_to(ROOT).as_posix(),
+                "generated_at": metric_signal_index.get("generated_at"),
+                "metric_count": len(metric_signal_index.get("metrics", [])),
+            },
+            "metric_threshold_proposals": {
+                "artifact_path": metric_threshold_proposals_path_result.relative_to(
+                    ROOT
+                ).as_posix(),
+                "generated_at": metric_threshold_proposals.get("generated_at"),
+                "entry_count": metric_threshold_proposals.get("entry_count"),
+            },
+            "specpm_feedback_index": {
+                "artifact_path": specpm_feedback_path.relative_to(ROOT).as_posix(),
+                "generated_at": specpm_feedback_index.get("generated_at"),
+                "entry_count": specpm_feedback_index.get("entry_count"),
+            },
+            "metrics_delivery_workflow": {
+                "artifact_path": metrics_delivery_path.relative_to(ROOT).as_posix(),
+                "generated_at": metrics_delivery_workflow.get("generated_at"),
+                "entry_count": metrics_delivery_workflow.get("entry_count"),
+            },
+            "metrics_feedback_index": {
+                "artifact_path": metrics_feedback_path.relative_to(ROOT).as_posix(),
+                "generated_at": metrics_feedback_index.get("generated_at"),
+                "entry_count": metrics_feedback_index.get("entry_count"),
+            },
+            "review_feedback_index": {
+                "artifact_path": review_feedback_path.relative_to(ROOT).as_posix(),
+                "generated_at": review_feedback_index.get("generated_at"),
+                "entry_count": review_feedback_index.get("entry_count"),
             },
             "proposal_spec_trace_index": {
                 "artifact_path": proposal_spec_trace_path.relative_to(ROOT).as_posix(),
