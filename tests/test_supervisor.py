@@ -13442,7 +13442,7 @@ def test_build_metric_threshold_proposals_emits_reviewable_followups(
                 },
                 {
                     "metric_id": "sib",
-                    "title": "Sibling Implementation Balance",
+                    "title": "Specification-Implementation Balance",
                     "score": 0.52,
                     "minimum_score": 0.6,
                     "status": "below_threshold",
