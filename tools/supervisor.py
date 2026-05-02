@@ -21330,7 +21330,7 @@ def build_sib_full_proxy_metric_signals(
     expected_potential = required_test_count or len(implementation_items)
     svc_score = specification_verifiability.get("score")
     sib_eff_star_value = None
-    if isinstance(svc_score, int | float) and expected_potential:
+    if isinstance(svc_score, (int, float)) and expected_potential:
         sib_eff_star_value = round((intent_atom_count * float(svc_score)) / expected_potential, 3)
 
     feedback_entries = [
@@ -21338,11 +21338,15 @@ def build_sib_full_proxy_metric_signals(
     ]
     root_cause_counts: dict[str, int] = {}
     for entry in feedback_entries:
-        root_cause = str(entry.get("root_cause_class", "")).strip() or "unclassified"
+        raw_root_cause = entry.get("root_cause_class")
+        root_cause = raw_root_cause.strip() if isinstance(raw_root_cause, str) else ""
+        root_cause = root_cause or "unclassified"
         root_cause_counts[root_cause] = root_cause_counts.get(root_cause, 0) + 1
     sib_score = sib_entry.get("score")
     defect_balance_value = (
-        round(float(sib_score), 3) if isinstance(sib_score, int | float) else None
+        round(float(sib_score), 3)
+        if feedback_entries and isinstance(sib_score, (int, float))
+        else None
     )
 
     return [
