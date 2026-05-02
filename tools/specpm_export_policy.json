@@ -52,6 +52,9 @@
     "provides_capabilities",
     "bounded_context"
   ],
+  "optional_export_fields": [
+    "provides_intents"
+  ],
   "boundary_spec_gaps": [
     "interfaces",
     "effects",

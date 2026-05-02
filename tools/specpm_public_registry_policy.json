@@ -38,6 +38,8 @@
       "missing_package_versions",
       "searchable_capabilities",
       "missing_capabilities",
+      "searchable_intents",
+      "missing_intents",
       "registry_drift",
       "dev_observation_only"
     ]
@@ -45,7 +47,8 @@
   "endpoint_templates": {
     "package": "/v0/packages/{package_id}",
     "version": "/v0/packages/{package_id}/versions/{version}",
-    "capability_search": "/v0/capabilities/{capability_id}/packages"
+    "capability_search": "/v0/capabilities/{capability_id}/packages",
+    "intent_search": "/v0/intents/{intent_id}/packages"
   },
   "probe_defaults": {
     "timeout_seconds": 5

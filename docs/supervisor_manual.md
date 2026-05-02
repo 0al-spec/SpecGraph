@@ -910,16 +910,17 @@ It emits:
 - package/version probes for `/v0/packages/{package_id}` and
   `/v0/packages/{package_id}/versions/{version}`
 - capability-search probes for `/v0/capabilities/{capability_id}/packages`
+- intent-search probes for `/v0/intents/{intent_id}/packages`
 - `registry_visible`, `registry_missing`, `registry_drift`, or
   `registry_unavailable` package statuses
 - viewer filters for `visible_package_versions`, `searchable_capabilities`,
-  `registry_drift`, and `dev_observation_only`
+  `searchable_intents`, `registry_drift`, and `dev_observation_only`
 
 Use it when you want to review:
 
 - whether a materialized local draft bundle is visible through the SpecPM
   static registry service
-- whether expected package versions or capabilities are missing from `/v0`
+- whether expected package versions, capabilities, or intents are missing from `/v0`
 - whether registry payloads drift from the current SpecGraph materialization
   expectations
 

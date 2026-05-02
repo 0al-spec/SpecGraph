@@ -17390,6 +17390,11 @@ def build_specpm_export_preview(specs: list[SpecNode]) -> dict[str, Any]:
             capability_id = str(item).strip()
             if capability_id and capability_id not in provides_capabilities:
                 provides_capabilities.append(capability_id)
+        provides_intents: list[str] = []
+        for item in raw_entry.get("provides_intents", []):
+            intent_id = str(item).strip()
+            if intent_id and intent_id not in provides_intents:
+                provides_intents.append(intent_id)
         requires_capabilities: list[str] = []
         for item in raw_entry.get("requires_capabilities", []):
             capability_id = str(item).strip()
@@ -17460,6 +17465,8 @@ def build_specpm_export_preview(specs: list[SpecNode]) -> dict[str, Any]:
                 },
                 "preview_only": True,
             }
+            if provides_intents:
+                manifest_preview["index"]["provides"]["intents"] = provides_intents
             if keywords:
                 manifest_preview["keywords"] = keywords
 
@@ -17497,6 +17504,7 @@ def build_specpm_export_preview(specs: list[SpecNode]) -> dict[str, Any]:
                     }
                 ),
                 "provides_capabilities": provides_capabilities,
+                "provides_intents": provides_intents,
                 "requires_capabilities": requires_capabilities,
                 "missing_fields_for_full_boundary_spec": boundary_spec_gaps,
                 "notes": str(raw_entry.get("notes", "")).strip(),
@@ -17524,6 +17532,7 @@ def build_specpm_export_preview(specs: list[SpecNode]) -> dict[str, Any]:
                 "root_spec_id": root_spec_id,
                 "source_spec_ids": source_spec_ids,
                 "provides_capabilities": provides_capabilities,
+                "provides_intents": provides_intents,
                 "requires_capabilities": requires_capabilities,
             },
             "contract_errors": sorted(set(export_contract_errors)),
@@ -17856,6 +17865,11 @@ def build_specpm_boundary_spec(
         for item in boundary_preview.get("provides_capabilities", [])
         if str(item).strip()
     ]
+    provides_intents = [
+        str(item).strip()
+        for item in boundary_preview.get("provides_intents", [])
+        if str(item).strip()
+    ]
     requires_capabilities = [
         str(item).strip()
         for item in boundary_preview.get("requires_capabilities", [])
@@ -17918,6 +17932,7 @@ def build_specpm_boundary_spec(
                     "summary": (
                         f"Exported capability {capability_id} from SpecGraph boundary preview."
                     ),
+                    **({"intentIds": provides_intents} if index == 0 and provides_intents else {}),
                 }
                 for index, capability_id in enumerate(provides_capabilities)
             ],
@@ -18613,6 +18628,7 @@ def build_specpm_import_preview(
         boundary_title = str(boundary_metadata.get("title", "")).strip()
 
         provides_capabilities: list[str] = []
+        provides_intents: list[str] = []
         if isinstance(boundary_payload, dict):
             for raw_item in boundary_payload.get("provides", {}).get("capabilities", []):
                 if not isinstance(raw_item, dict):
@@ -18620,6 +18636,23 @@ def build_specpm_import_preview(
                 capability_id = str(raw_item.get("id", "")).strip()
                 if capability_id and capability_id not in provides_capabilities:
                     provides_capabilities.append(capability_id)
+                for raw_intent in raw_item.get("intentIds", []) or []:
+                    intent_id = str(raw_intent).strip()
+                    if intent_id and intent_id not in provides_intents:
+                        provides_intents.append(intent_id)
+        manifest_intents: list[str] = []
+        if isinstance(manifest_payload, dict):
+            manifest_index = manifest_payload.get("index", {})
+            manifest_provides = (
+                manifest_index.get("provides", {}) if isinstance(manifest_index, dict) else {}
+            )
+            raw_manifest_intents = (
+                manifest_provides.get("intents", []) if isinstance(manifest_provides, dict) else []
+            )
+            for raw_intent in raw_manifest_intents or []:
+                intent_id = str(raw_intent).strip()
+                if intent_id and intent_id not in manifest_intents:
+                    manifest_intents.append(intent_id)
 
         handoff_package_identity = (
             handoff_payload.get("package_identity", {}) if isinstance(handoff_payload, dict) else {}
@@ -18724,6 +18757,7 @@ def build_specpm_import_preview(
                 "package_name": package_name,
                 "package_version": package_version,
                 "summary": str(manifest_metadata.get("summary", "")).strip(),
+                "provides_intents": manifest_intents,
             },
             "boundary_summary": {
                 "boundary_spec_id": boundary_spec_id,
@@ -18734,6 +18768,7 @@ def build_specpm_import_preview(
                     else ""
                 ),
                 "provides_capabilities": provides_capabilities,
+                "provides_intents": provides_intents,
             },
             "handoff_continuity": {
                 "handoff_present": handoff_payload is not None,
@@ -19984,6 +20019,7 @@ SPECPM_PUBLIC_REGISTRY_ENDPOINT_PLACEHOLDERS = {
     "package": {"package_id"},
     "version": {"package_id", "version"},
     "capability_search": {"capability_id"},
+    "intent_search": {"intent_id"},
 }
 
 
@@ -20048,7 +20084,7 @@ def normalize_specpm_public_registry_config(
         errors.append("missing_registry_base_url")
     if base_url.endswith("/v0"):
         errors.append("registry_base_url_must_not_include_api_prefix")
-    for endpoint_name in ("package", "version", "capability_search"):
+    for endpoint_name in ("package", "version", "capability_search", "intent_search"):
         endpoint = str(endpoints.get(endpoint_name, "")).strip()
         if not endpoint:
             errors.append(f"missing_{endpoint_name}_endpoint")
@@ -20097,6 +20133,11 @@ def expected_specpm_public_registry_entries(
             for item in registry_entry.get("provides_capabilities", [])
             if str(item).strip()
         ]
+        provides_intents = [
+            str(item).strip()
+            for item in registry_entry.get("provides_intents", [])
+            if str(item).strip()
+        ]
         entries.append(
             {
                 "export_id": str(raw_entry.get("export_id", "")).strip(),
@@ -20106,6 +20147,7 @@ def expected_specpm_public_registry_entries(
                 "materialization_status": materialization_status,
                 "bundle_root": str(raw_entry.get("bundle_root", "")).strip(),
                 "provides_capabilities": sorted(set(provides_capabilities)),
+                "provides_intents": sorted(set(provides_intents)),
             }
         )
     return entries
@@ -20172,6 +20214,11 @@ def build_specpm_public_registry_index(
                 for item in expected.get("provides_capabilities", [])
                 if str(item).strip()
             ]
+            intent_ids = [
+                str(item).strip()
+                for item in expected.get("provides_intents", [])
+                if str(item).strip()
+            ]
             endpoints = registry_config.get("endpoints", {})
             base_url = str(registry_config.get("base_url", "")).strip()
             package_probe = probe_specpm_public_registry_endpoint(
@@ -20207,7 +20254,22 @@ def build_specpm_public_registry_index(
                 }
                 for capability_id in capability_ids
             ]
-            probes = [package_probe, version_probe, *capability_probes]
+            intent_probes = [
+                {
+                    "intent_id": intent_id,
+                    **probe_specpm_public_registry_endpoint(
+                        url=specpm_public_registry_endpoint_url(
+                            base_url=base_url,
+                            endpoint_template=str(endpoints.get("intent_search", "")),
+                            values={"intent_id": intent_id},
+                        ),
+                        expected_values=[package_id],
+                        timeout_seconds=timeout_seconds,
+                    ),
+                }
+                for intent_id in intent_ids
+            ]
+            probes = [package_probe, version_probe, *capability_probes, *intent_probes]
             entry_status = derive_specpm_public_registry_entry_status(probes=probes)
             review_state = (
                 "registry_visible" if entry_status == "registry_visible" else "registry_gap"
@@ -20235,6 +20297,16 @@ def build_specpm_public_registry_index(
                 for probe in capability_probes
                 if str(probe.get("probe_status", "")).strip() in {"missing", "drift"}
             )
+            drift_findings.extend(
+                {
+                    "probe": "intent_search",
+                    "intent_id": str(probe.get("intent_id", "")).strip(),
+                    "missing_values": probe.get("missing_values", []),
+                    "probe_status": probe.get("probe_status"),
+                }
+                for probe in intent_probes
+                if str(probe.get("probe_status", "")).strip() in {"missing", "drift"}
+            )
             entry = {
                 "package_id": package_id,
                 "package_version": package_version,
@@ -20249,11 +20321,13 @@ def build_specpm_public_registry_index(
                     ).strip(),
                     "bundle_root": str(expected.get("bundle_root", "")).strip(),
                     "provides_capabilities": capability_ids,
+                    "provides_intents": intent_ids,
                 },
                 "probes": {
                     "package": package_probe,
                     "version": version_probe,
                     "capabilities": capability_probes,
+                    "intents": intent_probes,
                 },
                 "drift_findings": drift_findings,
             }
@@ -20283,6 +20357,10 @@ def build_specpm_public_registry_index(
                 probe.get("probe_status") in {"missing", "drift"} for probe in capability_probes
             ):
                 named_filters["missing_capabilities"].append(package_id)
+            if any(probe.get("probe_status") == "visible" for probe in intent_probes):
+                named_filters["searchable_intents"].append(package_id)
+            if any(probe.get("probe_status") in {"missing", "drift"} for probe in intent_probes):
+                named_filters["missing_intents"].append(package_id)
             if entry_status == "registry_drift":
                 named_filters["registry_drift"].append(package_id)
             if entry_status == "registry_unavailable":
