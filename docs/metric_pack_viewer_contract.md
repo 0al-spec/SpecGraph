@@ -497,6 +497,12 @@ Viewer guardrail:
 - Treat `price_status` as pricing source availability metadata only.
 - `verification_cost` currently uses
   `unit: "review_feedback_verification_record"` and is also a proxy.
+- `sib_eff_star` currently uses
+  `unit: "intent_atoms_per_expected_test_proxy"` and `value_kind:
+  "draft_sib_full_proxy"`.
+- `defect_balance_at_root` currently uses
+  `unit: "sib_score_at_review_feedback_snapshot"` and is not a causal defect
+  attribution model.
 
 Known `run_status` values:
 

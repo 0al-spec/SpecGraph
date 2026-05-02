@@ -840,6 +840,120 @@ def test_metric_pack_runs_computes_economic_proxy_values(
     assert report["summary"]["gap_count"] == 0
 
 
+def test_sib_full_proxy_signals_compute_draft_values(
+    supervisor_module: object,
+) -> None:
+    specs = [
+        supervisor_module.SpecNode(
+            path=Path("SG-SPEC-0001.yaml"),
+            data={
+                "id": "SG-SPEC-0001",
+                "title": "Root",
+                "kind": "spec",
+                "created_at": "2026-05-01T00:00:00Z",
+                "updated_at": "2026-05-01T00:00:00Z",
+                "status": "outlined",
+                "maturity": 0.5,
+                "depends_on": [],
+                "outputs": [],
+                "allowed_paths": [],
+                "acceptance": ["one", "two"],
+                "prompt": "Root.",
+            },
+        )
+    ]
+    signals = supervisor_module.build_sib_full_proxy_metric_signals(
+        specs=specs,
+        specification_verifiability={"score": 0.5},
+        sib_entry={"score": 0.75},
+        implementation_work_index={
+            "entries": [
+                {"required_tests": ["a", "b"]},
+                {"required_tests": ["c"]},
+            ],
+        },
+        review_feedback_index={
+            "entries": [
+                {"root_cause_class": "artifact_contract_validation_gap"},
+                {"root_cause_class": "artifact_contract_validation_gap"},
+                {"root_cause_class": "scope_isolation_gap"},
+            ],
+        },
+    )
+
+    by_id = {entry["metric_id"]: entry for entry in signals}
+    assert by_id["sib_eff_star"]["value"] == 0.333
+    assert by_id["sib_eff_star"]["unit"] == "intent_atoms_per_expected_test_proxy"
+    assert by_id["sib_eff_star"]["status"] == "observed_proxy"
+    assert by_id["defect_balance_at_root"]["value"] == 0.75
+    assert by_id["defect_balance_at_root"]["input_summary"]["root_cause_class_counts"] == {
+        "artifact_contract_validation_gap": 2,
+        "scope_isolation_gap": 1,
+    }
+
+
+def test_metric_pack_runs_computes_sib_full_proxy_values(
+    supervisor_module: object,
+) -> None:
+    report = supervisor_module.build_metric_pack_runs(
+        {
+            "entries": [
+                {
+                    "metric_pack_id": "sib_full",
+                    "title": "SIB Full Metrics",
+                    "pack_status": "draft_visible_only",
+                    "pack_authority_state": "not_threshold_authority",
+                    "reference_state": "draft_reference",
+                    "metrics": [
+                        {"metric_id": "sib_eff_star", "label": "Effective SIB*"},
+                        {"metric_id": "defect_balance_at_root", "label": "DBR"},
+                    ],
+                }
+            ],
+        },
+        {
+            "entries": [
+                {
+                    "metric_pack_id": "sib_full",
+                    "adapter_status": "ready_for_adapter_review",
+                    "inputs": [],
+                    "missing_inputs": [],
+                    "next_gap": "review_metric_pack_adapter_index",
+                }
+            ],
+        },
+        {
+            "metrics": [
+                {
+                    "metric_id": "sib_eff_star",
+                    "value": 0.333,
+                    "unit": "intent_atoms_per_expected_test_proxy",
+                    "value_kind": "draft_sib_full_proxy",
+                    "status": "observed_proxy",
+                    "threshold_authority_state": "not_threshold_authority",
+                    "basis": "Proxy only.",
+                },
+                {
+                    "metric_id": "defect_balance_at_root",
+                    "value": 0.75,
+                    "unit": "sib_score_at_review_feedback_snapshot",
+                    "value_kind": "draft_sib_full_proxy",
+                    "status": "observed_proxy",
+                    "threshold_authority_state": "not_threshold_authority",
+                    "basis": "Proxy only.",
+                },
+            ],
+        },
+    )
+
+    entry = report["entries"][0]
+    assert entry["run_status"] == "computed"
+    assert entry["gaps"] == []
+    values = {item["metric_id"]: item for item in entry["computed_values"]}
+    assert values["sib_eff_star"]["value"] == 0.333
+    assert values["defect_balance_at_root"]["value"] == 0.75
+
+
 def test_main_builds_metric_pack_adapter_index_as_standalone_command(
     supervisor_module: object,
     tmp_path: Path,
