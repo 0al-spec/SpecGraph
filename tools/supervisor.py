@@ -26959,7 +26959,7 @@ def graph_next_moves_top_backlog_entry(
                 if entry is not None and not is_covered_branch_split_candidate(entry):
                     bucket_entries.append(entry)
             if bucket_entries:
-                return sorted(bucket_entries, key=entry_selection_rank)[0]
+                return min(bucket_entries, key=entry_selection_rank)
     for entry in entries:
         if not is_covered_branch_split_candidate(entry):
             return entry
