@@ -284,6 +284,10 @@ Notes:
 - `sib_proxy` remains as an alias-only compatibility entry with
   `alias_of = "sib"` and `threshold_authority_state = "alias_only"`; avoid
   counting it as a second threshold-authoritative metric
+- `node_inference_cost` and `verification_cost` are proxy values. Render
+  `value` + `unit` when present, and key proxy-vs-spend semantics off
+  `value_kind` / `derivation_mode`. Treat `price_status` only as pricing source
+  availability metadata.
 
 ### `metrics_source_promotion_index.json`
 

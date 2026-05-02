@@ -1,6 +1,6 @@
 {
   "artifact_kind": "metric_signal_policy",
-  "version": 1,
+  "version": 2,
   "repository_layout": {
     "signal_artifact": "runs/metric_signal_index.json",
     "proposal_artifact": "runs/metric_threshold_proposals.json"
@@ -13,12 +13,16 @@
       "process_observability",
       "structural_observability",
       "sib",
-      "sib_proxy"
+      "sib_proxy",
+      "node_inference_cost",
+      "verification_cost"
     ],
     "metric_statuses": [
       "healthy",
       "below_threshold",
-      "not_applicable"
+      "not_applicable",
+      "observed_proxy",
+      "not_observed"
     ],
     "named_filters": [
       "metrics_below_threshold",
@@ -28,7 +32,8 @@
       "structural_attention",
       "sib_attention",
       "sib_family_attention",
-      "legacy_alias_metrics"
+      "legacy_alias_metrics",
+      "economic_proxy_metrics"
     ]
   },
   "status_scoring": {

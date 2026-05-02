@@ -544,6 +544,8 @@ Current bootstrap metric families are:
 - `process_observability`
 - `structural_observability`
 - `sib`
+- `node_inference_cost`
+- `verification_cost`
 
 `sib` is the bridge-native SIB metric family:
 
@@ -556,6 +558,12 @@ Current bootstrap metric families are:
 `metric_signal_index.json`, with `alias_of = "sib"` and
 `threshold_authority_state = "alias_only"`. Viewers may keep reading it during
 migration, but threshold proposals are emitted only for `sib`.
+
+`node_inference_cost` and `verification_cost` are economic-observability proxy
+metrics. They expose observed activity units from model-usage telemetry and
+review-feedback verification records. They are proxy activity units until a
+monetary spend derivation exists. `price_status` only reports whether a pricing
+source is connected, and the metrics do not carry threshold authority.
 
 Each metric entry records:
 

@@ -458,6 +458,31 @@ Each `entries[]` item describes one pack snapshot:
 }
 ```
 
+Economic observability pack values may use proxy fields instead of threshold
+scores:
+
+```json
+{
+  "metric_id": "node_inference_cost",
+  "value_status": "computed_from_existing_signal",
+  "score": null,
+  "value": 5,
+  "unit": "supervisor_run_proxy",
+  "value_kind": "usage_proxy_not_monetary_cost",
+  "price_status": "missing_price_source",
+  "threshold_authority_state": "not_threshold_authority"
+}
+```
+
+Viewer guardrail:
+
+- Render `value` + `unit` as observed proxy activity.
+- Decide proxy-vs-spend semantics from `value_kind` / `derivation_mode`, not
+  from `price_status`.
+- Treat `price_status` as pricing source availability metadata only.
+- `verification_cost` currently uses
+  `unit: "review_feedback_verification_record"` and is also a proxy.
+
 Known `run_status` values:
 
 - `computed`: at least one value is projected and no run gaps remain.

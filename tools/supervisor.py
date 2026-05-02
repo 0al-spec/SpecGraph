@@ -21176,6 +21176,136 @@ def entry_metric_bindings(
     return matches
 
 
+def economic_metric_price_status(pricing_provenance: dict[str, Any] | None) -> str:
+    if not isinstance(pricing_provenance, dict):
+        return "missing_price_source"
+    surfaces = [
+        item for item in pricing_provenance.get("pricing_surfaces", []) if isinstance(item, dict)
+    ]
+    statuses = {
+        str(surface.get("price_status", "")).strip()
+        for surface in surfaces
+        if str(surface.get("price_status", "")).strip()
+    }
+    if not statuses:
+        return "missing_price_source"
+    if "active_price_source" in statuses:
+        return "active_price_source"
+    if "missing_price_source" in statuses:
+        return "missing_price_source"
+    return sorted(statuses)[0]
+
+
+def build_economic_observability_metric_signals(
+    *,
+    model_usage_telemetry: dict[str, Any],
+    pricing_provenance: dict[str, Any] | None,
+    review_feedback_index: dict[str, Any],
+) -> list[dict[str, Any]]:
+    usage_surfaces = [
+        item
+        for item in model_usage_telemetry.get("model_usage_surfaces", [])
+        if isinstance(item, dict)
+    ]
+    observed_usage_surfaces = [
+        item
+        for item in usage_surfaces
+        if str(item.get("telemetry_status", "")).strip() == "usage_proxy_available"
+    ]
+    usage_proxy_total = sum(
+        int(item.get("usage_proxy", {}).get("value", 0) or 0)
+        for item in observed_usage_surfaces
+        if isinstance(item.get("usage_proxy", {}), dict)
+    )
+    observed_run_ids = sorted(
+        {
+            str(run_id).strip()
+            for item in observed_usage_surfaces
+            for run_id in item.get("observed_run_ids", [])
+            if str(run_id).strip()
+        }
+    )
+    price_status = economic_metric_price_status(pricing_provenance)
+    feedback_entries = [
+        item for item in review_feedback_index.get("entries", []) if isinstance(item, dict)
+    ]
+    verification_records = [
+        str(record).strip()
+        for item in feedback_entries
+        for record in item.get("verification", [])
+        if str(record).strip()
+    ]
+    verification_kind_counts: dict[str, int] = {}
+    for record in verification_records:
+        verification_kind_counts[record] = verification_kind_counts.get(record, 0) + 1
+    return [
+        {
+            "metric_id": "node_inference_cost",
+            "title": "Node Inference Cost",
+            "score": None,
+            "minimum_score": None,
+            "threshold_gap": None,
+            "status": "observed_proxy" if usage_proxy_total else "not_observed",
+            "trigger_signal": "",
+            "signal_emitted": False,
+            "derivation_mode": "proxy_from_existing_observation",
+            "metric_family": "economic_observability",
+            "threshold_authority_state": "not_threshold_authority",
+            "value": usage_proxy_total,
+            "unit": "supervisor_run_proxy",
+            "value_kind": "usage_proxy_not_monetary_cost",
+            "price_status": price_status,
+            "basis": (
+                "Derived from model usage telemetry run-count proxies. The value is always a "
+                "proxy activity unit until a monetary spend derivation exists; price_status only "
+                "reports pricing source availability."
+            ),
+            "source_artifacts": [
+                MODEL_USAGE_TELEMETRY_RELATIVE_PATH,
+                METRIC_PRICING_PROVENANCE_RELATIVE_PATH,
+            ],
+            "input_summary": {
+                "usage_surface_count": len(usage_surfaces),
+                "observed_usage_surface_count": len(observed_usage_surfaces),
+                "observed_run_count": usage_proxy_total,
+                "observed_run_ids": observed_run_ids,
+                "price_status": price_status,
+            },
+        },
+        {
+            "metric_id": "verification_cost",
+            "title": "Verification Cost",
+            "score": None,
+            "minimum_score": None,
+            "threshold_gap": None,
+            "status": "observed_proxy" if verification_records else "not_observed",
+            "trigger_signal": "",
+            "signal_emitted": False,
+            "derivation_mode": "proxy_from_existing_observation",
+            "metric_family": "economic_observability",
+            "threshold_authority_state": "not_threshold_authority",
+            "value": len(verification_records),
+            "unit": "review_feedback_verification_record",
+            "value_kind": "verification_activity_proxy_not_monetary_cost",
+            "price_status": price_status,
+            "basis": (
+                "Derived from review feedback verification records. This is verification "
+                "activity pressure, not monetary spend."
+            ),
+            "source_artifacts": [
+                review_feedback_index_path().relative_to(ROOT).as_posix(),
+                METRIC_PRICING_PROVENANCE_RELATIVE_PATH,
+            ],
+            "input_summary": {
+                "feedback_entry_count": len(feedback_entries),
+                "verification_record_count": len(verification_records),
+                "verification_kind_counts": dict(sorted(verification_kind_counts.items())),
+                "price_status": price_status,
+            },
+        },
+    ]
+
+
 def build_metric_signal_index(specs: list[SpecNode]) -> dict[str, Any]:
     trace_index = build_spec_trace_index(specs)
     trace_projection = build_spec_trace_projection(trace_index)
@@ -21413,6 +21543,24 @@ def build_metric_signal_index(specs: list[SpecNode]) -> dict[str, Any]:
         },
     }
 
+    economic_model_usage = build_model_usage_telemetry_index()
+    try:
+        economic_review_feedback = build_review_feedback_index()
+    except RuntimeError:
+        economic_review_feedback = {"entries": []}
+    economic_metric_signals = build_economic_observability_metric_signals(
+        model_usage_telemetry=economic_model_usage,
+        pricing_provenance=build_metric_pricing_provenance(economic_model_usage),
+        review_feedback_index=economic_review_feedback,
+    )
+    metrics_by_id.update(
+        {
+            str(entry.get("metric_id", "")).strip(): entry
+            for entry in economic_metric_signals
+            if isinstance(entry, dict) and str(entry.get("metric_id", "")).strip()
+        }
+    )
+
     sib_metric_ids = set(SIB_METRIC_IDS)
     stable_binding_roles = {
         str(item).strip()
@@ -21579,6 +21727,8 @@ def build_metric_signal_index(specs: list[SpecNode]) -> dict[str, Any]:
             named_filters["healthy_metrics"].append(metric_id)
         if is_alias_only:
             named_filters.setdefault("legacy_alias_metrics", []).append(metric_id)
+        if str(entry.get("metric_family", "")).strip() == "economic_observability":
+            named_filters.setdefault("economic_proxy_metrics", []).append(metric_id)
 
     return {
         "artifact_kind": METRIC_SIGNAL_INDEX_ARTIFACT_KIND,
@@ -23496,7 +23646,7 @@ def metric_pack_run_value_record(
     metric_signal_entry: dict[str, Any],
 ) -> dict[str, Any]:
     metric_id = str(metric_definition.get("metric_id", "")).strip()
-    return {
+    record = {
         "metric_id": metric_id,
         "label": str(metric_definition.get("label", "")).strip(),
         "kind": str(metric_definition.get("kind", "")).strip(),
@@ -23514,6 +23664,17 @@ def metric_pack_run_value_record(
         ).strip(),
         "basis": str(metric_signal_entry.get("basis", "")).strip(),
     }
+    for field in (
+        "value",
+        "unit",
+        "value_kind",
+        "price_status",
+        "source_artifacts",
+        "input_summary",
+    ):
+        if field in metric_signal_entry:
+            record[field] = copy.deepcopy(metric_signal_entry[field])
+    return record
 
 
 def metric_pack_run_gap_records(

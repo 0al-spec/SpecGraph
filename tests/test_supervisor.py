@@ -11743,6 +11743,40 @@ def test_build_metric_signal_index_reports_threshold_breaches(
     assert index["viewer_projection"]["named_filters"]["legacy_alias_metrics"] == ["sib_proxy"]
 
 
+def test_economic_observability_metrics_keep_proxy_semantics_with_active_prices(
+    supervisor_module: object,
+) -> None:
+    signals = supervisor_module.build_economic_observability_metric_signals(
+        model_usage_telemetry={
+            "model_usage_surfaces": [
+                {
+                    "telemetry_status": "usage_proxy_available",
+                    "usage_proxy": {"value": 2},
+                    "observed_run_ids": ["run-2", "run-1"],
+                }
+            ]
+        },
+        pricing_provenance={"pricing_surfaces": [{"price_status": "active_price_source"}]},
+        review_feedback_index={
+            "entries": [{"verification": ["targeted_test", "targeted_test", "manual_review"]}]
+        },
+    )
+
+    by_id = {entry["metric_id"]: entry for entry in signals}
+    node_cost = by_id["node_inference_cost"]
+    assert node_cost["value"] == 2
+    assert node_cost["value_kind"] == "usage_proxy_not_monetary_cost"
+    assert node_cost["price_status"] == "active_price_source"
+    assert "proxy activity unit" in node_cost["basis"]
+    assert "price_status remains missing_price_source" not in node_cost["basis"]
+
+    verification_cost = by_id["verification_cost"]
+    assert verification_cost["input_summary"]["verification_kind_counts"] == {
+        "manual_review": 1,
+        "targeted_test": 2,
+    }
+
+
 def test_build_metric_signal_index_ignores_gate_only_overlay_entries(
     supervisor_module: object,
     repo_fixture: Path,
