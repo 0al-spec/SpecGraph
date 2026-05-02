@@ -14503,11 +14503,12 @@ def test_build_graph_dashboard_aggregates_runtime_surfaces(
     assert by_card_id["metrics_source_promotion_ready"]["value"] == 1
     assert by_card_id["metric_packs_review_ready"]["value"] == 1
     assert by_card_id["review_feedback_open"]["value"] == 1
-    assert by_card_id["graph_backlog_open"]["value"] == 7
+    assert by_card_id["graph_backlog_open"]["value"] == 8
     assert report["sections"]["backlog"]["domain_counts"] == {
         "branch_rewrite": 2,
         "health": 1,
         "implementation": 1,
+        "metrics": 1,
         "process_feedback": 1,
         "proposals": 2,
     }
@@ -14521,7 +14522,7 @@ def test_build_graph_dashboard_aggregates_runtime_surfaces(
     assert report["viewer_projection"]["named_filters"]["review_feedback_open"] == 1
     assert report["viewer_projection"]["named_filters"]["review_feedback_invalid"] == 1
     assert report["viewer_projection"]["named_filters"]["review_feedback_accepted_risk"] == 1
-    assert report["viewer_projection"]["named_filters"]["graph_backlog_open"] == 7
+    assert report["viewer_projection"]["named_filters"]["graph_backlog_open"] == 8
 
     partial_injection_report = supervisor_module.build_graph_dashboard(
         supervisor_module.load_specs(),
@@ -14628,6 +14629,7 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
         metrics_feedback_index: dict[str, object] | None = None,
         metric_pack_index: dict[str, object] | None = None,
         metric_pack_adapter_index: dict[str, object] | None = None,
+        metric_pack_runs: dict[str, object] | None = None,
         specpm_export_preview: dict[str, object] | None = None,
         specpm_delivery_workflow: dict[str, object] | None = None,
         specpm_feedback_index: dict[str, object] | None = None,
@@ -14651,6 +14653,7 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
         assert metrics_feedback_index is not None
         assert metric_pack_index is not None
         assert metric_pack_adapter_index is not None
+        assert metric_pack_runs is not None
         assert specpm_export_preview is not None
         assert specpm_delivery_workflow is not None
         assert specpm_feedback_index is not None
