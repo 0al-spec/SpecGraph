@@ -21306,6 +21306,115 @@ def build_economic_observability_metric_signals(
     ]
 
 
+def count_spec_intent_atom_proxies(specs: list[SpecNode]) -> int:
+    return sum(acceptance_criteria_count(spec) for spec in specs)
+
+
+def build_sib_full_proxy_metric_signals(
+    *,
+    specs: list[SpecNode],
+    specification_verifiability: dict[str, Any],
+    sib_entry: dict[str, Any],
+    implementation_work_index: dict[str, Any],
+    review_feedback_index: dict[str, Any],
+) -> list[dict[str, Any]]:
+    intent_atom_count = count_spec_intent_atom_proxies(specs)
+    implementation_items = [
+        item for item in implementation_work_index.get("entries", []) if isinstance(item, dict)
+    ]
+    required_test_count = sum(
+        len(item.get("required_tests", []))
+        for item in implementation_items
+        if isinstance(item.get("required_tests", []), list)
+    )
+    expected_potential = required_test_count or len(implementation_items)
+    svc_score = specification_verifiability.get("score")
+    sib_eff_star_value = None
+    if isinstance(svc_score, (int, float)) and expected_potential:
+        sib_eff_star_value = round((intent_atom_count * float(svc_score)) / expected_potential, 3)
+
+    feedback_entries = [
+        item for item in review_feedback_index.get("entries", []) if isinstance(item, dict)
+    ]
+    root_cause_counts: dict[str, int] = {}
+    for entry in feedback_entries:
+        raw_root_cause = entry.get("root_cause_class")
+        root_cause = raw_root_cause.strip() if isinstance(raw_root_cause, str) else ""
+        root_cause = root_cause or "unclassified"
+        root_cause_counts[root_cause] = root_cause_counts.get(root_cause, 0) + 1
+    sib_score = sib_entry.get("score")
+    defect_balance_value = (
+        round(float(sib_score), 3)
+        if feedback_entries and isinstance(sib_score, (int, float))
+        else None
+    )
+
+    return [
+        {
+            "metric_id": "sib_eff_star",
+            "title": "Effective Pre-Implementation SIB",
+            "score": None,
+            "minimum_score": None,
+            "threshold_gap": None,
+            "status": "observed_proxy" if sib_eff_star_value is not None else "not_observed",
+            "trigger_signal": "",
+            "signal_emitted": False,
+            "derivation_mode": "proxy_from_existing_observation",
+            "metric_family": "sib_full",
+            "threshold_authority_state": "not_threshold_authority",
+            "value": sib_eff_star_value,
+            "unit": "intent_atoms_per_expected_test_proxy",
+            "value_kind": "draft_sib_full_proxy",
+            "basis": (
+                "Draft SIB_FULL proxy computed from acceptance-count intent atoms, current "
+                "specification verifiability, and implementation-work required-test pressure."
+            ),
+            "source_artifacts": [
+                "specs/nodes",
+                metric_signal_index_path().relative_to(ROOT).as_posix(),
+                implementation_work_index_path().relative_to(ROOT).as_posix(),
+            ],
+            "input_summary": {
+                "intent_atom_proxy_count": intent_atom_count,
+                "spec_verifiability_score": svc_score,
+                "implementation_work_item_count": len(implementation_items),
+                "expected_implementation_potential_proxy": expected_potential,
+            },
+        },
+        {
+            "metric_id": "defect_balance_at_root",
+            "title": "Defect Balance at Root",
+            "score": None,
+            "minimum_score": None,
+            "threshold_gap": None,
+            "status": "observed_proxy" if defect_balance_value is not None else "not_observed",
+            "trigger_signal": "",
+            "signal_emitted": False,
+            "derivation_mode": "proxy_from_existing_observation",
+            "metric_family": "sib_full",
+            "threshold_authority_state": "not_threshold_authority",
+            "value": defect_balance_value,
+            "unit": "sib_score_at_review_feedback_snapshot",
+            "value_kind": "draft_sib_full_proxy",
+            "basis": (
+                "Draft SIB_FULL proxy that joins current SIB with review-feedback root-cause "
+                "distribution. It is not a causal defect attribution model."
+            ),
+            "source_artifacts": [
+                metric_signal_index_path().relative_to(ROOT).as_posix(),
+                review_feedback_index_path().relative_to(ROOT).as_posix(),
+            ],
+            "input_summary": {
+                "feedback_entry_count": len(feedback_entries),
+                "root_cause_class_counts": {
+                    key: root_cause_counts[key] for key in sorted(root_cause_counts)
+                },
+                "sib_score": sib_score,
+            },
+        },
+    ]
+
+
 def build_metric_signal_index(specs: list[SpecNode]) -> dict[str, Any]:
     trace_index = build_spec_trace_index(specs)
     trace_projection = build_spec_trace_projection(trace_index)
@@ -21698,6 +21807,20 @@ def build_metric_signal_index(specs: list[SpecNode]) -> dict[str, Any]:
                 "now belong to the bridge-native SIB metric family."
             ),
         }
+    sib_full_proxy_signals = build_sib_full_proxy_metric_signals(
+        specs=specs,
+        specification_verifiability=metrics_by_id["specification_verifiability"],
+        sib_entry=sib_entry,
+        implementation_work_index=load_current_implementation_work_index(),
+        review_feedback_index=economic_review_feedback,
+    )
+    metrics_by_id.update(
+        {
+            str(entry.get("metric_id", "")).strip(): entry
+            for entry in sib_full_proxy_signals
+            if isinstance(entry, dict) and str(entry.get("metric_id", "")).strip()
+        }
+    )
 
     metrics = [copy.deepcopy(metrics_by_id[metric_id]) for metric_id in METRIC_SIGNAL_METRIC_IDS]
     status_groups: dict[str, list[str]] = {}
@@ -21729,6 +21852,8 @@ def build_metric_signal_index(specs: list[SpecNode]) -> dict[str, Any]:
             named_filters.setdefault("legacy_alias_metrics", []).append(metric_id)
         if str(entry.get("metric_family", "")).strip() == "economic_observability":
             named_filters.setdefault("economic_proxy_metrics", []).append(metric_id)
+        if str(entry.get("metric_family", "")).strip() == "sib_full":
+            named_filters.setdefault("sib_full_proxy_metrics", []).append(metric_id)
 
     return {
         "artifact_kind": METRIC_SIGNAL_INDEX_ARTIFACT_KIND,

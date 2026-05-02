@@ -546,6 +546,8 @@ Current bootstrap metric families are:
 - `sib`
 - `node_inference_cost`
 - `verification_cost`
+- `sib_eff_star`
+- `defect_balance_at_root`
 
 `sib` is the bridge-native SIB metric family:
 
@@ -564,6 +566,10 @@ metrics. They expose observed activity units from model-usage telemetry and
 review-feedback verification records. They are proxy activity units until a
 monetary spend derivation exists. `price_status` only reports whether a pricing
 source is connected, and the metrics do not carry threshold authority.
+
+`sib_eff_star` and `defect_balance_at_root` are SIB_FULL draft proxy metrics.
+They exist to make the draft pack inspectable end-to-end; they do not assert
+final research formulas or threshold authority.
 
 Each metric entry records:
 

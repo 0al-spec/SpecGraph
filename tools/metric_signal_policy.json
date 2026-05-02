@@ -15,7 +15,9 @@
       "sib",
       "sib_proxy",
       "node_inference_cost",
-      "verification_cost"
+      "verification_cost",
+      "sib_eff_star",
+      "defect_balance_at_root"
     ],
     "metric_statuses": [
       "healthy",
@@ -33,7 +35,8 @@
       "sib_attention",
       "sib_family_attention",
       "legacy_alias_metrics",
-      "economic_proxy_metrics"
+      "economic_proxy_metrics",
+      "sib_full_proxy_metrics"
     ]
   },
   "status_scoring": {

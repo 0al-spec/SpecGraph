@@ -11777,6 +11777,44 @@ def test_economic_observability_metrics_keep_proxy_semantics_with_active_prices(
     }
 
 
+def test_sib_full_defect_balance_requires_feedback_evidence(
+    supervisor_module: object,
+) -> None:
+    base_kwargs = {
+        "specs": supervisor_module.load_specs(),
+        "specification_verifiability": {"score": 0.5},
+        "sib_entry": {"score": 0.7},
+        "implementation_work_index": {"entries": [{"required_tests": ["test_acceptance"]}]},
+    }
+
+    missing_feedback = supervisor_module.build_sib_full_proxy_metric_signals(
+        **base_kwargs,
+        review_feedback_index={"entries": []},
+    )
+    missing_by_id = {entry["metric_id"]: entry for entry in missing_feedback}
+    assert missing_by_id["sib_eff_star"]["status"] == "observed_proxy"
+    assert missing_by_id["defect_balance_at_root"]["status"] == "not_observed"
+    assert missing_by_id["defect_balance_at_root"]["value"] is None
+
+    observed_feedback = supervisor_module.build_sib_full_proxy_metric_signals(
+        **base_kwargs,
+        review_feedback_index={
+            "entries": [
+                {"root_cause_class": None},
+                {"root_cause_class": "test_coverage_gap"},
+            ]
+        },
+    )
+    observed_by_id = {entry["metric_id"]: entry for entry in observed_feedback}
+    defect_balance = observed_by_id["defect_balance_at_root"]
+    assert defect_balance["status"] == "observed_proxy"
+    assert defect_balance["value"] == 0.7
+    assert defect_balance["input_summary"]["root_cause_class_counts"] == {
+        "test_coverage_gap": 1,
+        "unclassified": 1,
+    }
+
+
 def test_build_metric_signal_index_ignores_gate_only_overlay_entries(
     supervisor_module: object,
     repo_fixture: Path,

@@ -288,6 +288,8 @@ Notes:
   `value` + `unit` when present, and key proxy-vs-spend semantics off
   `value_kind` / `derivation_mode`. Treat `price_status` only as pricing source
   availability metadata.
+- `sib_eff_star` and `defect_balance_at_root` are `draft_sib_full_proxy`
+  values. Render them as draft diagnostics, not threshold-authoritative scores
 
 ### `metrics_source_promotion_index.json`
 
