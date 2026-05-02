@@ -165,7 +165,13 @@ Supervisor modes:
   findings.
 - `--build-metric-pricing-provenance`: build
   `runs/metric_pricing_provenance.json` so economic observability has a
-  versioned pricing surface before cost-like metric values are calculated.
+  versioned pricing surface before cost-like metric values are calculated. This
+  command also refreshes `runs/model_usage_telemetry_index.json` because pricing
+  provenance binds to that source artifact.
+- `--build-model-usage-telemetry`: build
+  `runs/model_usage_telemetry_index.json` from supervisor run logs so model
+  usage becomes a reviewable metric-pack input adapter before token-level spend
+  is available.
 - `--build-conversation-memory-index`: build
   `runs/conversation_memory_index.json` from
   `tools/conversation_memory_policy.json`,
@@ -410,7 +416,11 @@ Key derived artifacts:
   snapshots, and deferred finding/proposal projection
 - `runs/metric_pricing_provenance.json`: read-only pricing provenance surface
   for economic observability, including model/tool identity, unit convention,
-  pricing version, missing-price behavior, and observed-spend gaps
+  pricing version, model-usage binding, missing-price behavior, and
+  observed-spend gaps
+- `runs/model_usage_telemetry_index.json`: read-only model usage telemetry
+  surface, grouped by supervisor execution profile, observed run-log proxy
+  counts, token-usage capture status, and next gaps for economic observability
 - `runs/metric_signal_index.json`: derived metric surface for
   `Specification Verifiability`, `Process Observability`,
   `Structural Observability`, bridge-native `SIB`, and the alias-only

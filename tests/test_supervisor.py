@@ -14576,6 +14576,7 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
         "metric": 0,
         "promotion": 0,
         "pack": 0,
+        "model_usage": 0,
         "pricing": 0,
         "pack_adapter": 0,
         "pack_runs": 0,
@@ -14623,6 +14624,7 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
         metrics_source_promotion_index: dict[str, object] | None = None,
         metric_pack_index: dict[str, object] | None = None,
         metric_pack_adapter_index: dict[str, object] | None = None,
+        model_usage_telemetry: dict[str, object] | None = None,
         graph_backlog_projection: dict[str, object] | None = None,
         proposal_lane_overlay: dict[str, object] | None = None,
         proposal_runtime_index: dict[str, object] | None = None,
@@ -14634,6 +14636,7 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
         assert metrics_source_promotion_index is not None
         assert metric_pack_index is not None
         assert metric_pack_adapter_index is not None
+        assert model_usage_telemetry is not None
         assert graph_backlog_projection is not None
         assert proposal_lane_overlay is not None
         assert proposal_runtime_index is not None
@@ -14754,8 +14757,33 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
             "tracked_artifacts_written": False,
         }
 
-    def fake_metric_pricing_provenance() -> dict[str, object]:
+    def fake_model_usage_telemetry() -> dict[str, object]:
+        surface_calls["model_usage"] += 1
+        return {
+            "artifact_kind": supervisor_module.MODEL_USAGE_TELEMETRY_ARTIFACT_KIND,
+            "schema_version": supervisor_module.MODEL_USAGE_TELEMETRY_SCHEMA_VERSION,
+            "generated_at": "2026-04-27T00:00:06.200000Z",
+            "entry_count": 1,
+            "summary": {"run_count": 2},
+            "model_usage_surfaces": [
+                {
+                    "model_usage_surface_id": "codex_supervisor_default_model",
+                    "telemetry_status": "usage_proxy_available",
+                    "run_count": 2,
+                    "token_usage": {"status": "not_observed"},
+                }
+            ],
+            "viewer_projection": {"named_filters": {"usage_proxy_available": []}},
+            "canonical_mutations_allowed": False,
+            "tracked_artifacts_written": False,
+        }
+
+    def fake_metric_pricing_provenance(
+        model_usage_telemetry: dict[str, object] | None = None,
+    ) -> dict[str, object]:
         surface_calls["pricing"] += 1
+        assert model_usage_telemetry is not None
+        assert model_usage_telemetry["generated_at"] == "2026-04-27T00:00:06.200000Z"
         return {
             "artifact_kind": supervisor_module.METRIC_PRICING_PROVENANCE_ARTIFACT_KIND,
             "schema_version": supervisor_module.METRIC_PRICING_PROVENANCE_SCHEMA_VERSION,
@@ -14768,7 +14796,7 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
                     "price_status": "missing_price_source",
                 }
             ],
-            "next_gap": "connect_model_usage_telemetry",
+            "next_gap": "connect_price_source",
             "viewer_projection": {"named_filters": {"missing_price_source": []}},
             "canonical_mutations_allowed": False,
             "tracked_artifacts_written": False,
@@ -14885,6 +14913,11 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
     monkeypatch.setattr(supervisor_module, "build_metric_pack_index", fake_metric_pack_index)
     monkeypatch.setattr(
         supervisor_module,
+        "build_model_usage_telemetry_index",
+        fake_model_usage_telemetry,
+    )
+    monkeypatch.setattr(
+        supervisor_module,
         "build_metric_pricing_provenance",
         fake_metric_pricing_provenance,
     )
@@ -14922,10 +14955,12 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
     assert report["written_artifacts"]["graph_next_moves"]["current_scene"] == "steady_state"
     assert report["written_artifacts"]["metrics_source_promotion_index"]["entry_count"] == 1
     assert report["written_artifacts"]["metric_pack_index"]["entry_count"] == 1
+    assert report["written_artifacts"]["model_usage_telemetry"]["entry_count"] == 1
+    assert report["written_artifacts"]["model_usage_telemetry"]["run_count"] == 2
     assert report["written_artifacts"]["metric_pricing_provenance"]["entry_count"] == 1
     assert (
         report["written_artifacts"]["metric_pricing_provenance"]["next_gap"]
-        == "connect_model_usage_telemetry"
+        == "connect_price_source"
     )
     assert report["written_artifacts"]["metric_pack_adapter_index"]["entry_count"] == 1
     assert report["written_artifacts"]["metric_pack_adapter_index"]["adapter_backlog_count"] == 0
@@ -14952,6 +14987,7 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
         "metric": 1,
         "promotion": 1,
         "pack": 1,
+        "model_usage": 1,
         "pricing": 1,
         "pack_adapter": 1,
         "pack_runs": 1,
@@ -14989,6 +15025,12 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
             "entry_count"
         ]
         == 1
+    )
+    assert (
+        json.loads(
+            (repo_fixture / "runs" / "model_usage_telemetry_index.json").read_text(encoding="utf-8")
+        )["artifact_kind"]
+        == supervisor_module.MODEL_USAGE_TELEMETRY_ARTIFACT_KIND
     )
     assert (
         json.loads(

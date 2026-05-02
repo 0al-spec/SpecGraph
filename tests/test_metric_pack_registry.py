@@ -392,6 +392,88 @@ def test_infer_metric_pricing_provider_uses_known_openai_patterns(
     assert supervisor_module.infer_metric_pricing_provider(model) == provider
 
 
+def test_model_usage_telemetry_index_reports_profile_usage_proxy(
+    supervisor_module: object,
+) -> None:
+    report = supervisor_module.build_model_usage_telemetry_index(
+        [
+            {
+                "run_id": "run-1",
+                "spec_id": "SG-SPEC-0043",
+                "execution_profile": "fast",
+                "child_model": "gpt-5.5",
+                "finished_at_utc": "2026-05-01T12:00:00Z",
+                "token_usage": {
+                    "input_tokens": 100,
+                    "output_tokens": 25,
+                },
+            },
+            {
+                "run_id": "run-2",
+                "spec_id": "SG-SPEC-0044",
+                "execution_profile": "fast",
+                "child_model": "gpt-5.5",
+                "finished_at_utc": "2026-05-01T12:05:00Z",
+            },
+            {
+                "run_id": "run-3",
+                "spec_id": "SG-SPEC-0045",
+                "execution_profile": "fast",
+                "child_model": "gpt-4.1",
+                "finished_at_utc": "2026-05-01T12:10:00Z",
+                "token_usage": {"total_tokens": 50},
+            },
+            {
+                "run_id": "run-4",
+                "spec_id": "SG-SPEC-0046",
+                "execution_profile": "fast",
+                "finished_at_utc": "2026-05-01T12:15:00Z",
+            },
+        ]
+    )
+
+    assert report["artifact_kind"] == "model_usage_telemetry_index"
+    assert report["next_gap"] == "connect_token_usage_capture"
+    assert report["canonical_mutations_allowed"] is False
+    assert report["tracked_artifacts_written"] is False
+    by_id = {item["model_usage_surface_id"]: item for item in report["model_usage_surfaces"]}
+    fast_surface = by_id["codex_supervisor_profile_fast_model_gpt_5_5"]
+    assert fast_surface["telemetry_status"] == "usage_proxy_available"
+    assert fast_surface["run_count"] == 2
+    assert fast_surface["model"] == "gpt-5.5"
+    assert fast_surface["model_source"] == "run_log_child_model"
+    assert fast_surface["usage_proxy"] == {
+        "status": "available",
+        "unit": "supervisor_run",
+        "value": 2,
+    }
+    assert fast_surface["token_usage"]["status"] == "partially_observed"
+    assert fast_surface["token_usage"]["total_tokens"] == 125
+    assert fast_surface["next_gap"] == "connect_token_usage_capture"
+    other_model_surface = by_id["codex_supervisor_profile_fast_model_gpt_4_1"]
+    assert other_model_surface["model"] == "gpt-4.1"
+    assert other_model_surface["run_count"] == 1
+    assert other_model_surface["token_usage"]["status"] == "observed"
+    unrecorded_surface = by_id["codex_supervisor_profile_fast_model_unrecorded_profile_model"]
+    assert unrecorded_surface["model"] == ""
+    assert unrecorded_surface["configured_profile_model"] == supervisor_module.CHILD_EXECUTOR_MODEL
+    assert unrecorded_surface["model_source"].startswith("not_recorded_current_profile_model:")
+    assert unrecorded_surface["run_count"] == 1
+
+
+def test_metric_pricing_provenance_binds_model_usage_telemetry(
+    supervisor_module: object,
+) -> None:
+    model_usage = supervisor_module.build_model_usage_telemetry_index([])
+    report = supervisor_module.build_metric_pricing_provenance(model_usage)
+
+    assert report["next_gap"] == "connect_price_source"
+    assert report["summary"]["model_usage_binding_counts"] == {"model_usage_surface_available": 1}
+    binding = report["pricing_surfaces"][0]["model_usage_binding"]
+    assert binding["status"] == "model_usage_surface_available"
+    assert binding["artifact_path"] == "runs/model_usage_telemetry_index.json"
+
+
 def test_metric_pack_adapter_index_maps_pricing_surface_to_provenance(
     supervisor_module: object,
 ) -> None:
@@ -424,8 +506,10 @@ def test_metric_pack_adapter_index_maps_pricing_surface_to_provenance(
     by_input = {item["input_id"]: item for item in entry["inputs"]}
     assert by_input["pricing_surface"]["computability"] == "available"
     assert by_input["pricing_surface"]["source_artifact"] == "runs/metric_pricing_provenance.json"
-    assert by_input["model_usage"]["computability"] == "not_computable"
-    assert entry["missing_inputs"] == ["model_usage"]
+    assert by_input["model_usage"]["computability"] == "available"
+    assert by_input["model_usage"]["source_artifact"] == "runs/model_usage_telemetry_index.json"
+    assert entry["adapter_status"] == "ready_for_adapter_review"
+    assert entry["missing_inputs"] == []
 
 
 def test_metric_pack_runs_computes_available_signal_and_preserves_gaps(
@@ -681,5 +765,28 @@ def test_main_builds_metric_pricing_provenance_as_standalone_command(
     assert exit_code == 0
     report = json.loads(capsys.readouterr().out)
     assert report["artifact_kind"] == "metric_pricing_provenance"
+    assert report["next_gap"] == "connect_price_source"
     artifact = json.loads((runs_dir / "metric_pricing_provenance.json").read_text())
     assert artifact["pricing_surfaces"][0]["missing_price_behavior"] == "report_observation_gap"
+    model_usage_artifact = json.loads((runs_dir / "model_usage_telemetry_index.json").read_text())
+    assert model_usage_artifact["artifact_kind"] == "model_usage_telemetry_index"
+
+
+def test_main_builds_model_usage_telemetry_as_standalone_command(
+    supervisor_module: object,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    runs_dir = tmp_path / "runs"
+    runs_dir.mkdir()
+    monkeypatch.setattr(supervisor_module, "ROOT", tmp_path)
+    monkeypatch.setattr(supervisor_module, "RUNS_DIR", runs_dir)
+
+    exit_code = supervisor_module.main(build_model_usage_telemetry_mode=True)
+
+    assert exit_code == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["artifact_kind"] == "model_usage_telemetry_index"
+    artifact = json.loads((runs_dir / "model_usage_telemetry_index.json").read_text())
+    assert artifact["artifact_kind"] == "model_usage_telemetry_index"

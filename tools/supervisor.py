@@ -61,6 +61,7 @@ Derived artifacts:
 - Metric pack adapter index: `runs/metric_pack_adapter_index.json`
 - Metric pack runs: `runs/metric_pack_runs.json`
 - Metric pricing provenance: `runs/metric_pricing_provenance.json`
+- Model usage telemetry index: `runs/model_usage_telemetry_index.json`
 - bootstrap smoke benchmark: `runs/bootstrap_smoke_benchmark.json`
 - spec trace index: `runs/spec_trace_index.json`
 - spec trace projection: `runs/spec_trace_projection.json`
@@ -151,6 +152,7 @@ METRIC_PACK_REGISTRY_DRIFT_RELATIVE_PATH = "runs/metric_pack_registry_drift.json
 METRIC_PACK_ADAPTER_INDEX_RELATIVE_PATH = "runs/metric_pack_adapter_index.json"
 METRIC_PACK_RUNS_RELATIVE_PATH = "runs/metric_pack_runs.json"
 METRIC_PRICING_PROVENANCE_RELATIVE_PATH = "runs/metric_pricing_provenance.json"
+MODEL_USAGE_TELEMETRY_RELATIVE_PATH = "runs/model_usage_telemetry_index.json"
 SPECPM_EXPORT_REGISTRY_RELATIVE_PATH = "tools/specpm_export_registry.json"
 
 
@@ -2854,6 +2856,9 @@ METRIC_PRICING_PROVENANCE_FILENAME = Path(METRIC_PRICING_PROVENANCE_RELATIVE_PAT
 METRIC_PRICING_PROVENANCE_ARTIFACT_KIND = "metric_pricing_provenance"
 METRIC_PRICING_PROVENANCE_SCHEMA_VERSION = 1
 METRIC_PRICING_PROVENANCE_DEFAULT_VERSION = "unpriced_dev_v1"
+MODEL_USAGE_TELEMETRY_FILENAME = Path(MODEL_USAGE_TELEMETRY_RELATIVE_PATH).name
+MODEL_USAGE_TELEMETRY_ARTIFACT_KIND = "model_usage_telemetry_index"
+MODEL_USAGE_TELEMETRY_SCHEMA_VERSION = 1
 SUPERVISOR_PERFORMANCE_INDEX_FILENAME = Path(
     str(supervisor_performance_policy_lookup("repository_layout.index_artifact"))
 ).name
@@ -15198,6 +15203,10 @@ def metric_pricing_provenance_path() -> Path:
     return RUNS_DIR / METRIC_PRICING_PROVENANCE_FILENAME
 
 
+def model_usage_telemetry_path() -> Path:
+    return RUNS_DIR / MODEL_USAGE_TELEMETRY_FILENAME
+
+
 def supervisor_performance_index_path() -> Path:
     return RUNS_DIR / SUPERVISOR_PERFORMANCE_INDEX_FILENAME
 
@@ -22711,13 +22720,329 @@ def infer_metric_pricing_provider(model: str) -> str:
     return "unspecified"
 
 
-def build_metric_pricing_provenance() -> dict[str, Any]:
+def model_usage_surface_id(profile_name: str, model_key: str = "") -> str:
+    normalized = re.sub(r"[^a-z0-9]+", "_", profile_name.strip().lower()).strip("_")
+    model_slug = re.sub(r"[^a-z0-9]+", "_", model_key.strip().lower()).strip("_")
+    if not normalized or profile_name == DEFAULT_EXECUTION_PROFILE_NAME:
+        base = "codex_supervisor_default_model"
+    else:
+        base = f"codex_supervisor_profile_{normalized}"
+    return f"{base}_model_{model_slug}" if model_slug else base
+
+
+def model_usage_payload_model_identity(
+    payload: dict[str, Any],
+    profile: ExecutionProfile | None,
+) -> tuple[str, str, str]:
+    explicit = performance_child_model(payload)
+    if explicit:
+        return explicit, explicit, "run_log_child_model"
+    # Historical run logs did not persist the effective profile model. Keep
+    # those runs separate from current profile config to avoid relabeling old
+    # usage after a policy model change.
+    configured = profile.model if profile is not None else CHILD_EXECUTOR_MODEL
+    return "", "unrecorded_profile_model", f"not_recorded_current_profile_model:{configured}"
+
+
+def model_usage_token_status(token_record_count: int, run_count: int) -> str:
+    if token_record_count <= 0:
+        return "not_observed"
+    if token_record_count < run_count:
+        return "partially_observed"
+    return "observed"
+
+
+def model_usage_token_record(payload: dict[str, Any]) -> dict[str, int] | None:
+    raw = payload.get("token_usage")
+    if not isinstance(raw, dict):
+        raw = payload.get("usage")
+    if not isinstance(raw, dict):
+        return None
+    aliases = {
+        "input_tokens": ("input_tokens", "prompt_tokens"),
+        "output_tokens": ("output_tokens", "completion_tokens"),
+        "total_tokens": ("total_tokens",),
+    }
+    record: dict[str, int] = {}
+    for target, keys in aliases.items():
+        value = None
+        for key in keys:
+            candidate = raw.get(key)
+            if isinstance(candidate, int) and candidate >= 0:
+                value = candidate
+                break
+        if value is not None:
+            record[target] = value
+    if "total_tokens" not in record and ("input_tokens" in record or "output_tokens" in record):
+        record["total_tokens"] = record.get("input_tokens", 0) + record.get("output_tokens", 0)
+    return record or None
+
+
+def build_model_usage_telemetry_index(
+    run_payloads: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    if run_payloads is None:
+        run_payloads = []
+        skipped_invalid_run_logs: list[dict[str, str]] = []
+        for path in run_log_paths():
+            payload, error = load_json_object_report(path, artifact_kind="run log")
+            if payload is None:
+                skipped_invalid_run_logs.append(
+                    {"path": path.relative_to(ROOT).as_posix(), "error": error}
+                )
+                continue
+            run_payloads.append(payload)
+    else:
+        skipped_invalid_run_logs = []
+
+    grouped_payloads: dict[tuple[str, str], list[dict[str, Any]]] = {}
+    configured_groups: set[tuple[str, str]] = set()
+    model_identity_by_group: dict[tuple[str, str], tuple[str, str]] = {}
+    for profile_name, profile in sorted(EXECUTION_PROFILES.items()):
+        group_key = (profile_name, "")
+        grouped_payloads[group_key] = []
+        configured_groups.add(group_key)
+        model_identity_by_group[group_key] = (profile.model, "current_profile_config")
+    for payload in run_payloads:
+        profile_name = performance_execution_profile(payload) or DEFAULT_EXECUTION_PROFILE_NAME
+        profile = EXECUTION_PROFILES.get(profile_name)
+        model, model_key, model_source = model_usage_payload_model_identity(payload, profile)
+        group_key = (profile_name, model_key)
+        grouped_payloads.setdefault(group_key, []).append(payload)
+        model_identity_by_group[group_key] = (model, model_source)
+
+    surfaces: list[dict[str, Any]] = []
+    telemetry_status_groups: dict[str, list[str]] = {}
+    token_usage_status_groups: dict[str, list[str]] = {}
+    named_filters: dict[str, list[str]] = {
+        "usage_proxy_available": [],
+        "configured_not_observed": [],
+        "token_usage_missing": [],
+        "token_usage_partial": [],
+        "token_usage_observed": [],
+    }
+
+    for (profile_name, model_key), payloads in sorted(grouped_payloads.items()):
+        profile = EXECUTION_PROFILES.get(profile_name)
+        model, model_source = model_identity_by_group.get(
+            (profile_name, model_key),
+            (
+                profile.model if profile is not None else CHILD_EXECUTOR_MODEL,
+                "current_profile_config",
+            ),
+        )
+        reasoning_effort = profile.reasoning_effort if profile is not None else ""
+        surface_id = model_usage_surface_id(profile_name, model_key)
+        timestamps = [
+            timestamp
+            for payload in payloads
+            if (
+                timestamp := (
+                    parse_iso_datetime(payload.get("finished_at_utc"))
+                    or parse_iso_datetime(payload.get("timestamp_utc"))
+                    or parse_iso_datetime(payload.get("started_at_utc"))
+                )
+            )
+            is not None
+        ]
+        token_records = [
+            record for payload in payloads if (record := model_usage_token_record(payload))
+        ]
+        token_totals = {
+            "input_tokens": sum(record.get("input_tokens", 0) for record in token_records),
+            "output_tokens": sum(record.get("output_tokens", 0) for record in token_records),
+            "total_tokens": sum(record.get("total_tokens", 0) for record in token_records),
+        }
+        token_usage_status = model_usage_token_status(len(token_records), len(payloads))
+        telemetry_status = (
+            "usage_proxy_available"
+            if payloads
+            else "configured_not_observed"
+            if (profile_name, model_key) in configured_groups
+            else "not_observed"
+        )
+        run_ids = sorted(
+            {
+                str(payload.get("run_id", "")).strip()
+                for payload in payloads
+                if str(payload.get("run_id", "")).strip()
+            }
+        )
+        spec_ids = sorted(
+            {
+                str(payload.get("spec_id", "")).strip()
+                for payload in payloads
+                if str(payload.get("spec_id", "")).strip()
+            }
+        )
+        telemetry_status_groups.setdefault(telemetry_status, []).append(surface_id)
+        token_usage_status_groups.setdefault(token_usage_status, []).append(surface_id)
+        if telemetry_status in named_filters:
+            named_filters[telemetry_status].append(surface_id)
+        if token_usage_status == "observed":
+            named_filters["token_usage_observed"].append(surface_id)
+        elif token_usage_status == "partially_observed":
+            named_filters["token_usage_partial"].append(surface_id)
+        else:
+            named_filters["token_usage_missing"].append(surface_id)
+        surfaces.append(
+            {
+                "model_usage_surface_id": surface_id,
+                "provider": infer_metric_pricing_provider(model),
+                "model": model,
+                "model_source": model_source,
+                "configured_profile_model": profile.model if profile is not None else "",
+                "tool": "codex_supervisor",
+                "execution_profile": profile_name,
+                "reasoning_effort": reasoning_effort,
+                "source_kind": "supervisor_run_logs",
+                "telemetry_status": telemetry_status,
+                "run_count": len(payloads),
+                "observed_run_ids": run_ids,
+                "observed_spec_ids": spec_ids,
+                "time_window": {
+                    "kind": "run_log_observation",
+                    "first_observed_at": _iso_or_empty(min(timestamps)) if timestamps else "",
+                    "last_observed_at": _iso_or_empty(max(timestamps)) if timestamps else "",
+                },
+                "usage_proxy": {
+                    "status": "available" if payloads else "not_observed",
+                    "unit": "supervisor_run",
+                    "value": len(payloads),
+                },
+                "token_usage": {
+                    "status": token_usage_status,
+                    "observed_record_count": len(token_records),
+                    "input_tokens": token_totals["input_tokens"] if token_records else None,
+                    "output_tokens": token_totals["output_tokens"] if token_records else None,
+                    "total_tokens": token_totals["total_tokens"] if token_records else None,
+                    "missing_behavior": "report_observation_gap",
+                },
+                "review_state": "ready_for_review",
+                "next_gap": "connect_token_usage_capture"
+                if payloads and token_usage_status != "observed"
+                else "review_model_usage_telemetry",
+            }
+        )
+
+    for bucket in (telemetry_status_groups, token_usage_status_groups, named_filters):
+        for key in list(bucket):
+            bucket[key] = sorted(set(bucket[key]))
+    surface_next_gaps = {
+        str(surface.get("next_gap", "")).strip()
+        for surface in surfaces
+        if str(surface.get("next_gap", "")).strip()
+    }
+    if not surfaces:
+        next_gap = "collect_model_usage_events"
+    elif "connect_token_usage_capture" in surface_next_gaps:
+        next_gap = "connect_token_usage_capture"
+    else:
+        next_gap = "review_model_usage_telemetry"
+
+    return {
+        "artifact_kind": MODEL_USAGE_TELEMETRY_ARTIFACT_KIND,
+        "schema_version": MODEL_USAGE_TELEMETRY_SCHEMA_VERSION,
+        "generated_at": utc_now_iso(),
+        "review_state": "ready_for_review" if surfaces else "not_ready",
+        "next_gap": next_gap,
+        "source_snapshot": {
+            "artifact_path": MODEL_USAGE_TELEMETRY_RELATIVE_PATH,
+            "run_log_glob": "runs/*-SG-SPEC-*.json",
+            "run_log_count": len(run_payloads),
+            "skipped_invalid_run_logs": skipped_invalid_run_logs,
+            "supervisor_policy": {
+                "artifact_path": SUPERVISOR_POLICY_RELATIVE_PATH,
+                "version": SUPERVISOR_POLICY.get("version"),
+                "default_execution_profile": DEFAULT_EXECUTION_PROFILE_NAME,
+            },
+        },
+        "summary": {
+            "model_usage_surface_count": len(surfaces),
+            "run_count": sum(int(surface.get("run_count", 0) or 0) for surface in surfaces),
+            "telemetry_status_counts": {
+                key: len(value) for key, value in sorted(telemetry_status_groups.items())
+            },
+            "token_usage_status_counts": {
+                key: len(value) for key, value in sorted(token_usage_status_groups.items())
+            },
+        },
+        "entry_count": len(surfaces),
+        "model_usage_surfaces": surfaces,
+        "viewer_projection": {
+            "telemetry_status": {
+                key: value for key, value in sorted(telemetry_status_groups.items())
+            },
+            "token_usage_status": {
+                key: value for key, value in sorted(token_usage_status_groups.items())
+            },
+            "named_filters": {key: value for key, value in sorted(named_filters.items())},
+        },
+        "canonical_mutations_allowed": False,
+        "tracked_artifacts_written": False,
+    }
+
+
+def write_model_usage_telemetry_index(report: dict[str, Any]) -> Path:
+    RUNS_DIR.mkdir(parents=True, exist_ok=True)
+    path = model_usage_telemetry_path()
+    with artifact_lock(path):
+        atomic_write_json(path, report)
+    return path
+
+
+def metric_pricing_model_usage_binding(
+    model_usage_telemetry: dict[str, Any] | None,
+) -> dict[str, Any]:
+    if not isinstance(model_usage_telemetry, dict):
+        return {
+            "status": "model_usage_surface_missing",
+            "artifact_path": "",
+            "model_usage_surface_id": "",
+            "run_count": 0,
+            "token_usage_status": "not_observed",
+        }
+    surface_id = model_usage_surface_id(DEFAULT_EXECUTION_PROFILE_NAME)
+    surfaces = [
+        item
+        for item in model_usage_telemetry.get("model_usage_surfaces", [])
+        if isinstance(item, dict)
+        and str(item.get("model_usage_surface_id", "")).strip() == surface_id
+    ]
+    if not surfaces:
+        return {
+            "status": "model_usage_surface_missing",
+            "artifact_path": MODEL_USAGE_TELEMETRY_RELATIVE_PATH,
+            "model_usage_surface_id": surface_id,
+            "run_count": 0,
+            "token_usage_status": "not_observed",
+        }
+    surface = surfaces[0]
+    token_usage = surface.get("token_usage", {})
+    if not isinstance(token_usage, dict):
+        token_usage = {}
+    return {
+        "status": "model_usage_surface_available",
+        "artifact_path": MODEL_USAGE_TELEMETRY_RELATIVE_PATH,
+        "model_usage_surface_id": surface_id,
+        "run_count": int(surface.get("run_count", 0) or 0),
+        "telemetry_status": str(surface.get("telemetry_status", "")).strip(),
+        "token_usage_status": str(token_usage.get("status", "")).strip() or "not_observed",
+    }
+
+
+def build_metric_pricing_provenance(
+    model_usage_telemetry: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     profile = EXECUTION_PROFILES.get(DEFAULT_EXECUTION_PROFILE_NAME)
     model = profile.model if profile is not None else CHILD_EXECUTOR_MODEL
     reasoning_effort = (
         profile.reasoning_effort if profile is not None else CHILD_EXECUTOR_REASONING_EFFORT
     )
     surface_id = "codex_supervisor_default_model"
+    model_usage_binding = metric_pricing_model_usage_binding(model_usage_telemetry)
+    model_usage_connected = model_usage_binding["status"] == "model_usage_surface_available"
+    next_gap = "connect_price_source" if model_usage_connected else "connect_model_usage_telemetry"
     pricing_surface = {
         "pricing_surface_id": surface_id,
         "provider": infer_metric_pricing_provider(model),
@@ -22736,24 +23061,39 @@ def build_metric_pricing_provenance() -> dict[str, Any]:
         "derived_proxy": None,
         "price_status": "missing_price_source",
         "spend_status": "not_observed",
+        "model_usage_binding": model_usage_binding,
         "missing_price_behavior": "report_observation_gap",
         "review_state": "ready_for_review",
-        "next_gap": "connect_model_usage_telemetry",
+        "next_gap": next_gap,
     }
     status_groups = {"missing_price_source": [surface_id]}
     named_filters = {
         "ready_for_review": [surface_id],
         "missing_price_source": [surface_id],
         "dev_proxy_only": [surface_id],
+        model_usage_binding["status"]: [surface_id],
     }
     return {
         "artifact_kind": METRIC_PRICING_PROVENANCE_ARTIFACT_KIND,
         "schema_version": METRIC_PRICING_PROVENANCE_SCHEMA_VERSION,
         "generated_at": utc_now_iso(),
         "review_state": "ready_for_review",
-        "next_gap": "connect_model_usage_telemetry",
+        "next_gap": next_gap,
         "source_snapshot": {
             "artifact_path": METRIC_PRICING_PROVENANCE_RELATIVE_PATH,
+            "model_usage_telemetry": {
+                "artifact_path": MODEL_USAGE_TELEMETRY_RELATIVE_PATH,
+                "generated_at": (
+                    model_usage_telemetry.get("generated_at")
+                    if isinstance(model_usage_telemetry, dict)
+                    else None
+                ),
+                "entry_count": (
+                    model_usage_telemetry.get("entry_count")
+                    if isinstance(model_usage_telemetry, dict)
+                    else None
+                ),
+            },
             "supervisor_policy": {
                 "artifact_path": SUPERVISOR_POLICY_RELATIVE_PATH,
                 "version": SUPERVISOR_POLICY.get("version"),
@@ -22765,6 +23105,7 @@ def build_metric_pricing_provenance() -> dict[str, Any]:
             "status_counts": {key: len(value) for key, value in sorted(status_groups.items())},
             "observed_spend_count": 0,
             "derived_proxy_count": 0,
+            "model_usage_binding_counts": {model_usage_binding["status"]: 1},
         },
         "entry_count": 1,
         "pricing_surfaces": [pricing_surface],
@@ -22833,6 +23174,12 @@ METRIC_PACK_ADAPTER_INPUT_CATALOG: dict[str, dict[str, str]] = {
         "source_artifact": "runs/metric_pricing_provenance.json",
         "source_field": "pricing_surfaces",
         "next_gap": "review_metric_pricing_provenance",
+    },
+    "model_usage": {
+        "computability": "available",
+        "source_artifact": "runs/model_usage_telemetry_index.json",
+        "source_field": "model_usage_surfaces",
+        "next_gap": "review_model_usage_telemetry",
     },
 }
 
@@ -26755,6 +27102,7 @@ def build_graph_dashboard(
     metrics_source_promotion_index: dict[str, Any] | None = None,
     metric_pack_index: dict[str, Any] | None = None,
     metric_pack_adapter_index: dict[str, Any] | None = None,
+    model_usage_telemetry: dict[str, Any] | None = None,
     graph_backlog_projection: dict[str, Any] | None = None,
     proposal_lane_overlay: dict[str, Any] | None = None,
     proposal_runtime_index: dict[str, Any] | None = None,
@@ -26802,6 +27150,8 @@ def build_graph_dashboard(
         )
     if metric_pack_adapter_index is None:
         metric_pack_adapter_index = build_metric_pack_adapter_index(metric_pack_index)
+    if model_usage_telemetry is None:
+        model_usage_telemetry = build_model_usage_telemetry_index()
     metrics_delivery_workflow = build_metrics_delivery_workflow(external_consumer_handoffs)
     metrics_feedback_index = build_metrics_feedback_index(metrics_delivery_workflow)
     specpm_export_preview = build_specpm_export_preview(specs)
@@ -27476,6 +27826,10 @@ def build_graph_dashboard(
                 "artifact_path": metric_pack_adapter_index_path().relative_to(ROOT).as_posix(),
                 "generated_at": metric_pack_adapter_index.get("generated_at"),
             },
+            "model_usage_telemetry": {
+                "artifact_path": model_usage_telemetry_path().relative_to(ROOT).as_posix(),
+                "generated_at": model_usage_telemetry.get("generated_at"),
+            },
             "metric_signal_index": {
                 "artifact_path": metric_signal_index_path().relative_to(ROOT).as_posix(),
                 "generated_at": metric_signal_index.get("generated_at"),
@@ -27780,7 +28134,8 @@ def build_viewer_surfaces(specs: list[SpecNode]) -> dict[str, Any]:
         metric_pack_registry,
         consumer_index,
     )
-    metric_pricing_provenance = build_metric_pricing_provenance()
+    model_usage_telemetry = build_model_usage_telemetry_index()
+    metric_pricing_provenance = build_metric_pricing_provenance(model_usage_telemetry)
     metric_pack_adapter_index = build_metric_pack_adapter_index(metric_pack_index)
     metric_pack_runs = build_metric_pack_runs(
         metric_pack_index,
@@ -27812,6 +28167,7 @@ def build_viewer_surfaces(specs: list[SpecNode]) -> dict[str, Any]:
         metrics_source_promotion_index=metrics_source_promotion_index,
         metric_pack_index=metric_pack_index,
         metric_pack_adapter_index=metric_pack_adapter_index,
+        model_usage_telemetry=model_usage_telemetry,
         graph_backlog_projection=backlog_projection,
         proposal_lane_overlay=proposal_lane_overlay,
         proposal_runtime_index=proposal_runtime_index,
@@ -27832,6 +28188,7 @@ def build_viewer_surfaces(specs: list[SpecNode]) -> dict[str, Any]:
     proposal_spec_trace_path = write_proposal_spec_trace_index(proposal_spec_trace_index)
     promotion_path = write_metrics_source_promotion_index(metrics_source_promotion_index)
     metric_pack_path = write_metric_pack_index(metric_pack_index)
+    model_usage_path = write_model_usage_telemetry_index(model_usage_telemetry)
     metric_pricing_path = write_metric_pricing_provenance(metric_pricing_provenance)
     metric_pack_adapter_path = write_metric_pack_adapter_index(metric_pack_adapter_index)
     metric_pack_runs_path_result = write_metric_pack_runs(metric_pack_runs)
@@ -27906,6 +28263,12 @@ def build_viewer_surfaces(specs: list[SpecNode]) -> dict[str, Any]:
                 "generated_at": metric_pricing_provenance.get("generated_at"),
                 "entry_count": metric_pricing_provenance.get("entry_count"),
                 "next_gap": metric_pricing_provenance.get("next_gap"),
+            },
+            "model_usage_telemetry": {
+                "artifact_path": model_usage_path.relative_to(ROOT).as_posix(),
+                "generated_at": model_usage_telemetry.get("generated_at"),
+                "entry_count": model_usage_telemetry.get("entry_count"),
+                "run_count": (model_usage_telemetry.get("summary", {}).get("run_count", 0)),
             },
             "metric_pack_registry_drift": {
                 "artifact_path": metric_pack_registry_drift_path_result.relative_to(
@@ -31520,6 +31883,7 @@ def main(
     build_metric_pack_adapter_index_mode: bool = False,
     build_metric_pack_runs_mode: bool = False,
     build_metric_pricing_provenance_mode: bool = False,
+    build_model_usage_telemetry_mode: bool = False,
     build_conversation_memory_index_mode: bool = False,
     build_conversation_memory_map_mode: bool = False,
     build_conversation_memory_promotion_pressure_mode: bool = False,
@@ -31608,6 +31972,7 @@ def main(
         "--build-metric-pack-adapter-index": build_metric_pack_adapter_index_mode,
         "--build-metric-pack-runs": build_metric_pack_runs_mode,
         "--build-metric-pricing-provenance": build_metric_pricing_provenance_mode,
+        "--build-model-usage-telemetry": build_model_usage_telemetry_mode,
         "--build-conversation-memory-index": build_conversation_memory_index_mode,
         "--build-conversation-memory-map": build_conversation_memory_map_mode,
         "--build-conversation-memory-promotion-pressure": (
@@ -33495,9 +33860,46 @@ def main(
                 file=sys.stderr,
             )
             return 1
-        pricing = build_metric_pricing_provenance()
+        model_usage = build_model_usage_telemetry_index()
+        write_model_usage_telemetry_index(model_usage)
+        pricing = build_metric_pricing_provenance(model_usage)
         write_metric_pricing_provenance(pricing)
         emit_supervisor_json(pricing, output_mode=normalized_output_mode)
+        return 0
+
+    if build_model_usage_telemetry_mode:
+        if any(
+            (
+                dry_run,
+                auto_approve,
+                loop,
+                resolve_gate,
+                decision,
+                note,
+                target_spec,
+                split_proposal,
+                apply_split_proposal,
+                operator_note,
+                mutation_budget,
+                run_authority,
+                execution_profile,
+                child_model,
+                child_timeout_seconds,
+                verbose,
+                list_stale_runtime,
+                clean_stale_runtime,
+                observe_graph_health_mode,
+                operator_request_packet_path,
+            )
+        ):
+            print(
+                "--build-model-usage-telemetry must be used as a standalone command",
+                file=sys.stderr,
+            )
+            return 1
+        model_usage = build_model_usage_telemetry_index()
+        write_model_usage_telemetry_index(model_usage)
+        emit_supervisor_json(model_usage, output_mode=normalized_output_mode)
         return 0
 
     if build_conversation_memory_index_mode:
@@ -34820,6 +35222,14 @@ if __name__ == "__main__":
         ),
     )
     parser.add_argument(
+        "--build-model-usage-telemetry",
+        action="store_true",
+        help=(
+            "Build a read-only model usage telemetry index from supervisor run logs "
+            "without calculating spend or promoting economic findings"
+        ),
+    )
+    parser.add_argument(
         "--build-conversation-memory-index",
         action="store_true",
         help=(
@@ -35103,6 +35513,7 @@ if __name__ == "__main__":
             build_metric_pack_adapter_index_mode=args.build_metric_pack_adapter_index,
             build_metric_pack_runs_mode=args.build_metric_pack_runs,
             build_metric_pricing_provenance_mode=args.build_metric_pricing_provenance,
+            build_model_usage_telemetry_mode=args.build_model_usage_telemetry,
             build_conversation_memory_index_mode=args.build_conversation_memory_index,
             build_conversation_memory_map_mode=args.build_conversation_memory_map,
             build_conversation_memory_promotion_pressure_mode=(
