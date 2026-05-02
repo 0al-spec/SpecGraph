@@ -116,6 +116,13 @@ This first slice intentionally favors ready branch rewrite preview over generic
 backlog pressure because preview artifacts represent a human-review scene that
 can otherwise fall out of the normal dashboard flow.
 
+Within one backlog priority bucket, concrete runtime gaps should outrank broad
+draft-reference review rows. For example, a `metric_pack_runs` row with
+`next_gap: "define_metric_value_adapter"` is more actionable than an
+`external_consumer_handoffs` row with `next_gap: "review_draft_reference"`.
+This keeps the game-master surface pointed at bounded implementation follow-ups
+once downstream artifacts have already exposed specific missing adapters.
+
 ## Output Contract
 
 Minimal shape:

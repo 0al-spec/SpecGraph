@@ -26917,6 +26917,31 @@ def graph_next_moves_top_backlog_entry(
             return False
         return str(entry.get("subject_id", "")).strip() in proposal_covered_split_subjects
 
+    def entry_selection_rank(entry: dict[str, Any]) -> tuple[int, str, str]:
+        next_gap = str(entry.get("next_gap", "")).strip()
+        source_artifact = str(entry.get("source_artifact", "")).strip()
+        review_state = str(entry.get("review_state", "")).strip()
+        status = str(entry.get("status", "")).strip()
+        if next_gap in {"resolve_review_gate", "resolve_split_gate"}:
+            rank = 0
+        elif source_artifact == "branch_rewrite_preview":
+            rank = 10
+        elif source_artifact == "metric_pack_runs" and next_gap == "define_metric_value_adapter":
+            rank = 20
+        elif source_artifact == "metric_pack_runs":
+            rank = 21
+        elif review_state == "ready_for_review":
+            rank = 30
+        elif next_gap == "review_draft_reference":
+            rank = 80
+        else:
+            rank = 40
+        return (
+            rank,
+            next_gap,
+            str(entry.get("backlog_id", "")) or f"{source_artifact}::{status}",
+        )
+
     by_id = {str(item.get("backlog_id", "")): item for item in entries}
     priorities = (
         backlog_projection.get("viewer_projection", {}).get("priorities", {})
@@ -26928,10 +26953,13 @@ def graph_next_moves_top_backlog_entry(
             backlog_ids = priorities.get(priority, [])
             if not isinstance(backlog_ids, list):
                 continue
+            bucket_entries: list[dict[str, Any]] = []
             for backlog_id in backlog_ids:
                 entry = by_id.get(str(backlog_id))
                 if entry is not None and not is_covered_branch_split_candidate(entry):
-                    return entry
+                    bucket_entries.append(entry)
+            if bucket_entries:
+                return min(bucket_entries, key=entry_selection_rank)
     for entry in entries:
         if not is_covered_branch_split_candidate(entry):
             return entry

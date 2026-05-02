@@ -1330,6 +1330,11 @@ Initial source priority is:
 - proposal runtime realization backlog
 - steady state
 
+When several backlog rows share the same priority, the selector keeps review
+gates and branch rewrite review first, then prefers concrete runtime adapter
+gaps such as `metric_pack_runs` + `define_metric_value_adapter` over broad
+`review_draft_reference` rows.
+
 The command never mutates canonical specs, proposal-lane nodes, intent-layer
 nodes, queues, or downstream repositories.
 
