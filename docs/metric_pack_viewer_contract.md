@@ -367,9 +367,10 @@ Known `inputs[].computability` values:
 - `stale`: reserved for future freshness checks.
 
 Catalog v2 adds `node_scope` as an available economic-observability input backed
-by `runs/spec_trace_projection.json` and `source_field: "entries[].spec_id"`.
-`verification_runs` remains not computable until a dedicated verification-run
-adapter is defined.
+by `runs/spec_trace_projection.json` and
+`source_field: "viewer_projection.implementation_state.*[]"`, which points to
+the existing grouped spec-node IDs in the trace projection. `verification_runs`
+remains not computable until a dedicated verification-run adapter is defined.
 
 Viewer guidance:
 

@@ -23184,7 +23184,7 @@ METRIC_PACK_ADAPTER_INPUT_CATALOG: dict[str, dict[str, str]] = {
     "node_scope": {
         "computability": "available",
         "source_artifact": "runs/spec_trace_projection.json",
-        "source_field": "entries[].spec_id",
+        "source_field": "viewer_projection.implementation_state.*[]",
         "next_gap": "review_metric_node_scope_adapter",
     },
 }

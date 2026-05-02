@@ -510,7 +510,7 @@ def test_metric_pack_adapter_index_maps_economic_inputs_to_existing_surfaces(
     assert by_input["model_usage"]["source_artifact"] == "runs/model_usage_telemetry_index.json"
     assert by_input["node_scope"]["computability"] == "available"
     assert by_input["node_scope"]["source_artifact"] == "runs/spec_trace_projection.json"
-    assert by_input["node_scope"]["source_field"] == "entries[].spec_id"
+    assert by_input["node_scope"]["source_field"] == "viewer_projection.implementation_state.*[]"
     assert entry["adapter_status"] == "ready_for_adapter_review"
     assert entry["missing_inputs"] == []
 
