@@ -561,9 +561,9 @@ migration, but threshold proposals are emitted only for `sib`.
 
 `node_inference_cost` and `verification_cost` are economic-observability proxy
 metrics. They expose observed activity units from model-usage telemetry and
-review-feedback verification records. They are not monetary spend while pricing
-provenance reports `missing_price_source`, and they do not carry threshold
-authority.
+review-feedback verification records. They are proxy activity units until a
+monetary spend derivation exists. `price_status` only reports whether a pricing
+source is connected, and the metrics do not carry threshold authority.
 
 Each metric entry records:
 

@@ -21235,6 +21235,9 @@ def build_economic_observability_metric_signals(
         for record in item.get("verification", [])
         if str(record).strip()
     ]
+    verification_kind_counts: dict[str, int] = {}
+    for record in verification_records:
+        verification_kind_counts[record] = verification_kind_counts.get(record, 0) + 1
     return [
         {
             "metric_id": "node_inference_cost",
@@ -21253,8 +21256,9 @@ def build_economic_observability_metric_signals(
             "value_kind": "usage_proxy_not_monetary_cost",
             "price_status": price_status,
             "basis": (
-                "Derived from model usage telemetry run-count proxies. This is not monetary "
-                "spend while price_status remains missing_price_source."
+                "Derived from model usage telemetry run-count proxies. The value is always a "
+                "proxy activity unit until a monetary spend derivation exists; price_status only "
+                "reports pricing source availability."
             ),
             "source_artifacts": [
                 MODEL_USAGE_TELEMETRY_RELATIVE_PATH,
@@ -21295,10 +21299,7 @@ def build_economic_observability_metric_signals(
             "input_summary": {
                 "feedback_entry_count": len(feedback_entries),
                 "verification_record_count": len(verification_records),
-                "verification_kind_counts": {
-                    key: verification_records.count(key)
-                    for key in sorted(set(verification_records))
-                },
+                "verification_kind_counts": dict(sorted(verification_kind_counts.items())),
                 "price_status": price_status,
             },
         },

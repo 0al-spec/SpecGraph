@@ -477,8 +477,9 @@ scores:
 Viewer guardrail:
 
 - Render `value` + `unit` as observed proxy activity.
-- Do not label it as spend or monetary cost while `price_status` is
-  `missing_price_source`.
+- Decide proxy-vs-spend semantics from `value_kind` / `derivation_mode`, not
+  from `price_status`.
+- Treat `price_status` as pricing source availability metadata only.
 - `verification_cost` currently uses
   `unit: "review_feedback_verification_record"` and is also a proxy.
 
