@@ -1093,9 +1093,9 @@ Use it before making `sib_economic_observability` operational. The artifact can
 make `pricing_surface` available as an adapter input while model usage is
 observed through `runs/model_usage_telemetry_index.json` and node scope is
 mapped through `runs/spec_trace_projection.json`. Verification runs are exposed
-as a first proxy through `runs/review_feedback_index.json`
-`viewer_projection.verification_kind`; this is enough to make the input
-contract reviewable, but it is not yet a full CI/device-farm cost source.
+as a first proxy through `runs/review_feedback_index.json` via
+`viewer_projection.verification_kind`; this is enough to make the input contract
+reviewable, but it is not yet a full CI/device-farm cost source.
 
 ### Metric-threshold proposals
 

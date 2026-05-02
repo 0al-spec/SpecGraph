@@ -489,7 +489,7 @@ def test_metric_pack_adapter_index_maps_economic_inputs_to_existing_surfaces(
                     "pack_status": "draft_visible_only",
                     "pack_authority_state": "not_threshold_authority",
                     "reference_state": "draft_reference",
-                    "metric_count": 1,
+                    "metric_count": 2,
                     "inputs": ["pricing_surface"],
                     "metrics": [
                         {
