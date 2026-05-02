@@ -23343,6 +23343,36 @@ METRIC_PACK_ADAPTER_INPUT_CATALOG: dict[str, dict[str, str]] = {
         "source_field": "viewer_projection.verification_kind",
         "next_gap": "review_verification_runs_proxy",
     },
+    "intent_atoms": {
+        "computability": "available",
+        "source_artifact": "specs/nodes",
+        "source_field": "acceptance[]",
+        "next_gap": "review_intent_atom_proxy_adapter",
+    },
+    "spec_verifiability_coverage": {
+        "computability": "available",
+        "source_artifact": "runs/metric_signal_index.json",
+        "source_field": "metrics.specification_verifiability",
+        "next_gap": "review_spec_verifiability_proxy_adapter",
+    },
+    "expected_implementation_potential": {
+        "computability": "available",
+        "source_artifact": "runs/implementation_work_index.json",
+        "source_field": "entries[].required_tests",
+        "next_gap": "review_expected_implementation_potential_proxy",
+    },
+    "defect_root": {
+        "computability": "available",
+        "source_artifact": "runs/review_feedback_index.json",
+        "source_field": "entries[].root_cause_class",
+        "next_gap": "review_defect_root_proxy_adapter",
+    },
+    "effective_sib": {
+        "computability": "available",
+        "source_artifact": "runs/metric_signal_index.json",
+        "source_field": "metrics.sib",
+        "next_gap": "review_effective_sib_proxy_adapter",
+    },
 }
 
 METRIC_PACK_ADAPTER_INPUT_GAP_DEFAULTS: dict[str, str] = {
@@ -23567,7 +23597,7 @@ def build_metric_pack_adapter_index(metric_pack_index: dict[str, Any]) -> dict[s
                 "generated_at": metric_pack_index.get("generated_at"),
                 "entry_count": metric_pack_index.get("entry_count"),
             },
-            "input_catalog_version": 3,
+            "input_catalog_version": 4,
         },
         "summary": {
             "pack_count": len(entries),

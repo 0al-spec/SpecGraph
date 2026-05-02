@@ -331,20 +331,13 @@ def test_metric_pack_adapter_index_maps_available_and_missing_inputs(
         "next_gap": "add_metric_pack_execution_runtime",
     }
 
-    assert by_id["sib_full"]["adapter_status"] == "missing_input_adapters"
-    assert by_id["sib_full"]["missing_inputs"] == [
-        "expected_implementation_potential",
-        "intent_atoms",
-    ]
-    assert report["adapter_backlog"]["entry_count"] == 2
+    assert by_id["sib_full"]["adapter_status"] == "ready_for_adapter_review"
+    assert by_id["sib_full"]["missing_inputs"] == []
+    assert report["adapter_backlog"]["entry_count"] == 0
     assert report["summary"]["status_counts"] == {
-        "missing_input_adapters": 1,
-        "ready_for_adapter_review": 1,
+        "ready_for_adapter_review": 2,
     }
-    assert report["viewer_projection"]["missing_inputs"] == {
-        "expected_implementation_potential": ["sib_full"],
-        "intent_atoms": ["sib_full"],
-    }
+    assert report["viewer_projection"]["missing_inputs"] == {}
 
 
 def test_metric_pricing_provenance_declares_economic_guardrail(
@@ -520,6 +513,60 @@ def test_metric_pack_adapter_index_maps_economic_inputs_to_existing_surfaces(
     assert by_input["verification_runs"]["source_field"] == "viewer_projection.verification_kind"
     assert entry["adapter_status"] == "ready_for_adapter_review"
     assert entry["missing_inputs"] == []
+
+
+def test_metric_pack_adapter_index_maps_sib_full_inputs_to_proxy_surfaces(
+    supervisor_module: object,
+) -> None:
+    report = supervisor_module.build_metric_pack_adapter_index(
+        {
+            "artifact_kind": "metric_pack_index",
+            "generated_at": "2026-05-01T00:00:00Z",
+            "entry_count": 1,
+            "entries": [
+                {
+                    "metric_pack_id": "sib_full",
+                    "title": "SIB Full Metrics",
+                    "pack_status": "draft_visible_only",
+                    "pack_authority_state": "not_threshold_authority",
+                    "reference_state": "draft_reference",
+                    "metric_count": 2,
+                    "inputs": ["spec_graph", "trace_plane", "implementation_work"],
+                    "metrics": [
+                        {
+                            "metric_id": "sib_eff_star",
+                            "requires": [
+                                "intent_atoms",
+                                "spec_verifiability_coverage",
+                                "expected_implementation_potential",
+                            ],
+                        },
+                        {
+                            "metric_id": "defect_balance_at_root",
+                            "requires": ["defect_root", "effective_sib"],
+                        },
+                    ],
+                }
+            ],
+        }
+    )
+
+    entry = report["entries"][0]
+    by_input = {item["input_id"]: item for item in entry["inputs"]}
+    assert by_input["intent_atoms"]["source_artifact"] == "specs/nodes"
+    assert by_input["intent_atoms"]["source_field"] == "acceptance[]"
+    assert by_input["spec_verifiability_coverage"]["source_field"] == (
+        "metrics.specification_verifiability"
+    )
+    assert by_input["expected_implementation_potential"]["source_artifact"] == (
+        "runs/implementation_work_index.json"
+    )
+    assert by_input["defect_root"]["source_field"] == "entries[].root_cause_class"
+    assert by_input["effective_sib"]["source_field"] == "metrics.sib"
+    assert entry["adapter_status"] == "ready_for_adapter_review"
+    assert entry["missing_inputs"] == []
+    assert report["summary"]["missing_input_counts"] == {}
+    assert report["source_snapshot"]["input_catalog_version"] == 4
 
 
 def test_metric_pack_runs_computes_available_signal_and_preserves_gaps(
