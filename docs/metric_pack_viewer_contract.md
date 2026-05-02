@@ -300,7 +300,7 @@ Top-level shape:
       "generated_at": "...",
       "entry_count": 3
     },
-    "input_catalog_version": 3
+    "input_catalog_version": 4
   },
   "summary": {
     "pack_count": 3,
@@ -321,6 +321,21 @@ Top-level shape:
   "tracked_artifacts_written": false
 }
 ```
+
+Catalog version 4 includes proxy/read-only bindings for SIB_FULL research
+inputs:
+
+- `intent_atoms` -> `specs/nodes` via `acceptance[]`
+- `spec_verifiability_coverage` -> `runs/metric_signal_index.json` via
+  `metrics.specification_verifiability`
+- `expected_implementation_potential` -> `runs/implementation_work_index.json`
+  via `entries[].required_tests`
+- `defect_root` -> `runs/review_feedback_index.json` via
+  `entries[].root_cause_class`
+- `effective_sib` -> `runs/metric_signal_index.json` via `metrics.sib`
+
+These are computability bindings only. They do not make SIB_FULL operational
+threshold authority and they do not claim final research-quality formulas.
 
 Each `entries[]` item describes one pack adapter surface:
 
