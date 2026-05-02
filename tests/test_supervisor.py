@@ -14574,6 +14574,58 @@ def test_main_builds_graph_dashboard_as_standalone_command(
     assert artifact["viewer_projection"]["headline_card_ids"] == ["total_specs"]
 
 
+def test_build_graph_dashboard_does_not_rebuild_metric_pack_runs_with_prebuilt_backlog(
+    supervisor_module: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fail_metric_pack_runs(*_args: object, **_kwargs: object) -> dict[str, object]:
+        raise AssertionError("metric_pack_runs should not rebuild when backlog is prebuilt")
+
+    monkeypatch.setattr(supervisor_module, "build_metric_pack_runs", fail_metric_pack_runs)
+
+    report = supervisor_module.build_graph_dashboard(
+        [],
+        graph_overlay={"entries": [], "viewer_projection": {}},
+        graph_trends={"viewer_projection": {}},
+        branch_rewrite_preview={},
+        branch_rewrite_summary={},
+        intent_overlay={},
+        proposal_lane_overlay={"by_authority_state": {}},
+        proposal_runtime_index={"entries": [], "reflective_backlog": {"entry_count": 0}},
+        proposal_promotion_index={"entries": [], "promotion_backlog": {"entry_count": 0}},
+        spec_trace_projection={"viewer_projection": {}, "implementation_backlog": {}},
+        implementation_work_index={"viewer_projection": {}, "implementation_backlog": {}},
+        evidence_overlay={"viewer_projection": {}, "evidence_backlog": {}},
+        external_consumer_index={},
+        external_consumer_overlay={"viewer_projection": {}, "external_consumer_backlog": {}},
+        external_consumer_handoffs={"viewer_projection": {}, "handoff_backlog": {}},
+        metric_signal_index={"metrics": []},
+        metric_threshold_proposals={"entries": [], "viewer_projection": {}},
+        metrics_source_promotion_index={"viewer_projection": {}, "promotion_backlog": {}},
+        metrics_delivery_workflow={"viewer_projection": {}, "delivery_backlog": {}},
+        metrics_feedback_index={"viewer_projection": {}, "feedback_backlog": {}},
+        metric_pack_index={"entries": [], "viewer_projection": {}},
+        metric_pack_adapter_index={"adapter_backlog": {}, "viewer_projection": {}},
+        model_usage_telemetry={},
+        specpm_export_preview={},
+        specpm_delivery_workflow={"viewer_projection": {}, "delivery_backlog": {}},
+        specpm_feedback_index={"viewer_projection": {}, "feedback_backlog": {}},
+        review_feedback_index={"viewer_projection": {}, "review_feedback_backlog": {}},
+        graph_backlog_projection={
+            "entries": [],
+            "summary": {
+                "entry_count": 0,
+                "priority_counts": {},
+                "domain_counts": {},
+                "next_gap_counts": {},
+                "source_artifact_counts": {},
+            },
+        },
+    )
+
+    assert report["sections"]["backlog"]["backlog_entry_count"] == 0
+
+
 def test_main_builds_viewer_surfaces_as_standalone_command(
     supervisor_module: object,
     repo_fixture: Path,
@@ -15766,7 +15818,7 @@ def test_build_graph_backlog_projection_from_surfaces_normalizes_reviewable_gaps
         metric_pack_runs={
             "generated_at": "2026-04-24T00:00:11.750000Z",
             "entry_count": 1,
-            "summary": {"gap_count": 1},
+            "summary": {"gap_count": 2},
             "entries": [
                 {
                     "metric_pack_id": "sib_economic_observability",
@@ -15778,7 +15830,12 @@ def test_build_graph_backlog_projection_from_surfaces_normalizes_reviewable_gaps
                             "gap_status": "missing_metric_signal_adapter",
                             "metric_id": "node_inference_cost",
                             "next_gap": "define_metric_value_adapter",
-                        }
+                        },
+                        {
+                            "gap_id": ("sib_economic_observability::pack::invalid_contract"),
+                            "gap_status": "invalid_pack_contract",
+                            "next_gap": "repair_metric_pack_contract",
+                        },
                     ],
                 }
             ],
@@ -15854,7 +15911,7 @@ def test_build_graph_backlog_projection_from_surfaces_normalizes_reviewable_gaps
     )
 
     assert report["artifact_kind"] == supervisor_module.GRAPH_BACKLOG_PROJECTION_ARTIFACT_KIND
-    assert report["entry_count"] == 17
+    assert report["entry_count"] == 18
     assert report["summary"]["entry_count"] == report["entry_count"]
     assert report["summary"]["entry_count"] == len(report["entries"])
     assert report["summary"]["domain_counts"] == {
@@ -15863,24 +15920,31 @@ def test_build_graph_backlog_projection_from_surfaces_normalizes_reviewable_gaps
         "external_consumers": 1,
         "health": 1,
         "implementation": 2,
-        "metrics": 5,
+        "metrics": 6,
         "process_feedback": 2,
         "proposals": 2,
         "specpm": 1,
     }
-    assert report["summary"]["priority_counts"]["high"] == 10
+    assert report["summary"]["priority_counts"]["high"] == 11
     assert report["summary"]["priority_counts"]["info"] == 1
     assert report["summary"]["source_artifact_counts"]["branch_rewrite_preview"] == 2
     assert report["summary"]["source_artifact_counts"]["implementation_work_index"] == 1
     assert report["summary"]["source_artifact_counts"]["metric_pack_adapter_index"] == 1
     assert report["summary"]["source_artifact_counts"]["metric_pack_index"] == 1
-    assert report["summary"]["source_artifact_counts"]["metric_pack_runs"] == 1
+    assert report["summary"]["source_artifact_counts"]["metric_pack_runs"] == 2
     assert report["source_artifacts"]["metric_pack_adapter_index"]["artifact_path"] == (
         "runs/metric_pack_adapter_index.json"
     )
     assert report["source_artifacts"]["metric_pack_runs"]["artifact_path"] == (
         "runs/metric_pack_runs.json"
     )
+    metric_pack_run_entries = [
+        entry for entry in report["entries"] if entry["source_artifact"] == "metric_pack_runs"
+    ]
+    assert {entry["subject_id"]: entry["subject_kind"] for entry in metric_pack_run_entries} == {
+        "sib_economic_observability::node_inference_cost": "metric",
+        "sib_economic_observability": "metric_pack",
+    }
     adapter_entry = next(
         entry
         for entry in report["entries"]

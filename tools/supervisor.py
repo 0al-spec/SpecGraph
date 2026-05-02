@@ -26385,14 +26385,21 @@ def build_graph_backlog_projection_from_surfaces(
                 continue
             metric_id = str(raw_gap.get("metric_id", "")).strip()
             input_id = str(raw_gap.get("input_id", "")).strip()
-            subject_id = metric_id or input_id or gap_id
-            subject_kind = "metric" if metric_id else "metric_pack_input"
+            if metric_id:
+                subject_kind = "metric"
+                subject_id = f"{metric_pack_id}::{metric_id}"
+            elif input_id:
+                subject_kind = "metric_pack_input"
+                subject_id = f"{metric_pack_id}::{input_id}"
+            else:
+                subject_kind = "metric_pack"
+                subject_id = metric_pack_id
             entries.append(
                 graph_backlog_entry(
                     source_artifact="metric_pack_runs",
                     domain="metrics",
                     subject_kind=subject_kind,
-                    subject_id=f"{metric_pack_id}::{subject_id}",
+                    subject_id=subject_id,
                     title=title,
                     status=str(raw_gap.get("gap_status", "")).strip() or "metric_pack_run_gap",
                     review_state=str(raw_gap.get("review_state", "")).strip() or "ready_for_review",
@@ -27311,7 +27318,7 @@ def build_graph_dashboard(
         )
     if metric_pack_adapter_index is None:
         metric_pack_adapter_index = build_metric_pack_adapter_index(metric_pack_index)
-    if metric_pack_runs is None:
+    if metric_pack_runs is None and graph_backlog_projection is None:
         metric_pack_runs = build_metric_pack_runs(
             metric_pack_index,
             metric_pack_adapter_index,
