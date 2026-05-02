@@ -472,6 +472,9 @@ Viewer guidance:
   runtime.
 - Treat `finding_projection.status == "deferred"` as the guardrail that pack
   findings are not yet proposal pressure.
+- Run gaps are projected into `runs/graph_backlog_projection.json` with
+  `source_artifact: "metric_pack_runs"`. Use the backlog projection for
+  cross-surface prioritization; use this artifact for the detailed run snapshot.
 - Do not expose promote/apply/threshold buttons from this artifact.
 - Use `computed_values[].threshold_authority_state` only as provenance; this
   artifact itself never grants authority.

@@ -15760,6 +15760,26 @@ def test_build_graph_backlog_projection_from_surfaces_normalizes_reviewable_gaps
                 ],
             },
         },
+        metric_pack_runs={
+            "generated_at": "2026-04-24T00:00:11.750000Z",
+            "entry_count": 1,
+            "summary": {"gap_count": 1},
+            "entries": [
+                {
+                    "metric_pack_id": "sib_economic_observability",
+                    "title": "SIB Economic Observability",
+                    "run_status": "not_computable",
+                    "gaps": [
+                        {
+                            "gap_id": ("sib_economic_observability::metric::node_inference_cost"),
+                            "gap_status": "missing_metric_signal_adapter",
+                            "metric_id": "node_inference_cost",
+                            "next_gap": "define_metric_value_adapter",
+                        }
+                    ],
+                }
+            ],
+        },
         metric_threshold_proposals={
             "generated_at": "2026-04-24T00:00:12Z",
             "entry_count": 1,
@@ -15831,7 +15851,7 @@ def test_build_graph_backlog_projection_from_surfaces_normalizes_reviewable_gaps
     )
 
     assert report["artifact_kind"] == supervisor_module.GRAPH_BACKLOG_PROJECTION_ARTIFACT_KIND
-    assert report["entry_count"] == 16
+    assert report["entry_count"] == 17
     assert report["summary"]["entry_count"] == report["entry_count"]
     assert report["summary"]["entry_count"] == len(report["entries"])
     assert report["summary"]["domain_counts"] == {
@@ -15840,19 +15860,23 @@ def test_build_graph_backlog_projection_from_surfaces_normalizes_reviewable_gaps
         "external_consumers": 1,
         "health": 1,
         "implementation": 2,
-        "metrics": 4,
+        "metrics": 5,
         "process_feedback": 2,
         "proposals": 2,
         "specpm": 1,
     }
-    assert report["summary"]["priority_counts"]["high"] == 9
+    assert report["summary"]["priority_counts"]["high"] == 10
     assert report["summary"]["priority_counts"]["info"] == 1
     assert report["summary"]["source_artifact_counts"]["branch_rewrite_preview"] == 2
     assert report["summary"]["source_artifact_counts"]["implementation_work_index"] == 1
     assert report["summary"]["source_artifact_counts"]["metric_pack_adapter_index"] == 1
     assert report["summary"]["source_artifact_counts"]["metric_pack_index"] == 1
+    assert report["summary"]["source_artifact_counts"]["metric_pack_runs"] == 1
     assert report["source_artifacts"]["metric_pack_adapter_index"]["artifact_path"] == (
         "runs/metric_pack_adapter_index.json"
+    )
+    assert report["source_artifacts"]["metric_pack_runs"]["artifact_path"] == (
+        "runs/metric_pack_runs.json"
     )
     adapter_entry = next(
         entry
@@ -15868,6 +15892,8 @@ def test_build_graph_backlog_projection_from_surfaces_normalizes_reviewable_gaps
     assert report["viewer_projection"]["named_filters"]["missing_evidence_contract"]
     assert report["viewer_projection"]["named_filters"]["metric_threshold_pressure"]
     assert report["viewer_projection"]["named_filters"]["metric_pack_review_ready"]
+    assert report["viewer_projection"]["named_filters"]["metric_pack_run_gaps"]
+    assert report["viewer_projection"]["named_filters"]["metric_value_adapter_gaps"]
     assert report["viewer_projection"]["named_filters"]["metric_pack_draft_visible"] == []
     assert report["viewer_projection"]["named_filters"]["promotion_review_ready"]
     assert report["viewer_projection"]["named_filters"]["branch_rewrite_candidates"]
@@ -15989,6 +16015,10 @@ def test_graph_backlog_projection_suppresses_adopted_metrics_handoff_review(
         metric_pack_adapter_index={
             "generated_at": "2026-05-02T00:00:00Z",
             "adapter_backlog": {"entry_count": 0, "items": []},
+        },
+        metric_pack_runs={
+            "generated_at": "2026-05-02T00:00:00Z",
+            "entries": [],
         },
         metric_threshold_proposals={
             "generated_at": "2026-05-02T00:00:00Z",

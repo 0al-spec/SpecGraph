@@ -254,6 +254,8 @@ Known named filters:
 - `missing_trace_contract`
 - `missing_evidence_contract`
 - `metric_threshold_pressure`
+- `metric_pack_run_gaps`
+- `metric_value_adapter_gaps`
 - `proposal_runtime_realization`
 - `promotion_review_ready`
 - `review_feedback_open`
@@ -261,6 +263,37 @@ Known named filters:
 - `review_feedback_accepted_risk`
 
 Future named filters are allowed.
+
+### Metric Pack Run Rows
+
+When `runs/metric_pack_runs.json` contains run gaps, each gap is projected as a
+metrics backlog row.
+
+Metric value adapter gaps use:
+
+```json
+{
+  "source_artifact": "metric_pack_runs",
+  "domain": "metrics",
+  "subject_kind": "metric",
+  "subject_id": "sib_economic_observability::node_inference_cost",
+  "status": "missing_metric_signal_adapter",
+  "review_state": "ready_for_review",
+  "next_gap": "define_metric_value_adapter"
+}
+```
+
+Input adapter gaps from the run snapshot may also appear with
+`subject_kind: "metric_pack_input"` when the run-level gap comes from missing
+inputs rather than missing metric values.
+
+Viewer affordance:
+
+- Put these rows under the existing `metrics` domain.
+- Use `metric_pack_run_gaps` to open all run gaps.
+- Use `metric_value_adapter_gaps` for gaps where the next action is to define
+  a metric value adapter.
+- Treat these as reviewable derived gaps, not executable "run metrics" actions.
 
 ### Branch Rewrite Rows
 
