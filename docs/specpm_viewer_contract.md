@@ -114,6 +114,7 @@ Recommended detail section:
 - `boundary_source_preview.root_spec_id`
 - `boundary_source_preview.bounded_context`
 - `boundary_source_preview.provides_capabilities`
+- `boundary_source_preview.provides_intents`
 - `boundary_source_preview.requires_capabilities`
 - `boundary_source_preview.evidence_refs`
 - `boundary_source_preview.missing_fields_for_full_boundary_spec`
@@ -264,10 +265,12 @@ Recommended status badge:
 Recommended detail block:
 
 - `manifest_summary.package_id`
+- `manifest_summary.provides_intents`
 - `boundary_summary.boundary_spec_id`
 - `boundary_summary.boundary_title`
 - `boundary_summary.bounded_context`
 - `boundary_summary.provides_capabilities`
+- `boundary_summary.provides_intents`
 - `handoff_continuity.handoff_status`
 - `handoff_continuity.continuous`
 
@@ -367,9 +370,11 @@ Package card fields:
 - `expected.materialization_status`
 - `expected.bundle_root`
 - `expected.provides_capabilities`
+- `expected.provides_intents`
 - `probes.package`
 - `probes.version`
 - `probes.capabilities`
+- `probes.intents`
 - `drift_findings`
 
 Current registry status vocabulary:
@@ -393,6 +398,7 @@ Recommended badges:
 
 - `registry available`: `registry.registry_status == "registry_available"`
 - `visible in /v0`: package `registry_status == "registry_visible"`
+- `searchable intent`: package appears in `viewer_projection.named_filters.searchable_intents`
 - `registry drift`: package `registry_status == "registry_drift"`
 - `dev observation only`: `registry.authority == "dev_observation_only"`
 

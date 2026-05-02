@@ -8590,6 +8590,7 @@ def test_build_specpm_export_preview_emits_draft_preview_from_registry(
                         "root_spec_id": "SG-SPEC-0001",
                         "source_spec_ids": ["SG-SPEC-0001"],
                         "provides_capabilities": ["specgraph.repository_facade"],
+                        "provides_intents": ["intent.specification_graph.repository_facade"],
                         "requires_capabilities": [],
                         "bounded_context": "specgraph_repository",
                         "keywords": ["specgraph"],
@@ -8646,7 +8647,16 @@ def test_build_specpm_export_preview_emits_draft_preview_from_registry(
     assert entry["export_status"] == "draft_preview_only"
     assert entry["review_state"] == "draft_preview_only"
     assert entry["package_preview"]["metadata"]["id"] == "specgraph.core_repository_facade"
+    assert entry["package_preview"]["index"]["provides"]["intents"] == [
+        "intent.specification_graph.repository_facade"
+    ]
     assert entry["boundary_source_preview"]["root_spec_id"] == "SG-SPEC-0001"
+    assert entry["boundary_source_preview"]["provides_intents"] == [
+        "intent.specification_graph.repository_facade"
+    ]
+    assert entry["contract_summary"]["provides_intents"] == [
+        "intent.specification_graph.repository_facade"
+    ]
     assert "interfaces" in entry["boundary_source_preview"]["missing_fields_for_full_boundary_spec"]
     assert preview["viewer_projection"]["named_filters"]["draft_preview_only"] == [
         "specgraph_core_repository_facade"
@@ -9050,12 +9060,22 @@ def test_materialize_specpm_export_bundles_writes_bundle_for_draft_entry(
                         "version": "0.1.0",
                         "summary": "Boundary-first package preview for SpecGraph.",
                     },
+                    "index": {
+                        "provides": {
+                            "capabilities": ["specgraph.repository_facade"],
+                            "intents": ["intent.specification_graph.repository_facade"],
+                        },
+                        "requires": {
+                            "capabilities": ["metrics.bridge"],
+                        },
+                    },
                 },
                 "boundary_source_preview": {
                     "root_spec_id": "SG-SPEC-0001",
                     "intent_summary": "Expose the repository-facing boundary.",
                     "bounded_context": "specgraph_repository",
                     "provides_capabilities": ["specgraph.repository_facade"],
+                    "provides_intents": ["intent.specification_graph.repository_facade"],
                     "requires_capabilities": ["metrics.bridge"],
                     "acceptance_criteria": ["Exports remain reviewable."],
                     "evidence_refs": ["runs/specpm-evidence.json"],
@@ -9092,12 +9112,18 @@ def test_materialize_specpm_export_bundles_writes_bundle_for_draft_entry(
     manifest = supervisor_module.yaml.safe_load(manifest_path.read_text(encoding="utf-8"))
     assert manifest["kind"] == "SpecPackage"
     assert manifest["metadata"]["id"] == "specgraph.core_repository_facade"
+    assert manifest["index"]["provides"]["intents"] == [
+        "intent.specification_graph.repository_facade"
+    ]
 
     boundary_spec = supervisor_module.yaml.safe_load(boundary_path.read_text(encoding="utf-8"))
     assert boundary_spec["kind"] == "BoundarySpec"
     assert boundary_spec["metadata"]["id"] == "specgraph.repository_facade"
     assert boundary_spec["scope"]["boundedContext"] == "specgraph_repository"
     assert boundary_spec["provides"]["capabilities"][0]["id"] == "specgraph.repository_facade"
+    assert boundary_spec["provides"]["capabilities"][0]["intentIds"] == [
+        "intent.specification_graph.repository_facade"
+    ]
 
     handoff_sidecar = json.loads(handoff_path.read_text(encoding="utf-8"))
     assert handoff_sidecar["export_id"] == "specgraph_core_repository_facade"
@@ -10190,6 +10216,7 @@ def specpm_registry_consumer_index() -> dict[str, object]:
                         "package": "/v0/packages/{package_id}",
                         "version": "/v0/packages/{package_id}/versions/{version}",
                         "capability_search": "/v0/capabilities/{capability_id}/packages",
+                        "intent_search": "/v0/intents/{intent_id}/packages",
                     },
                 },
             }
@@ -10253,6 +10280,13 @@ def test_build_specpm_public_registry_index_reports_visible_package(
                 "payload_kind": "list",
                 "payload": [{"package_id": "specgraph.core_repository_facade"}],
             }
+        if url.endswith("/v0/intents/intent.specification_graph.repository_facade/packages"):
+            return {
+                "fetch_status": "ok",
+                "http_status": 200,
+                "payload_kind": "list",
+                "payload": [{"package_id": "specgraph.core_repository_facade"}],
+            }
         raise AssertionError(f"unexpected URL: {url}")
 
     monkeypatch.setattr(supervisor_module, "fetch_specpm_public_registry_json", fake_fetch)
@@ -10272,6 +10306,9 @@ def test_build_specpm_public_registry_index_reports_visible_package(
         "specgraph.core_repository_facade"
     ]
     assert report["viewer_projection"]["named_filters"]["searchable_capabilities"] == [
+        "specgraph.core_repository_facade"
+    ]
+    assert report["viewer_projection"]["named_filters"]["searchable_intents"] == [
         "specgraph.core_repository_facade"
     ]
     assert report["viewer_projection"]["named_filters"]["dev_observation_only"] == [
@@ -10350,6 +10387,13 @@ def test_build_specpm_public_registry_index_reports_capability_drift(
                 "http_status": 200,
                 "payload_kind": "list",
                 "payload": [],
+            }
+        if "/v0/intents/" in url:
+            return {
+                "fetch_status": "ok",
+                "http_status": 200,
+                "payload_kind": "list",
+                "payload": [{"package_id": "specgraph.core_repository_facade"}],
             }
         payload = {
             "package_id": "specgraph.core_repository_facade",

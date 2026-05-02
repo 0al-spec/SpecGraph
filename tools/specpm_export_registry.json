@@ -17,6 +17,9 @@
       "provides_capabilities": [
         "specgraph.repository_facade"
       ],
+      "provides_intents": [
+        "intent.specification_graph.repository_facade"
+      ],
       "requires_capabilities": [],
       "bounded_context": "specgraph_repository",
       "keywords": [
