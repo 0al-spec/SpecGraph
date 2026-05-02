@@ -17390,6 +17390,76 @@ def test_build_graph_next_moves_falls_back_to_high_priority_backlog(
     assert report["blocked_moves"][0]["blocked_by"] == ["missing_branch_rewrite_preview"]
 
 
+def test_build_graph_next_moves_prefers_metric_runtime_gap_over_draft_reference(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    _ = repo_fixture
+    draft_backlog_id = (
+        "external_consumer_handoffs::external_consumers::"
+        "metrics_sib_economic_observability::review_draft_reference"
+    )
+    metric_gap_backlog_id = (
+        "metric_pack_runs::metrics::sib_economic_observability::metric::"
+        "node_inference_cost::define_metric_value_adapter"
+    )
+    report = supervisor_module.build_graph_next_moves(
+        [],
+        backlog_projection={
+            "artifact_kind": supervisor_module.GRAPH_BACKLOG_PROJECTION_ARTIFACT_KIND,
+            "schema_version": supervisor_module.GRAPH_BACKLOG_PROJECTION_SCHEMA_VERSION,
+            "generated_at": "2026-05-02T00:00:00Z",
+            "entry_count": 2,
+            "entries": [
+                {
+                    "backlog_id": draft_backlog_id,
+                    "domain": "external_consumers",
+                    "source_artifact": "external_consumer_handoffs",
+                    "source_artifact_path": "runs/external_consumer_handoff_packets.json",
+                    "subject_kind": "consumer",
+                    "subject_id": "metrics_sib_economic_observability",
+                    "title": "",
+                    "status": "draft_reference_only",
+                    "review_state": "not_emitted",
+                    "next_gap": "review_draft_reference",
+                    "priority": "high",
+                    "details": {},
+                },
+                {
+                    "backlog_id": metric_gap_backlog_id,
+                    "domain": "metrics",
+                    "source_artifact": "metric_pack_runs",
+                    "source_artifact_path": "runs/metric_pack_runs.json",
+                    "subject_kind": "metric",
+                    "subject_id": "sib_economic_observability::node_inference_cost",
+                    "title": "SIB Economic Observability",
+                    "status": "missing_metric_signal_adapter",
+                    "review_state": "ready_for_review",
+                    "next_gap": "define_metric_value_adapter",
+                    "priority": "high",
+                    "details": {},
+                },
+            ],
+            "summary": {
+                "priority_counts": {"high": 2},
+                "next_gap_counts": {
+                    "review_draft_reference": 1,
+                    "define_metric_value_adapter": 1,
+                },
+            },
+            "viewer_projection": {
+                "priorities": {"high": [draft_backlog_id, metric_gap_backlog_id]}
+            },
+        },
+        proposal_runtime_index=fake_graph_next_moves_proposal_runtime(supervisor_module),
+    )
+
+    assert report["current_scene"] == "high_priority_backlog"
+    assert report["recommended_next_move_kind"] == "review_backlog_item"
+    assert report["recommended_next_move"]["next_gap"] == "define_metric_value_adapter"
+    assert report["recommended_next_move"]["subject"]["source_artifact"] == "metric_pack_runs"
+
+
 def test_build_graph_next_moves_reports_steady_state_when_no_gap_is_visible(
     supervisor_module: object,
     repo_fixture: Path,
