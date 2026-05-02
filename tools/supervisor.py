@@ -25784,6 +25784,7 @@ def graph_backlog_source_artifact_path(source_artifact: str) -> str:
         "metrics_source_promotion_index": metrics_source_promotion_index_path,
         "metric_pack_index": metric_pack_index_path,
         "metric_pack_adapter_index": metric_pack_adapter_index_path,
+        "metric_pack_runs": metric_pack_runs_path,
         "conversation_memory_index": conversation_memory_index_path,
         "conversation_memory_map": conversation_memory_map_path,
         "conversation_memory_promotion_pressure": conversation_memory_promotion_pressure_path,
@@ -26126,6 +26127,7 @@ def build_graph_backlog_projection_from_surfaces(
     metrics_source_promotion_index: dict[str, Any],
     metric_pack_index: dict[str, Any],
     metric_pack_adapter_index: dict[str, Any],
+    metric_pack_runs: dict[str, Any],
     metric_threshold_proposals: dict[str, Any],
     review_feedback_index: dict[str, Any],
     branch_rewrite_preview: dict[str, Any] | None = None,
@@ -26367,6 +26369,50 @@ def build_graph_backlog_projection_from_surfaces(
         id_fields=("adapter_backlog_id", "input_id"),
         status_fields=("computability",),
     )
+    for entry in metric_pack_runs.get("entries", []):
+        if not isinstance(entry, dict):
+            continue
+        metric_pack_id = str(entry.get("metric_pack_id", "")).strip()
+        if not metric_pack_id:
+            continue
+        title = str(entry.get("title", "")).strip()
+        for raw_gap in entry.get("gaps", []):
+            if not isinstance(raw_gap, dict):
+                continue
+            gap_id = str(raw_gap.get("gap_id", "")).strip()
+            next_gap = str(raw_gap.get("next_gap", "")).strip()
+            if not gap_id or not next_gap or next_gap == "none":
+                continue
+            metric_id = str(raw_gap.get("metric_id", "")).strip()
+            input_id = str(raw_gap.get("input_id", "")).strip()
+            if metric_id:
+                subject_kind = "metric"
+                subject_id = f"{metric_pack_id}::{metric_id}"
+            elif input_id:
+                subject_kind = "metric_pack_input"
+                subject_id = f"{metric_pack_id}::{input_id}"
+            else:
+                subject_kind = "metric_pack"
+                subject_id = metric_pack_id
+            entries.append(
+                graph_backlog_entry(
+                    source_artifact="metric_pack_runs",
+                    domain="metrics",
+                    subject_kind=subject_kind,
+                    subject_id=subject_id,
+                    title=title,
+                    status=str(raw_gap.get("gap_status", "")).strip() or "metric_pack_run_gap",
+                    review_state=str(raw_gap.get("review_state", "")).strip() or "ready_for_review",
+                    next_gap=next_gap,
+                    source_item_id=gap_id,
+                    details={
+                        "metric_pack_id": metric_pack_id,
+                        "metric_id": metric_id,
+                        "input_id": input_id,
+                        **graph_backlog_details(raw_gap, exclude={"gap_id", "input_id"}),
+                    },
+                )
+            )
     append_backlog_items(
         entries,
         source_artifact="review_feedback_index",
@@ -26433,6 +26479,8 @@ def build_graph_backlog_projection_from_surfaces(
         "metric_threshold_pressure": [],
         "metric_pack_review_ready": [],
         "metric_pack_draft_visible": [],
+        "metric_pack_run_gaps": [],
+        "metric_value_adapter_gaps": [],
         "proposal_runtime_realization": [],
         "promotion_review_ready": [],
         "review_feedback_open": [],
@@ -26491,6 +26539,10 @@ def build_graph_backlog_projection_from_surfaces(
             named_filters["metric_pack_review_ready"].append(backlog_id)
         if source_artifact == "metric_pack_index" and status == "draft_visible_only":
             named_filters["metric_pack_draft_visible"].append(backlog_id)
+        if source_artifact == "metric_pack_runs":
+            named_filters["metric_pack_run_gaps"].append(backlog_id)
+        if source_artifact == "metric_pack_runs" and next_gap == "define_metric_value_adapter":
+            named_filters["metric_value_adapter_gaps"].append(backlog_id)
         if source_artifact == "review_feedback_index":
             named_filters["review_feedback_open"].append(backlog_id)
         if source_artifact == "review_feedback_index" and status == "invalid_feedback_record":
@@ -26517,6 +26569,7 @@ def build_graph_backlog_projection_from_surfaces(
         "metrics_source_promotion_index": metrics_source_promotion_index,
         "metric_pack_index": metric_pack_index,
         "metric_pack_adapter_index": metric_pack_adapter_index,
+        "metric_pack_runs": metric_pack_runs,
         "metric_threshold_proposals": metric_threshold_proposals,
         "review_feedback_index": review_feedback_index,
     }
@@ -26571,6 +26624,7 @@ def build_graph_backlog_projection(
     metrics_feedback_index: dict[str, Any] | None = None,
     metric_pack_index: dict[str, Any] | None = None,
     metric_pack_adapter_index: dict[str, Any] | None = None,
+    metric_pack_runs: dict[str, Any] | None = None,
     specpm_export_preview: dict[str, Any] | None = None,
     specpm_delivery_workflow: dict[str, Any] | None = None,
     specpm_feedback_index: dict[str, Any] | None = None,
@@ -26626,6 +26680,12 @@ def build_graph_backlog_projection(
         )
     if metric_pack_adapter_index is None:
         metric_pack_adapter_index = build_metric_pack_adapter_index(metric_pack_index)
+    if metric_pack_runs is None:
+        metric_pack_runs = build_metric_pack_runs(
+            metric_pack_index,
+            metric_pack_adapter_index,
+            metric_signal_index,
+        )
     if metrics_delivery_workflow is None:
         metrics_delivery_workflow = build_metrics_delivery_workflow(external_consumer_handoffs)
     if metrics_feedback_index is None:
@@ -26659,6 +26719,7 @@ def build_graph_backlog_projection(
         metrics_source_promotion_index=metrics_source_promotion_index,
         metric_pack_index=metric_pack_index,
         metric_pack_adapter_index=metric_pack_adapter_index,
+        metric_pack_runs=metric_pack_runs,
         metric_threshold_proposals=metric_threshold_proposals,
         review_feedback_index=review_feedback_index,
         branch_rewrite_preview=branch_rewrite_preview,
@@ -27190,6 +27251,7 @@ def build_graph_dashboard(
     metrics_feedback_index: dict[str, Any] | None = None,
     metric_pack_index: dict[str, Any] | None = None,
     metric_pack_adapter_index: dict[str, Any] | None = None,
+    metric_pack_runs: dict[str, Any] | None = None,
     model_usage_telemetry: dict[str, Any] | None = None,
     specpm_export_preview: dict[str, Any] | None = None,
     specpm_delivery_workflow: dict[str, Any] | None = None,
@@ -27256,6 +27318,12 @@ def build_graph_dashboard(
         )
     if metric_pack_adapter_index is None:
         metric_pack_adapter_index = build_metric_pack_adapter_index(metric_pack_index)
+    if metric_pack_runs is None and graph_backlog_projection is None:
+        metric_pack_runs = build_metric_pack_runs(
+            metric_pack_index,
+            metric_pack_adapter_index,
+            metric_signal_index,
+        )
     if model_usage_telemetry is None:
         model_usage_telemetry = build_model_usage_telemetry_index()
     if metrics_delivery_workflow is None:
@@ -27296,6 +27364,7 @@ def build_graph_dashboard(
             metrics_source_promotion_index=metrics_source_promotion_index,
             metric_pack_index=metric_pack_index,
             metric_pack_adapter_index=metric_pack_adapter_index,
+            metric_pack_runs=metric_pack_runs,
             metric_threshold_proposals=metric_threshold_proposals,
             review_feedback_index=review_feedback_index,
             branch_rewrite_preview=branch_rewrite_preview,
@@ -28307,6 +28376,7 @@ def build_viewer_surfaces(specs: list[SpecNode]) -> dict[str, Any]:
         metrics_feedback_index=metrics_feedback_index,
         metric_pack_index=metric_pack_index,
         metric_pack_adapter_index=metric_pack_adapter_index,
+        metric_pack_runs=metric_pack_runs,
         specpm_export_preview=specpm_export_preview,
         specpm_delivery_workflow=specpm_delivery_workflow,
         specpm_feedback_index=specpm_feedback_index,
