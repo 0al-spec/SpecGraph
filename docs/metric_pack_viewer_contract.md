@@ -300,7 +300,7 @@ Top-level shape:
       "generated_at": "...",
       "entry_count": 3
     },
-    "input_catalog_version": 2
+    "input_catalog_version": 3
   },
   "summary": {
     "pack_count": 3,
@@ -369,8 +369,12 @@ Known `inputs[].computability` values:
 Catalog v2 adds `node_scope` as an available economic-observability input backed
 by `runs/spec_trace_projection.json` and
 `source_field: "viewer_projection.implementation_state.*[]"`, which points to
-the existing grouped spec-node IDs in the trace projection. `verification_runs`
-remains not computable until a dedicated verification-run adapter is defined.
+the existing grouped spec-node IDs in the trace projection.
+
+Catalog v3 adds `verification_runs` as an available proxy input backed by
+`runs/review_feedback_index.json` and
+`source_field: "viewer_projection.verification_kind"`. This is a recorded
+review-verification proxy, not a full CI/device-farm cost source.
 
 Viewer guidance:
 

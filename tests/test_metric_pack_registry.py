@@ -489,13 +489,17 @@ def test_metric_pack_adapter_index_maps_economic_inputs_to_existing_surfaces(
                     "pack_status": "draft_visible_only",
                     "pack_authority_state": "not_threshold_authority",
                     "reference_state": "draft_reference",
-                    "metric_count": 1,
+                    "metric_count": 2,
                     "inputs": ["pricing_surface"],
                     "metrics": [
                         {
                             "metric_id": "node_inference_cost",
                             "requires": ["model_usage", "node_scope", "pricing_surface"],
-                        }
+                        },
+                        {
+                            "metric_id": "verification_cost",
+                            "requires": ["pricing_surface", "verification_runs"],
+                        },
                     ],
                 }
             ],
@@ -511,6 +515,9 @@ def test_metric_pack_adapter_index_maps_economic_inputs_to_existing_surfaces(
     assert by_input["node_scope"]["computability"] == "available"
     assert by_input["node_scope"]["source_artifact"] == "runs/spec_trace_projection.json"
     assert by_input["node_scope"]["source_field"] == "viewer_projection.implementation_state.*[]"
+    assert by_input["verification_runs"]["computability"] == "available"
+    assert by_input["verification_runs"]["source_artifact"] == "runs/review_feedback_index.json"
+    assert by_input["verification_runs"]["source_field"] == "viewer_projection.verification_kind"
     assert entry["adapter_status"] == "ready_for_adapter_review"
     assert entry["missing_inputs"] == []
 
