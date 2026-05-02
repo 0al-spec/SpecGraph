@@ -279,6 +279,20 @@ findings, current/proposed role summaries, and whether the candidate is part of
 the branch story gap list. Viewers should render these rows as review-first
 decisions, not as applied canonical rewrites.
 
+### Downstream Adoption Rows
+
+The backlog projection may suppress older review rows when a downstream
+feedback surface has already observed adoption for the same bounded subject.
+For example, when `runs/metrics_feedback_index.json` reports
+`feedback_status: "adoption_observed_locally"` for `metrics_sib`, the projection
+does not also keep stale `external_consumer_handoffs` or
+`metrics_delivery_workflow` review rows for that same consumer.
+
+The feedback row itself may remain visible with a next gap such as
+`collect_metrics_adoption_feedback`. Viewers should treat that as the active
+follow-up, while the hidden handoff/delivery review rows are considered
+superseded by downstream adoption evidence.
+
 ## 9. Dashboard Relationship
 
 The graph dashboard remains the summary source:

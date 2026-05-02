@@ -15886,6 +15886,143 @@ def test_build_graph_backlog_projection_from_surfaces_normalizes_reviewable_gaps
     )
 
 
+def test_graph_backlog_projection_suppresses_adopted_metrics_handoff_review(
+    supervisor_module: object,
+) -> None:
+    report = supervisor_module.build_graph_backlog_projection_from_surfaces(
+        graph_overlay={"generated_at": "2026-05-02T00:00:00Z", "entries": []},
+        proposal_runtime_index={
+            "generated_at": "2026-05-02T00:00:00Z",
+            "reflective_backlog": {"entry_count": 0, "items": []},
+        },
+        proposal_promotion_index={
+            "generated_at": "2026-05-02T00:00:00Z",
+            "promotion_backlog": {"entry_count": 0, "items": []},
+        },
+        refactor_queue_items=[],
+        proposal_queue_items=[],
+        spec_trace_projection={
+            "generated_at": "2026-05-02T00:00:00Z",
+            "implementation_backlog": {"entry_count": 0, "items": []},
+        },
+        implementation_work_index={
+            "generated_at": "2026-05-02T00:00:00Z",
+            "implementation_backlog": {"entry_count": 0, "items": []},
+        },
+        evidence_overlay={
+            "generated_at": "2026-05-02T00:00:00Z",
+            "evidence_backlog": {"entry_count": 0, "items": []},
+        },
+        external_consumer_overlay={
+            "generated_at": "2026-05-02T00:00:00Z",
+            "external_consumer_backlog": {"entry_count": 0, "items": []},
+        },
+        external_consumer_handoffs={
+            "generated_at": "2026-05-02T00:00:00Z",
+            "handoff_backlog": {
+                "entry_count": 2,
+                "items": [
+                    {
+                        "consumer_id": "metrics_sib",
+                        "handoff_status": "ready_for_handoff",
+                        "review_state": "ready_for_review",
+                        "next_gap": "review_handoff_packet",
+                    },
+                    {
+                        "consumer_id": "metrics_sib_full",
+                        "handoff_status": "draft_reference_only",
+                        "review_state": "not_emitted",
+                        "next_gap": "review_draft_reference",
+                    },
+                ],
+            },
+        },
+        specpm_delivery_workflow={
+            "generated_at": "2026-05-02T00:00:00Z",
+            "delivery_backlog": {"entry_count": 0, "items": []},
+        },
+        specpm_feedback_index={
+            "generated_at": "2026-05-02T00:00:00Z",
+            "feedback_backlog": {"entry_count": 0, "items": []},
+        },
+        metrics_delivery_workflow={
+            "generated_at": "2026-05-02T00:00:00Z",
+            "delivery_backlog": {
+                "entry_count": 1,
+                "items": [
+                    {
+                        "consumer_id": "metrics_sib",
+                        "delivery_status": "ready_for_delivery_review",
+                        "review_state": "ready_for_review",
+                        "next_gap": "review_metrics_delivery_workflow",
+                    }
+                ],
+            },
+        },
+        metrics_feedback_index={
+            "generated_at": "2026-05-02T00:00:00Z",
+            "entries": [
+                {
+                    "consumer_id": "metrics_sib",
+                    "feedback_status": "adoption_observed_locally",
+                    "review_state": "adoption_visible",
+                    "observed_checkout_feedback": {"adoption_candidate": True},
+                }
+            ],
+            "feedback_backlog": {
+                "entry_count": 1,
+                "items": [
+                    {
+                        "consumer_id": "metrics_sib",
+                        "feedback_status": "adoption_observed_locally",
+                        "review_state": "adoption_visible",
+                        "next_gap": "collect_metrics_adoption_feedback",
+                    }
+                ],
+            },
+        },
+        metrics_source_promotion_index={
+            "generated_at": "2026-05-02T00:00:00Z",
+            "promotion_backlog": {"entry_count": 0, "items": []},
+        },
+        metric_pack_index={"generated_at": "2026-05-02T00:00:00Z", "entries": []},
+        metric_pack_adapter_index={
+            "generated_at": "2026-05-02T00:00:00Z",
+            "adapter_backlog": {"entry_count": 0, "items": []},
+        },
+        metric_threshold_proposals={
+            "generated_at": "2026-05-02T00:00:00Z",
+            "entries": [],
+        },
+        review_feedback_index={
+            "generated_at": "2026-05-02T00:00:00Z",
+            "review_feedback_backlog": {"entry_count": 0, "items": []},
+        },
+        branch_rewrite_preview=None,
+    )
+
+    backlog_ids = {entry["backlog_id"] for entry in report["entries"]}
+    assert not any(
+        backlog_id.startswith("external_consumer_handoffs::external_consumers::metrics_sib::")
+        for backlog_id in backlog_ids
+    )
+    assert not any(
+        backlog_id.startswith("metrics_delivery_workflow::metrics::metrics_sib::")
+        for backlog_id in backlog_ids
+    )
+    assert any(
+        backlog_id.startswith("external_consumer_handoffs::external_consumers::metrics_sib_full::")
+        for backlog_id in backlog_ids
+    )
+    assert any(
+        backlog_id.startswith("metrics_feedback_index::metrics::metrics_sib::")
+        for backlog_id in backlog_ids
+    )
+    assert "review_handoff_packet" not in report["summary"]["next_gap_counts"]
+    assert "review_metrics_delivery_workflow" not in report["summary"]["next_gap_counts"]
+    assert report["summary"]["next_gap_counts"]["collect_metrics_adoption_feedback"] == 1
+
+
 def test_main_builds_graph_backlog_projection_as_standalone_command(
     supervisor_module: object,
     repo_fixture: Path,
