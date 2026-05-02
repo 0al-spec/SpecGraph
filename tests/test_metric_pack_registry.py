@@ -681,6 +681,118 @@ def test_metric_pack_runs_keep_adapter_root_cause_for_non_ready_contracts(
     assert report["summary"]["computed_value_count"] == 0
 
 
+def test_economic_observability_signals_compute_proxy_values(
+    supervisor_module: object,
+) -> None:
+    signals = supervisor_module.build_economic_observability_metric_signals(
+        model_usage_telemetry={
+            "model_usage_surfaces": [
+                {
+                    "telemetry_status": "usage_proxy_available",
+                    "observed_run_ids": ["run-1", "run-2"],
+                    "usage_proxy": {"status": "available", "unit": "supervisor_run", "value": 2},
+                },
+                {
+                    "telemetry_status": "configured_not_observed",
+                    "usage_proxy": {"status": "not_observed", "value": 0},
+                },
+            ],
+        },
+        pricing_provenance={
+            "pricing_surfaces": [
+                {
+                    "price_status": "missing_price_source",
+                }
+            ],
+        },
+        review_feedback_index={
+            "entries": [
+                {"verification": ["targeted_test", "lint_or_format_check"]},
+                {"verification": ["targeted_test"]},
+            ],
+        },
+    )
+
+    by_id = {entry["metric_id"]: entry for entry in signals}
+    assert by_id["node_inference_cost"]["value"] == 2
+    assert by_id["node_inference_cost"]["unit"] == "supervisor_run_proxy"
+    assert by_id["node_inference_cost"]["status"] == "observed_proxy"
+    assert by_id["node_inference_cost"]["price_status"] == "missing_price_source"
+    assert by_id["verification_cost"]["value"] == 3
+    assert by_id["verification_cost"]["unit"] == "review_feedback_verification_record"
+    assert by_id["verification_cost"]["input_summary"]["verification_kind_counts"] == {
+        "lint_or_format_check": 1,
+        "targeted_test": 2,
+    }
+
+
+def test_metric_pack_runs_computes_economic_proxy_values(
+    supervisor_module: object,
+) -> None:
+    report = supervisor_module.build_metric_pack_runs(
+        {
+            "entries": [
+                {
+                    "metric_pack_id": "sib_economic_observability",
+                    "title": "SIB Economic Observability",
+                    "pack_status": "draft_visible_only",
+                    "pack_authority_state": "not_threshold_authority",
+                    "reference_state": "draft_reference",
+                    "metrics": [
+                        {"metric_id": "node_inference_cost", "label": "Node Inference Cost"},
+                        {"metric_id": "verification_cost", "label": "Verification Cost"},
+                    ],
+                }
+            ],
+        },
+        {
+            "entries": [
+                {
+                    "metric_pack_id": "sib_economic_observability",
+                    "adapter_status": "ready_for_adapter_review",
+                    "inputs": [],
+                    "missing_inputs": [],
+                    "next_gap": "review_metric_pack_adapter_index",
+                }
+            ],
+        },
+        {
+            "metrics": [
+                {
+                    "metric_id": "node_inference_cost",
+                    "value": 5,
+                    "unit": "supervisor_run_proxy",
+                    "value_kind": "usage_proxy_not_monetary_cost",
+                    "price_status": "missing_price_source",
+                    "status": "observed_proxy",
+                    "threshold_authority_state": "not_threshold_authority",
+                    "basis": "Proxy only.",
+                },
+                {
+                    "metric_id": "verification_cost",
+                    "value": 8,
+                    "unit": "review_feedback_verification_record",
+                    "value_kind": "verification_activity_proxy_not_monetary_cost",
+                    "price_status": "missing_price_source",
+                    "status": "observed_proxy",
+                    "threshold_authority_state": "not_threshold_authority",
+                    "basis": "Proxy only.",
+                },
+            ],
+        },
+    )
+
+    entry = report["entries"][0]
+    assert entry["run_status"] == "computed"
+    assert entry["gaps"] == []
+    values = {item["metric_id"]: item for item in entry["computed_values"]}
+    assert values["node_inference_cost"]["value"] == 5
+    assert values["node_inference_cost"]["price_status"] == "missing_price_source"
+    assert values["verification_cost"]["value"] == 8
+    assert report["summary"]["computed_value_count"] == 2
+    assert report["summary"]["gap_count"] == 0
+
+
 def test_main_builds_metric_pack_adapter_index_as_standalone_command(
     supervisor_module: object,
     tmp_path: Path,
