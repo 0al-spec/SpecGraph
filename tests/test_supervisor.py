@@ -14523,6 +14523,14 @@ def test_build_graph_dashboard_aggregates_runtime_surfaces(
     assert report["viewer_projection"]["named_filters"]["review_feedback_accepted_risk"] == 1
     assert report["viewer_projection"]["named_filters"]["graph_backlog_open"] == 7
 
+    partial_injection_report = supervisor_module.build_graph_dashboard(
+        supervisor_module.load_specs(),
+        branch_rewrite_preview={"branch_story": {"story_gaps": ["SG-SPEC-CUSTOM"]}},
+    )
+    assert partial_injection_report["sections"]["health"]["branch_rewrite_story_gap_spec_ids"] == [
+        "SG-SPEC-CUSTOM"
+    ]
+
 
 def test_main_builds_graph_dashboard_as_standalone_command(
     supervisor_module: object,
@@ -14572,7 +14580,22 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     surface_calls = {
+        "graph": 0,
+        "graph_trends": 0,
+        "intent": 0,
+        "spec_trace": 0,
+        "spec_trace_projection": 0,
+        "evidence": 0,
+        "evidence_overlay": 0,
         "external": 0,
+        "external_overlay": 0,
+        "thresholds": 0,
+        "handoffs": 0,
+        "metrics_delivery": 0,
+        "metrics_feedback": 0,
+        "specpm_export": 0,
+        "specpm_feedback": 0,
+        "review_feedback": 0,
         "metric": 0,
         "promotion": 0,
         "pack": 0,
@@ -14590,20 +14613,48 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
     def fake_backlog(
         specs: list[object],
         *,
+        graph_overlay: dict[str, object] | None = None,
+        branch_rewrite_preview: dict[str, object] | None = None,
+        spec_trace_projection: dict[str, object] | None = None,
+        implementation_work_index: dict[str, object] | None = None,
+        evidence_overlay: dict[str, object] | None = None,
         external_consumer_index: dict[str, object] | None = None,
+        external_consumer_overlay: dict[str, object] | None = None,
+        external_consumer_handoffs: dict[str, object] | None = None,
         metric_signal_index: dict[str, object] | None = None,
+        metric_threshold_proposals: dict[str, object] | None = None,
         metrics_source_promotion_index: dict[str, object] | None = None,
+        metrics_delivery_workflow: dict[str, object] | None = None,
+        metrics_feedback_index: dict[str, object] | None = None,
         metric_pack_index: dict[str, object] | None = None,
         metric_pack_adapter_index: dict[str, object] | None = None,
+        specpm_export_preview: dict[str, object] | None = None,
+        specpm_delivery_workflow: dict[str, object] | None = None,
+        specpm_feedback_index: dict[str, object] | None = None,
+        review_feedback_index: dict[str, object] | None = None,
         proposal_runtime_index: dict[str, object] | None = None,
         proposal_promotion_index: dict[str, object] | None = None,
     ) -> dict[str, object]:
         assert len(specs) == 1
+        assert graph_overlay is not None
+        assert branch_rewrite_preview is not None
+        assert spec_trace_projection is not None
+        assert implementation_work_index is not None
+        assert evidence_overlay is not None
         assert external_consumer_index is not None
+        assert external_consumer_overlay is not None
+        assert external_consumer_handoffs is not None
         assert metric_signal_index is not None
+        assert metric_threshold_proposals is not None
         assert metrics_source_promotion_index is not None
+        assert metrics_delivery_workflow is not None
+        assert metrics_feedback_index is not None
         assert metric_pack_index is not None
         assert metric_pack_adapter_index is not None
+        assert specpm_export_preview is not None
+        assert specpm_delivery_workflow is not None
+        assert specpm_feedback_index is not None
+        assert review_feedback_index is not None
         assert proposal_runtime_index is not None
         assert proposal_promotion_index is not None
         return {
@@ -14619,24 +14670,58 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
     def fake_dashboard(
         specs: list[object],
         *,
+        graph_overlay: dict[str, object] | None = None,
+        graph_trends: dict[str, object] | None = None,
+        branch_rewrite_preview: dict[str, object] | None = None,
+        branch_rewrite_summary: dict[str, object] | None = None,
+        intent_overlay: dict[str, object] | None = None,
+        spec_trace_projection: dict[str, object] | None = None,
+        implementation_work_index: dict[str, object] | None = None,
+        evidence_overlay: dict[str, object] | None = None,
         external_consumer_index: dict[str, object] | None = None,
+        external_consumer_overlay: dict[str, object] | None = None,
+        external_consumer_handoffs: dict[str, object] | None = None,
         metric_signal_index: dict[str, object] | None = None,
+        metric_threshold_proposals: dict[str, object] | None = None,
         metrics_source_promotion_index: dict[str, object] | None = None,
+        metrics_delivery_workflow: dict[str, object] | None = None,
+        metrics_feedback_index: dict[str, object] | None = None,
         metric_pack_index: dict[str, object] | None = None,
         metric_pack_adapter_index: dict[str, object] | None = None,
         model_usage_telemetry: dict[str, object] | None = None,
+        specpm_export_preview: dict[str, object] | None = None,
+        specpm_delivery_workflow: dict[str, object] | None = None,
+        specpm_feedback_index: dict[str, object] | None = None,
+        review_feedback_index: dict[str, object] | None = None,
         graph_backlog_projection: dict[str, object] | None = None,
         proposal_lane_overlay: dict[str, object] | None = None,
         proposal_runtime_index: dict[str, object] | None = None,
         proposal_promotion_index: dict[str, object] | None = None,
     ) -> dict[str, object]:
         assert len(specs) == 1
+        assert graph_overlay is not None
+        assert graph_trends is not None
+        assert branch_rewrite_preview is not None
+        assert branch_rewrite_summary is not None
+        assert intent_overlay is not None
+        assert spec_trace_projection is not None
+        assert implementation_work_index is not None
+        assert evidence_overlay is not None
         assert external_consumer_index is not None
+        assert external_consumer_overlay is not None
+        assert external_consumer_handoffs is not None
         assert metric_signal_index is not None
+        assert metric_threshold_proposals is not None
         assert metrics_source_promotion_index is not None
+        assert metrics_delivery_workflow is not None
+        assert metrics_feedback_index is not None
         assert metric_pack_index is not None
         assert metric_pack_adapter_index is not None
         assert model_usage_telemetry is not None
+        assert specpm_export_preview is not None
+        assert specpm_delivery_workflow is not None
+        assert specpm_feedback_index is not None
+        assert review_feedback_index is not None
         assert graph_backlog_projection is not None
         assert proposal_lane_overlay is not None
         assert proposal_runtime_index is not None
@@ -14673,6 +14758,121 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
             "tracked_artifacts_written": False,
         }
 
+    def fake_graph_health_overlay(specs: list[object]) -> dict[str, object]:
+        surface_calls["graph"] += 1
+        assert len(specs) == 1
+        return {
+            "artifact_kind": "graph_health_overlay",
+            "schema_version": 1,
+            "generated_at": "2026-04-27T00:00:02.100000Z",
+            "entry_count": 1,
+            "entries": [{"spec_id": "SG-SPEC-0001"}],
+            "viewer_projection": {},
+        }
+
+    def fake_graph_health_trends(
+        specs: list[object],
+        *,
+        overlay: dict[str, object] | None = None,
+    ) -> dict[str, object]:
+        surface_calls["graph_trends"] += 1
+        assert len(specs) == 1
+        assert overlay is not None
+        return {
+            "artifact_kind": "graph_health_trends",
+            "schema_version": 1,
+            "generated_at": "2026-04-27T00:00:02.200000Z",
+            "entry_count": 1,
+            "entries": [{"spec_id": "SG-SPEC-0001"}],
+            "viewer_projection": {},
+        }
+
+    def fake_branch_rewrite_summary() -> tuple[dict[str, object], dict[str, object]]:
+        return (
+            {
+                "artifact_kind": "branch_rewrite_preview",
+                "generated_at": "2026-04-27T00:00:02.250000Z",
+                "candidate_count": 0,
+            },
+            {
+                "artifact_path": "runs/branch_rewrite_preview.json",
+                "status": "missing",
+                "candidate_count": 0,
+            },
+        )
+
+    def fake_intent_layer_overlay() -> dict[str, object]:
+        surface_calls["intent"] += 1
+        return {
+            "artifact_kind": supervisor_module.INTENT_LAYER_OVERLAY_ARTIFACT_KIND,
+            "schema_version": supervisor_module.INTENT_LAYER_OVERLAY_SCHEMA_VERSION,
+            "generated_at": "2026-04-27T00:00:02.300000Z",
+            "entry_count": 0,
+            "entries": [],
+            "by_kind": {},
+            "by_mediation_state": {},
+        }
+
+    def fake_spec_trace_index(specs: list[object]) -> dict[str, object]:
+        surface_calls["spec_trace"] += 1
+        assert len(specs) == 1
+        return {
+            "artifact_kind": "spec_trace_index",
+            "schema_version": 4,
+            "generated_at": "2026-04-27T00:00:02.400000Z",
+            "entry_count": 1,
+            "entries": [],
+            "viewer_projection": {},
+        }
+
+    def fake_spec_trace_projection(index: dict[str, object]) -> dict[str, object]:
+        surface_calls["spec_trace_projection"] += 1
+        assert index["generated_at"] == "2026-04-27T00:00:02.400000Z"
+        return {
+            "artifact_kind": "spec_trace_projection",
+            "schema_version": 1,
+            "generated_at": "2026-04-27T00:00:02.500000Z",
+            "entry_count": 1,
+            "entries": [],
+            "implementation_backlog": {"entry_count": 0, "items": []},
+            "viewer_projection": {},
+        }
+
+    def fake_implementation_work_index() -> dict[str, object]:
+        return {
+            "artifact_kind": supervisor_module.IMPLEMENTATION_WORK_INDEX_ARTIFACT_KIND,
+            "schema_version": supervisor_module.IMPLEMENTATION_WORK_INDEX_SCHEMA_VERSION,
+            "generated_at": "2026-04-27T00:00:02.600000Z",
+            "entry_count": 0,
+            "implementation_backlog": {"entry_count": 0, "items": []},
+            "viewer_projection": {},
+        }
+
+    def fake_evidence_plane_index(specs: list[object]) -> dict[str, object]:
+        surface_calls["evidence"] += 1
+        assert len(specs) == 1
+        return {
+            "artifact_kind": supervisor_module.EVIDENCE_PLANE_INDEX_ARTIFACT_KIND,
+            "schema_version": supervisor_module.EVIDENCE_PLANE_INDEX_SCHEMA_VERSION,
+            "generated_at": "2026-04-27T00:00:02.700000Z",
+            "entry_count": 1,
+            "entries": [],
+            "viewer_projection": {},
+        }
+
+    def fake_evidence_plane_overlay(index: dict[str, object]) -> dict[str, object]:
+        surface_calls["evidence_overlay"] += 1
+        assert index["generated_at"] == "2026-04-27T00:00:02.700000Z"
+        return {
+            "artifact_kind": supervisor_module.EVIDENCE_PLANE_OVERLAY_ARTIFACT_KIND,
+            "schema_version": supervisor_module.EVIDENCE_PLANE_OVERLAY_SCHEMA_VERSION,
+            "generated_at": "2026-04-27T00:00:02.800000Z",
+            "entry_count": 1,
+            "entries": [],
+            "evidence_backlog": {"entry_count": 0, "items": []},
+            "viewer_projection": {},
+        }
+
     def fake_external_consumer_index() -> dict[str, object]:
         surface_calls["external"] += 1
         return {
@@ -14693,6 +14893,148 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
             "generated_at": "2026-04-27T00:00:04Z",
             "metrics": [],
             "active_signals": [],
+            "viewer_projection": {},
+        }
+
+    def fake_external_consumer_overlay(
+        consumer_index: dict[str, object],
+        metric_signal_index: dict[str, object],
+    ) -> dict[str, object]:
+        surface_calls["external_overlay"] += 1
+        assert consumer_index["generated_at"] == "2026-04-27T00:00:03Z"
+        assert metric_signal_index["generated_at"] == "2026-04-27T00:00:04Z"
+        return {
+            "artifact_kind": supervisor_module.EXTERNAL_CONSUMER_OVERLAY_ARTIFACT_KIND,
+            "schema_version": supervisor_module.EXTERNAL_CONSUMER_OVERLAY_SCHEMA_VERSION,
+            "generated_at": "2026-04-27T00:00:04.100000Z",
+            "entry_count": 0,
+            "entries": [],
+            "external_consumer_backlog": {"entry_count": 0, "items": []},
+            "viewer_projection": {},
+        }
+
+    def fake_metric_threshold_proposals(
+        metric_signal_index: dict[str, object],
+    ) -> dict[str, object]:
+        surface_calls["thresholds"] += 1
+        assert metric_signal_index["generated_at"] == "2026-04-27T00:00:04Z"
+        return {
+            "artifact_kind": supervisor_module.METRIC_THRESHOLD_PROPOSALS_ARTIFACT_KIND,
+            "schema_version": supervisor_module.METRIC_THRESHOLD_PROPOSALS_SCHEMA_VERSION,
+            "generated_at": "2026-04-27T00:00:04.200000Z",
+            "entry_count": 1,
+            "proposals": [],
+            "viewer_projection": {},
+        }
+
+    def fake_external_consumer_handoffs(
+        consumer_index: dict[str, object],
+        external_consumer_overlay: dict[str, object],
+        metric_signal_index: dict[str, object],
+        metric_threshold_proposals: dict[str, object],
+    ) -> dict[str, object]:
+        surface_calls["handoffs"] += 1
+        assert consumer_index["generated_at"] == "2026-04-27T00:00:03Z"
+        assert external_consumer_overlay["generated_at"] == "2026-04-27T00:00:04.100000Z"
+        assert metric_signal_index["generated_at"] == "2026-04-27T00:00:04Z"
+        assert metric_threshold_proposals["generated_at"] == "2026-04-27T00:00:04.200000Z"
+        return {
+            "artifact_kind": supervisor_module.EXTERNAL_CONSUMER_HANDOFF_ARTIFACT_KIND,
+            "schema_version": supervisor_module.EXTERNAL_CONSUMER_HANDOFF_SCHEMA_VERSION,
+            "generated_at": "2026-04-27T00:00:04.300000Z",
+            "entry_count": 1,
+            "entries": [{"consumer_id": "metrics_sib"}],
+            "handoff_backlog": {"entry_count": 1, "items": [], "grouped_by_next_gap": {}},
+            "viewer_projection": {
+                "handoff_status": {"ready_for_handoff": ["metrics_sib"]},
+                "review_state": {"ready_for_review": ["metrics_sib"]},
+            },
+        }
+
+    def fake_metrics_delivery_workflow(
+        external_consumer_handoffs: dict[str, object],
+    ) -> dict[str, object]:
+        surface_calls["metrics_delivery"] += 1
+        assert external_consumer_handoffs["generated_at"] == "2026-04-27T00:00:04.300000Z"
+        return {
+            "artifact_kind": supervisor_module.METRICS_DELIVERY_WORKFLOW_ARTIFACT_KIND,
+            "schema_version": supervisor_module.METRICS_DELIVERY_WORKFLOW_SCHEMA_VERSION,
+            "generated_at": "2026-04-27T00:00:04.400000Z",
+            "entry_count": 1,
+            "entries": [{"consumer_id": "metrics_sib"}],
+            "delivery_backlog": {"entry_count": 1, "items": [], "grouped_by_next_gap": {}},
+            "viewer_projection": {
+                "delivery_status": {"ready_for_delivery_review": ["metrics_sib"]},
+                "review_state": {"ready_for_review": ["metrics_sib"]},
+            },
+        }
+
+    def fake_metrics_feedback_index(
+        metrics_delivery_workflow: dict[str, object],
+    ) -> dict[str, object]:
+        surface_calls["metrics_feedback"] += 1
+        assert metrics_delivery_workflow["generated_at"] == "2026-04-27T00:00:04.400000Z"
+        return {
+            "artifact_kind": supervisor_module.METRICS_FEEDBACK_INDEX_ARTIFACT_KIND,
+            "schema_version": supervisor_module.METRICS_FEEDBACK_INDEX_SCHEMA_VERSION,
+            "generated_at": "2026-04-27T00:00:04.500000Z",
+            "entry_count": 1,
+            "entries": [{"consumer_id": "metrics_sib"}],
+            "feedback_backlog": {"entry_count": 1, "items": [], "grouped_by_next_gap": {}},
+            "viewer_projection": {
+                "feedback_status": {"review_activity_observed": ["metrics_sib"]},
+                "review_state": {"review_visible": ["metrics_sib"]},
+            },
+        }
+
+    def fake_specpm_export_preview(specs: list[object]) -> dict[str, object]:
+        surface_calls["specpm_export"] += 1
+        assert len(specs) == 1
+        return {
+            "artifact_kind": "specpm_export_preview",
+            "schema_version": 1,
+            "generated_at": "2026-04-27T00:00:04.600000Z",
+            "entry_count": 0,
+            "entries": [],
+        }
+
+    def fake_specpm_delivery_workflow() -> dict[str, object]:
+        return {
+            "artifact_kind": "specpm_delivery_workflow",
+            "schema_version": 1,
+            "generated_at": "2026-04-27T00:00:04.650000Z",
+            "entry_count": 0,
+            "entries": [],
+            "delivery_backlog": {"entry_count": 0, "items": []},
+            "viewer_projection": {},
+        }
+
+    def fake_specpm_feedback_index(
+        specpm_export_preview: dict[str, object],
+        specpm_delivery_workflow: dict[str, object],
+    ) -> dict[str, object]:
+        surface_calls["specpm_feedback"] += 1
+        assert specpm_export_preview["generated_at"] == "2026-04-27T00:00:04.600000Z"
+        assert specpm_delivery_workflow["generated_at"] == "2026-04-27T00:00:04.650000Z"
+        return {
+            "artifact_kind": "specpm_feedback_index",
+            "schema_version": 1,
+            "generated_at": "2026-04-27T00:00:04.700000Z",
+            "entry_count": 0,
+            "entries": [],
+            "feedback_backlog": {"entry_count": 0, "items": []},
+            "viewer_projection": {},
+        }
+
+    def fake_review_feedback_index() -> dict[str, object]:
+        surface_calls["review_feedback"] += 1
+        return {
+            "artifact_kind": supervisor_module.REVIEW_FEEDBACK_INDEX_ARTIFACT_KIND,
+            "schema_version": supervisor_module.REVIEW_FEEDBACK_INDEX_SCHEMA_VERSION,
+            "generated_at": "2026-04-27T00:00:04.800000Z",
+            "entry_count": 0,
+            "records": [],
+            "review_feedback_backlog": {"entry_count": 0, "items": []},
             "viewer_projection": {},
         }
 
@@ -14900,10 +15242,74 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
     monkeypatch.setattr(supervisor_module, "build_graph_backlog_projection", fake_backlog)
     monkeypatch.setattr(supervisor_module, "build_graph_dashboard", fake_dashboard)
     monkeypatch.setattr(supervisor_module, "build_graph_next_moves", fake_next_moves)
+    monkeypatch.setattr(supervisor_module, "build_graph_health_overlay", fake_graph_health_overlay)
+    monkeypatch.setattr(supervisor_module, "build_graph_health_trends", fake_graph_health_trends)
+    monkeypatch.setattr(
+        supervisor_module,
+        "load_current_branch_rewrite_preview_summary",
+        fake_branch_rewrite_summary,
+    )
+    monkeypatch.setattr(supervisor_module, "build_intent_layer_overlay", fake_intent_layer_overlay)
+    monkeypatch.setattr(supervisor_module, "build_spec_trace_index", fake_spec_trace_index)
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_spec_trace_projection",
+        fake_spec_trace_projection,
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "load_current_implementation_work_index",
+        fake_implementation_work_index,
+    )
+    monkeypatch.setattr(supervisor_module, "build_evidence_plane_index", fake_evidence_plane_index)
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_evidence_plane_overlay",
+        fake_evidence_plane_overlay,
+    )
     monkeypatch.setattr(
         supervisor_module, "build_external_consumer_index", fake_external_consumer_index
     )
     monkeypatch.setattr(supervisor_module, "build_metric_signal_index", fake_metric_signal_index)
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_external_consumer_overlay",
+        fake_external_consumer_overlay,
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_metric_threshold_proposals",
+        fake_metric_threshold_proposals,
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_external_consumer_handoff_packets",
+        fake_external_consumer_handoffs,
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_metrics_delivery_workflow",
+        fake_metrics_delivery_workflow,
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_metrics_feedback_index",
+        fake_metrics_feedback_index,
+    )
+    monkeypatch.setattr(
+        supervisor_module, "build_specpm_export_preview", fake_specpm_export_preview
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "load_current_specpm_delivery_workflow",
+        fake_specpm_delivery_workflow,
+    )
+    monkeypatch.setattr(
+        supervisor_module, "build_specpm_feedback_index", fake_specpm_feedback_index
+    )
+    monkeypatch.setattr(
+        supervisor_module, "build_review_feedback_index", fake_review_feedback_index
+    )
     monkeypatch.setattr(
         supervisor_module,
         "build_metrics_source_promotion_index",
@@ -14953,6 +15359,28 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
     assert report["written_artifacts"]["graph_backlog_projection"]["entry_count"] == 1
     assert report["written_artifacts"]["graph_dashboard"]["headline_count"] == 1
     assert report["written_artifacts"]["graph_next_moves"]["current_scene"] == "steady_state"
+    assert report["written_artifacts"]["graph_health_overlay"]["entry_count"] == 1
+    assert report["written_artifacts"]["graph_health_trends"]["entry_count"] == 1
+    assert report["written_artifacts"]["intent_layer_overlay"]["entry_count"] == 0
+    assert report["written_artifacts"]["spec_trace_index"]["entry_count"] == 1
+    assert report["written_artifacts"]["spec_trace_projection"]["entry_count"] == 1
+    assert report["written_artifacts"]["evidence_plane_index"]["entry_count"] == 1
+    assert report["written_artifacts"]["evidence_plane_overlay"]["entry_count"] == 1
+    assert report["written_artifacts"]["external_consumer_index"]["entry_count"] == 0
+    assert report["written_artifacts"]["external_consumer_overlay"]["entry_count"] == 0
+    assert report["written_artifacts"]["external_consumer_handoff_packets"]["entry_count"] == 1
+    assert (
+        report["written_artifacts"]["external_consumer_handoff_packets"]["ready_for_handoff_count"]
+        == 1
+    )
+    assert report["written_artifacts"]["metric_signal_index"]["metric_count"] == 0
+    assert report["written_artifacts"]["metric_threshold_proposals"]["entry_count"] == 1
+    assert report["written_artifacts"]["specpm_export_preview"]["entry_count"] == 0
+    assert report["written_artifacts"]["specpm_delivery_workflow"]["entry_count"] == 0
+    assert report["written_artifacts"]["specpm_feedback_index"]["entry_count"] == 0
+    assert report["written_artifacts"]["metrics_delivery_workflow"]["entry_count"] == 1
+    assert report["written_artifacts"]["metrics_feedback_index"]["entry_count"] == 1
+    assert report["written_artifacts"]["review_feedback_index"]["entry_count"] == 0
     assert report["written_artifacts"]["metrics_source_promotion_index"]["entry_count"] == 1
     assert report["written_artifacts"]["metric_pack_index"]["entry_count"] == 1
     assert report["written_artifacts"]["model_usage_telemetry"]["entry_count"] == 1
@@ -14983,7 +15411,22 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
         == 1
     )
     assert surface_calls == {
+        "graph": 1,
+        "graph_trends": 1,
+        "intent": 1,
+        "spec_trace": 1,
+        "spec_trace_projection": 1,
+        "evidence": 1,
+        "evidence_overlay": 1,
         "external": 1,
+        "external_overlay": 1,
+        "thresholds": 1,
+        "handoffs": 1,
+        "metrics_delivery": 1,
+        "metrics_feedback": 1,
+        "specpm_export": 1,
+        "specpm_feedback": 1,
+        "review_feedback": 1,
         "metric": 1,
         "promotion": 1,
         "pack": 1,
@@ -15011,6 +15454,68 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
             "recommended_next_move_kind"
         ]
         == "none"
+    )
+    assert (
+        json.loads(
+            (repo_fixture / "runs" / "graph_health_overlay.json").read_text(encoding="utf-8")
+        )["entry_count"]
+        == 1
+    )
+    assert (
+        json.loads(
+            (repo_fixture / "runs" / "spec_trace_projection.json").read_text(encoding="utf-8")
+        )["entry_count"]
+        == 1
+    )
+    assert (
+        json.loads(
+            (repo_fixture / "runs" / "evidence_plane_overlay.json").read_text(encoding="utf-8")
+        )["entry_count"]
+        == 1
+    )
+    assert (
+        json.loads(
+            (repo_fixture / "runs" / "external_consumer_index.json").read_text(encoding="utf-8")
+        )["entry_count"]
+        == 0
+    )
+    assert (
+        json.loads(
+            (repo_fixture / "runs" / "external_consumer_handoff_packets.json").read_text(
+                encoding="utf-8"
+            )
+        )["entry_count"]
+        == 1
+    )
+    assert (
+        json.loads(
+            (repo_fixture / "runs" / "metrics_delivery_workflow.json").read_text(encoding="utf-8")
+        )["entry_count"]
+        == 1
+    )
+    assert (
+        json.loads(
+            (repo_fixture / "runs" / "metrics_feedback_index.json").read_text(encoding="utf-8")
+        )["entry_count"]
+        == 1
+    )
+    assert (
+        json.loads(
+            (repo_fixture / "runs" / "specpm_export_preview.json").read_text(encoding="utf-8")
+        )["entry_count"]
+        == 0
+    )
+    assert (
+        json.loads(
+            (repo_fixture / "runs" / "specpm_delivery_workflow.json").read_text(encoding="utf-8")
+        )["entry_count"]
+        == 0
+    )
+    assert (
+        json.loads(
+            (repo_fixture / "runs" / "review_feedback_index.json").read_text(encoding="utf-8")
+        )["entry_count"]
+        == 0
     )
     assert (
         json.loads(

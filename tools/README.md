@@ -203,12 +203,14 @@ Supervisor modes:
   so minimal-seed bootstrap yield can be inspected structurally without
   comparing exact generated spec text.
 - `--build-viewer-surfaces`: refresh local viewer-facing generated artifacts by
-  writing `runs/graph_backlog_projection.json`, `runs/graph_dashboard.json`,
-  `runs/graph_next_moves.json`, `runs/metrics_source_promotion_index.json`,
-  `runs/metric_pack_index.json`, `runs/conversation_memory_index.json`, and
-  `runs/conversation_memory_map.json`, and
-  `runs/conversation_memory_promotion_pressure.json` in one standalone pass.
-  This is safe for local
+  writing the dashboard/backlog/next-move artifacts plus their viewer-facing
+  source artifacts in one standalone pass. This includes graph health, intent,
+  proposal, trace, evidence, external-consumer, handoff, Metrics delivery,
+  Metrics feedback, SpecPM export/delivery/feedback, metric signal, metric
+  threshold, metric pack, model usage, pricing, conversation-memory, and
+  review-feedback surfaces. The command keeps `runs/*` internally consistent
+  for ContextBuilder because dashboard and feedback `source_artifacts` point at
+  freshly written files rather than stale local JSON. This is safe for local
   hooks, CI smoke checks, or ContextBuilder build buttons because it does not
   choose implementation target scope or create new implementation work items.
 - Standalone artifact commands print compact JSON summaries by default. Use

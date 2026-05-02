@@ -11,7 +11,13 @@ help:
 		'  make backlog                  Refresh graph backlog projection JSON only' \
 		'  make next-move                Refresh advisory graph next-moves JSON only' \
 		'  make proposal-spec-trace      Refresh proposal-to-spec trace index JSON' \
+		'  make external-consumers       Refresh external consumer bridge JSON' \
+		'  make external-handoffs        Refresh external consumer handoff JSON' \
+		'  make metrics-delivery         Refresh Metrics delivery workflow JSON' \
+		'  make metrics-feedback         Refresh Metrics feedback JSON' \
 		'  make metrics-source-promotion Refresh Metrics source promotion candidates JSON' \
+		'  make metric-signals           Refresh metric signals JSON only' \
+		'  make metric-thresholds        Refresh metric threshold proposals JSON only' \
 		'  make metric-packs             Refresh metric pack index JSON only' \
 		'  make metric-pack-drift        Refresh metric pack registry drift JSON only' \
 		'  make metric-pack-adapters     Refresh metric pack adapter index JSON only' \
@@ -46,9 +52,33 @@ next-move:
 proposal-spec-trace:
 	@$(PYTHON) $(SUPERVISOR) --build-proposal-spec-trace-index
 
+.PHONY: external-consumers
+external-consumers:
+	@$(PYTHON) $(SUPERVISOR) --build-external-consumer-overlay
+
+.PHONY: external-handoffs
+external-handoffs:
+	@$(PYTHON) $(SUPERVISOR) --build-external-consumer-handoffs
+
+.PHONY: metrics-delivery
+metrics-delivery:
+	@$(PYTHON) $(SUPERVISOR) --build-metrics-delivery-workflow
+
+.PHONY: metrics-feedback
+metrics-feedback:
+	@$(PYTHON) $(SUPERVISOR) --build-metrics-feedback-index
+
 .PHONY: metrics-source-promotion
 metrics-source-promotion:
 	@$(PYTHON) $(SUPERVISOR) --build-metrics-source-promotion-index
+
+.PHONY: metric-signals
+metric-signals:
+	@$(PYTHON) $(SUPERVISOR) --build-metric-signal-index
+
+.PHONY: metric-thresholds
+metric-thresholds:
+	@$(PYTHON) $(SUPERVISOR) --build-metric-threshold-proposals
 
 .PHONY: metric-packs
 metric-packs:
