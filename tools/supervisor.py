@@ -21735,7 +21735,8 @@ def build_metric_signal_index(specs: list[SpecNode]) -> dict[str, Any]:
     sib_entry = {
         "metric_id": SIB_CANONICAL_METRIC_ID,
         "title": (
-            str(SIB_METRIC_FAMILY.get("title", "")).strip() or "Sibling Implementation Balance"
+            str(SIB_METRIC_FAMILY.get("title", "")).strip()
+            or "Specification-Implementation Balance"
         ),
         "score": sib_score,
         "minimum_score": sib_threshold,
