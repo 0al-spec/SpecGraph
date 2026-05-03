@@ -176,7 +176,8 @@
         "endpoints": {
           "package": "/v0/packages/{package_id}",
           "version": "/v0/packages/{package_id}/versions/{version}",
-          "capability_search": "/v0/capabilities/{capability_id}/packages"
+          "capability_search": "/v0/capabilities/{capability_id}/packages",
+          "intent_search": "/v0/intents/{intent_id}/packages"
         }
       },
       "metric_bindings": [],
