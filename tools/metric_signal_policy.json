@@ -105,7 +105,7 @@
   "metric_family": {
     "sib": {
       "canonical_metric_id": "sib",
-      "title": "Sibling Implementation Balance",
+      "title": "Specification-Implementation Balance",
       "legacy_metric_ids": [
         "sib_proxy"
       ],
