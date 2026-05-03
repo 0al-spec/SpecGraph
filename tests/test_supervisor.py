@@ -5,6 +5,7 @@ import datetime as dt
 import importlib.util
 import io
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -353,11 +354,24 @@ def test_resolve_codex_executable_prefers_homebrew_when_usr_local_is_resolved(
 
 def test_resolve_codex_executable_respects_explicit_override(
     supervisor_module: object,
+    tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setenv(supervisor_module.CODEX_EXECUTABLE_ENV_VAR, "/custom/codex")
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv(supervisor_module.CODEX_EXECUTABLE_ENV_VAR, "bin/codex")
 
-    assert supervisor_module.resolve_codex_executable() == "/custom/codex"
+    assert supervisor_module.resolve_codex_executable() == str(tmp_path / "bin" / "codex")
+
+
+def test_resolve_codex_executable_expands_user_override(
+    supervisor_module: object,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.setenv(supervisor_module.CODEX_EXECUTABLE_ENV_VAR, "~/bin/codex")
+
+    assert supervisor_module.resolve_codex_executable() == str(tmp_path / "bin" / "codex")
 
 
 def test_prepend_path_entry_moves_runtime_bin_to_front(supervisor_module: object) -> None:
@@ -367,6 +381,14 @@ def test_prepend_path_entry_moves_runtime_bin_to_front(supervisor_module: object
     )
 
     assert path == "/opt/homebrew/bin:/usr/local/bin:/usr/bin"
+
+
+def test_prepend_path_entry_keeps_system_defaults_when_path_is_empty(
+    supervisor_module: object,
+) -> None:
+    path = supervisor_module.prepend_path_entry("", "/opt/homebrew/bin")
+
+    assert path == os.pathsep.join(["/opt/homebrew/bin", os.defpath])
 
 
 def test_isolation_mode_for_branch_marks_copied_fallback(

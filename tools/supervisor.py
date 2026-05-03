@@ -30384,7 +30384,7 @@ def codex_cli_reasoning_effort(reasoning_effort: str) -> str:
 def resolve_codex_executable() -> str:
     override = os.environ.get(CODEX_EXECUTABLE_ENV_VAR, "").strip()
     if override:
-        return override
+        return str(Path(override).expanduser().resolve())
 
     resolved = shutil.which("codex")
     if resolved:
@@ -30403,7 +30403,8 @@ def resolve_codex_executable() -> str:
 
 
 def prepend_path_entry(path_value: str, entry: str) -> str:
-    parts = [part for part in path_value.split(os.pathsep) if part]
+    effective_path = path_value or os.defpath
+    parts = [part for part in effective_path.split(os.pathsep) if part]
     deduped = [entry]
     deduped.extend(part for part in parts if part != entry)
     return os.pathsep.join(deduped)
