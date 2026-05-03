@@ -5,6 +5,7 @@ import datetime as dt
 import importlib.util
 import io
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -277,7 +278,9 @@ def test_build_codex_exec_command_uses_explicit_child_runtime_profile(
 ) -> None:
     cmd = supervisor_module.build_codex_exec_command(prompt="Refine one bounded spec.")
 
-    assert cmd[:2] == ["codex", "exec"]
+    assert Path(cmd[0]).name == "codex"
+    assert cmd[1] == "exec"
+    assert "--ignore-user-config" in cmd
     assert "--model" in cmd
     assert supervisor_module.CHILD_EXECUTOR_MODEL in cmd
     assert "--sandbox" in cmd
@@ -324,11 +327,68 @@ def test_build_codex_exec_command_keeps_inner_sandbox_when_bypass_requested(
         bypass_inner_sandbox=True,
     )
 
-    assert cmd[:2] == ["codex", "exec"]
+    assert Path(cmd[0]).name == "codex"
+    assert cmd[1] == "exec"
+    assert "--ignore-user-config" in cmd
     assert "--dangerously-bypass-approvals-and-sandbox" not in cmd
     assert "--sandbox" in cmd
     assert supervisor_module.CHILD_EXECUTOR_SANDBOX in cmd
     assert cmd[-1] == "Refine one bounded spec."
+
+
+def test_resolve_codex_executable_prefers_homebrew_when_usr_local_is_resolved(
+    supervisor_module: object,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    preferred = tmp_path / "codex"
+    preferred.write_text("#!/bin/sh\n", encoding="utf-8")
+    preferred.chmod(0o755)
+
+    monkeypatch.delenv(supervisor_module.CODEX_EXECUTABLE_ENV_VAR, raising=False)
+    monkeypatch.setattr(supervisor_module, "PREFERRED_CODEX_EXECUTABLE_PATHS", (preferred,))
+    monkeypatch.setattr(supervisor_module.shutil, "which", lambda name: "/usr/local/bin/codex")
+
+    assert supervisor_module.resolve_codex_executable() == str(preferred)
+
+
+def test_resolve_codex_executable_respects_explicit_override(
+    supervisor_module: object,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv(supervisor_module.CODEX_EXECUTABLE_ENV_VAR, "bin/codex")
+
+    assert supervisor_module.resolve_codex_executable() == str(tmp_path / "bin" / "codex")
+
+
+def test_resolve_codex_executable_expands_user_override(
+    supervisor_module: object,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.setenv(supervisor_module.CODEX_EXECUTABLE_ENV_VAR, "~/bin/codex")
+
+    assert supervisor_module.resolve_codex_executable() == str(tmp_path / "bin" / "codex")
+
+
+def test_prepend_path_entry_moves_runtime_bin_to_front(supervisor_module: object) -> None:
+    path = supervisor_module.prepend_path_entry(
+        "/usr/local/bin:/opt/homebrew/bin:/usr/bin",
+        "/opt/homebrew/bin",
+    )
+
+    assert path == "/opt/homebrew/bin:/usr/local/bin:/usr/bin"
+
+
+def test_prepend_path_entry_keeps_system_defaults_when_path_is_empty(
+    supervisor_module: object,
+) -> None:
+    path = supervisor_module.prepend_path_entry("", "/opt/homebrew/bin")
+
+    assert path == os.pathsep.join(["/opt/homebrew/bin", os.defpath])
 
 
 def test_isolation_mode_for_branch_marks_copied_fallback(
