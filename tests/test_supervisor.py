@@ -8663,6 +8663,77 @@ def test_build_specpm_export_preview_emits_draft_preview_from_registry(
     ]
 
 
+def test_build_specpm_export_preview_rejects_malformed_provides_intents(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(supervisor_module, "TOOLS_DIR", repo_fixture / "tools")
+    (repo_fixture / "tools").mkdir(exist_ok=True)
+    (repo_fixture / "tools" / "specpm_export_registry.json").write_text(
+        json.dumps(
+            {
+                "artifact_kind": "specpm_export_registry",
+                "version": 1,
+                "entries": [
+                    {
+                        "export_id": "malformed_intents",
+                        "consumer_id": "specpm",
+                        "package_id": "specgraph.malformed_intents",
+                        "package_name": "Malformed Intents",
+                        "package_version": "0.1.0",
+                        "package_summary": "Malformed intent list.",
+                        "package_license": "Apache-2.0",
+                        "root_spec_id": "SG-SPEC-0001",
+                        "source_spec_ids": ["SG-SPEC-0001"],
+                        "provides_capabilities": ["specgraph.malformed_intents"],
+                        "provides_intents": "intent.specification_graph.malformed",
+                        "requires_capabilities": [],
+                        "bounded_context": "specgraph_repository",
+                        "keywords": ["specgraph"],
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_external_consumer_index",
+        lambda: {
+            "entries": [
+                {
+                    "consumer_id": "specpm",
+                    "title": "SpecPM / Boundary Package Consumer",
+                    "reference_state": "draft_reference",
+                    "profile": "boundary_package_consumer",
+                }
+            ],
+        },
+    )
+    monkeypatch.setattr(supervisor_module, "build_metric_signal_index", lambda specs: {})
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_external_consumer_overlay",
+        lambda index, metric_index: {
+            "entries": [
+                {
+                    "consumer_id": "specpm",
+                    "bridge_state": "draft_visible",
+                    "next_gap": "review_draft_reference",
+                }
+            ],
+        },
+    )
+
+    preview = supervisor_module.build_specpm_export_preview(supervisor_module.load_specs())
+
+    entry = preview["entries"][0]
+    assert entry["export_status"] == "invalid_export_contract"
+    assert "invalid_provides_intents" in entry["contract_errors"]
+    assert entry["package_preview"] is None
+
+
 def test_build_specpm_export_preview_marks_invalid_contract_for_missing_root_spec(
     supervisor_module: object,
     repo_fixture: Path,
@@ -11087,6 +11158,98 @@ provides:
     assert preview["viewer_projection"]["named_filters"]["handoff_continuous"] == [
         "specgraph.core_repository_facade"
     ]
+
+
+@pytest.mark.parametrize(
+    ("boundary_provides_yaml", "expected_error"),
+    [
+        ("provides: malformed", "invalid_boundary_provides"),
+        (
+            "\n".join(
+                [
+                    "provides:",
+                    "  capabilities:",
+                    "    - id: specgraph.repository_facade",
+                    "      intentIds: intent.specification_graph.repository_facade",
+                ]
+            ),
+            "invalid_boundary_intent_ids",
+        ),
+    ],
+)
+def test_build_specpm_import_preview_reports_malformed_provides_shapes(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    boundary_provides_yaml: str,
+    expected_error: str,
+) -> None:
+    specpm_checkout = repo_fixture / "SpecPM"
+    bundle_id = f"specgraph.{expected_error}"
+    bundle_root = specpm_checkout / ".specgraph_exports" / bundle_id
+    (bundle_root / "specs").mkdir(parents=True)
+    (bundle_root / "specpm.yaml").write_text(
+        f"""
+apiVersion: specpm.dev/v0.1
+kind: SpecPackage
+metadata:
+  id: {bundle_id}
+  name: Malformed Provides Bundle
+  version: 0.1.0
+""".strip()
+        + "\n",
+        encoding="utf-8",
+    )
+    (bundle_root / "specs" / "main.spec.yaml").write_text(
+        f"""
+apiVersion: specpm.dev/v0.1
+kind: BoundarySpec
+metadata:
+  id: {bundle_id}
+  title: Malformed Provides Bundle
+{boundary_provides_yaml}
+""".strip()
+        + "\n",
+        encoding="utf-8",
+    )
+    (bundle_root / "handoff.json").write_text(
+        json.dumps(
+            {
+                "export_id": expected_error,
+                "handoff_id": f"specpm_handoff::{expected_error}",
+                "handoff_status": "ready_for_handoff",
+                "consumer_id": "specpm",
+                "package_identity": {"package_id": bundle_id},
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_external_consumer_index",
+        lambda: {
+            "entries": [
+                {
+                    "consumer_id": "specpm",
+                    "title": "SpecPM / Boundary Package Consumer",
+                    "profile": "boundary_package_consumer",
+                    "repo_url": "https://github.com/0al-spec/SpecPM",
+                    "local_checkout": {
+                        "checkout_path": specpm_checkout.as_posix(),
+                        "status": "available",
+                        "remote_matches": True,
+                    },
+                }
+            ],
+        },
+    )
+
+    preview = supervisor_module.build_specpm_import_preview()
+
+    entry = preview["entries"][0]
+    assert entry["import_status"] == "invalid_import_contract"
+    assert expected_error in entry["contract_errors"]
+    assert entry["boundary_summary"]["provides_intents"] == []
 
 
 def test_build_specpm_import_preview_blocks_unverified_checkout(

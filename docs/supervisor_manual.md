@@ -913,8 +913,10 @@ It emits:
 - intent-search probes for `/v0/intents/{intent_id}/packages`
 - `registry_visible`, `registry_missing`, `registry_drift`, or
   `registry_unavailable` package statuses
-- viewer filters for `visible_package_versions`, `searchable_capabilities`,
-  `searchable_intents`, `registry_drift`, and `dev_observation_only`
+- viewer filters for registry visibility/searchability outcomes, including
+  `visible_package_versions`, `searchable_capabilities`, `searchable_intents`,
+  `missing_package_versions`, `missing_capabilities`, `missing_intents`,
+  `registry_drift`, and `dev_observation_only`
 
 Use it when you want to review:
 

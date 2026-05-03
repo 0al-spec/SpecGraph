@@ -4642,6 +4642,17 @@ def merge_unique_strings(*groups: list[str]) -> list[str]:
     return merged
 
 
+def unique_string_list(value: Any) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    unique: list[str] = []
+    for item in value:
+        normalized = str(item).strip()
+        if normalized and normalized not in unique:
+            unique.append(normalized)
+    return unique
+
+
 def reverse_dependents_count(specs: list[SpecNode]) -> dict[str, int]:
     counts: dict[str, int] = {spec.id: 0 for spec in specs if spec.id}
     for spec in specs:
@@ -17346,6 +17357,7 @@ def build_specpm_export_preview(specs: list[SpecNode]) -> dict[str, Any]:
             if field_name in {
                 "source_spec_ids",
                 "provides_capabilities",
+                "provides_intents",
                 "requires_capabilities",
                 "keywords",
             }:
@@ -17360,6 +17372,14 @@ def build_specpm_export_preview(specs: list[SpecNode]) -> dict[str, Any]:
                 continue
             if not str(raw_value).strip():
                 export_contract_errors.append(f"missing_{field_name}")
+        for field_name in ("provides_intents",):
+            raw_value = raw_entry.get(field_name)
+            if (
+                field_name in raw_entry
+                and raw_value is not None
+                and not isinstance(raw_value, list)
+            ):
+                export_contract_errors.append(f"invalid_{field_name}")
 
         consumer_id = str(raw_entry.get("consumer_id", "")).strip()
         consumer_entry = consumer_entries.get(consumer_id, {})
@@ -17380,31 +17400,11 @@ def build_specpm_export_preview(specs: list[SpecNode]) -> dict[str, Any]:
             export_contract_errors.append("missing_external_consumer")
 
         root_spec_id = str(raw_entry.get("root_spec_id", "")).strip()
-        source_spec_ids: list[str] = []
-        for item in raw_entry.get("source_spec_ids", []):
-            spec_id = str(item).strip()
-            if spec_id and spec_id not in source_spec_ids:
-                source_spec_ids.append(spec_id)
-        provides_capabilities: list[str] = []
-        for item in raw_entry.get("provides_capabilities", []):
-            capability_id = str(item).strip()
-            if capability_id and capability_id not in provides_capabilities:
-                provides_capabilities.append(capability_id)
-        provides_intents: list[str] = []
-        for item in raw_entry.get("provides_intents", []):
-            intent_id = str(item).strip()
-            if intent_id and intent_id not in provides_intents:
-                provides_intents.append(intent_id)
-        requires_capabilities: list[str] = []
-        for item in raw_entry.get("requires_capabilities", []):
-            capability_id = str(item).strip()
-            if capability_id and capability_id not in requires_capabilities:
-                requires_capabilities.append(capability_id)
-        keywords: list[str] = []
-        for item in raw_entry.get("keywords", []):
-            keyword = str(item).strip()
-            if keyword and keyword not in keywords:
-                keywords.append(keyword)
+        source_spec_ids = unique_string_list(raw_entry.get("source_spec_ids", []))
+        provides_capabilities = unique_string_list(raw_entry.get("provides_capabilities", []))
+        provides_intents = unique_string_list(raw_entry.get("provides_intents", []))
+        requires_capabilities = unique_string_list(raw_entry.get("requires_capabilities", []))
+        keywords = unique_string_list(raw_entry.get("keywords", []))
 
         if root_spec_id and root_spec_id not in spec_by_id:
             export_contract_errors.append("missing_root_spec")
@@ -18630,13 +18630,29 @@ def build_specpm_import_preview(
         provides_capabilities: list[str] = []
         provides_intents: list[str] = []
         if isinstance(boundary_payload, dict):
-            for raw_item in boundary_payload.get("provides", {}).get("capabilities", []):
+            provides_section = boundary_payload.get("provides")
+            if provides_section is not None and not isinstance(provides_section, dict):
+                contract_errors.append("invalid_boundary_provides")
+                provides_section = {}
+            raw_capabilities = (
+                provides_section.get("capabilities", [])
+                if isinstance(provides_section, dict)
+                else []
+            )
+            if raw_capabilities is not None and not isinstance(raw_capabilities, list):
+                contract_errors.append("invalid_boundary_capabilities")
+                raw_capabilities = []
+            for raw_item in raw_capabilities or []:
                 if not isinstance(raw_item, dict):
                     continue
                 capability_id = str(raw_item.get("id", "")).strip()
                 if capability_id and capability_id not in provides_capabilities:
                     provides_capabilities.append(capability_id)
-                for raw_intent in raw_item.get("intentIds", []) or []:
+                raw_intents = raw_item.get("intentIds", [])
+                if raw_intents is not None and not isinstance(raw_intents, list):
+                    contract_errors.append("invalid_boundary_intent_ids")
+                    raw_intents = []
+                for raw_intent in raw_intents or []:
                     intent_id = str(raw_intent).strip()
                     if intent_id and intent_id not in provides_intents:
                         provides_intents.append(intent_id)
@@ -18649,6 +18665,9 @@ def build_specpm_import_preview(
             raw_manifest_intents = (
                 manifest_provides.get("intents", []) if isinstance(manifest_provides, dict) else []
             )
+            if raw_manifest_intents is not None and not isinstance(raw_manifest_intents, list):
+                contract_errors.append("invalid_manifest_intents")
+                raw_manifest_intents = []
             for raw_intent in raw_manifest_intents or []:
                 intent_id = str(raw_intent).strip()
                 if intent_id and intent_id not in manifest_intents:
