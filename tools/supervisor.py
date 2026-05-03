@@ -3898,6 +3898,8 @@ SYNC_STRIPPED_SPEC_KEYS = {
 DERIVED_SPEC_TRACKING_KEYS = {"created_at", "updated_at", "last_pre_spec_provenance"}
 IMMUTABLE_CANONICAL_METADATA_KEYS = ("id", "created_at")
 DEFAULT_CODEX_HOME = Path(os.environ.get("CODEX_HOME", "~/.codex")).expanduser()
+CODEX_EXECUTABLE_ENV_VAR = "SPECGRAPH_CODEX_EXECUTABLE"
+PREFERRED_CODEX_EXECUTABLE_PATHS = (Path("/opt/homebrew/bin/codex"),)
 
 STATUS_PROGRESSION: dict[str, str] = {
     "idea": "stub",
@@ -30379,6 +30381,34 @@ def codex_cli_reasoning_effort(reasoning_effort: str) -> str:
     return reasoning_effort
 
 
+def resolve_codex_executable() -> str:
+    override = os.environ.get(CODEX_EXECUTABLE_ENV_VAR, "").strip()
+    if override:
+        return override
+
+    resolved = shutil.which("codex")
+    if resolved:
+        resolved_path = Path(resolved)
+        if resolved_path == Path("/usr/local/bin/codex"):
+            for candidate in PREFERRED_CODEX_EXECUTABLE_PATHS:
+                if candidate.exists() and os.access(candidate, os.X_OK):
+                    return str(candidate)
+        return resolved
+
+    for candidate in PREFERRED_CODEX_EXECUTABLE_PATHS:
+        if candidate.exists() and os.access(candidate, os.X_OK):
+            return str(candidate)
+
+    return "codex"
+
+
+def prepend_path_entry(path_value: str, entry: str) -> str:
+    parts = [part for part in path_value.split(os.pathsep) if part]
+    deduped = [entry]
+    deduped.extend(part for part in parts if part != entry)
+    return os.pathsep.join(deduped)
+
+
 def build_codex_exec_command(
     *,
     prompt: str,
@@ -30394,8 +30424,9 @@ def build_codex_exec_command(
     if profile is None:
         profile = EXECUTION_PROFILES[DEFAULT_EXECUTION_PROFILE_NAME]
     cmd = [
-        "codex",
+        resolve_codex_executable(),
         "exec",
+        "--ignore-user-config",
         "--model",
         profile.model,
         "-c",
@@ -30528,6 +30559,9 @@ def run_codex(
     )
     env = os.environ.copy()
     env["CODEX_HOME"] = str(child_codex_home)
+    codex_executable = Path(cmd[0])
+    if codex_executable.is_absolute():
+        env["PATH"] = prepend_path_entry(env.get("PATH", ""), str(codex_executable.parent))
     try:
         process = subprocess.Popen(
             cmd,
