@@ -2,9 +2,9 @@ id: SG-SPEC-0045
 title: SpecGraph - Proposal/Split Gateway Entry Contract
 kind: spec
 created_at: '2026-04-14T20:59:56Z'
-updated_at: '2026-04-25T07:35:00Z'
+updated_at: '2026-05-04T22:19:35Z'
 status: linked
-maturity: 0.4
+maturity: 0.6
 presence:
   state: active
   lineage_basis: current_expression
@@ -54,11 +54,13 @@ acceptance_evidence:
 - criterion: Keeps SG-SPEC-0045 as the active readable replacement for the historical SG-SPEC-0046/0047/0048
     split attempt.
   evidence: top-level supersedes records SG-SPEC-0046, SG-SPEC-0047, and SG-SPEC-0048, while specification.lineage_policy
-    keeps them historical.
+    keeps the historical SG-SPEC-0046/0047/0048 split attempt out of active readiness roles because the
+    edge and segment slice meanings are now covered by this bounded upstream readiness contribution.
 - criterion: Applies the topology-prose rule so this node is not re-split into upstream edge, segment,
     or handoff slices.
-  evidence: specification.topology_prose_policy and specification.boundaries forbid topology-only re-splitting
-    without a new runtime or review-observable invariant.
+  evidence: specification.topology_prose_policy and specification.boundaries apply the topology-prose
+    rule by forbidding SG-SPEC-0045 from being re-split into upstream edge, segment, or handoff slices
+    unless a new runtime or review-observable invariant appears.
 prompt: Define the upstream readiness contribution beneath SG-SPEC-0044. The spec should explain which
   upstream meanings must stay reviewable before proposal/split readiness is consumed, why the contract
   stops at SG-SPEC-0043, and why historical edge slices stay historical.
@@ -111,6 +113,8 @@ specification:
   lineage_policy:
   - SG-SPEC-0045 remains the active readable replacement for SG-SPEC-0046, SG-SPEC-0047, and SG-SPEC-0048.
   - The superseded nodes remain historical lineage and must not be treated as active readiness roles.
+  - Historical edge and segment slices stay historical because this node now owns the reviewable upstream
+    readiness meanings without requiring separate topology-only slice contracts.
   topology_prose_policy:
   - Ordered upstream graph paths are represented by canonical metadata and derived graph views.
   - SG-SPEC-0045 prose should explain upstream readiness meaning and inadmissible shortcuts, not route
@@ -145,4 +149,4 @@ last_worktree_path: ''
 last_branch: ''
 last_gate_decision: approve
 last_gate_note: ''
-last_gate_at: '2026-04-17T21:17:34.981494+00:00'
+last_gate_at: '2026-05-04T22:19:35.441429+00:00'
