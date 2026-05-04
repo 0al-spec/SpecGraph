@@ -12500,6 +12500,22 @@ def test_build_metrics_source_promotion_index_keeps_sib_full_review_first(
     report = supervisor_module.build_metrics_source_promotion_index(
         consumer_index,
         metric_signal_index,
+        {
+            "entries": [
+                {
+                    "metric_pack_id": "sib_full",
+                    "consumer_id": "metrics_sib_full",
+                    "pack_status": "ready_for_index_review",
+                    "pack_authority_state": "promotion_candidate",
+                },
+                {
+                    "metric_pack_id": "sib_full_partial",
+                    "consumer_id": "metrics_sib_full_partial",
+                    "pack_status": "blocked_by_contract_gap",
+                    "pack_authority_state": "promotion_candidate",
+                },
+            ]
+        },
     )
 
     assert report["artifact_kind"] == supervisor_module.METRICS_SOURCE_PROMOTION_INDEX_ARTIFACT_KIND
@@ -12519,6 +12535,94 @@ def test_build_metrics_source_promotion_index_keeps_sib_full_review_first(
     assert ready["guardrails"]["auto_threshold_authority"] is False
     assert ready["guardrails"]["threshold_authority_grant"] is False
     assert ready["next_gap"] == "review_metrics_source_promotion"
+
+
+def test_build_metrics_source_promotion_index_requires_pack_promotion_candidate(
+    supervisor_module: object,
+) -> None:
+    consumer_index = {
+        "generated_at": "2026-05-04T12:00:00Z",
+        "entries": [
+            {
+                "consumer_id": "metrics_sib",
+                "title": "Metrics / SIB",
+                "profile": "sibling_metric_consumer",
+                "reference_state": "stable_reference",
+                "contract_status": "ready",
+                "local_checkout": {"status": "available", "remote_matches": True},
+                "metric_bindings": [
+                    {
+                        "metric_id": "sib",
+                        "binding_role": "stable_bridge_reference",
+                        "legacy_metric_ids": ["sib_proxy"],
+                    }
+                ],
+            },
+            {
+                "consumer_id": "metrics_sib_full",
+                "title": "Metrics / SIB Full",
+                "profile": "sibling_metric_consumer",
+                "reference_state": "draft_reference",
+                "contract_status": "ready",
+                "local_checkout": {"status": "available"},
+                "metric_bindings": [
+                    {
+                        "metric_id": "sib",
+                        "binding_role": "draft_extended_reference",
+                        "legacy_metric_ids": ["sib_proxy"],
+                    }
+                ],
+            },
+        ],
+    }
+    metric_signal_index = {
+        "generated_at": "2026-05-04T12:01:00Z",
+        "metrics": [
+            {
+                "metric_id": "sib",
+                "status": "below_threshold",
+                "score": 0.564,
+                "minimum_score": 0.6,
+                "threshold_authority_state": "canonical_threshold_authority",
+            }
+        ],
+    }
+    metric_pack_index = {
+        "generated_at": "2026-05-04T12:02:00Z",
+        "entries": [
+            {
+                "metric_pack_id": "sib_full",
+                "consumer_id": "metrics_sib_full",
+                "pack_status": "draft_visible_only",
+                "pack_authority_state": "not_threshold_authority",
+            }
+        ],
+    }
+
+    report = supervisor_module.build_metrics_source_promotion_index(
+        consumer_index,
+        metric_signal_index,
+        metric_pack_index,
+    )
+
+    entry = report["entries"][0]
+    assert entry["consumer_id"] == "metrics_sib_full"
+    assert entry["promotion_status"] == "draft_visible_only"
+    assert entry["review_state"] == "draft_visible"
+    assert entry["authority_state"] == "not_threshold_authority"
+    assert entry["next_gap"] == "review_draft_metric_source"
+    assert entry["metric_pack_authority"] == {
+        "metric_pack_id": "sib_full",
+        "pack_status": "draft_visible_only",
+        "pack_authority_state": "not_threshold_authority",
+        "required_for_promotion_candidate": "promotion_candidate",
+    }
+    assert report["promotion_backlog"]["grouped_by_next_gap"] == {
+        "review_draft_metric_source": ["metrics_sib_full"]
+    }
+    assert report["viewer_projection"]["promotion_status"]["draft_visible_only"] == [
+        "metrics_sib_full"
+    ]
 
 
 def test_build_metrics_source_promotion_index_blocks_without_stable_sib_anchor(
@@ -13614,7 +13718,7 @@ def test_main_builds_metrics_source_promotion_index_as_standalone_command(
     monkeypatch.setattr(
         supervisor_module,
         "build_metrics_source_promotion_index",
-        lambda consumer_index, metric_signal_index: {
+        lambda consumer_index, metric_signal_index, metric_pack_index=None: {
             "artifact_kind": supervisor_module.METRICS_SOURCE_PROMOTION_INDEX_ARTIFACT_KIND,
             "schema_version": supervisor_module.METRICS_SOURCE_PROMOTION_INDEX_SCHEMA_VERSION,
             "generated_at": "2026-04-24T12:02:00Z",
@@ -14677,7 +14781,7 @@ def test_build_graph_dashboard_aggregates_runtime_surfaces(
     monkeypatch.setattr(
         supervisor_module,
         "build_metrics_source_promotion_index",
-        lambda consumer_index, metric_signal_index: {
+        lambda consumer_index, metric_signal_index, metric_pack_index=None: {
             "generated_at": "2026-04-19T00:00:10Z",
             "entry_count": 1,
             "viewer_projection": {
@@ -15435,10 +15539,12 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
     def fake_metrics_source_promotion_index(
         consumer_index: dict[str, object],
         metric_signal_index: dict[str, object],
+        metric_pack_index: dict[str, object] | None = None,
     ) -> dict[str, object]:
         surface_calls["promotion"] += 1
         assert consumer_index["generated_at"] == "2026-04-27T00:00:03Z"
         assert metric_signal_index["generated_at"] == "2026-04-27T00:00:04Z"
+        assert metric_pack_index is not None
         return {
             "artifact_kind": supervisor_module.METRICS_SOURCE_PROMOTION_INDEX_ARTIFACT_KIND,
             "schema_version": supervisor_module.METRICS_SOURCE_PROMOTION_INDEX_SCHEMA_VERSION,

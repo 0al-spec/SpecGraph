@@ -174,6 +174,12 @@ Known `pack_authority_state` values:
 
 Unknown future values should render as neutral chips and pass through raw text.
 
+For source-promotion surfaces, `promotion_candidate` is the required pack
+authority state before a draft external source can appear as
+`ready_for_promotion_review`. Draft packs with
+`pack_authority_state: not_threshold_authority` should remain visible as
+draft-only diagnostic references, not promotion-ready items.
+
 ## Viewer Projection
 
 `viewer_projection` groups pack IDs by stable dimensions:

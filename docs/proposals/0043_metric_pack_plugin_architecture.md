@@ -275,6 +275,13 @@ The important boundary is:
 - `operational_source_after_review` means the source has passed the existing
   Metrics source-promotion path, not that it may enforce policy by itself.
 
+The source-promotion index must also respect this first-class pack authority.
+An external draft source that is available and contract-ready is still only
+`draft_visible_only` while the corresponding metric pack remains
+`pack_authority_state: not_threshold_authority`. It may become
+`ready_for_promotion_review` only after the pack registry explicitly marks the
+pack `pack_authority_state: promotion_candidate`.
+
 Threshold authority remains controlled by existing metric signal and source
 promotion policies. A metric pack label alone must never alter thresholds,
 backlog priority, proposal queues, or enforcement behavior.

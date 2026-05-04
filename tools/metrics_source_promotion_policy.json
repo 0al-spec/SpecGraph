@@ -48,6 +48,7 @@
     "draft_binding_roles": [
       "draft_extended_reference"
     ],
+    "required_pack_authority_state_for_promotion_candidate": "promotion_candidate",
     "ready_contract_statuses": [
       "ready"
     ],
