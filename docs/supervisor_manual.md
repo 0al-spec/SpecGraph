@@ -1024,7 +1024,8 @@ It emits:
 
 - one promotion entry per draft sibling metric consumer candidate
 - `promotion_status` such as `ready_for_promotion_review`,
-  `draft_visible_only`, `blocked_by_contract_gap`,
+  `draft_visible_only`, `blocked_by_pack_authority_gap`,
+  `blocked_by_contract_gap`,
   `blocked_by_stable_family_gap`, or `invalid_promotion_contract`
 - `authority_state`, where draft sources stay `not_threshold_authority` until
   review makes them operational

@@ -10,6 +10,7 @@
     "promotion_statuses": [
       "ready_for_promotion_review",
       "draft_visible_only",
+      "blocked_by_pack_authority_gap",
       "blocked_by_contract_gap",
       "blocked_by_stable_family_gap",
       "invalid_promotion_contract"
@@ -27,6 +28,7 @@
     "named_filters": [
       "ready_for_promotion_review",
       "draft_visible_only",
+      "blocked_by_pack_authority_gap",
       "blocked_by_contract_gap",
       "blocked_by_stable_family_gap",
       "invalid_promotion_contract",
@@ -66,6 +68,7 @@
   "next_gap_defaults": {
     "ready_for_promotion_review": "review_metrics_source_promotion",
     "draft_visible_only": "review_draft_metric_source",
+    "blocked_by_pack_authority_gap": "align_metric_pack_authority",
     "blocked_by_contract_gap": "align_draft_metric_contract",
     "blocked_by_stable_family_gap": "establish_stable_sib_family_anchor",
     "invalid_promotion_contract": "repair_metrics_source_promotion_contract"

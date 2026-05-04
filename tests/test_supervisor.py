@@ -12505,14 +12505,14 @@ def test_build_metrics_source_promotion_index_keeps_sib_full_review_first(
                 {
                     "metric_pack_id": "sib_full",
                     "consumer_id": "metrics_sib_full",
-                    "pack_status": "ready_for_index_review",
+                    "pack_status": "blocked_by_authority_state",
                     "pack_authority_state": "promotion_candidate",
                 },
                 {
                     "metric_pack_id": "sib_full_partial",
                     "consumer_id": "metrics_sib_full_partial",
-                    "pack_status": "blocked_by_contract_gap",
-                    "pack_authority_state": "promotion_candidate",
+                    "pack_status": "draft_visible_only",
+                    "pack_authority_state": "not_threshold_authority",
                 },
             ]
         },
@@ -12621,6 +12621,74 @@ def test_build_metrics_source_promotion_index_requires_pack_promotion_candidate(
         "review_draft_metric_source": ["metrics_sib_full"]
     }
     assert report["viewer_projection"]["promotion_status"]["draft_visible_only"] == [
+        "metrics_sib_full"
+    ]
+
+
+def test_build_metrics_source_promotion_index_blocks_missing_pack_authority(
+    supervisor_module: object,
+) -> None:
+    consumer_index = {
+        "generated_at": "2026-05-04T12:00:00Z",
+        "entries": [
+            {
+                "consumer_id": "metrics_sib",
+                "title": "Metrics / SIB",
+                "profile": "sibling_metric_consumer",
+                "reference_state": "stable_reference",
+                "contract_status": "ready",
+                "local_checkout": {"status": "available", "remote_matches": True},
+                "metric_bindings": [
+                    {
+                        "metric_id": "sib",
+                        "binding_role": "stable_bridge_reference",
+                        "legacy_metric_ids": ["sib_proxy"],
+                    }
+                ],
+            },
+            {
+                "consumer_id": "metrics_sib_full",
+                "title": "Metrics / SIB Full",
+                "profile": "sibling_metric_consumer",
+                "reference_state": "draft_reference",
+                "contract_status": "ready",
+                "local_checkout": {"status": "available"},
+                "metric_bindings": [
+                    {
+                        "metric_id": "sib",
+                        "binding_role": "draft_extended_reference",
+                        "legacy_metric_ids": ["sib_proxy"],
+                    }
+                ],
+            },
+        ],
+    }
+    metric_signal_index = {
+        "generated_at": "2026-05-04T12:01:00Z",
+        "metrics": [{"metric_id": "sib", "status": "below_threshold"}],
+    }
+
+    report = supervisor_module.build_metrics_source_promotion_index(
+        consumer_index,
+        metric_signal_index,
+        {"generated_at": "2026-05-04T12:02:00Z", "entries": []},
+    )
+
+    entry = report["entries"][0]
+    assert entry["promotion_status"] == "blocked_by_pack_authority_gap"
+    assert entry["review_state"] == "not_ready"
+    assert entry["authority_state"] == "not_threshold_authority"
+    assert entry["next_gap"] == "align_metric_pack_authority"
+    assert entry["metric_pack_authority"] == {
+        "metric_pack_id": "",
+        "pack_status": "",
+        "pack_authority_state": "",
+        "required_for_promotion_candidate": "promotion_candidate",
+    }
+    assert report["promotion_backlog"]["grouped_by_next_gap"] == {
+        "align_metric_pack_authority": ["metrics_sib_full"]
+    }
+    assert report["viewer_projection"]["promotion_status"]["blocked_by_pack_authority_gap"] == [
         "metrics_sib_full"
     ]
 

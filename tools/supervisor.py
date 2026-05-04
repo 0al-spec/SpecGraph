@@ -22250,6 +22250,7 @@ def build_metrics_source_promotion_index(
 
         contract_status = str(raw_entry.get("contract_status", "")).strip()
         checkout_status = str(raw_entry.get("local_checkout", {}).get("status", "")).strip()
+        pack_entry = metric_pack_by_consumer_id.get(consumer_id)
         candidate_metric_id = canonical_metric_id
         promotion_status = "invalid_promotion_contract"
         review_state = "not_ready"
@@ -22260,19 +22261,20 @@ def build_metrics_source_promotion_index(
             promotion_status = "invalid_promotion_contract"
         elif not stable_anchor_ids:
             promotion_status = "blocked_by_stable_family_gap"
-        elif (
-            (pack_entry := metric_pack_by_consumer_id.get(consumer_id))
-            and required_pack_authority_state
-            and str(pack_entry.get("pack_authority_state", "")).strip()
-            != required_pack_authority_state
-        ):
-            promotion_status = "draft_visible_only"
-            review_state = "draft_visible"
         elif checkout_status != "available":
             promotion_status = "draft_visible_only"
             review_state = "draft_visible"
         elif contract_status not in ready_contract_statuses:
             promotion_status = "blocked_by_contract_gap"
+        elif required_pack_authority_state and pack_entry is None:
+            promotion_status = "blocked_by_pack_authority_gap"
+        elif (
+            required_pack_authority_state
+            and str(pack_entry.get("pack_authority_state", "")).strip()
+            != required_pack_authority_state
+        ):
+            promotion_status = "draft_visible_only"
+            review_state = "draft_visible"
         else:
             promotion_status = "ready_for_promotion_review"
             review_state = "ready_for_review"

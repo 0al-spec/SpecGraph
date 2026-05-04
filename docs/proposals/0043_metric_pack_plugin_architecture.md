@@ -281,6 +281,8 @@ An external draft source that is available and contract-ready is still only
 `pack_authority_state: not_threshold_authority`. It may become
 `ready_for_promotion_review` only after the pack registry explicitly marks the
 pack `pack_authority_state: promotion_candidate`.
+If the corresponding metric pack row is missing, promotion is blocked as a pack
+authority gap rather than inferred from the external consumer alone.
 
 Threshold authority remains controlled by existing metric signal and source
 promotion policies. A metric pack label alone must never alter thresholds,

@@ -179,6 +179,9 @@ authority state before a draft external source can appear as
 `ready_for_promotion_review`. Draft packs with
 `pack_authority_state: not_threshold_authority` should remain visible as
 draft-only diagnostic references, not promotion-ready items.
+If no metric-pack row exists for a draft source, source promotion should render
+`promotion_status: "blocked_by_pack_authority_gap"` rather than treating the
+source as promotion-ready.
 
 ## Viewer Projection
 
