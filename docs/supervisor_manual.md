@@ -1008,16 +1008,24 @@ Builds `runs/metrics_source_promotion_index.json` from:
 
 - a freshly rebuilt `runs/external_consumer_index.json`
 - a freshly rebuilt `runs/metric_signal_index.json`
+- a freshly rebuilt `runs/metric_pack_index.json`
 
 This layer defines the review path for `Metrics/SIB_FULL` and later sibling
 metric sources. A draft source can become `ready_for_promotion_review`, but it
 does not receive threshold authority automatically.
 
+First-class metric pack authority gates that transition. A draft source remains
+`draft_visible_only` while its pack entry is still
+`pack_authority_state: not_threshold_authority`; it only becomes
+`ready_for_promotion_review` after the pack registry marks it
+`pack_authority_state: promotion_candidate`.
+
 It emits:
 
 - one promotion entry per draft sibling metric consumer candidate
 - `promotion_status` such as `ready_for_promotion_review`,
-  `draft_visible_only`, `blocked_by_contract_gap`,
+  `draft_visible_only`, `blocked_by_pack_authority_gap`,
+  `blocked_by_contract_gap`,
   `blocked_by_stable_family_gap`, or `invalid_promotion_contract`
 - `authority_state`, where draft sources stay `not_threshold_authority` until
   review makes them operational

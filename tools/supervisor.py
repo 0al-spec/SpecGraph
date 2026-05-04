@@ -22128,10 +22128,28 @@ def derive_metrics_source_promotion_next_gap(promotion_status: str) -> str:
     )
 
 
+def metric_pack_entries_by_consumer_id(
+    metric_pack_index: dict[str, Any] | None,
+) -> dict[str, dict[str, Any]]:
+    if not isinstance(metric_pack_index, dict):
+        return {}
+    entries: dict[str, dict[str, Any]] = {}
+    for raw_entry in metric_pack_index.get("entries", []):
+        if not isinstance(raw_entry, dict):
+            continue
+        consumer_id = str(raw_entry.get("consumer_id", "")).strip()
+        if consumer_id:
+            entries[consumer_id] = raw_entry
+    return entries
+
+
 def build_metrics_source_promotion_index(
     external_consumer_index: dict[str, Any],
     metric_signal_index: dict[str, Any],
+    metric_pack_index: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
+    if not isinstance(metric_pack_index, dict):
+        metric_pack_index = {}
     required_profile = str(
         metrics_source_promotion_policy_lookup("eligibility_rules.required_profile")
     ).strip()
@@ -22160,6 +22178,11 @@ def build_metrics_source_promotion_index(
         for item in metrics_source_promotion_policy_lookup("eligibility_rules.draft_binding_roles")
         if str(item).strip()
     }
+    required_pack_authority_state = str(
+        metrics_source_promotion_policy_lookup(
+            "eligibility_rules.required_pack_authority_state_for_promotion_candidate"
+        )
+    ).strip()
     ready_contract_statuses = {
         str(item).strip()
         for item in metrics_source_promotion_policy_lookup(
@@ -22179,6 +22202,7 @@ def build_metrics_source_promotion_index(
         for entry in metric_signal_index.get("metrics", [])
         if isinstance(entry, dict) and str(entry.get("metric_id", "")).strip()
     }
+    metric_pack_by_consumer_id = metric_pack_entries_by_consumer_id(metric_pack_index)
     stable_anchor_ids = sorted(
         {
             str(entry.get("consumer_id", "")).strip()
@@ -22226,6 +22250,7 @@ def build_metrics_source_promotion_index(
 
         contract_status = str(raw_entry.get("contract_status", "")).strip()
         checkout_status = str(raw_entry.get("local_checkout", {}).get("status", "")).strip()
+        pack_entry = metric_pack_by_consumer_id.get(consumer_id)
         candidate_metric_id = canonical_metric_id
         promotion_status = "invalid_promotion_contract"
         review_state = "not_ready"
@@ -22241,6 +22266,15 @@ def build_metrics_source_promotion_index(
             review_state = "draft_visible"
         elif contract_status not in ready_contract_statuses:
             promotion_status = "blocked_by_contract_gap"
+        elif required_pack_authority_state and pack_entry is None:
+            promotion_status = "blocked_by_pack_authority_gap"
+        elif (
+            required_pack_authority_state
+            and str(pack_entry.get("pack_authority_state", "")).strip()
+            != required_pack_authority_state
+        ):
+            promotion_status = "draft_visible_only"
+            review_state = "draft_visible"
         else:
             promotion_status = "ready_for_promotion_review"
             review_state = "ready_for_review"
@@ -22263,6 +22297,21 @@ def build_metrics_source_promotion_index(
             "policy_reference": metrics_source_promotion_policy_reference(),
             "source_consumer": copy.deepcopy(raw_entry),
             "stable_family_anchor_consumer_ids": stable_anchor_ids,
+            "metric_pack_authority": {
+                "metric_pack_id": str(
+                    metric_pack_by_consumer_id.get(consumer_id, {}).get("metric_pack_id", "")
+                ).strip(),
+                "pack_status": str(
+                    metric_pack_by_consumer_id.get(consumer_id, {}).get("pack_status", "")
+                ).strip(),
+                "pack_authority_state": str(
+                    metric_pack_by_consumer_id.get(consumer_id, {}).get(
+                        "pack_authority_state",
+                        "",
+                    )
+                ).strip(),
+                "required_for_promotion_candidate": required_pack_authority_state,
+            },
             "guardrails": {
                 "requires_human_review": requires_human_review,
                 "auto_threshold_authority": auto_threshold_authority,
@@ -22345,6 +22394,11 @@ def build_metrics_source_promotion_index(
             "metric_signal_index": {
                 "artifact_path": metric_signal_index_path().relative_to(ROOT).as_posix(),
                 "generated_at": metric_signal_index.get("generated_at"),
+            },
+            "metric_pack_index": {
+                "artifact_path": metric_pack_index_path().relative_to(ROOT).as_posix(),
+                "generated_at": metric_pack_index.get("generated_at"),
+                "entry_count": metric_pack_index.get("entry_count"),
             },
         },
         "stable_family_anchor_consumer_ids": stable_anchor_ids,
@@ -27104,15 +27158,16 @@ def build_graph_backlog_projection(
             metric_signal_index,
             metric_threshold_proposals,
         )
-    if metrics_source_promotion_index is None:
-        metrics_source_promotion_index = build_metrics_source_promotion_index(
-            external_consumer_index,
-            metric_signal_index,
-        )
     if metric_pack_index is None:
         metric_pack_index = build_metric_pack_index(
             load_metric_pack_registry(),
             external_consumer_index,
+        )
+    if metrics_source_promotion_index is None:
+        metrics_source_promotion_index = build_metrics_source_promotion_index(
+            external_consumer_index,
+            metric_signal_index,
+            metric_pack_index,
         )
     if metric_pack_adapter_index is None:
         metric_pack_adapter_index = build_metric_pack_adapter_index(metric_pack_index)
@@ -27770,15 +27825,16 @@ def build_graph_dashboard(
             metric_signal_index,
             metric_threshold_proposals,
         )
-    if metrics_source_promotion_index is None:
-        metrics_source_promotion_index = build_metrics_source_promotion_index(
-            external_consumer_index,
-            metric_signal_index,
-        )
     if metric_pack_index is None:
         metric_pack_index = build_metric_pack_index(
             load_metric_pack_registry(),
             external_consumer_index,
+        )
+    if metrics_source_promotion_index is None:
+        metrics_source_promotion_index = build_metrics_source_promotion_index(
+            external_consumer_index,
+            metric_signal_index,
+            metric_pack_index,
         )
     if metric_pack_adapter_index is None:
         metric_pack_adapter_index = build_metric_pack_adapter_index(metric_pack_index)
@@ -28799,14 +28855,15 @@ def build_viewer_surfaces(specs: list[SpecNode]) -> dict[str, Any]:
         specpm_delivery_workflow,
     )
     review_feedback_index = build_review_feedback_index()
-    metrics_source_promotion_index = build_metrics_source_promotion_index(
-        consumer_index,
-        metric_signal_index,
-    )
     metric_pack_registry = load_metric_pack_registry()
     metric_pack_index = build_metric_pack_index(
         metric_pack_registry,
         consumer_index,
+    )
+    metrics_source_promotion_index = build_metrics_source_promotion_index(
+        consumer_index,
+        metric_signal_index,
+        metric_pack_index,
     )
     model_usage_telemetry = build_model_usage_telemetry_index()
     metric_pricing_provenance = build_metric_pricing_provenance(model_usage_telemetry)
@@ -34539,7 +34596,16 @@ def main(
         write_external_consumer_index(consumer_index)
         metric_index = build_metric_signal_index(specs)
         write_metric_signal_index(metric_index)
-        promotion_index = build_metrics_source_promotion_index(consumer_index, metric_index)
+        metric_pack_index = build_metric_pack_index(
+            load_metric_pack_registry(),
+            consumer_index,
+        )
+        write_metric_pack_index(metric_pack_index)
+        promotion_index = build_metrics_source_promotion_index(
+            consumer_index,
+            metric_index,
+            metric_pack_index,
+        )
         write_metrics_source_promotion_index(promotion_index)
         emit_supervisor_json(promotion_index, output_mode=normalized_output_mode)
         return 0
