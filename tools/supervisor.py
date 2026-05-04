@@ -26524,6 +26524,18 @@ def append_branch_rewrite_preview_backlog_items(
         )
 
 
+def metric_pack_ids_with_computed_runs(metric_pack_runs: dict[str, Any]) -> set[str]:
+    computed: set[str] = set()
+    for entry in metric_pack_runs.get("entries", []):
+        if not isinstance(entry, dict):
+            continue
+        metric_pack_id = str(entry.get("metric_pack_id", "")).strip()
+        run_status = str(entry.get("run_status", "")).strip()
+        if metric_pack_id and run_status == "computed":
+            computed.add(metric_pack_id)
+    return computed
+
+
 def build_graph_backlog_projection_from_surfaces(
     *,
     graph_overlay: dict[str, Any],
@@ -26550,6 +26562,7 @@ def build_graph_backlog_projection_from_surfaces(
 ) -> dict[str, Any]:
     entries: list[dict[str, Any]] = []
     adopted_metrics_consumer_ids = metrics_feedback_adopted_consumer_ids(metrics_feedback_index)
+    computed_metric_pack_ids = metric_pack_ids_with_computed_runs(metric_pack_runs)
 
     def metrics_consumer_is_adopted(item: dict[str, Any]) -> bool:
         consumer_id = str(item.get("consumer_id", "")).strip()
@@ -26763,6 +26776,13 @@ def build_graph_backlog_projection_from_surfaces(
         next_gap = str(item.get("next_gap", "")).strip()
         if not metric_pack_id or not next_gap or next_gap == "none":
             continue
+        pack_status = str(item.get("pack_status", "")).strip()
+        if (
+            pack_status == "ready_for_index_review"
+            and next_gap == "review_metric_pack_index"
+            and metric_pack_id in computed_metric_pack_ids
+        ):
+            continue
         entries.append(
             graph_backlog_entry(
                 source_artifact="metric_pack_index",
@@ -26770,7 +26790,7 @@ def build_graph_backlog_projection_from_surfaces(
                 subject_kind="metric_pack",
                 subject_id=metric_pack_id,
                 title=str(item.get("title", "")).strip(),
-                status=str(item.get("pack_status", "")).strip() or "metric_pack_gap",
+                status=pack_status or "metric_pack_gap",
                 review_state=str(item.get("review_state", "")).strip(),
                 next_gap=next_gap,
                 details=graph_backlog_details(item, exclude={"metric_pack_id"}),

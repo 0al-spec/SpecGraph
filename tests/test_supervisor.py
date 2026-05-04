@@ -16459,6 +16459,118 @@ def test_graph_backlog_projection_suppresses_adopted_metrics_handoff_review(
     assert report["summary"]["next_gap_counts"]["collect_metrics_adoption_feedback"] == 1
 
 
+def test_graph_backlog_projection_suppresses_computed_metric_pack_index_review(
+    supervisor_module: object,
+) -> None:
+    report = supervisor_module.build_graph_backlog_projection_from_surfaces(
+        graph_overlay={"generated_at": "2026-05-04T00:00:00Z", "entries": []},
+        proposal_runtime_index={
+            "generated_at": "2026-05-04T00:00:00Z",
+            "reflective_backlog": {"entry_count": 0, "items": []},
+        },
+        proposal_promotion_index={
+            "generated_at": "2026-05-04T00:00:00Z",
+            "promotion_backlog": {"entry_count": 0, "items": []},
+        },
+        refactor_queue_items=[],
+        proposal_queue_items=[],
+        spec_trace_projection={
+            "generated_at": "2026-05-04T00:00:00Z",
+            "implementation_backlog": {"entry_count": 0, "items": []},
+        },
+        implementation_work_index={
+            "generated_at": "2026-05-04T00:00:00Z",
+            "implementation_backlog": {"entry_count": 0, "items": []},
+        },
+        evidence_overlay={
+            "generated_at": "2026-05-04T00:00:00Z",
+            "evidence_backlog": {"entry_count": 0, "items": []},
+        },
+        external_consumer_overlay={
+            "generated_at": "2026-05-04T00:00:00Z",
+            "external_consumer_backlog": {"entry_count": 0, "items": []},
+        },
+        external_consumer_handoffs={
+            "generated_at": "2026-05-04T00:00:00Z",
+            "handoff_backlog": {"entry_count": 0, "items": []},
+        },
+        specpm_delivery_workflow={
+            "generated_at": "2026-05-04T00:00:00Z",
+            "delivery_backlog": {"entry_count": 0, "items": []},
+        },
+        specpm_feedback_index={
+            "generated_at": "2026-05-04T00:00:00Z",
+            "feedback_backlog": {"entry_count": 0, "items": []},
+        },
+        metrics_delivery_workflow={
+            "generated_at": "2026-05-04T00:00:00Z",
+            "delivery_backlog": {"entry_count": 0, "items": []},
+        },
+        metrics_feedback_index={
+            "generated_at": "2026-05-04T00:00:00Z",
+            "entries": [],
+            "feedback_backlog": {"entry_count": 0, "items": []},
+        },
+        metrics_source_promotion_index={
+            "generated_at": "2026-05-04T00:00:00Z",
+            "promotion_backlog": {"entry_count": 0, "items": []},
+        },
+        metric_pack_index={
+            "generated_at": "2026-05-04T00:00:00Z",
+            "entries": [
+                {
+                    "metric_pack_id": "sib",
+                    "title": "SIB",
+                    "pack_status": "ready_for_index_review",
+                    "review_state": "ready_for_review",
+                    "next_gap": "review_metric_pack_index",
+                },
+                {
+                    "metric_pack_id": "sib_full",
+                    "title": "SIB Full Metrics",
+                    "pack_status": "draft_visible_only",
+                    "review_state": "draft_visible",
+                    "next_gap": "review_draft_metric_pack",
+                },
+            ],
+        },
+        metric_pack_adapter_index={
+            "generated_at": "2026-05-04T00:00:00Z",
+            "adapter_backlog": {"entry_count": 0, "items": []},
+        },
+        metric_pack_runs={
+            "generated_at": "2026-05-04T00:00:00Z",
+            "entries": [
+                {
+                    "metric_pack_id": "sib",
+                    "run_status": "computed",
+                    "gaps": [],
+                }
+            ],
+        },
+        metric_threshold_proposals={
+            "generated_at": "2026-05-04T00:00:00Z",
+            "entries": [],
+        },
+        review_feedback_index={
+            "generated_at": "2026-05-04T00:00:00Z",
+            "review_feedback_backlog": {"entry_count": 0, "items": []},
+        },
+        branch_rewrite_preview=None,
+    )
+
+    assert not any(
+        entry["source_artifact"] == "metric_pack_index" and entry["subject_id"] == "sib"
+        for entry in report["entries"]
+    )
+    assert any(
+        entry["source_artifact"] == "metric_pack_index" and entry["subject_id"] == "sib_full"
+        for entry in report["entries"]
+    )
+    assert "review_metric_pack_index" not in report["summary"]["next_gap_counts"]
+    assert report["summary"]["next_gap_counts"]["review_draft_metric_pack"] == 1
+
+
 def test_main_builds_graph_backlog_projection_as_standalone_command(
     supervisor_module: object,
     repo_fixture: Path,
