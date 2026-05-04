@@ -269,6 +269,12 @@ Future named filters are allowed.
 When `runs/metric_pack_runs.json` contains run gaps, each gap is projected as a
 metrics backlog row.
 
+`metric_pack_index` review rows are intentionally not projected for packs that
+already have a computed `metric_pack_runs` entry. In that case the index review
+has been consumed by the downstream run snapshot, and the backlog should surface
+run gaps, threshold proposals, or later finding projection gaps instead of
+repeating `review_metric_pack_index` forever.
+
 Metric value adapter gaps use:
 
 ```json
