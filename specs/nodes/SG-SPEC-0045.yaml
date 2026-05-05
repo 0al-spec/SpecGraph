@@ -2,9 +2,9 @@ id: SG-SPEC-0045
 title: SpecGraph - Proposal/Split Gateway Entry Contract
 kind: spec
 created_at: '2026-04-14T20:59:56Z'
-updated_at: '2026-05-04T22:19:35Z'
+updated_at: '2026-05-05T19:58:36Z'
 status: linked
-maturity: 0.6
+maturity: 0.8
 presence:
   state: active
   lineage_basis: current_expression
@@ -40,9 +40,9 @@ acceptance:
 acceptance_evidence:
 - criterion: 'Defines the upstream readiness contribution to proposal/split admissibility: continuation
     and execution readiness must remain reviewable before proposal/split readiness is consumed.'
-  evidence: specification.upstream_readiness_contribution and specification.required_upstream_meanings
-    define continuation state, execution readiness, and readiness-region meaning as required upstream
-    inputs.
+  evidence: specification.upstream_readiness_contribution, specification.required_upstream_meanings, and
+    specification.consumption_preconditions define continuation state, execution readiness, and readiness-region
+    meaning as required upstream inputs before SG-SPEC-0043 readiness is consumed.
 - criterion: Explains which upstream shortcuts make readiness inadmissible without reciting the upstream
     graph chain as the main prose.
   evidence: specification.inadmissible_upstream_shortcuts defines shortcuts by the readiness meanings
@@ -96,10 +96,23 @@ specification:
   required_upstream_meanings:
     continuation_state:
     - Continuation state must remain separate from proposal/split mechanics detail.
+    - Review must show continuation selection still consumes an execution-readiness result rather than
+      proposal/split mechanics detail.
     execution_readiness:
     - Reflective execution readiness must remain reviewable before proposal/split readiness is consumed.
+    - Review must show the composed execution-readiness surface remains visible before the SG-SPEC-0043
+      boundary result is accepted.
     readiness_region:
     - Proposal/split readiness must remain readable as a capability region.
+    - Review must show the capability-region question remains distinct from SG-SPEC-0043 boundary availability
+      and SG-SPEC-0029 mechanics availability.
+  consumption_preconditions:
+  - Before SG-SPEC-0043 readiness is consumed, review evidence must name continuation state, execution
+    readiness, and readiness-region meaning as present upstream meanings.
+  - The upstream contribution is not reviewable if those meanings are only inferred from ordered graph
+    placement, superseded edge or segment slices, or downstream mechanics availability.
+  - SG-SPEC-0045 provides the entry contract for those upstream meanings; SG-SPEC-0043 may consume that
+    entry only after they are reviewable as meanings rather than route facts.
   inadmissible_upstream_shortcuts:
   - Upstream readiness is inadmissible if continuation state is skipped or hidden by mechanics availability.
   - Upstream readiness is inadmissible if execution readiness is bypassed before proposal/split readiness
@@ -109,12 +122,16 @@ specification:
   review_boundary_handoff:
   - SG-SPEC-0045 stops at SG-SPEC-0043 because that boundary owns review of proposal/split readiness before
     mechanics availability is consumed.
+  - SG-SPEC-0043 receives already-reviewable upstream meanings from this contract; it does not prove continuation
+    state, execution readiness, or readiness-region meaning by itself.
   - SG-SPEC-0045 does not restate downstream mechanics availability or concrete mechanics ownership.
   lineage_policy:
   - SG-SPEC-0045 remains the active readable replacement for SG-SPEC-0046, SG-SPEC-0047, and SG-SPEC-0048.
   - The superseded nodes remain historical lineage and must not be treated as active readiness roles.
   - Historical edge and segment slices stay historical because this node now owns the reviewable upstream
     readiness meanings without requiring separate topology-only slice contracts.
+  - Historical slices may be cited as lineage evidence, but they must not supply current review authority
+    for continuation state, execution readiness, readiness-region meaning, or the SG-SPEC-0043 handoff.
   topology_prose_policy:
   - Ordered upstream graph paths are represented by canonical metadata and derived graph views.
   - SG-SPEC-0045 prose should explain upstream readiness meaning and inadmissible shortcuts, not route
@@ -141,6 +158,10 @@ specification:
   - id: PSP-0045-4
     statement: SG-SPEC-0045 remains the active readable replacement for SG-SPEC-0046, SG-SPEC-0047, and
       SG-SPEC-0048, which remain historical lineage.
+  - id: PSP-0045-5
+    statement: SG-SPEC-0043 readiness consumption must not rely on ordered graph placement, superseded
+      edge or segment slices, or downstream mechanics availability as substitutes for reviewable upstream
+      meanings.
 gate_state: none
 proposed_status: null
 proposed_maturity: null
@@ -149,4 +170,4 @@ last_worktree_path: ''
 last_branch: ''
 last_gate_decision: approve
 last_gate_note: ''
-last_gate_at: '2026-05-04T22:19:35.441429+00:00'
+last_gate_at: '2026-05-04T22:23:29.124903+00:00'
