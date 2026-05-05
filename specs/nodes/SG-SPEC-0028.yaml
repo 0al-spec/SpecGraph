@@ -2,9 +2,9 @@ id: SG-SPEC-0028
 title: SpecGraph - Proposal/Split Mechanics Coordination
 kind: spec
 created_at: '2026-04-13T07:55:45Z'
-updated_at: '2026-04-30T04:58:14Z'
+updated_at: '2026-05-05T22:50:37Z'
 status: linked
-maturity: 0.89
+maturity: 1.0
 depends_on:
 - SG-SPEC-0006
 - SG-SPEC-0025
@@ -36,8 +36,9 @@ acceptance_evidence:
 - criterion: Keeps proposal-lane execution and split mechanics jointly reviewable as separate required
     capabilities without turning their graph placement into the main contract.
   evidence: specification.joint_reviewability_conditions requires separate review outcomes for proposal-lane
-    execution and split mechanics, while specification.topology_prose_policy says their graph placement
-    remains metadata.
+    execution and split mechanics, and specification.review_gate withholds admissibility for readiness
+    consumption unless both capabilities are review-present and separately admissible while specification.topology_prose_policy
+    says their graph placement remains metadata.
 - criterion: Preserves concrete capability boundaries between proposal-lane execution, split mechanics,
     split lifecycle anchoring, and parent-facing prerequisite semantics.
   evidence: specification.ownership_boundaries names each capability boundary and limits this node to
@@ -69,6 +70,12 @@ specification:
     - Retrospective direct-update boundary semantics.
     - Viewer layout, queue ranking formulas, proposal storage layout, and runtime orchestration.
     - Prose whose main purpose is to restate edge order, child placement, or route narration.
+  terminology:
+    review_present_capability: A named capability whose review surface exists and can receive a distinct
+      review outcome for this coordination decision.
+    review_blocked_capability: A named capability whose review surface is missing, ambiguous, or currently
+      blocked by an unresolved review finding, so the coordination decision cannot treat that capability
+      as admissible.
   coordination_surface:
   - Reflective execution may treat proposal/split mechanics as a coherent capability set only when proposal-lane
     execution and split mechanics remain separately reviewable.
@@ -87,6 +94,15 @@ specification:
     implying that proposal-lane execution failed.
   - A readiness conclusion must explain the capability-level coordination result without narrating child
     placement, edge shape, route order, queue ordering, or runtime scheduling.
+  review_gate:
+  - Proposal/split mechanics readiness is admissible only when proposal-lane execution and split mechanics
+    are both review-present as named capabilities.
+  - If either proposal-lane execution or split mechanics is absent, ambiguous, or review-blocked, the
+    coordination surface must report proposal/split mechanics readiness as not admissible rather than
+    inferring readiness from the other capability.
+  - The review gate records only capability-level admissibility for reflective execution; concrete payload
+    validity, queue state, lane storage, lifecycle transitions, and graph placement remain owned outside
+    this coordination surface.
   required_capabilities:
     proposal_lane_execution:
     - The proposal-lane execution capability provides tracked proposal identity and execution-lane behavior.
@@ -138,4 +154,4 @@ last_worktree_path: ''
 last_branch: ''
 last_gate_decision: approve
 last_gate_note: ''
-last_gate_at: '2026-04-27T21:14:36.668095+00:00'
+last_gate_at: '2026-05-05T20:59:28.750440+00:00'
