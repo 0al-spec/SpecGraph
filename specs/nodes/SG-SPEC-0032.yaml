@@ -2,7 +2,7 @@ id: SG-SPEC-0032
 title: SpecGraph - Proposal/Split Mechanics Subcluster
 kind: spec
 created_at: '2026-04-14T05:05:41Z'
-updated_at: '2026-04-29T22:36:53Z'
+updated_at: '2026-05-05T22:46:42Z'
 status: linked
 maturity: 0.69
 depends_on:
@@ -110,8 +110,9 @@ required_human_action: split spec scope before rerun
 proposed_status: null
 proposed_maturity: null
 last_outcome: split_required
-last_blocker: PyYAML is missing from the active python3 environment, so spec_yaml_format.py and spec_yaml_lint.py
-  could not run; Ruby YAML parse and acceptance/evidence count checks passed.
+last_blocker: Candidate refinement exceeded the atomicity gate with 6 candidate acceptance criteria >
+  5; the canonical spec remains at five acceptance criteria and needs split/decomposition before ordinary
+  rerun.
 last_run_id: 20260505T204840Z-SG-SPEC-0032-814cf633
 last_exit_code: 0
 last_changed_files:
@@ -178,8 +179,8 @@ last_refinement_acceptance:
   - atomicity gate still requires follow-up decomposition work
   errors: []
   warnings:
-  - 'specs/nodes/SG-SPEC-0032.yaml: Atomicity gate exceeded: 6 acceptance criteria > 5. Split independent
-    concerns into child specs.'
+  - 'Candidate SG-SPEC-0032 refinement exceeded the atomicity gate: 6 candidate acceptance criteria >
+    5. The canonical file remains at five acceptance criteria; split independent concerns into child specs.'
 last_reconciliation:
   worktree_spec_count: 57
   changed_spec_ids:
@@ -193,5 +194,5 @@ last_gate_decision: approve
 last_gate_note: topology-prose cleanup rewrote SG-SPEC-0032 as readiness-region prose
 last_gate_at: '2026-04-25T07:10:00+00:00'
 last_errors:
-- 'specs/nodes/SG-SPEC-0032.yaml: Atomicity gate exceeded: 6 acceptance criteria > 5. Split independent
-  concerns into child specs.'
+- 'Candidate SG-SPEC-0032 refinement exceeded the atomicity gate: 6 candidate acceptance criteria > 5.
+  The canonical file remains at five acceptance criteria; split independent concerns into child specs.'
