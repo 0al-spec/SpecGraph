@@ -105,27 +105,28 @@ specification:
   - This node keeps continuation selection separate from concrete proposal/split mechanics detail.
   - This node should be rewritten or merged rather than split again if the proposed child would only verbalize
     graph topology.
-gate_state: none
-required_human_action: '-'
+gate_state: split_required
+required_human_action: split spec scope before rerun
 proposed_status: null
 proposed_maturity: null
 last_outcome: split_required
-last_blocker: ''
-last_run_id: 20260414T192924Z-SG-SPEC-0032
+last_blocker: PyYAML is missing from the active python3 environment, so spec_yaml_format.py and spec_yaml_lint.py
+  could not run; Ruby YAML parse and acceptance/evidence count checks passed.
+last_run_id: 20260505T204840Z-SG-SPEC-0032-814cf633
 last_exit_code: 0
 last_changed_files:
 - specs/nodes/SG-SPEC-0032.yaml
-- specs/nodes/SG-SPEC-0043.yaml
-last_run_at: '2026-04-14T19:29:25.138520+00:00'
-last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0032-20260414T192850Z
-last_branch: codex/sg-spec-0032/20260414T192850Z
+last_run_at: '2026-05-05T20:50:38.878318+00:00'
+last_worktree_path: ''
+last_branch: ''
 last_validator_results:
   outputs: true
   allowed_paths: true
   reconciliation: true
-  atomicity: true
+  atomicity: false
   transition: true
   executor_environment: true
+  runtime_artifacts: true
   refinement_acceptance: true
 last_refinement_acceptance:
   decision: review_required
@@ -133,53 +134,64 @@ last_refinement_acceptance:
   checks:
     content_changed: true
     hard_validation: true
-    single_spec_scope: false
+    single_spec_scope: true
     constitutional_diff: false
     graph_refactor_diff: true
-    atomicity_clear: true
+    atomicity_clear: false
     within_mutation_budget: true
   diff_paths:
-  - acceptance[1]
-  - acceptance_evidence[1].criterion
-  - acceptance_evidence[1].evidence
-  - acceptance_evidence[2].evidence
-  - depends_on[0]
-  - inputs[3]
-  - specification.cluster_boundaries[0]
-  - specification.cluster_members.proposal_gateway[0]
-  - specification.cluster_members.proposal_gateway[1]
-  - specification.cluster_role[1]
-  - specification.cluster_topology[1]
-  - specification.cluster_topology[2]
-  - specification.cluster_topology[3]
-  - specification.objective
-  - specification.parent_contract[1]
-  - specification.parent_contract[2]
-  - specification.scope.in[1]
-  - specification.scope.in[3]
+  - acceptance[3]
+  - acceptance[4]
+  - acceptance[5]
+  - acceptance_evidence[3].criterion
+  - acceptance_evidence[3].evidence
+  - acceptance_evidence[4].criterion
+  - acceptance_evidence[4].evidence
+  - acceptance_evidence[5]
+  - acceptance_evidence[5].criterion
+  - acceptance_evidence[5].evidence
+  - maturity
+  - specification.readiness_verdict_semantics
+  - specification.readiness_verdict_semantics.satisfied
+  - specification.readiness_verdict_semantics.satisfied[0]
+  - specification.readiness_verdict_semantics.satisfied[1]
+  - specification.readiness_verdict_semantics.not_available
+  - specification.readiness_verdict_semantics.not_available[0]
+  - specification.readiness_verdict_semantics.not_available[1]
+  - specification.readiness_verdict_semantics.unresolved
+  - specification.readiness_verdict_semantics.unresolved[0]
+  - specification.readiness_verdict_semantics.unresolved[1]
+  - specification.reviewer_meaning
+  - specification.reviewer_meaning[0]
+  - specification.reviewer_meaning[1]
+  - specification.reviewer_meaning[2]
+  - specification.scope.in[4]
+  - specification.scope.in[5]
+  - status
   mutation_classes:
   - policy_text
   mutation_budget: []
   budget_exceeded_classes: []
   changed_spec_files:
   - specs/nodes/SG-SPEC-0032.yaml
-  - specs/nodes/SG-SPEC-0043.yaml
   review_reasons:
-  - run changed additional spec files beyond the selected source node
-  - run changed graph structure or spec contract paths
+  - atomicity gate still requires follow-up decomposition work
   errors: []
-  warnings: []
+  warnings:
+  - 'specs/nodes/SG-SPEC-0032.yaml: Atomicity gate exceeded: 6 acceptance criteria > 5. Split independent
+    concerns into child specs.'
 last_reconciliation:
-  worktree_spec_count: 43
+  worktree_spec_count: 57
   changed_spec_ids:
   - SG-SPEC-0032
-  - SG-SPEC-0043
   semantic_dependencies_resolved: true
   work_dependencies_ready: false
   cycles: []
-last_requested_child_materialization: true
-last_materialized_child_paths:
-- specs/nodes/SG-SPEC-0043.yaml
+last_requested_child_materialization: false
+last_materialized_child_paths: []
 last_gate_decision: approve
 last_gate_note: topology-prose cleanup rewrote SG-SPEC-0032 as readiness-region prose
 last_gate_at: '2026-04-25T07:10:00+00:00'
+last_errors:
+- 'specs/nodes/SG-SPEC-0032.yaml: Atomicity gate exceeded: 6 acceptance criteria > 5. Split independent
+  concerns into child specs.'
