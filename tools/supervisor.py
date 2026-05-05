@@ -3344,6 +3344,8 @@ REFINEMENT_ACCEPT_DECISION_APPROVE = "approve"
 REFINEMENT_ACCEPT_DECISION_REJECT = "reject"
 REFINEMENT_ACCEPT_DECISION_REVIEW_REQUIRED = "review_required"
 REFINEMENT_CLASS_LOCAL = "local_refinement"
+AUTO_RETRY_RECOVERABLE_VALIDATION_PATTERNS = ("must semantically ground",)
+AUTO_RETRY_RECOVERABLE_VALIDATION_LIMIT = 1
 
 
 def validation_findings_policy_reference() -> dict[str, Any]:
@@ -32758,6 +32760,93 @@ def _process_one_spec(
     return exit_code, outcome, completion_status, str(payload.get("gate_state") or "none")
 
 
+def recoverable_validation_retry_errors(node: SpecNode) -> list[str]:
+    """Return validation errors that are safe to repair with one fresh supervisor pass."""
+    gate_state = str(node.data.get("gate_state", "none")).strip() or "none"
+    if gate_state != "retry_pending":
+        return []
+
+    validator_results = node.data.get("last_validator_results", {})
+    if (
+        isinstance(validator_results, dict)
+        and validator_results.get("executor_environment") is False
+    ):
+        return []
+
+    raw_errors = node.data.get("last_errors", [])
+    errors = [str(error).strip() for error in raw_errors if str(error).strip()]
+    if not errors:
+        return []
+
+    recoverable_errors = [
+        error
+        for error in errors
+        if any(pattern in error for pattern in AUTO_RETRY_RECOVERABLE_VALIDATION_PATTERNS)
+    ]
+    if len(recoverable_errors) != len(errors):
+        return []
+    return recoverable_errors
+
+
+def normalize_process_one_spec_result(
+    process_result: object,
+) -> tuple[int, str, str, str]:
+    """Normalize legacy early-exit results into the supervisor's 4-field process contract."""
+    if not isinstance(process_result, tuple):
+        return int(process_result), "", COMPLETION_STATUS_FAILED, "none"
+    if len(process_result) == 4:
+        exit_code, outcome, completion_status, gate_state = process_result
+        return int(exit_code), str(outcome), str(completion_status), str(gate_state or "none")
+    if len(process_result) >= 2:
+        exit_code, outcome = process_result[:2]
+        normalized_outcome = str(outcome)
+        gate_state = normalized_outcome if normalized_outcome in BLOCKING_GATE_STATES else "none"
+        return int(exit_code), normalized_outcome, COMPLETION_STATUS_FAILED, gate_state
+    if len(process_result) == 1:
+        return int(process_result[0]), "", COMPLETION_STATUS_FAILED, "none"
+    return 1, "", COMPLETION_STATUS_FAILED, "none"
+
+
+def _process_one_spec_with_recoverable_retry(
+    process_kwargs: dict[str, Any],
+    *,
+    max_retries: int = AUTO_RETRY_RECOVERABLE_VALIDATION_LIMIT,
+) -> tuple[int, str, str, str] | int:
+    """Run one spec and immediately retry once for known recoverable validator misses."""
+    exit_code, outcome, completion_status, gate_state = normalize_process_one_spec_result(
+        _process_one_spec(**process_kwargs)
+    )
+    retry_count = 0
+    current_kwargs = dict(process_kwargs)
+    while exit_code != 0 and retry_count < max_retries:
+        node = current_kwargs["node"]
+        if not isinstance(node, SpecNode):
+            break
+        node.reload()
+        retry_errors = recoverable_validation_retry_errors(node)
+        if not retry_errors:
+            break
+
+        retry_count += 1
+        print(
+            f"Auto-retrying {node.id} after recoverable validation failure "
+            f"({retry_count}/{max_retries}): {retry_errors[0]}",
+            file=sys.stderr,
+        )
+        retry_specs = load_specs()
+        retry_node = next((spec for spec in retry_specs if spec.id == node.id), None)
+        if retry_node is None:
+            break
+        current_kwargs = dict(current_kwargs)
+        current_kwargs["node"] = retry_node
+        current_kwargs["specs"] = retry_specs
+        exit_code, outcome, completion_status, gate_state = normalize_process_one_spec_result(
+            _process_one_spec(**current_kwargs)
+        )
+
+    return exit_code, outcome, completion_status, gate_state
+
+
 def main(
     *,
     executor: Callable[[SpecNode, Path], subprocess.CompletedProcess[str]] | None = None,
@@ -35687,7 +35776,7 @@ def main(
             process_kwargs["operator_request_context"] = operator_request_context
         if callable_supports_keyword(_process_one_spec, "verbose"):
             process_kwargs["verbose"] = verbose
-        process_result = _process_one_spec(**process_kwargs)
+        process_result = _process_one_spec_with_recoverable_retry(process_kwargs)
         if isinstance(process_result, tuple):
             exit_code, _outcome, _completion_status, _gate_state = process_result
             return exit_code
@@ -35739,7 +35828,9 @@ def main(
             }
             if callable_supports_keyword(_process_one_spec, "verbose"):
                 process_kwargs["verbose"] = verbose
-            exit_code, outcome, completion_status, gate_state = _process_one_spec(**process_kwargs)
+            exit_code, outcome, completion_status, gate_state = (
+                _process_one_spec_with_recoverable_retry(process_kwargs)
+            )
 
             if completion_status == COMPLETION_STATUS_OK:
                 succeeded += 1
@@ -35821,7 +35912,9 @@ def main(
     }
     if callable_supports_keyword(_process_one_spec, "verbose"):
         process_kwargs["verbose"] = verbose
-    exit_code, _outcome, _completion_status, _gate_state = _process_one_spec(**process_kwargs)
+    exit_code, _outcome, _completion_status, _gate_state = _process_one_spec_with_recoverable_retry(
+        process_kwargs
+    )
     return exit_code
 
 
