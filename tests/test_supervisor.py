@@ -20780,10 +20780,9 @@ def test_main_split_proposal_rejects_seed_like_target(
     assert not (repo_fixture / "runs" / "proposal_queue.json").exists()
 
 
-def test_main_targeted_child_materialization_preflight_returns_exit_code(
+def test_targeted_child_materialization_extends_run_allowed_paths(
     supervisor_module: object,
     repo_fixture: Path,
-    capsys: pytest.CaptureFixture[str],
 ) -> None:
     node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0002.yaml"
     node_path.write_text(
@@ -20807,17 +20806,73 @@ def test_main_targeted_child_materialization_preflight_returns_exit_code(
         ),
         encoding="utf-8",
     )
+    node = next(spec for spec in supervisor_module.load_specs() if spec.id == "SG-SPEC-0002")
+    hint = {"id": "SG-SPEC-0099", "path": "specs/nodes/SG-SPEC-0099.yaml"}
 
-    exit_code = supervisor_module.main(
-        target_spec="SG-SPEC-0002",
+    assert (
+        supervisor_module.child_materialization_preflight_errors(
+            node=node,
+            specs=supervisor_module.load_specs(),
+            operator_target=True,
+            operator_note=(
+                "Create one new child spec for the delegated bootstrap relation vocabulary."
+            ),
+            run_authority=(supervisor_module.RUN_AUTHORITY_MATERIALIZE_ONE_CHILD,),
+            child_materialization_hint=hint,
+        )
+        == []
+    )
+    assert supervisor_module.effective_allowed_paths_for_run(
+        node,
+        child_materialization_hint=hint,
+    ) == [
+        "specs/nodes/SG-SPEC-0002.yaml",
+        "specs/nodes/SG-SPEC-0099.yaml",
+    ]
+    assert node.data["allowed_paths"] == ["specs/nodes/SG-SPEC-0002.yaml"]
+
+
+def test_targeted_child_materialization_still_requires_node_local_allowed_paths(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0002.yaml"
+    node_path.write_text(
+        json.dumps(
+            {
+                "id": "SG-SPEC-0002",
+                "title": "Vocabulary Parent",
+                "kind": "spec",
+                "status": "specified",
+                "maturity": 0.4,
+                "depends_on": [],
+                "relates_to": [],
+                "refines": ["SG-SPEC-0001"],
+                "inputs": ["specs/nodes/SG-SPEC-0001.yaml"],
+                "outputs": ["specs/nodes/SG-SPEC-0002.yaml"],
+                "allowed_paths": [],
+                "acceptance": ["Delegate one bounded child vocabulary slice."],
+                "acceptance_evidence": ["Existing evidence."],
+                "prompt": "Materialize one bounded child from this parent delegation boundary.",
+            }
+        ),
+        encoding="utf-8",
+    )
+    node = next(spec for spec in supervisor_module.load_specs() if spec.id == "SG-SPEC-0002")
+
+    errors = supervisor_module.child_materialization_preflight_errors(
+        node=node,
+        specs=supervisor_module.load_specs(),
+        operator_target=True,
         operator_note="Create one new child spec for the delegated bootstrap relation vocabulary.",
         run_authority=(supervisor_module.RUN_AUTHORITY_MATERIALIZE_ONE_CHILD,),
+        child_materialization_hint={"id": "SG-SPEC-0099", "path": "specs/nodes/SG-SPEC-0099.yaml"},
     )
 
-    assert exit_code == 1
-    assert "allowed_paths do not explicitly authorize the proposed child spec path" in (
-        capsys.readouterr().err
-    )
+    assert errors == [
+        "Child materialization was requested, but the selected node does not define "
+        "node-local allowed_paths for its own source spec."
+    ]
 
 
 def test_main_split_proposal_refreshes_existing_artifact_without_duplicate_queue_items(

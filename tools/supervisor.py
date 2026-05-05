@@ -6020,7 +6020,7 @@ def targeted_child_materialization_hint(
         hint = {"id": child_id, "path": child_path}
     child_id = str(hint.get("id", "")).strip()
     child_path = str(hint.get("path", "")).strip()
-    if not can_create_new_spec_files(node, child_path):
+    if not child_id or not child_path:
         return None
     return {
         "id": child_id,
@@ -6048,8 +6048,13 @@ def effective_allowed_paths_for_run(
     *,
     child_materialization_hint: dict[str, str] | None = None,
 ) -> list[str]:
-    _ = child_materialization_hint
-    return list(node.allowed_paths) or implicit_source_allowed_paths(node)
+    allowed_paths = list(node.allowed_paths) or implicit_source_allowed_paths(node)
+    if child_materialization_hint is None:
+        return allowed_paths
+    child_path = str(child_materialization_hint.get("path", "")).strip()
+    if child_path and child_path not in allowed_paths:
+        allowed_paths.append(child_path)
+    return allowed_paths
 
 
 def effective_outputs_for_run(
@@ -6092,10 +6097,12 @@ def child_materialization_preflight_errors(
     hint = child_materialization_hint or {"id": next_sequential_spec_id(specs)}
     child_id = str(hint.get("id", "")).strip()
     child_path = str(hint.get("path", "")).strip() or f"specs/nodes/{child_id}.yaml"
-    if not can_create_new_spec_files(node, child_path):
+    if not child_id or not child_path:
+        errors.append("Child materialization was requested, but no child spec path was reserved.")
+    elif not node.allowed_paths:
         errors.append(
-            "Child materialization was requested, but allowed_paths do not explicitly "
-            f"authorize the proposed child spec path: {child_path}"
+            "Child materialization was requested, but the selected node does not define "
+            "node-local allowed_paths for its own source spec."
         )
     return errors
 

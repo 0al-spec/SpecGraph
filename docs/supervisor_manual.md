@@ -1535,6 +1535,10 @@ python3 tools/supervisor.py \
 ```
 
 Authority matters. If the run asks for a new child but the authority does not grant it, child materialization is rejected.
+When `materialize_one_child` is granted, the supervisor reserves exactly one
+child spec id and adds that reserved child path to the run-local allowed paths.
+The parent spec's canonical `allowed_paths` remains node-local after sync-back;
+the child gets its own `allowed_paths` in the materialized child file.
 
 Current high-value authority:
 
