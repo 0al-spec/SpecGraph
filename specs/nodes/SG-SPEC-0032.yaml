@@ -2,11 +2,12 @@ id: SG-SPEC-0032
 title: SpecGraph - Proposal/Split Mechanics Subcluster
 kind: spec
 created_at: '2026-04-14T05:05:41Z'
-updated_at: '2026-05-05T22:46:42Z'
+updated_at: '2026-05-05T23:31:23Z'
 status: linked
-maturity: 0.69
+maturity: 0.89
 depends_on:
 - SG-SPEC-0043
+- SG-SPEC-0058
 refines:
 - SG-SPEC-0027
 inputs:
@@ -14,6 +15,7 @@ inputs:
 - specs/nodes/SG-SPEC-0029.yaml
 - tasks.md
 - specs/nodes/SG-SPEC-0043.yaml
+- specs/nodes/SG-SPEC-0058.yaml
 outputs:
 - specs/nodes/SG-SPEC-0032.yaml
 allowed_paths:
@@ -32,7 +34,8 @@ acceptance_evidence:
 - criterion: Defines proposal/split mechanics readiness as one coherent capability region inside reflective
     execution.
   evidence: specification.readiness_region and specification.execution_meaning define proposal/split readiness
-    as the runtime-facing capability that this node contributes.
+    as the runtime-facing capability that this node contributes, while specification.child_governance_map
+    delegates readiness verdict semantics and reviewer meaning to SG-SPEC-0058.
 - criterion: Explains how reflective execution can ask whether proposal/split mechanics are ready without
     reading split payload schemas or proposal-lane runtime details.
   evidence: specification.readiness_query describes the coarse readiness question, while specification.scope.out
@@ -63,6 +66,7 @@ specification:
     - Review boundary between execution readiness and concrete split lifecycle mechanics
     - Continuation-selection insulation from proposal/split mechanics detail
     - Topology-prose discipline for this branch
+    - Coordination of delegated readiness verdict semantics and reviewer meaning in SG-SPEC-0058
     out:
     - Field-level split artifact schemas owned by downstream mechanics contracts
     - Continuation-selection policy
@@ -72,6 +76,18 @@ specification:
     be considered available for reflective execution.
   - This node keeps that readiness concept readable as a capability region rather than as a chain of graph
     edges.
+  child_governance_map:
+  - child_spec: SG-SPEC-0058
+    concern: Proposal/split readiness verdict semantics and reviewer meaning
+    parent_summary:
+    - SG-SPEC-0032 keeps the coarse proposal/split readiness region exposed to reflective execution.
+    - SG-SPEC-0058 owns the detailed meanings of satisfied, not_available, and unresolved readiness verdicts,
+      plus the reviewer evidence expected for those verdicts.
+    detailed_governance_owned_by_child:
+    - readiness verdict semantics for the proposal/split readiness region
+    - reviewer meaning for satisfied, not_available, and unresolved outcomes
+    - evidence expectations that keep verdicts reviewable without split payload, queue, runtime, or topology
+      inspection
   execution_meaning:
   - Reflective execution can treat proposal/split readiness as satisfied only when the downstream mechanics
     boundary can answer the availability question without exposing split payload internals.
@@ -103,96 +119,16 @@ specification:
   parent_contract:
   - The reflective execution-readiness layer consumes this node as the proposal/split readiness region.
   - This node keeps continuation selection separate from concrete proposal/split mechanics detail.
+  - Readiness verdict semantics and reviewer meaning are delegated to SG-SPEC-0058 so this node can remain
+    the coarse readiness region.
   - This node should be rewritten or merged rather than split again if the proposed child would only verbalize
     graph topology.
-gate_state: split_required
-required_human_action: split spec scope before rerun
+gate_state: none
 proposed_status: null
 proposed_maturity: null
-last_outcome: split_required
-last_blocker: Candidate refinement exceeded the atomicity gate with 6 candidate acceptance criteria >
-  5; the canonical spec remains at five acceptance criteria and needs split/decomposition before ordinary
-  rerun.
-last_run_id: 20260505T204840Z-SG-SPEC-0032-814cf633
-last_exit_code: 0
-last_changed_files:
-- specs/nodes/SG-SPEC-0032.yaml
-last_run_at: '2026-05-05T20:50:38.878318+00:00'
+required_human_action: '-'
 last_worktree_path: ''
 last_branch: ''
-last_validator_results:
-  outputs: true
-  allowed_paths: true
-  reconciliation: true
-  atomicity: false
-  transition: true
-  executor_environment: true
-  runtime_artifacts: true
-  refinement_acceptance: true
-last_refinement_acceptance:
-  decision: review_required
-  change_class: graph_refactor
-  checks:
-    content_changed: true
-    hard_validation: true
-    single_spec_scope: true
-    constitutional_diff: false
-    graph_refactor_diff: true
-    atomicity_clear: false
-    within_mutation_budget: true
-  diff_paths:
-  - acceptance[3]
-  - acceptance[4]
-  - acceptance[5]
-  - acceptance_evidence[3].criterion
-  - acceptance_evidence[3].evidence
-  - acceptance_evidence[4].criterion
-  - acceptance_evidence[4].evidence
-  - acceptance_evidence[5]
-  - acceptance_evidence[5].criterion
-  - acceptance_evidence[5].evidence
-  - maturity
-  - specification.readiness_verdict_semantics
-  - specification.readiness_verdict_semantics.satisfied
-  - specification.readiness_verdict_semantics.satisfied[0]
-  - specification.readiness_verdict_semantics.satisfied[1]
-  - specification.readiness_verdict_semantics.not_available
-  - specification.readiness_verdict_semantics.not_available[0]
-  - specification.readiness_verdict_semantics.not_available[1]
-  - specification.readiness_verdict_semantics.unresolved
-  - specification.readiness_verdict_semantics.unresolved[0]
-  - specification.readiness_verdict_semantics.unresolved[1]
-  - specification.reviewer_meaning
-  - specification.reviewer_meaning[0]
-  - specification.reviewer_meaning[1]
-  - specification.reviewer_meaning[2]
-  - specification.scope.in[4]
-  - specification.scope.in[5]
-  - status
-  mutation_classes:
-  - policy_text
-  mutation_budget: []
-  budget_exceeded_classes: []
-  changed_spec_files:
-  - specs/nodes/SG-SPEC-0032.yaml
-  review_reasons:
-  - atomicity gate still requires follow-up decomposition work
-  errors: []
-  warnings:
-  - 'Candidate SG-SPEC-0032 refinement exceeded the atomicity gate: 6 candidate acceptance criteria >
-    5. The canonical file remains at five acceptance criteria; split independent concerns into child specs.'
-last_reconciliation:
-  worktree_spec_count: 57
-  changed_spec_ids:
-  - SG-SPEC-0032
-  semantic_dependencies_resolved: true
-  work_dependencies_ready: false
-  cycles: []
-last_requested_child_materialization: false
-last_materialized_child_paths: []
 last_gate_decision: approve
-last_gate_note: topology-prose cleanup rewrote SG-SPEC-0032 as readiness-region prose
-last_gate_at: '2026-04-25T07:10:00+00:00'
-last_errors:
-- 'Candidate SG-SPEC-0032 refinement exceeded the atomicity gate: 6 candidate acceptance criteria > 5.
-  The canonical file remains at five acceptance criteria; split independent concerns into child specs.'
+last_gate_note: ''
+last_gate_at: '2026-05-05T23:31:23.739244+00:00'
