@@ -2,9 +2,9 @@ id: SG-SPEC-0057
 title: SpecGraph - Authority Class Semantic Boundary
 kind: spec
 created_at: '2026-04-25T11:10:14Z'
-updated_at: '2026-04-25T20:11:07Z'
+updated_at: '2026-05-05T19:48:25Z'
 status: linked
-maturity: 0.92
+maturity: 1.0
 depends_on:
 - SG-SPEC-0019
 - SG-SPEC-0024
@@ -53,8 +53,8 @@ acceptance_evidence:
     specification.authority_class_contract.selection_rules chooses one class from the canonical act that
     materially produced the current expression, specification.authority_class_contract.preservation_boundary_rules
     distinguishes semantically preserved imports from materially restated or compressed expressions, defines
-    precedence for overlapping authored and inferred signals, and distinguishes distilled compression
-    from inferred new claims.
+    precedence for overlapping authored and inferred signals, distinguishes `source_bounded_compression`
+    from authored restatement, and distinguishes distilled compression from inferred new claims.
 - criterion: Defines how `authority_class` applies across revisions, supersession, and derived projections
     so class changes remain explicit canonical acts rather than inferred viewer state
   evidence: specification.authority_class_contract.lineage_rules requires authority-class changes to flow
@@ -97,8 +97,11 @@ specification:
       system as governed canonical content.
     inferred_subject: A governed subject whose current expression was synthesized from other available
       signals by machine reasoning and then explicitly admitted into canonical truth.
-    distilled_subject: A governed subject whose current expression is a governed compression or summary
+    distilled_subject: A governed subject whose current canonical act produced a governed source_bounded_compression
       of other governed or imported material.
+    source_bounded_compression: A compression, synthesis, or summary whose operative meaning remains bounded
+      to the source material being condensed and does not add a new claim, dependency, conclusion, or
+      normative scope beyond that source set.
     composite_expression: A governed subject whose current expression incorporates more than one upstream
       contribution mode or source pattern but is still admitted as one canonical subject carrying exactly
       one authority_class.
@@ -150,11 +153,12 @@ specification:
       - A machine-proposed dependency edge that is explicitly accepted into canonical graph state.
       - An inferred requirement wording that is promoted into a governed node with provenance.
     - class: distilled
-      origin_assertion: The current governed expression is a governed compression, synthesis, or summary
-        of other source material while remaining semantically narrower than the full source set.
+      origin_assertion: The current governed expression is a governed source_bounded_compression of other
+        source material while remaining semantically narrower than the full source set.
       non_assertions:
       - The distilled subject replaces its source lineage or deletes the underlying artifacts.
       - Distillation alone authorizes lifecycle progression or trust elevation.
+      - The compression was performed by a particular actor type or with a particular tool.
       subject_examples:
       - A role pack or glossary node condensed from multiple underlying specs.
       - A summary edge explanation promoted as governed canonical context.
@@ -171,16 +175,25 @@ specification:
       materially contributed the substantive new claim being admitted; classify it as authored only after
       a separate human-authored canonical act materially restates or replaces that claim.
     - Use authored when accountable human intent materially determines the current governed wording or
-      relation assertion, even if imports, summaries, or machine proposals informed the draft.
+      relation assertion outside a source_bounded_compression, even if imports, summaries, or machine
+      proposals informed the draft.
     - Use imported when the current governed expression is semantically preserved from an external source
       as the content being canonically admitted, even if tooling normalizes representation or wraps it
       in local metadata.
     - Use inferred when machine reasoning contributes the substantive new claim, relation assertion, or
       wording being canonically admitted rather than merely assisting a human-authored or externally preserved
       expression.
-    - Use distilled when the current governed expression is a governed compression or summary of source
-      material and remains semantically narrower than the source set; if the expression instead introduces
-      a new latent claim, dependency, or conclusion beyond compression, use inferred rather than distilled.
+    - Use distilled when the current canonical act produces a governed source_bounded_compression of source
+      material and remains semantically narrower than the source set, regardless of whether a human, tool,
+      or model performed that canonical compression act.
+    - A preserved external summary remains imported when the canonical act admits it unchanged under semantic_preservation;
+      source_bounded_compression selects distilled only when the canonical act performs the compression.
+    - A human-authored summary is distilled rather than authored when its canonical act is a source_bounded_compression;
+      it becomes authored only when the human act materially restates, adds, removes, or normatively reshapes
+      meaning beyond that compression boundary.
+    - If the expression introduces a new latent claim, dependency, or conclusion beyond source_bounded_compression,
+      use inferred rather than distilled when machine reasoning produced that new content, or authored
+      when accountable human intent produced that new content as a canonical restatement.
     preservation_boundary_rules:
     - Imported applies only when the current governed expression remains in semantic_preservation with
       a specific external source claim or relation assertion being canonically admitted.
@@ -269,6 +282,11 @@ specification:
     statement: A mixed-origin governed expression must still resolve to exactly one authority_class based
       on the canonical act that materially produced the current expression; source mixture, approval,
       or formatting normalization alone must not create multi-class canonical state.
+  - id: AUT-006
+    statement: A human or machine summary whose canonical act is a source_bounded_compression must be
+      classified as distilled, not authored or inferred, unless the canonical act adds, removes, concludes,
+      or normatively reshapes meaning beyond source_bounded_compression; an unchanged externally sourced
+      summary remains imported under semantic_preservation.
   examples:
   - name: Authored revision of an imported requirement
     description: An imported requirement is materially rewritten by a human reviewer into a new governed
@@ -292,10 +310,12 @@ specification:
       = authored` because the governed relation assertion was introduced by a human canonical act, not
       inherited from either imported endpoint.
   - name: Distilled summary versus inferred conclusion
-    description: A governed node that compresses three imported requirement paragraphs into one shorter
-      restatement remains `authority_class = distilled` if it only summarizes their existing meaning.
-      If a model instead derives a new dependency claim from those paragraphs that was not already present
-      as a compression, the admitted expression is `authority_class = inferred`.
+    description: A governed node whose current canonical act compresses three imported requirement paragraphs
+      into one shorter source_bounded_compression remains `authority_class = distilled` even when a human
+      writes the summary. If an external source already provides that concise summary and SpecGraph imports
+      it unchanged, the admitted expression remains `authority_class = imported`; if a model instead derives
+      a new dependency claim from those paragraphs that was not already present as source_bounded_compression,
+      the admitted expression is `authority_class = inferred`.
 gate_state: none
 proposed_status: null
 proposed_maturity: null
@@ -303,6 +323,6 @@ required_human_action: '-'
 last_worktree_path: ''
 last_branch: ''
 last_gate_decision: approve
-last_gate_note: 'Approve bounded imported-preservation refinement: semantic_preservation now separates
-  normalized imported content from authored, distilled, or inferred restatements and edge interpretations.'
-last_gate_at: '2026-04-25T20:11:07.873512+00:00'
+last_gate_note: 'Approve bounded authority-class refinement: source_bounded_compression clarifies distilled
+  summaries without changing graph topology or runtime behavior.'
+last_gate_at: '2026-05-04T22:13:29.284112+00:00'
