@@ -2,7 +2,7 @@ id: SG-SPEC-0030
 title: SpecGraph - Proposal/Split Prerequisite Contract
 kind: spec
 created_at: '2026-04-13T21:41:41Z'
-updated_at: '2026-04-30T04:58:14Z'
+updated_at: '2026-05-05T21:03:16Z'
 status: linked
 depends_on:
 - SG-SPEC-0005
@@ -34,12 +34,13 @@ acceptance:
 acceptance_evidence:
 - criterion: Defines the parent-facing prerequisite contract for consuming proposal/split mechanics coordination
     as readiness without inspecting concrete proposal-lane or split payload details first.
-  evidence: specification.prerequisite_contract and specification.consumer_guidance define the coordination
-    surface as capability-level readiness while leaving concrete mechanics inspection downstream.
+  evidence: specification.prerequisite_contract, specification.admissibility_check, and specification.consumer_guidance
+    define the coordination surface as capability-level readiness while leaving concrete mechanics inspection
+    downstream.
 - criterion: Defines semantic non-bypass conditions where readiness is invalid if proposal-lane execution,
     split mechanics, or direct-update separation becomes unreviewable or ambiguous.
-  evidence: specification.required_readiness_meanings and specification.inadmissible_bypass_conditions
-    define the required meanings and the conditions that make readiness inadmissible.
+  evidence: specification.required_readiness_meanings, specification.admissibility_check, and specification.inadmissible_bypass_conditions
+    define the required meanings, minimum consumer checks, and the conditions that make readiness inadmissible.
 - criterion: Preserves direct-update boundary semantics as a distinct concern that is not implied by proposal/split
     readiness.
   evidence: specification.boundary_separation states that direct-update authority is outside this prerequisite
@@ -77,11 +78,21 @@ specification:
     semantic_bypass: A shortcut that makes proposal/split readiness appear satisfied while proposal-lane
       execution, split mechanics, or direct-update separation is not reviewable.
     readiness_meaning: A required system meaning that must remain inspectable for readiness to be trusted.
+    admissibility_check: The minimum parent-facing test a consumer applies before accepting proposal/split
+      coordination as readiness.
   prerequisite_contract:
   - A parent may treat proposal/split coordination as readiness only when the required readiness meanings
     remain reviewable.
   - This contract answers whether proposal/split readiness is admissible as a capability-level readiness
     input; it does not define concrete proposal-lane execution or split payload behavior.
+  admissibility_check:
+  - Proposal/split readiness is admissible to a parent consumer only when the coordination surface names
+    proposal-lane execution and split mechanics as separate review-present capabilities.
+  - A parent consumer may accept readiness without inspecting concrete proposal-lane fields or split payload
+    fields only when missing, ambiguous, or review-blocked capability ownership would still be visible
+    as not-ready state.
+  - A parent consumer must treat readiness as inadmissible when the coordination surface cannot distinguish
+    capability-level proposal/split readiness from direct-update boundary semantics.
   required_readiness_meanings:
     proposal_lane_execution:
     - Proposal-lane execution semantics must remain reviewable as a distinct capability.
@@ -123,11 +134,14 @@ specification:
     authority, queue ranking, storage layout, or runtime orchestration.
   - Graph placement is represented by metadata edges; prose should describe admissibility and semantic
     bypass rather than restating provider routes.
-maturity: 0.58
+maturity: 0.78
 gate_state: none
 proposed_status: null
 proposed_maturity: null
 required_human_action: '-'
+last_worktree_path: ''
+last_branch: ''
 last_gate_decision: approve
-last_gate_note: ''
-last_gate_at: '2026-04-13T21:17:50.630495+00:00'
+last_gate_note: Approve bounded admissibility-check refinement; it clarifies parent-facing readiness consumption
+  without changing topology or downstream mechanics authority.
+last_gate_at: '2026-05-05T21:03:16.552687+00:00'
