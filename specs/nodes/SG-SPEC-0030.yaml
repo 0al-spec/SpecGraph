@@ -2,7 +2,7 @@ id: SG-SPEC-0030
 title: SpecGraph - Proposal/Split Prerequisite Contract
 kind: spec
 created_at: '2026-04-13T21:41:41Z'
-updated_at: '2026-05-05T21:03:16Z'
+updated_at: '2026-05-05T21:09:12Z'
 status: linked
 depends_on:
 - SG-SPEC-0005
@@ -43,8 +43,10 @@ acceptance_evidence:
     define the required meanings, minimum consumer checks, and the conditions that make readiness inadmissible.
 - criterion: Preserves direct-update boundary semantics as a distinct concern that is not implied by proposal/split
     readiness.
-  evidence: specification.boundary_separation states that direct-update authority is outside this prerequisite
-    contract, and consumers must not treat proposal/split readiness as a proxy for direct-update semantics.
+  evidence: specification.boundary_separation preserves direct-update boundary semantics as a distinct
+    concern by stating that retrospective direct-update boundary semantics remain independently consumed,
+    that proposal/split readiness does not imply direct-update admissibility or direct-update authority,
+    and that consumers must not treat proposal/split readiness as a proxy for direct-update semantics.
 - criterion: Remains implementation-agnostic about queue ranking formulas, proposal-lane execution timing,
     and runtime orchestration.
   evidence: specification.scope.out excludes queue ranking formulas, proposal-lane timing/orchestration
@@ -115,6 +117,10 @@ specification:
   - Consumer prose should explain required readiness meanings instead of narrating edge order.
   boundary_separation:
   - Retrospective direct-update boundary semantics remain independently consumed.
+  - Proposal/split readiness is admissible only for the proposal/split mechanics prerequisite question;
+    it does not imply direct-update admissibility or direct-update authority.
+  - Direct-update semantics remain separate because they govern when canonical graph updates may occur
+    without proposal/split mechanics standing in for that authority.
   - Consumers must not treat proposal/split readiness as a proxy for direct-update semantics.
   - Direct-update authority is out of scope for this prerequisite contract.
   topology_prose_policy:
@@ -134,7 +140,7 @@ specification:
     authority, queue ranking, storage layout, or runtime orchestration.
   - Graph placement is represented by metadata edges; prose should describe admissibility and semantic
     bypass rather than restating provider routes.
-maturity: 0.78
+maturity: 0.98
 gate_state: none
 proposed_status: null
 proposed_maturity: null
@@ -142,6 +148,6 @@ required_human_action: '-'
 last_worktree_path: ''
 last_branch: ''
 last_gate_decision: approve
-last_gate_note: Approve bounded admissibility-check refinement; it clarifies parent-facing readiness consumption
-  without changing topology or downstream mechanics authority.
-last_gate_at: '2026-05-05T21:03:16.552687+00:00'
+last_gate_note: Approve bounded grounding follow-up after auto-retry; it only strengthens boundary_separation
+  evidence and preserves direct-update separation.
+last_gate_at: '2026-05-05T21:09:12.318430+00:00'
