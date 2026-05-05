@@ -2,9 +2,9 @@ id: SG-SPEC-0043
 title: SpecGraph - Proposal/Split Gateway Boundary
 kind: spec
 created_at: '2026-04-14T19:40:20Z'
-updated_at: '2026-04-30T04:58:14Z'
+updated_at: '2026-05-04T22:02:06Z'
 status: linked
-maturity: 0.62
+maturity: 0.82
 depends_on:
 - SG-SPEC-0029
 - SG-SPEC-0044
@@ -20,8 +20,8 @@ outputs:
 allowed_paths:
 - specs/nodes/SG-SPEC-0043.yaml
 acceptance:
-- Defines the proposal/split readiness boundary that tells reflective execution when proposal/split mechanics
-  are available without exposing split payload details.
+- Defines the proposal/split readiness boundary and reviewable readiness decision that tell reflective
+  execution when proposal/split mechanics are available without exposing split payload details.
 - Preserves a single parent-facing readiness surface for proposal/split mechanics while keeping concrete
   split lifecycle ownership downstream.
 - Keeps readable no-bypass readiness-chain explanation separate instead of restating graph topology in
@@ -31,11 +31,11 @@ acceptance:
 - Keeps this node implementation-agnostic to queue ranking, continuation-selection policy, and runtime
   orchestration.
 acceptance_evidence:
-- criterion: Defines the proposal/split readiness boundary that tells reflective execution when proposal/split
-    mechanics are available without exposing split payload details.
-  evidence: specification.readiness_boundary and specification.review_boundary define the parent-facing
-    readiness contract, while specification.invariants.PSP-0043-1 explicitly excludes split payload and
-    lifecycle field semantics from the readiness decision.
+- criterion: Defines the proposal/split readiness boundary and reviewable readiness decision that tell
+    reflective execution when proposal/split mechanics are available without exposing split payload details.
+  evidence: specification.readiness_boundary, specification.readiness_decision, and specification.review_boundary
+    define the parent-facing readiness decision, while specification.invariants.PSP-0043-1 explicitly
+    excludes split payload and lifecycle field semantics from that decision.
 - criterion: Preserves a single parent-facing readiness surface for proposal/split mechanics while keeping
     concrete split lifecycle ownership downstream.
   evidence: specification.mechanics_boundary and specification.invariants.PSP-0043-2 keep concrete lifecycle
@@ -80,6 +80,13 @@ specification:
   - Reflective execution treats this node as the reviewable availability boundary for proposal/split mechanics.
   - The boundary answers whether proposal/split mechanics are available for use, not how every split payload
     field behaves.
+  readiness_decision:
+  - The readiness decision is satisfied only when the downstream mechanics availability contract is present
+    and reviewable as an availability decision.
+  - The readiness decision remains unresolved when availability cannot be determined without inspecting
+    split payload fields, lifecycle fields, queue internals, or proposal-lane runtime details.
+  - An unresolved readiness decision does not authorize reflective execution to bypass this boundary or
+    infer concrete mechanics behavior from graph placement.
   review_boundary:
   - Review at this node checks that proposal/split mechanics remain reachable as a coherent capability
     before concrete mechanics are inspected downstream.
@@ -132,4 +139,4 @@ last_worktree_path: ''
 last_branch: ''
 last_gate_decision: approve
 last_gate_note: ''
-last_gate_at: '2026-04-27T20:56:21+00:00'
+last_gate_at: '2026-05-04T22:02:06.596197+00:00'
