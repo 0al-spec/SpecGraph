@@ -434,7 +434,10 @@ license review, or otherwise constrained.
 - Add a policy for curated supervisor evidence packets.
 - Add a command that can distill one raw run into a stable evidence packet.
 - Keep raw `runs/*` ignored by default.
-- Let PR descriptions cite the packet path or run id.
+- Write reviewable packets to a stable curated location such as
+  `docs/evidence/supervisor-runs/<run_id>.json` until a future dedicated
+  evidence store exists.
+- Let PR descriptions cite the curated packet path and run id.
 
 ### Slice 2: Implementation Readiness Projection
 
