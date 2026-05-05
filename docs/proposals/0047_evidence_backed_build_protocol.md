@@ -128,6 +128,10 @@ Minimum fields should include:
 
 ```json
 {
+  "artifact_kind": "supervisor_evidence_packet",
+  "schema_version": 1,
+  "canonical_mutations_allowed": false,
+  "tracked_artifacts_written": false,
   "evidence_kind": "supervisor_run_packet",
   "run_id": "20260505T210742Z-SG-SPEC-0030-8616d24c",
   "spec_id": "SG-SPEC-0030",
@@ -153,14 +157,20 @@ Minimum fields should include:
     "review_reason": "bounded local refinement"
   },
   "raw_artifact_reference": {
-    "storage": "local_or_ci_artifact",
-    "run_path": "runs/20260505T210742Z-SG-SPEC-0030-8616d24c.json"
+    "availability": "retained_ci_artifact",
+    "run_path": "runs/20260505T210742Z-SG-SPEC-0030-8616d24c.json",
+    "content_sha256": "sha256:example",
+    "artifact_uri": "gh-artifact://0al-spec/SpecGraph/actions/runs/example",
+    "retention_expires_at": "2026-06-05T00:00:00Z"
   }
 }
 ```
 
 The packet is stable enough for review. The raw run remains available for deep
-debugging when the local or CI artifact is preserved.
+debugging only when a durable artifact URI and content digest are recorded. If a
+raw run is not retained, the packet must say so explicitly with
+`availability: "summary_only"` and must not imply that deep raw-run recovery is
+possible after local workspace or CI retention expiry.
 
 ## Build Protocol
 
@@ -286,6 +296,15 @@ frontier:
 
 ```json
 {
+  "artifact_kind": "implementation_frontier",
+  "schema_version": 1,
+  "canonical_mutations_allowed": false,
+  "tracked_artifacts_written": false,
+  "generated_at": "2026-05-06T00:00:00Z",
+  "source_snapshot": {
+    "graph_ref": "main",
+    "graph_digest": "sha256:example"
+  },
   "frontier": [
     {
       "spec_id": "SG-SPEC-0123",
@@ -383,7 +402,8 @@ packets and future contract packs should preserve source provenance:
 {
   "source_type": "open_source_repository",
   "license": "MIT",
-  "copied_code": false,
+  "copied_code_used": false,
+  "copied_code_policy": "not_used_without_explicit_license_review",
   "clean_room_required": false,
   "allowed_use": ["public_api_shape", "behavioral_specification"]
 }
@@ -395,13 +415,17 @@ For proprietary or unclear sources, the default should be conservative:
 {
   "source_type": "proprietary_observation",
   "license": "unknown",
-  "copied_code": "forbidden",
+  "copied_code_used": false,
+  "copied_code_policy": "forbidden",
   "clean_room_required": true,
   "allowed_use": ["behavioral_compatibility_notes"]
 }
 ```
 
 This keeps reverse specification from becoming hidden implementation copying.
+`copied_code_used` is always a boolean fact. `copied_code_policy` is the
+enum-like policy field that explains whether copying is forbidden, deferred to
+license review, or otherwise constrained.
 
 ## Proposed Runtime Slices
 
@@ -459,4 +483,3 @@ This keeps reverse specification from becoming hidden implementation copying.
 - The proposal defines parent composition contracts.
 - The proposal includes risk-based evidence ceremony.
 - The proposal preserves external anchors and source/license provenance.
-

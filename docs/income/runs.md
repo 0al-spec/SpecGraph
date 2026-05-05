@@ -2,6 +2,13 @@
 
 Ниже опираюсь на твоё описание и прошлый контекст; часть ранее загруженных PDF сейчас уже недоступна в окружении, поэтому я не перечитываю их заново.
 
+Repository curation note: this file is preserved as incoming expert review with
+known source limitations. The canonical proposal derived from it must rely only
+on claims that are explicit in this file or independently present in the
+repository. Any future PDF-backed claim needs its own source reference,
+checksum, or separate evidence packet before it can be treated as auditable
+SpecGraph evidence.
+
 reasoning_effort: высокий
 
 TL;DR
