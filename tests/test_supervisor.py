@@ -21526,6 +21526,142 @@ def test_main_rejects_noop_successful_refinement_run(
     assert any("No canonical spec change detected" in err for err in updated["last_errors"])
 
 
+def test_main_auto_retries_recoverable_semantic_grounding_failure(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    acceptance = [
+        "Defines continuation state readiness",
+        "Defines execution readiness",
+        "Defines readiness region",
+        "Keeps historical slices inactive",
+        "Requires semantic grounding for review evidence",
+    ]
+    node_data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    node_data["acceptance"] = acceptance
+    node_data["acceptance_evidence"] = grounded_acceptance_evidence(acceptance)
+    node_path.write_text(json.dumps(node_data), encoding="utf-8")
+
+    monkeypatch.setattr(
+        supervisor_module,
+        "create_isolated_worktree",
+        lambda _node_id: (make_fake_worktree(repo_fixture), "codex/sg-spec-0001/test"),
+    )
+    changed_snapshots = [
+        [],
+        ["specs/nodes/SG-SPEC-0001.yaml"],
+        [],
+        ["specs/nodes/SG-SPEC-0001.yaml"],
+    ]
+    monkeypatch.setattr(
+        supervisor_module,
+        "git_changed_files",
+        lambda _cwd=None: changed_snapshots.pop(0),
+    )
+
+    executor_calls = 0
+
+    def fake_executor(_node: object, worktree_path: Path) -> subprocess.CompletedProcess[str]:
+        nonlocal executor_calls
+        executor_calls += 1
+        worktree_node = worktree_path / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+        data = supervisor_module.get_yaml_module().safe_load(
+            worktree_node.read_text(encoding="utf-8")
+        )
+        data["acceptance_evidence"] = grounded_acceptance_evidence(acceptance)
+        if executor_calls == 1:
+            data["acceptance_evidence"][4] = "Unrelated route metadata without matching terms"
+        else:
+            data["specification"] = {
+                "review_evidence": ["Semantic grounding for review evidence remains explicit."]
+            }
+        worktree_node.write_text(json.dumps(data), encoding="utf-8")
+        return subprocess.CompletedProcess(
+            args=["codex"],
+            returncode=0,
+            stdout="RUN_OUTCOME: done\nBLOCKER: none\n",
+            stderr="",
+        )
+
+    exit_code = supervisor_module.main(executor=fake_executor)
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert executor_calls == 2
+    assert "Auto-retrying SG-SPEC-0001 after recoverable validation failure" in captured.err
+
+    updated = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    assert updated["gate_state"] == "review_pending"
+    assert updated["required_human_action"] == "approve or retry refinement"
+    assert updated["last_refinement_acceptance"]["decision"] == "approve"
+    assert "last_errors" not in updated
+
+    run_logs = sorted((repo_fixture / "runs").glob("*-SG-SPEC-*.json"))
+    assert len(run_logs) == 2
+    payloads = [json.loads(path.read_text(encoding="utf-8")) for path in run_logs]
+    failed_payload = next(
+        payload
+        for payload in payloads
+        if payload["completion_status"] == supervisor_module.COMPLETION_STATUS_FAILED
+    )
+    ok_payload = next(
+        payload
+        for payload in payloads
+        if payload["completion_status"] == supervisor_module.COMPLETION_STATUS_OK
+    )
+    assert any("must semantically ground" in err for err in failed_payload["validation_errors"])
+    assert ok_payload["gate_state"] == "review_pending"
+
+
+def test_recoverable_validation_retry_requires_all_errors_recoverable(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    node = supervisor_module.load_specs()[0]
+    node.data["gate_state"] = "retry_pending"
+    node.data["last_validator_results"] = {"executor_environment": True}
+    node.data["last_errors"] = [
+        (
+            "specs/nodes/SG-SPEC-0001.yaml: acceptance_evidence[1] must semantically "
+            "ground acceptance[1] using criterion terms"
+        ),
+        "specs/nodes/SG-SPEC-0001.yaml: Atomicity gate exceeded: 6 acceptance criteria > 5",
+    ]
+
+    assert supervisor_module.recoverable_validation_retry_errors(node) == []
+
+
+def test_process_one_spec_retry_wrapper_normalizes_legacy_early_exit_tuple(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    node = supervisor_module.load_specs()[0]
+    calls = 0
+
+    def fake_process_one_spec(**_kwargs: object) -> tuple[int, str]:
+        nonlocal calls
+        calls += 1
+        return 1, "blocked"
+
+    monkeypatch.setattr(supervisor_module, "_process_one_spec", fake_process_one_spec)
+
+    result = supervisor_module._process_one_spec_with_recoverable_retry(
+        {
+            "node": node,
+            "specs": [node],
+            "executor": supervisor_module.run_codex,
+            "auto_approve": False,
+        }
+    )
+
+    assert result == (1, "blocked", supervisor_module.COMPLETION_STATUS_FAILED, "blocked")
+    assert calls == 1
+
+
 def test_main_auto_approve_syncs_new_child_spec_from_parent_run(
     supervisor_module: object,
     repo_fixture: Path,
