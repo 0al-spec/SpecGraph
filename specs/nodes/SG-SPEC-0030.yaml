@@ -2,7 +2,7 @@ id: SG-SPEC-0030
 title: SpecGraph - Proposal/Split Prerequisite Contract
 kind: spec
 created_at: '2026-04-13T21:41:41Z'
-updated_at: '2026-05-05T21:09:12Z'
+updated_at: '2026-05-05T23:20:41Z'
 status: linked
 depends_on:
 - SG-SPEC-0005
@@ -34,9 +34,10 @@ acceptance:
 acceptance_evidence:
 - criterion: Defines the parent-facing prerequisite contract for consuming proposal/split mechanics coordination
     as readiness without inspecting concrete proposal-lane or split payload details first.
-  evidence: specification.prerequisite_contract, specification.admissibility_check, and specification.consumer_guidance
-    define the coordination surface as capability-level readiness while leaving concrete mechanics inspection
-    downstream.
+  evidence: specification.prerequisite_contract, specification.admissible_consumption, specification.admissibility_check,
+    and specification.consumer_guidance define the coordination surface as capability-level readiness
+    that a parent consumer may accept without first inspecting concrete proposal-lane or split payload
+    fields, while leaving concrete mechanics inspection downstream.
 - criterion: Defines semantic non-bypass conditions where readiness is invalid if proposal-lane execution,
     split mechanics, or direct-update separation becomes unreviewable or ambiguous.
   evidence: specification.required_readiness_meanings, specification.admissibility_check, and specification.inadmissible_bypass_conditions
@@ -87,6 +88,13 @@ specification:
     remain reviewable.
   - This contract answers whether proposal/split readiness is admissible as a capability-level readiness
     input; it does not define concrete proposal-lane execution or split payload behavior.
+  admissible_consumption:
+  - A parent consumer may consume proposal/split readiness only as a prerequisite answer that the mechanics
+    region is review-present enough for downstream proposal-lane and split-mechanics inspection to proceed.
+  - Admissible readiness does not assert that a concrete proposal should execute, that a split payload
+    is valid, or that canonical graph mutation is authorized.
+  - When a consumer needs direct-update authority, it must consume the separate direct-update boundary
+    semantics instead of extending this prerequisite readiness conclusion.
   admissibility_check:
   - Proposal/split readiness is admissible to a parent consumer only when the coordination surface names
     proposal-lane execution and split mechanics as separate review-present capabilities.
@@ -140,7 +148,7 @@ specification:
     authority, queue ranking, storage layout, or runtime orchestration.
   - Graph placement is represented by metadata edges; prose should describe admissibility and semantic
     bypass rather than restating provider routes.
-maturity: 0.98
+maturity: 1.0
 gate_state: none
 proposed_status: null
 proposed_maturity: null
@@ -148,6 +156,5 @@ required_human_action: '-'
 last_worktree_path: ''
 last_branch: ''
 last_gate_decision: approve
-last_gate_note: Approve bounded grounding follow-up after auto-retry; it only strengthens boundary_separation
-  evidence and preserves direct-update separation.
-last_gate_at: '2026-05-05T21:09:12.318430+00:00'
+last_gate_note: ''
+last_gate_at: '2026-05-05T23:13:57.831363+00:00'
