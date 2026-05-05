@@ -452,6 +452,10 @@ Key derived artifacts:
   `current_scene`, one `recommended_next_move`, alternatives, blocked moves, and
   compact source facts for a viewer "what should I do next?" panel. It is
   derived-only and cannot mutate canonical specs.
+- `tools/graph_diagnostics.py`: read-only operator diagnostic that summarizes
+  the current `runs/*.json` surfaces without relying on ad hoc `jq` assumptions.
+  Use `make graph-diagnostics` after `make viewer-surfaces` to print the compact
+  diagnosis.
 - `tools/spec_trace_registry.json`: explicit strong trace contracts used to
   derive conservative `implementation_state` overlays such as `planned`,
   `implemented`, `verified`, `drifted`, and `blocked`
