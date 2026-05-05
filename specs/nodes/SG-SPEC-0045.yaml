@@ -2,9 +2,9 @@ id: SG-SPEC-0045
 title: SpecGraph - Proposal/Split Gateway Entry Contract
 kind: spec
 created_at: '2026-04-14T20:59:56Z'
-updated_at: '2026-05-05T19:58:36Z'
+updated_at: '2026-05-05T20:56:11Z'
 status: linked
-maturity: 0.8
+maturity: 1.0
 presence:
   state: active
   lineage_basis: current_expression
@@ -40,8 +40,8 @@ acceptance:
 acceptance_evidence:
 - criterion: 'Defines the upstream readiness contribution to proposal/split admissibility: continuation
     and execution readiness must remain reviewable before proposal/split readiness is consumed.'
-  evidence: specification.upstream_readiness_contribution, specification.required_upstream_meanings, and
-    specification.consumption_preconditions define continuation state, execution readiness, and readiness-region
+  evidence: specification.upstream_readiness_contribution, specification.required_upstream_meanings, specification.reviewable_entry_check,
+    and specification.consumption_preconditions define continuation state, execution readiness, and readiness-region
     meaning as required upstream inputs before SG-SPEC-0043 readiness is consumed.
 - criterion: Explains which upstream shortcuts make readiness inadmissible without reciting the upstream
     graph chain as the main prose.
@@ -113,6 +113,14 @@ specification:
     placement, superseded edge or segment slices, or downstream mechanics availability.
   - SG-SPEC-0045 provides the entry contract for those upstream meanings; SG-SPEC-0043 may consume that
     entry only after they are reviewable as meanings rather than route facts.
+  reviewable_entry_check:
+  - The entry check passes when reviewer evidence can identify the continuation decision, the execution-readiness
+    result consumed by that decision, and the proposal/split readiness-region meaning before SG-SPEC-0043
+    evaluates boundary availability.
+  - The entry check fails when any required upstream meaning must be reconstructed from topology, inferred
+    from the historical SG-SPEC-0046/0047/0048 slice attempt, or borrowed from downstream mechanics availability.
+  - A passing entry check authorizes only SG-SPEC-0043 boundary review; it does not authorize concrete
+    proposal/split mechanics consumption or SG-SPEC-0029 availability.
   inadmissible_upstream_shortcuts:
   - Upstream readiness is inadmissible if continuation state is skipped or hidden by mechanics availability.
   - Upstream readiness is inadmissible if execution readiness is bypassed before proposal/split readiness
@@ -162,6 +170,9 @@ specification:
     statement: SG-SPEC-0043 readiness consumption must not rely on ordered graph placement, superseded
       edge or segment slices, or downstream mechanics availability as substitutes for reviewable upstream
       meanings.
+  - id: PSP-0045-6
+    statement: A successful SG-SPEC-0045 entry check authorizes only SG-SPEC-0043 boundary review, not
+      downstream mechanics availability or concrete proposal/split mechanics consumption.
 gate_state: none
 proposed_status: null
 proposed_maturity: null
@@ -170,4 +181,4 @@ last_worktree_path: ''
 last_branch: ''
 last_gate_decision: approve
 last_gate_note: ''
-last_gate_at: '2026-05-04T22:23:29.124903+00:00'
+last_gate_at: '2026-05-05T20:56:11.098760+00:00'
