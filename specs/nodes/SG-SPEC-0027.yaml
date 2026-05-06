@@ -127,25 +127,6 @@ specification:
     - A satisfied verdict means both mechanics families are jointly reviewable for the same reflective
       execution context; blocked and indeterminate verdicts suppress direct continuation without requiring
       continuation selection to resolve the underlying mechanics.
-  continuation_readiness_signal:
-    verdict:
-    - satisfied
-    - blocked
-    - indeterminate
-    bounded_reason_category:
-    - direct_update_boundary
-    - proposal_split_region
-    - comparison_leak
-    - joint_review_gap
-    semantics:
-    - The verdict and bounded reason category are the weakest integration signal exposed to continuation
-      selection.
-    - The bounded reason category may point to the mechanics family or comparison gap that prevents readiness,
-      but it must not expose direct-update fields, split payload structure, proposal-lane state, queue
-      detail, or child membership as decision inputs.
-    - A satisfied verdict means both mechanics families are jointly reviewable for the same reflective
-      execution context; blocked and indeterminate verdicts suppress direct continuation without requiring
-      continuation selection to resolve the underlying mechanics.
   topology_prose_policy:
   - Direct child membership is represented by canonical graph metadata.
   - This node's prose should explain the composed execution-readiness role rather than restating that
