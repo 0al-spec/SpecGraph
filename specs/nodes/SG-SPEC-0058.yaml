@@ -2,16 +2,18 @@ id: SG-SPEC-0058
 title: SpecGraph - Proposal/Split Readiness Verdict Semantics
 kind: spec
 created_at: '2026-05-05T23:31:23Z'
-updated_at: '2026-05-06T20:43:17Z'
+updated_at: '2026-05-06T20:53:31Z'
 status: linked
-maturity: 0.8
+maturity: 1.0
 depends_on:
 - SG-SPEC-0043
+- SG-SPEC-0060
 refines:
 - SG-SPEC-0032
 inputs:
 - specs/nodes/SG-SPEC-0032.yaml
 - specs/nodes/SG-SPEC-0043.yaml
+- specs/nodes/SG-SPEC-0060.yaml
 outputs:
 - specs/nodes/SG-SPEC-0058.yaml
 allowed_paths:
@@ -22,7 +24,7 @@ acceptance:
 - Defines the satisfied, not_available, and unresolved verdict meanings for proposal/split readiness without
   exposing split payload schemas, queue internals, proposal-lane runtime details, or graph topology narration.
 - Defines the reviewer evidence expected for each readiness verdict so review can confirm availability
-  meaning without resolving concrete mechanics fields.
+  meaning without resolving concrete mechanics fields or restating discrimination checkpoints.
 - Defines verdict assignment precedence so incomplete evidence remains unresolved rather than being collapsed
   into not_available, while determinate downstream negative availability remains not_available.
 - Preserves SG-SPEC-0032 as the coarse readiness region and SG-SPEC-0043 as the readiness boundary without
@@ -40,10 +42,11 @@ acceptance_evidence:
     and specification.scope.out excludes split payload schemas, queue internals, proposal-lane runtime
     details, and graph topology narration from those verdicts.
 - criterion: Defines the reviewer evidence expected for each readiness verdict so review can confirm availability
-    meaning without resolving concrete mechanics fields.
+    meaning without resolving concrete mechanics fields or restating discrimination checkpoints.
   evidence: specification.reviewer_meaning and specification.verdict_evidence_requirements define how
     reviewers confirm satisfied, not_available, and unresolved readiness verdict meaning without requiring
-    concrete mechanics field resolution.
+    concrete mechanics field resolution, while specification.child_boundary_contract delegates discrimination
+    checkpoints to SG-SPEC-0060.
 - criterion: Defines verdict assignment precedence so incomplete evidence remains unresolved rather than
     being collapsed into not_available, while determinate downstream negative availability remains not_available.
   evidence: specification.verdict_assignment_precedence separates satisfied, not_available, and unresolved
@@ -69,6 +72,8 @@ specification:
     - Boundary alignment with the SG-SPEC-0043 readiness decision surface.
     out:
     - Concrete split payload schemas and lifecycle field semantics.
+    - Reviewer discrimination checkpoint procedure for deciding whether evidence supports not_available
+      or remains unresolved.
     - Reviewer action transitions, reviewer disposition requirements, or remediation routing after readiness
       verdict assignment.
     - Proposal-lane runtime details and queue internals.
@@ -140,6 +145,13 @@ specification:
     downstream mechanics ownership.
   - Reviewer action after verdict assignment remains outside SG-SPEC-0058; this node stops at verdict
     meaning and verdict evidence.
+  child_boundary_contract:
+  - SG-SPEC-0060 owns the reviewer discrimination checkpoints that distinguish a determinate not_available
+    verdict from an unresolved verdict.
+  - SG-SPEC-0058 retains only the verdict meanings, assignment precedence, and verdict evidence categories
+    consumed by those checkpoints.
+  - SG-SPEC-0058 must not restate SG-SPEC-0060 checkpoint procedure or convert checkpoint ownership into
+    graph topology prose.
   parent_region_contract:
   - SG-SPEC-0032 remains the coarse proposal/split readiness region exposed to reflective execution.
   - SG-SPEC-0058 supplies the verdict semantics and reviewer meaning needed to keep that region reviewable
@@ -153,85 +165,12 @@ specification:
       invitation to inspect concrete mechanics fields inside this node.
     PSP-0058-3: An unresolved verdict identifies a leaky or missing readiness signal and must not be converted
       into availability by graph placement or topology reconstruction.
-gate_state: split_required
+gate_state: none
 proposed_status: null
 proposed_maturity: null
-required_human_action: split spec scope before rerun
+required_human_action: '-'
 last_worktree_path: ''
 last_branch: ''
 last_gate_decision: approve
-last_gate_note: Approve bounded verdict-semantics cleanup after SG-SPEC-0059 child materialization.
-last_gate_at: '2026-05-06T20:43:17.900905+00:00'
-last_outcome: split_required
-last_blocker: spec exceeds atomicity quality gate
-last_run_id: 20260506T204500Z-SG-SPEC-0058-39d55fc9
-last_exit_code: 0
-last_changed_files:
-- specs/nodes/SG-SPEC-0058.yaml
-last_run_at: '2026-05-06T20:47:10.900381+00:00'
-last_validator_results:
-  outputs: true
-  allowed_paths: true
-  reconciliation: true
-  atomicity: false
-  transition: true
-  executor_environment: true
-  runtime_artifacts: true
-  refinement_acceptance: true
-last_refinement_acceptance:
-  decision: review_required
-  change_class: graph_refactor
-  checks:
-    content_changed: true
-    hard_validation: true
-    single_spec_scope: true
-    constitutional_diff: false
-    graph_refactor_diff: true
-    atomicity_clear: false
-    within_mutation_budget: true
-  diff_paths:
-  - acceptance[4]
-  - acceptance[5]
-  - acceptance_evidence[4].criterion
-  - acceptance_evidence[4].evidence
-  - acceptance_evidence[5]
-  - acceptance_evidence[5].criterion
-  - acceptance_evidence[5].evidence
-  - specification.verdict_discrimination_checks
-  - specification.verdict_discrimination_checks.not_available
-  - specification.verdict_discrimination_checks.not_available[0]
-  - specification.verdict_discrimination_checks.not_available[1]
-  - specification.verdict_discrimination_checks.unresolved
-  - specification.verdict_discrimination_checks.unresolved[0]
-  - specification.verdict_discrimination_checks.unresolved[1]
-  - specification.verdict_discrimination_checks.reviewer_checkpoints
-  - specification.verdict_discrimination_checks.reviewer_checkpoints[0]
-  - specification.verdict_discrimination_checks.reviewer_checkpoints[0].reviewable_negative_source
-  - specification.verdict_discrimination_checks.reviewer_checkpoints[1]
-  - specification.verdict_discrimination_checks.reviewer_checkpoints[1].missing_or_ambiguous_evidence
-  - specification.verdict_discrimination_checks.reviewer_checkpoints[2]
-  - specification.verdict_discrimination_checks.reviewer_checkpoints[2].mechanics_leak
-  mutation_classes:
-  - policy_text
-  mutation_budget: []
-  budget_exceeded_classes: []
-  changed_spec_files:
-  - specs/nodes/SG-SPEC-0058.yaml
-  review_reasons:
-  - atomicity gate still requires follow-up decomposition work
-  errors: []
-  warnings:
-  - 'specs/nodes/SG-SPEC-0058.yaml: Atomicity gate exceeded: 6 acceptance criteria > 5. Split independent
-    concerns into child specs.'
-last_reconciliation:
-  worktree_spec_count: 59
-  changed_spec_ids:
-  - SG-SPEC-0058
-  semantic_dependencies_resolved: true
-  work_dependencies_ready: false
-  cycles: []
-last_requested_child_materialization: false
-last_materialized_child_paths: []
-last_errors:
-- 'specs/nodes/SG-SPEC-0058.yaml: Atomicity gate exceeded: 6 acceptance criteria > 5. Split independent
-  concerns into child specs.'
+last_gate_note: Approve child materialization for verdict discrimination checkpoints.
+last_gate_at: '2026-05-06T20:53:30.994488+00:00'
