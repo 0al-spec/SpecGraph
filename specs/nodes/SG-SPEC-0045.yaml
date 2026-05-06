@@ -2,7 +2,7 @@ id: SG-SPEC-0045
 title: SpecGraph - Proposal/Split Gateway Entry Contract
 kind: spec
 created_at: '2026-04-14T20:59:56Z'
-updated_at: '2026-05-06T21:01:01Z'
+updated_at: '2026-05-07T00:00:00Z'
 status: linked
 maturity: 1.0
 presence:
@@ -42,7 +42,7 @@ acceptance_evidence:
     and execution readiness must remain reviewable before proposal/split readiness is consumed.'
   evidence: specification.upstream_readiness_contribution, specification.required_upstream_meanings, specification.meaning_authority,
     specification.reviewable_entry_check, and specification.consumption_preconditions define continuation
-    state, execution readiness, and readiness-region meaning as required upstream inputs before SG-SPEC-0043
+    state, execution readiness, and readiness-region meaning as reviewable upstream meanings before boundary
     readiness is consumed.
 - criterion: Explains which upstream shortcuts make readiness inadmissible without reciting the upstream
     graph chain as the main prose.
@@ -62,13 +62,15 @@ acceptance_evidence:
   evidence: specification.topology_prose_policy and specification.boundaries apply the topology-prose
     rule by forbidding SG-SPEC-0045 from being re-split into upstream edge, segment, or handoff slices
     unless a new runtime or review-observable invariant appears.
-prompt: Define the upstream readiness contribution beneath SG-SPEC-0044. The spec should explain which
-  upstream meanings must stay reviewable before proposal/split readiness is consumed, why the contract
-  stops at SG-SPEC-0043, and why historical edge slices stay historical.
+prompt: 'Define the upstream readiness entry contract for proposal/split readiness. The spec should start
+  from the upstream meanings that must stay reviewable before boundary readiness is consumed: continuation
+  state, execution readiness, and readiness-region meaning. It should explain inadmissible shortcuts by
+  the meanings they skip, keep topology in metadata except where naming the review boundary or historical
+  lineage is necessary, and explain why historical edge slices stay historical.'
 specification:
-  objective: Define the upstream readiness contribution to proposal/split admissibility so continuation,
-    execution readiness, and proposal/split readiness meaning remain reviewable before the SG-SPEC-0043
-    review boundary is consumed.
+  objective: Define the upstream readiness entry contract for proposal/split admissibility so continuation
+    state, execution readiness, and proposal/split readiness-region meaning remain reviewable as meanings
+    before the review boundary consumes them.
   scope:
     in:
     - Upstream readiness contribution to proposal/split admissibility.
@@ -84,36 +86,41 @@ specification:
     - Further slice, segment, or edge bookkeeping unless a new runtime or review-observable invariant
       appears.
   terminology:
-    upstream_readiness_contribution: The upstream part of proposal/split admissibility that keeps continuation,
-      execution readiness, and readiness-region meaning reviewable before the review boundary is consumed.
+    upstream_readiness_contribution: The upstream meaning contribution to proposal/split admissibility
+      that keeps continuation state, execution readiness, and readiness-region meaning reviewable before
+      the review boundary is consumed.
     upstream_shortcut: Any route or interpretation that skips one of those upstream meanings and therefore
       makes readiness inadmissible.
     review_boundary_handoff: The point where upstream readiness contribution stops and SG-SPEC-0043 review
       boundary takes over.
   upstream_readiness_contribution:
-  - Proposal/split readiness is upstream-admissible only when continuation state, reflective execution
-    readiness, and proposal/split readiness-region meaning are all reviewable.
-  - This node stops at the SG-SPEC-0043 review boundary and does not define downstream mechanics availability.
+  - Proposal/split readiness is upstream-admissible only when continuation state is identifiable, reflective
+    execution readiness is reviewable, and proposal/split readiness-region meaning is still distinct from
+    concrete mechanics availability.
+  - These meanings must be reviewed as semantic inputs, not reconstructed from ordered graph placement,
+    historical edge slices, or downstream mechanics availability.
+  - This node contributes the upstream entry meaning and then stops at the review boundary; it does not
+    define downstream mechanics availability.
   required_upstream_meanings:
     continuation_state:
-    - Continuation state must remain separate from proposal/split mechanics detail.
-    - Review must show continuation selection still consumes an execution-readiness result rather than
-      proposal/split mechanics detail.
+    - Continuation state must be reviewable as the decision context for whether reflective execution may
+      continue toward another bounded target.
+    - Review must show continuation state consumes an execution-readiness result rather than proposal/split
+      mechanics detail.
     execution_readiness:
     - Reflective execution readiness must remain reviewable before proposal/split readiness is consumed.
-    - Review must show the composed execution-readiness surface remains visible before the SG-SPEC-0043
-      boundary result is accepted.
+    - Review must show the execution-readiness result remains visible before the boundary result is accepted.
     readiness_region:
     - Proposal/split readiness must remain readable as a capability region.
-    - Review must show the capability-region question remains distinct from SG-SPEC-0043 boundary availability
-      and SG-SPEC-0029 mechanics availability.
+    - Review must show the capability-region question remains distinct from boundary availability and
+      downstream mechanics availability.
   consumption_preconditions:
-  - Before SG-SPEC-0043 readiness is consumed, review evidence must name continuation state, execution
-    readiness, and readiness-region meaning as present upstream meanings.
+  - Before boundary readiness is consumed, review evidence must name continuation state, execution readiness,
+    and readiness-region meaning as present upstream meanings.
   - The upstream contribution is not reviewable if those meanings are only inferred from ordered graph
     placement, superseded edge or segment slices, or downstream mechanics availability.
-  - SG-SPEC-0045 provides the entry contract for those upstream meanings; SG-SPEC-0043 may consume that
-    entry only after they are reviewable as meanings rather than route facts.
+  - SG-SPEC-0045 provides the entry contract for those upstream meanings; the review boundary may consume
+    that entry only after they are reviewable as meanings rather than route facts.
   meaning_authority:
   - Continuation state, execution readiness, and readiness-region meaning are current review inputs only
     when they can be identified from active upstream readiness contracts or this entry contract.
@@ -123,13 +130,13 @@ specification:
     but it cannot backfill a missing upstream continuation state, execution-readiness result, or readiness-region
     meaning.
   reviewable_entry_check:
-  - The entry check passes when reviewer evidence can identify the continuation decision, the execution-readiness
-    result consumed by that decision, and the proposal/split readiness-region meaning before SG-SPEC-0043
-    evaluates boundary availability.
+  - The entry check passes when reviewer evidence can identify the continuation state, the execution-readiness
+    result consumed by that state, and the proposal/split readiness-region meaning before the boundary
+    evaluates availability.
   - The entry check fails when any required upstream meaning must be reconstructed from topology, inferred
     from the historical SG-SPEC-0046/0047/0048 slice attempt, or borrowed from downstream mechanics availability.
-  - A passing entry check authorizes only SG-SPEC-0043 boundary review; it does not authorize concrete
-    proposal/split mechanics consumption or SG-SPEC-0029 availability.
+  - A passing entry check authorizes only boundary review; it does not authorize concrete proposal/split
+    mechanics consumption or downstream mechanics availability.
   inadmissible_upstream_shortcuts:
   - Upstream readiness is inadmissible if continuation state is skipped or hidden by mechanics availability.
   - Upstream readiness is inadmissible if execution readiness is bypassed before proposal/split readiness
@@ -137,10 +144,10 @@ specification:
   - Upstream readiness is inadmissible if the readiness region collapses into concrete split lifecycle
     mechanics.
   review_boundary_handoff:
-  - SG-SPEC-0045 stops at SG-SPEC-0043 because that boundary owns review of proposal/split readiness before
-    mechanics availability is consumed.
-  - SG-SPEC-0043 receives already-reviewable upstream meanings from this contract; it does not prove continuation
-    state, execution readiness, or readiness-region meaning by itself.
+  - SG-SPEC-0045 stops at SG-SPEC-0043 because that boundary owns the availability decision that consumes
+    already-reviewable upstream meanings before mechanics availability is consumed.
+  - SG-SPEC-0043 receives continuation state, execution readiness, and readiness-region meaning from this
+    contract as upstream review inputs; it does not prove those meanings by route placement.
   - SG-SPEC-0045 does not restate downstream mechanics availability or concrete mechanics ownership.
   lineage_policy:
   - SG-SPEC-0045 remains the active readable replacement for SG-SPEC-0046, SG-SPEC-0047, and SG-SPEC-0048.
@@ -189,5 +196,5 @@ required_human_action: '-'
 last_worktree_path: ''
 last_branch: ''
 last_gate_decision: approve
-last_gate_note: Approve bounded meaning-authority clarification for gateway entry contract.
-last_gate_at: '2026-05-06T21:02:24.569464+00:00'
+last_gate_note: Approve domain-first prompt rewrite for gateway entry contract.
+last_gate_at: '2026-05-06T22:34:46.638135+00:00'
