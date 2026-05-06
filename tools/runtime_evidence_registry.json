@@ -102,6 +102,56 @@
     "notes": "Retrospective refactor evidence is registry-backed by graph-health detection, proposal-first queue handling, and prompt-guidance regression tests for live-region refactor boundaries."
   },
   {
+    "spec_id": "SG-SPEC-0006",
+    "evidence_scope": "surface_level",
+    "artifact_refs": [
+      "tools/supervisor.py",
+      "tools/proposal_lane_policy.json",
+      "tests/test_supervisor.py"
+    ],
+    "runtime_entities": [
+      {
+        "entity_id": "supervisor.proposal_queue_sync",
+        "entity_kind": "proposal_lane_writer"
+      },
+      {
+        "entity_id": "supervisor.proposal_lane_overlay",
+        "entity_kind": "viewer_overlay"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "test_sg_spec_0006_trace_anchor_tracks_repository_proposal_lane_node"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def sync_tracked_proposal_lane_node("
+      }
+    ],
+    "outcome_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "\"queryable\""
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "proposal_repository_presence"
+      }
+    ],
+    "adoption_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "assert proposal[\"spec_id\"] == \"SG-SPEC-0006\""
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "overlay[\"entries\"][0][\"target_region\"][\"target_reference\"] == \"SG-SPEC-0006\""
+      }
+    ],
+    "notes": "Proposal-lane evidence is registry-backed by a focused SG-SPEC-0006 regression anchor covering repository-tracked proposal nodes and queryable overlay state."
+  },
+  {
     "spec_id": "SG-SPEC-0049",
     "evidence_scope": "surface_level",
     "artifact_refs": [
