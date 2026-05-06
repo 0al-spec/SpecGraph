@@ -1,0 +1,134 @@
+id: SG-SPEC-0058
+title: SpecGraph - Proposal/Split Readiness Verdict Semantics
+kind: spec
+created_at: '2026-05-05T23:31:23Z'
+updated_at: '2026-05-05T23:31:23Z'
+status: linked
+maturity: 0.2
+depends_on:
+- SG-SPEC-0043
+refines:
+- SG-SPEC-0032
+inputs:
+- specs/nodes/SG-SPEC-0032.yaml
+- specs/nodes/SG-SPEC-0043.yaml
+outputs:
+- specs/nodes/SG-SPEC-0058.yaml
+allowed_paths:
+- specs/nodes/SG-SPEC-0058.yaml
+acceptance:
+- Defines SG-SPEC-0058 as the bounded child under SG-SPEC-0032 for proposal/split readiness verdict semantics
+  and reviewer meaning.
+- Defines the satisfied, not_available, and unresolved verdict meanings for proposal/split readiness without
+  exposing split payload schemas, queue internals, proposal-lane runtime details, or graph topology narration.
+- Defines the reviewer evidence expected for each readiness verdict so review can confirm availability
+  meaning without resolving concrete mechanics fields.
+- Preserves SG-SPEC-0032 as the coarse readiness region and SG-SPEC-0043 as the readiness boundary without
+  redefining continuation selection, queue ranking, viewer layout, or runtime orchestration.
+acceptance_evidence:
+- criterion: Defines SG-SPEC-0058 as the bounded child under SG-SPEC-0032 for proposal/split readiness
+    verdict semantics and reviewer meaning.
+  evidence: specification.objective, specification.scope.in, and specification.parent_region_contract
+    identify SG-SPEC-0058 as the child that owns proposal/split readiness verdict semantics and reviewer
+    meaning while keeping SG-SPEC-0032 as the coarse readiness region.
+- criterion: Defines the satisfied, not_available, and unresolved verdict meanings for proposal/split
+    readiness without exposing split payload schemas, queue internals, proposal-lane runtime details,
+    or graph topology narration.
+  evidence: specification.verdict_semantics defines satisfied, not_available, and unresolved outcomes,
+    and specification.scope.out excludes split payload schemas, queue internals, proposal-lane runtime
+    details, and graph topology narration from those verdicts.
+- criterion: Defines the reviewer evidence expected for each readiness verdict so review can confirm availability
+    meaning without resolving concrete mechanics fields.
+  evidence: specification.reviewer_meaning and specification.verdict_evidence_requirements define the
+    evidence reviewers expect for satisfied, not_available, and unresolved readiness verdicts without
+    requiring concrete mechanics field resolution.
+- criterion: Preserves SG-SPEC-0032 as the coarse readiness region and SG-SPEC-0043 as the readiness boundary
+    without redefining continuation selection, queue ranking, viewer layout, or runtime orchestration.
+  evidence: specification.parent_region_contract preserves SG-SPEC-0032 as the coarse readiness region,
+    specification.boundary_contract preserves SG-SPEC-0043 as the readiness boundary, and specification.scope.out
+    excludes continuation selection, queue ranking, viewer layout, and runtime orchestration.
+prompt: Define the bounded child beneath SG-SPEC-0032 for proposal/split readiness verdict semantics and
+  reviewer meaning. Keep SG-SPEC-0032 as the coarse readiness region and do not restate graph topology
+  or concrete split mechanics.
+specification:
+  objective: Define the proposal/split readiness verdict meanings and reviewer evidence expectations that
+    make the SG-SPEC-0032 readiness region reviewable without forcing reflective execution or reviewers
+    to inspect concrete split payloads, proposal-lane runtime details, queue internals, or graph topology.
+  scope:
+    in:
+    - Proposal/split readiness verdict semantics for the SG-SPEC-0032 readiness region.
+    - Reviewer meaning of satisfied, not_available, and unresolved readiness verdicts.
+    - Evidence expectations for each readiness verdict.
+    - Boundary alignment with the SG-SPEC-0043 readiness decision surface.
+    out:
+    - Concrete split payload schemas and lifecycle field semantics.
+    - Proposal-lane runtime details and queue internals.
+    - Continuation-selection policy, queue ranking, viewer layout, and runtime orchestration.
+    - Graph topology narration, edge-route explanation, or bookkeeping-only child ownership.
+  terminology:
+    readiness_verdict: The reviewable outcome that states whether proposal/split mechanics are available
+      as a capability for the current reflective execution context.
+    satisfied: The readiness verdict meaning that proposal/split mechanics are available as a reviewable
+      capability for the current reflective execution context.
+    not_available: The readiness verdict meaning that proposal/split mechanics are reviewably unavailable
+      for the current reflective execution context.
+    unresolved: The readiness verdict meaning that availability cannot be determined at this level without
+      leaking into concrete mechanics detail, queue state, runtime detail, or topology reconstruction.
+  verdict_semantics:
+    satisfied:
+    - The satisfied verdict means the readiness boundary can identify a reviewable downstream availability
+      result for proposal/split mechanics and that result reports satisfied availability.
+    - A satisfied verdict authorizes only consumption of proposal/split readiness as a capability signal;
+      it does not authorize concrete split lifecycle interpretation or continuation selection by mechanics
+      fields.
+    not_available:
+    - The not_available verdict means the readiness boundary can identify a reviewable downstream availability
+      result and that result reports proposal/split mechanics unavailable for the current context.
+    - A not_available verdict suppresses consumption of proposal/split readiness until the owning mechanics
+      boundary clears the unavailable condition.
+    unresolved:
+    - The unresolved verdict means reviewers cannot determine proposal/split readiness without inspecting
+      split payload schemas, lifecycle fields, proposal-lane runtime details, queue internals, or graph
+      topology reconstruction.
+    - An unresolved verdict is a refinement signal for the readiness region or boundary; it is not permission
+      to infer availability from neighboring spec placement.
+  reviewer_meaning:
+  - Reviewers read satisfied as proof that proposal/split mechanics are available only at the readiness-capability
+    level.
+  - Reviewers read not_available as a determinate negative availability result, not as missing evidence
+    or a request to inspect concrete mechanics fields.
+  - Reviewers read unresolved as evidence of a leaky readiness boundary or missing availability signal
+    that must be narrowed before reflective execution can consume proposal/split readiness.
+  verdict_evidence_requirements:
+    satisfied:
+    - Evidence must name the reviewable readiness boundary or downstream availability result that reports
+      satisfied availability.
+    - Evidence must avoid copying split payload schemas, lifecycle fields, queue formulas, runtime state,
+      or graph-edge routes into the verdict.
+    not_available:
+    - Evidence must name the reviewable readiness boundary or downstream availability result that reports
+      unavailable proposal/split mechanics.
+    - Evidence must identify the unavailable condition at readiness level, such as missing mechanics availability
+      or blocked readiness ownership, without resolving concrete mechanics fields here.
+    unresolved:
+    - Evidence must name the leak or missing signal that prevents readiness determination.
+    - Evidence should classify the leak as split_payload_detail, lifecycle_field_detail, proposal_lane_runtime_detail,
+      queue_internal_detail, or topology_reconstruction.
+  boundary_contract:
+  - SG-SPEC-0043 remains the readiness boundary that exposes proposal/split mechanics availability to
+    the SG-SPEC-0032 readiness region.
+  - SG-SPEC-0058 interprets readiness verdict meanings for reviewers; it does not redefine the boundary's
+    downstream mechanics ownership.
+  parent_region_contract:
+  - SG-SPEC-0032 remains the coarse proposal/split readiness region exposed to reflective execution.
+  - SG-SPEC-0058 supplies the verdict semantics and reviewer meaning needed to keep that region reviewable
+    without expanding SG-SPEC-0032.
+  - SG-SPEC-0058 must not become a topology-prose node; graph placement remains represented by canonical
+    metadata.
+  invariants:
+    PSP-0058-1: A satisfied verdict is only a readiness-capability signal and does not grant authority
+      over concrete split lifecycle fields or continuation-selection policy.
+    PSP-0058-2: A not_available verdict is a determinate readiness-level negative result rather than an
+      invitation to inspect concrete mechanics fields inside this node.
+    PSP-0058-3: An unresolved verdict identifies a leaky or missing readiness signal and must not be converted
+      into availability by graph placement or topology reconstruction.
