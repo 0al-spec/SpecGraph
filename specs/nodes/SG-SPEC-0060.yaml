@@ -1,0 +1,123 @@
+id: SG-SPEC-0060
+title: SpecGraph - Proposal/Split Readiness Verdict Discrimination Checkpoints
+kind: spec
+created_at: '2026-05-06T20:49:45Z'
+updated_at: '2026-05-06T20:49:45Z'
+status: linked
+maturity: 0.2
+depends_on: []
+refines:
+- SG-SPEC-0058
+inputs:
+- specs/nodes/SG-SPEC-0058.yaml
+outputs:
+- specs/nodes/SG-SPEC-0060.yaml
+allowed_paths:
+- specs/nodes/SG-SPEC-0060.yaml
+acceptance:
+- Defines SG-SPEC-0060 as the bounded child under SG-SPEC-0058 for reviewer discrimination checkpoints
+  between not_available and unresolved proposal/split readiness verdicts.
+- Defines the checkpoint conditions that allow not_available only when a reviewable negative availability
+  source is present and keep missing, ambiguous, or leaky evidence unresolved.
+- Defines the evidence reviewers must record for each discrimination checkpoint without copying split
+  payload schemas, lifecycle fields, queue internals, proposal-lane runtime detail, or graph topology
+  narration.
+- Keeps SG-SPEC-0058 as the owner of verdict meanings and does not redefine satisfied verdict handling,
+  reviewer action dispositions, remediation routing, continuation selection, queue ranking, viewer layout,
+  or runtime orchestration.
+acceptance_evidence:
+- criterion: Defines SG-SPEC-0060 as the bounded child under SG-SPEC-0058 for reviewer discrimination
+    checkpoints between not_available and unresolved proposal/split readiness verdicts.
+  evidence: specification.objective, specification.scope.in, and specification.parent_contract identify
+    SG-SPEC-0060 as the child that owns reviewer discrimination checkpoints for not_available versus unresolved
+    while SG-SPEC-0058 remains the verdict semantics node.
+- criterion: Defines the checkpoint conditions that allow not_available only when a reviewable negative
+    availability source is present and keep missing, ambiguous, or leaky evidence unresolved.
+  evidence: specification.discrimination_checkpoints.reviewable_negative_source allows not_available only
+    from a reviewable negative availability source, and specification.discrimination_checkpoints.missing_or_ambiguous_evidence
+    plus specification.discrimination_checkpoints.mechanics_leak keep missing, ambiguous, or leaky evidence
+    unresolved.
+- criterion: Defines the evidence reviewers must record for each discrimination checkpoint without copying
+    split payload schemas, lifecycle fields, queue internals, proposal-lane runtime detail, or graph topology
+    narration.
+  evidence: specification.checkpoint_evidence_requirements defines reviewer evidence for reviewable_negative_source,
+    missing_or_ambiguous_evidence, and mechanics_leak, while specification.scope.out excludes split payload
+    schemas, lifecycle fields, queue internals, proposal-lane runtime detail, and graph topology narration.
+- criterion: Keeps SG-SPEC-0058 as the owner of verdict meanings and does not redefine satisfied verdict
+    handling, reviewer action dispositions, remediation routing, continuation selection, queue ranking,
+    viewer layout, or runtime orchestration.
+  evidence: specification.parent_contract keeps verdict meanings in SG-SPEC-0058, and specification.scope.out
+    excludes satisfied verdict handling, reviewer action dispositions, remediation routing, continuation
+    selection, queue ranking, viewer layout, and runtime orchestration.
+prompt: Define the bounded child beneath SG-SPEC-0058 for reviewer discrimination checkpoints that distinguish
+  not_available from unresolved proposal/split readiness verdicts. Keep SG-SPEC-0058 as verdict semantics
+  and do not restate graph topology or concrete split mechanics.
+specification:
+  objective: Define the reviewer checkpoints that determine whether proposal/split readiness evidence
+    supports a determinate not_available verdict or must remain unresolved, without expanding SG-SPEC-0058
+    beyond verdict semantics.
+  scope:
+    in:
+    - Reviewer discrimination checkpoints for not_available versus unresolved proposal/split readiness
+      verdict assignment.
+    - Conditions that distinguish reviewable negative availability from missing, ambiguous, or leaky readiness
+      evidence.
+    - Evidence required to record each discrimination checkpoint at readiness level.
+    - Boundary alignment with SG-SPEC-0058 verdict semantics.
+    out:
+    - Redefinition of satisfied, not_available, or unresolved verdict meanings.
+    - Satisfied verdict handling beyond its exclusion from not_available versus unresolved discrimination.
+    - Reviewer action dispositions, remediation routing, or post-verdict transition procedure.
+    - Concrete split payload schemas, lifecycle field semantics, proposal-lane runtime details, queue
+      internals, queue ranking, viewer layout, runtime orchestration, or continuation-selection policy.
+    - Graph topology narration, edge-route explanation, or parent-child bookkeeping prose.
+  terminology:
+    discrimination_checkpoint: A reviewer-facing check that classifies readiness evidence as supporting
+      not_available or requiring unresolved under SG-SPEC-0058 verdict semantics.
+    reviewable_negative_source: A readiness-level source that reports proposal/split mechanics unavailable
+      for the current context without requiring concrete mechanics inspection.
+    missing_or_ambiguous_evidence: Evidence that does not provide a determinate readiness-level availability
+      answer.
+    mechanics_leak: Evidence that requires reviewers to inspect split payload detail, lifecycle field
+      detail, proposal-lane runtime detail, queue internal detail, or topology reconstruction before assigning
+      not_available.
+  discrimination_checkpoints:
+    reviewable_negative_source:
+    - Reviewers may discriminate toward not_available only when the evidence names a readiness-level source
+      that reports proposal/split mechanics unavailable for the current context.
+    - The named source must be reviewable without resolving split payload schemas, lifecycle fields, proposal-lane
+      runtime state, queue internals, or graph routes.
+    missing_or_ambiguous_evidence:
+    - Reviewers must keep the verdict unresolved when the evidence is absent, incomplete, contradictory,
+      or does not identify a determinate readiness-level negative availability source.
+    - Missing or ambiguous evidence must not be treated as not_available merely because proposal/split
+      readiness cannot be consumed yet.
+    mechanics_leak:
+    - Reviewers must keep the verdict unresolved when deciding not_available would require inspecting
+      concrete mechanics detail, queue state, runtime state, or topology reconstruction.
+    - A mechanics leak identifies the boundary that must be narrowed; it does not authorize a readiness-level
+      negative verdict by inference.
+  checkpoint_evidence_requirements:
+    reviewable_negative_source:
+    - Evidence must name the readiness-level source that reports unavailable proposal/split mechanics.
+    - Evidence must state that the source is reviewable without concrete mechanics or graph-route inspection.
+    missing_or_ambiguous_evidence:
+    - Evidence must name the absent, incomplete, contradictory, or non-determinate signal that prevents
+      not_available discrimination.
+    - Evidence must record unresolved as the checkpoint result.
+    mechanics_leak:
+    - Evidence must name the leaky detail category preventing readiness-level discrimination.
+    - Evidence should classify the leak as split_payload_detail, lifecycle_field_detail, proposal_lane_runtime_detail,
+      queue_internal_detail, or topology_reconstruction.
+  parent_contract:
+  - SG-SPEC-0058 owns the meanings of satisfied, not_available, and unresolved readiness verdicts.
+  - SG-SPEC-0060 owns only the reviewer checkpoints that discriminate not_available from unresolved using
+    SG-SPEC-0058 verdict semantics.
+  - SG-SPEC-0060 does not decide reviewer action after verdict assignment and does not define concrete
+    split mechanics.
+  invariants:
+    PSP-0060-1: not_available discrimination requires a reviewable readiness-level negative availability
+      source.
+    PSP-0060-2: Missing, ambiguous, or contradictory readiness evidence remains unresolved.
+    PSP-0060-3: Evidence that leaks into concrete mechanics, queue, runtime, or topology inspection remains
+      unresolved.
