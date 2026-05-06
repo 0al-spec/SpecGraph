@@ -10,6 +10,7 @@ help:
 		'  make dashboard                Refresh graph dashboard JSON only' \
 		'  make backlog                  Refresh graph backlog projection JSON only' \
 		'  make next-move                Refresh advisory graph next-moves JSON only' \
+		'  make graph-diagnostics        Print compact graph diagnostics from runs JSON' \
 		'  make proposal-spec-trace      Refresh proposal-to-spec trace index JSON' \
 		'  make external-consumers       Refresh external consumer bridge JSON' \
 		'  make external-handoffs        Refresh external consumer handoff JSON' \
@@ -47,6 +48,10 @@ backlog:
 .PHONY: next-move
 next-move:
 	@$(PYTHON) $(SUPERVISOR) --build-graph-next-moves
+
+.PHONY: graph-diagnostics
+graph-diagnostics:
+	@$(PYTHON) tools/graph_diagnostics.py --format text
 
 .PHONY: proposal-spec-trace
 proposal-spec-trace:
