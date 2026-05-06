@@ -121,6 +121,8 @@ specification:
     semantics:
     - The verdict and bounded reason category are the weakest integration signal exposed to continuation
       selection.
+    - The bounded reason category must be omitted when the verdict is satisfied; category values are emitted
+      only for blocked or indeterminate results.
     - The bounded reason category may point to the mechanics family or comparison gap that prevents readiness,
       but it must not expose direct-update fields, split payload structure, proposal-lane state, queue
       detail, or child membership as decision inputs.
