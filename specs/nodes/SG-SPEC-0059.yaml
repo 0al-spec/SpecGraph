@@ -1,0 +1,120 @@
+id: SG-SPEC-0059
+title: SpecGraph - Proposal/Split Readiness Reviewer Action Contract
+kind: spec
+created_at: '2026-05-05T23:41:11Z'
+updated_at: '2026-05-05T23:41:11Z'
+status: linked
+maturity: 0.2
+depends_on: []
+refines:
+- SG-SPEC-0058
+inputs:
+- specs/nodes/SG-SPEC-0058.yaml
+outputs:
+- specs/nodes/SG-SPEC-0059.yaml
+allowed_paths:
+- specs/nodes/SG-SPEC-0059.yaml
+acceptance:
+- Defines SG-SPEC-0059 as the bounded child under SG-SPEC-0058 for proposal/split readiness reviewer action
+  contract after a verdict has been assigned.
+- Defines the allowed reviewer disposition for satisfied, not_available, and unresolved proposal/split
+  readiness verdicts without redefining verdict meanings.
+- Defines reviewer disposition evidence required for each action so review records the action taken without
+  copying split payload schemas, queue internals, proposal-lane runtime detail, or graph topology narration.
+- Keeps mechanics remediation, continuation selection, queue ranking, viewer layout, runtime orchestration,
+  and concrete split lifecycle field resolution outside this reviewer action contract.
+acceptance_evidence:
+- criterion: Defines SG-SPEC-0059 as the bounded child under SG-SPEC-0058 for proposal/split readiness
+    reviewer action contract after a verdict has been assigned.
+  evidence: specification.objective, specification.scope.in, and specification.parent_contract identify
+    SG-SPEC-0059 as the child that owns the reviewer action contract following assigned proposal/split
+    readiness verdicts while SG-SPEC-0058 retains verdict semantics.
+- criterion: Defines the allowed reviewer disposition for satisfied, not_available, and unresolved proposal/split
+    readiness verdicts without redefining verdict meanings.
+  evidence: specification.reviewer_action_contract defines the approve_readiness_consumption, record_unavailable,
+    and request_readiness_narrowing dispositions for satisfied, not_available, and unresolved verdicts,
+    while specification.scope.out excludes redefining verdict meanings.
+- criterion: Defines reviewer disposition evidence required for each action so review records the action
+    taken without copying split payload schemas, queue internals, proposal-lane runtime detail, or graph
+    topology narration.
+  evidence: specification.disposition_evidence_requirements defines evidence for approve_readiness_consumption,
+    record_unavailable, and request_readiness_narrowing, and specification.scope.out excludes split payload
+    schemas, queue internals, proposal-lane runtime detail, and graph topology narration.
+- criterion: Keeps mechanics remediation, continuation selection, queue ranking, viewer layout, runtime
+    orchestration, and concrete split lifecycle field resolution outside this reviewer action contract.
+  evidence: specification.scope.out and specification.boundary_rules exclude mechanics remediation, continuation
+    selection, queue ranking, viewer layout, runtime orchestration, and concrete split lifecycle field
+    resolution from the reviewer action contract.
+prompt: Define the bounded child beneath SG-SPEC-0058 for proposal/split readiness reviewer action contract
+  after satisfied, not_available, or unresolved verdict assignment. Keep SG-SPEC-0058 as the verdict semantics
+  node and do not restate graph topology, concrete split mechanics, or continuation selection.
+specification:
+  objective: Define the reviewer action contract that follows an already assigned proposal/split readiness
+    verdict, so review can record what disposition is allowed without expanding SG-SPEC-0058 beyond verdict
+    semantics.
+  scope:
+    in:
+    - Reviewer action contract after satisfied, not_available, or unresolved proposal/split readiness
+      verdict assignment.
+    - Allowed reviewer dispositions for each readiness verdict.
+    - Evidence required to record reviewer disposition without concrete mechanics inspection.
+    - Boundary alignment with SG-SPEC-0058 verdict semantics.
+    out:
+    - Redefinition of satisfied, not_available, or unresolved verdict meanings.
+    - Concrete split payload schemas, lifecycle field semantics, or mechanics remediation procedure.
+    - Proposal-lane runtime details, queue internals, queue ranking, viewer layout, runtime orchestration,
+      or continuation-selection policy.
+    - Graph topology narration, edge-route explanation, or parent-child bookkeeping prose.
+  terminology:
+    reviewer_disposition: The bounded review outcome recorded after a proposal/split readiness verdict
+      has already been assigned under SG-SPEC-0058.
+    approve_readiness_consumption: The disposition allowed after a satisfied verdict, confirming that
+      reflective execution may consume proposal/split readiness as a capability signal only.
+    record_unavailable: The disposition allowed after a not_available verdict, recording the determinate
+      unavailable readiness result without resolving mechanics fields here.
+    request_readiness_narrowing: The disposition required after an unresolved verdict, identifying the
+      missing or leaky readiness signal that must be narrowed before readiness can be consumed.
+  reviewer_action_contract:
+    satisfied:
+    - A satisfied verdict permits reviewers to record approve_readiness_consumption only for the readiness-capability
+      signal.
+    - The approval does not authorize concrete split lifecycle interpretation, continuation selection,
+      queue ranking, or mechanics remediation.
+    not_available:
+    - A not_available verdict permits reviewers to record record_unavailable as the determinate negative
+      readiness disposition.
+    - The unavailable disposition must not be treated as missing evidence or converted into a request
+      to inspect concrete split fields inside this child.
+    unresolved:
+    - An unresolved verdict requires reviewers to record request_readiness_narrowing.
+    - The narrowing request must name the missing or leaky readiness signal, not infer availability or
+      unavailability from graph placement.
+  disposition_evidence_requirements:
+    approve_readiness_consumption:
+    - Evidence must cite the satisfied verdict assigned under SG-SPEC-0058.
+    - Evidence must state that approval is limited to proposal/split readiness consumption as a capability
+      signal.
+    record_unavailable:
+    - Evidence must cite the not_available verdict assigned under SG-SPEC-0058.
+    - Evidence must name the readiness-level unavailable condition already captured by the verdict evidence.
+    request_readiness_narrowing:
+    - Evidence must cite the unresolved verdict assigned under SG-SPEC-0058.
+    - Evidence must name the missing or leaky readiness signal that prevents reviewer disposition from
+      approving consumption or recording determinate unavailability.
+  boundary_rules:
+  - SG-SPEC-0058 owns verdict meanings and verdict evidence expectations; this child consumes those verdicts
+    as assigned inputs.
+  - SG-SPEC-0059 owns only the reviewer action contract after verdict assignment.
+  - Reviewer disposition evidence must remain at readiness-action level and must not copy split payload,
+    lifecycle field, queue, runtime, continuation-selection, or graph-route detail into this child.
+  parent_contract:
+  - SG-SPEC-0058 remains the proposal/split readiness verdict semantics node.
+  - SG-SPEC-0059 supplies the reviewer action contract that follows assigned verdicts without redefining
+    those verdicts.
+  invariants:
+    PSP-0059-1: A satisfied verdict can support only approve_readiness_consumption for readiness capability,
+      not mechanics authority.
+    PSP-0059-2: A not_available verdict can support only record_unavailable at readiness level, not concrete
+      mechanics remediation.
+    PSP-0059-3: An unresolved verdict requires request_readiness_narrowing and must not be converted into
+      availability by graph placement or topology reconstruction.

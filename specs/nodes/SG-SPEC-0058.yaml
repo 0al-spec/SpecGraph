@@ -2,16 +2,18 @@ id: SG-SPEC-0058
 title: SpecGraph - Proposal/Split Readiness Verdict Semantics
 kind: spec
 created_at: '2026-05-05T23:31:23Z'
-updated_at: '2026-05-05T23:39:40Z'
+updated_at: '2026-05-05T23:46:14Z'
 status: linked
-maturity: 0.4
+maturity: 0.6
 depends_on:
 - SG-SPEC-0043
+- SG-SPEC-0059
 refines:
 - SG-SPEC-0032
 inputs:
 - specs/nodes/SG-SPEC-0032.yaml
 - specs/nodes/SG-SPEC-0043.yaml
+- specs/nodes/SG-SPEC-0059.yaml
 outputs:
 - specs/nodes/SG-SPEC-0058.yaml
 allowed_paths:
@@ -67,8 +69,11 @@ specification:
     - Reviewer meaning of satisfied, not_available, and unresolved readiness verdicts.
     - Evidence expectations for each readiness verdict.
     - Boundary alignment with the SG-SPEC-0043 readiness decision surface.
+    - Coordination of delegated reviewer action contract ownership in SG-SPEC-0059.
     out:
     - Concrete split payload schemas and lifecycle field semantics.
+    - Reviewer action transitions, reviewer disposition requirements, or remediation routing for readiness
+      verdicts.
     - Proposal-lane runtime details and queue internals.
     - Continuation-selection policy, queue ranking, viewer layout, and runtime orchestration.
     - Graph topology narration, edge-route explanation, or bookkeeping-only child ownership.
@@ -81,6 +86,19 @@ specification:
       for the current reflective execution context.
     unresolved: The readiness verdict meaning that availability cannot be determined at this level without
       leaking into concrete mechanics detail, queue state, runtime detail, or topology reconstruction.
+    reviewer_action_contract: The delegated child concern that defines what reviewer disposition is allowed
+      after a satisfied, not_available, or unresolved proposal/split readiness verdict has been assigned.
+  child_governance_map:
+  - child_spec: SG-SPEC-0059
+    concern: Proposal/split readiness reviewer action contract
+    parent_summary:
+    - SG-SPEC-0058 owns readiness verdict meanings and evidence expectations.
+    - SG-SPEC-0059 owns the reviewer disposition contract that follows those verdicts.
+    detailed_governance_owned_by_child:
+    - reviewer action allowed for satisfied, not_available, and unresolved proposal/split readiness verdicts
+    - reviewer disposition evidence that records the action taken without redefining verdict meaning
+    - action limits that keep mechanics remediation, routing, and concrete split field resolution outside
+      the verdict semantics node
   verdict_semantics:
     satisfied:
     - The satisfied verdict means the readiness boundary can identify a reviewable downstream availability
@@ -136,6 +154,8 @@ specification:
     the SG-SPEC-0032 readiness region.
   - SG-SPEC-0058 interprets readiness verdict meanings for reviewers; it does not redefine the boundary's
     downstream mechanics ownership.
+  - SG-SPEC-0059 consumes verdict meanings from SG-SPEC-0058 and defines only the reviewer action contract
+    that follows assigned verdicts.
   parent_region_contract:
   - SG-SPEC-0032 remains the coarse proposal/split readiness region exposed to reflective execution.
   - SG-SPEC-0058 supplies the verdict semantics and reviewer meaning needed to keep that region reviewable
@@ -149,82 +169,12 @@ specification:
       invitation to inspect concrete mechanics fields inside this node.
     PSP-0058-3: An unresolved verdict identifies a leaky or missing readiness signal and must not be converted
       into availability by graph placement or topology reconstruction.
-gate_state: split_required
+gate_state: none
 proposed_status: null
 proposed_maturity: null
-required_human_action: split spec scope before rerun
+required_human_action: '-'
 last_worktree_path: ''
 last_branch: ''
 last_gate_decision: approve
 last_gate_note: ''
-last_gate_at: '2026-05-05T23:35:57.343943+00:00'
-last_outcome: split_required
-last_blocker: spec exceeds atomicity quality gate
-last_run_id: 20260505T233719Z-SG-SPEC-0058-83616818
-last_exit_code: 0
-last_changed_files:
-- specs/nodes/SG-SPEC-0058.yaml
-last_run_at: '2026-05-05T23:39:40.697605+00:00'
-last_validator_results:
-  outputs: true
-  allowed_paths: true
-  reconciliation: true
-  atomicity: false
-  transition: true
-  executor_environment: true
-  runtime_artifacts: true
-  refinement_acceptance: true
-last_refinement_acceptance:
-  decision: review_required
-  change_class: graph_refactor
-  checks:
-    content_changed: true
-    hard_validation: true
-    single_spec_scope: true
-    constitutional_diff: false
-    graph_refactor_diff: true
-    atomicity_clear: false
-    within_mutation_budget: true
-  diff_paths:
-  - acceptance[4]
-  - acceptance[5]
-  - acceptance_evidence[4].criterion
-  - acceptance_evidence[4].evidence
-  - acceptance_evidence[5]
-  - acceptance_evidence[5].criterion
-  - acceptance_evidence[5].evidence
-  - maturity
-  - specification.reviewer_action_contract
-  - specification.reviewer_action_contract.satisfied
-  - specification.reviewer_action_contract.satisfied[0]
-  - specification.reviewer_action_contract.satisfied[1]
-  - specification.reviewer_action_contract.not_available
-  - specification.reviewer_action_contract.not_available[0]
-  - specification.reviewer_action_contract.not_available[1]
-  - specification.reviewer_action_contract.unresolved
-  - specification.reviewer_action_contract.unresolved[0]
-  - specification.reviewer_action_contract.unresolved[1]
-  mutation_classes:
-  - policy_text
-  mutation_budget: []
-  budget_exceeded_classes: []
-  changed_spec_files:
-  - specs/nodes/SG-SPEC-0058.yaml
-  review_reasons:
-  - atomicity gate still requires follow-up decomposition work
-  errors: []
-  warnings:
-  - 'specs/nodes/SG-SPEC-0058.yaml: Atomicity gate exceeded: 6 acceptance criteria > 5. Split independent
-    concerns into child specs.'
-last_reconciliation:
-  worktree_spec_count: 58
-  changed_spec_ids:
-  - SG-SPEC-0058
-  semantic_dependencies_resolved: true
-  work_dependencies_ready: false
-  cycles: []
-last_requested_child_materialization: false
-last_materialized_child_paths: []
-last_errors:
-- 'specs/nodes/SG-SPEC-0058.yaml: Atomicity gate exceeded: 6 acceptance criteria > 5. Split independent
-  concerns into child specs.'
+last_gate_at: '2026-05-05T23:46:14.429179+00:00'
