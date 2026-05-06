@@ -5320,6 +5320,11 @@ def can_create_new_spec_files(node: SpecNode, rel_path: str | None = None) -> bo
     return any(sample_path.match(pattern) for pattern in node.allowed_paths)
 
 
+def node_has_explicit_source_allowed_path(node: SpecNode) -> bool:
+    source_path = PurePosixPath(implicit_source_allowed_paths(node)[0])
+    return any(source_path.match(pattern) for pattern in node.allowed_paths)
+
+
 def node_supports_child_delegation(node: SpecNode) -> bool:
     """Return True when the node semantically reads like a delegating parent."""
     parts: list[str] = [node.title, node.prompt]
@@ -6099,7 +6104,7 @@ def child_materialization_preflight_errors(
     child_path = str(hint.get("path", "")).strip() or f"specs/nodes/{child_id}.yaml"
     if not child_id or not child_path:
         errors.append("Child materialization was requested, but no child spec path was reserved.")
-    elif not node.allowed_paths:
+    elif not node.allowed_paths or not node_has_explicit_source_allowed_path(node):
         errors.append(
             "Child materialization was requested, but the selected node does not define "
             "node-local allowed_paths for its own source spec."
