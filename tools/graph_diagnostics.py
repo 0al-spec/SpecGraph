@@ -420,6 +420,7 @@ def build_summary(runs_dir: Path, top_limit: int = 10) -> dict[str, Any]:
 
 
 def render_text(summary: dict[str, Any]) -> str:
+    warnings = as_list(summary.get("warnings"))
     dashboard = as_dict(summary.get("dashboard"))
     next_move = as_dict(summary.get("next_move"))
     recommended = as_dict(next_move.get("recommended"))
@@ -431,18 +432,27 @@ def render_text(summary: dict[str, Any]) -> str:
 
     lines = [
         "SpecGraph Diagnostics",
-        "",
-        f"Specs: total={dashboard.get('total_specs')} active={dashboard.get('active_specs')} "
-        f"gated={dashboard.get('gated_specs')} "
-        f"structural_pressure={dashboard.get('structural_pressure_specs')}",
-        f"Backlog: open={backlog.get('entry_count')} priorities={backlog.get('priority_counts')}",
-        f"Next move: {recommended.get('title')} ({recommended.get('next_gap')})",
-        f"Metrics below threshold: {metrics.get('below_threshold_authoritative_metric_ids')}",
-        f"Trace: {trace.get('named_filter_counts')}",
-        f"Evidence: {evidence.get('named_filter_counts')}",
-        "",
-        "Health hotspots:",
     ]
+    if warnings:
+        lines.extend(["", "Warnings:"])
+        lines.extend(f"- {warning}" for warning in warnings)
+
+    lines.extend(
+        [
+            "",
+            f"Specs: total={dashboard.get('total_specs')} active={dashboard.get('active_specs')} "
+            f"gated={dashboard.get('gated_specs')} "
+            f"structural_pressure={dashboard.get('structural_pressure_specs')}",
+            f"Backlog: open={backlog.get('entry_count')} "
+            f"priorities={backlog.get('priority_counts')}",
+            f"Next move: {recommended.get('title')} ({recommended.get('next_gap')})",
+            f"Metrics below threshold: {metrics.get('below_threshold_authoritative_metric_ids')}",
+            f"Trace: {trace.get('named_filter_counts')}",
+            f"Evidence: {evidence.get('named_filter_counts')}",
+            "",
+            "Health hotspots:",
+        ]
+    )
     for hotspot in as_list(health.get("hotspot_regions"))[:5]:
         hotspot_obj = as_dict(hotspot)
         lines.append(

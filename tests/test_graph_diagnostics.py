@@ -268,3 +268,21 @@ def test_build_summary_reports_missing_artifacts(tmp_path: Path) -> None:
     assert summary["artifact_kind"] == "graph_diagnostics_summary"
     assert "missing:graph_dashboard.json" in summary["warnings"]
     assert summary["dashboard"]["total_specs"] is None
+
+
+def test_main_default_text_output_includes_artifact_warnings(
+    tmp_path: Path,
+    capsys,
+) -> None:
+    module = load_graph_diagnostics_module()
+    runs = tmp_path / "runs"
+    runs.mkdir()
+
+    exit_code = module.main(["--runs-dir", str(runs)])
+
+    output = capsys.readouterr().out
+    assert exit_code == 0
+    assert "SpecGraph Diagnostics" in output
+    assert "Warnings:" in output
+    assert "- missing:graph_dashboard.json" in output
+    assert "- missing:metric_pack_runs.json" in output
