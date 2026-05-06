@@ -3,7 +3,7 @@
   "schema_version": 1,
   "title": "Governance Proposal for SG-SPEC-0058 (stalled_maturity_candidate)",
   "created_at": "2026-05-05T23:45:24.183631+00:00",
-  "updated_at": "2026-05-05T23:50:13.549429+00:00",
+  "updated_at": "2026-05-06T20:42:43.919979+00:00",
   "policy_reference": {
     "artifact_path": "tools/proposal_lane_policy.json",
     "artifact_sha256": "cf16a8601fee008b754a9852160bb249386fc6182e9500fad95e72adc585eabc",
@@ -19,7 +19,7 @@
     "handle_value": "governance_proposal::SG-SPEC-0058::stalled_maturity_candidate",
     "handle_status": "active"
   },
-  "proposal_authority_state": "superseded",
+  "proposal_authority_state": "under_review",
   "proposal_target_region": {
     "target_kind": "canonical_node",
     "target_reference": "SG-SPEC-0058",
@@ -47,17 +47,16 @@
     "operator_request_handle": ""
   },
   "runtime_bridge": {
-    "proposal_queue_status": "superseded",
+    "proposal_queue_status": "proposed",
     "supporting_run_ids": [
-      "20260505T234111Z-SG-SPEC-0058-236e6444"
+      "20260505T234111Z-SG-SPEC-0058-236e6444",
+      "20260506T204026Z-SG-SPEC-0058-5a593225"
     ],
-    "occurrence_count": 1,
+    "occurrence_count": 2,
     "threshold": 1,
     "proposal_artifact_path": "",
     "applied_run_id": "",
     "applied_at": "",
-    "operator_request_handle": "",
-    "queue_presence": "retired_after_queue_refresh",
-    "last_queue_sync_at": "2026-05-05T23:50:13.549429+00:00"
+    "operator_request_handle": ""
   }
 }
