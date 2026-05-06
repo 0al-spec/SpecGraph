@@ -2,9 +2,9 @@ id: SG-SPEC-0032
 title: SpecGraph - Proposal/Split Mechanics Subcluster
 kind: spec
 created_at: '2026-04-14T05:05:41Z'
-updated_at: '2026-05-05T23:31:23Z'
+updated_at: '2026-05-06T20:58:05Z'
 status: linked
-maturity: 0.89
+maturity: 1.0
 depends_on:
 - SG-SPEC-0043
 - SG-SPEC-0058
@@ -33,21 +33,21 @@ acceptance:
 acceptance_evidence:
 - criterion: Defines proposal/split mechanics readiness as one coherent capability region inside reflective
     execution.
-  evidence: specification.readiness_region and specification.execution_meaning define proposal/split readiness
-    as the runtime-facing capability that this node contributes, while specification.child_governance_map
-    delegates readiness verdict semantics and reviewer meaning to SG-SPEC-0058.
+  evidence: specification.readiness_region and specification.runtime_readiness_contract define proposal/split
+    readiness as the runtime-facing capability that this node contributes to reflective execution.
 - criterion: Explains how reflective execution can ask whether proposal/split mechanics are ready without
     reading split payload schemas or proposal-lane runtime details.
   evidence: specification.readiness_query describes the coarse readiness question, while specification.scope.out
     excludes split payload schemas and proposal-lane runtime detail.
 - criterion: Keeps continuation selection insulated from proposal/split mechanics detail while preserving
     reviewable readiness for that mechanics region.
-  evidence: specification.continuation_boundary and specification.parent_contract separate continuation
-    selection from proposal/split readiness detail.
+  evidence: specification.continuation_boundary and specification.review_meaning separate continuation
+    selection from proposal/split readiness detail while preserving capability-level reviewer evidence.
 - criterion: 'Applies the topology-prose rule for this branch: graph edges remain metadata, while prose
     explains runtime readiness and review meaning.'
   evidence: specification.topology_prose_policy says direct child, edge, and delegation facts are represented
-    by canonical metadata and should not become the main prose of this node.
+    by canonical metadata, while specification.review_meaning explains the runtime and reviewer meaning
+    that belongs in prose.
 - criterion: Keeps this node implementation-agnostic to queue ranking, continuation selection, viewer
     layout, and runtime orchestration.
   evidence: specification.scope.out excludes queue ranking, continuation-selection policy, viewer layout,
@@ -76,18 +76,18 @@ specification:
     be considered available for reflective execution.
   - This node keeps that readiness concept readable as a capability region rather than as a chain of graph
     edges.
-  child_governance_map:
-  - child_spec: SG-SPEC-0058
-    concern: Proposal/split readiness verdict semantics and reviewer meaning
-    parent_summary:
-    - SG-SPEC-0032 keeps the coarse proposal/split readiness region exposed to reflective execution.
-    - SG-SPEC-0058 owns the detailed meanings of satisfied, not_available, and unresolved readiness verdicts,
-      plus the reviewer evidence expected for those verdicts.
-    detailed_governance_owned_by_child:
-    - readiness verdict semantics for the proposal/split readiness region
-    - reviewer meaning for satisfied, not_available, and unresolved outcomes
-    - evidence expectations that keep verdicts reviewable without split payload, queue, runtime, or topology
-      inspection
+  runtime_readiness_contract:
+  - Reflective execution asks this region only whether proposal/split mechanics are available as a reviewable
+    capability for the current context.
+  - The answer consumed here is capability-level readiness, not a split artifact, proposal-lane state,
+    queue position, or continuation target.
+  - The readiness answer remains valid at this level only when it can be reviewed without reconstructing
+    graph placement or reading concrete proposal/split mechanics fields.
+  readiness_verdict_boundary:
+  - SG-SPEC-0058 owns the detailed verdict meanings and evidence expectations used to interpret this region's
+    readiness answer.
+  - SG-SPEC-0032 names that verdict boundary only to keep the coarse readiness region reviewable; it does
+    not narrate the refinement route or copy verdict procedure back into this node.
   execution_meaning:
   - Reflective execution can treat proposal/split readiness as satisfied only when the downstream mechanics
     boundary can answer the availability question without exposing split payload internals.
@@ -102,6 +102,14 @@ specification:
     execution readiness.
   - Continuation selection must not inspect concrete proposal/split lifecycle fields to choose the next
     target.
+  review_meaning:
+  - Reviewers confirm this node by checking that proposal/split readiness is expressed as a capability-level
+    availability question for reflective execution.
+  - Reviewer evidence at this level should show that the readiness answer can be consumed without split
+    payload schemas, proposal-lane runtime detail, queue internals, continuation-selection policy, or
+    topology reconstruction.
+  - If reviewers need concrete mechanics fields or graph-route narration to decide whether the region
+    is ready, the readiness boundary is still leaky and this node requires further narrowing.
   topology_prose_policy:
   - Direct edge, child, and delegation facts for this branch are represented by canonical graph metadata.
   - This node's prose should explain readiness, review meaning, and insulation boundaries rather than
@@ -119,8 +127,8 @@ specification:
   parent_contract:
   - The reflective execution-readiness layer consumes this node as the proposal/split readiness region.
   - This node keeps continuation selection separate from concrete proposal/split mechanics detail.
-  - Readiness verdict semantics and reviewer meaning are delegated to SG-SPEC-0058 so this node can remain
-    the coarse readiness region.
+  - Detailed readiness verdict semantics remain outside this coarse region so this node can stay focused
+    on capability-level readiness.
   - This node should be rewritten or merged rather than split again if the proposed child would only verbalize
     graph topology.
 gate_state: none
@@ -130,5 +138,5 @@ required_human_action: '-'
 last_worktree_path: ''
 last_branch: ''
 last_gate_decision: approve
-last_gate_note: ''
-last_gate_at: '2026-05-05T23:31:23.739244+00:00'
+last_gate_note: Approve bounded SG-SPEC-0032 readiness-region refinement after child materialization.
+last_gate_at: '2026-05-06T20:58:05.257801+00:00'
