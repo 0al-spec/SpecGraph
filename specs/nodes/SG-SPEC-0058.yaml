@@ -2,9 +2,9 @@ id: SG-SPEC-0058
 title: SpecGraph - Proposal/Split Readiness Verdict Semantics
 kind: spec
 created_at: '2026-05-05T23:31:23Z'
-updated_at: '2026-05-05T23:31:23Z'
+updated_at: '2026-05-05T23:35:57Z'
 status: linked
-maturity: 0.2
+maturity: 0.4
 depends_on:
 - SG-SPEC-0043
 refines:
@@ -23,6 +23,8 @@ acceptance:
   exposing split payload schemas, queue internals, proposal-lane runtime details, or graph topology narration.
 - Defines the reviewer evidence expected for each readiness verdict so review can confirm availability
   meaning without resolving concrete mechanics fields.
+- Defines verdict assignment precedence so incomplete evidence remains unresolved rather than being collapsed
+  into not_available, while determinate downstream negative availability remains not_available.
 - Preserves SG-SPEC-0032 as the coarse readiness region and SG-SPEC-0043 as the readiness boundary without
   redefining continuation selection, queue ranking, viewer layout, or runtime orchestration.
 acceptance_evidence:
@@ -42,6 +44,11 @@ acceptance_evidence:
   evidence: specification.reviewer_meaning and specification.verdict_evidence_requirements define the
     evidence reviewers expect for satisfied, not_available, and unresolved readiness verdicts without
     requiring concrete mechanics field resolution.
+- criterion: Defines verdict assignment precedence so incomplete evidence remains unresolved rather than
+    being collapsed into not_available, while determinate downstream negative availability remains not_available.
+  evidence: specification.verdict_assignment_precedence separates satisfied, not_available, and unresolved
+    assignment, requires a reviewable downstream negative availability result before not_available can
+    be assigned, and keeps missing or leaky evidence unresolved.
 - criterion: Preserves SG-SPEC-0032 as the coarse readiness region and SG-SPEC-0043 as the readiness boundary
     without redefining continuation selection, queue ranking, viewer layout, or runtime orchestration.
   evidence: specification.parent_region_contract preserves SG-SPEC-0032 as the coarse readiness region,
@@ -92,6 +99,16 @@ specification:
       topology reconstruction.
     - An unresolved verdict is a refinement signal for the readiness region or boundary; it is not permission
       to infer availability from neighboring spec placement.
+  verdict_assignment_precedence:
+  - Assign satisfied only when the readiness boundary or downstream availability result is present, reviewable,
+    and reports satisfied proposal/split mechanics availability.
+  - Assign not_available only when the readiness boundary or downstream availability result is present,
+    reviewable, and reports determinate unavailable proposal/split mechanics.
+  - Assign unresolved when the reviewer lacks a reviewable downstream availability result or must inspect
+    split payload detail, lifecycle field detail, proposal-lane runtime detail, queue internal detail,
+    or topology reconstruction to decide availability.
+  - Missing evidence, ambiguous evidence, or leaky evidence must remain unresolved unless a reviewable
+    downstream negative availability result explicitly supports not_available.
   reviewer_meaning:
   - Reviewers read satisfied as proof that proposal/split mechanics are available only at the readiness-capability
     level.
@@ -132,3 +149,12 @@ specification:
       invitation to inspect concrete mechanics fields inside this node.
     PSP-0058-3: An unresolved verdict identifies a leaky or missing readiness signal and must not be converted
       into availability by graph placement or topology reconstruction.
+gate_state: none
+proposed_status: null
+proposed_maturity: null
+required_human_action: '-'
+last_worktree_path: ''
+last_branch: ''
+last_gate_decision: approve
+last_gate_note: ''
+last_gate_at: '2026-05-05T23:35:57.343943+00:00'
