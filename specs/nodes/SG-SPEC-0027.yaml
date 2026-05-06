@@ -2,9 +2,9 @@ id: SG-SPEC-0027
 title: SpecGraph - Reflective Execution Mechanics Cluster
 kind: spec
 created_at: '2026-04-13T07:49:44Z'
-updated_at: '2026-05-05T23:17:57Z'
+updated_at: '2026-05-05T23:21:31Z'
 status: linked
-maturity: 0.89
+maturity: 1.0
 depends_on:
 - SG-SPEC-0005
 - SG-SPEC-0032
@@ -40,9 +40,10 @@ acceptance_evidence:
     coherent while preserving distinct downstream mechanics ownership.
 - criterion: Defines the weakest integration contract by which continuation selection can consume execution
     readiness without inspecting concrete mechanics.
-  evidence: specification.continuation_contract states that continuation selection consumes only the execution-readiness
-    result, including satisfied, blocked, or indeterminate composition outcomes, and does not inspect
-    direct-update or proposal/split internals.
+  evidence: specification.continuation_contract and specification.continuation_readiness_signal state
+    that continuation selection consumes only the readiness verdict and bounded reason category, including
+    satisfied, blocked, or indeterminate composition outcomes, without inspecting direct-update or proposal/split
+    internals.
 - criterion: Applies the topology-prose rule for this branch so child membership and direct-edge facts
     remain metadata rather than the main prose.
   evidence: specification.topology_prose_policy says child membership is represented by canonical metadata
@@ -107,6 +108,27 @@ specification:
     boundary clears the gate, unsafe condition, unavailable region, or comparison leak.
   - Continuation selection must not inspect concrete mechanics internals to choose or suppress the next
     target.
+  continuation_readiness_signal:
+    verdict:
+    - satisfied
+    - blocked
+    - indeterminate
+    bounded_reason_category:
+    - direct_update_boundary
+    - proposal_split_region
+    - comparison_leak
+    - joint_review_gap
+    semantics:
+    - The verdict and bounded reason category are the weakest integration signal exposed to continuation
+      selection.
+    - The bounded reason category must be omitted when the verdict is satisfied; category values are emitted
+      only for blocked or indeterminate results.
+    - The bounded reason category may point to the mechanics family or comparison gap that prevents readiness,
+      but it must not expose direct-update fields, split payload structure, proposal-lane state, queue
+      detail, or child membership as decision inputs.
+    - A satisfied verdict means both mechanics families are jointly reviewable for the same reflective
+      execution context; blocked and indeterminate verdicts suppress direct continuation without requiring
+      continuation selection to resolve the underlying mechanics.
   topology_prose_policy:
   - Direct child membership is represented by canonical graph metadata.
   - This node's prose should explain the composed execution-readiness role rather than restating that
@@ -129,4 +151,4 @@ last_worktree_path: ''
 last_branch: ''
 last_gate_decision: approve
 last_gate_note: ''
-last_gate_at: '2026-05-05T23:17:57.933547+00:00'
+last_gate_at: '2026-05-05T23:21:31.872851+00:00'
