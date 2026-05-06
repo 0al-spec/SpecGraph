@@ -2,9 +2,9 @@ id: SG-SPEC-0027
 title: SpecGraph - Reflective Execution Mechanics Cluster
 kind: spec
 created_at: '2026-04-13T07:49:44Z'
-updated_at: '2026-04-29T22:29:29Z'
+updated_at: '2026-05-05T23:17:57Z'
 status: linked
-maturity: 0.69
+maturity: 0.89
 depends_on:
 - SG-SPEC-0005
 - SG-SPEC-0032
@@ -32,8 +32,8 @@ acceptance:
 acceptance_evidence:
 - criterion: Defines reflective execution readiness as the composed runtime condition that combines retrospective
     direct-update safety with proposal/split mechanics readiness.
-  evidence: specification.execution_readiness_model and specification.mechanics_families define the composed
-    readiness condition and name the two mechanics families it combines.
+  evidence: specification.execution_readiness_model, specification.readiness_composition, and specification.mechanics_families
+    define the composed readiness condition and name the two mechanics families it combines.
 - criterion: Explains how those mechanics remain jointly reviewable as one execution-readiness surface
     without merging their distinct contracts.
   evidence: specification.review_surface and specification.cluster_boundaries keep the readiness surface
@@ -41,7 +41,8 @@ acceptance_evidence:
 - criterion: Defines the weakest integration contract by which continuation selection can consume execution
     readiness without inspecting concrete mechanics.
   evidence: specification.continuation_contract states that continuation selection consumes only the execution-readiness
-    result and does not inspect direct-update or proposal/split internals.
+    result, including satisfied, blocked, or indeterminate composition outcomes, and does not inspect
+    direct-update or proposal/split internals.
 - criterion: Applies the topology-prose rule for this branch so child membership and direct-edge facts
     remain metadata rather than the main prose.
   evidence: specification.topology_prose_policy says child membership is represented by canonical metadata
@@ -72,6 +73,17 @@ specification:
   - Reflective execution readiness is true only when direct-update safety and proposal/split readiness
     can both be reviewed as coherent mechanics inputs.
   - This node defines the composed readiness surface, not the field-level mechanics beneath it.
+  readiness_composition:
+  - The composed readiness result is satisfied only when retrospective direct-update safety is within
+    its allowed application envelope and proposal/split mechanics readiness is available for the same
+    reflective execution context.
+  - The composed readiness result is blocked when either mechanics family reports an active gate, unsafe
+    application condition, or unavailable readiness region.
+  - The composed readiness result is indeterminate when the two mechanics families cannot be compared
+    without reading concrete direct-update fields, split payload schemas, proposal-lane runtime detail,
+    or queue internals.
+  - Composition adds only the joint readiness verdict and the bounded reason category needed by continuation
+    selection; it does not merge the mechanics contracts that produced the inputs.
   mechanics_families:
     retrospective_direct_update_boundary:
     - The retrospective direct-update input provides the direct-update boundary and application envelope.
@@ -90,6 +102,9 @@ specification:
     direct-update application details.
   continuation_contract:
   - Continuation selection consumes the execution-readiness result exposed here.
+  - A satisfied readiness result may be used as the execution-readiness precondition for direct continuation.
+  - A blocked or indeterminate readiness result suppresses direct continuation until the owning mechanics
+    boundary clears the gate, unsafe condition, unavailable region, or comparison leak.
   - Continuation selection must not inspect concrete mechanics internals to choose or suppress the next
     target.
   topology_prose_policy:
@@ -110,6 +125,8 @@ gate_state: none
 proposed_status: null
 proposed_maturity: null
 required_human_action: '-'
+last_worktree_path: ''
+last_branch: ''
 last_gate_decision: approve
 last_gate_note: ''
-last_gate_at: '2026-04-14T05:03:01.509195+00:00'
+last_gate_at: '2026-05-05T23:17:57.933547+00:00'
