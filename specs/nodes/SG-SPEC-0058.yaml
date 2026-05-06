@@ -2,7 +2,7 @@ id: SG-SPEC-0058
 title: SpecGraph - Proposal/Split Readiness Verdict Semantics
 kind: spec
 created_at: '2026-05-05T23:31:23Z'
-updated_at: '2026-05-05T23:35:57Z'
+updated_at: '2026-05-05T23:39:40Z'
 status: linked
 maturity: 0.4
 depends_on:
@@ -149,12 +149,82 @@ specification:
       invitation to inspect concrete mechanics fields inside this node.
     PSP-0058-3: An unresolved verdict identifies a leaky or missing readiness signal and must not be converted
       into availability by graph placement or topology reconstruction.
-gate_state: none
+gate_state: split_required
 proposed_status: null
 proposed_maturity: null
-required_human_action: '-'
+required_human_action: split spec scope before rerun
 last_worktree_path: ''
 last_branch: ''
 last_gate_decision: approve
 last_gate_note: ''
 last_gate_at: '2026-05-05T23:35:57.343943+00:00'
+last_outcome: split_required
+last_blocker: spec exceeds atomicity quality gate
+last_run_id: 20260505T233719Z-SG-SPEC-0058-83616818
+last_exit_code: 0
+last_changed_files:
+- specs/nodes/SG-SPEC-0058.yaml
+last_run_at: '2026-05-05T23:39:40.697605+00:00'
+last_validator_results:
+  outputs: true
+  allowed_paths: true
+  reconciliation: true
+  atomicity: false
+  transition: true
+  executor_environment: true
+  runtime_artifacts: true
+  refinement_acceptance: true
+last_refinement_acceptance:
+  decision: review_required
+  change_class: graph_refactor
+  checks:
+    content_changed: true
+    hard_validation: true
+    single_spec_scope: true
+    constitutional_diff: false
+    graph_refactor_diff: true
+    atomicity_clear: false
+    within_mutation_budget: true
+  diff_paths:
+  - acceptance[4]
+  - acceptance[5]
+  - acceptance_evidence[4].criterion
+  - acceptance_evidence[4].evidence
+  - acceptance_evidence[5]
+  - acceptance_evidence[5].criterion
+  - acceptance_evidence[5].evidence
+  - maturity
+  - specification.reviewer_action_contract
+  - specification.reviewer_action_contract.satisfied
+  - specification.reviewer_action_contract.satisfied[0]
+  - specification.reviewer_action_contract.satisfied[1]
+  - specification.reviewer_action_contract.not_available
+  - specification.reviewer_action_contract.not_available[0]
+  - specification.reviewer_action_contract.not_available[1]
+  - specification.reviewer_action_contract.unresolved
+  - specification.reviewer_action_contract.unresolved[0]
+  - specification.reviewer_action_contract.unresolved[1]
+  mutation_classes:
+  - policy_text
+  mutation_budget: []
+  budget_exceeded_classes: []
+  changed_spec_files:
+  - specs/nodes/SG-SPEC-0058.yaml
+  review_reasons:
+  - atomicity gate still requires follow-up decomposition work
+  errors: []
+  warnings:
+  - 'specs/nodes/SG-SPEC-0058.yaml: Atomicity gate exceeded: 6 acceptance criteria > 5. Split independent
+    concerns into child specs.'
+last_reconciliation:
+  worktree_spec_count: 58
+  changed_spec_ids:
+  - SG-SPEC-0058
+  semantic_dependencies_resolved: true
+  work_dependencies_ready: false
+  cycles: []
+last_requested_child_materialization: false
+last_materialized_child_paths: []
+last_errors:
+- 'specs/nodes/SG-SPEC-0058.yaml: Atomicity gate exceeded: 6 acceptance criteria > 5. Split independent
+  concerns into child specs.'
