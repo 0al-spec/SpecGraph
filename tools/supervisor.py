@@ -12770,9 +12770,11 @@ def branch_rewrite_topology_pressure(profile: dict[str, Any]) -> bool:
     bookkeeping_hits = int(profile.get("bookkeeping_hits", 0) or 0)
     role_hits = int(profile.get("role_hits", 0) or 0)
     unique_refs = int(profile.get("unique_spec_references", 0) or 0)
+    bookkeeping_ratio = bookkeeping_hits / max(role_hits, 1)
     return (
         bookkeeping_hits >= 3
         and unique_refs >= ROLE_OBSCURED_SPEC_REFERENCE_THRESHOLD
+        and bookkeeping_ratio >= 1.5
         and bookkeeping_hits > max(role_hits, 1)
     )
 

@@ -17437,6 +17437,30 @@ def test_branch_rewrite_candidate_preserves_historical_action(
     assert candidate["rewrite_classes"] == ["archive_historical_semantics"]
 
 
+def test_branch_rewrite_topology_pressure_ignores_near_balanced_role_text(
+    supervisor_module: object,
+) -> None:
+    profile = {
+        "bookkeeping_hits": 59,
+        "role_hits": 55,
+        "unique_spec_references": 8,
+    }
+
+    assert supervisor_module.branch_rewrite_topology_pressure(profile) is False
+
+
+def test_branch_rewrite_topology_pressure_flags_dominant_topology_text(
+    supervisor_module: object,
+) -> None:
+    profile = {
+        "bookkeeping_hits": 12,
+        "role_hits": 3,
+        "unique_spec_references": 4,
+    }
+
+    assert supervisor_module.branch_rewrite_topology_pressure(profile) is True
+
+
 def test_build_branch_rewrite_preview_blocks_on_unresolved_gate(
     supervisor_module: object,
     repo_fixture: Path,
