@@ -268,6 +268,12 @@ def metrics_from_signal_index(metric_signals: dict[str, Any]) -> dict[str, dict[
     return result
 
 
+def is_authoritative_threshold_metric(metric: dict[str, Any]) -> bool:
+    return str(metric.get("threshold_authority_state", "")).strip() == (
+        "canonical_threshold_authority"
+    )
+
+
 def summarize_metrics(
     dashboard: dict[str, Any],
     metric_signals: dict[str, Any],
@@ -294,7 +300,7 @@ def summarize_metrics(
             metric_id
             for metric_id, metric in signal_metrics.items()
             if metric.get("status") == "below_threshold"
-            and metric.get("threshold_authority_state") != "alias_only"
+            and is_authoritative_threshold_metric(metric)
         ]
 
     threshold_entries = [as_dict(entry) for entry in as_list(thresholds.get("entries"))]
@@ -398,6 +404,8 @@ def build_summary(runs_dir: Path, top_limit: int = 10) -> dict[str, Any]:
     summary = {
         "artifact_kind": "graph_diagnostics_summary",
         "schema_version": 1,
+        "canonical_mutations_allowed": False,
+        "tracked_artifacts_written": False,
         "runs_dir": str(runs_dir),
         "warnings": warnings,
         "dashboard": summarize_dashboard(artifacts["dashboard"]),

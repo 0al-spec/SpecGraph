@@ -247,6 +247,8 @@ def test_build_summary_handles_current_artifact_shapes(tmp_path: Path) -> None:
     summary = module.build_summary(runs, top_limit=1)
 
     assert summary["dashboard"]["total_specs"] == 57
+    assert summary["canonical_mutations_allowed"] is False
+    assert summary["tracked_artifacts_written"] is False
     assert summary["next_move"]["recommended"]["subject_id"] == "SG-SPEC-0032"
     assert summary["backlog"]["top_high_priority"][0]["next_gap"] == "resolve_split_gate"
     assert summary["trace"]["named_filter_counts"]["missing_trace_contract"] == 1
@@ -268,6 +270,46 @@ def test_build_summary_reports_missing_artifacts(tmp_path: Path) -> None:
     assert summary["artifact_kind"] == "graph_diagnostics_summary"
     assert "missing:graph_dashboard.json" in summary["warnings"]
     assert summary["dashboard"]["total_specs"] is None
+    assert summary["canonical_mutations_allowed"] is False
+    assert summary["tracked_artifacts_written"] is False
+
+
+def test_build_summary_fallback_excludes_non_authoritative_threshold_metrics(
+    tmp_path: Path,
+) -> None:
+    module = load_graph_diagnostics_module()
+    runs = tmp_path / "runs"
+    runs.mkdir()
+    write_json(
+        runs / "metric_signal_index.json",
+        """
+        {
+          "metrics": [
+            {
+              "metric_id": "specification_verifiability",
+              "status": "below_threshold",
+              "threshold_authority_state": "canonical_threshold_authority"
+            },
+            {
+              "metric_id": "economic_cost_pressure",
+              "status": "below_threshold",
+              "threshold_authority_state": "not_threshold_authority"
+            },
+            {
+              "metric_id": "sib_proxy",
+              "status": "below_threshold",
+              "threshold_authority_state": "alias_only"
+            }
+          ]
+        }
+        """,
+    )
+
+    summary = module.build_summary(runs)
+
+    assert summary["metrics"]["below_threshold_authoritative_metric_ids"] == [
+        "specification_verifiability"
+    ]
 
 
 def test_main_default_text_output_includes_artifact_warnings(
