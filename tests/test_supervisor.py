@@ -7636,6 +7636,13 @@ def test_build_spec_activity_feed_emits_trace_and_evidence_baseline_events(
                 "subject": "Clarify root spec wording",
                 "paths": ["specs/nodes/SG-SPEC-0001.yaml"],
             },
+            {
+                "sha": "c" * 40,
+                "short_sha": "ccccccc",
+                "committed_at": "2026-05-07T19:00:00+00:00",
+                "subject": "Record PR 161 review feedback",
+                "paths": ["tools/review_feedback_records.json"],
+            },
         ]
         return commits[: limit or len(commits)]
 
@@ -7649,16 +7656,20 @@ def test_build_spec_activity_feed_emits_trace_and_evidence_baseline_events(
 
     event_types = [entry["event_type"] for entry in feed["entries"]]
     assert feed["artifact_kind"] == supervisor_module.SPEC_ACTIVITY_FEED_ARTIFACT_KIND
-    assert feed["entry_count"] == 3
+    assert feed["entry_count"] == 4
     assert event_types == [
         "trace_baseline_attached",
         "evidence_baseline_attached",
         "canonical_spec_updated",
+        "review_feedback_applied",
     ]
-    assert {entry["spec_id"] for entry in feed["entries"]} == {"SG-SPEC-0001"}
+    assert {entry["spec_id"] for entry in feed["entries"]} == {"", "SG-SPEC-0001"}
     assert feed["entries"][0]["title"] == "Golden Path Node"
+    assert feed["entries"][3]["title"] == "Graph process feedback"
     assert feed["summary"]["event_type_counts"]["trace_baseline_attached"] == 1
     assert len(feed["viewer_projection"]["named_filters"]["trace_or_evidence_baselines"]) == 2
+    assert len(feed["viewer_projection"]["named_filters"]["process_activity"]) == 1
+    assert "" not in feed["viewer_projection"]["spec_id"]
     assert feed["canonical_mutations_allowed"] is False
     assert feed["tracked_artifacts_written"] is False
 

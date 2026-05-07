@@ -16220,11 +16220,13 @@ def build_spec_activity_feed(
     seen_event_ids: set[str] = set()
 
     for commit_ref in commits:
-        spec_ids = spec_activity_spec_ids_from_commit(commit_ref)
-        if not spec_ids:
-            continue
         event_types = spec_activity_event_types_from_commit(commit_ref)
         if not event_types:
+            continue
+        spec_ids = spec_activity_spec_ids_from_commit(commit_ref)
+        if not spec_ids and "review_feedback_applied" in event_types:
+            spec_ids = [""]
+        if not spec_ids:
             continue
         for event_type in event_types:
             for spec_id in spec_ids:
@@ -16233,12 +16235,15 @@ def build_spec_activity_feed(
                     continue
                 seen_event_ids.add(event_id)
                 spec = spec_index.get(spec_id)
+                title = spec.title if spec is not None else ""
+                if not title and not spec_id:
+                    title = "Graph process feedback"
                 events.append(
                     {
                         "event_id": event_id,
                         "event_type": event_type,
                         "spec_id": spec_id,
-                        "title": spec.title if spec is not None else "",
+                        "title": title,
                         "occurred_at": str(commit_ref.get("committed_at", "")).strip(),
                         "summary": str(commit_ref.get("subject", "")).strip(),
                         "source_kind": "git_commit",
@@ -16268,7 +16273,8 @@ def build_spec_activity_feed(
         event_type = str(event.get("event_type", "")).strip()
         spec_id = str(event.get("spec_id", "")).strip()
         event_type_index.setdefault(event_type, []).append(event_id)
-        spec_id_index.setdefault(spec_id, []).append(event_id)
+        if spec_id:
+            spec_id_index.setdefault(spec_id, []).append(event_id)
 
     return {
         "artifact_kind": SPEC_ACTIVITY_FEED_ARTIFACT_KIND,
@@ -16306,6 +16312,11 @@ def build_spec_activity_feed(
                     event["event_id"]
                     for event in events
                     if event.get("event_type") == "proposal_emitted"
+                ],
+                "process_activity": [
+                    event["event_id"]
+                    for event in events
+                    if event.get("event_type") == "review_feedback_applied"
                 ],
             },
         },

@@ -96,6 +96,11 @@ Expected shape:
     "spec_id": {},
     "named_filters": {}
   },
+  "viewer_contract": {
+    "contract_doc": "docs/spec_activity_feed_viewer_contract.md",
+    "recommended_endpoint": "GET /api/spec-activity?limit=N&since=ISO",
+    "source_artifact": "runs/spec_activity_feed.json"
+  },
   "canonical_mutations_allowed": false,
   "tracked_artifacts_written": false
 }
@@ -119,6 +124,11 @@ Stable fields:
 - `source_ref`
 - `source_paths`
 - `viewer`
+
+`spec_id` is empty for graph-level process events that cannot be honestly
+attached to a single canonical spec node, such as review-feedback records that
+do not mention an `SG-SPEC-####` id. Those events remain available through
+`viewer_projection.event_type` and `viewer_projection.named_filters`.
 
 Expected entry:
 
