@@ -100,6 +100,16 @@
     "notes": "Proposal/split availability gating is anchored by split target validation and SG-SPEC-0029 regression tests."
   },
   {
+    "spec_id": "SG-SPEC-0030",
+    "code_surfaces": [
+      "tools/supervisor.py"
+    ],
+    "test_surfaces": [
+      "tests/test_supervisor.py"
+    ],
+    "notes": "Proposal/split prerequisite readiness is anchored by implementation work readiness blockers and SG-SPEC-0030 non-bypass regression tests."
+  },
+  {
     "spec_id": "SG-SPEC-0049",
     "code_surfaces": [
       "tools/supervisor.py"

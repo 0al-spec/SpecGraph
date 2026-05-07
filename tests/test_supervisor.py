@@ -18614,6 +18614,23 @@ def test_build_implementation_work_index_from_delta_snapshot(
     assert index["runtime_code_mutations_allowed"] is False
 
 
+def test_sg_spec_0030_trace_anchor_blocks_non_bypass_prerequisite_gap(
+    supervisor_module: object,
+) -> None:
+    spec_id = "SG-SPEC-0030"
+
+    readiness, blockers = supervisor_module.implementation_work_item_readiness(
+        snapshot_status="ready_for_planning",
+        has_quality_blocker=False,
+        has_trace_gap=True,
+        has_evidence_gap=False,
+    )
+
+    assert spec_id == "SG-SPEC-0030"
+    assert readiness == "blocked_by_trace_gap"
+    assert blockers == ["trace_baseline_gap"]
+
+
 def test_load_current_implementation_work_index_normalizes_legacy_entries(
     supervisor_module: object,
     repo_fixture: Path,

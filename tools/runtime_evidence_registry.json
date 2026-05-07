@@ -447,6 +447,55 @@
     "notes": "Proposal/split gateway evidence is registry-backed by split target validation that admits only valid oversized non-seed targets into proposal/split mechanics."
   },
   {
+    "spec_id": "SG-SPEC-0030",
+    "evidence_scope": "surface_level",
+    "artifact_refs": [
+      "tools/supervisor.py",
+      "tests/test_supervisor.py"
+    ],
+    "runtime_entities": [
+      {
+        "entity_id": "supervisor.implementation_work_readiness",
+        "entity_kind": "prerequisite_gate"
+      },
+      {
+        "entity_id": "supervisor.proposal_split_non_bypass_guard",
+        "entity_kind": "readiness_guard"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "test_sg_spec_0030_trace_anchor_blocks_non_bypass_prerequisite_gap"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "Trace anchor: SG-SPEC-0030 governs prerequisite readiness as non-bypass input."
+      }
+    ],
+    "outcome_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "assert readiness == \"blocked_by_trace_gap\""
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "assert blockers == [\"trace_baseline_gap\"]"
+      }
+    ],
+    "adoption_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "spec_id = \"SG-SPEC-0030\""
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def implementation_work_item_readiness("
+      }
+    ],
+    "notes": "Prerequisite-readiness evidence is registry-backed by implementation work readiness blocking semantics for non-bypass prerequisite gaps."
+  },
+  {
     "spec_id": "SG-SPEC-0049",
     "evidence_scope": "surface_level",
     "artifact_refs": [
