@@ -110,6 +110,17 @@
     "notes": "Proposal/split prerequisite readiness is anchored by implementation work readiness blockers and SG-SPEC-0030 non-bypass regression tests."
   },
   {
+    "spec_id": "SG-SPEC-0031",
+    "code_surfaces": [
+      "tools/supervisor.py",
+      "tools/implementation_delta_policy.json"
+    ],
+    "test_surfaces": [
+      "tests/test_supervisor.py"
+    ],
+    "notes": "Proposal/split gateway prerequisite consumption is anchored by the implementation work next-gap policy that maps blocked prerequisite readiness to one bounded attach_trace_baseline path."
+  },
+  {
     "spec_id": "SG-SPEC-0049",
     "code_surfaces": [
       "tools/supervisor.py"
