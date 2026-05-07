@@ -80,6 +80,16 @@
     "notes": "Reflective execution readiness composition is anchored by proposal runtime follow-up derivation and SG-SPEC-0027 regression tests."
   },
   {
+    "spec_id": "SG-SPEC-0028",
+    "code_surfaces": [
+      "tools/supervisor.py"
+    ],
+    "test_surfaces": [
+      "tests/test_supervisor.py"
+    ],
+    "notes": "Proposal/split mechanics coordination is anchored by split work-item construction that carries split mechanics into proposal handoff readiness."
+  },
+  {
     "spec_id": "SG-SPEC-0049",
     "code_surfaces": [
       "tools/supervisor.py"

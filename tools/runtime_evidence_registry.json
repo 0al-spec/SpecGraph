@@ -349,6 +349,55 @@
     "notes": "Reflective execution readiness evidence is registry-backed by follow-up status and next-gap derivation tests for the SG-SPEC-0027 readiness composition surface."
   },
   {
+    "spec_id": "SG-SPEC-0028",
+    "evidence_scope": "surface_level",
+    "artifact_refs": [
+      "tools/supervisor.py",
+      "tests/test_supervisor.py"
+    ],
+    "runtime_entities": [
+      {
+        "entity_id": "supervisor.proposal_split_coordination",
+        "entity_kind": "readiness_coordination_surface"
+      },
+      {
+        "entity_id": "supervisor.split_to_proposal_handoff",
+        "entity_kind": "handoff_candidate"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "test_sg_spec_0028_trace_anchor_coordinates_split_proposal_handoff"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "Trace anchor: SG-SPEC-0028 coordinates split mechanics with proposal handoff readiness."
+      }
+    ],
+    "outcome_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "work_item[\"proposal_type\"] == \"refactor_proposal\""
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "work_item[\"refactor_kind\"] == \"split_oversized_spec\""
+      }
+    ],
+    "adoption_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "work_item[\"target_spec_id\"] == \"SG-SPEC-0028\""
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "work_item[\"execution_policy\"] == \"emit_proposal\""
+      }
+    ],
+    "notes": "Proposal/split coordination evidence is registry-backed by a focused SG-SPEC-0028 regression anchor covering the split-to-proposal handoff contract."
+  },
+  {
     "spec_id": "SG-SPEC-0049",
     "evidence_scope": "surface_level",
     "artifact_refs": [

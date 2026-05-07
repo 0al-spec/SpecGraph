@@ -6890,6 +6890,7 @@ def build_split_refactor_work_item(
     node: SpecNode,
     specs: list[SpecNode] | None = None,
 ) -> dict[str, Any]:
+    # Trace anchor: SG-SPEC-0028 coordinates split mechanics with proposal handoff readiness.
     local_specs = specs or load_specs()
     live_child_ids = [
         child.id for child in active_refining_child_specs(node, local_specs) if child.id
