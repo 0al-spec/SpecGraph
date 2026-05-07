@@ -251,6 +251,55 @@
     "notes": "Split proposal mechanics evidence is registry-backed by a focused SG-SPEC-0025 regression anchor covering split payload work-item shape and queue handoff intent."
   },
   {
+    "spec_id": "SG-SPEC-0026",
+    "evidence_scope": "surface_level",
+    "artifact_refs": [
+      "tools/supervisor.py",
+      "tests/test_supervisor.py"
+    ],
+    "runtime_entities": [
+      {
+        "entity_id": "supervisor.linked_continuation_selector",
+        "entity_kind": "continuation_decision_boundary"
+      },
+      {
+        "entity_id": "supervisor.continuation_reason_derivation",
+        "entity_kind": "derived_selection_signal"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "test_repair_candidate_yaml_text_quotes_multiline_sequence_mapping_scalar"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "Trace anchor: SG-SPEC-0026 governs continuation decision boundary derivation."
+      }
+    ],
+    "outcome_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "Defines the bounded execution-mechanics cluster beneath SG-SPEC-0026"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def linked_continuation_reasons("
+      }
+    ],
+    "adoption_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "SG-SPEC-0026 that groups exactly two concerns"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "selection_mode == \"linked_continuation\""
+      }
+    ],
+    "notes": "Continuation decision evidence is registry-backed by linked-continuation derivation and YAML repair regressions that preserve SG-SPEC-0026 continuation prose."
+  },
+  {
     "spec_id": "SG-SPEC-0049",
     "evidence_scope": "surface_level",
     "artifact_refs": [

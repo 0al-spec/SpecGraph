@@ -4799,6 +4799,7 @@ def linked_continuation_reasons(
     spec: SpecNode,
     index: dict[str, SpecNode],
 ) -> list[str]:
+    # Trace anchor: SG-SPEC-0026 governs continuation decision boundary derivation.
     """Return derived continuation reasons for already-linked graph regions.
 
     Low maturity alone is not enough. Continuation requires low maturity plus
