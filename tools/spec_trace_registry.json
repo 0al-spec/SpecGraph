@@ -90,6 +90,16 @@
     "notes": "Proposal/split mechanics coordination is anchored by split work-item construction that carries split mechanics into proposal handoff readiness."
   },
   {
+    "spec_id": "SG-SPEC-0029",
+    "code_surfaces": [
+      "tools/supervisor.py"
+    ],
+    "test_surfaces": [
+      "tests/test_supervisor.py"
+    ],
+    "notes": "Proposal/split availability gating is anchored by split target validation and SG-SPEC-0029 regression tests."
+  },
+  {
     "spec_id": "SG-SPEC-0049",
     "code_surfaces": [
       "tools/supervisor.py"

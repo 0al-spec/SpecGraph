@@ -6115,6 +6115,30 @@ def test_sg_spec_0028_trace_anchor_coordinates_split_proposal_handoff(
     assert work_item["execution_policy"] == "emit_proposal"
 
 
+def test_sg_spec_0029_trace_anchor_requires_available_split_target(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    acceptance_count = supervisor_module.ATOMICITY_MAX_ACCEPTANCE + 1
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    node_data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    node_data["id"] = "SG-SPEC-0029"
+    node_data["title"] = "Proposal Split Gateway"
+    node_data["acceptance"] = [f"gateway-availability-{i}" for i in range(1, acceptance_count + 1)]
+    node_data["outputs"] = ["specs/nodes/SG-SPEC-0029.yaml"]
+    node_data["allowed_paths"] = ["specs/nodes/SG-SPEC-0029.yaml"]
+    node_path.unlink()
+    (repo_fixture / "specs" / "nodes" / "SG-SPEC-0029.yaml").write_text(
+        json.dumps(node_data),
+        encoding="utf-8",
+    )
+
+    node = supervisor_module.load_specs()[0]
+
+    assert node.id == "SG-SPEC-0029"
+    assert supervisor_module.validate_split_refactor_target(node) == []
+
+
 def test_summarize_queue_transition_tracks_emitted_cleared_and_updated_ids(
     supervisor_module: object,
 ) -> None:
