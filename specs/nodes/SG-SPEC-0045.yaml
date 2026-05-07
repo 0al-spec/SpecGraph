@@ -2,7 +2,7 @@ id: SG-SPEC-0045
 title: SpecGraph - Proposal/Split Gateway Entry Contract
 kind: spec
 created_at: '2026-04-14T20:59:56Z'
-updated_at: '2026-05-07T00:00:00Z'
+updated_at: '2026-05-07T07:06:25Z'
 status: linked
 maturity: 1.0
 presence:
@@ -42,7 +42,7 @@ acceptance_evidence:
     and execution readiness must remain reviewable before proposal/split readiness is consumed.'
   evidence: specification.upstream_readiness_contribution, specification.required_upstream_meanings, specification.meaning_authority,
     specification.reviewable_entry_check, and specification.consumption_preconditions define continuation
-    state, execution readiness, and readiness-region meaning as reviewable upstream meanings before boundary
+    state, execution readiness, and readiness-region meaning as reviewable upstream meanings before proposal/split
     readiness is consumed.
 - criterion: Explains which upstream shortcuts make readiness inadmissible without reciting the upstream
     graph chain as the main prose.
