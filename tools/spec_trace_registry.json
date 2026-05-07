@@ -11,11 +11,13 @@
   },
   {
     "spec_id": "SG-SPEC-0005",
-    "code_surfaces": [],
+    "code_surfaces": [
+      "tools/supervisor.py"
+    ],
     "test_surfaces": [
       "tests/test_supervisor.py"
     ],
-    "notes": "Retrospective refactor pass semantics are anchored by graph-health, refactor-queue, proposal-queue, and prompt-guidance regression tests that mention SG-SPEC-0005."
+    "notes": "Retrospective refactor pass semantics are anchored by supervisor graph-health/refactor-queue runtime code and regression tests that mention SG-SPEC-0005."
   },
   {
     "spec_id": "SG-SPEC-0019",
