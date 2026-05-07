@@ -152,6 +152,56 @@
     "notes": "Proposal-lane evidence is registry-backed by a focused SG-SPEC-0006 regression anchor covering repository-tracked proposal nodes and queryable overlay state."
   },
   {
+    "spec_id": "SG-SPEC-0013",
+    "evidence_scope": "surface_level",
+    "artifact_refs": [
+      "tools/supervisor.py",
+      "tools/proposal_lane_policy.json",
+      "tests/test_supervisor.py"
+    ],
+    "runtime_entities": [
+      {
+        "entity_id": "supervisor.proposal_lane_application_gate",
+        "entity_kind": "review_gate"
+      },
+      {
+        "entity_id": "supervisor.proposal_lane_overlay",
+        "entity_kind": "viewer_overlay"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "test_sg_spec_0013_trace_anchor_exposes_approved_application_gate"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "Trace anchor: SG-SPEC-0013 governs this approved application gate surface."
+      }
+    ],
+    "outcome_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "assert overlay[\"entry_count\"] == 1"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "proposal_authority_state"
+      }
+    ],
+    "adoption_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "overlay[\"entries\"][0][\"target_region\"][\"target_reference\"] == \"SG-SPEC-0013\""
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "overlay[\"named_filters\"][\"approved_for_application\"] == [proposal[\"id\"]]"
+      }
+    ],
+    "notes": "Retrospective application gate evidence is registry-backed by a focused SG-SPEC-0013 regression anchor covering the repository-tracked approved_for_application gate."
+  },
+  {
     "spec_id": "SG-SPEC-0049",
     "evidence_scope": "surface_level",
     "artifact_refs": [

@@ -3644,6 +3644,34 @@ def test_sg_spec_0006_trace_anchor_tracks_repository_proposal_lane_node(
     assert overlay["named_filters"]["under_review"] == [proposal["id"]]
 
 
+def test_sg_spec_0013_trace_anchor_exposes_approved_application_gate(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    proposal = {
+        "id": "governance_proposal::SG-SPEC-0013::application_gate",
+        "spec_id": "SG-SPEC-0013",
+        "signal": "retrospective_application_gate",
+        "status": "approved_for_application",
+        "created_run_id": "RUN-SG-SPEC-0013",
+        "updated_run_id": "RUN-SG-SPEC-0013",
+        "created_at": "2026-05-06T00:00:00Z",
+        "updated_at": "2026-05-06T00:00:00Z",
+    }
+
+    node_path, node = supervisor_module.sync_tracked_proposal_lane_node(proposal)
+    overlay = supervisor_module.build_proposal_lane_overlay()
+
+    assert node_path.exists()
+    assert node["proposal_authority_state"] == "approved_for_application"
+    assert overlay["artifact_kind"] == supervisor_module.PROPOSAL_LANE_OVERLAY_ARTIFACT_KIND
+    assert overlay["entry_count"] == 1
+    assert overlay["entries"][0]["target_region"]["target_reference"] == "SG-SPEC-0013"
+    assert overlay["entries"][0]["proposal_authority_state"] == "approved_for_application"
+    assert overlay["entries"][0]["query_contract"]["status"] == "queryable"
+    assert overlay["named_filters"]["approved_for_application"] == [proposal["id"]]
+
+
 def test_sync_tracked_proposal_lane_node_records_canonical_application_event(
     supervisor_module: object,
     repo_fixture: Path,

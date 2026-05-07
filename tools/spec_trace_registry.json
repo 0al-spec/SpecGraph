@@ -30,6 +30,16 @@
     "notes": "Tracked proposal lane semantics are anchored by supervisor proposal-lane synchronization runtime code and overlay regression tests that mention SG-SPEC-0006."
   },
   {
+    "spec_id": "SG-SPEC-0013",
+    "code_surfaces": [
+      "tools/supervisor.py"
+    ],
+    "test_surfaces": [
+      "tests/test_supervisor.py"
+    ],
+    "notes": "Retrospective application gate semantics are anchored by supervisor proposal-lane approval gate runtime code and regression tests that mention SG-SPEC-0013."
+  },
+  {
     "spec_id": "SG-SPEC-0019",
     "code_surfaces": [
       "tools/supervisor.py"
