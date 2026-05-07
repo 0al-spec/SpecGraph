@@ -11253,6 +11253,7 @@ def build_proposal_lane_overlay() -> dict[str, Any]:
         if authority_state == "under_review":
             named_filters["under_review"].append(handle_value or tracked_path)
         if authority_state == "approved_for_application":
+            # Trace anchor: SG-SPEC-0013 governs this approved application gate surface.
             named_filters["approved_for_application"].append(handle_value or tracked_path)
         if authority_state in {"rejected", "superseded"}:
             named_filters["rejected_or_superseded"].append(handle_value or tracked_path)

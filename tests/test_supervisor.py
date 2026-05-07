@@ -3665,6 +3665,7 @@ def test_sg_spec_0013_trace_anchor_exposes_approved_application_gate(
     assert node_path.exists()
     assert node["proposal_authority_state"] == "approved_for_application"
     assert overlay["artifact_kind"] == supervisor_module.PROPOSAL_LANE_OVERLAY_ARTIFACT_KIND
+    assert overlay["entry_count"] == 1
     assert overlay["entries"][0]["target_region"]["target_reference"] == "SG-SPEC-0013"
     assert overlay["entries"][0]["proposal_authority_state"] == "approved_for_application"
     assert overlay["entries"][0]["query_contract"]["status"] == "queryable"

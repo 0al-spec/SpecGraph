@@ -31,11 +31,13 @@
   },
   {
     "spec_id": "SG-SPEC-0013",
-    "code_surfaces": [],
+    "code_surfaces": [
+      "tools/supervisor.py"
+    ],
     "test_surfaces": [
       "tests/test_supervisor.py"
     ],
-    "notes": "Retrospective application gate semantics are anchored by proposal-lane approval gate regression tests that mention SG-SPEC-0013."
+    "notes": "Retrospective application gate semantics are anchored by supervisor proposal-lane approval gate runtime code and regression tests that mention SG-SPEC-0013."
   },
   {
     "spec_id": "SG-SPEC-0019",

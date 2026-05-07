@@ -176,13 +176,13 @@
       },
       {
         "path": "tools/supervisor.py",
-        "pattern": "approved_for_application"
+        "pattern": "Trace anchor: SG-SPEC-0013 governs this approved application gate surface."
       }
     ],
     "outcome_markers": [
       {
         "path": "tests/test_supervisor.py",
-        "pattern": "overlay[\"named_filters\"][\"approved_for_application\"]"
+        "pattern": "assert overlay[\"entry_count\"] == 1"
       },
       {
         "path": "tools/supervisor.py",
@@ -192,11 +192,11 @@
     "adoption_markers": [
       {
         "path": "tests/test_supervisor.py",
-        "pattern": "\"SG-SPEC-0013\""
+        "pattern": "overlay[\"entries\"][0][\"target_region\"][\"target_reference\"] == \"SG-SPEC-0013\""
       },
       {
-        "path": "tools/proposal_lane_policy.json",
-        "pattern": "approved_for_application"
+        "path": "tests/test_supervisor.py",
+        "pattern": "overlay[\"named_filters\"][\"approved_for_application\"] == [proposal[\"id\"]]"
       }
     ],
     "notes": "Retrospective application gate evidence is registry-backed by a focused SG-SPEC-0013 regression anchor covering the repository-tracked approved_for_application gate."
