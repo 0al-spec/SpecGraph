@@ -18477,6 +18477,78 @@ def test_build_graph_next_moves_uses_tracked_proposal_lane_to_cover_split_residu
     assert report["source_facts"]["proposal_lane_overlay"]["entry_count"] == 1
 
 
+def test_sg_spec_0044_trace_anchor_accepts_proposal_lane_as_non_bypass_path(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    spec_id = "SG-SPEC-0044"
+    write_ready_branch_rewrite_preview_artifact(supervisor_module, repo_fixture)
+    branch_backlog_id = (
+        "branch_rewrite_preview::branch_rewrite::SG-SPEC-0044::emit_split_proposal::"
+        "review_branch_rewrite_candidate"
+    )
+    backlog_projection = {
+        "artifact_kind": supervisor_module.GRAPH_BACKLOG_PROJECTION_ARTIFACT_KIND,
+        "schema_version": supervisor_module.GRAPH_BACKLOG_PROJECTION_SCHEMA_VERSION,
+        "generated_at": "2026-04-28T00:00:01Z",
+        "entry_count": 1,
+        "entries": [
+            {
+                "backlog_id": branch_backlog_id,
+                "domain": "branch_rewrite",
+                "source_artifact": "branch_rewrite_preview",
+                "source_artifact_path": "runs/branch_rewrite_preview.json",
+                "subject_kind": "spec",
+                "subject_id": spec_id,
+                "title": "Proposal/Split Readiness Non-Bypass Path",
+                "status": "emit_split_proposal",
+                "review_state": "preview_only",
+                "next_gap": "review_branch_rewrite_candidate",
+                "priority": "high",
+                "details": {
+                    "rewrite_classes": ["split_needed"],
+                    "findings": ["node_has_split_pressure"],
+                },
+            }
+        ],
+        "summary": {
+            "source_artifact_counts": {"branch_rewrite_preview": 2},
+            "priority_counts": {"high": 1},
+            "next_gap_counts": {"review_branch_rewrite_candidate": 1},
+        },
+        "viewer_projection": {"priorities": {"high": [branch_backlog_id]}},
+    }
+    proposal_lane_overlay = {
+        "artifact_kind": "proposal_lane_overlay",
+        "schema_version": 1,
+        "generated_at": "2026-04-28T00:00:02Z",
+        "entry_count": 1,
+        "entries": [
+            {
+                "proposal_authority_state": "approved_for_application",
+                "target_region": {
+                    "target_kind": "canonical_node",
+                    "target_reference": spec_id,
+                    "change_scope": "repeated_split_required_candidate",
+                },
+            }
+        ],
+        "named_filters": {"approved_for_application": [f"governance_proposal::{spec_id}"]},
+    }
+
+    report = supervisor_module.build_graph_next_moves(
+        supervisor_module.load_specs(),
+        backlog_projection=backlog_projection,
+        proposal_runtime_index=fake_graph_next_moves_proposal_runtime(supervisor_module),
+        proposal_lane_overlay=proposal_lane_overlay,
+    )
+
+    assert spec_id == "SG-SPEC-0044"
+    assert report["current_scene"] == "steady_state"
+    assert report["recommended_next_move_kind"] == "none"
+    assert report["source_facts"]["proposal_lane_overlay"]["entry_count"] == 1
+
+
 def test_branch_rewrite_preview_projection_tolerates_malformed_optional_lists(
     supervisor_module: object,
 ) -> None:

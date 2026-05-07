@@ -644,6 +644,55 @@
     "notes": "Gateway-boundary evidence is anchored by graph-next-moves logic that suppresses branch split residue once a tracked proposal queue item already exposes the readiness boundary."
   },
   {
+    "spec_id": "SG-SPEC-0044",
+    "evidence_scope": "surface_level",
+    "artifact_refs": [
+      "tools/supervisor.py",
+      "tests/test_supervisor.py"
+    ],
+    "runtime_entities": [
+      {
+        "entity_id": "supervisor.graph_next_moves_top_backlog_entry",
+        "entity_kind": "admissible_path_selector"
+      },
+      {
+        "entity_id": "supervisor.proposal_lane_overlay",
+        "entity_kind": "non_bypass_path_cover"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "test_sg_spec_0044_trace_anchor_accepts_proposal_lane_as_non_bypass_path"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "Trace anchor: SG-SPEC-0044 blocks bypass by treating tracked"
+      }
+    ],
+    "outcome_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "assert report[\"current_scene\"] == \"steady_state\""
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "assert report[\"recommended_next_move_kind\"] == \"none\""
+      }
+    ],
+    "adoption_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "spec_id = \"SG-SPEC-0044\""
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "if isinstance(proposal_lane_overlay, dict):"
+      }
+    ],
+    "notes": "Non-bypass path evidence is anchored by graph-next-moves logic that accepts tracked proposal-lane coverage as the admissible path and suppresses branch split residue for the same subject."
+  },
+  {
     "spec_id": "SG-SPEC-0049",
     "evidence_scope": "surface_level",
     "artifact_refs": [
