@@ -3609,6 +3609,41 @@ def test_update_proposal_queue_syncs_tracked_proposal_lane_node(
     assert overlay["named_filters"]["under_review"] == [proposal["id"]]
 
 
+def test_sg_spec_0006_trace_anchor_tracks_repository_proposal_lane_node(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    graph_health = {
+        "source_spec_id": "SG-SPEC-0006",
+        "observations": [
+            {
+                "kind": "repeated_split_required_candidate",
+                "details": "SG-SPEC-0006 requires repository-tracked proposal lane state.",
+            }
+        ],
+        "signals": ["repeated_split_required_candidate"],
+        "recommended_actions": ["review_decomposition_policy"],
+    }
+
+    _path, items = supervisor_module.update_proposal_queue(
+        graph_health=graph_health,
+        run_id="RUN-SG-SPEC-0006",
+    )
+
+    assert len(items) == 1
+    proposal = items[0]
+    overlay = json.loads(
+        (repo_fixture / "runs" / "proposal_lane_overlay.json").read_text(encoding="utf-8")
+    )
+
+    assert proposal["spec_id"] == "SG-SPEC-0006"
+    assert overlay["artifact_kind"] == supervisor_module.PROPOSAL_LANE_OVERLAY_ARTIFACT_KIND
+    assert overlay["entry_count"] == 1
+    assert overlay["entries"][0]["target_region"]["target_reference"] == "SG-SPEC-0006"
+    assert overlay["entries"][0]["query_contract"]["status"] == "queryable"
+    assert overlay["named_filters"]["under_review"] == [proposal["id"]]
+
+
 def test_sync_tracked_proposal_lane_node_records_canonical_application_event(
     supervisor_module: object,
     repo_fixture: Path,

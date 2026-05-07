@@ -10967,6 +10967,7 @@ def proposal_lane_timestamp_findings(node: dict[str, Any]) -> list[str]:
     return findings
 
 
+# Trace anchor: SG-SPEC-0006 governs repository-tracked proposal lane synchronization.
 def sync_tracked_proposal_lane_node(
     proposal_item: dict[str, Any],
 ) -> tuple[Path, dict[str, Any]] | None:

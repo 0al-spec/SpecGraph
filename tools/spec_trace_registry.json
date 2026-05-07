@@ -20,6 +20,16 @@
     "notes": "Retrospective refactor pass semantics are anchored by supervisor graph-health/refactor-queue runtime code and regression tests that mention SG-SPEC-0005."
   },
   {
+    "spec_id": "SG-SPEC-0006",
+    "code_surfaces": [
+      "tools/supervisor.py"
+    ],
+    "test_surfaces": [
+      "tests/test_supervisor.py"
+    ],
+    "notes": "Tracked proposal lane semantics are anchored by supervisor proposal-lane synchronization runtime code and overlay regression tests that mention SG-SPEC-0006."
+  },
+  {
     "spec_id": "SG-SPEC-0019",
     "code_surfaces": [
       "tools/supervisor.py"
