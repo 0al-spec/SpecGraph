@@ -50,6 +50,16 @@
     "notes": "Canonical revision and supersession lineage semantics are embodied in supervisor lineage reconciliation and regression tests."
   },
   {
+    "spec_id": "SG-SPEC-0025",
+    "code_surfaces": [
+      "tools/supervisor.py"
+    ],
+    "test_surfaces": [
+      "tests/test_supervisor.py"
+    ],
+    "notes": "Split proposal mechanics are anchored by supervisor split payload work-item construction and regression tests that mention SG-SPEC-0025."
+  },
+  {
     "spec_id": "SG-SPEC-0049",
     "code_surfaces": [
       "tools/supervisor.py"
