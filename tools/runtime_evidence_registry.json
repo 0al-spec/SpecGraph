@@ -202,6 +202,55 @@
     "notes": "Retrospective application gate evidence is registry-backed by a focused SG-SPEC-0013 regression anchor covering the repository-tracked approved_for_application gate."
   },
   {
+    "spec_id": "SG-SPEC-0025",
+    "evidence_scope": "surface_level",
+    "artifact_refs": [
+      "tools/supervisor.py",
+      "tests/test_supervisor.py"
+    ],
+    "runtime_entities": [
+      {
+        "entity_id": "supervisor.split_refactor_work_item",
+        "entity_kind": "split_payload_builder"
+      },
+      {
+        "entity_id": "supervisor.split_proposal_queue",
+        "entity_kind": "derived_queue_item"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "test_sg_spec_0025_trace_anchor_builds_split_payload_work_item"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "Trace anchor: SG-SPEC-0025 governs split proposal payload and queue mechanics."
+      }
+    ],
+    "outcome_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "work_item[\"refactor_kind\"] == \"split_oversized_spec\""
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "work_item[\"proposal_artifact_relpath\"].endswith(\".json\")"
+      }
+    ],
+    "adoption_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "work_item[\"target_spec_id\"] == \"SG-SPEC-0025\""
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "work_item[\"recommended_action\"] == \"emit_split_proposal\""
+      }
+    ],
+    "notes": "Split proposal mechanics evidence is registry-backed by a focused SG-SPEC-0025 regression anchor covering split payload work-item shape and queue handoff intent."
+  },
+  {
     "spec_id": "SG-SPEC-0049",
     "evidence_scope": "surface_level",
     "artifact_refs": [

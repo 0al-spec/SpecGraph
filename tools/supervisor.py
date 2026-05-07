@@ -2212,6 +2212,7 @@ ATOMICITY_MAX_BLOCKING_CHILDREN = int(policy_lookup("thresholds.atomicity_max_bl
 RECURRING_REFACTOR_PROPOSAL_THRESHOLD = int(policy_lookup("thresholds.recurring_refactor_proposal"))
 SPLIT_REFACTOR_SIGNAL = "oversized_spec"
 SPLIT_REFACTOR_KIND = "split_oversized_spec"
+# Trace anchor: SG-SPEC-0025 governs split proposal payload and queue mechanics.
 # Trace anchor: SG-SPEC-0005 governs retrospective refactor pass detection and staging.
 RETROSPECTIVE_REFACTOR_SIGNAL = "retrospective_refactor_candidate"
 SUBTREE_SHAPE_SIGNALS = set(policy_lookup("queue_policy.subtree_shape_signals"))
