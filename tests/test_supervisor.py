@@ -6119,11 +6119,12 @@ def test_sg_spec_0029_trace_anchor_requires_available_split_target(
     supervisor_module: object,
     repo_fixture: Path,
 ) -> None:
+    acceptance_count = supervisor_module.ATOMICITY_MAX_ACCEPTANCE + 1
     node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
     node_data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
     node_data["id"] = "SG-SPEC-0029"
     node_data["title"] = "Proposal Split Gateway"
-    node_data["acceptance"] = [f"gateway-availability-{i}" for i in range(1, 7)]
+    node_data["acceptance"] = [f"gateway-availability-{i}" for i in range(1, acceptance_count + 1)]
     node_data["outputs"] = ["specs/nodes/SG-SPEC-0029.yaml"]
     node_data["allowed_paths"] = ["specs/nodes/SG-SPEC-0029.yaml"]
     node_path.unlink()
