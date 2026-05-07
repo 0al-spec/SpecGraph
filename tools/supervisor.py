@@ -27838,6 +27838,8 @@ def graph_next_moves_top_backlog_entry(
                 proposal_covered_split_subjects.add(target_reference)
 
     def is_covered_branch_split_candidate(entry: dict[str, Any]) -> bool:
+        # Trace anchor: SG-SPEC-0043 preserves one readiness boundary once
+        # proposal/split mechanics are already surfaced through tracked proposals.
         if str(entry.get("source_artifact", "")).strip() != "branch_rewrite_preview":
             return False
         if str(entry.get("status", "")).strip() != "emit_split_proposal":

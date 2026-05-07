@@ -131,6 +131,16 @@
     "notes": "Proposal/split mechanics readiness region is anchored by branch-rewrite split-pressure routing that exposes emit_split_proposal as one reviewable capability response."
   },
   {
+    "spec_id": "SG-SPEC-0043",
+    "code_surfaces": [
+      "tools/supervisor.py"
+    ],
+    "test_surfaces": [
+      "tests/test_supervisor.py"
+    ],
+    "notes": "Proposal/split gateway boundary is anchored by graph-next-moves routing that treats tracked proposal coverage as the active readiness boundary over branch rewrite residue."
+  },
+  {
     "spec_id": "SG-SPEC-0049",
     "code_surfaces": [
       "tools/supervisor.py"
