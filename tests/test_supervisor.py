@@ -3,6 +3,7 @@ from __future__ import annotations
 import copy
 import datetime as dt
 import importlib.util
+import inspect
 import io
 import json
 import os
@@ -18612,6 +18613,24 @@ def test_build_implementation_work_index_from_delta_snapshot(
     ]
     assert index["canonical_mutations_allowed"] is False
     assert index["runtime_code_mutations_allowed"] is False
+
+
+def test_sg_spec_0030_trace_anchor_blocks_non_bypass_prerequisite_gap(
+    supervisor_module: object,
+) -> None:
+    readiness, blockers = supervisor_module.implementation_work_item_readiness(
+        snapshot_status="ready_for_planning",
+        has_quality_blocker=False,
+        has_trace_gap=True,
+        has_evidence_gap=False,
+    )
+
+    assert (
+        "Trace anchor: SG-SPEC-0030 governs prerequisite readiness as non-bypass input."
+        in inspect.getsource(supervisor_module.implementation_work_item_readiness)
+    )
+    assert readiness == "blocked_by_trace_gap"
+    assert blockers == ["trace_baseline_gap"]
 
 
 def test_load_current_implementation_work_index_normalizes_legacy_entries(

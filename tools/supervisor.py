@@ -13486,6 +13486,7 @@ def implementation_work_item_readiness(
     has_trace_gap: bool,
     has_evidence_gap: bool,
 ) -> tuple[str, list[str]]:
+    # Trace anchor: SG-SPEC-0030 governs prerequisite readiness as non-bypass input.
     blockers: list[str] = []
     if has_quality_blocker or snapshot_status == "blocked_by_spec_quality":
         blockers.append("spec_quality_gate")
