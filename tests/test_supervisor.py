@@ -7606,6 +7606,107 @@ def test_build_spec_trace_index_detects_drift_on_unmentioned_declared_surface(
     assert entry["freshness"]["status"] == "drifted_after_verification"
 
 
+def test_build_spec_activity_feed_emits_trace_and_evidence_baseline_events(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fake_activity_commits(
+        *,
+        repo_root: Path | None = None,
+        limit: int | None = None,
+        source_paths: list[str] | None = None,
+    ) -> list[dict[str, object]]:
+        del repo_root, source_paths
+        commits: list[dict[str, object]] = [
+            {
+                "sha": "a" * 40,
+                "short_sha": "aaaaaaa",
+                "committed_at": "2026-05-07T21:00:00+00:00",
+                "subject": "Attach SG-SPEC-0001 trace baseline",
+                "paths": [
+                    "tools/runtime_evidence_registry.json",
+                    "tools/spec_trace_registry.json",
+                ],
+            },
+            {
+                "sha": "b" * 40,
+                "short_sha": "bbbbbbb",
+                "committed_at": "2026-05-07T20:00:00+00:00",
+                "subject": "Clarify root spec wording",
+                "paths": ["specs/nodes/SG-SPEC-0001.yaml"],
+            },
+            {
+                "sha": "c" * 40,
+                "short_sha": "ccccccc",
+                "committed_at": "2026-05-07T19:00:00+00:00",
+                "subject": "Record PR 161 review feedback",
+                "paths": ["tools/review_feedback_records.json"],
+            },
+        ]
+        return commits[: limit or len(commits)]
+
+    monkeypatch.setattr(
+        supervisor_module,
+        "collect_spec_activity_commit_refs",
+        fake_activity_commits,
+    )
+
+    feed = supervisor_module.build_spec_activity_feed(supervisor_module.load_specs())
+
+    event_types = [entry["event_type"] for entry in feed["entries"]]
+    assert feed["artifact_kind"] == supervisor_module.SPEC_ACTIVITY_FEED_ARTIFACT_KIND
+    assert feed["entry_count"] == 4
+    assert event_types == [
+        "trace_baseline_attached",
+        "evidence_baseline_attached",
+        "canonical_spec_updated",
+        "review_feedback_applied",
+    ]
+    assert {entry["spec_id"] for entry in feed["entries"]} == {"", "SG-SPEC-0001"}
+    assert feed["entries"][0]["title"] == "Golden Path Node"
+    assert feed["entries"][3]["title"] == "Graph process feedback"
+    assert feed["summary"]["event_type_counts"]["trace_baseline_attached"] == 1
+    assert len(feed["viewer_projection"]["named_filters"]["trace_or_evidence_baselines"]) == 2
+    assert len(feed["viewer_projection"]["named_filters"]["process_activity"]) == 1
+    assert "" not in feed["viewer_projection"]["spec_id"]
+    assert feed["canonical_mutations_allowed"] is False
+    assert feed["tracked_artifacts_written"] is False
+
+
+def test_main_builds_spec_activity_feed_as_standalone_command(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    def fake_activity_feed(specs: list[object]) -> dict[str, object]:
+        assert specs
+        return {
+            "artifact_kind": supervisor_module.SPEC_ACTIVITY_FEED_ARTIFACT_KIND,
+            "schema_version": supervisor_module.SPEC_ACTIVITY_FEED_SCHEMA_VERSION,
+            "generated_at": "2026-05-07T21:00:00+00:00",
+            "entry_count": 1,
+            "entries": [{"event_id": "spec_activity::1"}],
+            "summary": {"entry_count": 1},
+            "viewer_projection": {},
+            "canonical_mutations_allowed": False,
+            "tracked_artifacts_written": False,
+        }
+
+    monkeypatch.setattr(supervisor_module, "build_spec_activity_feed", fake_activity_feed)
+
+    exit_code = supervisor_module.main(build_spec_activity_feed_mode=True)
+
+    assert exit_code == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["artifact_kind"] == supervisor_module.SPEC_ACTIVITY_FEED_ARTIFACT_KIND
+    persisted = json.loads(
+        (repo_fixture / "runs" / "spec_activity_feed.json").read_text(encoding="utf-8")
+    )
+    assert persisted["entry_count"] == 1
+
+
 def test_build_spec_trace_projection_groups_backlog_and_viewer_filters(
     supervisor_module: object,
 ) -> None:
@@ -15261,6 +15362,7 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
         "runtime": 0,
         "proposal_promotion": 0,
         "trace": 0,
+        "activity": 0,
     }
 
     def fake_backlog(
@@ -15896,6 +15998,27 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
             "tracked_artifacts_written": False,
         }
 
+    def fake_spec_activity_feed(specs: list[object]) -> dict[str, object]:
+        surface_calls["activity"] += 1
+        assert specs
+        return {
+            "artifact_kind": supervisor_module.SPEC_ACTIVITY_FEED_ARTIFACT_KIND,
+            "schema_version": supervisor_module.SPEC_ACTIVITY_FEED_SCHEMA_VERSION,
+            "generated_at": "2026-04-27T00:00:11Z",
+            "entry_count": 2,
+            "entries": [
+                {"event_id": "spec_activity::trace", "event_type": "trace_baseline_attached"},
+                {
+                    "event_id": "spec_activity::evidence",
+                    "event_type": "evidence_baseline_attached",
+                },
+            ],
+            "summary": {"entry_count": 2},
+            "viewer_projection": {},
+            "canonical_mutations_allowed": False,
+            "tracked_artifacts_written": False,
+        }
+
     monkeypatch.setattr(supervisor_module, "build_graph_backlog_projection", fake_backlog)
     monkeypatch.setattr(supervisor_module, "build_graph_dashboard", fake_dashboard)
     monkeypatch.setattr(supervisor_module, "build_graph_next_moves", fake_next_moves)
@@ -16007,6 +16130,7 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
     monkeypatch.setattr(
         supervisor_module, "build_proposal_spec_trace_index", fake_proposal_spec_trace_index
     )
+    monkeypatch.setattr(supervisor_module, "build_spec_activity_feed", fake_spec_activity_feed)
 
     exit_code = supervisor_module.main(build_viewer_surfaces_mode=True)
 
@@ -16067,6 +16191,7 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
         report["written_artifacts"]["metrics_source_promotion_index"]["promotion_backlog_count"]
         == 1
     )
+    assert report["written_artifacts"]["spec_activity_feed"]["entry_count"] == 2
     assert surface_calls == {
         "graph": 1,
         "graph_trends": 1,
@@ -16096,6 +16221,7 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
         "runtime": 1,
         "proposal_promotion": 1,
         "trace": 1,
+        "activity": 1,
     }
     assert (
         json.loads(
@@ -16225,6 +16351,12 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
             )
         )["artifact_kind"]
         == supervisor_module.CONVERSATION_MEMORY_PROMOTION_PRESSURE_ARTIFACT_KIND
+    )
+    assert (
+        json.loads((repo_fixture / "runs" / "spec_activity_feed.json").read_text(encoding="utf-8"))[
+            "entry_count"
+        ]
+        == 2
     )
 
 

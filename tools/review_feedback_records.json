@@ -482,5 +482,41 @@
     "residual_risk": "",
     "resolved_commit": "49d652851bbb4fa0b78cbeb93058997e13ebe351",
     "recorded_at": "2026-04-28T21:52:15Z"
+  },
+  {
+    "feedback_id": "pr-243-spec-activity-review-feedback-unscoped",
+    "source_pr": 243,
+    "source_thread_url": "https://github.com/0al-spec/SpecGraph/pull/243#discussion_r3204974812",
+    "reviewer": "chatgpt-codex-connector",
+    "review_comment_summary": "Spec activity feed skipped review-feedback commits when no SG-SPEC id could be inferred from the commit subject or changed paths.",
+    "fix_summary": "Preserved unscoped review-feedback activity as graph-level process events with empty spec_id and added regression coverage.",
+    "root_cause_class": "process_rule_gap",
+    "prevention_action": "regression_test_added",
+    "verification": [
+      "targeted_test",
+      "full_test_suite",
+      "lint_or_format_check"
+    ],
+    "residual_risk": "",
+    "resolved_commit": "2127bd7bae4c4ec58ca3fa68f7016013bd63b13b",
+    "recorded_at": "2026-05-07T22:12:00Z"
+  },
+  {
+    "feedback_id": "pr-243-spec-activity-viewer-contract-example",
+    "source_pr": 243,
+    "source_thread_url": "https://github.com/0al-spec/SpecGraph/pull/243#discussion_r3204978520",
+    "reviewer": "copilot-pull-request-reviewer",
+    "review_comment_summary": "The spec activity feed viewer contract listed viewer_contract as stable but omitted it from the expected JSON shape example.",
+    "fix_summary": "Updated the expected artifact shape example to include the viewer_contract object written by the builder.",
+    "root_cause_class": "viewer_contract_gap",
+    "prevention_action": "documentation_rule_added",
+    "verification": [
+      "manual_contract_review",
+      "full_test_suite",
+      "lint_or_format_check"
+    ],
+    "residual_risk": "",
+    "resolved_commit": "2127bd7bae4c4ec58ca3fa68f7016013bd63b13b",
+    "recorded_at": "2026-05-07T22:12:00Z"
   }
 ]

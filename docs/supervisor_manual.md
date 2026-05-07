@@ -22,6 +22,8 @@ For the ContextBuilder graph backlog drill-down viewer contract, see
 [graph_backlog_projection_viewer_contract.md](./graph_backlog_projection_viewer_contract.md).
 For the ContextBuilder proposal/spec trace viewer contract, see
 [proposal_spec_trace_viewer_contract.md](./proposal_spec_trace_viewer_contract.md).
+For the ContextBuilder spec activity feed viewer contract, see
+[spec_activity_feed_viewer_contract.md](./spec_activity_feed_viewer_contract.md).
 For the planned Implementation Work delta/work-index viewer contract, see
 [implementation_work_viewer_contract.md](./implementation_work_viewer_contract.md).
 
@@ -146,6 +148,8 @@ particular task.
   `--build-graph-backlog-projection`
 - build a read-only advisory next-move surface:
   `--build-graph-next-moves`
+- build a viewer-facing spec activity feed:
+  `--build-spec-activity-feed` or `make spec-activity`
 - build a repository-tracked intent-layer overlay:
   `--build-intent-layer-overlay`
 - build a review-only assumption-mode exploration preview from root intent text:
@@ -1227,6 +1231,7 @@ reads:
 - `runs/conversation_memory_index.json`
 - `runs/conversation_memory_map.json`
 - `runs/conversation_memory_promotion_pressure.json`
+- `runs/spec_activity_feed.json`
 
 This mode is intended for local `post-merge` / `post-checkout` hooks, CI smoke
 checks, and viewer build buttons. It refreshes existing read models only: it
@@ -1703,6 +1708,9 @@ path.
 - `runs/graph_next_moves.json`
   - advisory derived surface with `current_scene`, one recommended bounded move,
     alternatives, blocked moves, and compact source facts for viewer guidance
+- `runs/spec_activity_feed.json`
+  - derived activity feed that maps git-observed spec, trace, evidence,
+    proposal, implementation, and review-feedback changes back to spec ids
 - `tools/proposal_lane_policy.json`
   - declarative proposal-lane contract for repository presence, authority-state
     mapping, and overlay/query semantics
