@@ -19914,6 +19914,35 @@ def test_build_proposal_runtime_index_reports_reflective_chain(
     assert index["reflective_backlog"]["grouped_by_next_gap"]["runtime_realization"] == ["0017"]
 
 
+def test_sg_spec_0027_trace_anchor_composes_reflective_execution_readiness(
+    supervisor_module: object,
+) -> None:
+    spec_id = "SG-SPEC-0027"
+    covered_marker_report = {"required_count": 1, "status": "covered"}
+
+    validation_status = supervisor_module.derive_reflective_followup_status(
+        posture="bounded_runtime_followup",
+        runtime_status="implemented",
+        marker_report=covered_marker_report,
+    )
+    observation_status = supervisor_module.derive_reflective_followup_status(
+        posture="bounded_runtime_followup",
+        runtime_status="implemented",
+        marker_report=covered_marker_report,
+    )
+    next_gap = supervisor_module.reflective_next_gap(
+        posture="bounded_runtime_followup",
+        runtime_status="implemented",
+        validation_status=validation_status,
+        observation_status=observation_status,
+    )
+
+    assert spec_id == "SG-SPEC-0027"
+    assert validation_status == "covered"
+    assert observation_status == "covered"
+    assert next_gap == "none"
+
+
 def test_implemented_proposal_without_registry_entry_is_not_required(
     supervisor_module: object,
     repo_fixture: Path,

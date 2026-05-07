@@ -70,6 +70,16 @@
     "notes": "Continuation selection semantics are anchored by linked-continuation runtime derivation and tests that mention SG-SPEC-0026."
   },
   {
+    "spec_id": "SG-SPEC-0027",
+    "code_surfaces": [
+      "tools/supervisor.py"
+    ],
+    "test_surfaces": [
+      "tests/test_supervisor.py"
+    ],
+    "notes": "Reflective execution readiness composition is anchored by proposal runtime follow-up derivation and SG-SPEC-0027 regression tests."
+  },
+  {
     "spec_id": "SG-SPEC-0049",
     "code_surfaces": [
       "tools/supervisor.py"

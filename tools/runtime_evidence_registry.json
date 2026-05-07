@@ -300,6 +300,55 @@
     "notes": "Continuation decision evidence is registry-backed by linked-continuation derivation and YAML repair regressions that preserve SG-SPEC-0026 continuation prose."
   },
   {
+    "spec_id": "SG-SPEC-0027",
+    "evidence_scope": "surface_level",
+    "artifact_refs": [
+      "tools/supervisor.py",
+      "tests/test_supervisor.py"
+    ],
+    "runtime_entities": [
+      {
+        "entity_id": "supervisor.reflective_followup_status",
+        "entity_kind": "readiness_derivation"
+      },
+      {
+        "entity_id": "supervisor.reflective_next_gap",
+        "entity_kind": "continuation_readiness_gate"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "test_sg_spec_0027_trace_anchor_composes_reflective_execution_readiness"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "Trace anchor: SG-SPEC-0027 governs reflective execution readiness composition."
+      }
+    ],
+    "outcome_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "assert validation_status == \"covered\""
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "assert next_gap == \"none\""
+      }
+    ],
+    "adoption_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "spec_id = \"SG-SPEC-0027\""
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def reflective_next_gap("
+      }
+    ],
+    "notes": "Reflective execution readiness evidence is registry-backed by follow-up status and next-gap derivation tests for the SG-SPEC-0027 readiness composition surface."
+  },
+  {
     "spec_id": "SG-SPEC-0049",
     "evidence_scope": "surface_level",
     "artifact_refs": [
