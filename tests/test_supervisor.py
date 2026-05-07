@@ -6090,6 +6090,31 @@ def test_sg_spec_0025_trace_anchor_builds_split_payload_work_item(
     assert work_item["proposal_artifact_relpath"].endswith(".json")
 
 
+def test_sg_spec_0028_trace_anchor_coordinates_split_proposal_handoff(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    node_data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    node_data["id"] = "SG-SPEC-0028"
+    node_data["title"] = "Proposal Split Mechanics Coordination"
+    node_data["acceptance"] = [f"proposal-split-coordinate-{i}" for i in range(1, 7)]
+    node_data["outputs"] = ["specs/nodes/SG-SPEC-0028.yaml"]
+    node_data["allowed_paths"] = ["specs/nodes/SG-SPEC-0028.yaml"]
+    node_path.unlink()
+    (repo_fixture / "specs" / "nodes" / "SG-SPEC-0028.yaml").write_text(
+        json.dumps(node_data),
+        encoding="utf-8",
+    )
+
+    work_item = supervisor_module.build_split_refactor_work_item(supervisor_module.load_specs()[0])
+
+    assert work_item["target_spec_id"] == "SG-SPEC-0028"
+    assert work_item["proposal_type"] == "refactor_proposal"
+    assert work_item["refactor_kind"] == "split_oversized_spec"
+    assert work_item["execution_policy"] == "emit_proposal"
+
+
 def test_summarize_queue_transition_tracks_emitted_cleared_and_updated_ids(
     supervisor_module: object,
 ) -> None:
