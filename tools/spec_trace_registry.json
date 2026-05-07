@@ -10,6 +10,16 @@
     "notes": "Split proposal application semantics are anchored by the supervisor apply path and regression tests that mention SG-SPEC-0004 and exercise canonical parent/child materialization."
   },
   {
+    "spec_id": "SG-SPEC-0005",
+    "code_surfaces": [
+      "tools/supervisor.py"
+    ],
+    "test_surfaces": [
+      "tests/test_supervisor.py"
+    ],
+    "notes": "Retrospective refactor pass semantics are anchored by supervisor graph-health/refactor-queue runtime code and regression tests that mention SG-SPEC-0005."
+  },
+  {
     "spec_id": "SG-SPEC-0019",
     "code_surfaces": [
       "tools/supervisor.py"

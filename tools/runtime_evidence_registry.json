@@ -49,6 +49,59 @@
     "notes": "Split proposal application evidence is registry-backed by the explicit supervisor apply path and end-to-end regression tests that verify canonical writeback and applied proposal/queue state."
   },
   {
+    "spec_id": "SG-SPEC-0005",
+    "evidence_scope": "surface_level",
+    "artifact_refs": [
+      "tools/supervisor.py",
+      "tests/test_supervisor.py"
+    ],
+    "runtime_entities": [
+      {
+        "entity_id": "supervisor.graph_health_retrospective_refactor_signal",
+        "entity_kind": "inspection_signal"
+      },
+      {
+        "entity_id": "supervisor.refactor_queue_retrospective_candidate",
+        "entity_kind": "derived_queue_item"
+      },
+      {
+        "entity_id": "supervisor.proposal_queue_retrospective_candidate",
+        "entity_kind": "proposal_queue_item"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "test_observe_graph_health_emits_retrospective_signal_for_live_oversized_parent"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "RETROSPECTIVE_REFACTOR_SIGNAL"
+      }
+    ],
+    "outcome_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "propose_retrospective_refactor"
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "test_update_refactor_queue_marks_retrospective_candidate_proposal_first"
+      }
+    ],
+    "adoption_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "test_build_prompt_includes_retrospective_split_preservation_guidance"
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "retrospective_refactor_candidates"
+      }
+    ],
+    "notes": "Retrospective refactor evidence is registry-backed by graph-health detection, proposal-first queue handling, and prompt-guidance regression tests for live-region refactor boundaries."
+  },
+  {
     "spec_id": "SG-SPEC-0049",
     "evidence_scope": "surface_level",
     "artifact_refs": [
