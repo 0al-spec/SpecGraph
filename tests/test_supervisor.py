@@ -7724,6 +7724,69 @@ def test_build_spec_activity_feed_emits_trace_and_evidence_baseline_events(
     assert feed["tracked_artifacts_written"] is False
 
 
+def test_spec_activity_event_types_emits_stack_only_merge_warning(
+    supervisor_module: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        supervisor_module,
+        "remote_branches_containing_commit",
+        lambda sha, repo_root=None: ["origin/codex/supervisor-run-36"],
+    )
+    commit_ref = {
+        "sha": "d" * 40,
+        "subject": "Merge pull request #242 from 0al-spec/codex/supervisor-run-37",
+        "paths": [],
+    }
+
+    event_types = supervisor_module.spec_activity_event_types_from_commit(commit_ref)
+    context = supervisor_module.spec_activity_stack_only_merge_context(commit_ref)
+
+    assert event_types == ["stack_only_merge_observed"]
+    assert context == {
+        "status": "stack_only_merge_observed",
+        "reachable_remote_branches": ["origin/codex/supervisor-run-36"],
+        "main_contains_commit": False,
+    }
+
+
+def test_build_spec_activity_feed_emits_stack_only_merge_process_event(
+    supervisor_module: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        supervisor_module,
+        "collect_spec_activity_commit_refs",
+        lambda **kwargs: [
+            {
+                "sha": "d" * 40,
+                "short_sha": "ddddddd",
+                "committed_at": "2026-05-08T00:00:00+00:00",
+                "subject": "Merge pull request #242 from 0al-spec/codex/supervisor-run-37",
+                "paths": [],
+            }
+        ],
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "remote_branches_containing_commit",
+        lambda sha, repo_root=None: ["origin/codex/supervisor-run-36"],
+    )
+
+    feed = supervisor_module.build_spec_activity_feed(supervisor_module.load_specs())
+
+    assert feed["entry_count"] == 1
+    assert feed["entries"][0]["event_type"] == "stack_only_merge_observed"
+    assert feed["entries"][0]["spec_id"] == ""
+    assert feed["entries"][0]["title"] == "Graph process feedback"
+    assert feed["entries"][0]["merge_landing"]["reachable_remote_branches"] == [
+        "origin/codex/supervisor-run-36"
+    ]
+    assert feed["summary"]["event_type_counts"]["stack_only_merge_observed"] == 1
+    assert len(feed["viewer_projection"]["named_filters"]["stack_only_merges"]) == 1
+    assert len(feed["viewer_projection"]["named_filters"]["process_activity"]) == 1
+
+
 def test_main_builds_spec_activity_feed_as_standalone_command(
     supervisor_module: object,
     repo_fixture: Path,
@@ -15166,6 +15229,21 @@ def test_build_graph_dashboard_aggregates_runtime_surfaces(
     )
     monkeypatch.setattr(
         supervisor_module,
+        "build_spec_activity_feed",
+        lambda specs: {
+            "generated_at": "2026-04-19T00:00:10Z",
+            "entry_count": 2,
+            "viewer_projection": {
+                "event_type": {"stack_only_merge_observed": ["activity-1"]},
+                "named_filters": {
+                    "process_activity": ["activity-1"],
+                    "stack_only_merges": ["activity-1"],
+                },
+            },
+        },
+    )
+    monkeypatch.setattr(
+        supervisor_module,
         "build_metric_threshold_proposals",
         lambda index: {
             "generated_at": "2026-04-19T00:00:11Z",
@@ -15233,6 +15311,14 @@ def test_build_graph_dashboard_aggregates_runtime_surfaces(
         "ready_for_index_review": 1
     }
     assert report["sections"]["process_feedback"]["review_feedback_entry_count"] == 4
+    assert report["sections"]["process_feedback"]["spec_activity_entry_count"] == 2
+    assert report["sections"]["process_feedback"]["spec_activity_event_type_counts"] == {
+        "stack_only_merge_observed": 1
+    }
+    assert report["sections"]["process_feedback"]["spec_activity_named_filter_counts"] == {
+        "process_activity": 1,
+        "stack_only_merges": 1,
+    }
     assert report["sections"]["process_feedback"]["review_feedback_backlog_count"] == 1
     assert report["sections"]["process_feedback"]["review_feedback_status_counts"] == {
         "accepted_risk_recorded": 1,
@@ -15254,6 +15340,7 @@ def test_build_graph_dashboard_aggregates_runtime_surfaces(
     assert by_card_id["metrics_source_promotion_ready"]["value"] == 1
     assert by_card_id["metric_packs_review_ready"]["value"] == 1
     assert by_card_id["review_feedback_open"]["value"] == 1
+    assert by_card_id["stack_only_merges"]["value"] == 1
     assert by_card_id["graph_backlog_open"]["value"] == 8
     assert report["sections"]["backlog"]["domain_counts"] == {
         "branch_rewrite": 2,
@@ -15271,6 +15358,7 @@ def test_build_graph_dashboard_aggregates_runtime_surfaces(
     assert report["viewer_projection"]["named_filters"]["retrospective_refactor_candidates"] == 1
     assert report["viewer_projection"]["named_filters"]["branch_rewrite_candidates"] == 2
     assert report["viewer_projection"]["named_filters"]["review_feedback_open"] == 1
+    assert report["viewer_projection"]["named_filters"]["stack_only_merges"] == 1
     assert report["viewer_projection"]["named_filters"]["review_feedback_invalid"] == 1
     assert report["viewer_projection"]["named_filters"]["review_feedback_accepted_risk"] == 1
     assert report["viewer_projection"]["named_filters"]["graph_backlog_open"] == 8
@@ -15500,6 +15588,7 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
         specpm_delivery_workflow: dict[str, object] | None = None,
         specpm_feedback_index: dict[str, object] | None = None,
         review_feedback_index: dict[str, object] | None = None,
+        spec_activity_feed: dict[str, object] | None = None,
         graph_backlog_projection: dict[str, object] | None = None,
         proposal_lane_overlay: dict[str, object] | None = None,
         proposal_runtime_index: dict[str, object] | None = None,
@@ -15529,6 +15618,7 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
         assert specpm_delivery_workflow is not None
         assert specpm_feedback_index is not None
         assert review_feedback_index is not None
+        assert spec_activity_feed is not None
         assert graph_backlog_projection is not None
         assert proposal_lane_overlay is not None
         assert proposal_runtime_index is not None

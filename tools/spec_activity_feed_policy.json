@@ -13,7 +13,8 @@
       "evidence_baseline_attached",
       "proposal_emitted",
       "implementation_work_emitted",
-      "review_feedback_applied"
+      "review_feedback_applied",
+      "stack_only_merge_observed"
     ],
     "stable_event_fields": [
       "event_id",
@@ -55,7 +56,8 @@
       "evidence_baseline_attached": "trace",
       "proposal_emitted": "proposal",
       "implementation_work_emitted": "implementation",
-      "review_feedback_applied": "process"
+      "review_feedback_applied": "process",
+      "stack_only_merge_observed": "process"
     }
   }
 }
