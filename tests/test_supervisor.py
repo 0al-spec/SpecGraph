@@ -18633,6 +18633,17 @@ def test_sg_spec_0030_trace_anchor_blocks_non_bypass_prerequisite_gap(
     assert blockers == ["trace_baseline_gap"]
 
 
+def test_sg_spec_0031_trace_anchor_maps_gateway_prerequisite_to_single_next_gap(
+    supervisor_module: object,
+) -> None:
+    spec_id = "SG-SPEC-0031"
+
+    next_gap = supervisor_module.implementation_policy_next_gap("blocked_by_trace_gap")
+
+    assert spec_id == "SG-SPEC-0031"
+    assert next_gap == "attach_trace_baseline"
+
+
 def test_load_current_implementation_work_index_normalizes_legacy_entries(
     supervisor_module: object,
     repo_fixture: Path,

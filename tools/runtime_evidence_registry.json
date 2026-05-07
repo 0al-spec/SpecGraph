@@ -496,6 +496,56 @@
     "notes": "Prerequisite-readiness evidence is registry-backed by implementation work readiness blocking semantics for non-bypass prerequisite gaps."
   },
   {
+    "spec_id": "SG-SPEC-0031",
+    "evidence_scope": "surface_level",
+    "artifact_refs": [
+      "tools/supervisor.py",
+      "tools/implementation_delta_policy.json",
+      "tests/test_supervisor.py"
+    ],
+    "runtime_entities": [
+      {
+        "entity_id": "supervisor.implementation_policy_next_gap",
+        "entity_kind": "gateway_prerequisite_gap_mapper"
+      },
+      {
+        "entity_id": "implementation_delta_policy.next_gap_defaults.blocked_by_trace_gap",
+        "entity_kind": "single_prerequisite_next_gap"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "test_sg_spec_0031_trace_anchor_maps_gateway_prerequisite_to_single_next_gap"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "Trace anchor: SG-SPEC-0031 maps gateway prerequisite readiness to one bounded next-gap."
+      }
+    ],
+    "outcome_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "assert next_gap == \"attach_trace_baseline\""
+      },
+      {
+        "path": "tools/implementation_delta_policy.json",
+        "pattern": "\"blocked_by_trace_gap\": \"attach_trace_baseline\""
+      }
+    ],
+    "adoption_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "spec_id = \"SG-SPEC-0031\""
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def implementation_policy_next_gap("
+      }
+    ],
+    "notes": "Gateway prerequisite evidence is registry-backed by the policy path that collapses blocked prerequisite readiness into one bounded trace-baseline next gap."
+  },
+  {
     "spec_id": "SG-SPEC-0049",
     "evidence_scope": "surface_level",
     "artifact_refs": [

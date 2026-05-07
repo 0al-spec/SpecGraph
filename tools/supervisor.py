@@ -13088,6 +13088,7 @@ def write_branch_rewrite_preview(preview: dict[str, Any]) -> Path:
 
 
 def implementation_policy_next_gap(status: str) -> str:
+    # Trace anchor: SG-SPEC-0031 maps gateway prerequisite readiness to one bounded next-gap.
     normalized = str(status).strip()
     if not normalized:
         normalized = "ready_for_planning"
