@@ -6875,6 +6875,7 @@ def validate_atomicity(node: SpecNode) -> list[str]:
 
 
 def validate_split_refactor_target(node: SpecNode) -> list[str]:
+    # Trace anchor: SG-SPEC-0029 governs proposal/split availability gating.
     errors: list[str] = []
     if str(node.data.get("kind", "")).strip() != "spec":
         errors.append("split_oversized_spec requires kind: spec")

@@ -398,6 +398,55 @@
     "notes": "Proposal/split coordination evidence is registry-backed by a focused SG-SPEC-0028 regression anchor covering the split-to-proposal handoff contract."
   },
   {
+    "spec_id": "SG-SPEC-0029",
+    "evidence_scope": "surface_level",
+    "artifact_refs": [
+      "tools/supervisor.py",
+      "tests/test_supervisor.py"
+    ],
+    "runtime_entities": [
+      {
+        "entity_id": "supervisor.split_target_validator",
+        "entity_kind": "availability_gate"
+      },
+      {
+        "entity_id": "supervisor.proposal_split_gateway",
+        "entity_kind": "gateway_contract"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "test_sg_spec_0029_trace_anchor_requires_available_split_target"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "Trace anchor: SG-SPEC-0029 governs proposal/split availability gating."
+      }
+    ],
+    "outcome_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "validate_split_refactor_target(node) == []"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def validate_split_refactor_target("
+      }
+    ],
+    "adoption_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "node.id == \"SG-SPEC-0029\""
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "split_oversized_spec requires an oversized non-seed spec target"
+      }
+    ],
+    "notes": "Proposal/split gateway evidence is registry-backed by split target validation that admits only valid oversized non-seed targets into proposal/split mechanics."
+  },
+  {
     "spec_id": "SG-SPEC-0049",
     "evidence_scope": "surface_level",
     "artifact_refs": [
