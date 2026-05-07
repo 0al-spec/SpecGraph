@@ -25495,6 +25495,7 @@ def derive_reflective_followup_status(
     runtime_status: str,
     marker_report: dict[str, Any],
 ) -> str:
+    # Trace anchor: SG-SPEC-0027 governs reflective execution readiness composition.
     if posture == "document_only":
         return "not_required"
     if posture == "deferred_until_canonicalized":
