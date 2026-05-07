@@ -60,6 +60,16 @@
     "notes": "Split proposal mechanics are anchored by supervisor split payload work-item construction and regression tests that mention SG-SPEC-0025."
   },
   {
+    "spec_id": "SG-SPEC-0026",
+    "code_surfaces": [
+      "tools/supervisor.py"
+    ],
+    "test_surfaces": [
+      "tests/test_supervisor.py"
+    ],
+    "notes": "Continuation selection semantics are anchored by linked-continuation runtime derivation and tests that mention SG-SPEC-0026."
+  },
+  {
     "spec_id": "SG-SPEC-0049",
     "code_surfaces": [
       "tools/supervisor.py"
