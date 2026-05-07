@@ -2989,6 +2989,7 @@ BOOKKEEPING_ONLY_CONTEXT_RATIO_THRESHOLD = float(
 ROLE_OBSCURED_SPEC_REFERENCE_THRESHOLD = int(
     policy_lookup("thresholds.role_obscured_spec_reference_count")
 )
+BRANCH_REWRITE_TOPOLOGY_BOOKKEEPING_RATIO_THRESHOLD = 1.5
 SPEC_ID_TEXT_RE = re.compile(r"\bsg-spec-\d{4}\b")
 SPEC_ID_CANONICAL_RE = re.compile(r"\bSG-SPEC-\d{4}\b")
 ROLE_OBSCURED_TITLE_MARKERS = ("edge", "segment", "slice", "topology")
@@ -12770,12 +12771,12 @@ def branch_rewrite_topology_pressure(profile: dict[str, Any]) -> bool:
     bookkeeping_hits = int(profile.get("bookkeeping_hits", 0) or 0)
     role_hits = int(profile.get("role_hits", 0) or 0)
     unique_refs = int(profile.get("unique_spec_references", 0) or 0)
-    bookkeeping_ratio = bookkeeping_hits / max(role_hits, 1)
+    role_floor = max(role_hits, 1)
+    bookkeeping_ratio = bookkeeping_hits / role_floor
     return (
         bookkeeping_hits >= 3
         and unique_refs >= ROLE_OBSCURED_SPEC_REFERENCE_THRESHOLD
-        and bookkeeping_ratio >= 1.5
-        and bookkeeping_hits > max(role_hits, 1)
+        and bookkeeping_ratio >= BRANCH_REWRITE_TOPOLOGY_BOOKKEEPING_RATIO_THRESHOLD
     )
 
 
