@@ -1,5 +1,54 @@
 [
   {
+    "spec_id": "SG-SPEC-0004",
+    "evidence_scope": "surface_level",
+    "artifact_refs": [
+      "tools/supervisor.py",
+      "tests/test_supervisor.py"
+    ],
+    "runtime_entities": [
+      {
+        "entity_id": "supervisor.apply_split_proposal",
+        "entity_kind": "canonical_application_path"
+      },
+      {
+        "entity_id": "supervisor.split_proposal_application_record",
+        "entity_kind": "application_record"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "test_main_apply_split_proposal_materializes_parent_and_children"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def _apply_split_proposal("
+      }
+    ],
+    "outcome_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "canonical_materialization_recorded"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "mark_split_proposal_applied("
+      }
+    ],
+    "adoption_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "assert updated_artifact[\"status\"] == \"applied\""
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "assert updated_queue[0][\"status\"] == \"applied\""
+      }
+    ],
+    "notes": "Split proposal application evidence is registry-backed by the explicit supervisor apply path and end-to-end regression tests that verify canonical writeback and applied proposal/queue state."
+  },
+  {
     "spec_id": "SG-SPEC-0049",
     "evidence_scope": "surface_level",
     "artifact_refs": [
