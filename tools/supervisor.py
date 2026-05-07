@@ -31021,6 +31021,7 @@ def _apply_split_proposal(
 
     This path is deterministic by design. It does not ask an agent to invent a
     new split; it materializes the already structured proposal artifact.
+    Trace anchor: SG-SPEC-0004 governs this explicit split proposal application path.
     """
     proposal_item = find_split_proposal_queue_item(node.id)
     if proposal_item is None:

@@ -1,11 +1,13 @@
 [
   {
     "spec_id": "SG-SPEC-0004",
-    "code_surfaces": [],
+    "code_surfaces": [
+      "tools/supervisor.py"
+    ],
     "test_surfaces": [
       "tests/test_supervisor.py"
     ],
-    "notes": "Split proposal application semantics are anchored by supervisor apply-path regression tests that mention SG-SPEC-0004 and exercise canonical parent/child materialization."
+    "notes": "Split proposal application semantics are anchored by the supervisor apply path and regression tests that mention SG-SPEC-0004 and exercise canonical parent/child materialization."
   },
   {
     "spec_id": "SG-SPEC-0019",
