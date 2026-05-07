@@ -66,6 +66,7 @@ Derived artifacts:
 - spec trace index: `runs/spec_trace_index.json`
 - spec trace projection: `runs/spec_trace_projection.json`
 - proposal runtime index: `runs/proposal_runtime_index.json`
+- spec activity feed: `runs/spec_activity_feed.json`
 """
 
 from __future__ import annotations
@@ -123,6 +124,7 @@ EXPLORATION_PREVIEW_POLICY_RELATIVE_PATH = "tools/exploration_preview_policy.jso
 CONVERSATION_MEMORY_POLICY_RELATIVE_PATH = "tools/conversation_memory_policy.json"
 BRANCH_REWRITE_PREVIEW_POLICY_RELATIVE_PATH = "tools/branch_rewrite_preview_policy.json"
 GRAPH_NEXT_MOVES_POLICY_RELATIVE_PATH = "tools/graph_next_moves_policy.json"
+SPEC_ACTIVITY_FEED_POLICY_RELATIVE_PATH = "tools/spec_activity_feed_policy.json"
 IMPLEMENTATION_DELTA_POLICY_RELATIVE_PATH = "tools/implementation_delta_policy.json"
 REVIEW_FEEDBACK_POLICY_RELATIVE_PATH = "tools/review_feedback_policy.json"
 VALIDATION_FINDINGS_POLICY_RELATIVE_PATH = "tools/validation_findings_policy.json"
@@ -206,6 +208,10 @@ def branch_rewrite_preview_policy_path() -> Path:
 
 def graph_next_moves_policy_path() -> Path:
     return TOOLS_DIR / "graph_next_moves_policy.json"
+
+
+def spec_activity_feed_policy_path() -> Path:
+    return TOOLS_DIR / "spec_activity_feed_policy.json"
 
 
 def implementation_delta_policy_path() -> Path:
@@ -760,6 +766,43 @@ def load_graph_next_moves_policy() -> tuple[dict[str, Any], str]:
 
 
 GRAPH_NEXT_MOVES_POLICY, GRAPH_NEXT_MOVES_POLICY_SHA256 = load_graph_next_moves_policy()
+
+
+def load_spec_activity_feed_policy() -> tuple[dict[str, Any], str]:
+    path = spec_activity_feed_policy_path()
+    try:
+        raw_text = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise RuntimeError(
+            f"failed to read spec activity feed policy artifact: {path.as_posix()} ({exc})"
+        ) from exc
+    try:
+        payload = json.loads(raw_text)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(
+            f"malformed spec activity feed policy artifact: {path.as_posix()} ({exc})"
+        ) from exc
+    if not isinstance(payload, dict):
+        raise RuntimeError(
+            "malformed spec activity feed policy artifact: "
+            f"{path.as_posix()} must contain a JSON object"
+        )
+    required_sections = (
+        "repository_layout",
+        "event_contract",
+        "source_contract",
+        "viewer_contract",
+    )
+    missing = [section for section in required_sections if section not in payload]
+    if missing:
+        raise RuntimeError(
+            "malformed spec activity feed policy artifact: missing top-level section(s): "
+            + ", ".join(missing)
+        )
+    return payload, hashlib.sha256(raw_text.encode("utf-8")).hexdigest()
+
+
+SPEC_ACTIVITY_FEED_POLICY, SPEC_ACTIVITY_FEED_POLICY_SHA256 = load_spec_activity_feed_policy()
 
 
 def load_implementation_delta_policy() -> tuple[dict[str, Any], str]:
@@ -3150,6 +3193,9 @@ GRAPH_DASHBOARD_FILENAME = "graph_dashboard.json"
 GRAPH_BACKLOG_PROJECTION_FILENAME = "graph_backlog_projection.json"
 GRAPH_BACKLOG_PROJECTION_ARTIFACT_KIND = "graph_backlog_projection"
 GRAPH_BACKLOG_PROJECTION_SCHEMA_VERSION = 1
+SPEC_ACTIVITY_FEED_FILENAME = "spec_activity_feed.json"
+SPEC_ACTIVITY_FEED_ARTIFACT_KIND = "spec_activity_feed"
+SPEC_ACTIVITY_FEED_SCHEMA_VERSION = 1
 SPEC_TRACE_INDEX_FILENAME = "spec_trace_index.json"
 SPEC_TRACE_PROJECTION_FILENAME = "spec_trace_projection.json"
 PROPOSAL_RUNTIME_INDEX_FILENAME = "proposal_runtime_index.json"
@@ -15137,6 +15183,10 @@ def graph_backlog_projection_path() -> Path:
     return RUNS_DIR / GRAPH_BACKLOG_PROJECTION_FILENAME
 
 
+def spec_activity_feed_path() -> Path:
+    return RUNS_DIR / SPEC_ACTIVITY_FEED_FILENAME
+
+
 def spec_trace_registry_path() -> Path:
     return ROOT / "tools" / "spec_trace_registry.json"
 
@@ -16003,6 +16053,274 @@ def collect_trace_pr_refs(commit_refs: list[dict[str, str]]) -> list[dict[str, A
                 }
             )
     return pr_refs
+
+
+def spec_activity_source_paths() -> list[str]:
+    raw_paths = SPEC_ACTIVITY_FEED_POLICY.get("source_contract", {}).get("git_paths", [])
+    if not isinstance(raw_paths, list):
+        return []
+    paths: list[str] = []
+    for raw_path in raw_paths:
+        path_text = str(raw_path).strip().strip("/")
+        if path_text:
+            paths.append(path_text)
+    return paths
+
+
+def spec_activity_default_limit() -> int:
+    raw_limit = SPEC_ACTIVITY_FEED_POLICY.get("event_contract", {}).get("default_limit", 100)
+    try:
+        limit = int(raw_limit)
+    except (TypeError, ValueError):
+        return 100
+    return max(limit, 1)
+
+
+def collect_spec_activity_commit_refs(
+    *,
+    repo_root: Path | None = None,
+    limit: int | None = None,
+    source_paths: list[str] | None = None,
+) -> list[dict[str, Any]]:
+    local_root = repo_root or ROOT
+    git_paths = source_paths if source_paths is not None else spec_activity_source_paths()
+    unique_paths = [path for path in sorted(set(git_paths)) if str(path).strip()]
+    if not unique_paths or shutil.which("git") is None:
+        return []
+
+    probe = subprocess.run(
+        ["git", "rev-parse", "--is-inside-work-tree"],
+        cwd=local_root,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if probe.returncode != 0 or probe.stdout.strip() != "true":
+        return []
+
+    max_count = max((limit or spec_activity_default_limit()) * 4, 1)
+    result = subprocess.run(
+        [
+            "git",
+            "log",
+            f"--max-count={max_count}",
+            "--format=commit%x09%H%x09%cI%x09%s",
+            "--name-only",
+            "--",
+            *unique_paths,
+        ],
+        cwd=local_root,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if result.returncode != 0:
+        return []
+
+    commits: list[dict[str, Any]] = []
+    current: dict[str, Any] | None = None
+    for line in result.stdout.splitlines():
+        if line.startswith("commit\t"):
+            if current is not None:
+                current["paths"] = sorted(set(current.get("paths", [])))
+                commits.append(current)
+            parts = line.split("\t", 3)
+            if len(parts) != 4:
+                current = None
+                continue
+            _marker, sha, committed_at, subject = parts
+            current = {
+                "sha": sha.strip(),
+                "short_sha": sha.strip()[:7],
+                "committed_at": committed_at.strip(),
+                "subject": subject.strip(),
+                "paths": [],
+            }
+            continue
+        if current is None:
+            continue
+        path_text = line.strip()
+        if path_text:
+            current.setdefault("paths", []).append(path_text)
+    if current is not None:
+        current["paths"] = sorted(set(current.get("paths", [])))
+        commits.append(current)
+    return commits
+
+
+def spec_activity_spec_ids_from_commit(commit_ref: dict[str, Any]) -> list[str]:
+    spec_ids = set(SPEC_ID_CANONICAL_RE.findall(str(commit_ref.get("subject", ""))))
+    for raw_path in commit_ref.get("paths", []):
+        path_text = str(raw_path).strip()
+        match = re.search(r"specs/nodes/(SG-SPEC-\d{4})\.ya?ml$", path_text)
+        if match:
+            spec_ids.add(match.group(1))
+        spec_ids.update(SPEC_ID_CANONICAL_RE.findall(path_text))
+    return sorted(spec_ids)
+
+
+def spec_activity_event_types_from_commit(commit_ref: dict[str, Any]) -> list[str]:
+    subject = str(commit_ref.get("subject", "")).strip().lower()
+    paths = {str(path).strip() for path in commit_ref.get("paths", [])}
+    event_types: list[str] = []
+    if any(path.startswith("specs/nodes/") for path in paths):
+        event_types.append("canonical_spec_updated")
+    if "tools/spec_trace_registry.json" in paths or "trace baseline" in subject:
+        event_types.append("trace_baseline_attached")
+    if "tools/runtime_evidence_registry.json" in paths or "evidence baseline" in subject:
+        event_types.append("evidence_baseline_attached")
+    if (
+        any(
+            path.startswith("proposal_lane/")
+            or path.startswith("runs/proposals/")
+            or path.startswith("docs/proposals/")
+            for path in paths
+        )
+        or "proposal" in subject
+    ):
+        event_types.append("proposal_emitted")
+    if "runs/implementation_work_index.json" in paths or "implementation work" in subject:
+        event_types.append("implementation_work_emitted")
+    if "tools/review_feedback_records.json" in paths or "review feedback" in subject:
+        event_types.append("review_feedback_applied")
+
+    allowed_types = SPEC_ACTIVITY_FEED_POLICY.get("event_contract", {}).get("event_types", [])
+    allowed = {str(item).strip() for item in allowed_types if str(item).strip()}
+    return [event_type for event_type in dict.fromkeys(event_types) if event_type in allowed]
+
+
+def spec_activity_event_tone(event_type: str) -> str:
+    event_tones = SPEC_ACTIVITY_FEED_POLICY.get("viewer_contract", {}).get("event_tones", {})
+    if not isinstance(event_tones, dict):
+        return "activity"
+    return str(event_tones.get(event_type, "activity")).strip() or "activity"
+
+
+def spec_activity_event_id(commit_ref: dict[str, Any], event_type: str, spec_id: str) -> str:
+    raw_id = ":".join(
+        [
+            str(commit_ref.get("sha", "")).strip(),
+            event_type,
+            spec_id,
+        ]
+    )
+    digest = hashlib.sha256(raw_id.encode("utf-8")).hexdigest()[:16]
+    return f"spec_activity::{digest}"
+
+
+def build_spec_activity_feed(
+    specs: list[SpecNode],
+    *,
+    limit: int | None = None,
+) -> dict[str, Any]:
+    event_limit = limit or spec_activity_default_limit()
+    spec_index = index_specs(specs)
+    commits = collect_spec_activity_commit_refs(limit=event_limit)
+    events: list[dict[str, Any]] = []
+    seen_event_ids: set[str] = set()
+
+    for commit_ref in commits:
+        spec_ids = spec_activity_spec_ids_from_commit(commit_ref)
+        if not spec_ids:
+            continue
+        event_types = spec_activity_event_types_from_commit(commit_ref)
+        if not event_types:
+            continue
+        for event_type in event_types:
+            for spec_id in spec_ids:
+                event_id = spec_activity_event_id(commit_ref, event_type, spec_id)
+                if event_id in seen_event_ids:
+                    continue
+                seen_event_ids.add(event_id)
+                spec = spec_index.get(spec_id)
+                events.append(
+                    {
+                        "event_id": event_id,
+                        "event_type": event_type,
+                        "spec_id": spec_id,
+                        "title": spec.title if spec is not None else "",
+                        "occurred_at": str(commit_ref.get("committed_at", "")).strip(),
+                        "summary": str(commit_ref.get("subject", "")).strip(),
+                        "source_kind": "git_commit",
+                        "source_ref": {
+                            "sha": str(commit_ref.get("sha", "")).strip(),
+                            "short_sha": str(commit_ref.get("short_sha", "")).strip(),
+                            "subject": str(commit_ref.get("subject", "")).strip(),
+                        },
+                        "source_paths": list(commit_ref.get("paths", [])),
+                        "viewer": {
+                            "tone": spec_activity_event_tone(event_type),
+                            "label": event_type.replace("_", " "),
+                        },
+                    }
+                )
+                if len(events) >= event_limit:
+                    break
+            if len(events) >= event_limit:
+                break
+        if len(events) >= event_limit:
+            break
+
+    event_type_index: dict[str, list[str]] = {}
+    spec_id_index: dict[str, list[str]] = {}
+    for event in events:
+        event_id = str(event.get("event_id", "")).strip()
+        event_type = str(event.get("event_type", "")).strip()
+        spec_id = str(event.get("spec_id", "")).strip()
+        event_type_index.setdefault(event_type, []).append(event_id)
+        spec_id_index.setdefault(spec_id, []).append(event_id)
+
+    return {
+        "artifact_kind": SPEC_ACTIVITY_FEED_ARTIFACT_KIND,
+        "schema_version": SPEC_ACTIVITY_FEED_SCHEMA_VERSION,
+        "generated_at": utc_now_iso(),
+        "source_artifacts": {
+            "policy": SPEC_ACTIVITY_FEED_POLICY_RELATIVE_PATH,
+            "git_paths": spec_activity_source_paths(),
+        },
+        "entry_count": len(events),
+        "entries": events,
+        "summary": {
+            "entry_count": len(events),
+            "event_type_counts": {
+                key: len(value) for key, value in sorted(event_type_index.items())
+            },
+            "spec_event_counts": {key: len(value) for key, value in sorted(spec_id_index.items())},
+        },
+        "viewer_projection": {
+            "event_type": event_type_index,
+            "spec_id": spec_id_index,
+            "named_filters": {
+                "trace_or_evidence_baselines": [
+                    event["event_id"]
+                    for event in events
+                    if event.get("event_type")
+                    in {"trace_baseline_attached", "evidence_baseline_attached"}
+                ],
+                "canonical_spec_updates": [
+                    event["event_id"]
+                    for event in events
+                    if event.get("event_type") == "canonical_spec_updated"
+                ],
+                "proposal_activity": [
+                    event["event_id"]
+                    for event in events
+                    if event.get("event_type") == "proposal_emitted"
+                ],
+            },
+        },
+        "viewer_contract": copy.deepcopy(SPEC_ACTIVITY_FEED_POLICY["viewer_contract"]),
+        "canonical_mutations_allowed": False,
+        "tracked_artifacts_written": False,
+    }
+
+
+def write_spec_activity_feed(feed: dict[str, Any]) -> Path:
+    RUNS_DIR.mkdir(parents=True, exist_ok=True)
+    path = spec_activity_feed_path()
+    with artifact_lock(path):
+        atomic_write_json(path, feed)
+    return path
 
 
 def acceptance_criteria_count(spec: SpecNode) -> int:
@@ -29016,6 +29334,8 @@ def build_viewer_surfaces(specs: list[SpecNode]) -> dict[str, Any]:
     conversation_memory_pressure_path_result = write_conversation_memory_promotion_pressure(
         conversation_memory_pressure
     )
+    spec_activity_feed = build_spec_activity_feed(specs)
+    spec_activity_feed_path_result = write_spec_activity_feed(spec_activity_feed)
     metrics_source_promotion_backlog = metrics_source_promotion_index.get(
         "promotion_backlog",
         {},
@@ -29244,6 +29564,11 @@ def build_viewer_surfaces(specs: list[SpecNode]) -> dict[str, Any]:
                 "entry_count": conversation_memory_pressure.get("entry_count"),
                 "review_state": conversation_memory_pressure.get("review_state"),
                 "next_gap": conversation_memory_pressure.get("next_gap"),
+            },
+            "spec_activity_feed": {
+                "artifact_path": spec_activity_feed_path_result.relative_to(ROOT).as_posix(),
+                "generated_at": spec_activity_feed.get("generated_at"),
+                "entry_count": spec_activity_feed.get("entry_count"),
             },
         },
         "notes": [
@@ -32943,6 +33268,7 @@ def main(
     build_graph_dashboard_mode: bool = False,
     build_graph_backlog_projection_mode: bool = False,
     build_graph_next_moves_mode: bool = False,
+    build_spec_activity_feed_mode: bool = False,
     build_proposal_lane_overlay_mode: bool = False,
     build_proposal_runtime_index_mode: bool = False,
     build_proposal_promotion_index_mode: bool = False,
@@ -33034,6 +33360,7 @@ def main(
         "--build-graph-dashboard": build_graph_dashboard_mode,
         "--build-graph-backlog-projection": build_graph_backlog_projection_mode,
         "--build-graph-next-moves": build_graph_next_moves_mode,
+        "--build-spec-activity-feed": build_spec_activity_feed_mode,
         "--build-proposal-lane-overlay": build_proposal_lane_overlay_mode,
         "--build-proposal-runtime-index": build_proposal_runtime_index_mode,
         "--build-proposal-promotion-index": build_proposal_promotion_index_mode,
@@ -35282,6 +35609,41 @@ def main(
         emit_supervisor_json(report, output_mode=normalized_output_mode)
         return 0
 
+    if build_spec_activity_feed_mode:
+        if any(
+            (
+                dry_run,
+                auto_approve,
+                loop,
+                resolve_gate,
+                decision,
+                note,
+                target_spec,
+                split_proposal,
+                apply_split_proposal,
+                operator_note,
+                mutation_budget,
+                run_authority,
+                execution_profile,
+                child_model,
+                child_timeout_seconds,
+                verbose,
+                list_stale_runtime,
+                clean_stale_runtime,
+                observe_graph_health_mode,
+                operator_request_packet_path,
+            )
+        ):
+            print(
+                "--build-spec-activity-feed must be used as a standalone command",
+                file=sys.stderr,
+            )
+            return 1
+        feed = build_spec_activity_feed(specs)
+        write_spec_activity_feed(feed)
+        emit_supervisor_json(feed, output_mode=normalized_output_mode)
+        return 0
+
     if build_proposal_runtime_index_mode:
         if any(
             (
@@ -36388,6 +36750,14 @@ if __name__ == "__main__":
         ),
     )
     parser.add_argument(
+        "--build-spec-activity-feed",
+        action="store_true",
+        help=(
+            "Build a viewer-facing spec activity feed from git-observed canonical, trace, "
+            "evidence, proposal, implementation, and review-feedback activity"
+        ),
+    )
+    parser.add_argument(
         "--build-proposal-lane-overlay",
         action="store_true",
         help=(
@@ -36588,6 +36958,7 @@ if __name__ == "__main__":
             build_graph_dashboard_mode=args.build_graph_dashboard,
             build_graph_backlog_projection_mode=args.build_graph_backlog_projection,
             build_graph_next_moves_mode=args.build_graph_next_moves,
+            build_spec_activity_feed_mode=args.build_spec_activity_feed,
             build_proposal_lane_overlay_mode=args.build_proposal_lane_overlay,
             build_proposal_runtime_index_mode=args.build_proposal_runtime_index,
             build_proposal_promotion_index_mode=args.build_proposal_promotion_index,

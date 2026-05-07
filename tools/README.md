@@ -207,11 +207,11 @@ Supervisor modes:
   source artifacts in one standalone pass. This includes graph health, intent,
   proposal, trace, evidence, external-consumer, handoff, Metrics delivery,
   Metrics feedback, SpecPM export/delivery/feedback, metric signal, metric
-  threshold, metric pack, model usage, pricing, conversation-memory, and
-  review-feedback surfaces. The command keeps `runs/*` internally consistent
-  for ContextBuilder because dashboard and feedback `source_artifacts` point at
-  freshly written files rather than stale local JSON. This is safe for local
-  hooks, CI smoke checks, or ContextBuilder build buttons because it does not
+  threshold, metric pack, model usage, pricing, conversation-memory,
+  review-feedback, and spec-activity surfaces. The command keeps `runs/*`
+  internally consistent for ContextBuilder because dashboard and feedback
+  `source_artifacts` point at freshly written files rather than stale local JSON.
+  This is safe for local hooks, CI smoke checks, or ContextBuilder build buttons because it does not
   choose implementation target scope or create new implementation work items.
 - Standalone artifact commands print compact JSON summaries by default. Use
   `--output-mode full` only when the complete artifact is needed on stdout; the
@@ -230,6 +230,11 @@ Supervisor modes:
   read-only advisory "next move" surface that selects one bounded recommended
   operator move from branch rewrite preview, graph backlog, and proposal
   runtime state.
+- `--build-spec-activity-feed`: build `runs/spec_activity_feed.json` as a
+  viewer-facing activity feed that maps git-observed canonical, trace,
+  evidence, proposal, implementation, and review-feedback changes back to
+  spec ids. See
+  [docs/spec_activity_feed_viewer_contract.md](../docs/spec_activity_feed_viewer_contract.md).
 - `--build-intent-layer-overlay`: build `runs/intent_layer_overlay.json` from
   repository-tracked intent-layer nodes under `intent_layer/nodes/`, so
   pre-canonical user intent and operator-request artifacts can be inspected as

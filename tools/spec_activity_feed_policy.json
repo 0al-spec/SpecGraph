@@ -1,0 +1,61 @@
+{
+  "artifact_kind": "spec_activity_feed_policy",
+  "schema_version": 1,
+  "repository_layout": {
+    "activity_feed_artifact": "runs/spec_activity_feed.json"
+  },
+  "event_contract": {
+    "artifact_kind": "spec_activity_feed",
+    "schema_version": 1,
+    "event_types": [
+      "canonical_spec_updated",
+      "trace_baseline_attached",
+      "evidence_baseline_attached",
+      "proposal_emitted",
+      "implementation_work_emitted",
+      "review_feedback_applied"
+    ],
+    "stable_event_fields": [
+      "event_id",
+      "event_type",
+      "spec_id",
+      "title",
+      "occurred_at",
+      "summary",
+      "source_kind",
+      "source_ref",
+      "source_paths",
+      "viewer"
+    ],
+    "default_limit": 100
+  },
+  "source_contract": {
+    "source_kind": "git_commit_history",
+    "git_paths": [
+      "specs/nodes",
+      "tools/spec_trace_registry.json",
+      "tools/runtime_evidence_registry.json",
+      "tools/review_feedback_records.json",
+      "docs/proposals",
+      "proposal_lane",
+      "runs/proposals"
+    ],
+    "notes": [
+      "SpecGraph owns the semantic mapping from repository activity to spec-node activity.",
+      "Viewers should consume the generated feed instead of running git path heuristics."
+    ]
+  },
+  "viewer_contract": {
+    "contract_doc": "docs/spec_activity_feed_viewer_contract.md",
+    "recommended_endpoint": "GET /api/spec-activity?limit=N&since=ISO",
+    "source_artifact": "runs/spec_activity_feed.json",
+    "event_tones": {
+      "canonical_spec_updated": "spec",
+      "trace_baseline_attached": "trace",
+      "evidence_baseline_attached": "trace",
+      "proposal_emitted": "proposal",
+      "implementation_work_emitted": "implementation",
+      "review_feedback_applied": "process"
+    }
+  }
+}
