@@ -70,6 +70,57 @@
     "notes": "Continuation selection semantics are anchored by linked-continuation runtime derivation and tests that mention SG-SPEC-0026."
   },
   {
+    "spec_id": "SG-SPEC-0027",
+    "code_surfaces": [
+      "tools/supervisor.py"
+    ],
+    "test_surfaces": [
+      "tests/test_supervisor.py"
+    ],
+    "notes": "Reflective execution readiness composition is anchored by proposal runtime follow-up derivation and SG-SPEC-0027 regression tests."
+  },
+  {
+    "spec_id": "SG-SPEC-0028",
+    "code_surfaces": [
+      "tools/supervisor.py"
+    ],
+    "test_surfaces": [
+      "tests/test_supervisor.py"
+    ],
+    "notes": "Proposal/split mechanics coordination is anchored by split work-item construction that carries split mechanics into proposal handoff readiness."
+  },
+  {
+    "spec_id": "SG-SPEC-0029",
+    "code_surfaces": [
+      "tools/supervisor.py"
+    ],
+    "test_surfaces": [
+      "tests/test_supervisor.py"
+    ],
+    "notes": "Proposal/split availability gating is anchored by split target validation and SG-SPEC-0029 regression tests."
+  },
+  {
+    "spec_id": "SG-SPEC-0030",
+    "code_surfaces": [
+      "tools/supervisor.py"
+    ],
+    "test_surfaces": [
+      "tests/test_supervisor.py"
+    ],
+    "notes": "Proposal/split prerequisite readiness is anchored by implementation work readiness blockers and SG-SPEC-0030 non-bypass regression tests."
+  },
+  {
+    "spec_id": "SG-SPEC-0031",
+    "code_surfaces": [
+      "tools/supervisor.py",
+      "tools/implementation_delta_policy.json"
+    ],
+    "test_surfaces": [
+      "tests/test_supervisor.py"
+    ],
+    "notes": "Proposal/split gateway prerequisite consumption is anchored by the implementation work next-gap policy that maps blocked prerequisite readiness to one bounded attach_trace_baseline path."
+  },
+  {
     "spec_id": "SG-SPEC-0049",
     "code_surfaces": [
       "tools/supervisor.py"

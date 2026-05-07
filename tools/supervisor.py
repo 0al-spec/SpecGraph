@@ -6921,6 +6921,7 @@ def validate_atomicity(node: SpecNode) -> list[str]:
 
 
 def validate_split_refactor_target(node: SpecNode) -> list[str]:
+    # Trace anchor: SG-SPEC-0029 governs proposal/split availability gating.
     errors: list[str] = []
     if str(node.data.get("kind", "")).strip() != "spec":
         errors.append("split_oversized_spec requires kind: spec")
@@ -6936,6 +6937,7 @@ def build_split_refactor_work_item(
     node: SpecNode,
     specs: list[SpecNode] | None = None,
 ) -> dict[str, Any]:
+    # Trace anchor: SG-SPEC-0028 coordinates split mechanics with proposal handoff readiness.
     local_specs = specs or load_specs()
     live_child_ids = [
         child.id for child in active_refining_child_specs(node, local_specs) if child.id
@@ -13132,6 +13134,7 @@ def write_branch_rewrite_preview(preview: dict[str, Any]) -> Path:
 
 
 def implementation_policy_next_gap(status: str) -> str:
+    # Trace anchor: SG-SPEC-0031 maps gateway prerequisite readiness to one bounded next-gap.
     normalized = str(status).strip()
     if not normalized:
         normalized = "ready_for_planning"
@@ -13530,6 +13533,7 @@ def implementation_work_item_readiness(
     has_trace_gap: bool,
     has_evidence_gap: bool,
 ) -> tuple[str, list[str]]:
+    # Trace anchor: SG-SPEC-0030 governs prerequisite readiness as non-bypass input.
     blockers: list[str] = []
     if has_quality_blocker or snapshot_status == "blocked_by_spec_quality":
         blockers.append("spec_quality_gate")
@@ -25824,6 +25828,7 @@ def derive_reflective_followup_status(
     runtime_status: str,
     marker_report: dict[str, Any],
 ) -> str:
+    # Trace anchor: SG-SPEC-0027 governs reflective execution readiness composition.
     if posture == "document_only":
         return "not_required"
     if posture == "deferred_until_canonicalized":

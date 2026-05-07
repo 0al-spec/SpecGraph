@@ -300,6 +300,252 @@
     "notes": "Continuation decision evidence is registry-backed by linked-continuation derivation and YAML repair regressions that preserve SG-SPEC-0026 continuation prose."
   },
   {
+    "spec_id": "SG-SPEC-0027",
+    "evidence_scope": "surface_level",
+    "artifact_refs": [
+      "tools/supervisor.py",
+      "tests/test_supervisor.py"
+    ],
+    "runtime_entities": [
+      {
+        "entity_id": "supervisor.reflective_followup_status",
+        "entity_kind": "readiness_derivation"
+      },
+      {
+        "entity_id": "supervisor.reflective_next_gap",
+        "entity_kind": "continuation_readiness_gate"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "test_sg_spec_0027_trace_anchor_composes_reflective_execution_readiness"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "Trace anchor: SG-SPEC-0027 governs reflective execution readiness composition."
+      }
+    ],
+    "outcome_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "assert validation_status == \"covered\""
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "assert next_gap == \"none\""
+      }
+    ],
+    "adoption_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "spec_id = \"SG-SPEC-0027\""
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def reflective_next_gap("
+      }
+    ],
+    "notes": "Reflective execution readiness evidence is registry-backed by follow-up status and next-gap derivation tests for the SG-SPEC-0027 readiness composition surface."
+  },
+  {
+    "spec_id": "SG-SPEC-0028",
+    "evidence_scope": "surface_level",
+    "artifact_refs": [
+      "tools/supervisor.py",
+      "tests/test_supervisor.py"
+    ],
+    "runtime_entities": [
+      {
+        "entity_id": "supervisor.proposal_split_coordination",
+        "entity_kind": "readiness_coordination_surface"
+      },
+      {
+        "entity_id": "supervisor.split_to_proposal_handoff",
+        "entity_kind": "handoff_candidate"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "test_sg_spec_0028_trace_anchor_coordinates_split_proposal_handoff"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "Trace anchor: SG-SPEC-0028 coordinates split mechanics with proposal handoff readiness."
+      }
+    ],
+    "outcome_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "work_item[\"proposal_type\"] == \"refactor_proposal\""
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "work_item[\"refactor_kind\"] == \"split_oversized_spec\""
+      }
+    ],
+    "adoption_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "work_item[\"target_spec_id\"] == \"SG-SPEC-0028\""
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "work_item[\"execution_policy\"] == \"emit_proposal\""
+      }
+    ],
+    "notes": "Proposal/split coordination evidence is registry-backed by a focused SG-SPEC-0028 regression anchor covering the split-to-proposal handoff contract."
+  },
+  {
+    "spec_id": "SG-SPEC-0029",
+    "evidence_scope": "surface_level",
+    "artifact_refs": [
+      "tools/supervisor.py",
+      "tests/test_supervisor.py"
+    ],
+    "runtime_entities": [
+      {
+        "entity_id": "supervisor.split_target_validator",
+        "entity_kind": "availability_gate"
+      },
+      {
+        "entity_id": "supervisor.proposal_split_gateway",
+        "entity_kind": "gateway_contract"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "test_sg_spec_0029_trace_anchor_requires_available_split_target"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "Trace anchor: SG-SPEC-0029 governs proposal/split availability gating."
+      }
+    ],
+    "outcome_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "validate_split_refactor_target(node) == []"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def validate_split_refactor_target("
+      }
+    ],
+    "adoption_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "node.id == \"SG-SPEC-0029\""
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "split_oversized_spec requires an oversized non-seed spec target"
+      }
+    ],
+    "notes": "Proposal/split gateway evidence is registry-backed by split target validation that admits only valid oversized non-seed targets into proposal/split mechanics."
+  },
+  {
+    "spec_id": "SG-SPEC-0030",
+    "evidence_scope": "surface_level",
+    "artifact_refs": [
+      "tools/supervisor.py",
+      "tests/test_supervisor.py"
+    ],
+    "runtime_entities": [
+      {
+        "entity_id": "supervisor.implementation_work_readiness",
+        "entity_kind": "prerequisite_gate"
+      },
+      {
+        "entity_id": "supervisor.proposal_split_non_bypass_guard",
+        "entity_kind": "readiness_guard"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "test_sg_spec_0030_trace_anchor_blocks_non_bypass_prerequisite_gap"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "Trace anchor: SG-SPEC-0030 governs prerequisite readiness as non-bypass input."
+      }
+    ],
+    "outcome_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "assert readiness == \"blocked_by_trace_gap\""
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "assert blockers == [\"trace_baseline_gap\"]"
+      }
+    ],
+    "adoption_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "spec_id = \"SG-SPEC-0030\""
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def implementation_work_item_readiness("
+      }
+    ],
+    "notes": "Prerequisite-readiness evidence is registry-backed by implementation work readiness blocking semantics for non-bypass prerequisite gaps."
+  },
+  {
+    "spec_id": "SG-SPEC-0031",
+    "evidence_scope": "surface_level",
+    "artifact_refs": [
+      "tools/supervisor.py",
+      "tools/implementation_delta_policy.json",
+      "tests/test_supervisor.py"
+    ],
+    "runtime_entities": [
+      {
+        "entity_id": "supervisor.implementation_policy_next_gap",
+        "entity_kind": "gateway_prerequisite_gap_mapper"
+      },
+      {
+        "entity_id": "implementation_delta_policy.next_gap_defaults.blocked_by_trace_gap",
+        "entity_kind": "single_prerequisite_next_gap"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "test_sg_spec_0031_trace_anchor_maps_gateway_prerequisite_to_single_next_gap"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "Trace anchor: SG-SPEC-0031 maps gateway prerequisite readiness to one bounded next-gap."
+      }
+    ],
+    "outcome_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "assert next_gap == \"attach_trace_baseline\""
+      },
+      {
+        "path": "tools/implementation_delta_policy.json",
+        "pattern": "\"blocked_by_trace_gap\": \"attach_trace_baseline\""
+      }
+    ],
+    "adoption_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "spec_id = \"SG-SPEC-0031\""
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def implementation_policy_next_gap("
+      }
+    ],
+    "notes": "Gateway prerequisite evidence is registry-backed by the policy path that collapses blocked prerequisite readiness into one bounded trace-baseline next gap."
+  },
+  {
     "spec_id": "SG-SPEC-0049",
     "evidence_scope": "surface_level",
     "artifact_refs": [

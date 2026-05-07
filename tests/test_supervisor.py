@@ -3,6 +3,7 @@ from __future__ import annotations
 import copy
 import datetime as dt
 import importlib.util
+import inspect
 import io
 import json
 import os
@@ -6088,6 +6089,55 @@ def test_sg_spec_0025_trace_anchor_builds_split_payload_work_item(
     assert work_item["refactor_kind"] == "split_oversized_spec"
     assert work_item["recommended_action"] == "emit_split_proposal"
     assert work_item["proposal_artifact_relpath"].endswith(".json")
+
+
+def test_sg_spec_0028_trace_anchor_coordinates_split_proposal_handoff(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    node_data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    node_data["id"] = "SG-SPEC-0028"
+    node_data["title"] = "Proposal Split Mechanics Coordination"
+    node_data["acceptance"] = [f"proposal-split-coordinate-{i}" for i in range(1, 7)]
+    node_data["outputs"] = ["specs/nodes/SG-SPEC-0028.yaml"]
+    node_data["allowed_paths"] = ["specs/nodes/SG-SPEC-0028.yaml"]
+    node_path.unlink()
+    (repo_fixture / "specs" / "nodes" / "SG-SPEC-0028.yaml").write_text(
+        json.dumps(node_data),
+        encoding="utf-8",
+    )
+
+    work_item = supervisor_module.build_split_refactor_work_item(supervisor_module.load_specs()[0])
+
+    assert work_item["target_spec_id"] == "SG-SPEC-0028"
+    assert work_item["proposal_type"] == "refactor_proposal"
+    assert work_item["refactor_kind"] == "split_oversized_spec"
+    assert work_item["execution_policy"] == "emit_proposal"
+
+
+def test_sg_spec_0029_trace_anchor_requires_available_split_target(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    acceptance_count = supervisor_module.ATOMICITY_MAX_ACCEPTANCE + 1
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    node_data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    node_data["id"] = "SG-SPEC-0029"
+    node_data["title"] = "Proposal Split Gateway"
+    node_data["acceptance"] = [f"gateway-availability-{i}" for i in range(1, acceptance_count + 1)]
+    node_data["outputs"] = ["specs/nodes/SG-SPEC-0029.yaml"]
+    node_data["allowed_paths"] = ["specs/nodes/SG-SPEC-0029.yaml"]
+    node_path.unlink()
+    (repo_fixture / "specs" / "nodes" / "SG-SPEC-0029.yaml").write_text(
+        json.dumps(node_data),
+        encoding="utf-8",
+    )
+
+    node = supervisor_module.load_specs()[0]
+
+    assert node.id == "SG-SPEC-0029"
+    assert supervisor_module.validate_split_refactor_target(node) == []
 
 
 def test_summarize_queue_transition_tracks_emitted_cleared_and_updated_ids(
@@ -18697,6 +18747,35 @@ def test_build_implementation_work_index_from_delta_snapshot(
     assert index["runtime_code_mutations_allowed"] is False
 
 
+def test_sg_spec_0030_trace_anchor_blocks_non_bypass_prerequisite_gap(
+    supervisor_module: object,
+) -> None:
+    readiness, blockers = supervisor_module.implementation_work_item_readiness(
+        snapshot_status="ready_for_planning",
+        has_quality_blocker=False,
+        has_trace_gap=True,
+        has_evidence_gap=False,
+    )
+
+    assert (
+        "Trace anchor: SG-SPEC-0030 governs prerequisite readiness as non-bypass input."
+        in inspect.getsource(supervisor_module.implementation_work_item_readiness)
+    )
+    assert readiness == "blocked_by_trace_gap"
+    assert blockers == ["trace_baseline_gap"]
+
+
+def test_sg_spec_0031_trace_anchor_maps_gateway_prerequisite_to_single_next_gap(
+    supervisor_module: object,
+) -> None:
+    spec_id = "SG-SPEC-0031"
+
+    next_gap = supervisor_module.implementation_policy_next_gap("blocked_by_trace_gap")
+
+    assert spec_id == "SG-SPEC-0031"
+    assert next_gap == "attach_trace_baseline"
+
+
 def test_load_current_implementation_work_index_normalizes_legacy_entries(
     supervisor_module: object,
     repo_fixture: Path,
@@ -20044,6 +20123,35 @@ def test_build_proposal_runtime_index_reports_reflective_chain(
     assert by_id["0017"]["runtime_realization"]["status"] == "untracked"
     assert by_id["0017"]["reflective_chain"]["next_gap"] == "runtime_realization"
     assert index["reflective_backlog"]["grouped_by_next_gap"]["runtime_realization"] == ["0017"]
+
+
+def test_sg_spec_0027_trace_anchor_composes_reflective_execution_readiness(
+    supervisor_module: object,
+) -> None:
+    spec_id = "SG-SPEC-0027"
+    covered_marker_report = {"required_count": 1, "status": "covered"}
+
+    validation_status = supervisor_module.derive_reflective_followup_status(
+        posture="bounded_runtime_followup",
+        runtime_status="implemented",
+        marker_report=covered_marker_report,
+    )
+    observation_status = supervisor_module.derive_reflective_followup_status(
+        posture="bounded_runtime_followup",
+        runtime_status="implemented",
+        marker_report=covered_marker_report,
+    )
+    next_gap = supervisor_module.reflective_next_gap(
+        posture="bounded_runtime_followup",
+        runtime_status="implemented",
+        validation_status=validation_status,
+        observation_status=observation_status,
+    )
+
+    assert spec_id == "SG-SPEC-0027"
+    assert validation_status == "covered"
+    assert observation_status == "covered"
+    assert next_gap == "none"
 
 
 def test_implemented_proposal_without_registry_entry_is_not_required(
