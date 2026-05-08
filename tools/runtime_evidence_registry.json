@@ -569,7 +569,7 @@
       },
       {
         "path": "tools/supervisor.py",
-        "pattern": "Trace anchor: SG-SPEC-0032 exposes proposal/split mechanics as one reviewable readiness region."
+        "pattern": "Trace anchor: SG-SPEC-0032 exposes proposal/split mechanics"
       }
     ],
     "outcome_markers": [
