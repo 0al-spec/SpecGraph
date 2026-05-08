@@ -26677,6 +26677,7 @@ def graph_backlog_source_artifact_path(source_artifact: str) -> str:
     path_by_artifact: dict[str, Callable[[], Path]] = {
         "graph_health_overlay": graph_health_overlay_path,
         "branch_rewrite_preview": branch_rewrite_preview_path,
+        "proposal_lane_overlay": proposal_lane_overlay_path,
         "proposal_runtime_index": proposal_runtime_index_path,
         "proposal_promotion_index": proposal_promotion_index_path,
         "proposal_spec_trace_index": proposal_spec_trace_index_path,
@@ -27059,7 +27060,7 @@ def build_graph_backlog_projection_from_surfaces(
     entries: list[dict[str, Any]] = []
     adopted_metrics_consumer_ids = metrics_feedback_adopted_consumer_ids(metrics_feedback_index)
     computed_metric_pack_ids = metric_pack_ids_with_computed_runs(metric_pack_runs)
-    stale_split_subject_ids = stale_split_proposal_subjects(proposal_lane_overlay)
+    stale_split_signal_keys = stale_split_proposal_signal_keys(proposal_lane_overlay)
 
     def metrics_consumer_is_adopted(item: dict[str, Any]) -> bool:
         consumer_id = str(item.get("consumer_id", "")).strip()
@@ -27163,8 +27164,8 @@ def build_graph_backlog_projection_from_surfaces(
             )
             signal = str(item.get("signal", "")).strip()
             if (
-                signal in {"repeated_split_required_candidate", "stalled_maturity_candidate"}
-                and subject_id in stale_split_subject_ids
+                signal in GRAPH_NEXT_MOVES_SPLIT_READINESS_SIGNALS
+                and (subject_id, signal) in stale_split_signal_keys
             ):
                 continue
             entries.append(
@@ -27492,6 +27493,7 @@ def build_graph_backlog_projection_from_surfaces(
     source_payloads: dict[str, dict[str, Any] | list[dict[str, Any]]] = {
         "graph_health_overlay": graph_overlay,
         "branch_rewrite_preview": branch_rewrite_preview or {},
+        "proposal_lane_overlay": proposal_lane_overlay or {},
         "proposal_runtime_index": proposal_runtime_index,
         "proposal_promotion_index": proposal_promotion_index,
         "refactor_queue": refactor_queue_items,
@@ -28005,31 +28007,39 @@ def graph_next_moves_split_readiness_reviewer_actions(
     return actions
 
 
-def stale_split_proposal_subjects(
+def stale_split_proposal_signal_keys(
     proposal_lane_overlay: dict[str, Any] | None,
-) -> set[str]:
-    subjects: set[str] = set()
+) -> set[tuple[str, str]]:
+    active_keys: set[tuple[str, str]] = set()
+    inactive_keys: set[tuple[str, str]] = set()
     if not isinstance(proposal_lane_overlay, dict):
-        return subjects
+        return inactive_keys
     for entry in proposal_lane_overlay.get("entries", []):
         if not isinstance(entry, dict):
             continue
         authority_state = str(entry.get("proposal_authority_state", "")).strip()
-        if authority_state not in {"rejected", "superseded"}:
+        if authority_state not in {
+            "under_review",
+            "approved_for_application",
+            "rejected",
+            "superseded",
+        }:
             continue
         target_region = entry.get("target_region", {})
         if not isinstance(target_region, dict):
             continue
         change_scope = str(target_region.get("change_scope", "")).strip()
-        if change_scope not in {
-            "repeated_split_required_candidate",
-            "stalled_maturity_candidate",
-        }:
+        if change_scope not in GRAPH_NEXT_MOVES_SPLIT_READINESS_SIGNALS:
             continue
         target_reference = str(target_region.get("target_reference", "")).strip()
-        if target_reference:
-            subjects.add(target_reference)
-    return subjects
+        if not target_reference:
+            continue
+        key = (target_reference, change_scope)
+        if authority_state in {"under_review", "approved_for_application"}:
+            active_keys.add(key)
+        else:
+            inactive_keys.add(key)
+    return inactive_keys - active_keys
 
 
 def graph_next_moves_branch_preview_projected(
@@ -28474,6 +28484,7 @@ def build_graph_dashboard(
             metric_pack_runs=metric_pack_runs,
             metric_threshold_proposals=metric_threshold_proposals,
             review_feedback_index=review_feedback_index,
+            proposal_lane_overlay=proposal_lane_overlay,
             branch_rewrite_preview=branch_rewrite_preview,
         )
     graph_backlog_priority_counts = graph_backlog_projection.get("summary", {}).get(

@@ -15489,6 +15489,65 @@ def test_build_graph_dashboard_does_not_rebuild_metric_pack_runs_with_prebuilt_b
     assert report["sections"]["backlog"]["backlog_entry_count"] == 0
 
 
+def test_build_graph_dashboard_threads_proposal_lane_overlay_to_backlog_projection(
+    supervisor_module: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    lane_overlay = {"generated_at": "2026-05-08T00:00:00Z", "entries": []}
+
+    def fake_backlog(**kwargs: object) -> dict[str, object]:
+        assert kwargs["proposal_lane_overlay"] is lane_overlay
+        return {
+            "entries": [],
+            "summary": {
+                "entry_count": 0,
+                "priority_counts": {},
+                "domain_counts": {},
+                "next_gap_counts": {},
+                "source_artifact_counts": {},
+            },
+        }
+
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_graph_backlog_projection_from_surfaces",
+        fake_backlog,
+    )
+
+    report = supervisor_module.build_graph_dashboard(
+        [],
+        graph_overlay={"entries": [], "viewer_projection": {}},
+        graph_trends={"viewer_projection": {}},
+        branch_rewrite_preview={},
+        branch_rewrite_summary={},
+        intent_overlay={},
+        proposal_lane_overlay=lane_overlay,
+        proposal_runtime_index={"entries": [], "reflective_backlog": {"entry_count": 0}},
+        proposal_promotion_index={"entries": [], "promotion_backlog": {"entry_count": 0}},
+        spec_trace_projection={"viewer_projection": {}, "implementation_backlog": {}},
+        implementation_work_index={"viewer_projection": {}, "implementation_backlog": {}},
+        evidence_overlay={"viewer_projection": {}, "evidence_backlog": {}},
+        external_consumer_index={},
+        external_consumer_overlay={"viewer_projection": {}, "external_consumer_backlog": {}},
+        external_consumer_handoffs={"viewer_projection": {}, "handoff_backlog": {}},
+        metric_signal_index={"metrics": []},
+        metric_threshold_proposals={"entries": [], "viewer_projection": {}},
+        metrics_source_promotion_index={"viewer_projection": {}, "promotion_backlog": {}},
+        metrics_delivery_workflow={"viewer_projection": {}, "delivery_backlog": {}},
+        metrics_feedback_index={"viewer_projection": {}, "feedback_backlog": {}},
+        metric_pack_index={"entries": [], "viewer_projection": {}},
+        metric_pack_adapter_index={"adapter_backlog": {}, "viewer_projection": {}},
+        metric_pack_runs={"entries": []},
+        model_usage_telemetry={},
+        specpm_export_preview={},
+        specpm_delivery_workflow={"viewer_projection": {}, "delivery_backlog": {}},
+        specpm_feedback_index={"viewer_projection": {}, "feedback_backlog": {}},
+        review_feedback_index={"viewer_projection": {}, "review_feedback_backlog": {}},
+    )
+
+    assert report["sections"]["backlog"]["backlog_entry_count"] == 0
+
+
 def test_main_builds_viewer_surfaces_as_standalone_command(
     supervisor_module: object,
     repo_fixture: Path,
@@ -17161,7 +17220,15 @@ def test_graph_backlog_projection_suppresses_stale_split_queue_pressure(
                 "signal": "repeated_split_required_candidate",
                 "recommended_action": "review_decomposition_policy",
                 "status": "proposed",
-            }
+            },
+            {
+                "id": "governance_proposal::SG-SPEC-0058::stalled_maturity_candidate",
+                "proposal_type": "governance_proposal",
+                "spec_id": "SG-SPEC-0058",
+                "signal": "stalled_maturity_candidate",
+                "recommended_action": "review_refinement_strategy",
+                "status": "proposed",
+            },
         ],
         spec_trace_projection={
             "generated_at": "2026-05-08T00:00:00Z",
@@ -17230,15 +17297,28 @@ def test_graph_backlog_projection_suppresses_stale_split_queue_pressure(
                         "target_reference": "SG-SPEC-0058",
                         "change_scope": "repeated_split_required_candidate",
                     },
-                }
+                },
+                {
+                    "proposal_authority_state": "under_review",
+                    "target_region": {
+                        "target_kind": "canonical_node",
+                        "target_reference": "SG-SPEC-0058",
+                        "change_scope": "stalled_maturity_candidate",
+                    },
+                },
             ],
         },
         branch_rewrite_preview=None,
     )
 
-    assert report["entry_count"] == 0
-    assert report["summary"]["source_artifact_counts"] == {}
+    assert report["entry_count"] == 1
+    assert report["entries"][0]["details"]["signal"] == "stalled_maturity_candidate"
+    assert report["summary"]["source_artifact_counts"] == {"proposal_queue": 1}
     assert "review_decomposition_policy" not in report["summary"]["next_gap_counts"]
+    assert report["summary"]["next_gap_counts"] == {"review_refinement_strategy": 1}
+    assert report["source_artifacts"]["proposal_lane_overlay"]["artifact_path"] == (
+        "runs/proposal_lane_overlay.json"
+    )
 
 
 def test_main_builds_graph_backlog_projection_as_standalone_command(
