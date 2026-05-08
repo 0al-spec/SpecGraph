@@ -27819,6 +27819,8 @@ def graph_next_moves_top_backlog_entry(
         for entry in proposal_lane_overlay.get("entries", []):
             if not isinstance(entry, dict):
                 continue
+            # Trace anchor: SG-SPEC-0044 blocks bypass by treating tracked
+            # proposal-lane readiness as the admissible path over branch residue.
             if str(entry.get("proposal_authority_state", "")).strip() not in {
                 "under_review",
                 "approved_for_application",

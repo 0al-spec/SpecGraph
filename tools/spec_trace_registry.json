@@ -141,6 +141,16 @@
     "notes": "Proposal/split gateway boundary is anchored by graph-next-moves routing that treats tracked proposal coverage as the active readiness boundary over branch rewrite residue."
   },
   {
+    "spec_id": "SG-SPEC-0044",
+    "code_surfaces": [
+      "tools/supervisor.py"
+    ],
+    "test_surfaces": [
+      "tests/test_supervisor.py"
+    ],
+    "notes": "Proposal/split readiness admissibility is anchored by proposal-lane coverage that suppresses branch split residue only when the tracked lane provides the non-bypass path."
+  },
+  {
     "spec_id": "SG-SPEC-0049",
     "code_surfaces": [
       "tools/supervisor.py"
