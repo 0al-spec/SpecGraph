@@ -673,21 +673,21 @@
     "outcome_markers": [
       {
         "path": "tests/test_supervisor.py",
-        "pattern": "assert report[\"current_scene\"] == \"steady_state\""
+        "pattern": "assert report[\"source_facts\"][\"proposal_lane_overlay\"][\"entry_count\"] == len("
       },
       {
         "path": "tests/test_supervisor.py",
-        "pattern": "assert report[\"recommended_next_move_kind\"] == \"none\""
+        "pattern": "assert report[\"recommended_next_move\"][\"move_id\"] == \"next_move::steady_state\""
       }
     ],
     "adoption_markers": [
       {
         "path": "tests/test_supervisor.py",
-        "pattern": "spec_id = \"SG-SPEC-0044\""
+        "pattern": "assert proposal_lane_overlay[\"entries\"][0][\"target_region\"][\"target_reference\"] == spec_id"
       },
       {
         "path": "tools/supervisor.py",
-        "pattern": "if isinstance(proposal_lane_overlay, dict):"
+        "pattern": "proposal-lane readiness as the admissible path over branch residue"
       }
     ],
     "notes": "Non-bypass path evidence is anchored by graph-next-moves logic that accepts tracked proposal-lane coverage as the admissible path and suppresses branch split residue for the same subject."

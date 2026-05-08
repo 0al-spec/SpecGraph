@@ -18543,10 +18543,16 @@ def test_sg_spec_0044_trace_anchor_accepts_proposal_lane_as_non_bypass_path(
         proposal_lane_overlay=proposal_lane_overlay,
     )
 
-    assert spec_id == "SG-SPEC-0044"
+    assert proposal_lane_overlay["entries"][0]["target_region"]["target_reference"] == spec_id
+    assert proposal_lane_overlay["entries"][0]["target_region"]["change_scope"] == (
+        "repeated_split_required_candidate"
+    )
     assert report["current_scene"] == "steady_state"
     assert report["recommended_next_move_kind"] == "none"
-    assert report["source_facts"]["proposal_lane_overlay"]["entry_count"] == 1
+    assert report["source_facts"]["proposal_lane_overlay"]["entry_count"] == len(
+        proposal_lane_overlay["entries"]
+    )
+    assert report["recommended_next_move"]["move_id"] == "next_move::steady_state"
 
 
 def test_branch_rewrite_preview_projection_tolerates_malformed_optional_lists(
