@@ -179,5 +179,15 @@
       "tests/test_supervisor.py"
     ],
     "notes": "Canonical presence-state handling is embodied in supervisor active-vs-historical topology logic and tests."
+  },
+  {
+    "spec_id": "SG-SPEC-0058",
+    "code_surfaces": [
+      "tools/supervisor.py"
+    ],
+    "test_surfaces": [
+      "tests/test_supervisor.py"
+    ],
+    "notes": "Proposal/split readiness verdict semantics are anchored by graph-next-moves source facts that keep stale split-readiness evidence unresolved until active proposal-lane availability exists."
   }
 ]

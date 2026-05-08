@@ -18757,6 +18757,82 @@ def test_sg_spec_0045_trace_anchor_keeps_stalled_maturity_review_ahead_of_lane(
     assert report["recommended_next_move"]["subject"]["subject_id"] == spec_id
 
 
+def test_sg_spec_0058_trace_anchor_keeps_stale_split_evidence_unresolved(
+    supervisor_module: object,
+) -> None:
+    spec_id = "SG-SPEC-0058"
+    proposal_backlog_id = (
+        "proposal_queue::proposals::governance_proposal::SG-SPEC-0058::"
+        "repeated_split_required_candidate::review_decomposition_policy"
+    )
+    backlog_projection = {
+        "artifact_kind": supervisor_module.GRAPH_BACKLOG_PROJECTION_ARTIFACT_KIND,
+        "schema_version": supervisor_module.GRAPH_BACKLOG_PROJECTION_SCHEMA_VERSION,
+        "generated_at": "2026-04-28T00:00:01Z",
+        "entry_count": 1,
+        "entries": [
+            {
+                "backlog_id": proposal_backlog_id,
+                "domain": "proposals",
+                "source_artifact": "proposal_queue",
+                "source_artifact_path": "runs/proposal_queue.json",
+                "subject_kind": "queue_item",
+                "subject_id": spec_id,
+                "title": "",
+                "status": "proposed",
+                "review_state": "",
+                "next_gap": "review_decomposition_policy",
+                "priority": "high",
+                "details": {
+                    "proposal_type": "governance_proposal",
+                    "signal": "repeated_split_required_candidate",
+                    "recommended_action": "review_decomposition_policy",
+                },
+            }
+        ],
+        "summary": {
+            "source_artifact_counts": {"proposal_queue": 1},
+            "priority_counts": {"high": 1},
+            "next_gap_counts": {"review_decomposition_policy": 1},
+        },
+        "viewer_projection": {"priorities": {"high": [proposal_backlog_id]}},
+    }
+    proposal_lane_overlay = {
+        "artifact_kind": "proposal_lane_overlay",
+        "schema_version": 1,
+        "generated_at": "2026-04-28T00:00:02Z",
+        "entry_count": 1,
+        "entries": [
+            {
+                "proposal_authority_state": "superseded",
+                "target_region": {
+                    "target_kind": "canonical_node",
+                    "target_reference": spec_id,
+                    "change_scope": "repeated_split_required_candidate",
+                },
+            }
+        ],
+        "named_filters": {
+            "rejected_or_superseded": [f"governance_proposal::{spec_id}"],
+            "under_review": [],
+        },
+    }
+
+    report = supervisor_module.build_graph_next_moves(
+        supervisor_module.load_specs(),
+        backlog_projection=backlog_projection,
+        proposal_runtime_index=fake_graph_next_moves_proposal_runtime(supervisor_module),
+        proposal_lane_overlay=proposal_lane_overlay,
+    )
+
+    verdict = report["source_facts"]["split_readiness_verdicts"][spec_id]
+    assert verdict["verdict"] == "unresolved"
+    assert verdict["evidence_category"] == "proposal_lane_runtime_detail"
+    assert verdict["queued_boundary_signal"] is True
+    assert verdict["active_lane_signal"] is False
+    assert verdict["inactive_lane_signal"] is True
+
+
 def test_branch_rewrite_preview_projection_tolerates_malformed_optional_lists(
     supervisor_module: object,
 ) -> None:
