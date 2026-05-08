@@ -27873,7 +27873,7 @@ def graph_next_moves_top_backlog_entry(
             rank = 0
         # Trace anchor: SG-SPEC-0045 allows upstream entry success to
         # authorize boundary review only; tracked mechanics availability
-        # must not outrank the explicit review_decomposition_policy step.
+        # must not outrank explicit split-readiness review actions.
         elif is_reviewable_boundary_entry(entry):
             rank = 5
         elif source_artifact == "branch_rewrite_preview":

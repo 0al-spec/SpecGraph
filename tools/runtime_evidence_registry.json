@@ -629,6 +629,10 @@
       {
         "path": "tests/test_supervisor.py",
         "pattern": "assert report[\"recommended_next_move\"][\"next_gap\"] == \"review_decomposition_policy\""
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "assert report[\"recommended_next_move\"][\"next_gap\"] == \"review_refinement_strategy\""
       }
     ],
     "adoption_markers": [
@@ -739,7 +743,7 @@
         "pattern": "def is_reviewable_boundary_entry(entry: dict[str, Any]) -> bool:"
       }
     ],
-    "notes": "Gateway-entry evidence is anchored by graph-next-moves ranking that keeps explicit review_decomposition_policy boundary review ahead of proposal-lane availability once the same split subject is already tracked."
+    "notes": "Gateway-entry evidence is anchored by graph-next-moves ranking that keeps explicit split-readiness boundary review actions, including decomposition-policy and refinement-strategy review, ahead of proposal-lane availability once the same split subject is already tracked."
   },
   {
     "spec_id": "SG-SPEC-0049",
