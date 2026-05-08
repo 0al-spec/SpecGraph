@@ -16153,6 +16153,70 @@ def collect_spec_activity_commit_refs(
     return commits
 
 
+def remote_branches_containing_commit(
+    sha: str,
+    *,
+    repo_root: Path | None = None,
+) -> list[str]:
+    local_root = repo_root or ROOT
+    commit_sha = str(sha).strip()
+    if not commit_sha or shutil.which("git") is None:
+        return []
+    result = subprocess.run(
+        ["git", "branch", "-r", "--contains", commit_sha],
+        cwd=local_root,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if result.returncode != 0:
+        return []
+    branches: list[str] = []
+    for line in result.stdout.splitlines():
+        branch = line.replace("*", "").strip()
+        if "->" in branch:
+            branch = branch.split("->", 1)[1].strip()
+        if branch:
+            branches.append(branch)
+    return sorted(set(branches))
+
+
+def spec_activity_cached_stack_only_merge_context(
+    commit_ref: dict[str, Any],
+) -> dict[str, Any] | None:
+    cache_key = "_stack_only_merge_context"
+    if cache_key not in commit_ref:
+        commit_ref[cache_key] = spec_activity_stack_only_merge_context(commit_ref)
+    context = commit_ref.get(cache_key)
+    return context if isinstance(context, dict) else None
+
+
+def spec_activity_stack_only_merge_context(
+    commit_ref: dict[str, Any],
+    *,
+    repo_root: Path | None = None,
+) -> dict[str, Any] | None:
+    subject = str(commit_ref.get("subject", "")).strip()
+    if not re.match(r"^Merge pull request #\d+ from ", subject):
+        return None
+    branches = remote_branches_containing_commit(
+        str(commit_ref.get("sha", "")).strip(),
+        repo_root=repo_root,
+    )
+    if not branches or "origin/main" in branches:
+        return None
+    non_main_branches = [
+        branch for branch in branches if branch not in {"origin/main", "origin/HEAD"}
+    ]
+    if not non_main_branches:
+        return None
+    return {
+        "status": "stack_only_merge_observed",
+        "reachable_remote_branches": non_main_branches,
+        "main_contains_commit": False,
+    }
+
+
 def spec_activity_spec_ids_from_commit(commit_ref: dict[str, Any]) -> list[str]:
     spec_ids = set(SPEC_ID_CANONICAL_RE.findall(str(commit_ref.get("subject", ""))))
     for raw_path in commit_ref.get("paths", []):
@@ -16188,6 +16252,8 @@ def spec_activity_event_types_from_commit(commit_ref: dict[str, Any]) -> list[st
         event_types.append("implementation_work_emitted")
     if "tools/review_feedback_records.json" in paths or "review feedback" in subject:
         event_types.append("review_feedback_applied")
+    if spec_activity_cached_stack_only_merge_context(commit_ref) is not None:
+        event_types.append("stack_only_merge_observed")
 
     allowed_types = SPEC_ACTIVITY_FEED_POLICY.get("event_contract", {}).get("event_types", [])
     allowed = {str(item).strip() for item in allowed_types if str(item).strip()}
@@ -16229,11 +16295,16 @@ def build_spec_activity_feed(
         if not event_types:
             continue
         spec_ids = spec_activity_spec_ids_from_commit(commit_ref)
-        if not spec_ids and "review_feedback_applied" in event_types:
+        if not spec_ids and (
+            "review_feedback_applied" in event_types or "stack_only_merge_observed" in event_types
+        ):
             spec_ids = [""]
         if not spec_ids:
             continue
         for event_type in event_types:
+            stack_context = None
+            if event_type == "stack_only_merge_observed":
+                stack_context = spec_activity_cached_stack_only_merge_context(commit_ref)
             for spec_id in spec_ids:
                 event_id = spec_activity_event_id(commit_ref, event_type, spec_id)
                 if event_id in seen_event_ids:
@@ -16257,6 +16328,7 @@ def build_spec_activity_feed(
                             "short_sha": str(commit_ref.get("short_sha", "")).strip(),
                             "subject": str(commit_ref.get("subject", "")).strip(),
                         },
+                        **({"merge_landing": stack_context} if stack_context is not None else {}),
                         "source_paths": list(commit_ref.get("paths", [])),
                         "viewer": {
                             "tone": spec_activity_event_tone(event_type),
@@ -16321,7 +16393,13 @@ def build_spec_activity_feed(
                 "process_activity": [
                     event["event_id"]
                     for event in events
-                    if event.get("event_type") == "review_feedback_applied"
+                    if event.get("event_type")
+                    in {"review_feedback_applied", "stack_only_merge_observed"}
+                ],
+                "stack_only_merges": [
+                    event["event_id"]
+                    for event in events
+                    if event.get("event_type") == "stack_only_merge_observed"
                 ],
             },
         },
@@ -28132,6 +28210,7 @@ def build_graph_dashboard(
     specpm_delivery_workflow: dict[str, Any] | None = None,
     specpm_feedback_index: dict[str, Any] | None = None,
     review_feedback_index: dict[str, Any] | None = None,
+    spec_activity_feed: dict[str, Any] | None = None,
     graph_backlog_projection: dict[str, Any] | None = None,
     proposal_lane_overlay: dict[str, Any] | None = None,
     proposal_runtime_index: dict[str, Any] | None = None,
@@ -28217,6 +28296,8 @@ def build_graph_dashboard(
         )
     if review_feedback_index is None:
         review_feedback_index = build_review_feedback_index()
+    if spec_activity_feed is None:
+        spec_activity_feed = build_spec_activity_feed(specs)
     refactor_queue_items = [item for item in load_refactor_queue() if isinstance(item, dict)]
     proposal_queue_items = [item for item in load_proposal_queue() if isinstance(item, dict)]
     active_refactor_queue_items = active_queue_items(refactor_queue_items)
@@ -28497,6 +28578,12 @@ def build_graph_dashboard(
     review_feedback_backlog_count = int(
         review_feedback_index.get("review_feedback_backlog", {}).get("entry_count", 0) or 0
     )
+    spec_activity_event_type_counts = grouped_identifier_counts(
+        spec_activity_feed.get("viewer_projection", {}).get("event_type", {})
+    )
+    spec_activity_named_filter_counts = grouped_identifier_counts(
+        spec_activity_feed.get("viewer_projection", {}).get("named_filters", {})
+    )
 
     metric_entries = [
         entry for entry in metric_signal_index.get("metrics", []) if isinstance(entry, dict)
@@ -28759,6 +28846,21 @@ def build_graph_dashboard(
             ),
         ),
         dashboard_card(
+            card_id="stack_only_merges",
+            title="Stack-Only Merges",
+            value=spec_activity_named_filter_counts.get("stack_only_merges", 0),
+            section="process_feedback",
+            status=(
+                "attention"
+                if spec_activity_named_filter_counts.get("stack_only_merges", 0) > 0
+                else "healthy"
+            ),
+            basis=(
+                "Observed PR merge commits that landed in stacked remote branches but were not "
+                "yet reachable from origin/main at dashboard generation time."
+            ),
+        ),
+        dashboard_card(
             card_id="metrics_below_threshold",
             title="Metrics Below Threshold",
             value=len(below_threshold_authoritative_metric_ids),
@@ -28898,6 +29000,10 @@ def build_graph_dashboard(
             "review_feedback_index": {
                 "artifact_path": review_feedback_index_path().relative_to(ROOT).as_posix(),
                 "generated_at": review_feedback_index.get("generated_at"),
+            },
+            "spec_activity_feed": {
+                "artifact_path": spec_activity_feed_path().relative_to(ROOT).as_posix(),
+                "generated_at": spec_activity_feed.get("generated_at"),
             },
             "graph_backlog_projection": {
                 "artifact_path": graph_backlog_projection_path().relative_to(ROOT).as_posix(),
@@ -29078,6 +29184,9 @@ def build_graph_dashboard(
                 "review_feedback_entry_count": int(
                     review_feedback_index.get("entry_count", 0) or 0
                 ),
+                "spec_activity_entry_count": int(spec_activity_feed.get("entry_count", 0) or 0),
+                "spec_activity_event_type_counts": spec_activity_event_type_counts,
+                "spec_activity_named_filter_counts": spec_activity_named_filter_counts,
                 "review_feedback_backlog_count": review_feedback_backlog_count,
                 "review_feedback_status_counts": review_feedback_status_counts,
                 "review_feedback_root_cause_counts": review_feedback_root_cause_counts,
@@ -29156,6 +29265,7 @@ def build_graph_dashboard(
                 ),
                 "metric_pack_adapter_gaps": metric_pack_adapter_backlog_count,
                 "review_feedback_open": review_feedback_backlog_count,
+                "stack_only_merges": spec_activity_named_filter_counts.get("stack_only_merges", 0),
                 "review_feedback_invalid": review_feedback_status_counts.get(
                     "invalid_feedback_record",
                     0,
@@ -29211,6 +29321,7 @@ def build_viewer_surfaces(specs: list[SpecNode]) -> dict[str, Any]:
         specpm_delivery_workflow,
     )
     review_feedback_index = build_review_feedback_index()
+    spec_activity_feed = build_spec_activity_feed(specs)
     metric_pack_registry = load_metric_pack_registry()
     metric_pack_index = build_metric_pack_index(
         metric_pack_registry,
@@ -29287,6 +29398,7 @@ def build_viewer_surfaces(specs: list[SpecNode]) -> dict[str, Any]:
         specpm_delivery_workflow=specpm_delivery_workflow,
         specpm_feedback_index=specpm_feedback_index,
         review_feedback_index=review_feedback_index,
+        spec_activity_feed=spec_activity_feed,
         graph_backlog_projection=backlog_projection,
         proposal_lane_overlay=proposal_lane_overlay,
         proposal_runtime_index=proposal_runtime_index,
@@ -29351,7 +29463,6 @@ def build_viewer_surfaces(specs: list[SpecNode]) -> dict[str, Any]:
     conversation_memory_pressure_path_result = write_conversation_memory_promotion_pressure(
         conversation_memory_pressure
     )
-    spec_activity_feed = build_spec_activity_feed(specs)
     spec_activity_feed_path_result = write_spec_activity_feed(spec_activity_feed)
     metrics_source_promotion_backlog = metrics_source_promotion_index.get(
         "promotion_backlog",

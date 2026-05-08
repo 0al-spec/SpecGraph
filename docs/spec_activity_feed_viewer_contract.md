@@ -167,6 +167,7 @@ Initial event vocabulary:
 - `proposal_emitted`
 - `implementation_work_emitted`
 - `review_feedback_applied`
+- `stack_only_merge_observed`
 
 Viewer tone guidance:
 
@@ -176,6 +177,28 @@ Viewer tone guidance:
 - `proposal_emitted` -> proposal accent
 - `implementation_work_emitted` -> implementation/work accent
 - `review_feedback_applied` -> process/review accent
+- `stack_only_merge_observed` -> process/review accent
+
+`stack_only_merge_observed` is a graph-level process warning: the commit was
+reachable from a remote stacked branch but not yet from `origin/main` when the
+feed was generated. Treat it as delivery-topology evidence, not as a canonical
+spec mutation.
+
+`stack_only_merge_observed` entries include a `merge_landing` object:
+
+```json
+{
+  "status": "stack_only_merge_observed",
+  "reachable_remote_branches": ["origin/codex/supervisor-run-36"],
+  "main_contains_commit": false
+}
+```
+
+`merge_landing.reachable_remote_branches` lists non-main remote branches that
+contain the merge commit. `merge_landing.main_contains_commit` is `false` for
+this event because the same commit was not reachable from `origin/main` during
+feed generation. The object is present only on `stack_only_merge_observed`
+events.
 
 Unknown future event types should be displayed as neutral activity rows rather
 than treated as parse failures.
