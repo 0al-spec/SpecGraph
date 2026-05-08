@@ -27053,11 +27053,13 @@ def build_graph_backlog_projection_from_surfaces(
     metric_pack_runs: dict[str, Any],
     metric_threshold_proposals: dict[str, Any],
     review_feedback_index: dict[str, Any],
+    proposal_lane_overlay: dict[str, Any] | None = None,
     branch_rewrite_preview: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     entries: list[dict[str, Any]] = []
     adopted_metrics_consumer_ids = metrics_feedback_adopted_consumer_ids(metrics_feedback_index)
     computed_metric_pack_ids = metric_pack_ids_with_computed_runs(metric_pack_runs)
+    stale_split_subject_ids = stale_split_proposal_subjects(proposal_lane_overlay)
 
     def metrics_consumer_is_adopted(item: dict[str, Any]) -> bool:
         consumer_id = str(item.get("consumer_id", "")).strip()
@@ -27159,6 +27161,12 @@ def build_graph_backlog_projection_from_surfaces(
                 or source_item_id
                 or "unknown"
             )
+            signal = str(item.get("signal", "")).strip()
+            if (
+                signal in {"repeated_split_required_candidate", "stalled_maturity_candidate"}
+                and subject_id in stale_split_subject_ids
+            ):
+                continue
             entries.append(
                 graph_backlog_entry(
                     source_artifact=source_artifact,
@@ -27633,6 +27641,7 @@ def build_graph_backlog_projection(
         )
     if review_feedback_index is None:
         review_feedback_index = build_review_feedback_index()
+    proposal_lane_overlay = build_proposal_lane_overlay()
     return build_graph_backlog_projection_from_surfaces(
         graph_overlay=graph_overlay,
         proposal_runtime_index=proposal_runtime_index,
@@ -27654,6 +27663,7 @@ def build_graph_backlog_projection(
         metric_pack_runs=metric_pack_runs,
         metric_threshold_proposals=metric_threshold_proposals,
         review_feedback_index=review_feedback_index,
+        proposal_lane_overlay=proposal_lane_overlay,
         branch_rewrite_preview=branch_rewrite_preview,
     )
 
@@ -27993,6 +28003,33 @@ def graph_next_moves_split_readiness_reviewer_actions(
             "evidence_category": str(verdict_entry.get("evidence_category", "")).strip(),
         }
     return actions
+
+
+def stale_split_proposal_subjects(
+    proposal_lane_overlay: dict[str, Any] | None,
+) -> set[str]:
+    subjects: set[str] = set()
+    if not isinstance(proposal_lane_overlay, dict):
+        return subjects
+    for entry in proposal_lane_overlay.get("entries", []):
+        if not isinstance(entry, dict):
+            continue
+        authority_state = str(entry.get("proposal_authority_state", "")).strip()
+        if authority_state not in {"rejected", "superseded"}:
+            continue
+        target_region = entry.get("target_region", {})
+        if not isinstance(target_region, dict):
+            continue
+        change_scope = str(target_region.get("change_scope", "")).strip()
+        if change_scope not in {
+            "repeated_split_required_candidate",
+            "stalled_maturity_candidate",
+        }:
+            continue
+        target_reference = str(target_region.get("target_reference", "")).strip()
+        if target_reference:
+            subjects.add(target_reference)
+    return subjects
 
 
 def graph_next_moves_branch_preview_projected(

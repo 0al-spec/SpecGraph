@@ -17130,6 +17130,117 @@ def test_graph_backlog_projection_suppresses_computed_metric_pack_index_review(
     assert report["summary"]["next_gap_counts"]["review_draft_metric_pack"] == 1
 
 
+def test_graph_backlog_projection_suppresses_stale_split_queue_pressure(
+    supervisor_module: object,
+) -> None:
+    report = supervisor_module.build_graph_backlog_projection_from_surfaces(
+        graph_overlay={"generated_at": "2026-05-08T00:00:00Z", "entries": []},
+        proposal_runtime_index={
+            "generated_at": "2026-05-08T00:00:00Z",
+            "reflective_backlog": {"entry_count": 0, "items": []},
+        },
+        proposal_promotion_index={
+            "generated_at": "2026-05-08T00:00:00Z",
+            "promotion_backlog": {"entry_count": 0, "items": []},
+        },
+        refactor_queue_items=[
+            {
+                "id": "governance_proposal::SG-SPEC-0058::repeated_split_required_candidate",
+                "work_item_type": "governance_proposal",
+                "spec_id": "SG-SPEC-0058",
+                "signal": "repeated_split_required_candidate",
+                "recommended_action": "review_decomposition_policy",
+                "status": "proposed",
+            }
+        ],
+        proposal_queue_items=[
+            {
+                "id": "governance_proposal::SG-SPEC-0058::repeated_split_required_candidate",
+                "proposal_type": "governance_proposal",
+                "spec_id": "SG-SPEC-0058",
+                "signal": "repeated_split_required_candidate",
+                "recommended_action": "review_decomposition_policy",
+                "status": "proposed",
+            }
+        ],
+        spec_trace_projection={
+            "generated_at": "2026-05-08T00:00:00Z",
+            "implementation_backlog": {"entry_count": 0, "items": []},
+        },
+        implementation_work_index={
+            "generated_at": "2026-05-08T00:00:00Z",
+            "implementation_backlog": {"entry_count": 0, "items": []},
+        },
+        evidence_overlay={
+            "generated_at": "2026-05-08T00:00:00Z",
+            "evidence_backlog": {"entry_count": 0, "items": []},
+        },
+        external_consumer_overlay={
+            "generated_at": "2026-05-08T00:00:00Z",
+            "external_consumer_backlog": {"entry_count": 0, "items": []},
+        },
+        external_consumer_handoffs={
+            "generated_at": "2026-05-08T00:00:00Z",
+            "handoff_backlog": {"entry_count": 0, "items": []},
+        },
+        specpm_delivery_workflow={
+            "generated_at": "2026-05-08T00:00:00Z",
+            "delivery_backlog": {"entry_count": 0, "items": []},
+        },
+        specpm_feedback_index={
+            "generated_at": "2026-05-08T00:00:00Z",
+            "feedback_backlog": {"entry_count": 0, "items": []},
+        },
+        metrics_delivery_workflow={
+            "generated_at": "2026-05-08T00:00:00Z",
+            "delivery_backlog": {"entry_count": 0, "items": []},
+        },
+        metrics_feedback_index={
+            "generated_at": "2026-05-08T00:00:00Z",
+            "feedback_backlog": {"entry_count": 0, "items": []},
+        },
+        metrics_source_promotion_index={
+            "generated_at": "2026-05-08T00:00:00Z",
+            "promotion_backlog": {"entry_count": 0, "items": []},
+        },
+        metric_pack_index={"generated_at": "2026-05-08T00:00:00Z", "entries": []},
+        metric_pack_adapter_index={
+            "generated_at": "2026-05-08T00:00:00Z",
+            "adapter_backlog": {"entry_count": 0, "items": []},
+        },
+        metric_pack_runs={
+            "generated_at": "2026-05-08T00:00:00Z",
+            "entries": [],
+        },
+        metric_threshold_proposals={
+            "generated_at": "2026-05-08T00:00:00Z",
+            "entries": [],
+        },
+        review_feedback_index={
+            "generated_at": "2026-05-08T00:00:00Z",
+            "review_feedback_backlog": {"entry_count": 0, "items": []},
+        },
+        proposal_lane_overlay={
+            "generated_at": "2026-05-08T00:00:00Z",
+            "entries": [
+                {
+                    "proposal_authority_state": "superseded",
+                    "target_region": {
+                        "target_kind": "canonical_node",
+                        "target_reference": "SG-SPEC-0058",
+                        "change_scope": "repeated_split_required_candidate",
+                    },
+                }
+            ],
+        },
+        branch_rewrite_preview=None,
+    )
+
+    assert report["entry_count"] == 0
+    assert report["summary"]["source_artifact_counts"] == {}
+    assert "review_decomposition_policy" not in report["summary"]["next_gap_counts"]
+
+
 def test_main_builds_graph_backlog_projection_as_standalone_command(
     supervisor_module: object,
     repo_fixture: Path,
