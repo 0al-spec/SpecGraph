@@ -595,6 +595,55 @@
     "notes": "Proposal/split mechanics readiness is evidenced by branch-rewrite split-pressure routing that promotes split-required nodes into one reviewable emit_split_proposal response."
   },
   {
+    "spec_id": "SG-SPEC-0043",
+    "evidence_scope": "surface_level",
+    "artifact_refs": [
+      "tools/supervisor.py",
+      "tests/test_supervisor.py"
+    ],
+    "runtime_entities": [
+      {
+        "entity_id": "supervisor.select_backlog_next_move",
+        "entity_kind": "readiness_boundary_selector"
+      },
+      {
+        "entity_id": "supervisor.proposal_covered_split_subjects",
+        "entity_kind": "tracked_proposal_boundary"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "test_sg_spec_0043_trace_anchor_prefers_tracked_split_boundary_over_branch_residue"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "Trace anchor: SG-SPEC-0043 preserves one readiness boundary once"
+      }
+    ],
+    "outcome_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "assert report[\"recommended_next_move\"][\"subject\"][\"source_artifact\"] == \"proposal_queue\""
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "assert report[\"recommended_next_move\"][\"next_gap\"] == \"review_decomposition_policy\""
+      }
+    ],
+    "adoption_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "spec_id = \"SG-SPEC-0043\""
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def is_covered_branch_split_candidate(entry: dict[str, Any]) -> bool:"
+      }
+    ],
+    "notes": "Gateway-boundary evidence is anchored by graph-next-moves logic that suppresses branch split residue once a tracked proposal queue item already exposes the readiness boundary."
+  },
+  {
     "spec_id": "SG-SPEC-0049",
     "evidence_scope": "surface_level",
     "artifact_refs": [
