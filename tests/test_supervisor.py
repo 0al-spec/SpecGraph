@@ -18204,6 +18204,10 @@ def test_build_graph_next_moves_prefers_active_split_proposal_over_branch_previe
         "branch_rewrite_preview::branch_rewrite::SG-SPEC-0001::emit_split_proposal::"
         "review_branch_rewrite_candidate"
     )
+    second_branch_backlog_id = (
+        "branch_rewrite_preview::branch_rewrite::SG-SPEC-0001::emit_split_proposal_secondary::"
+        "review_branch_rewrite_candidate"
+    )
     proposal_backlog_id = (
         "proposal_queue::proposals::governance_proposal::SG-SPEC-0001::"
         "repeated_split_required_candidate::review_decomposition_policy"
@@ -18212,10 +18216,27 @@ def test_build_graph_next_moves_prefers_active_split_proposal_over_branch_previe
         "artifact_kind": supervisor_module.GRAPH_BACKLOG_PROJECTION_ARTIFACT_KIND,
         "schema_version": supervisor_module.GRAPH_BACKLOG_PROJECTION_SCHEMA_VERSION,
         "generated_at": "2026-04-28T00:00:01Z",
-        "entry_count": 2,
+        "entry_count": 3,
         "entries": [
             {
                 "backlog_id": branch_backlog_id,
+                "domain": "branch_rewrite",
+                "source_artifact": "branch_rewrite_preview",
+                "source_artifact_path": "runs/branch_rewrite_preview.json",
+                "subject_kind": "spec",
+                "subject_id": "SG-SPEC-0001",
+                "title": "Golden Path Node",
+                "status": "emit_split_proposal",
+                "review_state": "preview_only",
+                "next_gap": "review_branch_rewrite_candidate",
+                "priority": "high",
+                "details": {
+                    "rewrite_classes": ["split_needed"],
+                    "findings": ["node_has_split_pressure"],
+                },
+            },
+            {
+                "backlog_id": second_branch_backlog_id,
                 "domain": "branch_rewrite",
                 "source_artifact": "branch_rewrite_preview",
                 "source_artifact_path": "runs/branch_rewrite_preview.json",
@@ -18255,14 +18276,16 @@ def test_build_graph_next_moves_prefers_active_split_proposal_over_branch_previe
                 "branch_rewrite_preview": 2,
                 "proposal_queue": 1,
             },
-            "priority_counts": {"high": 2},
+            "priority_counts": {"high": 3},
             "next_gap_counts": {
-                "review_branch_rewrite_candidate": 1,
+                "review_branch_rewrite_candidate": 2,
                 "review_decomposition_policy": 1,
             },
         },
         "viewer_projection": {
-            "priorities": {"high": [branch_backlog_id, proposal_backlog_id]},
+            "priorities": {
+                "high": [branch_backlog_id, second_branch_backlog_id, proposal_backlog_id]
+            },
         },
     }
 
@@ -18288,6 +18311,10 @@ def test_sg_spec_0043_trace_anchor_prefers_tracked_split_boundary_over_branch_re
         "branch_rewrite_preview::branch_rewrite::SG-SPEC-0043::emit_split_proposal::"
         "review_branch_rewrite_candidate"
     )
+    second_branch_backlog_id = (
+        "branch_rewrite_preview::branch_rewrite::SG-SPEC-0043::emit_split_proposal_secondary::"
+        "review_branch_rewrite_candidate"
+    )
     proposal_backlog_id = (
         "proposal_queue::proposals::governance_proposal::SG-SPEC-0043::"
         "repeated_split_required_candidate::review_decomposition_policy"
@@ -18296,10 +18323,27 @@ def test_sg_spec_0043_trace_anchor_prefers_tracked_split_boundary_over_branch_re
         "artifact_kind": supervisor_module.GRAPH_BACKLOG_PROJECTION_ARTIFACT_KIND,
         "schema_version": supervisor_module.GRAPH_BACKLOG_PROJECTION_SCHEMA_VERSION,
         "generated_at": "2026-04-28T00:00:01Z",
-        "entry_count": 2,
+        "entry_count": 3,
         "entries": [
             {
                 "backlog_id": branch_backlog_id,
+                "domain": "branch_rewrite",
+                "source_artifact": "branch_rewrite_preview",
+                "source_artifact_path": "runs/branch_rewrite_preview.json",
+                "subject_kind": "spec",
+                "subject_id": spec_id,
+                "title": "Proposal/Split Gateway Boundary",
+                "status": "emit_split_proposal",
+                "review_state": "preview_only",
+                "next_gap": "review_branch_rewrite_candidate",
+                "priority": "high",
+                "details": {
+                    "rewrite_classes": ["split_needed"],
+                    "findings": ["node_has_split_pressure"],
+                },
+            },
+            {
+                "backlog_id": second_branch_backlog_id,
                 "domain": "branch_rewrite",
                 "source_artifact": "branch_rewrite_preview",
                 "source_artifact_path": "runs/branch_rewrite_preview.json",
@@ -18339,14 +18383,16 @@ def test_sg_spec_0043_trace_anchor_prefers_tracked_split_boundary_over_branch_re
                 "branch_rewrite_preview": 2,
                 "proposal_queue": 1,
             },
-            "priority_counts": {"high": 2},
+            "priority_counts": {"high": 3},
             "next_gap_counts": {
-                "review_branch_rewrite_candidate": 1,
+                "review_branch_rewrite_candidate": 2,
                 "review_decomposition_policy": 1,
             },
         },
         "viewer_projection": {
-            "priorities": {"high": [branch_backlog_id, proposal_backlog_id]},
+            "priorities": {
+                "high": [branch_backlog_id, second_branch_backlog_id, proposal_backlog_id]
+            },
         },
     }
 
