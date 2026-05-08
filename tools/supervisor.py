@@ -3347,6 +3347,11 @@ SEMANTIC_ACCEPTANCE_STOPWORDS = {
     "parent",
 }
 APPLICABLE_PROPOSAL_STATUSES = {"proposed", "review_pending", "pending_review", "approved"}
+GRAPH_NEXT_MOVES_SPLIT_BACKLOG_SOURCES = {"proposal_queue", "refactor_queue"}
+GRAPH_NEXT_MOVES_SPLIT_READINESS_SIGNALS = {
+    "repeated_split_required_candidate",
+    "stalled_maturity_candidate",
+}
 BLOCKING_GATE_STATES = {
     "review_pending",
     "blocked",
@@ -27790,6 +27795,22 @@ def graph_next_move_record(
     }
 
 
+def graph_next_moves_split_candidate_subject_id(entry: dict[str, Any]) -> str:
+    if str(entry.get("domain", "")).strip() != "proposals":
+        return ""
+    if str(entry.get("source_artifact", "")).strip() not in GRAPH_NEXT_MOVES_SPLIT_BACKLOG_SOURCES:
+        return ""
+    if str(entry.get("status", "")).strip() not in APPLICABLE_PROPOSAL_STATUSES:
+        return ""
+    details = entry.get("details", {})
+    if not isinstance(details, dict):
+        return ""
+    signal = str(details.get("signal", "")).strip()
+    if signal not in GRAPH_NEXT_MOVES_SPLIT_READINESS_SIGNALS:
+        return ""
+    return str(entry.get("subject_id", "")).strip()
+
+
 def graph_next_moves_top_backlog_entry(
     backlog_projection: dict[str, Any],
     proposal_lane_overlay: dict[str, Any] | None = None,
@@ -27800,20 +27821,7 @@ def graph_next_moves_top_backlog_entry(
     proposal_reviewable_split_subjects: set[str] = set()
     proposal_lane_split_subjects: set[str] = set()
     for entry in entries:
-        if str(entry.get("domain", "")).strip() != "proposals":
-            continue
-        if str(entry.get("source_artifact", "")).strip() not in {
-            "proposal_queue",
-            "refactor_queue",
-        }:
-            continue
-        if str(entry.get("status", "")).strip() not in APPLICABLE_PROPOSAL_STATUSES:
-            continue
-        details = entry.get("details", {})
-        signal = str(details.get("signal", "")).strip() if isinstance(details, dict) else ""
-        if signal not in {"repeated_split_required_candidate", "stalled_maturity_candidate"}:
-            continue
-        subject_id = str(entry.get("subject_id", "")).strip()
+        subject_id = graph_next_moves_split_candidate_subject_id(entry)
         if subject_id:
             proposal_reviewable_split_subjects.add(subject_id)
     if isinstance(proposal_lane_overlay, dict):
@@ -27831,10 +27839,7 @@ def graph_next_moves_top_backlog_entry(
             if not isinstance(target_region, dict):
                 continue
             change_scope = str(target_region.get("change_scope", "")).strip()
-            if change_scope not in {
-                "repeated_split_required_candidate",
-                "stalled_maturity_candidate",
-            }:
+            if change_scope not in GRAPH_NEXT_MOVES_SPLIT_READINESS_SIGNALS:
                 continue
             target_reference = str(target_region.get("target_reference", "")).strip()
             if target_reference:
@@ -27854,15 +27859,8 @@ def graph_next_moves_top_backlog_entry(
         return str(entry.get("subject_id", "")).strip() in proposal_covered_split_subjects
 
     def is_reviewable_boundary_entry(entry: dict[str, Any]) -> bool:
-        if str(entry.get("domain", "")).strip() != "proposals":
-            return False
-        details = entry.get("details", {})
-        if not isinstance(details, dict):
-            return False
-        signal = str(details.get("signal", "")).strip()
-        if signal not in {"repeated_split_required_candidate", "stalled_maturity_candidate"}:
-            return False
-        return str(entry.get("subject_id", "")).strip() in proposal_reviewable_split_subjects
+        subject_id = graph_next_moves_split_candidate_subject_id(entry)
+        return bool(subject_id and subject_id in proposal_reviewable_split_subjects)
 
     def entry_selection_rank(entry: dict[str, Any]) -> tuple[int, str, str]:
         next_gap = str(entry.get("next_gap", "")).strip()
@@ -27916,6 +27914,61 @@ def graph_next_moves_top_backlog_entry(
         if not is_covered_branch_split_candidate(entry):
             return entry
     return None
+
+
+def graph_next_moves_split_readiness_verdicts(
+    backlog_projection: dict[str, Any],
+    proposal_lane_overlay: dict[str, Any] | None = None,
+) -> dict[str, dict[str, Any]]:
+    entries = [item for item in backlog_projection.get("entries", []) if isinstance(item, dict)]
+    active_lane_subjects: set[str] = set()
+    inactive_lane_subjects: set[str] = set()
+    queued_split_subjects: set[str] = set()
+
+    for entry in entries:
+        subject_id = graph_next_moves_split_candidate_subject_id(entry)
+        if subject_id:
+            queued_split_subjects.add(subject_id)
+
+    if isinstance(proposal_lane_overlay, dict):
+        for entry in proposal_lane_overlay.get("entries", []):
+            if not isinstance(entry, dict):
+                continue
+            target_region = entry.get("target_region", {})
+            if not isinstance(target_region, dict):
+                continue
+            change_scope = str(target_region.get("change_scope", "")).strip()
+            if change_scope not in GRAPH_NEXT_MOVES_SPLIT_READINESS_SIGNALS:
+                continue
+            target_reference = str(target_region.get("target_reference", "")).strip()
+            if not target_reference:
+                continue
+            authority_state = str(entry.get("proposal_authority_state", "")).strip()
+            if authority_state in {"under_review", "approved_for_application"}:
+                active_lane_subjects.add(target_reference)
+            elif authority_state in {"rejected", "superseded"}:
+                inactive_lane_subjects.add(target_reference)
+
+    verdicts: dict[str, dict[str, Any]] = {}
+    for subject_id in sorted(queued_split_subjects | active_lane_subjects | inactive_lane_subjects):
+        if subject_id in active_lane_subjects:
+            verdict = "satisfied"
+            evidence = "active_proposal_lane_signal"
+        elif subject_id in queued_split_subjects or subject_id in inactive_lane_subjects:
+            # Trace anchor: SG-SPEC-0058 keeps stale or incomplete split-readiness
+            # evidence unresolved instead of collapsing it into not_available.
+            verdict = "unresolved"
+            evidence = "proposal_lane_runtime_detail"
+        else:
+            continue
+        verdicts[subject_id] = {
+            "verdict": verdict,
+            "evidence_category": evidence,
+            "queued_boundary_signal": subject_id in queued_split_subjects,
+            "active_lane_signal": subject_id in active_lane_subjects,
+            "inactive_lane_signal": subject_id in inactive_lane_subjects,
+        }
+    return verdicts
 
 
 def graph_next_moves_branch_preview_projected(
@@ -28063,6 +28116,10 @@ def build_graph_next_moves(
     )
     backlog_move = graph_next_moves_from_backlog_entry(backlog_entry) if backlog_entry else None
     runtime_move = graph_next_moves_from_runtime_backlog(proposal_runtime_index)
+    split_readiness_verdicts = graph_next_moves_split_readiness_verdicts(
+        backlog_projection,
+        proposal_lane_overlay=proposal_lane_overlay,
+    )
 
     if branch_summary.get("status") in {"malformed", "invalid_kind"}:
         current_scene = "source_artifact_blocked"
@@ -28195,6 +28252,7 @@ def build_graph_next_moves(
                     else []
                 ),
             },
+            "split_readiness_verdicts": copy.deepcopy(split_readiness_verdicts),
         },
         "canonical_mutations_allowed": False,
         "tracked_artifacts_written": False,
