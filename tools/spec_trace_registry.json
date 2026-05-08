@@ -188,6 +188,6 @@
     "test_surfaces": [
       "tests/test_supervisor.py"
     ],
-    "notes": "Proposal/split readiness verdict semantics are anchored by graph-next-moves source facts that keep stale split-readiness evidence unresolved until active proposal-lane availability exists."
+    "notes": "Proposal/split readiness verdict semantics are anchored by graph-next-moves source facts that gate queued split signals on applicable proposal status, keep stale split-readiness evidence unresolved, and classify active proposal-lane availability as satisfied."
   }
 ]

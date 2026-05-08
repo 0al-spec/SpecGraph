@@ -3347,6 +3347,11 @@ SEMANTIC_ACCEPTANCE_STOPWORDS = {
     "parent",
 }
 APPLICABLE_PROPOSAL_STATUSES = {"proposed", "review_pending", "pending_review", "approved"}
+GRAPH_NEXT_MOVES_SPLIT_BACKLOG_SOURCES = {"proposal_queue", "refactor_queue"}
+GRAPH_NEXT_MOVES_SPLIT_READINESS_SIGNALS = {
+    "repeated_split_required_candidate",
+    "stalled_maturity_candidate",
+}
 BLOCKING_GATE_STATES = {
     "review_pending",
     "blocked",
@@ -27790,6 +27795,22 @@ def graph_next_move_record(
     }
 
 
+def graph_next_moves_split_candidate_subject_id(entry: dict[str, Any]) -> str:
+    if str(entry.get("domain", "")).strip() != "proposals":
+        return ""
+    if str(entry.get("source_artifact", "")).strip() not in GRAPH_NEXT_MOVES_SPLIT_BACKLOG_SOURCES:
+        return ""
+    if str(entry.get("status", "")).strip() not in APPLICABLE_PROPOSAL_STATUSES:
+        return ""
+    details = entry.get("details", {})
+    if not isinstance(details, dict):
+        return ""
+    signal = str(details.get("signal", "")).strip()
+    if signal not in GRAPH_NEXT_MOVES_SPLIT_READINESS_SIGNALS:
+        return ""
+    return str(entry.get("subject_id", "")).strip()
+
+
 def graph_next_moves_top_backlog_entry(
     backlog_projection: dict[str, Any],
     proposal_lane_overlay: dict[str, Any] | None = None,
@@ -27800,20 +27821,7 @@ def graph_next_moves_top_backlog_entry(
     proposal_reviewable_split_subjects: set[str] = set()
     proposal_lane_split_subjects: set[str] = set()
     for entry in entries:
-        if str(entry.get("domain", "")).strip() != "proposals":
-            continue
-        if str(entry.get("source_artifact", "")).strip() not in {
-            "proposal_queue",
-            "refactor_queue",
-        }:
-            continue
-        if str(entry.get("status", "")).strip() not in APPLICABLE_PROPOSAL_STATUSES:
-            continue
-        details = entry.get("details", {})
-        signal = str(details.get("signal", "")).strip() if isinstance(details, dict) else ""
-        if signal not in {"repeated_split_required_candidate", "stalled_maturity_candidate"}:
-            continue
-        subject_id = str(entry.get("subject_id", "")).strip()
+        subject_id = graph_next_moves_split_candidate_subject_id(entry)
         if subject_id:
             proposal_reviewable_split_subjects.add(subject_id)
     if isinstance(proposal_lane_overlay, dict):
@@ -27831,10 +27839,7 @@ def graph_next_moves_top_backlog_entry(
             if not isinstance(target_region, dict):
                 continue
             change_scope = str(target_region.get("change_scope", "")).strip()
-            if change_scope not in {
-                "repeated_split_required_candidate",
-                "stalled_maturity_candidate",
-            }:
+            if change_scope not in GRAPH_NEXT_MOVES_SPLIT_READINESS_SIGNALS:
                 continue
             target_reference = str(target_region.get("target_reference", "")).strip()
             if target_reference:
@@ -27854,15 +27859,8 @@ def graph_next_moves_top_backlog_entry(
         return str(entry.get("subject_id", "")).strip() in proposal_covered_split_subjects
 
     def is_reviewable_boundary_entry(entry: dict[str, Any]) -> bool:
-        if str(entry.get("domain", "")).strip() != "proposals":
-            return False
-        details = entry.get("details", {})
-        if not isinstance(details, dict):
-            return False
-        signal = str(details.get("signal", "")).strip()
-        if signal not in {"repeated_split_required_candidate", "stalled_maturity_candidate"}:
-            return False
-        return str(entry.get("subject_id", "")).strip() in proposal_reviewable_split_subjects
+        subject_id = graph_next_moves_split_candidate_subject_id(entry)
+        return bool(subject_id and subject_id in proposal_reviewable_split_subjects)
 
     def entry_selection_rank(entry: dict[str, Any]) -> tuple[int, str, str]:
         next_gap = str(entry.get("next_gap", "")).strip()
@@ -27928,18 +27926,7 @@ def graph_next_moves_split_readiness_verdicts(
     queued_split_subjects: set[str] = set()
 
     for entry in entries:
-        if str(entry.get("domain", "")).strip() != "proposals":
-            continue
-        if str(entry.get("source_artifact", "")).strip() not in {
-            "proposal_queue",
-            "refactor_queue",
-        }:
-            continue
-        details = entry.get("details", {})
-        signal = str(details.get("signal", "")).strip() if isinstance(details, dict) else ""
-        if signal not in {"repeated_split_required_candidate", "stalled_maturity_candidate"}:
-            continue
-        subject_id = str(entry.get("subject_id", "")).strip()
+        subject_id = graph_next_moves_split_candidate_subject_id(entry)
         if subject_id:
             queued_split_subjects.add(subject_id)
 
@@ -27951,10 +27938,7 @@ def graph_next_moves_split_readiness_verdicts(
             if not isinstance(target_region, dict):
                 continue
             change_scope = str(target_region.get("change_scope", "")).strip()
-            if change_scope not in {
-                "repeated_split_required_candidate",
-                "stalled_maturity_candidate",
-            }:
+            if change_scope not in GRAPH_NEXT_MOVES_SPLIT_READINESS_SIGNALS:
                 continue
             target_reference = str(target_region.get("target_reference", "")).strip()
             if not target_reference:

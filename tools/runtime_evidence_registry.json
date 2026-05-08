@@ -930,6 +930,10 @@
         "pattern": "test_sg_spec_0058_trace_anchor_keeps_stale_split_evidence_unresolved"
       },
       {
+        "path": "tests/test_supervisor.py",
+        "pattern": "test_sg_spec_0058_trace_anchor_marks_active_split_lane_satisfied"
+      },
+      {
         "path": "tools/supervisor.py",
         "pattern": "Trace anchor: SG-SPEC-0058 keeps stale or incomplete split-readiness"
       }
@@ -942,6 +946,10 @@
       {
         "path": "tests/test_supervisor.py",
         "pattern": "assert verdict[\"evidence_category\"] == \"proposal_lane_runtime_detail\""
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "assert verdict[\"evidence_category\"] == \"active_proposal_lane_signal\""
       }
     ],
     "adoption_markers": [
@@ -954,6 +962,6 @@
         "pattern": "def graph_next_moves_split_readiness_verdicts("
       }
     ],
-    "notes": "Readiness-verdict evidence is anchored by a graph-next-moves verdict interpreter that treats queued or superseded split signals as unresolved until active proposal-lane availability exists."
+    "notes": "Readiness-verdict evidence is anchored by a graph-next-moves verdict interpreter that gates queued split signals on applicable proposal status, treats queued or superseded split signals as unresolved, and marks active proposal-lane availability as satisfied."
   }
 ]

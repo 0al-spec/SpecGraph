@@ -18833,6 +18833,83 @@ def test_sg_spec_0058_trace_anchor_keeps_stale_split_evidence_unresolved(
     assert verdict["inactive_lane_signal"] is True
 
 
+def test_sg_spec_0058_trace_anchor_ignores_non_applicable_split_queue_status(
+    supervisor_module: object,
+) -> None:
+    spec_id = "SG-SPEC-0058"
+    backlog_projection = {
+        "entries": [
+            {
+                "domain": "proposals",
+                "source_artifact": "proposal_queue",
+                "subject_id": spec_id,
+                "status": "rejected",
+                "details": {
+                    "signal": "repeated_split_required_candidate",
+                    "recommended_action": "review_decomposition_policy",
+                },
+            }
+        ]
+    }
+
+    verdicts = supervisor_module.graph_next_moves_split_readiness_verdicts(
+        backlog_projection,
+        proposal_lane_overlay={"entries": []},
+    )
+
+    assert spec_id not in verdicts
+
+
+def test_sg_spec_0058_trace_anchor_marks_active_split_lane_satisfied(
+    supervisor_module: object,
+) -> None:
+    spec_id = "SG-SPEC-0058"
+    backlog_projection = {
+        "entries": [
+            {
+                "domain": "proposals",
+                "source_artifact": "proposal_queue",
+                "subject_id": spec_id,
+                "status": "approved",
+                "details": {
+                    "signal": "repeated_split_required_candidate",
+                    "recommended_action": "review_decomposition_policy",
+                },
+            }
+        ]
+    }
+    proposal_lane_overlay = {
+        "entries": [
+            {
+                "proposal_authority_state": "superseded",
+                "target_region": {
+                    "target_reference": spec_id,
+                    "change_scope": "repeated_split_required_candidate",
+                },
+            },
+            {
+                "proposal_authority_state": "under_review",
+                "target_region": {
+                    "target_reference": spec_id,
+                    "change_scope": "repeated_split_required_candidate",
+                },
+            },
+        ]
+    }
+
+    verdicts = supervisor_module.graph_next_moves_split_readiness_verdicts(
+        backlog_projection,
+        proposal_lane_overlay=proposal_lane_overlay,
+    )
+
+    verdict = verdicts[spec_id]
+    assert verdict["verdict"] == "satisfied"
+    assert verdict["evidence_category"] == "active_proposal_lane_signal"
+    assert verdict["queued_boundary_signal"] is True
+    assert verdict["active_lane_signal"] is True
+    assert verdict["inactive_lane_signal"] is True
+
+
 def test_branch_rewrite_preview_projection_tolerates_malformed_optional_lists(
     supervisor_module: object,
 ) -> None:
