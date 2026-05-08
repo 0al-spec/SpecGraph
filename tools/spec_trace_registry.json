@@ -151,6 +151,16 @@
     "notes": "Proposal/split readiness admissibility is anchored by proposal-lane coverage that suppresses branch split residue only when the tracked lane provides the non-bypass path."
   },
   {
+    "spec_id": "SG-SPEC-0045",
+    "code_surfaces": [
+      "tools/supervisor.py"
+    ],
+    "test_surfaces": [
+      "tests/test_supervisor.py"
+    ],
+    "notes": "Proposal/split gateway entry is anchored by graph-next-moves ranking that preserves explicit review_decomposition_policy boundary review ahead of tracked proposal-lane availability for the same subject."
+  },
+  {
     "spec_id": "SG-SPEC-0049",
     "code_surfaces": [
       "tools/supervisor.py"

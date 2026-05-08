@@ -27797,7 +27797,8 @@ def graph_next_moves_top_backlog_entry(
     entries = [item for item in backlog_projection.get("entries", []) if isinstance(item, dict)]
     if not entries:
         return None
-    proposal_covered_split_subjects: set[str] = set()
+    proposal_reviewable_split_subjects: set[str] = set()
+    proposal_lane_split_subjects: set[str] = set()
     for entry in entries:
         if str(entry.get("domain", "")).strip() != "proposals":
             continue
@@ -27814,7 +27815,7 @@ def graph_next_moves_top_backlog_entry(
             continue
         subject_id = str(entry.get("subject_id", "")).strip()
         if subject_id:
-            proposal_covered_split_subjects.add(subject_id)
+            proposal_reviewable_split_subjects.add(subject_id)
     if isinstance(proposal_lane_overlay, dict):
         for entry in proposal_lane_overlay.get("entries", []):
             if not isinstance(entry, dict):
@@ -27837,7 +27838,11 @@ def graph_next_moves_top_backlog_entry(
                 continue
             target_reference = str(target_region.get("target_reference", "")).strip()
             if target_reference:
-                proposal_covered_split_subjects.add(target_reference)
+                proposal_lane_split_subjects.add(target_reference)
+
+    proposal_covered_split_subjects = (
+        proposal_reviewable_split_subjects | proposal_lane_split_subjects
+    )
 
     def is_covered_branch_split_candidate(entry: dict[str, Any]) -> bool:
         # Trace anchor: SG-SPEC-0043 preserves one readiness boundary once
@@ -27848,6 +27853,17 @@ def graph_next_moves_top_backlog_entry(
             return False
         return str(entry.get("subject_id", "")).strip() in proposal_covered_split_subjects
 
+    def is_reviewable_boundary_entry(entry: dict[str, Any]) -> bool:
+        if str(entry.get("domain", "")).strip() != "proposals":
+            return False
+        details = entry.get("details", {})
+        if not isinstance(details, dict):
+            return False
+        signal = str(details.get("signal", "")).strip()
+        if signal not in {"repeated_split_required_candidate", "stalled_maturity_candidate"}:
+            return False
+        return str(entry.get("subject_id", "")).strip() in proposal_reviewable_split_subjects
+
     def entry_selection_rank(entry: dict[str, Any]) -> tuple[int, str, str]:
         next_gap = str(entry.get("next_gap", "")).strip()
         source_artifact = str(entry.get("source_artifact", "")).strip()
@@ -27855,6 +27871,11 @@ def graph_next_moves_top_backlog_entry(
         status = str(entry.get("status", "")).strip()
         if next_gap in {"resolve_review_gate", "resolve_split_gate"}:
             rank = 0
+        # Trace anchor: SG-SPEC-0045 allows upstream entry success to
+        # authorize boundary review only; tracked mechanics availability
+        # must not outrank the explicit review_decomposition_policy step.
+        elif is_reviewable_boundary_entry(entry):
+            rank = 5
         elif source_artifact == "branch_rewrite_preview":
             rank = 10
         elif source_artifact == "metric_pack_runs" and next_gap == "define_metric_value_adapter":
