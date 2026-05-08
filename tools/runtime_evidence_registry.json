@@ -629,6 +629,10 @@
       {
         "path": "tests/test_supervisor.py",
         "pattern": "assert report[\"recommended_next_move\"][\"next_gap\"] == \"review_decomposition_policy\""
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "assert report[\"recommended_next_move\"][\"next_gap\"] == \"review_refinement_strategy\""
       }
     ],
     "adoption_markers": [
@@ -691,6 +695,55 @@
       }
     ],
     "notes": "Non-bypass path evidence is anchored by graph-next-moves logic that accepts tracked proposal-lane coverage as the admissible path and suppresses branch split residue for the same subject."
+  },
+  {
+    "spec_id": "SG-SPEC-0045",
+    "evidence_scope": "surface_level",
+    "artifact_refs": [
+      "tools/supervisor.py",
+      "tests/test_supervisor.py"
+    ],
+    "runtime_entities": [
+      {
+        "entity_id": "supervisor.entry_selection_rank",
+        "entity_kind": "boundary_review_ranker"
+      },
+      {
+        "entity_id": "supervisor.proposal_reviewable_split_subjects",
+        "entity_kind": "reviewable_entry_authority"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "test_sg_spec_0045_trace_anchor_keeps_boundary_review_ahead_of_lane_availability"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "Trace anchor: SG-SPEC-0045 allows upstream entry success to"
+      }
+    ],
+    "outcome_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "assert report[\"recommended_next_move\"][\"subject\"][\"source_artifact\"] == \"proposal_queue\""
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "assert report[\"recommended_next_move\"][\"next_gap\"] == \"review_decomposition_policy\""
+      }
+    ],
+    "adoption_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "spec_id = \"SG-SPEC-0045\""
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def is_reviewable_boundary_entry(entry: dict[str, Any]) -> bool:"
+      }
+    ],
+    "notes": "Gateway-entry evidence is anchored by graph-next-moves ranking that keeps explicit split-readiness boundary review actions, including decomposition-policy and refinement-strategy review, ahead of proposal-lane availability once the same split subject is already tracked."
   },
   {
     "spec_id": "SG-SPEC-0049",
