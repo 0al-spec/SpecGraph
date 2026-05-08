@@ -12877,6 +12877,8 @@ def branch_rewrite_candidate_for_spec(
         suggested_action = "rewrite_node_role_boundary"
         risk_level = "medium"
     elif "split_required" in {str(spec.data.get("last_outcome", "")).strip(), spec.gate_state}:
+        # Trace anchor: SG-SPEC-0032 exposes proposal/split mechanics
+        # as one reviewable readiness region.
         rewrite_classes.append("split_needed")
         findings.append("node_has_split_pressure")
         suggested_action = "emit_split_proposal"

@@ -546,6 +546,55 @@
     "notes": "Gateway prerequisite evidence is registry-backed by the policy path that collapses blocked prerequisite readiness into one bounded trace-baseline next gap."
   },
   {
+    "spec_id": "SG-SPEC-0032",
+    "evidence_scope": "surface_level",
+    "artifact_refs": [
+      "tools/supervisor.py",
+      "tests/test_supervisor.py"
+    ],
+    "runtime_entities": [
+      {
+        "entity_id": "supervisor.branch_rewrite_candidate_for_spec",
+        "entity_kind": "readiness_region_router"
+      },
+      {
+        "entity_id": "supervisor.branch_rewrite_split_pressure",
+        "entity_kind": "reviewable_capability_region"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "test_sg_spec_0032_trace_anchor_exposes_split_pressure_as_reviewable_region"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "Trace anchor: SG-SPEC-0032 exposes proposal/split mechanics"
+      }
+    ],
+    "outcome_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "assert candidate[\"suggested_action\"] == \"emit_split_proposal\""
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "assert candidate[\"rewrite_classes\"] == [\"split_needed\"]"
+      }
+    ],
+    "adoption_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "spec_id = \"SG-SPEC-0032\""
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def branch_rewrite_candidate_for_spec("
+      }
+    ],
+    "notes": "Proposal/split mechanics readiness is evidenced by branch-rewrite split-pressure routing that promotes split-required nodes into one reviewable emit_split_proposal response."
+  },
+  {
     "spec_id": "SG-SPEC-0049",
     "evidence_scope": "surface_level",
     "artifact_refs": [

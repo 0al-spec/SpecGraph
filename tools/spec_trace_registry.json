@@ -121,6 +121,16 @@
     "notes": "Proposal/split gateway prerequisite consumption is anchored by the implementation work next-gap policy that maps blocked prerequisite readiness to one bounded attach_trace_baseline path."
   },
   {
+    "spec_id": "SG-SPEC-0032",
+    "code_surfaces": [
+      "tools/supervisor.py"
+    ],
+    "test_surfaces": [
+      "tests/test_supervisor.py"
+    ],
+    "notes": "Proposal/split mechanics readiness region is anchored by branch-rewrite split-pressure routing that exposes emit_split_proposal as one reviewable capability response."
+  },
+  {
     "spec_id": "SG-SPEC-0049",
     "code_surfaces": [
       "tools/supervisor.py"

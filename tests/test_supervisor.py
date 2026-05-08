@@ -17846,6 +17846,34 @@ def test_branch_rewrite_topology_pressure_flags_dominant_topology_text(
     assert supervisor_module.branch_rewrite_topology_pressure(profile) is True
 
 
+def test_sg_spec_0032_trace_anchor_exposes_split_pressure_as_reviewable_region(
+    supervisor_module: object,
+) -> None:
+    spec_id = "SG-SPEC-0032"
+    node = supervisor_module.SpecNode(
+        path=Path("specs/nodes/SG-SPEC-0032.yaml"),
+        data={
+            "id": spec_id,
+            "title": "Proposal/Split Mechanics Subcluster",
+            "kind": "spec",
+            "status": "linked",
+            "prompt": "Keep proposal/split mechanics readable as one capability region.",
+            "acceptance": [
+                "Defines proposal/split mechanics readiness as one coherent capability region."
+            ],
+            "last_outcome": "split_required",
+            "gate_state": "split_required",
+        },
+    )
+
+    candidate = supervisor_module.branch_rewrite_candidate_for_spec(node)
+
+    assert candidate["suggested_action"] == "emit_split_proposal"
+    assert candidate["rewrite_classes"] == ["split_needed"]
+    assert candidate["findings"] == ["node_has_split_pressure"]
+    assert candidate["risk_level"] == "medium"
+
+
 def test_build_branch_rewrite_preview_blocks_on_unresolved_gate(
     supervisor_module: object,
     repo_fixture: Path,
