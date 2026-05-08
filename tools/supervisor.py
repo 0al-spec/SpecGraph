@@ -27971,6 +27971,30 @@ def graph_next_moves_split_readiness_verdicts(
     return verdicts
 
 
+def graph_next_moves_split_readiness_reviewer_actions(
+    verdicts: dict[str, dict[str, Any]],
+) -> dict[str, dict[str, Any]]:
+    actions: dict[str, dict[str, Any]] = {}
+    for subject_id, verdict_entry in sorted(verdicts.items()):
+        verdict = str(verdict_entry.get("verdict", "")).strip()
+        if verdict == "satisfied":
+            disposition = "approve_readiness_consumption"
+        elif verdict == "not_available":
+            disposition = "record_unavailable"
+        elif verdict == "unresolved":
+            # Trace anchor: SG-SPEC-0059 requires unresolved readiness verdicts
+            # to produce a narrowing request rather than implicit approval.
+            disposition = "request_readiness_narrowing"
+        else:
+            continue
+        actions[subject_id] = {
+            "reviewer_disposition": disposition,
+            "verdict": verdict,
+            "evidence_category": str(verdict_entry.get("evidence_category", "")).strip(),
+        }
+    return actions
+
+
 def graph_next_moves_branch_preview_projected(
     branch_preview: dict[str, Any],
     backlog_projection: dict[str, Any],
@@ -28120,6 +28144,9 @@ def build_graph_next_moves(
         backlog_projection,
         proposal_lane_overlay=proposal_lane_overlay,
     )
+    split_readiness_reviewer_actions = graph_next_moves_split_readiness_reviewer_actions(
+        split_readiness_verdicts
+    )
 
     if branch_summary.get("status") in {"malformed", "invalid_kind"}:
         current_scene = "source_artifact_blocked"
@@ -28253,6 +28280,7 @@ def build_graph_next_moves(
                 ),
             },
             "split_readiness_verdicts": copy.deepcopy(split_readiness_verdicts),
+            "split_readiness_reviewer_actions": copy.deepcopy(split_readiness_reviewer_actions),
         },
         "canonical_mutations_allowed": False,
         "tracked_artifacts_written": False,

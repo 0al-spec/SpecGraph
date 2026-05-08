@@ -189,5 +189,15 @@
       "tests/test_supervisor.py"
     ],
     "notes": "Proposal/split readiness verdict semantics are anchored by graph-next-moves source facts that gate queued split signals on applicable proposal status, keep stale split-readiness evidence unresolved, and classify active proposal-lane availability as satisfied."
+  },
+  {
+    "spec_id": "SG-SPEC-0059",
+    "code_surfaces": [
+      "tools/supervisor.py"
+    ],
+    "test_surfaces": [
+      "tests/test_supervisor.py"
+    ],
+    "notes": "Proposal/split reviewer action semantics are anchored by graph-next-moves source facts that map readiness verdicts to bounded reviewer dispositions without expanding into mechanics detail."
   }
 ]

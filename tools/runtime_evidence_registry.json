@@ -963,5 +963,54 @@
       }
     ],
     "notes": "Readiness-verdict evidence is anchored by a graph-next-moves verdict interpreter that gates queued split signals on applicable proposal status, treats queued or superseded split signals as unresolved, and marks active proposal-lane availability as satisfied."
+  },
+  {
+    "spec_id": "SG-SPEC-0059",
+    "evidence_scope": "surface_level",
+    "artifact_refs": [
+      "tools/supervisor.py",
+      "tests/test_supervisor.py"
+    ],
+    "runtime_entities": [
+      {
+        "entity_id": "supervisor.graph_next_moves_split_readiness_reviewer_actions",
+        "entity_kind": "reviewer_action_interpreter"
+      },
+      {
+        "entity_id": "supervisor.graph_next_moves.source_facts.split_readiness_reviewer_actions",
+        "entity_kind": "derived_reviewer_action_surface"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "test_sg_spec_0059_trace_anchor_maps_unresolved_verdict_to_narrowing_request"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "Trace anchor: SG-SPEC-0059 requires unresolved readiness verdicts"
+      }
+    ],
+    "outcome_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "assert action[\"reviewer_disposition\"] == \"request_readiness_narrowing\""
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "assert action[\"verdict\"] == \"unresolved\""
+      }
+    ],
+    "adoption_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "spec_id = \"SG-SPEC-0059\""
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def graph_next_moves_split_readiness_reviewer_actions("
+      }
+    ],
+    "notes": "Reviewer-action evidence is anchored by a graph-next-moves action interpreter that maps split-readiness verdicts to bounded reviewer dispositions without implying mechanics remediation."
   }
 ]
