@@ -7728,10 +7728,17 @@ def test_spec_activity_event_types_emits_stack_only_merge_warning(
     supervisor_module: object,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    calls = 0
+
+    def fake_remote_branches(sha: str, repo_root: object = None) -> list[str]:
+        nonlocal calls
+        calls += 1
+        return ["origin/codex/supervisor-run-36"]
+
     monkeypatch.setattr(
         supervisor_module,
         "remote_branches_containing_commit",
-        lambda sha, repo_root=None: ["origin/codex/supervisor-run-36"],
+        fake_remote_branches,
     )
     commit_ref = {
         "sha": "d" * 40,
@@ -7740,7 +7747,7 @@ def test_spec_activity_event_types_emits_stack_only_merge_warning(
     }
 
     event_types = supervisor_module.spec_activity_event_types_from_commit(commit_ref)
-    context = supervisor_module.spec_activity_stack_only_merge_context(commit_ref)
+    context = supervisor_module.spec_activity_cached_stack_only_merge_context(commit_ref)
 
     assert event_types == ["stack_only_merge_observed"]
     assert context == {
@@ -7748,6 +7755,23 @@ def test_spec_activity_event_types_emits_stack_only_merge_warning(
         "reachable_remote_branches": ["origin/codex/supervisor-run-36"],
         "main_contains_commit": False,
     }
+    assert calls == 1
+
+
+def test_remote_branches_containing_commit_normalizes_symbolic_head(
+    supervisor_module: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class FakeResult:
+        returncode = 0
+        stdout = "  origin/HEAD -> origin/main\n  origin/main\n"
+
+    monkeypatch.setattr(supervisor_module.shutil, "which", lambda command: "/usr/bin/git")
+    monkeypatch.setattr(supervisor_module.subprocess, "run", lambda *args, **kwargs: FakeResult())
+
+    branches = supervisor_module.remote_branches_containing_commit("d" * 40)
+
+    assert branches == ["origin/main"]
 
 
 def test_build_spec_activity_feed_emits_stack_only_merge_process_event(

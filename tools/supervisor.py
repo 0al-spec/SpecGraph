@@ -16174,9 +16174,21 @@ def remote_branches_containing_commit(
     branches: list[str] = []
     for line in result.stdout.splitlines():
         branch = line.replace("*", "").strip()
+        if "->" in branch:
+            branch = branch.split("->", 1)[1].strip()
         if branch:
             branches.append(branch)
     return sorted(set(branches))
+
+
+def spec_activity_cached_stack_only_merge_context(
+    commit_ref: dict[str, Any],
+) -> dict[str, Any] | None:
+    cache_key = "_stack_only_merge_context"
+    if cache_key not in commit_ref:
+        commit_ref[cache_key] = spec_activity_stack_only_merge_context(commit_ref)
+    context = commit_ref.get(cache_key)
+    return context if isinstance(context, dict) else None
 
 
 def spec_activity_stack_only_merge_context(
@@ -16240,7 +16252,7 @@ def spec_activity_event_types_from_commit(commit_ref: dict[str, Any]) -> list[st
         event_types.append("implementation_work_emitted")
     if "tools/review_feedback_records.json" in paths or "review feedback" in subject:
         event_types.append("review_feedback_applied")
-    if spec_activity_stack_only_merge_context(commit_ref) is not None:
+    if spec_activity_cached_stack_only_merge_context(commit_ref) is not None:
         event_types.append("stack_only_merge_observed")
 
     allowed_types = SPEC_ACTIVITY_FEED_POLICY.get("event_contract", {}).get("event_types", [])
@@ -16292,7 +16304,7 @@ def build_spec_activity_feed(
         for event_type in event_types:
             stack_context = None
             if event_type == "stack_only_merge_observed":
-                stack_context = spec_activity_stack_only_merge_context(commit_ref)
+                stack_context = spec_activity_cached_stack_only_merge_context(commit_ref)
             for spec_id in spec_ids:
                 event_id = spec_activity_event_id(commit_ref, event_type, spec_id)
                 if event_id in seen_event_ids:
