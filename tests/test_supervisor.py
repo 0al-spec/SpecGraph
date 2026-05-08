@@ -18986,6 +18986,31 @@ def test_sg_spec_0059_trace_anchor_maps_unresolved_verdict_to_narrowing_request(
     assert action["evidence_category"] == "proposal_lane_runtime_detail"
 
 
+def test_sg_spec_0059_trace_anchor_maps_all_readiness_verdict_dispositions(
+    supervisor_module: object,
+) -> None:
+    actions = supervisor_module.graph_next_moves_split_readiness_reviewer_actions(
+        {
+            "SG-SPEC-0058": {
+                "verdict": "satisfied",
+                "evidence_category": "active_proposal_lane_signal",
+            },
+            "SG-SPEC-0059": {
+                "verdict": "unresolved",
+                "evidence_category": "proposal_lane_runtime_detail",
+            },
+            "SG-SPEC-0060": {
+                "verdict": "not_available",
+                "evidence_category": "no_split_readiness_signal",
+            },
+        }
+    )
+
+    assert actions["SG-SPEC-0058"]["reviewer_disposition"] == ("approve_readiness_consumption")
+    assert actions["SG-SPEC-0059"]["reviewer_disposition"] == ("request_readiness_narrowing")
+    assert actions["SG-SPEC-0060"]["reviewer_disposition"] == "record_unavailable"
+
+
 def test_branch_rewrite_preview_projection_tolerates_malformed_optional_lists(
     supervisor_module: object,
 ) -> None:

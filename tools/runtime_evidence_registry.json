@@ -998,6 +998,14 @@
       },
       {
         "path": "tests/test_supervisor.py",
+        "pattern": "approve_readiness_consumption"
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "assert actions[\"SG-SPEC-0060\"][\"reviewer_disposition\"] == \"record_unavailable\""
+      },
+      {
+        "path": "tests/test_supervisor.py",
         "pattern": "assert action[\"verdict\"] == \"unresolved\""
       }
     ],
