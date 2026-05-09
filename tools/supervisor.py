@@ -27948,7 +27948,8 @@ def graph_next_moves_split_readiness_verdicts(
             if isinstance(details, dict):
                 explicit_verdict = str(details.get("readiness_verdict", "")).strip()
                 evidence_category = str(details.get("evidence_category", "")).strip()
-                source = str(details.get("reviewable_negative_source", "")).strip()
+                raw_source = details.get("reviewable_negative_source", "")
+                source = raw_source.strip() if isinstance(raw_source, str) else ""
                 if (
                     explicit_verdict == "not_available"
                     and evidence_category == "reviewable_negative_source"
