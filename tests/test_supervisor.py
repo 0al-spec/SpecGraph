@@ -17170,6 +17170,13 @@ def test_graph_backlog_projection_suppresses_adopted_metrics_handoff_review(
     assert "review_handoff_packet" not in report["summary"]["next_gap_counts"]
     assert "review_metrics_delivery_workflow" not in report["summary"]["next_gap_counts"]
     assert report["summary"]["next_gap_counts"]["collect_metrics_adoption_feedback"] == 1
+    adoption_entry = next(
+        entry
+        for entry in report["entries"]
+        if entry["source_artifact"] == "metrics_feedback_index"
+        and entry["subject_id"] == "metrics_sib"
+    )
+    assert adoption_entry["priority"] == "low"
 
 
 def test_graph_backlog_projection_suppresses_computed_metric_pack_index_review(
