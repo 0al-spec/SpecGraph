@@ -7507,6 +7507,55 @@ def test_build_spec_trace_index_derives_registry_backed_implementation_states(
     assert index["entries"][0]["freshness"]["status"] == "not_applicable"
 
 
+def test_blocked_trace_dependencies_allows_linked_integrated_dependency(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    node1_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    node1 = supervisor_module.get_yaml_module().safe_load(node1_path.read_text(encoding="utf-8"))
+    node1["depends_on"] = ["SG-SPEC-0002"]
+    node1_path.write_text(json.dumps(node1), encoding="utf-8")
+    (repo_fixture / "specs" / "nodes" / "SG-SPEC-0002.yaml").write_text(
+        json.dumps(
+            {
+                "id": "SG-SPEC-0002",
+                "title": "Linked Dependency",
+                "kind": "spec",
+                "created_at": "2026-04-18T00:00:00Z",
+                "updated_at": "2026-04-18T00:00:00Z",
+                "status": "linked",
+                "maturity": 1.0,
+                "depends_on": [],
+                "relates_to": [],
+                "inputs": [],
+                "outputs": ["specs/nodes/SG-SPEC-0002.yaml"],
+                "allowed_paths": ["specs/nodes/SG-SPEC-0002.yaml"],
+                "acceptance": ["linked dependency kept"],
+                "prompt": "Linked dependency.",
+                "gate_state": "none",
+            }
+        ),
+        encoding="utf-8",
+    )
+    specs = supervisor_module.load_specs()
+    spec_index = supervisor_module.index_specs(specs)
+
+    assert (
+        supervisor_module.blocked_trace_dependencies(spec_index["SG-SPEC-0001"], spec_index) == []
+    )
+
+    dep_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0002.yaml"
+    dep = supervisor_module.get_yaml_module().safe_load(dep_path.read_text(encoding="utf-8"))
+    dep["gate_state"] = "review_pending"
+    dep_path.write_text(json.dumps(dep), encoding="utf-8")
+    specs = supervisor_module.load_specs()
+    spec_index = supervisor_module.index_specs(specs)
+
+    assert supervisor_module.blocked_trace_dependencies(spec_index["SG-SPEC-0001"], spec_index) == [
+        "SG-SPEC-0002"
+    ]
+
+
 def test_build_spec_trace_index_derives_stale_and_drifted_verified_states(
     supervisor_module: object,
     repo_fixture: Path,
