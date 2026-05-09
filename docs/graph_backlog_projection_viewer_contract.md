@@ -331,6 +331,9 @@ The feedback row itself may remain visible with a next gap such as
 `collect_metrics_adoption_feedback`. Viewers should treat that as the active
 follow-up, while the hidden handoff/delivery review rows are considered
 superseded by downstream adoption evidence.
+This adoption follow-up is a low-priority backlog row: it records feedback after
+successful downstream visibility and should not visually outrank unresolved
+handoff, implementation, trace, evidence, or draft-reference review work.
 
 ## 9. Dashboard Relationship
 

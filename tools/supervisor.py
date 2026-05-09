@@ -26775,6 +26775,8 @@ def graph_backlog_priority(
         or next_gap == "review_accepted_risk_when_context_changes"
     ):
         return "info"
+    if next_gap == "collect_metrics_adoption_feedback":
+        return "low"
     if "blocked" in status or next_gap.startswith("isolate_"):
         return "high"
     if review_state in {"ready_for_review", "review_visible", "adoption_visible"}:
