@@ -19147,6 +19147,104 @@ def test_sg_spec_0058_trace_anchor_marks_active_split_lane_satisfied(
     assert verdict["inactive_lane_signal"] is True
 
 
+def test_sg_spec_0060_trace_anchor_requires_negative_source_for_not_available(
+    supervisor_module: object,
+) -> None:
+    spec_id = "SG-SPEC-0060"
+    backlog_projection = {
+        "entries": [
+            {
+                "domain": "proposals",
+                "source_artifact": "proposal_queue",
+                "subject_id": spec_id,
+                "status": "approved",
+                "details": {
+                    "signal": "repeated_split_required_candidate",
+                    "recommended_action": "review_decomposition_policy",
+                    "readiness_verdict": "not_available",
+                    "evidence_category": "reviewable_negative_source",
+                    "reviewable_negative_source": "split_gateway_unavailable_for_context",
+                },
+            }
+        ]
+    }
+
+    verdicts = supervisor_module.graph_next_moves_split_readiness_verdicts(
+        backlog_projection,
+        proposal_lane_overlay={"entries": []},
+    )
+
+    verdict = verdicts[spec_id]
+    assert verdict["verdict"] == "not_available"
+    assert verdict["evidence_category"] == "reviewable_negative_source"
+    assert verdict["reviewable_negative_source"] == "split_gateway_unavailable_for_context"
+
+
+def test_sg_spec_0060_trace_anchor_keeps_missing_negative_source_unresolved(
+    supervisor_module: object,
+) -> None:
+    spec_id = "SG-SPEC-0060"
+    backlog_projection = {
+        "entries": [
+            {
+                "domain": "proposals",
+                "source_artifact": "proposal_queue",
+                "subject_id": spec_id,
+                "status": "approved",
+                "details": {
+                    "signal": "repeated_split_required_candidate",
+                    "recommended_action": "review_decomposition_policy",
+                    "readiness_verdict": "not_available",
+                    "evidence_category": "reviewable_negative_source",
+                },
+            }
+        ]
+    }
+
+    verdicts = supervisor_module.graph_next_moves_split_readiness_verdicts(
+        backlog_projection,
+        proposal_lane_overlay={"entries": []},
+    )
+
+    verdict = verdicts[spec_id]
+    assert verdict["verdict"] == "unresolved"
+    assert verdict["evidence_category"] == "proposal_lane_runtime_detail"
+    assert verdict["reviewable_negative_source"] == ""
+
+
+def test_sg_spec_0060_trace_anchor_keeps_null_negative_source_unresolved(
+    supervisor_module: object,
+) -> None:
+    spec_id = "SG-SPEC-0060"
+    backlog_projection = {
+        "entries": [
+            {
+                "domain": "proposals",
+                "source_artifact": "proposal_queue",
+                "subject_id": spec_id,
+                "status": "approved",
+                "details": {
+                    "signal": "repeated_split_required_candidate",
+                    "recommended_action": "review_decomposition_policy",
+                    "readiness_verdict": "not_available",
+                    "evidence_category": "reviewable_negative_source",
+                    "reviewable_negative_source": None,
+                },
+            }
+        ]
+    }
+
+    verdicts = supervisor_module.graph_next_moves_split_readiness_verdicts(
+        backlog_projection,
+        proposal_lane_overlay={"entries": []},
+    )
+
+    verdict = verdicts[spec_id]
+    assert verdict["verdict"] == "unresolved"
+    assert verdict["evidence_category"] == "proposal_lane_runtime_detail"
+    assert verdict["reviewable_negative_source"] == ""
+
+
 def test_sg_spec_0059_trace_anchor_maps_unresolved_verdict_to_narrowing_request(
     supervisor_module: object,
 ) -> None:

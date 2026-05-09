@@ -209,5 +209,15 @@
       "tests/test_supervisor.py"
     ],
     "notes": "Proposal/split reviewer action semantics are anchored by graph-next-moves source facts that map readiness verdicts to bounded reviewer dispositions without expanding into mechanics detail."
+  },
+  {
+    "spec_id": "SG-SPEC-0060",
+    "code_surfaces": [
+      "tools/supervisor.py"
+    ],
+    "test_surfaces": [
+      "tests/test_supervisor.py"
+    ],
+    "notes": "Proposal/split readiness discrimination checkpoints are anchored by graph-next-moves verdict logic that allows not_available only when an explicit reviewable negative availability source is present and keeps missing negative-source evidence unresolved."
   }
 ]
