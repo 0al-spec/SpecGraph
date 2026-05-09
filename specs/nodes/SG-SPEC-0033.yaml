@@ -2,7 +2,7 @@ id: SG-SPEC-0033
 title: SpecGraph - Deterministic Continuation Candidate Selection
 kind: spec
 created_at: '2026-04-14T08:20:52Z'
-updated_at: '2026-04-14T08:20:52Z'
+updated_at: '2026-05-09T20:43:17Z'
 status: reviewed
 maturity: 0.89
 depends_on:
@@ -32,8 +32,10 @@ acceptance:
 acceptance_evidence:
 - criterion: Defines bounded derivation constraints for continuation candidates from already linked canonical
     frontier specs.
-  evidence: specification.candidate_discovery restricts candidates to linked canonical specs and to the
-    active reflective frontier.
+  evidence: specification.derivation_source_boundary and specification.candidate_discovery restrict candidates
+    to already linked canonical specs in the active reflective frontier and exclude tasks, viewer state,
+    historical run artifacts, proposal-lane drafts, staged review worktrees, and unlinked specs as derivation
+    sources.
 - criterion: 'Defines de-duplication and at-most-one deterministic selection semantics with the exact
     tie-break precedence: repeated_split_required_candidate, then stalled_maturity_candidate, then weak_structural_linkage_candidate,
     then lexicographically smallest candidate identifier.'
@@ -63,9 +65,20 @@ specification:
     - Scoring formulas, queue-priority engines, and viewer/UX design
   candidate_discovery:
   - SG-SPEC-0033 searches only linked canonical specs in the current reflective frontier.
-  - 'Candidate candidates may be informed by status, maturity, and graph-health signal classes: repeated_split_required_candidate,
+  - 'Continuation candidates may be informed by status, maturity, and graph-health signal classes: repeated_split_required_candidate,
     stalled_maturity_candidate, weak_structural_linkage_candidate.'
   - Candidate derivation de-duplicates identical target regions before selection ranking.
+  derivation_source_boundary:
+  - A continuation candidate is admissible only when the candidate target is an already linked canonical
+    spec reachable from the current SG-SPEC-0026 continuation context.
+  - SG-SPEC-0033 may inspect only canonical spec metadata, canonical spec maturity/status fields, and
+    canonical graph-health signal classes already represented in the active reflective frontier.
+  - Tasks, viewer state, historical run artifacts, proposal-lane drafts, staged review worktrees, and
+    unlinked specs may provide review context elsewhere, but they are not valid derivation sources for
+    selected_continuation_candidate output.
+  - If a possible concern is visible only through an excluded source, SG-SPEC-0033 records no selectable
+    candidate for that concern; the required `continuation_selection` artifact uses selected_candidate_id
+    null and selection_rationale to explain the excluded source boundary.
   selection_contract:
   - SG-SPEC-0033 emits at most one selected_continuation_candidate per run context.
   - 'When multiple candidates survive, ordering is deterministic by signal class: repeated_split_required_candidate
@@ -75,8 +88,9 @@ specification:
   output_contract:
   - 'SG-SPEC-0033 emits exactly one derived `continuation_selection` artifact per run context with fields:
     selected_candidate_id (or null), selection_rationale, and de-duplicated candidate_set.'
-  - SG-SPEC-0033 emits derived `continuation_handoff` artifacts for each suppressed or non-selected candidate.
-    Suppression handoff artifacts carry candidate_id, suppression_reason, and rerank_position.
+  - SG-SPEC-0033 emits derived `continuation_handoff` artifacts for each suppressed or non-selected candidate
+    in candidate_set. Suppression handoff artifacts carry candidate_id, suppression_reason, and rerank_position;
+    no handoff is required for excluded-source-only concerns that never become selectable candidates.
   - SG-SPEC-0026 consumes only these derived continuation artifacts and this node performs no canonical
     status/maturity/backlog/ownership mutations.
   parent_contract:
