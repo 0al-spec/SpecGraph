@@ -2247,6 +2247,7 @@ def metrics_feedback_policy_reference() -> dict[str, Any]:
 
 
 READY_DEP_STATUSES = {"reviewed", "frozen"}
+TRACE_READY_DEP_STATUSES = READY_DEP_STATUSES | {"linked"}
 WORKABLE_STATUSES = {"outlined", "specified"}
 CONTINUATION_STATUSES = {"linked"}
 VALID_STATUSES = {"idea", "stub", "outlined", "specified", "linked", "reviewed", "frozen"}
@@ -15708,7 +15709,9 @@ def blocked_trace_dependencies(spec: SpecNode, index: dict[str, SpecNode]) -> li
         dep = index.get(dep_id)
         if (
             dep is None
-            or dep.status not in READY_DEP_STATUSES
+            # Trace projection consumes integrated specs as dependency baselines;
+            # supervisor refinement selection still uses READY_DEP_STATUSES.
+            or dep.status not in TRACE_READY_DEP_STATUSES
             or dep.gate_state in BLOCKING_GATE_STATES
         ):
             blocked.append(dep_id)
