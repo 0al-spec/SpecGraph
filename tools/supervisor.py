@@ -4938,6 +4938,8 @@ def pick_next_spec_gap(specs: list[SpecNode]) -> SpecNode | None:
     if not candidates:
         refactor_items = load_refactor_queue()
         proposal_items = load_proposal_queue()
+        # Trace anchor: SG-SPEC-0033 derives continuation candidates only from
+        # canonical spec frontier facts.
         continuation_candidates = [
             spec
             for spec in specs

@@ -595,6 +595,55 @@
     "notes": "Proposal/split mechanics readiness is evidenced by branch-rewrite split-pressure routing that promotes split-required nodes into one reviewable emit_split_proposal response."
   },
   {
+    "spec_id": "SG-SPEC-0033",
+    "evidence_scope": "surface_level",
+    "artifact_refs": [
+      "tools/supervisor.py",
+      "tests/test_supervisor.py"
+    ],
+    "runtime_entities": [
+      {
+        "entity_id": "supervisor.linked_continuation_reasons",
+        "entity_kind": "canonical_frontier_deriver"
+      },
+      {
+        "entity_id": "supervisor.pick_next_spec_gap",
+        "entity_kind": "continuation_candidate_selector"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "test_sg_spec_0033_trace_anchor_excludes_proposal_queue_as_derivation_source"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "Trace anchor: SG-SPEC-0033 derives continuation candidates only from canonical spec frontier facts."
+      }
+    ],
+    "outcome_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "assert supervisor_module.linked_continuation_reasons("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "assert supervisor_module.pick_next_spec_gap(specs) is None"
+      }
+    ],
+    "adoption_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "spec_id = \"SG-SPEC-0001\""
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def pick_next_spec_gap(specs: list[SpecNode]) -> SpecNode | None:"
+      }
+    ],
+    "notes": "Continuation-candidate evidence is anchored by a runtime selector that derives candidates from canonical linked-frontier facts while allowing proposal queue state only as suppression/review context."
+  },
+  {
     "spec_id": "SG-SPEC-0043",
     "evidence_scope": "surface_level",
     "artifact_refs": [
