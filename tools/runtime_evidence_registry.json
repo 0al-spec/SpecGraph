@@ -1069,5 +1069,62 @@
       }
     ],
     "notes": "Reviewer-action evidence is anchored by a graph-next-moves action interpreter that maps split-readiness verdicts to bounded reviewer dispositions without implying mechanics remediation."
+  },
+  {
+    "spec_id": "SG-SPEC-0060",
+    "evidence_scope": "surface_level",
+    "artifact_refs": [
+      "tools/supervisor.py",
+      "tests/test_supervisor.py"
+    ],
+    "runtime_entities": [
+      {
+        "entity_id": "supervisor.graph_next_moves_split_readiness_verdicts",
+        "entity_kind": "readiness_discrimination_checkpoint"
+      },
+      {
+        "entity_id": "supervisor.graph_next_moves.source_facts.split_readiness_verdicts",
+        "entity_kind": "derived_verdict_surface"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "test_sg_spec_0060_trace_anchor_requires_negative_source_for_not_available"
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "test_sg_spec_0060_trace_anchor_keeps_missing_negative_source_unresolved"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "Trace anchor: SG-SPEC-0060 allows not_available only when a"
+      }
+    ],
+    "outcome_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "assert verdict[\"verdict\"] == \"not_available\""
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "assert verdict[\"verdict\"] == \"unresolved\""
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "assert verdict[\"reviewable_negative_source\"] == \"split_gateway_unavailable_for_context\""
+      }
+    ],
+    "adoption_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "spec_id = \"SG-SPEC-0060\""
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "negative_availability_sources"
+      }
+    ],
+    "notes": "Verdict-discrimination evidence is anchored by graph-next-moves logic that requires an explicit readiness-level negative source before recording not_available and keeps missing or ambiguous negative-source evidence unresolved."
   }
 ]

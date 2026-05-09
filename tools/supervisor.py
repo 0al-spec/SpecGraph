@@ -27938,11 +27938,23 @@ def graph_next_moves_split_readiness_verdicts(
     active_lane_subjects: set[str] = set()
     inactive_lane_subjects: set[str] = set()
     queued_split_subjects: set[str] = set()
+    negative_availability_sources: dict[str, str] = {}
 
     for entry in entries:
         subject_id = graph_next_moves_split_candidate_subject_id(entry)
         if subject_id:
             queued_split_subjects.add(subject_id)
+            details = entry.get("details", {})
+            if isinstance(details, dict):
+                explicit_verdict = str(details.get("readiness_verdict", "")).strip()
+                evidence_category = str(details.get("evidence_category", "")).strip()
+                source = str(details.get("reviewable_negative_source", "")).strip()
+                if (
+                    explicit_verdict == "not_available"
+                    and evidence_category == "reviewable_negative_source"
+                    and source
+                ):
+                    negative_availability_sources[subject_id] = source
 
     if isinstance(proposal_lane_overlay, dict):
         for entry in proposal_lane_overlay.get("entries", []):
@@ -27964,10 +27976,20 @@ def graph_next_moves_split_readiness_verdicts(
                 inactive_lane_subjects.add(target_reference)
 
     verdicts: dict[str, dict[str, Any]] = {}
-    for subject_id in sorted(queued_split_subjects | active_lane_subjects | inactive_lane_subjects):
+    for subject_id in sorted(
+        queued_split_subjects
+        | active_lane_subjects
+        | inactive_lane_subjects
+        | set(negative_availability_sources)
+    ):
         if subject_id in active_lane_subjects:
             verdict = "satisfied"
             evidence = "active_proposal_lane_signal"
+        elif subject_id in negative_availability_sources:
+            # Trace anchor: SG-SPEC-0060 allows not_available only when a
+            # reviewable readiness-level negative availability source is present.
+            verdict = "not_available"
+            evidence = "reviewable_negative_source"
         elif subject_id in queued_split_subjects or subject_id in inactive_lane_subjects:
             # Trace anchor: SG-SPEC-0058 keeps stale or incomplete split-readiness
             # evidence unresolved instead of collapsing it into not_available.
@@ -27981,6 +28003,7 @@ def graph_next_moves_split_readiness_verdicts(
             "queued_boundary_signal": subject_id in queued_split_subjects,
             "active_lane_signal": subject_id in active_lane_subjects,
             "inactive_lane_signal": subject_id in inactive_lane_subjects,
+            "reviewable_negative_source": negative_availability_sources.get(subject_id, ""),
         }
     return verdicts
 
