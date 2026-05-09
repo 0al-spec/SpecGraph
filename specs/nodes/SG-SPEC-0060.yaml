@@ -2,9 +2,9 @@ id: SG-SPEC-0060
 title: SpecGraph - Proposal/Split Readiness Verdict Discrimination Checkpoints
 kind: spec
 created_at: '2026-05-06T20:49:45Z'
-updated_at: '2026-05-06T20:49:45Z'
-status: linked
-maturity: 0.2
+updated_at: '2026-05-09T21:36:19Z'
+status: reviewed
+maturity: 0.3
 depends_on: []
 refines:
 - SG-SPEC-0058
@@ -22,6 +22,8 @@ acceptance:
 - Defines the evidence reviewers must record for each discrimination checkpoint without copying split
   payload schemas, lifecycle fields, queue internals, proposal-lane runtime detail, or graph topology
   narration.
+- Defines checkpoint resolution for mixed evidence so unresolved checkpoint signals dominate not_available
+  support within the same reviewer pass.
 - Keeps SG-SPEC-0058 as the owner of verdict meanings and does not redefine satisfied verdict handling,
   reviewer action dispositions, remediation routing, continuation selection, queue ranking, viewer layout,
   or runtime orchestration.
@@ -43,6 +45,11 @@ acceptance_evidence:
   evidence: specification.checkpoint_evidence_requirements defines reviewer evidence for reviewable_negative_source,
     missing_or_ambiguous_evidence, and mechanics_leak, while specification.scope.out excludes split payload
     schemas, lifecycle fields, queue internals, proposal-lane runtime detail, and graph topology narration.
+- criterion: Defines checkpoint resolution for mixed evidence so unresolved checkpoint signals dominate
+    not_available support within the same reviewer pass.
+  evidence: specification.checkpoint_resolution.mixed_evidence_precedence requires missing_or_ambiguous_evidence
+    or mechanics_leak signals to keep the checkpoint result unresolved even when a reviewable_negative_source
+    is also named in the same reviewer pass.
 - criterion: Keeps SG-SPEC-0058 as the owner of verdict meanings and does not redefine satisfied verdict
     handling, reviewer action dispositions, remediation routing, continuation selection, queue ranking,
     viewer layout, or runtime orchestration.
@@ -81,6 +88,8 @@ specification:
     mechanics_leak: Evidence that requires reviewers to inspect split payload detail, lifecycle field
       detail, proposal-lane runtime detail, queue internal detail, or topology reconstruction before assigning
       not_available.
+    checkpoint_result: The reviewer-pass outcome produced by applying SG-SPEC-0060 checkpoints before
+      SG-SPEC-0058 verdict semantics are consumed.
   discrimination_checkpoints:
     reviewable_negative_source:
     - Reviewers may discriminate toward not_available only when the evidence names a readiness-level source
@@ -97,6 +106,19 @@ specification:
       concrete mechanics detail, queue state, runtime state, or topology reconstruction.
     - A mechanics leak identifies the boundary that must be narrowed; it does not authorize a readiness-level
       negative verdict by inference.
+  checkpoint_resolution:
+    mixed_evidence_precedence:
+    - A reviewable_negative_source supports not_available only when the same reviewer pass has no missing_or_ambiguous_evidence
+      signal and no mechanics_leak signal for the readiness evidence under review.
+    - If missing_or_ambiguous_evidence or mechanics_leak is present in the same reviewer pass, reviewers
+      must record unresolved as the checkpoint result even when a reviewable_negative_source is also named.
+    - Mixed evidence must preserve the blocking checkpoint category in recorded evidence so the next refinement
+      can narrow the missing, ambiguous, or leaky boundary without reinterpreting SG-SPEC-0058 verdict
+      meanings.
+    result_recording:
+    - Each reviewer pass records one checkpoint_result for the readiness evidence under review.
+    - checkpoint_result may support not_available or require unresolved; it must not assign satisfied
+      or define post-verdict reviewer action.
   checkpoint_evidence_requirements:
     reviewable_negative_source:
     - Evidence must name the readiness-level source that reports unavailable proposal/split mechanics.
@@ -109,6 +131,10 @@ specification:
     - Evidence must name the leaky detail category preventing readiness-level discrimination.
     - Evidence should classify the leak as split_payload_detail, lifecycle_field_detail, proposal_lane_runtime_detail,
       queue_internal_detail, or topology_reconstruction.
+    mixed_evidence_precedence:
+    - Evidence must name the unresolved checkpoint category that dominated not_available support.
+    - Evidence must identify any simultaneously named reviewable_negative_source without treating it as
+      sufficient for not_available while the unresolved signal remains present.
   parent_contract:
   - SG-SPEC-0058 owns the meanings of satisfied, not_available, and unresolved readiness verdicts.
   - SG-SPEC-0060 owns only the reviewer checkpoints that discriminate not_available from unresolved using
@@ -121,3 +147,5 @@ specification:
     PSP-0060-2: Missing, ambiguous, or contradictory readiness evidence remains unresolved.
     PSP-0060-3: Evidence that leaks into concrete mechanics, queue, runtime, or topology inspection remains
       unresolved.
+    PSP-0060-4: Within one reviewer pass, missing_or_ambiguous_evidence and mechanics_leak checkpoint
+      signals dominate reviewable_negative_source support.
