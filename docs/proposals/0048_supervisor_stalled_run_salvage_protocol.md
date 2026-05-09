@@ -109,19 +109,41 @@ The protocol must produce reviewable evidence, not canonical mutation.
 ## Required Runtime Behavior
 
 When the supervisor detects a stalled dirty worktree, it should terminate the
-run explicitly and write a failure summary.
+run explicitly and write a recoverable failure record.
 
-The summary should include:
+The structured run-log payload (`runs/<run_id>.json`) should keep the existing
+`outcome` vocabulary stable and add salvage-specific recovery fields instead of
+overloading `runs/latest-summary.md` as JSON:
 
 ```json
 {
   "completion_status": "failed",
-  "outcome": "stalled_run_salvage_required",
-  "executor_environment_primary_failure": true,
+  "outcome": "blocked",
+  "recovery_status": "stalled_run_salvage_required",
   "required_human_action": "review_salvaged_worktree_diff",
-  "salvage_artifact_path": "runs/<run_id>-salvage.json"
+  "executor_environment": {
+    "primary_failure": true,
+    "primary_failure_reason": "child_worktree_stalled_after_mutation"
+  },
+  "salvage": {
+    "artifact_path": "runs/<run_id>-salvage.json",
+    "patch_artifact_path": "runs/<run_id>-salvage.patch"
+  }
 }
 ```
+
+`stalled_run_salvage_required` is therefore not a replacement for the current
+`outcome` values (`done`, `retry`, `split_required`, `blocked`, `escalate`). It
+is a recovery status used under a failed or blocked run outcome.
+
+`runs/latest-summary.md` should render the same facts as Markdown, including:
+
+- completion status: `failed`;
+- outcome: `blocked`;
+- recovery status: `stalled_run_salvage_required`;
+- executor environment primary failure: `yes`;
+- required human action: `review_salvaged_worktree_diff`;
+- salvage artifact path and patch artifact path.
 
 The supervisor must not leave `runs/latest-summary.md` pointing at an unrelated
 older successful run when it knows that a newer targeted run stalled after
@@ -152,8 +174,10 @@ Minimum shape:
   },
   "diff": {
     "diff_stat": "specs/nodes/SG-SPEC-0033.yaml | 19 +++++++++++++++----",
-    "content_sha256": "sha256:example",
-    "bounded_to_allowed_paths": true
+    "patch_artifact_path": "runs/20260509T185012Z-SG-SPEC-0033-c6a92bf1-salvage.patch",
+    "patch_sha256": "sha256:example",
+    "bounded_to_allowed_paths": true,
+    "patch_truncated": false
   },
   "recovery": {
     "automatic_adoption_allowed": false,
@@ -163,9 +187,15 @@ Minimum shape:
 }
 ```
 
-The artifact may include a compact patch digest, diff stat, and changed file
-list. It should not embed large raw patches by default unless a future policy
-explicitly allows that for small bounded diffs.
+The artifact must preserve the diff in a reviewable durable form. It may do so
+by embedding a small bounded patch inline or, preferably, by recording a
+relative `patch_artifact_path` plus `patch_sha256` for a retained run artifact.
+Diff stat and changed file list alone are insufficient because the child
+worktree may later be cleaned up or become unavailable.
+
+The artifact should not commit raw `.worktrees/` contents. Large patches may be
+truncated only when `patch_truncated: true` is set and a follow-up recovery gap
+explains how to recover or intentionally reject the incomplete salvage.
 
 ## Recovery Semantics
 
@@ -220,7 +250,8 @@ The expected process classification for this incident is:
 - A stalled dirty child worktree cannot leave `latest-summary` pointing only at
   an older run.
 - A salvage artifact records worktree path, changed files, bounded-path status,
-  diff summary, phase, and recovery hint.
+  diff summary, durable patch reference or bounded inline patch, phase, and
+  recovery hint.
 - The supervisor marks the run as failed/recoverable instead of silently
   hanging.
 - Automatic canonical mutation remains disabled for salvaged diffs.
