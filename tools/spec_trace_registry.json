@@ -131,6 +131,16 @@
     "notes": "Proposal/split mechanics readiness region is anchored by branch-rewrite split-pressure routing that exposes emit_split_proposal as one reviewable capability response."
   },
   {
+    "spec_id": "SG-SPEC-0033",
+    "code_surfaces": [
+      "tools/supervisor.py"
+    ],
+    "test_surfaces": [
+      "tests/test_supervisor.py"
+    ],
+    "notes": "Deterministic continuation candidate selection is anchored by linked-continuation derivation that admits only canonical frontier facts and treats proposal/task/runtime surfaces as non-deriving review context."
+  },
+  {
     "spec_id": "SG-SPEC-0043",
     "code_surfaces": [
       "tools/supervisor.py"

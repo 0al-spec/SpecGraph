@@ -4487,6 +4487,52 @@ def test_pick_next_spec_gap_selects_linked_continuation_candidate_when_no_workab
     ) == ["latent_graph_improvement_candidate", "weak_structural_linkage_candidate"]
 
 
+def test_sg_spec_0033_trace_anchor_excludes_proposal_queue_as_derivation_source(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    # SG-SPEC-0033 trace adoption anchors proposal queue suppression as non-derivation context.
+    spec_id = "SG-SPEC-0001"
+    node_path = repo_fixture / "specs" / "nodes" / f"{spec_id}.yaml"
+    node = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    node["status"] = "linked"
+    node["maturity"] = 0.4
+    node["depends_on"] = []
+    node.pop("last_outcome", None)
+    node_path.write_text(json.dumps(node), encoding="utf-8")
+    (repo_fixture / "runs" / "proposal_queue.json").write_text(
+        json.dumps(
+            [
+                {
+                    "id": f"governance_proposal::{spec_id}::repeated_split_required_candidate",
+                    "proposal_type": "governance_proposal",
+                    "spec_id": spec_id,
+                    "signal": "repeated_split_required_candidate",
+                    "recommended_action": "review_decomposition_policy",
+                    "status": "proposed",
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    specs = supervisor_module.load_specs()
+    spec = specs[0]
+
+    assert supervisor_module.active_signal_items_for_spec(
+        spec_id,
+        signals={"repeated_split_required_candidate"},
+    )
+    assert (
+        supervisor_module.linked_continuation_reasons(
+            spec,
+            supervisor_module.index_specs(specs),
+        )
+        == []
+    )
+    assert supervisor_module.pick_next_spec_gap(specs) is None
+
+
 def test_pick_next_spec_gap_skips_freshly_approved_weak_linkage_continuation(
     supervisor_module: object,
     repo_fixture: Path,
