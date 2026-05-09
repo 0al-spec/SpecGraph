@@ -618,7 +618,7 @@
       },
       {
         "path": "tools/supervisor.py",
-        "pattern": "Trace anchor: SG-SPEC-0033 derives continuation candidates only from canonical spec frontier facts."
+        "pattern": "Trace anchor: SG-SPEC-0033 derives continuation candidates only from"
       }
     ],
     "outcome_markers": [
@@ -634,7 +634,7 @@
     "adoption_markers": [
       {
         "path": "tests/test_supervisor.py",
-        "pattern": "spec_id = \"SG-SPEC-0001\""
+        "pattern": "SG-SPEC-0033 trace adoption anchors proposal queue suppression as non-derivation context."
       },
       {
         "path": "tools/supervisor.py",

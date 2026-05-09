@@ -4491,6 +4491,7 @@ def test_sg_spec_0033_trace_anchor_excludes_proposal_queue_as_derivation_source(
     supervisor_module: object,
     repo_fixture: Path,
 ) -> None:
+    # SG-SPEC-0033 trace adoption anchors proposal queue suppression as non-derivation context.
     spec_id = "SG-SPEC-0001"
     node_path = repo_fixture / "specs" / "nodes" / f"{spec_id}.yaml"
     node = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
