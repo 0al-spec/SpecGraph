@@ -2,7 +2,7 @@ id: SG-SPEC-0060
 title: SpecGraph - Proposal/Split Readiness Verdict Discrimination Checkpoints
 kind: spec
 created_at: '2026-05-06T20:49:45Z'
-updated_at: '2026-05-09T21:36:19Z'
+updated_at: '2026-05-10T06:14:54Z'
 status: reviewed
 maturity: 0.3
 depends_on: []
@@ -88,7 +88,7 @@ specification:
     mechanics_leak: Evidence that requires reviewers to inspect split payload detail, lifecycle field
       detail, proposal-lane runtime detail, queue internal detail, or topology reconstruction before assigning
       not_available.
-    checkpoint_result: The reviewer-pass outcome produced by applying SG-SPEC-0060 checkpoints before
+    checkpoint_result: The reviewer pass outcome produced by applying SG-SPEC-0060 checkpoints before
       SG-SPEC-0058 verdict semantics are consumed.
   discrimination_checkpoints:
     reviewable_negative_source:
@@ -147,5 +147,5 @@ specification:
     PSP-0060-2: Missing, ambiguous, or contradictory readiness evidence remains unresolved.
     PSP-0060-3: Evidence that leaks into concrete mechanics, queue, runtime, or topology inspection remains
       unresolved.
-    PSP-0060-4: Within one reviewer pass, missing_or_ambiguous_evidence and mechanics_leak checkpoint
-      signals dominate reviewable_negative_source support.
+    PSP-0060-4: Within one reviewer pass, missing_or_ambiguous_evidence or mechanics_leak checkpoint signals
+      dominate reviewable_negative_source support.
