@@ -476,6 +476,57 @@
     "notes": "OperatorRequest evidence is registry-backed by the policy contract, packet normalization, pre-spec intent-layer sync, single-run routing, proposal-link recording, and operator manual coverage. It demonstrates one-run steering without granting canonical authority to the request itself."
   },
   {
+    "spec_id": "SG-SPEC-0010",
+    "evidence_scope": "surface_level",
+    "artifact_refs": [
+      "specs/nodes/SG-SPEC-0010.yaml",
+      "specs/nodes/SG-SPEC-0011.yaml",
+      "docs/proposals/0001_vocabulary.md",
+      "tests/test_supervisor.py"
+    ],
+    "runtime_entities": [
+      {
+        "entity_id": "specgraph.ubiquitous_vocabulary_layer",
+        "entity_kind": "canonical_meta_ontology_boundary"
+      },
+      {
+        "entity_id": "specgraph.bootstrap_relation_vocabulary_slice",
+        "entity_kind": "delegated_relation_binding_child"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0010.yaml",
+        "pattern": "ubiquitous_vocabulary_layer"
+      },
+      {
+        "path": "docs/proposals/0001_vocabulary.md",
+        "pattern": "Meta-ontology"
+      }
+    ],
+    "outcome_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0010.yaml",
+        "pattern": "primitive_catalog"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0011.yaml",
+        "pattern": "relation_catalog"
+      }
+    ],
+    "adoption_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0010.yaml",
+        "pattern": "SG-SPEC-0011 is the bounded child"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0011.yaml",
+        "pattern": "SG-SPEC-0010 remains the parent primitive contract"
+      }
+    ],
+    "notes": "Vocabulary primitive evidence is registry-backed by the canonical SG-SPEC-0010 meta-ontology contract, the initial vocabulary proposal, and delegated SG-SPEC-0011 relation-binding child. This is semantic surface evidence and intentionally does not overclaim full runtime execution of the universal meta-ontology."
+  },
+  {
     "spec_id": "SG-SPEC-0013",
     "evidence_scope": "surface_level",
     "artifact_refs": [
