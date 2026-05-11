@@ -27288,11 +27288,10 @@ def build_graph_backlog_projection_from_surfaces(
         if not metric_pack_id or not next_gap or next_gap == "none":
             continue
         pack_status = str(item.get("pack_status", "")).strip()
-        if (
-            pack_status == "ready_for_index_review"
-            and next_gap == "review_metric_pack_index"
-            and metric_pack_id in computed_metric_pack_ids
-        ):
+        if metric_pack_id in computed_metric_pack_ids and next_gap in {
+            "review_metric_pack_index",
+            "review_draft_metric_pack",
+        }:
             continue
         entries.append(
             graph_backlog_entry(

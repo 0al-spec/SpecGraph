@@ -17252,6 +17252,13 @@ def test_graph_backlog_projection_suppresses_computed_metric_pack_index_review(
                     "review_state": "draft_visible",
                     "next_gap": "review_draft_metric_pack",
                 },
+                {
+                    "metric_pack_id": "draft_without_run",
+                    "title": "Draft Without Run",
+                    "pack_status": "draft_visible_only",
+                    "review_state": "draft_visible",
+                    "next_gap": "review_draft_metric_pack",
+                },
             ],
         },
         metric_pack_adapter_index={
@@ -17265,7 +17272,12 @@ def test_graph_backlog_projection_suppresses_computed_metric_pack_index_review(
                     "metric_pack_id": "sib",
                     "run_status": "computed",
                     "gaps": [],
-                }
+                },
+                {
+                    "metric_pack_id": "sib_full",
+                    "run_status": "computed",
+                    "gaps": [],
+                },
             ],
         },
         metric_threshold_proposals={
@@ -17283,8 +17295,13 @@ def test_graph_backlog_projection_suppresses_computed_metric_pack_index_review(
         entry["source_artifact"] == "metric_pack_index" and entry["subject_id"] == "sib"
         for entry in report["entries"]
     )
-    assert any(
+    assert not any(
         entry["source_artifact"] == "metric_pack_index" and entry["subject_id"] == "sib_full"
+        for entry in report["entries"]
+    )
+    assert any(
+        entry["source_artifact"] == "metric_pack_index"
+        and entry["subject_id"] == "draft_without_run"
         for entry in report["entries"]
     )
     assert "review_metric_pack_index" not in report["summary"]["next_gap_counts"]
