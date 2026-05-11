@@ -17385,7 +17385,7 @@ def build_external_consumer_overlay(
         }
         overlay_entries.append(overlay_entry)
 
-        if next_gap != "none" and bridge_state != "draft_visible":
+        if next_gap != "none" and reference_state != "draft_reference":
             backlog_items.append(
                 {
                     "consumer_id": consumer_id,

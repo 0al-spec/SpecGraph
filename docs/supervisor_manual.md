@@ -636,10 +636,10 @@ The overlay adds:
 - named filters such as `stable_ready`, `identity_unverified`, and `metric_pressure`
 - `external_consumer_backlog` grouped by `next_gap`
 
-Draft-visible references remain inspectable in `entries[]` and viewer
-projection filters, but they are observation-only and do not enter actionable
-external-consumer backlog until the reference becomes stable or blocked as a
-stable bridge.
+Draft references remain inspectable in `entries[]` and viewer projection
+filters, including when their local checkout is missing, but they are
+observation-only and do not enter actionable external-consumer backlog until
+the reference becomes stable or blocked as a stable bridge.
 
 This is the preferred visualizer surface for sibling-consumer bridge state.
 

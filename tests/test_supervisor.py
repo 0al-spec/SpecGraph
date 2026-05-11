@@ -8605,6 +8605,16 @@ def test_build_external_consumer_overlay_reports_bridge_states_and_backlog(
                 "notes": "draft",
             },
             {
+                "consumer_id": "metrics_draft_missing",
+                "title": "Metrics / Draft Missing",
+                "reference_state": "draft_reference",
+                "contract_status": "ready",
+                "local_checkout": {"status": "missing", "remote_matches": False},
+                "artifact_status_counts": {"verified": 2},
+                "metric_bindings": [],
+                "notes": "draft missing checkout",
+            },
+            {
                 "consumer_id": "metrics_shadow",
                 "title": "Metrics / Shadow",
                 "reference_state": "stable_reference",
@@ -8634,6 +8644,9 @@ def test_build_external_consumer_overlay_reports_bridge_states_and_backlog(
     assert overlay["artifact_kind"] == supervisor_module.EXTERNAL_CONSUMER_OVERLAY_ARTIFACT_KIND
     assert overlay["viewer_projection"]["bridge_state"]["stable_partial"] == ["metrics_sib"]
     assert overlay["viewer_projection"]["bridge_state"]["draft_visible"] == ["metrics_sib_full"]
+    assert overlay["viewer_projection"]["bridge_state"]["draft_checkout_missing"] == [
+        "metrics_draft_missing"
+    ]
     assert overlay["viewer_projection"]["bridge_state"]["stable_identity_unverified"] == [
         "metrics_shadow"
     ]
@@ -8649,7 +8662,7 @@ def test_build_external_consumer_overlay_reports_bridge_states_and_backlog(
         "verify_repo_identity": ["metrics_shadow"],
     }
     assert not any(
-        item["consumer_id"] == "metrics_sib_full"
+        item["consumer_id"] in {"metrics_sib_full", "metrics_draft_missing"}
         for item in overlay["external_consumer_backlog"]["items"]
     )
 
