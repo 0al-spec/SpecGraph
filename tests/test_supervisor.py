@@ -8227,6 +8227,25 @@ def test_live_sg_spec_0001_evidence_contract_is_chain_complete(
     }
 
 
+def test_live_sg_spec_0002_evidence_contract_is_chain_complete(
+    supervisor_module: object,
+) -> None:
+    index = supervisor_module.build_evidence_plane_index(supervisor_module.load_specs())
+    by_id = {entry["spec_id"]: entry for entry in index["entries"]}
+
+    assert by_id["SG-SPEC-0002"]["evidence_contract"]["source"] == "runtime_evidence_registry"
+    assert by_id["SG-SPEC-0002"]["artifact_stage"]["status"] == "linked"
+    assert by_id["SG-SPEC-0002"]["chain_status"] == "chain_complete"
+    assert by_id["SG-SPEC-0002"]["evidence_summary"] == {
+        "artifact_ref_count": 4,
+        "runtime_entity_count": 2,
+        "observation_source_count": 2,
+        "outcome_source_count": 3,
+        "adoption_source_count": 2,
+        "chain_status": "chain_complete",
+    }
+
+
 def test_build_evidence_plane_overlay_groups_chain_gaps(
     supervisor_module: object,
 ) -> None:
