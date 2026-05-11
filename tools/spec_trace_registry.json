@@ -38,6 +38,19 @@
     "notes": "Intent mediation and discovery boundary semantics are semantic-surface backed by the runtime evidence registry and a live regression anchor. This trace contract intentionally does not claim executor-code embodiment."
   },
   {
+    "spec_id": "SG-SPEC-0008",
+    "code_surfaces": [
+      "tools/conversation_memory_policy.json",
+      "tools/supervisor.py",
+      "docs/conversation_memory_viewer_contract.md",
+      "docs/proposals/0045_conversation_memory_exploration_vault.md"
+    ],
+    "test_surfaces": [
+      "tests/test_supervisor.py"
+    ],
+    "notes": "Explicit project-memory consultation semantics are anchored by the conversation-memory policy, read-only derived artifact builders, viewer contract, and regression tests that keep recalled conversation context pre-canonical and review-gated."
+  },
+  {
     "spec_id": "SG-SPEC-0013",
     "code_surfaces": [
       "tools/supervisor.py"
