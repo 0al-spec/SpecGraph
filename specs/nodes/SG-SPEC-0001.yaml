@@ -2,7 +2,7 @@ id: SG-SPEC-0001
 title: SpecGraph - The Executable Product Ontology
 kind: spec
 created_at: '2026-04-03T12:19:31Z'
-updated_at: '2026-05-11T07:53:04Z'
+updated_at: '2026-05-11T09:47:49Z'
 status: linked
 maturity: 1.0
 depends_on:
@@ -596,8 +596,9 @@ specification:
 
       '
   - id: INV-002
-    statement: 'Every requirement and acceptance criterion must be traceable to at least one intent via
-      refines or derived_from edges.
+    statement: 'Every active specification-layer traceable subject, including requirements, acceptance
+      criteria, specs, decisions, constraints, and invariants, must be traceable to at least one intent
+      via refines or derived_from edges.
 
       '
   - id: INV-003
