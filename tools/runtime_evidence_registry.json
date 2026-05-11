@@ -1,5 +1,54 @@
 [
   {
+    "spec_id": "SG-SPEC-0001",
+    "evidence_scope": "surface_level",
+    "artifact_refs": [
+      "specs/nodes/SG-SPEC-0001.yaml",
+      "specs/nodes/SG-SPEC-0061.yaml"
+    ],
+    "runtime_entities": [
+      {
+        "entity_id": "specgraph.seed_ontology",
+        "entity_kind": "canonical_spec_root"
+      },
+      {
+        "entity_id": "specgraph.canonical_traceability_reachability_boundary",
+        "entity_kind": "semantic_boundary_child"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0001.yaml",
+        "pattern": "INV-002"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0001.yaml",
+        "pattern": "SG-SPEC-0061 refines INV-002"
+      }
+    ],
+    "outcome_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0061.yaml",
+        "pattern": "canonical_trace_path"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0061.yaml",
+        "pattern": "derived_non_satisfying_evidence"
+      }
+    ],
+    "adoption_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0001.yaml",
+        "pattern": "Detailed canonical traceability reachability rules for INV-002"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0001.yaml",
+        "pattern": "SG-SPEC-0061"
+      }
+    ],
+    "notes": "Seed ontology evidence is registry-backed by the canonical SG-SPEC-0001 root contract and delegated SG-SPEC-0061 traceability reachability boundary for INV-002. This is semantic surface evidence, not raw runtime telemetry."
+  },
+  {
     "spec_id": "SG-SPEC-0004",
     "evidence_scope": "surface_level",
     "artifact_refs": [
