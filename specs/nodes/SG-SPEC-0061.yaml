@@ -1,0 +1,180 @@
+id: SG-SPEC-0061
+title: SpecGraph - Canonical Traceability Reachability Boundary
+kind: spec
+created_at: '2026-05-11T07:53:04Z'
+updated_at: '2026-05-11T09:35:13Z'
+status: linked
+maturity: 1.0
+depends_on:
+- SG-SPEC-0019
+- SG-SPEC-0023
+- SG-SPEC-0054
+refines:
+- SG-SPEC-0001
+inputs:
+- specs/nodes/SG-SPEC-0001.yaml
+- specs/nodes/SG-SPEC-0019.yaml
+- specs/nodes/SG-SPEC-0023.yaml
+- specs/nodes/SG-SPEC-0054.yaml
+outputs:
+- specs/nodes/SG-SPEC-0061.yaml
+allowed_paths:
+- specs/nodes/SG-SPEC-0061.yaml
+acceptance:
+- Defines the bounded canonical reachability contract for INV-002 by naming traceability roots, traceable
+  subjects, and acceptable canonical chain edges without redefining SG-SPEC-0001 edge-kind compatibility.
+- Defines when a governed subject satisfies traceability reachability through explicit canonical edges
+  and when missing, broken, cyclic, or generic-only chains remain unresolved.
+- Defines how active versus historical presence interacts with traceability reachability without redefining
+  SG-SPEC-0054 presence semantics or SG-SPEC-0019 supersession lineage.
+- Defines the canonical-versus-derived boundary for traceability evidence so indexes, viewer paths, inferred
+  edges, and summaries cannot satisfy INV-002 unless admitted as explicit canonical graph state.
+- Keeps validation algorithms, storage layout, traversal implementation, UI presentation, metrics, and
+  lifecycle transition mechanics out of scope.
+acceptance_evidence:
+- criterion: Defines the bounded canonical reachability contract for INV-002 by naming traceability roots,
+    traceable subjects, and acceptable canonical chain edges without redefining SG-SPEC-0001 edge-kind
+    compatibility.
+  evidence: specification.reachability_contract names intent nodes as traceability_roots, lists traceable_subjects,
+    including acceptance_criterion, and identifies acceptable_chain_edges as refines and derived_from
+    while specification.scope.out delegates edge-kind compatibility to SG-SPEC-0023 and executable-layer
+    traceability for code_surface, test, and release to SG-SPEC-0020.
+- criterion: Defines when a governed subject satisfies traceability reachability through explicit canonical
+    edges and when missing, broken, cyclic, or generic-only chains remain unresolved.
+  evidence: specification.satisfaction_rules.requires_canonical_path defines satisfaction through at least
+    one canonical path to an intent root, and specification.unresolved_conditions names missing_root_path,
+    broken_endpoint, depends_only_path, relates_only_path, dynamic_only_path, and cyclic_trace_slice as
+    unresolved traceability conditions.
+- criterion: Defines how active versus historical presence interacts with traceability reachability without
+    redefining SG-SPEC-0054 presence semantics or SG-SPEC-0019 supersession lineage.
+  evidence: specification.presence_and_lineage_boundary requires current active subjects to satisfy traceability
+    through current canonical state, keeps historical subjects inspectable through preserved lineage,
+    and explicitly delegates presence semantics to SG-SPEC-0054 and supersession ordering to SG-SPEC-0019.
+- criterion: Defines the canonical-versus-derived boundary for traceability evidence so indexes, viewer
+    paths, inferred edges, and summaries cannot satisfy INV-002 unless admitted as explicit canonical
+    graph state.
+  evidence: specification.canonical_vs_derived_boundary states that explicit canonical edges may satisfy
+    reachability, while search indexes, viewer paths, inferred edges, graph layouts, metrics, and summaries
+    remain derived until promoted into canonical graph state.
+- criterion: Keeps validation algorithms, storage layout, traversal implementation, UI presentation, metrics,
+    and lifecycle transition mechanics out of scope.
+  evidence: specification.scope.out excludes validation algorithms, storage layout, traversal implementation,
+    UI presentation, metrics, and lifecycle transition mechanics.
+prompt: Refine SG-SPEC-0001 by defining the bounded canonical traceability reachability contract for INV-002.
+  Keep this child implementation-agnostic and do not redefine edge compatibility, presence, supersession,
+  metrics, or traversal algorithms.
+specification:
+  objective: Define the canonical semantic boundary for satisfying SG-SPEC-0001 traceability reachability
+    so governed graph subjects can be judged traceable to intent without relying on derived projections
+    or implementation-specific traversal mechanics.
+  scope:
+    in:
+    - Canonical reachability semantics for SG-SPEC-0001 INV-002.
+    - Traceability roots and traceable subjects for specification-layer canonical subjects.
+    - Edge kinds that may form an intent-reachability chain at the semantic level.
+    - Unresolved traceability conditions that prevent a subject from satisfying INV-002.
+    - Boundary between canonical traceability evidence and derived projections.
+    - Interaction with active versus historical presence at the semantic level.
+    out:
+    - Edge-kind compatibility matrices, endpoint-kind validation, and blocked-edge rules — covered by
+      SG-SPEC-0023.
+    - Detailed active-versus-historical presence semantics and visible current-vs-lineage markers — covered
+      by SG-SPEC-0054.
+    - Detailed revision-record ordering, supersession-lineage mechanics, or predecessor storage — covered
+      by SG-SPEC-0019.
+    - Detailed executable-layer traceability semantics for code_surface, test, and release — covered by
+      SG-SPEC-0020.
+    - Validation algorithms, graph traversal implementation, query planning, indexes, storage layout,
+      serialization format, CLI behavior, or CI policy.
+    - Metrics, dashboards, viewer presentation, remediation queues, lifecycle transition automation, or
+      review workflow.
+  terminology:
+    traceability_root: An intent node that anchors why a governed subject exists.
+    traceable_subject: A specification-layer canonical subject such as a spec, requirement, acceptance
+      criterion, invariant, decision, or constraint whose canonical meaning must remain reachable from
+      at least one traceability_root when it is part of active governed graph state.
+    canonical_trace_path: A finite directed chain of explicit canonical edges that connects a traceable_subject
+      to a traceability_root using only edge semantics admitted by this child and endpoint validity admitted
+      by SG-SPEC-0023.
+    unresolved_traceability: A state where canonical graph evidence is insufficient to show at least one
+      valid canonical_trace_path to a traceability_root.
+    generic_relation: A relates_to edge or other non-traceability relation that may aid human navigation
+      but does not by itself explain derivation from intent.
+    derived_trace_view: A rebuildable projection, index, layout, inferred route, summary, metric, or UI
+      path that presents traceability-like information without being canonical graph state.
+  reachability_contract:
+    traceability_roots:
+    - intent
+    traceable_subjects:
+    - spec
+    - requirement
+    - acceptance_criterion
+    - decision
+    - constraint
+    - invariant
+    acceptable_chain_edges:
+    - refines
+    - derived_from
+    endpoint_contract:
+    - Endpoint-kind validity for each edge remains governed by SG-SPEC-0023.
+    - This child defines only whether an otherwise valid canonical edge kind can contribute to intent
+      reachability.
+    - code_surface, test, and release traceability is governed by SG-SPEC-0020 and must not be forced
+      through this child's refines/derived_from reachability rule.
+    - depends_on, implements, tested_by, conflicts_with, supersedes, owns, and relates_to do not by themselves
+      establish derivation from intent for INV-002.
+  satisfaction_rules:
+    requires_canonical_path:
+    - A traceable_subject satisfies INV-002 only when at least one finite canonical_trace_path reaches
+      an intent traceability_root.
+    - Every edge in the canonical_trace_path must be explicit canonical graph state, not merely inferred,
+      displayed, indexed, or summarized.
+    - The path must preserve the subject's bounded meaning; a path through a generic_relation does not
+      satisfy traceability.
+    acceptable_root_cases:
+    - An intent node is its own traceability_root and does not require a parent intent to satisfy INV-002.
+    - A child spec may be traceable through refines to an ancestor spec only when that ancestor has a
+      canonical_trace_path to intent or is itself intentionally admitted as the seed ontology root for
+      bootstrap.
+    edge_direction:
+    - Reachability is evaluated according to the semantic direction of each canonical edge kind, not viewer
+      navigation direction.
+    - A reverse traversal display may help inspect a path but does not change which edge semantics satisfy
+      INV-002.
+  unresolved_conditions:
+    missing_root_path: No canonical_trace_path from the traceable_subject reaches an intent traceability_root.
+    broken_endpoint: A candidate path uses an edge endpoint that is absent or invalid under the edge-kind
+      contract.
+    depends_only_path: A candidate path reaches other work through depends_on without an acceptable_chain_edge
+      path to intent.
+    relates_only_path: A candidate path uses only relates_to or other generic_relation evidence.
+    dynamic_only_path: A candidate path exists only through inferred, indexed, summarized, metric, or
+      viewer state that has not been admitted as explicit canonical graph state.
+    cyclic_trace_slice: Candidate traceability evidence loops without reaching a traceability_root.
+  presence_and_lineage_boundary:
+  - Active traceable_subjects must satisfy traceability through current canonical graph state.
+  - Historical traceable_subjects remain inspectable through preserved lineage, but their historical presence
+    status does not require them to be current routing anchors for active subjects.
+  - Supersession may preserve why a historical subject existed, but the active successor remains responsible
+    for its own current canonical_trace_path.
+  - SG-SPEC-0054 owns the detailed meaning and surface behavior of active versus historical presence.
+  - SG-SPEC-0019 owns revision-record and supersession-lineage mechanics.
+  canonical_vs_derived_boundary:
+    canonical_satisfying_evidence:
+    - Explicit canonical refines edges.
+    - Explicit canonical derived_from edges.
+    - Explicit canonical node identity, kind, status, and presence fields needed to evaluate whether the
+      subject and root are governed current or historical graph state.
+    derived_non_satisfying_evidence:
+    - Search results, embeddings, indexes, graph layouts, viewer paths, inferred edges, metric rollups,
+      route suggestions, summaries, and cached traversal results.
+    - Derived evidence may identify a candidate trace gap or candidate path, but it satisfies INV-002
+      only after the relevant relation is admitted as explicit canonical graph state.
+  invariants:
+    CTR-0061-1: Every active traceable_subject must have at least one canonical_trace_path to a traceability_root
+      or remain in unresolved_traceability.
+    CTR-0061-2: Generic_relation, depends_on, implements, tested_by, conflicts_with, supersedes, and owns
+      edges do not independently satisfy INV-002.
+    CTR-0061-3: Derived_trace_view evidence is advisory until promoted into explicit canonical graph state.
+    CTR-0061-4: Historical lineage remains inspectable without serving as the required current route for
+      an active successor.
