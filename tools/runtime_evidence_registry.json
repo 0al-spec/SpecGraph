@@ -104,6 +104,61 @@
     "notes": "Refinement/linkage evidence is registry-backed by the canonical SG-SPEC-0002 parent contract and its explicit child-governance map for SG-SPEC-0014, SG-SPEC-0015, and SG-SPEC-0016. This is semantic surface evidence for the coordination envelope, not raw runtime telemetry."
   },
   {
+    "spec_id": "SG-SPEC-0003",
+    "evidence_scope": "surface_level",
+    "artifact_refs": [
+      "specs/nodes/SG-SPEC-0003.yaml",
+      "specs/nodes/SG-SPEC-0026.yaml",
+      "specs/nodes/SG-SPEC-0034.yaml",
+      "specs/nodes/SG-SPEC-0049.yaml"
+    ],
+    "runtime_entities": [
+      {
+        "entity_id": "specgraph.reflective_governance_boundary",
+        "entity_kind": "canonical_governance_boundary"
+      },
+      {
+        "entity_id": "specgraph.graph_health_signal_policy",
+        "entity_kind": "derived_signal_contract"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0003.yaml",
+        "pattern": "boundary_policy"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0003.yaml",
+        "pattern": "graph_health_signal_policy"
+      }
+    ],
+    "outcome_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0003.yaml",
+        "pattern": "derived_artifact_policy"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0003.yaml",
+        "pattern": "delegated_integration_map"
+      }
+    ],
+    "adoption_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0003.yaml",
+        "pattern": "SG-SPEC-0026"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0003.yaml",
+        "pattern": "SG-SPEC-0034"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0003.yaml",
+        "pattern": "SG-SPEC-0049"
+      }
+    ],
+    "notes": "Reflective governance evidence is registry-backed by the canonical SG-SPEC-0003 boundary contract and its explicit delegated integration map for continuation, proposal/queue control, and lower-boundary handoff signal children. This is semantic surface evidence, not raw runtime telemetry."
+  },
+  {
     "spec_id": "SG-SPEC-0004",
     "evidence_scope": "surface_level",
     "artifact_refs": [
