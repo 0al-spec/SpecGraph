@@ -30,6 +30,18 @@
     "notes": "Tracked proposal lane semantics are anchored by supervisor proposal-lane synchronization runtime code and overlay regression tests that mention SG-SPEC-0006."
   },
   {
+    "spec_id": "SG-SPEC-0007",
+    "code_surfaces": [
+      "specs/nodes/SG-SPEC-0007.yaml",
+      "docs/proposals/0011_pre_spec_semantic_layer.md"
+    ],
+    "test_surfaces": [
+      "specs/nodes/SG-SPEC-0008.yaml",
+      "specs/nodes/SG-SPEC-0050.yaml"
+    ],
+    "notes": "Intent mediation and discovery boundary semantics are anchored by canonical semantic surfaces, not executor code. The parent boundary spec, pre-spec semantic proposal, and delegated child specs preserve the raw-goal to mediated-intent to canonicalization contract."
+  },
+  {
     "spec_id": "SG-SPEC-0013",
     "code_surfaces": [
       "tools/supervisor.py"
