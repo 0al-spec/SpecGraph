@@ -13039,9 +13039,7 @@ def test_build_metrics_source_promotion_index_requires_pack_promotion_candidate(
         "pack_authority_state": "not_threshold_authority",
         "required_for_promotion_candidate": "promotion_candidate",
     }
-    assert report["promotion_backlog"]["grouped_by_next_gap"] == {
-        "review_draft_metric_source": ["metrics_sib_full"]
-    }
+    assert report["promotion_backlog"] == {"entry_count": 0, "items": [], "grouped_by_next_gap": {}}
     assert report["viewer_projection"]["promotion_status"]["draft_visible_only"] == [
         "metrics_sib_full"
     ]
