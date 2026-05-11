@@ -13352,13 +13352,16 @@ def build_implementation_delta_snapshot(
     if not intent_text:
         validation_findings.append("missing_operator_intent")
 
+    implementation_state_projection = (
+        (trace_projection or {}).get("viewer_projection", {}).get("implementation_state", {})
+    )
     implemented_spec_ids = sorted(
-        str(item)
-        for item in (trace_projection or {})
-        .get("viewer_projection", {})
-        .get("implementation_state", {})
-        .get("implemented", [])
-        if str(item).strip()
+        {
+            str(item).strip()
+            for state in ("implemented", "verified")
+            for item in implementation_state_projection.get(state, [])
+            if str(item).strip()
+        }
     )
     implemented_set = set(implemented_spec_ids)
 
