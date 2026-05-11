@@ -527,6 +527,65 @@
     "notes": "Vocabulary primitive evidence is registry-backed by the canonical SG-SPEC-0010 meta-ontology contract, the initial vocabulary proposal, and delegated SG-SPEC-0011 relation-binding child. This is semantic surface evidence and intentionally does not overclaim full runtime execution of the universal meta-ontology."
   },
   {
+    "spec_id": "SG-SPEC-0011",
+    "evidence_scope": "surface_level",
+    "artifact_refs": [
+      "specs/nodes/SG-SPEC-0011.yaml",
+      "specs/nodes/SG-SPEC-0010.yaml",
+      "specs/nodes/SG-SPEC-0012.yaml",
+      "tests/test_supervisor.py"
+    ],
+    "runtime_entities": [
+      {
+        "entity_id": "specgraph.relation_type.specializes",
+        "entity_kind": "canonical_relation_type"
+      },
+      {
+        "entity_id": "specgraph.relation_type.governed_by_state_family",
+        "entity_kind": "canonical_relation_type"
+      },
+      {
+        "entity_id": "specgraph.relation_type.resolved_by_alias",
+        "entity_kind": "canonical_relation_type"
+      },
+      {
+        "entity_id": "specgraph.relation_type.constrained_by_invariant",
+        "entity_kind": "canonical_relation_type"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0011.yaml",
+        "pattern": "relation_catalog"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0011.yaml",
+        "pattern": "bootstrap_relation_slice"
+      }
+    ],
+    "outcome_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0011.yaml",
+        "pattern": "admissibility_rules"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0011.yaml",
+        "pattern": "cardinality_and_uniqueness"
+      }
+    ],
+    "adoption_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0011.yaml",
+        "pattern": "SG-SPEC-0010 remains the parent primitive contract"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0012.yaml",
+        "pattern": "SG-SPEC-0010 and SG-SPEC-0011 remain the adjacent vocabulary-layer sources"
+      }
+    ],
+    "notes": "Bootstrap relation vocabulary evidence is registry-backed by the canonical SG-SPEC-0011 relation catalog and its declared parent/downstream adjacency. This is semantic surface evidence for first relation binding, not proof of a dedicated runtime relation engine."
+  },
+  {
     "spec_id": "SG-SPEC-0013",
     "evidence_scope": "surface_level",
     "artifact_refs": [
