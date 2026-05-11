@@ -2,7 +2,7 @@ id: SG-SPEC-0061
 title: SpecGraph - Canonical Traceability Reachability Boundary
 kind: spec
 created_at: '2026-05-11T07:53:04Z'
-updated_at: '2026-05-11T07:53:04Z'
+updated_at: '2026-05-11T09:35:13Z'
 status: linked
 maturity: 1.0
 depends_on:
@@ -23,8 +23,8 @@ allowed_paths:
 acceptance:
 - Defines the bounded canonical reachability contract for INV-002 by naming traceability roots, traceable
   subjects, and acceptable canonical chain edges without redefining SG-SPEC-0001 edge-kind compatibility.
-- Defines when a node satisfies traceability reachability through explicit canonical edges and when missing,
-  broken, cyclic, or generic-only chains remain unresolved.
+- Defines when a governed subject satisfies traceability reachability through explicit canonical edges
+  and when missing, broken, cyclic, or generic-only chains remain unresolved.
 - Defines how active versus historical presence interacts with traceability reachability without redefining
   SG-SPEC-0054 presence semantics or SG-SPEC-0019 supersession lineage.
 - Defines the canonical-versus-derived boundary for traceability evidence so indexes, viewer paths, inferred
@@ -36,10 +36,11 @@ acceptance_evidence:
     traceable subjects, and acceptable canonical chain edges without redefining SG-SPEC-0001 edge-kind
     compatibility.
   evidence: specification.reachability_contract names intent nodes as traceability_roots, lists traceable_subjects,
-    and identifies acceptable_chain_edges as refines and derived_from while specification.scope.out delegates
-    edge-kind compatibility to SG-SPEC-0023.
-- criterion: Defines when a node satisfies traceability reachability through explicit canonical edges
-    and when missing, broken, cyclic, or generic-only chains remain unresolved.
+    including acceptance_criterion, and identifies acceptable_chain_edges as refines and derived_from
+    while specification.scope.out delegates edge-kind compatibility to SG-SPEC-0023 and executable-layer
+    traceability for code_surface, test, and release to SG-SPEC-0020.
+- criterion: Defines when a governed subject satisfies traceability reachability through explicit canonical
+    edges and when missing, broken, cyclic, or generic-only chains remain unresolved.
   evidence: specification.satisfaction_rules.requires_canonical_path defines satisfaction through at least
     one canonical path to an intent root, and specification.unresolved_conditions names missing_root_path,
     broken_endpoint, depends_only_path, relates_only_path, dynamic_only_path, and cyclic_trace_slice as
@@ -69,7 +70,7 @@ specification:
   scope:
     in:
     - Canonical reachability semantics for SG-SPEC-0001 INV-002.
-    - Traceability roots and traceable subjects for root ontology node kinds.
+    - Traceability roots and traceable subjects for specification-layer canonical subjects.
     - Edge kinds that may form an intent-reachability chain at the semantic level.
     - Unresolved traceability conditions that prevent a subject from satisfying INV-002.
     - Boundary between canonical traceability evidence and derived projections.
@@ -81,15 +82,17 @@ specification:
       by SG-SPEC-0054.
     - Detailed revision-record ordering, supersession-lineage mechanics, or predecessor storage — covered
       by SG-SPEC-0019.
+    - Detailed executable-layer traceability semantics for code_surface, test, and release — covered by
+      SG-SPEC-0020.
     - Validation algorithms, graph traversal implementation, query planning, indexes, storage layout,
       serialization format, CLI behavior, or CI policy.
     - Metrics, dashboards, viewer presentation, remediation queues, lifecycle transition automation, or
       review workflow.
   terminology:
     traceability_root: An intent node that anchors why a governed subject exists.
-    traceable_subject: A requirement, acceptance criterion, spec, invariant, decision, constraint, code_surface,
-      test, or release whose canonical meaning must remain reachable from at least one traceability_root
-      when it is part of active governed graph state.
+    traceable_subject: A specification-layer canonical subject such as a spec, requirement, acceptance
+      criterion, invariant, decision, or constraint whose canonical meaning must remain reachable from
+      at least one traceability_root when it is part of active governed graph state.
     canonical_trace_path: A finite directed chain of explicit canonical edges that connects a traceable_subject
       to a traceability_root using only edge semantics admitted by this child and endpoint validity admitted
       by SG-SPEC-0023.
@@ -105,12 +108,10 @@ specification:
     traceable_subjects:
     - spec
     - requirement
+    - acceptance_criterion
     - decision
     - constraint
     - invariant
-    - code_surface
-    - test
-    - release
     acceptable_chain_edges:
     - refines
     - derived_from
@@ -118,6 +119,8 @@ specification:
     - Endpoint-kind validity for each edge remains governed by SG-SPEC-0023.
     - This child defines only whether an otherwise valid canonical edge kind can contribute to intent
       reachability.
+    - code_surface, test, and release traceability is governed by SG-SPEC-0020 and must not be forced
+      through this child's refines/derived_from reachability rule.
     - depends_on, implements, tested_by, conflicts_with, supersedes, owns, and relates_to do not by themselves
       establish derivation from intent for INV-002.
   satisfaction_rules:
