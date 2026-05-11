@@ -11180,6 +11180,10 @@ def test_build_metrics_delivery_workflow_emits_ready_draft_and_blocked_entries(
     assert report["viewer_projection"]["named_filters"]["checkout_behind_remote"] == [
         "metrics_sib_full"
     ]
+    assert not any(
+        item["consumer_id"] == "metrics_sib_full" for item in report["delivery_backlog"]["items"]
+    )
+    assert "review_draft_metrics_delivery" not in report["delivery_backlog"]["grouped_by_next_gap"]
 
     dirty = next(entry for entry in report["entries"] if entry["consumer_id"] == "metrics_dirty")
     assert dirty["review_state"] == "not_ready"

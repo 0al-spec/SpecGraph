@@ -199,6 +199,10 @@ Use these for:
 - downstream `SpecPM` review/adoption observation panels
 - downstream `Metrics` handoff delivery and review/adoption observation panels
 
+Draft-only rows in `runs/metrics_delivery_workflow.json` are overlay
+observations. Treat actionable delivery work from the backlog projection, not
+from `delivery_status: "draft_delivery_only"` alone.
+
 This is not node-level graph data. Treat it as a separate panel or side rail.
 
 ## 2. What To Render From Each Artifact

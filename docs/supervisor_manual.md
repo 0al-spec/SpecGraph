@@ -968,6 +968,9 @@ It emits:
 - git checkout diagnostics scoped to `.specgraph_handoffs/<consumer_id>/`
 - suggested downstream branch, commit subject, PR title, and ordered workflow
   steps
+- `draft_delivery_only` entries remain visible in the workflow artifact and
+  viewer projection, but they are not actionable delivery backlog rows until
+  the upstream handoff becomes ready
 
 This command does **not** write into `Metrics`, does not commit, does not push,
 and does not create a downstream PR automatically.
