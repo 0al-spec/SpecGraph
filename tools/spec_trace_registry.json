@@ -48,6 +48,19 @@
     "notes": "Explicit project-memory consultation semantics are anchored by a supervisor trace anchor and regression tests for the conversation-memory derived surfaces. Policy and viewer contract files remain evidence artifacts, not trace-collected code refs."
   },
   {
+    "spec_id": "SG-SPEC-0009",
+    "code_surfaces": [
+      "tools/operator_request_bridge_policy.json",
+      "tools/supervisor.py",
+      "tools/specgraph_vocabulary.json",
+      "docs/supervisor_manual.md"
+    ],
+    "test_surfaces": [
+      "tests/test_supervisor.py"
+    ],
+    "notes": "OperatorRequest single-run steering semantics are anchored by the bridge policy, packet normalization and routing code, shared vocabulary, supervisor manual, and regression tests for targeted refinement, split proposal, and proposal linkage flows."
+  },
+  {
     "spec_id": "SG-SPEC-0013",
     "code_surfaces": [
       "tools/supervisor.py"
