@@ -162,6 +162,9 @@ particular task.
   region roots that should expand through active `refines` descendants.
 - build bounded implementation work items from the latest delta snapshot:
   `--build-implementation-work-index`
+  Verified specs are treated as already implemented when building the delta
+  baseline; they must not create implementation work merely because they are not
+  in the weaker `implemented` projection bucket.
 - build a repository-tracked proposal-lane overlay:
   `--build-proposal-lane-overlay`
 - build a derived proposal runtime index:

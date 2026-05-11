@@ -19742,6 +19742,59 @@ def test_build_implementation_delta_snapshot_uses_explicit_target_scope(
     assert snapshot["runtime_code_mutations_allowed"] is False
 
 
+def test_build_implementation_delta_snapshot_treats_verified_as_implemented(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    (repo_fixture / "runs" / "spec_trace_projection.json").write_text(
+        json.dumps(
+            {
+                "artifact_kind": "spec_trace_projection",
+                "generated_at": "2026-04-26T00:00:00Z",
+                "entry_count": 1,
+                "viewer_projection": {
+                    "implementation_state": {
+                        "implemented": [],
+                        "verified": ["SG-SPEC-0001"],
+                    }
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    (repo_fixture / "runs" / "evidence_plane_overlay.json").write_text(
+        json.dumps(
+            {
+                "artifact_kind": "evidence_plane_overlay",
+                "generated_at": "2026-04-26T00:00:01Z",
+                "entry_count": 1,
+                "viewer_projection": {
+                    "chain_status": {
+                        "chain_complete": ["SG-SPEC-0001"],
+                    }
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    snapshot = supervisor_module.build_implementation_delta_snapshot(
+        target_scope_kind="spec",
+        target_spec_ids="SG-SPEC-0001",
+        operator_intent="Plan implementation for an already verified spec.",
+    )
+    index = supervisor_module.build_implementation_work_index(snapshot)
+
+    assert snapshot["baseline"]["implemented_spec_ids"] == ["SG-SPEC-0001"]
+    assert snapshot["status"] == "empty_delta"
+    assert snapshot["next_gap"] == "no_implementation_delta"
+    assert snapshot["delta"]["changed_spec_ids"] == []
+    assert snapshot["delta"]["changed_acceptance_refs"] == []
+    assert snapshot["delta"]["required_test_refs"] == []
+    assert index["entries"] == []
+    assert index["implementation_backlog"]["items"] == []
+
+
 def test_build_implementation_delta_snapshot_expands_active_subtree_scope(
     supervisor_module: object,
     repo_fixture: Path,

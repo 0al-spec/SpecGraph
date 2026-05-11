@@ -165,6 +165,11 @@ Viewer code should treat these fields as stable:
 - `canonical_mutations_allowed`
 - `runtime_code_mutations_allowed`
 
+For delta baseline purposes, `implementation_state: "verified"` is treated as
+already implemented. Verification is a stronger implementation state, so a
+verified spec must not re-enter the implementation work backlog merely because
+it is not listed under the weaker `implemented` projection bucket.
+
 Expected top-level shape:
 
 ```json
