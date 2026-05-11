@@ -1036,6 +1036,9 @@ It emits:
 - explicit guardrails: `requires_human_review = true`,
   `auto_threshold_authority = false`, and `threshold_authority_grant = false`
   for review candidates
+- `draft_visible_only` entries remain visible in the source-promotion index and
+  viewer projection, but they are not actionable promotion backlog rows until
+  the metric pack becomes `promotion_candidate`
 
 Use it when you want to review whether `Metrics/SIB_FULL` is ready to graduate
 from draft reference to operational input without silently changing metric

@@ -311,6 +311,9 @@ Notes:
 - `entries[].candidate_metric_id` remains as the explicit promotion candidate
   field; `entries[].metric_id` is the compact viewer-facing alias for the same
   metric family
+- `draft_visible_only` rows are observation-only: show them in the overlay, but
+  do not treat them as actionable promotion backlog unless a separate backlog
+  row exists
 - draft sources with `authority_state = "promotion_candidate"` are not
   threshold authority until a human review records that transition
 

@@ -22802,7 +22802,7 @@ def build_metrics_source_promotion_index(
         named_filters.setdefault(promotion_status, []).append(key)
         named_filters["threshold_authority_blocked"].append(key)
         named_filters["sib_family_candidate"].append(key)
-        if next_gap != "none":
+        if next_gap != "none" and promotion_status != "draft_visible_only":
             backlog_items.append(
                 {
                     "consumer_id": consumer_id,
