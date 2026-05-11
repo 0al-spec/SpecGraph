@@ -636,6 +636,11 @@ The overlay adds:
 - named filters such as `stable_ready`, `identity_unverified`, and `metric_pressure`
 - `external_consumer_backlog` grouped by `next_gap`
 
+Draft references remain inspectable in `entries[]` and viewer projection
+filters, including when their local checkout is missing, but they are
+observation-only and do not enter actionable external-consumer backlog until
+the reference becomes stable or blocked as a stable bridge.
+
 This is the preferred visualizer surface for sibling-consumer bridge state.
 
 ### External consumer handoffs
@@ -661,7 +666,8 @@ Each declared external consumer is classified into:
 
 Only stable-ready consumers receive a normalized downstream `handoff` packet.
 Today that means `Metrics/SIB` can become reviewable handoff material, while
-`Metrics/SIB_FULL` remains visible as draft-only context and next-gap pressure.
+draft consumers such as `Metrics/SIB_FULL` remain visible as draft-only context
+without actionable handoff backlog pressure.
 
 ### SpecPM export preview
 

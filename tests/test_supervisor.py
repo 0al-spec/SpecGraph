@@ -8605,6 +8605,16 @@ def test_build_external_consumer_overlay_reports_bridge_states_and_backlog(
                 "notes": "draft",
             },
             {
+                "consumer_id": "metrics_draft_missing",
+                "title": "Metrics / Draft Missing",
+                "reference_state": "draft_reference",
+                "contract_status": "ready",
+                "local_checkout": {"status": "missing", "remote_matches": False},
+                "artifact_status_counts": {"verified": 2},
+                "metric_bindings": [],
+                "notes": "draft missing checkout",
+            },
+            {
                 "consumer_id": "metrics_shadow",
                 "title": "Metrics / Shadow",
                 "reference_state": "stable_reference",
@@ -8634,6 +8644,9 @@ def test_build_external_consumer_overlay_reports_bridge_states_and_backlog(
     assert overlay["artifact_kind"] == supervisor_module.EXTERNAL_CONSUMER_OVERLAY_ARTIFACT_KIND
     assert overlay["viewer_projection"]["bridge_state"]["stable_partial"] == ["metrics_sib"]
     assert overlay["viewer_projection"]["bridge_state"]["draft_visible"] == ["metrics_sib_full"]
+    assert overlay["viewer_projection"]["bridge_state"]["draft_checkout_missing"] == [
+        "metrics_draft_missing"
+    ]
     assert overlay["viewer_projection"]["bridge_state"]["stable_identity_unverified"] == [
         "metrics_shadow"
     ]
@@ -8646,9 +8659,12 @@ def test_build_external_consumer_overlay_reports_bridge_states_and_backlog(
     ]
     assert overlay["external_consumer_backlog"]["grouped_by_next_gap"] == {
         "repair_artifact_markers": ["metrics_sib"],
-        "review_draft_reference": ["metrics_sib_full"],
         "verify_repo_identity": ["metrics_shadow"],
     }
+    assert not any(
+        item["consumer_id"] in {"metrics_sib_full", "metrics_draft_missing"}
+        for item in overlay["external_consumer_backlog"]["items"]
+    )
 
 
 def test_main_builds_external_consumer_overlay_as_standalone_command(
@@ -8803,6 +8819,10 @@ def test_build_external_consumer_handoff_packets_emits_ready_and_draft_entries(
     assert draft["review_state"] == "not_emitted"
     assert draft["next_gap"] == "review_draft_reference"
     assert draft["transition_packet"] is None
+    assert not any(
+        item["consumer_id"] == "metrics_sib_full" for item in report["handoff_backlog"]["items"]
+    )
+    assert "review_draft_reference" not in report["handoff_backlog"]["grouped_by_next_gap"]
 
 
 def test_build_external_consumer_handoff_packets_links_canonical_sib_proposals_for_legacy_binding(
@@ -17067,19 +17087,13 @@ def test_graph_backlog_projection_suppresses_adopted_metrics_handoff_review(
         external_consumer_handoffs={
             "generated_at": "2026-05-02T00:00:00Z",
             "handoff_backlog": {
-                "entry_count": 2,
+                "entry_count": 1,
                 "items": [
                     {
                         "consumer_id": "metrics_sib",
                         "handoff_status": "ready_for_handoff",
                         "review_state": "ready_for_review",
                         "next_gap": "review_handoff_packet",
-                    },
-                    {
-                        "consumer_id": "metrics_sib_full",
-                        "handoff_status": "draft_reference_only",
-                        "review_state": "not_emitted",
-                        "next_gap": "review_draft_reference",
                     },
                 ],
             },
@@ -17161,7 +17175,7 @@ def test_graph_backlog_projection_suppresses_adopted_metrics_handoff_review(
         backlog_id.startswith("metrics_delivery_workflow::metrics::metrics_sib::")
         for backlog_id in backlog_ids
     )
-    assert any(
+    assert not any(
         backlog_id.startswith("external_consumer_handoffs::external_consumers::metrics_sib_full::")
         for backlog_id in backlog_ids
     )
@@ -17171,6 +17185,7 @@ def test_graph_backlog_projection_suppresses_adopted_metrics_handoff_review(
     )
     assert "review_handoff_packet" not in report["summary"]["next_gap_counts"]
     assert "review_metrics_delivery_workflow" not in report["summary"]["next_gap_counts"]
+    assert "review_draft_reference" not in report["summary"]["next_gap_counts"]
     assert report["summary"]["next_gap_counts"]["collect_metrics_adoption_feedback"] == 1
     adoption_entry = next(
         entry

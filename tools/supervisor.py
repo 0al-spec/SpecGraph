@@ -17385,7 +17385,7 @@ def build_external_consumer_overlay(
         }
         overlay_entries.append(overlay_entry)
 
-        if next_gap != "none":
+        if next_gap != "none" and reference_state != "draft_reference":
             backlog_items.append(
                 {
                     "consumer_id": consumer_id,
@@ -17686,7 +17686,7 @@ def build_external_consumer_handoff_packets(
             named_filters["threshold_driven"].append(consumer_id)
         if validation_report and not validation_report.get("ok"):
             named_filters["packet_validation_failed"].append(consumer_id)
-        if next_gap != "none":
+        if next_gap != "none" and handoff_status != "draft_reference_only":
             backlog_items.append(
                 {
                     "consumer_id": consumer_id,
