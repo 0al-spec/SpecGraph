@@ -410,6 +410,12 @@ The main statuses are:
 - `blocked_by_bridge_gap`
 - `draft_reference_only`
 
+Draft external consumer references remain visible in `entries[]`,
+`viewer_projection`, and named filters, but they are not actionable handoff
+backlog rows until they become stable handoff candidates. Use the backlog
+projection for actionable work; do not treat `draft_reference_only` or
+`draft_visible` alone as a required follow-up.
+
 ## 3. Practical Visualizer Layout
 
 If you want one compact but useful UI, this layout works well:
