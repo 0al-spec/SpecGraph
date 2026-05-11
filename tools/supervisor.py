@@ -21248,7 +21248,7 @@ def build_metrics_delivery_workflow(
             named_filters["threshold_driven"].append(key)
         for metric_id in bound_metric_ids:
             metric_groups.setdefault(metric_id, []).append(key)
-        if next_gap != "none":
+        if next_gap != "none" and delivery_status != "draft_delivery_only":
             backlog_items.append(
                 {
                     "consumer_id": consumer_id,
