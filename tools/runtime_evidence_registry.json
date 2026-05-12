@@ -2488,6 +2488,64 @@
     "notes": "Gateway-entry evidence is anchored by graph-next-moves ranking that keeps explicit split-readiness boundary review actions, including decomposition-policy and refinement-strategy review, ahead of proposal-lane availability once the same split subject is already tracked."
   },
   {
+    "spec_id": "SG-SPEC-0046",
+    "evidence_scope": "surface_level",
+    "artifact_refs": [
+      "specs/nodes/SG-SPEC-0046.yaml",
+      "specs/nodes/SG-SPEC-0045.yaml",
+      "tests/test_supervisor.py"
+    ],
+    "runtime_entities": [
+      {
+        "entity_id": "specgraph.historical_upstream_parent_path_slice",
+        "entity_kind": "superseded_lineage_node"
+      },
+      {
+        "entity_id": "specgraph.historical_lineage_contract",
+        "entity_kind": "inactive_lineage_contract"
+      },
+      {
+        "entity_id": "specgraph.historical_inactive_child_rule",
+        "entity_kind": "active_subtree_exclusion_rule"
+      },
+      {
+        "entity_id": "specgraph.historical_supersession_anchor",
+        "entity_kind": "superseded_by_anchor"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0046.yaml",
+        "pattern": "historical_status"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0046.yaml",
+        "pattern": "lineage_contract"
+      }
+    ],
+    "outcome_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0046.yaml",
+        "pattern": "inactive_rules"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0046.yaml",
+        "pattern": "boundaries"
+      }
+    ],
+    "adoption_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0045.yaml",
+        "pattern": "SG-SPEC-0045 remains the active readable replacement for SG-SPEC-0046"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0045.yaml",
+        "pattern": "Historical edge and segment slices stay historical"
+      }
+    ],
+    "notes": "Historical upstream parent-path evidence is registry-backed by SG-SPEC-0046 superseded-lineage semantics, SG-SPEC-0045 active replacement adoption, inactive-child rules, and a live regression anchor. This establishes inspectable historical lineage without claiming an active subtree role, runtime-observable invariant, decomposition authority, proposal/split mechanics implementation, or queue-control behavior."
+  },
+  {
     "spec_id": "SG-SPEC-0049",
     "evidence_scope": "surface_level",
     "artifact_refs": [
