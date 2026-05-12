@@ -1971,6 +1971,66 @@
     "notes": "Active-item precedence evidence is registry-backed by SG-SPEC-0036 derived-control semantics, SG-SPEC-0041 gateway delegation, SG-SPEC-0034 parent-facing consumption, and a live regression anchor. This establishes precedence metadata traceability without claiming scheduler formulas, queue engine internals, priority tuning, canonical writeback, proposal approval, or authority-transition implementation."
   },
   {
+    "spec_id": "SG-SPEC-0037",
+    "evidence_scope": "surface_level",
+    "artifact_refs": [
+      "specs/nodes/SG-SPEC-0037.yaml",
+      "specs/nodes/SG-SPEC-0039.yaml",
+      "specs/nodes/SG-SPEC-0034.yaml",
+      "specs/nodes/SG-SPEC-0042.yaml",
+      "tests/test_supervisor.py"
+    ],
+    "runtime_entities": [
+      {
+        "entity_id": "specgraph.preempt_direct_update",
+        "entity_kind": "non_retry_routing_control"
+      },
+      {
+        "entity_id": "specgraph.proposal_direct_handoff",
+        "entity_kind": "non_retry_routing_control"
+      },
+      {
+        "entity_id": "specgraph.non_retry_routing_evaluation",
+        "entity_kind": "bounded_queue_control_order"
+      },
+      {
+        "entity_id": "specgraph.dedupe_key_delegation",
+        "entity_kind": "excluded_child_semantics"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0037.yaml",
+        "pattern": "queue_control_fields"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0037.yaml",
+        "pattern": "routing_evaluation order is fixed"
+      }
+    ],
+    "outcome_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0037.yaml",
+        "pattern": "noncanonical_boundary"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0037.yaml",
+        "pattern": "parent_integration"
+      }
+    ],
+    "adoption_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0039.yaml",
+        "pattern": "concrete_non_retry_semantics_contract: SG-SPEC-0037"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0034.yaml",
+        "pattern": "preempt_direct_update, and proposal_direct_handoff semantics owned by SG-SPEC-0037"
+      }
+    ],
+    "notes": "Non-retry queue-control evidence is registry-backed by SG-SPEC-0037 routing semantics, SG-SPEC-0039 intermediary delegation, SG-SPEC-0034 parent-facing consumption, SG-SPEC-0042 dedupe exclusion, and a live regression anchor. This establishes preempt/proposal handoff traceability without claiming runtime scheduling, governance execution, canonical storage, or dedupe implementation."
+  },
+  {
     "spec_id": "SG-SPEC-0043",
     "evidence_scope": "surface_level",
     "artifact_refs": [
