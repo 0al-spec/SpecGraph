@@ -66,6 +66,14 @@
     "notes": "Ubiquitous vocabulary meta-ontology primitives are semantic-surface backed by the runtime evidence registry and a live regression anchor. This trace contract intentionally does not claim executor-code embodiment or a completed runtime universal meta-ontology."
   },
   {
+    "spec_id": "SG-SPEC-0011",
+    "code_surfaces": [],
+    "test_surfaces": [
+      "tests/test_supervisor.py"
+    ],
+    "notes": "Bootstrap relation vocabulary semantics are semantic-surface backed by the runtime evidence registry and a live regression anchor. This trace contract intentionally does not claim executor-code embodiment or a dedicated runtime relation engine."
+  },
+  {
     "spec_id": "SG-SPEC-0013",
     "code_surfaces": [
       "tools/supervisor.py"
