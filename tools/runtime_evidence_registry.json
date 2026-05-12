@@ -818,6 +818,65 @@
     "notes": "Delegation and atomic decomposition evidence is registry-backed by SG-SPEC-0015 policy text, SG-SPEC-0002 child delegation, supervisor atomicity policy, and split_required regression coverage. This links semantic delegation rules to existing runtime gate behavior without claiming a full decomposition planner."
   },
   {
+    "spec_id": "SG-SPEC-0016",
+    "evidence_scope": "surface_level",
+    "artifact_refs": [
+      "specs/nodes/SG-SPEC-0016.yaml",
+      "specs/nodes/SG-SPEC-0002.yaml",
+      "specs/nodes/SG-SPEC-0055.yaml",
+      "tests/test_supervisor.py"
+    ],
+    "runtime_entities": [
+      {
+        "entity_id": "specgraph.semantic_unlock",
+        "entity_kind": "linked_readiness_gate"
+      },
+      {
+        "entity_id": "specgraph.concrete_descendant_spec",
+        "entity_kind": "refinement_connectivity_requirement"
+      },
+      {
+        "entity_id": "specgraph.linked_readiness_evidence",
+        "entity_kind": "delegated_parent_evidence_contract"
+      },
+      {
+        "entity_id": "specgraph.ancestor_reconciliation",
+        "entity_kind": "delegated_reconciliation_contract"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0016.yaml",
+        "pattern": "semantic_unlock"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0016.yaml",
+        "pattern": "child_governance_map"
+      }
+    ],
+    "outcome_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0016.yaml",
+        "pattern": "readiness_decision_procedure"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0055.yaml",
+        "pattern": "linked_readiness_evidence_policy"
+      }
+    ],
+    "adoption_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0002.yaml",
+        "pattern": "linked-readiness evidence"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0055.yaml",
+        "pattern": "SG-SPEC-0016's readiness overview"
+      }
+    ],
+    "notes": "Linked readiness evidence is registry-backed by SG-SPEC-0016 overview policy text, SG-SPEC-0002 parent delegation, SG-SPEC-0055 detailed readiness evidence policy, and a live regression anchor. This links semantic readiness governance to its delegated evidence contract without claiming a dedicated transition runtime engine."
+  },
+  {
     "spec_id": "SG-SPEC-0025",
     "evidence_scope": "surface_level",
     "artifact_refs": [

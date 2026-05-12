@@ -108,6 +108,14 @@
     "notes": "Delegation and atomic decomposition policy is semantic-surface backed by the runtime evidence registry and a live regression anchor, with runtime projection through existing atomicity and split_required checks."
   },
   {
+    "spec_id": "SG-SPEC-0016",
+    "code_surfaces": [],
+    "test_surfaces": [
+      "tests/test_supervisor.py"
+    ],
+    "notes": "Linked readiness and evidence policy is semantic-surface backed by the runtime evidence registry and a live regression anchor. This trace contract intentionally does not claim a dedicated readiness-transition runtime engine."
+  },
+  {
     "spec_id": "SG-SPEC-0019",
     "code_surfaces": [
       "tools/supervisor.py"
