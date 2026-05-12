@@ -2090,6 +2090,67 @@
     "notes": "Queue field-surface evidence is registry-backed by SG-SPEC-0038 shape semantics, SG-SPEC-0039 intermediary delegation, SG-SPEC-0034 parent-facing consumption, and a live regression anchor. This establishes queue-control key placement traceability without claiming value semantics, runtime queue execution, scheduling, canonical writeback, or authority-transition implementation."
   },
   {
+    "spec_id": "SG-SPEC-0039",
+    "evidence_scope": "surface_level",
+    "artifact_refs": [
+      "specs/nodes/SG-SPEC-0039.yaml",
+      "specs/nodes/SG-SPEC-0034.yaml",
+      "specs/nodes/SG-SPEC-0037.yaml",
+      "specs/nodes/SG-SPEC-0038.yaml",
+      "specs/nodes/SG-SPEC-0040.yaml",
+      "tests/test_supervisor.py"
+    ],
+    "runtime_entities": [
+      {
+        "entity_id": "specgraph.non_retry_queue_control_cluster",
+        "entity_kind": "intermediary_cluster_contract"
+      },
+      {
+        "entity_id": "specgraph.queue_control_delegation_chain",
+        "entity_kind": "bounded_child_delegation"
+      },
+      {
+        "entity_id": "specgraph.queue_control_cluster_contract",
+        "entity_kind": "parent_facing_contract_surface"
+      },
+      {
+        "entity_id": "specgraph.noncanonical_queue_consumption_boundary",
+        "entity_kind": "delegated_consumption_boundary"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0039.yaml",
+        "pattern": "delegation_chain"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0039.yaml",
+        "pattern": "cluster_contract"
+      }
+    ],
+    "outcome_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0039.yaml",
+        "pattern": "noncanonical_boundary"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0039.yaml",
+        "pattern": "consumer_rule"
+      }
+    ],
+    "adoption_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0034.yaml",
+        "pattern": "SG-SPEC-0039 is the bounded child that defines the non-retry queue-control cluster"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0039.yaml",
+        "pattern": "SG-SPEC-0034 depends on SG-SPEC-0039 for the bounded non-retry queue-control cluster contract"
+      }
+    ],
+    "notes": "Non-retry queue-control cluster evidence is registry-backed by SG-SPEC-0039 intermediary semantics, SG-SPEC-0034 parent-facing consumption, delegated SG-SPEC-0037/0038/0040 child contracts, and a live regression anchor. This establishes cluster traceability without claiming concrete field semantics, artifact-shape execution, first-persistence implementation, scheduler, or canonical writeback."
+  },
+  {
     "spec_id": "SG-SPEC-0043",
     "evidence_scope": "surface_level",
     "artifact_refs": [
