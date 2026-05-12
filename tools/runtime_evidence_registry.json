@@ -936,6 +936,66 @@
     "notes": "Runtime observability entity evidence is registry-backed by SG-SPEC-0017 ontology boundary text, SG-SPEC-0001 root delegation, SG-SPEC-0003 graph-health derived-boundary semantics, and a live regression anchor. This establishes observability-entity traceability without claiming telemetry collection or storage implementation."
   },
   {
+    "spec_id": "SG-SPEC-0018",
+    "evidence_scope": "surface_level",
+    "artifact_refs": [
+      "specs/nodes/SG-SPEC-0018.yaml",
+      "specs/nodes/SG-SPEC-0001.yaml",
+      "specs/nodes/SG-SPEC-0007.yaml",
+      "specs/nodes/SG-SPEC-0017.yaml",
+      "tests/test_supervisor.py"
+    ],
+    "runtime_entities": [
+      {
+        "entity_id": "specgraph.adoption_layer_entity",
+        "entity_kind": "ontology_boundary"
+      },
+      {
+        "entity_id": "specgraph.DiscoverySurface",
+        "entity_kind": "encounter_surface_entity"
+      },
+      {
+        "entity_id": "specgraph.AdoptionCriterion",
+        "entity_kind": "uptake_criterion_entity"
+      },
+      {
+        "entity_id": "specgraph.adoption_evidence_reference",
+        "entity_kind": "evidence_pointer"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0018.yaml",
+        "pattern": "adoption_layer_entity"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0018.yaml",
+        "pattern": "entity_catalog"
+      }
+    ],
+    "outcome_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0018.yaml",
+        "pattern": "relationship_policy"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0018.yaml",
+        "pattern": "canonical_vs_derived_boundary"
+      }
+    ],
+    "adoption_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0001.yaml",
+        "pattern": "adoption-layer entities to SG-SPEC-0018"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0007.yaml",
+        "pattern": "Discovery surfaces and adoption-facing entities are adjacent"
+      }
+    ],
+    "notes": "Adoption-layer entity evidence is registry-backed by SG-SPEC-0018 ontology boundary text, SG-SPEC-0001 root delegation, SG-SPEC-0007 mediated-discovery adjacency, SG-SPEC-0017 evidence-reference boundary, and a live regression anchor. This establishes adoption-entity traceability without claiming UX, analytics, campaign, or runtime implementation."
+  },
+  {
     "spec_id": "SG-SPEC-0025",
     "evidence_scope": "surface_level",
     "artifact_refs": [
