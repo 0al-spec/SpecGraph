@@ -315,6 +315,14 @@
     "notes": "Queue field-surface and artifact-shape contracts are semantic-surface backed by the runtime evidence registry and a live regression anchor. This trace contract intentionally does not claim value semantics, runtime queue execution, scheduling, canonical writeback, or authority-transition code."
   },
   {
+    "spec_id": "SG-SPEC-0039",
+    "code_surfaces": [],
+    "test_surfaces": [
+      "tests/test_supervisor.py"
+    ],
+    "notes": "Non-retry queue-control cluster semantics are semantic-surface backed by the runtime evidence registry and a live regression anchor. This trace contract intentionally does not claim concrete field semantics, artifact-shape execution, first-persistence implementation, scheduler, or canonical writeback code."
+  },
+  {
     "spec_id": "SG-SPEC-0043",
     "code_surfaces": [
       "tools/supervisor.py"
