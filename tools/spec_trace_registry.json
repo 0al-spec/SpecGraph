@@ -31,15 +31,11 @@
   },
   {
     "spec_id": "SG-SPEC-0007",
-    "code_surfaces": [
-      "specs/nodes/SG-SPEC-0007.yaml",
-      "docs/proposals/0011_pre_spec_semantic_layer.md"
-    ],
+    "code_surfaces": [],
     "test_surfaces": [
-      "specs/nodes/SG-SPEC-0008.yaml",
-      "specs/nodes/SG-SPEC-0050.yaml"
+      "tests/test_supervisor.py"
     ],
-    "notes": "Intent mediation and discovery boundary semantics are anchored by canonical semantic surfaces, not executor code. The parent boundary spec, pre-spec semantic proposal, and delegated child specs preserve the raw-goal to mediated-intent to canonicalization contract."
+    "notes": "Intent mediation and discovery boundary semantics are semantic-surface backed by the runtime evidence registry and a live regression anchor. This trace contract intentionally does not claim executor-code embodiment."
   },
   {
     "spec_id": "SG-SPEC-0013",
