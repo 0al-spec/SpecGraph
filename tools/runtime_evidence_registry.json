@@ -2276,6 +2276,67 @@
     "notes": "Retry-condition and active-item precedence gateway evidence is registry-backed by SG-SPEC-0041 topology semantics, SG-SPEC-0034 parent-facing consumption, SG-SPEC-0035 retry-condition delegation, SG-SPEC-0036 active-item precedence delegation, and a live regression anchor. This establishes the bounded gateway path without claiming queue engine behavior, persistence implementation, concrete retry execution, active-item scheduling formulas, or authority-transition implementation."
   },
   {
+    "spec_id": "SG-SPEC-0042",
+    "evidence_scope": "surface_level",
+    "artifact_refs": [
+      "specs/nodes/SG-SPEC-0042.yaml",
+      "specs/nodes/SG-SPEC-0037.yaml",
+      "specs/nodes/SG-SPEC-0039.yaml",
+      "specs/nodes/SG-SPEC-0034.yaml",
+      "specs/nodes/SG-SPEC-0040.yaml",
+      "tests/test_supervisor.py"
+    ],
+    "runtime_entities": [
+      {
+        "entity_id": "specgraph.dedupe_key",
+        "entity_kind": "non_retry_identity_key"
+      },
+      {
+        "entity_id": "specgraph.dedupe_key_comparison",
+        "entity_kind": "strict_string_comparison_contract"
+      },
+      {
+        "entity_id": "specgraph.dedupe_duplicate_suppression",
+        "entity_kind": "first_persistence_suppression_rule"
+      },
+      {
+        "entity_id": "specgraph.dedupe_noncanonical_boundary",
+        "entity_kind": "advisory_metadata_boundary"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0042.yaml",
+        "pattern": "dedupe_key"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0042.yaml",
+        "pattern": "dedupe_key_behavior"
+      }
+    ],
+    "outcome_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0042.yaml",
+        "pattern": "noncanonical_boundary"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0042.yaml",
+        "pattern": "parent_integration"
+      }
+    ],
+    "adoption_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0037.yaml",
+        "pattern": "Delegates dedupe_key semantics to SG-SPEC-0042"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0042.yaml",
+        "pattern": "SG-SPEC-0039 should consume SG-SPEC-0037 for preempt/proposal controls and SG-SPEC-0042 for dedupe"
+      }
+    ],
+    "notes": "Non-retry dedupe_key evidence is registry-backed by SG-SPEC-0042 dedupe semantics, SG-SPEC-0037 delegation, SG-SPEC-0039/0034 parent-facing non-retry queue-control consumption, SG-SPEC-0040 first-persistence context, and a live regression anchor. This establishes dedupe identity and suppression traceability without claiming runtime queue execution, persistence implementation, canonical writeback, authority-transition implementation, or broader preempt/proposal handoff routing behavior."
+  },
+  {
     "spec_id": "SG-SPEC-0043",
     "evidence_scope": "surface_level",
     "artifact_refs": [
