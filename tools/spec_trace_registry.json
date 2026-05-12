@@ -100,6 +100,14 @@
     "notes": "Spec edge semantics and declared-versus-derived blocking policy are semantic-surface backed by the runtime evidence registry and a live regression anchor. This trace contract intentionally does not claim a dedicated runtime edge-policy engine."
   },
   {
+    "spec_id": "SG-SPEC-0015",
+    "code_surfaces": [],
+    "test_surfaces": [
+      "tests/test_supervisor.py"
+    ],
+    "notes": "Delegation and atomic decomposition policy is semantic-surface backed by the runtime evidence registry and a live regression anchor, with runtime projection through existing atomicity and split_required checks."
+  },
+  {
     "spec_id": "SG-SPEC-0019",
     "code_surfaces": [
       "tools/supervisor.py"

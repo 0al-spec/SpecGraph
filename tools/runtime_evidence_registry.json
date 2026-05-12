@@ -758,6 +758,66 @@
     "notes": "Spec edge semantics evidence is registry-backed by the canonical SG-SPEC-0014 relation policy, parent SG-SPEC-0002 coordination context, downstream delegation/readiness specs that defer edge semantics, and the topology-prose guardrail proposal. This is semantic surface evidence, not proof of a dedicated runtime edge-policy engine."
   },
   {
+    "spec_id": "SG-SPEC-0015",
+    "evidence_scope": "surface_level",
+    "artifact_refs": [
+      "specs/nodes/SG-SPEC-0015.yaml",
+      "specs/nodes/SG-SPEC-0002.yaml",
+      "tools/supervisor_policy.json",
+      "tests/test_supervisor.py",
+      "docs/proposals/0008_refinement_shape.md"
+    ],
+    "runtime_entities": [
+      {
+        "entity_id": "specgraph.delegated_gap",
+        "entity_kind": "delegation_policy_concept"
+      },
+      {
+        "entity_id": "specgraph.atomic_spec_node",
+        "entity_kind": "atomicity_policy_concept"
+      },
+      {
+        "entity_id": "specgraph.sibling_child_specs",
+        "entity_kind": "decomposition_policy_concept"
+      },
+      {
+        "entity_id": "supervisor.split_required",
+        "entity_kind": "runtime_gate_signal"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0015.yaml",
+        "pattern": "delegation_policy"
+      },
+      {
+        "path": "tools/supervisor_policy.json",
+        "pattern": "atomicity_max_acceptance"
+      }
+    ],
+    "outcome_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "test_main_atomicity_gate_forces_split_required"
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "test_main_split_required_syncs_decomposition_outputs"
+      }
+    ],
+    "adoption_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0002.yaml",
+        "pattern": "Detailed delegation, atomic decomposition, sibling decomposition, or split_required rules delegated"
+      },
+      {
+        "path": "docs/proposals/0008_refinement_shape.md",
+        "pattern": "local atomicity"
+      }
+    ],
+    "notes": "Delegation and atomic decomposition evidence is registry-backed by SG-SPEC-0015 policy text, SG-SPEC-0002 child delegation, supervisor atomicity policy, and split_required regression coverage. This links semantic delegation rules to existing runtime gate behavior without claiming a full decomposition planner."
+  },
+  {
     "spec_id": "SG-SPEC-0025",
     "evidence_scope": "surface_level",
     "artifact_refs": [
