@@ -4721,6 +4721,8 @@ def reverse_dependents_count(specs: list[SpecNode]) -> dict[str, int]:
     return counts
 
 
+# Trace anchor: SG-SPEC-0023 edge-kind compatibility keeps depends_on references resolvable
+# before dependency readiness is interpreted as work readiness.
 def semantic_dependencies_resolved(node: SpecNode, index: dict[str, SpecNode]) -> bool:
     for dep_id in node.depends_on:
         if index.get(dep_id) is None:
@@ -5117,6 +5119,7 @@ def format_pending_gate_actions(actions: list[dict[str, Any]], *, limit: int = 1
     return "\n".join(lines)
 
 
+# Trace anchor: SG-SPEC-0023 depends_on edges reject dependency cycles.
 def detect_cycles(specs: list[SpecNode]) -> list[list[str]]:
     """Detect dependency cycles via DFS. Returns list of cycles found."""
     index = index_specs(specs)
