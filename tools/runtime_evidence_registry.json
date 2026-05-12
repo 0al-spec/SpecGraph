@@ -2212,6 +2212,70 @@
     "notes": "Non-retry first-persistence and consumption-boundary evidence is registry-backed by SG-SPEC-0040 first-persistence semantics, SG-SPEC-0039 intermediary delegation, SG-SPEC-0034 parent-facing consumption, SG-SPEC-0037/0038 non-consumer constraints, and a live regression anchor. This establishes noncanonical consumption-chain traceability without claiming field value semantics, artifact-shape execution, runtime queue scheduling, canonical writeback, or authority-transition implementation."
   },
   {
+    "spec_id": "SG-SPEC-0041",
+    "evidence_scope": "surface_level",
+    "artifact_refs": [
+      "specs/nodes/SG-SPEC-0041.yaml",
+      "specs/nodes/SG-SPEC-0034.yaml",
+      "specs/nodes/SG-SPEC-0035.yaml",
+      "specs/nodes/SG-SPEC-0036.yaml",
+      "tests/test_supervisor.py"
+    ],
+    "runtime_entities": [
+      {
+        "entity_id": "specgraph.retry_precedence_gateway",
+        "entity_kind": "parent_facing_gateway_contract"
+      },
+      {
+        "entity_id": "specgraph.retry_condition_delegation",
+        "entity_kind": "concrete_retry_delegation"
+      },
+      {
+        "entity_id": "specgraph.active_item_precedence_delegation",
+        "entity_kind": "concrete_precedence_delegation"
+      },
+      {
+        "entity_id": "specgraph.retry_precedence_non_bypass_path",
+        "entity_kind": "bounded_consumption_path"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0041.yaml",
+        "pattern": "cluster_role"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0041.yaml",
+        "pattern": "cluster_topology"
+      }
+    ],
+    "outcome_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0041.yaml",
+        "pattern": "cluster_boundaries"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0041.yaml",
+        "pattern": "parent_contract"
+      }
+    ],
+    "adoption_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0034.yaml",
+        "pattern": "retry_precedence_contract: SG-SPEC-0041 owns the parent-facing retry/active-item precedence control"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0035.yaml",
+        "pattern": "proposal_queue and refactor_queue control paths must consume retry_condition through SG-SPEC-0041"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0036.yaml",
+        "pattern": "SG-SPEC-0041 consumes SG-SPEC-0036 as the bounded child contract for active_item_precedence"
+      }
+    ],
+    "notes": "Retry-condition and active-item precedence gateway evidence is registry-backed by SG-SPEC-0041 topology semantics, SG-SPEC-0034 parent-facing consumption, SG-SPEC-0035 retry-condition delegation, SG-SPEC-0036 active-item precedence delegation, and a live regression anchor. This establishes the bounded gateway path without claiming queue engine behavior, persistence implementation, concrete retry execution, active-item scheduling formulas, or authority-transition implementation."
+  },
+  {
     "spec_id": "SG-SPEC-0043",
     "evidence_scope": "surface_level",
     "artifact_refs": [
