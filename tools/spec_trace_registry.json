@@ -67,15 +67,11 @@
   },
   {
     "spec_id": "SG-SPEC-0011",
-    "code_surfaces": [
-      "specs/nodes/SG-SPEC-0011.yaml",
-      "specs/nodes/SG-SPEC-0010.yaml",
-      "specs/nodes/SG-SPEC-0012.yaml"
-    ],
+    "code_surfaces": [],
     "test_surfaces": [
       "tests/test_supervisor.py"
     ],
-    "notes": "Bootstrap relation vocabulary semantics are semantic-surface backed by the canonical relation catalog, parent SG-SPEC-0010 primitive contract, and adjacent SG-SPEC-0012 context-pack vocabulary boundary. This does not claim a dedicated runtime relation engine."
+    "notes": "Bootstrap relation vocabulary semantics are semantic-surface backed by the runtime evidence registry and a live regression anchor. This trace contract intentionally does not claim executor-code embodiment or a dedicated runtime relation engine."
   },
   {
     "spec_id": "SG-SPEC-0013",
