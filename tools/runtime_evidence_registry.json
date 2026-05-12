@@ -1853,6 +1853,65 @@
     "notes": "Proposal/queue contract evidence is registry-backed by SG-SPEC-0034 parent-facing queue-control semantics, SG-SPEC-0003 delegation, SG-SPEC-0039 and SG-SPEC-0041 child-boundary delegation, supervisor proposal/refactor queue artifact functions, and live regression coverage. This links existing queue surfaces without claiming canonical persistence, queue-engine scheduling, or authority-transition implementation."
   },
   {
+    "spec_id": "SG-SPEC-0035",
+    "evidence_scope": "surface_level",
+    "artifact_refs": [
+      "specs/nodes/SG-SPEC-0035.yaml",
+      "specs/nodes/SG-SPEC-0041.yaml",
+      "specs/nodes/SG-SPEC-0034.yaml",
+      "tests/test_supervisor.py"
+    ],
+    "runtime_entities": [
+      {
+        "entity_id": "specgraph.retry_condition",
+        "entity_kind": "derived_queue_control_metadata"
+      },
+      {
+        "entity_id": "specgraph.retry_reason",
+        "entity_kind": "bounded_retry_reason_code"
+      },
+      {
+        "entity_id": "specgraph.retry_attempt",
+        "entity_kind": "advisory_retry_state"
+      },
+      {
+        "entity_id": "specgraph.retry_after_seconds",
+        "entity_kind": "advisory_backoff_signal"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0035.yaml",
+        "pattern": "retry_condition_schema"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0035.yaml",
+        "pattern": "retry_contract_scope"
+      }
+    ],
+    "outcome_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0035.yaml",
+        "pattern": "retry_governance"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0035.yaml",
+        "pattern": "actionability_constraints"
+      }
+    ],
+    "adoption_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0041.yaml",
+        "pattern": "SG-SPEC-0035 owns concrete retry-condition control semantics"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0034.yaml",
+        "pattern": "SG-SPEC-0003 defers retry-condition semantics to SG-SPEC-0035 through SG-SPEC-0041"
+      }
+    ],
+    "notes": "Retry-condition evidence is registry-backed by SG-SPEC-0035 metadata semantics, SG-SPEC-0041 gateway delegation, SG-SPEC-0034 parent-facing consumption, and a live regression anchor. This establishes retry metadata traceability without claiming queue scheduling, retry execution, canonical writeback, proposal approval, or authority-transition implementation."
+  },
+  {
     "spec_id": "SG-SPEC-0043",
     "evidence_scope": "surface_level",
     "artifact_refs": [
