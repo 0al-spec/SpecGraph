@@ -1792,6 +1792,67 @@
     "notes": "Continuation-candidate evidence is anchored by a runtime selector that derives candidates from canonical linked-frontier facts while allowing proposal queue state only as suppression/review context."
   },
   {
+    "spec_id": "SG-SPEC-0034",
+    "evidence_scope": "surface_level",
+    "artifact_refs": [
+      "specs/nodes/SG-SPEC-0034.yaml",
+      "specs/nodes/SG-SPEC-0003.yaml",
+      "specs/nodes/SG-SPEC-0039.yaml",
+      "specs/nodes/SG-SPEC-0041.yaml",
+      "tools/supervisor.py",
+      "tests/test_supervisor.py"
+    ],
+    "runtime_entities": [
+      {
+        "entity_id": "supervisor.proposal_queue",
+        "entity_kind": "derived_queue_artifact"
+      },
+      {
+        "entity_id": "supervisor.refactor_queue",
+        "entity_kind": "derived_queue_artifact"
+      },
+      {
+        "entity_id": "supervisor.queue_effects",
+        "entity_kind": "decision_inspector_queue_summary"
+      },
+      {
+        "entity_id": "specgraph.queue_control_parent_contract",
+        "entity_kind": "implementation_agnostic_boundary"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0034.yaml",
+        "pattern": "queue_contract_scope"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0034.yaml",
+        "pattern": "noncanonical_boundary"
+      }
+    ],
+    "outcome_markers": [
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def update_proposal_queue("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def update_refactor_queue("
+      }
+    ],
+    "adoption_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0003.yaml",
+        "pattern": "SG-SPEC-0034 owns proposal/queue control contracts"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0034.yaml",
+        "pattern": "SG-SPEC-0041 is the only parent-facing retry/active-item precedence gateway"
+      }
+    ],
+    "notes": "Proposal/queue contract evidence is registry-backed by SG-SPEC-0034 parent-facing queue-control semantics, SG-SPEC-0003 delegation, SG-SPEC-0039 and SG-SPEC-0041 child-boundary delegation, supervisor proposal/refactor queue artifact functions, and live regression coverage. This links existing queue surfaces without claiming canonical persistence, queue-engine scheduling, or authority-transition implementation."
+  },
+  {
     "spec_id": "SG-SPEC-0043",
     "evidence_scope": "surface_level",
     "artifact_refs": [
