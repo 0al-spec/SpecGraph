@@ -996,6 +996,65 @@
     "notes": "Adoption-layer entity evidence is registry-backed by SG-SPEC-0018 ontology boundary text, SG-SPEC-0001 root delegation, SG-SPEC-0007 mediated-discovery adjacency, SG-SPEC-0017 evidence-reference boundary, and a live regression anchor. This establishes adoption-entity traceability without claiming UX, analytics, campaign, or runtime implementation."
   },
   {
+    "spec_id": "SG-SPEC-0019",
+    "evidence_scope": "surface_level",
+    "artifact_refs": [
+      "specs/nodes/SG-SPEC-0019.yaml",
+      "specs/nodes/SG-SPEC-0001.yaml",
+      "tools/supervisor.py",
+      "tests/test_supervisor.py"
+    ],
+    "runtime_entities": [
+      {
+        "entity_id": "specgraph.revision_record",
+        "entity_kind": "revision_lineage_entity"
+      },
+      {
+        "entity_id": "specgraph.supersession_event",
+        "entity_kind": "supersession_lineage_entity"
+      },
+      {
+        "entity_id": "specgraph.subject_presence_state",
+        "entity_kind": "topology_presence_contract"
+      },
+      {
+        "entity_id": "supervisor.is_historical_spec",
+        "entity_kind": "active_topology_filter"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0019.yaml",
+        "pattern": "revision_contract"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0019.yaml",
+        "pattern": "supersession_topology"
+      }
+    ],
+    "outcome_markers": [
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def is_historical_spec"
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "test_observe_graph_health_ignores_superseded_descendants"
+      }
+    ],
+    "adoption_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0001.yaml",
+        "pattern": "SG-SPEC-0019 governs the detailed revision and supersession contract"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0019.yaml",
+        "pattern": "active_graph_projection"
+      }
+    ],
+    "notes": "Canonical revision and supersession lineage evidence is registry-backed by SG-SPEC-0019 ontology text, SG-SPEC-0001 supersedes-edge adoption, supervisor active-topology filtering, and historical-descendant graph-health regressions. This ties lineage semantics to existing runtime filtering without claiming a full revision-record storage engine."
+  },
+  {
     "spec_id": "SG-SPEC-0025",
     "evidence_scope": "surface_level",
     "artifact_refs": [
