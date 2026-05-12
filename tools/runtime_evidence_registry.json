@@ -1912,6 +1912,65 @@
     "notes": "Retry-condition evidence is registry-backed by SG-SPEC-0035 metadata semantics, SG-SPEC-0041 gateway delegation, SG-SPEC-0034 parent-facing consumption, and a live regression anchor. This establishes retry metadata traceability without claiming queue scheduling, retry execution, canonical writeback, proposal approval, or authority-transition implementation."
   },
   {
+    "spec_id": "SG-SPEC-0036",
+    "evidence_scope": "surface_level",
+    "artifact_refs": [
+      "specs/nodes/SG-SPEC-0036.yaml",
+      "specs/nodes/SG-SPEC-0041.yaml",
+      "specs/nodes/SG-SPEC-0034.yaml",
+      "tests/test_supervisor.py"
+    ],
+    "runtime_entities": [
+      {
+        "entity_id": "specgraph.active_item_precedence",
+        "entity_kind": "derived_queue_control_metadata"
+      },
+      {
+        "entity_id": "specgraph.active_item_precedence_value",
+        "entity_kind": "bounded_precedence_value_contract"
+      },
+      {
+        "entity_id": "specgraph.active_item_precedence_tier",
+        "entity_kind": "advisory_queue_preference"
+      },
+      {
+        "entity_id": "specgraph.active_item_precedence_parent_gateway",
+        "entity_kind": "noncanonical_gateway_consumption"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0036.yaml",
+        "pattern": "active_item_precedence_contract"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0036.yaml",
+        "pattern": "active_item_precedence_value_contract"
+      }
+    ],
+    "outcome_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0036.yaml",
+        "pattern": "control_semantics"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0036.yaml",
+        "pattern": "noncanonical_boundary"
+      }
+    ],
+    "adoption_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0041.yaml",
+        "pattern": "SG-SPEC-0036 owns concrete active-item precedence control semantics"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0034.yaml",
+        "pattern": "SG-SPEC-0003 consumes active-item precedence semantics"
+      }
+    ],
+    "notes": "Active-item precedence evidence is registry-backed by SG-SPEC-0036 derived-control semantics, SG-SPEC-0041 gateway delegation, SG-SPEC-0034 parent-facing consumption, and a live regression anchor. This establishes precedence metadata traceability without claiming scheduler formulas, queue engine internals, priority tuning, canonical writeback, proposal approval, or authority-transition implementation."
+  },
+  {
     "spec_id": "SG-SPEC-0043",
     "evidence_scope": "surface_level",
     "artifact_refs": [

@@ -291,6 +291,14 @@
     "notes": "Proposal queue retry-condition semantics are semantic-surface backed by the runtime evidence registry and a live regression anchor. This trace contract intentionally does not claim queue scheduler, retry executor, canonical writeback, or authority-transition runtime code."
   },
   {
+    "spec_id": "SG-SPEC-0036",
+    "code_surfaces": [],
+    "test_surfaces": [
+      "tests/test_supervisor.py"
+    ],
+    "notes": "Active-item precedence queue-control semantics are semantic-surface backed by the runtime evidence registry and a live regression anchor. This trace contract intentionally does not claim queue scheduler formulas, queue engine internals, canonical writeback, or authority-transition runtime code."
+  },
+  {
     "spec_id": "SG-SPEC-0043",
     "code_surfaces": [
       "tools/supervisor.py"
