@@ -1113,6 +1113,66 @@
     "notes": "Executable-layer traceability evidence is registry-backed by SG-SPEC-0020 ontology boundary text, SG-SPEC-0001 executable-layer seed adoption, and a live regression anchor. This establishes code_surface/test/release traceability without claiming repository scanning, CI, build, deployment, or runtime implementation."
   },
   {
+    "spec_id": "SG-SPEC-0021",
+    "evidence_scope": "surface_level",
+    "artifact_refs": [
+      "specs/nodes/SG-SPEC-0021.yaml",
+      "specs/nodes/SG-SPEC-0001.yaml",
+      "specs/nodes/SG-SPEC-0003.yaml",
+      "specs/nodes/SG-SPEC-0017.yaml",
+      "tests/test_supervisor.py"
+    ],
+    "runtime_entities": [
+      {
+        "entity_id": "specgraph.derived_metric_family",
+        "entity_kind": "metric_family_boundary"
+      },
+      {
+        "entity_id": "specgraph.metric_family_role",
+        "entity_kind": "metric_semantic_role"
+      },
+      {
+        "entity_id": "specgraph.metric_snapshot",
+        "entity_kind": "derived_metric_result"
+      },
+      {
+        "entity_id": "specgraph.threshold_candidate",
+        "entity_kind": "review_required_metric_interpretation"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0021.yaml",
+        "pattern": "derived_metric_family"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0021.yaml",
+        "pattern": "metric_family_catalog"
+      }
+    ],
+    "outcome_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0021.yaml",
+        "pattern": "relationship_policy"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0021.yaml",
+        "pattern": "canonical_vs_derived_boundary"
+      }
+    ],
+    "adoption_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0001.yaml",
+        "pattern": "Observability metrics (SIB, PFI, CSI, etc.)"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0003.yaml",
+        "pattern": "metric systems such as SIB or Specification Verifiability"
+      }
+    ],
+    "notes": "Derived metric family evidence is registry-backed by SG-SPEC-0021 ontology boundary text, SG-SPEC-0001 metric-family delegation, SG-SPEC-0003 derived-metric boundary context, SG-SPEC-0017 runtime-observability input context, and a live regression anchor. This establishes metric-family traceability without claiming formula execution, threshold enforcement, dashboards, storage, or scheduler implementation."
+  },
+  {
     "spec_id": "SG-SPEC-0025",
     "evidence_scope": "surface_level",
     "artifact_refs": [

@@ -150,6 +150,14 @@
     "notes": "Executable-layer traceability boundary is semantic-surface backed by the runtime evidence registry and a live regression anchor. This trace contract intentionally does not claim repository layout, CI workflow, build tooling, deployment, or implementation scanner runtime code."
   },
   {
+    "spec_id": "SG-SPEC-0021",
+    "code_surfaces": [],
+    "test_surfaces": [
+      "tests/test_supervisor.py"
+    ],
+    "notes": "Derived metric family boundary is semantic-surface backed by the runtime evidence registry and a live regression anchor. This trace contract intentionally does not claim formula execution, threshold policy, dashboards, storage, or scheduler runtime code."
+  },
+  {
     "spec_id": "SG-SPEC-0025",
     "code_surfaces": [
       "tools/supervisor.py"
