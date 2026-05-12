@@ -2031,6 +2031,65 @@
     "notes": "Non-retry queue-control evidence is registry-backed by SG-SPEC-0037 routing semantics, SG-SPEC-0039 intermediary delegation, SG-SPEC-0034 parent-facing consumption, SG-SPEC-0042 dedupe exclusion, and a live regression anchor. This establishes preempt/proposal handoff traceability without claiming runtime scheduling, governance execution, canonical storage, or dedupe implementation."
   },
   {
+    "spec_id": "SG-SPEC-0038",
+    "evidence_scope": "surface_level",
+    "artifact_refs": [
+      "specs/nodes/SG-SPEC-0038.yaml",
+      "specs/nodes/SG-SPEC-0039.yaml",
+      "specs/nodes/SG-SPEC-0034.yaml",
+      "tests/test_supervisor.py"
+    ],
+    "runtime_entities": [
+      {
+        "entity_id": "specgraph.queue_field_surface_contract",
+        "entity_kind": "surface_shape_contract"
+      },
+      {
+        "entity_id": "specgraph.queue_control_metadata_path",
+        "entity_kind": "artifact_shape_path"
+      },
+      {
+        "entity_id": "specgraph.proposal_refactor_queue_shape",
+        "entity_kind": "derived_queue_artifact_shape"
+      },
+      {
+        "entity_id": "specgraph.surface_only_queue_child",
+        "entity_kind": "nonsemantic_field_owner"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0038.yaml",
+        "pattern": "field_surface_contract"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0038.yaml",
+        "pattern": "artifact_shape_contract"
+      }
+    ],
+    "outcome_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0038.yaml",
+        "pattern": "delegation_scope"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0038.yaml",
+        "pattern": "noncanonical_boundary"
+      }
+    ],
+    "adoption_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0039.yaml",
+        "pattern": "field_surface_and_artifact_shape_contract: SG-SPEC-0038"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0034.yaml",
+        "pattern": "field-surface/artifact-shape contracts to SG-SPEC-0038"
+      }
+    ],
+    "notes": "Queue field-surface evidence is registry-backed by SG-SPEC-0038 shape semantics, SG-SPEC-0039 intermediary delegation, SG-SPEC-0034 parent-facing consumption, and a live regression anchor. This establishes queue-control key placement traceability without claiming value semantics, runtime queue execution, scheduling, canonical writeback, or authority-transition implementation."
+  },
+  {
     "spec_id": "SG-SPEC-0043",
     "evidence_scope": "surface_level",
     "artifact_refs": [
