@@ -1292,6 +1292,64 @@
     "notes": "Edge-kind validation evidence is registry-backed by SG-SPEC-0023 compatibility semantics, SG-SPEC-0001 edge-kind delegation, supervisor dependency/cycle validation helpers, and changed-spec validation regressions. This ties edge validation policy to existing runtime checks without claiming a full standalone edge-validation engine."
   },
   {
+    "spec_id": "SG-SPEC-0024",
+    "evidence_scope": "surface_level",
+    "artifact_refs": [
+      "specs/nodes/SG-SPEC-0024.yaml",
+      "specs/nodes/SG-SPEC-0001.yaml",
+      "tests/test_supervisor.py"
+    ],
+    "runtime_entities": [
+      {
+        "entity_id": "specgraph.provenance_record",
+        "entity_kind": "canonical_metadata_envelope"
+      },
+      {
+        "entity_id": "specgraph.authority_class",
+        "entity_kind": "canonical_origin_classification"
+      },
+      {
+        "entity_id": "specgraph.source_ref",
+        "entity_kind": "deterministic_source_pointer"
+      },
+      {
+        "entity_id": "specgraph.provenance_lineage",
+        "entity_kind": "revision_supersession_context"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0024.yaml",
+        "pattern": "provenance_contract"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0024.yaml",
+        "pattern": "authority_rules"
+      }
+    ],
+    "outcome_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0024.yaml",
+        "pattern": "lineage_rules"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0024.yaml",
+        "pattern": "storage or index implementation"
+      }
+    ],
+    "adoption_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0001.yaml",
+        "pattern": "SG-SPEC-0024 defines a shared provenance envelope contract"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0001.yaml",
+        "pattern": "Canonical provenance envelope and actor-source metadata"
+      }
+    ],
+    "notes": "Canonical provenance-envelope evidence is registry-backed by SG-SPEC-0024 envelope semantics, SG-SPEC-0001 provenance delegation, authority/source-reference rules, and a live regression anchor. This establishes provenance traceability without claiming storage format, signatures, secret management, indexing, audit-log transport, or enforcement runtime."
+  },
+  {
     "spec_id": "SG-SPEC-0025",
     "evidence_scope": "surface_level",
     "artifact_refs": [
