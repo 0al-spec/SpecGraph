@@ -697,6 +697,67 @@
     "notes": "Retrospective application gate evidence is registry-backed by a focused SG-SPEC-0013 regression anchor covering the repository-tracked approved_for_application gate."
   },
   {
+    "spec_id": "SG-SPEC-0014",
+    "evidence_scope": "surface_level",
+    "artifact_refs": [
+      "specs/nodes/SG-SPEC-0014.yaml",
+      "specs/nodes/SG-SPEC-0002.yaml",
+      "specs/nodes/SG-SPEC-0015.yaml",
+      "specs/nodes/SG-SPEC-0055.yaml",
+      "docs/proposals/0036_topology_facts_are_not_spec_prose.md",
+      "tests/test_supervisor.py"
+    ],
+    "runtime_entities": [
+      {
+        "entity_id": "specgraph.edge.refines",
+        "entity_kind": "canonical_spec_relation"
+      },
+      {
+        "entity_id": "specgraph.edge.depends_on",
+        "entity_kind": "canonical_blocking_relation"
+      },
+      {
+        "entity_id": "specgraph.edge.relates_to",
+        "entity_kind": "canonical_context_relation"
+      },
+      {
+        "entity_id": "specgraph.effective_blocking",
+        "entity_kind": "derived_operational_view"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0014.yaml",
+        "pattern": "relation_policy"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0014.yaml",
+        "pattern": "blocking_semantics"
+      }
+    ],
+    "outcome_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0014.yaml",
+        "pattern": "edge_selection_procedure"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0014.yaml",
+        "pattern": "parent_child_edge_rules"
+      }
+    ],
+    "adoption_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0015.yaml",
+        "pattern": "Edge semantics beyond the delegated parent/child use of refines and depends_on"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0055.yaml",
+        "pattern": "Initial edge selection or declared-versus-derived blocking semantics"
+      }
+    ],
+    "notes": "Spec edge semantics evidence is registry-backed by the canonical SG-SPEC-0014 relation policy, parent SG-SPEC-0002 coordination context, downstream delegation/readiness specs that defer edge semantics, and the topology-prose guardrail proposal. This is semantic surface evidence, not proof of a dedicated runtime edge-policy engine."
+  },
+  {
     "spec_id": "SG-SPEC-0025",
     "evidence_scope": "surface_level",
     "artifact_refs": [

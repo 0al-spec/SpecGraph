@@ -92,6 +92,14 @@
     "notes": "Retrospective application gate semantics are anchored by supervisor proposal-lane approval gate runtime code and regression tests that mention SG-SPEC-0013."
   },
   {
+    "spec_id": "SG-SPEC-0014",
+    "code_surfaces": [],
+    "test_surfaces": [
+      "tests/test_supervisor.py"
+    ],
+    "notes": "Spec edge semantics and declared-versus-derived blocking policy are semantic-surface backed by the runtime evidence registry and a live regression anchor. This trace contract intentionally does not claim a dedicated runtime edge-policy engine."
+  },
+  {
     "spec_id": "SG-SPEC-0019",
     "code_surfaces": [
       "tools/supervisor.py"
