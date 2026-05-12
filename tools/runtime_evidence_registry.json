@@ -1055,6 +1055,64 @@
     "notes": "Canonical revision and supersession lineage evidence is registry-backed by SG-SPEC-0019 ontology text, SG-SPEC-0001 supersedes-edge adoption, supervisor active-topology filtering, and historical-descendant graph-health regressions. This ties lineage semantics to existing runtime filtering without claiming a full revision-record storage engine."
   },
   {
+    "spec_id": "SG-SPEC-0020",
+    "evidence_scope": "surface_level",
+    "artifact_refs": [
+      "specs/nodes/SG-SPEC-0020.yaml",
+      "specs/nodes/SG-SPEC-0001.yaml",
+      "tests/test_supervisor.py"
+    ],
+    "runtime_entities": [
+      {
+        "entity_id": "specgraph.code_surface",
+        "entity_kind": "executable_anchor_entity"
+      },
+      {
+        "entity_id": "specgraph.test",
+        "entity_kind": "verification_artifact_entity"
+      },
+      {
+        "entity_id": "specgraph.release",
+        "entity_kind": "release_envelope_entity"
+      },
+      {
+        "entity_id": "specgraph.execution_traceability",
+        "entity_kind": "canonical_trace_link_contract"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0020.yaml",
+        "pattern": "code_surface"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0020.yaml",
+        "pattern": "entity_catalog"
+      }
+    ],
+    "outcome_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0020.yaml",
+        "pattern": "relationship_policy"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0020.yaml",
+        "pattern": "canonical_vs_derived_boundary"
+      }
+    ],
+    "adoption_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0001.yaml",
+        "pattern": "Detailed executable-layer traceability semantics"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0001.yaml",
+        "pattern": "kind: tested_by"
+      }
+    ],
+    "notes": "Executable-layer traceability evidence is registry-backed by SG-SPEC-0020 ontology boundary text, SG-SPEC-0001 executable-layer seed adoption, and a live regression anchor. This establishes code_surface/test/release traceability without claiming repository scanning, CI, build, deployment, or runtime implementation."
+  },
+  {
     "spec_id": "SG-SPEC-0025",
     "evidence_scope": "surface_level",
     "artifact_refs": [
