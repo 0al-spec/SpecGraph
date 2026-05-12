@@ -877,6 +877,65 @@
     "notes": "Linked readiness evidence is registry-backed by SG-SPEC-0016 overview policy text, SG-SPEC-0002 parent delegation, SG-SPEC-0055 detailed readiness evidence policy, and a live regression anchor. This links semantic readiness governance to its delegated evidence contract without claiming a dedicated transition runtime engine."
   },
   {
+    "spec_id": "SG-SPEC-0017",
+    "evidence_scope": "surface_level",
+    "artifact_refs": [
+      "specs/nodes/SG-SPEC-0017.yaml",
+      "specs/nodes/SG-SPEC-0001.yaml",
+      "specs/nodes/SG-SPEC-0003.yaml",
+      "tests/test_supervisor.py"
+    ],
+    "runtime_entities": [
+      {
+        "entity_id": "specgraph.runtime_observability_entity",
+        "entity_kind": "ontology_boundary"
+      },
+      {
+        "entity_id": "specgraph.ObservabilityContract",
+        "entity_kind": "evidence_obligation_entity"
+      },
+      {
+        "entity_id": "specgraph.Campaign",
+        "entity_kind": "observation_context_entity"
+      },
+      {
+        "entity_id": "specgraph.Attestation",
+        "entity_kind": "evidence_claim_entity"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0017.yaml",
+        "pattern": "runtime_observability_entity"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0017.yaml",
+        "pattern": "entity_catalog"
+      }
+    ],
+    "outcome_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0017.yaml",
+        "pattern": "canonical_vs_derived_boundary"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0017.yaml",
+        "pattern": "evidence_boundary_policy"
+      }
+    ],
+    "adoption_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0001.yaml",
+        "pattern": "Runtime observability entities"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0003.yaml",
+        "pattern": "graph_health_observation"
+      }
+    ],
+    "notes": "Runtime observability entity evidence is registry-backed by SG-SPEC-0017 ontology boundary text, SG-SPEC-0001 root delegation, SG-SPEC-0003 graph-health derived-boundary semantics, and a live regression anchor. This establishes observability-entity traceability without claiming telemetry collection or storage implementation."
+  },
+  {
     "spec_id": "SG-SPEC-0025",
     "evidence_scope": "surface_level",
     "artifact_refs": [
