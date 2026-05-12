@@ -166,6 +166,16 @@
     "notes": "Node maturity semantics are semantic-surface backed by the runtime evidence registry and a live regression anchor. This trace contract intentionally does not claim scoring formulas, threshold gates, dashboard behavior, or scheduler runtime code."
   },
   {
+    "spec_id": "SG-SPEC-0023",
+    "code_surfaces": [
+      "tools/supervisor.py"
+    ],
+    "test_surfaces": [
+      "tests/test_supervisor.py"
+    ],
+    "notes": "Edge-kind validation semantics are anchored by supervisor dependency, cycle, and changed-spec validation helpers plus regression tests that exercise edge-overlap and readiness behavior."
+  },
+  {
     "spec_id": "SG-SPEC-0025",
     "code_surfaces": [
       "tools/supervisor.py"

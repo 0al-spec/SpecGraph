@@ -1233,6 +1233,65 @@
     "notes": "Node maturity evidence is registry-backed by SG-SPEC-0022 maturity semantics, SG-SPEC-0001 lifecycle/maturity delegation, SG-SPEC-0003 stalled-maturity signal context, SG-SPEC-0021 metric-family boundary context, and a live regression anchor. This establishes maturity traceability without claiming scoring formulas, threshold gates, dashboards, or scheduler implementation."
   },
   {
+    "spec_id": "SG-SPEC-0023",
+    "evidence_scope": "surface_level",
+    "artifact_refs": [
+      "specs/nodes/SG-SPEC-0023.yaml",
+      "specs/nodes/SG-SPEC-0001.yaml",
+      "tools/supervisor.py",
+      "tests/test_supervisor.py"
+    ],
+    "runtime_entities": [
+      {
+        "entity_id": "supervisor.validate_changed_spec_nodes",
+        "entity_kind": "changed_spec_edge_validator"
+      },
+      {
+        "entity_id": "supervisor.detect_cycles",
+        "entity_kind": "depends_on_cycle_detector"
+      },
+      {
+        "entity_id": "supervisor.semantic_dependencies_resolved",
+        "entity_kind": "semantic_dependency_readiness_check"
+      },
+      {
+        "entity_id": "supervisor.work_dependencies_ready",
+        "entity_kind": "work_dependency_readiness_check"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0023.yaml",
+        "pattern": "edge_contract"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0023.yaml",
+        "pattern": "compatibility_matrix"
+      }
+    ],
+    "outcome_markers": [
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def detect_cycles"
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "test_validate_changed_spec_nodes_rejects_relates_to_overlap_with_refines"
+      }
+    ],
+    "adoption_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0001.yaml",
+        "pattern": "machine-checkable compatibility matrix"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0023.yaml",
+        "pattern": "blocking_kinds"
+      }
+    ],
+    "notes": "Edge-kind validation evidence is registry-backed by SG-SPEC-0023 compatibility semantics, SG-SPEC-0001 edge-kind delegation, supervisor dependency/cycle validation helpers, and changed-spec validation regressions. This ties edge validation policy to existing runtime checks without claiming a full standalone edge-validation engine."
+  },
+  {
     "spec_id": "SG-SPEC-0025",
     "evidence_scope": "surface_level",
     "artifact_refs": [
