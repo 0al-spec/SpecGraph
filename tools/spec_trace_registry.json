@@ -30,6 +30,14 @@
     "notes": "Tracked proposal lane semantics are anchored by supervisor proposal-lane synchronization runtime code and overlay regression tests that mention SG-SPEC-0006."
   },
   {
+    "spec_id": "SG-SPEC-0007",
+    "code_surfaces": [],
+    "test_surfaces": [
+      "tests/test_supervisor.py"
+    ],
+    "notes": "Intent mediation and discovery boundary semantics are semantic-surface backed by the runtime evidence registry and a live regression anchor. This trace contract intentionally does not claim executor-code embodiment."
+  },
+  {
     "spec_id": "SG-SPEC-0013",
     "code_surfaces": [
       "tools/supervisor.py"

@@ -311,6 +311,57 @@
     "notes": "Proposal-lane evidence is registry-backed by a focused SG-SPEC-0006 regression anchor covering repository-tracked proposal nodes and queryable overlay state."
   },
   {
+    "spec_id": "SG-SPEC-0007",
+    "evidence_scope": "surface_level",
+    "artifact_refs": [
+      "specs/nodes/SG-SPEC-0007.yaml",
+      "specs/nodes/SG-SPEC-0008.yaml",
+      "specs/nodes/SG-SPEC-0050.yaml",
+      "docs/proposals/0011_pre_spec_semantic_layer.md"
+    ],
+    "runtime_entities": [
+      {
+        "entity_id": "specgraph.intent_mediation_boundary",
+        "entity_kind": "canonical_intake_boundary"
+      },
+      {
+        "entity_id": "specgraph.mediated_discovery_flow",
+        "entity_kind": "pre_canonical_flow_contract"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0007.yaml",
+        "pattern": "boundary_policy"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0007.yaml",
+        "pattern": "discovery_flow"
+      }
+    ],
+    "outcome_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0007.yaml",
+        "pattern": "traceability_policy"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0007.yaml",
+        "pattern": "canonicalization_boundary"
+      }
+    ],
+    "adoption_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0007.yaml",
+        "pattern": "SG-SPEC-0008"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0007.yaml",
+        "pattern": "SG-SPEC-0050"
+      }
+    ],
+    "notes": "Intent mediation evidence is registry-backed by the canonical SG-SPEC-0007 boundary contract, the pre-spec semantic proposal, and delegated child surfaces for project-memory consultation and first-class pre-spec semantic kinds. This is semantic surface evidence, not raw runtime telemetry."
+  },
+  {
     "spec_id": "SG-SPEC-0013",
     "evidence_scope": "surface_level",
     "artifact_refs": [
