@@ -158,6 +158,14 @@
     "notes": "Derived metric family boundary is semantic-surface backed by the runtime evidence registry and a live regression anchor. This trace contract intentionally does not claim formula execution, threshold policy, dashboards, storage, or scheduler runtime code."
   },
   {
+    "spec_id": "SG-SPEC-0022",
+    "code_surfaces": [],
+    "test_surfaces": [
+      "tests/test_supervisor.py"
+    ],
+    "notes": "Node maturity semantics are semantic-surface backed by the runtime evidence registry and a live regression anchor. This trace contract intentionally does not claim scoring formulas, threshold gates, dashboard behavior, or scheduler runtime code."
+  },
+  {
     "spec_id": "SG-SPEC-0025",
     "code_surfaces": [
       "tools/supervisor.py"
