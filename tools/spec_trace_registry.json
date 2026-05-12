@@ -116,6 +116,14 @@
     "notes": "Linked readiness and evidence policy is semantic-surface backed by the runtime evidence registry and a live regression anchor. This trace contract intentionally does not claim a dedicated readiness-transition runtime engine."
   },
   {
+    "spec_id": "SG-SPEC-0017",
+    "code_surfaces": [],
+    "test_surfaces": [
+      "tests/test_supervisor.py"
+    ],
+    "notes": "Runtime observability entity boundary is semantic-surface backed by the runtime evidence registry and a live regression anchor. This trace contract intentionally does not claim telemetry collection, storage, or instrumentation runtime code."
+  },
+  {
     "spec_id": "SG-SPEC-0019",
     "code_surfaces": [
       "tools/supervisor.py"
