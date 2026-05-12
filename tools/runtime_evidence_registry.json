@@ -1173,6 +1173,66 @@
     "notes": "Derived metric family evidence is registry-backed by SG-SPEC-0021 ontology boundary text, SG-SPEC-0001 metric-family delegation, SG-SPEC-0003 derived-metric boundary context, SG-SPEC-0017 runtime-observability input context, and a live regression anchor. This establishes metric-family traceability without claiming formula execution, threshold enforcement, dashboards, storage, or scheduler implementation."
   },
   {
+    "spec_id": "SG-SPEC-0022",
+    "evidence_scope": "surface_level",
+    "artifact_refs": [
+      "specs/nodes/SG-SPEC-0022.yaml",
+      "specs/nodes/SG-SPEC-0001.yaml",
+      "specs/nodes/SG-SPEC-0003.yaml",
+      "specs/nodes/SG-SPEC-0021.yaml",
+      "tests/test_supervisor.py"
+    ],
+    "runtime_entities": [
+      {
+        "entity_id": "specgraph.node_maturity",
+        "entity_kind": "canonical_diagnostic_signal"
+      },
+      {
+        "entity_id": "specgraph.maturity_assessment",
+        "entity_kind": "governed_maturity_record"
+      },
+      {
+        "entity_id": "specgraph.estimated_maturity_assessment",
+        "entity_kind": "derived_maturity_estimate"
+      },
+      {
+        "entity_id": "specgraph.maturity_trend_artifact",
+        "entity_kind": "derived_maturity_projection"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0022.yaml",
+        "pattern": "node_maturity"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0022.yaml",
+        "pattern": "maturity_contract"
+      }
+    ],
+    "outcome_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0022.yaml",
+        "pattern": "lifecycle_interaction"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0022.yaml",
+        "pattern": "canonical_vs_derived_boundary"
+      }
+    ],
+    "adoption_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0001.yaml",
+        "pattern": "Detailed node maturity semantics and maturity-to-lifecycle interaction"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0003.yaml",
+        "pattern": "stalled_maturity_candidate"
+      }
+    ],
+    "notes": "Node maturity evidence is registry-backed by SG-SPEC-0022 maturity semantics, SG-SPEC-0001 lifecycle/maturity delegation, SG-SPEC-0003 stalled-maturity signal context, SG-SPEC-0021 metric-family boundary context, and a live regression anchor. This establishes maturity traceability without claiming scoring formulas, threshold gates, dashboards, or scheduler implementation."
+  },
+  {
     "spec_id": "SG-SPEC-0025",
     "evidence_scope": "surface_level",
     "artifact_refs": [
