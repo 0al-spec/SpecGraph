@@ -2151,6 +2151,67 @@
     "notes": "Non-retry queue-control cluster evidence is registry-backed by SG-SPEC-0039 intermediary semantics, SG-SPEC-0034 parent-facing consumption, delegated SG-SPEC-0037/0038/0040 child contracts, and a live regression anchor. This establishes cluster traceability without claiming concrete field semantics, artifact-shape execution, first-persistence implementation, scheduler, or canonical writeback."
   },
   {
+    "spec_id": "SG-SPEC-0040",
+    "evidence_scope": "surface_level",
+    "artifact_refs": [
+      "specs/nodes/SG-SPEC-0040.yaml",
+      "specs/nodes/SG-SPEC-0039.yaml",
+      "specs/nodes/SG-SPEC-0034.yaml",
+      "specs/nodes/SG-SPEC-0037.yaml",
+      "specs/nodes/SG-SPEC-0038.yaml",
+      "tests/test_supervisor.py"
+    ],
+    "runtime_entities": [
+      {
+        "entity_id": "specgraph.non_retry_first_persistence_boundary",
+        "entity_kind": "first_persistence_boundary"
+      },
+      {
+        "entity_id": "specgraph.noncanonical_queue_consumption_boundary",
+        "entity_kind": "consumer_boundary_contract"
+      },
+      {
+        "entity_id": "specgraph.queue_control_consumer_rule",
+        "entity_kind": "non_bypass_consumption_rule"
+      },
+      {
+        "entity_id": "specgraph.queue_control_chain_constraint",
+        "entity_kind": "parent_facing_chain_constraint"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0040.yaml",
+        "pattern": "first_persistence_contract"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0040.yaml",
+        "pattern": "consumer_boundary"
+      }
+    ],
+    "outcome_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0040.yaml",
+        "pattern": "consumer_rule"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0040.yaml",
+        "pattern": "consumer_chain"
+      }
+    ],
+    "adoption_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0039.yaml",
+        "pattern": "first_persistence_and_consumption_contract: SG-SPEC-0040"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0039.yaml",
+        "pattern": "SG-SPEC-0040 owns the first-persistence and noncanonical-consumption boundary"
+      }
+    ],
+    "notes": "Non-retry first-persistence and consumption-boundary evidence is registry-backed by SG-SPEC-0040 first-persistence semantics, SG-SPEC-0039 intermediary delegation, SG-SPEC-0034 parent-facing consumption, SG-SPEC-0037/0038 non-consumer constraints, and a live regression anchor. This establishes noncanonical consumption-chain traceability without claiming field value semantics, artifact-shape execution, runtime queue scheduling, canonical writeback, or authority-transition implementation."
+  },
+  {
     "spec_id": "SG-SPEC-0043",
     "evidence_scope": "surface_level",
     "artifact_refs": [
