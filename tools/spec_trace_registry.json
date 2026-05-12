@@ -38,6 +38,16 @@
     "notes": "Intent mediation and discovery boundary semantics are semantic-surface backed by the runtime evidence registry and a live regression anchor. This trace contract intentionally does not claim executor-code embodiment."
   },
   {
+    "spec_id": "SG-SPEC-0008",
+    "code_surfaces": [
+      "tools/supervisor.py"
+    ],
+    "test_surfaces": [
+      "tests/test_supervisor.py"
+    ],
+    "notes": "Explicit project-memory consultation semantics are anchored by a supervisor trace anchor and regression tests for the conversation-memory derived surfaces. Policy and viewer contract files remain evidence artifacts, not trace-collected code refs."
+  },
+  {
     "spec_id": "SG-SPEC-0013",
     "code_surfaces": [
       "tools/supervisor.py"

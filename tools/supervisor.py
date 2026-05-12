@@ -11978,6 +11978,7 @@ def build_conversation_memory_index(
     *,
     include_storage: bool = True,
 ) -> dict[str, Any]:
+    # Trace anchor: SG-SPEC-0008 governs explicit project-memory consultation surfaces.
     active_policy = copy.deepcopy(policy or CONVERSATION_MEMORY_POLICY)
     policy_reference = (
         conversation_memory_policy_reference()

@@ -362,6 +362,63 @@
     "notes": "Intent mediation evidence is registry-backed by the canonical SG-SPEC-0007 boundary contract, the pre-spec semantic proposal, and delegated child surfaces for project-memory consultation and first-class pre-spec semantic kinds. This is semantic surface evidence, not raw runtime telemetry."
   },
   {
+    "spec_id": "SG-SPEC-0008",
+    "evidence_scope": "surface_level",
+    "artifact_refs": [
+      "specs/nodes/SG-SPEC-0008.yaml",
+      "tools/conversation_memory_policy.json",
+      "tools/supervisor.py",
+      "docs/conversation_memory_viewer_contract.md",
+      "tests/test_supervisor.py",
+      "docs/proposals/0045_conversation_memory_exploration_vault.md"
+    ],
+    "runtime_entities": [
+      {
+        "entity_id": "supervisor.conversation_memory_index",
+        "entity_kind": "derived_memory_index"
+      },
+      {
+        "entity_id": "supervisor.conversation_memory_map",
+        "entity_kind": "derived_exploration_map"
+      },
+      {
+        "entity_id": "supervisor.conversation_memory_promotion_pressure",
+        "entity_kind": "review_pressure_queue"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "tools/conversation_memory_policy.json",
+        "pattern": "pageindex_conversation"
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "test_conversation_memory_policy_declares_noncanonical_boundary"
+      }
+    ],
+    "outcome_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "test_build_conversation_memory_index_reads_storage_sources_and_notes"
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "test_build_conversation_memory_promotion_pressure_groups_candidates"
+      }
+    ],
+    "adoption_markers": [
+      {
+        "path": "docs/conversation_memory_viewer_contract.md",
+        "pattern": "structured exploration memory, not canonical"
+      },
+      {
+        "path": "docs/proposals/0045_conversation_memory_exploration_vault.md",
+        "pattern": "SG-SPEC-0008` defines explicit project-memory consultation"
+      }
+    ],
+    "notes": "Project-memory consultation evidence is registry-backed by the conversation-memory policy, derived index/map/promotion-pressure surfaces, viewer contract guardrails, and regression tests. This keeps PageIndex-backed recall and other project memory as declared pre-canonical context rather than implicit canonical authority."
+  },
+  {
     "spec_id": "SG-SPEC-0013",
     "evidence_scope": "surface_level",
     "artifact_refs": [
