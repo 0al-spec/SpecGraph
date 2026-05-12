@@ -331,6 +331,14 @@
     "notes": "Non-retry queue-control first-persistence and consumption-boundary semantics are semantic-surface backed by the runtime evidence registry and a live regression anchor. This trace contract intentionally does not claim concrete field semantics, artifact-shape execution, runtime queue scheduling, canonical writeback, or authority-transition code."
   },
   {
+    "spec_id": "SG-SPEC-0041",
+    "code_surfaces": [],
+    "test_surfaces": [
+      "tests/test_supervisor.py"
+    ],
+    "notes": "Retry-condition and active-item precedence gateway semantics are semantic-surface backed by the runtime evidence registry and a live regression anchor. This trace contract intentionally does not claim queue engine behavior, persistence implementation, concrete retry execution, active-item scheduling formulas, or authority-transition code."
+  },
+  {
     "spec_id": "SG-SPEC-0043",
     "code_surfaces": [
       "tools/supervisor.py"
