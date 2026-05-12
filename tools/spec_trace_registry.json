@@ -40,15 +40,12 @@
   {
     "spec_id": "SG-SPEC-0008",
     "code_surfaces": [
-      "tools/conversation_memory_policy.json",
-      "tools/supervisor.py",
-      "docs/conversation_memory_viewer_contract.md",
-      "docs/proposals/0045_conversation_memory_exploration_vault.md"
+      "tools/supervisor.py"
     ],
     "test_surfaces": [
       "tests/test_supervisor.py"
     ],
-    "notes": "Explicit project-memory consultation semantics are anchored by the conversation-memory policy, read-only derived artifact builders, viewer contract, and regression tests that keep recalled conversation context pre-canonical and review-gated."
+    "notes": "Explicit project-memory consultation semantics are anchored by a supervisor trace anchor and regression tests for the conversation-memory derived surfaces. Policy and viewer contract files remain evidence artifacts, not trace-collected code refs."
   },
   {
     "spec_id": "SG-SPEC-0013",
