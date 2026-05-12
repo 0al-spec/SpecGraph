@@ -176,6 +176,14 @@
     "notes": "Edge-kind validation semantics are anchored by supervisor dependency, cycle, and changed-spec validation helpers plus regression tests that exercise edge-overlap and readiness behavior."
   },
   {
+    "spec_id": "SG-SPEC-0024",
+    "code_surfaces": [],
+    "test_surfaces": [
+      "tests/test_supervisor.py"
+    ],
+    "notes": "Canonical provenance envelope semantics are semantic-surface backed by the runtime evidence registry and a live regression anchor. This trace contract intentionally does not claim storage, signature, index, audit-log, or provenance-enforcement runtime code."
+  },
+  {
     "spec_id": "SG-SPEC-0025",
     "code_surfaces": [
       "tools/supervisor.py"
