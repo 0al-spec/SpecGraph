@@ -275,6 +275,14 @@
     "notes": "Deterministic continuation candidate selection is anchored by linked-continuation derivation that admits only canonical frontier facts and treats proposal/task/runtime surfaces as non-deriving review context."
   },
   {
+    "spec_id": "SG-SPEC-0034",
+    "code_surfaces": [],
+    "test_surfaces": [
+      "tests/test_supervisor.py"
+    ],
+    "notes": "Proposal/refactor queue parent-contract semantics are semantic-surface backed by the runtime evidence registry and a live regression anchor. Concrete queue behavior remains delegated to SG-SPEC-0039 and SG-SPEC-0041, while runtime queue functions remain evidence markers rather than a dedicated SG-SPEC-0034 code embodiment."
+  },
+  {
     "spec_id": "SG-SPEC-0043",
     "code_surfaces": [
       "tools/supervisor.py"
