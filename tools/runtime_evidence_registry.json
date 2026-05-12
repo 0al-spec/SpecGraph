@@ -586,6 +586,67 @@
     "notes": "Bootstrap relation vocabulary evidence is registry-backed by the canonical SG-SPEC-0011 relation catalog and its declared parent/downstream adjacency. This is semantic surface evidence for first relation binding, not proof of a dedicated runtime relation engine."
   },
   {
+    "spec_id": "SG-SPEC-0012",
+    "evidence_scope": "surface_level",
+    "artifact_refs": [
+      "specs/nodes/SG-SPEC-0012.yaml",
+      "specs/nodes/SG-SPEC-0008.yaml",
+      "specs/nodes/SG-SPEC-0009.yaml",
+      "specs/nodes/SG-SPEC-0010.yaml",
+      "specs/nodes/SG-SPEC-0011.yaml",
+      "tests/test_supervisor.py"
+    ],
+    "runtime_entities": [
+      {
+        "entity_id": "specgraph.context_pack",
+        "entity_kind": "run_scoped_context_contract"
+      },
+      {
+        "entity_id": "specgraph.ambient_vocabulary_resolution",
+        "entity_kind": "vocabulary_grounding_contract"
+      },
+      {
+        "entity_id": "specgraph.duplicate_avoidance_signal",
+        "entity_kind": "context_pack_guidance"
+      },
+      {
+        "entity_id": "specgraph.source_attributed_context",
+        "entity_kind": "traceability_contract"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0012.yaml",
+        "pattern": "context_pack"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0012.yaml",
+        "pattern": "canonical_graph_vocabulary"
+      }
+    ],
+    "outcome_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0012.yaml",
+        "pattern": "duplicate_avoidance_guidance"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0012.yaml",
+        "pattern": "source_attribution"
+      }
+    ],
+    "adoption_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0009.yaml",
+        "pattern": "SG-SPEC-0012 isolates the run-scoped context_pack concern"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0012.yaml",
+        "pattern": "SG-SPEC-0010 and SG-SPEC-0011 remain the adjacent vocabulary-layer sources"
+      }
+    ],
+    "notes": "OperatorRequest context-pack evidence is registry-backed by the canonical SG-SPEC-0012 contract and its parent/adjacent spec surfaces. This is semantic surface evidence for one-run ambient context guidance, not proof of a dedicated runtime context-pack resolver."
+  },
+  {
     "spec_id": "SG-SPEC-0013",
     "evidence_scope": "surface_level",
     "artifact_refs": [
