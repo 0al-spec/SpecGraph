@@ -419,6 +419,63 @@
     "notes": "Project-memory consultation evidence is registry-backed by the conversation-memory policy, derived index/map/promotion-pressure surfaces, viewer contract guardrails, and regression tests. This keeps PageIndex-backed recall and other project memory as declared pre-canonical context rather than implicit canonical authority."
   },
   {
+    "spec_id": "SG-SPEC-0009",
+    "evidence_scope": "surface_level",
+    "artifact_refs": [
+      "specs/nodes/SG-SPEC-0009.yaml",
+      "tools/operator_request_bridge_policy.json",
+      "tools/supervisor.py",
+      "tools/specgraph_vocabulary.json",
+      "docs/supervisor_manual.md",
+      "tests/test_supervisor.py"
+    ],
+    "runtime_entities": [
+      {
+        "entity_id": "supervisor.normalize_operator_request_packet",
+        "entity_kind": "request_normalizer"
+      },
+      {
+        "entity_id": "supervisor.sync_intent_layer_from_operator_request",
+        "entity_kind": "pre_execution_sync"
+      },
+      {
+        "entity_id": "supervisor.record_operator_request_execution",
+        "entity_kind": "execution_record_writer"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "tools/operator_request_bridge_policy.json",
+        "pattern": "operator_request_packet"
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "test_normalize_operator_request_packet_builds_typed_execution_contract"
+      }
+    ],
+    "outcome_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "test_main_routes_operator_request_packet_to_targeted_refinement"
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "test_main_routes_operator_request_packet_to_split_proposal"
+      }
+    ],
+    "adoption_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "test_record_operator_request_execution_marks_proposal_linked"
+      },
+      {
+        "path": "docs/supervisor_manual.md",
+        "pattern": "--operator-request-packet"
+      }
+    ],
+    "notes": "OperatorRequest evidence is registry-backed by the policy contract, packet normalization, pre-spec intent-layer sync, single-run routing, proposal-link recording, and operator manual coverage. It demonstrates one-run steering without granting canonical authority to the request itself."
+  },
+  {
     "spec_id": "SG-SPEC-0013",
     "evidence_scope": "surface_level",
     "artifact_refs": [
