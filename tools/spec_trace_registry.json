@@ -59,15 +59,11 @@
   },
   {
     "spec_id": "SG-SPEC-0010",
-    "code_surfaces": [
-      "specs/nodes/SG-SPEC-0010.yaml",
-      "docs/proposals/0001_vocabulary.md",
-      "specs/nodes/SG-SPEC-0011.yaml"
-    ],
+    "code_surfaces": [],
     "test_surfaces": [
       "tests/test_supervisor.py"
     ],
-    "notes": "Ubiquitous vocabulary meta-ontology primitives are currently semantic-surface backed by the parent primitive contract, the vocabulary proposal, and delegated SG-SPEC-0011 relation binding slice. This does not claim that the runtime vocabulary projection fully implements the universal meta-ontology."
+    "notes": "Ubiquitous vocabulary meta-ontology primitives are semantic-surface backed by the runtime evidence registry and a live regression anchor. This trace contract intentionally does not claim executor-code embodiment or a completed runtime universal meta-ontology."
   },
   {
     "spec_id": "SG-SPEC-0013",
