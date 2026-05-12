@@ -10405,6 +10405,7 @@ def normalize_operator_request_packet(
     *,
     specs: list[SpecNode],
 ) -> tuple[dict[str, Any] | None, list[str]]:
+    # Trace anchor: SG-SPEC-0009 governs single-run OperatorRequest steering.
     packet, error = load_json_object_report(path, artifact_kind="operator request packet")
     if packet is None:
         return None, [error]

@@ -8324,6 +8324,12 @@ def test_live_sg_spec_0009_evidence_contract_is_chain_complete(
     by_id = {entry["spec_id"]: entry for entry in index["entries"]}
 
     assert trace_by_id["SG-SPEC-0009"]["trace_contract"]["source"] == "registry"
+    assert trace_by_id["SG-SPEC-0009"]["trace_contract"]["matched_code_paths"] == [
+        "tools/supervisor.py"
+    ]
+    assert trace_by_id["SG-SPEC-0009"]["trace_contract"]["matched_test_paths"] == [
+        "tests/test_supervisor.py"
+    ]
     assert by_id["SG-SPEC-0009"]["evidence_contract"]["source"] == "runtime_evidence_registry"
     assert by_id["SG-SPEC-0009"]["artifact_stage"]["status"] == "linked"
     assert by_id["SG-SPEC-0009"]["chain_status"] == "chain_complete"
