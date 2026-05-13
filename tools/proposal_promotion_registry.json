@@ -39,6 +39,19 @@
     ]
   },
   {
+    "proposal_id": "0004",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0004_evaluator_loop.md"
+    ],
+    "motivating_concern": "metric-guided evaluator loop for bounded graph improvement",
+    "normalized_title": "Evaluator Loop for Metric-Guided SpecGraph Improvement",
+    "bounded_scope": "Define an observe-assess-act evaluator loop for selecting bounded supervisor interventions and stop conditions without finalizing metric formulas, orchestration implementation, or autonomous main writes.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
+  },
+  {
     "proposal_id": "0018",
     "source_artifact_class": "working_draft",
     "source_refs": [
