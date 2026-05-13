@@ -3118,7 +3118,7 @@
       },
       {
         "entity_id": "specgraph.sg_spec_0056_inactive_child_rule",
-        "entity_kind": "historical_inactive_child_rule"
+        "entity_kind": "active_subtree_exclusion_rule"
       },
       {
         "entity_id": "specgraph.sg_spec_0040_active_successor_boundary",
@@ -3156,14 +3156,14 @@
       },
       {
         "path": "specs/nodes/SG-SPEC-0039.yaml",
-        "pattern": "SG-SPEC-0056 will be retained only as historical lineage"
+        "pattern": "SG-SPEC-0040 owns the first-persistence and noncanonical-consumption boundary"
       },
       {
         "path": "specs/nodes/SG-SPEC-0054.yaml",
         "pattern": "lineage_basis = superseded_lineage"
       }
     ],
-    "notes": "Historical non-retry consumer-chain evidence is registry-backed by SG-SPEC-0056 superseded-lineage semantics, SG-SPEC-0040 active successor ownership, SG-SPEC-0039 lineage notes, and SG-SPEC-0054 historical-presence grounding. This preserves SG-SPEC-0056 as inspectable lineage only and does not claim active readiness topology, concrete non-retry routing behavior, queue scheduling, or canonical writeback."
+    "notes": "Historical non-retry consumer-chain evidence is registry-backed by SG-SPEC-0056 superseded-lineage semantics, SG-SPEC-0040 active successor ownership, SG-SPEC-0039 active delegation, and SG-SPEC-0054 historical-presence grounding. This preserves SG-SPEC-0056 as inspectable lineage only and does not claim active readiness topology, concrete non-retry routing behavior, queue scheduling, or canonical writeback."
   },
   {
     "spec_id": "SG-SPEC-0058",
