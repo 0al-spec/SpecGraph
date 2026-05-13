@@ -377,6 +377,14 @@
     "notes": "Proposal/split gateway entry is anchored by graph-next-moves ranking that preserves explicit split-readiness boundary review actions ahead of tracked proposal-lane availability for the same subject."
   },
   {
+    "spec_id": "SG-SPEC-0046",
+    "code_surfaces": [],
+    "test_surfaces": [
+      "tests/test_supervisor.py"
+    ],
+    "notes": "Historical upstream parent-path lineage semantics are semantic-surface backed by the runtime evidence registry and a live regression anchor. This trace contract intentionally preserves SG-SPEC-0046 as superseded lineage only and does not claim active subtree role, runtime-observable invariant, decomposition authority, or proposal/split mechanics implementation."
+  },
+  {
     "spec_id": "SG-SPEC-0049",
     "code_surfaces": [
       "tools/supervisor.py"
