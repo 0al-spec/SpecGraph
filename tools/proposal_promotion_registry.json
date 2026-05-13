@@ -104,6 +104,19 @@
     ]
   },
   {
+    "proposal_id": "0009",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0009_graph_to_techspec_handoff.md"
+    ],
+    "motivating_concern": "lower boundary between graph specs and implementation-facing tech specs",
+    "normalized_title": "SpecGraph-to-TechSpec Handoff Boundary",
+    "bounded_scope": "Define the lower boundary where graph-layer refinement should stop and hand off to implementation-facing Tech Specs without finalizing the Tech Spec schema or automatic conversion workflow.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
+  },
+  {
     "proposal_id": "0018",
     "source_artifact_class": "working_draft",
     "source_refs": [
