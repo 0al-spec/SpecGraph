@@ -22780,6 +22780,7 @@ def test_build_proposal_promotion_index_reports_traceability_gaps(
         ("0021", ["docs/archive/proposal_sources/0021_deterministic_transition_checks.md"]),
         ("0023", ["docs/archive/proposal_sources/0023_reflective_runtime_coevolution.md"]),
         ("0024", ["docs/archive/proposal_sources/0024_external_consumer_metrics_bridge.md"]),
+        ("0025", ["docs/archive/proposal_sources/0025_metrics_bridge_overlays.md"]),
     ],
 )
 def test_live_proposal_promotion_trace_is_bounded(
