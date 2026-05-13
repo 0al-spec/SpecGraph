@@ -393,6 +393,14 @@
     "notes": "Historical gateway segment lineage semantics are semantic-surface backed by the runtime evidence registry and a live regression anchor. This trace contract intentionally preserves SG-SPEC-0047 as superseded lineage only and does not claim active subtree role, runtime-observable invariant, decomposition authority, or proposal/split mechanics implementation."
   },
   {
+    "spec_id": "SG-SPEC-0048",
+    "code_surfaces": [],
+    "test_surfaces": [
+      "tests/test_supervisor.py"
+    ],
+    "notes": "Historical gateway edge lineage semantics are semantic-surface backed by the runtime evidence registry and a live regression anchor. This trace contract intentionally preserves SG-SPEC-0048 as superseded lineage only and does not claim active subtree role, runtime-observable invariant, decomposition authority, or proposal/split mechanics implementation."
+  },
+  {
     "spec_id": "SG-SPEC-0049",
     "code_surfaces": [
       "tools/supervisor.py"
