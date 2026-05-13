@@ -3166,6 +3166,74 @@
     "notes": "Historical non-retry consumer-chain evidence is registry-backed by SG-SPEC-0056 superseded-lineage semantics, SG-SPEC-0040 active successor ownership, SG-SPEC-0039 active delegation, and SG-SPEC-0054 historical-presence grounding. This preserves SG-SPEC-0056 as inspectable lineage only and does not claim active readiness topology, concrete non-retry routing behavior, queue scheduling, or canonical writeback."
   },
   {
+    "spec_id": "SG-SPEC-0057",
+    "evidence_scope": "surface_level",
+    "artifact_refs": [
+      "specs/nodes/SG-SPEC-0057.yaml",
+      "specs/nodes/SG-SPEC-0001.yaml",
+      "specs/nodes/SG-SPEC-0024.yaml",
+      "specs/nodes/SG-SPEC-0019.yaml",
+      "tests/test_supervisor.py"
+    ],
+    "runtime_entities": [
+      {
+        "entity_id": "specgraph.authority_class_semantic_contract",
+        "entity_kind": "authority_class_boundary"
+      },
+      {
+        "entity_id": "specgraph.authority_class_catalog",
+        "entity_kind": "origin_class_catalog"
+      },
+      {
+        "entity_id": "specgraph.authority_class_selection_rules",
+        "entity_kind": "mixed_origin_selection_contract"
+      },
+      {
+        "entity_id": "specgraph.authority_class_lineage_boundary",
+        "entity_kind": "revision_supersession_boundary"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0057.yaml",
+        "pattern": "authority_class_contract"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0057.yaml",
+        "pattern": "class_catalog"
+      }
+    ],
+    "outcome_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0057.yaml",
+        "pattern": "selection_rules"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0057.yaml",
+        "pattern": "preservation_boundary_rules"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0057.yaml",
+        "pattern": "canonical_vs_derived_boundary"
+      }
+    ],
+    "adoption_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0001.yaml",
+        "pattern": "SG-SPEC-0057 now owns the detailed semantic contract"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0024.yaml",
+        "pattern": "provenance.authority_class"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0019.yaml",
+        "pattern": "authority_class, provenance"
+      }
+    ],
+    "notes": "Authority-class semantic-boundary evidence is registry-backed by SG-SPEC-0057 class catalog, mixed-origin selection rules, preservation boundaries, lineage interaction, SG-SPEC-0001 delegation, SG-SPEC-0024 provenance envelope usage, and SG-SPEC-0019 revision/supersession grounding. This establishes inspectable authority-class semantics without claiming storage layout, trust scoring, review-policy enforcement, viewer badging, or runtime implementation."
+  },
+  {
     "spec_id": "SG-SPEC-0058",
     "evidence_scope": "surface_level",
     "artifact_refs": [

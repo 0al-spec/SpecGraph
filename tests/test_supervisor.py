@@ -9020,134 +9020,108 @@ def test_live_sg_spec_0048_evidence_contract_is_chain_complete(
     }
 
 
-def test_live_sg_spec_0052_evidence_contract_is_chain_complete(
+@pytest.mark.parametrize(
+    (
+        "spec_id",
+        "matched_code_paths",
+        "expected_summary",
+    ),
+    [
+        (
+            "SG-SPEC-0052",
+            [],
+            {
+                "artifact_ref_count": 5,
+                "runtime_entity_count": 4,
+                "observation_source_count": 2,
+                "outcome_source_count": 2,
+                "adoption_source_count": 3,
+                "chain_status": "chain_complete",
+            },
+        ),
+        (
+            "SG-SPEC-0053",
+            [],
+            {
+                "artifact_ref_count": 5,
+                "runtime_entity_count": 4,
+                "observation_source_count": 2,
+                "outcome_source_count": 3,
+                "adoption_source_count": 3,
+                "chain_status": "chain_complete",
+            },
+        ),
+        (
+            "SG-SPEC-0054",
+            [],
+            {
+                "artifact_ref_count": 8,
+                "runtime_entity_count": 4,
+                "observation_source_count": 2,
+                "outcome_source_count": 3,
+                "adoption_source_count": 4,
+                "chain_status": "chain_complete",
+            },
+        ),
+        (
+            "SG-SPEC-0055",
+            [],
+            {
+                "artifact_ref_count": 4,
+                "runtime_entity_count": 4,
+                "observation_source_count": 2,
+                "outcome_source_count": 3,
+                "adoption_source_count": 3,
+                "chain_status": "chain_complete",
+            },
+        ),
+        (
+            "SG-SPEC-0056",
+            [],
+            {
+                "artifact_ref_count": 5,
+                "runtime_entity_count": 4,
+                "observation_source_count": 2,
+                "outcome_source_count": 3,
+                "adoption_source_count": 3,
+                "chain_status": "chain_complete",
+            },
+        ),
+        (
+            "SG-SPEC-0057",
+            [],
+            {
+                "artifact_ref_count": 5,
+                "runtime_entity_count": 4,
+                "observation_source_count": 2,
+                "outcome_source_count": 3,
+                "adoption_source_count": 3,
+                "chain_status": "chain_complete",
+            },
+        ),
+    ],
+)
+def test_live_spec_evidence_contract_is_chain_complete(
     supervisor_module: object,
+    spec_id: str,
+    matched_code_paths: list[str],
+    expected_summary: dict[str, object],
 ) -> None:
-    trace_index = supervisor_module.build_spec_trace_index(supervisor_module.load_specs())
+    specs = supervisor_module.load_specs()
+    trace_index = supervisor_module.build_spec_trace_index(specs)
     trace_by_id = {entry["spec_id"]: entry for entry in trace_index["entries"]}
-    index = supervisor_module.build_evidence_plane_index(supervisor_module.load_specs())
+    index = supervisor_module.build_evidence_plane_index(specs)
     by_id = {entry["spec_id"]: entry for entry in index["entries"]}
 
-    assert trace_by_id["SG-SPEC-0052"]["trace_contract"]["source"] == "registry"
-    assert trace_by_id["SG-SPEC-0052"]["trace_contract"]["matched_code_paths"] == []
-    assert trace_by_id["SG-SPEC-0052"]["trace_contract"]["matched_test_paths"] == [
+    assert trace_by_id[spec_id]["trace_contract"]["source"] == "registry"
+    assert trace_by_id[spec_id]["trace_contract"]["matched_code_paths"] == matched_code_paths
+    assert trace_by_id[spec_id]["trace_contract"]["matched_test_paths"] == [
         "tests/test_supervisor.py"
     ]
-    assert by_id["SG-SPEC-0052"]["evidence_contract"]["source"] == "runtime_evidence_registry"
-    assert by_id["SG-SPEC-0052"]["artifact_stage"]["status"] == "linked"
-    assert by_id["SG-SPEC-0052"]["chain_status"] == "chain_complete"
-    assert by_id["SG-SPEC-0052"]["evidence_summary"] == {
-        "artifact_ref_count": 5,
-        "runtime_entity_count": 4,
-        "observation_source_count": 2,
-        "outcome_source_count": 2,
-        "adoption_source_count": 3,
-        "chain_status": "chain_complete",
-    }
-
-
-def test_live_sg_spec_0053_evidence_contract_is_chain_complete(
-    supervisor_module: object,
-) -> None:
-    trace_index = supervisor_module.build_spec_trace_index(supervisor_module.load_specs())
-    trace_by_id = {entry["spec_id"]: entry for entry in trace_index["entries"]}
-    index = supervisor_module.build_evidence_plane_index(supervisor_module.load_specs())
-    by_id = {entry["spec_id"]: entry for entry in index["entries"]}
-
-    assert trace_by_id["SG-SPEC-0053"]["trace_contract"]["source"] == "registry"
-    assert trace_by_id["SG-SPEC-0053"]["trace_contract"]["matched_code_paths"] == []
-    assert trace_by_id["SG-SPEC-0053"]["trace_contract"]["matched_test_paths"] == [
-        "tests/test_supervisor.py"
-    ]
-    assert by_id["SG-SPEC-0053"]["evidence_contract"]["source"] == "runtime_evidence_registry"
-    assert by_id["SG-SPEC-0053"]["artifact_stage"]["status"] == "linked"
-    assert by_id["SG-SPEC-0053"]["chain_status"] == "chain_complete"
-    assert by_id["SG-SPEC-0053"]["evidence_summary"] == {
-        "artifact_ref_count": 5,
-        "runtime_entity_count": 4,
-        "observation_source_count": 2,
-        "outcome_source_count": 3,
-        "adoption_source_count": 3,
-        "chain_status": "chain_complete",
-    }
-
-
-def test_live_sg_spec_0054_evidence_contract_is_chain_complete(
-    supervisor_module: object,
-) -> None:
-    trace_index = supervisor_module.build_spec_trace_index(supervisor_module.load_specs())
-    trace_by_id = {entry["spec_id"]: entry for entry in trace_index["entries"]}
-    index = supervisor_module.build_evidence_plane_index(supervisor_module.load_specs())
-    by_id = {entry["spec_id"]: entry for entry in index["entries"]}
-
-    assert trace_by_id["SG-SPEC-0054"]["trace_contract"]["source"] == "registry"
-    assert trace_by_id["SG-SPEC-0054"]["trace_contract"]["matched_code_paths"] == []
-    assert trace_by_id["SG-SPEC-0054"]["trace_contract"]["matched_test_paths"] == [
-        "tests/test_supervisor.py"
-    ]
-    assert by_id["SG-SPEC-0054"]["evidence_contract"]["source"] == "runtime_evidence_registry"
-    assert by_id["SG-SPEC-0054"]["artifact_stage"]["status"] == "linked"
-    assert by_id["SG-SPEC-0054"]["chain_status"] == "chain_complete"
-    assert by_id["SG-SPEC-0054"]["evidence_summary"] == {
-        "artifact_ref_count": 8,
-        "runtime_entity_count": 4,
-        "observation_source_count": 2,
-        "outcome_source_count": 3,
-        "adoption_source_count": 4,
-        "chain_status": "chain_complete",
-    }
-
-
-def test_live_sg_spec_0055_evidence_contract_is_chain_complete(
-    supervisor_module: object,
-) -> None:
-    trace_index = supervisor_module.build_spec_trace_index(supervisor_module.load_specs())
-    trace_by_id = {entry["spec_id"]: entry for entry in trace_index["entries"]}
-    index = supervisor_module.build_evidence_plane_index(supervisor_module.load_specs())
-    by_id = {entry["spec_id"]: entry for entry in index["entries"]}
-
-    assert trace_by_id["SG-SPEC-0055"]["trace_contract"]["source"] == "registry"
-    assert trace_by_id["SG-SPEC-0055"]["trace_contract"]["matched_code_paths"] == []
-    assert trace_by_id["SG-SPEC-0055"]["trace_contract"]["matched_test_paths"] == [
-        "tests/test_supervisor.py"
-    ]
-    assert by_id["SG-SPEC-0055"]["evidence_contract"]["source"] == "runtime_evidence_registry"
-    assert by_id["SG-SPEC-0055"]["artifact_stage"]["status"] == "linked"
-    assert by_id["SG-SPEC-0055"]["chain_status"] == "chain_complete"
-    assert by_id["SG-SPEC-0055"]["evidence_summary"] == {
-        "artifact_ref_count": 4,
-        "runtime_entity_count": 4,
-        "observation_source_count": 2,
-        "outcome_source_count": 3,
-        "adoption_source_count": 3,
-        "chain_status": "chain_complete",
-    }
-
-
-def test_live_sg_spec_0056_evidence_contract_is_chain_complete(
-    supervisor_module: object,
-) -> None:
-    trace_index = supervisor_module.build_spec_trace_index(supervisor_module.load_specs())
-    trace_by_id = {entry["spec_id"]: entry for entry in trace_index["entries"]}
-    index = supervisor_module.build_evidence_plane_index(supervisor_module.load_specs())
-    by_id = {entry["spec_id"]: entry for entry in index["entries"]}
-
-    assert trace_by_id["SG-SPEC-0056"]["trace_contract"]["source"] == "registry"
-    assert trace_by_id["SG-SPEC-0056"]["trace_contract"]["matched_code_paths"] == []
-    assert trace_by_id["SG-SPEC-0056"]["trace_contract"]["matched_test_paths"] == [
-        "tests/test_supervisor.py"
-    ]
-    assert by_id["SG-SPEC-0056"]["evidence_contract"]["source"] == "runtime_evidence_registry"
-    assert by_id["SG-SPEC-0056"]["artifact_stage"]["status"] == "linked"
-    assert by_id["SG-SPEC-0056"]["chain_status"] == "chain_complete"
-    assert by_id["SG-SPEC-0056"]["evidence_summary"] == {
-        "artifact_ref_count": 5,
-        "runtime_entity_count": 4,
-        "observation_source_count": 2,
-        "outcome_source_count": 3,
-        "adoption_source_count": 3,
-        "chain_status": "chain_complete",
-    }
+    assert by_id[spec_id]["evidence_contract"]["source"] == "runtime_evidence_registry"
+    assert by_id[spec_id]["artifact_stage"]["status"] == "linked"
+    assert by_id[spec_id]["chain_status"] == "chain_complete"
+    assert by_id[spec_id]["evidence_summary"] == expected_summary
 
 
 def test_build_evidence_plane_overlay_groups_chain_gaps(
