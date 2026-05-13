@@ -443,6 +443,14 @@
     "notes": "Linked-readiness evidence reconciliation semantics are semantic-surface backed by the runtime evidence registry and a live regression anchor. This trace contract intentionally does not claim validator implementation, queue behavior, supervisor scheduling, or storage schema behavior."
   },
   {
+    "spec_id": "SG-SPEC-0056",
+    "code_surfaces": [],
+    "test_surfaces": [
+      "tests/test_supervisor.py"
+    ],
+    "notes": "Historical non-retry consumer-chain semantics are semantic-surface backed by the runtime evidence registry and a live regression anchor. This trace contract intentionally preserves SG-SPEC-0056 as superseded lineage only and does not claim active readiness topology, concrete non-retry routing behavior, queue scheduling, or canonical writeback."
+  },
+  {
     "spec_id": "SG-SPEC-0058",
     "code_surfaces": [
       "tools/supervisor.py"
