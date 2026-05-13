@@ -364,6 +364,19 @@
     ]
   },
   {
+    "proposal_id": "0029",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0029_specpm_local_export_bundle.md"
+    ],
+    "motivating_concern": "SpecPM handoff remains inspectable but not locally materialized",
+    "normalized_title": "SpecPM Local Export Bundle Materialization",
+    "bounded_scope": "Define a local SpecPM draft bundle materialization workflow and report derived from handoff packets without auto-committing into SpecPM, publishing to a registry, or implementing import back into SpecGraph.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
+  },
+  {
     "proposal_id": "0034",
     "source_artifact_class": "working_draft",
     "source_refs": [
