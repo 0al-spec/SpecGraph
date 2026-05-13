@@ -78,6 +78,19 @@
     ]
   },
   {
+    "proposal_id": "0007",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0007_supervisor_performance.md"
+    ],
+    "motivating_concern": "observable supervisor runtime, yield, and graph impact",
+    "normalized_title": "Supervisor Performance, Yield, and Graph-Impact Measurement",
+    "bounded_scope": "Define supervisor runtime, yield, and graph-impact measurement layers without finalizing future SIB formulas, dashboards, benchmark infrastructure, or automatic optimization.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
+  },
+  {
     "proposal_id": "0018",
     "source_artifact_class": "working_draft",
     "source_refs": [
