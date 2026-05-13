@@ -16,6 +16,14 @@
     "notes": "Spec refinement and linkage policy semantics are semantic-surface backed by the runtime evidence registry and a live regression anchor. This trace contract intentionally does not claim a dedicated refinement runtime, graph storage engine, scheduler, or transition executor."
   },
   {
+    "spec_id": "SG-SPEC-0003",
+    "code_surfaces": [],
+    "test_surfaces": [
+      "tests/test_supervisor.py"
+    ],
+    "notes": "Reflective governance boundary and graph-health semantics are semantic-surface backed by the runtime evidence registry and a live regression anchor. This trace contract intentionally does not claim a dedicated governance runtime, queue scheduler, graph-health executor, or autonomous policy authority."
+  },
+  {
     "spec_id": "SG-SPEC-0004",
     "code_surfaces": [
       "tools/supervisor.py"
