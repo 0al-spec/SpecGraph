@@ -377,6 +377,19 @@
     ]
   },
   {
+    "proposal_id": "0030",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0030_specpm_import_preview.md"
+    ],
+    "motivating_concern": "missing non-mutating review layer for inbound SpecPM bundles",
+    "normalized_title": "SpecPM-to-SpecGraph Import Preview",
+    "bounded_scope": "Define a reviewable import-preview artifact for local SpecPM bundles that validates manifest, boundary spec, and handoff continuity without auto-importing into canonical specs or creating cross-repo commits.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
+  },
+  {
     "proposal_id": "0034",
     "source_artifact_class": "working_draft",
     "source_refs": [
