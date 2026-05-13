@@ -9124,6 +9124,27 @@ def test_live_spec_evidence_contract_is_chain_complete(
     assert by_id[spec_id]["evidence_summary"] == expected_summary
 
 
+@pytest.mark.parametrize(
+    ("spec_id", "matched_code_paths"),
+    [
+        ("SG-SPEC-0001", []),
+    ],
+)
+def test_live_spec_trace_contract_is_registry_backed(
+    supervisor_module: object,
+    spec_id: str,
+    matched_code_paths: list[str],
+) -> None:
+    trace_index = supervisor_module.build_spec_trace_index(supervisor_module.load_specs())
+    trace_by_id = {entry["spec_id"]: entry for entry in trace_index["entries"]}
+
+    assert trace_by_id[spec_id]["trace_contract"]["source"] == "registry"
+    assert trace_by_id[spec_id]["trace_contract"]["matched_code_paths"] == matched_code_paths
+    assert trace_by_id[spec_id]["trace_contract"]["matched_test_paths"] == [
+        "tests/test_supervisor.py"
+    ]
+
+
 def test_live_sg_spec_0057_evidence_contract_is_chain_complete(
     supervisor_module: object,
 ) -> None:
