@@ -428,13 +428,11 @@
   },
   {
     "spec_id": "SG-SPEC-0054",
-    "code_surfaces": [
-      "tools/supervisor.py"
-    ],
+    "code_surfaces": [],
     "test_surfaces": [
       "tests/test_supervisor.py"
     ],
-    "notes": "Canonical presence-state handling is embodied in supervisor active-vs-historical topology logic and tests."
+    "notes": "Canonical node-presence semantics are semantic-surface backed by the runtime evidence registry and a live regression anchor. This trace contract intentionally does not claim viewer layout, storage layout, query implementation, or lifecycle-status replacement."
   },
   {
     "spec_id": "SG-SPEC-0058",
