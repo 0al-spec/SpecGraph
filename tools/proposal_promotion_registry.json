@@ -260,6 +260,19 @@
     ]
   },
   {
+    "proposal_id": "0021",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0021_deterministic_transition_checks.md"
+    ],
+    "motivating_concern": "implicit and partially procedural artifact transitions",
+    "normalized_title": "Deterministic Transition Checks and Validator Profiles",
+    "bounded_scope": "Define a deterministic transition-checking model, normalized transition packets, and profile-specific validation boundaries without replacing semantic human review or finalizing every serialization format.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
+  },
+  {
     "proposal_id": "0022",
     "source_artifact_class": "working_draft",
     "source_refs": [
