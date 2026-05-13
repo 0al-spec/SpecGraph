@@ -65,6 +65,19 @@
     ]
   },
   {
+    "proposal_id": "0006",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0006_typed_validation.md"
+    ],
+    "motivating_concern": "typed validation findings and safe repair boundaries",
+    "normalized_title": "Typed Validation, Structured Findings, and Safe Repair",
+    "bounded_scope": "Define layered validation contracts, structured findings, and narrow safe-repair semantics without finalizing every schema, validator implementation, or repair executor.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
+  },
+  {
     "proposal_id": "0018",
     "source_artifact_class": "working_draft",
     "source_refs": [
