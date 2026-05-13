@@ -2824,6 +2824,70 @@
     "notes": "Promotion-boundary evidence is currently derived from promotion/runtime indexes and structured transition validation artifacts."
   },
   {
+    "spec_id": "SG-SPEC-0052",
+    "evidence_scope": "surface_level",
+    "artifact_refs": [
+      "specs/nodes/SG-SPEC-0052.yaml",
+      "specs/nodes/SG-SPEC-0050.yaml",
+      "specs/nodes/SG-SPEC-0051.yaml",
+      "specs/nodes/SG-SPEC-0053.yaml",
+      "tests/test_supervisor.py"
+    ],
+    "runtime_entities": [
+      {
+        "entity_id": "specgraph.pre_spec_axis_model",
+        "entity_kind": "axis_value_contract"
+      },
+      {
+        "entity_id": "specgraph.pre_spec_axis_traceability",
+        "entity_kind": "lineage_traceability_contract"
+      },
+      {
+        "entity_id": "specgraph.pre_spec_axis_consistency",
+        "entity_kind": "orthogonality_constraint_contract"
+      },
+      {
+        "entity_id": "specgraph.pre_spec_axis_updates",
+        "entity_kind": "non_silent_update_contract"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0052.yaml",
+        "pattern": "axis_model"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0052.yaml",
+        "pattern": "axis_traceability"
+      }
+    ],
+    "outcome_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0052.yaml",
+        "pattern": "axis_consistency"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0052.yaml",
+        "pattern": "axis_updates"
+      }
+    ],
+    "adoption_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0050.yaml",
+        "pattern": "SG-SPEC-0052 defines the orthogonal axis value spaces and traceability semantics"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0053.yaml",
+        "pattern": "SG-SPEC-0052 owns orthogonal axis value spaces and traceability semantics"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0051.yaml",
+        "pattern": "orthogonal draft axes"
+      }
+    ],
+    "notes": "Pre-spec orthogonal-axis evidence is registry-backed by SG-SPEC-0052 axis value spaces, traceability, consistency, and update semantics, with SG-SPEC-0050/0053 adoption and SG-SPEC-0051 boundary exclusion. This establishes inspectable pre-spec axis semantics without claiming promotion-gate behavior, proposal-lane persistence, memory consultation policy, operator-request runtime semantics, GUI protocol, or repository storage layout."
+  },
+  {
     "spec_id": "SG-SPEC-0058",
     "evidence_scope": "surface_level",
     "artifact_refs": [
