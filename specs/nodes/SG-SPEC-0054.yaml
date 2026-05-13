@@ -45,9 +45,10 @@ acceptance_evidence:
     conditions under which historical presence must be paired with SG-SPEC-0019-compatible supersession
     lineage.
   evidence: specification.presence_field.minimum_record defines required `state` and `lineage_basis` fields,
-    specification.presence_field.valid_combinations defines the allowed state/basis pairings, and specification.presence_rules.historical_rules
-    requires `lineage_basis = superseded_lineage` to be backed by explicit SG-SPEC-0019-compatible lineage
-    such as `superseded_by`, `supersedes`, or equivalent predecessor-linked replacement facts.
+    specification.presence_field.minimum_record.valid_combinations defines the allowed state/basis pairings,
+    and specification.presence_rules.historical_rules requires `lineage_basis = superseded_lineage` to
+    be backed by explicit SG-SPEC-0019-compatible lineage such as `superseded_by`, `supersedes`, or equivalent
+    predecessor-linked replacement facts.
 - criterion: Defines how active and historical presence remain machine-readable on nodes like SG-SPEC-0045
     through SG-SPEC-0048 without prescribing storage layout, query engine, or viewer UX.
   evidence: 'specification.examples.active_readable_contract assigns `presence.state = active` and `presence.lineage_basis
