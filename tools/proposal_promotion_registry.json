@@ -195,6 +195,19 @@
     ]
   },
   {
+    "proposal_id": "0016",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0016_declarative_supervisor_policy_and_decision_inspection.md"
+    ],
+    "motivating_concern": "declarative supervisor policy and explainable run decisions",
+    "normalized_title": "Declarative Supervisor Policy and Decision Inspection",
+    "bounded_scope": "Define the split between hard runtime invariants, declarative governance policy, and operator-local overrides, plus decision-inspection surfaces, without replacing all Python logic or human judgment.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
+  },
+  {
     "proposal_id": "0018",
     "source_artifact_class": "working_draft",
     "source_refs": [
