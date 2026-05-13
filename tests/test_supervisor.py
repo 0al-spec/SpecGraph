@@ -22768,6 +22768,12 @@ def test_build_proposal_promotion_index_reports_traceability_gaps(
         ("0013", ["docs/archive/proposal_sources/0013_default_deny_write_authority.md"]),
         ("0014", ["docs/archive/proposal_sources/0014_non_escalating_fallback_isolation.md"]),
         ("0015", ["docs/archive/proposal_sources/0015_atomic_artifact_store_and_id_allocation.md"]),
+        (
+            "0016",
+            [
+                "docs/archive/proposal_sources/0016_declarative_supervisor_policy_and_decision_inspection.md"
+            ],
+        ),
     ],
 )
 def test_live_proposal_promotion_trace_is_bounded(
