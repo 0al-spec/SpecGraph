@@ -143,6 +143,19 @@
     ]
   },
   {
+    "proposal_id": "0012",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0012_true_review_barrier.md"
+    ],
+    "motivating_concern": "review_pending must be a true pre-merge canonical mutation barrier",
+    "normalized_title": "True Review Barrier for Canonical Mutation",
+    "bounded_scope": "Define review_pending as a pre-merge canonical mutation barrier with staged candidate review and accepted-only derivation without replacing split proposals or finalizing every staged artifact format.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
+  },
+  {
     "proposal_id": "0018",
     "source_artifact_class": "working_draft",
     "source_refs": [

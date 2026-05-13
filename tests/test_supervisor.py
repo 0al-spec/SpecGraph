@@ -22764,6 +22764,7 @@ def test_build_proposal_promotion_index_reports_traceability_gaps(
         ("0009", ["docs/archive/proposal_sources/0009_graph_to_techspec_handoff.md"]),
         ("0010", ["docs/archive/proposal_sources/0010_llm_bootstrap_smoke.md"]),
         ("0011", ["docs/archive/proposal_sources/0011_pre_spec_semantic_layer.md"]),
+        ("0012", ["docs/archive/proposal_sources/0012_true_review_barrier.md"]),
     ],
 )
 def test_live_proposal_promotion_trace_is_bounded(
