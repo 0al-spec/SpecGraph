@@ -351,6 +351,19 @@
     ]
   },
   {
+    "proposal_id": "0028",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0028_specpm_handoff_artifacts.md"
+    ],
+    "motivating_concern": "SpecPM export preview lacks reviewable downstream handoff status",
+    "normalized_title": "SpecGraph-to-SpecPM Handoff Artifacts",
+    "bounded_scope": "Define a dedicated SpecPM handoff artifact derived from export preview status without writing package files into SpecPM, finalizing the specpm.yaml schema, or importing packages back into SpecGraph.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
+  },
+  {
     "proposal_id": "0034",
     "source_artifact_class": "working_draft",
     "source_refs": [
