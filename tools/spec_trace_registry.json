@@ -435,6 +435,14 @@
     "notes": "Subtree-shape and lower-boundary handoff signals are currently embodied in supervisor graph-health derivation and tests."
   },
   {
+    "spec_id": "SG-SPEC-0050",
+    "code_surfaces": [],
+    "test_surfaces": [
+      "tests/test_supervisor.py"
+    ],
+    "notes": "Pre-spec semantic layer semantics are semantic-surface backed by the runtime evidence registry and a live regression anchor. This trace contract intentionally does not claim project-memory consultation, operator-request runtime execution, proposal-lane persistence, GUI protocol, repository storage layout, or model-specific interpretation logic."
+  },
+  {
     "spec_id": "SG-SPEC-0052",
     "code_surfaces": [],
     "test_surfaces": [
