@@ -419,6 +419,14 @@
     "notes": "Pre-spec orthogonal axis and traceability semantics are semantic-surface backed by the runtime evidence registry and a live regression anchor. This trace contract intentionally does not claim promotion-gate behavior, proposal-lane persistence, memory consultation policy, operator-request runtime semantics, GUI protocol, or repository storage layout."
   },
   {
+    "spec_id": "SG-SPEC-0053",
+    "code_surfaces": [],
+    "test_surfaces": [
+      "tests/test_supervisor.py"
+    ],
+    "notes": "Primary pre-spec kind semantics are semantic-surface backed by the runtime evidence registry and a live regression anchor. This trace contract intentionally does not claim concrete promotion gates, orthogonal axis value spaces, traceability procedure implementation, repository storage layout, or model-specific interpretation algorithms."
+  },
+  {
     "spec_id": "SG-SPEC-0054",
     "code_surfaces": [
       "tools/supervisor.py"

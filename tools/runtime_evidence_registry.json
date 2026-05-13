@@ -2888,6 +2888,74 @@
     "notes": "Pre-spec orthogonal-axis evidence is registry-backed by SG-SPEC-0052 axis value spaces, traceability, consistency, and update semantics, with SG-SPEC-0050/0053 adoption and SG-SPEC-0051 boundary exclusion. This establishes inspectable pre-spec axis semantics without claiming promotion-gate behavior, proposal-lane persistence, memory consultation policy, operator-request runtime semantics, GUI protocol, or repository storage layout."
   },
   {
+    "spec_id": "SG-SPEC-0053",
+    "evidence_scope": "surface_level",
+    "artifact_refs": [
+      "specs/nodes/SG-SPEC-0053.yaml",
+      "specs/nodes/SG-SPEC-0050.yaml",
+      "specs/nodes/SG-SPEC-0051.yaml",
+      "specs/nodes/SG-SPEC-0052.yaml",
+      "tests/test_supervisor.py"
+    ],
+    "runtime_entities": [
+      {
+        "entity_id": "specgraph.pre_spec_primary_kind_roles",
+        "entity_kind": "primary_kind_semantics_contract"
+      },
+      {
+        "entity_id": "specgraph.pre_spec_observed_intent_path",
+        "entity_kind": "observed_intent_path_contract"
+      },
+      {
+        "entity_id": "specgraph.pre_spec_semantic_adjacency",
+        "entity_kind": "primary_kind_adjacency_contract"
+      },
+      {
+        "entity_id": "specgraph.pre_spec_kind_separation",
+        "entity_kind": "mixed_content_separation_contract"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0053.yaml",
+        "pattern": "kind_roles"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0053.yaml",
+        "pattern": "observed_intent_path"
+      }
+    ],
+    "outcome_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0053.yaml",
+        "pattern": "semantic_adjacency"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0053.yaml",
+        "pattern": "kind_separation"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0053.yaml",
+        "pattern": "boundary_rules"
+      }
+    ],
+    "adoption_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0050.yaml",
+        "pattern": "SG-SPEC-0053 defines the detailed primary-kind semantics"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0051.yaml",
+        "pattern": "Primary semantic-kind ontology for Intent, Hypothesis, Proposal, IntentFragment, or IntentDraft"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0052.yaml",
+        "pattern": "Every IntentFragment, IntentDraft, Intent, and Proposal in one concern"
+      }
+    ],
+    "notes": "Primary pre-spec kind evidence is registry-backed by SG-SPEC-0053 kind roles, observed-intent path, semantic adjacency, and mixed-content separation semantics, with SG-SPEC-0050 adoption plus SG-SPEC-0051/0052 boundary alignment. This establishes inspectable primary-kind semantics without claiming concrete promotion gates, orthogonal axis value spaces, traceability procedure implementation, repository storage layout, or model-specific interpretation algorithms."
+  },
+  {
     "spec_id": "SG-SPEC-0058",
     "evidence_scope": "surface_level",
     "artifact_refs": [
