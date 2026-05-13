@@ -22766,6 +22766,7 @@ def test_build_proposal_promotion_index_reports_traceability_gaps(
         ("0011", ["docs/archive/proposal_sources/0011_pre_spec_semantic_layer.md"]),
         ("0012", ["docs/archive/proposal_sources/0012_true_review_barrier.md"]),
         ("0013", ["docs/archive/proposal_sources/0013_default_deny_write_authority.md"]),
+        ("0014", ["docs/archive/proposal_sources/0014_non_escalating_fallback_isolation.md"]),
     ],
 )
 def test_live_proposal_promotion_trace_is_bounded(
