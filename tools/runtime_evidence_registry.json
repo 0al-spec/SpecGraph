@@ -3031,6 +3031,73 @@
     "notes": "Canonical node-presence evidence is registry-backed by SG-SPEC-0054 presence-field semantics, explicit valid state/basis combinations, machine-readable marker requirements, SG-SPEC-0001 adoption, SG-SPEC-0019 lineage grounding, and active/historical examples in SG-SPEC-0045 through SG-SPEC-0048. This establishes inspectable active-versus-historical presence semantics without claiming viewer layout, storage layout, query implementation, or lifecycle-status replacement."
   },
   {
+    "spec_id": "SG-SPEC-0055",
+    "evidence_scope": "surface_level",
+    "artifact_refs": [
+      "specs/nodes/SG-SPEC-0055.yaml",
+      "specs/nodes/SG-SPEC-0016.yaml",
+      "specs/nodes/SG-SPEC-0002.yaml",
+      "tests/test_supervisor.py"
+    ],
+    "runtime_entities": [
+      {
+        "entity_id": "specgraph.linked_readiness_evidence_policy",
+        "entity_kind": "parent_side_evidence_contract"
+      },
+      {
+        "entity_id": "specgraph.ancestor_reconciliation_policy",
+        "entity_kind": "narrow_reconciliation_contract"
+      },
+      {
+        "entity_id": "specgraph.refinement_chain_evidence_alignment",
+        "entity_kind": "acceptance_evidence_alignment_contract"
+      },
+      {
+        "entity_id": "specgraph.stale_linked_readiness_evidence",
+        "entity_kind": "stale_evidence_guardrail"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0055.yaml",
+        "pattern": "linked_readiness_evidence_policy"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0055.yaml",
+        "pattern": "ancestor_reconciliation_policy"
+      }
+    ],
+    "outcome_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0055.yaml",
+        "pattern": "evidence_alignment_policy"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0055.yaml",
+        "pattern": "stale_evidence_rules"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0055.yaml",
+        "pattern": "boundary_rules"
+      }
+    ],
+    "adoption_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0016.yaml",
+        "pattern": "child_spec: SG-SPEC-0055"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0016.yaml",
+        "pattern": "delegated_to: SG-SPEC-0055"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0002.yaml",
+        "pattern": "linked-readiness evidence"
+      }
+    ],
+    "notes": "Linked-readiness reconciliation evidence is registry-backed by SG-SPEC-0055 parent-side evidence policy, narrow ancestor reconciliation, refinement-chain evidence alignment, stale-evidence guardrails, SG-SPEC-0016 child delegation, and SG-SPEC-0002 readiness governance context. This establishes inspectable semantic evidence without claiming validator implementation, queue behavior, supervisor scheduling, or storage schema behavior."
+  },
+  {
     "spec_id": "SG-SPEC-0058",
     "evidence_scope": "surface_level",
     "artifact_refs": [
