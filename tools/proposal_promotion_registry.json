@@ -286,6 +286,19 @@
     ]
   },
   {
+    "proposal_id": "0023",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0023_reflective_runtime_coevolution.md"
+    ],
+    "motivating_concern": "proposal, runtime, backlog, and observation drift",
+    "normalized_title": "Reflective Co-Evolution of Proposals and Runtime Realization",
+    "bounded_scope": "Define a reflective co-evolution rule for implementation-relevant proposals and their bounded runtime, validation, and observation follow-up without requiring every proposal to be implemented immediately.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
+  },
+  {
     "proposal_id": "0034",
     "source_artifact_class": "working_draft",
     "source_refs": [
