@@ -3234,6 +3234,74 @@
     "notes": "Authority-class semantic-boundary evidence is registry-backed by SG-SPEC-0057 class catalog, mixed-origin selection rules, preservation boundaries, lineage interaction, SG-SPEC-0001 delegation, SG-SPEC-0024 provenance envelope usage, and SG-SPEC-0019 revision/supersession grounding. This establishes inspectable authority-class semantics without claiming storage layout, trust scoring, review-policy enforcement, viewer badging, or runtime implementation."
   },
   {
+    "spec_id": "SG-SPEC-0057",
+    "evidence_scope": "surface_level",
+    "artifact_refs": [
+      "specs/nodes/SG-SPEC-0057.yaml",
+      "specs/nodes/SG-SPEC-0001.yaml",
+      "specs/nodes/SG-SPEC-0024.yaml",
+      "specs/nodes/SG-SPEC-0019.yaml",
+      "tests/test_supervisor.py"
+    ],
+    "runtime_entities": [
+      {
+        "entity_id": "specgraph.authority_class_semantic_contract",
+        "entity_kind": "authority_class_boundary"
+      },
+      {
+        "entity_id": "specgraph.authority_class_catalog",
+        "entity_kind": "origin_class_catalog"
+      },
+      {
+        "entity_id": "specgraph.authority_class_selection_rules",
+        "entity_kind": "mixed_origin_selection_contract"
+      },
+      {
+        "entity_id": "specgraph.authority_class_lineage_boundary",
+        "entity_kind": "revision_supersession_boundary"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0057.yaml",
+        "pattern": "authority_class_contract"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0057.yaml",
+        "pattern": "class_catalog"
+      }
+    ],
+    "outcome_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0057.yaml",
+        "pattern": "selection_rules"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0057.yaml",
+        "pattern": "preservation_boundary_rules"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0057.yaml",
+        "pattern": "canonical_vs_derived_boundary"
+      }
+    ],
+    "adoption_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0001.yaml",
+        "pattern": "SG-SPEC-0057 now owns the detailed semantic contract"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0024.yaml",
+        "pattern": "provenance.authority_class"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0019.yaml",
+        "pattern": "authority_class, provenance"
+      }
+    ],
+    "notes": "Authority-class semantic-boundary evidence is registry-backed by SG-SPEC-0057 class catalog, mixed-origin selection rules, preservation boundaries, lineage interaction, SG-SPEC-0001 delegation, SG-SPEC-0024 provenance envelope usage, and SG-SPEC-0019 revision/supersession grounding. This establishes inspectable authority-class semantics without claiming storage layout, trust scoring, review-policy enforcement, viewer badging, or runtime implementation."
+  },
+  {
     "spec_id": "SG-SPEC-0058",
     "evidence_scope": "surface_level",
     "artifact_refs": [
@@ -3403,5 +3471,78 @@
       }
     ],
     "notes": "Verdict-discrimination evidence is anchored by graph-next-moves logic that requires an explicit readiness-level negative source before recording not_available and keeps missing or ambiguous negative-source evidence unresolved."
+  },
+  {
+    "spec_id": "SG-SPEC-0061",
+    "evidence_scope": "surface_level",
+    "artifact_refs": [
+      "specs/nodes/SG-SPEC-0061.yaml",
+      "specs/nodes/SG-SPEC-0001.yaml",
+      "specs/nodes/SG-SPEC-0023.yaml",
+      "specs/nodes/SG-SPEC-0054.yaml",
+      "specs/nodes/SG-SPEC-0019.yaml",
+      "tests/test_supervisor.py"
+    ],
+    "runtime_entities": [
+      {
+        "entity_id": "specgraph.canonical_traceability_reachability",
+        "entity_kind": "traceability_reachability_contract"
+      },
+      {
+        "entity_id": "specgraph.canonical_trace_path",
+        "entity_kind": "canonical_path_contract"
+      },
+      {
+        "entity_id": "specgraph.traceability_presence_lineage_boundary",
+        "entity_kind": "presence_lineage_boundary"
+      },
+      {
+        "entity_id": "specgraph.derived_trace_view_boundary",
+        "entity_kind": "canonical_vs_derived_boundary"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0061.yaml",
+        "pattern": "reachability_contract"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0061.yaml",
+        "pattern": "traceability_roots"
+      }
+    ],
+    "outcome_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0061.yaml",
+        "pattern": "satisfaction_rules"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0061.yaml",
+        "pattern": "presence_and_lineage_boundary"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0061.yaml",
+        "pattern": "canonical_vs_derived_boundary"
+      }
+    ],
+    "adoption_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0001.yaml",
+        "pattern": "SG-SPEC-0061 refines INV-002"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0023.yaml",
+        "pattern": "endpoint_contract"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0054.yaml",
+        "pattern": "active versus historical presence"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0019.yaml",
+        "pattern": "supersession_topology"
+      }
+    ],
+    "notes": "Canonical traceability reachability evidence is registry-backed by SG-SPEC-0061 reachability contract, traceability roots, canonical path satisfaction rules, presence/lineage boundary, SG-SPEC-0001 INV-002 delegation, SG-SPEC-0023 endpoint compatibility, SG-SPEC-0054 presence semantics, and SG-SPEC-0019 supersession topology. This establishes inspectable semantic reachability without claiming traversal algorithms, storage layout, indexes, viewer presentation, metrics, or lifecycle transition automation."
   }
 ]
