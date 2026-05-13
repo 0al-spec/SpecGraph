@@ -1,5 +1,13 @@
 [
   {
+    "spec_id": "SG-SPEC-0001",
+    "code_surfaces": [],
+    "test_surfaces": [
+      "tests/test_supervisor.py"
+    ],
+    "notes": "Seed ontology semantics are semantic-surface backed by the runtime evidence registry and a live regression anchor. This trace contract intentionally does not claim a dedicated ontology runtime, storage engine, traversal implementation, or viewer implementation."
+  },
+  {
     "spec_id": "SG-SPEC-0004",
     "code_surfaces": [
       "tools/supervisor.py"
