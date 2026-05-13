@@ -299,6 +299,19 @@
     ]
   },
   {
+    "proposal_id": "0024",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0024_external_consumer_metrics_bridge.md"
+    ],
+    "motivating_concern": "ad hoc external Metrics/SIB bridge semantics",
+    "normalized_title": "External Consumer Registry and Metrics Bridge",
+    "bounded_scope": "Define a tracked external consumer registry and derived bridge artifact for Metrics/SIB and future consumers without adding Git submodules, requiring network fetches, or treating draft external documents as threshold authority.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
+  },
+  {
     "proposal_id": "0034",
     "source_artifact_class": "working_draft",
     "source_refs": [
