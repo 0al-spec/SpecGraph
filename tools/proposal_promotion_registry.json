@@ -325,6 +325,19 @@
     ]
   },
   {
+    "proposal_id": "0026",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0026_specgraph_to_metrics_handoff.md"
+    ],
+    "motivating_concern": "missing governed SpecGraph-to-Metrics handoff packet",
+    "normalized_title": "SpecGraph-to-Metrics Handoff Artifacts",
+    "bounded_scope": "Define a derived Metrics-facing handoff artifact for stable-ready external consumers and draft-only visibility without creating cross-repo PRs, making SIB_FULL operational authority, or mutating canonical SpecGraph state.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
+  },
+  {
     "proposal_id": "0034",
     "source_artifact_class": "working_draft",
     "source_refs": [
