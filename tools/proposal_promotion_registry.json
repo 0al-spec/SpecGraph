@@ -208,6 +208,19 @@
     ]
   },
   {
+    "proposal_id": "0017",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0017_role_first_semantic_bias.md"
+    ],
+    "motivating_concern": "role legibility drift and bookkeeping-only subtrees",
+    "normalized_title": "Role-First Semantic Bias for Supervisor Refinement",
+    "bounded_scope": "Define a role-first semantic bias for supervisor-guided refinement so nodes remain human-legible system roles or composed functions without making role legibility a hard validity error or mandating one architecture style.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
+  },
+  {
     "proposal_id": "0018",
     "source_artifact_class": "working_draft",
     "source_refs": [
