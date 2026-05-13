@@ -26,6 +26,19 @@
     ]
   },
   {
+    "proposal_id": "0003",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0003_operator_request.md"
+    ],
+    "motivating_concern": "typed bounded supervisor request envelope",
+    "normalized_title": "Operator Request Contract for Supervisor Runs",
+    "bounded_scope": "Define a normalized run-scoped OperatorRequest contract for bounded supervisor execution without removing existing CLI flags or finalizing every wire-format detail.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
+  },
+  {
     "proposal_id": "0018",
     "source_artifact_class": "working_draft",
     "source_refs": [
