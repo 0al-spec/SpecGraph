@@ -338,6 +338,19 @@
     ]
   },
   {
+    "proposal_id": "0027",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0027_specpm_export_preview.md"
+    ],
+    "motivating_concern": "missing reviewable SpecGraph-to-SpecPM export preview",
+    "normalized_title": "SpecGraph-to-SpecPM Boundary Export Preview",
+    "bounded_scope": "Define SpecPM as a boundary package consumer plus a tracked export registry and derived package preview artifact without publishing packages, finalizing BoundarySpec content, or designing bidirectional import in the same slice.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
+  },
+  {
     "proposal_id": "0034",
     "source_artifact_class": "working_draft",
     "source_refs": [
