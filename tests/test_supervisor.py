@@ -22783,6 +22783,7 @@ def test_build_proposal_promotion_index_reports_traceability_gaps(
         ("0025", ["docs/archive/proposal_sources/0025_metrics_bridge_overlays.md"]),
         ("0026", ["docs/archive/proposal_sources/0026_specgraph_to_metrics_handoff.md"]),
         ("0027", ["docs/archive/proposal_sources/0027_specpm_export_preview.md"]),
+        ("0028", ["docs/archive/proposal_sources/0028_specpm_handoff_artifacts.md"]),
     ],
 )
 def test_live_proposal_promotion_trace_is_bounded(
