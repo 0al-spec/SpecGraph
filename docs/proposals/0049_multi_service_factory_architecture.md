@@ -229,7 +229,7 @@ operator_input:
   source: specspace_chat
   kind: intent | correction | priority | constraint | approval_policy | stop_signal
   target_scope: product | graph_subtree | proposal | spec_node | runtime
-  authority_level: advisory | draft_allowed | pr_allowed | merge_allowed
+  authority_level: observe | plan | draft_mutate | pr_mutate | merge | external_publish
   note: "Build a SwiftUI calculator for iOS and macOS."
   created_at: "2026-05-13T00:00:00Z"
 ```
@@ -304,7 +304,7 @@ operator_action:
   kind: submit_intent | run_supervisor | approve_proposal | reject_proposal | request_export | stop_run
   target:
     spec_id: SG-SPEC-0058
-  authority_level: pr_allowed
+  authority_level: pr_mutate
   operator_note: "Run one bounded supervisor refinement."
   created_at: "2026-05-13T00:00:00Z"
 ```
@@ -323,7 +323,7 @@ factory_run:
   requested_by_action: op-action-2026-05-13-0001
   service: specgraph
   mode: supervisor_worker
-  authority_level: pr_allowed
+  authority_level: pr_mutate
   completion_status: progressed | failed | blocked
   produced_artifacts: []
   produced_pr: 301
@@ -436,7 +436,7 @@ Example:
 Next move: SG-SPEC-0058
 Gap: attach_trace_contract
 Suggested action: run_supervisor
-Authority required: pr_allowed
+Authority required: pr_mutate
 
 [Explain] [Run one bounded PR] [Defer] [Stop this line]
 ```
