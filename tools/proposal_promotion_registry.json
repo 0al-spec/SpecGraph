@@ -312,6 +312,19 @@
     ]
   },
   {
+    "proposal_id": "0025",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0025_metrics_bridge_overlays.md"
+    ],
+    "motivating_concern": "external consumer bridge pressure hidden inside metric behavior",
+    "normalized_title": "Metrics Bridge Overlays and Backlog Pressure",
+    "bounded_scope": "Define a first-class external-consumer overlay and dashboard aggregation for bridge readiness and backlog pressure without mutating canonical specs, making SIB_FULL authoritative, or replacing sib_proxy in the same slice.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
+  },
+  {
     "proposal_id": "0034",
     "source_artifact_class": "working_draft",
     "source_refs": [
