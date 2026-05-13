@@ -156,6 +156,19 @@
     ]
   },
   {
+    "proposal_id": "0013",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0013_default_deny_write_authority.md"
+    ],
+    "motivating_concern": "default-deny supervisor write authority",
+    "normalized_title": "Default-Deny Write Authority for Supervisor Refinement",
+    "bounded_scope": "Define default-deny write authority and explicit path/structural authority tiers for supervisor refinement without restricting required read access or designing a full capability language.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
+  },
+  {
     "proposal_id": "0018",
     "source_artifact_class": "working_draft",
     "source_refs": [
