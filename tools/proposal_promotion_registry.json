@@ -117,6 +117,19 @@
     ]
   },
   {
+    "proposal_id": "0010",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0010_llm_bootstrap_smoke.md"
+    ],
+    "motivating_concern": "cheap end-to-end LLM bootstrap smoke benchmark",
+    "normalized_title": "LLM-Driven Bootstrap Smoke Benchmark",
+    "bounded_scope": "Define a lightweight benchmark for supervisor graph-building from a minimal seed using structural invariants without creating deterministic text snapshots or a blocking CI gate.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
+  },
+  {
     "proposal_id": "0018",
     "source_artifact_class": "working_draft",
     "source_refs": [
