@@ -3098,6 +3098,74 @@
     "notes": "Linked-readiness reconciliation evidence is registry-backed by SG-SPEC-0055 parent-side evidence policy, narrow ancestor reconciliation, refinement-chain evidence alignment, stale-evidence guardrails, SG-SPEC-0016 child delegation, and SG-SPEC-0002 readiness governance context. This establishes inspectable semantic evidence without claiming validator implementation, queue behavior, supervisor scheduling, or storage schema behavior."
   },
   {
+    "spec_id": "SG-SPEC-0056",
+    "evidence_scope": "surface_level",
+    "artifact_refs": [
+      "specs/nodes/SG-SPEC-0056.yaml",
+      "specs/nodes/SG-SPEC-0040.yaml",
+      "specs/nodes/SG-SPEC-0039.yaml",
+      "specs/nodes/SG-SPEC-0054.yaml",
+      "tests/test_supervisor.py"
+    ],
+    "runtime_entities": [
+      {
+        "entity_id": "specgraph.historical_non_retry_consumer_chain_boundary",
+        "entity_kind": "superseded_lineage_node"
+      },
+      {
+        "entity_id": "specgraph.sg_spec_0056_supersession_anchor",
+        "entity_kind": "superseded_by_anchor"
+      },
+      {
+        "entity_id": "specgraph.sg_spec_0056_inactive_child_rule",
+        "entity_kind": "historical_inactive_child_rule"
+      },
+      {
+        "entity_id": "specgraph.sg_spec_0040_active_successor_boundary",
+        "entity_kind": "active_successor_contract"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0056.yaml",
+        "pattern": "historical_status"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0056.yaml",
+        "pattern": "lineage_contract"
+      }
+    ],
+    "outcome_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0056.yaml",
+        "pattern": "active_successor_boundary"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0056.yaml",
+        "pattern": "inactive_rules"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0056.yaml",
+        "pattern": "boundaries"
+      }
+    ],
+    "adoption_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0040.yaml",
+        "pattern": "first-persistence and noncanonical-consumption"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0039.yaml",
+        "pattern": "SG-SPEC-0056 will be retained only as historical lineage"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0054.yaml",
+        "pattern": "lineage_basis = superseded_lineage"
+      }
+    ],
+    "notes": "Historical non-retry consumer-chain evidence is registry-backed by SG-SPEC-0056 superseded-lineage semantics, SG-SPEC-0040 active successor ownership, SG-SPEC-0039 lineage notes, and SG-SPEC-0054 historical-presence grounding. This preserves SG-SPEC-0056 as inspectable lineage only and does not claim active readiness topology, concrete non-retry routing behavior, queue scheduling, or canonical writeback."
+  },
+  {
     "spec_id": "SG-SPEC-0058",
     "evidence_scope": "surface_level",
     "artifact_refs": [
