@@ -459,14 +459,6 @@
     "notes": "Authority-class semantic-boundary semantics are semantic-surface backed by the runtime evidence registry and a live regression anchor. This trace contract intentionally does not claim storage layout, trust scoring, review-policy enforcement, viewer badging, or runtime implementation."
   },
   {
-    "spec_id": "SG-SPEC-0061",
-    "code_surfaces": [],
-    "test_surfaces": [
-      "tests/test_supervisor.py"
-    ],
-    "notes": "Canonical traceability reachability semantics are semantic-surface backed by the runtime evidence registry and a live regression anchor. This trace contract intentionally does not claim traversal algorithms, storage layout, indexes, viewer presentation, metrics, or lifecycle transition automation."
-  },
-  {
     "spec_id": "SG-SPEC-0058",
     "code_surfaces": [
       "tools/supervisor.py"
@@ -495,5 +487,13 @@
       "tests/test_supervisor.py"
     ],
     "notes": "Proposal/split readiness discrimination checkpoints are anchored by graph-next-moves verdict logic that allows not_available only when an explicit reviewable negative availability source is present and keeps missing negative-source evidence unresolved."
+  },
+  {
+    "spec_id": "SG-SPEC-0061",
+    "code_surfaces": [],
+    "test_surfaces": [
+      "tests/test_supervisor.py"
+    ],
+    "notes": "Canonical traceability reachability semantics are semantic-surface backed by the runtime evidence registry and a live regression anchor. This trace contract intentionally does not claim traversal algorithms, storage layout, indexes, viewer presentation, metrics, or lifecycle transition automation."
   }
 ]
