@@ -22778,6 +22778,7 @@ def test_build_proposal_promotion_index_reports_traceability_gaps(
         ("0019", ["docs/archive/proposal_sources/0019_spec_to_code_trace_plane.md"]),
         ("0020", ["docs/archive/proposal_sources/0020_draft_to_proposal_promotion.md"]),
         ("0021", ["docs/archive/proposal_sources/0021_deterministic_transition_checks.md"]),
+        ("0023", ["docs/archive/proposal_sources/0023_reflective_runtime_coevolution.md"]),
     ],
 )
 def test_live_proposal_promotion_trace_is_bounded(
