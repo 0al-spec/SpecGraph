@@ -2,9 +2,12 @@ id: SG-SPEC-0054
 title: SpecGraph - Canonical Node Presence Surface
 kind: spec
 created_at: '2026-04-17T21:18:34Z'
-updated_at: '2026-04-17T21:18:34Z'
-status: linked
-maturity: 0.56
+updated_at: '2026-05-13T09:30:13Z'
+status: reviewed
+maturity: 0.76
+presence:
+  state: active
+  lineage_basis: current_expression
 depends_on:
 - SG-SPEC-0019
 relates_to: []
@@ -35,21 +38,25 @@ acceptance_evidence:
 - criterion: Defines one canonical `presence` node field for SG-SPEC-0001 node kinds that marks active
     versus historical presence without redefining lifecycle status.
   evidence: specification.presence_field.field_name fixes the canonical field name as `presence`, specification.presence_field.applies_to
-    covers every SG-SPEC-0001 seed node kind, and specification.boundary_policy states that presence is
-    orthogonal to lifecycle status rather than a replacement for `status`.
+    covers every SG-SPEC-0001 seed node kind, top-level presence marks SG-SPEC-0054 itself as `active`
+    with `current_expression`, and specification.boundary_policy states that presence is orthogonal to
+    lifecycle status rather than a replacement for `status`.
 - criterion: Defines the minimum `presence` record contract, including `state`, `lineage_basis`, and the
     conditions under which historical presence must be paired with SG-SPEC-0019-compatible supersession
     lineage.
   evidence: specification.presence_field.minimum_record defines required `state` and `lineage_basis` fields,
-    while specification.presence_rules.historical_rules requires `lineage_basis = superseded_lineage`
-    to be backed by explicit SG-SPEC-0019-compatible lineage such as `superseded_by`, `supersedes`, or
-    equivalent predecessor-linked replacement facts.
+    specification.presence_field.minimum_record.valid_combinations defines the allowed state/basis pairings,
+    and specification.presence_rules.historical_rules requires `lineage_basis = superseded_lineage` to
+    be backed by explicit SG-SPEC-0019-compatible lineage such as `superseded_by`, `supersedes`, or equivalent
+    predecessor-linked replacement facts.
 - criterion: Defines how active and historical presence remain machine-readable on nodes like SG-SPEC-0045
     through SG-SPEC-0048 without prescribing storage layout, query engine, or viewer UX.
   evidence: 'specification.examples.active_readable_contract assigns `presence.state = active` and `presence.lineage_basis
     = current_expression` to SG-SPEC-0045, while specification.examples.historical_lineage_contract assigns
     `presence.state = historical` and `presence.lineage_basis = superseded_lineage` to SG-SPEC-0046, SG-SPEC-0047,
-    and SG-SPEC-0048 alongside the existing `superseded_by: [SG-SPEC-0045]` lineage markers.'
+    and SG-SPEC-0048 alongside the existing `superseded_by: [SG-SPEC-0045]` lineage markers. specification.machine_readable_marker_contract
+    requires those markers to remain parseable as literal record values and ties `historical` plus `superseded_lineage`
+    to SG-SPEC-0019 historical_lineage_only semantics.'
 - criterion: Keeps revision-record structure, predecessor ordering, renderer affordances, and storage
     or index implementation out of scope for this child.
   evidence: specification.scope.out excludes revision-record internals, predecessor ordering mechanics,
@@ -128,6 +135,16 @@ specification:
             visible only as inspectable lineage.
           retained_archive: The node remains canonical history without this child asserting a replacement
             successor.
+      valid_combinations:
+      - state: active
+        lineage_basis: current_expression
+        sg_spec_0019_presence_effect: active
+      - state: historical
+        lineage_basis: superseded_lineage
+        sg_spec_0019_presence_effect: historical_lineage_only
+      - state: historical
+        lineage_basis: retained_archive
+        sg_spec_0019_presence_effect: historical_lineage_only
   presence_rules:
     active_rules:
     - '`presence.state = active` MUST pair with `presence.lineage_basis = current_expression`.'
@@ -145,6 +162,26 @@ specification:
       or an equivalent canonical replacement marker.
     - If `presence.lineage_basis = retained_archive`, this child defines only that the node is historical;
       any more specific archival rationale remains outside the bounded concern of this child.
+    invalid_combinations:
+    - '`presence.state = active` with `presence.lineage_basis = superseded_lineage` is invalid because
+      replacement lineage demotes the older subject to historical presence.'
+    - '`presence.state = active` with `presence.lineage_basis = retained_archive` is invalid because retained
+      archive is historical by definition in this child.'
+    - '`presence.state = historical` with `presence.lineage_basis = current_expression` is invalid because
+      current_expression denotes the active readable subject for the bounded concern.'
+  machine_readable_marker_contract:
+  - A node that carries `presence` must expose `state` and `lineage_basis` as literal record fields whose
+    values match specification.presence_field.minimum_record; prose-only statements such as "inactive",
+    "old", or "current" are not substitutes for the record.
+  - For this child, `presence.state = active` maps to SG-SPEC-0019 `subject_presence_state = active` for
+    the node-level presence surface, while `presence.state = historical` maps to SG-SPEC-0019 `subject_presence_state
+    = historical_lineage_only`.
+  - When `lineage_basis = superseded_lineage`, the machine-readable marker is incomplete unless the node
+    also preserves canonical replacement lineage through `superseded_by`, `supersedes`, predecessor-linked
+    revision facts, or an equivalent SG-SPEC-0019-compatible replacement marker.
+  - Consumers may project labels, filters, or active-graph views from these literal markers, but those
+    projections must remain derived from the canonical record rather than becoming alternative canonical
+    states.
   canonical_vs_derived_boundary:
     canonical:
     - Authored `presence` records recorded directly on governed node snapshots
@@ -184,6 +221,11 @@ specification:
     - Those historical nodes remain inspectable lineage only; their historical presence does not require
       a special lifecycle status beyond whatever lifecycle state they canonically retain.
 gate_state: none
-required_human_action: '-'
 proposed_status: null
 proposed_maturity: null
+required_human_action: '-'
+last_worktree_path: ''
+last_branch: ''
+last_gate_decision: approve
+last_gate_note: ''
+last_gate_at: '2026-05-13T09:30:13.096668+00:00'

@@ -2956,6 +2956,81 @@
     "notes": "Primary pre-spec kind evidence is registry-backed by SG-SPEC-0053 kind roles, observed-intent path, semantic adjacency, and mixed-content separation semantics, with SG-SPEC-0050 adoption plus SG-SPEC-0051/0052 boundary alignment. This establishes inspectable primary-kind semantics without claiming concrete promotion gates, orthogonal axis value spaces, traceability procedure implementation, repository storage layout, or model-specific interpretation algorithms."
   },
   {
+    "spec_id": "SG-SPEC-0054",
+    "evidence_scope": "surface_level",
+    "artifact_refs": [
+      "specs/nodes/SG-SPEC-0054.yaml",
+      "specs/nodes/SG-SPEC-0001.yaml",
+      "specs/nodes/SG-SPEC-0019.yaml",
+      "specs/nodes/SG-SPEC-0045.yaml",
+      "specs/nodes/SG-SPEC-0046.yaml",
+      "specs/nodes/SG-SPEC-0047.yaml",
+      "specs/nodes/SG-SPEC-0048.yaml",
+      "tests/test_supervisor.py"
+    ],
+    "runtime_entities": [
+      {
+        "entity_id": "specgraph.node_presence_field",
+        "entity_kind": "canonical_presence_contract"
+      },
+      {
+        "entity_id": "specgraph.presence_lineage_basis",
+        "entity_kind": "presence_lineage_contract"
+      },
+      {
+        "entity_id": "specgraph.presence_machine_readable_markers",
+        "entity_kind": "presence_marker_contract"
+      },
+      {
+        "entity_id": "specgraph.active_historical_projection_boundary",
+        "entity_kind": "canonical_vs_derived_boundary"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0054.yaml",
+        "pattern": "presence_field"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0054.yaml",
+        "pattern": "presence_rules"
+      }
+    ],
+    "outcome_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0054.yaml",
+        "pattern": "valid_combinations"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0054.yaml",
+        "pattern": "machine_readable_marker_contract"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0054.yaml",
+        "pattern": "canonical_vs_derived_boundary"
+      }
+    ],
+    "adoption_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0001.yaml",
+        "pattern": "SG-SPEC-0054 owns the detailed contract for that field"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0019.yaml",
+        "pattern": "subject_presence_state"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0045.yaml",
+        "pattern": "lineage_basis: current_expression"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0046.yaml",
+        "pattern": "lineage_basis: superseded_lineage"
+      }
+    ],
+    "notes": "Canonical node-presence evidence is registry-backed by SG-SPEC-0054 presence-field semantics, explicit valid state/basis combinations, machine-readable marker requirements, SG-SPEC-0001 adoption, SG-SPEC-0019 lineage grounding, and active/historical examples in SG-SPEC-0045 through SG-SPEC-0048. This establishes inspectable active-versus-historical presence semantics without claiming viewer layout, storage layout, query implementation, or lifecycle-status replacement."
+  },
+  {
     "spec_id": "SG-SPEC-0058",
     "evidence_scope": "surface_level",
     "artifact_refs": [
