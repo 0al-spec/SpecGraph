@@ -52,6 +52,19 @@
     ]
   },
   {
+    "proposal_id": "0005",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0005_intent_to_proposal_workflow.md"
+    ],
+    "motivating_concern": "traceable workflow from raw intent to reviewable proposal",
+    "normalized_title": "Intent-to-Proposal Workflow and Provenance",
+    "bounded_scope": "Define the expected workflow and provenance chain from raw intent through mediated artifacts and supervisor execution into reviewable proposals without finalizing every repository layout or GUI detail.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
+  },
+  {
     "proposal_id": "0018",
     "source_artifact_class": "working_draft",
     "source_refs": [
