@@ -22754,6 +22754,7 @@ def test_build_proposal_promotion_index_reports_traceability_gaps(
     ("proposal_id", "source_refs"),
     [
         ("0001", ["docs/archive/proposal_sources/0001_vocabulary.md"]),
+        ("0002", ["docs/archive/proposal_sources/0002_intent_layer.md"]),
     ],
 )
 def test_live_proposal_promotion_trace_is_bounded(
