@@ -234,6 +234,19 @@
     ]
   },
   {
+    "proposal_id": "0019",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0019_spec_to_code_trace_plane.md"
+    ],
+    "motivating_concern": "implementation observability outside the graph",
+    "normalized_title": "Spec-to-Code Trace Plane and Implementation Overlay",
+    "bounded_scope": "Define a derived trace plane for implementation state, code/test evidence, backlog projection, and freshness without turning canonical spec YAML into a manual inventory of source files or replacing Git and PR systems.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
+  },
+  {
     "proposal_id": "0022",
     "source_artifact_class": "working_draft",
     "source_refs": [
