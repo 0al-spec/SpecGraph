@@ -22774,6 +22774,7 @@ def test_build_proposal_promotion_index_reports_traceability_gaps(
                 "docs/archive/proposal_sources/0016_declarative_supervisor_policy_and_decision_inspection.md"
             ],
         ),
+        ("0017", ["docs/archive/proposal_sources/0017_role_first_semantic_bias.md"]),
     ],
 )
 def test_live_proposal_promotion_trace_is_bounded(
