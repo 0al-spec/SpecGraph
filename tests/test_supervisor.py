@@ -22776,6 +22776,7 @@ def test_build_proposal_promotion_index_reports_traceability_gaps(
         ),
         ("0017", ["docs/archive/proposal_sources/0017_role_first_semantic_bias.md"]),
         ("0019", ["docs/archive/proposal_sources/0019_spec_to_code_trace_plane.md"]),
+        ("0020", ["docs/archive/proposal_sources/0020_draft_to_proposal_promotion.md"]),
     ],
 )
 def test_live_proposal_promotion_trace_is_bounded(
