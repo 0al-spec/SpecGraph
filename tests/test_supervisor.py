@@ -22760,6 +22760,7 @@ def test_build_proposal_promotion_index_reports_traceability_gaps(
         ("0005", ["docs/archive/proposal_sources/0005_intent_to_proposal_workflow.md"]),
         ("0006", ["docs/archive/proposal_sources/0006_typed_validation.md"]),
         ("0007", ["docs/archive/proposal_sources/0007_supervisor_performance.md"]),
+        ("0008", ["docs/archive/proposal_sources/0008_refinement_shape.md"]),
     ],
 )
 def test_live_proposal_promotion_trace_is_bounded(

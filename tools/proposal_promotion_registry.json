@@ -91,6 +91,19 @@
     ]
   },
   {
+    "proposal_id": "0008",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0008_refinement_shape.md"
+    ],
+    "motivating_concern": "serial refinement ladders and over-atomized subtree shape",
+    "normalized_title": "Refinement-Shape Signals for Serial Ladders and Over-Atomized Subtrees",
+    "bounded_scope": "Define derived graph-health signals for serialized refinement ladders and over-atomized subtrees without hard-banning deep chains or automatically rewriting canonical graph structure.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
+  },
+  {
     "proposal_id": "0018",
     "source_artifact_class": "working_draft",
     "source_refs": [
