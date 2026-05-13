@@ -435,6 +435,14 @@
     "notes": "Canonical node-presence semantics are semantic-surface backed by the runtime evidence registry and a live regression anchor. This trace contract intentionally does not claim viewer layout, storage layout, query implementation, or lifecycle-status replacement."
   },
   {
+    "spec_id": "SG-SPEC-0055",
+    "code_surfaces": [],
+    "test_surfaces": [
+      "tests/test_supervisor.py"
+    ],
+    "notes": "Linked-readiness evidence reconciliation semantics are semantic-surface backed by the runtime evidence registry and a live regression anchor. This trace contract intentionally does not claim validator implementation, queue behavior, supervisor scheduling, or storage schema behavior."
+  },
+  {
     "spec_id": "SG-SPEC-0058",
     "code_surfaces": [
       "tools/supervisor.py"
