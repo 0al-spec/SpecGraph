@@ -182,6 +182,19 @@
     ]
   },
   {
+    "proposal_id": "0015",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0015_atomic_artifact_store_and_id_allocation.md"
+    ],
+    "motivating_concern": "atomic runtime artifacts and collision-safe identifier allocation",
+    "normalized_title": "Atomic Artifact Store and Collision-Safe Allocation for Supervisor",
+    "bounded_scope": "Define atomic artifact writes, lock discipline, collision-safe run/worktree identifiers, and reserved spec ID allocation without introducing a distributed coordinator or database replacement.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
+  },
+  {
     "proposal_id": "0018",
     "source_artifact_class": "working_draft",
     "source_refs": [
