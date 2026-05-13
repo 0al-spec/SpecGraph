@@ -1,5 +1,18 @@
 [
   {
+    "proposal_id": "0001",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0001_vocabulary.md"
+    ],
+    "motivating_concern": "vocabulary and executable ontology drift",
+    "normalized_title": "Ubiquitous Vocabulary and Executable Ontology Layer",
+    "bounded_scope": "Define a machine-readable vocabulary layer for canonical terms, aliases, relation contracts, state families, and future domain vocabularies without finalizing every ontology artifact or viewer UX.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
+  },
+  {
     "proposal_id": "0018",
     "source_artifact_class": "working_draft",
     "source_refs": [

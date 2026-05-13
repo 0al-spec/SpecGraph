@@ -22750,6 +22750,28 @@ def test_build_proposal_promotion_index_reports_traceability_gaps(
     assert index["promotion_backlog"]["grouped_by_next_gap"]["attach_promotion_trace"] == ["0022"]
 
 
+@pytest.mark.parametrize(
+    ("proposal_id", "source_refs"),
+    [
+        ("0001", ["docs/archive/proposal_sources/0001_vocabulary.md"]),
+    ],
+)
+def test_live_proposal_promotion_trace_is_bounded(
+    supervisor_module: object,
+    proposal_id: str,
+    source_refs: list[str],
+) -> None:
+    index = supervisor_module.build_proposal_promotion_index()
+    by_id = {entry["proposal_id"]: entry for entry in index["entries"]}
+    traceability = by_id[proposal_id]["promotion_traceability"]
+
+    assert traceability["status"] == "bounded"
+    assert traceability["next_gap"] == "none"
+    assert traceability["source_refs"] == source_refs
+    assert traceability["required_provenance_links"] == ["source_draft_ref"]
+    assert traceability["missing_fields"] == []
+
+
 def test_build_proposal_promotion_index_rejects_source_refs_outside_repo_root(
     supervisor_module: object,
     repo_fixture: Path,
