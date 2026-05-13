@@ -13,6 +13,19 @@
     ]
   },
   {
+    "proposal_id": "0002",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0002_intent_layer.md"
+    ],
+    "motivating_concern": "pre-canonical intent capture and mediated discovery",
+    "normalized_title": "Intent Layer and Mediated Discovery",
+    "bounded_scope": "Define a persistent intent-facing layer and mediator boundary for raw or semi-normalized user goals without finalizing repository layout, mediator implementation, or viewer UX.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
+  },
+  {
     "proposal_id": "0018",
     "source_artifact_class": "working_draft",
     "source_refs": [
