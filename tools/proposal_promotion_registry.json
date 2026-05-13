@@ -169,6 +169,19 @@
     ]
   },
   {
+    "proposal_id": "0014",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0014_non_escalating_fallback_isolation.md"
+    ],
+    "motivating_concern": "fallback execution must not expand supervisor authority",
+    "normalized_title": "Non-Escalating Fallback Isolation for Supervisor Runs",
+    "bounded_scope": "Define non-escalating fallback isolation semantics so degraded execution preserves or narrows authority without designing every future container or copied-workspace runtime detail.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
+  },
+  {
     "proposal_id": "0018",
     "source_artifact_class": "working_draft",
     "source_refs": [
