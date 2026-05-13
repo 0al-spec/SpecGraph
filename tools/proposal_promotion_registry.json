@@ -130,6 +130,19 @@
     ]
   },
   {
+    "proposal_id": "0011",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0011_pre_spec_semantic_layer.md"
+    ],
+    "motivating_concern": "reviewable pre-spec semantics before canonical promotion",
+    "normalized_title": "Pre-Spec Semantic Layer for Observable Intent",
+    "bounded_scope": "Define graph-native pre-spec semantic kinds, review axes, and promotion boundaries without finalizing all repository layout, viewer UX, or automatic raw-chat promotion behavior.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
+  },
+  {
     "proposal_id": "0018",
     "source_artifact_class": "working_draft",
     "source_refs": [
