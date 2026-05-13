@@ -9128,6 +9128,7 @@ def test_live_spec_evidence_contract_is_chain_complete(
     ("spec_id", "matched_code_paths"),
     [
         ("SG-SPEC-0001", []),
+        ("SG-SPEC-0002", []),
     ],
 )
 def test_live_spec_trace_contract_is_registry_backed(
