@@ -247,6 +247,19 @@
     ]
   },
   {
+    "proposal_id": "0020",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0020_draft_to_proposal_promotion.md"
+    ],
+    "motivating_concern": "implicit draft-to-proposal promotion boundary",
+    "normalized_title": "Draft-to-Proposal Promotion Boundary and Workflow",
+    "bounded_scope": "Define the semantic boundary and provenance-preserving workflow for promoting working drafts into reviewable proposals without requiring every idea to start in one folder or auto-promoting drafts into proposal-lane truth.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
+  },
+  {
     "proposal_id": "0022",
     "source_artifact_class": "working_draft",
     "source_refs": [
