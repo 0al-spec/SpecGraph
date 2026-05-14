@@ -2,7 +2,7 @@ id: SG-SPEC-0022
 title: SpecGraph - Node Maturity Semantics
 kind: spec
 created_at: '2026-04-12T08:01:41Z'
-updated_at: '2026-04-13T04:51:58Z'
+updated_at: '2026-05-14T22:21:00Z'
 status: frozen
 maturity: 1.0
 depends_on: []
@@ -10,9 +10,10 @@ relates_to:
 - SG-SPEC-0003
 - SG-SPEC-0021
 refines:
-- SG-SPEC-0001
+- SG-SPEC-0062
 inputs:
 - specs/nodes/SG-SPEC-0001.yaml
+- specs/nodes/SG-SPEC-0062.yaml
 - specs/nodes/SG-SPEC-0003.yaml
 - specs/nodes/SG-SPEC-0021.yaml
 outputs:
@@ -62,7 +63,7 @@ acceptance_evidence:
     reification before any estimated value can become canonical, complementing MAT-003.
 
     '
-prompt: Refine SG-SPEC-0001 by defining the canonical semantics of node maturity. Keep this child focused
+prompt: Refine SG-SPEC-0062 by defining the canonical semantics of node maturity. Keep this child focused
   on maturity meaning, lifecycle interaction, and canonical versus derived separation; do not define formulas,
   automation, dashboards, or threshold policy.
 specification:
