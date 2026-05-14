@@ -609,5 +609,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0048",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0048_supervisor_stalled_run_salvage_protocol.md"
+    ],
+    "motivating_concern": "supervisor can stall after child worktree mutation without governed recovery evidence",
+    "normalized_title": "Supervisor Stalled Run Salvage Protocol",
+    "bounded_scope": "Define recoverable stalled-run salvage status, evidence artifacts, and human-review adoption boundaries without implementing a watchdog, auto-applying dirty worktree diffs, or committing raw worktree contents.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]
