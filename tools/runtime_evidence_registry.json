@@ -3755,5 +3755,74 @@
       }
     ],
     "notes": "Governance-and-vocabulary cluster evidence is registry-backed by SG-SPEC-0064, the root fan-out pressure proposal, the SG-SPEC-0001 delegation wording, and the first reparented refinement-policy member SG-SPEC-0002. This establishes an inspectable semantic cluster parent without claiming validator implementation, supervisor workflow, queue control, runtime execution, vocabulary compiler behavior, or viewer implementation."
+  },
+  {
+    "spec_id": "SG-SPEC-0065",
+    "evidence_scope": "surface_level",
+    "artifact_refs": [
+      "specs/nodes/SG-SPEC-0065.yaml",
+      "specs/nodes/SG-SPEC-0001.yaml",
+      "specs/nodes/SG-SPEC-0007.yaml",
+      "specs/nodes/SG-SPEC-0009.yaml",
+      "docs/proposals/0022_refinement_fan_out_pressure.md",
+      "tests/test_supervisor.py"
+    ],
+    "runtime_entities": [
+      {
+        "entity_id": "specgraph.intent_operator_ingress_cluster",
+        "entity_kind": "semantic_cluster_parent"
+      },
+      {
+        "entity_id": "specgraph.intent_ingress_boundary",
+        "entity_kind": "aggregate_intent_ingress_contract"
+      },
+      {
+        "entity_id": "specgraph.operator_ingress_boundary",
+        "entity_kind": "aggregate_operator_ingress_contract"
+      },
+      {
+        "entity_id": "specgraph.root_fan_out_reduction.intent_operator",
+        "entity_kind": "graph_health_response"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0065.yaml",
+        "pattern": "intent_operator_ingress_cluster"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0065.yaml",
+        "pattern": "operator_ingress_boundary"
+      },
+      {
+        "path": "docs/proposals/0022_refinement_fan_out_pressure.md",
+        "pattern": "introduce_semantic_cluster_parent"
+      }
+    ],
+    "outcome_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0065.yaml",
+        "pattern": "member_contracts"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0065.yaml",
+        "pattern": "dependency_policy"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0065.yaml",
+        "pattern": "refinement_routing_policy"
+      }
+    ],
+    "adoption_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0001.yaml",
+        "pattern": "intent or operator ingress semantics to SG-SPEC-0065"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0007.yaml",
+        "pattern": "SG-SPEC-0065"
+      }
+    ],
+    "notes": "Intent-and-operator ingress cluster evidence is registry-backed by SG-SPEC-0065, the root fan-out pressure proposal, the SG-SPEC-0001 delegation wording, and the first reparented intent-mediation member SG-SPEC-0007. This establishes an inspectable semantic cluster parent without claiming UI, chat transport, agent workflow implementation, request execution, queue control, storage layout, or viewer implementation."
   }
 ]
