@@ -596,5 +596,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0047",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0047_evidence_backed_build_protocol.md"
+    ],
+    "motivating_concern": "raw supervisor runs are either ignored or over-treated as proof",
+    "normalized_title": "Evidence-Backed Build Protocol",
+    "bounded_scope": "Define curated evidence packets and a build protocol bridge from mature specs to implementation work and runtime evidence without committing raw runs, auto-generating code, or replacing human PR review.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]
