@@ -16341,14 +16341,15 @@ def build_spec_activity_feed(
         event_types = spec_activity_event_types_from_commit(commit_ref)
         if not event_types:
             continue
-        spec_ids = spec_activity_spec_ids_from_commit(commit_ref)
-        if not spec_ids and any(
-            event_type in GRAPH_LEVEL_SPEC_ACTIVITY_EVENT_TYPES for event_type in event_types
-        ):
-            spec_ids = [""]
-        if not spec_ids:
-            continue
+        commit_spec_ids = spec_activity_spec_ids_from_commit(commit_ref)
         for event_type in event_types:
+            spec_ids = (
+                commit_spec_ids
+                if commit_spec_ids
+                else ([""] if event_type in GRAPH_LEVEL_SPEC_ACTIVITY_EVENT_TYPES else [])
+            )
+            if not spec_ids:
+                continue
             stack_context = None
             if event_type == "stack_only_merge_observed":
                 stack_context = spec_activity_cached_stack_only_merge_context(commit_ref)

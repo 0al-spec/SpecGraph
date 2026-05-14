@@ -8048,7 +8048,10 @@ def test_build_spec_activity_feed_emits_proposal_registry_events_without_spec_id
                 "short_sha": "fffffff",
                 "committed_at": "2026-05-14T11:00:00+00:00",
                 "subject": "Backfill foundation proposal runtime registry",
-                "paths": ["tools/proposal_runtime_registry.json"],
+                "paths": [
+                    "tools/proposal_runtime_registry.json",
+                    "tools/spec_trace_registry.json",
+                ],
             },
         ],
     )
