@@ -492,5 +492,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0039",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0039_review_feedback_learning_loop.md"
+    ],
+    "motivating_concern": "review comments are patched but not converted into prevention evidence",
+    "normalized_title": "Review Feedback Learning Loop",
+    "bounded_scope": "Define review-feedback records, root-cause vocabulary, prevention actions, verification, and residual-risk handling without requiring automatic GitHub parsing, automatic thread resolution, or treating every comment as actionable.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]
