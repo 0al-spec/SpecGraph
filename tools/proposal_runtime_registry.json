@@ -1,5 +1,291 @@
 [
   {
+    "proposal_id": "0001",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "tools/supervisor.py",
+      "tests/test_supervisor.py",
+      "tools/specgraph_vocabulary.json"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/specgraph_vocabulary.json",
+        "pattern": "\"artifact_kind\": \"specgraph_vocabulary\""
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def build_vocabulary_index("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def build_vocabulary_drift_report("
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_vocabulary_index_flattens_terms_aliases_and_contexts("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_vocabulary_drift_report_flags_collisions_and_pre_spec_drift("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_main_builds_vocabulary_index_without_loading_specs("
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "write_vocabulary_index(index)"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "write_vocabulary_drift_report(report)"
+      }
+    ]
+  },
+  {
+    "proposal_id": "0002",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "tools/supervisor.py",
+      "tests/test_supervisor.py",
+      "tools/intent_layer_policy.json",
+      "tools/pre_spec_semantics_policy.json"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/intent_layer_policy.json",
+        "pattern": "\"artifact_kind\": \"intent_layer_policy\""
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def build_intent_layer_overlay("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def build_pre_spec_semantics_index("
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_intent_layer_overlay_marks_invalid_query_contract("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_pre_spec_semantics_index_links_intent_proposals_and_canonical_specs("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_main_builds_intent_layer_overlay_as_standalone_command("
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "write_intent_layer_overlay(overlay)"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "write_pre_spec_semantics_index(index)"
+      }
+    ]
+  },
+  {
+    "proposal_id": "0003",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "tools/supervisor.py",
+      "tests/test_supervisor.py",
+      "tools/operator_request_bridge_policy.json"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/operator_request_bridge_policy.json",
+        "pattern": "\"artifact_kind\": \"operator_request_bridge_policy\""
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def normalize_operator_request_packet("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def sync_intent_layer_from_operator_request("
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_normalize_operator_request_packet_builds_typed_execution_contract("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_main_routes_operator_request_packet_to_targeted_refinement("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_main_routes_operator_request_packet_to_split_proposal("
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "sync_intent_layer_from_operator_request(operator_request_context)"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "payload[\"operator_request_bridge\"] = {"
+      }
+    ]
+  },
+  {
+    "proposal_id": "0004",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "tools/supervisor.py",
+      "tests/test_supervisor.py",
+      "tools/evaluator_loop_policy.json",
+      "tools/evaluator_intervention_policy.json"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/evaluator_loop_policy.json",
+        "pattern": "\"artifact_kind\": \"evaluator_loop_policy\""
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def choose_evaluator_intervention("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def build_evaluator_loop_control("
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_evaluator_loop_control_records_intervention_and_stop_conditions("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_choose_evaluator_intervention_prefers_handoff_over_authority_constraint("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_choose_evaluator_intervention_converts_authority_bound_graph_update_to_propose("
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "write_evaluator_control_artifact(evaluator_loop_control)"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "\"evaluator_loop_control\": evaluator_loop_control"
+      }
+    ]
+  },
+  {
+    "proposal_id": "0005",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "tools/supervisor.py",
+      "tests/test_supervisor.py",
+      "tools/intent_layer_policy.json",
+      "tools/proposal_lane_policy.json"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def record_operator_request_execution("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def proposal_lane_lineage_links("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def sync_intent_layer_from_operator_request("
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_pre_spec_semantics_index_links_intent_proposals_and_canonical_specs("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_proposal_lane_lineage_links_include_intent_handles("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_record_operator_request_execution_marks_proposal_linked("
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "record_operator_request_execution("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "\"proposal_ids\": proposal_ids"
+      }
+    ]
+  },
+  {
+    "proposal_id": "0006",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "tools/supervisor.py",
+      "tests/test_supervisor.py",
+      "tools/validation_findings_policy.json",
+      "tools/safe_repair_policy.json"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/validation_findings_policy.json",
+        "pattern": "\"artifact_kind\": \"validation_findings_policy\""
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def validation_finding("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def build_safe_repair_contract("
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_validate_transition_packet_reports_structured_findings_for_missing_fields("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_safe_repair_contract_is_bounded_to_worktree_candidate("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_main_transition_packet_summary_preserves_validation_findings("
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "\"validation_findings_policy\": validation_findings_policy_reference()"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "\"validation_summary\": validation_summary(validation_findings)"
+      }
+    ]
+  },
+  {
     "proposal_id": "0007",
     "posture": "synchronous_runtime_slice",
     "runtime_surfaces": [
