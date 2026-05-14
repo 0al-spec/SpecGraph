@@ -466,5 +466,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0037",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0037_implementation_work_layer.md"
+    ],
+    "motivating_concern": "missing reviewable bridge between specification and coding work",
+    "normalized_title": "Implementation Work Layer",
+    "bounded_scope": "Define an implementation work layer, delta snapshot, and implementation work index between canonical specifications and code without writing code directly or treating implementation work as canonical spec truth.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]
