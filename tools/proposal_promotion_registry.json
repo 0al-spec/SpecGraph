@@ -479,5 +479,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0038",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0038_specpm_public_registry_observation.md"
+    ],
+    "motivating_concern": "SpecPM public registry visibility is not observable from SpecGraph",
+    "normalized_title": "SpecPM Public Registry Observation",
+    "bounded_scope": "Define a read-only SpecPM public registry observation layer for local dev registry payloads and drift without package publishing, checkout writes, canonical graph mutation, global listing assumptions, or stable public authority claims.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]
