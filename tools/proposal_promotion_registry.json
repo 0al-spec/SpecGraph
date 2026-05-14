@@ -453,5 +453,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0036",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0036_topology_facts_not_spec_prose.md"
+    ],
+    "motivating_concern": "canonical specs narrate graph topology instead of system meaning",
+    "normalized_title": "Topology Facts Are Not Spec Prose",
+    "bounded_scope": "Define a domain-first prose rule and supervisor prompt guardrail that keeps topology in structured graph metadata without banning legitimate boundary specs or rewriting the whole graph in one pass.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]
