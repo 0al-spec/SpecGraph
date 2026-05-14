@@ -544,5 +544,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0043",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0043_metric_pack_plugin_architecture.md"
+    ],
+    "motivating_concern": "metric methods lack a governed plugin architecture and authority boundary",
+    "normalized_title": "Metric Pack Plugin Architecture",
+    "bounded_scope": "Define metric packs as read-only plugin-style interpreters with source, contract, adapter, run, and projection layers without making Metrics a submodule, treating draft papers as operational authority, or allowing metrics to auto-enforce policy.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]
