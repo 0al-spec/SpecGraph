@@ -23004,6 +23004,7 @@ def test_build_proposal_promotion_index_reports_traceability_gaps(
         ("0046", ["docs/archive/proposal_sources/0046_proposal_spec_trace_semantics.md"]),
         ("0047", ["docs/archive/proposal_sources/0047_evidence_backed_build_protocol.md"]),
         ("0048", ["docs/archive/proposal_sources/0048_supervisor_stalled_run_salvage_protocol.md"]),
+        ("0049", ["docs/archive/proposal_sources/0049_multi_service_factory_architecture.md"]),
     ],
 )
 def test_live_proposal_promotion_trace_is_bounded(
