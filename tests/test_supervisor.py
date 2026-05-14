@@ -22767,6 +22767,43 @@ def test_implemented_proposals_0008_and_0017_have_full_marker_coverage(
         )
 
 
+def test_foundation_proposals_have_full_runtime_marker_coverage(
+    supervisor_module: object,
+) -> None:
+    """Foundation draft proposals that already have tooling slices must stay closed."""
+    index = supervisor_module.build_proposal_runtime_index()
+    by_id = {e["proposal_id"]: e for e in index["entries"]}
+
+    for pid in ("0001", "0002", "0003", "0004", "0005", "0006"):
+        assert pid in by_id, f"Proposal {pid} missing from proposal_runtime_index"
+        entry = by_id[pid]
+        rr = entry["runtime_realization"]
+        vc = entry["validation_closure"]
+        oc = entry["observation_coverage"]
+        chain = entry["reflective_chain"]
+        assert rr["status"] == "implemented", (
+            f"Proposal {pid} runtime_realization.status={rr['status']!r}; expected 'implemented'"
+        )
+        assert rr["missing_markers"] == [], (
+            f"Proposal {pid} has missing runtime markers: {rr['missing_markers']}"
+        )
+        assert vc["status"] == "covered", (
+            f"Proposal {pid} validation_closure.status={vc['status']!r}; expected 'covered'"
+        )
+        assert vc["missing_markers"] == [], (
+            f"Proposal {pid} has missing validation markers: {vc['missing_markers']}"
+        )
+        assert oc["status"] == "covered", (
+            f"Proposal {pid} observation_coverage.status={oc['status']!r}; expected 'covered'"
+        )
+        assert oc["missing_markers"] == [], (
+            f"Proposal {pid} has missing observation markers: {oc['missing_markers']}"
+        )
+        assert chain["next_gap"] == "none", (
+            f"Proposal {pid} reflective_chain.next_gap={chain['next_gap']!r}; expected 'none'"
+        )
+
+
 def test_all_implemented_proposals_have_registry_entries() -> None:
     """Every Implemented proposal must have a registry entry with at least one marker."""
     registry_path = SPECGRAPH_ROOT / "tools" / "proposal_runtime_registry.json"
