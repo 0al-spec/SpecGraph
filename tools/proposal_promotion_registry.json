@@ -390,6 +390,19 @@
     ]
   },
   {
+    "proposal_id": "0031",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0031_specpm_import_handoff.md"
+    ],
+    "motivating_concern": "SpecPM import preview lacks explicit upstream candidate routing",
+    "normalized_title": "SpecPM Import Handoff Artifacts",
+    "bounded_scope": "Define a reviewable import-handoff artifact and upstream route metadata for inbound SpecPM bundles without auto-importing canonical specs, writing proposal-lane nodes, or applying bundles silently.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
+  },
+  {
     "proposal_id": "0034",
     "source_artifact_class": "working_draft",
     "source_refs": [
