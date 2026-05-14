@@ -416,6 +416,19 @@
     ]
   },
   {
+    "proposal_id": "0033",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0033_specpm_feedback_index.md"
+    ],
+    "motivating_concern": "SpecPM downstream review and adoption signals are not reflected back into derived surfaces",
+    "normalized_title": "SpecPM Feedback into Derived Surfaces",
+    "bounded_scope": "Define a derived SpecPM feedback index from delivery workflow and sibling checkout observations without treating downstream state as canonical truth or auto-applying acceptance back into specs.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
+  },
+  {
     "proposal_id": "0034",
     "source_artifact_class": "working_draft",
     "source_refs": [
