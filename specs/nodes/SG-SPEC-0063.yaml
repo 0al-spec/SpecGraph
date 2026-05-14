@@ -1,0 +1,137 @@
+id: SG-SPEC-0063
+title: SpecGraph - Realization and Observation Semantics Cluster
+kind: spec
+created_at: '2026-05-14T22:30:00Z'
+updated_at: '2026-05-14T22:30:00Z'
+status: linked
+maturity: 0.68
+depends_on:
+- SG-SPEC-0017
+- SG-SPEC-0018
+- SG-SPEC-0020
+- SG-SPEC-0021
+relates_to:
+- SG-SPEC-0003
+- SG-SPEC-0007
+refines:
+- SG-SPEC-0001
+inputs:
+- specs/nodes/SG-SPEC-0001.yaml
+- specs/nodes/SG-SPEC-0017.yaml
+- specs/nodes/SG-SPEC-0018.yaml
+- specs/nodes/SG-SPEC-0020.yaml
+- specs/nodes/SG-SPEC-0021.yaml
+- docs/proposals/0022_refinement_fan_out_pressure.md
+outputs:
+- specs/nodes/SG-SPEC-0063.yaml
+allowed_paths:
+- specs/nodes/SG-SPEC-0063.yaml
+acceptance:
+- Defines SG-SPEC-0063 as the intermediate semantic cluster parent under SG-SPEC-0001 for realization,
+  observation, adoption, executable traceability, and derived metric-family semantics.
+- Groups runtime observability entities, adoption-layer entities, executable-layer traceability, and derived
+  metric family boundaries without redefining the bounded contracts owned by those children.
+- Defines root dependency routing so SG-SPEC-0001 can depend on one realization-and-observation aggregate
+  while concrete child specs keep their existing semantic ownership and dependencies.
+- Keeps implementation tooling, telemetry collection, dashboards, metric formulas, adoption operations,
+  and repository layout out of scope for this cluster.
+acceptance_evidence:
+- criterion: Defines SG-SPEC-0063 as the intermediate semantic cluster parent under SG-SPEC-0001 for realization,
+    observation, adoption, executable traceability, and derived metric-family semantics.
+  evidence: specification.objective, specification.scope.in, and specification.cluster_contract.parent_boundary
+    define SG-SPEC-0063 as the delegated realization-and-observation cluster beneath SG-SPEC-0001, while
+    inputs include the fan-out pressure proposal that motivates intermediate clustering.
+- criterion: Groups runtime observability entities, adoption-layer entities, executable-layer traceability,
+    and derived metric family boundaries without redefining the bounded contracts owned by those children.
+  evidence: specification.member_contracts enumerates SG-SPEC-0017, SG-SPEC-0018, SG-SPEC-0020, and SG-SPEC-0021
+    with explicit member roles and ownership boundaries.
+- criterion: Defines root dependency routing so SG-SPEC-0001 can depend on one realization-and-observation
+    aggregate while concrete child specs keep their existing semantic ownership and dependencies.
+  evidence: specification.cluster_contract.dependency_policy and specification.cluster_contract.refinement_routing_policy
+    state that SG-SPEC-0001 should depend on SG-SPEC-0063 for the aggregate, while members retain their
+    bounded contracts and may be reparented under the cluster without changing stable spec identity.
+- criterion: Keeps implementation tooling, telemetry collection, dashboards, metric formulas, adoption
+    operations, and repository layout out of scope for this cluster.
+  evidence: specification.scope.out excludes implementation tooling, telemetry collection, dashboards,
+    metric formulas, adoption operations, and repository layout; specification.non_goal_policy forbids
+    runtime realization claims and wrapper-only clustering.
+prompt: Introduce the realization and observation semantics cluster beneath SG-SPEC-0001 so root fan-out
+  pressure can be reduced through a meaningful intermediate parent for runtime, adoption, executable,
+  and metric-family semantics.
+specification:
+  objective: Define the intermediate semantic cluster for the graph-to-realization boundary so SG-SPEC-0001
+    can delegate runtime observability, adoption semantics, executable traceability, and derived metric
+    family concerns through one legible aggregate boundary while each concrete child keeps its stable
+    bounded contract.
+  scope:
+    in:
+    - Intermediate cluster role for realization and observation semantics beneath SG-SPEC-0001
+    - Grouping boundary for runtime observability, adoption-layer entities, executable-layer traceability,
+      and derived metric-family semantics
+    - Dependency routing from SG-SPEC-0001 through the cluster to concrete semantic children
+    - Reparenting boundary for reducing root refinement fan-out without changing stable child IDs
+    - Canonical-versus-derived protection for observation and metric-family semantics
+    out:
+    - Runtime instrumentation, telemetry collection, storage schemas, or observability backends
+    - Metric formulas, threshold policies, dashboards, ranking, or scheduler behavior
+    - UX taxonomy, analytics event schemas, campaign operations, or adoption execution
+    - Repository layout, CI workflow, build tooling, deployment mechanics, or code-generation strategy
+    - Viewer UI, graph layout, badges, alerts, or interaction design
+    - Runtime implementation or dedicated executor ownership for these semantics
+  terminology:
+    realization_observation_cluster: The intermediate parent under SG-SPEC-0001 that groups semantics
+      connecting canonical graph subjects to execution, observation, adoption, and metric interpretation.
+    realization_boundary: The semantic frontier where canonical specs become executable anchors, tests,
+      releases, or implementation-facing traceability subjects without making operational artifacts authoritative.
+    observation_boundary: The semantic frontier where runtime evidence, adoption evidence, and derived
+      metric families inform graph understanding without becoming canonical truth by default.
+    cluster_member_contract: A stable child spec whose bounded semantics are grouped by SG-SPEC-0063 without
+      losing its own identity, acceptance criteria, or dependency relationships.
+  cluster_contract:
+    parent_boundary:
+    - SG-SPEC-0001 remains the seed ontology and owns root layer, node kind, edge kind, lifecycle, and
+      invariant semantics.
+    - SG-SPEC-0063 owns the aggregate boundary for the graph-to-realization and graph-to-observation semantic
+      region.
+    - The cluster exists only because runtime observability, adoption semantics, executable traceability,
+      and metric families form a real downstream observation-and-realization aggregate.
+    dependency_policy:
+    - SG-SPEC-0001 may depend on SG-SPEC-0063 as the aggregate blocking descendant for realization and
+      observation semantics.
+    - SG-SPEC-0063 depends on concrete member specs that define the detailed semantics required by the
+      aggregate.
+    - Member specs keep their stable IDs and may retain their existing own dependencies; the cluster does
+      not rewrite those contracts.
+    refinement_routing_policy:
+    - Existing SG-SPEC-0001 children whose primary role is runtime observability, adoption, executable
+      traceability, or derived metric-family semantics may be reparented to SG-SPEC-0063.
+    - Reparenting a member under SG-SPEC-0063 must preserve the member's stable identity, acceptance,
+      provenance, and own dependency semantics.
+    - SG-SPEC-0001 should reference the cluster for the aggregate and avoid repeating a flat list of every
+      downstream realization or observation member when the cluster owns that grouping.
+  member_contracts:
+  - spec_id: SG-SPEC-0017
+    member_role: Runtime observability entity boundary.
+    ownership_boundary: Defines ObservabilityContract, Campaign, and Attestation semantics plus evidence
+      boundaries without defining telemetry collection or instrumentation.
+  - spec_id: SG-SPEC-0018
+    member_role: Adoption-layer entity boundary.
+    ownership_boundary: Defines DiscoverySurface and AdoptionCriterion semantics without defining UX taxonomy,
+      analytics formulas, or campaign operations.
+  - spec_id: SG-SPEC-0020
+    member_role: Executable-layer traceability boundary.
+    ownership_boundary: Defines code_surface, test, release, and executable trace links without prescribing
+      repository layout, CI, build, deployment, or language choices.
+  - spec_id: SG-SPEC-0021
+    member_role: Derived metric family boundary.
+    ownership_boundary: Defines metric-family semantic handles and canonical-versus-derived separation
+      without defining formulas, thresholds, dashboards, storage, or scheduler behavior.
+  non_goal_policy:
+  - SG-SPEC-0063 must not redefine member formulas, runtime entity schemas, telemetry pipelines, or viewer
+    affordances.
+  - SG-SPEC-0063 must not claim runtime realization merely because its members name executable or observation
+    surfaces.
+  - SG-SPEC-0063 must not hide unresolved member gaps; backlog and evidence projections should continue
+    to point to the concrete member when the gap is member-specific.
+gate_state: none
+proposed_status: null
