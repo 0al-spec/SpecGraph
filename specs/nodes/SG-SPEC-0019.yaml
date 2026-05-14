@@ -8,9 +8,10 @@ maturity: 1.0
 depends_on: []
 relates_to: []
 refines:
-- SG-SPEC-0001
+- SG-SPEC-0062
 inputs:
 - specs/nodes/SG-SPEC-0001.yaml
+- specs/nodes/SG-SPEC-0062.yaml
 - AGENTS.md
 outputs:
 - specs/nodes/SG-SPEC-0019.yaml
@@ -65,7 +66,7 @@ acceptance_evidence:
     stand in for canonical lineage.
 
     '
-prompt: Refine SG-SPEC-0001 by defining the canonical revision and supersession lineage boundary. Keep
+prompt: Refine SG-SPEC-0062 by defining the canonical revision and supersession lineage boundary. Keep
   this child implementation-agnostic and focused on ontology semantics for change history, stable identity,
   and canonical versus derived history separation.
 specification:
