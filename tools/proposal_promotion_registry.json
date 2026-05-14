@@ -557,5 +557,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0044",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0044_metric_pack_runtime_followups.md"
+    ],
+    "motivating_concern": "metric-pack observation slice needs explicit ordered runtime follow-ups",
+    "normalized_title": "Metric Pack Runtime Followups",
+    "bounded_scope": "Record the realized metric-pack observation boundary and define ordered follow-ups for drift, adapters, run artifacts, pricing provenance, and proposal-first findings without executing metric packs or promoting draft sources to authority.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]
