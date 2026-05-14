@@ -622,5 +622,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0049",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0049_multi_service_factory_architecture.md"
+    ],
+    "motivating_concern": "SpecGraph standalone deployment lacks explicit multi-service factory boundaries",
+    "normalized_title": "Multi-Service SpecGraph Factory Architecture",
+    "bounded_scope": "Define SpecPM, SpecGraph, and ContextBuilder/SpecSpace service roles plus human-on-the-loop authority boundaries without implementing Docker deployment, replacing GitHub review, or granting unconditional merge or production authority.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]
