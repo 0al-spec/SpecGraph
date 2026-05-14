@@ -22789,6 +22789,7 @@ def test_build_proposal_promotion_index_reports_traceability_gaps(
         ("0031", ["docs/archive/proposal_sources/0031_specpm_import_handoff.md"]),
         ("0032", ["docs/archive/proposal_sources/0032_specpm_delivery_workflow.md"]),
         ("0033", ["docs/archive/proposal_sources/0033_specpm_feedback_index.md"]),
+        ("0035", ["docs/archive/proposal_sources/0035_immutable_canonical_metadata.md"]),
     ],
 )
 def test_live_proposal_promotion_trace_is_bounded(
