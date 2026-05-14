@@ -986,7 +986,7 @@
     "adoption_markers": [
       {
         "path": "specs/nodes/SG-SPEC-0001.yaml",
-        "pattern": "adoption-layer entities to SG-SPEC-0018"
+        "pattern": "Adoption-layer entities (DiscoverySurface, AdoptionCriterion, etc.)"
       },
       {
         "path": "specs/nodes/SG-SPEC-0007.yaml",
