@@ -20790,6 +20790,61 @@ def test_build_graph_next_moves_falls_back_to_high_priority_backlog(
     assert report["blocked_moves"][0]["blocked_by"] == ["missing_branch_rewrite_preview"]
 
 
+def test_supervisor_output_summary_includes_compact_graph_next_move_subject(
+    supervisor_module: object,
+) -> None:
+    summary = supervisor_module.supervisor_output_summary(
+        {
+            "artifact_kind": supervisor_module.GRAPH_NEXT_MOVES_ARTIFACT_KIND,
+            "schema_version": supervisor_module.GRAPH_NEXT_MOVES_SCHEMA_VERSION,
+            "generated_at": "2026-05-15T00:00:00Z",
+            "current_scene": "high_priority_backlog",
+            "scene_confidence": "medium",
+            "recommended_next_move_kind": "review_backlog_item",
+            "recommended_next_move": {
+                "move_id": "next_move::backlog::graph_health_overlay::health::SG-SPEC-0001",
+                "kind": "review_backlog_item",
+                "title": "Review backlog item: Golden Path Node",
+                "reason": "The graph backlog projection has an actionable item.",
+                "next_gap": "introduce_semantic_cluster_parent",
+                "source_artifacts": ["runs/graph_health_overlay.json"],
+                "bounded_scope": ["SG-SPEC-0001"],
+                "subject": {
+                    "subject_kind": "spec",
+                    "subject_id": "SG-SPEC-0001",
+                    "title": "Golden Path Node",
+                    "domain": "health",
+                    "source_artifact": "graph_health_overlay",
+                    "status": "structural_pressure",
+                    "review_state": "",
+                    "next_gap": "introduce_semantic_cluster_parent",
+                    "details": {"verbose": "not copied into summary"},
+                },
+                "command_hint": "Open the backlog projection entry.",
+                "success_condition": "The backlog item is resolved.",
+                "review_required": True,
+                "blocked_by": [],
+            },
+            "canonical_mutations_allowed": False,
+            "tracked_artifacts_written": False,
+        }
+    )
+
+    assert summary["recommended_next_move"]["title"] == "Review backlog item: Golden Path Node"
+    assert summary["recommended_next_move"]["next_gap"] == "introduce_semantic_cluster_parent"
+    assert summary["recommended_next_move"]["bounded_scope"] == ["SG-SPEC-0001"]
+    assert summary["recommended_next_move"]["subject"] == {
+        "subject_id": "SG-SPEC-0001",
+        "subject_kind": "spec",
+        "title": "Golden Path Node",
+        "domain": "health",
+        "source_artifact": "graph_health_overlay",
+        "status": "structural_pressure",
+        "review_state": "",
+        "next_gap": "introduce_semantic_cluster_parent",
+    }
+
+
 def test_build_graph_next_moves_prefers_metric_runtime_gap_over_draft_reference(
     supervisor_module: object,
     repo_fixture: Path,

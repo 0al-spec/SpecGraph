@@ -29943,6 +29943,54 @@ def build_viewer_surfaces(specs: list[SpecNode]) -> dict[str, Any]:
 
 SUPERVISOR_OUTPUT_MODES = {"summary", "full"}
 
+GRAPH_NEXT_MOVE_SUBJECT_SUMMARY_FIELDS = (
+    "subject_id",
+    "subject_kind",
+    "proposal_id",
+    "root_spec_id",
+    "title",
+    "domain",
+    "source_artifact",
+    "status",
+    "review_state",
+    "next_gap",
+)
+
+
+def compact_graph_next_move_summary(move: dict[str, Any]) -> dict[str, Any]:
+    summary: dict[str, Any] = {}
+    for field in (
+        "move_id",
+        "kind",
+        "title",
+        "reason",
+        "next_gap",
+        "command_hint",
+        "success_condition",
+        "review_required",
+    ):
+        if field in move:
+            summary[field] = copy.deepcopy(move[field])
+    bounded_scope = move.get("bounded_scope")
+    if isinstance(bounded_scope, list):
+        summary["bounded_scope"] = copy.deepcopy(bounded_scope)
+    source_artifacts = move.get("source_artifacts")
+    if isinstance(source_artifacts, list):
+        summary["source_artifacts"] = copy.deepcopy(source_artifacts)
+    subject = move.get("subject")
+    if isinstance(subject, dict):
+        subject_summary = {
+            field: copy.deepcopy(subject[field])
+            for field in GRAPH_NEXT_MOVE_SUBJECT_SUMMARY_FIELDS
+            if field in subject
+        }
+        if subject_summary:
+            summary["subject"] = subject_summary
+    blocked_by = move.get("blocked_by")
+    if isinstance(blocked_by, list) and blocked_by:
+        summary["blocked_by"] = copy.deepcopy(blocked_by)
+    return summary
+
 
 def supervisor_payload_kind(payload: dict[str, Any]) -> str:
     artifact_kind = str(payload.get("artifact_kind", "")).strip()
@@ -30033,6 +30081,12 @@ def supervisor_output_summary(payload: dict[str, Any]) -> dict[str, Any]:
         source_counts = payload.get("summary", {}).get("source_artifact_counts", {})
         if isinstance(source_counts, dict):
             summary["source_artifact_counts"] = copy.deepcopy(source_counts)
+    if summary["artifact_kind"] == GRAPH_NEXT_MOVES_ARTIFACT_KIND:
+        recommended_next_move = payload.get("recommended_next_move")
+        if isinstance(recommended_next_move, dict):
+            next_move_summary = compact_graph_next_move_summary(recommended_next_move)
+            if next_move_summary:
+                summary["recommended_next_move"] = next_move_summary
     return summary
 
 
