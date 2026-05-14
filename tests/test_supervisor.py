@@ -23001,6 +23001,7 @@ def test_build_proposal_promotion_index_reports_traceability_gaps(
         ("0043", ["docs/archive/proposal_sources/0043_metric_pack_plugin_architecture.md"]),
         ("0044", ["docs/archive/proposal_sources/0044_metric_pack_runtime_followups.md"]),
         ("0045", ["docs/archive/proposal_sources/0045_conversation_memory_exploration_vault.md"]),
+        ("0046", ["docs/archive/proposal_sources/0046_proposal_spec_trace_semantics.md"]),
     ],
 )
 def test_live_proposal_promotion_trace_is_bounded(
