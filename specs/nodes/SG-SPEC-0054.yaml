@@ -2,7 +2,7 @@ id: SG-SPEC-0054
 title: SpecGraph - Canonical Node Presence Surface
 kind: spec
 created_at: '2026-04-17T21:18:34Z'
-updated_at: '2026-05-13T09:30:13Z'
+updated_at: '2026-05-14T22:24:00Z'
 status: reviewed
 maturity: 0.76
 presence:
@@ -12,9 +12,10 @@ depends_on:
 - SG-SPEC-0019
 relates_to: []
 refines:
-- SG-SPEC-0001
+- SG-SPEC-0062
 inputs:
 - specs/nodes/SG-SPEC-0001.yaml
+- specs/nodes/SG-SPEC-0062.yaml
 - specs/nodes/SG-SPEC-0019.yaml
 - specs/nodes/SG-SPEC-0045.yaml
 - specs/nodes/SG-SPEC-0046.yaml
@@ -62,7 +63,7 @@ acceptance_evidence:
   evidence: specification.scope.out excludes revision-record internals, predecessor ordering mechanics,
     storage backends, query or index implementation, and viewer-specific badges or affordances. specification.boundary_policy
     also states that presence consumes SG-SPEC-0019 lineage semantics rather than replacing them.
-prompt: Define the bounded canonical node presence field beneath SG-SPEC-0001 so nodes can expose explicit
+prompt: Define the bounded canonical node presence field beneath SG-SPEC-0062 so nodes can expose explicit
   active versus historical presence without overloading lifecycle status. Keep the child implementation-agnostic,
   consume SG-SPEC-0019 lineage semantics, and make the contract narrow enough to support visible machine-readable
   markers on nodes like SG-SPEC-0045 through SG-SPEC-0048.
