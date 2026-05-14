@@ -22987,6 +22987,7 @@ def test_build_proposal_promotion_index_reports_traceability_gaps(
         ("0028", ["docs/archive/proposal_sources/0028_specpm_handoff_artifacts.md"]),
         ("0029", ["docs/archive/proposal_sources/0029_specpm_local_export_bundle.md"]),
         ("0030", ["docs/archive/proposal_sources/0030_specpm_import_preview.md"]),
+        ("0031", ["docs/archive/proposal_sources/0031_specpm_import_handoff.md"]),
     ],
 )
 def test_live_proposal_promotion_trace_is_bounded(
