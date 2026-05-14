@@ -1253,6 +1253,13 @@ checks, and viewer build buttons. It refreshes existing read models only: it
 does not choose an Implementation Work target scope, create new implementation
 work items, mutate canonical specs, or stage generated JSON for commit.
 
+Successful refinement steps and successful gate-resolution decisions also
+attempt this refresh automatically after the run or gate state has been
+persisted. That post-step refresh is non-blocking: if a local viewer surface
+cannot be rebuilt, the already-classified supervisor outcome is preserved and a
+diagnostic is emitted. Attempted refreshes write compact reports under
+`runs/viewer_surfaces_refresh/`.
+
 Use this when the viewer needs a current local snapshot after the graph or
 derived runtime surfaces changed.
 

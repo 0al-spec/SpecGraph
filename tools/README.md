@@ -213,6 +213,9 @@ Supervisor modes:
   `source_artifacts` point at freshly written files rather than stale local JSON.
   This is safe for local hooks, CI smoke checks, or ContextBuilder build buttons because it does not
   choose implementation target scope or create new implementation work items.
+  Successful refinement and gate-resolution supervisor steps also invoke this
+  builder as a non-blocking post-step refresh and record compact diagnostics
+  under `runs/viewer_surfaces_refresh/`.
 - Standalone artifact commands print compact JSON summaries by default. Use
   `--output-mode full` only when the complete artifact is needed on stdout; the
   canonical generated artifact is still written under `runs/`.
