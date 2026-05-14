@@ -22998,6 +22998,7 @@ def test_build_proposal_promotion_index_reports_traceability_gaps(
         ("0040", ["docs/archive/proposal_sources/0040_branch_rewrite_preview.md"]),
         ("0041", ["docs/archive/proposal_sources/0041_graph_next_moves_game_master.md"]),
         ("0042", ["docs/archive/proposal_sources/0042_branch_rewrite_preview_projection.md"]),
+        ("0043", ["docs/archive/proposal_sources/0043_metric_pack_plugin_architecture.md"]),
     ],
 )
 def test_live_proposal_promotion_trace_is_bounded(
