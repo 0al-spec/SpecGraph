@@ -2,7 +2,7 @@ id: SG-SPEC-0001
 title: SpecGraph - The Executable Product Ontology
 kind: spec
 created_at: '2026-04-03T12:19:31Z'
-updated_at: '2026-05-14T22:09:54Z'
+updated_at: '2026-05-14T22:22:00Z'
 status: linked
 maturity: 1.0
 depends_on:
@@ -11,7 +11,6 @@ depends_on:
 - SG-SPEC-0009
 - SG-SPEC-0010
 - SG-SPEC-0017
-- SG-SPEC-0023
 - SG-SPEC-0024
 - SG-SPEC-0054
 - SG-SPEC-0061
@@ -111,11 +110,11 @@ acceptance_evidence:
     `specs/nodes/SG-SPEC-0023.yaml`, `specs/nodes/SG-SPEC-0024.yaml`, `specs/nodes/SG-SPEC-0054.yaml`,
     `specs/nodes/SG-SPEC-0057.yaml`, `specs/nodes/SG-SPEC-0061.yaml`, and `specs/nodes/SG-SPEC-0062.yaml`
     now declare or serve delegated refinement under `SG-SPEC-0001`. SG-SPEC-0001 keeps `depends_on: [SG-SPEC-0002,
-    SG-SPEC-0007, SG-SPEC-0009, SG-SPEC-0010, SG-SPEC-0017, SG-SPEC-0023, SG-SPEC-0024, SG-SPEC-0054,
-    SG-SPEC-0061, SG-SPEC-0062]` for concrete blocking descendants and the new record-semantics aggregate,
-    while SG-SPEC-0018, SG-SPEC-0020, SG-SPEC-0021, SG-SPEC-0022, SG-SPEC-0057, and SG-SPEC-0019 remain
-    delegated children or cluster members, keeping the refinement chain explicit without widening linked
-    blockers beyond meaningful aggregate descendants.
+    SG-SPEC-0007, SG-SPEC-0009, SG-SPEC-0010, SG-SPEC-0017, SG-SPEC-0024, SG-SPEC-0054, SG-SPEC-0061,
+    SG-SPEC-0062]` for concrete blocking descendants and the new record-semantics aggregate, while SG-SPEC-0018,
+    SG-SPEC-0020, SG-SPEC-0021, SG-SPEC-0022, SG-SPEC-0057, and SG-SPEC-0019 remain delegated children
+    or cluster members, keeping the refinement chain explicit without widening linked blockers beyond
+    meaningful aggregate descendants.
 
     '
 prompt: 'This spec is a seed ontology, not a finished graph. Use child specs to
