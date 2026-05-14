@@ -3197,6 +3197,8 @@ GRAPH_BACKLOG_PROJECTION_SCHEMA_VERSION = 1
 SPEC_ACTIVITY_FEED_FILENAME = "spec_activity_feed.json"
 SPEC_ACTIVITY_FEED_ARTIFACT_KIND = "spec_activity_feed"
 SPEC_ACTIVITY_FEED_SCHEMA_VERSION = 1
+VIEWER_SURFACES_REFRESH_ARTIFACT_KIND = "post_supervisor_viewer_surfaces_refresh"
+VIEWER_SURFACES_REFRESH_SCHEMA_VERSION = 1
 SPEC_TRACE_INDEX_FILENAME = "spec_trace_index.json"
 SPEC_TRACE_PROJECTION_FILENAME = "spec_trace_projection.json"
 PROPOSAL_RUNTIME_INDEX_FILENAME = "proposal_runtime_index.json"
@@ -30614,6 +30616,17 @@ def write_latest_summary(payload: dict[str, Any]) -> None:
         completion_status = (
             COMPLETION_STATUS_OK if payload.get("exit_code", 1) == 0 else COMPLETION_STATUS_FAILED
         )
+    viewer_surfaces_refresh = payload.get("viewer_surfaces_refresh", {})
+    viewer_surfaces_refresh_status = (
+        str(viewer_surfaces_refresh.get("status", "")).strip()
+        if isinstance(viewer_surfaces_refresh, dict)
+        else ""
+    )
+    viewer_surfaces_refresh_artifact = (
+        str(viewer_surfaces_refresh.get("artifact_path", "")).strip()
+        if isinstance(viewer_surfaces_refresh, dict)
+        else ""
+    )
     summary = (
         f"# Latest Supervisor Run\n\n"
         f"- run_id: {payload['run_id']}\n"
@@ -30629,13 +30642,117 @@ def write_latest_summary(payload: dict[str, Any]) -> None:
         f"- executor_environment_issues: {len(issues)}\n"
         f"- executor_environment_primary_failure: {'yes' if primary_failure else 'no'}\n"
         f"- required_human_action: {payload.get('required_human_action', '-')}\n"
+        f"- viewer_surfaces_refresh: {viewer_surfaces_refresh_status or '-'}\n"
+        f"- viewer_surfaces_refresh_artifact: {viewer_surfaces_refresh_artifact or '-'}\n"
     )
     summary_path = RUNS_DIR / "latest-summary.md"
     with artifact_lock(summary_path):
         atomic_write_text(summary_path, summary)
 
 
-def refresh_latest_summary_for_gate_resolution(node: SpecNode) -> None:
+def viewer_surfaces_refresh_dir_path() -> Path:
+    return RUNS_DIR / "viewer_surfaces_refresh"
+
+
+def viewer_surfaces_refresh_artifact_path(run_id: str) -> Path:
+    safe_run_id = sanitize_for_git(run_id)
+    return viewer_surfaces_refresh_dir_path() / f"{safe_run_id}.json"
+
+
+def viewer_surfaces_auto_refresh_available() -> bool:
+    """Return true when the current ROOT looks like a full SpecGraph checkout."""
+    return (ROOT / "tools" / "supervisor.py").exists() and SPECS_DIR.exists()
+
+
+def should_refresh_viewer_surfaces_after_supervisor_step(completion_status: str) -> bool:
+    return completion_status in {COMPLETION_STATUS_OK, COMPLETION_STATUS_PROGRESSED}
+
+
+def write_viewer_surfaces_refresh_artifact(run_id: str, report: dict[str, Any]) -> Path:
+    path = viewer_surfaces_refresh_artifact_path(run_id)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with artifact_lock(path):
+        atomic_write_json(path, report)
+    return path
+
+
+def refresh_viewer_surfaces_after_supervisor_step(
+    *,
+    run_id: str,
+    completion_status: str,
+    outcome: str,
+    trigger: str,
+    verbose: bool = False,
+) -> dict[str, Any]:
+    """Refresh viewer read models after a successful supervisor state change.
+
+    The refresh is deliberately non-blocking: a local viewer surface failure must
+    not rewrite the already-classified supervisor outcome.
+    """
+    report: dict[str, Any] = {
+        "artifact_kind": VIEWER_SURFACES_REFRESH_ARTIFACT_KIND,
+        "schema_version": VIEWER_SURFACES_REFRESH_SCHEMA_VERSION,
+        "generated_at": utc_now_iso(),
+        "source_run_id": run_id,
+        "trigger": trigger,
+        "completion_status": completion_status,
+        "outcome": outcome,
+        "status": "skipped",
+        "reason": "",
+        "viewer_surfaces_report": {},
+    }
+    if not should_refresh_viewer_surfaces_after_supervisor_step(completion_status):
+        report["reason"] = "completion_status_not_refreshable"
+        return report
+    if not viewer_surfaces_auto_refresh_available():
+        report["reason"] = "full_specgraph_checkout_not_available"
+        return report
+
+    try:
+        surface_report = build_viewer_surfaces(load_specs())
+        if not isinstance(surface_report, dict):
+            raise TypeError("viewer surfaces builder returned a non-object report")
+        viewer_surfaces_report = {
+            "artifact_kind": surface_report.get("artifact_kind"),
+            "generated_at": surface_report.get("generated_at"),
+            "written_artifacts": surface_report.get("written_artifacts", {}),
+        }
+    except Exception as exc:
+        report["status"] = "failed"
+        report["reason"] = "viewer_surfaces_build_failed"
+        report["error"] = str(exc)
+        print(
+            f"Viewer surfaces refresh failed after {trigger} for {run_id}: {exc}",
+            file=sys.stderr,
+        )
+    else:
+        report["status"] = "refreshed"
+        report["reason"] = "-"
+        report["viewer_surfaces_report"] = viewer_surfaces_report
+        emit(
+            f"Refreshed viewer surfaces after {trigger}: {run_id}",
+            enabled=verbose,
+        )
+
+    try:
+        artifact_path = write_viewer_surfaces_refresh_artifact(run_id, report)
+    except (OSError, RuntimeError) as exc:
+        report.pop("artifact_path", None)
+        report["artifact_write_error"] = str(exc)
+        print(
+            f"Viewer surfaces refresh report write failed for {run_id}: {exc}",
+            file=sys.stderr,
+        )
+    else:
+        report["artifact_path"] = artifact_path.relative_to(ROOT).as_posix()
+    return report
+
+
+def refresh_latest_summary_for_gate_resolution(
+    node: SpecNode,
+    *,
+    viewer_surfaces_refresh: dict[str, Any] | None = None,
+) -> None:
     """Rewrite the latest summary to reflect the current gate decision state."""
     run_id = str(node.data.get("last_run_id", "")).strip()
     title = str(node.title).strip() or str(node.data.get("title", "")).strip() or node.id
@@ -30655,6 +30772,8 @@ def refresh_latest_summary_for_gate_resolution(node: SpecNode) -> None:
         "required_human_action": str(node.data.get("required_human_action", "")).strip() or "-",
         "exit_code": 0,
     }
+    if viewer_surfaces_refresh is not None:
+        payload["viewer_surfaces_refresh"] = viewer_surfaces_refresh
     write_latest_summary(payload)
 
 
@@ -31659,7 +31778,23 @@ def resolve_gate_decision(
     node.data["last_gate_note"] = note
     node.data["last_gate_at"] = utc_now_iso()
     node.save()
-    refresh_latest_summary_for_gate_resolution(node)
+    gate_refresh_id = str(node.data.get("last_run_id", "")).strip()
+    if gate_refresh_id:
+        gate_refresh_id = f"{gate_refresh_id}-gate-{decision}"
+    else:
+        gate_refresh_id = f"gate-resolution-{node.id}-{utc_compact_timestamp()}"
+    viewer_surfaces_refresh = refresh_viewer_surfaces_after_supervisor_step(
+        run_id=gate_refresh_id,
+        completion_status=COMPLETION_STATUS_OK,
+        outcome=f"gate_{decision}",
+        trigger="gate_resolution",
+    )
+    refresh_latest_summary_for_gate_resolution(
+        node,
+        viewer_surfaces_refresh=(
+            viewer_surfaces_refresh if viewer_surfaces_refresh.get("status") != "skipped" else None
+        ),
+    )
 
     if retained_worktree_path is not None:
         cleanup_isolated_worktree(retained_worktree_path, retained_branch)
@@ -33415,6 +33550,17 @@ def _process_one_spec(
     if cleanup_failed_child_materialization or cleanup_failed_source_refinement:
         node.path.write_text(before_source_text, encoding="utf-8")
         node.reload()
+
+    viewer_surfaces_refresh = refresh_viewer_surfaces_after_supervisor_step(
+        run_id=run_id,
+        completion_status=completion_status,
+        outcome=outcome,
+        trigger=run_kind,
+        verbose=verbose,
+    )
+    if viewer_surfaces_refresh.get("status") != "skipped":
+        payload["viewer_surfaces_refresh"] = viewer_surfaces_refresh
+        write_latest_summary(payload)
 
     if not preserve_run_worktree:
         cleanup_isolated_worktree(worktree_path, branch)
