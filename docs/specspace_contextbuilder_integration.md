@@ -24,12 +24,22 @@ Use these defaults unless a local session explicitly overrides them:
 | --- | --- | --- |
 | ContextBuilder / SpecSpace UI | `http://127.0.0.1:5173/` | Vite dev server. |
 | ContextBuilder API | `http://127.0.0.1:8001/` | Python API server. |
-| SpecGraph repo root | `/Users/egor/Development/GitHub/0AL/SpecGraph` | Passed as `SPECGRAPH_DIR` / `--specgraph-dir`. |
-| SpecGraph specs | `/Users/egor/Development/GitHub/0AL/SpecGraph/specs/nodes` | Passed as `SPEC_DIR` / `--spec-dir`. |
+| SpecGraph repo root | `$SPECGRAPH_DIR` | Passed as `SPECGRAPH_DIR` / `--specgraph-dir`. |
+| SpecGraph specs | `$SPEC_DIR` | Usually `$SPECGRAPH_DIR/specs/nodes`; passed as `SPEC_DIR` / `--spec-dir`. |
 
 Do not assume `http://127.0.0.1:8766/` is the active viewer. That port can be
 left over from an older app-browser session or a custom launch. The current
-Makefile defaults are `5173` for UI and `8001` for API.
+ContextBuilder / SpecSpace dev setup defaults to `5173` for UI and `8001` for
+API; those values come from the ContextBuilder `Makefile` and Vite proxy
+configuration, not from the SpecGraph `Makefile`.
+
+Set portable paths once per shell:
+
+```bash
+export SPECGRAPH_DIR=/path/to/SpecGraph
+export SPEC_DIR="$SPECGRAPH_DIR/specs/nodes"
+export CONTEXTBUILDER_DIR=/path/to/ContextBuilder
+```
 
 ## Refresh SpecGraph Surfaces
 
@@ -37,7 +47,7 @@ Before checking the viewer after supervisor runs or PR merges, refresh the
 derived SpecGraph surfaces:
 
 ```bash
-cd /Users/egor/Development/GitHub/0AL/SpecGraph
+cd "$SPECGRAPH_DIR"
 make viewer-surfaces
 ```
 
@@ -56,7 +66,7 @@ This rebuilds the common viewer-facing read models, including:
 For only the Recent Changes feed:
 
 ```bash
-cd /Users/egor/Development/GitHub/0AL/SpecGraph
+cd "$SPECGRAPH_DIR"
 make spec-activity
 ```
 
@@ -68,11 +78,11 @@ or commit them unless a task explicitly promotes a curated artifact.
 From the ContextBuilder checkout:
 
 ```bash
-cd /Users/egor/Development/GitHub/0AL/ContextBuilder
+cd "$CONTEXTBUILDER_DIR"
 make dev \
   PYTHON=/path/to/python3.10-or-newer \
-  SPECGRAPH_DIR=/Users/egor/Development/GitHub/0AL/SpecGraph \
-  SPEC_DIR=/Users/egor/Development/GitHub/0AL/SpecGraph/specs/nodes \
+  SPECGRAPH_DIR="$SPECGRAPH_DIR" \
+  SPEC_DIR="$SPEC_DIR" \
   API_PORT=8001 \
   UI_PORT=5173
 ```
@@ -84,16 +94,16 @@ ContextBuilder API process.
 You can also run the API and UI separately:
 
 ```bash
-cd /Users/egor/Development/GitHub/0AL/ContextBuilder
+cd "$CONTEXTBUILDER_DIR"
 make api \
   PYTHON=/path/to/python3.10-or-newer \
-  SPECGRAPH_DIR=/Users/egor/Development/GitHub/0AL/SpecGraph \
-  SPEC_DIR=/Users/egor/Development/GitHub/0AL/SpecGraph/specs/nodes \
+  SPECGRAPH_DIR="$SPECGRAPH_DIR" \
+  SPEC_DIR="$SPEC_DIR" \
   API_PORT=8001
 ```
 
 ```bash
-cd /Users/egor/Development/GitHub/0AL/ContextBuilder
+cd "$CONTEXTBUILDER_DIR"
 make ui UI_PORT=5173
 ```
 
@@ -115,7 +125,7 @@ curl -sS 'http://127.0.0.1:8001/api/spec-activity?limit=3'
 The response should include a metadata envelope whose `path` points at:
 
 ```text
-/Users/egor/Development/GitHub/0AL/SpecGraph/runs/spec_activity_feed.json
+$SPECGRAPH_DIR/runs/spec_activity_feed.json
 ```
 
 The nested `data.generated_at` value should match the most recent
@@ -165,7 +175,7 @@ The feed exists because graph activity is broader than canonical
 If the UI still shows older trace-only rows after a merge, first rebuild:
 
 ```bash
-cd /Users/egor/Development/GitHub/0AL/SpecGraph
+cd "$SPECGRAPH_DIR"
 make viewer-surfaces
 ```
 
@@ -200,7 +210,7 @@ SpecGraph supervisor and its generated local artifacts.
 | Symptom | Likely cause | Fix |
 | --- | --- | --- |
 | `curl http://127.0.0.1:8766` fails | Old or custom app-browser URL. | Use `http://127.0.0.1:5173/` unless the session explicitly started another port. |
-| `/api/spec-activity` returns `503` | API was started without `--specgraph-dir`. | Restart ContextBuilder with `SPECGRAPH_DIR=/Users/egor/Development/GitHub/0AL/SpecGraph`. |
+| `/api/spec-activity` returns `503` | API was started without `--specgraph-dir`. | Restart ContextBuilder with `SPECGRAPH_DIR="$SPECGRAPH_DIR"`. |
 | `/api/spec-activity` returns `404` | `runs/spec_activity_feed.json` has not been built. | Run `make spec-activity` or `make viewer-surfaces` in SpecGraph. |
 | Recent Changes looks stale | Derived surfaces were not rebuilt after merge/supervisor run, or UI was open before rebuild. | Run `make viewer-surfaces`, verify `/api/spec-activity`, then reload the UI. |
 | ContextBuilder API fails importing `TypeGuard` | Python runtime is too old. | Use Python 3.10+ for `make api` / `make dev`. |
