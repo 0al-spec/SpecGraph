@@ -583,5 +583,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0046",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0046_proposal_spec_trace_semantics.md"
+    ],
+    "motivating_concern": "proposal-to-spec references have ambiguous authority and relation semantics",
+    "normalized_title": "Proposal Spec Trace Semantics",
+    "bounded_scope": "Define textual reference, promotion trace, and lane target relation semantics plus normalized vocabulary without mutating canonical specs, backfilling all missing traces, or adding ContextBuilder write actions.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]
