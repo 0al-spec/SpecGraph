@@ -505,5 +505,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0040",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0040_branch_rewrite_preview.md"
+    ],
+    "motivating_concern": "single-node refinement misses branch-level semantic story issues",
+    "normalized_title": "Branch Rewrite Preview Mode",
+    "bounded_scope": "Define a review-only branch rewrite preview mode and artifact for bounded active subtrees without rewriting canonical specs, applying multi-node patches, or replacing ordinary targeted refinement.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]
