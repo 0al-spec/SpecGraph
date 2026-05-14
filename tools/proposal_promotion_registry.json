@@ -518,5 +518,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0041",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0041_graph_next_moves_game_master.md"
+    ],
+    "motivating_concern": "operators rely on chat memory to choose the next bounded graph move",
+    "normalized_title": "Graph Next Moves Game-Master Surface",
+    "bounded_scope": "Define a read-only graph next-move advisory surface with scenes, recommendation, alternatives, and blocked moves without autonomous looping, auto-applying rewrites, or mutating canonical artifacts.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]
