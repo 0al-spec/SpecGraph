@@ -403,6 +403,19 @@
     ]
   },
   {
+    "proposal_id": "0032",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0032_specpm_delivery_workflow.md"
+    ],
+    "motivating_concern": "local SpecPM bundle lacks reviewable downstream delivery workflow",
+    "normalized_title": "SpecGraph-to-SpecPM Delivery Workflow",
+    "bounded_scope": "Define a review-first SpecPM delivery workflow artifact with repo-state checks and delivery scaffolding without auto-committing, pushing, opening downstream PRs, or treating local bundle presence as acceptance.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
+  },
+  {
     "proposal_id": "0034",
     "source_artifact_class": "working_draft",
     "source_refs": [
