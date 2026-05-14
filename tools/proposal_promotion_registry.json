@@ -570,5 +570,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0045",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0045_conversation_memory_exploration_vault.md"
+    ],
+    "motivating_concern": "raw conversation rationale is not structured into reviewable pre-canonical memory",
+    "normalized_title": "Conversation Memory Exploration Vault",
+    "bounded_scope": "Define a conversation memory and exploration vault layer with typed notes, source links, and proposal pressure without importing Ars Contexta, replacing PageIndex, or auto-promoting chat excerpts into canonical specs.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]
