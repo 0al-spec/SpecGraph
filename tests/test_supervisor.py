@@ -4470,6 +4470,88 @@ def test_failed_refinement_does_not_refresh_viewer_surfaces(
     assert not (repo_fixture / "runs" / "viewer_surfaces_refresh").exists()
 
 
+def test_viewer_surfaces_refresh_write_failure_omits_artifact_path(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(supervisor_module, "viewer_surfaces_auto_refresh_available", lambda: True)
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_viewer_surfaces",
+        lambda _specs: {
+            "artifact_kind": "viewer_surfaces_build_report",
+            "generated_at": "2026-05-14T00:00:00Z",
+            "written_artifacts": {},
+        },
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "write_viewer_surfaces_refresh_artifact",
+        lambda _run_id, _report: (_ for _ in ()).throw(RuntimeError("refresh lock failed")),
+    )
+
+    report = supervisor_module.refresh_viewer_surfaces_after_supervisor_step(
+        run_id="RUN-1",
+        completion_status=supervisor_module.COMPLETION_STATUS_OK,
+        outcome="done",
+        trigger="ordinary_refine",
+    )
+
+    assert report["status"] == "refreshed"
+    assert "artifact_path" not in report
+    assert report["artifact_write_error"] == "refresh lock failed"
+
+
+def test_viewer_surfaces_refresh_runs_after_failed_source_cleanup(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    before_text = node_path.read_text(encoding="utf-8")
+    worktree = make_fake_worktree(repo_fixture)
+    monkeypatch.setattr(
+        supervisor_module,
+        "create_isolated_worktree",
+        lambda _node_id: (worktree, "codex/sg-spec-0001/test"),
+    )
+    changed_snapshots = [[], ["specs/nodes/SG-SPEC-0001.yaml"]]
+    monkeypatch.setattr(
+        supervisor_module,
+        "git_changed_files",
+        lambda _cwd=None: changed_snapshots.pop(0),
+    )
+    refresh_observations: list[bool] = []
+
+    def fake_refresh(**_kwargs: object) -> dict[str, object]:
+        data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+        refresh_observations.append("gate_state" in data)
+        return {"status": "skipped", "reason": "test_observation_only"}
+
+    monkeypatch.setattr(
+        supervisor_module,
+        "refresh_viewer_surfaces_after_supervisor_step",
+        fake_refresh,
+    )
+
+    def fake_executor(_node: object, worktree_path: Path) -> subprocess.CompletedProcess[str]:
+        worktree_node = worktree_path / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+        worktree_node.write_text("id: [broken yaml\n", encoding="utf-8")
+        return subprocess.CompletedProcess(
+            args=["codex"],
+            returncode=0,
+            stdout="RUN_OUTCOME: done\nBLOCKER: none\n",
+            stderr="",
+        )
+
+    exit_code = supervisor_module.main(executor=fake_executor)
+
+    assert exit_code == 1
+    assert node_path.read_text(encoding="utf-8") == before_text
+    assert refresh_observations == [False]
+
+
 def test_main_review_pending_graph_health_keeps_canonical_outcome_basis(
     supervisor_module: object,
     repo_fixture: Path,
@@ -25838,6 +25920,7 @@ def test_resolve_gate_approve_accepts_staged_worktree_changes(
     assert "- gate_state: none" in latest_summary
     assert "- final_status: specified" in latest_summary
     assert "- required_human_action: -" in latest_summary
+    assert "- viewer_surfaces_refresh: refreshed" in latest_summary
     assert refresh_calls == [["SG-SPEC-0001"]]
     refresh_artifact = next((repo_fixture / "runs" / "viewer_surfaces_refresh").glob("*.json"))
     refresh_report = json.loads(refresh_artifact.read_text(encoding="utf-8"))

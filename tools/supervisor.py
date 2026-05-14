@@ -30735,10 +30735,9 @@ def refresh_viewer_surfaces_after_supervisor_step(
         )
 
     try:
-        planned_artifact_path = viewer_surfaces_refresh_artifact_path(run_id)
-        report["artifact_path"] = planned_artifact_path.relative_to(ROOT).as_posix()
         artifact_path = write_viewer_surfaces_refresh_artifact(run_id, report)
     except (OSError, RuntimeError) as exc:
+        report.pop("artifact_path", None)
         report["artifact_write_error"] = str(exc)
         print(
             f"Viewer surfaces refresh report write failed for {run_id}: {exc}",
@@ -30749,7 +30748,11 @@ def refresh_viewer_surfaces_after_supervisor_step(
     return report
 
 
-def refresh_latest_summary_for_gate_resolution(node: SpecNode) -> None:
+def refresh_latest_summary_for_gate_resolution(
+    node: SpecNode,
+    *,
+    viewer_surfaces_refresh: dict[str, Any] | None = None,
+) -> None:
     """Rewrite the latest summary to reflect the current gate decision state."""
     run_id = str(node.data.get("last_run_id", "")).strip()
     title = str(node.title).strip() or str(node.data.get("title", "")).strip() or node.id
@@ -30769,6 +30772,8 @@ def refresh_latest_summary_for_gate_resolution(node: SpecNode) -> None:
         "required_human_action": str(node.data.get("required_human_action", "")).strip() or "-",
         "exit_code": 0,
     }
+    if viewer_surfaces_refresh is not None:
+        payload["viewer_surfaces_refresh"] = viewer_surfaces_refresh
     write_latest_summary(payload)
 
 
@@ -31773,17 +31778,22 @@ def resolve_gate_decision(
     node.data["last_gate_note"] = note
     node.data["last_gate_at"] = utc_now_iso()
     node.save()
-    refresh_latest_summary_for_gate_resolution(node)
     gate_refresh_id = str(node.data.get("last_run_id", "")).strip()
     if gate_refresh_id:
         gate_refresh_id = f"{gate_refresh_id}-gate-{decision}"
     else:
         gate_refresh_id = f"gate-resolution-{node.id}-{utc_compact_timestamp()}"
-    refresh_viewer_surfaces_after_supervisor_step(
+    viewer_surfaces_refresh = refresh_viewer_surfaces_after_supervisor_step(
         run_id=gate_refresh_id,
         completion_status=COMPLETION_STATUS_OK,
         outcome=f"gate_{decision}",
         trigger="gate_resolution",
+    )
+    refresh_latest_summary_for_gate_resolution(
+        node,
+        viewer_surfaces_refresh=(
+            viewer_surfaces_refresh if viewer_surfaces_refresh.get("status") != "skipped" else None
+        ),
     )
 
     if retained_worktree_path is not None:
@@ -33536,6 +33546,11 @@ def _process_one_spec(
         gate_state=str(payload.get("gate_state", "")),
         proposal_items=proposal_queue_after,
     )
+
+    if cleanup_failed_child_materialization or cleanup_failed_source_refinement:
+        node.path.write_text(before_source_text, encoding="utf-8")
+        node.reload()
+
     viewer_surfaces_refresh = refresh_viewer_surfaces_after_supervisor_step(
         run_id=run_id,
         completion_status=completion_status,
@@ -33546,10 +33561,6 @@ def _process_one_spec(
     if viewer_surfaces_refresh.get("status") != "skipped":
         payload["viewer_surfaces_refresh"] = viewer_surfaces_refresh
         write_latest_summary(payload)
-
-    if cleanup_failed_child_materialization or cleanup_failed_source_refinement:
-        node.path.write_text(before_source_text, encoding="utf-8")
-        node.reload()
 
     if not preserve_run_worktree:
         cleanup_isolated_worktree(worktree_path, branch)
