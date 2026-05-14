@@ -531,5 +531,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0042",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0042_branch_rewrite_preview_projection.md"
+    ],
+    "motivating_concern": "ready branch rewrite previews are not projected into normal backlog and dashboard surfaces",
+    "normalized_title": "Branch Rewrite Preview Projection",
+    "bounded_scope": "Define derived backlog and dashboard projection for ready branch rewrite preview candidates without applying rewrites, mutating specs, creating proposal-lane nodes, or replacing the preview artifact as source details.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]
