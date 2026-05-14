@@ -165,6 +165,8 @@ Initial event vocabulary:
 - `trace_baseline_attached`
 - `evidence_baseline_attached`
 - `proposal_emitted`
+- `proposal_promotion_trace_attached`
+- `proposal_runtime_realization_attached`
 - `implementation_work_emitted`
 - `review_feedback_applied`
 - `stack_only_merge_observed`
@@ -175,9 +177,23 @@ Viewer tone guidance:
 - `trace_baseline_attached` -> trace/evidence accent
 - `evidence_baseline_attached` -> trace/evidence accent
 - `proposal_emitted` -> proposal accent
+- `proposal_promotion_trace_attached` -> proposal accent
+- `proposal_runtime_realization_attached` -> proposal accent
 - `implementation_work_emitted` -> implementation/work accent
 - `review_feedback_applied` -> process/review accent
 - `stack_only_merge_observed` -> process/review accent
+
+`proposal_promotion_trace_attached` is emitted when commits update
+`tools/proposal_promotion_registry.json` or archived proposal source drafts
+under `docs/archive/proposal_sources/`.
+
+`proposal_runtime_realization_attached` is emitted when commits update
+`tools/proposal_runtime_registry.json`.
+
+These proposal lifecycle events may have an empty `spec_id` because they often
+represent graph-level proposal/process evidence rather than a direct canonical
+spec-node edit. Viewers should render them as graph-level activity rows, not
+drop them.
 
 `stack_only_merge_observed` is a graph-level process warning: the commit was
 reachable from a remote stacked branch but not yet from `origin/main` when the

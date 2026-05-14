@@ -12,6 +12,8 @@
       "trace_baseline_attached",
       "evidence_baseline_attached",
       "proposal_emitted",
+      "proposal_promotion_trace_attached",
+      "proposal_runtime_realization_attached",
       "implementation_work_emitted",
       "review_feedback_applied",
       "stack_only_merge_observed"
@@ -36,8 +38,11 @@
       "specs/nodes",
       "tools/spec_trace_registry.json",
       "tools/runtime_evidence_registry.json",
+      "tools/proposal_promotion_registry.json",
+      "tools/proposal_runtime_registry.json",
       "tools/review_feedback_records.json",
       "docs/proposals",
+      "docs/archive/proposal_sources",
       "proposal_lane",
       "runs/proposals"
     ],
@@ -55,6 +60,8 @@
       "trace_baseline_attached": "trace",
       "evidence_baseline_attached": "trace",
       "proposal_emitted": "proposal",
+      "proposal_promotion_trace_attached": "proposal",
+      "proposal_runtime_realization_attached": "proposal",
       "implementation_work_emitted": "implementation",
       "review_feedback_applied": "process",
       "stack_only_merge_observed": "process"
