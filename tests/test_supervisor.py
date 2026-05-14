@@ -8020,6 +8020,62 @@ def test_build_spec_activity_feed_emits_trace_and_evidence_baseline_events(
     assert feed["tracked_artifacts_written"] is False
 
 
+def test_build_spec_activity_feed_emits_proposal_registry_events_without_spec_id(
+    supervisor_module: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    source_paths = supervisor_module.spec_activity_source_paths()
+    assert "tools/proposal_promotion_registry.json" in source_paths
+    assert "tools/proposal_runtime_registry.json" in source_paths
+    assert "docs/archive/proposal_sources" in source_paths
+
+    monkeypatch.setattr(
+        supervisor_module,
+        "collect_spec_activity_commit_refs",
+        lambda **kwargs: [
+            {
+                "sha": "e" * 40,
+                "short_sha": "eeeeeee",
+                "committed_at": "2026-05-14T12:00:00+00:00",
+                "subject": "Attach proposal 0049 promotion trace",
+                "paths": [
+                    "docs/archive/proposal_sources/0049_multi_service_factory_architecture.md",
+                    "tools/proposal_promotion_registry.json",
+                ],
+            },
+            {
+                "sha": "f" * 40,
+                "short_sha": "fffffff",
+                "committed_at": "2026-05-14T11:00:00+00:00",
+                "subject": "Backfill foundation proposal runtime registry",
+                "paths": [
+                    "tools/proposal_runtime_registry.json",
+                    "tools/spec_trace_registry.json",
+                ],
+            },
+        ],
+    )
+
+    feed = supervisor_module.build_spec_activity_feed(supervisor_module.load_specs())
+
+    assert feed["entry_count"] == 2
+    assert [entry["event_type"] for entry in feed["entries"]] == [
+        "proposal_promotion_trace_attached",
+        "proposal_runtime_realization_attached",
+    ]
+    assert [entry["spec_id"] for entry in feed["entries"]] == ["", ""]
+    assert [entry["title"] for entry in feed["entries"]] == [
+        "Graph process feedback",
+        "Graph process feedback",
+    ]
+    assert feed["summary"]["event_type_counts"] == {
+        "proposal_promotion_trace_attached": 1,
+        "proposal_runtime_realization_attached": 1,
+    }
+    assert len(feed["viewer_projection"]["named_filters"]["proposal_activity"]) == 2
+    assert "" not in feed["viewer_projection"]["spec_id"]
+
+
 def test_spec_activity_event_types_emits_stack_only_merge_warning(
     supervisor_module: object,
     monkeypatch: pytest.MonkeyPatch,

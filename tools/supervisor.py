@@ -16250,24 +16250,49 @@ def spec_activity_spec_ids_from_commit(commit_ref: dict[str, Any]) -> list[str]:
     return sorted(spec_ids)
 
 
+GRAPH_LEVEL_SPEC_ACTIVITY_EVENT_TYPES = {
+    "proposal_emitted",
+    "proposal_promotion_trace_attached",
+    "proposal_runtime_realization_attached",
+    "review_feedback_applied",
+    "stack_only_merge_observed",
+}
+
+
 def spec_activity_event_types_from_commit(commit_ref: dict[str, Any]) -> list[str]:
     subject = str(commit_ref.get("subject", "")).strip().lower()
     paths = {str(path).strip() for path in commit_ref.get("paths", [])}
     event_types: list[str] = []
+    proposal_promotion_trace = (
+        "tools/proposal_promotion_registry.json" in paths
+        or any(path.startswith("docs/archive/proposal_sources/") for path in paths)
+        or "promotion trace" in subject
+    )
+    proposal_runtime_realization = (
+        "tools/proposal_runtime_registry.json" in paths
+        or "proposal runtime" in subject
+        or "runtime registry" in subject
+    )
     if any(path.startswith("specs/nodes/") for path in paths):
         event_types.append("canonical_spec_updated")
     if "tools/spec_trace_registry.json" in paths or "trace baseline" in subject:
         event_types.append("trace_baseline_attached")
     if "tools/runtime_evidence_registry.json" in paths or "evidence baseline" in subject:
         event_types.append("evidence_baseline_attached")
-    if (
-        any(
-            path.startswith("proposal_lane/")
-            or path.startswith("runs/proposals/")
-            or path.startswith("docs/proposals/")
-            for path in paths
-        )
-        or "proposal" in subject
+    if proposal_promotion_trace:
+        event_types.append("proposal_promotion_trace_attached")
+    if proposal_runtime_realization:
+        event_types.append("proposal_runtime_realization_attached")
+    if any(
+        path.startswith("proposal_lane/")
+        or path.startswith("runs/proposals/")
+        or path.startswith("docs/proposals/")
+        for path in paths
+    ) or (
+        "proposal" in subject
+        and not subject.startswith("merge pull request")
+        and not proposal_promotion_trace
+        and not proposal_runtime_realization
     ):
         event_types.append("proposal_emitted")
     if "runs/implementation_work_index.json" in paths or "implementation work" in subject:
@@ -16316,14 +16341,15 @@ def build_spec_activity_feed(
         event_types = spec_activity_event_types_from_commit(commit_ref)
         if not event_types:
             continue
-        spec_ids = spec_activity_spec_ids_from_commit(commit_ref)
-        if not spec_ids and (
-            "review_feedback_applied" in event_types or "stack_only_merge_observed" in event_types
-        ):
-            spec_ids = [""]
-        if not spec_ids:
-            continue
+        commit_spec_ids = spec_activity_spec_ids_from_commit(commit_ref)
         for event_type in event_types:
+            spec_ids = (
+                commit_spec_ids
+                if commit_spec_ids
+                else ([""] if event_type in GRAPH_LEVEL_SPEC_ACTIVITY_EVENT_TYPES else [])
+            )
+            if not spec_ids:
+                continue
             stack_context = None
             if event_type == "stack_only_merge_observed":
                 stack_context = spec_activity_cached_stack_only_merge_context(commit_ref)
@@ -16410,7 +16436,12 @@ def build_spec_activity_feed(
                 "proposal_activity": [
                     event["event_id"]
                     for event in events
-                    if event.get("event_type") == "proposal_emitted"
+                    if event.get("event_type")
+                    in {
+                        "proposal_emitted",
+                        "proposal_promotion_trace_attached",
+                        "proposal_runtime_realization_attached",
+                    }
                 ],
                 "process_activity": [
                     event["event_id"]
