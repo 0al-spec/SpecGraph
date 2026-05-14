@@ -22995,6 +22995,7 @@ def test_build_proposal_promotion_index_reports_traceability_gaps(
         ("0037", ["docs/archive/proposal_sources/0037_implementation_work_layer.md"]),
         ("0038", ["docs/archive/proposal_sources/0038_specpm_public_registry_observation.md"]),
         ("0039", ["docs/archive/proposal_sources/0039_review_feedback_learning_loop.md"]),
+        ("0040", ["docs/archive/proposal_sources/0040_branch_rewrite_preview.md"]),
     ],
 )
 def test_live_proposal_promotion_trace_is_bounded(
