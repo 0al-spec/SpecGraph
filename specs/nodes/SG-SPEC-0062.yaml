@@ -7,12 +7,8 @@ status: linked
 maturity: 0.72
 depends_on:
 - SG-SPEC-0019
-- SG-SPEC-0022
 - SG-SPEC-0023
-- SG-SPEC-0024
 - SG-SPEC-0054
-- SG-SPEC-0057
-- SG-SPEC-0061
 relates_to:
 - SG-SPEC-0003
 refines:
@@ -58,7 +54,9 @@ acceptance_evidence:
     ownership.
   evidence: specification.cluster_contract.dependency_policy and specification.cluster_contract.refinement_routing_policy
     state that SG-SPEC-0001 should depend on SG-SPEC-0062 for the aggregate, while members retain their
-    bounded contracts and may be reparented under the cluster without changing stable spec identity.
+    bounded contracts and may be reparented under the cluster without changing stable spec identity. The
+    top-level depends_on list stays limited to the foundation blockers, while the full member set remains
+    enumerated in specification.member_contracts.
 - criterion: Keeps storage layout, traversal algorithms, viewer rendering, lifecycle automation, and runtime
     implementation out of scope for this cluster.
   evidence: specification.scope.out excludes storage layout, traversal algorithms, viewer rendering, lifecycle
@@ -108,8 +106,10 @@ specification:
     dependency_policy:
     - SG-SPEC-0001 may depend on SG-SPEC-0062 as the aggregate blocking descendant for canonical record
       semantics.
-    - SG-SPEC-0062 depends on concrete member specs that define the detailed semantics required by the
-      aggregate.
+    - SG-SPEC-0062 depends only on the foundation blockers required to make the aggregate coherent, including
+      lineage, explicit edge validation, and node presence semantics.
+    - Non-blocking record-semantics members stay enumerated in member_contracts rather than widening top-level
+      depends_on beyond the atomicity threshold.
     - Member specs keep their stable IDs and may retain their existing own dependencies; the cluster does
       not rewrite those contracts.
     refinement_routing_policy:
