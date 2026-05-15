@@ -2,7 +2,7 @@ id: SG-SPEC-0009
 title: SpecGraph - OperatorRequest Contract for Single-Run Steering
 kind: spec
 created_at: '2026-04-08T08:53:50Z'
-updated_at: '2026-04-13T04:51:58Z'
+updated_at: '2026-05-14T22:45:00Z'
 status: reviewed
 maturity: 1.0
 depends_on:
@@ -12,9 +12,10 @@ relates_to:
 - SG-SPEC-0007
 - SG-SPEC-0008
 refines:
-- SG-SPEC-0001
+- SG-SPEC-0065
 inputs:
 - specs/nodes/SG-SPEC-0001.yaml
+- specs/nodes/SG-SPEC-0065.yaml
 - specs/nodes/SG-SPEC-0003.yaml
 - specs/nodes/SG-SPEC-0007.yaml
 - specs/nodes/SG-SPEC-0008.yaml
@@ -79,11 +80,11 @@ acceptance_evidence:
     broader workflow implications must be deferred rather than silently absorbed.
 
     '
-prompt: Create a bounded child spec for the OperatorRequest contract that steers one supervisor run from
-  external actor intent such as GUI selection or mediator output. Keep it focused on request normalization,
-  target selection, scope and authority declaration, and one-run steering semantics. Do not define full
-  GUI protocol, full mediator workflow, or project-memory policy details beyond explicit adjacency to
-  SG-SPEC-0008.
+prompt: Create a bounded child spec under SG-SPEC-0065 for the OperatorRequest contract that steers one
+  supervisor run from external actor intent such as GUI selection or mediator output. Keep it focused
+  on request normalization, target selection, scope and authority declaration, and one-run steering semantics.
+  Do not define full GUI protocol, full mediator workflow, or project-memory policy details beyond explicit
+  adjacency to SG-SPEC-0008.
 specification:
   objective: 'Define the minimal contract by which external actor intent is normalized into a bounded
     OperatorRequest that steers exactly one supervisor run while preserving explicit target selection,

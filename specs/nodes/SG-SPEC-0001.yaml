@@ -2,11 +2,10 @@ id: SG-SPEC-0001
 title: SpecGraph - The Executable Product Ontology
 kind: spec
 created_at: '2026-04-03T12:19:31Z'
-updated_at: '2026-05-14T22:44:00Z'
+updated_at: '2026-05-14T22:45:00Z'
 status: linked
 maturity: 1.0
 depends_on:
-- SG-SPEC-0009
 - SG-SPEC-0062
 - SG-SPEC-0063
 - SG-SPEC-0064
@@ -113,9 +112,9 @@ acceptance_evidence:
     `specs/nodes/SG-SPEC-0061.yaml`, `specs/nodes/SG-SPEC-0062.yaml`, `specs/nodes/SG-SPEC-0063.yaml`,
     `specs/nodes/SG-SPEC-0064.yaml`, and `specs/nodes/SG-SPEC-0065.yaml` now either directly refine `SG-SPEC-0001`
     or serve delegated refinement through `SG-SPEC-0062`, `SG-SPEC-0063`, `SG-SPEC-0064`, and `SG-SPEC-0065`
-    as semantic aggregates. SG-SPEC-0001 keeps `depends_on: [SG-SPEC-0009, SG-SPEC-0062, SG-SPEC-0063,
-    SG-SPEC-0064, SG-SPEC-0065]` for concrete blocking descendants and the new semantic aggregates, while
-    SG-SPEC-0002, SG-SPEC-0007, SG-SPEC-0010, SG-SPEC-0017, SG-SPEC-0018, SG-SPEC-0020, SG-SPEC-0021,
+    as semantic aggregates. SG-SPEC-0001 keeps `depends_on: [SG-SPEC-0062, SG-SPEC-0063, SG-SPEC-0064,
+    SG-SPEC-0065]` for concrete blocking descendants and the new semantic aggregates, while SG-SPEC-0002,
+    SG-SPEC-0007, SG-SPEC-0009, SG-SPEC-0010, SG-SPEC-0017, SG-SPEC-0018, SG-SPEC-0020, SG-SPEC-0021,
     SG-SPEC-0022, SG-SPEC-0024, SG-SPEC-0054, SG-SPEC-0057, SG-SPEC-0061, and SG-SPEC-0019 remain delegated
     children or cluster members, keeping the refinement chain explicit without widening linked blockers
     beyond meaningful aggregate descendants.
@@ -188,7 +187,7 @@ specification:
     - Intent-facing mediation and discovery semantics before canonicalization — covered through SG-SPEC-0065
       by SG-SPEC-0007
     - Single-run OperatorRequest normalization and steering semantics from external actor intent — covered
-      by SG-SPEC-0009
+      through SG-SPEC-0065 by SG-SPEC-0009
     - Ubiquitous vocabulary meta-ontology primitives for executable domain vocabularies — covered through
       SG-SPEC-0064 by SG-SPEC-0010
     - Adoption-layer entities (DiscoverySurface, AdoptionCriterion, etc.) — covered through SG-SPEC-0063
