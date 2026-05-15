@@ -535,5 +535,13 @@
       "tests/test_supervisor.py"
     ],
     "notes": "Canonical traceability reachability semantics are semantic-surface backed by the runtime evidence registry and a live regression anchor. This trace contract intentionally does not claim traversal algorithms, storage layout, indexes, viewer presentation, metrics, or lifecycle transition automation."
+  },
+  {
+    "spec_id": "SG-SPEC-0062",
+    "code_surfaces": [],
+    "test_surfaces": [
+      "tests/test_supervisor.py"
+    ],
+    "notes": "Canonical record-semantics cluster semantics are semantic-surface backed by the runtime evidence registry and a live regression anchor. This trace contract intentionally does not claim storage layout, traversal algorithms, viewer presentation, lifecycle automation, or runtime implementation."
   }
 ]

@@ -2,7 +2,7 @@ id: SG-SPEC-0001
 title: SpecGraph - The Executable Product Ontology
 kind: spec
 created_at: '2026-04-03T12:19:31Z'
-updated_at: '2026-05-11T09:47:49Z'
+updated_at: '2026-05-14T22:09:54Z'
 status: linked
 maturity: 1.0
 depends_on:
@@ -11,11 +11,11 @@ depends_on:
 - SG-SPEC-0009
 - SG-SPEC-0010
 - SG-SPEC-0017
-- SG-SPEC-0019
 - SG-SPEC-0023
 - SG-SPEC-0024
 - SG-SPEC-0054
 - SG-SPEC-0061
+- SG-SPEC-0062
 relates_to: []
 inputs:
 - README.md
@@ -23,6 +23,7 @@ inputs:
 - specs/nodes/SG-SPEC-0054.yaml
 - specs/nodes/SG-SPEC-0057.yaml
 - specs/nodes/SG-SPEC-0061.yaml
+- specs/nodes/SG-SPEC-0062.yaml
 outputs:
 - specs/nodes/SG-SPEC-0001.yaml
 allowed_paths:
@@ -60,8 +61,8 @@ acceptance_evidence:
 - criterion: Defines the edge kinds currently in scope with source/target constraints and semantics
   evidence: 'specification.edge_kinds in SG-SPEC-0001 defines the edge set and baseline semantics. SG-SPEC-0023
     adds the machine-checkable compatibility matrix, directedness constraints, and blocked-edge rules
-    for each edge kind, while SG-SPEC-0019 refines the revision and supersession lineage semantics consumed
-    by the `supersedes` edge.
+    for each edge kind, while SG-SPEC-0062 now groups canonical record semantics and delegates the revision
+    and supersession lineage semantics consumed by the `supersedes` edge to SG-SPEC-0019.
 
     '
 - criterion: Defines the node lifecycle and valid status transitions
@@ -100,20 +101,21 @@ acceptance_evidence:
   evidence: 'prompt frames SG-SPEC-0001 as a seed ontology and directs unresolved areas into child specs;
     scope.in adds recursive refinement via child specs; scope.out now delegates observability metrics
     to SG-SPEC-0021, adoption-layer entities to SG-SPEC-0018, executable-layer code_surface/test/release
-    semantics to SG-SPEC-0020, revision/supersession lineage semantics to SG-SPEC-0019, detailed maturity
-    semantics to SG-SPEC-0022, active-versus-historical presence surface semantics to SG-SPEC-0054, authority-class
-    semantics to SG-SPEC-0057, and canonical traceability reachability rules to SG-SPEC-0061; D7 formalizes
-    the seed-spec rule; spec.node_kinds.spec includes refines; and the concrete descendants `specs/nodes/SG-SPEC-0002.yaml`,
+    semantics to SG-SPEC-0020, and canonical record semantics to SG-SPEC-0062, which groups revision/supersession
+    lineage, detailed maturity semantics, active-versus-historical presence, authority-class semantics,
+    edge validation, provenance, and canonical traceability reachability; D7 formalizes the seed-spec
+    rule; spec.node_kinds.spec includes refines; and the concrete descendants `specs/nodes/SG-SPEC-0002.yaml`,
     `specs/nodes/SG-SPEC-0007.yaml`, `specs/nodes/SG-SPEC-0009.yaml`, `specs/nodes/SG-SPEC-0010.yaml`,
     `specs/nodes/SG-SPEC-0017.yaml`, `specs/nodes/SG-SPEC-0018.yaml`, `specs/nodes/SG-SPEC-0019.yaml`,
     `specs/nodes/SG-SPEC-0020.yaml`, `specs/nodes/SG-SPEC-0021.yaml`, `specs/nodes/SG-SPEC-0022.yaml`,
     `specs/nodes/SG-SPEC-0023.yaml`, `specs/nodes/SG-SPEC-0024.yaml`, `specs/nodes/SG-SPEC-0054.yaml`,
-    `specs/nodes/SG-SPEC-0057.yaml`, and `specs/nodes/SG-SPEC-0061.yaml` now declare or serve delegated
-    refinement under `SG-SPEC-0001`. SG-SPEC-0001 keeps `depends_on: [SG-SPEC-0002, SG-SPEC-0007, SG-SPEC-0009,
-    SG-SPEC-0010, SG-SPEC-0017, SG-SPEC-0019, SG-SPEC-0023, SG-SPEC-0024, SG-SPEC-0054, SG-SPEC-0061]`
-    for concrete blocking descendants, while SG-SPEC-0018, SG-SPEC-0020, SG-SPEC-0021, SG-SPEC-0022, and
-    SG-SPEC-0057 remain non-blocking delegated children, keeping the refinement chain explicit without
-    widening linked blockers beyond concrete descendants.
+    `specs/nodes/SG-SPEC-0057.yaml`, `specs/nodes/SG-SPEC-0061.yaml`, and `specs/nodes/SG-SPEC-0062.yaml`
+    now declare or serve delegated refinement under `SG-SPEC-0001`. SG-SPEC-0001 keeps `depends_on: [SG-SPEC-0002,
+    SG-SPEC-0007, SG-SPEC-0009, SG-SPEC-0010, SG-SPEC-0017, SG-SPEC-0023, SG-SPEC-0024, SG-SPEC-0054,
+    SG-SPEC-0061, SG-SPEC-0062]` for concrete blocking descendants and the new record-semantics aggregate,
+    while SG-SPEC-0018, SG-SPEC-0020, SG-SPEC-0021, SG-SPEC-0022, SG-SPEC-0057, and SG-SPEC-0019 remain
+    delegated children or cluster members, keeping the refinement chain explicit without widening linked
+    blockers beyond meaningful aggregate descendants.
 
     '
 prompt: 'This spec is a seed ontology, not a finished graph. Use child specs to
@@ -180,15 +182,20 @@ specification:
     - Adoption-layer entities (DiscoverySurface, AdoptionCriterion, etc.) — covered by SG-SPEC-0018
     - Detailed executable-layer traceability semantics for code_surface, test, and release — covered by
       SG-SPEC-0020
-    - Detailed canonical revision-record and supersession-lineage semantics — covered by SG-SPEC-0019
-    - Detailed node maturity semantics and maturity-to-lifecycle interaction — covered by SG-SPEC-0022
+    - Canonical record semantics cluster for revision lineage, maturity, edge validation, provenance,
+      presence, authority, and traceability reachability — covered by SG-SPEC-0062
+    - Detailed canonical revision-record and supersession-lineage semantics — covered through SG-SPEC-0062
+      by SG-SPEC-0019
+    - Detailed node maturity semantics and maturity-to-lifecycle interaction — covered through SG-SPEC-0062
+      by SG-SPEC-0022
     - Detailed edge-kind compatibility matrix, blocked-edge semantics, and directedness constraints —
-      covered by SG-SPEC-0023
+      covered through SG-SPEC-0062 by SG-SPEC-0023
     - Detailed authority-class semantic contract for authored/imported/inferred/distilled records and
-      explicit canonical edges — covered by SG-SPEC-0057
+      explicit canonical edges — covered through SG-SPEC-0062 by SG-SPEC-0057
     - Detailed active-versus-historical node presence surface semantics and visible current-vs-lineage
-      markers — covered by SG-SPEC-0054
-    - Detailed canonical traceability reachability rules for INV-002 — covered by SG-SPEC-0061
+      markers — covered through SG-SPEC-0062 by SG-SPEC-0054
+    - Detailed canonical traceability reachability rules for INV-002 — covered through SG-SPEC-0062 by
+      SG-SPEC-0061
   terminology:
     intent: 'A precise, governed representation of what a product must be, how it must behave, and how
       its implementation can be validated.  Intent is the source of truth from which all other artifacts
