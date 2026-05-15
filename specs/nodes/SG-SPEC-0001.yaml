@@ -2,16 +2,16 @@ id: SG-SPEC-0001
 title: SpecGraph - The Executable Product Ontology
 kind: spec
 created_at: '2026-04-03T12:19:31Z'
-updated_at: '2026-05-14T22:30:00Z'
+updated_at: '2026-05-14T22:40:00Z'
 status: linked
 maturity: 1.0
 depends_on:
-- SG-SPEC-0002
 - SG-SPEC-0007
 - SG-SPEC-0009
 - SG-SPEC-0010
 - SG-SPEC-0062
 - SG-SPEC-0063
+- SG-SPEC-0064
 relates_to: []
 inputs:
 - README.md
@@ -21,6 +21,7 @@ inputs:
 - specs/nodes/SG-SPEC-0061.yaml
 - specs/nodes/SG-SPEC-0062.yaml
 - specs/nodes/SG-SPEC-0063.yaml
+- specs/nodes/SG-SPEC-0064.yaml
 outputs:
 - specs/nodes/SG-SPEC-0001.yaml
 allowed_paths:
@@ -96,24 +97,26 @@ acceptance_evidence:
     '
 - criterion: States that SG-SPEC-0001 is a seed spec that child specs refine before the graph is frozen
   evidence: 'prompt frames SG-SPEC-0001 as a seed ontology and directs unresolved areas into child specs;
-    scope.in adds recursive refinement via child specs; scope.out now delegates canonical record semantics
-    to SG-SPEC-0062 and realization or observation semantics to SG-SPEC-0063, which groups runtime observability,
-    adoption-layer, executable traceability, and metric-family semantics; SG-SPEC-0062 groups revision/supersession
-    lineage, detailed maturity semantics, active-versus-historical presence, authority-class semantics,
-    edge validation, provenance, and canonical traceability reachability; D7 formalizes the seed-spec
-    rule; spec.node_kinds.spec includes refines; and the concrete descendants `specs/nodes/SG-SPEC-0002.yaml`,
-    `specs/nodes/SG-SPEC-0007.yaml`, `specs/nodes/SG-SPEC-0009.yaml`, `specs/nodes/SG-SPEC-0010.yaml`,
-    `specs/nodes/SG-SPEC-0017.yaml`, `specs/nodes/SG-SPEC-0018.yaml`, `specs/nodes/SG-SPEC-0019.yaml`,
-    `specs/nodes/SG-SPEC-0020.yaml`, `specs/nodes/SG-SPEC-0021.yaml`, `specs/nodes/SG-SPEC-0022.yaml`,
-    `specs/nodes/SG-SPEC-0023.yaml`, `specs/nodes/SG-SPEC-0024.yaml`, `specs/nodes/SG-SPEC-0054.yaml`,
-    `specs/nodes/SG-SPEC-0057.yaml`, `specs/nodes/SG-SPEC-0061.yaml`, `specs/nodes/SG-SPEC-0062.yaml`,
-    and `specs/nodes/SG-SPEC-0063.yaml` now either directly refine `SG-SPEC-0001` or serve delegated refinement
-    through `SG-SPEC-0062` and `SG-SPEC-0063` as semantic aggregates. SG-SPEC-0001 keeps `depends_on:
-    [SG-SPEC-0002, SG-SPEC-0007, SG-SPEC-0009, SG-SPEC-0010, SG-SPEC-0062, SG-SPEC-0063]` for concrete
-    blocking descendants and the new semantic aggregates, while SG-SPEC-0017, SG-SPEC-0018, SG-SPEC-0020,
-    SG-SPEC-0021, SG-SPEC-0022, SG-SPEC-0024, SG-SPEC-0054, SG-SPEC-0057, SG-SPEC-0061, and SG-SPEC-0019
-    remain delegated children or cluster members, keeping the refinement chain explicit without widening
-    linked blockers beyond meaningful aggregate descendants.
+    scope.in adds recursive refinement via child specs; scope.out now delegates governance and vocabulary
+    semantics to SG-SPEC-0064, canonical record semantics to SG-SPEC-0062, and realization or observation
+    semantics to SG-SPEC-0063. SG-SPEC-0064 groups refinement policy, graph-health governance, and vocabulary
+    primitives; SG-SPEC-0063 groups runtime observability, adoption-layer, executable traceability, and
+    metric-family semantics; SG-SPEC-0062 groups revision/supersession lineage, detailed maturity semantics,
+    active-versus-historical presence, authority-class semantics, edge validation, provenance, and canonical
+    traceability reachability; D7 formalizes the seed-spec rule; spec.node_kinds.spec includes refines;
+    and the concrete descendants `specs/nodes/SG-SPEC-0002.yaml`, `specs/nodes/SG-SPEC-0007.yaml`, `specs/nodes/SG-SPEC-0009.yaml`,
+    `specs/nodes/SG-SPEC-0010.yaml`, `specs/nodes/SG-SPEC-0017.yaml`, `specs/nodes/SG-SPEC-0018.yaml`,
+    `specs/nodes/SG-SPEC-0019.yaml`, `specs/nodes/SG-SPEC-0020.yaml`, `specs/nodes/SG-SPEC-0021.yaml`,
+    `specs/nodes/SG-SPEC-0022.yaml`, `specs/nodes/SG-SPEC-0023.yaml`, `specs/nodes/SG-SPEC-0024.yaml`,
+    `specs/nodes/SG-SPEC-0054.yaml`, `specs/nodes/SG-SPEC-0057.yaml`, `specs/nodes/SG-SPEC-0061.yaml`,
+    `specs/nodes/SG-SPEC-0062.yaml`, `specs/nodes/SG-SPEC-0063.yaml`, and `specs/nodes/SG-SPEC-0064.yaml`
+    now either directly refine `SG-SPEC-0001` or serve delegated refinement through `SG-SPEC-0062`, `SG-SPEC-0063`,
+    and `SG-SPEC-0064` as semantic aggregates. SG-SPEC-0001 keeps `depends_on: [SG-SPEC-0007, SG-SPEC-0009,
+    SG-SPEC-0010, SG-SPEC-0062, SG-SPEC-0063, SG-SPEC-0064]` for concrete blocking descendants and the
+    new semantic aggregates, while SG-SPEC-0002, SG-SPEC-0017, SG-SPEC-0018, SG-SPEC-0020, SG-SPEC-0021,
+    SG-SPEC-0022, SG-SPEC-0024, SG-SPEC-0054, SG-SPEC-0057, SG-SPEC-0061, and SG-SPEC-0019 remain delegated
+    children or cluster members, keeping the refinement chain explicit without widening linked blockers
+    beyond meaningful aggregate descendants.
 
     '
 prompt: 'This spec is a seed ontology, not a finished graph. Use child specs to
@@ -171,6 +174,8 @@ specification:
     - Tooling, CLI, or CI implementation
     - Runtime retrieval, indexing, or embedding strategies
     - Fine-tuning, model specialization, or adapter design
+    - Governance and vocabulary semantics cluster for refinement policy, graph-health governance, and
+      ubiquitous vocabulary primitives — covered by SG-SPEC-0064
     - Realization and observation semantics cluster for runtime observability, adoption, executable traceability,
       and derived metric-family semantics — covered by SG-SPEC-0063
     - Observability metrics (SIB, PFI, CSI, etc.) — covered through SG-SPEC-0063 by SG-SPEC-0021
@@ -179,7 +184,8 @@ specification:
     - Intent-facing mediation and discovery semantics before canonicalization — covered by SG-SPEC-0007
     - Single-run OperatorRequest normalization and steering semantics from external actor intent — covered
       by SG-SPEC-0009
-    - Ubiquitous vocabulary meta-ontology primitives for executable domain vocabularies — covered by SG-SPEC-0010
+    - Ubiquitous vocabulary meta-ontology primitives for executable domain vocabularies — covered through
+      SG-SPEC-0064 by SG-SPEC-0010
     - Adoption-layer entities (DiscoverySurface, AdoptionCriterion, etc.) — covered through SG-SPEC-0063
       by SG-SPEC-0018
     - Detailed executable-layer traceability semantics for code_surface, test, and release — covered by

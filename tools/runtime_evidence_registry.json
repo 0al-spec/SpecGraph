@@ -3685,5 +3685,75 @@
       }
     ],
     "notes": "Realization-and-observation cluster evidence is registry-backed by SG-SPEC-0063, the root fan-out pressure proposal, the SG-SPEC-0001 delegation wording, and the first reparented runtime-observability member SG-SPEC-0017. This establishes an inspectable semantic cluster parent without claiming runtime instrumentation, telemetry collection, dashboards, metric formulas, adoption operations, repository layout, or implementation code."
+  },
+  {
+    "spec_id": "SG-SPEC-0064",
+    "evidence_scope": "surface_level",
+    "artifact_refs": [
+      "specs/nodes/SG-SPEC-0064.yaml",
+      "specs/nodes/SG-SPEC-0001.yaml",
+      "specs/nodes/SG-SPEC-0002.yaml",
+      "specs/nodes/SG-SPEC-0003.yaml",
+      "specs/nodes/SG-SPEC-0010.yaml",
+      "docs/proposals/0022_refinement_fan_out_pressure.md",
+      "tests/test_supervisor.py"
+    ],
+    "runtime_entities": [
+      {
+        "entity_id": "specgraph.governance_vocabulary_cluster",
+        "entity_kind": "semantic_cluster_parent"
+      },
+      {
+        "entity_id": "specgraph.governance_boundary",
+        "entity_kind": "aggregate_governance_contract"
+      },
+      {
+        "entity_id": "specgraph.vocabulary_boundary",
+        "entity_kind": "aggregate_vocabulary_contract"
+      },
+      {
+        "entity_id": "specgraph.root_fan_out_reduction.governance_vocabulary",
+        "entity_kind": "graph_health_response"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0064.yaml",
+        "pattern": "governance_vocabulary_cluster"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0064.yaml",
+        "pattern": "governance_boundary"
+      },
+      {
+        "path": "docs/proposals/0022_refinement_fan_out_pressure.md",
+        "pattern": "introduce_semantic_cluster_parent"
+      }
+    ],
+    "outcome_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0064.yaml",
+        "pattern": "member_contracts"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0064.yaml",
+        "pattern": "dependency_policy"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0064.yaml",
+        "pattern": "refinement_routing_policy"
+      }
+    ],
+    "adoption_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0001.yaml",
+        "pattern": "SG-SPEC-0064 groups refinement policy"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0002.yaml",
+        "pattern": "under SG-SPEC-0064"
+      }
+    ],
+    "notes": "Governance-and-vocabulary cluster evidence is registry-backed by SG-SPEC-0064, the root fan-out pressure proposal, the SG-SPEC-0001 delegation wording, and the first reparented refinement-policy member SG-SPEC-0002. This establishes an inspectable semantic cluster parent without claiming validator implementation, supervisor workflow, queue control, runtime execution, vocabulary compiler behavior, or viewer implementation."
   }
 ]
