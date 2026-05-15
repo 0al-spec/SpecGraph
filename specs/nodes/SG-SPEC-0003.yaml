@@ -2,7 +2,7 @@ id: SG-SPEC-0003
 title: SpecGraph - Reflective Governance Boundary and Graph Health Signals
 kind: spec
 created_at: '2026-04-05T19:01:36Z'
-updated_at: '2026-04-17T22:29:41Z'
+updated_at: '2026-05-14T22:41:00Z'
 status: linked
 maturity: 1.0
 depends_on:
@@ -12,9 +12,10 @@ depends_on:
 relates_to:
 - SG-SPEC-0002
 refines:
-- SG-SPEC-0001
+- SG-SPEC-0064
 inputs:
 - specs/nodes/SG-SPEC-0001.yaml
+- specs/nodes/SG-SPEC-0064.yaml
 - specs/nodes/SG-SPEC-0002.yaml
 - specs/nodes/SG-SPEC-0004.yaml
 - specs/nodes/SG-SPEC-0005.yaml
@@ -111,12 +112,13 @@ acceptance_evidence:
     and bounded subtree-shape plus lower-boundary handoff signal semantics to SG-SPEC-0049.
 
     '
-prompt: Keep SG-SPEC-0003 as the canonical overview and integration node for reflective graph-health governance.
-  It retains the boundary among SpecGraph governance, supervisor execution, bounded autonomous continuation,
-  derived observation/signal/proposal flow, diagnostic graph-health vocabulary, derived first-persistence
-  constraints, and implementation-agnostic scope, while SG-SPEC-0026 and its descendants own continuation
-  selection and delegated reflective execution mechanics, SG-SPEC-0034 owns proposal/queue control contracts,
-  and SG-SPEC-0049 owns derived subtree-shape and lower-boundary handoff signal contracts.
+prompt: Keep SG-SPEC-0003 as the canonical overview and integration node under SG-SPEC-0064 for reflective
+  graph-health governance. It retains the boundary among SpecGraph governance, supervisor execution, bounded
+  autonomous continuation, derived observation/signal/proposal flow, diagnostic graph-health vocabulary,
+  derived first-persistence constraints, and implementation-agnostic scope, while SG-SPEC-0026 and its
+  descendants own continuation selection and delegated reflective execution mechanics, SG-SPEC-0034 owns
+  proposal/queue control contracts, and SG-SPEC-0049 owns derived subtree-shape and lower-boundary handoff
+  signal contracts.
 specification:
   objective: 'Define how SpecGraph observes its own graph quality, how those observations become derived
     signals, continuation candidates, and proposals, where the boundary lies between canonical governance,
