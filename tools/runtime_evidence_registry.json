@@ -986,7 +986,7 @@
     "adoption_markers": [
       {
         "path": "specs/nodes/SG-SPEC-0001.yaml",
-        "pattern": "adoption-layer entities to SG-SPEC-0018"
+        "pattern": "Adoption-layer entities (DiscoverySurface, AdoptionCriterion, etc.)"
       },
       {
         "path": "specs/nodes/SG-SPEC-0007.yaml",
@@ -3606,7 +3606,7 @@
     "adoption_markers": [
       {
         "path": "specs/nodes/SG-SPEC-0001.yaml",
-        "pattern": "canonical record semantics to SG-SPEC-0062"
+        "pattern": "SG-SPEC-0062 groups revision/supersession"
       },
       {
         "path": "specs/nodes/SG-SPEC-0019.yaml",
@@ -3614,5 +3614,76 @@
       }
     ],
     "notes": "Canonical record-semantics cluster evidence is registry-backed by SG-SPEC-0062, the root fan-out pressure proposal, the SG-SPEC-0001 delegation wording, and the first reparented lineage member SG-SPEC-0019. This establishes an inspectable semantic cluster parent without claiming storage layout, traversal algorithms, viewer presentation, lifecycle automation, or runtime implementation."
+  },
+  {
+    "spec_id": "SG-SPEC-0063",
+    "evidence_scope": "surface_level",
+    "artifact_refs": [
+      "specs/nodes/SG-SPEC-0063.yaml",
+      "specs/nodes/SG-SPEC-0001.yaml",
+      "specs/nodes/SG-SPEC-0017.yaml",
+      "specs/nodes/SG-SPEC-0018.yaml",
+      "specs/nodes/SG-SPEC-0020.yaml",
+      "specs/nodes/SG-SPEC-0021.yaml",
+      "docs/proposals/0022_refinement_fan_out_pressure.md",
+      "tests/test_supervisor.py"
+    ],
+    "runtime_entities": [
+      {
+        "entity_id": "specgraph.realization_observation_cluster",
+        "entity_kind": "semantic_cluster_parent"
+      },
+      {
+        "entity_id": "specgraph.realization_boundary",
+        "entity_kind": "aggregate_realization_contract"
+      },
+      {
+        "entity_id": "specgraph.observation_boundary",
+        "entity_kind": "aggregate_observation_contract"
+      },
+      {
+        "entity_id": "specgraph.root_fan_out_reduction.realization_observation",
+        "entity_kind": "graph_health_response"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0063.yaml",
+        "pattern": "realization_observation_cluster"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0063.yaml",
+        "pattern": "observation_boundary"
+      },
+      {
+        "path": "docs/proposals/0022_refinement_fan_out_pressure.md",
+        "pattern": "introduce_semantic_cluster_parent"
+      }
+    ],
+    "outcome_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0063.yaml",
+        "pattern": "member_contracts"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0063.yaml",
+        "pattern": "dependency_policy"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0063.yaml",
+        "pattern": "refinement_routing_policy"
+      }
+    ],
+    "adoption_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0001.yaml",
+        "pattern": "realization or observation semantics to SG-SPEC-0063"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0017.yaml",
+        "pattern": "Refine SG-SPEC-0063"
+      }
+    ],
+    "notes": "Realization-and-observation cluster evidence is registry-backed by SG-SPEC-0063, the root fan-out pressure proposal, the SG-SPEC-0001 delegation wording, and the first reparented runtime-observability member SG-SPEC-0017. This establishes an inspectable semantic cluster parent without claiming runtime instrumentation, telemetry collection, dashboards, metric formulas, adoption operations, repository layout, or implementation code."
   }
 ]
