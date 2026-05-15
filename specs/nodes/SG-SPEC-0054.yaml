@@ -196,9 +196,9 @@ specification:
       lineage inspection
   parent_contract:
   - SG-SPEC-0001 names the concrete `presence` field and delegates detailed active-versus-historical node-presence
-    surface semantics to SG-SPEC-0054.
-  - SG-SPEC-0054 refines SG-SPEC-0001 without redefining the root canonical-versus-derived policy outside
-    node-presence surface semantics.
+    surface semantics through SG-SPEC-0062 to SG-SPEC-0054.
+  - SG-SPEC-0054 refines SG-SPEC-0062 as the canonical record-semantics cluster member for node presence
+    without redefining the root canonical-versus-derived policy outside node-presence surface semantics.
   invariants:
   - id: NPS-001
     statement: Presence and lifecycle status are orthogonal; `presence.state` must not be used as a synonym
