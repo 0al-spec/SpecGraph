@@ -2,7 +2,7 @@ id: SG-SPEC-0019
 title: SpecGraph - Canonical Revision and Supersession Lineage
 kind: spec
 created_at: '2026-04-12T07:03:31Z'
-updated_at: '2026-04-17T21:18:34Z'
+updated_at: '2026-05-15T22:14:00Z'
 status: frozen
 maturity: 1.0
 depends_on: []

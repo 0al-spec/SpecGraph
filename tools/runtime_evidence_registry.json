@@ -3606,7 +3606,7 @@
     "adoption_markers": [
       {
         "path": "specs/nodes/SG-SPEC-0001.yaml",
-        "pattern": "canonical record semantics to SG-SPEC-0062"
+        "pattern": "SG-SPEC-0062 groups revision/supersession"
       },
       {
         "path": "specs/nodes/SG-SPEC-0019.yaml",
