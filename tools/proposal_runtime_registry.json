@@ -375,6 +375,54 @@
     ]
   },
   {
+    "proposal_id": "0009",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "tools/supervisor.py",
+      "tests/test_supervisor.py",
+      "tools/techspec_handoff_policy.json",
+      "docs/proposals/0009_graph_to_techspec_handoff.md"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/techspec_handoff_policy.json",
+        "pattern": "\"artifact_kind\": \"techspec_handoff_policy\""
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def techspec_handoff_profile("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "TECHSPEC_HANDOFF_PRIMARY_SIGNAL"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_observe_graph_health_reports_techspec_handoff_candidate("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_update_refactor_queue_routes_techspec_handoff_to_handoff_metadata("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_update_proposal_queue_emits_handoff_proposal_for_techspec_boundary_signal("
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "\"target_transition_profile\": TECHSPEC_HANDOFF_TARGET_TRANSITION_PROFILE"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "signals.append(TECHSPEC_HANDOFF_PRIMARY_SIGNAL)"
+      }
+    ]
+  },
+  {
     "proposal_id": "0010",
     "posture": "synchronous_runtime_slice",
     "runtime_surfaces": [
