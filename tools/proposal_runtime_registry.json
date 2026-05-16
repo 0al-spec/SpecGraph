@@ -513,6 +513,61 @@
     ]
   },
   {
+    "proposal_id": "0012",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "tools/supervisor.py",
+      "tests/test_supervisor.py",
+      "docs/proposals/0012_true_review_barrier.md"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def pending_review_sync_paths("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def pending_review_base_divergence_paths("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def pending_review_candidate_divergence_paths("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def clear_pending_review_state("
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_main_review_pending_graph_health_keeps_canonical_outcome_basis("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_resolve_gate_approve_rejects_stale_worktree_candidate("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_resolve_gate_approve_syncs_when_allowed_paths_empty("
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "\"graph_health_truth_basis\": \"accepted_canonical\""
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "node.data[\"pending_sync_paths\"] = allowed_changes"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "clear_pending_review_state(node)"
+      }
+    ]
+  },
+  {
     "proposal_id": "0016",
     "posture": "synchronous_runtime_slice",
     "runtime_surfaces": [

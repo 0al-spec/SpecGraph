@@ -23100,6 +23100,22 @@ def test_proposal_0011_pre_spec_semantics_runtime_is_covered(
     assert entry["reflective_chain"]["next_gap"] == "none"
 
 
+def test_proposal_0012_true_review_barrier_runtime_is_covered(
+    supervisor_module: object,
+) -> None:
+    """Proposal 0012 is implemented by pending review staging and freshness checks."""
+    index = supervisor_module.build_proposal_runtime_index()
+    by_id = {e["proposal_id"]: e for e in index["entries"]}
+
+    assert "0012" in by_id, "Proposal 0012 missing from proposal_runtime_index"
+    entry = by_id["0012"]
+    assert entry["runtime_realization"]["status"] == "implemented"
+    assert entry["validation_closure"]["status"] == "covered"
+    assert entry["observation_coverage"]["status"] == "covered"
+    assert entry["observation_coverage"]["missing_markers"] == []
+    assert entry["reflective_chain"]["next_gap"] == "none"
+
+
 def test_proposal_0036_topology_prose_observation_is_covered(
     supervisor_module: object,
 ) -> None:
