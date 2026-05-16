@@ -572,7 +572,7 @@
       },
       {
         "path": "tools/supervisor.py",
-        "pattern": "emit_supervisor_json(report, output_mode=normalized_output_mode)"
+        "pattern": "report = validate_transition_packet_file(\n            Path(validate_transition_packet_path),\n            validator_profile=transition_profile,\n        )\n        emit_supervisor_json(report, output_mode=normalized_output_mode)"
       }
     ]
   },
