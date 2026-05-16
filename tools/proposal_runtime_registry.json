@@ -568,6 +568,61 @@
     ]
   },
   {
+    "proposal_id": "0013",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "tools/supervisor.py",
+      "tests/test_supervisor.py",
+      "docs/proposals/0013_default_deny_write_authority.md"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def implicit_source_allowed_paths("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def effective_allowed_paths_for_run("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def validate_changed_files_against_allowed_paths("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def select_sync_paths("
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_effective_allowed_paths_defaults_to_source_spec_when_empty("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_can_create_new_spec_files_requires_explicit_allowed_paths("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_main_rejects_cross_file_change_when_allowed_paths_empty("
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "allowed_paths = list(node.allowed_paths) or implicit_source_allowed_paths(node)"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "return [f\"Changed file outside allowed_paths: {changed}\" for changed in changed_files]"
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "Changed file outside allowed_paths: specs/nodes/SG-SPEC-0002.yaml"
+      }
+    ]
+  },
+  {
     "proposal_id": "0016",
     "posture": "synchronous_runtime_slice",
     "runtime_surfaces": [
