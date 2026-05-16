@@ -635,5 +635,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0050",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0050_swift_typed_tooling_lane.md"
+    ],
+    "motivating_concern": "Swift adoption needs a bounded typed tooling lane rather than a supervisor rewrite",
+    "normalized_title": "Swift Typed Tooling Lane",
+    "bounded_scope": "Define Swift as an optional read-only typed tooling and SDK lane over SpecGraph artifacts without rewriting the Python supervisor, requiring Swift for ordinary operation, or granting canonical write authority.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]
