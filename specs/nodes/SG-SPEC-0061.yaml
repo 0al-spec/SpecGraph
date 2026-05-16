@@ -2,7 +2,7 @@ id: SG-SPEC-0061
 title: SpecGraph - Canonical Traceability Reachability Boundary
 kind: spec
 created_at: '2026-05-11T07:53:04Z'
-updated_at: '2026-05-11T09:35:13Z'
+updated_at: '2026-05-14T22:26:00Z'
 status: linked
 maturity: 1.0
 depends_on:
@@ -10,9 +10,10 @@ depends_on:
 - SG-SPEC-0023
 - SG-SPEC-0054
 refines:
-- SG-SPEC-0001
+- SG-SPEC-0062
 inputs:
 - specs/nodes/SG-SPEC-0001.yaml
+- specs/nodes/SG-SPEC-0062.yaml
 - specs/nodes/SG-SPEC-0019.yaml
 - specs/nodes/SG-SPEC-0023.yaml
 - specs/nodes/SG-SPEC-0054.yaml
@@ -60,7 +61,7 @@ acceptance_evidence:
     and lifecycle transition mechanics out of scope.
   evidence: specification.scope.out excludes validation algorithms, storage layout, traversal implementation,
     UI presentation, metrics, and lifecycle transition mechanics.
-prompt: Refine SG-SPEC-0001 by defining the bounded canonical traceability reachability contract for INV-002.
+prompt: Refine SG-SPEC-0062 by defining the bounded canonical traceability reachability contract for INV-002.
   Keep this child implementation-agnostic and do not redefine edge compatibility, presence, supersession,
   metrics, or traversal algorithms.
 specification:

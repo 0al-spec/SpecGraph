@@ -9356,6 +9356,18 @@ def test_live_sg_spec_0048_evidence_contract_is_chain_complete(
                 "chain_status": "chain_complete",
             },
         ),
+        (
+            "SG-SPEC-0062",
+            [],
+            {
+                "artifact_ref_count": 11,
+                "runtime_entity_count": 3,
+                "observation_source_count": 3,
+                "outcome_source_count": 3,
+                "adoption_source_count": 2,
+                "chain_status": "chain_complete",
+            },
+        ),
     ],
 )
 def test_live_spec_evidence_contract_is_chain_complete(

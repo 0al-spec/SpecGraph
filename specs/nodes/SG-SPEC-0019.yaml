@@ -2,15 +2,16 @@ id: SG-SPEC-0019
 title: SpecGraph - Canonical Revision and Supersession Lineage
 kind: spec
 created_at: '2026-04-12T07:03:31Z'
-updated_at: '2026-04-17T21:18:34Z'
+updated_at: '2026-05-15T22:14:00Z'
 status: frozen
 maturity: 1.0
 depends_on: []
 relates_to: []
 refines:
-- SG-SPEC-0001
+- SG-SPEC-0062
 inputs:
 - specs/nodes/SG-SPEC-0001.yaml
+- specs/nodes/SG-SPEC-0062.yaml
 - AGENTS.md
 outputs:
 - specs/nodes/SG-SPEC-0019.yaml
@@ -65,7 +66,7 @@ acceptance_evidence:
     stand in for canonical lineage.
 
     '
-prompt: Refine SG-SPEC-0001 by defining the canonical revision and supersession lineage boundary. Keep
+prompt: Refine SG-SPEC-0062 by defining the canonical revision and supersession lineage boundary. Keep
   this child implementation-agnostic and focused on ontology semantics for change history, stable identity,
   and canonical versus derived history separation.
 specification:

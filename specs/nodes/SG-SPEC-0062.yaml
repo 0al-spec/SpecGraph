@@ -1,0 +1,157 @@
+id: SG-SPEC-0062
+title: SpecGraph - Canonical Record Semantics Cluster
+kind: spec
+created_at: '2026-05-14T22:09:54Z'
+updated_at: '2026-05-14T22:09:54Z'
+status: linked
+maturity: 0.72
+depends_on:
+- SG-SPEC-0019
+- SG-SPEC-0023
+- SG-SPEC-0054
+relates_to:
+- SG-SPEC-0003
+refines:
+- SG-SPEC-0001
+inputs:
+- specs/nodes/SG-SPEC-0001.yaml
+- specs/nodes/SG-SPEC-0019.yaml
+- specs/nodes/SG-SPEC-0022.yaml
+- specs/nodes/SG-SPEC-0023.yaml
+- specs/nodes/SG-SPEC-0024.yaml
+- specs/nodes/SG-SPEC-0054.yaml
+- specs/nodes/SG-SPEC-0057.yaml
+- specs/nodes/SG-SPEC-0061.yaml
+- docs/proposals/0022_refinement_fan_out_pressure.md
+outputs:
+- specs/nodes/SG-SPEC-0062.yaml
+allowed_paths:
+- specs/nodes/SG-SPEC-0062.yaml
+acceptance:
+- Defines SG-SPEC-0062 as the intermediate semantic cluster parent under SG-SPEC-0001 for canonical record
+  semantics so the root ontology no longer needs to directly own every record-field, lineage, presence,
+  authority, and reachability child.
+- Groups canonical revision lineage, maturity, edge-kind validation, provenance, presence, authority-class,
+  and traceability-reachability contracts without redefining the bounded contracts owned by those children.
+- Defines the dependency and refinement routing rule for the cluster so SG-SPEC-0001 can depend on one
+  meaningful record-semantics aggregate while concrete child specs keep their existing semantic ownership.
+- Keeps storage layout, traversal algorithms, viewer rendering, lifecycle automation, and runtime implementation
+  out of scope for this cluster.
+acceptance_evidence:
+- criterion: Defines SG-SPEC-0062 as the intermediate semantic cluster parent under SG-SPEC-0001 for canonical
+    record semantics so the root ontology no longer needs to directly own every record-field, lineage,
+    presence, authority, and reachability child.
+  evidence: specification.objective, specification.scope.in, and specification.cluster_contract.parent_boundary
+    define SG-SPEC-0062 as the delegated record-semantics cluster beneath SG-SPEC-0001, while inputs include
+    the fan-out pressure proposal that motivates intermediate clustering.
+- criterion: Groups canonical revision lineage, maturity, edge-kind validation, provenance, presence,
+    authority-class, and traceability-reachability contracts without redefining the bounded contracts
+    owned by those children.
+  evidence: specification.member_contracts enumerates SG-SPEC-0019, SG-SPEC-0022, SG-SPEC-0023, SG-SPEC-0024,
+    SG-SPEC-0054, SG-SPEC-0057, and SG-SPEC-0061 with explicit member roles and ownership boundaries.
+- criterion: Defines the dependency and refinement routing rule for the cluster so SG-SPEC-0001 can depend
+    on one meaningful record-semantics aggregate while concrete child specs keep their existing semantic
+    ownership.
+  evidence: specification.cluster_contract.dependency_policy and specification.cluster_contract.refinement_routing_policy
+    state that SG-SPEC-0001 should depend on SG-SPEC-0062 for the aggregate, while members retain their
+    bounded contracts and may be reparented under the cluster without changing stable spec identity. The
+    top-level depends_on list stays limited to the foundation blockers, while the full member set remains
+    enumerated in specification.member_contracts.
+- criterion: Keeps storage layout, traversal algorithms, viewer rendering, lifecycle automation, and runtime
+    implementation out of scope for this cluster.
+  evidence: specification.scope.out excludes storage layout, traversal algorithms, viewer rendering, lifecycle
+    automation, and runtime implementation; specification.non_goal_policy also forbids wrapper-only clustering
+    and runtime realization claims.
+prompt: Introduce the canonical record semantics cluster beneath SG-SPEC-0001 so root fan-out pressure
+  can be reduced through a meaningful intermediate parent instead of another flat root child.
+specification:
+  objective: Define the intermediate semantic cluster for canonical record-level semantics so SG-SPEC-0001
+    can delegate record identity, metadata, lineage, presence, authority, and reachability concerns through
+    one legible aggregate boundary while each concrete child keeps its stable bounded contract.
+  scope:
+    in:
+    - Intermediate cluster role for canonical record semantics beneath SG-SPEC-0001
+    - Grouping boundary for revision lineage, maturity, edge validation, provenance, presence, authority
+      classes, and traceability reachability
+    - Dependency routing from SG-SPEC-0001 through the cluster to concrete semantic children
+    - Reparenting boundary for reducing root refinement fan-out without changing stable child IDs
+    - Canonical-versus-derived protection for record semantics as graph truth rather than viewer projection
+    out:
+    - Storage format, repository layout, database schema, or serialization mechanics
+    - Traversal algorithms, validation execution, search indexes, or graph-query implementation
+    - Viewer badges, layout, colors, filters, or interaction design
+    - Lifecycle automation, supervisor queue policy, or promotion mechanics
+    - New node kinds, edge kinds, authority classes, presence states, or maturity formulas
+    - Runtime implementation or dedicated executor ownership for these semantics
+  terminology:
+    canonical_record_semantics_cluster: The intermediate parent under SG-SPEC-0001 that groups cross-cutting
+      semantics attached to canonical nodes and explicit canonical edges.
+    record_identity_surface: The stable identity, lineage, presence, and authority meaning that lets a
+      governed subject remain inspectable across revisions and derived projections.
+    record_integrity_contract: The combined semantic obligation that canonical records remain traceable,
+      provenance-bearing, lifecycle-valid, edge-valid, and current-or-historical in explicitly governed
+      ways.
+    cluster_member_contract: A stable child spec whose bounded semantics are grouped by SG-SPEC-0062 without
+      losing its own identity, acceptance criteria, or dependency relationships.
+    root_fan_out_reduction: A structural cleanup in which SG-SPEC-0001 delegates related direct children
+      through SG-SPEC-0062 instead of carrying every member as a separate direct refinement child.
+  cluster_contract:
+    parent_boundary:
+    - SG-SPEC-0001 remains the seed executable product ontology and owns the root node kinds, edge kinds,
+      lifecycle, canonical-versus-derived split, and invariants.
+    - SG-SPEC-0062 owns the aggregate record-semantics grouping that makes those root commitments legible
+      without forcing SG-SPEC-0001 to directly own every record-level child.
+    - The cluster exists only when its member concerns form a real semantic aggregate; it must not become
+      a meaningless wrapper node.
+    dependency_policy:
+    - SG-SPEC-0001 may depend on SG-SPEC-0062 as the aggregate blocking descendant for canonical record
+      semantics.
+    - SG-SPEC-0062 depends only on the foundation blockers required to make the aggregate coherent, including
+      lineage, explicit edge validation, and node presence semantics.
+    - Non-blocking record-semantics members stay enumerated in member_contracts rather than widening top-level
+      depends_on beyond the atomicity threshold.
+    - Member specs keep their stable IDs and may retain their existing own dependencies; the cluster does
+      not rewrite those contracts.
+    refinement_routing_policy:
+    - Existing SG-SPEC-0001 children whose primary role is record-level lineage, metadata, presence, authority,
+      validation, or reachability may be reparented to SG-SPEC-0062.
+    - Reparenting a member under SG-SPEC-0062 must preserve the member's stable identity, acceptance,
+      provenance, and own dependency semantics.
+    - SG-SPEC-0001 should reference the cluster for the aggregate and avoid repeating a flat list of every
+      record-semantics member when the cluster already owns that grouping.
+  member_contracts:
+  - spec_id: SG-SPEC-0019
+    member_role: Canonical revision and supersession lineage.
+    ownership_boundary: Defines revision records, supersession, successor mapping, and active-versus-historical
+      lineage semantics consumed by record presence and reachability.
+  - spec_id: SG-SPEC-0022
+    member_role: Node maturity semantics.
+    ownership_boundary: Defines the diagnostic maturity signal and its lifecycle boundary without turning
+      maturity into approval or queue policy.
+  - spec_id: SG-SPEC-0023
+    member_role: Edge-kind validation contract.
+    ownership_boundary: Defines compatibility, directedness, endpoint presence, and linked-readiness semantics
+      for explicit canonical edges.
+  - spec_id: SG-SPEC-0024
+    member_role: Canonical provenance envelope.
+    ownership_boundary: Defines provenance metadata and authority/source reference handling for canonical
+      nodes and explicit canonical edges.
+  - spec_id: SG-SPEC-0054
+    member_role: Canonical node presence surface.
+    ownership_boundary: Defines active versus historical node presence markers and their lineage boundary.
+  - spec_id: SG-SPEC-0057
+    member_role: Authority class semantic boundary.
+    ownership_boundary: Defines authored, imported, inferred, and distilled authority-class semantics
+      across governed subjects and explicit canonical edges.
+  - spec_id: SG-SPEC-0061
+    member_role: Canonical traceability reachability boundary.
+    ownership_boundary: Defines when active specification-layer subjects satisfy INV-002 through canonical
+      trace paths rather than derived projections.
+  non_goal_policy:
+  - SG-SPEC-0062 must not redefine member formulas, field-level schemas, storage layouts, or viewer affordances.
+  - SG-SPEC-0062 must not claim runtime realization merely because its members have evidence or derived
+    surfaces.
+  - SG-SPEC-0062 must not hide unresolved member gaps; backlog and evidence projections should continue
+    to point to the concrete member when the gap is member-specific.
+gate_state: none
+proposed_status: null

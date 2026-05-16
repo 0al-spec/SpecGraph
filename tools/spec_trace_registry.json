@@ -535,5 +535,37 @@
       "tests/test_supervisor.py"
     ],
     "notes": "Canonical traceability reachability semantics are semantic-surface backed by the runtime evidence registry and a live regression anchor. This trace contract intentionally does not claim traversal algorithms, storage layout, indexes, viewer presentation, metrics, or lifecycle transition automation."
+  },
+  {
+    "spec_id": "SG-SPEC-0062",
+    "code_surfaces": [],
+    "test_surfaces": [
+      "tests/test_supervisor.py"
+    ],
+    "notes": "Canonical record-semantics cluster semantics are semantic-surface backed by the runtime evidence registry and a live regression anchor. This trace contract intentionally does not claim storage layout, traversal algorithms, viewer presentation, lifecycle automation, or runtime implementation."
+  },
+  {
+    "spec_id": "SG-SPEC-0063",
+    "code_surfaces": [],
+    "test_surfaces": [
+      "tests/test_supervisor.py"
+    ],
+    "notes": "Realization-and-observation cluster semantics are semantic-surface backed by the runtime evidence registry and a live regression anchor. This trace contract intentionally does not claim runtime instrumentation, telemetry collection, dashboards, metric formulas, adoption operations, repository layout, or implementation code."
+  },
+  {
+    "spec_id": "SG-SPEC-0064",
+    "code_surfaces": [],
+    "test_surfaces": [
+      "tests/test_supervisor.py"
+    ],
+    "notes": "Governance-and-vocabulary cluster semantics are semantic-surface backed by the runtime evidence registry and a live regression anchor. This trace contract intentionally does not claim validator implementation, supervisor workflow, queue control, runtime execution, vocabulary compiler behavior, or viewer implementation."
+  },
+  {
+    "spec_id": "SG-SPEC-0065",
+    "code_surfaces": [],
+    "test_surfaces": [
+      "tests/test_supervisor.py"
+    ],
+    "notes": "Intent-and-operator ingress cluster semantics are semantic-surface backed by the runtime evidence registry and a live regression anchor. This trace contract intentionally does not claim UI, chat transport, agent workflow implementation, request execution, queue control, storage layout, or viewer implementation."
   }
 ]

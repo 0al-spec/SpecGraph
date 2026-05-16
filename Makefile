@@ -31,6 +31,7 @@ help:
 		'  make conversation-memory-pressure Refresh conversation memory promotion pressure JSON' \
 		'  make implementation-work      Refresh latest implementation work index' \
 		'  make review-feedback          Refresh review feedback index' \
+		'  make publish-bundle           Build static specs/ + runs/ publish bundle' \
 		'  make test                     Run full Python test suite quietly' \
 		'  make test-supervisor          Run supervisor tests quietly'
 
@@ -133,6 +134,10 @@ implementation-work:
 .PHONY: review-feedback
 review-feedback:
 	@$(PYTHON) $(SUPERVISOR) --build-review-feedback-index
+
+.PHONY: publish-bundle
+publish-bundle:
+	@$(PYTHON) tools/build_static_artifact_bundle.py --refresh-viewer-surfaces
 
 .PHONY: test
 test:

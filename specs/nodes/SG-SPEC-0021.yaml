@@ -2,7 +2,7 @@ id: SG-SPEC-0021
 title: SpecGraph - Derived Metric Family Boundary
 kind: spec
 created_at: '2026-04-12T07:36:12Z'
-updated_at: '2026-04-13T04:51:58Z'
+updated_at: '2026-05-14T22:33:00Z'
 status: linked
 maturity: 1.0
 depends_on:
@@ -10,9 +10,10 @@ depends_on:
 - SG-SPEC-0017
 relates_to: []
 refines:
-- SG-SPEC-0001
+- SG-SPEC-0063
 inputs:
 - specs/nodes/SG-SPEC-0001.yaml
+- specs/nodes/SG-SPEC-0063.yaml
 - specs/nodes/SG-SPEC-0003.yaml
 - specs/nodes/SG-SPEC-0017.yaml
 - tasks.md
@@ -68,7 +69,7 @@ acceptance_evidence:
     acceptance, or authority.
 
     '
-prompt: Refine SG-SPEC-0001 by defining the bounded metric-family boundary for derived quality and observability
+prompt: Refine SG-SPEC-0063 by defining the bounded metric-family boundary for derived quality and observability
   measures such as pre-SIB, SIB, Specification Verifiability, Process Observability, and Structural Observability.
   Keep this child focused on semantic family roles, subject binding, and canonical versus derived separation;
   do not define formulas, thresholds, dashboards, storage, or scheduler behavior.

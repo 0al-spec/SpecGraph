@@ -2,7 +2,7 @@ id: SG-SPEC-0007
 title: SpecGraph - Intent Mediation and Discovery Boundary
 kind: spec
 created_at: '2026-04-07T20:43:09Z'
-updated_at: '2026-04-15T21:59:18Z'
+updated_at: '2026-05-14T22:44:00Z'
 status: frozen
 maturity: 1.0
 depends_on:
@@ -11,9 +11,10 @@ depends_on:
 relates_to:
 - SG-SPEC-0006
 refines:
-- SG-SPEC-0001
+- SG-SPEC-0065
 inputs:
 - specs/nodes/SG-SPEC-0001.yaml
+- specs/nodes/SG-SPEC-0065.yaml
 - specs/nodes/SG-SPEC-0008.yaml
 - specs/nodes/SG-SPEC-0050.yaml
 - docs/proposals/0011_pre_spec_semantic_layer.md
@@ -82,11 +83,11 @@ acceptance_evidence:
     boundary semantics for mediated discovery.
 
     '
-prompt: Retain SG-SPEC-0007 as the overview boundary spec for pre-canonical intent mediation between raw
-  user goals and canonical intent or spec nodes, including minimal mediation artifacts, promotion traceability,
-  adjacent out-of-scope boundaries, and implementation-agnostic constraints, while deferring explicit
-  project-memory consultation policy to child SG-SPEC-0008 and first-class pre-spec semantic-layer kinds
-  and promotion graph shape to child SG-SPEC-0050.
+prompt: Retain SG-SPEC-0007 as the overview boundary spec under SG-SPEC-0065 for pre-canonical intent
+  mediation between raw user goals and canonical intent or spec nodes, including minimal mediation artifacts,
+  promotion traceability, adjacent out-of-scope boundaries, and implementation-agnostic constraints, while
+  deferring explicit project-memory consultation policy to child SG-SPEC-0008 and first-class pre-spec
+  semantic-layer kinds and promotion graph shape to child SG-SPEC-0050.
 specification:
   objective: 'Define the bounded pre-canonical discovery and mediation semantics that translate raw user
     goals into governed canonical intent-facing artifacts without expanding the canonical layer model

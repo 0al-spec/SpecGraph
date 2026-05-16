@@ -2,7 +2,7 @@ id: SG-SPEC-0010
 title: SpecGraph - Ubiquitous Vocabulary Meta-Ontology Primitives
 kind: spec
 created_at: '2026-04-08T10:05:18Z'
-updated_at: '2026-04-13T04:51:58Z'
+updated_at: '2026-05-14T22:42:00Z'
 status: frozen
 maturity: 0.93
 depends_on: []
@@ -10,9 +10,10 @@ relates_to:
 - SG-SPEC-0007
 - SG-SPEC-0011
 refines:
-- SG-SPEC-0001
+- SG-SPEC-0064
 inputs:
 - specs/nodes/SG-SPEC-0001.yaml
+- specs/nodes/SG-SPEC-0064.yaml
 - AGENTS.md
 outputs:
 - specs/nodes/SG-SPEC-0010.yaml
@@ -71,10 +72,11 @@ acceptance_evidence:
     this node governs canonical vocabulary primitives only, not tooling or interface behavior.
 
     '
-prompt: Create one bounded child spec for the ubiquitous vocabulary layer. Define only the first meta-ontology
-  primitives needed to support executable domain vocabularies in SpecGraph, such as Concept, RelationType,
-  StateFamily, Alias, and Invariant. Keep it implementation-agnostic, do not define full domain vocabularies
-  yet, and do not drift into evaluator metrics, project-memory policy, or viewer UX.
+prompt: Create one bounded child spec under SG-SPEC-0064 for the ubiquitous vocabulary layer. Define only
+  the first meta-ontology primitives needed to support executable domain vocabularies in SpecGraph, such
+  as Concept, RelationType, StateFamily, Alias, and Invariant. Keep it implementation-agnostic, do not
+  define full domain vocabularies yet, and do not drift into evaluator metrics, project-memory policy,
+  or viewer UX.
 specification:
   objective: 'Define the minimal meta-ontology primitives that later domain vocabularies can reuse to
     express executable product semantics in SpecGraph without yet freezing any domain-specific vocabulary.
