@@ -23043,6 +23043,31 @@ def test_foundation_proposals_have_full_runtime_marker_coverage(
         )
 
 
+def test_proposal_0021_transition_validator_observation_is_covered(
+    supervisor_module: object,
+) -> None:
+    """Proposal 0021 must stay fully observed after output routing changes."""
+    index = supervisor_module.build_proposal_runtime_index()
+    by_id = {e["proposal_id"]: e for e in index["entries"]}
+
+    assert "0021" in by_id, "Proposal 0021 missing from proposal_runtime_index"
+    entry = by_id["0021"]
+    assert entry["runtime_realization"]["status"] == "implemented"
+    assert entry["validation_closure"]["status"] == "covered"
+    assert entry["observation_coverage"]["status"] == "covered"
+    assert entry["observation_coverage"]["missing_markers"] == []
+    assert entry["reflective_chain"]["next_gap"] == "none"
+
+    marker = next(
+        marker
+        for marker in entry["observation_coverage"]["markers"]
+        if "emit_supervisor_json" in marker["pattern"]
+    )
+    supervisor_source = (SPECGRAPH_ROOT / "tools" / "supervisor.py").read_text(encoding="utf-8")
+    assert "validate_transition_packet_path" in marker["pattern"]
+    assert supervisor_source.count(marker["pattern"]) == 1
+
+
 def test_all_implemented_proposals_have_registry_entries() -> None:
     """Every Implemented proposal must have a registry entry with at least one marker."""
     registry_path = SPECGRAPH_ROOT / "tools" / "proposal_runtime_registry.json"
