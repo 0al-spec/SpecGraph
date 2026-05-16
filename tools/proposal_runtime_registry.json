@@ -465,6 +465,54 @@
     ]
   },
   {
+    "proposal_id": "0011",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "tools/supervisor.py",
+      "tests/test_supervisor.py",
+      "tools/pre_spec_semantics_policy.json",
+      "docs/proposals/0011_pre_spec_semantic_layer.md"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/pre_spec_semantics_policy.json",
+        "pattern": "\"artifact_kind\": \"pre_spec_semantics_policy\""
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def build_pre_spec_semantics_index("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "PRE_SPEC_SEMANTICS_INDEX_ARTIFACT_KIND"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_pre_spec_semantics_index_links_intent_proposals_and_canonical_specs("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_pre_spec_semantics_index_tolerates_non_object_sections("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_main_builds_pre_spec_semantics_index_as_standalone_command("
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "write_pre_spec_semantics_index(index)"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "\"artifact_kind\": PRE_SPEC_SEMANTICS_INDEX_ARTIFACT_KIND"
+      }
+    ]
+  },
+  {
     "proposal_id": "0016",
     "posture": "synchronous_runtime_slice",
     "runtime_surfaces": [
