@@ -572,7 +572,7 @@
       },
       {
         "path": "tools/supervisor.py",
-        "pattern": "print(json.dumps(report, ensure_ascii=False, indent=2))"
+        "pattern": "emit_supervisor_json(report, output_mode=normalized_output_mode)"
       }
     ]
   },
