@@ -40,7 +40,9 @@ def test_publish_workflow_has_pr_deploy_connection_check_without_upload() -> Non
     )
     assert "name: FTP" in connection_check_block
     assert "secrets.SFTP_PASSWORD" in connection_check_block
+    assert "secrets.FTPS_ALLOW_UNVERIFIED_CERT" in connection_check_block
     assert "tools/static_artifact_deploy_plan.py" in connection_check_block
     assert "Check FTP/SFTP connection without upload" in connection_check_block
+    assert "set ssl:verify-certificate false" in connection_check_block
     assert 'cls -1 "$SFTP_REMOTE_ROOT"' in connection_check_block
     assert "mirror -R" not in connection_check_block

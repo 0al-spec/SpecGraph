@@ -66,7 +66,48 @@ def test_ftps_plan_uses_password_and_requires_tls(
     assert plan["transport"] == "ftps"
     assert plan["auth_kind"] == "password"
     assert plan["tls"] == "required"
+    assert plan["certificate_verification"] == "enabled"
+    assert plan["accepted_risk"] is None
     assert plan["known_hosts_required"] is False
+
+
+def test_ftps_plan_records_explicit_unverified_certificate_risk(
+    deploy_plan_module: object,
+    bundle_dir: Path,
+) -> None:
+    plan = deploy_plan_module.build_deploy_plan(
+        {
+            "SFTP_HOST": "example.invalid",
+            "SFTP_PORT": "21",
+            "SFTP_USER": "dry-run",
+            "SFTP_PASSWORD": "password",
+            "SFTP_REMOTE_ROOT": "/",
+            "FTPS_ALLOW_UNVERIFIED_CERT": "true",
+        },
+        bundle_dir,
+    )
+
+    assert plan["transport"] == "ftps"
+    assert plan["tls"] == "required"
+    assert plan["certificate_verification"] == "disabled_by_explicit_opt_in"
+    assert plan["accepted_risk"] == "ftps_certificate_identity_not_verified"
+
+
+def test_ftps_plan_rejects_ambiguous_unverified_certificate_setting(
+    deploy_plan_module: object,
+    bundle_dir: Path,
+) -> None:
+    env = {
+        "SFTP_HOST": "example.invalid",
+        "SFTP_PORT": "21",
+        "SFTP_USER": "dry-run",
+        "SFTP_PASSWORD": "password",
+        "SFTP_REMOTE_ROOT": "/",
+        "FTPS_ALLOW_UNVERIFIED_CERT": "yes",
+    }
+
+    with pytest.raises(deploy_plan_module.DeployPlanError, match="FTPS_ALLOW_UNVERIFIED_CERT"):
+        deploy_plan_module.build_deploy_plan(env, bundle_dir)
 
 
 def test_sftp_plan_allows_private_key_auth(

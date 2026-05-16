@@ -70,6 +70,7 @@ jobs:
       SFTP_PRIVATE_KEY: ${{ secrets.SFTP_PRIVATE_KEY }}
       SFTP_KNOWN_HOSTS: ${{ secrets.SFTP_KNOWN_HOSTS }}
       SFTP_REMOTE_ROOT: ${{ secrets.SFTP_REMOTE_ROOT }}
+      FTPS_ALLOW_UNVERIFIED_CERT: ${{ secrets.FTPS_ALLOW_UNVERIFIED_CERT }}
 
     steps:
       - name: Checkout deploy tooling
@@ -100,10 +101,15 @@ jobs:
 
           if [ "$DEPLOY_PORT" = "21" ]; then
             test -n "$SFTP_PASSWORD"
+            FTPS_VERIFY_CERT_LINE=""
+            if [ "${FTPS_ALLOW_UNVERIFIED_CERT:-}" = "true" ]; then
+              FTPS_VERIFY_CERT_LINE="set ssl:verify-certificate false"
+            fi
             lftp -u "$SFTP_USER,$SFTP_PASSWORD" "ftp://$SFTP_HOST:$DEPLOY_PORT" <<EOF
           set ftp:ssl-allow true
           set ftp:ssl-force true
           set ftp:ssl-protect-data true
+          $FTPS_VERIFY_CERT_LINE
           set net:max-retries 2
           set net:timeout 30
           mirror -R --delete --verbose dist/specgraph-public "$SFTP_REMOTE_ROOT"
@@ -158,6 +164,7 @@ jobs:
       SFTP_PRIVATE_KEY: ${{ secrets.SFTP_PRIVATE_KEY }}
       SFTP_KNOWN_HOSTS: ${{ secrets.SFTP_KNOWN_HOSTS }}
       SFTP_REMOTE_ROOT: ${{ secrets.SFTP_REMOTE_ROOT }}
+      FTPS_ALLOW_UNVERIFIED_CERT: ${{ secrets.FTPS_ALLOW_UNVERIFIED_CERT }}
 
     steps:
       - name: Checkout deploy tooling
@@ -188,10 +195,15 @@ jobs:
 
           if [ "$DEPLOY_PORT" = "21" ]; then
             test -n "$SFTP_PASSWORD"
+            FTPS_VERIFY_CERT_LINE=""
+            if [ "${FTPS_ALLOW_UNVERIFIED_CERT:-}" = "true" ]; then
+              FTPS_VERIFY_CERT_LINE="set ssl:verify-certificate false"
+            fi
             lftp -u "$SFTP_USER,$SFTP_PASSWORD" "ftp://$SFTP_HOST:$DEPLOY_PORT" <<EOF
           set ftp:ssl-allow true
           set ftp:ssl-force true
           set ftp:ssl-protect-data true
+          $FTPS_VERIFY_CERT_LINE
           set net:max-retries 2
           set net:timeout 30
           cls -1 "$SFTP_REMOTE_ROOT"

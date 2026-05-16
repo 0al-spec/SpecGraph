@@ -75,6 +75,7 @@ SFTP_PASSWORD
 SFTP_PRIVATE_KEY
 SFTP_KNOWN_HOSTS
 SFTP_REMOTE_ROOT
+FTPS_ALLOW_UNVERIFIED_CERT
 ```
 
 For ordinary ISPmanager FTP accounts, use:
@@ -92,6 +93,13 @@ deploy fails instead of sending credentials over plain FTP. `SFTP_KNOWN_HOSTS`
 is ignored for port `21`. `SFTP_PASSWORD` is required for port `21`; the
 workflow does not treat `SFTP_PRIVATE_KEY` as a password fallback for FTP/FTPS
 uploads.
+
+Some ISPmanager/shared-hosting FTP endpoints expose only an IP address while
+serving a provider certificate with an incomplete or mismatched trust chain. For
+that case, `FTPS_ALLOW_UNVERIFIED_CERT=true` disables certificate identity
+verification for port `21` only. TLS encryption remains required and plain FTP
+is still forbidden; this is an explicit accepted-risk mode for hosting providers
+that cannot supply a verifiable FTPS endpoint.
 
 `SFTP_PRIVATE_KEY` is used when it contains an SSH private key. Password-based
 SFTP can use `SFTP_PASSWORD`; for compatibility, a non-key `SFTP_PRIVATE_KEY`

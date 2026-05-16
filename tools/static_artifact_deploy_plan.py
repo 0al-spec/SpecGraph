@@ -28,6 +28,14 @@ def _contains_private_key(value: str) -> bool:
     return bool(re.search(r"BEGIN .*PRIVATE KEY", value))
 
 
+def _bool_secret(name: str, value: str) -> bool:
+    if value in {"", "false"}:
+        return False
+    if value == "true":
+        return True
+    raise DeployPlanError(f"{name} must be unset, 'false', or 'true'")
+
+
 def validate_bundle_dir(bundle_dir: Path) -> None:
     required_paths = [
         bundle_dir / "artifact_manifest.json",
@@ -57,6 +65,10 @@ def build_deploy_plan(env: Mapping[str, str], bundle_dir: Path) -> dict[str, obj
     password = _clean(env.get("SFTP_PASSWORD"))
     private_key = _clean(env.get("SFTP_PRIVATE_KEY"))
     known_hosts = _clean(env.get("SFTP_KNOWN_HOSTS"))
+    allow_unverified_ftps_cert = _bool_secret(
+        "FTPS_ALLOW_UNVERIFIED_CERT",
+        _clean(env.get("FTPS_ALLOW_UNVERIFIED_CERT")),
+    )
 
     if port == "21":
         _require("SFTP_PASSWORD", password)
@@ -70,6 +82,12 @@ def build_deploy_plan(env: Mapping[str, str], bundle_dir: Path) -> dict[str, obj
             "remote_root": remote_root,
             "auth_kind": "password",
             "tls": "required",
+            "certificate_verification": (
+                "disabled_by_explicit_opt_in" if allow_unverified_ftps_cert else "enabled"
+            ),
+            "accepted_risk": (
+                "ftps_certificate_identity_not_verified" if allow_unverified_ftps_cert else None
+            ),
             "known_hosts_required": False,
             "network_upload": "not_performed_by_validator",
         }
