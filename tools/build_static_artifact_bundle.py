@@ -18,6 +18,7 @@ REQUIRED_RUN_SURFACES = (
     "graph_dashboard.json",
     "graph_backlog_projection.json",
     "graph_next_moves.json",
+    "implementation_work_index.json",
     "spec_activity_feed.json",
 )
 JUNK_FILENAMES = {".DS_Store", ".gitkeep"}
@@ -205,14 +206,19 @@ def write_checksums(output_dir: Path, copied_files: list[PublishFile]) -> Path:
     return checksums_path
 
 
-def refresh_viewer_surfaces(repo_root: Path) -> None:
+def run_make_target(repo_root: Path, target: str) -> None:
     completed = subprocess.run(
-        ["make", "viewer-surfaces"],
+        ["make", target],
         cwd=repo_root,
         text=True,
     )
     if completed.returncode != 0:
-        raise PublishBundleError("make viewer-surfaces failed")
+        raise PublishBundleError(f"make {target} failed")
+
+
+def refresh_publish_surfaces(repo_root: Path) -> None:
+    run_make_target(repo_root, "viewer-surfaces")
+    run_make_target(repo_root, "implementation-work")
 
 
 def build_public_bundle(
@@ -228,7 +234,7 @@ def build_public_bundle(
     )
 
     if refresh_surfaces:
-        refresh_viewer_surfaces(repo_root)
+        refresh_publish_surfaces(repo_root)
 
     git_dir = repo_root / ".git"
     if output_dir == repo_root or output_dir == git_dir or git_dir in output_dir.parents:

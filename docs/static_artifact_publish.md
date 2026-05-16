@@ -20,7 +20,8 @@ Build the bundle locally:
 make publish-bundle
 ```
 
-This runs `make viewer-surfaces`, then writes a static mirror under:
+This runs `make viewer-surfaces` and `make implementation-work`, then writes a
+static mirror under:
 
 ```text
 dist/specgraph-public/
@@ -65,6 +66,7 @@ The bundle builder fails before upload when it finds:
   - `runs/graph_dashboard.json`
   - `runs/graph_backlog_projection.json`
   - `runs/graph_next_moves.json`
+  - `runs/implementation_work_index.json`
   - `runs/spec_activity_feed.json`
 
 Junk files such as `.DS_Store` and `.gitkeep` are not published.
