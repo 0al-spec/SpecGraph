@@ -52,7 +52,7 @@ The bundle builder fails before upload when it finds:
 
 Junk files such as `.DS_Store` and `.gitkeep` are not published.
 
-## SFTP Deployment
+## Static Host Deployment
 
 The GitHub Actions workflow `.github/workflows/publish-static-artifacts.yml`
 builds the bundle on PRs and can upload it from `main` or manual
@@ -71,11 +71,26 @@ SFTP_KNOWN_HOSTS
 SFTP_REMOTE_ROOT
 ```
 
+For ordinary ISPmanager FTP accounts, use:
+
+```text
+SFTP_PORT=21
+SFTP_USER=<FTP account>
+SFTP_PASSWORD=<FTP password>
+SFTP_REMOTE_ROOT=/
+```
+
+Despite the historical `SFTP_*` secret names, port `21` makes the workflow use
+`ftp://` through `lftp` with TLS forced. If the host does not support FTPS, the
+deploy fails instead of sending credentials over plain FTP. `SFTP_KNOWN_HOSTS`
+is ignored for port `21`.
+
 `SFTP_PRIVATE_KEY` is used when it contains an SSH private key. Password-based
 SFTP can use `SFTP_PASSWORD`; for compatibility, a non-key `SFTP_PRIVATE_KEY`
 value is also treated as the password fallback.
 
-`SFTP_KNOWN_HOSTS` should contain the host keys from `ssh-keyscan`, for example:
+For SFTP over SSH, use port `22`. `SFTP_KNOWN_HOSTS` should contain the host
+keys from `ssh-keyscan`, for example:
 
 ```bash
 ssh-keyscan -p 22 31.31.196.166
