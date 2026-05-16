@@ -81,7 +81,9 @@ SFTP_REMOTE_ROOT=/
 ```
 
 Despite the historical `SFTP_*` secret names, port `21` makes the workflow use
-`ftp://` through `lftp`. `SFTP_KNOWN_HOSTS` is ignored for port `21`.
+`ftp://` through `lftp` with TLS forced. If the host does not support FTPS, the
+deploy fails instead of sending credentials over plain FTP. `SFTP_KNOWN_HOSTS`
+is ignored for port `21`.
 
 `SFTP_PRIVATE_KEY` is used when it contains an SSH private key. Password-based
 SFTP can use `SFTP_PASSWORD`; for compatibility, a non-key `SFTP_PRIVATE_KEY`

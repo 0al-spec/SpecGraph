@@ -96,6 +96,7 @@ jobs:
             test -n "$DEPLOY_PASSWORD"
             lftp -u "$SFTP_USER,$DEPLOY_PASSWORD" "ftp://$SFTP_HOST:$DEPLOY_PORT" <<EOF
           set ftp:ssl-allow true
+          set ftp:ssl-force true
           set ftp:ssl-protect-data true
           set net:max-retries 2
           set net:timeout 30
