@@ -15,6 +15,9 @@ on:
       - ".github/workflows/markdown-links.yml"
       - ".mlc_config.json"
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   markdown-links:
     runs-on: ubuntu-latest

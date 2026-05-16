@@ -58,6 +58,15 @@ The GitHub Actions workflow `.github/workflows/publish-static-artifacts.yml`
 builds the bundle on PRs and can upload it from `main` or manual
 `workflow_dispatch` runs.
 
+After `.github/workflows/deploy-connection-check.yml` is present on the base
+branch, pull requests from branches in this repository also run `Check deploy
+connection` through `pull_request_target`. The check uses deploy tooling from
+the trusted base commit, reads the `FTP` Environment secrets, validates the
+deploy contract, and opens a real FTP/FTPS/SFTP connection to list
+`SFTP_REMOTE_ROOT` without running `mirror` or uploading files. It does not
+checkout or execute pull-request-controlled code in secret-bearing steps. Pull
+requests from forks do not receive deployment secrets and skip this job.
+
 The deploy job uses the GitHub Environment named `FTP`. Configure these
 environment secrets:
 
@@ -69,6 +78,7 @@ SFTP_PASSWORD
 SFTP_PRIVATE_KEY
 SFTP_KNOWN_HOSTS
 SFTP_REMOTE_ROOT
+FTPS_ALLOW_UNVERIFIED_CERT
 ```
 
 For ordinary ISPmanager FTP accounts, use:
@@ -77,8 +87,13 @@ For ordinary ISPmanager FTP accounts, use:
 SFTP_PORT=21
 SFTP_USER=<FTP account>
 SFTP_PASSWORD=<FTP password>
-SFTP_REMOTE_ROOT=/
+SFTP_REMOTE_ROOT=/www/specgraph.tech/
 ```
+
+`SFTP_REMOTE_ROOT` must be the site directory served by the public HTTP origin,
+not the FTP account root. The workflow rejects `/` because deploy uses
+`mirror --delete`; pointing it at the FTP account root could delete unrelated
+sites or hosting files.
 
 Despite the historical `SFTP_*` secret names, port `21` makes the workflow use
 `ftp://` through `lftp` with TLS forced. If the host does not support FTPS, the
@@ -86,6 +101,13 @@ deploy fails instead of sending credentials over plain FTP. `SFTP_KNOWN_HOSTS`
 is ignored for port `21`. `SFTP_PASSWORD` is required for port `21`; the
 workflow does not treat `SFTP_PRIVATE_KEY` as a password fallback for FTP/FTPS
 uploads.
+
+Some ISPmanager/shared-hosting FTP endpoints expose only an IP address while
+serving a provider certificate with an incomplete or mismatched trust chain. For
+that case, `FTPS_ALLOW_UNVERIFIED_CERT=true` disables certificate identity
+verification for port `21` only. TLS encryption remains required and plain FTP
+is still forbidden; this is an explicit accepted-risk mode for hosting providers
+that cannot supply a verifiable FTPS endpoint.
 
 `SFTP_PRIVATE_KEY` is used when it contains an SSH private key. Password-based
 SFTP can use `SFTP_PASSWORD`; for compatibility, a non-key `SFTP_PRIVATE_KEY`

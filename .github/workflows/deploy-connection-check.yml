@@ -1,68 +1,30 @@
-name: Publish Static Artifacts
+name: Deploy Connection Check
 
 on:
-  workflow_dispatch:
-  pull_request:
+  pull_request_target:
     paths:
-      - "specs/**"
-      - "tools/**"
-      - "tests/**"
-      - "Makefile"
-      - ".github/workflows/publish-static-artifacts.yml"
-  push:
-    branches:
-      - main
-      - master
-    paths:
-      - "specs/**"
-      - "tools/**"
-      - "Makefile"
+      - "tools/static_artifact_deploy_plan.py"
+      - "tests/test_static_artifact_deploy_plan.py"
+      - "tests/test_publish_static_artifacts_workflow.py"
+      - "docs/static_artifact_publish.md"
+      - ".github/workflows/deploy-connection-check.yml"
       - ".github/workflows/publish-static-artifacts.yml"
 
 permissions:
   contents: read
 
 concurrency:
-  group: specgraph-static-artifacts-${{ github.ref }}
+  group: specgraph-deploy-connection-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  build:
-    name: Build static artifact bundle
+  deploy_connection_check:
+    name: Check deploy connection
     runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.10"
-
-      - name: Install project dependencies
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install -e .[dev]
-
-      - name: Build bundle
-        run: make publish-bundle
-
-      - name: Upload bundle as GitHub Actions artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: specgraph-static-artifacts
-          path: dist/specgraph-public
-          if-no-files-found: error
-
-  deploy:
-    name: Deploy bundle to static host
-    runs-on: ubuntu-latest
-    needs: build
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    if: github.event.pull_request.head.repo.full_name == github.repository
     environment:
       name: FTP
     env:
@@ -76,18 +38,14 @@ jobs:
       FTPS_ALLOW_UNVERIFIED_CERT: ${{ secrets.FTPS_ALLOW_UNVERIFIED_CERT }}
 
     steps:
-      - name: Checkout deploy tooling
+      - name: Checkout trusted deploy tooling
         uses: actions/checkout@v4
-
-      - name: Download bundle artifact
-        uses: actions/download-artifact@v4
         with:
-          name: specgraph-static-artifacts
-          path: dist/specgraph-public
+          ref: ${{ github.event.pull_request.base.sha }}
 
       - name: Validate deploy contract
         if: env.SFTP_HOST != ''
-        run: python tools/static_artifact_deploy_plan.py --bundle-dir dist/specgraph-public
+        run: python tools/static_artifact_deploy_plan.py --skip-bundle-check
 
       - name: Install transfer client
         if: env.SFTP_HOST != ''
@@ -95,7 +53,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y lftp openssh-client
 
-      - name: Upload bundle
+      - name: Check FTP/SFTP connection without upload
         if: env.SFTP_HOST != ''
         run: |
           test -n "$SFTP_USER"
@@ -115,7 +73,7 @@ jobs:
           $FTPS_VERIFY_CERT_LINE
           set net:max-retries 2
           set net:timeout 30
-          mirror -R --delete --verbose dist/specgraph-public "$SFTP_REMOTE_ROOT"
+          cls -1 "$SFTP_REMOTE_ROOT"
           bye
           EOF
             exit 0
@@ -133,7 +91,7 @@ jobs:
           set sftp:connect-program "ssh -a -x -i $HOME/.ssh/specgraph_publish_key -o UserKnownHostsFile=$HOME/.ssh/known_hosts"
           set net:max-retries 2
           set net:timeout 30
-          mirror -R --delete --verbose dist/specgraph-public "$SFTP_REMOTE_ROOT"
+          cls -1 "$SFTP_REMOTE_ROOT"
           bye
           EOF
           else
@@ -142,12 +100,12 @@ jobs:
           set sftp:connect-program "ssh -a -x -o UserKnownHostsFile=$HOME/.ssh/known_hosts"
           set net:max-retries 2
           set net:timeout 30
-          mirror -R --delete --verbose dist/specgraph-public "$SFTP_REMOTE_ROOT"
+          cls -1 "$SFTP_REMOTE_ROOT"
           bye
           EOF
           fi
 
-      - name: Report skipped SFTP upload
+      - name: Report skipped deploy connection check
         if: env.SFTP_HOST == ''
         run: |
-          echo "SFTP_HOST is not configured; built bundle only."
+          echo "SFTP_HOST is not configured; deploy connection check skipped."
