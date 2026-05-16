@@ -48,8 +48,14 @@ def validate_bundle_dir(bundle_dir: Path) -> None:
         raise DeployPlanError(f"deploy bundle is incomplete: missing {', '.join(missing)}")
 
 
-def build_deploy_plan(env: Mapping[str, str], bundle_dir: Path) -> dict[str, object]:
-    validate_bundle_dir(bundle_dir)
+def build_deploy_plan(
+    env: Mapping[str, str],
+    bundle_dir: Path,
+    *,
+    skip_bundle_check: bool = False,
+) -> dict[str, object]:
+    if not skip_bundle_check:
+        validate_bundle_dir(bundle_dir)
 
     host = _clean(env.get("SFTP_HOST"))
     if not host:
@@ -128,10 +134,19 @@ def main(argv: list[str] | None = None) -> int:
         default=Path("dist/specgraph-public"),
         help="Built static artifact bundle directory.",
     )
+    parser.add_argument(
+        "--skip-bundle-check",
+        action="store_true",
+        help="Validate deploy settings without requiring a built bundle directory.",
+    )
     args = parser.parse_args(argv)
 
     try:
-        plan = build_deploy_plan(os.environ, args.bundle_dir)
+        plan = build_deploy_plan(
+            os.environ,
+            args.bundle_dir,
+            skip_bundle_check=args.skip_bundle_check,
+        )
     except DeployPlanError as exc:
         print(f"deploy plan error: {exc}", file=sys.stderr)
         return 2

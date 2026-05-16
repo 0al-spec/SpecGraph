@@ -172,3 +172,23 @@ def test_deploy_plan_requires_complete_bundle(
 ) -> None:
     with pytest.raises(deploy_plan_module.DeployPlanError, match="deploy bundle is incomplete"):
         deploy_plan_module.build_deploy_plan({}, tmp_path / "missing")
+
+
+def test_deploy_plan_can_skip_bundle_check_for_connection_only_validation(
+    deploy_plan_module: object,
+    tmp_path: Path,
+) -> None:
+    plan = deploy_plan_module.build_deploy_plan(
+        {
+            "SFTP_HOST": "example.invalid",
+            "SFTP_PORT": "21",
+            "SFTP_USER": "dry-run",
+            "SFTP_PASSWORD": "password",
+            "SFTP_REMOTE_ROOT": "/",
+        },
+        tmp_path / "missing",
+        skip_bundle_check=True,
+    )
+
+    assert plan["transport"] == "ftps"
+    assert plan["status"] == "ready"

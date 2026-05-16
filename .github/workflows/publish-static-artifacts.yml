@@ -9,6 +9,13 @@ on:
       - "tests/**"
       - "Makefile"
       - ".github/workflows/publish-static-artifacts.yml"
+  pull_request_target:
+    paths:
+      - "tools/static_artifact_deploy_plan.py"
+      - "tests/test_static_artifact_deploy_plan.py"
+      - "tests/test_publish_static_artifacts_workflow.py"
+      - "docs/static_artifact_publish.md"
+      - ".github/workflows/publish-static-artifacts.yml"
   push:
     branches:
       - main
@@ -30,6 +37,7 @@ jobs:
   build:
     name: Build static artifact bundle
     runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request_target'
 
     steps:
       - name: Checkout
@@ -59,7 +67,7 @@ jobs:
     name: Deploy bundle to static host
     runs-on: ubuntu-latest
     needs: build
-    if: github.event_name != 'pull_request'
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     environment:
       name: FTP
     env:
@@ -152,8 +160,7 @@ jobs:
   deploy_connection_check:
     name: Check deploy connection
     runs-on: ubuntu-latest
-    needs: build
-    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    if: github.event_name == 'pull_request_target' && github.event.pull_request.head.repo.full_name == github.repository
     environment:
       name: FTP
     env:
@@ -167,18 +174,14 @@ jobs:
       FTPS_ALLOW_UNVERIFIED_CERT: ${{ secrets.FTPS_ALLOW_UNVERIFIED_CERT }}
 
     steps:
-      - name: Checkout deploy tooling
+      - name: Checkout trusted deploy tooling
         uses: actions/checkout@v4
-
-      - name: Download bundle artifact
-        uses: actions/download-artifact@v4
         with:
-          name: specgraph-static-artifacts
-          path: dist/specgraph-public
+          ref: ${{ github.event.pull_request.base.sha }}
 
       - name: Validate deploy contract
         if: env.SFTP_HOST != ''
-        run: python tools/static_artifact_deploy_plan.py --bundle-dir dist/specgraph-public
+        run: python tools/static_artifact_deploy_plan.py --skip-bundle-check
 
       - name: Install transfer client
         if: env.SFTP_HOST != ''
