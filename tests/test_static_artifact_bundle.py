@@ -87,6 +87,56 @@ def test_build_public_bundle_copies_specs_and_runs_with_manifest(
     assert "artifact_manifest.json" in result.checksums_path.read_text(encoding="utf-8")
 
 
+def test_build_public_bundle_skips_symlinked_artifacts(
+    tmp_path: Path,
+    bundle_module: object,
+) -> None:
+    repo = make_repo(tmp_path / "repo")
+    outside = tmp_path / "outside-secret.txt"
+    outside.write_text("do-not-publish", encoding="utf-8")
+    (repo / "runs" / "linked-secret.txt").symlink_to(outside)
+
+    linked_dir_target = tmp_path / "linked-dir-target"
+    linked_dir_target.mkdir()
+    (linked_dir_target / "nested.json").write_text('{"secret": true}', encoding="utf-8")
+    (repo / "runs" / "linked-dir").symlink_to(linked_dir_target, target_is_directory=True)
+
+    result = bundle_module.build_public_bundle(
+        repo_root=repo,
+        output_dir=repo / "dist" / "specgraph-public",
+    )
+
+    assert not (result.output_dir / "runs" / "linked-secret.txt").exists()
+    assert not (result.output_dir / "runs" / "linked-dir" / "nested.json").exists()
+    assert "do-not-publish" not in result.checksums_path.read_text(encoding="utf-8")
+
+
+def test_build_public_bundle_redacts_linux_absolute_paths(
+    tmp_path: Path,
+    bundle_module: object,
+) -> None:
+    repo = make_repo(tmp_path / "repo")
+    write_json(
+        repo / "runs" / "linux_paths.json",
+        {
+            "runner_path": "/home/runner/work/SpecGraph/SpecGraph/runs/x.json",
+            "workspace_path": "/github/workspace/runs/y.json",
+            "tmp_path": "/tmp/specgraph/z.json",
+        },
+    )
+
+    result = bundle_module.build_public_bundle(
+        repo_root=repo,
+        output_dir=repo / "dist" / "specgraph-public",
+    )
+
+    published = (result.output_dir / "runs" / "linux_paths.json").read_text(encoding="utf-8")
+    assert "/home/runner" not in published
+    assert "/github/workspace" not in published
+    assert "/tmp/specgraph" not in published
+    assert published.count("$LOCAL_PATH") == 3
+
+
 def test_build_public_bundle_rejects_malformed_runs_json(
     tmp_path: Path,
     bundle_module: object,

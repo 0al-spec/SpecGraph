@@ -22,7 +22,10 @@ REQUIRED_RUN_SURFACES = (
 )
 JUNK_FILENAMES = {".DS_Store", ".gitkeep"}
 JUNK_DIRNAMES = {"__pycache__", ".pytest_cache", ".ruff_cache"}
-LOCAL_PATH_RE = re.compile(r"(?P<prefix>(?:/Users/|/private/var/|/var/folders/))[^\s\"'<>]+")
+LOCAL_PATH_RE = re.compile(
+    r"(?P<prefix>(?:/Users/|/home/runner/|/github/workspace/|/private/var/|"
+    r"/var/folders/|/tmp/))[^\s\"'<>]+"
+)
 SECRET_PATTERNS = (
     re.compile(r"-----BEGIN [A-Z ]*PRIVATE KEY-----"),
     re.compile(r"(?i)(?:^|[^A-Z0-9_])(?:[A-Z0-9_]*_)?API_KEY\s*=\s*[^\s\"']+"),
@@ -79,13 +82,26 @@ def should_skip_file(path: Path, root: Path) -> bool:
     return any(part in JUNK_DIRNAMES for part in rel.parts)
 
 
+def has_symlink_component(path: Path, stop_at: Path) -> bool:
+    current = path
+    while current != stop_at:
+        if current.is_symlink():
+            return True
+        current = current.parent
+    return False
+
+
 def iter_publish_sources(repo_root: Path) -> Iterable[tuple[str, Path, PurePosixPath]]:
     for root_name in PUBLISHED_ROOTS:
         source_root = repo_root / root_name
         if not source_root.exists():
             continue
         for path in sorted(source_root.rglob("*")):
-            if not path.is_file() or should_skip_file(path, repo_root):
+            if (
+                has_symlink_component(path, source_root)
+                or not path.is_file()
+                or should_skip_file(path, repo_root)
+            ):
                 continue
             rel = PurePosixPath(root_name, path.relative_to(source_root).as_posix())
             yield root_name, path, rel
