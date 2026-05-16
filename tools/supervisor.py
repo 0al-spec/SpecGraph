@@ -6907,6 +6907,33 @@ def validate_relation_semantics(node_data: dict[str, Any]) -> list[str]:
     return errors
 
 
+def explicit_cluster_member_spec_ids(node: SpecNode) -> set[str]:
+    specification = node.data.get("specification")
+    if not isinstance(specification, dict):
+        return set()
+    cluster_contract = specification.get("cluster_contract")
+    member_contracts = specification.get("member_contracts")
+    if not isinstance(cluster_contract, dict) or not isinstance(member_contracts, list):
+        return set()
+    member_ids = {
+        str(item.get("spec_id", "")).strip()
+        for item in member_contracts
+        if isinstance(item, dict) and str(item.get("spec_id", "")).strip()
+    }
+    return member_ids
+
+
+def depends_only_on_declared_cluster_members(node: SpecNode) -> bool:
+    member_ids = explicit_cluster_member_spec_ids(node)
+    if not member_ids:
+        return False
+    depends_on = node.data.get("depends_on")
+    if not isinstance(depends_on, list):
+        return False
+    dependency_ids = {str(item).strip() for item in depends_on if str(item).strip()}
+    return bool(dependency_ids) and dependency_ids.issubset(member_ids)
+
+
 def validate_atomicity(node: SpecNode) -> list[str]:
     if str(node.data.get("kind", "")).strip() != "spec":
         return []
@@ -6923,7 +6950,11 @@ def validate_atomicity(node: SpecNode) -> list[str]:
         )
 
     depends_on = node.data.get("depends_on")
-    if isinstance(depends_on, list) and len(depends_on) > ATOMICITY_MAX_BLOCKING_CHILDREN:
+    if (
+        isinstance(depends_on, list)
+        and len(depends_on) > ATOMICITY_MAX_BLOCKING_CHILDREN
+        and not depends_only_on_declared_cluster_members(node)
+    ):
         errors.append(
             "Atomicity gate exceeded: "
             f"{len(depends_on)} blocking children > {ATOMICITY_MAX_BLOCKING_CHILDREN}. "

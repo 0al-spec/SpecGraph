@@ -2792,6 +2792,122 @@ def test_observe_graph_health_distinguishes_healthy_multi_child_aggregate(
     assert observation["details"]["parent_reads_as_aggregate"] is True
 
 
+def test_validate_atomicity_allows_explicit_cluster_member_dependencies(
+    supervisor_module: object,
+) -> None:
+    spec_node = supervisor_module.SpecNode
+    source = spec_node(
+        path=Path("/tmp/source.yaml"),
+        data={
+            "id": "SG-SPEC-9258",
+            "title": "Gateway Capability Cluster",
+            "kind": "spec",
+            "status": "linked",
+            "maturity": 0.4,
+            "depends_on": [
+                "SG-SPEC-9261",
+                "SG-SPEC-9262",
+                "SG-SPEC-9263",
+                "SG-SPEC-9264",
+            ],
+            "acceptance": ["Owns one coherent gateway capability family."],
+            "prompt": "Coordinate one grouped gateway cluster without flattening its children.",
+            "specification": {
+                "cluster_contract": {
+                    "parent_boundary": ["Owns the aggregate gateway boundary."],
+                },
+                "member_contracts": [
+                    {"spec_id": "SG-SPEC-9261", "member_role": "Gateway input."},
+                    {"spec_id": "SG-SPEC-9262", "member_role": "Gateway output."},
+                    {"spec_id": "SG-SPEC-9263", "member_role": "Gateway policy."},
+                    {"spec_id": "SG-SPEC-9264", "member_role": "Gateway routing."},
+                ],
+            },
+            "last_outcome": "done",
+        },
+    )
+
+    assert supervisor_module.validate_atomicity(source) == []
+
+
+def test_observe_graph_health_does_not_retrospectively_refactor_explicit_cluster_aggregate(
+    supervisor_module: object,
+) -> None:
+    spec_node = supervisor_module.SpecNode
+    source = spec_node(
+        path=Path("/tmp/source.yaml"),
+        data={
+            "id": "SG-SPEC-9257",
+            "title": "Gateway Capability Cluster",
+            "kind": "spec",
+            "status": "linked",
+            "maturity": 0.4,
+            "depends_on": [
+                "SG-SPEC-9261",
+                "SG-SPEC-9262",
+                "SG-SPEC-9263",
+                "SG-SPEC-9264",
+            ],
+            "acceptance": ["Owns one coherent gateway capability family."],
+            "prompt": "Coordinate one grouped gateway cluster without flattening its children.",
+            "specification": {
+                "cluster_contract": {
+                    "parent_boundary": ["Owns the aggregate gateway boundary."],
+                },
+                "member_contracts": [
+                    {"spec_id": "SG-SPEC-9261", "member_role": "Gateway input."},
+                    {"spec_id": "SG-SPEC-9262", "member_role": "Gateway output."},
+                    {"spec_id": "SG-SPEC-9263", "member_role": "Gateway policy."},
+                    {"spec_id": "SG-SPEC-9264", "member_role": "Gateway routing."},
+                ],
+            },
+            "last_outcome": "done",
+        },
+    )
+    children = [
+        spec_node(
+            path=Path(f"/tmp/gateway-child-explicit-{i}.yaml"),
+            data={
+                "id": f"SG-SPEC-926{i}",
+                "title": title,
+                "kind": "spec",
+                "status": "linked",
+                "maturity": 0.3,
+                "depends_on": [],
+                "refines": ["SG-SPEC-9257"],
+                "acceptance": [f"Owns {title.lower()}."],
+                "prompt": f"Define the {title.lower()} boundary.",
+            },
+        )
+        for i, title in enumerate(
+            [
+                "Gateway Input",
+                "Gateway Output",
+                "Gateway Policy",
+                "Gateway Routing",
+            ],
+            start=1,
+        )
+    ]
+
+    graph_health = supervisor_module.observe_graph_health(
+        source_node=source,
+        worktree_specs=[source, *children],
+        reconciliation={"semantic_dependencies_resolved": True},
+        atomicity_errors=[],
+        outcome="done",
+    )
+
+    assert supervisor_module.RETROSPECTIVE_REFACTOR_SIGNAL not in graph_health["signals"]
+    assert "propose_retrospective_refactor" not in graph_health["recommended_actions"]
+    observation = next(
+        item
+        for item in graph_health["observations"]
+        if item["kind"] == "healthy_multi_child_aggregate"
+    )
+    assert observation["details"]["classification"] == "healthy_multi_child_aggregate"
+
+
 def test_observe_graph_health_uses_reconciled_node_for_fan_out_legibility(
     supervisor_module: object,
 ) -> None:
