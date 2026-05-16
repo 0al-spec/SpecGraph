@@ -20,8 +20,8 @@ Build the bundle locally:
 make publish-bundle
 ```
 
-This runs `make viewer-surfaces` and `make implementation-work`, then writes a
-static mirror under:
+This runs `make viewer-surfaces`, `make implementation-delta`, and
+`make implementation-work`, then writes a static mirror under:
 
 ```text
 dist/specgraph-public/

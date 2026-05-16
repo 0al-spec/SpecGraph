@@ -219,7 +219,7 @@ def test_refresh_publish_surfaces_builds_viewer_and_implementation_work(
 
     bundle_module.refresh_publish_surfaces(tmp_path)
 
-    assert calls == ["viewer-surfaces", "implementation-work"]
+    assert calls == ["viewer-surfaces", "implementation-delta", "implementation-work"]
 
 
 def test_main_prints_compact_summary(
