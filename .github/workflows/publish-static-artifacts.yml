@@ -90,11 +90,10 @@ jobs:
           test -n "$SFTP_USER"
           test -n "$SFTP_REMOTE_ROOT"
           DEPLOY_PORT="${SFTP_PORT:-22}"
-          DEPLOY_PASSWORD="${SFTP_PASSWORD:-$SFTP_PRIVATE_KEY}"
 
           if [ "$DEPLOY_PORT" = "21" ]; then
-            test -n "$DEPLOY_PASSWORD"
-            lftp -u "$SFTP_USER,$DEPLOY_PASSWORD" "ftp://$SFTP_HOST:$DEPLOY_PORT" <<EOF
+            test -n "$SFTP_PASSWORD"
+            lftp -u "$SFTP_USER,$SFTP_PASSWORD" "ftp://$SFTP_HOST:$DEPLOY_PORT" <<EOF
           set ftp:ssl-allow true
           set ftp:ssl-force true
           set ftp:ssl-protect-data true
@@ -106,6 +105,7 @@ jobs:
             exit 0
           fi
 
+          DEPLOY_PASSWORD="${SFTP_PASSWORD:-$SFTP_PRIVATE_KEY}"
           test -n "$SFTP_KNOWN_HOSTS"
           mkdir -p "$HOME/.ssh"
           printf '%s\n' "$SFTP_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
