@@ -1,6 +1,9 @@
 PYTHON ?= python3
 SUPERVISOR ?= tools/supervisor.py
 PYTEST ?= $(PYTHON) -m pytest
+IMPLEMENTATION_TARGET_SCOPE_KIND ?= active_subtree
+IMPLEMENTATION_TARGET_SPEC_IDS ?= SG-SPEC-0001
+IMPLEMENTATION_OPERATOR_INTENT ?= Build publishable implementation work surface for SpecSpace static artifact consumers.
 
 .PHONY: help
 help:
@@ -29,6 +32,7 @@ help:
 		'  make conversation-memory      Refresh conversation memory index JSON only' \
 		'  make conversation-memory-map  Refresh conversation memory map JSON only' \
 		'  make conversation-memory-pressure Refresh conversation memory promotion pressure JSON' \
+		'  make implementation-delta     Refresh latest implementation delta snapshot' \
 		'  make implementation-work      Refresh latest implementation work index' \
 		'  make review-feedback          Refresh review feedback index' \
 		'  make publish-bundle           Build static specs/ + runs/ publish bundle' \
@@ -126,6 +130,10 @@ conversation-memory-map:
 .PHONY: conversation-memory-pressure
 conversation-memory-pressure:
 	@$(PYTHON) $(SUPERVISOR) --build-conversation-memory-promotion-pressure
+
+.PHONY: implementation-delta
+implementation-delta:
+	@$(PYTHON) $(SUPERVISOR) --build-implementation-delta-snapshot --target-scope-kind "$(IMPLEMENTATION_TARGET_SCOPE_KIND)" --target-spec-ids "$(IMPLEMENTATION_TARGET_SPEC_IDS)" --operator-intent "$(IMPLEMENTATION_OPERATOR_INTENT)"
 
 .PHONY: implementation-work
 implementation-work:

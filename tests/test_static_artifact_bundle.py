@@ -45,6 +45,7 @@ def make_repo(root: Path) -> Path:
         "graph_dashboard.json",
         "graph_backlog_projection.json",
         "graph_next_moves.json",
+        "implementation_work_index.json",
         "spec_activity_feed.json",
     ):
         write_json(runs_dir / name, {"artifact_kind": name.removesuffix(".json")})
@@ -82,9 +83,17 @@ def test_build_public_bundle_copies_specs_and_runs_with_manifest(
     manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
     assert manifest["artifact_kind"] == "specgraph_static_artifact_manifest"
     assert manifest["published_roots"] == ["specs", "runs"]
+    assert manifest["required_surfaces"]["implementation_work_index.json"] is True
+    assert any(
+        file_info["path"] == "runs/implementation_work_index.json"
+        for file_info in manifest["files"]
+    )
     assert manifest["safety_gate"]["status"] == "passed"
     assert manifest["safety_gate"]["redacted_local_path_occurrences"] == 1
     assert "artifact_manifest.json" in result.checksums_path.read_text(encoding="utf-8")
+    assert "runs/implementation_work_index.json" in result.checksums_path.read_text(
+        encoding="utf-8"
+    )
 
 
 def test_build_public_bundle_skips_symlinked_artifacts(
@@ -179,6 +188,38 @@ def test_build_public_bundle_requires_core_viewer_surfaces(
             repo_root=repo,
             output_dir=repo / "dist" / "specgraph-public",
         )
+
+
+def test_build_public_bundle_requires_implementation_work_surface(
+    tmp_path: Path,
+    bundle_module: object,
+) -> None:
+    repo = make_repo(tmp_path / "repo")
+    (repo / "runs" / "implementation_work_index.json").unlink()
+
+    with pytest.raises(bundle_module.PublishBundleError, match="implementation_work_index"):
+        bundle_module.build_public_bundle(
+            repo_root=repo,
+            output_dir=repo / "dist" / "specgraph-public",
+        )
+
+
+def test_refresh_publish_surfaces_builds_viewer_and_implementation_work(
+    tmp_path: Path,
+    bundle_module: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[str] = []
+
+    def fake_run_make_target(repo_root: Path, target: str) -> None:
+        assert repo_root == tmp_path
+        calls.append(target)
+
+    monkeypatch.setattr(bundle_module, "run_make_target", fake_run_make_target)
+
+    bundle_module.refresh_publish_surfaces(tmp_path)
+
+    assert calls == ["viewer-surfaces", "implementation-delta", "implementation-work"]
 
 
 def test_main_prints_compact_summary(
