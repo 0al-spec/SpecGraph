@@ -23068,6 +23068,22 @@ def test_proposal_0021_transition_validator_observation_is_covered(
     assert supervisor_source.count(marker["pattern"]) == 1
 
 
+def test_proposal_0036_topology_prose_observation_is_covered(
+    supervisor_module: object,
+) -> None:
+    """Proposal 0036 observation must tolerate markdown line wrapping."""
+    index = supervisor_module.build_proposal_runtime_index()
+    by_id = {e["proposal_id"]: e for e in index["entries"]}
+
+    assert "0036" in by_id, "Proposal 0036 missing from proposal_runtime_index"
+    entry = by_id["0036"]
+    assert entry["runtime_realization"]["status"] == "implemented"
+    assert entry["validation_closure"]["status"] == "covered"
+    assert entry["observation_coverage"]["status"] == "covered"
+    assert entry["observation_coverage"]["missing_markers"] == []
+    assert entry["reflective_chain"]["next_gap"] == "none"
+
+
 def test_all_implemented_proposals_have_registry_entries() -> None:
     """Every Implemented proposal must have a registry entry with at least one marker."""
     registry_path = SPECGRAPH_ROOT / "tools" / "proposal_runtime_registry.json"

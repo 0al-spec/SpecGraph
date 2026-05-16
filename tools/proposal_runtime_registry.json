@@ -1126,7 +1126,7 @@
     "observation_markers": [
       {
         "path": "docs/proposals/0036_topology_facts_are_not_spec_prose.md",
-        "pattern": "The SG-SPEC-0026 reflective/proposal branch starts moving toward domain-first prose."
+        "pattern": "reflective/proposal branch starts moving toward domain-first"
       }
     ]
   },
