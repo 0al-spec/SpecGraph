@@ -58,3 +58,15 @@ def test_secret_bearing_jobs_do_not_run_on_pr_controlled_workflow() -> None:
     )
     assert "pull_request_target:" in connection_workflow
     assert "ref: ${{ github.event.pull_request.base.sha }}" in connection_workflow
+
+
+def test_workflows_opt_into_node24_actions_runtime() -> None:
+    workflow_dir = Path(__file__).resolve().parents[1] / ".github" / "workflows"
+    workflow_paths = sorted(workflow_dir.glob("*.yml"))
+
+    assert workflow_paths
+    for workflow_path in workflow_paths:
+        workflow = workflow_path.read_text(encoding="utf-8")
+        if "uses:" not in workflow:
+            continue
+        assert "FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true" in workflow, workflow_path.name

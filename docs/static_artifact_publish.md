@@ -87,8 +87,13 @@ For ordinary ISPmanager FTP accounts, use:
 SFTP_PORT=21
 SFTP_USER=<FTP account>
 SFTP_PASSWORD=<FTP password>
-SFTP_REMOTE_ROOT=/
+SFTP_REMOTE_ROOT=/www/specgraph.tech/
 ```
+
+`SFTP_REMOTE_ROOT` must be the site directory served by the public HTTP origin,
+not the FTP account root. The workflow rejects `/` because deploy uses
+`mirror --delete`; pointing it at the FTP account root could delete unrelated
+sites or hosting files.
 
 Despite the historical `SFTP_*` secret names, port `21` makes the workflow use
 `ftp://` through `lftp` with TLS forced. If the host does not support FTPS, the

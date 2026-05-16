@@ -36,6 +36,17 @@ def _bool_secret(name: str, value: str) -> bool:
     raise DeployPlanError(f"{name} must be unset, 'false', or 'true'")
 
 
+def _safe_remote_root(remote_root: str) -> str:
+    normalized = remote_root.rstrip("/") or "/"
+    if normalized == "/":
+        raise DeployPlanError(
+            "SFTP_REMOTE_ROOT must point to a site directory, not the FTP account root"
+        )
+    if not remote_root.startswith("/"):
+        raise DeployPlanError("SFTP_REMOTE_ROOT must be an absolute FTP path")
+    return remote_root
+
+
 def validate_bundle_dir(bundle_dir: Path) -> None:
     required_paths = [
         bundle_dir / "artifact_manifest.json",
@@ -66,7 +77,9 @@ def build_deploy_plan(
         }
 
     user = _require("SFTP_USER", _clean(env.get("SFTP_USER")))
-    remote_root = _require("SFTP_REMOTE_ROOT", _clean(env.get("SFTP_REMOTE_ROOT")))
+    remote_root = _safe_remote_root(
+        _require("SFTP_REMOTE_ROOT", _clean(env.get("SFTP_REMOTE_ROOT")))
+    )
     port = _clean(env.get("SFTP_PORT")) or "22"
     password = _clean(env.get("SFTP_PASSWORD"))
     private_key = _clean(env.get("SFTP_PRIVATE_KEY"))

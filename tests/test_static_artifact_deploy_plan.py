@@ -40,7 +40,7 @@ def test_ftps_plan_requires_password_secret(
         "SFTP_PORT": "21",
         "SFTP_USER": "dry-run",
         "SFTP_PRIVATE_KEY": "legacy-password",
-        "SFTP_REMOTE_ROOT": "/",
+        "SFTP_REMOTE_ROOT": "/www/specgraph.tech/",
     }
 
     with pytest.raises(deploy_plan_module.DeployPlanError, match="SFTP_PASSWORD"):
@@ -58,7 +58,7 @@ def test_ftps_plan_uses_password_and_requires_tls(
             "SFTP_USER": "dry-run",
             "SFTP_PASSWORD": "password",
             "SFTP_PRIVATE_KEY": "",
-            "SFTP_REMOTE_ROOT": "/",
+            "SFTP_REMOTE_ROOT": "/www/specgraph.tech/",
         },
         bundle_dir,
     )
@@ -81,7 +81,7 @@ def test_ftps_plan_records_explicit_unverified_certificate_risk(
             "SFTP_PORT": "21",
             "SFTP_USER": "dry-run",
             "SFTP_PASSWORD": "password",
-            "SFTP_REMOTE_ROOT": "/",
+            "SFTP_REMOTE_ROOT": "/www/specgraph.tech/",
             "FTPS_ALLOW_UNVERIFIED_CERT": "true",
         },
         bundle_dir,
@@ -102,7 +102,7 @@ def test_ftps_plan_rejects_ambiguous_unverified_certificate_setting(
         "SFTP_PORT": "21",
         "SFTP_USER": "dry-run",
         "SFTP_PASSWORD": "password",
-        "SFTP_REMOTE_ROOT": "/",
+        "SFTP_REMOTE_ROOT": "/www/specgraph.tech/",
         "FTPS_ALLOW_UNVERIFIED_CERT": "yes",
     }
 
@@ -127,7 +127,7 @@ def test_sftp_plan_allows_private_key_auth(
                 ]
             ),
             "SFTP_KNOWN_HOSTS": "example.invalid ssh-ed25519 AAAA",
-            "SFTP_REMOTE_ROOT": "/",
+            "SFTP_REMOTE_ROOT": "/www/specgraph.tech/",
         },
         bundle_dir,
     )
@@ -146,7 +146,7 @@ def test_sftp_plan_requires_known_hosts(
         "SFTP_PORT": "22",
         "SFTP_USER": "dry-run",
         "SFTP_PASSWORD": "password",
-        "SFTP_REMOTE_ROOT": "/",
+        "SFTP_REMOTE_ROOT": "/www/specgraph.tech/",
     }
 
     with pytest.raises(deploy_plan_module.DeployPlanError, match="SFTP_KNOWN_HOSTS"):
@@ -184,7 +184,7 @@ def test_deploy_plan_can_skip_bundle_check_for_connection_only_validation(
             "SFTP_PORT": "21",
             "SFTP_USER": "dry-run",
             "SFTP_PASSWORD": "password",
-            "SFTP_REMOTE_ROOT": "/",
+            "SFTP_REMOTE_ROOT": "/www/specgraph.tech/",
         },
         tmp_path / "missing",
         skip_bundle_check=True,
@@ -192,3 +192,35 @@ def test_deploy_plan_can_skip_bundle_check_for_connection_only_validation(
 
     assert plan["transport"] == "ftps"
     assert plan["status"] == "ready"
+
+
+def test_deploy_plan_rejects_ftp_account_root_for_delete_mirror(
+    deploy_plan_module: object,
+    bundle_dir: Path,
+) -> None:
+    env = {
+        "SFTP_HOST": "example.invalid",
+        "SFTP_PORT": "21",
+        "SFTP_USER": "dry-run",
+        "SFTP_PASSWORD": "password",
+        "SFTP_REMOTE_ROOT": "/",
+    }
+
+    with pytest.raises(deploy_plan_module.DeployPlanError, match="FTP account root"):
+        deploy_plan_module.build_deploy_plan(env, bundle_dir)
+
+
+def test_deploy_plan_requires_absolute_remote_root(
+    deploy_plan_module: object,
+    bundle_dir: Path,
+) -> None:
+    env = {
+        "SFTP_HOST": "example.invalid",
+        "SFTP_PORT": "21",
+        "SFTP_USER": "dry-run",
+        "SFTP_PASSWORD": "password",
+        "SFTP_REMOTE_ROOT": "www/specgraph.tech/",
+    }
+
+    with pytest.raises(deploy_plan_module.DeployPlanError, match="absolute FTP path"):
+        deploy_plan_module.build_deploy_plan(env, bundle_dir)
