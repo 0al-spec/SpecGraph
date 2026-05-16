@@ -64,8 +64,34 @@ def test_deploy_upload_mirrors_bundle_contents_not_wrapper_directory() -> None:
     workflow = _workflow_text()
 
     assert "lcd dist/specgraph-public" in workflow
-    assert 'mirror -R --delete --verbose . "$SFTP_REMOTE_ROOT"' in workflow
+    assert 'mirror -R --verbose . "$SFTP_REMOTE_ROOT"' in workflow
     assert 'mirror -R --delete --verbose dist/specgraph-public "$SFTP_REMOTE_ROOT"' not in workflow
+
+
+def test_artifact_deploy_does_not_delete_webroot_content() -> None:
+    workflow = _workflow_text()
+    upload_bundle_block = workflow.split("      - name: Upload bundle", 1)[1].split(
+        "      - name: Report skipped SFTP upload",
+        1,
+    )[0]
+
+    assert "--delete" not in upload_bundle_block
+
+
+def test_landing_page_deploys_as_separate_non_destructive_job() -> None:
+    workflow = _workflow_text()
+    landing_job = workflow.split("  deploy_landing:", 1)[1]
+
+    assert "name: Deploy landing page to static host" in landing_job
+    assert "needs: deploy" in landing_job
+    assert "landing/**" in workflow
+    assert "test -f landing/index.html" in landing_job
+    assert "lcd landing" in landing_job
+    assert (
+        "mirror -R --verbose --exclude-glob .DS_Store --exclude-glob 'check/**' . "
+        '"$SFTP_REMOTE_ROOT"'
+    ) in landing_job
+    assert "--delete" not in landing_job
 
 
 def test_workflows_opt_into_node24_actions_runtime() -> None:
