@@ -3,13 +3,8 @@ from __future__ import annotations
 from pathlib import Path
 
 
-def _workflow_text() -> str:
-    workflow_path = (
-        Path(__file__).resolve().parents[1]
-        / ".github"
-        / "workflows"
-        / "publish-static-artifacts.yml"
-    )
+def _workflow_text(relative_path: str = "publish-static-artifacts.yml") -> str:
+    workflow_path = Path(__file__).resolve().parents[1] / ".github" / "workflows" / relative_path
     return workflow_path.read_text(encoding="utf-8")
 
 
@@ -27,14 +22,13 @@ def test_ftps_deploy_requires_password_secret_without_private_key_fallback() -> 
     assert "SFTP_PRIVATE_KEY" not in ftp_block
 
 
-def test_publish_workflow_has_pr_deploy_connection_check_without_upload() -> None:
-    workflow = _workflow_text()
+def test_deploy_connection_check_workflow_uses_trusted_code_without_upload() -> None:
+    workflow = _workflow_text("deploy-connection-check.yml")
 
     assert "pull_request_target:" in workflow
     assert "deploy_connection_check:" in workflow
     connection_check_block = workflow.split("  deploy_connection_check:", 1)[1]
 
-    assert "if: github.event_name == 'pull_request_target'" in connection_check_block
     assert (
         "github.event.pull_request.head.repo.full_name == github.repository"
         in connection_check_block
@@ -53,8 +47,14 @@ def test_publish_workflow_has_pr_deploy_connection_check_without_upload() -> Non
 
 
 def test_secret_bearing_jobs_do_not_run_on_pr_controlled_workflow() -> None:
-    workflow = _workflow_text()
+    publish_workflow = _workflow_text()
+    connection_workflow = _workflow_text("deploy-connection-check.yml")
 
-    assert "if: github.event_name != 'pull_request_target'" in workflow
-    assert "if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'" in workflow
-    assert "if: github.event_name == 'pull_request_target'" in workflow
+    assert "pull_request_target:" not in publish_workflow
+    assert "deploy_connection_check:" not in publish_workflow
+    assert (
+        "if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'"
+        in publish_workflow
+    )
+    assert "pull_request_target:" in connection_workflow
+    assert "ref: ${{ github.event.pull_request.base.sha }}" in connection_workflow

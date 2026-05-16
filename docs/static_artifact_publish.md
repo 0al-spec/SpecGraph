@@ -58,7 +58,8 @@ The GitHub Actions workflow `.github/workflows/publish-static-artifacts.yml`
 builds the bundle on PRs and can upload it from `main` or manual
 `workflow_dispatch` runs.
 
-Pull requests from branches in this repository also run `Check deploy
+After `.github/workflows/deploy-connection-check.yml` is present on the base
+branch, pull requests from branches in this repository also run `Check deploy
 connection` through `pull_request_target`. The check uses deploy tooling from
 the trusted base commit, reads the `FTP` Environment secrets, validates the
 deploy contract, and opens a real FTP/FTPS/SFTP connection to list
