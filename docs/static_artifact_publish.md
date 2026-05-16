@@ -33,6 +33,10 @@ The bundle includes:
 - `artifact_manifest.json`
 - `checksums.sha256`
 
+Deployment mirrors the contents of `dist/specgraph-public/` into
+`SFTP_REMOTE_ROOT`. It must not create a nested `specgraph-public/` directory on
+the static host.
+
 The source `runs/` directory remains local and unchanged. The publish bundle is
 a redacted mirror: local absolute paths such as `/Users/...` are replaced with
 `$LOCAL_PATH` in the copied files.

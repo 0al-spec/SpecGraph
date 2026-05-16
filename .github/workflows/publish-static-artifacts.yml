@@ -115,7 +115,8 @@ jobs:
           $FTPS_VERIFY_CERT_LINE
           set net:max-retries 2
           set net:timeout 30
-          mirror -R --delete --verbose dist/specgraph-public "$SFTP_REMOTE_ROOT"
+          lcd dist/specgraph-public
+          mirror -R --delete --verbose . "$SFTP_REMOTE_ROOT"
           bye
           EOF
             exit 0
@@ -133,7 +134,8 @@ jobs:
           set sftp:connect-program "ssh -a -x -i $HOME/.ssh/specgraph_publish_key -o UserKnownHostsFile=$HOME/.ssh/known_hosts"
           set net:max-retries 2
           set net:timeout 30
-          mirror -R --delete --verbose dist/specgraph-public "$SFTP_REMOTE_ROOT"
+          lcd dist/specgraph-public
+          mirror -R --delete --verbose . "$SFTP_REMOTE_ROOT"
           bye
           EOF
           else
@@ -142,7 +144,8 @@ jobs:
           set sftp:connect-program "ssh -a -x -o UserKnownHostsFile=$HOME/.ssh/known_hosts"
           set net:max-retries 2
           set net:timeout 30
-          mirror -R --delete --verbose dist/specgraph-public "$SFTP_REMOTE_ROOT"
+          lcd dist/specgraph-public
+          mirror -R --delete --verbose . "$SFTP_REMOTE_ROOT"
           bye
           EOF
           fi
