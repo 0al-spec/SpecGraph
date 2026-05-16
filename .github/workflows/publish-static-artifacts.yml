@@ -72,11 +72,18 @@ jobs:
       SFTP_REMOTE_ROOT: ${{ secrets.SFTP_REMOTE_ROOT }}
 
     steps:
+      - name: Checkout deploy tooling
+        uses: actions/checkout@v4
+
       - name: Download bundle artifact
         uses: actions/download-artifact@v4
         with:
           name: specgraph-static-artifacts
           path: dist/specgraph-public
+
+      - name: Validate deploy contract
+        if: env.SFTP_HOST != ''
+        run: python tools/static_artifact_deploy_plan.py --bundle-dir dist/specgraph-public
 
       - name: Install transfer client
         if: env.SFTP_HOST != ''
@@ -135,3 +142,91 @@ jobs:
         if: env.SFTP_HOST == ''
         run: |
           echo "SFTP_HOST is not configured; built bundle only."
+
+  deploy_connection_check:
+    name: Check deploy connection
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    environment:
+      name: FTP
+    env:
+      SFTP_HOST: ${{ secrets.SFTP_HOST }}
+      SFTP_PORT: ${{ secrets.SFTP_PORT }}
+      SFTP_USER: ${{ secrets.SFTP_USER }}
+      SFTP_PASSWORD: ${{ secrets.SFTP_PASSWORD }}
+      SFTP_PRIVATE_KEY: ${{ secrets.SFTP_PRIVATE_KEY }}
+      SFTP_KNOWN_HOSTS: ${{ secrets.SFTP_KNOWN_HOSTS }}
+      SFTP_REMOTE_ROOT: ${{ secrets.SFTP_REMOTE_ROOT }}
+
+    steps:
+      - name: Checkout deploy tooling
+        uses: actions/checkout@v4
+
+      - name: Download bundle artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: specgraph-static-artifacts
+          path: dist/specgraph-public
+
+      - name: Validate deploy contract
+        if: env.SFTP_HOST != ''
+        run: python tools/static_artifact_deploy_plan.py --bundle-dir dist/specgraph-public
+
+      - name: Install transfer client
+        if: env.SFTP_HOST != ''
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y lftp openssh-client
+
+      - name: Check FTP/SFTP connection without upload
+        if: env.SFTP_HOST != ''
+        run: |
+          test -n "$SFTP_USER"
+          test -n "$SFTP_REMOTE_ROOT"
+          DEPLOY_PORT="${SFTP_PORT:-22}"
+
+          if [ "$DEPLOY_PORT" = "21" ]; then
+            test -n "$SFTP_PASSWORD"
+            lftp -u "$SFTP_USER,$SFTP_PASSWORD" "ftp://$SFTP_HOST:$DEPLOY_PORT" <<EOF
+          set ftp:ssl-allow true
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set net:max-retries 2
+          set net:timeout 30
+          cls -1 "$SFTP_REMOTE_ROOT"
+          bye
+          EOF
+            exit 0
+          fi
+
+          DEPLOY_PASSWORD="${SFTP_PASSWORD:-$SFTP_PRIVATE_KEY}"
+          test -n "$SFTP_KNOWN_HOSTS"
+          mkdir -p "$HOME/.ssh"
+          printf '%s\n' "$SFTP_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+
+          if printf '%s\n' "$SFTP_PRIVATE_KEY" | grep -q "BEGIN .*PRIVATE KEY"; then
+            printf '%s\n' "$SFTP_PRIVATE_KEY" > "$HOME/.ssh/specgraph_publish_key"
+            chmod 600 "$HOME/.ssh/specgraph_publish_key"
+            lftp -u "$SFTP_USER," "sftp://$SFTP_HOST:$DEPLOY_PORT" <<EOF
+          set sftp:connect-program "ssh -a -x -i $HOME/.ssh/specgraph_publish_key -o UserKnownHostsFile=$HOME/.ssh/known_hosts"
+          set net:max-retries 2
+          set net:timeout 30
+          cls -1 "$SFTP_REMOTE_ROOT"
+          bye
+          EOF
+          else
+            test -n "$DEPLOY_PASSWORD"
+            lftp -u "$SFTP_USER,$DEPLOY_PASSWORD" "sftp://$SFTP_HOST:$DEPLOY_PORT" <<EOF
+          set sftp:connect-program "ssh -a -x -o UserKnownHostsFile=$HOME/.ssh/known_hosts"
+          set net:max-retries 2
+          set net:timeout 30
+          cls -1 "$SFTP_REMOTE_ROOT"
+          bye
+          EOF
+          fi
+
+      - name: Report skipped deploy connection check
+        if: env.SFTP_HOST == ''
+        run: |
+          echo "SFTP_HOST is not configured; deploy connection check skipped."

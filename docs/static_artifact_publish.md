@@ -58,6 +58,12 @@ The GitHub Actions workflow `.github/workflows/publish-static-artifacts.yml`
 builds the bundle on PRs and can upload it from `main` or manual
 `workflow_dispatch` runs.
 
+Pull requests from branches in this repository also run `Check deploy
+connection`. The check downloads the built bundle, reads the `FTP` Environment
+secrets, validates the deploy contract, and opens a real FTP/FTPS/SFTP
+connection to list `SFTP_REMOTE_ROOT` without running `mirror` or uploading files.
+Pull requests from forks do not receive deployment secrets and skip this job.
+
 The deploy job uses the GitHub Environment named `FTP`. Configure these
 environment secrets:
 
