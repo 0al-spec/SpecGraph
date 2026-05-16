@@ -60,6 +60,14 @@ def test_secret_bearing_jobs_do_not_run_on_pr_controlled_workflow() -> None:
     assert "ref: ${{ github.event.pull_request.base.sha }}" in connection_workflow
 
 
+def test_deploy_upload_mirrors_bundle_contents_not_wrapper_directory() -> None:
+    workflow = _workflow_text()
+
+    assert "lcd dist/specgraph-public" in workflow
+    assert 'mirror -R --delete --verbose . "$SFTP_REMOTE_ROOT"' in workflow
+    assert 'mirror -R --delete --verbose dist/specgraph-public "$SFTP_REMOTE_ROOT"' not in workflow
+
+
 def test_workflows_opt_into_node24_actions_runtime() -> None:
     workflow_dir = Path(__file__).resolve().parents[1] / ".github" / "workflows"
     workflow_paths = sorted(workflow_dir.glob("*.yml"))
