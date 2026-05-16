@@ -194,7 +194,7 @@ def test_deploy_plan_can_skip_bundle_check_for_connection_only_validation(
     assert plan["status"] == "ready"
 
 
-def test_deploy_plan_rejects_ftp_account_root_for_delete_mirror(
+def test_deploy_plan_rejects_ftp_account_root_for_site_upload(
     deploy_plan_module: object,
     bundle_dir: Path,
 ) -> None:

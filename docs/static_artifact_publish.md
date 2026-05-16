@@ -37,6 +37,19 @@ Deployment mirrors the contents of `dist/specgraph-public/` into
 `SFTP_REMOTE_ROOT`. It must not create a nested `specgraph-public/` directory on
 the static host.
 
+Artifact deployment is intentionally non-destructive for the webroot. The
+workflow must not run a root-level `mirror --delete` because the same
+`SFTP_REMOTE_ROOT` can also contain the public landing page and hosting-managed
+files. Consumers should use `artifact_manifest.json` and `checksums.sha256` as
+the authoritative artifact index instead of inferring validity from every file
+that happens to remain under `specs/` or `runs/`.
+
+The repository landing page is deployed by a separate workflow job from
+`landing/` into the same `SFTP_REMOTE_ROOT`. That job is also non-destructive and
+excludes local QA screenshots under `landing/check/`. Landing files are not part
+of `artifact_manifest.json`; the manifest describes only the SpecGraph artifact
+surface.
+
 The source `runs/` directory remains local and unchanged. The publish bundle is
 a redacted mirror: local absolute paths such as `/Users/...` are replaced with
 `$LOCAL_PATH` in the copied files.
@@ -96,8 +109,8 @@ SFTP_REMOTE_ROOT=/www/specgraph.tech/
 
 `SFTP_REMOTE_ROOT` must be the site directory served by the public HTTP origin,
 not the FTP account root. The workflow rejects `/` because deploy uses
-`mirror --delete`; pointing it at the FTP account root could delete unrelated
-sites or hosting files.
+root-level uploads into the configured path; pointing it at the FTP account root
+could pollute unrelated sites or hosting files.
 
 Despite the historical `SFTP_*` secret names, port `21` makes the workflow use
 `ftp://` through `lftp` with TLS forced. If the host does not support FTPS, the
