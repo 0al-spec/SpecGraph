@@ -58,15 +58,27 @@ The GitHub Actions workflow `.github/workflows/publish-static-artifacts.yml`
 builds the bundle on PRs and can upload it from `main` or manual
 `workflow_dispatch` runs.
 
-Configure these repository secrets:
+The deploy job uses the GitHub Environment named `FTP`. Configure these
+environment secrets:
 
 ```text
 SFTP_HOST
 SFTP_PORT
 SFTP_USER
+SFTP_PASSWORD
 SFTP_PRIVATE_KEY
 SFTP_KNOWN_HOSTS
 SFTP_REMOTE_ROOT
+```
+
+`SFTP_PRIVATE_KEY` is used when it contains an SSH private key. Password-based
+SFTP can use `SFTP_PASSWORD`; for compatibility, a non-key `SFTP_PRIVATE_KEY`
+value is also treated as the password fallback.
+
+`SFTP_KNOWN_HOSTS` should contain the host keys from `ssh-keyscan`, for example:
+
+```bash
+ssh-keyscan -p 22 31.31.196.166
 ```
 
 `SFTP_REMOTE_ROOT` must be the directory served by the public HTTP origin. For

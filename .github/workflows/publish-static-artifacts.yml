@@ -30,13 +30,6 @@ jobs:
   build:
     name: Build static artifact bundle
     runs-on: ubuntu-latest
-    env:
-      SFTP_HOST: ${{ secrets.SFTP_HOST }}
-      SFTP_PORT: ${{ secrets.SFTP_PORT }}
-      SFTP_USER: ${{ secrets.SFTP_USER }}
-      SFTP_PRIVATE_KEY: ${{ secrets.SFTP_PRIVATE_KEY }}
-      SFTP_KNOWN_HOSTS: ${{ secrets.SFTP_KNOWN_HOSTS }}
-      SFTP_REMOTE_ROOT: ${{ secrets.SFTP_REMOTE_ROOT }}
 
     steps:
       - name: Checkout
@@ -62,32 +55,67 @@ jobs:
           path: dist/specgraph-public
           if-no-files-found: error
 
+  deploy:
+    name: Deploy bundle to SFTP
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name != 'pull_request'
+    environment:
+      name: FTP
+    env:
+      SFTP_HOST: ${{ secrets.SFTP_HOST }}
+      SFTP_PORT: ${{ secrets.SFTP_PORT }}
+      SFTP_USER: ${{ secrets.SFTP_USER }}
+      SFTP_PASSWORD: ${{ secrets.SFTP_PASSWORD }}
+      SFTP_PRIVATE_KEY: ${{ secrets.SFTP_PRIVATE_KEY }}
+      SFTP_KNOWN_HOSTS: ${{ secrets.SFTP_KNOWN_HOSTS }}
+      SFTP_REMOTE_ROOT: ${{ secrets.SFTP_REMOTE_ROOT }}
+
+    steps:
+      - name: Download bundle artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: specgraph-static-artifacts
+          path: dist/specgraph-public
+
       - name: Install SFTP client
-        if: github.event_name != 'pull_request' && env.SFTP_HOST != ''
+        if: env.SFTP_HOST != ''
         run: |
           sudo apt-get update
           sudo apt-get install -y lftp openssh-client
 
       - name: Upload bundle to SFTP
-        if: github.event_name != 'pull_request' && env.SFTP_HOST != ''
+        if: env.SFTP_HOST != ''
         run: |
           test -n "$SFTP_USER"
-          test -n "$SFTP_PRIVATE_KEY"
           test -n "$SFTP_KNOWN_HOSTS"
           test -n "$SFTP_REMOTE_ROOT"
           mkdir -p "$HOME/.ssh"
-          printf '%s\n' "$SFTP_PRIVATE_KEY" > "$HOME/.ssh/specgraph_publish_key"
-          chmod 600 "$HOME/.ssh/specgraph_publish_key"
           printf '%s\n' "$SFTP_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
-          lftp -u "$SFTP_USER," "sftp://$SFTP_HOST:${SFTP_PORT:-22}" <<EOF
+
+          if printf '%s\n' "$SFTP_PRIVATE_KEY" | grep -q "BEGIN .*PRIVATE KEY"; then
+            printf '%s\n' "$SFTP_PRIVATE_KEY" > "$HOME/.ssh/specgraph_publish_key"
+            chmod 600 "$HOME/.ssh/specgraph_publish_key"
+            lftp -u "$SFTP_USER," "sftp://$SFTP_HOST:${SFTP_PORT:-22}" <<EOF
           set sftp:connect-program "ssh -a -x -i $HOME/.ssh/specgraph_publish_key -o UserKnownHostsFile=$HOME/.ssh/known_hosts"
           set net:max-retries 2
           set net:timeout 30
           mirror -R --delete --verbose dist/specgraph-public "$SFTP_REMOTE_ROOT"
           bye
           EOF
+          else
+            DEPLOY_PASSWORD="${SFTP_PASSWORD:-$SFTP_PRIVATE_KEY}"
+            test -n "$DEPLOY_PASSWORD"
+            lftp -u "$SFTP_USER,$DEPLOY_PASSWORD" "sftp://$SFTP_HOST:${SFTP_PORT:-22}" <<EOF
+          set sftp:connect-program "ssh -a -x -o UserKnownHostsFile=$HOME/.ssh/known_hosts"
+          set net:max-retries 2
+          set net:timeout 30
+          mirror -R --delete --verbose dist/specgraph-public "$SFTP_REMOTE_ROOT"
+          bye
+          EOF
+          fi
 
       - name: Report skipped SFTP upload
-        if: github.event_name != 'pull_request' && env.SFTP_HOST == ''
+        if: env.SFTP_HOST == ''
         run: |
           echo "SFTP_HOST is not configured; built bundle only."
