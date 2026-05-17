@@ -2023,6 +2023,10 @@
     "validation_markers": [
       {
         "path": "tests/test_supervisor.py",
+        "pattern": "report[\"written_artifacts\"][\"metric_pack_registry_drift\"][\"next_gap\"] == \"none\""
+      },
+      {
+        "path": "tests/test_supervisor.py",
         "pattern": "report[\"written_artifacts\"][\"metric_pack_adapter_index\"][\"entry_count\"] == 1"
       },
       {
@@ -2037,7 +2041,15 @@
     "observation_markers": [
       {
         "path": "tools/supervisor.py",
+        "pattern": "write_metric_pack_registry_drift(drift_report)"
+      },
+      {
+        "path": "tools/supervisor.py",
         "pattern": "write_metric_pack_adapter_index(adapter_index)"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "write_metric_pricing_provenance(pricing)"
       },
       {
         "path": "tools/supervisor.py",
