@@ -1,0 +1,50 @@
+{
+  "artifact_kind": "supervisor_stalled_run_salvage_policy",
+  "version": 1,
+  "repository_layout": {
+    "salvage_artifact_template": "runs/<run_id>-salvage.json",
+    "patch_artifact_template": "runs/<run_id>-salvage.patch",
+    "raw_worktrees_tracked_by_default": false,
+    "latest_summary_artifact": "runs/latest-summary.md"
+  },
+  "salvage_contract": {
+    "artifact_kind": "supervisor_stalled_run_salvage",
+    "schema_version": 1,
+    "recovery_status": "stalled_run_salvage_required",
+    "required_human_action": "review_salvaged_worktree_diff",
+    "stalled_phase": "post_child_mutation_pre_sync",
+    "required_sections": [
+      "target_scope",
+      "worktree",
+      "diff",
+      "recovery",
+      "process_feedback"
+    ],
+    "required_diff_fields": [
+      "diff_stat",
+      "patch_artifact_path",
+      "patch_sha256",
+      "bounded_to_allowed_paths",
+      "patch_truncated"
+    ]
+  },
+  "recovery_policy": {
+    "automatic_adoption_allowed": false,
+    "canonical_mutations_allowed": false,
+    "required_review_action": "review_salvaged_worktree_diff",
+    "allowed_next_actions": [
+      "review_salvaged_worktree_diff",
+      "adopt_salvaged_diff",
+      "reject_salvaged_diff",
+      "cleanup_salvaged_worktree"
+    ],
+    "adoption_requires_validation": true,
+    "raw_worktree_contents_must_not_be_committed": true
+  },
+  "process_feedback_mapping": {
+    "root_cause_class": "process_rule_gap",
+    "prevention_action": "policy_rule_added",
+    "verification": "targeted_test",
+    "proposal_source": "docs/proposals/0048_supervisor_stalled_run_salvage_protocol.md"
+  }
+}

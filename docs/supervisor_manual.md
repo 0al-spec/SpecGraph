@@ -1724,6 +1724,12 @@ path.
 - `runs/bootstrap_smoke_benchmark.json`
   - advisory smoke benchmark surface for minimal-seed structural yield, based
     on performance-index run signals rather than exact generated text
+- `runs/<RUN_ID>-salvage.json`
+  - review-first recovery artifact for a supervisor run that stalled after
+    mutating a child worktree
+- `runs/<RUN_ID>-salvage.patch`
+  - durable patch artifact referenced by stalled-run salvage metadata; this is
+    evidence for review, not automatic canonical adoption
 - `runs/graph_dashboard.json`
   - aggregated dashboard surface with headline cards and numeric section
     summaries for graph, health, proposals, implementation, evidence, external
@@ -1760,6 +1766,37 @@ Use `runs/<RUN_ID>.json` when you need to answer:
 - whether graph-health signals came from accepted canonical state or only from a
   candidate view
 
+### Stalled Run Salvage
+
+Use stalled-run salvage when a supervisor child worktree contains a bounded diff
+but the parent run did not complete normal sync, validation, and summary writing.
+The recovery artifact is review-first evidence; it is not automatic canonical
+adoption.
+
+```bash
+make supervisor-stalled-run-salvage \
+  TARGET_SPEC=SG-SPEC-0033 \
+  SALVAGE_WORKTREE_PATH=.worktrees/sg-spec-0033-20260509T185012Z-c6a92bf1
+```
+
+This writes:
+
+- `runs/<run_id>-salvage.json`
+- `runs/<run_id>-salvage.patch`
+- `runs/<run_id>.json`
+- `runs/latest-summary.md`
+
+Expected recovery fields:
+
+- `recovery_status: stalled_run_salvage_required`
+- `required_human_action: review_salvaged_worktree_diff`
+- `executor_environment.primary_failure: true`
+- `salvage.artifact_path`
+- `salvage.patch_artifact_path`
+
+The patch may be adopted only after human review and normal validation. Raw
+`.worktrees/` contents remain local runtime state and must not be committed.
+
 ## 7. How To Read Outcomes
 
 The supervisor writes authoritative run data to:
@@ -1779,6 +1816,8 @@ Important fields:
 - `safe_repair_contract`
 - `evaluator_loop_control`
 - `executor_environment`
+- `recovery_status`
+- `salvage`
 - `refinement_acceptance`
 - `reconciliation`
 - `graph_health`

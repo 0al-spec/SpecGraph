@@ -75,6 +75,7 @@ from __future__ import annotations
 import argparse
 import copy
 import datetime as dt
+import difflib
 import hashlib
 import importlib.util
 import inspect
@@ -128,6 +129,9 @@ GRAPH_NEXT_MOVES_POLICY_RELATIVE_PATH = "tools/graph_next_moves_policy.json"
 SPEC_ACTIVITY_FEED_POLICY_RELATIVE_PATH = "tools/spec_activity_feed_policy.json"
 IMPLEMENTATION_DELTA_POLICY_RELATIVE_PATH = "tools/implementation_delta_policy.json"
 SUPERVISOR_EVIDENCE_PACKET_POLICY_RELATIVE_PATH = "tools/supervisor_evidence_packet_policy.json"
+SUPERVISOR_STALLED_RUN_SALVAGE_POLICY_RELATIVE_PATH = (
+    "tools/supervisor_stalled_run_salvage_policy.json"
+)
 REVIEW_FEEDBACK_POLICY_RELATIVE_PATH = "tools/review_feedback_policy.json"
 VALIDATION_FINDINGS_POLICY_RELATIVE_PATH = "tools/validation_findings_policy.json"
 SAFE_REPAIR_POLICY_RELATIVE_PATH = "tools/safe_repair_policy.json"
@@ -222,6 +226,10 @@ def implementation_delta_policy_path() -> Path:
 
 def supervisor_evidence_packet_policy_path() -> Path:
     return TOOLS_DIR / "supervisor_evidence_packet_policy.json"
+
+
+def supervisor_stalled_run_salvage_policy_path() -> Path:
+    return TOOLS_DIR / "supervisor_stalled_run_salvage_policy.json"
 
 
 def review_feedback_policy_path() -> Path:
@@ -886,6 +894,46 @@ def load_supervisor_evidence_packet_policy() -> tuple[dict[str, Any], str]:
 
 SUPERVISOR_EVIDENCE_PACKET_POLICY, SUPERVISOR_EVIDENCE_PACKET_POLICY_SHA256 = (
     load_supervisor_evidence_packet_policy()
+)
+
+
+def load_supervisor_stalled_run_salvage_policy() -> tuple[dict[str, Any], str]:
+    path = supervisor_stalled_run_salvage_policy_path()
+    try:
+        raw_text = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise RuntimeError(
+            f"failed to read supervisor stalled-run salvage policy artifact: "
+            f"{path.as_posix()} ({exc})"
+        ) from exc
+    try:
+        payload = json.loads(raw_text)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(
+            f"malformed supervisor stalled-run salvage policy artifact: {path.as_posix()} ({exc})"
+        ) from exc
+    if not isinstance(payload, dict):
+        raise RuntimeError(
+            "malformed supervisor stalled-run salvage policy artifact: "
+            f"{path.as_posix()} must contain a JSON object"
+        )
+    required_sections = (
+        "repository_layout",
+        "salvage_contract",
+        "recovery_policy",
+        "process_feedback_mapping",
+    )
+    missing = [section for section in required_sections if section not in payload]
+    if missing:
+        raise RuntimeError(
+            "malformed supervisor stalled-run salvage policy artifact: "
+            "missing top-level section(s): " + ", ".join(missing)
+        )
+    return payload, hashlib.sha256(raw_text.encode("utf-8")).hexdigest()
+
+
+SUPERVISOR_STALLED_RUN_SALVAGE_POLICY, SUPERVISOR_STALLED_RUN_SALVAGE_POLICY_SHA256 = (
+    load_supervisor_stalled_run_salvage_policy()
 )
 
 
@@ -2152,6 +2200,14 @@ def supervisor_evidence_packet_policy_reference() -> dict[str, Any]:
         "artifact_path": SUPERVISOR_EVIDENCE_PACKET_POLICY_RELATIVE_PATH,
         "artifact_sha256": SUPERVISOR_EVIDENCE_PACKET_POLICY_SHA256,
         "version": SUPERVISOR_EVIDENCE_PACKET_POLICY.get("version"),
+    }
+
+
+def supervisor_stalled_run_salvage_policy_reference() -> dict[str, Any]:
+    return {
+        "artifact_path": SUPERVISOR_STALLED_RUN_SALVAGE_POLICY_RELATIVE_PATH,
+        "artifact_sha256": SUPERVISOR_STALLED_RUN_SALVAGE_POLICY_SHA256,
+        "version": SUPERVISOR_STALLED_RUN_SALVAGE_POLICY.get("version"),
     }
 
 
@@ -8857,6 +8913,239 @@ def write_supervisor_evidence_packet(packet: dict[str, Any]) -> Path:
     with artifact_lock(path):
         atomic_write_json(path, packet)
     return path
+
+
+def supervisor_stalled_run_salvage_artifact_path(run_id: str) -> Path:
+    safe_run_id = sanitize_for_git(str(run_id).strip())
+    return RUNS_DIR / f"{safe_run_id}-salvage.json"
+
+
+def supervisor_stalled_run_salvage_patch_path(run_id: str) -> Path:
+    safe_run_id = sanitize_for_git(str(run_id).strip())
+    return RUNS_DIR / f"{safe_run_id}-salvage.patch"
+
+
+def _read_text_if_exists(path: Path) -> str:
+    try:
+        return path.read_text(encoding="utf-8")
+    except OSError:
+        return ""
+
+
+def fallback_worktree_patch(worktree_path: Path, changed_files: list[str]) -> str:
+    chunks: list[str] = []
+    for rel_path in changed_files:
+        root_path = ROOT / rel_path
+        worktree_file = worktree_path / rel_path
+        before = _read_text_if_exists(root_path).splitlines(keepends=True)
+        after = _read_text_if_exists(worktree_file).splitlines(keepends=True)
+        if before == after:
+            continue
+        chunks.extend(
+            difflib.unified_diff(
+                before,
+                after,
+                fromfile=f"a/{rel_path}",
+                tofile=f"b/{rel_path}",
+            )
+        )
+    return "".join(chunks)
+
+
+def fallback_worktree_changed_files(
+    worktree_path: Path,
+    *,
+    allowed_paths: list[str],
+) -> list[str]:
+    changed: list[str] = []
+    for rel_path in allowed_paths:
+        root_path = ROOT / rel_path
+        worktree_file = worktree_path / rel_path
+        if worktree_file.exists() and _read_text_if_exists(root_path) != _read_text_if_exists(
+            worktree_file
+        ):
+            changed.append(rel_path)
+    return sorted(changed)
+
+
+def worktree_patch_text(worktree_path: Path, changed_files: list[str]) -> str:
+    if changed_files:
+        result = subprocess.run(
+            ["git", "diff", "--", *changed_files],
+            cwd=worktree_path,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            return result.stdout
+    return fallback_worktree_patch(worktree_path, changed_files)
+
+
+def worktree_diff_stat(worktree_path: Path, changed_files: list[str], patch_text: str) -> str:
+    if changed_files:
+        result = subprocess.run(
+            ["git", "diff", "--stat", "--", *changed_files],
+            cwd=worktree_path,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            return result.stdout.strip()
+    if not patch_text.strip():
+        return "No patch content recorded."
+    return f"{len(changed_files)} changed file(s)"
+
+
+def build_supervisor_stalled_run_salvage(
+    *,
+    spec_id: str,
+    worktree_path: Path,
+    run_id: str | None = None,
+) -> tuple[dict[str, Any], dict[str, Any], str]:
+    normalized_spec_id = str(spec_id).strip()
+    if not normalized_spec_id:
+        raise RuntimeError("--target-spec is required for stalled-run salvage")
+    if not worktree_path.exists() or not worktree_path.is_dir():
+        raise RuntimeError(f"salvage worktree path does not exist: {worktree_path.as_posix()}")
+
+    selected_run_id = str(run_id or "").strip() or make_run_id(normalized_spec_id)
+    allowed_paths = [f"specs/nodes/{normalized_spec_id}.yaml"]
+    changed_files = git_status_changed_files(worktree_path)
+    if not changed_files:
+        changed_files = fallback_worktree_changed_files(
+            worktree_path,
+            allowed_paths=allowed_paths,
+        )
+    changed_files = sorted({path for path in changed_files if path})
+    bounded_to_allowed_paths = bool(changed_files) and all(
+        path in set(allowed_paths) for path in changed_files
+    )
+    patch_text = worktree_patch_text(worktree_path, changed_files)
+    patch_sha256 = hashlib.sha256(patch_text.encode("utf-8")).hexdigest()
+    patch_path = supervisor_stalled_run_salvage_patch_path(selected_run_id)
+    salvage_path = supervisor_stalled_run_salvage_artifact_path(selected_run_id)
+
+    salvage = {
+        "artifact_kind": "supervisor_stalled_run_salvage",
+        "schema_version": 1,
+        "generated_at": utc_now_iso(),
+        "canonical_mutations_allowed": False,
+        "tracked_artifacts_written": False,
+        "policy_reference": supervisor_stalled_run_salvage_policy_reference(),
+        "run_id": selected_run_id,
+        "spec_id": normalized_spec_id,
+        "recovery_status": "stalled_run_salvage_required",
+        "required_human_action": "review_salvaged_worktree_diff",
+        "target_scope": {
+            "target_spec": normalized_spec_id,
+            "allowed_paths": allowed_paths,
+        },
+        "stalled_phase": "post_child_mutation_pre_sync",
+        "worktree": {
+            "path": repo_relative_or_absolute_path(worktree_path),
+            "dirty": bool(changed_files),
+            "changed_files": changed_files,
+        },
+        "diff": {
+            "diff_stat": worktree_diff_stat(worktree_path, changed_files, patch_text),
+            "patch_artifact_path": repo_relative_or_absolute_path(patch_path),
+            "patch_sha256": f"sha256:{patch_sha256}",
+            "bounded_to_allowed_paths": bounded_to_allowed_paths,
+            "patch_truncated": False,
+        },
+        "recovery": {
+            "automatic_adoption_allowed": False,
+            "required_human_action": "review_salvaged_worktree_diff",
+            "allowed_next_actions": [
+                "review_salvaged_worktree_diff",
+                "adopt_salvaged_diff",
+                "reject_salvaged_diff",
+                "cleanup_salvaged_worktree",
+            ],
+            "recovery_hint": "inspect diff, apply only if bounded, rerun validation",
+        },
+        "process_feedback": {
+            "root_cause_class": "process_rule_gap",
+            "prevention_action": "policy_rule_added",
+            "verification": "targeted_test",
+        },
+        "summary": {
+            "salvage_artifact_path": repo_relative_or_absolute_path(salvage_path),
+            "patch_artifact_path": repo_relative_or_absolute_path(patch_path),
+            "changed_file_count": len(changed_files),
+            "bounded_to_allowed_paths": bounded_to_allowed_paths,
+            "next_gap": "review_salvaged_worktree_diff",
+        },
+    }
+    run_payload = {
+        "run_id": selected_run_id,
+        "spec_id": normalized_spec_id,
+        "title": f"{normalized_spec_id} stalled run salvage",
+        "completion_status": COMPLETION_STATUS_FAILED,
+        "outcome": "blocked",
+        "gate_state": "blocked",
+        "before_status": "-",
+        "proposed_status": None,
+        "final_status": "-",
+        "validation_errors": ["stalled_run_salvage_required"],
+        "validation_findings": [
+            validation_finding(
+                code="stalled_run_salvage_required",
+                family="executor_environment",
+                error_class="runtime_failure",
+                message=(
+                    "Supervisor stalled after child worktree mutation; salvage review required."
+                ),
+                details={
+                    "salvage_artifact_path": repo_relative_or_absolute_path(salvage_path),
+                    "patch_artifact_path": repo_relative_or_absolute_path(patch_path),
+                },
+            )
+        ],
+        "executor_environment": {
+            "issues": [
+                {
+                    "kind": "child_worktree_stalled_after_mutation",
+                    "summary": "Child worktree changed before parent supervisor completed sync.",
+                    "evidence": changed_files,
+                }
+            ],
+            "issue_kinds": ["child_worktree_stalled_after_mutation"],
+            "primary_failure": True,
+            "primary_failure_reason": "child_worktree_stalled_after_mutation",
+        },
+        "recovery_status": "stalled_run_salvage_required",
+        "required_human_action": "review_salvaged_worktree_diff",
+        "salvage": {
+            "artifact_path": repo_relative_or_absolute_path(salvage_path),
+            "patch_artifact_path": repo_relative_or_absolute_path(patch_path),
+        },
+        "changed_files": changed_files,
+        "accepted_canonical_diff": False,
+    }
+    return salvage, run_payload, patch_text
+
+
+def write_supervisor_stalled_run_salvage(
+    salvage: dict[str, Any],
+    run_payload: dict[str, Any],
+    patch_text: str,
+) -> tuple[Path, Path, Path]:
+    run_id = str(salvage.get("run_id", "")).strip()
+    if not run_id:
+        raise RuntimeError("invalid stalled-run salvage artifact: missing run_id")
+    salvage_path = supervisor_stalled_run_salvage_artifact_path(run_id)
+    patch_path = supervisor_stalled_run_salvage_patch_path(run_id)
+    patch_path.parent.mkdir(parents=True, exist_ok=True)
+    with artifact_lock(patch_path):
+        atomic_write_text(patch_path, patch_text)
+    with artifact_lock(salvage_path):
+        atomic_write_json(salvage_path, salvage)
+    run_log_path = write_run_log(run_id, run_payload)
+    write_latest_summary(run_payload)
+    return salvage_path, patch_path, run_log_path
 
 
 def decision_inspector_dir_path() -> Path:
@@ -30980,6 +31269,13 @@ def write_latest_summary(payload: dict[str, Any]) -> None:
         if isinstance(viewer_surfaces_refresh, dict)
         else ""
     )
+    salvage = payload.get("salvage", {})
+    salvage_artifact_path = (
+        str(salvage.get("artifact_path", "")).strip() if isinstance(salvage, dict) else ""
+    )
+    salvage_patch_artifact_path = (
+        str(salvage.get("patch_artifact_path", "")).strip() if isinstance(salvage, dict) else ""
+    )
     summary = (
         f"# Latest Supervisor Run\n\n"
         f"- run_id: {payload['run_id']}\n"
@@ -30994,7 +31290,10 @@ def write_latest_summary(payload: dict[str, Any]) -> None:
         f"- validation_errors: {len(payload['validation_errors'])}\n"
         f"- executor_environment_issues: {len(issues)}\n"
         f"- executor_environment_primary_failure: {'yes' if primary_failure else 'no'}\n"
+        f"- recovery_status: {payload.get('recovery_status', '-')}\n"
         f"- required_human_action: {payload.get('required_human_action', '-')}\n"
+        f"- salvage_artifact_path: {salvage_artifact_path or '-'}\n"
+        f"- salvage_patch_artifact_path: {salvage_patch_artifact_path or '-'}\n"
         f"- viewer_surfaces_refresh: {viewer_surfaces_refresh_status or '-'}\n"
         f"- viewer_surfaces_refresh_artifact: {viewer_surfaces_refresh_artifact or '-'}\n"
     )
@@ -34054,7 +34353,9 @@ def main(
     implementation_operator_intent: str | None = None,
     build_implementation_work_index_mode: bool = False,
     build_supervisor_evidence_packet_mode: bool = False,
+    build_supervisor_stalled_run_salvage_mode: bool = False,
     supervisor_run_path: str | None = None,
+    supervisor_salvage_worktree_path: str | None = None,
     supervisor_raw_artifact_uri: str = "",
     supervisor_raw_retention_expires_at: str = "",
     build_review_feedback_index_mode: bool = False,
@@ -34148,6 +34449,7 @@ def main(
         "--build-implementation-delta-snapshot": build_implementation_delta_snapshot_mode,
         "--build-implementation-work-index": build_implementation_work_index_mode,
         "--build-supervisor-evidence-packet": build_supervisor_evidence_packet_mode,
+        "--build-supervisor-stalled-run-salvage": build_supervisor_stalled_run_salvage_mode,
         "--build-review-feedback-index": build_review_feedback_index_mode,
         "--build-vocabulary-index": build_vocabulary_index_mode,
         "--build-vocabulary-drift-report": build_vocabulary_drift_report_mode,
@@ -34221,18 +34523,42 @@ def main(
         )
         return 1
 
-    if (
-        supervisor_run_path or supervisor_raw_artifact_uri or supervisor_raw_retention_expires_at
-    ) and not build_supervisor_evidence_packet_mode:
+    if supervisor_salvage_worktree_path and not build_supervisor_stalled_run_salvage_mode:
         print(
-            "--supervisor-run-path/--raw-artifact-uri/--raw-retention-expires-at require "
+            "--salvage-worktree-path requires --build-supervisor-stalled-run-salvage",
+            file=sys.stderr,
+        )
+        return 1
+
+    if (supervisor_raw_artifact_uri or supervisor_raw_retention_expires_at) and not (
+        build_supervisor_evidence_packet_mode
+    ):
+        print(
+            "--raw-artifact-uri/--raw-retention-expires-at require "
             "--build-supervisor-evidence-packet",
+            file=sys.stderr,
+        )
+        return 1
+
+    if supervisor_run_path and not (
+        build_supervisor_evidence_packet_mode or build_supervisor_stalled_run_salvage_mode
+    ):
+        print(
+            "--supervisor-run-path requires --build-supervisor-evidence-packet or "
+            "--build-supervisor-stalled-run-salvage",
             file=sys.stderr,
         )
         return 1
 
     if build_supervisor_evidence_packet_mode and not supervisor_run_path:
         print("--build-supervisor-evidence-packet requires --supervisor-run-path", file=sys.stderr)
+        return 1
+
+    if build_supervisor_stalled_run_salvage_mode and not supervisor_salvage_worktree_path:
+        print(
+            "--build-supervisor-stalled-run-salvage requires --salvage-worktree-path",
+            file=sys.stderr,
+        )
         return 1
 
     if validate_transition_packet_path:
@@ -34604,6 +34930,71 @@ def main(
         }
         packet["summary"]["packet_path"] = repo_relative_or_absolute_path(packet_path)
         emit_supervisor_json(packet, output_mode=normalized_output_mode)
+        return 0
+
+    if build_supervisor_stalled_run_salvage_mode:
+        if any(
+            (
+                dry_run,
+                auto_approve,
+                loop,
+                resolve_gate,
+                decision,
+                note,
+                split_proposal,
+                apply_split_proposal,
+                operator_note,
+                mutation_budget,
+                run_authority,
+                execution_profile,
+                child_model,
+                child_timeout_seconds,
+                verbose,
+                list_stale_runtime,
+                clean_stale_runtime,
+                observe_graph_health_mode,
+                operator_request_packet_path,
+                supervisor_raw_artifact_uri,
+                supervisor_raw_retention_expires_at,
+            )
+        ):
+            print(
+                "--build-supervisor-stalled-run-salvage must be used as a standalone command",
+                file=sys.stderr,
+            )
+            return 1
+        try:
+            salvage, run_payload, patch_text = build_supervisor_stalled_run_salvage(
+                spec_id=target_spec or "",
+                worktree_path=Path(supervisor_salvage_worktree_path or ""),
+                run_id=supervisor_run_path,
+            )
+            salvage_path, patch_path, run_log_path = write_supervisor_stalled_run_salvage(
+                salvage,
+                run_payload,
+                patch_text,
+            )
+        except RuntimeError as exc:
+            print(str(exc), file=sys.stderr)
+            return 1
+        salvage["written_artifacts"] = {
+            "supervisor_stalled_run_salvage": {
+                "artifact_path": repo_relative_or_absolute_path(salvage_path),
+                "run_id": salvage.get("run_id"),
+                "spec_id": salvage.get("spec_id"),
+            },
+            "supervisor_stalled_run_patch": {
+                "artifact_path": repo_relative_or_absolute_path(patch_path),
+                "run_id": salvage.get("run_id"),
+            },
+            "supervisor_run_log": {
+                "artifact_path": repo_relative_or_absolute_path(run_log_path),
+                "run_id": salvage.get("run_id"),
+            },
+        }
+        salvage["summary"]["salvage_artifact_path"] = repo_relative_or_absolute_path(salvage_path)
+        salvage["summary"]["patch_artifact_path"] = repo_relative_or_absolute_path(patch_path)
+        emit_supervisor_json(salvage, output_mode=normalized_output_mode)
         return 0
 
     if build_review_feedback_index_mode:
@@ -37321,11 +37712,26 @@ if __name__ == "__main__":
         ),
     )
     parser.add_argument(
+        "--build-supervisor-stalled-run-salvage",
+        action="store_true",
+        help=(
+            "Write a recoverable stalled-run salvage artifact, patch artifact, failed run "
+            "log, and latest summary from a dirty supervisor child worktree"
+        ),
+    )
+    parser.add_argument(
         "--supervisor-run-path",
         metavar="PATH_OR_RUN_ID",
         help=(
-            "Raw supervisor run artifact path or run id used by --build-supervisor-evidence-packet"
+            "Raw supervisor run artifact path or run id used by "
+            "--build-supervisor-evidence-packet; "
+            "with --build-supervisor-stalled-run-salvage, an optional run id to write"
         ),
+    )
+    parser.add_argument(
+        "--salvage-worktree-path",
+        metavar="PATH",
+        help="Dirty child worktree path used by --build-supervisor-stalled-run-salvage",
     )
     parser.add_argument(
         "--raw-artifact-uri",
@@ -37841,7 +38247,9 @@ if __name__ == "__main__":
             implementation_operator_intent=args.operator_intent,
             build_implementation_work_index_mode=args.build_implementation_work_index,
             build_supervisor_evidence_packet_mode=args.build_supervisor_evidence_packet,
+            build_supervisor_stalled_run_salvage_mode=(args.build_supervisor_stalled_run_salvage),
             supervisor_run_path=args.supervisor_run_path,
+            supervisor_salvage_worktree_path=args.salvage_worktree_path,
             supervisor_raw_artifact_uri=args.raw_artifact_uri,
             supervisor_raw_retention_expires_at=args.raw_retention_expires_at,
             build_review_feedback_index_mode=args.build_review_feedback_index,

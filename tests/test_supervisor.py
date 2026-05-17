@@ -21545,6 +21545,82 @@ def test_main_build_supervisor_evidence_packet_rejects_missing_run_path(
     )
 
 
+def test_main_builds_supervisor_stalled_run_salvage_as_recoverable_failure(
+    supervisor_module: object,
+    repo_fixture: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    worktree = make_fake_worktree(repo_fixture)
+    target_path = worktree / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    target_path.write_text(
+        target_path.read_text(encoding="utf-8") + "\n# salvaged bounded edit\n",
+        encoding="utf-8",
+    )
+
+    exit_code = supervisor_module.main(
+        build_supervisor_stalled_run_salvage_mode=True,
+        target_spec="SG-SPEC-0001",
+        supervisor_salvage_worktree_path=worktree.as_posix(),
+        supervisor_run_path="RUN-SALVAGE-1",
+    )
+
+    assert exit_code == 0
+    summary = json.loads(capsys.readouterr().out)
+    assert summary["artifact_kind"] == "supervisor_stalled_run_salvage"
+    assert summary["tracked_artifacts_written"] is False
+    assert summary["summary"]["next_gap"] == "review_salvaged_worktree_diff"
+
+    salvage_path = repo_fixture / "runs" / "run-salvage-1-salvage.json"
+    patch_path = repo_fixture / "runs" / "run-salvage-1-salvage.patch"
+    run_log_path = repo_fixture / "runs" / "RUN-SALVAGE-1.json"
+    assert salvage_path.exists()
+    assert patch_path.exists()
+    assert run_log_path.exists()
+
+    salvage = json.loads(salvage_path.read_text(encoding="utf-8"))
+    assert salvage["policy_reference"]["artifact_path"] == (
+        "tools/supervisor_stalled_run_salvage_policy.json"
+    )
+    assert salvage["recovery_status"] == "stalled_run_salvage_required"
+    assert salvage["required_human_action"] == "review_salvaged_worktree_diff"
+    assert salvage["target_scope"]["allowed_paths"] == ["specs/nodes/SG-SPEC-0001.yaml"]
+    assert salvage["worktree"]["dirty"] is True
+    assert salvage["worktree"]["changed_files"] == ["specs/nodes/SG-SPEC-0001.yaml"]
+    assert salvage["diff"]["bounded_to_allowed_paths"] is True
+    assert salvage["diff"]["patch_sha256"].startswith("sha256:")
+    assert salvage["recovery"]["automatic_adoption_allowed"] is False
+    assert "salvaged bounded edit" in patch_path.read_text(encoding="utf-8")
+
+    run_log = json.loads(run_log_path.read_text(encoding="utf-8"))
+    assert run_log["completion_status"] == "failed"
+    assert run_log["outcome"] == "blocked"
+    assert run_log["recovery_status"] == "stalled_run_salvage_required"
+    assert run_log["required_human_action"] == "review_salvaged_worktree_diff"
+    assert run_log["executor_environment"]["primary_failure"] is True
+    assert run_log["accepted_canonical_diff"] is False
+
+    latest_summary = (repo_fixture / "runs" / "latest-summary.md").read_text(encoding="utf-8")
+    assert "- recovery_status: stalled_run_salvage_required" in latest_summary
+    assert "- required_human_action: review_salvaged_worktree_diff" in latest_summary
+    assert "- salvage_artifact_path: runs/run-salvage-1-salvage.json" in latest_summary
+    assert "- salvage_patch_artifact_path: runs/run-salvage-1-salvage.patch" in latest_summary
+
+
+def test_main_build_supervisor_stalled_run_salvage_rejects_missing_worktree_path(
+    supervisor_module: object,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    exit_code = supervisor_module.main(
+        build_supervisor_stalled_run_salvage_mode=True,
+        target_spec="SG-SPEC-0001",
+    )
+
+    assert exit_code == 1
+    assert "--build-supervisor-stalled-run-salvage requires --salvage-worktree-path" in (
+        capsys.readouterr().err
+    )
+
+
 def test_sg_spec_0030_trace_anchor_blocks_non_bypass_prerequisite_gap(
     supervisor_module: object,
 ) -> None:
