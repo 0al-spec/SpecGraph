@@ -28808,6 +28808,8 @@ def graph_next_moves_top_backlog_entry(
             rank = 30
         elif next_gap == "collect_metrics_adoption_feedback":
             rank = 70
+        elif next_gap == "observe_metrics_downstream_review":
+            rank = 75
         elif next_gap == "review_draft_reference":
             rank = 80
         else:

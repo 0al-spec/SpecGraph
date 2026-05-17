@@ -338,6 +338,11 @@ The graph next-move surface may therefore defer
 `collect_metrics_adoption_feedback` while ordinary local evidence or proposal
 gaps remain visible.
 
+Similarly, `observe_metrics_downstream_review` rows from Metrics feedback are
+low-priority sibling-observation reminders. They should remain visible in
+backlog drill-downs, but the next-move surface may defer them while local graph,
+evidence, proposal, or metric-runtime gaps are still actionable.
+
 ## 9. Dashboard Relationship
 
 The graph dashboard remains the summary source:

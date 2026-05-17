@@ -21228,6 +21228,75 @@ def test_build_graph_next_moves_defers_metrics_adoption_feedback_after_local_gap
     assert report["recommended_next_move"]["subject"]["subject_id"] == "SG-SPEC-0050"
 
 
+def test_build_graph_next_moves_defers_metrics_downstream_observation_after_local_gaps(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    _ = repo_fixture
+    feedback_backlog_id = (
+        "metrics_feedback_index::metrics::metrics_sib_full::observe_metrics_downstream_review"
+    )
+    refactor_backlog_id = (
+        "refactor_queue::proposals::graph_refactor::SG-SPEC-0001::"
+        "refinement_fan_out_pressure::regroup_under_intermediate_cluster"
+    )
+    report = supervisor_module.build_graph_next_moves(
+        [],
+        backlog_projection={
+            "artifact_kind": supervisor_module.GRAPH_BACKLOG_PROJECTION_ARTIFACT_KIND,
+            "schema_version": supervisor_module.GRAPH_BACKLOG_PROJECTION_SCHEMA_VERSION,
+            "generated_at": "2026-05-02T00:00:00Z",
+            "entry_count": 2,
+            "entries": [
+                {
+                    "backlog_id": feedback_backlog_id,
+                    "domain": "metrics",
+                    "source_artifact": "metrics_feedback_index",
+                    "source_artifact_path": "runs/metrics_feedback_index.json",
+                    "subject_kind": "consumer",
+                    "subject_id": "metrics_sib_full",
+                    "title": "",
+                    "status": "downstream_unobserved",
+                    "review_state": "not_observed",
+                    "next_gap": "observe_metrics_downstream_review",
+                    "priority": "low",
+                    "details": {},
+                },
+                {
+                    "backlog_id": refactor_backlog_id,
+                    "domain": "proposals",
+                    "source_artifact": "refactor_queue",
+                    "source_artifact_path": "runs/refactor_queue.json",
+                    "subject_kind": "queue_item",
+                    "subject_id": "SG-SPEC-0001",
+                    "title": "Root",
+                    "status": "proposed",
+                    "review_state": "",
+                    "next_gap": "regroup_under_intermediate_cluster",
+                    "priority": "low",
+                    "details": {},
+                },
+            ],
+            "summary": {
+                "priority_counts": {"low": 2},
+                "next_gap_counts": {
+                    "observe_metrics_downstream_review": 1,
+                    "regroup_under_intermediate_cluster": 1,
+                },
+            },
+            "viewer_projection": {
+                "priorities": {"low": [feedback_backlog_id, refactor_backlog_id]}
+            },
+        },
+        proposal_runtime_index=fake_graph_next_moves_proposal_runtime(supervisor_module),
+    )
+
+    assert report["current_scene"] == "high_priority_backlog"
+    assert report["recommended_next_move_kind"] == "review_backlog_item"
+    assert report["recommended_next_move"]["next_gap"] == "regroup_under_intermediate_cluster"
+    assert report["recommended_next_move"]["subject"]["subject_id"] == "SG-SPEC-0001"
+
+
 def test_build_graph_next_moves_reports_steady_state_when_no_gap_is_visible(
     supervisor_module: object,
     repo_fixture: Path,
