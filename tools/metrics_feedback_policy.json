@@ -43,7 +43,9 @@
       "master"
     ],
     "adoption_requires_clean_handoff_paths": true,
-    "adoption_requires_default_branch": true
+    "adoption_requires_default_branch": true,
+    "stable_adoption_without_threshold_proposals_closes_backlog": true,
+    "draft_delivery_without_downstream_activity_closes_backlog": true
   },
   "next_gap_defaults": {
     "downstream_unobserved": "observe_metrics_downstream_review",

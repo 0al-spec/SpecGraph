@@ -335,11 +335,13 @@ For example, when `runs/metrics_feedback_index.json` reports
 does not also keep stale `external_consumer_handoffs` or
 `metrics_delivery_workflow` review rows for that same consumer.
 
-The feedback row itself may remain visible with a next gap such as
-`collect_metrics_adoption_feedback`. Viewers should treat that as the active
-follow-up, while the hidden handoff/delivery review rows are considered
-superseded by downstream adoption evidence.
-This adoption follow-up is a low-priority backlog row: it records feedback after
+The feedback row itself may remain visible as an adoption observation in
+dashboard counts even when it no longer has an actionable backlog gap. When
+additional threshold-driven follow-up exists, it may surface with a next gap
+such as `collect_metrics_adoption_feedback`; otherwise stable clean adoption is
+treated as observed, not as unfinished work. Hidden handoff/delivery review rows
+are considered superseded by downstream adoption evidence.
+Any adoption follow-up is a low-priority backlog row: it records feedback after
 successful downstream visibility and should not visually outrank unresolved
 handoff, implementation, trace, evidence, or draft-reference review work.
 The graph next-move surface may therefore defer

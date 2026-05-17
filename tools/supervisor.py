@@ -22269,6 +22269,16 @@ def build_metrics_feedback_index(
     adoption_requires_default_branch = bool(
         metrics_feedback_policy_lookup("observation_rules.adoption_requires_default_branch")
     )
+    stable_adoption_closes_backlog = bool(
+        metrics_feedback_policy_lookup(
+            "observation_rules.stable_adoption_without_threshold_proposals_closes_backlog"
+        )
+    )
+    draft_delivery_closes_backlog = bool(
+        metrics_feedback_policy_lookup(
+            "observation_rules.draft_delivery_without_downstream_activity_closes_backlog"
+        )
+    )
 
     entries: list[dict[str, Any]] = []
     status_groups: dict[str, list[str]] = {}
@@ -22404,6 +22414,18 @@ def build_metrics_feedback_index(
                 feedback_status=feedback_status,
                 delivery_entry=raw_entry,
             )
+            if (
+                stable_adoption_closes_backlog
+                and feedback_status == "adoption_observed_locally"
+                and not threshold_proposal_ids
+            ):
+                next_gap = "none"
+            elif (
+                draft_delivery_closes_backlog
+                and feedback_status == "downstream_unobserved"
+                and delivery_status == "draft_delivery_only"
+            ):
+                next_gap = "none"
 
         entry = {
             "feedback_id": f"metrics_feedback::{key}",
