@@ -1637,6 +1637,62 @@
     ]
   },
   {
+    "proposal_id": "0037",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "tools/supervisor.py",
+      "tests/test_supervisor.py",
+      "tools/implementation_delta_policy.json",
+      "docs/proposals/0037_implementation_work_layer.md"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/implementation_delta_policy.json",
+        "pattern": "\"artifact_kind\": \"implementation_delta_policy\""
+      },
+      {
+        "path": "tools/implementation_delta_policy.json",
+        "pattern": "\"work_index_artifact\": \"runs/implementation_work_index.json\""
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def build_implementation_delta_snapshot("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def build_implementation_work_index("
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_implementation_delta_snapshot_uses_explicit_target_scope("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_implementation_work_index_from_delta_snapshot("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_main_builds_implementation_work_index_from_latest_snapshot("
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "write_implementation_delta_snapshot(snapshot)"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "write_implementation_work_index(index)"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "\"--build-implementation-work-index\""
+      }
+    ]
+  },
+  {
     "proposal_id": "0040",
     "posture": "synchronous_runtime_slice",
     "runtime_surfaces": [
