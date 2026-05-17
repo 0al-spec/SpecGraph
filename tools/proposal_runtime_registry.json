@@ -678,6 +678,65 @@
     ]
   },
   {
+    "proposal_id": "0015",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "tools/supervisor.py",
+      "tests/test_supervisor.py",
+      "docs/proposals/0015_atomic_artifact_store_and_id_allocation.md"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "RUNTIME_ID_COLLISION_RETRY_LIMIT = "
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def artifact_lock("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def atomic_write_text("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def atomic_write_json("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def reserve_child_materialization_spec_id("
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_artifact_writers_leave_no_temp_or_lock_residue("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_make_run_id_uses_nonce_and_write_run_log_rejects_duplicate("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_child_spec_id_reservations_skip_pending_review_and_active_reservations("
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "with artifact_lock(path):"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "os.replace(tmp_path, path)"
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "assert [item[\"spec_id\"] for item in payload[\"reservations\"]] == [\"SG-SPEC-0004\", \"SG-SPEC-0005\"]"
+      }
+    ]
+  },
+  {
     "proposal_id": "0016",
     "posture": "synchronous_runtime_slice",
     "runtime_surfaces": [
