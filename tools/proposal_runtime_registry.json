@@ -1936,5 +1936,61 @@
         "pattern": "\"branch_rewrite_candidates\": branch_rewrite_candidate_count"
       }
     ]
+  },
+  {
+    "proposal_id": "0043",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "tools/supervisor.py",
+      "tests/test_supervisor.py",
+      "tools/metric_pack_registry.json",
+      "docs/proposals/0043_metric_pack_plugin_architecture.md"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/metric_pack_registry.json",
+        "pattern": "\"artifact_kind\": \"metric_pack_registry\""
+      },
+      {
+        "path": "tools/metric_pack_registry.json",
+        "pattern": "\"index_artifact\": \"runs/metric_pack_index.json\""
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def load_metric_pack_registry("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def build_metric_pack_index("
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_metric_pack_index_reports_pack_statuses("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_metric_pack_index_keeps_invalid_contracts_as_entries("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_main_builds_metric_pack_index_as_standalone_command("
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "write_metric_pack_index(metric_pack_index)"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "build_metric_pack_registry_drift("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "\"--build-metric-pack-index\""
+      }
+    ]
   }
 ]

@@ -23295,6 +23295,22 @@ def test_proposal_0039_review_feedback_learning_loop_runtime_is_covered(
     assert entry["reflective_chain"]["next_gap"] == "none"
 
 
+def test_proposal_0043_metric_pack_plugin_architecture_runtime_is_covered(
+    supervisor_module: object,
+) -> None:
+    """Proposal 0043 is implemented by metric-pack registry and index artifacts."""
+    index = supervisor_module.build_proposal_runtime_index()
+    by_id = {e["proposal_id"]: e for e in index["entries"]}
+
+    assert "0043" in by_id, "Proposal 0043 missing from proposal_runtime_index"
+    entry = by_id["0043"]
+    assert entry["runtime_realization"]["status"] == "implemented"
+    assert entry["validation_closure"]["status"] == "covered"
+    assert entry["observation_coverage"]["status"] == "covered"
+    assert entry["observation_coverage"]["missing_markers"] == []
+    assert entry["reflective_chain"]["next_gap"] == "none"
+
+
 def test_all_implemented_proposals_have_registry_entries() -> None:
     """Every Implemented proposal must have a registry entry with at least one marker."""
     registry_path = SPECGRAPH_ROOT / "tools" / "proposal_runtime_registry.json"
