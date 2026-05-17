@@ -21689,6 +21689,48 @@ def test_main_build_supervisor_stalled_run_salvage_rejects_missing_worktree_path
     )
 
 
+def test_build_factory_architecture_index_defines_service_roles_and_authority(
+    supervisor_module: object,
+) -> None:
+    index = supervisor_module.build_factory_architecture_index()
+
+    assert index["artifact_kind"] == "factory_architecture_index"
+    assert index["canonical_mutations_allowed"] is False
+    assert index["tracked_artifacts_written"] is False
+    assert index["proposal_id"] == "0049"
+    assert index["policy_reference"]["artifact_path"] == "tools/factory_architecture_policy.json"
+    assert index["viewer_projection"]["service_ids"] == ["specgraph", "specpm", "specspace"]
+    assert index["viewer_projection"]["authority_levels"] == [
+        "observe",
+        "plan",
+        "draft_mutate",
+        "pr_mutate",
+        "merge",
+        "external_publish",
+    ]
+    assert index["guardrails"]["unconditional_merge_authority"] is False
+    assert index["guardrails"]["external_publish_default_allowed"] is False
+    assert "operator_action" in index["viewer_projection"]["handoff_families"]
+    assert index["summary"]["next_gap"] == "none"
+
+
+def test_main_builds_factory_architecture_index_as_standalone_command(
+    supervisor_module: object,
+    repo_fixture: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    exit_code = supervisor_module.main(build_factory_architecture_index_mode=True)
+
+    assert exit_code == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["artifact_kind"] == "factory_architecture_index"
+    artifact = json.loads(
+        (repo_fixture / "runs" / "factory_architecture_index.json").read_text(encoding="utf-8")
+    )
+    assert artifact["operator_action_contract"]["artifact_kind"] == "operator_action"
+    assert artifact["factory_run_contract"]["artifact_kind"] == "factory_run"
+
+
 def test_sg_spec_0030_trace_anchor_blocks_non_bypass_prerequisite_gap(
     supervisor_module: object,
 ) -> None:
@@ -23591,6 +23633,22 @@ def test_proposal_0047_evidence_backed_build_protocol_runtime_is_covered(
 
     assert "0047" in by_id, "Proposal 0047 missing from proposal_runtime_index"
     entry = by_id["0047"]
+    assert entry["runtime_realization"]["status"] == "implemented"
+    assert entry["validation_closure"]["status"] == "covered"
+    assert entry["observation_coverage"]["status"] == "covered"
+    assert entry["observation_coverage"]["missing_markers"] == []
+    assert entry["reflective_chain"]["next_gap"] == "none"
+
+
+def test_proposal_0049_factory_architecture_runtime_is_covered(
+    supervisor_module: object,
+) -> None:
+    """Proposal 0049 is implemented by factory-architecture policy and index artifacts."""
+    index = supervisor_module.build_proposal_runtime_index()
+    by_id = {e["proposal_id"]: e for e in index["entries"]}
+
+    assert "0049" in by_id, "Proposal 0049 missing from proposal_runtime_index"
+    entry = by_id["0049"]
     assert entry["runtime_realization"]["status"] == "implemented"
     assert entry["validation_closure"]["status"] == "covered"
     assert entry["observation_coverage"]["status"] == "covered"

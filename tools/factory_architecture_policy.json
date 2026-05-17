@@ -1,0 +1,187 @@
+{
+  "artifact_kind": "factory_architecture_policy",
+  "schema_version": 1,
+  "version": "2026-05-17",
+  "proposal_id": "0049",
+  "service_roles": [
+    {
+      "service_id": "specpm",
+      "label": "SpecPM",
+      "role": "specification_package_registry",
+      "owns": [
+        "package_storage",
+        "package_versions",
+        "capability_discovery",
+        "handoff_bundle_materialization"
+      ],
+      "does_not_own": [
+        "graph_next_move_selection",
+        "canonical_specgraph_mutation",
+        "supervisor_policy"
+      ]
+    },
+    {
+      "service_id": "specgraph",
+      "label": "SpecGraph",
+      "role": "graph_supervisor_control_core",
+      "owns": [
+        "canonical_spec_graph",
+        "derived_surfaces",
+        "supervisor_policy",
+        "authority_enforcement",
+        "runtime_feedback_integration"
+      ],
+      "does_not_own": [
+        "operator_ui_state",
+        "package_registry_authority",
+        "unconditional_merge_authority"
+      ]
+    },
+    {
+      "service_id": "specspace",
+      "label": "ContextBuilder / SpecSpace",
+      "role": "operator_cockpit",
+      "owns": [
+        "operator_interaction",
+        "graph_browsing",
+        "dashboard_rendering",
+        "operator_action_submission"
+      ],
+      "does_not_own": [
+        "graph_truth",
+        "canonical_spec_validation",
+        "supervisor_decisions"
+      ]
+    }
+  ],
+  "authority_levels": [
+    {
+      "authority_level": "observe",
+      "meaning": "Read, index, summarize, and diagnose.",
+      "default_preproduction_policy": "automatic_allowed"
+    },
+    {
+      "authority_level": "plan",
+      "meaning": "Create bounded draft pressure, proposals, or action candidates.",
+      "default_preproduction_policy": "automatic_allowed_with_bounded_scope"
+    },
+    {
+      "authority_level": "draft_mutate",
+      "meaning": "Mutate non-canonical or isolated draft state.",
+      "default_preproduction_policy": "isolated_worktree_required"
+    },
+    {
+      "authority_level": "pr_mutate",
+      "meaning": "Prepare canonical change only as a pull request.",
+      "default_preproduction_policy": "explicit_operator_command_required"
+    },
+    {
+      "authority_level": "merge",
+      "meaning": "Land canonical change.",
+      "default_preproduction_policy": "human_approval_required"
+    },
+    {
+      "authority_level": "external_publish",
+      "meaning": "Publish or update state outside SpecGraph.",
+      "default_preproduction_policy": "explicit_approval_required"
+    }
+  ],
+  "handoff_families": [
+    {
+      "handoff_family": "operator_action",
+      "source_service": "specspace",
+      "target_service": "specgraph",
+      "authority_floor": "observe"
+    },
+    {
+      "handoff_family": "factory_run",
+      "source_service": "specgraph",
+      "target_service": "specgraph",
+      "authority_floor": "observe"
+    },
+    {
+      "handoff_family": "spec_package_handoff",
+      "source_service": "specgraph",
+      "target_service": "specpm",
+      "authority_floor": "plan"
+    },
+    {
+      "handoff_family": "specpm_import_preview",
+      "source_service": "specgraph",
+      "target_service": "specgraph",
+      "authority_floor": "observe"
+    },
+    {
+      "handoff_family": "registry_observation",
+      "source_service": "specgraph",
+      "target_service": "specpm",
+      "authority_floor": "observe"
+    },
+    {
+      "handoff_family": "implementation_work",
+      "source_service": "specgraph",
+      "target_service": "implementation_agent",
+      "authority_floor": "pr_mutate"
+    },
+    {
+      "handoff_family": "runtime_evidence",
+      "source_service": "implementation_runtime",
+      "target_service": "specgraph",
+      "authority_floor": "observe"
+    }
+  ],
+  "deployment_profiles": [
+    {
+      "profile_id": "local_development",
+      "isolation_posture": "shared_checkout_allowed"
+    },
+    {
+      "profile_id": "preproduction_standalone",
+      "isolation_posture": "role_isolated_workers"
+    },
+    {
+      "profile_id": "hosted_factory",
+      "isolation_posture": "future_profile"
+    }
+  ],
+  "operator_action_contract": {
+    "artifact_kind": "operator_action",
+    "required_fields": [
+      "artifact_kind",
+      "schema_version",
+      "action_id",
+      "source_service",
+      "target_service",
+      "kind",
+      "authority_level",
+      "created_at"
+    ],
+    "allowed_kinds": [
+      "submit_intent",
+      "run_supervisor",
+      "approve_proposal",
+      "reject_proposal",
+      "request_export",
+      "stop_run"
+    ]
+  },
+  "factory_run_contract": {
+    "artifact_kind": "factory_run",
+    "required_fields": [
+      "artifact_kind",
+      "schema_version",
+      "run_id",
+      "service",
+      "mode",
+      "authority_level",
+      "completion_status",
+      "produced_artifacts"
+    ]
+  },
+  "non_goals": [
+    "docker_deployment_implementation",
+    "github_review_replacement",
+    "unconditional_merge_authority",
+    "production_publish_authority"
+  ]
+}

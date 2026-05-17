@@ -132,6 +132,7 @@ SUPERVISOR_EVIDENCE_PACKET_POLICY_RELATIVE_PATH = "tools/supervisor_evidence_pac
 SUPERVISOR_STALLED_RUN_SALVAGE_POLICY_RELATIVE_PATH = (
     "tools/supervisor_stalled_run_salvage_policy.json"
 )
+FACTORY_ARCHITECTURE_POLICY_RELATIVE_PATH = "tools/factory_architecture_policy.json"
 REVIEW_FEEDBACK_POLICY_RELATIVE_PATH = "tools/review_feedback_policy.json"
 VALIDATION_FINDINGS_POLICY_RELATIVE_PATH = "tools/validation_findings_policy.json"
 SAFE_REPAIR_POLICY_RELATIVE_PATH = "tools/safe_repair_policy.json"
@@ -230,6 +231,10 @@ def supervisor_evidence_packet_policy_path() -> Path:
 
 def supervisor_stalled_run_salvage_policy_path() -> Path:
     return TOOLS_DIR / "supervisor_stalled_run_salvage_policy.json"
+
+
+def factory_architecture_policy_path() -> Path:
+    return TOOLS_DIR / "factory_architecture_policy.json"
 
 
 def review_feedback_policy_path() -> Path:
@@ -935,6 +940,45 @@ def load_supervisor_stalled_run_salvage_policy() -> tuple[dict[str, Any], str]:
 SUPERVISOR_STALLED_RUN_SALVAGE_POLICY, SUPERVISOR_STALLED_RUN_SALVAGE_POLICY_SHA256 = (
     load_supervisor_stalled_run_salvage_policy()
 )
+
+
+def load_factory_architecture_policy() -> tuple[dict[str, Any], str]:
+    path = factory_architecture_policy_path()
+    try:
+        raw_text = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise RuntimeError(
+            f"failed to read factory architecture policy artifact: {path.as_posix()} ({exc})"
+        ) from exc
+    try:
+        payload = json.loads(raw_text)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(
+            f"malformed factory architecture policy artifact: {path.as_posix()} ({exc})"
+        ) from exc
+    if not isinstance(payload, dict):
+        raise RuntimeError(
+            "malformed factory architecture policy artifact: "
+            f"{path.as_posix()} must contain a JSON object"
+        )
+    required_sections = (
+        "service_roles",
+        "authority_levels",
+        "handoff_families",
+        "deployment_profiles",
+        "operator_action_contract",
+        "factory_run_contract",
+    )
+    missing = [section for section in required_sections if section not in payload]
+    if missing:
+        raise RuntimeError(
+            "malformed factory architecture policy artifact: "
+            "missing top-level section(s): " + ", ".join(missing)
+        )
+    return payload, hashlib.sha256(raw_text.encode("utf-8")).hexdigest()
+
+
+FACTORY_ARCHITECTURE_POLICY, FACTORY_ARCHITECTURE_POLICY_SHA256 = load_factory_architecture_policy()
 
 
 def load_review_feedback_policy() -> tuple[dict[str, Any], str]:
@@ -2208,6 +2252,14 @@ def supervisor_stalled_run_salvage_policy_reference() -> dict[str, Any]:
         "artifact_path": SUPERVISOR_STALLED_RUN_SALVAGE_POLICY_RELATIVE_PATH,
         "artifact_sha256": SUPERVISOR_STALLED_RUN_SALVAGE_POLICY_SHA256,
         "version": SUPERVISOR_STALLED_RUN_SALVAGE_POLICY.get("version"),
+    }
+
+
+def factory_architecture_policy_reference() -> dict[str, Any]:
+    return {
+        "artifact_path": FACTORY_ARCHITECTURE_POLICY_RELATIVE_PATH,
+        "artifact_sha256": FACTORY_ARCHITECTURE_POLICY_SHA256,
+        "version": FACTORY_ARCHITECTURE_POLICY.get("version"),
     }
 
 
@@ -9159,6 +9211,93 @@ def write_supervisor_stalled_run_salvage(
         atomic_write_json(salvage_path, salvage)
     write_latest_summary(run_payload)
     return salvage_path, patch_path, run_log_path
+
+
+FACTORY_ARCHITECTURE_INDEX_ARTIFACT_KIND = "factory_architecture_index"
+FACTORY_ARCHITECTURE_INDEX_SCHEMA_VERSION = 1
+
+
+def factory_architecture_index_path() -> Path:
+    return RUNS_DIR / "factory_architecture_index.json"
+
+
+def build_factory_architecture_index(
+    policy: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    source_policy = copy.deepcopy(
+        policy if isinstance(policy, dict) else FACTORY_ARCHITECTURE_POLICY
+    )
+    service_roles = [
+        copy.deepcopy(entry)
+        for entry in source_policy.get("service_roles", [])
+        if isinstance(entry, dict) and str(entry.get("service_id", "")).strip()
+    ]
+    authority_levels = [
+        copy.deepcopy(entry)
+        for entry in source_policy.get("authority_levels", [])
+        if isinstance(entry, dict) and str(entry.get("authority_level", "")).strip()
+    ]
+    handoff_families = [
+        copy.deepcopy(entry)
+        for entry in source_policy.get("handoff_families", [])
+        if isinstance(entry, dict) and str(entry.get("handoff_family", "")).strip()
+    ]
+    deployment_profiles = [
+        copy.deepcopy(entry)
+        for entry in source_policy.get("deployment_profiles", [])
+        if isinstance(entry, dict) and str(entry.get("profile_id", "")).strip()
+    ]
+    service_ids = sorted(str(entry["service_id"]).strip() for entry in service_roles)
+    authority_level_ids = [str(entry["authority_level"]).strip() for entry in authority_levels]
+    return {
+        "artifact_kind": FACTORY_ARCHITECTURE_INDEX_ARTIFACT_KIND,
+        "schema_version": FACTORY_ARCHITECTURE_INDEX_SCHEMA_VERSION,
+        "generated_at": utc_now_iso(),
+        "canonical_mutations_allowed": False,
+        "tracked_artifacts_written": False,
+        "proposal_id": str(source_policy.get("proposal_id", "0049")).strip() or "0049",
+        "policy_reference": factory_architecture_policy_reference(),
+        "service_count": len(service_roles),
+        "services": service_roles,
+        "authority_levels": authority_levels,
+        "handoff_families": handoff_families,
+        "deployment_profiles": deployment_profiles,
+        "operator_action_contract": copy.deepcopy(
+            source_policy.get("operator_action_contract", {})
+        ),
+        "factory_run_contract": copy.deepcopy(source_policy.get("factory_run_contract", {})),
+        "guardrails": {
+            "specspace_is_graph_authority": False,
+            "specpm_is_supervisor": False,
+            "unconditional_merge_authority": False,
+            "external_publish_default_allowed": False,
+        },
+        "viewer_projection": {
+            "service_ids": service_ids,
+            "authority_levels": authority_level_ids,
+            "handoff_families": sorted(
+                str(entry["handoff_family"]).strip() for entry in handoff_families
+            ),
+            "deployment_profiles": sorted(
+                str(entry["profile_id"]).strip() for entry in deployment_profiles
+            ),
+        },
+        "summary": {
+            "service_count": len(service_roles),
+            "authority_level_count": len(authority_levels),
+            "handoff_family_count": len(handoff_families),
+            "deployment_profile_count": len(deployment_profiles),
+            "next_gap": "none",
+        },
+    }
+
+
+def write_factory_architecture_index(index: dict[str, Any]) -> Path:
+    RUNS_DIR.mkdir(parents=True, exist_ok=True)
+    path = factory_architecture_index_path()
+    with artifact_lock(path):
+        atomic_write_json(path, index)
+    return path
 
 
 def decision_inspector_dir_path() -> Path:
@@ -30146,6 +30285,7 @@ def build_viewer_surfaces(specs: list[SpecNode]) -> dict[str, Any]:
         metric_pack_registry,
         consumer_index,
     )
+    factory_architecture_index = build_factory_architecture_index()
     proposal_lane_overlay = build_proposal_lane_overlay()
     proposal_runtime_index = build_proposal_runtime_index()
     proposal_promotion_index = build_proposal_promotion_index()
@@ -30254,6 +30394,9 @@ def build_viewer_surfaces(specs: list[SpecNode]) -> dict[str, Any]:
     metric_pack_runs_path_result = write_metric_pack_runs(metric_pack_runs)
     metric_pack_registry_drift_path_result = write_metric_pack_registry_drift(
         metric_pack_registry_drift,
+    )
+    factory_architecture_path_result = write_factory_architecture_index(
+        factory_architecture_index,
     )
     conversation_memory_index = build_conversation_memory_index()
     conversation_memory_path = write_conversation_memory_index(conversation_memory_index)
@@ -30471,6 +30614,23 @@ def build_viewer_surfaces(specs: list[SpecNode]) -> dict[str, Any]:
                     metric_pack_runs.get("summary", {}).get("computed_value_count", 0)
                 ),
                 "gap_count": metric_pack_runs.get("summary", {}).get("gap_count", 0),
+            },
+            "factory_architecture_index": {
+                "artifact_path": factory_architecture_path_result.relative_to(ROOT).as_posix(),
+                "generated_at": factory_architecture_index.get("generated_at"),
+                "service_count": factory_architecture_index.get("service_count"),
+                "authority_level_count": (
+                    factory_architecture_index.get("summary", {}).get(
+                        "authority_level_count",
+                        0,
+                    )
+                ),
+                "handoff_family_count": (
+                    factory_architecture_index.get("summary", {}).get(
+                        "handoff_family_count",
+                        0,
+                    )
+                ),
             },
             "conversation_memory_index": {
                 "artifact_path": conversation_memory_path.relative_to(ROOT).as_posix(),
@@ -34367,6 +34527,7 @@ def main(
     build_implementation_work_index_mode: bool = False,
     build_supervisor_evidence_packet_mode: bool = False,
     build_supervisor_stalled_run_salvage_mode: bool = False,
+    build_factory_architecture_index_mode: bool = False,
     supervisor_run_path: str | None = None,
     supervisor_salvage_worktree_path: str | None = None,
     supervisor_raw_artifact_uri: str = "",
@@ -34463,6 +34624,7 @@ def main(
         "--build-implementation-work-index": build_implementation_work_index_mode,
         "--build-supervisor-evidence-packet": build_supervisor_evidence_packet_mode,
         "--build-supervisor-stalled-run-salvage": build_supervisor_stalled_run_salvage_mode,
+        "--build-factory-architecture-index": build_factory_architecture_index_mode,
         "--build-review-feedback-index": build_review_feedback_index_mode,
         "--build-vocabulary-index": build_vocabulary_index_mode,
         "--build-vocabulary-drift-report": build_vocabulary_drift_report_mode,
@@ -34570,6 +34732,18 @@ def main(
     if build_supervisor_stalled_run_salvage_mode and not supervisor_salvage_worktree_path:
         print(
             "--build-supervisor-stalled-run-salvage requires --salvage-worktree-path",
+            file=sys.stderr,
+        )
+        return 1
+
+    if build_factory_architecture_index_mode and (
+        supervisor_salvage_worktree_path
+        or supervisor_run_path
+        or supervisor_raw_artifact_uri
+        or supervisor_raw_retention_expires_at
+    ):
+        print(
+            "--build-factory-architecture-index does not accept supervisor run/salvage inputs",
             file=sys.stderr,
         )
         return 1
@@ -35008,6 +35182,41 @@ def main(
         salvage["summary"]["salvage_artifact_path"] = repo_relative_or_absolute_path(salvage_path)
         salvage["summary"]["patch_artifact_path"] = repo_relative_or_absolute_path(patch_path)
         emit_supervisor_json(salvage, output_mode=normalized_output_mode)
+        return 0
+
+    if build_factory_architecture_index_mode:
+        if any(
+            (
+                dry_run,
+                auto_approve,
+                loop,
+                resolve_gate,
+                decision,
+                note,
+                target_spec,
+                split_proposal,
+                apply_split_proposal,
+                operator_note,
+                mutation_budget,
+                run_authority,
+                execution_profile,
+                child_model,
+                child_timeout_seconds,
+                verbose,
+                list_stale_runtime,
+                clean_stale_runtime,
+                observe_graph_health_mode,
+                operator_request_packet_path,
+            )
+        ):
+            print(
+                "--build-factory-architecture-index must be used as a standalone command",
+                file=sys.stderr,
+            )
+            return 1
+        index = build_factory_architecture_index()
+        write_factory_architecture_index(index)
+        emit_supervisor_json(index, output_mode=normalized_output_mode)
         return 0
 
     if build_review_feedback_index_mode:
@@ -37733,6 +37942,14 @@ if __name__ == "__main__":
         ),
     )
     parser.add_argument(
+        "--build-factory-architecture-index",
+        action="store_true",
+        help=(
+            "Build a read-only multi-service factory architecture index from the "
+            "factory architecture policy"
+        ),
+    )
+    parser.add_argument(
         "--supervisor-run-path",
         metavar="PATH_OR_RUN_ID",
         help=(
@@ -38261,6 +38478,7 @@ if __name__ == "__main__":
             build_implementation_work_index_mode=args.build_implementation_work_index,
             build_supervisor_evidence_packet_mode=args.build_supervisor_evidence_packet,
             build_supervisor_stalled_run_salvage_mode=(args.build_supervisor_stalled_run_salvage),
+            build_factory_architecture_index_mode=args.build_factory_architecture_index,
             supervisor_run_path=args.supervisor_run_path,
             supervisor_salvage_worktree_path=args.salvage_worktree_path,
             supervisor_raw_artifact_uri=args.raw_artifact_uri,

@@ -36,6 +36,7 @@ help:
 		'  make implementation-delta     Refresh latest implementation delta snapshot' \
 		'  make implementation-work      Refresh latest implementation work index' \
 		'  make supervisor-evidence-packet SUPERVISOR_RUN_PATH=<run-id-or-path>' \
+		'  make factory-architecture     Refresh multi-service factory architecture index' \
 		'  make review-feedback          Refresh review feedback index' \
 		'  make publish-bundle           Build static specs/ + runs/ publish bundle' \
 		'  make test                     Run full Python test suite quietly' \
@@ -151,6 +152,10 @@ supervisor-stalled-run-salvage:
 	@test -n "$(TARGET_SPEC)" || (echo 'TARGET_SPEC is required' >&2; exit 2)
 	@test -n "$(SALVAGE_WORKTREE_PATH)" || (echo 'SALVAGE_WORKTREE_PATH is required' >&2; exit 2)
 	@$(PYTHON) $(SUPERVISOR) --build-supervisor-stalled-run-salvage --target-spec "$(TARGET_SPEC)" --salvage-worktree-path "$(SALVAGE_WORKTREE_PATH)" $(if $(SUPERVISOR_RUN_PATH),--supervisor-run-path "$(SUPERVISOR_RUN_PATH)")
+
+.PHONY: factory-architecture
+factory-architecture:
+	@$(PYTHON) $(SUPERVISOR) --build-factory-architecture-index
 
 .PHONY: review-feedback
 review-feedback:

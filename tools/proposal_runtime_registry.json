@@ -2289,5 +2289,62 @@
         "pattern": "supervisor-stalled-run-salvage:"
       }
     ]
+  },
+  {
+    "proposal_id": "0049",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "tools/supervisor.py",
+      "tests/test_supervisor.py",
+      "tools/factory_architecture_policy.json",
+      "docs/proposals/0049_multi_service_factory_architecture.md",
+      "Makefile"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/factory_architecture_policy.json",
+        "pattern": "\"artifact_kind\": \"factory_architecture_policy\""
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "FACTORY_ARCHITECTURE_INDEX_ARTIFACT_KIND = \"factory_architecture_index\""
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def build_factory_architecture_index("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "\"--build-factory-architecture-index\""
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_factory_architecture_index_defines_service_roles_and_authority("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_main_builds_factory_architecture_index_as_standalone_command("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_proposal_0049_factory_architecture_runtime_is_covered("
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "write_factory_architecture_index(index)"
+      },
+      {
+        "path": "Makefile",
+        "pattern": "factory-architecture:"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "\"factory_architecture_index\""
+      }
+    ]
   }
 ]
