@@ -334,6 +334,9 @@ superseded by downstream adoption evidence.
 This adoption follow-up is a low-priority backlog row: it records feedback after
 successful downstream visibility and should not visually outrank unresolved
 handoff, implementation, trace, evidence, or draft-reference review work.
+The graph next-move surface may therefore defer
+`collect_metrics_adoption_feedback` while ordinary local evidence or proposal
+gaps remain visible.
 
 ## 9. Dashboard Relationship
 
