@@ -822,6 +822,66 @@
     ]
   },
   {
+    "proposal_id": "0018",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "tools/supervisor.py",
+      "tests/test_supervisor.py",
+      "tools/evidence_plane_policy.json",
+      "docs/proposals/0018_telemetry_evidence_plane.md"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/evidence_plane_policy.json",
+        "pattern": "\"artifact_kind\": \"evidence_plane_policy\""
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def build_evidence_plane_index("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def build_evidence_plane_overlay("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "EVIDENCE_PLANE_SEMANTIC_CHAIN"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_evidence_plane_index_reports_registry_backed_chain_statuses("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_main_builds_evidence_plane_index_as_standalone_command("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_main_builds_evidence_plane_overlay_as_standalone_command("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_live_sg_spec_0018_evidence_contract_is_chain_complete("
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "write_evidence_plane_index(index)"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "write_evidence_plane_overlay(overlay)"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "evidence_plane_overlay_path().relative_to(ROOT).as_posix()"
+      }
+    ]
+  },
+  {
     "proposal_id": "0019",
     "posture": "synchronous_runtime_slice",
     "runtime_surfaces": [
