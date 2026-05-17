@@ -1027,6 +1027,62 @@
     ]
   },
   {
+    "proposal_id": "0022",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "tools/supervisor.py",
+      "tests/test_supervisor.py",
+      "tools/supervisor_policy.json",
+      "docs/proposals/0022_refinement_fan_out_pressure.md"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/supervisor_policy.json",
+        "pattern": "\"refinement_fan_out_direct_children\": 4"
+      },
+      {
+        "path": "tools/supervisor_policy.json",
+        "pattern": "\"refinement_fan_out_pressure\": \"regroup_under_intermediate_cluster\""
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "\"kind\": \"refinement_fan_out_pressure\""
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "recommended_actions.append(\"regroup_under_intermediate_cluster\")"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_observe_graph_health_reports_refinement_fan_out_pressure("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_observe_graph_health_uses_reconciled_node_for_fan_out_legibility("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_update_refactor_queue_prefers_regrouping_for_fan_out_pressure("
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "signals.append(\"refinement_fan_out_pressure\")"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "recommended_actions.append(\"introduce_semantic_cluster_parent\")"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "queue_policy.subtree_shape_signals"
+      }
+    ]
+  },
+  {
     "proposal_id": "0023",
     "posture": "synchronous_runtime_slice",
     "runtime_surfaces": [
