@@ -7824,6 +7824,70 @@ def test_build_spec_trace_index_derives_registry_backed_implementation_states(
     assert index["entries"][0]["freshness"]["status"] == "not_applicable"
 
 
+def test_semantic_trace_contract_without_code_surfaces_uses_tests_as_verification(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    tests_dir = repo_fixture / "tests"
+    tools_dir = repo_fixture / "tools"
+    tests_dir.mkdir()
+    tools_dir.mkdir(exist_ok=True)
+    (tests_dir / "test_semantic_contract.py").write_text(
+        "def test_semantic_contract():\n    assert 'SG-SPEC-0001'\n",
+        encoding="utf-8",
+    )
+    (tools_dir / "spec_trace_registry.json").write_text(
+        json.dumps(
+            [
+                {
+                    "spec_id": "SG-SPEC-0001",
+                    "code_surfaces": [],
+                    "test_surfaces": ["tests/test_semantic_contract.py"],
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    def fake_trace_commits(
+        ref_paths: list[str],
+        repo_root: Path | None = None,
+        limit: int = 5,
+    ) -> list[dict[str, str]]:
+        del repo_root
+        if tuple(sorted(set(ref_paths))) == ("tests/test_semantic_contract.py",):
+            return [
+                {
+                    "sha": "a" * 40,
+                    "short_sha": "aaaaaaa",
+                    "committed_at": "2026-04-19T00:00:00Z",
+                    "subject": "Verify semantic contract",
+                }
+            ][:limit]
+        return []
+
+    monkeypatch.setattr(supervisor_module, "collect_trace_commit_refs", fake_trace_commits)
+    monkeypatch.setattr(supervisor_module, "git_status_changed_files", lambda cwd: [])
+
+    index = supervisor_module.build_spec_trace_index(supervisor_module.load_specs())
+    entry = index["entries"][0]
+
+    assert entry["trace_contract"]["declared_code_surfaces"] == []
+    assert entry["trace_contract"]["matched_code_paths"] == []
+    assert entry["trace_contract"]["matched_test_paths"] == ["tests/test_semantic_contract.py"]
+    assert entry["implementation_state"]["status"] == "verified"
+    assert entry["freshness"]["status"] == "fresh"
+
+    projection = supervisor_module.build_spec_trace_projection(index)
+    backlog_items = projection["implementation_backlog"]["items"]
+    assert "SG-SPEC-0001" in projection["viewer_projection"]["named_filters"]["verified_fresh"]
+    assert not any(
+        item["spec_id"] == "SG-SPEC-0001" and item["next_gap"] == "add_verification_anchors"
+        for item in backlog_items
+    )
+
+
 def test_blocked_trace_dependencies_allows_linked_integrated_dependency(
     supervisor_module: object,
     repo_fixture: Path,
