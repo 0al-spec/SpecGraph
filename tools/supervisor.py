@@ -30393,6 +30393,8 @@ def build_viewer_surfaces(specs: list[SpecNode]) -> dict[str, Any]:
     graph_trends = build_graph_health_trends(specs, overlay=graph_overlay)
     branch_rewrite_preview, branch_rewrite_summary = load_current_branch_rewrite_preview_summary()
     intent_overlay = build_intent_layer_overlay()
+    pre_spec_semantics_index = build_pre_spec_semantics_index(specs)
+    pre_spec_semantics_path = write_pre_spec_semantics_index(pre_spec_semantics_index)
     spec_trace_index = build_spec_trace_index(specs)
     spec_trace_projection = build_spec_trace_projection(spec_trace_index)
     implementation_work_index = load_current_implementation_work_index()
@@ -30621,6 +30623,11 @@ def build_viewer_surfaces(specs: list[SpecNode]) -> dict[str, Any]:
                 "artifact_path": intent_overlay_path_result.relative_to(ROOT).as_posix(),
                 "generated_at": intent_overlay.get("generated_at"),
                 "entry_count": intent_overlay.get("entry_count"),
+            },
+            "pre_spec_semantics_index": {
+                "artifact_path": pre_spec_semantics_path.relative_to(ROOT).as_posix(),
+                "generated_at": pre_spec_semantics_index.get("generated_at"),
+                "entry_count": pre_spec_semantics_index.get("entry_count"),
             },
             "proposal_lane_overlay": {
                 "artifact_path": proposal_lane_path.relative_to(ROOT).as_posix(),

@@ -33,6 +33,7 @@ help:
 		'  make conversation-memory      Refresh conversation memory index JSON only' \
 		'  make conversation-memory-map  Refresh conversation memory map JSON only' \
 		'  make conversation-memory-pressure Refresh conversation memory promotion pressure JSON' \
+		'  make pre-spec-semantics       Refresh pre-spec semantics index JSON only' \
 		'  make implementation-delta     Refresh latest implementation delta snapshot' \
 		'  make implementation-work      Refresh latest implementation work index' \
 		'  make supervisor-evidence-packet SUPERVISOR_RUN_PATH=<run-id-or-path>' \
@@ -134,6 +135,10 @@ conversation-memory-map:
 .PHONY: conversation-memory-pressure
 conversation-memory-pressure:
 	@$(PYTHON) $(SUPERVISOR) --build-conversation-memory-promotion-pressure
+
+.PHONY: pre-spec-semantics
+pre-spec-semantics:
+	@$(PYTHON) $(SUPERVISOR) --build-pre-spec-semantics-index
 
 .PHONY: implementation-delta
 implementation-delta:
