@@ -2231,5 +2231,63 @@
         "pattern": "supervisor-evidence-packet:"
       }
     ]
+  },
+  {
+    "proposal_id": "0048",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "tools/supervisor.py",
+      "tests/test_supervisor.py",
+      "tools/supervisor_stalled_run_salvage_policy.json",
+      "docs/supervisor_manual.md",
+      "docs/proposals/0048_supervisor_stalled_run_salvage_protocol.md",
+      "Makefile"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/supervisor_stalled_run_salvage_policy.json",
+        "pattern": "\"artifact_kind\": \"supervisor_stalled_run_salvage_policy\""
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def build_supervisor_stalled_run_salvage("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def write_supervisor_stalled_run_salvage("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "\"--build-supervisor-stalled-run-salvage\""
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_main_builds_supervisor_stalled_run_salvage_as_recoverable_failure("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_main_build_supervisor_stalled_run_salvage_rejects_missing_worktree_path("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "salvage[\"recovery\"][\"automatic_adoption_allowed\"] is False"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "write_supervisor_stalled_run_salvage("
+      },
+      {
+        "path": "docs/supervisor_manual.md",
+        "pattern": "runs/<run_id>-salvage.json"
+      },
+      {
+        "path": "Makefile",
+        "pattern": "supervisor-stalled-run-salvage:"
+      }
+    ]
   }
 ]
