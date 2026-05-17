@@ -16671,12 +16671,24 @@ def derive_implementation_state(
             ),
         }
 
+    declared_code_surfaces = trace_contract["declared_code_surfaces"]
     if matched_code_refs and matched_test_refs:
         return {
             "status": "verified",
             "confidence": "strong",
             "available_statuses": available_statuses,
             "basis": "Declared code and test surfaces are both observed for this spec.",
+        }
+
+    if matched_test_refs and not declared_code_surfaces:
+        return {
+            "status": "verified",
+            "confidence": "strong",
+            "available_statuses": available_statuses,
+            "basis": (
+                "Declared verification anchors are observed and this semantic trace contract "
+                "intentionally declares no code surfaces."
+            ),
         }
 
     return {
