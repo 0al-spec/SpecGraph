@@ -1992,5 +1992,61 @@
         "pattern": "\"--build-metric-pack-index\""
       }
     ]
+  },
+  {
+    "proposal_id": "0044",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "tools/supervisor.py",
+      "tests/test_supervisor.py",
+      "docs/metric_pack_viewer_contract.md",
+      "docs/proposals/0044_metric_pack_runtime_followups.md"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def build_metric_pack_registry_drift("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def build_metric_pack_adapter_index("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def build_metric_pack_runs("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def build_metric_pricing_provenance("
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "report[\"written_artifacts\"][\"metric_pack_adapter_index\"][\"entry_count\"] == 1"
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "report[\"written_artifacts\"][\"metric_pack_runs\"][\"computed_value_count\"] == 1"
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "report[\"written_artifacts\"][\"metric_pricing_provenance\"][\"next_gap\"]"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "write_metric_pack_adapter_index(adapter_index)"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "write_metric_pack_runs(metric_pack_runs)"
+      },
+      {
+        "path": "docs/metric_pack_viewer_contract.md",
+        "pattern": "runs/metric_pack_runs.json"
+      }
+    ]
   }
 ]
