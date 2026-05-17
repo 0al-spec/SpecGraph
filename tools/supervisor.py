@@ -8701,8 +8701,9 @@ def resolve_supervisor_run_reference(run_reference: str) -> Path:
     candidate = Path(value)
     if candidate.exists():
         return candidate
-    if candidate.suffix != ".json" and not any(sep in value for sep in ("/", "\\")):
-        run_candidate = RUNS_DIR / f"{value}.json"
+    if not any(sep in value for sep in ("/", "\\")):
+        run_filename = value if candidate.suffix == ".json" else f"{value}.json"
+        run_candidate = RUNS_DIR / run_filename
         if run_candidate.exists():
             return run_candidate
     raise RuntimeError(f"supervisor run artifact not found: {value}")
@@ -8776,6 +8777,7 @@ def build_supervisor_evidence_packet(
         selection_reasons.insert(0, selection_mode)
     if not selection_reasons:
         selection_reasons = ["run_artifact"]
+    normalized_raw_artifact_uri = str(raw_artifact_uri).strip()
 
     packet = {
         "artifact_kind": "supervisor_evidence_packet",
@@ -8827,10 +8829,12 @@ def build_supervisor_evidence_packet(
             "review_reason": str(run_payload.get("required_human_action", "")).strip(),
         },
         "raw_artifact_reference": {
-            "availability": "local_raw_run" if not raw_artifact_uri else "retained_ci_artifact",
+            "availability": (
+                "local_raw_run" if not normalized_raw_artifact_uri else "retained_ci_artifact"
+            ),
             "run_path": repo_relative_or_absolute_path(raw_run_path),
             "content_sha256": f"sha256:{raw_content_sha256}",
-            "artifact_uri": str(raw_artifact_uri).strip(),
+            "artifact_uri": normalized_raw_artifact_uri,
             "retention_expires_at": str(raw_retention_expires_at).strip(),
         },
         "summary": {

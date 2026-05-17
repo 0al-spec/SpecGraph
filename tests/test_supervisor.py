@@ -21502,7 +21502,8 @@ def test_main_builds_supervisor_evidence_packet_as_standalone_command(
 
     exit_code = supervisor_module.main(
         build_supervisor_evidence_packet_mode=True,
-        supervisor_run_path=str(raw_run["run_id"]),
+        supervisor_run_path=raw_run_path.name,
+        supervisor_raw_artifact_uri="   ",
     )
 
     assert exit_code == 0
@@ -21525,6 +21526,8 @@ def test_main_builds_supervisor_evidence_packet_as_standalone_command(
     assert packet["gate"]["decision"] == "pending_human_review"
     assert packet["raw_artifact_reference"]["run_path"] == f"runs/{raw_run['run_id']}.json"
     assert packet["raw_artifact_reference"]["content_sha256"].startswith("sha256:")
+    assert packet["raw_artifact_reference"]["availability"] == "local_raw_run"
+    assert packet["raw_artifact_reference"]["artifact_uri"] == ""
     assert summary["written_artifacts"]["supervisor_evidence_packet"]["artifact_path"] == (
         f"docs/evidence/supervisor-runs/{raw_run['run_id']}.json"
     )
