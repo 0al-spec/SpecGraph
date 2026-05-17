@@ -4,6 +4,7 @@ PYTEST ?= $(PYTHON) -m pytest
 IMPLEMENTATION_TARGET_SCOPE_KIND ?= active_subtree
 IMPLEMENTATION_TARGET_SPEC_IDS ?= SG-SPEC-0001
 IMPLEMENTATION_OPERATOR_INTENT ?= Build publishable implementation work surface for SpecSpace static artifact consumers.
+SUPERVISOR_RUN_PATH ?=
 
 .PHONY: help
 help:
@@ -34,6 +35,7 @@ help:
 		'  make conversation-memory-pressure Refresh conversation memory promotion pressure JSON' \
 		'  make implementation-delta     Refresh latest implementation delta snapshot' \
 		'  make implementation-work      Refresh latest implementation work index' \
+		'  make supervisor-evidence-packet SUPERVISOR_RUN_PATH=<run-id-or-path>' \
 		'  make review-feedback          Refresh review feedback index' \
 		'  make publish-bundle           Build static specs/ + runs/ publish bundle' \
 		'  make test                     Run full Python test suite quietly' \
@@ -138,6 +140,11 @@ implementation-delta:
 .PHONY: implementation-work
 implementation-work:
 	@$(PYTHON) $(SUPERVISOR) --build-implementation-work-index
+
+.PHONY: supervisor-evidence-packet
+supervisor-evidence-packet:
+	@test -n "$(SUPERVISOR_RUN_PATH)" || (echo 'SUPERVISOR_RUN_PATH is required' >&2; exit 2)
+	@$(PYTHON) $(SUPERVISOR) --build-supervisor-evidence-packet --supervisor-run-path "$(SUPERVISOR_RUN_PATH)"
 
 .PHONY: review-feedback
 review-feedback:

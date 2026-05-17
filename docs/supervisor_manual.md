@@ -167,6 +167,11 @@ particular task.
   Verified specs are treated as already implemented when building the delta
   baseline; they must not create implementation work merely because they are not
   in the weaker `implemented` projection bucket.
+- distill one raw supervisor run artifact into a curated reviewable evidence
+  packet:
+  `--build-supervisor-evidence-packet --supervisor-run-path <run-id-or-path>`
+  This writes `docs/evidence/supervisor-runs/<run_id>.json`; raw `runs/*`
+  remain local or CI-artifact scoped by default.
 - build a repository-tracked proposal-lane overlay:
   `--build-proposal-lane-overlay`
 - build a derived proposal runtime index:

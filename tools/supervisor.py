@@ -42,6 +42,7 @@ Derived artifacts:
 - branch rewrite preview: `runs/branch_rewrite_preview.json`
 - implementation delta snapshot: `runs/implementation_delta_snapshot.json`
 - implementation work index: `runs/implementation_work_index.json`
+- supervisor evidence packets: `docs/evidence/supervisor-runs/<run_id>.json`
 - review feedback index: `runs/review_feedback_index.json`
 - proposal-lane overlay: `runs/proposal_lane_overlay.json`
 - graph health overlay: `runs/graph_health_overlay.json`
@@ -126,6 +127,7 @@ BRANCH_REWRITE_PREVIEW_POLICY_RELATIVE_PATH = "tools/branch_rewrite_preview_poli
 GRAPH_NEXT_MOVES_POLICY_RELATIVE_PATH = "tools/graph_next_moves_policy.json"
 SPEC_ACTIVITY_FEED_POLICY_RELATIVE_PATH = "tools/spec_activity_feed_policy.json"
 IMPLEMENTATION_DELTA_POLICY_RELATIVE_PATH = "tools/implementation_delta_policy.json"
+SUPERVISOR_EVIDENCE_PACKET_POLICY_RELATIVE_PATH = "tools/supervisor_evidence_packet_policy.json"
 REVIEW_FEEDBACK_POLICY_RELATIVE_PATH = "tools/review_feedback_policy.json"
 VALIDATION_FINDINGS_POLICY_RELATIVE_PATH = "tools/validation_findings_policy.json"
 SAFE_REPAIR_POLICY_RELATIVE_PATH = "tools/safe_repair_policy.json"
@@ -216,6 +218,10 @@ def spec_activity_feed_policy_path() -> Path:
 
 def implementation_delta_policy_path() -> Path:
     return TOOLS_DIR / "implementation_delta_policy.json"
+
+
+def supervisor_evidence_packet_policy_path() -> Path:
+    return TOOLS_DIR / "supervisor_evidence_packet_policy.json"
 
 
 def review_feedback_policy_path() -> Path:
@@ -842,6 +848,45 @@ def load_implementation_delta_policy() -> tuple[dict[str, Any], str]:
 
 
 IMPLEMENTATION_DELTA_POLICY, IMPLEMENTATION_DELTA_POLICY_SHA256 = load_implementation_delta_policy()
+
+
+def load_supervisor_evidence_packet_policy() -> tuple[dict[str, Any], str]:
+    path = supervisor_evidence_packet_policy_path()
+    try:
+        raw_text = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise RuntimeError(
+            f"failed to read supervisor evidence packet policy artifact: {path.as_posix()} ({exc})"
+        ) from exc
+    try:
+        payload = json.loads(raw_text)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(
+            f"malformed supervisor evidence packet policy artifact: {path.as_posix()} ({exc})"
+        ) from exc
+    if not isinstance(payload, dict):
+        raise RuntimeError(
+            "malformed supervisor evidence packet policy artifact: "
+            f"{path.as_posix()} must contain a JSON object"
+        )
+    required_sections = (
+        "repository_layout",
+        "packet_contract",
+        "raw_artifact_reference_contract",
+        "promotion_policy",
+    )
+    missing = [section for section in required_sections if section not in payload]
+    if missing:
+        raise RuntimeError(
+            "malformed supervisor evidence packet policy artifact: "
+            "missing top-level section(s): " + ", ".join(missing)
+        )
+    return payload, hashlib.sha256(raw_text.encode("utf-8")).hexdigest()
+
+
+SUPERVISOR_EVIDENCE_PACKET_POLICY, SUPERVISOR_EVIDENCE_PACKET_POLICY_SHA256 = (
+    load_supervisor_evidence_packet_policy()
+)
 
 
 def load_review_feedback_policy() -> tuple[dict[str, Any], str]:
@@ -2099,6 +2144,14 @@ def implementation_delta_policy_reference() -> dict[str, Any]:
         "artifact_path": IMPLEMENTATION_DELTA_POLICY_RELATIVE_PATH,
         "artifact_sha256": IMPLEMENTATION_DELTA_POLICY_SHA256,
         "version": IMPLEMENTATION_DELTA_POLICY.get("version"),
+    }
+
+
+def supervisor_evidence_packet_policy_reference() -> dict[str, Any]:
+    return {
+        "artifact_path": SUPERVISOR_EVIDENCE_PACKET_POLICY_RELATIVE_PATH,
+        "artifact_sha256": SUPERVISOR_EVIDENCE_PACKET_POLICY_SHA256,
+        "version": SUPERVISOR_EVIDENCE_PACKET_POLICY.get("version"),
     }
 
 
@@ -8633,6 +8686,175 @@ def write_run_log(run_id: str, payload: dict[str, Any]) -> Path:
     return path
 
 
+def repo_relative_or_absolute_path(path: Path) -> str:
+    resolved_path = path.resolve(strict=False)
+    try:
+        return resolved_path.relative_to(ROOT.resolve(strict=False)).as_posix()
+    except ValueError:
+        return resolved_path.as_posix()
+
+
+def resolve_supervisor_run_reference(run_reference: str) -> Path:
+    value = str(run_reference).strip()
+    if not value:
+        raise RuntimeError("--supervisor-run-path must be a non-empty path or run id")
+    candidate = Path(value)
+    if candidate.exists():
+        return candidate
+    if candidate.suffix != ".json" and not any(sep in value for sep in ("/", "\\")):
+        run_candidate = RUNS_DIR / f"{value}.json"
+        if run_candidate.exists():
+            return run_candidate
+    raise RuntimeError(f"supervisor run artifact not found: {value}")
+
+
+def load_supervisor_run_artifact(path: Path) -> tuple[dict[str, Any], str]:
+    try:
+        raw_text = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise RuntimeError(
+            f"failed to read supervisor run artifact: {path.as_posix()} ({exc})"
+        ) from exc
+    try:
+        payload = json.loads(raw_text)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(f"malformed supervisor run artifact: {path.as_posix()} ({exc})") from exc
+    if not isinstance(payload, dict):
+        raise RuntimeError(
+            f"malformed supervisor run artifact: {path.as_posix()} must contain a JSON object"
+        )
+    return payload, hashlib.sha256(raw_text.encode("utf-8")).hexdigest()
+
+
+def _supervisor_packet_string_list(value: Any) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    return [str(item).strip() for item in value if str(item).strip()]
+
+
+def _supervisor_packet_status(value: Any) -> str:
+    return "passed" if bool(value) else "failed"
+
+
+def build_supervisor_evidence_packet(
+    run_payload: dict[str, Any],
+    *,
+    raw_run_path: Path,
+    raw_content_sha256: str,
+    raw_artifact_uri: str = "",
+    raw_retention_expires_at: str = "",
+) -> dict[str, Any]:
+    run_id = str(run_payload.get("run_id") or raw_run_path.stem).strip()
+    packet_path = supervisor_evidence_packet_path(run_id)
+    selected_by_rule = (
+        copy.deepcopy(run_payload.get("selected_by_rule"))
+        if isinstance(run_payload.get("selected_by_rule"), dict)
+        else {}
+    )
+    validator_results = (
+        copy.deepcopy(run_payload.get("validator_results"))
+        if isinstance(run_payload.get("validator_results"), dict)
+        else {}
+    )
+    validation_errors = _supervisor_packet_string_list(run_payload.get("validation_errors"))
+    validation_findings = (
+        copy.deepcopy(run_payload.get("validation_findings"))
+        if isinstance(run_payload.get("validation_findings"), list)
+        else []
+    )
+    changed_files = _supervisor_packet_string_list(run_payload.get("changed_files"))
+    yaml_repair_paths = _supervisor_packet_string_list(run_payload.get("yaml_repair_paths"))
+    gate_state = str(run_payload.get("gate_state", "none")).strip() or "none"
+    auto_approved = bool(run_payload.get("auto_approved"))
+    decision = "auto_approved" if auto_approved else "pending_human_review"
+    if gate_state == "none" and not auto_approved:
+        decision = "none"
+
+    selection_reasons = _supervisor_packet_string_list(selected_by_rule.get("sort_order"))
+    selection_mode = str(selected_by_rule.get("selection_mode", "")).strip()
+    if selection_mode and selection_mode not in selection_reasons:
+        selection_reasons.insert(0, selection_mode)
+    if not selection_reasons:
+        selection_reasons = ["run_artifact"]
+
+    packet = {
+        "artifact_kind": "supervisor_evidence_packet",
+        "schema_version": 1,
+        "generated_at": utc_now_iso(),
+        "canonical_mutations_allowed": False,
+        "tracked_artifacts_written": True,
+        "evidence_kind": "supervisor_run_packet",
+        "policy_reference": supervisor_evidence_packet_policy_reference(),
+        "run_id": run_id,
+        "spec_id": str(run_payload.get("spec_id", "")).strip(),
+        "source_title": str(run_payload.get("title", "")).strip(),
+        "selection": {
+            "selected_because": selection_reasons,
+            "source_artifacts": [repo_relative_or_absolute_path(raw_run_path)],
+            "selected_by_rule": selected_by_rule,
+        },
+        "mutation": {
+            "changed_files": changed_files,
+            "change_class": str(run_payload.get("run_kind", "")).strip() or "unknown",
+            "diff_summary": (
+                f"{len(changed_files)} changed file(s)"
+                if changed_files
+                else "No tracked file changes recorded."
+            ),
+            "accepted_canonical_diff": bool(run_payload.get("accepted_canonical_diff")),
+            "materialized_child_paths": _supervisor_packet_string_list(
+                run_payload.get("materialized_child_paths")
+            ),
+        },
+        "validation": {
+            "status": "failed" if validation_errors else "passed",
+            "validator_results": {
+                str(key): _supervisor_packet_status(value)
+                for key, value in sorted(validator_results.items())
+            },
+            "validation_errors": validation_errors,
+            "validation_findings": validation_findings,
+            "initial_failures": validation_errors,
+            "retry_recovery": {
+                "yaml_repair_paths": yaml_repair_paths,
+            }
+            if yaml_repair_paths
+            else None,
+        },
+        "gate": {
+            "gate_state": gate_state,
+            "decision": decision,
+            "review_reason": str(run_payload.get("required_human_action", "")).strip(),
+        },
+        "raw_artifact_reference": {
+            "availability": "local_raw_run" if not raw_artifact_uri else "retained_ci_artifact",
+            "run_path": repo_relative_or_absolute_path(raw_run_path),
+            "content_sha256": f"sha256:{raw_content_sha256}",
+            "artifact_uri": str(raw_artifact_uri).strip(),
+            "retention_expires_at": str(raw_retention_expires_at).strip(),
+        },
+        "summary": {
+            "packet_path": repo_relative_or_absolute_path(packet_path),
+            "completion_status": str(run_payload.get("completion_status", "")).strip(),
+            "outcome": str(run_payload.get("outcome", "")).strip(),
+            "changed_file_count": len(changed_files),
+            "validation_error_count": len(validation_errors),
+            "validation_finding_count": len(validation_findings),
+            "gate_state": gate_state,
+        },
+    }
+    return packet
+
+
+def write_supervisor_evidence_packet(packet: dict[str, Any]) -> Path:
+    run_id = str(packet.get("run_id", "")).strip()
+    path = supervisor_evidence_packet_path(run_id)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with artifact_lock(path):
+        atomic_write_json(path, packet)
+    return path
+
+
 def decision_inspector_dir_path() -> Path:
     return RUNS_DIR / "decision_inspector"
 
@@ -8711,6 +8933,17 @@ def implementation_delta_snapshot_path() -> Path:
 
 def implementation_work_index_path() -> Path:
     return RUNS_DIR / IMPLEMENTATION_WORK_INDEX_FILENAME
+
+
+def supervisor_evidence_packet_dir_path() -> Path:
+    return ROOT / "docs" / "evidence" / "supervisor-runs"
+
+
+def supervisor_evidence_packet_path(run_id: str) -> Path:
+    normalized = str(run_id).strip()
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*", normalized):
+        raise RuntimeError(f"invalid supervisor evidence packet run_id: {run_id!r}")
+    return supervisor_evidence_packet_dir_path() / f"{normalized}.json"
 
 
 def review_feedback_index_path() -> Path:
@@ -33816,6 +34049,10 @@ def main(
     implementation_target_spec_ids: str | tuple[str, ...] | list[str] | None = None,
     implementation_operator_intent: str | None = None,
     build_implementation_work_index_mode: bool = False,
+    build_supervisor_evidence_packet_mode: bool = False,
+    supervisor_run_path: str | None = None,
+    supervisor_raw_artifact_uri: str = "",
+    supervisor_raw_retention_expires_at: str = "",
     build_review_feedback_index_mode: bool = False,
     build_vocabulary_index_mode: bool = False,
     build_vocabulary_drift_report_mode: bool = False,
@@ -33906,6 +34143,7 @@ def main(
         "--build-branch-rewrite-preview": build_branch_rewrite_preview_mode,
         "--build-implementation-delta-snapshot": build_implementation_delta_snapshot_mode,
         "--build-implementation-work-index": build_implementation_work_index_mode,
+        "--build-supervisor-evidence-packet": build_supervisor_evidence_packet_mode,
         "--build-review-feedback-index": build_review_feedback_index_mode,
         "--build-vocabulary-index": build_vocabulary_index_mode,
         "--build-vocabulary-drift-report": build_vocabulary_drift_report_mode,
@@ -33977,6 +34215,20 @@ def main(
             "--build-implementation-delta-snapshot",
             file=sys.stderr,
         )
+        return 1
+
+    if (
+        supervisor_run_path or supervisor_raw_artifact_uri or supervisor_raw_retention_expires_at
+    ) and not build_supervisor_evidence_packet_mode:
+        print(
+            "--supervisor-run-path/--raw-artifact-uri/--raw-retention-expires-at require "
+            "--build-supervisor-evidence-packet",
+            file=sys.stderr,
+        )
+        return 1
+
+    if build_supervisor_evidence_packet_mode and not supervisor_run_path:
+        print("--build-supervisor-evidence-packet requires --supervisor-run-path", file=sys.stderr)
         return 1
 
     if validate_transition_packet_path:
@@ -34293,6 +34545,61 @@ def main(
             return 1
         write_implementation_work_index(index)
         emit_supervisor_json(index, output_mode=normalized_output_mode)
+        return 0
+
+    if build_supervisor_evidence_packet_mode:
+        if any(
+            (
+                dry_run,
+                auto_approve,
+                loop,
+                resolve_gate,
+                decision,
+                note,
+                target_spec,
+                split_proposal,
+                apply_split_proposal,
+                operator_note,
+                mutation_budget,
+                run_authority,
+                execution_profile,
+                child_model,
+                child_timeout_seconds,
+                verbose,
+                list_stale_runtime,
+                clean_stale_runtime,
+                observe_graph_health_mode,
+                operator_request_packet_path,
+            )
+        ):
+            print(
+                "--build-supervisor-evidence-packet must be used as a standalone command",
+                file=sys.stderr,
+            )
+            return 1
+        try:
+            raw_run_path = resolve_supervisor_run_reference(supervisor_run_path or "")
+            run_payload, raw_sha256 = load_supervisor_run_artifact(raw_run_path)
+            packet = build_supervisor_evidence_packet(
+                run_payload,
+                raw_run_path=raw_run_path,
+                raw_content_sha256=raw_sha256,
+                raw_artifact_uri=supervisor_raw_artifact_uri,
+                raw_retention_expires_at=supervisor_raw_retention_expires_at,
+            )
+            packet_path = write_supervisor_evidence_packet(packet)
+        except RuntimeError as exc:
+            print(str(exc), file=sys.stderr)
+            return 1
+        packet["written_artifacts"] = {
+            "supervisor_evidence_packet": {
+                "artifact_path": repo_relative_or_absolute_path(packet_path),
+                "run_id": packet.get("run_id"),
+                "spec_id": packet.get("spec_id"),
+            }
+        }
+        packet["summary"]["packet_path"] = repo_relative_or_absolute_path(packet_path)
+        emit_supervisor_json(packet, output_mode=normalized_output_mode)
         return 0
 
     if build_review_feedback_index_mode:
@@ -37002,6 +37309,31 @@ if __name__ == "__main__":
         ),
     )
     parser.add_argument(
+        "--build-supervisor-evidence-packet",
+        action="store_true",
+        help=(
+            "Distill one raw supervisor run artifact into a curated evidence packet under "
+            "docs/evidence/supervisor-runs/"
+        ),
+    )
+    parser.add_argument(
+        "--supervisor-run-path",
+        metavar="PATH_OR_RUN_ID",
+        help=(
+            "Raw supervisor run artifact path or run id used by --build-supervisor-evidence-packet"
+        ),
+    )
+    parser.add_argument(
+        "--raw-artifact-uri",
+        default="",
+        help="Optional durable URI for the retained raw supervisor artifact",
+    )
+    parser.add_argument(
+        "--raw-retention-expires-at",
+        default="",
+        help="Optional expiration timestamp for the retained raw supervisor artifact",
+    )
+    parser.add_argument(
         "--build-review-feedback-index",
         action="store_true",
         help=(
@@ -37504,6 +37836,10 @@ if __name__ == "__main__":
             implementation_target_spec_ids=args.target_spec_ids,
             implementation_operator_intent=args.operator_intent,
             build_implementation_work_index_mode=args.build_implementation_work_index,
+            build_supervisor_evidence_packet_mode=args.build_supervisor_evidence_packet,
+            supervisor_run_path=args.supervisor_run_path,
+            supervisor_raw_artifact_uri=args.raw_artifact_uri,
+            supervisor_raw_retention_expires_at=args.raw_retention_expires_at,
             build_review_feedback_index_mode=args.build_review_feedback_index,
             build_vocabulary_index_mode=args.build_vocabulary_index,
             build_vocabulary_drift_report_mode=args.build_vocabulary_drift_report,
