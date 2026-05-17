@@ -741,7 +741,8 @@
     "posture": "synchronous_runtime_slice",
     "runtime_surfaces": [
       "tools/supervisor.py",
-      "tests/test_supervisor.py"
+      "tests/test_supervisor.py",
+      "docs/proposals/0016_declarative_supervisor_policy_and_decision_inspection.md"
     ],
     "runtime_markers": [
       {
@@ -750,7 +751,7 @@
       },
       {
         "path": "tools/supervisor.py",
-        "pattern": "\"decision_inspector\": build_decision_inspector("
+        "pattern": "decision_inspector = build_decision_inspector("
       }
     ],
     "validation_markers": [
@@ -766,7 +767,7 @@
     "observation_markers": [
       {
         "path": "tools/supervisor.py",
-        "pattern": "\"decision_inspector\": build_decision_inspector("
+        "pattern": "write_decision_inspector_artifact(run_id, decision_inspector)"
       }
     ]
   },
