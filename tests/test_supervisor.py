@@ -12794,6 +12794,22 @@ def test_build_metrics_feedback_index_emits_observed_and_blocked_entries(
                 "threshold_proposal_ids": ["metric-sib-followup"],
             },
             {
+                "delivery_id": "metrics_delivery::metrics_draft_only",
+                "handoff_id": "external_consumer_handoff::metrics_draft_only",
+                "consumer_id": "metrics_draft_only",
+                "title": "Metrics Draft Only",
+                "delivery_status": "draft_delivery_only",
+                "review_state": "draft_visible",
+                "next_gap": "review_draft_metrics_delivery",
+                "delivery_root": ".specgraph_handoffs/metrics_draft_only",
+                "target_consumer": {
+                    "profile": "sibling_metric_consumer",
+                    "local_checkout_hint": metrics_checkout.as_posix(),
+                },
+                "bound_metric_ids": [],
+                "threshold_proposal_ids": [],
+            },
+            {
                 "delivery_id": "metrics_delivery::metrics_adopted",
                 "handoff_id": "external_consumer_handoff::metrics_adopted",
                 "consumer_id": "metrics_adopted",
@@ -12832,7 +12848,8 @@ def test_build_metrics_feedback_index_emits_observed_and_blocked_entries(
 
     assert report["artifact_kind"] == supervisor_module.METRICS_FEEDBACK_INDEX_ARTIFACT_KIND
     assert report["viewer_projection"]["feedback_status"]["downstream_unobserved"] == [
-        "metrics_draft"
+        "metrics_draft",
+        "metrics_draft_only",
     ]
     assert report["viewer_projection"]["feedback_status"]["review_activity_observed"] == [
         "metrics_review"
@@ -12847,6 +12864,8 @@ def test_build_metrics_feedback_index_emits_observed_and_blocked_entries(
     by_consumer = {entry["consumer_id"]: entry for entry in report["entries"]}
     assert by_consumer["metrics_draft"]["review_state"] == "not_observed"
     assert by_consumer["metrics_draft"]["next_gap"] == "observe_metrics_downstream_review"
+    assert by_consumer["metrics_draft_only"]["review_state"] == "not_observed"
+    assert by_consumer["metrics_draft_only"]["next_gap"] == "none"
     assert by_consumer["metrics_review"]["review_state"] == "review_visible"
     assert by_consumer["metrics_review"]["next_gap"] == "review_metrics_downstream_feedback"
     assert (
@@ -12854,6 +12873,7 @@ def test_build_metrics_feedback_index_emits_observed_and_blocked_entries(
         is True
     )
     assert by_consumer["metrics_adopted"]["review_state"] == "adoption_visible"
+    assert by_consumer["metrics_adopted"]["next_gap"] == "none"
     assert (
         by_consumer["metrics_adopted"]["observed_checkout_feedback"]["adoption_candidate"] is True
     )
@@ -12864,6 +12884,9 @@ def test_build_metrics_feedback_index_emits_observed_and_blocked_entries(
         "metrics_review",
     ]
     assert report["viewer_projection"]["named_filters"]["threshold_driven"] == ["metrics_review"]
+    backlog_consumers = {item["consumer_id"] for item in report["feedback_backlog"]["items"]}
+    assert "metrics_adopted" not in backlog_consumers
+    assert "metrics_draft_only" not in backlog_consumers
 
 
 def test_main_builds_metrics_delivery_workflow_as_standalone_command(
