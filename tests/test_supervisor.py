@@ -21838,6 +21838,7 @@ def test_main_builds_swift_typed_tooling_index_as_standalone_command(
 def test_sg_spec_0030_trace_anchor_blocks_non_bypass_prerequisite_gap(
     supervisor_module: object,
 ) -> None:
+    spec_id = "SG-SPEC-0030"
     readiness, blockers = supervisor_module.implementation_work_item_readiness(
         snapshot_status="ready_for_planning",
         has_quality_blocker=False,
@@ -21849,8 +21850,29 @@ def test_sg_spec_0030_trace_anchor_blocks_non_bypass_prerequisite_gap(
         "Trace anchor: SG-SPEC-0030 governs prerequisite readiness as non-bypass input."
         in inspect.getsource(supervisor_module.implementation_work_item_readiness)
     )
+    assert spec_id == "SG-SPEC-0030"
     assert readiness == "blocked_by_trace_gap"
     assert blockers == ["trace_baseline_gap"]
+
+
+def test_live_sg_spec_0030_evidence_contract_is_chain_complete(
+    supervisor_module: object,
+) -> None:
+    index = supervisor_module.build_evidence_plane_index(supervisor_module.load_specs())
+    by_id = {entry["spec_id"]: entry for entry in index["entries"]}
+
+    assert by_id["SG-SPEC-0030"]["evidence_contract"]["source"] == "runtime_evidence_registry"
+    assert by_id["SG-SPEC-0030"]["artifact_stage"]["status"] == "linked"
+    assert by_id["SG-SPEC-0030"]["adoption_coverage"]["status"] == "covered"
+    assert by_id["SG-SPEC-0030"]["chain_status"] == "chain_complete"
+    assert by_id["SG-SPEC-0030"]["evidence_summary"] == {
+        "artifact_ref_count": 2,
+        "runtime_entity_count": 2,
+        "observation_source_count": 2,
+        "outcome_source_count": 2,
+        "adoption_source_count": 2,
+        "chain_status": "chain_complete",
+    }
 
 
 def test_sg_spec_0031_trace_anchor_maps_gateway_prerequisite_to_single_next_gap(
