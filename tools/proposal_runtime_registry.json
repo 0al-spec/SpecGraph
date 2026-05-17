@@ -623,6 +623,61 @@
     ]
   },
   {
+    "proposal_id": "0014",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "tools/supervisor.py",
+      "tests/test_supervisor.py",
+      "docs/proposals/0014_non_escalating_fallback_isolation.md"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def should_fallback_to_copied_worktree("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def create_sandbox_worktree_copy("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def child_executor_should_bypass_inner_sandbox("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def isolation_mode_for_branch("
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_codex_exec_command_keeps_inner_sandbox_when_bypass_requested("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_isolation_mode_for_branch_marks_copied_fallback("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_main_does_not_treat_websocket_fallback_warning_as_primary_transport_failure("
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "if should_fallback_to_copied_worktree(result.stderr):"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "return create_sandbox_worktree_copy(safe_id=safe_id, timestamp=suffix)"
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "\"--dangerously-bypass-approvals-and-sandbox\" not in cmd"
+      }
+    ]
+  },
+  {
     "proposal_id": "0016",
     "posture": "synchronous_runtime_slice",
     "runtime_surfaces": [
