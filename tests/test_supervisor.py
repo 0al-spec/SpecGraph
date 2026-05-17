@@ -21425,6 +21425,51 @@ def test_build_graph_next_moves_reports_steady_state_when_no_gap_is_visible(
     assert report["recommended_next_move"]["review_required"] is False
 
 
+def test_build_graph_next_moves_ignores_info_only_backlog_rows(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    _ = repo_fixture
+    info_backlog_id = (
+        "review_feedback_index::process_feedback::pr-157::review_accepted_risk_when_context_changes"
+    )
+    report = supervisor_module.build_graph_next_moves(
+        [],
+        backlog_projection={
+            "artifact_kind": supervisor_module.GRAPH_BACKLOG_PROJECTION_ARTIFACT_KIND,
+            "schema_version": supervisor_module.GRAPH_BACKLOG_PROJECTION_SCHEMA_VERSION,
+            "generated_at": "2026-05-02T00:00:00Z",
+            "entry_count": 1,
+            "entries": [
+                {
+                    "backlog_id": info_backlog_id,
+                    "domain": "process_feedback",
+                    "source_artifact": "review_feedback_index",
+                    "source_artifact_path": "runs/review_feedback_index.json",
+                    "subject_kind": "review_thread",
+                    "subject_id": "pr-157",
+                    "title": "",
+                    "status": "accepted_risk_recorded",
+                    "review_state": "",
+                    "next_gap": "review_accepted_risk_when_context_changes",
+                    "priority": "info",
+                    "details": {},
+                }
+            ],
+            "summary": {
+                "priority_counts": {"info": 1},
+                "next_gap_counts": {"review_accepted_risk_when_context_changes": 1},
+            },
+            "viewer_projection": {"priorities": {"info": [info_backlog_id]}},
+        },
+        proposal_runtime_index=fake_graph_next_moves_proposal_runtime(supervisor_module),
+    )
+
+    assert report["current_scene"] == "steady_state"
+    assert report["recommended_next_move_kind"] == "none"
+    assert report["recommended_next_move"]["review_required"] is False
+
+
 def test_main_builds_graph_next_moves_as_standalone_command(
     supervisor_module: object,
     repo_fixture: Path,

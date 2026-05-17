@@ -28824,6 +28824,11 @@ def graph_next_moves_top_backlog_entry(
         subject_id = graph_next_moves_split_candidate_subject_id(entry)
         return bool(subject_id and subject_id in proposal_reviewable_split_subjects)
 
+    def is_actionable_next_move_entry(entry: dict[str, Any]) -> bool:
+        if str(entry.get("priority", "")).strip() == "info":
+            return False
+        return not is_covered_branch_split_candidate(entry)
+
     def entry_selection_rank(entry: dict[str, Any]) -> tuple[int, str, str]:
         next_gap = str(entry.get("next_gap", "")).strip()
         source_artifact = str(entry.get("source_artifact", "")).strip()
@@ -28872,12 +28877,12 @@ def graph_next_moves_top_backlog_entry(
             bucket_entries: list[dict[str, Any]] = []
             for backlog_id in backlog_ids:
                 entry = by_id.get(str(backlog_id))
-                if entry is not None and not is_covered_branch_split_candidate(entry):
+                if entry is not None and is_actionable_next_move_entry(entry):
                     bucket_entries.append(entry)
             if bucket_entries:
                 return min(bucket_entries, key=entry_selection_rank)
     for entry in entries:
-        if not is_covered_branch_split_candidate(entry):
+        if is_actionable_next_move_entry(entry):
             return entry
     return None
 

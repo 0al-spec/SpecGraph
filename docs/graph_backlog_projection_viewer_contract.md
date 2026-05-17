@@ -195,7 +195,9 @@ Recommended display order:
 5. unknown future priorities, sorted by label
 
 `info` is currently used for visible but non-urgent rows such as accepted-risk
-review-feedback follow-up.
+review-feedback follow-up. Viewers should show these rows separately from
+actionable work; the graph next-move surface treats `info` rows as non-actionable
+unless a later artifact promotes the row to `low`, `medium`, or `high`.
 
 ## 6. Domain Contract
 
