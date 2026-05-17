@@ -3677,7 +3677,7 @@
     "adoption_markers": [
       {
         "path": "specs/nodes/SG-SPEC-0001.yaml",
-        "pattern": "realization or observation semantics to SG-SPEC-0063"
+        "pattern": "Realization and observation semantics cluster for runtime observability"
       },
       {
         "path": "specs/nodes/SG-SPEC-0017.yaml",
