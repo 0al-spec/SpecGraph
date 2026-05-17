@@ -1693,6 +1693,62 @@
     ]
   },
   {
+    "proposal_id": "0038",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "tools/supervisor.py",
+      "tests/test_supervisor.py",
+      "tools/specpm_public_registry_policy.json",
+      "docs/proposals/0038_specpm_public_registry_observation.md"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/specpm_public_registry_policy.json",
+        "pattern": "\"artifact_kind\": \"specpm_public_registry_policy\""
+      },
+      {
+        "path": "tools/specpm_public_registry_policy.json",
+        "pattern": "\"artifact\": \"runs/specpm_public_registry_index.json\""
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def normalize_specpm_public_registry_config("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def build_specpm_public_registry_index("
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_specpm_public_registry_index_reports_visible_package("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_specpm_public_registry_index_reports_bad_endpoint_template("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_main_builds_specpm_public_registry_index_as_standalone_command("
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def specpm_public_registry_endpoint_url("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "write_specpm_public_registry_index(index)"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "\"--build-specpm-public-registry-index\""
+      }
+    ]
+  },
+  {
     "proposal_id": "0040",
     "posture": "synchronous_runtime_slice",
     "runtime_surfaces": [
