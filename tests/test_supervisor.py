@@ -9519,6 +9519,7 @@ def test_live_spec_evidence_contract_is_chain_complete(
         ("SG-SPEC-0051", []),
         ("SG-SPEC-0063", []),
         ("SG-SPEC-0064", []),
+        ("SG-SPEC-0065", []),
     ],
 )
 def test_live_spec_trace_contract_is_registry_backed(
