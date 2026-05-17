@@ -1749,6 +1749,63 @@
     ]
   },
   {
+    "proposal_id": "0039",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "tools/supervisor.py",
+      "tests/test_supervisor.py",
+      "tools/review_feedback_policy.json",
+      "tools/review_feedback_records.json",
+      "docs/proposals/0039_review_feedback_learning_loop.md"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/review_feedback_policy.json",
+        "pattern": "\"artifact_kind\": \"review_feedback_policy\""
+      },
+      {
+        "path": "tools/review_feedback_policy.json",
+        "pattern": "\"future_index_artifact\": \"runs/review_feedback_index.json\""
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def build_review_feedback_index("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def derive_review_feedback_status("
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_review_feedback_index_groups_prevention_records("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_review_feedback_index_flags_missing_prevention_action("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_main_builds_review_feedback_index_as_standalone_command("
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "AGENTS.md",
+        "pattern": "When addressing actionable PR review threads, treat review feedback as process evidence"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "write_review_feedback_index(index)"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "\"--build-review-feedback-index\""
+      }
+    ]
+  },
+  {
     "proposal_id": "0040",
     "posture": "synchronous_runtime_slice",
     "runtime_surfaces": [
