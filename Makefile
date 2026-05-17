@@ -37,6 +37,7 @@ help:
 		'  make implementation-work      Refresh latest implementation work index' \
 		'  make supervisor-evidence-packet SUPERVISOR_RUN_PATH=<run-id-or-path>' \
 		'  make factory-architecture     Refresh multi-service factory architecture index' \
+		'  make swift-typed-tooling      Refresh Swift typed tooling lane index' \
 		'  make review-feedback          Refresh review feedback index' \
 		'  make publish-bundle           Build static specs/ + runs/ publish bundle' \
 		'  make test                     Run full Python test suite quietly' \
@@ -156,6 +157,10 @@ supervisor-stalled-run-salvage:
 .PHONY: factory-architecture
 factory-architecture:
 	@$(PYTHON) $(SUPERVISOR) --build-factory-architecture-index
+
+.PHONY: swift-typed-tooling
+swift-typed-tooling:
+	@$(PYTHON) $(SUPERVISOR) --build-swift-typed-tooling-index
 
 .PHONY: review-feedback
 review-feedback:

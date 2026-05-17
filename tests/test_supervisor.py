@@ -21731,6 +21731,46 @@ def test_main_builds_factory_architecture_index_as_standalone_command(
     assert artifact["factory_run_contract"]["artifact_kind"] == "factory_run"
 
 
+def test_build_swift_typed_tooling_index_declares_read_only_lane(
+    supervisor_module: object,
+) -> None:
+    index = supervisor_module.build_swift_typed_tooling_index()
+
+    assert index["artifact_kind"] == "swift_typed_tooling_index"
+    assert index["canonical_mutations_allowed"] is False
+    assert index["tracked_artifacts_written"] is False
+    assert index["proposal_id"] == "0050"
+    assert index["lane_status"] == "optional_read_only"
+    assert index["policy_reference"]["artifact_path"] == "tools/swift_typed_tooling_policy.json"
+    assert index["candidate_component"]["component_id"] == "SpecGraphKit"
+    assert index["summary"]["swift_required_for_ordinary_operation"] is False
+    assert index["summary"]["canonical_write_authority"] is False
+    assert "artifact_manifest" in index["viewer_projection"]["artifact_ids"]
+    assert "graph_dashboard" in index["viewer_projection"]["artifact_ids"]
+    assert "graph_backlog_projection" in index["viewer_projection"]["artifact_ids"]
+    assert "local_filesystem_root" in index["viewer_projection"]["provider_ids"]
+    assert "static_http_root" in index["viewer_projection"]["provider_ids"]
+    assert "mutate_canonical_specs" in index["viewer_projection"]["forbidden_operations"]
+    assert index["summary"]["next_gap"] == "none"
+
+
+def test_main_builds_swift_typed_tooling_index_as_standalone_command(
+    supervisor_module: object,
+    repo_fixture: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    exit_code = supervisor_module.main(build_swift_typed_tooling_index_mode=True)
+
+    assert exit_code == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["artifact_kind"] == "swift_typed_tooling_index"
+    artifact = json.loads(
+        (repo_fixture / "runs" / "swift_typed_tooling_index.json").read_text(encoding="utf-8")
+    )
+    assert artifact["validation_strategy"]["fixture_parity_required"] is True
+    assert artifact["validation_strategy"]["normal_unit_tests_require_network"] is False
+
+
 def test_sg_spec_0030_trace_anchor_blocks_non_bypass_prerequisite_gap(
     supervisor_module: object,
 ) -> None:
@@ -23649,6 +23689,22 @@ def test_proposal_0049_factory_architecture_runtime_is_covered(
 
     assert "0049" in by_id, "Proposal 0049 missing from proposal_runtime_index"
     entry = by_id["0049"]
+    assert entry["runtime_realization"]["status"] == "implemented"
+    assert entry["validation_closure"]["status"] == "covered"
+    assert entry["observation_coverage"]["status"] == "covered"
+    assert entry["observation_coverage"]["missing_markers"] == []
+    assert entry["reflective_chain"]["next_gap"] == "none"
+
+
+def test_proposal_0050_swift_typed_tooling_runtime_is_covered(
+    supervisor_module: object,
+) -> None:
+    """Proposal 0050 is implemented by the optional Swift typed tooling lane index."""
+    index = supervisor_module.build_proposal_runtime_index()
+    by_id = {e["proposal_id"]: e for e in index["entries"]}
+
+    assert "0050" in by_id, "Proposal 0050 missing from proposal_runtime_index"
+    entry = by_id["0050"]
     assert entry["runtime_realization"]["status"] == "implemented"
     assert entry["validation_closure"]["status"] == "covered"
     assert entry["observation_coverage"]["status"] == "covered"
