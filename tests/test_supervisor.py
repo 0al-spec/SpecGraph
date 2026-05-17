@@ -17144,6 +17144,7 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
         "graph": 0,
         "graph_trends": 0,
         "intent": 0,
+        "pre_spec": 0,
         "spec_trace": 0,
         "spec_trace_projection": 0,
         "evidence": 0,
@@ -17377,6 +17378,18 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
             "entries": [],
             "by_kind": {},
             "by_mediation_state": {},
+        }
+
+    def fake_pre_spec_semantics_index(specs: list[object]) -> dict[str, object]:
+        surface_calls["pre_spec"] += 1
+        assert len(specs) == 1
+        return {
+            "artifact_kind": supervisor_module.PRE_SPEC_SEMANTICS_INDEX_ARTIFACT_KIND,
+            "schema_version": supervisor_module.PRE_SPEC_SEMANTICS_INDEX_SCHEMA_VERSION,
+            "generated_at": "2026-04-27T00:00:02.350000Z",
+            "entry_count": 1,
+            "entries": [],
+            "viewer_projection": {},
         }
 
     def fake_spec_trace_index(specs: list[object]) -> dict[str, object]:
@@ -17839,6 +17852,11 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
         fake_branch_rewrite_summary,
     )
     monkeypatch.setattr(supervisor_module, "build_intent_layer_overlay", fake_intent_layer_overlay)
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_pre_spec_semantics_index",
+        fake_pre_spec_semantics_index,
+    )
     monkeypatch.setattr(supervisor_module, "build_spec_trace_index", fake_spec_trace_index)
     monkeypatch.setattr(
         supervisor_module,
@@ -17952,6 +17970,7 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
     assert report["written_artifacts"]["graph_health_overlay"]["entry_count"] == 1
     assert report["written_artifacts"]["graph_health_trends"]["entry_count"] == 1
     assert report["written_artifacts"]["intent_layer_overlay"]["entry_count"] == 0
+    assert report["written_artifacts"]["pre_spec_semantics_index"]["entry_count"] == 1
     assert report["written_artifacts"]["spec_trace_index"]["entry_count"] == 1
     assert report["written_artifacts"]["spec_trace_projection"]["entry_count"] == 1
     assert report["written_artifacts"]["evidence_plane_index"]["entry_count"] == 1
@@ -18005,6 +18024,7 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
         "graph": 1,
         "graph_trends": 1,
         "intent": 1,
+        "pre_spec": 1,
         "spec_trace": 1,
         "spec_trace_projection": 1,
         "evidence": 1,
@@ -18056,6 +18076,12 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
     assert (
         json.loads(
             (repo_fixture / "runs" / "spec_trace_projection.json").read_text(encoding="utf-8")
+        )["entry_count"]
+        == 1
+    )
+    assert (
+        json.loads(
+            (repo_fixture / "runs" / "pre_spec_semantics_index.json").read_text(encoding="utf-8")
         )["entry_count"]
         == 1
     )
