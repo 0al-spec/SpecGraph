@@ -133,6 +133,7 @@ SUPERVISOR_STALLED_RUN_SALVAGE_POLICY_RELATIVE_PATH = (
     "tools/supervisor_stalled_run_salvage_policy.json"
 )
 FACTORY_ARCHITECTURE_POLICY_RELATIVE_PATH = "tools/factory_architecture_policy.json"
+SWIFT_TYPED_TOOLING_POLICY_RELATIVE_PATH = "tools/swift_typed_tooling_policy.json"
 REVIEW_FEEDBACK_POLICY_RELATIVE_PATH = "tools/review_feedback_policy.json"
 VALIDATION_FINDINGS_POLICY_RELATIVE_PATH = "tools/validation_findings_policy.json"
 SAFE_REPAIR_POLICY_RELATIVE_PATH = "tools/safe_repair_policy.json"
@@ -235,6 +236,10 @@ def supervisor_stalled_run_salvage_policy_path() -> Path:
 
 def factory_architecture_policy_path() -> Path:
     return TOOLS_DIR / "factory_architecture_policy.json"
+
+
+def swift_typed_tooling_policy_path() -> Path:
+    return TOOLS_DIR / "swift_typed_tooling_policy.json"
 
 
 def review_feedback_policy_path() -> Path:
@@ -979,6 +984,44 @@ def load_factory_architecture_policy() -> tuple[dict[str, Any], str]:
 
 
 FACTORY_ARCHITECTURE_POLICY, FACTORY_ARCHITECTURE_POLICY_SHA256 = load_factory_architecture_policy()
+
+
+def load_swift_typed_tooling_policy() -> tuple[dict[str, Any], str]:
+    path = swift_typed_tooling_policy_path()
+    try:
+        raw_text = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise RuntimeError(
+            f"failed to read Swift typed tooling policy artifact: {path.as_posix()} ({exc})"
+        ) from exc
+    try:
+        payload = json.loads(raw_text)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(
+            f"malformed Swift typed tooling policy artifact: {path.as_posix()} ({exc})"
+        ) from exc
+    if not isinstance(payload, dict):
+        raise RuntimeError(
+            "malformed Swift typed tooling policy artifact: "
+            f"{path.as_posix()} must contain a JSON object"
+        )
+    required_sections = (
+        "candidate_component",
+        "authority_boundary",
+        "artifact_contracts",
+        "provider_contracts",
+        "validation_strategy",
+    )
+    missing = [section for section in required_sections if section not in payload]
+    if missing:
+        raise RuntimeError(
+            "malformed Swift typed tooling policy artifact: "
+            "missing top-level section(s): " + ", ".join(missing)
+        )
+    return payload, hashlib.sha256(raw_text.encode("utf-8")).hexdigest()
+
+
+SWIFT_TYPED_TOOLING_POLICY, SWIFT_TYPED_TOOLING_POLICY_SHA256 = load_swift_typed_tooling_policy()
 
 
 def load_review_feedback_policy() -> tuple[dict[str, Any], str]:
@@ -2260,6 +2303,14 @@ def factory_architecture_policy_reference() -> dict[str, Any]:
         "artifact_path": FACTORY_ARCHITECTURE_POLICY_RELATIVE_PATH,
         "artifact_sha256": FACTORY_ARCHITECTURE_POLICY_SHA256,
         "version": FACTORY_ARCHITECTURE_POLICY.get("version"),
+    }
+
+
+def swift_typed_tooling_policy_reference() -> dict[str, Any]:
+    return {
+        "artifact_path": SWIFT_TYPED_TOOLING_POLICY_RELATIVE_PATH,
+        "artifact_sha256": SWIFT_TYPED_TOOLING_POLICY_SHA256,
+        "version": SWIFT_TYPED_TOOLING_POLICY.get("version"),
     }
 
 
@@ -9295,6 +9346,99 @@ def build_factory_architecture_index(
 def write_factory_architecture_index(index: dict[str, Any]) -> Path:
     RUNS_DIR.mkdir(parents=True, exist_ok=True)
     path = factory_architecture_index_path()
+    with artifact_lock(path):
+        atomic_write_json(path, index)
+    return path
+
+
+SWIFT_TYPED_TOOLING_INDEX_ARTIFACT_KIND = "swift_typed_tooling_index"
+SWIFT_TYPED_TOOLING_INDEX_SCHEMA_VERSION = 1
+
+
+def swift_typed_tooling_index_path() -> Path:
+    return RUNS_DIR / "swift_typed_tooling_index.json"
+
+
+def build_swift_typed_tooling_index(
+    policy: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    source_policy = copy.deepcopy(
+        policy if isinstance(policy, dict) else SWIFT_TYPED_TOOLING_POLICY
+    )
+    artifact_contracts = [
+        copy.deepcopy(entry)
+        for entry in source_policy.get("artifact_contracts", [])
+        if isinstance(entry, dict) and str(entry.get("artifact_id", "")).strip()
+    ]
+    provider_contracts = [
+        copy.deepcopy(entry)
+        for entry in source_policy.get("provider_contracts", [])
+        if isinstance(entry, dict) and str(entry.get("provider_id", "")).strip()
+    ]
+    authority_boundary = copy.deepcopy(source_policy.get("authority_boundary", {}))
+    candidate_component = copy.deepcopy(source_policy.get("candidate_component", {}))
+    validation_strategy = copy.deepcopy(source_policy.get("validation_strategy", {}))
+    return {
+        "artifact_kind": SWIFT_TYPED_TOOLING_INDEX_ARTIFACT_KIND,
+        "schema_version": SWIFT_TYPED_TOOLING_INDEX_SCHEMA_VERSION,
+        "generated_at": utc_now_iso(),
+        "canonical_mutations_allowed": False,
+        "tracked_artifacts_written": False,
+        "proposal_id": str(source_policy.get("proposal_id", "0050")).strip() or "0050",
+        "lane_id": str(source_policy.get("lane_id", "swift_typed_tooling")).strip(),
+        "lane_status": str(source_policy.get("lane_status", "optional_read_only")).strip(),
+        "policy_reference": swift_typed_tooling_policy_reference(),
+        "candidate_component": candidate_component,
+        "authority_boundary": authority_boundary,
+        "artifact_contracts": artifact_contracts,
+        "provider_contracts": provider_contracts,
+        "validation_strategy": validation_strategy,
+        "future_followups": [
+            str(item).strip()
+            for item in source_policy.get("future_followups", [])
+            if str(item).strip()
+        ],
+        "viewer_projection": {
+            "artifact_ids": sorted(
+                str(entry["artifact_id"]).strip() for entry in artifact_contracts
+            ),
+            "provider_ids": sorted(
+                str(entry["provider_id"]).strip() for entry in provider_contracts
+            ),
+            "allowed_operations": sorted(
+                str(item).strip()
+                for item in authority_boundary.get("allowed_operations", [])
+                if str(item).strip()
+            )
+            if isinstance(authority_boundary, dict)
+            else [],
+            "forbidden_operations": sorted(
+                str(item).strip()
+                for item in authority_boundary.get("forbidden_operations", [])
+                if str(item).strip()
+            )
+            if isinstance(authority_boundary, dict)
+            else [],
+        },
+        "summary": {
+            "artifact_contract_count": len(artifact_contracts),
+            "provider_contract_count": len(provider_contracts),
+            "swift_required_for_ordinary_operation": bool(
+                candidate_component.get("required_for_ordinary_operation")
+            )
+            if isinstance(candidate_component, dict)
+            else False,
+            "canonical_write_authority": bool(authority_boundary.get("canonical_write_authority"))
+            if isinstance(authority_boundary, dict)
+            else False,
+            "next_gap": "none",
+        },
+    }
+
+
+def write_swift_typed_tooling_index(index: dict[str, Any]) -> Path:
+    RUNS_DIR.mkdir(parents=True, exist_ok=True)
+    path = swift_typed_tooling_index_path()
     with artifact_lock(path):
         atomic_write_json(path, index)
     return path
@@ -30286,6 +30430,7 @@ def build_viewer_surfaces(specs: list[SpecNode]) -> dict[str, Any]:
         consumer_index,
     )
     factory_architecture_index = build_factory_architecture_index()
+    swift_typed_tooling_index = build_swift_typed_tooling_index()
     proposal_lane_overlay = build_proposal_lane_overlay()
     proposal_runtime_index = build_proposal_runtime_index()
     proposal_promotion_index = build_proposal_promotion_index()
@@ -30397,6 +30542,9 @@ def build_viewer_surfaces(specs: list[SpecNode]) -> dict[str, Any]:
     )
     factory_architecture_path_result = write_factory_architecture_index(
         factory_architecture_index,
+    )
+    swift_typed_tooling_path_result = write_swift_typed_tooling_index(
+        swift_typed_tooling_index,
     )
     conversation_memory_index = build_conversation_memory_index()
     conversation_memory_path = write_conversation_memory_index(conversation_memory_index)
@@ -30629,6 +30777,28 @@ def build_viewer_surfaces(specs: list[SpecNode]) -> dict[str, Any]:
                     factory_architecture_index.get("summary", {}).get(
                         "handoff_family_count",
                         0,
+                    )
+                ),
+            },
+            "swift_typed_tooling_index": {
+                "artifact_path": swift_typed_tooling_path_result.relative_to(ROOT).as_posix(),
+                "generated_at": swift_typed_tooling_index.get("generated_at"),
+                "artifact_contract_count": (
+                    swift_typed_tooling_index.get("summary", {}).get(
+                        "artifact_contract_count",
+                        0,
+                    )
+                ),
+                "provider_contract_count": (
+                    swift_typed_tooling_index.get("summary", {}).get(
+                        "provider_contract_count",
+                        0,
+                    )
+                ),
+                "swift_required_for_ordinary_operation": (
+                    swift_typed_tooling_index.get("summary", {}).get(
+                        "swift_required_for_ordinary_operation",
+                        False,
                     )
                 ),
             },
@@ -34528,6 +34698,7 @@ def main(
     build_supervisor_evidence_packet_mode: bool = False,
     build_supervisor_stalled_run_salvage_mode: bool = False,
     build_factory_architecture_index_mode: bool = False,
+    build_swift_typed_tooling_index_mode: bool = False,
     supervisor_run_path: str | None = None,
     supervisor_salvage_worktree_path: str | None = None,
     supervisor_raw_artifact_uri: str = "",
@@ -34625,6 +34796,7 @@ def main(
         "--build-supervisor-evidence-packet": build_supervisor_evidence_packet_mode,
         "--build-supervisor-stalled-run-salvage": build_supervisor_stalled_run_salvage_mode,
         "--build-factory-architecture-index": build_factory_architecture_index_mode,
+        "--build-swift-typed-tooling-index": build_swift_typed_tooling_index_mode,
         "--build-review-feedback-index": build_review_feedback_index_mode,
         "--build-vocabulary-index": build_vocabulary_index_mode,
         "--build-vocabulary-drift-report": build_vocabulary_drift_report_mode,
@@ -34744,6 +34916,18 @@ def main(
     ):
         print(
             "--build-factory-architecture-index does not accept supervisor run/salvage inputs",
+            file=sys.stderr,
+        )
+        return 1
+
+    if build_swift_typed_tooling_index_mode and (
+        supervisor_salvage_worktree_path
+        or supervisor_run_path
+        or supervisor_raw_artifact_uri
+        or supervisor_raw_retention_expires_at
+    ):
+        print(
+            "--build-swift-typed-tooling-index does not accept supervisor run/salvage inputs",
             file=sys.stderr,
         )
         return 1
@@ -35216,6 +35400,41 @@ def main(
             return 1
         index = build_factory_architecture_index()
         write_factory_architecture_index(index)
+        emit_supervisor_json(index, output_mode=normalized_output_mode)
+        return 0
+
+    if build_swift_typed_tooling_index_mode:
+        if any(
+            (
+                dry_run,
+                auto_approve,
+                loop,
+                resolve_gate,
+                decision,
+                note,
+                target_spec,
+                split_proposal,
+                apply_split_proposal,
+                operator_note,
+                mutation_budget,
+                run_authority,
+                execution_profile,
+                child_model,
+                child_timeout_seconds,
+                verbose,
+                list_stale_runtime,
+                clean_stale_runtime,
+                observe_graph_health_mode,
+                operator_request_packet_path,
+            )
+        ):
+            print(
+                "--build-swift-typed-tooling-index must be used as a standalone command",
+                file=sys.stderr,
+            )
+            return 1
+        index = build_swift_typed_tooling_index()
+        write_swift_typed_tooling_index(index)
         emit_supervisor_json(index, output_mode=normalized_output_mode)
         return 0
 
@@ -37950,6 +38169,11 @@ if __name__ == "__main__":
         ),
     )
     parser.add_argument(
+        "--build-swift-typed-tooling-index",
+        action="store_true",
+        help=("Build a read-only Swift typed tooling lane index from the Swift tooling policy"),
+    )
+    parser.add_argument(
         "--supervisor-run-path",
         metavar="PATH_OR_RUN_ID",
         help=(
@@ -38479,6 +38703,7 @@ if __name__ == "__main__":
             build_supervisor_evidence_packet_mode=args.build_supervisor_evidence_packet,
             build_supervisor_stalled_run_salvage_mode=(args.build_supervisor_stalled_run_salvage),
             build_factory_architecture_index_mode=args.build_factory_architecture_index,
+            build_swift_typed_tooling_index_mode=args.build_swift_typed_tooling_index,
             supervisor_run_path=args.supervisor_run_path,
             supervisor_salvage_worktree_path=args.salvage_worktree_path,
             supervisor_raw_artifact_uri=args.raw_artifact_uri,

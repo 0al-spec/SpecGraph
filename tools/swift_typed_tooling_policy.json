@@ -1,0 +1,108 @@
+{
+  "artifact_kind": "swift_typed_tooling_policy",
+  "schema_version": 1,
+  "version": "2026-05-18",
+  "proposal_id": "0050",
+  "lane_id": "swift_typed_tooling",
+  "lane_status": "optional_read_only",
+  "candidate_component": {
+    "component_id": "SpecGraphKit",
+    "suggested_path": "tools/swift/SpecGraphKit",
+    "component_kind": "typed_artifact_client",
+    "required_for_ordinary_operation": false
+  },
+  "authority_boundary": {
+    "canonical_write_authority": false,
+    "supervisor_authority": false,
+    "proposal_registry_write_authority": false,
+    "runs_truth_write_authority": false,
+    "allowed_operations": [
+      "read_artifacts",
+      "validate_typed_shape",
+      "emit_local_inspection_output",
+      "report_typed_gaps"
+    ],
+    "forbidden_operations": [
+      "mutate_canonical_specs",
+      "mutate_proposal_registries",
+      "approve_supervisor_gates",
+      "write_runs_as_graph_truth",
+      "publish_artifacts",
+      "trigger_supervisor_runs"
+    ]
+  },
+  "artifact_contracts": [
+    {
+      "artifact_id": "artifact_manifest",
+      "path": "artifact_manifest.json",
+      "required_fields": [
+        "generated_at",
+        "artifacts"
+      ],
+      "unknown_field_policy": "tolerate"
+    },
+    {
+      "artifact_id": "graph_dashboard",
+      "path": "runs/graph_dashboard.json",
+      "required_fields": [
+        "artifact_kind",
+        "schema_version",
+        "generated_at",
+        "sections"
+      ],
+      "unknown_field_policy": "tolerate"
+    },
+    {
+      "artifact_id": "graph_backlog_projection",
+      "path": "runs/graph_backlog_projection.json",
+      "required_fields": [
+        "artifact_kind",
+        "schema_version",
+        "entries",
+        "summary"
+      ],
+      "unknown_field_policy": "tolerate"
+    },
+    {
+      "artifact_id": "spec_node_yaml",
+      "path": "specs/nodes/*.yaml",
+      "required_fields": [
+        "id",
+        "title",
+        "status"
+      ],
+      "unknown_field_policy": "tolerate"
+    }
+  ],
+  "provider_contracts": [
+    {
+      "provider_id": "local_filesystem_root",
+      "root_kind": "local_path",
+      "network_required": false
+    },
+    {
+      "provider_id": "static_http_root",
+      "root_kind": "http_url",
+      "network_required": true,
+      "example_root": "https://specgraph.tech/"
+    }
+  ],
+  "validation_strategy": {
+    "fixture_parity_required": true,
+    "normal_unit_tests_require_network": false,
+    "minimal_assertions": [
+      "artifact_identity",
+      "schema_version",
+      "stable_counts",
+      "path_or_url_normalization"
+    ]
+  },
+  "future_followups": [
+    "SpecGraphKit package layout",
+    "static artifact HTTP provider",
+    "typed dashboard and backlog SDK models",
+    "Agent Passport validator wrapper",
+    "native SpecSpace consumer integration",
+    "signed bundle verification"
+  ]
+}

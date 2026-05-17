@@ -2346,5 +2346,62 @@
         "pattern": "\"factory_architecture_index\""
       }
     ]
+  },
+  {
+    "proposal_id": "0050",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "tools/supervisor.py",
+      "tests/test_supervisor.py",
+      "tools/swift_typed_tooling_policy.json",
+      "docs/proposals/0050_swift_typed_tooling_lane.md",
+      "Makefile"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/swift_typed_tooling_policy.json",
+        "pattern": "\"artifact_kind\": \"swift_typed_tooling_policy\""
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "SWIFT_TYPED_TOOLING_INDEX_ARTIFACT_KIND = \"swift_typed_tooling_index\""
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def build_swift_typed_tooling_index("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "\"--build-swift-typed-tooling-index\""
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_swift_typed_tooling_index_declares_read_only_lane("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_main_builds_swift_typed_tooling_index_as_standalone_command("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_proposal_0050_swift_typed_tooling_runtime_is_covered("
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "write_swift_typed_tooling_index(index)"
+      },
+      {
+        "path": "Makefile",
+        "pattern": "swift-typed-tooling:"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "\"swift_typed_tooling_index\""
+      }
+    ]
   }
 ]
