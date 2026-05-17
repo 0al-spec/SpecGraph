@@ -318,6 +318,14 @@ findings, current/proposed role summaries, and whether the candidate is part of
 the branch story gap list. Viewers should render these rows as review-first
 decisions, not as applied canonical rewrites.
 
+### Refactor Queue Freshness
+
+`runs/refactor_queue.json` is historical derived evidence from earlier
+graph-health runs. The backlog projection should only surface a refactor queue
+item when the current `graph_health_overlay` still reports the same signal for
+the same subject. If the latest overlay no longer reports that signal, the row
+is stale and should be omitted from current backlog and next-move views.
+
 ### Downstream Adoption Rows
 
 The backlog projection may suppress older review rows when a downstream

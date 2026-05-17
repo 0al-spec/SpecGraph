@@ -18691,6 +18691,95 @@ def test_graph_backlog_projection_suppresses_adopted_metrics_handoff_review(
     assert adoption_entry["priority"] == "low"
 
 
+def test_graph_backlog_projection_suppresses_stale_refactor_queue_items(
+    supervisor_module: object,
+) -> None:
+    report = supervisor_module.build_graph_backlog_projection_from_surfaces(
+        graph_overlay={"generated_at": "2026-05-02T00:00:00Z", "entries": []},
+        proposal_runtime_index={
+            "generated_at": "2026-05-02T00:00:00Z",
+            "reflective_backlog": {"entry_count": 0, "items": []},
+        },
+        proposal_promotion_index={
+            "generated_at": "2026-05-02T00:00:00Z",
+            "promotion_backlog": {"entry_count": 0, "items": []},
+        },
+        refactor_queue_items=[
+            {
+                "id": "graph_refactor::SG-SPEC-0001::refinement_fan_out_pressure",
+                "work_item_type": "graph_refactor",
+                "spec_id": "SG-SPEC-0001",
+                "signal": "refinement_fan_out_pressure",
+                "recommended_action": "regroup_under_intermediate_cluster",
+                "status": "proposed",
+            }
+        ],
+        proposal_queue_items=[],
+        spec_trace_projection={
+            "generated_at": "2026-05-02T00:00:00Z",
+            "implementation_backlog": {"entry_count": 0, "items": []},
+        },
+        implementation_work_index={
+            "generated_at": "2026-05-02T00:00:00Z",
+            "implementation_backlog": {"entry_count": 0, "items": []},
+        },
+        evidence_overlay={
+            "generated_at": "2026-05-02T00:00:00Z",
+            "evidence_backlog": {"entry_count": 0, "items": []},
+        },
+        external_consumer_overlay={
+            "generated_at": "2026-05-02T00:00:00Z",
+            "external_consumer_backlog": {"entry_count": 0, "items": []},
+        },
+        external_consumer_handoffs={
+            "generated_at": "2026-05-02T00:00:00Z",
+            "handoff_backlog": {"entry_count": 0, "items": []},
+        },
+        specpm_delivery_workflow={
+            "generated_at": "2026-05-02T00:00:00Z",
+            "delivery_backlog": {"entry_count": 0, "items": []},
+        },
+        specpm_feedback_index={
+            "generated_at": "2026-05-02T00:00:00Z",
+            "feedback_backlog": {"entry_count": 0, "items": []},
+        },
+        metrics_delivery_workflow={
+            "generated_at": "2026-05-02T00:00:00Z",
+            "delivery_backlog": {"entry_count": 0, "items": []},
+        },
+        metrics_feedback_index={
+            "generated_at": "2026-05-02T00:00:00Z",
+            "entries": [],
+            "feedback_backlog": {"entry_count": 0, "items": []},
+        },
+        metrics_source_promotion_index={
+            "generated_at": "2026-05-02T00:00:00Z",
+            "promotion_backlog": {"entry_count": 0, "items": []},
+        },
+        metric_pack_index={"generated_at": "2026-05-02T00:00:00Z", "entries": []},
+        metric_pack_adapter_index={
+            "generated_at": "2026-05-02T00:00:00Z",
+            "adapter_backlog": {"entry_count": 0, "items": []},
+        },
+        metric_pack_runs={
+            "generated_at": "2026-05-02T00:00:00Z",
+            "entries": [],
+        },
+        metric_threshold_proposals={
+            "generated_at": "2026-05-02T00:00:00Z",
+            "entries": [],
+        },
+        review_feedback_index={
+            "generated_at": "2026-05-02T00:00:00Z",
+            "review_feedback_backlog": {"entry_count": 0, "items": []},
+        },
+        branch_rewrite_preview=None,
+    )
+
+    assert report["entry_count"] == 0
+    assert report["summary"]["source_artifact_counts"].get("refactor_queue", 0) == 0
+
+
 def test_graph_backlog_projection_suppresses_computed_metric_pack_index_review(
     supervisor_module: object,
 ) -> None:
