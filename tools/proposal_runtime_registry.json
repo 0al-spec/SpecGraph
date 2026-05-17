@@ -920,6 +920,75 @@
     ]
   },
   {
+    "proposal_id": "0020",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "tools/supervisor.py",
+      "tests/test_supervisor.py",
+      "tools/proposal_promotion_policy.json",
+      "tools/proposal_promotion_registry.json",
+      "docs/proposals/0020_draft_to_proposal_promotion.md"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/proposal_promotion_policy.json",
+        "pattern": "\"semantic_boundary_principle\": \"Promotion is normalization into a reviewable proposal contract, not a folder move.\""
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def load_proposal_promotion_policy_report("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def validate_transition_packet_report("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def classify_proposal_repository_projection("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def build_proposal_promotion_index("
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_validate_transition_packet_report_includes_promotion_policy_metadata("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_validate_transition_packet_accepts_minimal_promotion_packet("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_validate_transition_packet_promotion_requires_packet_contract("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "(\"0020\", [\"docs/archive/proposal_sources/0020_draft_to_proposal_promotion.md\"])"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "\"artifact_kind\": \"proposal_promotion_index\""
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "write_proposal_promotion_index(index)"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "proposal_promotion_index_path().relative_to(ROOT).as_posix()"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "\"--build-proposal-promotion-index\""
+      }
+    ]
+  },
+  {
     "proposal_id": "0021",
     "posture": "synchronous_runtime_slice",
     "runtime_surfaces": [
