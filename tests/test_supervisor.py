@@ -21572,7 +21572,7 @@ def test_main_builds_supervisor_stalled_run_salvage_as_recoverable_failure(
 
     salvage_path = repo_fixture / "runs" / "run-salvage-1-salvage.json"
     patch_path = repo_fixture / "runs" / "run-salvage-1-salvage.patch"
-    run_log_path = repo_fixture / "runs" / "RUN-SALVAGE-1.json"
+    run_log_path = repo_fixture / "runs" / "run-salvage-1.json"
     assert salvage_path.exists()
     assert patch_path.exists()
     assert run_log_path.exists()
@@ -21604,6 +21604,74 @@ def test_main_builds_supervisor_stalled_run_salvage_as_recoverable_failure(
     assert "- required_human_action: review_salvaged_worktree_diff" in latest_summary
     assert "- salvage_artifact_path: runs/run-salvage-1-salvage.json" in latest_summary
     assert "- salvage_patch_artifact_path: runs/run-salvage-1-salvage.patch" in latest_summary
+
+
+def test_main_builds_supervisor_stalled_run_salvage_handles_binary_file_without_crash(
+    supervisor_module: object,
+    repo_fixture: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    worktree = make_fake_worktree(repo_fixture)
+    target_path = worktree / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    target_path.write_bytes(b"\x00\x01\x02\x03")
+
+    exit_code = supervisor_module.main(
+        build_supervisor_stalled_run_salvage_mode=True,
+        target_spec="SG-SPEC-0001",
+        supervisor_salvage_worktree_path=worktree.as_posix(),
+        supervisor_run_path="RUN-BINARY-1",
+    )
+
+    assert exit_code == 0
+    summary = json.loads(capsys.readouterr().out)
+    assert summary["artifact_kind"] == "supervisor_stalled_run_salvage"
+    assert (repo_fixture / "runs" / "run-binary-1-salvage.patch").exists()
+    assert (repo_fixture / "runs" / "run-binary-1-salvage.json").exists()
+    assert (repo_fixture / "runs" / "run-binary-1.json").exists()
+
+
+def test_main_build_supervisor_stalled_run_salvage_rejects_empty_salvage(
+    supervisor_module: object,
+    repo_fixture: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    worktree = make_fake_worktree(repo_fixture)
+
+    exit_code = supervisor_module.main(
+        build_supervisor_stalled_run_salvage_mode=True,
+        target_spec="SG-SPEC-0001",
+        supervisor_salvage_worktree_path=worktree.as_posix(),
+    )
+
+    assert exit_code == 1
+    assert "no changes found for salvage scope; nothing to review" in capsys.readouterr().err
+
+
+def test_main_build_supervisor_stalled_run_salvage_rejects_existing_run_log(
+    supervisor_module: object,
+    repo_fixture: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    worktree = make_fake_worktree(repo_fixture)
+    target_path = worktree / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    target_path.write_text(
+        target_path.read_text(encoding="utf-8") + "\n# salvaged bounded edit\n",
+        encoding="utf-8",
+    )
+    existing_log = repo_fixture / "runs" / "run-conflict-1.json"
+    existing_log.write_text("{}", encoding="utf-8")
+
+    exit_code = supervisor_module.main(
+        build_supervisor_stalled_run_salvage_mode=True,
+        target_spec="SG-SPEC-0001",
+        supervisor_salvage_worktree_path=worktree.as_posix(),
+        supervisor_run_path="RUN-CONFLICT-1",
+    )
+
+    assert exit_code == 1
+    assert "run log already exists for run_id: run-conflict-1" in (capsys.readouterr().err)
+    assert not (repo_fixture / "runs" / "run-conflict-1-salvage.patch").exists()
+    assert not (repo_fixture / "runs" / "run-conflict-1-salvage.json").exists()
 
 
 def test_main_build_supervisor_stalled_run_salvage_rejects_missing_worktree_path(

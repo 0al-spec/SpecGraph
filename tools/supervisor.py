@@ -8925,10 +8925,15 @@ def supervisor_stalled_run_salvage_patch_path(run_id: str) -> Path:
     return RUNS_DIR / f"{safe_run_id}-salvage.patch"
 
 
+def supervisor_stalled_run_salvage_log_path(run_id: str) -> Path:
+    safe_run_id = sanitize_for_git(str(run_id).strip())
+    return RUNS_DIR / f"{safe_run_id}.json"
+
+
 def _read_text_if_exists(path: Path) -> str:
     try:
         return path.read_text(encoding="utf-8")
-    except OSError:
+    except (OSError, UnicodeDecodeError):
         return ""
 
 
@@ -9010,7 +9015,7 @@ def build_supervisor_stalled_run_salvage(
     if not worktree_path.exists() or not worktree_path.is_dir():
         raise RuntimeError(f"salvage worktree path does not exist: {worktree_path.as_posix()}")
 
-    selected_run_id = str(run_id or "").strip() or make_run_id(normalized_spec_id)
+    selected_run_id = sanitize_for_git(str(run_id or "").strip()) or make_run_id(normalized_spec_id)
     allowed_paths = [f"specs/nodes/{normalized_spec_id}.yaml"]
     changed_files = git_status_changed_files(worktree_path)
     if not changed_files:
@@ -9019,10 +9024,14 @@ def build_supervisor_stalled_run_salvage(
             allowed_paths=allowed_paths,
         )
     changed_files = sorted({path for path in changed_files if path})
+    if not changed_files:
+        raise RuntimeError("no changes found for salvage scope; nothing to review")
     bounded_to_allowed_paths = bool(changed_files) and all(
         path in set(allowed_paths) for path in changed_files
     )
     patch_text = worktree_patch_text(worktree_path, changed_files)
+    if not patch_text.strip():
+        raise RuntimeError("no salvage patch content generated; nothing to review")
     patch_sha256 = hashlib.sha256(patch_text.encode("utf-8")).hexdigest()
     patch_path = supervisor_stalled_run_salvage_patch_path(selected_run_id)
     salvage_path = supervisor_stalled_run_salvage_artifact_path(selected_run_id)
@@ -9136,14 +9145,18 @@ def write_supervisor_stalled_run_salvage(
     run_id = str(salvage.get("run_id", "")).strip()
     if not run_id:
         raise RuntimeError("invalid stalled-run salvage artifact: missing run_id")
+    if not supervisor_stalled_run_salvage_log_path(run_id).parent.exists():
+        supervisor_stalled_run_salvage_log_path(run_id).parent.mkdir(parents=True, exist_ok=True)
+    if supervisor_stalled_run_salvage_log_path(run_id).exists():
+        raise RuntimeError(f"run log already exists for run_id: {run_id}")
     salvage_path = supervisor_stalled_run_salvage_artifact_path(run_id)
     patch_path = supervisor_stalled_run_salvage_patch_path(run_id)
     patch_path.parent.mkdir(parents=True, exist_ok=True)
+    run_log_path = write_run_log(run_id, run_payload)
     with artifact_lock(patch_path):
         atomic_write_text(patch_path, patch_text)
     with artifact_lock(salvage_path):
         atomic_write_json(salvage_path, salvage)
-    run_log_path = write_run_log(run_id, run_payload)
     write_latest_summary(run_payload)
     return salvage_path, patch_path, run_log_path
 
