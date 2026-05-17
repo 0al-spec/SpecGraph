@@ -27974,6 +27974,16 @@ def build_graph_backlog_projection_from_surfaces(
     adopted_metrics_consumer_ids = metrics_feedback_adopted_consumer_ids(metrics_feedback_index)
     computed_metric_pack_ids = metric_pack_ids_with_computed_runs(metric_pack_runs)
     stale_split_signal_keys = stale_split_proposal_signal_keys(proposal_lane_overlay)
+    current_graph_signals_by_spec: dict[str, set[str]] = {}
+    for item in graph_overlay.get("entries", []):
+        if not isinstance(item, dict):
+            continue
+        spec_id = str(item.get("spec_id", "")).strip()
+        if not spec_id:
+            continue
+        current_graph_signals_by_spec[spec_id] = {
+            str(signal).strip() for signal in item.get("signals", []) if str(signal).strip()
+        }
 
     def metrics_consumer_is_adopted(item: dict[str, Any]) -> bool:
         consumer_id = str(item.get("consumer_id", "")).strip()
@@ -28076,6 +28086,12 @@ def build_graph_backlog_projection_from_surfaces(
                 or "unknown"
             )
             signal = str(item.get("signal", "")).strip()
+            if (
+                source_artifact == "refactor_queue"
+                and signal
+                and signal not in current_graph_signals_by_spec.get(subject_id, set())
+            ):
+                continue
             if (
                 signal in GRAPH_NEXT_MOVES_SPLIT_READINESS_SIGNALS
                 and (subject_id, signal) in stale_split_signal_keys
