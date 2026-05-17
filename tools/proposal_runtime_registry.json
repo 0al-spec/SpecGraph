@@ -2117,5 +2117,61 @@
         "pattern": "write_conversation_memory_promotion_pressure(pressure)"
       }
     ]
+  },
+  {
+    "proposal_id": "0046",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "tools/supervisor.py",
+      "tests/test_supervisor.py",
+      "docs/proposal_spec_trace_viewer_contract.md",
+      "docs/proposals/0046_proposal_spec_trace_semantics.md"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "PROPOSAL_SPEC_TRACE_INDEX_ARTIFACT_KIND = \"proposal_spec_trace_index\""
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def proposal_spec_trace_status_from_promotion("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def build_proposal_spec_trace_index("
+      },
+      {
+        "path": "docs/proposal_spec_trace_viewer_contract.md",
+        "pattern": "runs/proposal_spec_trace_index.json"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_proposal_spec_trace_index_separates_relation_authority("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_proposal_spec_trace_index_keeps_missing_trace_visible("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_main_builds_proposal_spec_trace_index_as_standalone_command("
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "write_proposal_spec_trace_index(index)"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "\"contract_doc\": \"docs/proposal_spec_trace_viewer_contract.md\""
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "\"--build-proposal-spec-trace-index\""
+      }
+    ]
   }
 ]
