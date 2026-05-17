@@ -21134,6 +21134,74 @@ def test_build_graph_next_moves_prefers_metric_runtime_gap_over_draft_reference(
     assert report["recommended_next_move"]["subject"]["source_artifact"] == "metric_pack_runs"
 
 
+def test_build_graph_next_moves_defers_metrics_adoption_feedback_after_local_gaps(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    _ = repo_fixture
+    adoption_backlog_id = (
+        "metrics_feedback_index::metrics::metrics_sib::collect_metrics_adoption_feedback"
+    )
+    evidence_backlog_id = (
+        "evidence_plane_overlay::evidence::SG-SPEC-0050::collect_observation_evidence"
+    )
+    report = supervisor_module.build_graph_next_moves(
+        [],
+        backlog_projection={
+            "artifact_kind": supervisor_module.GRAPH_BACKLOG_PROJECTION_ARTIFACT_KIND,
+            "schema_version": supervisor_module.GRAPH_BACKLOG_PROJECTION_SCHEMA_VERSION,
+            "generated_at": "2026-05-02T00:00:00Z",
+            "entry_count": 2,
+            "entries": [
+                {
+                    "backlog_id": adoption_backlog_id,
+                    "domain": "metrics",
+                    "source_artifact": "metrics_feedback_index",
+                    "source_artifact_path": "runs/metrics_feedback_index.json",
+                    "subject_kind": "consumer",
+                    "subject_id": "metrics_sib",
+                    "title": "",
+                    "status": "adoption_observed_locally",
+                    "review_state": "adoption_visible",
+                    "next_gap": "collect_metrics_adoption_feedback",
+                    "priority": "low",
+                    "details": {},
+                },
+                {
+                    "backlog_id": evidence_backlog_id,
+                    "domain": "evidence",
+                    "source_artifact": "evidence_plane_overlay",
+                    "source_artifact_path": "runs/evidence_plane_overlay.json",
+                    "subject_kind": "spec",
+                    "subject_id": "SG-SPEC-0050",
+                    "title": "Pre-Spec Semantic Layer",
+                    "status": "partial",
+                    "review_state": "",
+                    "next_gap": "collect_observation_evidence",
+                    "priority": "low",
+                    "details": {},
+                },
+            ],
+            "summary": {
+                "priority_counts": {"low": 2},
+                "next_gap_counts": {
+                    "collect_metrics_adoption_feedback": 1,
+                    "collect_observation_evidence": 1,
+                },
+            },
+            "viewer_projection": {
+                "priorities": {"low": [adoption_backlog_id, evidence_backlog_id]}
+            },
+        },
+        proposal_runtime_index=fake_graph_next_moves_proposal_runtime(supervisor_module),
+    )
+
+    assert report["current_scene"] == "high_priority_backlog"
+    assert report["recommended_next_move_kind"] == "review_backlog_item"
+    assert report["recommended_next_move"]["next_gap"] == "collect_observation_evidence"
+    assert report["recommended_next_move"]["subject"]["subject_id"] == "SG-SPEC-0050"
+
+
 def test_build_graph_next_moves_reports_steady_state_when_no_gap_is_visible(
     supervisor_module: object,
     repo_fixture: Path,
