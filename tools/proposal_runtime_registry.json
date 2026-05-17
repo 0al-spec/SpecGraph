@@ -2173,5 +2173,63 @@
         "pattern": "\"--build-proposal-spec-trace-index\""
       }
     ]
+  },
+  {
+    "proposal_id": "0047",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "tools/supervisor.py",
+      "tests/test_supervisor.py",
+      "tools/supervisor_evidence_packet_policy.json",
+      "docs/supervisor_manual.md",
+      "docs/proposals/0047_evidence_backed_build_protocol.md",
+      "Makefile"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/supervisor_evidence_packet_policy.json",
+        "pattern": "\"artifact_kind\": \"supervisor_evidence_packet_policy\""
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def build_supervisor_evidence_packet("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def write_supervisor_evidence_packet("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "\"--build-supervisor-evidence-packet\""
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_main_builds_supervisor_evidence_packet_as_standalone_command("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_main_build_supervisor_evidence_packet_rejects_missing_run_path("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "packet[\"raw_artifact_reference\"][\"content_sha256\"]"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "write_supervisor_evidence_packet(packet)"
+      },
+      {
+        "path": "docs/supervisor_manual.md",
+        "pattern": "docs/evidence/supervisor-runs/<run_id>.json"
+      },
+      {
+        "path": "Makefile",
+        "pattern": "supervisor-evidence-packet:"
+      }
+    ]
   }
 ]

@@ -21466,6 +21466,85 @@ def test_build_implementation_work_index_from_delta_snapshot(
     assert index["runtime_code_mutations_allowed"] is False
 
 
+def test_main_builds_supervisor_evidence_packet_as_standalone_command(
+    supervisor_module: object,
+    repo_fixture: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    raw_run = {
+        "run_id": "20260517T120000Z-SG-SPEC-0001-test0001",
+        "spec_id": "SG-SPEC-0001",
+        "title": "Golden Path Node",
+        "run_kind": "ordinary_refine",
+        "completion_status": "ok",
+        "outcome": "done",
+        "gate_state": "review_pending",
+        "required_human_action": "approve or retry refinement",
+        "auto_approved": False,
+        "selected_by_rule": {
+            "selection_mode": "explicit_target_refine",
+            "sort_order": ["explicit_operator_target"],
+        },
+        "changed_files": ["specs/nodes/SG-SPEC-0001.yaml"],
+        "accepted_canonical_diff": False,
+        "materialized_child_paths": [],
+        "validator_results": {
+            "outputs": True,
+            "allowed_paths": True,
+            "reconciliation": True,
+        },
+        "validation_errors": [],
+        "validation_findings": [],
+        "yaml_repair_paths": [],
+    }
+    raw_run_path = repo_fixture / "runs" / f"{raw_run['run_id']}.json"
+    raw_run_path.write_text(json.dumps(raw_run), encoding="utf-8")
+
+    exit_code = supervisor_module.main(
+        build_supervisor_evidence_packet_mode=True,
+        supervisor_run_path=raw_run_path.name,
+        supervisor_raw_artifact_uri="   ",
+    )
+
+    assert exit_code == 0
+    summary = json.loads(capsys.readouterr().out)
+    assert summary["artifact_kind"] == "supervisor_evidence_packet"
+    assert summary["tracked_artifacts_written"] is True
+    packet_path = (
+        repo_fixture / "docs" / "evidence" / "supervisor-runs" / f"{raw_run['run_id']}.json"
+    )
+    packet = json.loads(packet_path.read_text(encoding="utf-8"))
+    assert packet["policy_reference"]["artifact_path"] == (
+        "tools/supervisor_evidence_packet_policy.json"
+    )
+    assert packet["selection"]["selected_because"] == [
+        "explicit_target_refine",
+        "explicit_operator_target",
+    ]
+    assert packet["mutation"]["changed_files"] == ["specs/nodes/SG-SPEC-0001.yaml"]
+    assert packet["validation"]["status"] == "passed"
+    assert packet["gate"]["decision"] == "pending_human_review"
+    assert packet["raw_artifact_reference"]["run_path"] == f"runs/{raw_run['run_id']}.json"
+    assert packet["raw_artifact_reference"]["content_sha256"].startswith("sha256:")
+    assert packet["raw_artifact_reference"]["availability"] == "local_raw_run"
+    assert packet["raw_artifact_reference"]["artifact_uri"] == ""
+    assert summary["written_artifacts"]["supervisor_evidence_packet"]["artifact_path"] == (
+        f"docs/evidence/supervisor-runs/{raw_run['run_id']}.json"
+    )
+
+
+def test_main_build_supervisor_evidence_packet_rejects_missing_run_path(
+    supervisor_module: object,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    exit_code = supervisor_module.main(build_supervisor_evidence_packet_mode=True)
+
+    assert exit_code == 1
+    assert "--build-supervisor-evidence-packet requires --supervisor-run-path" in (
+        capsys.readouterr().err
+    )
+
+
 def test_sg_spec_0030_trace_anchor_blocks_non_bypass_prerequisite_gap(
     supervisor_module: object,
 ) -> None:
@@ -23352,6 +23431,22 @@ def test_proposal_0046_proposal_spec_trace_runtime_is_covered(
 
     assert "0046" in by_id, "Proposal 0046 missing from proposal_runtime_index"
     entry = by_id["0046"]
+    assert entry["runtime_realization"]["status"] == "implemented"
+    assert entry["validation_closure"]["status"] == "covered"
+    assert entry["observation_coverage"]["status"] == "covered"
+    assert entry["observation_coverage"]["missing_markers"] == []
+    assert entry["reflective_chain"]["next_gap"] == "none"
+
+
+def test_proposal_0047_evidence_backed_build_protocol_runtime_is_covered(
+    supervisor_module: object,
+) -> None:
+    """Proposal 0047 starts runtime realization through supervisor evidence packets."""
+    index = supervisor_module.build_proposal_runtime_index()
+    by_id = {e["proposal_id"]: e for e in index["entries"]}
+
+    assert "0047" in by_id, "Proposal 0047 missing from proposal_runtime_index"
+    entry = by_id["0047"]
     assert entry["runtime_realization"]["status"] == "implemented"
     assert entry["validation_closure"]["status"] == "covered"
     assert entry["observation_coverage"]["status"] == "covered"

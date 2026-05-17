@@ -1,0 +1,37 @@
+{
+  "artifact_kind": "supervisor_evidence_packet_policy",
+  "version": 1,
+  "repository_layout": {
+    "raw_runs_default": "local_or_ci_artifact",
+    "curated_packet_dir": "docs/evidence/supervisor-runs",
+    "raw_runs_tracked_by_default": false
+  },
+  "packet_contract": {
+    "artifact_kind": "supervisor_evidence_packet",
+    "schema_version": 1,
+    "evidence_kind": "supervisor_run_packet",
+    "required_sections": [
+      "selection",
+      "mutation",
+      "validation",
+      "gate",
+      "raw_artifact_reference"
+    ],
+    "canonical_mutations_allowed": false
+  },
+  "raw_artifact_reference_contract": {
+    "availability_values": [
+      "local_raw_run",
+      "retained_ci_artifact",
+      "summary_only"
+    ],
+    "digest_required": true,
+    "durable_uri_required_for_retained_ci_artifact": true
+  },
+  "promotion_policy": {
+    "raw_runs_remain_local_by_default": true,
+    "curated_packets_are_reviewable_evidence": true,
+    "packets_must_not_claim_raw_recovery_without_uri": true,
+    "proposal_source": "docs/proposals/0047_evidence_backed_build_protocol.md"
+  }
+}
