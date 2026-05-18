@@ -7706,6 +7706,13 @@ def test_derive_acceptance_coverage_uses_canonical_acceptance_evidence(
         "criterion": "Reports partial mapping when one criterion is missing evidence.",
         "evidence": "",
     }
+    spec.data["acceptance"].append("")
+    spec.data["acceptance_evidence"].append(
+        {
+            "criterion": "",
+            "evidence": "Blank acceptance entries must not inflate mapped criteria.",
+        }
+    )
     partial = supervisor_module.derive_acceptance_coverage(
         spec,
         test_refs=[{"path": "tests/test_supervisor.py", "line": 1}],
@@ -8473,6 +8480,13 @@ def test_build_spec_trace_projection_groups_backlog_and_viewer_filters(
                     "freshness": {"status": "drifted_after_verification"},
                     "acceptance_coverage": {"status": "evidence_linked_unmapped"},
                 },
+                {
+                    "spec_id": "SG-SPEC-0005",
+                    "title": "Partially Mapped",
+                    "implementation_state": {"status": "verified"},
+                    "freshness": {"status": "fresh"},
+                    "acceptance_coverage": {"status": "partially_mapped"},
+                },
             ],
         }
     )
@@ -8483,9 +8497,11 @@ def test_build_spec_trace_projection_groups_backlog_and_viewer_filters(
         "SG-SPEC-0003"
     ]
     assert projection["viewer_projection"]["named_filters"]["drifted"] == ["SG-SPEC-0004"]
+    assert projection["viewer_projection"]["named_filters"]["acceptance_gap"] == ["SG-SPEC-0005"]
     assert projection["implementation_backlog"]["grouped_by_next_gap"] == {
         "add_verification_anchors": ["SG-SPEC-0002"],
         "attach_trace_contract": ["SG-SPEC-0001"],
+        "map_acceptance_evidence": ["SG-SPEC-0005"],
         "refresh_after_spec_update": ["SG-SPEC-0003"],
         "reverify_after_drift": ["SG-SPEC-0004"],
     }
@@ -13942,6 +13958,10 @@ def test_build_metric_signal_index_reports_threshold_breaches(
                     "spec_id": "SG-SPEC-0002",
                     "acceptance_coverage": {"status": "evidence_linked_unmapped"},
                 },
+                {
+                    "spec_id": "SG-SPEC-0003",
+                    "acceptance_coverage": {"status": "partially_mapped"},
+                },
             ],
         },
     )
@@ -14021,6 +14041,11 @@ def test_build_metric_signal_index_reports_threshold_breaches(
     assert index["artifact_kind"] == supervisor_module.METRIC_SIGNAL_INDEX_ARTIFACT_KIND
     by_id = {entry["metric_id"]: entry for entry in index["metrics"]}
     assert by_id["specification_verifiability"]["status"] == "below_threshold"
+    assert by_id["specification_verifiability"]["input_summary"]["acceptance_status_counts"] == {
+        "evidence_linked_unmapped": 1,
+        "no_linked_evidence": 1,
+        "partially_mapped": 1,
+    }
     assert by_id["process_observability"]["status"] == "healthy"
     assert by_id["structural_observability"]["status"] == "below_threshold"
     assert by_id["sib"]["status"] == "below_threshold"

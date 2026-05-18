@@ -42,6 +42,7 @@
   "status_scoring": {
     "acceptance_coverage": {
       "covered": 1.0,
+      "partially_mapped": 0.75,
       "evidence_linked_unmapped": 0.5,
       "no_linked_evidence": 0.0
     },

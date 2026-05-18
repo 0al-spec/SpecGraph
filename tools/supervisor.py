@@ -17400,8 +17400,11 @@ def derive_acceptance_coverage(
     mapped_criterion_count = 0
     if isinstance(acceptance, list) and isinstance(evidence, list):
         for criterion, evidence_item in zip(acceptance, evidence, strict=False):
+            criterion_text = str(criterion).strip()
+            if not criterion_text:
+                continue
             if acceptance_evidence_semantically_grounded(
-                criterion=str(criterion).strip(),
+                criterion=criterion_text,
                 evidence_item=evidence_item,
             ):
                 mapped_criterion_count += 1
@@ -17685,7 +17688,7 @@ def build_spec_trace_projection(index: dict[str, Any]) -> dict[str, Any]:
             named_filters["acceptance_gap"].append(spec_id)
             if acceptance_status == "no_linked_evidence":
                 next_gap = "link_acceptance_evidence"
-            elif acceptance_status == "evidence_linked_unmapped":
+            elif acceptance_status in {"evidence_linked_unmapped", "partially_mapped"}:
                 next_gap = "map_acceptance_evidence"
 
         if next_gap != "none":
