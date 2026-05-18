@@ -39,8 +39,9 @@ acceptance_evidence:
     undeclared side channel, including when the consulted memory comes from PageIndex-backed conversation
     recall.
 - criterion: Defines the minimal traceability contract for consulted project memory by preserving the
-    consulted source class, distinguishing recalled context from direct user wording, and keeping PageIndex-backed
-    conversation recall attributable when used
+    consulted source class, distinguishing recalled context from direct user wording, keeping PageIndex-backed
+    conversation recall attributable when used, and preserving an explicit mediation-record decision when
+    project memory is not consulted
   evidence: specification.consultation_policy.declaration_rules requires every mediation event to record
     whether consulted_project_memory was consulted or explicitly not consulted. specification.traceability_policy.consultation_traceability
     then requires each declared_memory_consultation to preserve the consulted source class, keep recalled
