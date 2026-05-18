@@ -31,8 +31,8 @@ acceptance_evidence:
     blocking views derived by tooling.
 
     '
-- criterion: Defines explicit parent-child edge patterns and anti-patterns so refinement ancestry and
-    blocking are not conflated
+- criterion: Defines explicit parent-child edge patterns and anti-patterns so that refinement ancestry
+    and blocking are not conflated
   evidence: 'specification.relation_policy distinguishes the parent-to-child depends_on blocking case
     from child-to-parent refines ancestry. specification.parent_child_edge_rules states the normal pair
     of edges and the permitted non-blocking variant, and disallows replacing parent-child blocking intent
