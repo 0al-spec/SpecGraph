@@ -48,7 +48,9 @@ acceptance_evidence:
     authority-class, and traceability-reachability contracts without redefining the bounded contracts
     owned by those children.
   evidence: specification.member_contracts enumerates SG-SPEC-0019, SG-SPEC-0022, SG-SPEC-0023, SG-SPEC-0024,
-    SG-SPEC-0054, SG-SPEC-0057, and SG-SPEC-0061 with explicit member roles and ownership boundaries.
+    SG-SPEC-0054, SG-SPEC-0057, and SG-SPEC-0061 with explicit member roles for canonical revision lineage,
+    maturity, edge-kind validation, provenance, presence, authority-class, and traceability-reachability
+    while preserving each bounded contract.
 - criterion: Defines the dependency and refinement routing rule for the cluster so SG-SPEC-0001 can depend
     on one meaningful record-semantics aggregate while concrete child specs keep their existing semantic
     ownership.
