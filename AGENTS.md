@@ -1,6 +1,7 @@
 # AGENTS.md
 
 See [CONSTITUTION.md](CONSTITUTION.md) for the runtime governance model used to grow SpecGraph during bootstrap.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for accumulated project workflow, operational lessons, and human-readable contribution rules.
 
 ## Repository rules
 - Merge in main branch ONLY  via Pull (Merge) Request on GitHub
@@ -9,6 +10,7 @@ See [CONSTITUTION.md](CONSTITUTION.md) for the runtime governance model used to 
 - Refine specifications, not runtime code.
 - Preserve stable spec IDs and terminology.
 - For any change affecting SpecGraph tooling or SpecGraph specifications, do not let proposals accumulate separately from runtime realization; close the loop through `observe -> propose -> improve tools -> observe again`.
+- When project work reveals reusable lessons, update [CONTRIBUTING.md](CONTRIBUTING.md); if the lesson changes mandatory agent behavior, update this file too.
 - When addressing actionable PR review threads, treat review feedback as process evidence: classify the root cause, add or name a prevention action such as a regression test, validator, policy rule, documentation rule, or agent instruction, record verification, and only use accepted risk when prevention is intentionally deferred. Use [tools/review_feedback_policy.json](tools/review_feedback_policy.json) as the vocabulary source.
 - When operating the supervisor, use the repo-local skills under [`.codex/skills`](.codex/skills) as the default operational wrapper before ad hoc CLI usage; especially `specgraph-supervisor`, `specgraph-supervisor-gate-review`, and `specgraph-supervisor-child-materialize`.
 - Prefer the repository Makefile shortcuts for routine supervisor/viewer/test operations instead of direct verbose commands: `make viewer-surfaces`, `make dashboard`, `make backlog`, `make next-move`, `make spec-activity`, `make proposal-spec-trace`, `make external-consumers`, `make external-handoffs`, `make metrics-delivery`, `make metrics-feedback`, `make metrics-source-promotion`, `make metric-signals`, `make metric-thresholds`, `make metric-packs`, `make metric-pack-drift`, `make metric-pack-adapters`, `make metric-pack-runs`, `make metric-pricing`, `make model-usage`, `make conversation-memory`, `make conversation-memory-map`, `make conversation-memory-pressure`, `make pre-spec-semantics`, `make implementation-work`, `make supervisor-evidence-packet`, `make supervisor-stalled-run-salvage`, `make factory-architecture`, `make swift-typed-tooling`, `make review-feedback`, `make publish-bundle`, `make test`, and `make test-supervisor`. Use direct `python3 tools/supervisor.py ... --output-mode full` only when a task explicitly needs the complete artifact on stdout.
