@@ -8990,7 +8990,10 @@ def test_live_sg_spec_0018_evidence_contract_is_chain_complete(
 
 def test_live_sg_spec_0019_evidence_contract_is_chain_complete(
     supervisor_module: object,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    monkeypatch.setattr(supervisor_module, "git_status_changed_files", lambda cwd: [])
+
     trace_index = supervisor_module.build_spec_trace_index(supervisor_module.load_specs())
     trace_by_id = {entry["spec_id"]: entry for entry in trace_index["entries"]}
     index = supervisor_module.build_evidence_plane_index(supervisor_module.load_specs())
