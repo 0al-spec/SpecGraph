@@ -2,7 +2,7 @@
 
 SpecGraph is grown through small, reviewable graph changes. The project has accumulated a working style that matters as much as the code: observe the graph, make one bounded improvement, verify the derived surfaces, open a PR, then repeat from updated `main`.
 
-Use [AGENTS.md](AGENTS.md) for executable agent rules. Use this file for the human-readable process, conventions, and lessons learned.
+Use [AGENTS.md](AGENTS.md) for executable agent rules. Use this file for the human-readable process, conventions, lessons learned, and durable project experience.
 
 ## Core Loop
 
@@ -108,6 +108,19 @@ Code review comments are process evidence. For each actionable review thread:
 - Close the thread through GraphQL.
 
 Use [tools/review_feedback_policy.json](tools/review_feedback_policy.json) as the vocabulary source.
+
+## Capturing Lessons
+
+Treat important project experience as a first-class contribution. When a PR, supervisor run, review thread, deploy incident, viewer integration, or graph diagnosis teaches a reusable lesson, record it in this file before the knowledge stays only in chat history.
+
+Record lessons here when they are:
+
+- repeated enough to become a rule of thumb;
+- surprising enough that another contributor would likely repeat the mistake;
+- important for PR stack handling, supervisor behavior, evidence mapping, viewer contracts, deploy, metrics, or graph semantics;
+- a stable human-facing process convention rather than an agent-only instruction.
+
+If the lesson changes how agents must behave, update [AGENTS.md](AGENTS.md) as well. If the lesson changes a machine contract, add or update the relevant policy, validator, test, or viewer contract instead of documenting it only in prose.
 
 ## Generated Artifacts
 
