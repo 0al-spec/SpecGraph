@@ -33,9 +33,9 @@ acceptance_evidence:
 - criterion: Defines first derived subtree-shape signals for serial ladders, over-atomized subtrees, missing
     aggregate grouping, depth without breadth, delegation-only chains, role-obscured nodes, and bookkeeping-only
     nodes.
-  evidence: specification.signal_families.subtree_shape enumerates serial_refinement_ladder, over_atomized_subtree,
-    missing_aggregate_node, depth_without_breadth, delegation_only_chain, role_obscured_node, and bookkeeping_only_node
-    with bounded indicative evidence for each.
+  evidence: specification.signal_families.subtree_shape enumerates derived subtree-shape signals for serial
+    ladders, over-atomized subtrees, missing aggregate grouping, depth without breadth, delegation-only
+    chains, role-obscured nodes, and bookkeeping-only nodes with bounded indicative evidence for each.
 - criterion: Defines lower-boundary handoff signals, their distinction from subtree-shape pressure, and
     their non-canonical meaning so further graph decomposition can be redirected without introducing a
     tracked Tech Spec layer.
