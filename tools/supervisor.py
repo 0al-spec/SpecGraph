@@ -7083,16 +7083,6 @@ def semantic_text_token_sequence(text: str, *, min_len: int = 4) -> list[str]:
     return tokens
 
 
-def acceptance_evidence_grounding_suffix(criterion: str) -> str:
-    terms = semantic_text_token_sequence(criterion)
-    if not terms:
-        terms = semantic_text_token_sequence(criterion, min_len=2)
-    if not terms:
-        normalized = " ".join(SEMANTIC_WORD_RE.findall(str(criterion).lower())).strip()
-        return f" Grounding criterion: {normalized}." if normalized else ""
-    return " Grounding criterion terms: " + ", ".join(terms[:8]) + "."
-
-
 def normalize_acceptance_evidence_mapping(node_data: dict[str, Any]) -> bool:
     acceptance = node_data.get("acceptance")
     evidence = node_data.get("acceptance_evidence")
@@ -7124,14 +7114,6 @@ def normalize_acceptance_evidence_mapping(node_data: dict[str, Any]) -> bool:
             if original_item != repaired_item:
                 changed = True
 
-        if evidence_text and not acceptance_evidence_semantically_grounded(
-            criterion=criterion_text,
-            evidence_item=repaired_item,
-        ):
-            repaired_item["evidence"] = (
-                evidence_text.rstrip() + acceptance_evidence_grounding_suffix(criterion_text)
-            )
-            changed = True
         normalized_evidence.append(repaired_item)
 
     if changed:

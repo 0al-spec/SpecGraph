@@ -25787,7 +25787,7 @@ def test_validate_changed_spec_nodes_accepts_grounded_dict_acceptance_evidence(
     assert errors == []
 
 
-def test_normalize_acceptance_evidence_mapping_copies_criteria_and_repairs_grounding(
+def test_normalize_acceptance_evidence_mapping_copies_criteria_without_forcing_grounding(
     supervisor_module: object,
 ) -> None:
     criterion = (
@@ -25810,7 +25810,7 @@ def test_normalize_acceptance_evidence_mapping_copies_criteria_and_repairs_groun
     item = node_data["acceptance_evidence"][0]
     assert item["criterion"] == criterion
     assert "dependency" in item["evidence"]
-    assert supervisor_module.acceptance_evidence_semantically_grounded(
+    assert not supervisor_module.acceptance_evidence_semantically_grounded(
         criterion=criterion,
         evidence_item=item,
     )
@@ -26095,7 +26095,10 @@ def test_main_normalizes_recoverable_semantic_grounding_failure_before_retry(
             worktree_node.read_text(encoding="utf-8")
         )
         data["acceptance_evidence"] = grounded_acceptance_evidence(acceptance)
-        data["acceptance_evidence"][4] = "Unrelated route metadata without matching terms"
+        if executor_calls == 1:
+            data["acceptance_evidence"][4] = "Unrelated route metadata without matching terms"
+        else:
+            data["acceptance_evidence"][4] = grounded_acceptance_evidence([acceptance[4]])[0]
         worktree_node.write_text(json.dumps(data), encoding="utf-8")
         return subprocess.CompletedProcess(
             args=["codex"],
@@ -26108,8 +26111,8 @@ def test_main_normalizes_recoverable_semantic_grounding_failure_before_retry(
     captured = capsys.readouterr()
 
     assert exit_code == 0
-    assert executor_calls == 1
-    assert "Auto-retrying SG-SPEC-0001 after recoverable validation failure" not in captured.err
+    assert executor_calls == 2
+    assert "Auto-retrying SG-SPEC-0001 after recoverable validation failure" in captured.err
 
     updated = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
     assert updated["gate_state"] == "review_pending"
