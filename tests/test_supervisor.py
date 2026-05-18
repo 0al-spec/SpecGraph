@@ -9025,6 +9025,27 @@ def test_live_sg_spec_0019_evidence_contract_is_chain_complete(
     }
 
 
+def test_live_sg_spec_0049_trace_contract_is_verified(
+    supervisor_module: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(supervisor_module, "git_status_changed_files", lambda cwd: [])
+
+    trace_index = supervisor_module.build_spec_trace_index(supervisor_module.load_specs())
+    trace_by_id = {entry["spec_id"]: entry for entry in trace_index["entries"]}
+    entry = trace_by_id["SG-SPEC-0049"]
+
+    assert entry["trace_contract"]["source"] == "registry"
+    assert entry["trace_contract"]["matched_code_paths"] == ["tools/supervisor.py"]
+    assert entry["trace_contract"]["matched_test_paths"] == ["tests/test_supervisor.py"]
+    assert entry["implementation_state"]["status"] == "verified"
+    projection = supervisor_module.build_spec_trace_projection(trace_index)
+    assert not any(
+        item["spec_id"] == "SG-SPEC-0049" and item["next_gap"] == "add_verification_anchors"
+        for item in projection["implementation_backlog"]["items"]
+    )
+
+
 def test_live_sg_spec_0020_evidence_contract_is_chain_complete(
     supervisor_module: object,
 ) -> None:
