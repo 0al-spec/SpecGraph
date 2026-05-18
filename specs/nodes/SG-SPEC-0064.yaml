@@ -40,7 +40,8 @@ acceptance_evidence:
 - criterion: Groups spec refinement/linkage policy, reflective governance and graph-health signals, and
     ubiquitous vocabulary primitives without redefining the bounded contracts owned by those children.
   evidence: specification.member_contracts enumerates SG-SPEC-0002, SG-SPEC-0003, and SG-SPEC-0010 with
-    explicit member roles and ownership boundaries.
+    explicit member roles for spec refinement/linkage policy, reflective governance and graph-health signals,
+    and ubiquitous vocabulary primitives while preserving each bounded contract.
 - criterion: Defines root dependency routing so SG-SPEC-0001 can depend on one governance-and-vocabulary
     aggregate while concrete child specs keep their existing semantic ownership and dependencies.
   evidence: specification.cluster_contract.dependency_policy and specification.cluster_contract.refinement_routing_policy
