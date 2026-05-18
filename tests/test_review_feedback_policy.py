@@ -39,6 +39,25 @@ def test_review_feedback_policy_defines_learning_loop_contract() -> None:
     } <= required_fields
 
 
+def test_review_feedback_policy_defines_accepted_risk_revalidation_contract() -> None:
+    policy = load_review_feedback_policy()
+
+    contract = policy["accepted_risk_revalidation_contract"]
+    assert isinstance(contract, dict)
+    assert contract["status"] == "accepted_risk_recorded"
+    assert contract["next_gap"] == "review_accepted_risk_when_context_changes"
+    assert contract["trigger"] == "surrounding_context_changed"
+    assert contract["review_state"] == "watch"
+    assert contract["operator_action"] == (
+        "revisit_residual_risk_and_choose_prevention_or_keep_accepted"
+    )
+    assert set(contract["context_change_signals"]) >= {
+        "same_root_cause_reappears",
+        "affected_artifact_contract_changes",
+        "accepted_risk_blocks_or_confuses_next_move_selection",
+    }
+
+
 def test_review_feedback_policy_covers_recent_review_root_causes() -> None:
     policy = load_review_feedback_policy()
 

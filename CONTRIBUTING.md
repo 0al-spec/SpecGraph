@@ -214,5 +214,7 @@ make next-move
 - ContextBuilder often reads artifacts as raw passthrough; most data-shape bugs originate in SpecGraph, not the viewer.
 - Do not let `tasks.md` become a parallel backlog. The graph should surface gaps itself.
 - Conversation memory and raw exploration are inputs to graph work, but promotion into specs should remain review-first.
-- Accepted risk is temporary. Revisit it when surrounding context changes.
+- Accepted risk is temporary. If review feedback is closed through `accepted_risk_recorded`,
+  keep it as a watch item and revisit it when surrounding context changes, especially if
+  the same root cause reappears or a viewer/CI surface starts consuming the affected contract.
 - A PR that only changes docs can still be a feature PR if it changes the operational contract.
