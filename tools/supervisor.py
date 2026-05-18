@@ -4529,6 +4529,8 @@ def is_historical_spec(node_data: dict[str, Any]) -> bool:
         return False
     if state in {"historical", "historical_lineage_only"}:
         return True
+    # SG-SPEC-0019: supersession lineage keeps historical subjects inspectable
+    # while excluding them from active topology projections.
     return bool(relation_ids(node_data, "superseded_by"))
 
 
