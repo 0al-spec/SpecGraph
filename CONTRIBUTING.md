@@ -208,6 +208,7 @@ make next-move
 ## Practical Lessons
 
 - Brittle string markers are a common source of false evidence gaps. Prefer stable phrases, IDs, or structured anchors.
+- Live trace tests that assert `implementation_state.status = verified` must control dirty-worktree inputs, usually by stubbing `git_status_changed_files`, because local edits to declared code or test surfaces legitimately produce `in_progress`.
 - If generated artifacts show old data, rebuild the specific surface before assuming the viewer is wrong.
 - If `gh pr checks` reports no required checks after retargeting, verify PR state directly before merging.
 - ContextBuilder often reads artifacts as raw passthrough; most data-shape bugs originate in SpecGraph, not the viewer.
