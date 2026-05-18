@@ -8069,6 +8069,8 @@ def observe_graph_health(
                 and outcome == "split_required"
                 and metrics["execution_marker_ratio"] >= TEXT_MARKER_RATIO_THRESHOLD
             ):
+                # SG-SPEC-0049: subtree-shape pressure plus execution-facing
+                # residue becomes advisory lower-boundary handoff pressure.
                 observations.append(
                     {
                         "kind": "lower_boundary_handoff_candidate",
