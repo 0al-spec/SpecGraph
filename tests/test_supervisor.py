@@ -25809,7 +25809,7 @@ def test_normalize_acceptance_evidence_mapping_copies_criteria_without_forcing_g
     assert changed is True
     item = node_data["acceptance_evidence"][0]
     assert item["criterion"] == criterion
-    assert "dependency" in item["evidence"]
+    assert item["evidence"] == "specification.cluster_contract explains the placeholder note."
     assert not supervisor_module.acceptance_evidence_semantically_grounded(
         criterion=criterion,
         evidence_item=item,
@@ -26078,6 +26078,8 @@ def test_main_normalizes_recoverable_semantic_grounding_failure_before_retry(
     changed_snapshots = [
         [],
         ["specs/nodes/SG-SPEC-0001.yaml"],
+        [],
+        ["specs/nodes/SG-SPEC-0001.yaml"],
     ]
     monkeypatch.setattr(
         supervisor_module,
@@ -26131,8 +26133,10 @@ def test_main_normalizes_recoverable_semantic_grounding_failure_before_retry(
     )
 
     run_logs = sorted((repo_fixture / "runs").glob("*-SG-SPEC-*.json"))
-    assert len(run_logs) == 1
-    ok_payload = json.loads(run_logs[0].read_text(encoding="utf-8"))
+    assert len(run_logs) == 2
+    failed_payload = json.loads(run_logs[0].read_text(encoding="utf-8"))
+    assert failed_payload["gate_state"] == "retry_pending"
+    ok_payload = json.loads(run_logs[1].read_text(encoding="utf-8"))
     assert ok_payload["gate_state"] == "review_pending"
 
 
