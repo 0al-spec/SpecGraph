@@ -41,7 +41,7 @@ acceptance_evidence:
 - criterion: Preserves SG-SPEC-0043 as the review boundary and SG-SPEC-0029 as the mechanics availability
     contract.
   evidence: specification.review_boundary and specification.mechanics_boundary identify those active roles
-    without using them as a topology narrative.
+    as the review boundary and mechanics availability contract without using them as a topology narrative.
 - criterion: Applies the topology-prose rule so ordered graph paths stay metadata or derived projection,
     not the main contract.
   evidence: specification.topology_prose_policy states that path order is represented by graph metadata
