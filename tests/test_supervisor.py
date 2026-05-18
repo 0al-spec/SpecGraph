@@ -25787,6 +25787,35 @@ def test_validate_changed_spec_nodes_accepts_grounded_dict_acceptance_evidence(
     assert errors == []
 
 
+def test_normalize_acceptance_evidence_mapping_copies_criteria_and_repairs_grounding(
+    supervisor_module: object,
+) -> None:
+    criterion = (
+        "Defines root dependency routing so SG-SPEC-0001 can depend on one "
+        "governance-and-vocabulary aggregate"
+    )
+    node_data = {
+        "acceptance": [criterion],
+        "acceptance_evidence": [
+            {
+                "criterion": "Paraphrased dependency route",
+                "evidence": "specification.cluster_contract explains the placeholder note.",
+            }
+        ],
+    }
+
+    changed = supervisor_module.normalize_acceptance_evidence_mapping(node_data)
+
+    assert changed is True
+    item = node_data["acceptance_evidence"][0]
+    assert item["criterion"] == criterion
+    assert "dependency" in item["evidence"]
+    assert supervisor_module.acceptance_evidence_semantically_grounded(
+        criterion=criterion,
+        evidence_item=item,
+    )
+
+
 def test_validate_changed_spec_nodes_rejects_short_identifier_placeholder_evidence(
     supervisor_module: object,
     repo_fixture: Path,
@@ -26022,7 +26051,7 @@ def test_main_rejects_noop_successful_refinement_run(
     assert any("No canonical spec change detected" in err for err in updated["last_errors"])
 
 
-def test_main_auto_retries_recoverable_semantic_grounding_failure(
+def test_main_normalizes_recoverable_semantic_grounding_failure_before_retry(
     supervisor_module: object,
     repo_fixture: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -26049,8 +26078,6 @@ def test_main_auto_retries_recoverable_semantic_grounding_failure(
     changed_snapshots = [
         [],
         ["specs/nodes/SG-SPEC-0001.yaml"],
-        [],
-        ["specs/nodes/SG-SPEC-0001.yaml"],
     ]
     monkeypatch.setattr(
         supervisor_module,
@@ -26068,12 +26095,7 @@ def test_main_auto_retries_recoverable_semantic_grounding_failure(
             worktree_node.read_text(encoding="utf-8")
         )
         data["acceptance_evidence"] = grounded_acceptance_evidence(acceptance)
-        if executor_calls == 1:
-            data["acceptance_evidence"][4] = "Unrelated route metadata without matching terms"
-        else:
-            data["specification"] = {
-                "review_evidence": ["Semantic grounding for review evidence remains explicit."]
-            }
+        data["acceptance_evidence"][4] = "Unrelated route metadata without matching terms"
         worktree_node.write_text(json.dumps(data), encoding="utf-8")
         return subprocess.CompletedProcess(
             args=["codex"],
@@ -26086,29 +26108,28 @@ def test_main_auto_retries_recoverable_semantic_grounding_failure(
     captured = capsys.readouterr()
 
     assert exit_code == 0
-    assert executor_calls == 2
-    assert "Auto-retrying SG-SPEC-0001 after recoverable validation failure" in captured.err
+    assert executor_calls == 1
+    assert "Auto-retrying SG-SPEC-0001 after recoverable validation failure" not in captured.err
 
     updated = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
     assert updated["gate_state"] == "review_pending"
     assert updated["required_human_action"] == "approve or retry refinement"
     assert updated["last_refinement_acceptance"]["decision"] == "approve"
     assert "last_errors" not in updated
+    worktree_node = Path(updated["last_worktree_path"]) / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    candidate = supervisor_module.get_yaml_module().safe_load(
+        worktree_node.read_text(encoding="utf-8")
+    )
+    evidence_item = candidate["acceptance_evidence"][4]
+    assert evidence_item["criterion"] == acceptance[4]
+    assert supervisor_module.acceptance_evidence_semantically_grounded(
+        criterion=acceptance[4],
+        evidence_item=evidence_item,
+    )
 
     run_logs = sorted((repo_fixture / "runs").glob("*-SG-SPEC-*.json"))
-    assert len(run_logs) == 2
-    payloads = [json.loads(path.read_text(encoding="utf-8")) for path in run_logs]
-    failed_payload = next(
-        payload
-        for payload in payloads
-        if payload["completion_status"] == supervisor_module.COMPLETION_STATUS_FAILED
-    )
-    ok_payload = next(
-        payload
-        for payload in payloads
-        if payload["completion_status"] == supervisor_module.COMPLETION_STATUS_OK
-    )
-    assert any("must semantically ground" in err for err in failed_payload["validation_errors"])
+    assert len(run_logs) == 1
+    ok_payload = json.loads(run_logs[0].read_text(encoding="utf-8"))
     assert ok_payload["gate_state"] == "review_pending"
 
 
@@ -27323,7 +27344,18 @@ def test_main_split_required_preserves_source_spec_refinement(
     updated = supervisor_module.get_yaml_module().safe_load(spec_path.read_text(encoding="utf-8"))
     assert updated["gate_state"] == "split_required"
     assert updated["prompt"] == "Refined prompt while node remains oversized."
-    assert updated["acceptance_evidence"] == grounded_acceptance_evidence(updated["acceptance"])
+    assert [item["criterion"] for item in updated["acceptance_evidence"]] == updated["acceptance"]
+    assert all(
+        supervisor_module.acceptance_evidence_semantically_grounded(
+            criterion=criterion,
+            evidence_item=evidence_item,
+        )
+        for criterion, evidence_item in zip(
+            updated["acceptance"],
+            updated["acceptance_evidence"],
+            strict=True,
+        )
+    )
 
 
 def test_loop_counts_split_required_progress_separately(

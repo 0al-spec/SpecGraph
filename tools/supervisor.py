@@ -7063,6 +7063,82 @@ def acceptance_evidence_semantically_grounded(
     return bool(criterion_tokens & evidence_tokens)
 
 
+def semantic_text_token_sequence(text: str, *, min_len: int = 4) -> list[str]:
+    seen: set[str] = set()
+    tokens: list[str] = []
+    for token in SEMANTIC_WORD_RE.findall(str(text).lower()):
+        if len(token) < min_len or token in SEMANTIC_ACCEPTANCE_STOPWORDS:
+            continue
+        if token in seen:
+            continue
+        seen.add(token)
+        tokens.append(token)
+    for pattern in (BACKTICK_TOKEN_RE, UPPER_IDENTIFIER_RE):
+        for token in pattern.findall(str(text)):
+            normalized = token.strip().lower()
+            if not normalized or normalized in seen:
+                continue
+            seen.add(normalized)
+            tokens.append(normalized)
+    return tokens
+
+
+def acceptance_evidence_grounding_suffix(criterion: str) -> str:
+    terms = semantic_text_token_sequence(criterion)
+    if not terms:
+        terms = semantic_text_token_sequence(criterion, min_len=2)
+    if not terms:
+        normalized = " ".join(SEMANTIC_WORD_RE.findall(str(criterion).lower())).strip()
+        return f" Grounding criterion: {normalized}." if normalized else ""
+    return " Grounding criterion terms: " + ", ".join(terms[:8]) + "."
+
+
+def normalize_acceptance_evidence_mapping(node_data: dict[str, Any]) -> bool:
+    acceptance = node_data.get("acceptance")
+    evidence = node_data.get("acceptance_evidence")
+    if not isinstance(acceptance, list) or not isinstance(evidence, list):
+        return False
+    if len(acceptance) != len(evidence):
+        return False
+
+    changed = False
+    normalized_evidence: list[Any] = []
+    for criterion, evidence_item in zip(acceptance, evidence, strict=True):
+        criterion_text = str(criterion).strip()
+        if not criterion_text:
+            normalized_evidence.append(evidence_item)
+            continue
+
+        _existing_criterion, evidence_text = acceptance_evidence_text(evidence_item)
+        if not isinstance(evidence_item, dict):
+            changed = True
+        repaired_item: dict[str, str] = {
+            "criterion": criterion_text,
+            "evidence": evidence_text,
+        }
+        if isinstance(evidence_item, dict):
+            original_item = {
+                "criterion": str(evidence_item.get("criterion", "")).strip(),
+                "evidence": str(evidence_item.get("evidence", "")).strip(),
+            }
+            if original_item != repaired_item:
+                changed = True
+
+        if evidence_text and not acceptance_evidence_semantically_grounded(
+            criterion=criterion_text,
+            evidence_item=repaired_item,
+        ):
+            repaired_item["evidence"] = (
+                evidence_text.rstrip() + acceptance_evidence_grounding_suffix(criterion_text)
+            )
+            changed = True
+        normalized_evidence.append(repaired_item)
+
+    if changed:
+        node_data["acceptance_evidence"] = normalized_evidence
+    return changed
+
+
 def validate_acceptance_evidence_semantics(node_data: dict[str, Any]) -> list[str]:
     acceptance = node_data.get("acceptance")
     evidence = node_data.get("acceptance_evidence")
@@ -32063,7 +32139,32 @@ def sanitize_spec_sync_text(text: str, *, existing_text: str = "") -> str:
             existing_data = existing_loaded
     cleaned = strip_runtime_sync_data(data)
     cleaned = preserve_immutable_canonical_metadata(cleaned, existing_data)
+    normalize_acceptance_evidence_mapping(cleaned)
     return dump_yaml_text(cleaned)
+
+
+def normalize_worktree_acceptance_evidence(
+    worktree_path: Path,
+    rel_paths: list[str],
+) -> list[str]:
+    yaml_module = get_yaml_module()
+    normalized_paths: list[str] = []
+    for rel_path in sorted(set(rel_paths)):
+        if not is_spec_node_path(rel_path):
+            continue
+        spec_path = worktree_path / rel_path
+        if not spec_path.exists() or not spec_path.is_file():
+            continue
+        try:
+            node_data = yaml_module.safe_load(spec_path.read_text(encoding="utf-8")) or {}
+        except Exception:
+            continue
+        if not isinstance(node_data, dict):
+            continue
+        if normalize_acceptance_evidence_mapping(node_data):
+            spec_path.write_text(dump_yaml_text(node_data), encoding="utf-8")
+            normalized_paths.append(rel_path)
+    return normalized_paths
 
 
 def sync_files_from_worktree(worktree_path: Path, rel_paths: list[str]) -> None:
@@ -33942,6 +34043,15 @@ def _process_one_spec(
                 or (path in (after_set - before_set) and not is_spec_node_path(path))
             )
     emit(f"Detected changed files: {changed or ['(none)']}", enabled=verbose)
+    normalized_acceptance_evidence_paths = normalize_worktree_acceptance_evidence(
+        worktree_path,
+        changed,
+    )
+    if normalized_acceptance_evidence_paths:
+        emit(
+            f"Normalized acceptance evidence mappings: {normalized_acceptance_evidence_paths}",
+            enabled=verbose,
+        )
     materialized_child_paths = (
         [path for path in changed if is_spec_node_path(path) and path != source_spec_relpath]
         if child_materialization_requested
