@@ -45,7 +45,7 @@ acceptance_evidence:
 - criterion: Applies the topology-prose rule so ordered graph paths stay metadata or derived projection,
     not the main contract.
   evidence: specification.topology_prose_policy states that path order is represented by graph metadata
-    and derived views while this node owns the admissibility rule.
+    and derived projection surfaces, not the main contract, while this node owns the admissibility rule.
 - criterion: Keeps this node at readiness-admissibility scope only; continuation-selection policy, concrete
     mechanics ownership, queue ranking, and runtime orchestration remain outside this boundary.
   evidence: specification.scope.out and specification.boundaries exclude continuation-selection policy,
