@@ -17386,6 +17386,8 @@ def derive_acceptance_coverage(
     test_refs: list[dict[str, Any]],
 ) -> dict[str, Any]:
     criterion_count = acceptance_criteria_count(spec)
+    acceptance = spec.data.get("acceptance")
+    evidence = spec.data.get("acceptance_evidence")
     if criterion_count <= 0:
         return {
             "status": "not_defined",
@@ -17394,6 +17396,38 @@ def derive_acceptance_coverage(
             "evidence_ref_count": len(test_refs),
             "confidence": "none",
             "basis": "The spec does not define acceptance criteria to map.",
+        }
+    mapped_criterion_count = 0
+    if isinstance(acceptance, list) and isinstance(evidence, list):
+        for criterion, evidence_item in zip(acceptance, evidence, strict=False):
+            if acceptance_evidence_semantically_grounded(
+                criterion=str(criterion).strip(),
+                evidence_item=evidence_item,
+            ):
+                mapped_criterion_count += 1
+    if mapped_criterion_count >= criterion_count:
+        return {
+            "status": "covered",
+            "criterion_count": criterion_count,
+            "mapped_criterion_count": mapped_criterion_count,
+            "evidence_ref_count": len(test_refs),
+            "confidence": "strong",
+            "basis": (
+                "Canonical acceptance_evidence maps every acceptance criterion and remains "
+                "semantically grounded in the validated spec node."
+            ),
+        }
+    if mapped_criterion_count > 0:
+        return {
+            "status": "partially_mapped",
+            "criterion_count": criterion_count,
+            "mapped_criterion_count": mapped_criterion_count,
+            "evidence_ref_count": len(test_refs),
+            "confidence": "medium",
+            "basis": (
+                "Canonical acceptance_evidence maps some acceptance criteria, but at least one "
+                "criterion remains unmapped."
+            ),
         }
     if test_refs:
         return {

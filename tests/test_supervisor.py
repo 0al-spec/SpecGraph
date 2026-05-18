@@ -7655,6 +7655,68 @@ def test_build_spec_trace_index_collects_tool_and_test_refs(
     ]
 
 
+def test_derive_acceptance_coverage_uses_canonical_acceptance_evidence(
+    supervisor_module: object,
+) -> None:
+    spec = supervisor_module.SpecNode(
+        path=Path("/tmp/SG-SPEC-0001.yaml"),
+        data={
+            "id": "SG-SPEC-0001",
+            "title": "Acceptance Evidence Mapping",
+            "kind": "spec",
+            "status": "linked",
+            "maturity": 0.5,
+            "depends_on": [],
+            "acceptance": [
+                "Defines canonical acceptance evidence mapping.",
+                "Reports partial mapping when one criterion is missing evidence.",
+            ],
+            "acceptance_evidence": [
+                {
+                    "criterion": "Defines canonical acceptance evidence mapping.",
+                    "evidence": "The canonical acceptance evidence mapping is present.",
+                },
+                {
+                    "criterion": "Reports partial mapping when one criterion is missing evidence.",
+                    "evidence": "The partial mapping report is present for missing evidence.",
+                },
+            ],
+            "prompt": "Map acceptance evidence.",
+        },
+    )
+
+    coverage = supervisor_module.derive_acceptance_coverage(
+        spec,
+        test_refs=[{"path": "tests/test_supervisor.py", "line": 1}],
+    )
+
+    assert coverage == {
+        "status": "covered",
+        "criterion_count": 2,
+        "mapped_criterion_count": 2,
+        "evidence_ref_count": 1,
+        "confidence": "strong",
+        "basis": (
+            "Canonical acceptance_evidence maps every acceptance criterion and remains "
+            "semantically grounded in the validated spec node."
+        ),
+    }
+
+    spec.data["acceptance_evidence"][1] = {
+        "criterion": "Reports partial mapping when one criterion is missing evidence.",
+        "evidence": "",
+    }
+    partial = supervisor_module.derive_acceptance_coverage(
+        spec,
+        test_refs=[{"path": "tests/test_supervisor.py", "line": 1}],
+    )
+
+    assert partial["status"] == "partially_mapped"
+    assert partial["criterion_count"] == 2
+    assert partial["mapped_criterion_count"] == 1
+    assert partial["evidence_ref_count"] == 1
+
+
 def test_main_builds_spec_trace_index_as_standalone_command(
     supervisor_module: object,
     repo_fixture: Path,
