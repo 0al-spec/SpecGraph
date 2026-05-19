@@ -208,6 +208,12 @@ exact run id is available, render `legacy_unknown` with
 prompt overlay provenance, render `legacy_unknown` with
 `reason: "legacy_run_without_provenance"`.
 
+For published/static bundles, raw `runs/<RUN_ID>.json` files are not required.
+When a supervisor run records safe prompt provenance in the spec node's tracked
+`last_prompt_overlay_provenance` metadata, the activity feed may project that
+tracked provenance directly. Raw run logs remain a local fallback for development
+and diagnosis.
+
 Prompt drift summaries are run-scoped. Entries without an exact run id are still
 renderable as `legacy_unknown`, but they are excluded from
 `summary.prompt_overlay.status_counts` and drift groups. If several visible

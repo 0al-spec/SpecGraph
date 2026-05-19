@@ -8467,6 +8467,57 @@ def test_build_spec_activity_feed_does_not_infer_prompt_overlay_from_current_spe
     assert feed["viewer_projection"]["prompt_overlay"]["run_count"] == 0
 
 
+def test_build_spec_activity_feed_projects_tracked_prompt_overlay_provenance(
+    supervisor_module: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    tracked_provenance = {
+        "enabled": True,
+        "source_kind": "profile",
+        "prompt_profile_id": "default",
+        "prompt_extension_path": "tools/supervisor_prompts/default.md",
+        "prompt_extension_sha256": "e" * 64,
+        "core_prompt_overridden": False,
+        "policy_reference": {
+            "artifact_path": "tools/supervisor_prompt_policy.json",
+            "artifact_sha256": "p" * 64,
+            "version": 1,
+        },
+    }
+    monkeypatch.setattr(
+        supervisor_module,
+        "collect_spec_activity_commit_refs",
+        lambda **kwargs: [
+            {
+                "sha": "c" * 40,
+                "short_sha": "ccccccc",
+                "committed_at": "2026-05-19T00:01:00+00:00",
+                "subject": "Update SG-SPEC-0001 with tracked prompt overlay",
+                "paths": ["specs/nodes/SG-SPEC-0001.yaml"],
+            }
+        ],
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "spec_activity_exact_run_context_from_commit",
+        lambda *_args, **_kwargs: {
+            "run_id": "RUN-TRACKED-PROMPT",
+            "prompt_overlay_provenance": tracked_provenance,
+        },
+    )
+    monkeypatch.setattr(supervisor_module, "load_supervisor_run_log_payloads", lambda *_args: [])
+
+    feed = supervisor_module.build_spec_activity_feed(supervisor_module.load_specs())
+
+    projection = feed["entries"][0]["prompt_overlay_provenance"]
+    assert projection["status"] == "enabled"
+    assert projection["display_label"] == "default"
+    assert projection["run_id"] == "RUN-TRACKED-PROMPT"
+    assert projection["prompt_profile_id"] == "default"
+    assert feed["viewer_projection"]["prompt_overlay"]["status_counts"] == {"enabled": 1}
+    assert feed["viewer_projection"]["prompt_overlay"]["run_count"] == 1
+
+
 def test_prompt_overlay_projection_marks_missing_core_and_unsafe_states(
     supervisor_module: object,
 ) -> None:
@@ -26466,6 +26517,10 @@ def test_main_records_supervisor_prompt_overlay_provenance(
     assert provenance["prompt_extension_sha256"]
     assert "prompt_text" not in provenance
     assert payload["selected_by_rule"]["prompt_overlay_provenance"] == provenance
+    updated = supervisor_module.get_yaml_module().safe_load(
+        (repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml").read_text(encoding="utf-8")
+    )
+    assert updated["last_prompt_overlay_provenance"] == provenance
 
 
 def test_main_auto_approve_does_not_bypass_review_required_refinement(

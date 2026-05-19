@@ -4213,6 +4213,7 @@ SYNC_STRIPPED_SPEC_KEYS = {
     "last_reconciliation",
     "last_requested_child_materialization",
     "last_materialized_child_paths",
+    "last_prompt_overlay_provenance",
     "last_errors",
     "last_gate_decision",
     "last_gate_note",
@@ -17761,35 +17762,36 @@ def prompt_overlay_run_indexes(
     return by_run_id
 
 
-def spec_activity_exact_run_id_from_commit(
+def spec_activity_exact_run_context_from_commit(
     commit_ref: dict[str, Any],
     spec_id: str,
     *,
     repo_root: Path | None = None,
-) -> str:
+) -> dict[str, Any]:
     for key in ("run_id", "source_run_id", "last_run_id"):
         run_id = str(commit_ref.get(key, "")).strip()
         if run_id:
-            return run_id
+            return {"run_id": run_id}
 
     spec_id_text = str(spec_id).strip()
     sha = str(commit_ref.get("sha", "")).strip()
     if not re.fullmatch(r"SG-SPEC-\d{4}", spec_id_text) or not re.fullmatch(
         r"[0-9a-fA-F]{7,40}", sha
     ):
-        return ""
+        return {}
 
-    cache_key = "_spec_activity_exact_run_ids"
+    cache_key = "_spec_activity_exact_run_contexts"
     cache = commit_ref.setdefault(cache_key, {})
     if isinstance(cache, dict) and spec_id_text in cache:
-        return str(cache.get(spec_id_text, "")).strip()
+        cached = cache.get(spec_id_text)
+        return cached if isinstance(cached, dict) else {}
 
     spec_path = f"specs/nodes/{spec_id_text}.yaml"
     changed_paths = {str(path).strip() for path in commit_ref.get("paths", [])}
     if spec_path not in changed_paths or shutil.which("git") is None:
         if isinstance(cache, dict):
-            cache[spec_id_text] = ""
-        return ""
+            cache[spec_id_text] = {}
+        return {}
 
     local_root = repo_root or ROOT
     result = subprocess.run(
@@ -17799,7 +17801,7 @@ def spec_activity_exact_run_id_from_commit(
         text=True,
         check=False,
     )
-    run_id = ""
+    context: dict[str, Any] = {}
     if result.returncode == 0 and result.stdout.strip():
         try:
             payload = get_yaml_module().safe_load(result.stdout)
@@ -17807,23 +17809,46 @@ def spec_activity_exact_run_id_from_commit(
             payload = None
         if isinstance(payload, dict):
             run_id = str(payload.get("last_run_id", "")).strip()
+            if run_id:
+                context["run_id"] = run_id
+            prompt_overlay_provenance = payload.get("last_prompt_overlay_provenance")
+            if isinstance(prompt_overlay_provenance, dict):
+                context["prompt_overlay_provenance"] = prompt_overlay_provenance
     if isinstance(cache, dict):
-        cache[spec_id_text] = run_id
-    return run_id
+        cache[spec_id_text] = context
+    return context
+
+
+def spec_activity_exact_run_id_from_commit(
+    commit_ref: dict[str, Any],
+    spec_id: str,
+    *,
+    repo_root: Path | None = None,
+) -> str:
+    context = spec_activity_exact_run_context_from_commit(
+        commit_ref,
+        spec_id,
+        repo_root=repo_root,
+    )
+    return str(context.get("run_id", "")).strip()
 
 
 def prompt_overlay_projection_for_activity_entry(
     *,
     run_id: str,
     run_logs_by_id: dict[str, dict[str, Any]],
+    tracked_prompt_overlay_provenance: object | None = None,
 ) -> dict[str, Any]:
     run_id_text = str(run_id).strip()
     if not run_id_text:
         return legacy_prompt_overlay_projection("missing_exact_run_link")
-    run_payload = run_logs_by_id.get(run_id_text)
-    raw_provenance = (
-        run_payload.get("prompt_overlay_provenance") if isinstance(run_payload, dict) else None
-    )
+    if isinstance(tracked_prompt_overlay_provenance, dict):
+        raw_provenance = tracked_prompt_overlay_provenance
+    else:
+        run_payload = run_logs_by_id.get(run_id_text)
+        raw_provenance = (
+            run_payload.get("prompt_overlay_provenance") if isinstance(run_payload, dict) else None
+        )
     projection = normalize_prompt_overlay_provenance_for_viewer(raw_provenance)
     projection["run_id"] = run_id_text
     return projection
@@ -17950,7 +17975,11 @@ def build_spec_activity_feed(
                 title = spec.title if spec is not None else ""
                 if not title and not spec_id:
                     title = "Graph process feedback"
-                exact_run_id = spec_activity_exact_run_id_from_commit(commit_ref, spec_id)
+                exact_run_context = spec_activity_exact_run_context_from_commit(
+                    commit_ref,
+                    spec_id,
+                )
+                exact_run_id = str(exact_run_context.get("run_id", "")).strip()
                 if exact_run_id:
                     exact_run_ids.add(exact_run_id)
                 events.append(
@@ -17969,6 +17998,9 @@ def build_spec_activity_feed(
                         },
                         **({"merge_landing": stack_context} if stack_context is not None else {}),
                         "_prompt_overlay_exact_run_id": exact_run_id,
+                        "_prompt_overlay_tracked_provenance": exact_run_context.get(
+                            "prompt_overlay_provenance"
+                        ),
                         "source_paths": list(commit_ref.get("paths", [])),
                         "viewer": {
                             "tone": spec_activity_event_tone(event_type),
@@ -17986,9 +18018,11 @@ def build_spec_activity_feed(
     run_logs_by_id = prompt_overlay_run_indexes(load_supervisor_run_log_payloads(exact_run_ids))
     for event in events:
         exact_run_id = str(event.pop("_prompt_overlay_exact_run_id", "")).strip()
+        tracked_prompt_overlay_provenance = event.pop("_prompt_overlay_tracked_provenance", None)
         event["prompt_overlay_provenance"] = prompt_overlay_projection_for_activity_entry(
             run_id=exact_run_id,
             run_logs_by_id=run_logs_by_id,
+            tracked_prompt_overlay_provenance=tracked_prompt_overlay_provenance,
         )
 
     event_type_index: dict[str, list[str]] = {}
@@ -35202,6 +35236,10 @@ def _process_one_spec(
     node.data["last_reconciliation"] = reconciliation
     node.data["last_requested_child_materialization"] = child_materialization_requested
     node.data["last_materialized_child_paths"] = materialized_child_paths
+    if prompt_overlay_provenance is not None:
+        node.data["last_prompt_overlay_provenance"] = prompt_overlay_provenance
+    else:
+        node.data.pop("last_prompt_overlay_provenance", None)
     if operator_request_context:
         pre_spec_provenance = build_last_pre_spec_provenance(
             operator_request_context=operator_request_context,
