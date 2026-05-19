@@ -80,7 +80,7 @@ SpecGraph invariants.
 - Creating an interactive prompt editor.
 - Adding model-provider-specific prompt syntax.
 - Granting prompt overlays write authority.
-- Implementing the runtime flags in this proposal-only slice.
+- Allowing prompt overlays to replace the core supervisor prompt.
 
 ## Core Proposal
 
@@ -220,12 +220,17 @@ They should complement, not replace:
 - review feedback policy;
 - model usage telemetry.
 
-## Future Follow-Ups
+## Runtime Realization And Future Follow-Ups
 
-- Add `tools/supervisor_prompt_policy.json`.
-- Add `tools/supervisor_prompts/*.md`.
-- Add supervisor CLI flags and prompt assembly logic.
-- Add run-log prompt overlay provenance.
+The first runtime slice should add:
+
+- `tools/supervisor_prompt_policy.json`.
+- `tools/supervisor_prompts/*.md`.
+- supervisor CLI flags and additive prompt assembly logic.
+- run-log prompt overlay provenance.
+
+Future follow-ups:
+
 - Add graph/viewer surfaces for active prompt profile and prompt drift.
 - Allow ContextBuilder/SpecSpace to select approved prompt profiles.
 
@@ -235,4 +240,5 @@ They should complement, not replace:
   prompt authority.
 - Non-overridable supervisor invariants are named.
 - Candidate policy, CLI, and run-log provenance are defined.
-- Runtime implementation remains out of scope for this proposal-only slice.
+- Runtime implementation preserves additive-only overlay behavior and records
+  provenance without storing raw prompt text in run logs.
