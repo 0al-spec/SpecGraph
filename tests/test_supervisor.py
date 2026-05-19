@@ -22613,11 +22613,124 @@ def test_build_review_feedback_index_projects_accepted_risk_revalidation_contrac
     assert entry["next_gap"] == "review_accepted_risk_when_context_changes"
     assert entry["revalidation"]["trigger"] == "surrounding_context_changed"
     assert entry["revalidation"]["review_state"] == "watch"
+    assert entry["revalidation"]["triggered_context_change_signals"] == []
+    assert entry["review_state"] == "watch"
     assert entry["revalidation"]["operator_action"] == (
         "revisit_residual_risk_and_choose_prevention_or_keep_accepted"
     )
     backlog_item = index["review_feedback_backlog"]["items"][0]
+    assert backlog_item["review_state"] == "watch"
     assert backlog_item["revalidation"] == entry["revalidation"]
+
+
+def test_build_review_feedback_index_marks_accepted_risk_review_due_when_root_cause_reappears(
+    supervisor_module: object,
+) -> None:
+    index = supervisor_module.build_review_feedback_index(
+        [
+            sample_review_feedback_record(
+                feedback_id="review-feedback-accepted-risk",
+                root_cause_class="artifact_contract_validation_gap",
+                prevention_action="accepted_risk_recorded",
+                verification=["accepted_risk_review"],
+                residual_risk="Temporary tradeoff while external context is stable.",
+                recorded_at="2026-04-26T00:00:00Z",
+            ),
+            sample_review_feedback_record(
+                feedback_id="review-feedback-later-same-cause",
+                root_cause_class="artifact_contract_validation_gap",
+                prevention_action="regression_test_added",
+                recorded_at="2026-04-27T00:00:00Z",
+            ),
+        ]
+    )
+
+    entry = next(
+        item for item in index["entries"] if item["feedback_id"] == "review-feedback-accepted-risk"
+    )
+    assert entry["revalidation"]["review_state"] == "review_due"
+    assert entry["revalidation"]["triggered_context_change_signals"] == [
+        "same_root_cause_reappears"
+    ]
+    assert entry["review_state"] == "review_due"
+    backlog_item = index["review_feedback_backlog"]["items"][0]
+    assert backlog_item["review_state"] == "review_due"
+    assert backlog_item["revalidation"] == entry["revalidation"]
+
+
+def test_build_review_feedback_index_keeps_accepted_risk_watch_without_valid_ordering(
+    supervisor_module: object,
+) -> None:
+    index = supervisor_module.build_review_feedback_index(
+        [
+            sample_review_feedback_record(
+                feedback_id="review-feedback-accepted-risk",
+                root_cause_class="artifact_contract_validation_gap",
+                prevention_action="accepted_risk_recorded",
+                verification=["accepted_risk_review"],
+                residual_risk="Temporary tradeoff while external context is stable.",
+                recorded_at="",
+            ),
+            sample_review_feedback_record(
+                feedback_id="review-feedback-invalid-timestamp-same-cause",
+                root_cause_class="artifact_contract_validation_gap",
+                prevention_action="regression_test_added",
+                recorded_at="zzz",
+            ),
+        ]
+    )
+
+    entry = next(
+        item for item in index["entries"] if item["feedback_id"] == "review-feedback-accepted-risk"
+    )
+    assert entry["revalidation"]["review_state"] == "watch"
+    assert entry["revalidation"]["triggered_context_change_signals"] == []
+    assert entry["review_state"] == "watch"
+
+
+def test_graph_backlog_projection_promotes_due_accepted_risk_to_high_priority(
+    supervisor_module: object,
+) -> None:
+    report = supervisor_module.build_graph_backlog_projection_from_surfaces(
+        graph_overlay={},
+        proposal_runtime_index={},
+        proposal_promotion_index={},
+        refactor_queue_items=[],
+        proposal_queue_items=[],
+        spec_trace_projection={},
+        implementation_work_index={},
+        evidence_overlay={},
+        external_consumer_overlay={},
+        external_consumer_handoffs={},
+        specpm_delivery_workflow={},
+        specpm_feedback_index={},
+        metrics_delivery_workflow={},
+        metrics_feedback_index={},
+        metrics_source_promotion_index={},
+        metric_pack_index={},
+        metric_pack_adapter_index={},
+        metric_pack_runs={},
+        metric_threshold_proposals={},
+        review_feedback_index={
+            "review_feedback_backlog": {
+                "entry_count": 1,
+                "items": [
+                    {
+                        "feedback_id": "review-feedback-accepted-risk",
+                        "status": "accepted_risk_recorded",
+                        "root_cause_class": "artifact_contract_validation_gap",
+                        "prevention_action": "accepted_risk_recorded",
+                        "review_state": "review_due",
+                        "next_gap": "review_accepted_risk_when_context_changes",
+                    }
+                ],
+            }
+        },
+    )
+
+    entry = report["entries"][0]
+    assert entry["review_state"] == "review_due"
+    assert entry["priority"] == "high"
 
 
 def test_build_review_feedback_index_flags_null_required_string_as_invalid(
@@ -26161,10 +26274,11 @@ def test_main_normalizes_recoverable_semantic_grounding_failure_before_retry(
 
     run_logs = sorted((repo_fixture / "runs").glob("*-SG-SPEC-*.json"))
     assert len(run_logs) == 2
-    failed_payload = json.loads(run_logs[0].read_text(encoding="utf-8"))
-    assert failed_payload["gate_state"] == "retry_pending"
-    ok_payload = json.loads(run_logs[1].read_text(encoding="utf-8"))
-    assert ok_payload["gate_state"] == "review_pending"
+    payloads = [json.loads(path.read_text(encoding="utf-8")) for path in run_logs]
+    assert sorted(payload["gate_state"] for payload in payloads) == [
+        "retry_pending",
+        "review_pending",
+    ]
 
 
 def test_recoverable_validation_retry_requires_all_errors_recoverable(

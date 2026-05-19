@@ -279,6 +279,7 @@ may surface the contract as a compact operator hint:
   "trigger": "surrounding_context_changed",
   "review_state": "watch",
   "operator_action": "revisit_residual_risk_and_choose_prevention_or_keep_accepted",
+  "triggered_context_change_signals": [],
   "context_change_signals": [
     "same_root_cause_reappears",
     "affected_artifact_contract_changes",
@@ -291,6 +292,11 @@ may surface the contract as a compact operator hint:
 The row should stay low pressure until one of the listed context-change signals
 is observed. At that point the operator reviews whether the residual risk still
 stands, should become a concrete prevention action, or should be retired.
+
+The first deterministic trigger is `same_root_cause_reappears`: if a later review
+feedback record uses the same `root_cause_class`, the derived row may switch
+`revalidation.review_state` from `watch` to `review_due` and list the trigger in
+`triggered_context_change_signals`.
 
 ### Metric Pack Run Rows
 

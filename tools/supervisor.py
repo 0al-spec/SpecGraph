@@ -14952,7 +14952,73 @@ def review_feedback_revalidation_contract(status: str, next_gap: str) -> dict[st
     ).strip()
     if status != contract_status or next_gap != contract_next_gap:
         return {}
-    return dict(REVIEW_FEEDBACK_ACCEPTED_RISK_REVALIDATION_CONTRACT)
+    contract = dict(REVIEW_FEEDBACK_ACCEPTED_RISK_REVALIDATION_CONTRACT)
+    contract["triggered_context_change_signals"] = []
+    return contract
+
+
+def review_feedback_recorded_after(candidate: str, baseline: str) -> bool:
+    candidate_text = str(candidate).strip()
+    baseline_text = str(baseline).strip()
+    if not candidate_text or not baseline_text:
+        return False
+    candidate_dt = parse_iso_datetime(candidate_text)
+    baseline_dt = parse_iso_datetime(baseline_text)
+    if candidate_dt is not None and baseline_dt is not None:
+        return candidate_dt > baseline_dt
+    return False
+
+
+def review_feedback_revalidation_signals(
+    entry: dict[str, Any],
+    entries: list[dict[str, Any]],
+) -> list[str]:
+    revalidation = entry.get("revalidation")
+    if not isinstance(revalidation, dict):
+        return []
+
+    signals: list[str] = []
+    root_cause_class = str(entry.get("root_cause_class", "")).strip()
+    recorded_at = str(entry.get("recorded_at", "")).strip()
+    feedback_id = str(entry.get("feedback_id", "")).strip()
+    if root_cause_class and any(
+        str(other.get("feedback_id", "")).strip() != feedback_id
+        and str(other.get("root_cause_class", "")).strip() == root_cause_class
+        and review_feedback_recorded_after(str(other.get("recorded_at", "")).strip(), recorded_at)
+        for other in entries
+    ):
+        signals.append("same_root_cause_reappears")
+    return signals
+
+
+def apply_review_feedback_revalidation_triggers(
+    entries: list[dict[str, Any]],
+    backlog_items: list[dict[str, Any]],
+) -> None:
+    backlog_by_feedback_id = {
+        str(item.get("feedback_id", "")).strip(): item
+        for item in backlog_items
+        if isinstance(item, dict)
+    }
+    for entry in entries:
+        revalidation = entry.get("revalidation")
+        if not isinstance(revalidation, dict):
+            continue
+        triggered_signals = review_feedback_revalidation_signals(entry, entries)
+        if triggered_signals:
+            revalidation = dict(revalidation)
+            revalidation["review_state"] = "review_due"
+            revalidation["triggered_context_change_signals"] = triggered_signals
+            entry["revalidation"] = revalidation
+        review_state = str(revalidation.get("review_state", "")).strip()
+        if review_state:
+            entry["review_state"] = review_state
+        feedback_id = str(entry.get("feedback_id", "")).strip()
+        backlog_item = backlog_by_feedback_id.get(feedback_id)
+        if backlog_item is not None:
+            backlog_item["revalidation"] = entry["revalidation"]
+            if review_state:
+                backlog_item["review_state"] = review_state
 
 
 def build_review_feedback_index(
@@ -15025,6 +15091,8 @@ def build_review_feedback_index(
                 backlog_item["revalidation"] = revalidation_contract
             backlog_items.append(backlog_item)
             backlog_next_gap_groups.setdefault(next_gap, []).append(feedback_id)
+
+    apply_review_feedback_revalidation_triggers(entries, backlog_items)
 
     for bucket in (
         status_groups,
@@ -27816,16 +27884,16 @@ def graph_backlog_priority(
     severity_priority = {"critical": "high", "high": "high", "medium": "medium", "low": "low"}
     if severity in severity_priority:
         return severity_priority[severity]
+    if next_gap == "collect_metrics_adoption_feedback":
+        return "low"
+    if review_state in {"ready_for_review", "review_visible", "adoption_visible", "review_due"}:
+        return "high"
     if (
         status == "accepted_risk_recorded"
         or next_gap == "review_accepted_risk_when_context_changes"
     ):
         return "info"
-    if next_gap == "collect_metrics_adoption_feedback":
-        return "low"
     if "blocked" in status or next_gap.startswith("isolate_"):
-        return "high"
-    if review_state in {"ready_for_review", "review_visible", "adoption_visible"}:
         return "high"
     if next_gap.startswith("review_") or next_gap in {"resolve_review_gate", "resolve_split_gate"}:
         return "high"
