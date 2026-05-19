@@ -648,5 +648,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0051",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0051_supervisor_prompt_overlay_profiles.md"
+    ],
+    "motivating_concern": "supervisor needs user-guided prompt customization without allowing raw system prompt replacement",
+    "normalized_title": "Supervisor Prompt Overlay Profiles",
+    "bounded_scope": "Define additive supervisor prompt overlay profiles, non-overridable invariants, candidate policy and CLI surfaces, and run-log provenance without implementing runtime flags or allowing core prompt replacement.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]
