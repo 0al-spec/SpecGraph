@@ -2779,6 +2779,9 @@ REVIEW_FEEDBACK_REQUIRED_CLOSURE_FIELDS = [
 REVIEW_FEEDBACK_ACCEPTED_RISK_ACTION = str(
     review_feedback_policy_lookup("learning_loop_contract.accepted_risk_action")
 )
+REVIEW_FEEDBACK_ACCEPTED_RISK_REVALIDATION_CONTRACT = dict(
+    review_feedback_policy_lookup("accepted_risk_revalidation_contract")
+)
 EVIDENCE_PLANE_INDEX_FILENAME = Path(
     str(evidence_plane_policy_lookup("repository_layout.index_artifact"))
 ).name
@@ -14940,6 +14943,18 @@ def review_feedback_entry_id(record: dict[str, Any], index: int) -> str:
     return f"review_feedback::record_{index + 1}"
 
 
+def review_feedback_revalidation_contract(status: str, next_gap: str) -> dict[str, Any]:
+    contract_status = str(
+        REVIEW_FEEDBACK_ACCEPTED_RISK_REVALIDATION_CONTRACT.get("status", "")
+    ).strip()
+    contract_next_gap = str(
+        REVIEW_FEEDBACK_ACCEPTED_RISK_REVALIDATION_CONTRACT.get("next_gap", "")
+    ).strip()
+    if status != contract_status or next_gap != contract_next_gap:
+        return {}
+    return dict(REVIEW_FEEDBACK_ACCEPTED_RISK_REVALIDATION_CONTRACT)
+
+
 def build_review_feedback_index(
     records: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
@@ -14963,6 +14978,7 @@ def build_review_feedback_index(
         verification = normalize_review_feedback_verification(record.get("verification"))
         status, findings = derive_review_feedback_status(record)
         next_gap = review_feedback_next_gap(status)
+        revalidation_contract = review_feedback_revalidation_contract(status, next_gap)
 
         entry = {
             "feedback_id": feedback_id,
@@ -14981,6 +14997,8 @@ def build_review_feedback_index(
             "next_gap": next_gap,
             "findings": findings,
         }
+        if revalidation_contract:
+            entry["revalidation"] = revalidation_contract
         entries.append(entry)
 
         status_groups.setdefault(status, []).append(feedback_id)
@@ -14996,15 +15014,16 @@ def build_review_feedback_index(
         if status in named_filters:
             named_filters[status].append(feedback_id)
         if status != "prevention_recorded":
-            backlog_items.append(
-                {
-                    "feedback_id": feedback_id,
-                    "status": status,
-                    "root_cause_class": root_cause_class,
-                    "prevention_action": prevention_action,
-                    "next_gap": next_gap,
-                }
-            )
+            backlog_item = {
+                "feedback_id": feedback_id,
+                "status": status,
+                "root_cause_class": root_cause_class,
+                "prevention_action": prevention_action,
+                "next_gap": next_gap,
+            }
+            if revalidation_contract:
+                backlog_item["revalidation"] = revalidation_contract
+            backlog_items.append(backlog_item)
             backlog_next_gap_groups.setdefault(next_gap, []).append(feedback_id)
 
     for bucket in (

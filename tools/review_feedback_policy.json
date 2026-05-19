@@ -21,6 +21,19 @@
     "accepted_risk_action": "accepted_risk_recorded",
     "thread_reply_expectation": "reply_should_name_fix_and_prevention_path_when_available"
   },
+  "accepted_risk_revalidation_contract": {
+    "status": "accepted_risk_recorded",
+    "next_gap": "review_accepted_risk_when_context_changes",
+    "trigger": "surrounding_context_changed",
+    "review_state": "watch",
+    "operator_action": "revisit_residual_risk_and_choose_prevention_or_keep_accepted",
+    "context_change_signals": [
+      "same_root_cause_reappears",
+      "affected_artifact_contract_changes",
+      "viewer_or_ci_surface_starts_consuming_the_accepted_risk",
+      "accepted_risk_blocks_or_confuses_next_move_selection"
+    ]
+  },
   "root_cause_classes": [
     "scope_isolation_gap",
     "artifact_contract_validation_gap",

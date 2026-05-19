@@ -22593,6 +22593,33 @@ def test_build_review_feedback_index_requires_residual_risk_for_accepted_risk(
     assert "accepted_risk_requires_residual_risk" in entry["findings"]
 
 
+def test_build_review_feedback_index_projects_accepted_risk_revalidation_contract(
+    supervisor_module: object,
+) -> None:
+    index = supervisor_module.build_review_feedback_index(
+        [
+            sample_review_feedback_record(
+                feedback_id="review-feedback-accepted-risk",
+                root_cause_class="accepted_design_tradeoff",
+                prevention_action="accepted_risk_recorded",
+                verification=["accepted_risk_review"],
+                residual_risk="Temporary tradeoff while external context is stable.",
+            )
+        ]
+    )
+
+    entry = index["entries"][0]
+    assert entry["status"] == "accepted_risk_recorded"
+    assert entry["next_gap"] == "review_accepted_risk_when_context_changes"
+    assert entry["revalidation"]["trigger"] == "surrounding_context_changed"
+    assert entry["revalidation"]["review_state"] == "watch"
+    assert entry["revalidation"]["operator_action"] == (
+        "revisit_residual_risk_and_choose_prevention_or_keep_accepted"
+    )
+    backlog_item = index["review_feedback_backlog"]["items"][0]
+    assert backlog_item["revalidation"] == entry["revalidation"]
+
+
 def test_build_review_feedback_index_flags_null_required_string_as_invalid(
     supervisor_module: object,
 ) -> None:

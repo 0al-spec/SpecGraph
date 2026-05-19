@@ -266,6 +266,32 @@ Known named filters:
 
 Future named filters are allowed.
 
+### Accepted Risk Review Rows
+
+`review_feedback_accepted_risk` rows are watch items, not urgent failures.
+When the source `review_feedback_index` item includes `revalidation`, viewers
+may surface the contract as a compact operator hint:
+
+```json
+{
+  "status": "accepted_risk_recorded",
+  "next_gap": "review_accepted_risk_when_context_changes",
+  "trigger": "surrounding_context_changed",
+  "review_state": "watch",
+  "operator_action": "revisit_residual_risk_and_choose_prevention_or_keep_accepted",
+  "context_change_signals": [
+    "same_root_cause_reappears",
+    "affected_artifact_contract_changes",
+    "viewer_or_ci_surface_starts_consuming_the_accepted_risk",
+    "accepted_risk_blocks_or_confuses_next_move_selection"
+  ]
+}
+```
+
+The row should stay low pressure until one of the listed context-change signals
+is observed. At that point the operator reviews whether the residual risk still
+stands, should become a concrete prevention action, or should be retired.
+
 ### Metric Pack Run Rows
 
 When `runs/metric_pack_runs.json` contains run gaps, each gap is projected as a
