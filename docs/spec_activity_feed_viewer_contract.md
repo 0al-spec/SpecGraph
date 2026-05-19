@@ -89,11 +89,24 @@ Expected shape:
   "summary": {
     "entry_count": 0,
     "event_type_counts": {},
-    "spec_event_counts": {}
+    "spec_event_counts": {},
+    "prompt_overlay": {
+      "scope": "visible_entries",
+      "label": "Prompt drift in visible runs",
+      "status_counts": {},
+      "drift_group_count": 0
+    }
   },
   "viewer_projection": {
     "event_type": {},
     "spec_id": {},
+    "prompt_overlay": {
+      "scope": "visible_entries",
+      "label": "Prompt drift in visible runs",
+      "status_counts": {},
+      "drift_group_count": 0,
+      "drift_groups": []
+    },
     "named_filters": {}
   },
   "viewer_contract": {
@@ -123,6 +136,7 @@ Stable fields:
 - `source_kind`
 - `source_ref`
 - `source_paths`
+- `prompt_overlay_provenance`
 - `viewer`
 
 `spec_id` is empty for graph-level process events that cannot be honestly
@@ -150,12 +164,117 @@ Expected entry:
     "tools/spec_trace_registry.json",
     "tools/runtime_evidence_registry.json"
   ],
+  "prompt_overlay_provenance": {
+    "status": "enabled",
+    "source_kind": "profile",
+    "display_label": "default",
+    "drift_key": "profile|default|...",
+    "prompt_profile_id": "default",
+    "prompt_extension_path": "tools/supervisor_prompts/default.md",
+    "prompt_extension_sha256": "abcdef...",
+    "prompt_overlay_authority": "project",
+    "core_prompt_overridden": false,
+    "policy_reference": {
+      "artifact_path": "tools/supervisor_prompt_policy.json",
+      "artifact_sha256": "123456...",
+      "version": 1
+    },
+    "non_overridable_invariants": []
+  },
   "viewer": {
     "tone": "trace",
     "label": "trace baseline attached"
   }
 }
 ```
+
+## 4.1. Prompt Overlay Projection
+
+`entries[].prompt_overlay_provenance` is a viewer-facing projection of the
+supervisor prompt overlay provenance. It is intentionally safe to render:
+
+- raw prompt text is never included;
+- paths are repo-relative or omitted;
+- `status` is a derived summary field for UI badges;
+- `core_prompt_overridden` remains as the source diagnostic fact;
+- drift grouping uses `drift_key`, not the display label.
+
+Per-entry provenance is only populated when the activity source can be tied to an
+exact supervisor run id. SpecGraph may use an explicit activity `source_run_id`
+or the `last_run_id` captured in the spec file at the activity commit. It must
+not silently fall back to the latest current run for the same spec id. If no
+exact run id is available, render `legacy_unknown`.
+
+Statuses:
+
+- `core`: provenance explicitly says no overlay was enabled.
+- `enabled`: a profile or extension-file overlay was used and passed projection
+  safety checks.
+- `legacy_unknown`: provenance is missing, usually because the run predates this
+  contract or no matching run log is visible.
+- `unsafe`: the projection detected an unsafe or malformed state such as
+  `core_prompt_overridden !== false`, raw prompt text, missing required hashes,
+  or non-repo-relative paths.
+
+Source kinds:
+
+- `core`
+- `profile`
+- `extension_file`
+- `unknown`
+
+Stable drift key:
+
+```text
+source_kind + prompt_profile_id + prompt_extension_sha256 + policy_reference.artifact_sha256
+```
+
+SpecSpace should display compact labels from `display_label`, but should group
+prompt drift by `drift_key`.
+
+For compact UI:
+
+- show short hashes such as `abc123...`;
+- keep full hashes for tooltip/copy actions;
+- treat group-level `status`/`dominant_status` as the worst status in that
+  `drift_key` group, with `unsafe` winning over enabled/core/legacy states;
+- use group-level `status_counts` when showing mixed-state groups;
+- never display raw prompt snippets.
+
+The prompt drift summary is scoped to the currently visible feed entries:
+
+```json
+{
+  "scope": "visible_entries",
+  "label": "Prompt drift in visible runs",
+  "status_counts": {
+    "enabled": 3,
+    "legacy_unknown": 42
+  },
+  "drift_group_count": 2,
+  "drift_groups": [
+    {
+      "drift_key": "profile|default|...",
+      "display_label": "default",
+      "status": "enabled",
+      "dominant_status": "enabled",
+      "source_kind": "profile",
+      "status_counts": {
+        "enabled": 1
+      },
+      "event_ids": ["spec_activity::abc123"],
+      "event_count": 1
+    }
+  ]
+}
+```
+
+Because this scope is visible/currently loaded entries, UI copy should say
+`Prompt drift in visible runs`, not global prompt drift.
+
+Top-level `summary.prompt_overlay` intentionally stays compact and omits
+per-event ids. Detailed drift groups live under
+`viewer_projection.prompt_overlay`.
 
 ## 5. Event Types
 

@@ -28,6 +28,7 @@
       "source_kind",
       "source_ref",
       "source_paths",
+      "prompt_overlay_provenance",
       "viewer"
     ],
     "default_limit": 100
@@ -55,6 +56,24 @@
     "contract_doc": "docs/spec_activity_feed_viewer_contract.md",
     "recommended_endpoint": "GET /api/spec-activity?limit=N&since=ISO",
     "source_artifact": "runs/spec_activity_feed.json",
+    "prompt_overlay_projection": {
+      "statuses": [
+        "core",
+        "enabled",
+        "legacy_unknown",
+        "unsafe"
+      ],
+      "source_kinds": [
+        "core",
+        "profile",
+        "extension_file",
+        "unknown"
+      ],
+      "exact_run_match_required": true,
+      "group_status_rule": "worst_status_with_unsafe_wins",
+      "drift_scope_label": "Prompt drift in visible runs",
+      "raw_prompt_text_allowed": false
+    },
     "event_tones": {
       "canonical_spec_updated": "spec",
       "trace_baseline_attached": "trace",

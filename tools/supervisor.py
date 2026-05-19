@@ -17554,6 +17554,330 @@ def spec_activity_event_tone(event_type: str) -> str:
     return str(event_tones.get(event_type, "activity")).strip() or "activity"
 
 
+def safe_repo_relative_path_text(value: object) -> str:
+    text = str(value or "").strip()
+    if not text or text.startswith("/") or "\\" in text or ":" in text or "~" in text:
+        return ""
+    path = PurePosixPath(text)
+    if ".." in path.parts:
+        return ""
+    return path.as_posix()
+
+
+def normalize_prompt_overlay_policy_reference(value: object) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        return {
+            "artifact_path": "",
+            "artifact_sha256": "",
+            "version": None,
+        }
+    return {
+        "artifact_path": safe_repo_relative_path_text(value.get("artifact_path", "")),
+        "artifact_sha256": str(value.get("artifact_sha256", "")).strip(),
+        "version": value.get("version"),
+    }
+
+
+def prompt_overlay_display_label(
+    *,
+    status: str,
+    source_kind: str,
+    prompt_profile_id: str,
+) -> str:
+    if status == "unsafe":
+        return "unsafe"
+    if status == "legacy_unknown":
+        return "legacy"
+    if status == "core":
+        return "core"
+    if source_kind == "profile":
+        return prompt_profile_id or "profile"
+    if source_kind == "extension_file":
+        return "local file"
+    return "unknown"
+
+
+def prompt_overlay_drift_key(
+    *,
+    source_kind: str,
+    prompt_profile_id: str,
+    prompt_extension_sha256: str,
+    policy_sha256: str,
+) -> str:
+    return "|".join(
+        (
+            source_kind,
+            prompt_profile_id,
+            prompt_extension_sha256,
+            policy_sha256,
+        )
+    )
+
+
+def normalize_prompt_overlay_provenance_for_viewer(value: object) -> dict[str, Any]:
+    """Return a viewer-safe prompt overlay projection with no raw prompt text."""
+    if not isinstance(value, dict):
+        return {
+            "status": "legacy_unknown",
+            "source_kind": "unknown",
+            "display_label": "legacy",
+            "drift_key": prompt_overlay_drift_key(
+                source_kind="unknown",
+                prompt_profile_id="",
+                prompt_extension_sha256="",
+                policy_sha256="",
+            ),
+            "core_prompt_overridden": None,
+            "policy_reference": {
+                "artifact_path": "",
+                "artifact_sha256": "",
+                "version": None,
+            },
+            "non_overridable_invariants": [],
+        }
+
+    enabled = value.get("enabled")
+    raw_source_kind = str(value.get("source_kind", "")).strip()
+    source_kind = raw_source_kind
+    unsafe_reasons: list[str] = []
+    core_prompt_overridden = value.get("core_prompt_overridden")
+    if core_prompt_overridden is not False:
+        unsafe_reasons.append("core_prompt_overridden")
+    if "prompt_text" in value:
+        unsafe_reasons.append("raw_prompt_text_present")
+
+    if enabled is False:
+        source_kind = "core"
+    elif enabled is True and source_kind not in {"profile", "extension_file"}:
+        unsafe_reasons.append("invalid_source_kind")
+        source_kind = source_kind or "unknown"
+    elif enabled is not True:
+        unsafe_reasons.append("invalid_enabled_flag")
+        source_kind = source_kind or "unknown"
+
+    prompt_profile_id = str(value.get("prompt_profile_id", "")).strip()
+    prompt_extension_path = safe_repo_relative_path_text(value.get("prompt_extension_path", ""))
+    if value.get("prompt_extension_path") and not prompt_extension_path:
+        unsafe_reasons.append("non_repo_relative_prompt_extension_path")
+    policy_reference = normalize_prompt_overlay_policy_reference(value.get("policy_reference"))
+    if isinstance(value.get("policy_reference"), dict):
+        raw_policy_path = value["policy_reference"].get("artifact_path", "")
+        if raw_policy_path and not policy_reference["artifact_path"]:
+            unsafe_reasons.append("non_repo_relative_policy_path")
+
+    prompt_extension_sha256 = str(value.get("prompt_extension_sha256", "")).strip()
+    if enabled is True and not prompt_extension_sha256:
+        unsafe_reasons.append("missing_prompt_extension_sha256")
+    if enabled is True and not prompt_extension_path and not value.get("prompt_extension_path"):
+        unsafe_reasons.append("missing_prompt_extension_path")
+    if enabled is True and not str(policy_reference.get("artifact_sha256", "")).strip():
+        unsafe_reasons.append("missing_policy_artifact_sha256")
+    if source_kind == "profile" and not prompt_profile_id:
+        unsafe_reasons.append("missing_prompt_profile_id")
+
+    status = "core" if enabled is False else "enabled"
+    if unsafe_reasons:
+        status = "unsafe"
+    display_label = prompt_overlay_display_label(
+        status=status,
+        source_kind=source_kind,
+        prompt_profile_id=prompt_profile_id,
+    )
+    invariants = [
+        str(item).strip()
+        for item in value.get("non_overridable_invariants", [])
+        if str(item).strip()
+    ]
+
+    projection: dict[str, Any] = {
+        "status": status,
+        "source_kind": source_kind,
+        "display_label": display_label,
+        "drift_key": prompt_overlay_drift_key(
+            source_kind=source_kind,
+            prompt_profile_id=prompt_profile_id,
+            prompt_extension_sha256=prompt_extension_sha256,
+            policy_sha256=str(policy_reference.get("artifact_sha256", "")).strip(),
+        ),
+        "core_prompt_overridden": core_prompt_overridden,
+        "policy_reference": policy_reference,
+        "non_overridable_invariants": invariants,
+    }
+    if prompt_profile_id:
+        projection["prompt_profile_id"] = prompt_profile_id
+    if prompt_extension_path:
+        projection["prompt_extension_path"] = prompt_extension_path
+    if prompt_extension_sha256:
+        projection["prompt_extension_sha256"] = prompt_extension_sha256
+    prompt_overlay_authority = str(value.get("prompt_overlay_authority", "")).strip()
+    if prompt_overlay_authority:
+        projection["prompt_overlay_authority"] = prompt_overlay_authority
+    if unsafe_reasons:
+        projection["unsafe_reasons"] = sorted(dict.fromkeys(unsafe_reasons))
+    return projection
+
+
+def load_supervisor_run_log_payloads() -> list[dict[str, Any]]:
+    payloads: list[dict[str, Any]] = []
+    for path in run_log_paths():
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if isinstance(payload, dict):
+            payloads.append(payload)
+    return payloads
+
+
+def prompt_overlay_run_indexes(
+    run_payloads: list[dict[str, Any]],
+) -> dict[str, dict[str, Any]]:
+    by_run_id: dict[str, dict[str, Any]] = {}
+
+    def run_sort_key(payload: dict[str, Any]) -> tuple[dt.datetime, str]:
+        timestamp = (
+            parse_iso_datetime(payload.get("finished_at_utc"))
+            or parse_iso_datetime(payload.get("timestamp_utc"))
+            or dt.datetime.min.replace(tzinfo=dt.timezone.utc)
+        )
+        return timestamp, str(payload.get("run_id", "")).strip()
+
+    for payload in sorted(run_payloads, key=run_sort_key):
+        run_id = str(payload.get("run_id", "")).strip()
+        if run_id:
+            by_run_id[run_id] = payload
+    return by_run_id
+
+
+def spec_activity_exact_run_id_from_commit(
+    commit_ref: dict[str, Any],
+    spec_id: str,
+    *,
+    repo_root: Path | None = None,
+) -> str:
+    for key in ("run_id", "source_run_id", "last_run_id"):
+        run_id = str(commit_ref.get(key, "")).strip()
+        if run_id:
+            return run_id
+
+    spec_id_text = str(spec_id).strip()
+    sha = str(commit_ref.get("sha", "")).strip()
+    if not re.fullmatch(r"SG-SPEC-\d{4}", spec_id_text) or not re.fullmatch(
+        r"[0-9a-fA-F]{7,40}", sha
+    ):
+        return ""
+
+    cache_key = "_spec_activity_exact_run_ids"
+    cache = commit_ref.setdefault(cache_key, {})
+    if isinstance(cache, dict) and spec_id_text in cache:
+        return str(cache.get(spec_id_text, "")).strip()
+
+    spec_path = f"specs/nodes/{spec_id_text}.yaml"
+    changed_paths = {str(path).strip() for path in commit_ref.get("paths", [])}
+    if spec_path not in changed_paths or shutil.which("git") is None:
+        if isinstance(cache, dict):
+            cache[spec_id_text] = ""
+        return ""
+
+    local_root = repo_root or ROOT
+    result = subprocess.run(
+        ["git", "show", f"{sha}:{spec_path}"],
+        cwd=local_root,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    run_id = ""
+    if result.returncode == 0 and result.stdout.strip():
+        try:
+            payload = get_yaml_module().safe_load(result.stdout)
+        except Exception:
+            payload = None
+        if isinstance(payload, dict):
+            run_id = str(payload.get("last_run_id", "")).strip()
+    if isinstance(cache, dict):
+        cache[spec_id_text] = run_id
+    return run_id
+
+
+def prompt_overlay_projection_for_activity_entry(
+    *,
+    run_id: str,
+    run_logs_by_id: dict[str, dict[str, Any]],
+) -> dict[str, Any]:
+    run_payload = run_logs_by_id.get(str(run_id).strip())
+    raw_provenance = (
+        run_payload.get("prompt_overlay_provenance") if isinstance(run_payload, dict) else None
+    )
+    return normalize_prompt_overlay_provenance_for_viewer(raw_provenance)
+
+
+PROMPT_OVERLAY_STATUS_SEVERITY = {
+    "legacy_unknown": 0,
+    "core": 1,
+    "enabled": 2,
+    "unsafe": 3,
+}
+
+
+def prompt_overlay_worst_status(status_counts: dict[str, int]) -> str:
+    if not status_counts:
+        return "unknown"
+    return max(
+        sorted(status_counts),
+        key=lambda status: PROMPT_OVERLAY_STATUS_SEVERITY.get(status, -1),
+    )
+
+
+def prompt_overlay_visible_run_summary(
+    events: list[dict[str, Any]],
+    *,
+    include_groups: bool = True,
+    include_event_ids: bool = True,
+) -> dict[str, Any]:
+    groups: dict[str, dict[str, Any]] = {}
+    status_counts: dict[str, int] = {}
+    for event in events:
+        projection = event.get("prompt_overlay_provenance")
+        if not isinstance(projection, dict):
+            continue
+        status = str(projection.get("status", "")).strip() or "unknown"
+        status_counts[status] = status_counts.get(status, 0) + 1
+        drift_key = str(projection.get("drift_key", "")).strip()
+        if not drift_key:
+            continue
+        group = groups.setdefault(
+            drift_key,
+            {
+                "drift_key": drift_key,
+                "display_label": str(projection.get("display_label", "")).strip(),
+                "status": status,
+                "source_kind": str(projection.get("source_kind", "")).strip(),
+                "status_counts": {},
+                "event_ids": [],
+                "event_count": 0,
+            },
+        )
+        group_status_counts = group.setdefault("status_counts", {})
+        if isinstance(group_status_counts, dict):
+            group_status_counts[status] = int(group_status_counts.get(status, 0)) + 1
+            worst_status = prompt_overlay_worst_status(group_status_counts)
+            group["status"] = worst_status
+            group["dominant_status"] = worst_status
+        if include_event_ids:
+            group["event_ids"].append(str(event.get("event_id", "")).strip())
+        group["event_count"] = int(group.get("event_count", 0)) + 1
+    summary = {
+        "scope": "visible_entries",
+        "label": "Prompt drift in visible runs",
+        "status_counts": {key: status_counts[key] for key in sorted(status_counts)},
+        "drift_group_count": len(groups),
+    }
+    if include_groups:
+        summary["drift_groups"] = [groups[key] for key in sorted(groups)]
+    return summary
+
+
 def spec_activity_event_id(commit_ref: dict[str, Any], event_type: str, spec_id: str) -> str:
     raw_id = ":".join(
         [
@@ -17574,6 +17898,7 @@ def build_spec_activity_feed(
     event_limit = limit or spec_activity_default_limit()
     spec_index = index_specs(specs)
     commits = collect_spec_activity_commit_refs(limit=event_limit)
+    run_logs_by_id = prompt_overlay_run_indexes(load_supervisor_run_log_payloads())
     events: list[dict[str, Any]] = []
     seen_event_ids: set[str] = set()
 
@@ -17602,6 +17927,7 @@ def build_spec_activity_feed(
                 title = spec.title if spec is not None else ""
                 if not title and not spec_id:
                     title = "Graph process feedback"
+                exact_run_id = spec_activity_exact_run_id_from_commit(commit_ref, spec_id)
                 events.append(
                     {
                         "event_id": event_id,
@@ -17617,6 +17943,12 @@ def build_spec_activity_feed(
                             "subject": str(commit_ref.get("subject", "")).strip(),
                         },
                         **({"merge_landing": stack_context} if stack_context is not None else {}),
+                        "prompt_overlay_provenance": (
+                            prompt_overlay_projection_for_activity_entry(
+                                run_id=exact_run_id,
+                                run_logs_by_id=run_logs_by_id,
+                            )
+                        ),
                         "source_paths": list(commit_ref.get("paths", [])),
                         "viewer": {
                             "tone": spec_activity_event_tone(event_type),
@@ -17657,10 +17989,15 @@ def build_spec_activity_feed(
                 key: len(value) for key, value in sorted(event_type_index.items())
             },
             "spec_event_counts": {key: len(value) for key, value in sorted(spec_id_index.items())},
+            "prompt_overlay": prompt_overlay_visible_run_summary(
+                events,
+                include_groups=False,
+            ),
         },
         "viewer_projection": {
             "event_type": event_type_index,
             "spec_id": spec_id_index,
+            "prompt_overlay": prompt_overlay_visible_run_summary(events),
             "named_filters": {
                 "trace_or_evidence_baselines": [
                     event["event_id"]

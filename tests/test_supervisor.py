@@ -8334,6 +8334,229 @@ def test_build_spec_activity_feed_emits_trace_and_evidence_baseline_events(
     assert feed["tracked_artifacts_written"] is False
 
 
+def test_build_spec_activity_feed_projects_prompt_overlay_provenance(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    node_data = supervisor_module.get_yaml_module().safe_load(node_path.read_text())
+    node_data["last_run_id"] = "RUN-PROMPT-1"
+    node_path.write_text(json.dumps(node_data), encoding="utf-8")
+    run_payload = {
+        "run_id": "RUN-PROMPT-1",
+        "spec_id": "SG-SPEC-0001",
+        "finished_at_utc": "2026-05-19T00:00:00Z",
+        "prompt_overlay_provenance": {
+            "enabled": True,
+            "source_kind": "profile",
+            "prompt_profile_id": "default",
+            "prompt_extension_path": "tools/supervisor_prompts/default.md",
+            "prompt_extension_sha256": "e" * 64,
+            "prompt_overlay_authority": "project",
+            "core_prompt_overridden": False,
+            "policy_reference": {
+                "artifact_path": "tools/supervisor_prompt_policy.json",
+                "artifact_sha256": "p" * 64,
+                "version": 1,
+            },
+            "non_overridable_invariants": ["allowed_paths_required"],
+        },
+    }
+    (repo_fixture / "runs" / "20260519T000000Z-SG-SPEC-0001-prompt.json").write_text(
+        json.dumps(run_payload),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "collect_spec_activity_commit_refs",
+        lambda **kwargs: [
+            {
+                "sha": "a" * 40,
+                "short_sha": "aaaaaaa",
+                "committed_at": "2026-05-19T00:01:00+00:00",
+                "subject": "Update SG-SPEC-0001 with prompt overlay",
+                "source_run_id": "RUN-PROMPT-1",
+                "paths": ["specs/nodes/SG-SPEC-0001.yaml"],
+            }
+        ],
+    )
+
+    feed = supervisor_module.build_spec_activity_feed(supervisor_module.load_specs())
+
+    projection = feed["entries"][0]["prompt_overlay_provenance"]
+    assert projection["status"] == "enabled"
+    assert projection["source_kind"] == "profile"
+    assert projection["display_label"] == "default"
+    assert projection["prompt_profile_id"] == "default"
+    assert projection["prompt_extension_path"] == "tools/supervisor_prompts/default.md"
+    assert projection["prompt_extension_sha256"] == "e" * 64
+    assert projection["core_prompt_overridden"] is False
+    assert projection["policy_reference"]["artifact_sha256"] == "p" * 64
+    assert projection["drift_key"] == f"profile|default|{'e' * 64}|{'p' * 64}"
+    assert "prompt_text" not in projection
+    prompt_summary = feed["viewer_projection"]["prompt_overlay"]
+    assert prompt_summary["scope"] == "visible_entries"
+    assert prompt_summary["label"] == "Prompt drift in visible runs"
+    assert prompt_summary["status_counts"] == {"enabled": 1}
+    assert prompt_summary["drift_group_count"] == 1
+    assert prompt_summary["drift_groups"][0]["event_count"] == 1
+    assert prompt_summary["drift_groups"][0]["status"] == "enabled"
+    assert prompt_summary["drift_groups"][0]["dominant_status"] == "enabled"
+    assert prompt_summary["drift_groups"][0]["status_counts"] == {"enabled": 1}
+    assert prompt_summary["drift_groups"][0]["event_ids"] == [feed["entries"][0]["event_id"]]
+    assert "drift_groups" not in feed["summary"]["prompt_overlay"]
+
+
+def test_build_spec_activity_feed_does_not_infer_prompt_overlay_from_current_spec(
+    repo_fixture: Path,
+    supervisor_module: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    node_data = supervisor_module.get_yaml_module().safe_load(node_path.read_text())
+    node_data["last_run_id"] = "RUN-PROMPT-LATEST"
+    node_path.write_text(json.dumps(node_data), encoding="utf-8")
+    run_payload = {
+        "run_id": "RUN-PROMPT-LATEST",
+        "spec_id": "SG-SPEC-0001",
+        "finished_at_utc": "2026-05-19T00:00:00Z",
+        "prompt_overlay_provenance": {
+            "enabled": True,
+            "source_kind": "profile",
+            "prompt_profile_id": "default",
+            "prompt_extension_path": "tools/supervisor_prompts/default.md",
+            "prompt_extension_sha256": "e" * 64,
+            "core_prompt_overridden": False,
+            "policy_reference": {
+                "artifact_path": "tools/supervisor_prompt_policy.json",
+                "artifact_sha256": "p" * 64,
+                "version": 1,
+            },
+        },
+    }
+    (repo_fixture / "runs" / "20260519T000000Z-SG-SPEC-0001-prompt.json").write_text(
+        json.dumps(run_payload),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "collect_spec_activity_commit_refs",
+        lambda **kwargs: [
+            {
+                "sha": "b" * 40,
+                "short_sha": "bbbbbbb",
+                "committed_at": "2026-05-19T00:01:00+00:00",
+                "subject": "Update SG-SPEC-0001 without exact run id",
+                "paths": ["specs/nodes/SG-SPEC-0001.yaml"],
+            }
+        ],
+    )
+
+    feed = supervisor_module.build_spec_activity_feed(supervisor_module.load_specs())
+
+    projection = feed["entries"][0]["prompt_overlay_provenance"]
+    assert projection["status"] == "legacy_unknown"
+    assert projection["display_label"] == "legacy"
+
+
+def test_prompt_overlay_projection_marks_missing_core_and_unsafe_states(
+    supervisor_module: object,
+) -> None:
+    missing = supervisor_module.normalize_prompt_overlay_provenance_for_viewer(None)
+    assert missing["status"] == "legacy_unknown"
+    assert missing["display_label"] == "legacy"
+
+    core = supervisor_module.normalize_prompt_overlay_provenance_for_viewer(
+        {
+            "enabled": False,
+            "source_kind": "core",
+            "core_prompt_overridden": False,
+            "policy_reference": {
+                "artifact_path": "tools/supervisor_prompt_policy.json",
+                "artifact_sha256": "p" * 64,
+                "version": 1,
+            },
+        }
+    )
+    assert core["status"] == "core"
+    assert core["source_kind"] == "core"
+    assert core["display_label"] == "core"
+
+    unsafe = supervisor_module.normalize_prompt_overlay_provenance_for_viewer(
+        {
+            "enabled": True,
+            "source_kind": "profile",
+            "prompt_profile_id": "default",
+            "prompt_extension_path": "/Users/example/secret.md",
+            "prompt_extension_sha256": "e" * 64,
+            "core_prompt_overridden": True,
+            "prompt_text": "must never render",
+            "policy_reference": {
+                "artifact_path": "/tmp/policy.json",
+                "artifact_sha256": "p" * 64,
+                "version": 1,
+            },
+        }
+    )
+    assert unsafe["status"] == "unsafe"
+    assert unsafe["display_label"] == "unsafe"
+    assert unsafe["core_prompt_overridden"] is True
+    assert "prompt_text" not in unsafe
+    assert "prompt_extension_path" not in unsafe
+    assert unsafe["policy_reference"]["artifact_path"] == ""
+    assert unsafe["unsafe_reasons"] == [
+        "core_prompt_overridden",
+        "non_repo_relative_policy_path",
+        "non_repo_relative_prompt_extension_path",
+        "raw_prompt_text_present",
+    ]
+    assert supervisor_module.safe_repo_relative_path_text("C:/Users/example/prompt.md") == ""
+    assert supervisor_module.safe_repo_relative_path_text("~/prompt.md") == ""
+    assert supervisor_module.safe_repo_relative_path_text("https://example.test/prompt.md") == ""
+    safe_prompt_path = supervisor_module.safe_repo_relative_path_text(
+        "tools/supervisor_prompts/default.md"
+    )
+    assert safe_prompt_path == "tools/supervisor_prompts/default.md"
+
+
+def test_prompt_overlay_visible_run_summary_tracks_group_status_counts(
+    supervisor_module: object,
+) -> None:
+    enabled_projection = {
+        "status": "enabled",
+        "source_kind": "profile",
+        "display_label": "default",
+        "drift_key": "profile|default|hash|policy",
+    }
+    unsafe_projection = {
+        "status": "unsafe",
+        "source_kind": "profile",
+        "display_label": "unsafe",
+        "drift_key": "profile|default|hash|policy",
+    }
+
+    summary = supervisor_module.prompt_overlay_visible_run_summary(
+        [
+            {
+                "event_id": "event-1",
+                "prompt_overlay_provenance": enabled_projection,
+            },
+            {
+                "event_id": "event-2",
+                "prompt_overlay_provenance": unsafe_projection,
+            },
+        ]
+    )
+
+    group = summary["drift_groups"][0]
+    assert summary["status_counts"] == {"enabled": 1, "unsafe": 1}
+    assert group["status"] == "unsafe"
+    assert group["dominant_status"] == "unsafe"
+    assert group["status_counts"] == {"enabled": 1, "unsafe": 1}
+    assert group["event_ids"] == ["event-1", "event-2"]
+
+
 def test_build_spec_activity_feed_emits_proposal_registry_events_without_spec_id(
     supervisor_module: object,
     monkeypatch: pytest.MonkeyPatch,
