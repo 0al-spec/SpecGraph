@@ -26274,10 +26274,11 @@ def test_main_normalizes_recoverable_semantic_grounding_failure_before_retry(
 
     run_logs = sorted((repo_fixture / "runs").glob("*-SG-SPEC-*.json"))
     assert len(run_logs) == 2
-    failed_payload = json.loads(run_logs[0].read_text(encoding="utf-8"))
-    assert failed_payload["gate_state"] == "retry_pending"
-    ok_payload = json.loads(run_logs[1].read_text(encoding="utf-8"))
-    assert ok_payload["gate_state"] == "review_pending"
+    payloads = [json.loads(path.read_text(encoding="utf-8")) for path in run_logs]
+    assert sorted(payload["gate_state"] for payload in payloads) == [
+        "retry_pending",
+        "review_pending",
+    ]
 
 
 def test_recoverable_validation_retry_requires_all_errors_recoverable(

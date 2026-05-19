@@ -27884,6 +27884,8 @@ def graph_backlog_priority(
     severity_priority = {"critical": "high", "high": "high", "medium": "medium", "low": "low"}
     if severity in severity_priority:
         return severity_priority[severity]
+    if next_gap == "collect_metrics_adoption_feedback":
+        return "low"
     if review_state in {"ready_for_review", "review_visible", "adoption_visible", "review_due"}:
         return "high"
     if (
@@ -27891,8 +27893,6 @@ def graph_backlog_priority(
         or next_gap == "review_accepted_risk_when_context_changes"
     ):
         return "info"
-    if next_gap == "collect_metrics_adoption_feedback":
-        return "low"
     if "blocked" in status or next_gap.startswith("isolate_"):
         return "high"
     if next_gap.startswith("review_") or next_gap in {"resolve_review_gate", "resolve_split_gate"}:
