@@ -116,6 +116,7 @@ ARTIFACT_LOCK_TIMEOUT_SECONDS = 5.0
 ARTIFACT_LOCK_POLL_SECONDS = 0.05
 RUNTIME_ID_COLLISION_RETRY_LIMIT = 8
 SUPERVISOR_POLICY_RELATIVE_PATH = "tools/supervisor_policy.json"
+SUPERVISOR_PROMPT_POLICY_RELATIVE_PATH = "tools/supervisor_prompt_policy.json"
 TECHSPEC_HANDOFF_POLICY_RELATIVE_PATH = "tools/techspec_handoff_policy.json"
 PROPOSAL_LANE_POLICY_RELATIVE_PATH = "tools/proposal_lane_policy.json"
 INTENT_LAYER_POLICY_RELATIVE_PATH = "tools/intent_layer_policy.json"
@@ -168,6 +169,10 @@ SPECPM_EXPORT_REGISTRY_RELATIVE_PATH = "tools/specpm_export_registry.json"
 
 def supervisor_policy_path() -> Path:
     return TOOLS_DIR / "supervisor_policy.json"
+
+
+def supervisor_prompt_policy_path() -> Path:
+    return TOOLS_DIR / "supervisor_prompt_policy.json"
 
 
 def techspec_handoff_policy_path() -> Path:
@@ -374,6 +379,48 @@ def load_supervisor_policy() -> tuple[dict[str, Any], str]:
 
 
 SUPERVISOR_POLICY, SUPERVISOR_POLICY_SHA256 = load_supervisor_policy()
+
+
+def load_supervisor_prompt_policy() -> tuple[dict[str, Any], str]:
+    path = supervisor_prompt_policy_path()
+    try:
+        raw_text = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise RuntimeError(
+            f"failed to read supervisor prompt policy artifact: {path.as_posix()} ({exc})"
+        ) from exc
+    try:
+        payload = json.loads(raw_text)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(
+            f"malformed supervisor prompt policy artifact: {path.as_posix()} ({exc})"
+        ) from exc
+    if not isinstance(payload, dict):
+        raise RuntimeError(
+            "malformed supervisor prompt policy artifact: "
+            f"{path.as_posix()} must contain a JSON object"
+        )
+    if payload.get("artifact_kind") != "supervisor_prompt_policy":
+        raise RuntimeError(
+            "malformed supervisor prompt policy artifact: "
+            "artifact_kind must be supervisor_prompt_policy"
+        )
+    required_sections = (
+        "approved_prompt_roots",
+        "profiles",
+        "non_overridable_invariants",
+        "prompt_anchor_checks",
+    )
+    missing = [section for section in required_sections if section not in payload]
+    if missing:
+        raise RuntimeError(
+            "malformed supervisor prompt policy artifact: missing top-level section(s): "
+            + ", ".join(missing)
+        )
+    return payload, hashlib.sha256(raw_text.encode("utf-8")).hexdigest()
+
+
+SUPERVISOR_PROMPT_POLICY, SUPERVISOR_PROMPT_POLICY_SHA256 = load_supervisor_prompt_policy()
 
 
 def load_techspec_handoff_policy() -> tuple[dict[str, Any], str]:
@@ -2191,6 +2238,14 @@ def supervisor_policy_reference() -> dict[str, Any]:
         "artifact_path": SUPERVISOR_POLICY_RELATIVE_PATH,
         "artifact_sha256": SUPERVISOR_POLICY_SHA256,
         "version": SUPERVISOR_POLICY.get("version"),
+    }
+
+
+def supervisor_prompt_policy_reference() -> dict[str, Any]:
+    return {
+        "artifact_path": SUPERVISOR_PROMPT_POLICY_RELATIVE_PATH,
+        "artifact_sha256": SUPERVISOR_PROMPT_POLICY_SHA256,
+        "version": SUPERVISOR_PROMPT_POLICY.get("version"),
     }
 
 
@@ -6456,6 +6511,167 @@ def normalize_materialized_child_specs(child_relpaths: list[str]) -> None:
         write_spec_yaml(child_path, normalized)
 
 
+def supervisor_prompt_profiles_by_id() -> dict[str, dict[str, Any]]:
+    profiles = SUPERVISOR_PROMPT_POLICY.get("profiles", [])
+    if not isinstance(profiles, list):
+        return {}
+    indexed: dict[str, dict[str, Any]] = {}
+    for entry in profiles:
+        if not isinstance(entry, dict):
+            continue
+        profile_id = str(entry.get("profile_id", "")).strip()
+        if profile_id:
+            indexed[profile_id] = entry
+    return indexed
+
+
+def repo_relative_prompt_extension_path(path_value: str) -> str:
+    candidate_text = str(path_value or "").strip()
+    if not candidate_text:
+        raise ValueError("supervisor prompt extension path must be non-empty")
+
+    candidate = Path(candidate_text).expanduser()
+    resolved = candidate.resolve() if candidate.is_absolute() else (ROOT / candidate).resolve()
+    try:
+        relpath = resolved.relative_to(ROOT.resolve()).as_posix()
+    except ValueError as exc:
+        raise ValueError(
+            "supervisor prompt extension file must stay inside this repository"
+        ) from exc
+
+    approved_roots = [
+        str(root).strip().rstrip("/")
+        for root in SUPERVISOR_PROMPT_POLICY.get("approved_prompt_roots", [])
+        if str(root).strip()
+    ]
+    if not any(relpath == root or relpath.startswith(f"{root}/") for root in approved_roots):
+        raise ValueError(
+            "supervisor prompt extension file must stay under approved prompt roots: "
+            + ", ".join(approved_roots)
+        )
+    return relpath
+
+
+def read_prompt_extension(relpath: str) -> tuple[str, str]:
+    path = ROOT / relpath
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise ValueError(
+            f"failed to read supervisor prompt extension file: {relpath} ({exc})"
+        ) from exc
+    if not text.strip():
+        raise ValueError(f"supervisor prompt extension file must be non-empty: {relpath}")
+    return text.strip(), hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def resolve_supervisor_prompt_overlay(
+    *,
+    profile_id: str | None = None,
+    extension_file: str | None = None,
+) -> dict[str, Any]:
+    """Resolve additive supervisor prompt overlay provenance and text."""
+    requested_profile = str(profile_id or "").strip()
+    requested_file = str(extension_file or "").strip()
+    if requested_profile and requested_file:
+        raise ValueError(
+            "--supervisor-prompt-profile and --supervisor-prompt-extension-file cannot be combined"
+        )
+    if not requested_profile and not requested_file:
+        return {
+            "enabled": False,
+            "core_prompt_overridden": False,
+            "policy_reference": supervisor_prompt_policy_reference(),
+        }
+
+    source_kind = "profile"
+    authority = "local_file"
+    if requested_profile:
+        profiles = supervisor_prompt_profiles_by_id()
+        profile = profiles.get(requested_profile)
+        if profile is None:
+            known_profiles = ", ".join(sorted(profiles)) or "(none)"
+            raise ValueError(
+                f"unknown supervisor prompt profile: {requested_profile}; "
+                f"known profiles: {known_profiles}"
+            )
+        relpath = repo_relative_prompt_extension_path(
+            str(profile.get("prompt_extension_path", "")).strip()
+        )
+        authority = str(profile.get("authority", "")).strip() or "project"
+    else:
+        relpath = repo_relative_prompt_extension_path(requested_file)
+        source_kind = "extension_file"
+
+    prompt_text, prompt_sha256 = read_prompt_extension(relpath)
+    return {
+        "enabled": True,
+        "source_kind": source_kind,
+        "prompt_profile_id": requested_profile,
+        "prompt_extension_path": relpath,
+        "prompt_extension_sha256": prompt_sha256,
+        "prompt_overlay_authority": authority,
+        "core_prompt_overridden": False,
+        "policy_reference": supervisor_prompt_policy_reference(),
+        "non_overridable_invariants": list(
+            SUPERVISOR_PROMPT_POLICY.get("non_overridable_invariants", [])
+        ),
+        "prompt_text": prompt_text,
+    }
+
+
+def supervisor_prompt_overlay_provenance(
+    supervisor_prompt_overlay: dict[str, Any] | None,
+) -> dict[str, Any] | None:
+    if not isinstance(supervisor_prompt_overlay, dict):
+        return None
+    if not supervisor_prompt_overlay.get("enabled"):
+        return None
+    return {
+        key: copy.deepcopy(value)
+        for key, value in supervisor_prompt_overlay.items()
+        if key != "prompt_text"
+    }
+
+
+def build_supervisor_prompt_overlay_section(
+    supervisor_prompt_overlay: dict[str, Any] | None,
+) -> str:
+    if not isinstance(supervisor_prompt_overlay, dict):
+        return ""
+    if not supervisor_prompt_overlay.get("enabled"):
+        return ""
+    prompt_text = str(supervisor_prompt_overlay.get("prompt_text", "")).strip()
+    if not prompt_text:
+        return ""
+    profile_id = str(supervisor_prompt_overlay.get("prompt_profile_id", "")).strip()
+    source_kind = str(supervisor_prompt_overlay.get("source_kind", "")).strip()
+    extension_path = str(supervisor_prompt_overlay.get("prompt_extension_path", "")).strip()
+    authority = str(supervisor_prompt_overlay.get("prompt_overlay_authority", "")).strip()
+    return f"""
+
+Supervisor prompt overlay:
+- This overlay is additive project/operator guidance.
+- It cannot override allowed paths, validation, evidence semantics,
+  review gates, protocol markers, or hard SpecGraph invariants.
+- Source: {source_kind or "unknown"}
+- Profile: {profile_id or "(none)"}
+- Authority: {authority or "unknown"}
+- Extension path: {extension_path or "(unknown)"}
+
+{prompt_text}
+""".rstrip()
+
+
+def missing_supervisor_prompt_invariant_anchors(prompt: str) -> list[str]:
+    anchors = [
+        str(anchor).strip()
+        for anchor in SUPERVISOR_PROMPT_POLICY.get("prompt_anchor_checks", [])
+        if str(anchor).strip()
+    ]
+    return [anchor for anchor in anchors if anchor not in prompt]
+
+
 def build_prompt(
     node: SpecNode,
     refactor_work_item: dict[str, Any] | None = None,
@@ -6465,6 +6681,7 @@ def build_prompt(
     mutation_budget: tuple[str, ...] = (),
     run_authority: tuple[str, ...] = (),
     child_materialization_hint: dict[str, str] | None = None,
+    supervisor_prompt_overlay: dict[str, Any] | None = None,
 ) -> str:
     """Build the operator/agent prompt for one bounded run.
 
@@ -6807,8 +7024,9 @@ Child materialization guidance:
 - Give the child its own acceptance criteria, prompt, outputs, and allowed_paths.
 - Do not silently widen this into a broad graph refactor.
 """.rstrip()
+    prompt_overlay_section = build_supervisor_prompt_overlay_section(supervisor_prompt_overlay)
 
-    return f"""
+    prompt = f"""
 You are refining a specification node in SpecGraph.
 
 {agents_hint}Spec node ID: {node.id}
@@ -6831,6 +7049,7 @@ Expected outputs:
 {mode_section}
 {bootstrap_section}
 {child_materialization_section}
+{prompt_overlay_section}
 
 Rules:
 - Refine specification only.
@@ -6849,6 +7068,13 @@ Rules:
   RUN_OUTCOME: done|retry|split_required|blocked|escalate
   BLOCKER: <text or none>
 """.strip()
+    missing_invariants = missing_supervisor_prompt_invariant_anchors(prompt)
+    if missing_invariants:
+        raise RuntimeError(
+            "assembled supervisor prompt is missing non-overridable invariant anchor(s): "
+            + ", ".join(missing_invariants)
+        )
+    return prompt
 
 
 def validate_yaml(path: Path) -> list[str]:
@@ -32570,6 +32796,7 @@ def invoke_executor(
     child_timeout_seconds: int | None = None,
     worktree_branch: str = "",
     child_materialization_hint: dict[str, str] | None = None,
+    supervisor_prompt_overlay: dict[str, Any] | None = None,
     verbose: bool = False,
 ) -> subprocess.CompletedProcess[str]:
     """Call the executor with optional work-item context when supported.
@@ -32592,6 +32819,7 @@ def invoke_executor(
             child_timeout_seconds=child_timeout_seconds,
             worktree_branch=worktree_branch,
             child_materialization_hint=child_materialization_hint,
+            supervisor_prompt_overlay=supervisor_prompt_overlay,
             verbose=verbose,
         )
     if refactor_work_item is not None and (
@@ -32744,6 +32972,7 @@ def run_codex(
     child_timeout_seconds: int | None = None,
     worktree_branch: str = "",
     child_materialization_hint: dict[str, str] | None = None,
+    supervisor_prompt_overlay: dict[str, Any] | None = None,
     verbose: bool = False,
 ) -> subprocess.CompletedProcess[str]:
     """Run the Codex executor in the isolated worktree and stream logs live."""
@@ -32778,6 +33007,7 @@ def run_codex(
             mutation_budget=mutation_budget,
             run_authority=run_authority,
             child_materialization_hint=child_materialization_hint,
+            supervisor_prompt_overlay=supervisor_prompt_overlay,
         ),
         profile=profile,
         bypass_inner_sandbox=bypass_inner_sandbox,
@@ -33435,6 +33665,7 @@ def _process_split_refactor_proposal(
     execution_profile: str | None = None,
     child_model: str | None = None,
     child_timeout_seconds: int | None = None,
+    supervisor_prompt_overlay: dict[str, Any] | None = None,
     verbose: bool = False,
 ) -> tuple[int, str]:
     """Run the explicit proposal-first split pass for one oversized non-seed spec.
@@ -33485,6 +33716,9 @@ def _process_split_refactor_proposal(
         run_authority=(),
         operator_target=True,
     )
+    prompt_overlay_provenance = supervisor_prompt_overlay_provenance(supervisor_prompt_overlay)
+    if prompt_overlay_provenance is not None:
+        selected_by_rule["prompt_overlay_provenance"] = prompt_overlay_provenance
     before_status = node.status
     before_maturity = node.maturity
 
@@ -33517,6 +33751,8 @@ def _process_split_refactor_proposal(
         "child_timeout_seconds": child_timeout_seconds,
         "worktree_branch": branch,
     }
+    if callable_supports_keyword(invoke_executor, "supervisor_prompt_overlay"):
+        invoke_kwargs["supervisor_prompt_overlay"] = supervisor_prompt_overlay
     if callable_supports_keyword(invoke_executor, "verbose"):
         invoke_kwargs["verbose"] = verbose
     result = invoke_executor(
@@ -33841,6 +34077,8 @@ def _process_split_refactor_proposal(
         "stdout": result.stdout,
         "stderr": result.stderr,
     }
+    if prompt_overlay_provenance is not None:
+        payload["prompt_overlay_provenance"] = prompt_overlay_provenance
     if operator_request_context:
         payload["operator_request_bridge"] = {
             "policy_reference": operator_request_bridge_policy_reference(),
@@ -33897,6 +34135,7 @@ def _process_one_spec(
     execution_profile: str | None = None,
     child_model: str | None = None,
     child_timeout_seconds: int | None = None,
+    supervisor_prompt_overlay: dict[str, Any] | None = None,
     verbose: bool = False,
 ) -> tuple[int, str, str, str]:
     """Process one ordinary supervisor run.
@@ -33965,6 +34204,9 @@ def _process_one_spec(
             "recommended_action": str(refactor_work_item.get("recommended_action", "")),
             "source_run_id": str(refactor_work_item.get("source_run_id", "")),
         }
+    prompt_overlay_provenance = supervisor_prompt_overlay_provenance(supervisor_prompt_overlay)
+    if prompt_overlay_provenance is not None:
+        selected_by_rule["prompt_overlay_provenance"] = prompt_overlay_provenance
 
     before_status = node.status
     proposal_queue_before = load_proposal_queue()
@@ -34064,6 +34306,8 @@ def _process_one_spec(
     }
     if callable_supports_keyword(invoke_executor, "child_materialization_hint"):
         invoke_kwargs["child_materialization_hint"] = child_materialization_hint
+    if callable_supports_keyword(invoke_executor, "supervisor_prompt_overlay"):
+        invoke_kwargs["supervisor_prompt_overlay"] = supervisor_prompt_overlay
     if callable_supports_keyword(invoke_executor, "verbose"):
         invoke_kwargs["verbose"] = verbose
     result = invoke_executor(
@@ -34797,6 +35041,8 @@ def _process_one_spec(
         "stdout": result.stdout,
         "stderr": result.stderr,
     }
+    if prompt_overlay_provenance is not None:
+        payload["prompt_overlay_provenance"] = prompt_overlay_provenance
     if operator_request_context:
         payload["operator_request_bridge"] = {
             "policy_reference": operator_request_bridge_policy_reference(),
@@ -35035,6 +35281,8 @@ def main(
     build_proposal_runtime_index_mode: bool = False,
     build_proposal_promotion_index_mode: bool = False,
     build_proposal_spec_trace_index_mode: bool = False,
+    supervisor_prompt_profile: str | None = None,
+    supervisor_prompt_extension_file: str | None = None,
     output_mode: str = "summary",
 ) -> int:
     """Entry point for CLI and tests.
@@ -35138,6 +35386,33 @@ def main(
             "standalone commands cannot be combined: " + ", ".join(enabled_standalone_modes),
             file=sys.stderr,
         )
+        return 1
+
+    supervisor_prompt_overlay_requested = bool(
+        str(supervisor_prompt_profile or "").strip()
+        or str(supervisor_prompt_extension_file or "").strip()
+    )
+    if supervisor_prompt_overlay_requested and (
+        enabled_standalone_modes
+        or resolve_gate
+        or list_stale_runtime
+        or clean_stale_runtime
+        or observe_graph_health_mode
+        or apply_split_proposal
+    ):
+        print(
+            "--supervisor-prompt-profile/--supervisor-prompt-extension-file "
+            "can only be used with supervisor prompt-producing run modes",
+            file=sys.stderr,
+        )
+        return 1
+    try:
+        supervisor_prompt_overlay = resolve_supervisor_prompt_overlay(
+            profile_id=supervisor_prompt_profile,
+            extension_file=supervisor_prompt_extension_file,
+        )
+    except ValueError as exc:
+        print(str(exc), file=sys.stderr)
         return 1
 
     if exploration_intent_text and not build_exploration_preview_mode:
@@ -38057,6 +38332,7 @@ def main(
                 refactor_work_item,
                 operator_note=operator_note,
                 mutation_budget=mutation_budget,
+                supervisor_prompt_overlay=supervisor_prompt_overlay,
             )
             print(f"\n{prompt}")
             return 0
@@ -38075,6 +38351,8 @@ def main(
         }
         if callable_supports_keyword(_process_split_refactor_proposal, "operator_request_context"):
             proposal_kwargs["operator_request_context"] = operator_request_context
+        if callable_supports_keyword(_process_split_refactor_proposal, "supervisor_prompt_overlay"):
+            proposal_kwargs["supervisor_prompt_overlay"] = supervisor_prompt_overlay
         if callable_supports_keyword(_process_split_refactor_proposal, "verbose"):
             proposal_kwargs["verbose"] = verbose
         exit_code, _outcome = _process_split_refactor_proposal(**proposal_kwargs)
@@ -38151,6 +38429,7 @@ def main(
                 operator_note=operator_note,
                 mutation_budget=mutation_budget,
                 run_authority=run_authority,
+                supervisor_prompt_overlay=supervisor_prompt_overlay,
             )
             print(f"\n{prompt}")
             return 0
@@ -38174,6 +38453,8 @@ def main(
         }
         if callable_supports_keyword(_process_one_spec, "operator_request_context"):
             process_kwargs["operator_request_context"] = operator_request_context
+        if callable_supports_keyword(_process_one_spec, "supervisor_prompt_overlay"):
+            process_kwargs["supervisor_prompt_overlay"] = supervisor_prompt_overlay
         if callable_supports_keyword(_process_one_spec, "verbose"):
             process_kwargs["verbose"] = verbose
         process_result = _process_one_spec_with_recoverable_retry(process_kwargs)
@@ -38226,6 +38507,8 @@ def main(
                 "child_model": child_model,
                 "child_timeout_seconds": child_timeout_seconds,
             }
+            if callable_supports_keyword(_process_one_spec, "supervisor_prompt_overlay"):
+                process_kwargs["supervisor_prompt_overlay"] = supervisor_prompt_overlay
             if callable_supports_keyword(_process_one_spec, "verbose"):
                 process_kwargs["verbose"] = verbose
             exit_code, outcome, completion_status, gate_state = (
@@ -38297,7 +38580,12 @@ def main(
         print(f"Would execute prompt for: {node.id}")
         print(f"Status: {node.status} | Maturity: {node.maturity:.2f} | Gate: {node.gate_state}")
         print(f"Selection context: {json.dumps(selected_by_rule, ensure_ascii=False)}")
-        print(f"\n{build_prompt(node, refactor_work_item)}")
+        prompt = build_prompt(
+            node,
+            refactor_work_item,
+            supervisor_prompt_overlay=supervisor_prompt_overlay,
+        )
+        print(f"\n{prompt}")
         return 0
 
     process_kwargs = {
@@ -38310,6 +38598,8 @@ def main(
         "child_model": child_model,
         "child_timeout_seconds": child_timeout_seconds,
     }
+    if callable_supports_keyword(_process_one_spec, "supervisor_prompt_overlay"):
+        process_kwargs["supervisor_prompt_overlay"] = supervisor_prompt_overlay
     if callable_supports_keyword(_process_one_spec, "verbose"):
         process_kwargs["verbose"] = verbose
     exit_code, _outcome, _completion_status, _gate_state = _process_one_spec_with_recoverable_retry(
@@ -38894,6 +39184,21 @@ if __name__ == "__main__":
         ),
     )
     parser.add_argument(
+        "--supervisor-prompt-profile",
+        help=(
+            "Optional approved supervisor prompt overlay profile from "
+            "tools/supervisor_prompt_policy.json. The overlay is additive and cannot "
+            "replace core supervisor invariants."
+        ),
+    )
+    parser.add_argument(
+        "--supervisor-prompt-extension-file",
+        help=(
+            "Optional prompt overlay Markdown file under approved prompt roots for a "
+            "local, non-profile run. Cannot be combined with --supervisor-prompt-profile."
+        ),
+    )
+    parser.add_argument(
         "--mutation-budget",
         help=(
             "Optional comma-separated mutation classes allowed for an explicit targeted run, "
@@ -39042,6 +39347,8 @@ if __name__ == "__main__":
             build_proposal_runtime_index_mode=args.build_proposal_runtime_index,
             build_proposal_promotion_index_mode=args.build_proposal_promotion_index,
             build_proposal_spec_trace_index_mode=args.build_proposal_spec_trace_index,
+            supervisor_prompt_profile=args.supervisor_prompt_profile,
+            supervisor_prompt_extension_file=args.supervisor_prompt_extension_file,
             output_mode=args.output_mode,
         )
     )

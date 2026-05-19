@@ -1,0 +1,28 @@
+{
+  "artifact_kind": "supervisor_prompt_policy",
+  "version": 1,
+  "approved_prompt_roots": [
+    "tools/supervisor_prompts"
+  ],
+  "profiles": [
+    {
+      "profile_id": "default",
+      "authority": "project",
+      "prompt_extension_path": "tools/supervisor_prompts/default.md",
+      "description": "Neutral project-level prompt overlay that documents the additive overlay contract without changing supervisor authority."
+    }
+  ],
+  "non_overridable_invariants": [
+    "protocol_markers_required",
+    "allowed_paths_required",
+    "review_gates_required",
+    "evidence_semantics_required",
+    "artifact_contract_validation_required"
+  ],
+  "prompt_anchor_checks": [
+    "Do not edit files outside allowed paths.",
+    "Keep acceptance_evidence aligned 1:1 with acceptance criteria.",
+    "Print RUN_OUTCOME and BLOCKER to stdout only",
+    "RUN_OUTCOME: done|retry|split_required|blocked|escalate"
+  ]
+}

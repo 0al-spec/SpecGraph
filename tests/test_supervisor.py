@@ -97,6 +97,15 @@ def grounded_acceptance_evidence(acceptance: list[object]) -> list[str]:
     return [f"Evidence grounds criterion: {str(item).strip()}" for item in acceptance]
 
 
+def write_default_prompt_overlay_fixture(repo_root: Path) -> None:
+    prompt_dir = repo_root / "tools" / "supervisor_prompts"
+    prompt_dir.mkdir(parents=True, exist_ok=True)
+    (prompt_dir / "default.md").write_text(
+        "# Default Supervisor Prompt Overlay\n\nUse the normal SpecGraph supervisor behavior.\n",
+        encoding="utf-8",
+    )
+
+
 @pytest.fixture()
 def git_repo_fixture(
     tmp_path: Path,
@@ -4139,6 +4148,62 @@ def test_build_prompt_includes_incremental_refinement_policy_for_non_seed_spec(
     assert expected_split_rule in prompt
     assert "Do not browse the web or external sources" in prompt
     assert "Bootstrap guidance:" not in prompt
+
+
+def test_resolve_supervisor_prompt_overlay_profile_records_provenance(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    write_default_prompt_overlay_fixture(repo_fixture)
+    overlay = supervisor_module.resolve_supervisor_prompt_overlay(profile_id="default")
+    provenance = supervisor_module.supervisor_prompt_overlay_provenance(overlay)
+
+    assert overlay["enabled"] is True
+    assert overlay["prompt_profile_id"] == "default"
+    assert overlay["prompt_extension_path"] == "tools/supervisor_prompts/default.md"
+    assert overlay["prompt_overlay_authority"] == "project"
+    assert overlay["core_prompt_overridden"] is False
+    assert overlay["prompt_text"]
+    assert provenance is not None
+    assert provenance["prompt_extension_sha256"]
+    assert "prompt_text" not in provenance
+
+
+def test_resolve_supervisor_prompt_overlay_rejects_unknown_profile(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    with pytest.raises(ValueError, match="unknown supervisor prompt profile"):
+        supervisor_module.resolve_supervisor_prompt_overlay(profile_id="missing")
+
+
+def test_resolve_supervisor_prompt_overlay_rejects_unapproved_path(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    unapproved = repo_fixture / "README.md"
+    unapproved.write_text("not an approved prompt root", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="approved prompt roots"):
+        supervisor_module.resolve_supervisor_prompt_overlay(extension_file=unapproved.as_posix())
+
+
+def test_build_prompt_includes_additive_supervisor_prompt_overlay(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    write_default_prompt_overlay_fixture(repo_fixture)
+    node = supervisor_module.load_specs()[0]
+    overlay = supervisor_module.resolve_supervisor_prompt_overlay(profile_id="default")
+    prompt = supervisor_module.build_prompt(node, supervisor_prompt_overlay=overlay)
+
+    assert "Supervisor prompt overlay:" in prompt
+    assert "This overlay is additive project/operator guidance." in prompt
+    assert "Profile: default" in prompt
+    assert "Extension path: tools/supervisor_prompts/default.md" in prompt
+    assert "Use the normal SpecGraph supervisor behavior." in prompt
+    assert "Do not edit files outside allowed paths." in prompt
+    assert "RUN_OUTCOME: done|retry|split_required|blocked|escalate" in prompt
 
 
 def test_build_prompt_includes_child_materialization_guidance_for_targeted_non_root_parent(
@@ -26080,6 +26145,55 @@ def test_main_auto_approve_applies_status_and_copies_changes(
     assert updated["last_worktree_path"] == ""
     assert updated["last_branch"] == ""
     assert cleaned == [(worktree.as_posix(), "codex/sg-spec-0001/test")]
+
+
+def test_main_records_supervisor_prompt_overlay_provenance(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    write_default_prompt_overlay_fixture(repo_fixture)
+    worktree = make_fake_worktree(repo_fixture)
+    monkeypatch.setattr(
+        supervisor_module,
+        "create_isolated_worktree",
+        lambda _node_id: (worktree, "codex/sg-spec-0001/test"),
+    )
+    changed_snapshots = [[], ["specs/nodes/SG-SPEC-0001.yaml"]]
+    monkeypatch.setattr(
+        supervisor_module, "git_changed_files", lambda _cwd=None: changed_snapshots.pop(0)
+    )
+
+    def fake_executor(_node: object, worktree_path: Path) -> subprocess.CompletedProcess[str]:
+        node_path = worktree_path / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+        data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+        data["acceptance_evidence"] = grounded_acceptance_evidence(data["acceptance"])
+        data["prompt"] = "Prompt overlay provenance test."
+        node_path.write_text(json.dumps(data), encoding="utf-8")
+        return subprocess.CompletedProcess(
+            args=["codex"],
+            returncode=0,
+            stdout="RUN_OUTCOME: done\nBLOCKER: none\n",
+            stderr="",
+        )
+
+    exit_code = supervisor_module.main(
+        executor=fake_executor,
+        auto_approve=True,
+        supervisor_prompt_profile="default",
+    )
+    assert exit_code == 0
+
+    run_log = next((repo_fixture / "runs").glob("*-SG-SPEC-*.json"))
+    payload = json.loads(run_log.read_text(encoding="utf-8"))
+    provenance = payload["prompt_overlay_provenance"]
+    assert provenance["prompt_profile_id"] == "default"
+    assert provenance["prompt_extension_path"] == "tools/supervisor_prompts/default.md"
+    assert provenance["prompt_overlay_authority"] == "project"
+    assert provenance["core_prompt_overridden"] is False
+    assert provenance["prompt_extension_sha256"]
+    assert "prompt_text" not in provenance
+    assert payload["selected_by_rule"]["prompt_overlay_provenance"] == provenance
 
 
 def test_main_auto_approve_does_not_bypass_review_required_refinement(
