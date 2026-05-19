@@ -133,5 +133,96 @@ specification:
     surfaces.
   - SG-SPEC-0063 must not hide unresolved member gaps; backlog and evidence projections should continue
     to point to the concrete member when the gap is member-specific.
-gate_state: none
-proposed_status: null
+gate_state: review_pending
+proposed_status: linked
+proposed_maturity: 0.88
+pending_sync_paths:
+- specs/nodes/SG-SPEC-0063.yaml
+pending_base_digests:
+  specs/nodes/SG-SPEC-0063.yaml: 4d246985df339243e60c9df7ba390c1eecaca4a5979595a132c05cbe8714078d
+pending_candidate_digests:
+  specs/nodes/SG-SPEC-0063.yaml: c8c874450759511f1d1fb2e21bc8104543718a1d9a5927c3e07f15249b0521e7
+pending_run_id: 20260519T214802Z-SG-SPEC-0063-80e51a2c
+required_human_action: review refinement impact before approval
+last_outcome: done
+last_blocker: ''
+last_run_id: 20260519T214802Z-SG-SPEC-0063-80e51a2c
+last_exit_code: 0
+last_changed_files:
+- specs/nodes/SG-SPEC-0063.yaml
+last_run_at: '2026-05-19T21:50:03.036358+00:00'
+last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0063-20260519T214802Z-bee69405
+last_branch: codex/sg-spec-0063/20260519T214802Z-bee69405
+last_validator_results:
+  outputs: true
+  allowed_paths: true
+  reconciliation: true
+  atomicity: true
+  transition: true
+  executor_environment: true
+  runtime_artifacts: true
+  refinement_acceptance: true
+last_refinement_acceptance:
+  decision: review_required
+  change_class: constitutional_change
+  checks:
+    content_changed: true
+    hard_validation: true
+    single_spec_scope: true
+    constitutional_diff: true
+    graph_refactor_diff: false
+    atomicity_clear: true
+    within_mutation_budget: true
+  diff_paths:
+  - acceptance[3]
+  - acceptance[4]
+  - acceptance_evidence[3].criterion
+  - acceptance_evidence[3].evidence
+  - acceptance_evidence[4]
+  - acceptance_evidence[4].criterion
+  - acceptance_evidence[4].evidence
+  - specification.cross_member_handoff_policy
+  - specification.cross_member_handoff_policy[0]
+  - specification.cross_member_handoff_policy[1]
+  - specification.cross_member_handoff_policy[2]
+  - specification.cross_member_handoff_policy[3]
+  - specification.cross_member_handoff_policy[4]
+  - specification.scope.in[5]
+  - specification.terminology.cross_member_handoff
+  mutation_classes:
+  - policy_text
+  mutation_budget: []
+  budget_exceeded_classes: []
+  changed_spec_files:
+  - specs/nodes/SG-SPEC-0063.yaml
+  review_reasons:
+  - run changed governance-sensitive specification sections
+  errors: []
+  warnings: []
+last_reconciliation:
+  worktree_spec_count: 65
+  changed_spec_ids:
+  - SG-SPEC-0063
+  semantic_dependencies_resolved: true
+  work_dependencies_ready: false
+  cycles: []
+last_requested_child_materialization: false
+last_materialized_child_paths: []
+last_prompt_overlay_provenance:
+  enabled: true
+  source_kind: profile
+  prompt_profile_id: default
+  prompt_extension_path: tools/supervisor_prompts/default.md
+  prompt_extension_sha256: 12e2eb9fe436d018cec8e97924fa146b7d4fc8d64ff173a49db80a7a6f6acab5
+  prompt_overlay_authority: project
+  core_prompt_overridden: false
+  policy_reference:
+    artifact_path: tools/supervisor_prompt_policy.json
+    artifact_sha256: 88d2c46d25b2ed732f7cf1694d7a2bcf4455962d1b0dd290cb9993fbe35a728d
+    version: 1
+  non_overridable_invariants:
+  - protocol_markers_required
+  - allowed_paths_required
+  - review_gates_required
+  - evidence_semantics_required
+  - artifact_contract_validation_required
