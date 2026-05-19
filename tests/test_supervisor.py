@@ -22613,9 +22613,43 @@ def test_build_review_feedback_index_projects_accepted_risk_revalidation_contrac
     assert entry["next_gap"] == "review_accepted_risk_when_context_changes"
     assert entry["revalidation"]["trigger"] == "surrounding_context_changed"
     assert entry["revalidation"]["review_state"] == "watch"
+    assert entry["revalidation"]["triggered_context_change_signals"] == []
     assert entry["revalidation"]["operator_action"] == (
         "revisit_residual_risk_and_choose_prevention_or_keep_accepted"
     )
+    backlog_item = index["review_feedback_backlog"]["items"][0]
+    assert backlog_item["revalidation"] == entry["revalidation"]
+
+
+def test_build_review_feedback_index_marks_accepted_risk_review_due_when_root_cause_reappears(
+    supervisor_module: object,
+) -> None:
+    index = supervisor_module.build_review_feedback_index(
+        [
+            sample_review_feedback_record(
+                feedback_id="review-feedback-accepted-risk",
+                root_cause_class="artifact_contract_validation_gap",
+                prevention_action="accepted_risk_recorded",
+                verification=["accepted_risk_review"],
+                residual_risk="Temporary tradeoff while external context is stable.",
+                recorded_at="2026-04-26T00:00:00Z",
+            ),
+            sample_review_feedback_record(
+                feedback_id="review-feedback-later-same-cause",
+                root_cause_class="artifact_contract_validation_gap",
+                prevention_action="regression_test_added",
+                recorded_at="2026-04-27T00:00:00Z",
+            ),
+        ]
+    )
+
+    entry = next(
+        item for item in index["entries"] if item["feedback_id"] == "review-feedback-accepted-risk"
+    )
+    assert entry["revalidation"]["review_state"] == "review_due"
+    assert entry["revalidation"]["triggered_context_change_signals"] == [
+        "same_root_cause_reappears"
+    ]
     backlog_item = index["review_feedback_backlog"]["items"][0]
     assert backlog_item["revalidation"] == entry["revalidation"]
 
