@@ -208,6 +208,11 @@ exact run id is available, render `legacy_unknown` with
 prompt overlay provenance, render `legacy_unknown` with
 `reason: "legacy_run_without_provenance"`.
 
+Prompt drift summaries are run-scoped. Entries without an exact run id are still
+renderable as `legacy_unknown`, but they are excluded from
+`summary.prompt_overlay.status_counts` and drift groups. If several visible
+activity entries point to the same run id, that run is counted once.
+
 Statuses:
 
 - `core`: provenance explicitly says no overlay was enabled.
@@ -257,6 +262,7 @@ The prompt drift summary is scoped to the currently visible feed entries:
     "enabled": 3,
     "legacy_unknown": 42
   },
+  "run_count": 45,
   "drift_group_count": 2,
   "drift_groups": [
     {

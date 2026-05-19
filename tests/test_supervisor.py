@@ -8339,12 +8339,13 @@ def test_build_spec_activity_feed_projects_prompt_overlay_provenance(
     repo_fixture: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    run_id = "20260519T000000Z-SG-SPEC-0001-prompt"
     node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
     node_data = supervisor_module.get_yaml_module().safe_load(node_path.read_text())
-    node_data["last_run_id"] = "RUN-PROMPT-1"
+    node_data["last_run_id"] = run_id
     node_path.write_text(json.dumps(node_data), encoding="utf-8")
     run_payload = {
-        "run_id": "RUN-PROMPT-1",
+        "run_id": run_id,
         "spec_id": "SG-SPEC-0001",
         "finished_at_utc": "2026-05-19T00:00:00Z",
         "prompt_overlay_provenance": {
@@ -8363,7 +8364,7 @@ def test_build_spec_activity_feed_projects_prompt_overlay_provenance(
             "non_overridable_invariants": ["allowed_paths_required"],
         },
     }
-    (repo_fixture / "runs" / "20260519T000000Z-SG-SPEC-0001-prompt.json").write_text(
+    (repo_fixture / "runs" / f"{run_id}.json").write_text(
         json.dumps(run_payload),
         encoding="utf-8",
     )
@@ -8376,7 +8377,7 @@ def test_build_spec_activity_feed_projects_prompt_overlay_provenance(
                 "short_sha": "aaaaaaa",
                 "committed_at": "2026-05-19T00:01:00+00:00",
                 "subject": "Update SG-SPEC-0001 with prompt overlay",
-                "source_run_id": "RUN-PROMPT-1",
+                "source_run_id": run_id,
                 "paths": ["specs/nodes/SG-SPEC-0001.yaml"],
             }
         ],
@@ -8394,11 +8395,13 @@ def test_build_spec_activity_feed_projects_prompt_overlay_provenance(
     assert projection["core_prompt_overridden"] is False
     assert projection["policy_reference"]["artifact_sha256"] == "p" * 64
     assert projection["drift_key"] == f"profile|default|{'e' * 64}|{'p' * 64}"
+    assert projection["run_id"] == run_id
     assert "prompt_text" not in projection
     prompt_summary = feed["viewer_projection"]["prompt_overlay"]
     assert prompt_summary["scope"] == "visible_entries"
     assert prompt_summary["label"] == "Prompt drift in visible runs"
     assert prompt_summary["status_counts"] == {"enabled": 1}
+    assert prompt_summary["run_count"] == 1
     assert prompt_summary["drift_group_count"] == 1
     assert prompt_summary["drift_groups"][0]["event_count"] == 1
     assert prompt_summary["drift_groups"][0]["status"] == "enabled"
@@ -8413,12 +8416,13 @@ def test_build_spec_activity_feed_does_not_infer_prompt_overlay_from_current_spe
     supervisor_module: object,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    run_id = "20260519T000000Z-SG-SPEC-0001-prompt"
     node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
     node_data = supervisor_module.get_yaml_module().safe_load(node_path.read_text())
-    node_data["last_run_id"] = "RUN-PROMPT-LATEST"
+    node_data["last_run_id"] = run_id
     node_path.write_text(json.dumps(node_data), encoding="utf-8")
     run_payload = {
-        "run_id": "RUN-PROMPT-LATEST",
+        "run_id": run_id,
         "spec_id": "SG-SPEC-0001",
         "finished_at_utc": "2026-05-19T00:00:00Z",
         "prompt_overlay_provenance": {
@@ -8435,7 +8439,7 @@ def test_build_spec_activity_feed_does_not_infer_prompt_overlay_from_current_spe
             },
         },
     }
-    (repo_fixture / "runs" / "20260519T000000Z-SG-SPEC-0001-prompt.json").write_text(
+    (repo_fixture / "runs" / f"{run_id}.json").write_text(
         json.dumps(run_payload),
         encoding="utf-8",
     )
@@ -8459,6 +8463,8 @@ def test_build_spec_activity_feed_does_not_infer_prompt_overlay_from_current_spe
     assert projection["status"] == "legacy_unknown"
     assert projection["display_label"] == "legacy"
     assert projection["reason"] == "missing_exact_run_link"
+    assert feed["viewer_projection"]["prompt_overlay"]["status_counts"] == {}
+    assert feed["viewer_projection"]["prompt_overlay"]["run_count"] == 0
 
 
 def test_prompt_overlay_projection_marks_missing_core_and_unsafe_states(
@@ -8530,12 +8536,14 @@ def test_prompt_overlay_visible_run_summary_tracks_group_status_counts(
         "source_kind": "profile",
         "display_label": "default",
         "drift_key": "profile|default|hash|policy",
+        "run_id": "run-1",
     }
     unsafe_projection = {
         "status": "unsafe",
         "source_kind": "profile",
         "display_label": "unsafe",
         "drift_key": "profile|default|hash|policy",
+        "run_id": "run-2",
     }
 
     summary = supervisor_module.prompt_overlay_visible_run_summary(
@@ -8557,6 +8565,45 @@ def test_prompt_overlay_visible_run_summary_tracks_group_status_counts(
     assert group["dominant_status"] == "unsafe"
     assert group["status_counts"] == {"enabled": 1, "unsafe": 1}
     assert group["event_ids"] == ["event-1", "event-2"]
+
+
+def test_prompt_overlay_visible_run_summary_deduplicates_runs(
+    supervisor_module: object,
+) -> None:
+    projection = {
+        "status": "enabled",
+        "source_kind": "profile",
+        "display_label": "default",
+        "drift_key": "profile|default|hash|policy",
+        "run_id": "run-1",
+    }
+
+    summary = supervisor_module.prompt_overlay_visible_run_summary(
+        [
+            {
+                "event_id": "event-1",
+                "prompt_overlay_provenance": projection,
+            },
+            {
+                "event_id": "event-2",
+                "prompt_overlay_provenance": projection,
+            },
+            {
+                "event_id": "event-without-run",
+                "prompt_overlay_provenance": {
+                    "status": "legacy_unknown",
+                    "display_label": "legacy",
+                    "drift_key": "unknown|||",
+                },
+            },
+        ]
+    )
+
+    group = summary["drift_groups"][0]
+    assert summary["status_counts"] == {"enabled": 1}
+    assert summary["run_count"] == 1
+    assert group["event_count"] == 1
+    assert group["event_ids"] == ["event-1"]
 
 
 def test_build_spec_activity_feed_emits_proposal_registry_events_without_spec_id(

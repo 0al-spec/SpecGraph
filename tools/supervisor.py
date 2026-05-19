@@ -17726,9 +17726,12 @@ def normalize_prompt_overlay_provenance_for_viewer(
     return projection
 
 
-def load_supervisor_run_log_payloads() -> list[dict[str, Any]]:
+def load_supervisor_run_log_payloads(run_ids: set[str] | None = None) -> list[dict[str, Any]]:
     payloads: list[dict[str, Any]] = []
+    wanted_run_ids = {str(run_id).strip() for run_id in (run_ids or set()) if str(run_id).strip()}
     for path in run_log_paths():
+        if wanted_run_ids and path.stem not in wanted_run_ids:
+            continue
         try:
             payload = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):
@@ -17821,7 +17824,9 @@ def prompt_overlay_projection_for_activity_entry(
     raw_provenance = (
         run_payload.get("prompt_overlay_provenance") if isinstance(run_payload, dict) else None
     )
-    return normalize_prompt_overlay_provenance_for_viewer(raw_provenance)
+    projection = normalize_prompt_overlay_provenance_for_viewer(raw_provenance)
+    projection["run_id"] = run_id_text
+    return projection
 
 
 PROMPT_OVERLAY_STATUS_SEVERITY = {
@@ -17849,10 +17854,15 @@ def prompt_overlay_visible_run_summary(
 ) -> dict[str, Any]:
     groups: dict[str, dict[str, Any]] = {}
     status_counts: dict[str, int] = {}
+    seen_run_ids: set[str] = set()
     for event in events:
         projection = event.get("prompt_overlay_provenance")
         if not isinstance(projection, dict):
             continue
+        run_id = str(projection.get("run_id", "")).strip()
+        if not run_id or run_id in seen_run_ids:
+            continue
+        seen_run_ids.add(run_id)
         status = str(projection.get("status", "")).strip() or "unknown"
         status_counts[status] = status_counts.get(status, 0) + 1
         drift_key = str(projection.get("drift_key", "")).strip()
@@ -17884,6 +17894,7 @@ def prompt_overlay_visible_run_summary(
         "label": "Prompt drift in visible runs",
         "status_counts": {key: status_counts[key] for key in sorted(status_counts)},
         "drift_group_count": len(groups),
+        "run_count": len(seen_run_ids),
     }
     if include_groups:
         summary["drift_groups"] = [groups[key] for key in sorted(groups)]
@@ -17910,9 +17921,9 @@ def build_spec_activity_feed(
     event_limit = limit or spec_activity_default_limit()
     spec_index = index_specs(specs)
     commits = collect_spec_activity_commit_refs(limit=event_limit)
-    run_logs_by_id = prompt_overlay_run_indexes(load_supervisor_run_log_payloads())
     events: list[dict[str, Any]] = []
     seen_event_ids: set[str] = set()
+    exact_run_ids: set[str] = set()
 
     for commit_ref in commits:
         event_types = spec_activity_event_types_from_commit(commit_ref)
@@ -17940,6 +17951,8 @@ def build_spec_activity_feed(
                 if not title and not spec_id:
                     title = "Graph process feedback"
                 exact_run_id = spec_activity_exact_run_id_from_commit(commit_ref, spec_id)
+                if exact_run_id:
+                    exact_run_ids.add(exact_run_id)
                 events.append(
                     {
                         "event_id": event_id,
@@ -17955,12 +17968,7 @@ def build_spec_activity_feed(
                             "subject": str(commit_ref.get("subject", "")).strip(),
                         },
                         **({"merge_landing": stack_context} if stack_context is not None else {}),
-                        "prompt_overlay_provenance": (
-                            prompt_overlay_projection_for_activity_entry(
-                                run_id=exact_run_id,
-                                run_logs_by_id=run_logs_by_id,
-                            )
-                        ),
+                        "_prompt_overlay_exact_run_id": exact_run_id,
                         "source_paths": list(commit_ref.get("paths", [])),
                         "viewer": {
                             "tone": spec_activity_event_tone(event_type),
@@ -17974,6 +17982,14 @@ def build_spec_activity_feed(
                 break
         if len(events) >= event_limit:
             break
+
+    run_logs_by_id = prompt_overlay_run_indexes(load_supervisor_run_log_payloads(exact_run_ids))
+    for event in events:
+        exact_run_id = str(event.pop("_prompt_overlay_exact_run_id", "")).strip()
+        event["prompt_overlay_provenance"] = prompt_overlay_projection_for_activity_entry(
+            run_id=exact_run_id,
+            run_logs_by_id=run_logs_by_id,
+        )
 
     event_type_index: dict[str, list[str]] = {}
     spec_id_index: dict[str, list[str]] = {}

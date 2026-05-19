@@ -75,6 +75,7 @@
       ],
       "display_label_contract": "safe_user_facing_copy",
       "exact_run_match_required": true,
+      "summary_counting_scope": "unique_exact_runs",
       "group_status_rule": "worst_status_with_unsafe_wins",
       "drift_scope_label": "Prompt drift in visible runs",
       "raw_prompt_text_allowed": false
