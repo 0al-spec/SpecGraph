@@ -17614,27 +17614,36 @@ def prompt_overlay_drift_key(
     )
 
 
-def normalize_prompt_overlay_provenance_for_viewer(value: object) -> dict[str, Any]:
+def legacy_prompt_overlay_projection(reason: str) -> dict[str, Any]:
+    return {
+        "status": "legacy_unknown",
+        "source_kind": "unknown",
+        "display_label": "legacy",
+        "reason": reason,
+        "drift_key": prompt_overlay_drift_key(
+            source_kind="unknown",
+            prompt_profile_id="",
+            prompt_extension_sha256="",
+            policy_sha256="",
+        ),
+        "core_prompt_overridden": None,
+        "policy_reference": {
+            "artifact_path": "",
+            "artifact_sha256": "",
+            "version": None,
+        },
+        "non_overridable_invariants": [],
+    }
+
+
+def normalize_prompt_overlay_provenance_for_viewer(
+    value: object,
+    *,
+    legacy_reason: str = "legacy_run_without_provenance",
+) -> dict[str, Any]:
     """Return a viewer-safe prompt overlay projection with no raw prompt text."""
     if not isinstance(value, dict):
-        return {
-            "status": "legacy_unknown",
-            "source_kind": "unknown",
-            "display_label": "legacy",
-            "drift_key": prompt_overlay_drift_key(
-                source_kind="unknown",
-                prompt_profile_id="",
-                prompt_extension_sha256="",
-                policy_sha256="",
-            ),
-            "core_prompt_overridden": None,
-            "policy_reference": {
-                "artifact_path": "",
-                "artifact_sha256": "",
-                "version": None,
-            },
-            "non_overridable_invariants": [],
-        }
+        return legacy_prompt_overlay_projection(legacy_reason)
 
     enabled = value.get("enabled")
     raw_source_kind = str(value.get("source_kind", "")).strip()
@@ -17805,7 +17814,10 @@ def prompt_overlay_projection_for_activity_entry(
     run_id: str,
     run_logs_by_id: dict[str, dict[str, Any]],
 ) -> dict[str, Any]:
-    run_payload = run_logs_by_id.get(str(run_id).strip())
+    run_id_text = str(run_id).strip()
+    if not run_id_text:
+        return legacy_prompt_overlay_projection("missing_exact_run_link")
+    run_payload = run_logs_by_id.get(run_id_text)
     raw_provenance = (
         run_payload.get("prompt_overlay_provenance") if isinstance(run_payload, dict) else None
     )

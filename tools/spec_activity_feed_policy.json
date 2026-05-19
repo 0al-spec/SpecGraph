@@ -69,6 +69,11 @@
         "extension_file",
         "unknown"
       ],
+      "legacy_unknown_reasons": [
+        "missing_exact_run_link",
+        "legacy_run_without_provenance"
+      ],
+      "display_label_contract": "safe_user_facing_copy",
       "exact_run_match_required": true,
       "group_status_rule": "worst_status_with_unsafe_wins",
       "drift_scope_label": "Prompt drift in visible runs",

@@ -8458,6 +8458,7 @@ def test_build_spec_activity_feed_does_not_infer_prompt_overlay_from_current_spe
     projection = feed["entries"][0]["prompt_overlay_provenance"]
     assert projection["status"] == "legacy_unknown"
     assert projection["display_label"] == "legacy"
+    assert projection["reason"] == "missing_exact_run_link"
 
 
 def test_prompt_overlay_projection_marks_missing_core_and_unsafe_states(
@@ -8466,6 +8467,7 @@ def test_prompt_overlay_projection_marks_missing_core_and_unsafe_states(
     missing = supervisor_module.normalize_prompt_overlay_provenance_for_viewer(None)
     assert missing["status"] == "legacy_unknown"
     assert missing["display_label"] == "legacy"
+    assert missing["reason"] == "legacy_run_without_provenance"
 
     core = supervisor_module.normalize_prompt_overlay_provenance_for_viewer(
         {

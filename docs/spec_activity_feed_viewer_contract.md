@@ -203,7 +203,10 @@ Per-entry provenance is only populated when the activity source can be tied to a
 exact supervisor run id. SpecGraph may use an explicit activity `source_run_id`
 or the `last_run_id` captured in the spec file at the activity commit. It must
 not silently fall back to the latest current run for the same spec id. If no
-exact run id is available, render `legacy_unknown`.
+exact run id is available, render `legacy_unknown` with
+`reason: "missing_exact_run_link"`. If an exact run is visible but has no
+prompt overlay provenance, render `legacy_unknown` with
+`reason: "legacy_run_without_provenance"`.
 
 Statuses:
 
@@ -231,6 +234,9 @@ source_kind + prompt_profile_id + prompt_extension_sha256 + policy_reference.art
 
 SpecSpace should display compact labels from `display_label`, but should group
 prompt drift by `drift_key`.
+
+`display_label` is safe user-facing copy and can be shown as-is. `status` is the
+semantic/tone field for badge styling, filtering, warnings, and tests.
 
 For compact UI:
 
