@@ -10500,6 +10500,55 @@ def test_normalize_repo_url_equates_https_and_ssh_github_forms(
     )
 
 
+def test_external_consumer_checkout_uses_sibling_fallback_when_hint_missing(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    if shutil.which("git") is None:
+        pytest.skip("git is required for checkout inspection")
+
+    metrics_root = repo_fixture.parent / "Metrics"
+    shutil.rmtree(metrics_root, ignore_errors=True)
+    metrics_root.mkdir()
+    subprocess.run(["git", "init"], cwd=metrics_root, check=True, capture_output=True, text=True)
+    subprocess.run(
+        ["git", "remote", "add", "origin", "https://github.com/0al-spec/Metrics"],
+        cwd=metrics_root,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    checkout = supervisor_module.inspect_external_consumer_checkout(
+        "/Users/example/missing/Metrics",
+        "https://github.com/0al-spec/Metrics",
+    )
+
+    assert checkout["status"] == "available"
+    assert checkout["checkout_path"] == metrics_root.as_posix()
+    assert checkout["is_git_checkout"] is True
+    assert checkout["remote_matches"] is True
+
+
+def test_external_consumer_checkout_uses_configured_checkout_root(
+    supervisor_module: object,
+    repo_fixture: Path,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    metrics_root = tmp_path / "external-checkouts" / "Metrics"
+    metrics_root.mkdir(parents=True)
+    monkeypatch.setenv("SPECGRAPH_EXTERNAL_CHECKOUT_ROOT", metrics_root.parent.as_posix())
+
+    checkout = supervisor_module.inspect_external_consumer_checkout(
+        "/Users/example/missing/Metrics",
+        "https://github.com/0al-spec/Metrics",
+    )
+
+    assert checkout["status"] == "available"
+    assert checkout["checkout_path"] == metrics_root.as_posix()
+
+
 def test_main_builds_external_consumer_index_as_standalone_command(
     supervisor_module: object,
     repo_fixture: Path,
