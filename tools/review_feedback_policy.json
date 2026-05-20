@@ -27,6 +27,14 @@
     "trigger": "surrounding_context_changed",
     "review_state": "watch",
     "operator_action": "revisit_residual_risk_and_choose_prevention_or_keep_accepted",
+    "accepted_risk_review_fields": [
+      "accepted_risk_reviewed_at",
+      "accepted_risk_review_decision",
+      "accepted_risk_review_summary"
+    ],
+    "accepted_risk_review_decisions": [
+      "keep_accepted_risk"
+    ],
     "context_change_signals": [
       "same_root_cause_reappears",
       "affected_artifact_contract_changes",

@@ -298,6 +298,13 @@ feedback record uses the same `root_cause_class`, the derived row may switch
 `revalidation.review_state` from `watch` to `review_due` and list the trigger in
 `triggered_context_change_signals`.
 
+If an operator intentionally revalidates the accepted risk after the later
+context change, the source record may include `accepted_risk_reviewed_at`,
+`accepted_risk_review_decision: "keep_accepted_risk"`, and
+`accepted_risk_review_summary`. When the review timestamp is newer than the
+later same-root-cause feedback, the row remains in `watch` instead of blocking
+next-move selection.
+
 ### Metric Pack Run Rows
 
 When `runs/metric_pack_runs.json` contains run gaps, each gap is projected as a

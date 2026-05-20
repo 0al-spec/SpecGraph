@@ -15209,12 +15209,27 @@ def review_feedback_revalidation_signals(
     root_cause_class = str(entry.get("root_cause_class", "")).strip()
     recorded_at = str(entry.get("recorded_at", "")).strip()
     feedback_id = str(entry.get("feedback_id", "")).strip()
-    if root_cause_class and any(
-        str(other.get("feedback_id", "")).strip() != feedback_id
+    later_same_cause_records = [
+        other
+        for other in entries
+        if str(other.get("feedback_id", "")).strip() != feedback_id
         and str(other.get("root_cause_class", "")).strip() == root_cause_class
         and review_feedback_recorded_after(str(other.get("recorded_at", "")).strip(), recorded_at)
-        for other in entries
-    ):
+    ]
+    accepted_risk_reviewed_at = str(entry.get("accepted_risk_reviewed_at", "")).strip()
+    accepted_risk_review_decision = str(entry.get("accepted_risk_review_decision", "")).strip()
+    accepted_risk_review_covers_context = (
+        accepted_risk_review_decision == "keep_accepted_risk"
+        and accepted_risk_reviewed_at
+        and all(
+            review_feedback_recorded_after(
+                accepted_risk_reviewed_at,
+                str(other.get("recorded_at", "")).strip(),
+            )
+            for other in later_same_cause_records
+        )
+    )
+    if root_cause_class and later_same_cause_records and not accepted_risk_review_covers_context:
         signals.append("same_root_cause_reappears")
     return signals
 
@@ -15291,6 +15306,14 @@ def build_review_feedback_index(
             "next_gap": next_gap,
             "findings": findings,
         }
+        for optional_field in (
+            "accepted_risk_reviewed_at",
+            "accepted_risk_review_decision",
+            "accepted_risk_review_summary",
+        ):
+            optional_value = str(record.get(optional_field, "")).strip()
+            if optional_value:
+                entry[optional_field] = optional_value
         if revalidation_contract:
             entry["revalidation"] = revalidation_contract
         entries.append(entry)
