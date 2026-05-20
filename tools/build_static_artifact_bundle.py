@@ -217,9 +217,9 @@ def run_make_target(repo_root: Path, target: str) -> None:
 
 
 def refresh_publish_surfaces(repo_root: Path) -> None:
-    run_make_target(repo_root, "viewer-surfaces")
     run_make_target(repo_root, "implementation-delta")
     run_make_target(repo_root, "implementation-work")
+    run_make_target(repo_root, "viewer-surfaces")
 
 
 def build_public_bundle(
@@ -319,9 +319,19 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("--repo-root", type=Path, default=Path.cwd())
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
     parser.add_argument(
+        "--refresh-publish-surfaces",
+        action="store_true",
+        dest="refresh_publish_surfaces",
+        help=(
+            "Run publish surface refresh targets before collecting specs/ and runs/: "
+            "implementation-delta, implementation-work, then viewer-surfaces."
+        ),
+    )
+    parser.add_argument(
         "--refresh-viewer-surfaces",
         action="store_true",
-        help="Run make viewer-surfaces before collecting specs/ and runs/.",
+        dest="refresh_publish_surfaces",
+        help=argparse.SUPPRESS,
     )
     parser.add_argument(
         "--allow-missing-required-surfaces",
@@ -337,7 +347,7 @@ def main(argv: list[str] | None = None) -> int:
         result = build_public_bundle(
             repo_root=args.repo_root,
             output_dir=args.output_dir,
-            refresh_surfaces=args.refresh_viewer_surfaces,
+            refresh_surfaces=args.refresh_publish_surfaces,
             strict_required_surfaces=not args.allow_missing_required_surfaces,
         )
     except PublishBundleError as exc:
