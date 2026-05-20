@@ -20,8 +20,8 @@ Build the bundle locally:
 make publish-bundle
 ```
 
-This runs `make viewer-surfaces`, `make implementation-delta`, and
-`make implementation-work`, then writes a static mirror under:
+This runs `make implementation-delta`, `make implementation-work`, and then
+`make viewer-surfaces`, then writes a static mirror under:
 
 ```text
 dist/specgraph-public/
@@ -54,6 +54,11 @@ surface.
 The source `runs/` directory remains local and unchanged. The publish bundle is
 a redacted mirror: local absolute paths such as `/Users/...` are replaced with
 `$LOCAL_PATH` in the copied files.
+
+The order matters: implementation delta/work must be refreshed before viewer
+surfaces so `graph_backlog_projection.json` and `graph_next_moves.json` are
+built from the same `implementation_work_index.json` that is copied into the
+bundle.
 
 ## Safety Gate
 
