@@ -2403,5 +2403,66 @@
         "pattern": "\"swift_typed_tooling_index\""
       }
     ]
+  },
+  {
+    "proposal_id": "0051",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "tools/supervisor.py",
+      "tests/test_supervisor.py",
+      "tools/supervisor_prompt_policy.json",
+      "tools/supervisor_prompts/default.md",
+      "docs/spec_activity_feed_viewer_contract.md"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/supervisor_prompt_policy.json",
+        "pattern": "\"artifact_kind\": \"supervisor_prompt_policy\""
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def resolve_supervisor_prompt_overlay("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def build_supervisor_prompt_overlay_section("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "\"--supervisor-prompt-profile\""
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_resolve_supervisor_prompt_overlay_profile_records_provenance("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_prompt_includes_additive_supervisor_prompt_overlay("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_main_records_supervisor_prompt_overlay_provenance("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_proposal_0051_prompt_overlay_runtime_is_covered("
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "prompt_overlay_projection_for_activity_entry("
+      },
+      {
+        "path": "docs/spec_activity_feed_viewer_contract.md",
+        "pattern": "prompt_overlay_provenance"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "last_prompt_overlay_provenance"
+      }
+    ]
   }
 ]
