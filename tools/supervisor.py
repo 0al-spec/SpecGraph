@@ -4214,6 +4214,7 @@ SYNC_STRIPPED_SPEC_KEYS = {
     "last_requested_child_materialization",
     "last_materialized_child_paths",
     "last_prompt_overlay_provenance",
+    "last_gate_run_id",
     "last_errors",
     "last_gate_decision",
     "last_gate_note",
@@ -17768,7 +17769,7 @@ def spec_activity_exact_run_context_from_commit(
     *,
     repo_root: Path | None = None,
 ) -> dict[str, Any]:
-    for key in ("run_id", "source_run_id", "last_run_id"):
+    for key in ("run_id", "source_run_id", "last_run_id", "last_gate_run_id"):
         run_id = str(commit_ref.get(key, "")).strip()
         if run_id:
             return {"run_id": run_id}
@@ -17808,7 +17809,9 @@ def spec_activity_exact_run_context_from_commit(
         except Exception:
             payload = None
         if isinstance(payload, dict):
-            run_id = str(payload.get("last_run_id", "")).strip()
+            run_id = str(
+                payload.get("last_run_id") or payload.get("last_gate_run_id") or ""
+            ).strip()
             if run_id:
                 context["run_id"] = run_id
             prompt_overlay_provenance = payload.get("last_prompt_overlay_provenance")
@@ -33579,6 +33582,12 @@ def resolve_gate_decision(
         Path(retained_worktree_value).expanduser() if retained_worktree_value else None
     )
     retained_branch = str(node.data.get("last_branch", "")).strip()
+    retained_gate_run_id = str(
+        node.data.get("pending_run_id") or node.data.get("last_run_id") or ""
+    ).strip()
+    retained_prompt_overlay_provenance = node.data.get("last_prompt_overlay_provenance")
+    if not isinstance(retained_prompt_overlay_provenance, dict):
+        retained_prompt_overlay_provenance = None
 
     if decision == "approve":
         if node.gate_state != "review_pending":
@@ -33658,6 +33667,12 @@ def resolve_gate_decision(
         node.data["proposed_maturity"] = None
         node.data["required_human_action"] = "-"
         clear_pending_review_state(node)
+        if retained_gate_run_id:
+            node.data["last_gate_run_id"] = retained_gate_run_id
+        if retained_prompt_overlay_provenance is not None:
+            node.data["last_prompt_overlay_provenance"] = copy.deepcopy(
+                retained_prompt_overlay_provenance
+            )
     else:
         gate_map = {
             "retry": ("retry_pending", "rerun supervisor"),

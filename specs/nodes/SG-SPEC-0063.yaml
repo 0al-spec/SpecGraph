@@ -2,9 +2,9 @@ id: SG-SPEC-0063
 title: SpecGraph - Realization and Observation Semantics Cluster
 kind: spec
 created_at: '2026-05-14T22:30:00Z'
-updated_at: '2026-05-14T22:30:00Z'
+updated_at: '2026-05-20T06:55:41Z'
 status: linked
-maturity: 0.68
+maturity: 0.88
 depends_on:
 - SG-SPEC-0017
 - SG-SPEC-0018
@@ -33,6 +33,8 @@ acceptance:
   metric family boundaries without redefining the bounded contracts owned by those children.
 - Defines root dependency routing so SG-SPEC-0001 can depend on one realization-and-observation aggregate
   while concrete child specs keep their existing semantic ownership and dependencies.
+- Defines cross-member handoff semantics so realization, observation, adoption, executable, and metric-family
+  concerns route to the owning member spec when evidence or gaps span more than one member boundary.
 - Keeps implementation tooling, telemetry collection, dashboards, metric formulas, adoption operations,
   and repository layout out of scope for this cluster.
 acceptance_evidence:
@@ -50,6 +52,12 @@ acceptance_evidence:
   evidence: specification.cluster_contract.dependency_policy and specification.cluster_contract.refinement_routing_policy
     state that SG-SPEC-0001 should depend on SG-SPEC-0063 for the aggregate, while members retain their
     bounded contracts and may be reparented under the cluster without changing stable spec identity.
+- criterion: Defines cross-member handoff semantics so realization, observation, adoption, executable,
+    and metric-family concerns route to the owning member spec when evidence or gaps span more than one
+    member boundary.
+  evidence: specification.cross_member_handoff_policy defines how multi-member realization and observation
+    concerns identify a primary owning member, reference supporting members, preserve canonical-versus-derived
+    boundaries, and route member-specific gaps back to the concrete owning spec.
 - criterion: Keeps implementation tooling, telemetry collection, dashboards, metric formulas, adoption
     operations, and repository layout out of scope for this cluster.
   evidence: specification.scope.out excludes implementation tooling, telemetry collection, dashboards,
@@ -71,6 +79,8 @@ specification:
     - Dependency routing from SG-SPEC-0001 through the cluster to concrete semantic children
     - Reparenting boundary for reducing root refinement fan-out without changing stable child IDs
     - Canonical-versus-derived protection for observation and metric-family semantics
+    - Cross-member handoff semantics for realization and observation concerns spanning more than one member
+      boundary
     out:
     - Runtime instrumentation, telemetry collection, storage schemas, or observability backends
     - Metric formulas, threshold policies, dashboards, ranking, or scheduler behavior
@@ -87,6 +97,8 @@ specification:
       metric families inform graph understanding without becoming canonical truth by default.
     cluster_member_contract: A stable child spec whose bounded semantics are grouped by SG-SPEC-0063 without
       losing its own identity, acceptance criteria, or dependency relationships.
+    cross_member_handoff: A realization or observation concern that touches more than one cluster member
+      but still requires one primary owning member for acceptance, evidence, and backlog routing.
   cluster_contract:
     parent_boundary:
     - SG-SPEC-0001 remains the seed ontology and owns root layer, node kind, edge kind, lifecycle, and
@@ -126,6 +138,19 @@ specification:
     member_role: Derived metric family boundary.
     ownership_boundary: Defines metric-family semantic handles and canonical-versus-derived separation
       without defining formulas, thresholds, dashboards, storage, or scheduler behavior.
+  cross_member_handoff_policy:
+  - A concern spanning runtime observability, adoption, executable traceability, or metric-family semantics
+    must name one primary member spec as the owner of the acceptance claim or unresolved gap.
+  - Supporting members may be referenced as inputs or evidence context, but those references do not transfer
+    ownership of their bounded semantics to SG-SPEC-0063.
+  - Executable traces that produce runtime evidence remain executable-layer traceability when the claim
+    is about code_surface, test, release, or executable links, and become runtime observability evidence
+    only when interpreted through ObservabilityContract, Campaign, or Attestation semantics.
+  - Adoption evidence that is summarized by a metric family remains adoption-layer evidence at the source
+    and derived metric-family semantics at the summary boundary; the summary must not become canonical
+    adoption truth by default.
+  - Backlog, review, or evidence gaps that are member-specific must route to the concrete owning member
+    rather than being closed at the cluster aggregate boundary.
   non_goal_policy:
   - SG-SPEC-0063 must not redefine member formulas, runtime entity schemas, telemetry pipelines, or viewer
     affordances.
@@ -133,81 +158,16 @@ specification:
     surfaces.
   - SG-SPEC-0063 must not hide unresolved member gaps; backlog and evidence projections should continue
     to point to the concrete member when the gap is member-specific.
-gate_state: review_pending
-proposed_status: linked
-proposed_maturity: 0.88
-pending_sync_paths:
-- specs/nodes/SG-SPEC-0063.yaml
-pending_base_digests:
-  specs/nodes/SG-SPEC-0063.yaml: 4d246985df339243e60c9df7ba390c1eecaca4a5979595a132c05cbe8714078d
-pending_candidate_digests:
-  specs/nodes/SG-SPEC-0063.yaml: c8c874450759511f1d1fb2e21bc8104543718a1d9a5927c3e07f15249b0521e7
-pending_run_id: 20260519T214802Z-SG-SPEC-0063-80e51a2c
-required_human_action: review refinement impact before approval
-last_outcome: done
-last_blocker: ''
-last_run_id: 20260519T214802Z-SG-SPEC-0063-80e51a2c
-last_exit_code: 0
-last_changed_files:
-- specs/nodes/SG-SPEC-0063.yaml
-last_run_at: '2026-05-19T21:50:03.036358+00:00'
-last_worktree_path: /Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/sg-spec-0063-20260519T214802Z-bee69405
-last_branch: codex/sg-spec-0063/20260519T214802Z-bee69405
-last_validator_results:
-  outputs: true
-  allowed_paths: true
-  reconciliation: true
-  atomicity: true
-  transition: true
-  executor_environment: true
-  runtime_artifacts: true
-  refinement_acceptance: true
-last_refinement_acceptance:
-  decision: review_required
-  change_class: constitutional_change
-  checks:
-    content_changed: true
-    hard_validation: true
-    single_spec_scope: true
-    constitutional_diff: true
-    graph_refactor_diff: false
-    atomicity_clear: true
-    within_mutation_budget: true
-  diff_paths:
-  - acceptance[3]
-  - acceptance[4]
-  - acceptance_evidence[3].criterion
-  - acceptance_evidence[3].evidence
-  - acceptance_evidence[4]
-  - acceptance_evidence[4].criterion
-  - acceptance_evidence[4].evidence
-  - specification.cross_member_handoff_policy
-  - specification.cross_member_handoff_policy[0]
-  - specification.cross_member_handoff_policy[1]
-  - specification.cross_member_handoff_policy[2]
-  - specification.cross_member_handoff_policy[3]
-  - specification.cross_member_handoff_policy[4]
-  - specification.scope.in[5]
-  - specification.terminology.cross_member_handoff
-  mutation_classes:
-  - policy_text
-  mutation_budget: []
-  budget_exceeded_classes: []
-  changed_spec_files:
-  - specs/nodes/SG-SPEC-0063.yaml
-  review_reasons:
-  - run changed governance-sensitive specification sections
-  errors: []
-  warnings: []
-last_reconciliation:
-  worktree_spec_count: 65
-  changed_spec_ids:
-  - SG-SPEC-0063
-  semantic_dependencies_resolved: true
-  work_dependencies_ready: false
-  cycles: []
-last_requested_child_materialization: false
-last_materialized_child_paths: []
+gate_state: none
+proposed_status: null
+proposed_maturity: null
+required_human_action: '-'
+last_worktree_path: ''
+last_branch: ''
+last_gate_decision: approve
+last_gate_note: ''
+last_gate_at: '2026-05-20T06:55:41.934026+00:00'
+last_gate_run_id: 20260519T214802Z-SG-SPEC-0063-80e51a2c
 last_prompt_overlay_provenance:
   enabled: true
   source_kind: profile

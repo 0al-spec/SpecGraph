@@ -213,6 +213,9 @@ When a supervisor run records safe prompt provenance in the spec node's tracked
 `last_prompt_overlay_provenance` metadata, the activity feed may project that
 tracked provenance directly. Raw run logs remain a local fallback for development
 and diagnosis.
+Gate-approval commits may use `last_gate_run_id` as the exact run link when the
+approved content comes from a previously reviewed supervisor run and ordinary
+`last_run_id` metadata has been cleared.
 
 Prompt drift summaries are run-scoped. Entries without an exact run id are still
 renderable as `legacy_unknown`, but they are excluded from

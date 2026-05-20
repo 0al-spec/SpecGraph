@@ -76,6 +76,7 @@
       "display_label_contract": "safe_user_facing_copy",
       "exact_run_match_required": true,
       "tracked_provenance_source": "last_prompt_overlay_provenance",
+      "gate_approval_run_source": "last_gate_run_id",
       "summary_counting_scope": "unique_exact_runs",
       "group_status_rule": "worst_status_with_unsafe_wins",
       "drift_scope_label": "Prompt drift in visible runs",

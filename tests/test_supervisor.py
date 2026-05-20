@@ -28065,6 +28065,64 @@ def test_resolve_gate_approve_accepts_staged_worktree_changes(
     assert refresh_report["status"] == "refreshed"
 
 
+def test_resolve_gate_approve_preserves_prompt_overlay_run_link(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    worktree = make_fake_worktree(repo_fixture)
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    worktree_node_path = worktree / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    rel_path = "specs/nodes/SG-SPEC-0001.yaml"
+
+    candidate_data = supervisor_module.get_yaml_module().safe_load(
+        worktree_node_path.read_text(encoding="utf-8")
+    )
+    candidate_data["prompt"] = "Approved prompt overlay candidate"
+    candidate_data.pop("last_prompt_overlay_provenance", None)
+    worktree_node_path.write_text(json.dumps(candidate_data), encoding="utf-8")
+
+    provenance = {
+        "enabled": True,
+        "source_kind": "profile",
+        "prompt_profile_id": "default",
+        "prompt_extension_path": "tools/supervisor_prompts/default.md",
+        "prompt_extension_sha256": "e" * 64,
+        "core_prompt_overridden": False,
+        "policy_reference": {
+            "artifact_path": "tools/supervisor_prompt_policy.json",
+            "artifact_sha256": "p" * 64,
+            "version": 1,
+        },
+    }
+    data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    data["gate_state"] = "review_pending"
+    data["proposed_status"] = "specified"
+    data["proposed_maturity"] = 0.4
+    data["last_worktree_path"] = worktree.as_posix()
+    data["last_changed_files"] = [rel_path]
+    data["pending_sync_paths"] = [rel_path]
+    data["pending_base_digests"] = supervisor_module.snapshot_sync_digests([rel_path], repo_fixture)
+    data["pending_candidate_digests"] = supervisor_module.snapshot_sync_digests(
+        [rel_path], worktree
+    )
+    data["pending_run_id"] = "RUN-PROMPT-OVERLAY"
+    data["last_prompt_overlay_provenance"] = provenance
+    node_path.write_text(json.dumps(data), encoding="utf-8")
+
+    exit_code = supervisor_module.main(
+        resolve_gate="SG-SPEC-0001",
+        decision="approve",
+        note="approve semantic content and keep safe prompt provenance",
+    )
+    assert exit_code == 0
+
+    updated = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    assert updated["gate_state"] == "none"
+    assert updated["last_gate_decision"] == "approve"
+    assert updated["last_gate_run_id"] == "RUN-PROMPT-OVERLAY"
+    assert updated["last_prompt_overlay_provenance"] == provenance
+
+
 def test_resolve_gate_approve_preserves_immutable_canonical_metadata(
     supervisor_module: object,
     repo_fixture: Path,
