@@ -283,6 +283,9 @@
       "manual_contract_review"
     ],
     "residual_risk": "A repository-wide timestamp freshness validator is intentionally deferred because many legacy spec nodes still carry older last_gate_at values; this PR fixes only the reviewed SG-SPEC-0043 drift.",
+    "accepted_risk_reviewed_at": "2026-05-20T22:30:00Z",
+    "accepted_risk_review_decision": "keep_accepted_risk",
+    "accepted_risk_review_summary": "Revalidated after later process-rule-gap feedback. The repository-wide timestamp freshness validator remains intentionally deferred because legacy nodes still violate the timestamp relation; the accepted risk should stay in watch state instead of blocking next-move selection.",
     "resolved_commit": "9de37a27f5acd1539b48816a16f4b538209113d6",
     "recorded_at": "2026-04-27T21:36:44Z"
   },

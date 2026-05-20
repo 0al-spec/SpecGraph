@@ -23095,6 +23095,43 @@ def test_build_review_feedback_index_marks_accepted_risk_review_due_when_root_ca
     assert backlog_item["revalidation"] == entry["revalidation"]
 
 
+def test_build_review_feedback_index_keeps_reviewed_accepted_risk_in_watch(
+    supervisor_module: object,
+) -> None:
+    index = supervisor_module.build_review_feedback_index(
+        [
+            sample_review_feedback_record(
+                feedback_id="review-feedback-accepted-risk",
+                root_cause_class="artifact_contract_validation_gap",
+                prevention_action="accepted_risk_recorded",
+                verification=["accepted_risk_review"],
+                residual_risk="Temporary tradeoff while external context is stable.",
+                recorded_at="2026-04-26T00:00:00Z",
+                accepted_risk_reviewed_at="2026-04-28T00:00:00Z",
+                accepted_risk_review_decision="keep_accepted_risk",
+                accepted_risk_review_summary="Operator revalidated the residual risk.",
+            ),
+            sample_review_feedback_record(
+                feedback_id="review-feedback-later-same-cause",
+                root_cause_class="artifact_contract_validation_gap",
+                prevention_action="regression_test_added",
+                recorded_at="2026-04-27T00:00:00Z",
+            ),
+        ]
+    )
+
+    entry = next(
+        item for item in index["entries"] if item["feedback_id"] == "review-feedback-accepted-risk"
+    )
+    assert entry["accepted_risk_reviewed_at"] == "2026-04-28T00:00:00Z"
+    assert entry["accepted_risk_review_decision"] == "keep_accepted_risk"
+    assert entry["revalidation"]["review_state"] == "watch"
+    assert entry["revalidation"]["triggered_context_change_signals"] == []
+    assert entry["review_state"] == "watch"
+    backlog_item = index["review_feedback_backlog"]["items"][0]
+    assert backlog_item["review_state"] == "watch"
+
+
 def test_build_review_feedback_index_keeps_accepted_risk_watch_without_valid_ordering(
     supervisor_module: object,
 ) -> None:
