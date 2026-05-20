@@ -20,7 +20,7 @@ Build the bundle locally:
 make publish-bundle
 ```
 
-This runs `make implementation-delta`, `make implementation-work`, and then
+This runs `make implementation-delta`, `make implementation-work`, and
 `make viewer-surfaces`, then writes a static mirror under:
 
 ```text

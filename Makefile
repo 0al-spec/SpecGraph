@@ -173,7 +173,7 @@ review-feedback:
 
 .PHONY: publish-bundle
 publish-bundle:
-	@$(PYTHON) tools/build_static_artifact_bundle.py --refresh-viewer-surfaces
+	@$(PYTHON) tools/build_static_artifact_bundle.py --refresh-publish-surfaces
 
 .PHONY: test
 test:
