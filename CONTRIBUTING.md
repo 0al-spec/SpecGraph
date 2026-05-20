@@ -185,6 +185,13 @@ SpecGraph CI
 
 The FTP/FTPS hosting root for `specgraph.tech` is not the hosting account root. Use the configured website path, and avoid deleting the landing page while deploying artifact subdirectories.
 
+Public artifact builds must preserve environment parity for external
+observation sources. If local viewer surfaces depend on a sibling checkout such
+as `Metrics`, the CI publish workflow must either check out the same sibling
+source or explicitly classify the resulting gaps as deployment-environment
+observation gaps rather than canonical product backlog. Do not let missing CI
+siblings make the public `next_move` contradict the local graph state.
+
 ## Validation
 
 Choose checks based on blast radius:

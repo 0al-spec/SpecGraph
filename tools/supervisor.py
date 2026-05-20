@@ -16751,9 +16751,43 @@ def normalize_repo_url(url: str) -> str:
     return normalized
 
 
-def inspect_external_consumer_checkout(checkout_hint: str, repo_url: str) -> dict[str, Any]:
+def external_consumer_repo_name(repo_url: str) -> str:
+    normalized = normalize_repo_url(repo_url)
+    if not normalized or "/" not in normalized:
+        return ""
+    return normalized.rsplit("/", 1)[-1].strip()
+
+
+def external_consumer_checkout_candidates(
+    checkout_hint: str,
+    repo_url: str,
+) -> list[Path]:
+    candidates: list[Path] = []
+
+    def add_candidate(path: Path) -> None:
+        expanded = path.expanduser()
+        if not expanded.is_absolute():
+            expanded = ROOT / expanded
+        if expanded not in candidates:
+            candidates.append(expanded)
+
     checkout_text = str(checkout_hint).strip()
-    if not checkout_text:
+    if checkout_text:
+        add_candidate(Path(checkout_text))
+
+    repo_name = external_consumer_repo_name(repo_url)
+    if repo_name:
+        external_checkout_root = os.environ.get("SPECGRAPH_EXTERNAL_CHECKOUT_ROOT", "").strip()
+        if external_checkout_root:
+            add_candidate(Path(external_checkout_root) / repo_name)
+        add_candidate(ROOT.parent / repo_name)
+
+    return candidates
+
+
+def inspect_external_consumer_checkout(checkout_hint: str, repo_url: str) -> dict[str, Any]:
+    candidates = external_consumer_checkout_candidates(checkout_hint, repo_url)
+    if not candidates:
         return {
             "status": "missing",
             "checkout_path": "",
@@ -16762,7 +16796,10 @@ def inspect_external_consumer_checkout(checkout_hint: str, repo_url: str) -> dic
             "remote_url": "",
             "remote_matches": None,
         }
-    checkout_path = Path(checkout_text).expanduser()
+
+    checkout_path = next((path for path in candidates if path.exists() and path.is_dir()), None)
+    if checkout_path is None:
+        checkout_path = candidates[0]
     if not checkout_path.exists() or not checkout_path.is_dir():
         return {
             "status": "missing",
