@@ -217,6 +217,7 @@ def run_make_target(repo_root: Path, target: str) -> None:
 
 
 def refresh_publish_surfaces(repo_root: Path) -> None:
+    run_make_target(repo_root, "viewer-surfaces")
     run_make_target(repo_root, "implementation-delta")
     run_make_target(repo_root, "implementation-work")
     run_make_target(repo_root, "viewer-surfaces")
@@ -324,7 +325,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         dest="refresh_publish_surfaces",
         help=(
             "Run publish surface refresh targets before collecting specs/ and runs/: "
-            "implementation-delta, implementation-work, then viewer-surfaces."
+            "viewer-surfaces, implementation-delta, implementation-work, then viewer-surfaces."
         ),
     )
     parser.add_argument(
