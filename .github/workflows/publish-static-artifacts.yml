@@ -44,7 +44,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: 0al-spec/Metrics
-          path: ../Metrics
+          path: external/Metrics
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -58,7 +58,7 @@ jobs:
 
       - name: Build bundle
         env:
-          SPECGRAPH_EXTERNAL_CHECKOUT_ROOT: ${{ github.workspace }}/..
+          SPECGRAPH_EXTERNAL_CHECKOUT_ROOT: ${{ github.workspace }}/external
         run: make publish-bundle
 
       - name: Upload bundle as GitHub Actions artifact

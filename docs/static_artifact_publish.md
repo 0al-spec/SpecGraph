@@ -77,8 +77,8 @@ The GitHub Actions workflow `.github/workflows/publish-static-artifacts.yml`
 builds the bundle on PRs and can upload it from `main` or manual
 `workflow_dispatch` runs.
 
-The publish workflow checks out `0al-spec/Metrics` as a sibling repository at
-`../Metrics` before building the bundle. This keeps public artifacts aligned
+The publish workflow checks out `0al-spec/Metrics` as an external sibling source
+under `external/Metrics` before building the bundle. This keeps public artifacts aligned
 with local development, where `tools/external_consumers.json` points at the
 same Metrics checkout through `local_checkout_hint`. The supervisor also
 supports `SPECGRAPH_EXTERNAL_CHECKOUT_ROOT`; when a declared absolute checkout
