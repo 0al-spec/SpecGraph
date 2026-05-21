@@ -58,7 +58,7 @@ That creates operational risk:
 - package imports can be confused with initial canonical graph materialization.
 
 The missing capability is a reviewable initialization flow that creates a
-minimal project folder-document without mutating SpecGraph core.
+minimal project folder document without mutating SpecGraph core.
 
 ## Goals
 
@@ -82,7 +82,8 @@ minimal project folder-document without mutating SpecGraph core.
 - Implementing SpecPM package import materialization.
 - Auto-importing reusable specs from SpecPM.
 - Copying SpecGraph `SG-SPEC-*` nodes into a product graph.
-- Mutating SpecGraph core tools, policies, tests, or specifications.
+- Allowing the product workspace initialization flow to mutate SpecGraph core
+  tools, policies, tests, or specifications.
 
 ## Core Proposal
 
