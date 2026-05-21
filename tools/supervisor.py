@@ -31310,6 +31310,11 @@ def write_graph_dashboard(report: dict[str, Any]) -> Path:
 def build_viewer_surfaces(specs: list[SpecNode]) -> dict[str, Any]:
     graph_overlay = build_graph_health_overlay(specs)
     graph_trends = build_graph_health_trends(specs, overlay=graph_overlay)
+    # Evidence contracts inspect derived artifact files by marker path. Write these
+    # producer surfaces before building the evidence plane so clean CI checkouts do
+    # not depend on stale local runs/ residue.
+    graph_overlay_path = write_graph_health_overlay(graph_overlay)
+    graph_trends_path_result = write_graph_health_trends(graph_trends)
     branch_rewrite_preview, branch_rewrite_summary = load_current_branch_rewrite_preview_summary()
     intent_overlay = build_intent_layer_overlay()
     pre_spec_semantics_index = build_pre_spec_semantics_index(specs)
@@ -31317,6 +31322,11 @@ def build_viewer_surfaces(specs: list[SpecNode]) -> dict[str, Any]:
     spec_trace_index = build_spec_trace_index(specs)
     spec_trace_projection = build_spec_trace_projection(spec_trace_index)
     implementation_work_index = load_current_implementation_work_index()
+    proposal_lane_overlay = build_proposal_lane_overlay()
+    proposal_runtime_index = build_proposal_runtime_index()
+    proposal_promotion_index = build_proposal_promotion_index()
+    proposal_runtime_path = write_proposal_runtime_index(proposal_runtime_index)
+    proposal_promotion_path = write_proposal_promotion_index(proposal_promotion_index)
     evidence_index = build_evidence_plane_index(specs)
     evidence_overlay = build_evidence_plane_overlay(evidence_index)
     consumer_index = build_external_consumer_index()
@@ -31366,9 +31376,6 @@ def build_viewer_surfaces(specs: list[SpecNode]) -> dict[str, Any]:
     )
     factory_architecture_index = build_factory_architecture_index()
     swift_typed_tooling_index = build_swift_typed_tooling_index()
-    proposal_lane_overlay = build_proposal_lane_overlay()
-    proposal_runtime_index = build_proposal_runtime_index()
-    proposal_promotion_index = build_proposal_promotion_index()
     backlog_projection = build_graph_backlog_projection(
         specs,
         graph_overlay=graph_overlay,
@@ -31439,12 +31446,8 @@ def build_viewer_surfaces(specs: list[SpecNode]) -> dict[str, Any]:
         proposal_lane_overlay=proposal_lane_overlay,
     )
     proposal_spec_trace_path = write_proposal_spec_trace_index(proposal_spec_trace_index)
-    graph_overlay_path = write_graph_health_overlay(graph_overlay)
-    graph_trends_path_result = write_graph_health_trends(graph_trends)
     intent_overlay_path_result = write_intent_layer_overlay(intent_overlay)
     proposal_lane_path = write_proposal_lane_overlay(proposal_lane_overlay)
-    proposal_runtime_path = write_proposal_runtime_index(proposal_runtime_index)
-    proposal_promotion_path = write_proposal_promotion_index(proposal_promotion_index)
     spec_trace_index_path_result = write_spec_trace_index(spec_trace_index)
     spec_trace_projection_path_result = write_spec_trace_projection(spec_trace_projection)
     evidence_index_path_result = write_evidence_plane_index(evidence_index)
