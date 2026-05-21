@@ -20606,6 +20606,30 @@ def fake_graph_next_moves_proposal_runtime(
     }
 
 
+def fake_product_workspace_environment(supervisor_module: object) -> dict[str, object]:
+    policy = copy.deepcopy(supervisor_module.PROJECT_ENVIRONMENT_POLICY)
+    profiles = {
+        str(item.get("profile_id")): item
+        for item in policy.get("governance_profiles", [])
+        if isinstance(item, dict)
+    }
+    profile = copy.deepcopy(profiles["product_workspace"])
+    return {
+        "artifact_kind": supervisor_module.PROJECT_ENVIRONMENT_ARTIFACT_KIND,
+        "schema_version": supervisor_module.PROJECT_ENVIRONMENT_SCHEMA_VERSION,
+        "generated_at": "2026-05-21T00:00:00Z",
+        "project": {
+            "project_id": "swiftui-calculator",
+            "governance_profile": "product_workspace",
+            "requested_governance_profile": "product_workspace",
+            "active_profile_known": True,
+        },
+        "governance_enforcement": supervisor_module.project_environment_enforcement_contract(
+            profile
+        ),
+    }
+
+
 def test_build_graph_next_moves_prefers_ready_branch_rewrite_preview(
     supervisor_module: object,
     repo_fixture: Path,
@@ -21719,6 +21743,63 @@ def test_build_graph_next_moves_falls_back_to_high_priority_backlog(
     assert report["recommended_next_move_kind"] == "review_backlog_item"
     assert report["recommended_next_move"]["subject"]["subject_id"] == "SG-SPEC-0001"
     assert report["blocked_moves"][0]["blocked_by"] == ["missing_branch_rewrite_preview"]
+
+
+def test_project_workspace_next_move_filter_blocks_self_evolution(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    _ = repo_fixture
+    backlog_id = "proposal_runtime_index::proposals::0053::runtime_realization"
+    report = supervisor_module.build_graph_next_moves(
+        [],
+        backlog_projection={
+            "artifact_kind": supervisor_module.GRAPH_BACKLOG_PROJECTION_ARTIFACT_KIND,
+            "schema_version": supervisor_module.GRAPH_BACKLOG_PROJECTION_SCHEMA_VERSION,
+            "generated_at": "2026-05-21T00:00:00Z",
+            "entry_count": 1,
+            "entries": [
+                {
+                    "backlog_id": backlog_id,
+                    "domain": "proposals",
+                    "source_artifact": "proposal_runtime_index",
+                    "source_artifact_path": "runs/proposal_runtime_index.json",
+                    "subject_kind": "proposal",
+                    "subject_id": "0053",
+                    "title": "Product Workspace Stable Mode Enforcement",
+                    "status": "synchronous_runtime_slice",
+                    "review_state": "",
+                    "next_gap": "runtime_realization",
+                    "priority": "high",
+                    "details": {},
+                }
+            ],
+            "summary": {
+                "priority_counts": {"high": 1},
+                "next_gap_counts": {"runtime_realization": 1},
+            },
+            "viewer_projection": {"priorities": {"high": [backlog_id]}},
+        },
+        proposal_runtime_index=fake_graph_next_moves_proposal_runtime(supervisor_module),
+        project_environment=fake_product_workspace_environment(supervisor_module),
+    )
+
+    assert report["current_scene"] == "steady_state"
+    assert report["recommended_next_move_kind"] == "none"
+    assert report["recommended_next_move"]["move_id"] == "next_move::governance_filtered::none"
+    governance_blocks = [
+        move
+        for move in report["blocked_moves"]
+        if move.get("governance_block", {}).get("blocked_move_status")
+        == "blocked_by_governance_profile"
+    ]
+    assert governance_blocks
+    assert governance_blocks[0]["subject"]["subject_id"] == "0053"
+    assert governance_blocks[0]["governance_block"]["target_domain"] == "specgraph_core"
+    assert (
+        report["source_facts"]["project_environment"]["governance_filter"]["blocked_move_count"]
+        == 1
+    )
 
 
 def test_supervisor_output_summary_includes_compact_graph_next_move_subject(
@@ -25224,10 +25305,10 @@ def test_proposal_0052_project_environment_runtime_is_covered(
     assert entry["reflective_chain"]["next_gap"] == "none"
 
 
-def test_proposal_0053_policy_contract_runtime_is_partial_until_enforcement_hooks_land(
+def test_proposal_0053_runtime_is_partial_until_target_authorization_lands(
     supervisor_module: object,
 ) -> None:
-    """Proposal 0053 has policy contract coverage but still needs enforcement hooks."""
+    """Proposal 0053 still needs target/path authorization after next-move filtering."""
     index = supervisor_module.build_proposal_runtime_index()
     by_id = {e["proposal_id"]: e for e in index["entries"]}
 
@@ -25240,7 +25321,7 @@ def test_proposal_0053_policy_contract_runtime_is_partial_until_enforcement_hook
     missing_runtime_patterns = {
         marker["pattern"] for marker in entry["runtime_realization"]["missing_markers"]
     }
-    assert "def apply_project_workspace_next_move_filter(" in missing_runtime_patterns
+    assert "def apply_project_workspace_next_move_filter(" not in missing_runtime_patterns
     assert "def authorize_project_workspace_target(" in missing_runtime_patterns
 
 
