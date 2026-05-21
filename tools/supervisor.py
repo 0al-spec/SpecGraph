@@ -30634,6 +30634,127 @@ def apply_project_workspace_next_move_filter(
     )
 
 
+def project_workspace_path_matches_root(path_text: str, root_text: str) -> bool:
+    path = str(path_text).strip()
+    root = str(root_text).strip()
+    if not path or not root:
+        return False
+    if root.endswith("/"):
+        return path.startswith(root)
+    return path == root or path.startswith(root.rstrip("/") + "/")
+
+
+def project_workspace_path_has_glob(path_text: str) -> bool:
+    return any(marker in str(path_text) for marker in ("*", "?", "["))
+
+
+def project_workspace_path_pattern_may_match_root(path_text: str, root_text: str) -> bool:
+    path = str(path_text).strip()
+    root = str(root_text).strip()
+    if not path or not root:
+        return False
+    if not project_workspace_path_has_glob(path):
+        return project_workspace_path_matches_root(path, root)
+
+    literal_parts: list[str] = []
+    for part in PurePosixPath(path).parts:
+        if project_workspace_path_has_glob(part):
+            break
+        literal_parts.append(part)
+    literal_prefix = "/".join(literal_parts).strip("/")
+    if not literal_prefix:
+        return True
+    return project_workspace_path_matches_root(
+        literal_prefix,
+        root,
+    ) or project_workspace_path_matches_root(root, literal_prefix)
+
+
+def authorize_project_workspace_target(
+    *,
+    target_spec_id: str,
+    target_paths: list[str],
+    project_environment: dict[str, Any],
+) -> dict[str, Any]:
+    project = project_environment.get("project", {})
+    if not isinstance(project, dict):
+        project = {}
+    governance_profile = str(project.get("governance_profile", "")).strip()
+    project_id = str(project.get("project_id", "")).strip()
+    enforcement = project_environment.get("governance_enforcement", {})
+    if not isinstance(enforcement, dict):
+        enforcement = {}
+    forbidden_domains = {
+        str(item).strip()
+        for item in enforcement.get("forbidden_target_domains", [])
+        if str(item).strip()
+    }
+    forbidden_roots = [
+        str(item).strip()
+        for item in enforcement.get("forbidden_mutation_roots", [])
+        if str(item).strip()
+    ]
+    normalized_paths = [str(path).strip() for path in target_paths if str(path).strip()]
+    blocked_paths = sorted(
+        path
+        for path in normalized_paths
+        if any(
+            project_workspace_path_pattern_may_match_root(path, root) for root in forbidden_roots
+        )
+    )
+
+    target_domain = "project_graph"
+    if governance_profile == "unknown_profile_fail_closed":
+        target_domain = "unknown_profile"
+    elif governance_profile == "product_workspace" and str(target_spec_id).strip().startswith(
+        "SG-SPEC-"
+    ):
+        target_domain = "specgraph_core"
+
+    blocked_by: list[str] = []
+    if governance_profile == "unknown_profile_fail_closed":
+        blocked_by.append("blocked_by_unknown_governance_profile")
+    if target_domain in forbidden_domains:
+        blocked_by.append("blocked_by_governance_profile")
+    if blocked_paths:
+        blocked_by.append("blocked_by_forbidden_mutation_root")
+
+    return {
+        "authorized": not blocked_by,
+        "target_spec_id": str(target_spec_id).strip(),
+        "target_domain": target_domain,
+        "target_paths": normalized_paths,
+        "blocked_paths": blocked_paths,
+        "blocked_by": blocked_by,
+        "governance_profile": governance_profile,
+        "project_id": project_id,
+        "forbidden_target_domains": sorted(forbidden_domains),
+        "forbidden_mutation_roots": forbidden_roots,
+    }
+
+
+def project_workspace_target_authorization_for_node(
+    node: SpecNode,
+    *,
+    project_environment: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    return authorize_project_workspace_target(
+        target_spec_id=node.id,
+        target_paths=effective_allowed_paths_for_run(node),
+        project_environment=project_environment or build_project_environment(),
+    )
+
+
+def print_project_workspace_target_authorization_error(
+    target_authorization: dict[str, Any],
+) -> None:
+    print(
+        "target blocked by project governance: "
+        + json.dumps(target_authorization, ensure_ascii=False, sort_keys=True),
+        file=sys.stderr,
+    )
+
+
 def build_graph_next_moves(
     specs: list[SpecNode],
     *,
@@ -39491,6 +39612,10 @@ def main(
         if node is None:
             print(f"Spec not found: {target_spec}", file=sys.stderr)
             return 1
+        target_authorization = project_workspace_target_authorization_for_node(node)
+        if not target_authorization["authorized"]:
+            print_project_workspace_target_authorization_error(target_authorization)
+            return 1
         eligibility_errors = validate_split_refactor_target(node)
         if eligibility_errors:
             for error in eligibility_errors:
@@ -39579,6 +39704,11 @@ def main(
             print(f"Spec not found: {target_spec}", file=sys.stderr)
             return 1
 
+        target_authorization = project_workspace_target_authorization_for_node(node)
+        if not target_authorization["authorized"]:
+            print_project_workspace_target_authorization_error(target_authorization)
+            return 1
+
         print(f"Selected spec node: {node.id} — {node.title}")
         return _apply_split_proposal(node=node, specs=specs)
 
@@ -39590,6 +39720,11 @@ def main(
             return 1
         if str(node.data.get("kind", "")).strip() != "spec":
             print(f"Explicit target is not a spec node: {target_spec}", file=sys.stderr)
+            return 1
+
+        target_authorization = project_workspace_target_authorization_for_node(node)
+        if not target_authorization["authorized"]:
+            print_project_workspace_target_authorization_error(target_authorization)
             return 1
 
         selected_by_rule = {
