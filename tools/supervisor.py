@@ -9814,16 +9814,34 @@ def project_environment_profile_by_id(
     return profiles
 
 
-def safe_project_environment_path_text(value: Any) -> str:
+def project_environment_policy_reference_for(
+    policy: dict[str, Any] | None,
+) -> dict[str, Any]:
+    if policy is None:
+        return project_environment_policy_reference()
+    policy_text = json.dumps(policy, sort_keys=True, separators=(",", ":"))
+    return {
+        "artifact_path": "<injected-project-environment-policy>",
+        "artifact_sha256": hashlib.sha256(policy_text.encode("utf-8")).hexdigest(),
+        "version": policy.get("version"),
+    }
+
+
+def safe_project_environment_path_text(
+    value: Any,
+    *,
+    path_safety: dict[str, Any] | None = None,
+) -> str:
     text = str(value or "").strip()
     if not text:
         return ""
+    safety = path_safety if isinstance(path_safety, dict) else {}
     if (
-        text.startswith("/")
-        or text.startswith("~")
+        (bool(safety.get("reject_absolute_paths", True)) and text.startswith("/"))
+        or (bool(safety.get("reject_home_expansion", True)) and text.startswith("~"))
         or "\\" in text
-        or ":" in text
-        or ".." in PurePosixPath(text).parts
+        or (bool(safety.get("reject_windows_drive_or_uri_colon", True)) and ":" in text)
+        or (bool(safety.get("reject_parent_traversal", True)) and ".." in PurePosixPath(text).parts)
     ):
         return ""
     return text
@@ -9833,8 +9851,12 @@ def load_project_config(config_path: Path | None = None) -> tuple[dict[str, Any]
     path = config_path or project_config_path()
     try:
         raw_text = path.read_text(encoding="utf-8")
-    except OSError:
+    except FileNotFoundError:
         return {}, "", "missing"
+    except OSError as exc:
+        raise RuntimeError(
+            f"unreadable project config artifact: {path.as_posix()} ({exc})"
+        ) from exc
     try:
         payload = get_yaml_module().safe_load(raw_text) or {}
     except Exception as exc:
@@ -9846,13 +9868,62 @@ def load_project_config(config_path: Path | None = None) -> tuple[dict[str, Any]
     return payload, hashlib.sha256(raw_text.encode("utf-8")).hexdigest(), "available"
 
 
+def project_environment_fail_closed_profile(requested_profile_id: str) -> dict[str, Any]:
+    return {
+        "profile_id": "unknown_profile_fail_closed",
+        "label": "Unknown profile (locked)",
+        "requested_profile_id": requested_profile_id,
+        "core_locked": True,
+        "self_evolution_enabled": False,
+        "project_graph_writable": False,
+        "ordinary_core_mutation_policy": "locked",
+        "upstream_export_required": True,
+        "allowed_supervisor_focus": [],
+        "forbidden_mutation_roots": [
+            "tools/",
+            "tests/",
+            ".github/",
+            "AGENTS.md",
+            "CONSTITUTION.md",
+        ],
+    }
+
+
+def project_environment_bool_value(
+    value: Any,
+    *,
+    default: bool,
+    field_path: str,
+    validation_findings: list[dict[str, Any]],
+) -> bool:
+    if value is None:
+        return default
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        normalized = value.strip().lower()
+        if normalized == "true":
+            return True
+        if normalized == "false":
+            return False
+    validation_findings.append(
+        {
+            "finding_id": "invalid_boolean_value",
+            "severity": "error",
+            "field": field_path,
+            "message": f"{field_path} must be a boolean value",
+            "next_gap": "repair_project_config",
+        }
+    )
+    return default
+
+
 def build_project_environment(
     policy: dict[str, Any] | None = None,
     config_path: Path | None = None,
 ) -> dict[str, Any]:
-    source_policy = copy.deepcopy(
-        policy if isinstance(policy, dict) else PROJECT_ENVIRONMENT_POLICY
-    )
+    injected_policy = copy.deepcopy(policy) if isinstance(policy, dict) else None
+    source_policy = copy.deepcopy(injected_policy or PROJECT_ENVIRONMENT_POLICY)
     try:
         config, config_sha256, config_status = load_project_config(config_path)
     except RuntimeError as exc:
@@ -9867,13 +9938,14 @@ def build_project_environment(
     default_profile_id = str(
         source_policy.get("default_profile_id", "self_hosted_bootstrap")
     ).strip()
-    profile_id = str(config.get("governance_profile", default_profile_id)).strip()
-    if not profile_id:
-        profile_id = default_profile_id
-    active_profile = copy.deepcopy(profiles.get(profile_id, {}))
+    requested_profile_id = str(config.get("governance_profile", default_profile_id)).strip()
+    if not requested_profile_id:
+        requested_profile_id = default_profile_id
+    active_profile = copy.deepcopy(profiles.get(requested_profile_id, {}))
     profile_known = bool(active_profile)
     if not profile_known:
-        active_profile = copy.deepcopy(profiles.get(default_profile_id, {}))
+        active_profile = project_environment_fail_closed_profile(requested_profile_id)
+    effective_profile_id = str(active_profile.get("profile_id", requested_profile_id)).strip()
 
     workspace = config.get("workspace", {})
     if not isinstance(workspace, dict):
@@ -9891,6 +9963,9 @@ def build_project_environment(
         if isinstance(workspace_contract, dict)
         else []
     )
+    path_safety = source_policy.get("path_safety", {})
+    if not isinstance(path_safety, dict):
+        path_safety = {}
     validation_findings: list[dict[str, Any]] = []
     if config_status == "missing":
         validation_findings.append(
@@ -9928,28 +10003,35 @@ def build_project_environment(
             {
                 "finding_id": "unknown_governance_profile",
                 "severity": "error",
-                "message": f"unknown governance_profile: {profile_id}",
+                "message": f"unknown governance_profile: {requested_profile_id}",
                 "next_gap": "select_supported_governance_profile",
             }
         )
-    for field in required_workspace_fields:
-        field_name = str(field).strip()
-        if not field_name:
-            continue
-        path_text = safe_project_environment_path_text(workspace.get(field_name))
-        if not path_text:
-            validation_findings.append(
-                {
-                    "finding_id": "unsafe_or_missing_workspace_path",
-                    "severity": "error",
-                    "field": field_name,
-                    "message": f"workspace.{field_name} must be a safe repo-relative path",
-                    "next_gap": "repair_workspace_paths",
-                }
+    if config_status == "available":
+        for field in required_workspace_fields:
+            field_name = str(field).strip()
+            if not field_name:
+                continue
+            path_text = safe_project_environment_path_text(
+                workspace.get(field_name),
+                path_safety=path_safety,
             )
+            if not path_text:
+                validation_findings.append(
+                    {
+                        "finding_id": "unsafe_or_missing_workspace_path",
+                        "severity": "error",
+                        "field": field_name,
+                        "message": f"workspace.{field_name} must be a safe repo-relative path",
+                        "next_gap": "repair_workspace_paths",
+                    }
+                )
 
     normalized_workspace = {
-        str(field).strip(): safe_project_environment_path_text(workspace.get(str(field).strip()))
+        str(field).strip(): safe_project_environment_path_text(
+            workspace.get(str(field).strip()),
+            path_safety=path_safety,
+        )
         for field in required_workspace_fields
         if str(field).strip()
     }
@@ -9958,11 +10040,51 @@ def build_project_environment(
     core_locked = bool(active_profile.get("core_locked", False))
     self_evolution_enabled = bool(active_profile.get("self_evolution_enabled", False))
     project_graph_writable = bool(active_profile.get("project_graph_writable", True))
-    mode_label = str(active_profile.get("label", profile_id)).strip() or profile_id
+    mode_label = (
+        str(active_profile.get("label", effective_profile_id)).strip() or effective_profile_id
+    )
     self_evolution_label = "enabled" if self_evolution_enabled else "disabled"
     core_state = "locked" if core_locked else str(engine.get("mutation_policy", "")).strip()
     if not core_state:
         core_state = "proposal_first"
+    supervisor_authority = {
+        "allow_project_spec_refinement": project_environment_bool_value(
+            supervisor.get("allow_project_spec_refinement"),
+            default=True,
+            field_path="supervisor.allow_project_spec_refinement",
+            validation_findings=validation_findings,
+        ),
+        "allow_project_proposals": project_environment_bool_value(
+            supervisor.get("allow_project_proposals"),
+            default=True,
+            field_path="supervisor.allow_project_proposals",
+            validation_findings=validation_findings,
+        ),
+        "allow_project_retrospectives": project_environment_bool_value(
+            supervisor.get("allow_project_retrospectives"),
+            default=True,
+            field_path="supervisor.allow_project_retrospectives",
+            validation_findings=validation_findings,
+        ),
+        "allow_core_policy_mutation": project_environment_bool_value(
+            supervisor.get("allow_core_policy_mutation"),
+            default=not core_locked,
+            field_path="supervisor.allow_core_policy_mutation",
+            validation_findings=validation_findings,
+        ),
+        "allow_core_tooling_mutation": project_environment_bool_value(
+            supervisor.get("allow_core_tooling_mutation"),
+            default=not core_locked,
+            field_path="supervisor.allow_core_tooling_mutation",
+            validation_findings=validation_findings,
+        ),
+        "allow_self_evolution_proposals": project_environment_bool_value(
+            supervisor.get("allow_self_evolution_proposals"),
+            default=self_evolution_enabled,
+            field_path="supervisor.allow_self_evolution_proposals",
+            validation_findings=validation_findings,
+        ),
+    }
     summary_status = "valid" if not validation_findings else "needs_attention"
     return {
         "artifact_kind": PROJECT_ENVIRONMENT_ARTIFACT_KIND,
@@ -9971,7 +10093,7 @@ def build_project_environment(
         "canonical_mutations_allowed": False,
         "tracked_artifacts_written": False,
         "proposal_id": str(source_policy.get("proposal_id", "0052")).strip() or "0052",
-        "policy_reference": project_environment_policy_reference(),
+        "policy_reference": project_environment_policy_reference_for(injected_policy),
         "source_config": {
             "artifact_path": repo_relative_or_absolute_path(config_path or project_config_path()),
             "artifact_sha256": config_sha256,
@@ -9980,7 +10102,8 @@ def build_project_environment(
         "project": {
             "project_id": project_id,
             "display_name": display_name,
-            "governance_profile": profile_id,
+            "governance_profile": effective_profile_id,
+            "requested_governance_profile": requested_profile_id,
             "active_profile_known": profile_known,
         },
         "engine": {
@@ -9990,31 +10113,15 @@ def build_project_environment(
             "core_locked": core_locked,
         },
         "workspace": normalized_workspace,
-        "supervisor_authority": {
-            "allow_project_spec_refinement": bool(
-                supervisor.get("allow_project_spec_refinement", True)
-            ),
-            "allow_project_proposals": bool(supervisor.get("allow_project_proposals", True)),
-            "allow_project_retrospectives": bool(
-                supervisor.get("allow_project_retrospectives", True)
-            ),
-            "allow_core_policy_mutation": bool(
-                supervisor.get("allow_core_policy_mutation", not core_locked)
-            ),
-            "allow_core_tooling_mutation": bool(
-                supervisor.get("allow_core_tooling_mutation", not core_locked)
-            ),
-            "allow_self_evolution_proposals": bool(
-                supervisor.get("allow_self_evolution_proposals", self_evolution_enabled)
-            ),
-        },
+        "supervisor_authority": supervisor_authority,
         "active_profile": active_profile,
         "validation_findings": validation_findings,
         "viewer_projection": {
             "environment_badge": {
                 "mode_label": mode_label,
                 "project_id": project_id,
-                "governance_profile": profile_id,
+                "governance_profile": effective_profile_id,
+                "requested_governance_profile": requested_profile_id,
                 "core_state": core_state,
                 "self_evolution": self_evolution_label,
                 "project_graph": "writable" if project_graph_writable else "read_only",
@@ -10029,7 +10136,8 @@ def build_project_environment(
         "summary": {
             "status": summary_status,
             "project_id": project_id,
-            "governance_profile": profile_id,
+            "governance_profile": effective_profile_id,
+            "requested_governance_profile": requested_profile_id,
             "core_locked": core_locked,
             "self_evolution_enabled": self_evolution_enabled,
             "validation_finding_count": len(validation_findings),

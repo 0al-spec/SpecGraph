@@ -16,6 +16,7 @@ filesystem paths.
     "project_id": "specgraph",
     "display_name": "SpecGraph Bootstrap",
     "governance_profile": "self_hosted_bootstrap",
+    "requested_governance_profile": "self_hosted_bootstrap",
     "active_profile_known": true
   },
   "viewer_projection": {
@@ -23,6 +24,7 @@ filesystem paths.
       "mode_label": "Self-hosted bootstrap",
       "project_id": "specgraph",
       "governance_profile": "self_hosted_bootstrap",
+      "requested_governance_profile": "self_hosted_bootstrap",
       "core_state": "proposal_first",
       "self_evolution": "enabled",
       "project_graph": "writable",
@@ -46,6 +48,8 @@ filesystem paths.
   fatal viewer error.
 - In `product_workspace`, display core state as locked and self-evolution as
   disabled.
+- If `governance_profile` is `unknown_profile_fail_closed`, display a warning
+  and show `requested_governance_profile` in details. Treat the core as locked.
 - Do not show absolute local paths; all workspace paths are expected to be
   repo-relative.
 

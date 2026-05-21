@@ -22866,6 +22866,127 @@ def test_build_project_environment_rejects_unsafe_workspace_paths(
     }
 
 
+def test_build_project_environment_marks_unreadable_config_invalid_without_path_noise(
+    supervisor_module: object,
+    tmp_path: Path,
+) -> None:
+    environment = supervisor_module.build_project_environment(config_path=tmp_path)
+
+    assert environment["source_config"]["status"] == "invalid"
+    assert environment["summary"]["status"] == "needs_attention"
+    assert environment["summary"]["validation_finding_count"] == 1
+    assert environment["validation_findings"][0]["finding_id"] == "invalid_project_config"
+    assert environment["validation_findings"][0]["next_gap"] == "repair_project_config"
+
+
+def test_build_project_environment_unknown_profile_fails_closed(
+    supervisor_module: object,
+    tmp_path: Path,
+) -> None:
+    config_path = tmp_path / "specgraph.project.yaml"
+    config_path.write_text(
+        json.dumps(
+            {
+                "artifact_kind": "specgraph_project_config",
+                "schema_version": 1,
+                "project_id": "typo-profile",
+                "governance_profile": "prodcut_workspace",
+                "workspace": {
+                    "specs_root": "specs/",
+                    "proposals_root": "docs/proposals/",
+                    "runs_root": "runs/",
+                    "publish_root": "projects/typo-profile/",
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    environment = supervisor_module.build_project_environment(config_path=config_path)
+
+    assert environment["project"]["governance_profile"] == "unknown_profile_fail_closed"
+    assert environment["project"]["requested_governance_profile"] == "prodcut_workspace"
+    assert environment["summary"]["core_locked"] is True
+    assert environment["summary"]["self_evolution_enabled"] is False
+    assert environment["viewer_projection"]["environment_badge"]["project_graph"] == "read_only"
+    assert environment["validation_findings"][0]["finding_id"] == "unknown_governance_profile"
+
+
+def test_build_project_environment_parses_false_like_supervisor_strings(
+    supervisor_module: object,
+    tmp_path: Path,
+) -> None:
+    config_path = tmp_path / "specgraph.project.yaml"
+    config_path.write_text(
+        json.dumps(
+            {
+                "artifact_kind": "specgraph_project_config",
+                "schema_version": 1,
+                "project_id": "string-booleans",
+                "governance_profile": "self_hosted_bootstrap",
+                "workspace": {
+                    "specs_root": "specs/",
+                    "proposals_root": "docs/proposals/",
+                    "runs_root": "runs/",
+                    "publish_root": "projects/string-booleans/",
+                },
+                "supervisor": {
+                    "allow_core_policy_mutation": "false",
+                    "allow_core_tooling_mutation": "false",
+                    "allow_self_evolution_proposals": "false",
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    environment = supervisor_module.build_project_environment(config_path=config_path)
+
+    assert environment["summary"]["status"] == "valid"
+    assert environment["supervisor_authority"]["allow_core_policy_mutation"] is False
+    assert environment["supervisor_authority"]["allow_core_tooling_mutation"] is False
+    assert environment["supervisor_authority"]["allow_self_evolution_proposals"] is False
+
+
+def test_build_project_environment_reports_injected_policy_provenance_and_path_safety(
+    supervisor_module: object,
+    tmp_path: Path,
+) -> None:
+    policy = copy.deepcopy(supervisor_module.PROJECT_ENVIRONMENT_POLICY)
+    policy["version"] = "test-override"
+    policy["path_safety"]["reject_windows_drive_or_uri_colon"] = False
+    config_path = tmp_path / "specgraph.project.yaml"
+    config_path.write_text(
+        json.dumps(
+            {
+                "artifact_kind": "specgraph_project_config",
+                "schema_version": 1,
+                "project_id": "override-policy",
+                "governance_profile": "product_workspace",
+                "workspace": {
+                    "specs_root": "specs/",
+                    "proposals_root": "docs/proposals/",
+                    "runs_root": "C:/runs",
+                    "publish_root": "projects/override-policy/",
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    environment = supervisor_module.build_project_environment(
+        policy=policy,
+        config_path=config_path,
+    )
+
+    assert environment["policy_reference"]["artifact_path"] == (
+        "<injected-project-environment-policy>"
+    )
+    assert environment["policy_reference"]["version"] == "test-override"
+    assert environment["workspace"]["runs_root"] == "C:/runs"
+    assert environment["summary"]["next_gap"] == "none"
+
+
 def test_main_builds_project_environment_as_standalone_command(
     supervisor_module: object,
     repo_fixture: Path,
