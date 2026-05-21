@@ -21802,6 +21802,49 @@ def test_project_workspace_next_move_filter_blocks_self_evolution(
     )
 
 
+def test_product_workspace_target_authorization_blocks_core_mutation(
+    supervisor_module: object,
+) -> None:
+    authorization = supervisor_module.authorize_project_workspace_target(
+        target_spec_id="SG-SPEC-0001",
+        target_paths=["specs/nodes/SG-SPEC-0001.yaml"],
+        project_environment=fake_product_workspace_environment(supervisor_module),
+    )
+
+    assert authorization["authorized"] is False
+    assert authorization["target_domain"] == "specgraph_core"
+    assert authorization["blocked_by"] == ["blocked_by_governance_profile"]
+    assert "specgraph_core" in authorization["forbidden_target_domains"]
+
+
+def test_main_blocks_product_workspace_core_target_before_executor(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    _ = repo_fixture
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_project_environment",
+        lambda: fake_product_workspace_environment(supervisor_module),
+    )
+
+    def forbidden_executor(node: object, worktree: Path) -> object:
+        _ = node, worktree
+        raise AssertionError("executor must not run for governance-blocked targets")
+
+    exit_code = supervisor_module.main(
+        target_spec="SG-SPEC-0001",
+        executor=forbidden_executor,
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 1
+    assert "target blocked by project governance" in captured.err
+    assert "blocked_by_governance_profile" in captured.err
+
+
 def test_supervisor_output_summary_includes_compact_graph_next_move_subject(
     supervisor_module: object,
 ) -> None:
@@ -25305,10 +25348,10 @@ def test_proposal_0052_project_environment_runtime_is_covered(
     assert entry["reflective_chain"]["next_gap"] == "none"
 
 
-def test_proposal_0053_runtime_is_partial_until_target_authorization_lands(
+def test_proposal_0053_runtime_is_partial_until_guide_and_smoke_land(
     supervisor_module: object,
 ) -> None:
-    """Proposal 0053 still needs target/path authorization after next-move filtering."""
+    """Proposal 0053 still needs the client-mode guide and smoke scenario."""
     index = supervisor_module.build_proposal_runtime_index()
     by_id = {e["proposal_id"]: e for e in index["entries"]}
 
@@ -25322,7 +25365,15 @@ def test_proposal_0053_runtime_is_partial_until_target_authorization_lands(
         marker["pattern"] for marker in entry["runtime_realization"]["missing_markers"]
     }
     assert "def apply_project_workspace_next_move_filter(" not in missing_runtime_patterns
-    assert "def authorize_project_workspace_target(" in missing_runtime_patterns
+    assert "def authorize_project_workspace_target(" not in missing_runtime_patterns
+    assert "governance_profile: product_workspace" in missing_runtime_patterns
+    missing_validation_patterns = {
+        marker["pattern"] for marker in entry["validation_closure"]["missing_markers"]
+    }
+    assert (
+        "def test_product_workspace_stable_client_smoke_"
+        "blocks_core_target(" in missing_validation_patterns
+    )
 
 
 def test_all_implemented_proposals_have_registry_entries() -> None:

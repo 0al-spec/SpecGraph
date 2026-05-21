@@ -2564,6 +2564,10 @@
       {
         "path": "tools/supervisor.py",
         "pattern": "def authorize_project_workspace_target("
+      },
+      {
+        "path": "docs/product_workspace_stable_mode_guide.md",
+        "pattern": "governance_profile: product_workspace"
       }
     ],
     "validation_markers": [
@@ -2578,6 +2582,10 @@
       {
         "path": "tests/test_supervisor.py",
         "pattern": "def test_product_workspace_target_authorization_blocks_core_mutation("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_product_workspace_stable_client_smoke_blocks_core_target("
       }
     ],
     "observation_markers": [
