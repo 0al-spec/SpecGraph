@@ -18010,6 +18010,13 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
     def fake_evidence_plane_index(specs: list[object]) -> dict[str, object]:
         surface_calls["evidence"] += 1
         assert len(specs) == 1
+        for evidence_input_path in (
+            repo_fixture / "runs" / "graph_health_overlay.json",
+            repo_fixture / "runs" / "graph_health_trends.json",
+            repo_fixture / "runs" / "proposal_runtime_index.json",
+            repo_fixture / "runs" / "proposal_promotion_index.json",
+        ):
+            assert evidence_input_path.is_file()
         return {
             "artifact_kind": supervisor_module.EVIDENCE_PLANE_INDEX_ARTIFACT_KIND,
             "schema_version": supervisor_module.EVIDENCE_PLANE_INDEX_SCHEMA_VERSION,
