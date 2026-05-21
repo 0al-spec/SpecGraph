@@ -25858,6 +25858,7 @@ def test_build_proposal_promotion_index_reports_traceability_gaps(
             "0053",
             ["docs/archive/proposal_sources/0053_product_workspace_stable_mode_enforcement.md"],
         ),
+        ("0054", ["docs/archive/proposal_sources/0054_product_workspace_initialization.md"]),
     ],
 )
 def test_live_proposal_promotion_trace_is_bounded(

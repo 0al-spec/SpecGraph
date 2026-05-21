@@ -687,5 +687,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0054",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0054_product_workspace_initialization.md"
+    ],
+    "motivating_concern": "external product workspaces need a safe first-class initialization entrypoint instead of hand-written setup boilerplate",
+    "normalized_title": "Product Workspace Initialization",
+    "bounded_scope": "Define a SpecGraph-owned product workspace initialization contract covering generated layout, project config, setup report, Platform orchestration boundary, SpecSpace status expectations, and SpecPM review-first import boundary without implementing hosted accounts, project switching, or automatic package materialization.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]
