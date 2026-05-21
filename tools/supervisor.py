@@ -30533,6 +30533,7 @@ def graph_next_move_target_domain(move: dict[str, Any]) -> str:
     bounded_scope = [
         str(item).strip() for item in move.get("bounded_scope", []) if str(item).strip()
     ]
+    subject_id = str(subject.get("subject_id", "")).strip()
 
     if kind == "realize_proposal_runtime_slice" or source_artifact == "proposal_runtime_index":
         return "specgraph_core"
@@ -30545,6 +30546,10 @@ def graph_next_move_target_domain(move: dict[str, Any]) -> str:
     ):
         return "specgraph_core"
     if str(subject.get("subject_kind", "")).strip() == "spec":
+        if subject_id.startswith("SG-SPEC-") or any(
+            item.startswith("SG-SPEC-") for item in bounded_scope
+        ):
+            return "specgraph_core"
         return "project_graph"
     return ""
 
@@ -30582,7 +30587,7 @@ def apply_project_workspace_next_move_filter(
         target_domain = graph_next_move_target_domain(move)
         blocked_reason = ""
         if governance_profile == "unknown_profile_fail_closed":
-            blocked_reason = "blocked_by_unknown_governance_profile"
+            blocked_reason = blocked_status
         elif target_domain in forbidden_domains:
             blocked_reason = blocked_status
         elif (
@@ -30852,7 +30857,6 @@ def build_graph_next_moves(
         if eligible_moves:
             recommended_move = eligible_moves[0]
             alternatives = eligible_moves[1:]
-            recommended_move_kind = str(recommended_move.get("kind", "")).strip()
         else:
             current_scene = "steady_state"
             scene_confidence = "medium"

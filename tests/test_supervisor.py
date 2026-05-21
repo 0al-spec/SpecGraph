@@ -21802,6 +21802,34 @@ def test_project_workspace_next_move_filter_blocks_self_evolution(
     )
 
 
+def test_project_workspace_next_move_filter_blocks_specgraph_core_spec_backlog(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    _ = repo_fixture
+    report = supervisor_module.build_graph_next_moves(
+        [],
+        backlog_projection=fake_graph_next_moves_backlog(supervisor_module),
+        proposal_runtime_index=fake_graph_next_moves_proposal_runtime(supervisor_module),
+        project_environment=fake_product_workspace_environment(supervisor_module),
+    )
+
+    assert report["current_scene"] == "steady_state"
+    assert report["recommended_next_move_kind"] == "none"
+    governance_blocks = [
+        move
+        for move in report["blocked_moves"]
+        if move.get("governance_block", {}).get("target_domain") == "specgraph_core"
+    ]
+    assert governance_blocks
+    assert governance_blocks[0]["subject"]["subject_kind"] == "spec"
+    assert governance_blocks[0]["subject"]["subject_id"] == "SG-SPEC-0001"
+    assert (
+        governance_blocks[0]["governance_block"]["blocked_move_status"]
+        == "blocked_by_governance_profile"
+    )
+
+
 def test_product_workspace_target_authorization_blocks_core_mutation(
     supervisor_module: object,
 ) -> None:
