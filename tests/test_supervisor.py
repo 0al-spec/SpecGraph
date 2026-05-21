@@ -21905,6 +21905,83 @@ def test_main_blocks_product_workspace_core_target_before_executor(
     assert "blocked_by_governance_profile" in captured.err
 
 
+def test_product_workspace_stable_client_smoke_blocks_core_target(
+    supervisor_module: object,
+    tmp_path: Path,
+) -> None:
+    config_path = tmp_path / "specgraph.project.yaml"
+    config_path.write_text(
+        """artifact_kind: specgraph_project_config
+schema_version: 1
+project_id: swiftui-calculator
+display_name: SwiftUI Calculator
+governance_profile: product_workspace
+workspace:
+  specs_root: specs/
+  proposals_root: docs/proposals/
+  runs_root: runs/
+  publish_root: projects/swiftui-calculator/
+supervisor:
+  allow_core_policy_mutation: false
+  allow_core_tooling_mutation: false
+  allow_self_evolution_proposals: false
+""",
+        encoding="utf-8",
+    )
+
+    environment = supervisor_module.build_project_environment(config_path=config_path)
+    authorization = supervisor_module.authorize_project_workspace_target(
+        target_spec_id="SG-SPEC-0001",
+        target_paths=["specs/nodes/SG-SPEC-0001.yaml"],
+        project_environment=environment,
+    )
+
+    assert environment["summary"]["status"] == "valid"
+    assert environment["project"]["governance_profile"] == "product_workspace"
+    assert environment["summary"]["core_locked"] is True
+    assert authorization["authorized"] is False
+    assert authorization["target_domain"] == "specgraph_core"
+    assert authorization["blocked_by"] == ["blocked_by_governance_profile"]
+
+
+def test_product_workspace_stable_client_smoke_blocks_core_target_without_project_id(
+    supervisor_module: object,
+    tmp_path: Path,
+) -> None:
+    config_path = tmp_path / "specgraph.project.yaml"
+    config_path.write_text(
+        """artifact_kind: specgraph_project_config
+schema_version: 1
+display_name: Project Without ID
+governance_profile: product_workspace
+workspace:
+  specs_root: specs/
+  proposals_root: docs/proposals/
+  runs_root: runs/
+  publish_root: projects/project-without-id/
+supervisor:
+  allow_core_policy_mutation: false
+  allow_core_tooling_mutation: false
+  allow_self_evolution_proposals: false
+""",
+        encoding="utf-8",
+    )
+
+    environment = supervisor_module.build_project_environment(config_path=config_path)
+    authorization = supervisor_module.authorize_project_workspace_target(
+        target_spec_id="SG-SPEC-0001",
+        target_paths=["specs/nodes/SG-SPEC-0001.yaml"],
+        project_environment=environment,
+    )
+
+    assert environment["summary"]["status"] == "valid"
+    assert environment["project"]["governance_profile"] == "product_workspace"
+    assert environment["project"]["project_id"] == "specgraph"
+    assert authorization["authorized"] is False
+    assert authorization["target_domain"] == "specgraph_core"
+    assert authorization["blocked_by"] == ["blocked_by_governance_profile"]
+
+
 def test_main_blocks_product_workspace_split_proposal_target_before_executor(
     supervisor_module: object,
     repo_fixture: Path,
@@ -25518,32 +25595,22 @@ def test_proposal_0052_project_environment_runtime_is_covered(
     assert entry["reflective_chain"]["next_gap"] == "none"
 
 
-def test_proposal_0053_runtime_is_partial_until_guide_and_smoke_land(
+def test_proposal_0053_product_workspace_stable_mode_runtime_is_covered(
     supervisor_module: object,
 ) -> None:
-    """Proposal 0053 still needs the client-mode guide and smoke scenario."""
+    """Proposal 0053 is covered by policy, next-move filtering, target auth, and smoke."""
     index = supervisor_module.build_proposal_runtime_index()
     by_id = {e["proposal_id"]: e for e in index["entries"]}
 
     assert "0053" in by_id, "Proposal 0053 missing from proposal_runtime_index"
     entry = by_id["0053"]
-    assert entry["runtime_realization"]["status"] == "partial"
-    assert entry["validation_closure"]["status"] == "partial"
+    assert entry["runtime_realization"]["status"] == "implemented"
+    assert entry["validation_closure"]["status"] == "covered"
     assert entry["observation_coverage"]["status"] == "covered"
-    assert entry["reflective_chain"]["next_gap"] == "runtime_realization"
-    missing_runtime_patterns = {
-        marker["pattern"] for marker in entry["runtime_realization"]["missing_markers"]
-    }
-    assert "def apply_project_workspace_next_move_filter(" not in missing_runtime_patterns
-    assert "def authorize_project_workspace_target(" not in missing_runtime_patterns
-    assert "governance_profile: product_workspace" in missing_runtime_patterns
-    missing_validation_patterns = {
-        marker["pattern"] for marker in entry["validation_closure"]["missing_markers"]
-    }
-    assert (
-        "def test_product_workspace_stable_client_smoke_"
-        "blocks_core_target(" in missing_validation_patterns
-    )
+    assert entry["runtime_realization"]["missing_markers"] == []
+    assert entry["validation_closure"]["missing_markers"] == []
+    assert entry["observation_coverage"]["missing_markers"] == []
+    assert entry["reflective_chain"]["next_gap"] == "none"
 
 
 def test_all_implemented_proposals_have_registry_entries() -> None:
