@@ -68,6 +68,7 @@ Derived artifacts:
 - spec trace projection: `runs/spec_trace_projection.json`
 - proposal runtime index: `runs/proposal_runtime_index.json`
 - spec activity feed: `runs/spec_activity_feed.json`
+- project environment: `runs/project_environment.json`
 """
 
 from __future__ import annotations
@@ -135,6 +136,8 @@ SUPERVISOR_STALLED_RUN_SALVAGE_POLICY_RELATIVE_PATH = (
 )
 FACTORY_ARCHITECTURE_POLICY_RELATIVE_PATH = "tools/factory_architecture_policy.json"
 SWIFT_TYPED_TOOLING_POLICY_RELATIVE_PATH = "tools/swift_typed_tooling_policy.json"
+PROJECT_ENVIRONMENT_POLICY_RELATIVE_PATH = "tools/project_environment_policy.json"
+PROJECT_CONFIG_RELATIVE_PATH = "specgraph.project.yaml"
 REVIEW_FEEDBACK_POLICY_RELATIVE_PATH = "tools/review_feedback_policy.json"
 VALIDATION_FINDINGS_POLICY_RELATIVE_PATH = "tools/validation_findings_policy.json"
 SAFE_REPAIR_POLICY_RELATIVE_PATH = "tools/safe_repair_policy.json"
@@ -245,6 +248,14 @@ def factory_architecture_policy_path() -> Path:
 
 def swift_typed_tooling_policy_path() -> Path:
     return TOOLS_DIR / "swift_typed_tooling_policy.json"
+
+
+def project_environment_policy_path() -> Path:
+    return TOOLS_DIR / "project_environment_policy.json"
+
+
+def project_config_path() -> Path:
+    return ROOT / PROJECT_CONFIG_RELATIVE_PATH
 
 
 def review_feedback_policy_path() -> Path:
@@ -1069,6 +1080,43 @@ def load_swift_typed_tooling_policy() -> tuple[dict[str, Any], str]:
 
 
 SWIFT_TYPED_TOOLING_POLICY, SWIFT_TYPED_TOOLING_POLICY_SHA256 = load_swift_typed_tooling_policy()
+
+
+def load_project_environment_policy() -> tuple[dict[str, Any], str]:
+    path = project_environment_policy_path()
+    try:
+        raw_text = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise RuntimeError(
+            f"failed to read project environment policy artifact: {path.as_posix()} ({exc})"
+        ) from exc
+    try:
+        payload = json.loads(raw_text)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(
+            f"malformed project environment policy artifact: {path.as_posix()} ({exc})"
+        ) from exc
+    if not isinstance(payload, dict):
+        raise RuntimeError(
+            "malformed project environment policy artifact: "
+            f"{path.as_posix()} must contain a JSON object"
+        )
+    required_sections = (
+        "governance_profiles",
+        "workspace_contract",
+        "viewer_contract",
+        "path_safety",
+    )
+    missing = [section for section in required_sections if section not in payload]
+    if missing:
+        raise RuntimeError(
+            "malformed project environment policy artifact: "
+            "missing top-level section(s): " + ", ".join(missing)
+        )
+    return payload, hashlib.sha256(raw_text.encode("utf-8")).hexdigest()
+
+
+PROJECT_ENVIRONMENT_POLICY, PROJECT_ENVIRONMENT_POLICY_SHA256 = load_project_environment_policy()
 
 
 def load_review_feedback_policy() -> tuple[dict[str, Any], str]:
@@ -2366,6 +2414,14 @@ def swift_typed_tooling_policy_reference() -> dict[str, Any]:
         "artifact_path": SWIFT_TYPED_TOOLING_POLICY_RELATIVE_PATH,
         "artifact_sha256": SWIFT_TYPED_TOOLING_POLICY_SHA256,
         "version": SWIFT_TYPED_TOOLING_POLICY.get("version"),
+    }
+
+
+def project_environment_policy_reference() -> dict[str, Any]:
+    return {
+        "artifact_path": PROJECT_ENVIRONMENT_POLICY_RELATIVE_PATH,
+        "artifact_sha256": PROJECT_ENVIRONMENT_POLICY_SHA256,
+        "version": PROJECT_ENVIRONMENT_POLICY.get("version"),
     }
 
 
@@ -9734,6 +9790,259 @@ def write_swift_typed_tooling_index(index: dict[str, Any]) -> Path:
     path = swift_typed_tooling_index_path()
     with artifact_lock(path):
         atomic_write_json(path, index)
+    return path
+
+
+PROJECT_ENVIRONMENT_ARTIFACT_KIND = "project_environment"
+PROJECT_ENVIRONMENT_SCHEMA_VERSION = 1
+
+
+def project_environment_path() -> Path:
+    return RUNS_DIR / "project_environment.json"
+
+
+def project_environment_profile_by_id(
+    policy: dict[str, Any],
+) -> dict[str, dict[str, Any]]:
+    profiles: dict[str, dict[str, Any]] = {}
+    for entry in policy.get("governance_profiles", []):
+        if not isinstance(entry, dict):
+            continue
+        profile_id = str(entry.get("profile_id", "")).strip()
+        if profile_id:
+            profiles[profile_id] = copy.deepcopy(entry)
+    return profiles
+
+
+def safe_project_environment_path_text(value: Any) -> str:
+    text = str(value or "").strip()
+    if not text:
+        return ""
+    if (
+        text.startswith("/")
+        or text.startswith("~")
+        or "\\" in text
+        or ":" in text
+        or ".." in PurePosixPath(text).parts
+    ):
+        return ""
+    return text
+
+
+def load_project_config(config_path: Path | None = None) -> tuple[dict[str, Any], str, str]:
+    path = config_path or project_config_path()
+    try:
+        raw_text = path.read_text(encoding="utf-8")
+    except OSError:
+        return {}, "", "missing"
+    try:
+        payload = get_yaml_module().safe_load(raw_text) or {}
+    except Exception as exc:
+        raise RuntimeError(f"malformed project config artifact: {path.as_posix()} ({exc})") from exc
+    if not isinstance(payload, dict):
+        raise RuntimeError(
+            f"malformed project config artifact: {path.as_posix()} must contain a mapping"
+        )
+    return payload, hashlib.sha256(raw_text.encode("utf-8")).hexdigest(), "available"
+
+
+def build_project_environment(
+    policy: dict[str, Any] | None = None,
+    config_path: Path | None = None,
+) -> dict[str, Any]:
+    source_policy = copy.deepcopy(
+        policy if isinstance(policy, dict) else PROJECT_ENVIRONMENT_POLICY
+    )
+    try:
+        config, config_sha256, config_status = load_project_config(config_path)
+    except RuntimeError as exc:
+        config = {}
+        config_sha256 = ""
+        config_status = "invalid"
+        config_error = str(exc)
+    else:
+        config_error = ""
+
+    profiles = project_environment_profile_by_id(source_policy)
+    default_profile_id = str(
+        source_policy.get("default_profile_id", "self_hosted_bootstrap")
+    ).strip()
+    profile_id = str(config.get("governance_profile", default_profile_id)).strip()
+    if not profile_id:
+        profile_id = default_profile_id
+    active_profile = copy.deepcopy(profiles.get(profile_id, {}))
+    profile_known = bool(active_profile)
+    if not profile_known:
+        active_profile = copy.deepcopy(profiles.get(default_profile_id, {}))
+
+    workspace = config.get("workspace", {})
+    if not isinstance(workspace, dict):
+        workspace = {}
+    engine = config.get("engine", {})
+    if not isinstance(engine, dict):
+        engine = {}
+    supervisor = config.get("supervisor", {})
+    if not isinstance(supervisor, dict):
+        supervisor = {}
+
+    workspace_contract = source_policy.get("workspace_contract", {})
+    required_workspace_fields = (
+        workspace_contract.get("required_fields", [])
+        if isinstance(workspace_contract, dict)
+        else []
+    )
+    validation_findings: list[dict[str, Any]] = []
+    if config_status == "missing":
+        validation_findings.append(
+            {
+                "finding_id": "missing_project_config",
+                "severity": "warning",
+                "message": (
+                    f"{PROJECT_CONFIG_RELATIVE_PATH} is missing; using policy default profile"
+                ),
+                "next_gap": "create_project_config",
+            }
+        )
+    elif config_status == "invalid":
+        validation_findings.append(
+            {
+                "finding_id": "invalid_project_config",
+                "severity": "error",
+                "message": config_error,
+                "next_gap": "repair_project_config",
+            }
+        )
+    if config and str(config.get("artifact_kind", "")).strip() != "specgraph_project_config":
+        validation_findings.append(
+            {
+                "finding_id": "wrong_project_config_kind",
+                "severity": "error",
+                "message": (
+                    "specgraph.project.yaml must declare artifact_kind=specgraph_project_config"
+                ),
+                "next_gap": "repair_project_config",
+            }
+        )
+    if not profile_known:
+        validation_findings.append(
+            {
+                "finding_id": "unknown_governance_profile",
+                "severity": "error",
+                "message": f"unknown governance_profile: {profile_id}",
+                "next_gap": "select_supported_governance_profile",
+            }
+        )
+    for field in required_workspace_fields:
+        field_name = str(field).strip()
+        if not field_name:
+            continue
+        path_text = safe_project_environment_path_text(workspace.get(field_name))
+        if not path_text:
+            validation_findings.append(
+                {
+                    "finding_id": "unsafe_or_missing_workspace_path",
+                    "severity": "error",
+                    "field": field_name,
+                    "message": f"workspace.{field_name} must be a safe repo-relative path",
+                    "next_gap": "repair_workspace_paths",
+                }
+            )
+
+    normalized_workspace = {
+        str(field).strip(): safe_project_environment_path_text(workspace.get(str(field).strip()))
+        for field in required_workspace_fields
+        if str(field).strip()
+    }
+    project_id = str(config.get("project_id", source_policy.get("default_project_id", ""))).strip()
+    display_name = str(config.get("display_name", project_id)).strip() or project_id
+    core_locked = bool(active_profile.get("core_locked", False))
+    self_evolution_enabled = bool(active_profile.get("self_evolution_enabled", False))
+    project_graph_writable = bool(active_profile.get("project_graph_writable", True))
+    mode_label = str(active_profile.get("label", profile_id)).strip() or profile_id
+    self_evolution_label = "enabled" if self_evolution_enabled else "disabled"
+    core_state = "locked" if core_locked else str(engine.get("mutation_policy", "")).strip()
+    if not core_state:
+        core_state = "proposal_first"
+    summary_status = "valid" if not validation_findings else "needs_attention"
+    return {
+        "artifact_kind": PROJECT_ENVIRONMENT_ARTIFACT_KIND,
+        "schema_version": PROJECT_ENVIRONMENT_SCHEMA_VERSION,
+        "generated_at": utc_now_iso(),
+        "canonical_mutations_allowed": False,
+        "tracked_artifacts_written": False,
+        "proposal_id": str(source_policy.get("proposal_id", "0052")).strip() or "0052",
+        "policy_reference": project_environment_policy_reference(),
+        "source_config": {
+            "artifact_path": repo_relative_or_absolute_path(config_path or project_config_path()),
+            "artifact_sha256": config_sha256,
+            "status": config_status,
+        },
+        "project": {
+            "project_id": project_id,
+            "display_name": display_name,
+            "governance_profile": profile_id,
+            "active_profile_known": profile_known,
+        },
+        "engine": {
+            "version_policy": str(engine.get("version_policy", "")).strip(),
+            "mutation_policy": str(engine.get("mutation_policy", "")).strip(),
+            "allowed_core_updates": str(engine.get("allowed_core_updates", "")).strip(),
+            "core_locked": core_locked,
+        },
+        "workspace": normalized_workspace,
+        "supervisor_authority": {
+            "allow_project_spec_refinement": bool(
+                supervisor.get("allow_project_spec_refinement", True)
+            ),
+            "allow_project_proposals": bool(supervisor.get("allow_project_proposals", True)),
+            "allow_project_retrospectives": bool(
+                supervisor.get("allow_project_retrospectives", True)
+            ),
+            "allow_core_policy_mutation": bool(
+                supervisor.get("allow_core_policy_mutation", not core_locked)
+            ),
+            "allow_core_tooling_mutation": bool(
+                supervisor.get("allow_core_tooling_mutation", not core_locked)
+            ),
+            "allow_self_evolution_proposals": bool(
+                supervisor.get("allow_self_evolution_proposals", self_evolution_enabled)
+            ),
+        },
+        "active_profile": active_profile,
+        "validation_findings": validation_findings,
+        "viewer_projection": {
+            "environment_badge": {
+                "mode_label": mode_label,
+                "project_id": project_id,
+                "governance_profile": profile_id,
+                "core_state": core_state,
+                "self_evolution": self_evolution_label,
+                "project_graph": "writable" if project_graph_writable else "read_only",
+                "status": summary_status,
+            },
+            "guardrails": {
+                "core_locked": core_locked,
+                "self_evolution_enabled": self_evolution_enabled,
+                "project_graph_writable": project_graph_writable,
+            },
+        },
+        "summary": {
+            "status": summary_status,
+            "project_id": project_id,
+            "governance_profile": profile_id,
+            "core_locked": core_locked,
+            "self_evolution_enabled": self_evolution_enabled,
+            "validation_finding_count": len(validation_findings),
+            "next_gap": "none" if not validation_findings else validation_findings[0]["next_gap"],
+        },
+    }
+
+
+def write_project_environment(environment: dict[str, Any]) -> Path:
+    RUNS_DIR.mkdir(parents=True, exist_ok=True)
+    path = project_environment_path()
+    with artifact_lock(path):
+        atomic_write_json(path, environment)
     return path
 
 
@@ -31366,6 +31675,7 @@ def build_viewer_surfaces(specs: list[SpecNode]) -> dict[str, Any]:
     )
     factory_architecture_index = build_factory_architecture_index()
     swift_typed_tooling_index = build_swift_typed_tooling_index()
+    project_environment = build_project_environment()
     proposal_lane_overlay = build_proposal_lane_overlay()
     proposal_runtime_index = build_proposal_runtime_index()
     proposal_promotion_index = build_proposal_promotion_index()
@@ -31481,6 +31791,7 @@ def build_viewer_surfaces(specs: list[SpecNode]) -> dict[str, Any]:
     swift_typed_tooling_path_result = write_swift_typed_tooling_index(
         swift_typed_tooling_index,
     )
+    project_environment_path_result = write_project_environment(project_environment)
     conversation_memory_index = build_conversation_memory_index()
     conversation_memory_path = write_conversation_memory_index(conversation_memory_index)
     conversation_memory_map = build_conversation_memory_map(conversation_memory_index)
@@ -31740,6 +32051,18 @@ def build_viewer_surfaces(specs: list[SpecNode]) -> dict[str, Any]:
                         "swift_required_for_ordinary_operation",
                         False,
                     )
+                ),
+            },
+            "project_environment": {
+                "artifact_path": project_environment_path_result.relative_to(ROOT).as_posix(),
+                "generated_at": project_environment.get("generated_at"),
+                "project_id": project_environment.get("project", {}).get("project_id"),
+                "governance_profile": project_environment.get("project", {}).get(
+                    "governance_profile"
+                ),
+                "core_locked": project_environment.get("summary", {}).get("core_locked"),
+                "self_evolution_enabled": project_environment.get("summary", {}).get(
+                    "self_evolution_enabled"
                 ),
             },
             "conversation_memory_index": {
@@ -35709,6 +36032,7 @@ def main(
     build_supervisor_stalled_run_salvage_mode: bool = False,
     build_factory_architecture_index_mode: bool = False,
     build_swift_typed_tooling_index_mode: bool = False,
+    build_project_environment_mode: bool = False,
     supervisor_run_path: str | None = None,
     supervisor_salvage_worktree_path: str | None = None,
     supervisor_raw_artifact_uri: str = "",
@@ -35809,6 +36133,7 @@ def main(
         "--build-supervisor-stalled-run-salvage": build_supervisor_stalled_run_salvage_mode,
         "--build-factory-architecture-index": build_factory_architecture_index_mode,
         "--build-swift-typed-tooling-index": build_swift_typed_tooling_index_mode,
+        "--build-project-environment": build_project_environment_mode,
         "--build-review-feedback-index": build_review_feedback_index_mode,
         "--build-vocabulary-index": build_vocabulary_index_mode,
         "--build-vocabulary-drift-report": build_vocabulary_drift_report_mode,
@@ -35967,6 +36292,18 @@ def main(
     ):
         print(
             "--build-swift-typed-tooling-index does not accept supervisor run/salvage inputs",
+            file=sys.stderr,
+        )
+        return 1
+
+    if build_project_environment_mode and (
+        supervisor_salvage_worktree_path
+        or supervisor_run_path
+        or supervisor_raw_artifact_uri
+        or supervisor_raw_retention_expires_at
+    ):
+        print(
+            "--build-project-environment does not accept supervisor run/salvage inputs",
             file=sys.stderr,
         )
         return 1
@@ -36475,6 +36812,41 @@ def main(
         index = build_swift_typed_tooling_index()
         write_swift_typed_tooling_index(index)
         emit_supervisor_json(index, output_mode=normalized_output_mode)
+        return 0
+
+    if build_project_environment_mode:
+        if any(
+            (
+                dry_run,
+                auto_approve,
+                loop,
+                resolve_gate,
+                decision,
+                note,
+                target_spec,
+                split_proposal,
+                apply_split_proposal,
+                operator_note,
+                mutation_budget,
+                run_authority,
+                execution_profile,
+                child_model,
+                child_timeout_seconds,
+                verbose,
+                list_stale_runtime,
+                clean_stale_runtime,
+                observe_graph_health_mode,
+                operator_request_packet_path,
+            )
+        ):
+            print(
+                "--build-project-environment must be used as a standalone command",
+                file=sys.stderr,
+            )
+            return 1
+        environment = build_project_environment()
+        write_project_environment(environment)
+        emit_supervisor_json(environment, output_mode=normalized_output_mode)
         return 0
 
     if build_review_feedback_index_mode:
@@ -39228,6 +39600,14 @@ if __name__ == "__main__":
         help=("Build a read-only Swift typed tooling lane index from the Swift tooling policy"),
     )
     parser.add_argument(
+        "--build-project-environment",
+        action="store_true",
+        help=(
+            "Build a read-only project environment artifact from specgraph.project.yaml "
+            "and the project environment policy"
+        ),
+    )
+    parser.add_argument(
         "--supervisor-run-path",
         metavar="PATH_OR_RUN_ID",
         help=(
@@ -39773,6 +40153,7 @@ if __name__ == "__main__":
             build_supervisor_stalled_run_salvage_mode=(args.build_supervisor_stalled_run_salvage),
             build_factory_architecture_index_mode=args.build_factory_architecture_index,
             build_swift_typed_tooling_index_mode=args.build_swift_typed_tooling_index,
+            build_project_environment_mode=args.build_project_environment,
             supervisor_run_path=args.supervisor_run_path,
             supervisor_salvage_worktree_path=args.salvage_worktree_path,
             supervisor_raw_artifact_uri=args.raw_artifact_uri,

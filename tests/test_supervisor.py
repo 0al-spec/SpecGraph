@@ -18586,6 +18586,11 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
     assert report["written_artifacts"]["metric_pack_runs"]["gap_count"] == 0
     assert report["written_artifacts"]["metric_pack_registry_drift"]["entry_count"] == 0
     assert report["written_artifacts"]["metric_pack_registry_drift"]["next_gap"] == "none"
+    assert report["written_artifacts"]["project_environment"]["project_id"] == "specgraph"
+    assert (
+        report["written_artifacts"]["project_environment"]["governance_profile"]
+        == "self_hosted_bootstrap"
+    )
     assert report["written_artifacts"]["proposal_spec_trace_index"]["entry_count"] == 1
     assert report["written_artifacts"]["metric_pack_index"]["ready_for_index_review_count"] == 1
     assert report["written_artifacts"]["conversation_memory_map"]["cluster_count"] == 0
@@ -18659,6 +18664,11 @@ def test_main_builds_viewer_surfaces_as_standalone_command(
         )["entry_count"]
         == 1
     )
+    project_environment = json.loads(
+        (repo_fixture / "runs" / "project_environment.json").read_text(encoding="utf-8")
+    )
+    assert project_environment["artifact_kind"] == "project_environment"
+    assert project_environment["summary"]["next_gap"] == "create_project_config"
     assert (
         json.loads(
             (repo_fixture / "runs" / "pre_spec_semantics_index.json").read_text(encoding="utf-8")
@@ -22736,6 +22746,154 @@ def test_main_builds_swift_typed_tooling_index_as_standalone_command(
     assert artifact["validation_strategy"]["normal_unit_tests_require_network"] is False
 
 
+def test_build_project_environment_surfaces_self_hosted_bootstrap_profile(
+    supervisor_module: object,
+) -> None:
+    environment = supervisor_module.build_project_environment()
+
+    assert environment["artifact_kind"] == "project_environment"
+    assert environment["canonical_mutations_allowed"] is False
+    assert environment["tracked_artifacts_written"] is False
+    assert environment["proposal_id"] == "0052"
+    assert (
+        environment["policy_reference"]["artifact_path"] == "tools/project_environment_policy.json"
+    )
+    assert environment["source_config"]["artifact_path"] == "specgraph.project.yaml"
+    assert environment["project"]["project_id"] == "specgraph"
+    assert environment["project"]["governance_profile"] == "self_hosted_bootstrap"
+    assert environment["summary"]["core_locked"] is False
+    assert environment["summary"]["self_evolution_enabled"] is True
+    assert environment["summary"]["next_gap"] == "none"
+    badge = environment["viewer_projection"]["environment_badge"]
+    assert badge["mode_label"] == "Self-hosted bootstrap"
+    assert badge["core_state"] == "proposal_first"
+    assert badge["self_evolution"] == "enabled"
+    assert badge["project_graph"] == "writable"
+
+
+def test_build_project_environment_surfaces_product_workspace_guardrails(
+    supervisor_module: object,
+    tmp_path: Path,
+) -> None:
+    config_path = tmp_path / "specgraph.project.yaml"
+    config_path.write_text(
+        json.dumps(
+            {
+                "artifact_kind": "specgraph_project_config",
+                "schema_version": 1,
+                "project_id": "swiftui-calculator",
+                "display_name": "SwiftUI Calculator",
+                "governance_profile": "product_workspace",
+                "engine": {
+                    "version_policy": "pinned",
+                    "mutation_policy": "locked",
+                    "allowed_core_updates": "package_upgrade_only",
+                },
+                "workspace": {
+                    "specs_root": "specs/",
+                    "proposals_root": "docs/proposals/",
+                    "runs_root": "runs/",
+                    "publish_root": "projects/swiftui-calculator/",
+                },
+                "supervisor": {
+                    "allow_project_spec_refinement": True,
+                    "allow_project_proposals": True,
+                    "allow_project_retrospectives": True,
+                    "allow_core_policy_mutation": False,
+                    "allow_core_tooling_mutation": False,
+                    "allow_self_evolution_proposals": False,
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    environment = supervisor_module.build_project_environment(config_path=config_path)
+
+    assert environment["project"]["project_id"] == "swiftui-calculator"
+    assert environment["project"]["governance_profile"] == "product_workspace"
+    assert environment["summary"]["core_locked"] is True
+    assert environment["summary"]["self_evolution_enabled"] is False
+    assert environment["supervisor_authority"]["allow_core_policy_mutation"] is False
+    assert environment["supervisor_authority"]["allow_core_tooling_mutation"] is False
+    assert environment["supervisor_authority"]["allow_self_evolution_proposals"] is False
+    assert "tools/" in environment["active_profile"]["forbidden_mutation_roots"]
+    badge = environment["viewer_projection"]["environment_badge"]
+    assert badge["mode_label"] == "Product workspace"
+    assert badge["core_state"] == "locked"
+    assert badge["self_evolution"] == "disabled"
+
+
+def test_build_project_environment_rejects_unsafe_workspace_paths(
+    supervisor_module: object,
+    tmp_path: Path,
+) -> None:
+    config_path = tmp_path / "specgraph.project.yaml"
+    config_path.write_text(
+        json.dumps(
+            {
+                "artifact_kind": "specgraph_project_config",
+                "schema_version": 1,
+                "project_id": "bad-paths",
+                "governance_profile": "product_workspace",
+                "workspace": {
+                    "specs_root": "/tmp/specs",
+                    "proposals_root": "../docs/proposals",
+                    "runs_root": "C:/runs",
+                    "publish_root": "~/publish",
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    environment = supervisor_module.build_project_environment(config_path=config_path)
+
+    assert environment["summary"]["status"] == "needs_attention"
+    assert environment["summary"]["validation_finding_count"] == 4
+    assert {finding["field"] for finding in environment["validation_findings"]} == {
+        "specs_root",
+        "proposals_root",
+        "runs_root",
+        "publish_root",
+    }
+
+
+def test_main_builds_project_environment_as_standalone_command(
+    supervisor_module: object,
+    repo_fixture: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    (repo_fixture / "specgraph.project.yaml").write_text(
+        json.dumps(
+            {
+                "artifact_kind": "specgraph_project_config",
+                "schema_version": 1,
+                "project_id": "specgraph",
+                "governance_profile": "self_hosted_bootstrap",
+                "workspace": {
+                    "specs_root": "specs/",
+                    "proposals_root": "docs/proposals/",
+                    "runs_root": "runs/",
+                    "publish_root": "specgraph-public/",
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    exit_code = supervisor_module.main(build_project_environment_mode=True)
+
+    assert exit_code == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["artifact_kind"] == "project_environment"
+    artifact = json.loads(
+        (repo_fixture / "runs" / "project_environment.json").read_text(encoding="utf-8")
+    )
+    assert artifact["summary"]["governance_profile"] == "self_hosted_bootstrap"
+    assert artifact["viewer_projection"]["environment_badge"]["project_id"] == "specgraph"
+
+
 def test_sg_spec_0030_trace_anchor_blocks_non_bypass_prerequisite_gap(
     supervisor_module: object,
 ) -> None:
@@ -24885,6 +25043,22 @@ def test_proposal_0051_prompt_overlay_runtime_is_covered(
 
     assert "0051" in by_id, "Proposal 0051 missing from proposal_runtime_index"
     entry = by_id["0051"]
+    assert entry["runtime_realization"]["status"] == "implemented"
+    assert entry["validation_closure"]["status"] == "covered"
+    assert entry["observation_coverage"]["status"] == "covered"
+    assert entry["observation_coverage"]["missing_markers"] == []
+    assert entry["reflective_chain"]["next_gap"] == "none"
+
+
+def test_proposal_0052_project_environment_runtime_is_covered(
+    supervisor_module: object,
+) -> None:
+    """Proposal 0052 is implemented by the project environment governance profile surface."""
+    index = supervisor_module.build_proposal_runtime_index()
+    by_id = {e["proposal_id"]: e for e in index["entries"]}
+
+    assert "0052" in by_id, "Proposal 0052 missing from proposal_runtime_index"
+    entry = by_id["0052"]
     assert entry["runtime_realization"]["status"] == "implemented"
     assert entry["validation_closure"]["status"] == "covered"
     assert entry["observation_coverage"]["status"] == "covered"

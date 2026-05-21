@@ -1,0 +1,21 @@
+artifact_kind: specgraph_project_config
+schema_version: 1
+project_id: specgraph
+display_name: SpecGraph Bootstrap
+governance_profile: self_hosted_bootstrap
+engine:
+  version_policy: repository_main
+  mutation_policy: proposal_first
+  allowed_core_updates: pull_request_only
+workspace:
+  specs_root: specs/
+  proposals_root: docs/proposals/
+  runs_root: runs/
+  publish_root: specgraph-public/
+supervisor:
+  allow_project_spec_refinement: true
+  allow_project_proposals: true
+  allow_project_retrospectives: true
+  allow_core_policy_mutation: true
+  allow_core_tooling_mutation: true
+  allow_self_evolution_proposals: true

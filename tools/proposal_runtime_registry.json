@@ -2464,5 +2464,75 @@
         "pattern": "last_prompt_overlay_provenance"
       }
     ]
+  },
+  {
+    "proposal_id": "0052",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "tools/supervisor.py",
+      "tests/test_supervisor.py",
+      "tools/project_environment_policy.json",
+      "specgraph.project.yaml",
+      "docs/project_environment_viewer_contract.md",
+      "Makefile"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/project_environment_policy.json",
+        "pattern": "\"artifact_kind\": \"project_environment_policy\""
+      },
+      {
+        "path": "specgraph.project.yaml",
+        "pattern": "governance_profile: self_hosted_bootstrap"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "PROJECT_ENVIRONMENT_ARTIFACT_KIND = \"project_environment\""
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def build_project_environment("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "\"--build-project-environment\""
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_project_environment_surfaces_self_hosted_bootstrap_profile("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_project_environment_surfaces_product_workspace_guardrails("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_main_builds_project_environment_as_standalone_command("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_proposal_0052_project_environment_runtime_is_covered("
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "write_project_environment(environment)"
+      },
+      {
+        "path": "Makefile",
+        "pattern": "project-environment:"
+      },
+      {
+        "path": "docs/project_environment_viewer_contract.md",
+        "pattern": "viewer_projection.environment_badge"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "\"project_environment\""
+      }
+    ]
   }
 ]
