@@ -2534,5 +2534,65 @@
         "pattern": "\"project_environment\""
       }
     ]
+  },
+  {
+    "proposal_id": "0053",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "tools/project_environment_policy.json",
+      "tools/supervisor.py",
+      "tests/test_supervisor.py",
+      "docs/project_environment_viewer_contract.md"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/project_environment_policy.json",
+        "pattern": "\"enforcement_contract\""
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def project_environment_enforcement_contract("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "\"governance_enforcement\": governance_enforcement"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def apply_project_workspace_next_move_filter("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def authorize_project_workspace_target("
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_project_environment_surfaces_product_workspace_guardrails("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_project_workspace_next_move_filter_blocks_self_evolution("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_product_workspace_target_authorization_blocks_core_mutation("
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/project_environment_viewer_contract.md",
+        "pattern": "viewer_projection.enforcement_summary"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "\"enforcement_summary\":"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "\"blocked_moves\":"
+      }
+    ]
   }
 ]
