@@ -21817,6 +21817,38 @@ def test_product_workspace_target_authorization_blocks_core_mutation(
     assert "specgraph_core" in authorization["forbidden_target_domains"]
 
 
+def test_product_workspace_target_authorization_blocks_core_when_project_id_defaults_to_specgraph(
+    supervisor_module: object,
+) -> None:
+    environment = fake_product_workspace_environment(supervisor_module)
+    environment["project"]["project_id"] = "specgraph"
+
+    authorization = supervisor_module.authorize_project_workspace_target(
+        target_spec_id="SG-SPEC-0001",
+        target_paths=["specs/nodes/SG-SPEC-0001.yaml"],
+        project_environment=environment,
+    )
+
+    assert authorization["authorized"] is False
+    assert authorization["target_domain"] == "specgraph_core"
+    assert authorization["blocked_by"] == ["blocked_by_governance_profile"]
+
+
+def test_product_workspace_target_authorization_blocks_glob_paths_under_forbidden_roots(
+    supervisor_module: object,
+) -> None:
+    authorization = supervisor_module.authorize_project_workspace_target(
+        target_spec_id="PROJECT-SPEC-0001",
+        target_paths=["*/*.py"],
+        project_environment=fake_product_workspace_environment(supervisor_module),
+    )
+
+    assert authorization["authorized"] is False
+    assert authorization["target_domain"] == "project_graph"
+    assert authorization["blocked_paths"] == ["*/*.py"]
+    assert authorization["blocked_by"] == ["blocked_by_forbidden_mutation_root"]
+
+
 def test_main_blocks_product_workspace_core_target_before_executor(
     supervisor_module: object,
     repo_fixture: Path,
@@ -21837,6 +21869,68 @@ def test_main_blocks_product_workspace_core_target_before_executor(
     exit_code = supervisor_module.main(
         target_spec="SG-SPEC-0001",
         executor=forbidden_executor,
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 1
+    assert "target blocked by project governance" in captured.err
+    assert "blocked_by_governance_profile" in captured.err
+
+
+def test_main_blocks_product_workspace_split_proposal_target_before_executor(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    _ = repo_fixture
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_project_environment",
+        lambda: fake_product_workspace_environment(supervisor_module),
+    )
+
+    def forbidden_split_processor(**_kwargs: object) -> tuple[int, object]:
+        raise AssertionError("split proposal processor must not run for blocked targets")
+
+    monkeypatch.setattr(
+        supervisor_module,
+        "_process_split_refactor_proposal",
+        forbidden_split_processor,
+    )
+
+    exit_code = supervisor_module.main(
+        target_spec="SG-SPEC-0001",
+        split_proposal=True,
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 1
+    assert "target blocked by project governance" in captured.err
+    assert "blocked_by_governance_profile" in captured.err
+
+
+def test_main_blocks_product_workspace_apply_split_target_before_executor(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    _ = repo_fixture
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_project_environment",
+        lambda: fake_product_workspace_environment(supervisor_module),
+    )
+
+    def forbidden_apply_split(**_kwargs: object) -> int:
+        raise AssertionError("apply split must not run for blocked targets")
+
+    monkeypatch.setattr(supervisor_module, "_apply_split_proposal", forbidden_apply_split)
+
+    exit_code = supervisor_module.main(
+        target_spec="SG-SPEC-0001",
+        apply_split_proposal=True,
     )
 
     captured = capsys.readouterr()

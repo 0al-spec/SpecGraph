@@ -30635,6 +30635,32 @@ def project_workspace_path_matches_root(path_text: str, root_text: str) -> bool:
     return path == root or path.startswith(root.rstrip("/") + "/")
 
 
+def project_workspace_path_has_glob(path_text: str) -> bool:
+    return any(marker in str(path_text) for marker in ("*", "?", "["))
+
+
+def project_workspace_path_pattern_may_match_root(path_text: str, root_text: str) -> bool:
+    path = str(path_text).strip()
+    root = str(root_text).strip()
+    if not path or not root:
+        return False
+    if not project_workspace_path_has_glob(path):
+        return project_workspace_path_matches_root(path, root)
+
+    literal_parts: list[str] = []
+    for part in PurePosixPath(path).parts:
+        if project_workspace_path_has_glob(part):
+            break
+        literal_parts.append(part)
+    literal_prefix = "/".join(literal_parts).strip("/")
+    if not literal_prefix:
+        return True
+    return project_workspace_path_matches_root(
+        literal_prefix,
+        root,
+    ) or project_workspace_path_matches_root(root, literal_prefix)
+
+
 def authorize_project_workspace_target(
     *,
     target_spec_id: str,
@@ -30663,16 +30689,16 @@ def authorize_project_workspace_target(
     blocked_paths = sorted(
         path
         for path in normalized_paths
-        if any(project_workspace_path_matches_root(path, root) for root in forbidden_roots)
+        if any(
+            project_workspace_path_pattern_may_match_root(path, root) for root in forbidden_roots
+        )
     )
 
     target_domain = "project_graph"
     if governance_profile == "unknown_profile_fail_closed":
         target_domain = "unknown_profile"
-    elif (
-        governance_profile == "product_workspace"
-        and project_id != "specgraph"
-        and str(target_spec_id).strip().startswith("SG-SPEC-")
+    elif governance_profile == "product_workspace" and str(target_spec_id).strip().startswith(
+        "SG-SPEC-"
     ):
         target_domain = "specgraph_core"
 
@@ -30696,6 +30722,28 @@ def authorize_project_workspace_target(
         "forbidden_target_domains": sorted(forbidden_domains),
         "forbidden_mutation_roots": forbidden_roots,
     }
+
+
+def project_workspace_target_authorization_for_node(
+    node: SpecNode,
+    *,
+    project_environment: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    return authorize_project_workspace_target(
+        target_spec_id=node.id,
+        target_paths=effective_allowed_paths_for_run(node),
+        project_environment=project_environment or build_project_environment(),
+    )
+
+
+def print_project_workspace_target_authorization_error(
+    target_authorization: dict[str, Any],
+) -> None:
+    print(
+        "target blocked by project governance: "
+        + json.dumps(target_authorization, ensure_ascii=False, sort_keys=True),
+        file=sys.stderr,
+    )
 
 
 def build_graph_next_moves(
@@ -39556,6 +39604,10 @@ def main(
         if node is None:
             print(f"Spec not found: {target_spec}", file=sys.stderr)
             return 1
+        target_authorization = project_workspace_target_authorization_for_node(node)
+        if not target_authorization["authorized"]:
+            print_project_workspace_target_authorization_error(target_authorization)
+            return 1
         eligibility_errors = validate_split_refactor_target(node)
         if eligibility_errors:
             for error in eligibility_errors:
@@ -39644,6 +39696,11 @@ def main(
             print(f"Spec not found: {target_spec}", file=sys.stderr)
             return 1
 
+        target_authorization = project_workspace_target_authorization_for_node(node)
+        if not target_authorization["authorized"]:
+            print_project_workspace_target_authorization_error(target_authorization)
+            return 1
+
         print(f"Selected spec node: {node.id} — {node.title}")
         return _apply_split_proposal(node=node, specs=specs)
 
@@ -39657,18 +39714,9 @@ def main(
             print(f"Explicit target is not a spec node: {target_spec}", file=sys.stderr)
             return 1
 
-        project_environment = build_project_environment()
-        target_authorization = authorize_project_workspace_target(
-            target_spec_id=node.id,
-            target_paths=effective_allowed_paths_for_run(node),
-            project_environment=project_environment,
-        )
+        target_authorization = project_workspace_target_authorization_for_node(node)
         if not target_authorization["authorized"]:
-            print(
-                "target blocked by project governance: "
-                + json.dumps(target_authorization, ensure_ascii=False, sort_keys=True),
-                file=sys.stderr,
-            )
+            print_project_workspace_target_authorization_error(target_authorization)
             return 1
 
         selected_by_rule = {
