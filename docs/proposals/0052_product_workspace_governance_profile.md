@@ -2,7 +2,7 @@
 
 ## Status
 
-Draft proposal
+Implemented
 
 ## Source Material
 
@@ -254,6 +254,21 @@ It also complements:
 - Multi-Service SpecGraph Factory Architecture, which defines service
   boundaries.
 
+## Runtime Scope
+
+The first runtime slice materializes the profile as a read-only project
+environment surface:
+
+- `specgraph.project.yaml`;
+- `tools/project_environment_policy.json`;
+- `runs/project_environment.json`;
+- `make project-environment`;
+- `docs/project_environment_viewer_contract.md`.
+
+This establishes observable profile identity and viewer contract. Deeper
+enforcement hooks for next-move filtering, allowed path checks, and upstream
+export flows remain future runtime follow-ups.
+
 ## Acceptance Criteria
 
 - The proposal distinguishes `self_hosted_bootstrap` from `product_workspace`.
@@ -262,5 +277,5 @@ It also complements:
   diagnostics, evidence, implementation work, and retrospectives.
 - Multi-project deployment requires separate project identity, workspace roots,
   artifact roots, and viewer data sources.
-- Runtime follow-up is explicitly proposal-first: this document does not itself
-  implement the profile.
+- Runtime follow-up is explicitly proposal-first and starts with a read-only
+  environment artifact before deeper enforcement hooks.

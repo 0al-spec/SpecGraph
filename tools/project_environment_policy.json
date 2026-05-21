@@ -1,0 +1,86 @@
+{
+  "artifact_kind": "project_environment_policy",
+  "schema_version": 1,
+  "version": "2026-05-21",
+  "proposal_id": "0052",
+  "default_project_id": "specgraph",
+  "default_profile_id": "self_hosted_bootstrap",
+  "governance_profiles": [
+    {
+      "profile_id": "self_hosted_bootstrap",
+      "label": "Self-hosted bootstrap",
+      "core_locked": false,
+      "self_evolution_enabled": true,
+      "project_graph_writable": true,
+      "ordinary_core_mutation_policy": "proposal_first_pull_request",
+      "upstream_export_required": false,
+      "allowed_supervisor_focus": [
+        "specgraph_core",
+        "project_graph",
+        "runtime_tooling",
+        "policy_feedback"
+      ],
+      "forbidden_mutation_roots": []
+    },
+    {
+      "profile_id": "product_workspace",
+      "label": "Product workspace",
+      "core_locked": true,
+      "self_evolution_enabled": false,
+      "project_graph_writable": true,
+      "ordinary_core_mutation_policy": "locked",
+      "upstream_export_required": true,
+      "allowed_supervisor_focus": [
+        "project_graph",
+        "project_proposals",
+        "project_retrospectives",
+        "implementation_work"
+      ],
+      "forbidden_mutation_roots": [
+        "tools/",
+        "tests/",
+        ".github/",
+        "AGENTS.md",
+        "CONSTITUTION.md"
+      ]
+    }
+  ],
+  "workspace_contract": {
+    "config_path": "specgraph.project.yaml",
+    "required_fields": [
+      "specs_root",
+      "proposals_root",
+      "runs_root",
+      "publish_root"
+    ],
+    "path_policy": "repo_relative_no_parent_traversal"
+  },
+  "viewer_contract": {
+    "artifact_path": "runs/project_environment.json",
+    "compact_badge_fields": [
+      "mode_label",
+      "project_id",
+      "core_state",
+      "self_evolution",
+      "project_graph"
+    ],
+    "must_not_infer_from": [
+      "repository_name",
+      "url_shape",
+      "local_filesystem_path"
+    ]
+  },
+  "path_safety": {
+    "reject_absolute_paths": true,
+    "reject_parent_traversal": true,
+    "reject_home_expansion": true,
+    "reject_windows_drive_or_uri_colon": true
+  },
+  "non_goals": [
+    "multi_tenant_auth",
+    "billing",
+    "docker_deployment",
+    "workspace_creation_wizard",
+    "full_policy_enforcement"
+  ]
+}

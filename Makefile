@@ -39,6 +39,7 @@ help:
 		'  make supervisor-evidence-packet SUPERVISOR_RUN_PATH=<run-id-or-path>' \
 		'  make factory-architecture     Refresh multi-service factory architecture index' \
 		'  make swift-typed-tooling      Refresh Swift typed tooling lane index' \
+		'  make project-environment      Refresh project environment governance profile JSON' \
 		'  make review-feedback          Refresh review feedback index' \
 		'  make publish-bundle           Build static specs/ + runs/ publish bundle' \
 		'  make test                     Run full Python test suite quietly' \
@@ -166,6 +167,10 @@ factory-architecture:
 .PHONY: swift-typed-tooling
 swift-typed-tooling:
 	@$(PYTHON) $(SUPERVISOR) --build-swift-typed-tooling-index
+
+.PHONY: project-environment
+project-environment:
+	@$(PYTHON) $(SUPERVISOR) --build-project-environment
 
 .PHONY: review-feedback
 review-feedback:
