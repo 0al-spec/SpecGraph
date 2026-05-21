@@ -25434,6 +25434,11 @@ def test_build_proposal_promotion_index_reports_traceability_gaps(
         ("0049", ["docs/archive/proposal_sources/0049_multi_service_factory_architecture.md"]),
         ("0050", ["docs/archive/proposal_sources/0050_swift_typed_tooling_lane.md"]),
         ("0051", ["docs/archive/proposal_sources/0051_supervisor_prompt_overlay_profiles.md"]),
+        ("0052", ["docs/archive/proposal_sources/0052_product_workspace_governance_profile.md"]),
+        (
+            "0053",
+            ["docs/archive/proposal_sources/0053_product_workspace_stable_mode_enforcement.md"],
+        ),
     ],
 )
 def test_live_proposal_promotion_trace_is_bounded(

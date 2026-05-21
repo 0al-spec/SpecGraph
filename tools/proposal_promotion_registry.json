@@ -674,5 +674,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0053",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0053_product_workspace_stable_mode_enforcement.md"
+    ],
+    "motivating_concern": "product workspace mode is visible but not yet enforced in supervisor move selection or mutation authority",
+    "normalized_title": "Product Workspace Stable Mode Enforcement",
+    "bounded_scope": "Define product workspace stable-mode enforcement slices for policy contract tightening, next-move filtering, target/path enforcement, viewer diagnostics, client instance guidance, and smoke coverage without implementing hosted multi-tenancy or automatic upstream export.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]
