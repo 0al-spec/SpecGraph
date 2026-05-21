@@ -9951,15 +9951,19 @@ def project_environment_enforcement_contract(profile: dict[str, Any]) -> dict[st
     raw_contract = profile.get("enforcement_contract", {})
     contract = raw_contract if isinstance(raw_contract, dict) else {}
     allowed_mutation_roots = project_environment_string_list(contract.get("allowed_mutation_roots"))
-    forbidden_mutation_roots = project_environment_string_list(
-        contract.get("forbidden_mutation_roots")
-    )
-    if not forbidden_mutation_roots:
+    if "forbidden_mutation_roots" in contract:
+        forbidden_mutation_roots = project_environment_string_list(
+            contract.get("forbidden_mutation_roots")
+        )
+    else:
         forbidden_mutation_roots = project_environment_string_list(
             profile.get("forbidden_mutation_roots")
         )
-    allowed_target_domains = project_environment_string_list(contract.get("allowed_target_domains"))
-    if not allowed_target_domains:
+    if "allowed_target_domains" in contract:
+        allowed_target_domains = project_environment_string_list(
+            contract.get("allowed_target_domains")
+        )
+    else:
         allowed_target_domains = project_environment_string_list(
             profile.get("allowed_supervisor_focus")
         )
@@ -10115,7 +10119,8 @@ def build_project_environment(
     project_id = str(config.get("project_id", source_policy.get("default_project_id", ""))).strip()
     display_name = str(config.get("display_name", project_id)).strip() or project_id
     core_locked = bool(active_profile.get("core_locked", False))
-    self_evolution_enabled = bool(active_profile.get("self_evolution_enabled", False))
+    governance_enforcement = project_environment_enforcement_contract(active_profile)
+    self_evolution_enabled = governance_enforcement["self_evolution"] == "enabled"
     project_graph_writable = bool(active_profile.get("project_graph_writable", True))
     mode_label = (
         str(active_profile.get("label", effective_profile_id)).strip() or effective_profile_id
@@ -10124,7 +10129,6 @@ def build_project_environment(
     core_state = "locked" if core_locked else str(engine.get("mutation_policy", "")).strip()
     if not core_state:
         core_state = "proposal_first"
-    governance_enforcement = project_environment_enforcement_contract(active_profile)
     supervisor_authority = {
         "allow_project_spec_refinement": project_environment_bool_value(
             supervisor.get("allow_project_spec_refinement"),

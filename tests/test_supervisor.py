@@ -22852,6 +22852,54 @@ def test_build_project_environment_surfaces_product_workspace_guardrails(
     )
 
 
+def test_project_environment_contract_respects_explicit_empty_overrides(
+    supervisor_module: object,
+    tmp_path: Path,
+) -> None:
+    config_path = tmp_path / "specgraph.project.yaml"
+    config_path.write_text(
+        json.dumps(
+            {
+                "artifact_kind": "specgraph_project_config",
+                "schema_version": 1,
+                "project_id": "empty-contract",
+                "governance_profile": "explicit_empty",
+            }
+        ),
+        encoding="utf-8",
+    )
+    policy = {
+        "default_profile_id": "explicit_empty",
+        "default_project_id": "empty-contract",
+        "workspace_contract": {"required_fields": []},
+        "governance_profiles": [
+            {
+                "profile_id": "explicit_empty",
+                "label": "Explicit empty",
+                "self_evolution_enabled": True,
+                "allowed_supervisor_focus": ["specgraph_core"],
+                "forbidden_mutation_roots": ["tools/"],
+                "enforcement_contract": {
+                    "allowed_target_domains": [],
+                    "forbidden_mutation_roots": [],
+                    "self_evolution": "disabled",
+                    "blocked_move_status": "blocked_by_contract",
+                },
+            }
+        ],
+    }
+
+    environment = supervisor_module.build_project_environment(
+        policy=policy,
+        config_path=config_path,
+    )
+
+    assert environment["governance_enforcement"]["allowed_target_domains"] == []
+    assert environment["governance_enforcement"]["forbidden_mutation_roots"] == []
+    assert environment["summary"]["self_evolution_enabled"] is False
+    assert environment["viewer_projection"]["environment_badge"]["self_evolution"] == "disabled"
+
+
 def test_build_project_environment_rejects_unsafe_workspace_paths(
     supervisor_module: object,
     tmp_path: Path,
