@@ -30526,12 +30526,121 @@ def graph_next_moves_from_runtime_backlog(
     )
 
 
+def graph_next_move_target_domain(move: dict[str, Any]) -> str:
+    kind = str(move.get("kind", "")).strip()
+    subject = move.get("subject", {})
+    subject = subject if isinstance(subject, dict) else {}
+    source_artifact = str(subject.get("source_artifact", "")).strip()
+    source_artifacts = [
+        str(item).strip() for item in move.get("source_artifacts", []) if str(item).strip()
+    ]
+    bounded_scope = [
+        str(item).strip() for item in move.get("bounded_scope", []) if str(item).strip()
+    ]
+    subject_id = str(subject.get("subject_id", "")).strip()
+
+    if kind == "realize_proposal_runtime_slice" or source_artifact == "proposal_runtime_index":
+        return "specgraph_core"
+    if source_artifact == "review_feedback_index" or any(
+        item.endswith("review_feedback_index.json") for item in source_artifacts
+    ):
+        return "policy_feedback"
+    if kind == "project_branch_rewrite_preview" and any(
+        item.startswith("SG-SPEC-") for item in bounded_scope
+    ):
+        return "specgraph_core"
+    if str(subject.get("subject_kind", "")).strip() == "spec":
+        if subject_id.startswith("SG-SPEC-") or any(
+            item.startswith("SG-SPEC-") for item in bounded_scope
+        ):
+            return "specgraph_core"
+        return "project_graph"
+    return ""
+
+
+def apply_project_workspace_next_move_filter(
+    moves: list[dict[str, Any]],
+    *,
+    project_environment: dict[str, Any],
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[str, Any]]:
+    project = project_environment.get("project", {})
+    if not isinstance(project, dict):
+        project = {}
+    governance_profile = str(project.get("governance_profile", "")).strip()
+    enforcement = project_environment.get("governance_enforcement", {})
+    if not isinstance(enforcement, dict):
+        enforcement = {}
+    allowed_domains = {
+        str(item).strip()
+        for item in enforcement.get("allowed_target_domains", [])
+        if str(item).strip()
+    }
+    forbidden_domains = {
+        str(item).strip()
+        for item in enforcement.get("forbidden_target_domains", [])
+        if str(item).strip()
+    }
+    blocked_status = (
+        str(enforcement.get("blocked_move_status", "blocked_by_governance_profile")).strip()
+        or "blocked_by_governance_profile"
+    )
+
+    eligible: list[dict[str, Any]] = []
+    blocked: list[dict[str, Any]] = []
+    for move in moves:
+        target_domain = graph_next_move_target_domain(move)
+        blocked_reason = ""
+        if governance_profile == "unknown_profile_fail_closed":
+            blocked_reason = blocked_status
+        elif target_domain in forbidden_domains:
+            blocked_reason = blocked_status
+        elif (
+            governance_profile == "product_workspace"
+            and target_domain
+            and target_domain not in allowed_domains
+        ):
+            blocked_reason = blocked_status
+
+        if blocked_reason:
+            blocked_move = copy.deepcopy(move)
+            blocked_by = [
+                str(item).strip()
+                for item in blocked_move.get("blocked_by", [])
+                if str(item).strip()
+            ]
+            blocked_by.append(blocked_reason)
+            blocked_move["blocked_by"] = blocked_by
+            blocked_move["governance_block"] = {
+                "governance_profile": governance_profile,
+                "target_domain": target_domain,
+                "blocked_move_status": blocked_reason,
+                "allowed_target_domains": sorted(allowed_domains),
+                "forbidden_target_domains": sorted(forbidden_domains),
+            }
+            blocked.append(blocked_move)
+        else:
+            eligible.append(move)
+
+    return (
+        eligible,
+        blocked,
+        {
+            "governance_profile": governance_profile,
+            "allowed_target_domains": sorted(allowed_domains),
+            "forbidden_target_domains": sorted(forbidden_domains),
+            "blocked_move_count": len(blocked),
+            "eligible_move_count": len(eligible),
+        },
+    )
+
+
 def build_graph_next_moves(
     specs: list[SpecNode],
     *,
     backlog_projection: dict[str, Any] | None = None,
     proposal_runtime_index: dict[str, Any] | None = None,
     proposal_lane_overlay: dict[str, Any] | None = None,
+    project_environment: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     mode_contract = validate_graph_next_moves_mode_contract()
     if backlog_projection is None:
@@ -30540,6 +30649,8 @@ def build_graph_next_moves(
         proposal_runtime_index = build_proposal_runtime_index()
     if proposal_lane_overlay is None:
         proposal_lane_overlay = build_proposal_lane_overlay()
+    if project_environment is None:
+        project_environment = build_project_environment()
     branch_preview, branch_summary = load_current_branch_rewrite_preview_summary()
 
     alternatives: list[dict[str, Any]] = []
@@ -30616,6 +30727,40 @@ def build_graph_next_moves(
             success_condition="No immediate action required.",
             review_required=False,
         )
+
+    candidate_moves = [recommended_move, *alternatives]
+    eligible_moves, governance_blocked_moves, governance_filter = (
+        apply_project_workspace_next_move_filter(
+            candidate_moves,
+            project_environment=project_environment,
+        )
+    )
+    if governance_blocked_moves:
+        blocked_moves.extend(governance_blocked_moves)
+        if eligible_moves:
+            recommended_move = eligible_moves[0]
+            alternatives = eligible_moves[1:]
+        else:
+            current_scene = "steady_state"
+            scene_confidence = "medium"
+            recommended_move = graph_next_move_record(
+                move_id="next_move::governance_filtered::none",
+                kind=str(graph_next_moves_policy_lookup("move_contract.default_done_move_kind")),
+                title="No governance-eligible graph move detected",
+                reason=(
+                    "Candidate moves exist, but the active project governance profile blocks "
+                    "them from ordinary recommendation."
+                ),
+                next_gap="none",
+                source_artifacts=[],
+                command_hint=(
+                    "Inspect blocked_moves and either choose a project-scoped action or export "
+                    "the blocked concern upstream by explicit human decision."
+                ),
+                success_condition="A governance-eligible next move is selected.",
+                review_required=False,
+            )
+            alternatives = []
 
     if branch_summary.get("status") == "missing":
         blocked_moves.append(
@@ -30694,6 +30839,19 @@ def build_graph_next_moves(
                     if isinstance(proposal_lane_overlay.get("named_filters"), dict)
                     else []
                 ),
+            },
+            "project_environment": {
+                "artifact_path": project_environment_path().relative_to(ROOT).as_posix(),
+                "generated_at": project_environment.get("generated_at"),
+                "project_id": project_environment.get("project", {}).get("project_id")
+                if isinstance(project_environment.get("project"), dict)
+                else "",
+                "governance_profile": project_environment.get("project", {}).get(
+                    "governance_profile"
+                )
+                if isinstance(project_environment.get("project"), dict)
+                else "",
+                "governance_filter": governance_filter,
             },
             "split_readiness_verdicts": copy.deepcopy(split_readiness_verdicts),
             "split_readiness_reviewer_actions": copy.deepcopy(split_readiness_reviewer_actions),
