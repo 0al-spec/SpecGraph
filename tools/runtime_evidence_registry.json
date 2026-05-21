@@ -2706,7 +2706,7 @@
     "adoption_markers": [
       {
         "path": "runs/graph_health_trends.json",
-        "pattern": "\"currently_active\""
+        "pattern": "\"history_window\""
       },
       {
         "path": "runs/graph_health_overlay.json",

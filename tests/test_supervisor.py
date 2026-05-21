@@ -8994,7 +8994,7 @@ def test_build_evidence_plane_index_reports_registry_backed_chain_statuses(
                     "adoption_markers": [
                         {
                             "path": "runs/graph_health_trends.json",
-                            "pattern": '"currently_active"',
+                            "pattern": '"history_window"',
                         }
                     ],
                 },
@@ -9075,8 +9075,8 @@ def test_build_evidence_plane_index_reports_registry_backed_chain_statuses(
         json.dumps(
             {
                 "artifact_kind": "graph_health_trends",
+                "history_window": {"observed_run_count": 0},
                 "viewer_projection": {"recurring_signal_groups": {}},
-                "currently_active": True,
             }
         ),
         encoding="utf-8",
