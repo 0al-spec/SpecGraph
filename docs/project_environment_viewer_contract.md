@@ -29,6 +29,16 @@ filesystem paths.
       "self_evolution": "enabled",
       "project_graph": "writable",
       "status": "valid"
+    },
+    "enforcement_summary": {
+      "allowed_target_domains": ["specgraph_core", "project_graph"],
+      "forbidden_target_domains": [],
+      "allowed_mutation_roots": ["specs/", "docs/proposals/", "runs/"],
+      "forbidden_mutation_roots": [],
+      "default_next_move_behavior": "allow_profile_eligible_moves",
+      "blocked_move_status": "not_applicable",
+      "review_feedback_routing": "specgraph_core_allowed",
+      "upstream_export_mode": "not_required"
     }
   },
   "summary": {
@@ -50,6 +60,12 @@ filesystem paths.
   disabled.
 - If `governance_profile` is `unknown_profile_fail_closed`, display a warning
   and show `requested_governance_profile` in details. Treat the core as locked.
+- Use `viewer_projection.enforcement_summary` for operator details. It is the
+  viewer-facing contract for allowed/forbidden target domains, mutation roots,
+  feedback routing, and default next-move behavior.
+- In `product_workspace`, display
+  `blocked_move_status=blocked_by_governance_profile` as policy enforcement,
+  not as a runtime crash.
 - Do not show absolute local paths; all workspace paths are expected to be
   repo-relative.
 

@@ -20,7 +20,35 @@
         "runtime_tooling",
         "policy_feedback"
       ],
-      "forbidden_mutation_roots": []
+      "forbidden_mutation_roots": [],
+      "enforcement_contract": {
+        "allowed_mutation_roots": [
+          "specs/",
+          "docs/proposals/",
+          "docs/archive/proposal_sources/",
+          "docs/evidence/",
+          "runs/",
+          "tools/",
+          "tests/",
+          ".github/",
+          "AGENTS.md",
+          "CONSTITUTION.md"
+        ],
+        "forbidden_mutation_roots": [],
+        "allowed_target_domains": [
+          "specgraph_core",
+          "project_graph",
+          "runtime_tooling",
+          "policy_feedback",
+          "self_evolution"
+        ],
+        "forbidden_target_domains": [],
+        "self_evolution": "enabled",
+        "review_feedback_routing": "specgraph_core_allowed",
+        "default_next_move_behavior": "allow_profile_eligible_moves",
+        "blocked_move_status": "not_applicable",
+        "upstream_export_mode": "not_required"
+      }
     },
     {
       "profile_id": "product_workspace",
@@ -42,7 +70,42 @@
         ".github/",
         "AGENTS.md",
         "CONSTITUTION.md"
-      ]
+      ],
+      "enforcement_contract": {
+        "allowed_mutation_roots": [
+          "specs/",
+          "docs/proposals/",
+          "docs/archive/proposal_sources/",
+          "docs/evidence/",
+          "runs/"
+        ],
+        "forbidden_mutation_roots": [
+          "tools/",
+          "tests/",
+          ".github/",
+          "AGENTS.md",
+          "CONSTITUTION.md"
+        ],
+        "allowed_target_domains": [
+          "project_graph",
+          "project_proposals",
+          "project_retrospectives",
+          "implementation_work",
+          "project_evidence",
+          "project_trace"
+        ],
+        "forbidden_target_domains": [
+          "specgraph_core",
+          "runtime_tooling",
+          "policy_feedback",
+          "self_evolution"
+        ],
+        "self_evolution": "disabled",
+        "review_feedback_routing": "project_local_only",
+        "default_next_move_behavior": "filter_core_and_self_evolution",
+        "blocked_move_status": "blocked_by_governance_profile",
+        "upstream_export_mode": "human_explicit_only"
+      }
     }
   ],
   "workspace_contract": {

@@ -9886,6 +9886,29 @@ def project_environment_fail_closed_profile(requested_profile_id: str) -> dict[s
             "AGENTS.md",
             "CONSTITUTION.md",
         ],
+        "enforcement_contract": {
+            "allowed_mutation_roots": [],
+            "forbidden_mutation_roots": [
+                "tools/",
+                "tests/",
+                ".github/",
+                "AGENTS.md",
+                "CONSTITUTION.md",
+            ],
+            "allowed_target_domains": [],
+            "forbidden_target_domains": [
+                "specgraph_core",
+                "project_graph",
+                "runtime_tooling",
+                "policy_feedback",
+                "self_evolution",
+            ],
+            "self_evolution": "disabled",
+            "review_feedback_routing": "blocked_until_profile_repaired",
+            "default_next_move_behavior": "block_all_profile_sensitive_moves",
+            "blocked_move_status": "blocked_by_unknown_governance_profile",
+            "upstream_export_mode": "disabled_until_profile_repaired",
+        },
     }
 
 
@@ -9916,6 +9939,64 @@ def project_environment_bool_value(
         }
     )
     return default
+
+
+def project_environment_string_list(value: Any) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    return [str(item).strip() for item in value if str(item).strip()]
+
+
+def project_environment_enforcement_contract(profile: dict[str, Any]) -> dict[str, Any]:
+    raw_contract = profile.get("enforcement_contract", {})
+    contract = raw_contract if isinstance(raw_contract, dict) else {}
+    allowed_mutation_roots = project_environment_string_list(contract.get("allowed_mutation_roots"))
+    if "forbidden_mutation_roots" in contract:
+        forbidden_mutation_roots = project_environment_string_list(
+            contract.get("forbidden_mutation_roots")
+        )
+    else:
+        forbidden_mutation_roots = project_environment_string_list(
+            profile.get("forbidden_mutation_roots")
+        )
+    if "allowed_target_domains" in contract:
+        allowed_target_domains = project_environment_string_list(
+            contract.get("allowed_target_domains")
+        )
+    else:
+        allowed_target_domains = project_environment_string_list(
+            profile.get("allowed_supervisor_focus")
+        )
+
+    return {
+        "allowed_mutation_roots": allowed_mutation_roots,
+        "forbidden_mutation_roots": forbidden_mutation_roots,
+        "allowed_target_domains": allowed_target_domains,
+        "forbidden_target_domains": project_environment_string_list(
+            contract.get("forbidden_target_domains")
+        ),
+        "self_evolution": str(
+            contract.get(
+                "self_evolution",
+                "enabled" if bool(profile.get("self_evolution_enabled", False)) else "disabled",
+            )
+        ).strip()
+        or "disabled",
+        "review_feedback_routing": str(
+            contract.get("review_feedback_routing", "unspecified")
+        ).strip()
+        or "unspecified",
+        "default_next_move_behavior": str(
+            contract.get("default_next_move_behavior", "allow_profile_eligible_moves")
+        ).strip()
+        or "allow_profile_eligible_moves",
+        "blocked_move_status": str(
+            contract.get("blocked_move_status", "blocked_by_governance_profile")
+        ).strip()
+        or "blocked_by_governance_profile",
+        "upstream_export_mode": str(contract.get("upstream_export_mode", "unspecified")).strip()
+        or "unspecified",
+    }
 
 
 def build_project_environment(
@@ -10038,7 +10119,8 @@ def build_project_environment(
     project_id = str(config.get("project_id", source_policy.get("default_project_id", ""))).strip()
     display_name = str(config.get("display_name", project_id)).strip() or project_id
     core_locked = bool(active_profile.get("core_locked", False))
-    self_evolution_enabled = bool(active_profile.get("self_evolution_enabled", False))
+    governance_enforcement = project_environment_enforcement_contract(active_profile)
+    self_evolution_enabled = governance_enforcement["self_evolution"] == "enabled"
     project_graph_writable = bool(active_profile.get("project_graph_writable", True))
     mode_label = (
         str(active_profile.get("label", effective_profile_id)).strip() or effective_profile_id
@@ -10114,6 +10196,7 @@ def build_project_environment(
         },
         "workspace": normalized_workspace,
         "supervisor_authority": supervisor_authority,
+        "governance_enforcement": governance_enforcement,
         "active_profile": active_profile,
         "validation_findings": validation_findings,
         "viewer_projection": {
@@ -10126,6 +10209,16 @@ def build_project_environment(
                 "self_evolution": self_evolution_label,
                 "project_graph": "writable" if project_graph_writable else "read_only",
                 "status": summary_status,
+            },
+            "enforcement_summary": {
+                "allowed_target_domains": governance_enforcement["allowed_target_domains"],
+                "forbidden_target_domains": governance_enforcement["forbidden_target_domains"],
+                "allowed_mutation_roots": governance_enforcement["allowed_mutation_roots"],
+                "forbidden_mutation_roots": governance_enforcement["forbidden_mutation_roots"],
+                "default_next_move_behavior": governance_enforcement["default_next_move_behavior"],
+                "blocked_move_status": governance_enforcement["blocked_move_status"],
+                "review_feedback_routing": governance_enforcement["review_feedback_routing"],
+                "upstream_export_mode": governance_enforcement["upstream_export_mode"],
             },
             "guardrails": {
                 "core_locked": core_locked,
@@ -10140,6 +10233,8 @@ def build_project_environment(
             "requested_governance_profile": requested_profile_id,
             "core_locked": core_locked,
             "self_evolution_enabled": self_evolution_enabled,
+            "default_next_move_behavior": governance_enforcement["default_next_move_behavior"],
+            "review_feedback_routing": governance_enforcement["review_feedback_routing"],
             "validation_finding_count": len(validation_findings),
             "next_gap": "none" if not validation_findings else validation_findings[0]["next_gap"],
         },

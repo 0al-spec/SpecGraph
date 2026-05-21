@@ -22771,11 +22771,20 @@ def test_build_project_environment_surfaces_self_hosted_bootstrap_profile(
     assert environment["summary"]["core_locked"] is False
     assert environment["summary"]["self_evolution_enabled"] is True
     assert environment["summary"]["next_gap"] == "none"
+    enforcement = environment["governance_enforcement"]
+    assert enforcement["self_evolution"] == "enabled"
+    assert "specgraph_core" in enforcement["allowed_target_domains"]
+    assert enforcement["default_next_move_behavior"] == "allow_profile_eligible_moves"
+    assert enforcement["review_feedback_routing"] == "specgraph_core_allowed"
     badge = environment["viewer_projection"]["environment_badge"]
     assert badge["mode_label"] == "Self-hosted bootstrap"
     assert badge["core_state"] == "proposal_first"
     assert badge["self_evolution"] == "enabled"
     assert badge["project_graph"] == "writable"
+    assert (
+        environment["viewer_projection"]["enforcement_summary"]["blocked_move_status"]
+        == "not_applicable"
+    )
 
 
 def test_build_project_environment_surfaces_product_workspace_guardrails(
@@ -22825,10 +22834,70 @@ def test_build_project_environment_surfaces_product_workspace_guardrails(
     assert environment["supervisor_authority"]["allow_core_tooling_mutation"] is False
     assert environment["supervisor_authority"]["allow_self_evolution_proposals"] is False
     assert "tools/" in environment["active_profile"]["forbidden_mutation_roots"]
+    enforcement = environment["governance_enforcement"]
+    assert "project_graph" in enforcement["allowed_target_domains"]
+    assert "specgraph_core" in enforcement["forbidden_target_domains"]
+    assert "tools/" in enforcement["forbidden_mutation_roots"]
+    assert enforcement["default_next_move_behavior"] == "filter_core_and_self_evolution"
+    assert enforcement["blocked_move_status"] == "blocked_by_governance_profile"
+    assert enforcement["review_feedback_routing"] == "project_local_only"
+    assert enforcement["upstream_export_mode"] == "human_explicit_only"
     badge = environment["viewer_projection"]["environment_badge"]
     assert badge["mode_label"] == "Product workspace"
     assert badge["core_state"] == "locked"
     assert badge["self_evolution"] == "disabled"
+    assert (
+        environment["viewer_projection"]["enforcement_summary"]["default_next_move_behavior"]
+        == "filter_core_and_self_evolution"
+    )
+
+
+def test_project_environment_contract_respects_explicit_empty_overrides(
+    supervisor_module: object,
+    tmp_path: Path,
+) -> None:
+    config_path = tmp_path / "specgraph.project.yaml"
+    config_path.write_text(
+        json.dumps(
+            {
+                "artifact_kind": "specgraph_project_config",
+                "schema_version": 1,
+                "project_id": "empty-contract",
+                "governance_profile": "explicit_empty",
+            }
+        ),
+        encoding="utf-8",
+    )
+    policy = {
+        "default_profile_id": "explicit_empty",
+        "default_project_id": "empty-contract",
+        "workspace_contract": {"required_fields": []},
+        "governance_profiles": [
+            {
+                "profile_id": "explicit_empty",
+                "label": "Explicit empty",
+                "self_evolution_enabled": True,
+                "allowed_supervisor_focus": ["specgraph_core"],
+                "forbidden_mutation_roots": ["tools/"],
+                "enforcement_contract": {
+                    "allowed_target_domains": [],
+                    "forbidden_mutation_roots": [],
+                    "self_evolution": "disabled",
+                    "blocked_move_status": "blocked_by_contract",
+                },
+            }
+        ],
+    }
+
+    environment = supervisor_module.build_project_environment(
+        policy=policy,
+        config_path=config_path,
+    )
+
+    assert environment["governance_enforcement"]["allowed_target_domains"] == []
+    assert environment["governance_enforcement"]["forbidden_mutation_roots"] == []
+    assert environment["summary"]["self_evolution_enabled"] is False
+    assert environment["viewer_projection"]["environment_badge"]["self_evolution"] == "disabled"
 
 
 def test_build_project_environment_rejects_unsafe_workspace_paths(
@@ -22909,6 +22978,15 @@ def test_build_project_environment_unknown_profile_fails_closed(
     assert environment["summary"]["core_locked"] is True
     assert environment["summary"]["self_evolution_enabled"] is False
     assert environment["viewer_projection"]["environment_badge"]["project_graph"] == "read_only"
+    assert environment["governance_enforcement"]["allowed_target_domains"] == []
+    assert (
+        environment["governance_enforcement"]["default_next_move_behavior"]
+        == "block_all_profile_sensitive_moves"
+    )
+    assert (
+        environment["viewer_projection"]["enforcement_summary"]["blocked_move_status"]
+        == "blocked_by_unknown_governance_profile"
+    )
     assert environment["validation_findings"][0]["finding_id"] == "unknown_governance_profile"
 
 
@@ -25192,6 +25270,26 @@ def test_proposal_0052_project_environment_runtime_is_covered(
     assert entry["observation_coverage"]["status"] == "covered"
     assert entry["observation_coverage"]["missing_markers"] == []
     assert entry["reflective_chain"]["next_gap"] == "none"
+
+
+def test_proposal_0053_policy_contract_runtime_is_partial_until_enforcement_hooks_land(
+    supervisor_module: object,
+) -> None:
+    """Proposal 0053 has policy contract coverage but still needs enforcement hooks."""
+    index = supervisor_module.build_proposal_runtime_index()
+    by_id = {e["proposal_id"]: e for e in index["entries"]}
+
+    assert "0053" in by_id, "Proposal 0053 missing from proposal_runtime_index"
+    entry = by_id["0053"]
+    assert entry["runtime_realization"]["status"] == "partial"
+    assert entry["validation_closure"]["status"] == "partial"
+    assert entry["observation_coverage"]["status"] == "covered"
+    assert entry["reflective_chain"]["next_gap"] == "runtime_realization"
+    missing_runtime_patterns = {
+        marker["pattern"] for marker in entry["runtime_realization"]["missing_markers"]
+    }
+    assert "def apply_project_workspace_next_move_filter(" in missing_runtime_patterns
+    assert "def authorize_project_workspace_target(" in missing_runtime_patterns
 
 
 def test_all_implemented_proposals_have_registry_entries() -> None:
