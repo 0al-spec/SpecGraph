@@ -661,5 +661,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0052",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0052_product_workspace_governance_profile.md"
+    ],
+    "motivating_concern": "external product deployments need stable project-scoped SpecGraph authority rather than self-hosted core evolution",
+    "normalized_title": "Product Workspace Governance Profile",
+    "bounded_scope": "Define product workspace governance as a locked-core profile for customer projects with project-scoped specs, proposals, diagnostics, implementation work, and artifact publishing without implementing runtime enforcement, hosting topology, or multi-tenant account management.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]
