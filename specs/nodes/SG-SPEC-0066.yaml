@@ -2,9 +2,9 @@ id: SG-SPEC-0066
 title: SpecGraph - Aggregate Evidence Projection Semantics
 kind: spec
 created_at: '2026-05-22T20:45:00Z'
-updated_at: '2026-05-22T20:45:00Z'
+updated_at: '2026-05-22T21:52:42Z'
 status: linked
-maturity: 0.7
+maturity: 0.9
 depends_on:
 - SG-SPEC-0017
 - SG-SPEC-0018
@@ -33,6 +33,8 @@ acceptance:
   semantics.
 - Defines unresolved gap routing so projection gaps remain attached to the concrete owning member spec
   unless the gap is specifically about the projection rule itself.
+- Defines aggregate projection disposition semantics so cluster-level summaries can expose complete, partial,
+  missing, or conflicting member evidence without becoming an aggregate acceptance verdict.
 - Keeps telemetry collection, dashboards, formulas, storage schemas, ranking, and runtime implementation
   out of scope for aggregate evidence projection semantics.
 acceptance_evidence:
@@ -51,6 +53,12 @@ acceptance_evidence:
     member spec unless the gap is specifically about the projection rule itself.
   evidence: specification.gap_routing_policy routes member-specific evidence gaps to SG-SPEC-0017, SG-SPEC-0018,
     SG-SPEC-0020, or SG-SPEC-0021 and reserves SG-SPEC-0066 ownership for projection-rule gaps.
+- criterion: Defines aggregate projection disposition semantics so cluster-level summaries can expose
+    complete, partial, missing, or conflicting member evidence without becoming an aggregate acceptance
+    verdict.
+  evidence: specification.summary_disposition_policy defines aggregate_projection_disposition values for
+    complete, partial, missing, conflicting, and projection_rule_gap summaries, and states that those
+    dispositions are review navigation signals rather than aggregate acceptance verdicts.
 - criterion: Keeps telemetry collection, dashboards, formulas, storage schemas, ranking, and runtime implementation
     out of scope for aggregate evidence projection semantics.
   evidence: specification.scope.out excludes telemetry collection, dashboards, formulas, storage schemas,
@@ -87,6 +95,9 @@ specification:
       identifier, missing evidence condition, conflict, or projection-rule gap being summarized.
     projection_rule_gap: An unresolved condition caused by missing or ambiguous aggregate projection semantics
       rather than missing evidence inside a member-owned contract.
+    aggregate_projection_disposition: A derived review-navigation label for the projection as a whole,
+      indicating whether summarized member evidence appears complete, partial, missing, conflicting, or
+      blocked by a projection_rule_gap without deciding member acceptance.
   cluster_contract:
     parent_boundary:
     - SG-SPEC-0066 owns only the derived aggregate projection rule boundary for SG-SPEC-0063 member evidence.
@@ -143,6 +154,22 @@ specification:
     remain rebuildable from member-owned sources.
   - A projection conflict between member evidence and aggregate presentation is resolved by inspecting
     the member-owned evidence first; the projection is corrected or marked as a projection_rule_gap.
+  summary_disposition_policy:
+  - An aggregate_evidence_projection may carry one aggregate_projection_disposition for review navigation
+    across the projected_evidence_item set.
+  - complete means every projected member-owned evidence claim required by the projection rule is represented
+    by source-attributed satisfied evidence.
+  - partial means at least one projected member-owned evidence claim is satisfied while at least one other
+    projected member-owned evidence claim is missing, inconclusive, stale, or otherwise not fully satisfied.
+  - missing means the projection rule identifies required member-owned evidence but no source-attributed
+    member evidence is available for the projected subject.
+  - conflicting means source-attributed member evidence conflicts across one or more projected_evidence_item
+    entries and the conflict must remain traceable to the owning source_member entries.
+  - projection_rule_gap means the aggregate projection rule is missing, ambiguous, or internally inconsistent
+    before member evidence can be summarized honestly.
+  - An aggregate_projection_disposition is a derived review-navigation signal and must not be used as
+    an aggregate acceptance verdict, lifecycle decision, member evidence replacement, ranking score, or
+    automatic gap closure.
   gap_routing_policy:
   - Missing runtime observability evidence routes to SG-SPEC-0017.
   - Missing adoption-layer evidence routes to SG-SPEC-0018.
@@ -154,3 +181,15 @@ specification:
     AEP-0066-2: Every projected evidence item identifies one primary source member.
     AEP-0066-3: Member-specific evidence gaps are routed to the member spec that owns the missing evidence
       semantics.
+    AEP-0066-4: Aggregate projection dispositions remain review-navigation labels and do not decide member
+      acceptance or close member-specific gaps.
+gate_state: none
+proposed_status: null
+proposed_maturity: null
+required_human_action: '-'
+last_gate_run_id: 20260522T214910Z-SG-SPEC-0066-5a0f0151
+last_worktree_path: ''
+last_branch: ''
+last_gate_decision: approve
+last_gate_note: approve aggregate projection disposition semantics after candidate review
+last_gate_at: '2026-05-22T21:52:42.982433+00:00'

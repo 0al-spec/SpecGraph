@@ -3882,6 +3882,10 @@
       {
         "path": "specs/nodes/SG-SPEC-0066.yaml",
         "pattern": "gap_routing_policy"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0066.yaml",
+        "pattern": "summary_disposition_policy"
       }
     ],
     "adoption_markers": [
@@ -3892,6 +3896,10 @@
       {
         "path": "specs/nodes/SG-SPEC-0066.yaml",
         "pattern": "AEP-0066-1"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0066.yaml",
+        "pattern": "AEP-0066-4"
       }
     ],
     "notes": "Aggregate evidence projection evidence is registry-backed by SG-SPEC-0066, the SG-SPEC-0063 cluster boundary, concrete member specs, and live regression coverage. This establishes a derived cluster-level evidence summary contract without claiming telemetry collection, dashboards, formulas, storage schemas, ranking, or runtime implementation."
