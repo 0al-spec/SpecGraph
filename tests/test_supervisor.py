@@ -10051,7 +10051,7 @@ def test_live_sg_spec_0048_evidence_contract_is_chain_complete(
             "SG-SPEC-0063",
             [],
             {
-                "artifact_ref_count": 8,
+                "artifact_ref_count": 9,
                 "runtime_entity_count": 4,
                 "observation_source_count": 3,
                 "outcome_source_count": 3,

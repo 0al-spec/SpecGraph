@@ -167,8 +167,8 @@ specification:
     surfaces.
   - SG-SPEC-0063 must not hide unresolved member gaps; backlog and evidence projections should continue
     to point to the concrete member when the gap is member-specific.
-gate_state: none
-required_human_action: '-'
+gate_state: review_pending
+required_human_action: review graph refactor before merge
 proposed_status: null
 proposed_maturity: null
 last_outcome: done

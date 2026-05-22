@@ -9,6 +9,7 @@ depends_on:
 - SG-SPEC-0017
 - SG-SPEC-0018
 - SG-SPEC-0020
+- SG-SPEC-0021
 relates_to:
 - SG-SPEC-0003
 - SG-SPEC-0007
@@ -80,8 +81,38 @@ specification:
       evidence claim, missing evidence condition, or cross-member evidence relationship.
     source_member: The concrete SG-SPEC-0063 member spec that owns the evidence claim or unresolved gap
       summarized by a projected_evidence_item.
+    source_claim_type: The projected_evidence_item field that classifies whether the source member claim
+      is satisfied, partial, missing, conflicting, or a projection_rule_gap.
+    summarized_evidence_or_gap: The projected_evidence_item field that preserves the member-owned evidence
+      identifier, missing evidence condition, conflict, or projection-rule gap being summarized.
     projection_rule_gap: An unresolved condition caused by missing or ambiguous aggregate projection semantics
       rather than missing evidence inside a member-owned contract.
+  cluster_contract:
+    parent_boundary:
+    - SG-SPEC-0066 owns only the derived aggregate projection rule boundary for SG-SPEC-0063 member evidence.
+    - SG-SPEC-0017, SG-SPEC-0018, SG-SPEC-0020, and SG-SPEC-0021 keep canonical ownership of their member
+      evidence semantics.
+    dependency_policy:
+    - SG-SPEC-0066 depends on each source member spec whose evidence may be summarized by aggregate evidence
+      projections.
+    - These dependencies gate projection semantics only; they do not transfer member evidence ownership
+      to SG-SPEC-0066.
+  member_contracts:
+  - spec_id: SG-SPEC-0017
+    member_role: Runtime observability evidence source.
+    ownership_boundary: Owns runtime observability evidence semantics summarized by aggregate evidence
+      projection.
+  - spec_id: SG-SPEC-0018
+    member_role: Adoption-layer evidence source.
+    ownership_boundary: Owns adoption-layer evidence semantics summarized by aggregate evidence projection.
+  - spec_id: SG-SPEC-0020
+    member_role: Executable traceability evidence source.
+    ownership_boundary: Owns executable traceability evidence semantics summarized by aggregate evidence
+      projection.
+  - spec_id: SG-SPEC-0021
+    member_role: Derived metric-family evidence source.
+    ownership_boundary: Owns derived metric-family evidence semantics summarized by aggregate evidence
+      projection.
   projection_contract:
     summary_boundary:
     - aggregate_evidence_projection is a derived cluster-level summary over evidence owned by SG-SPEC-0017,
@@ -97,8 +128,10 @@ specification:
     - Derived metric-family evidence owned by SG-SPEC-0021.
   source_attribution_policy:
   - Every projected_evidence_item must name a source_member.
-  - Every projected_evidence_item must identify whether it summarizes a satisfied claim, partial claim,
-    missing evidence condition, conflict, or projection_rule_gap.
+  - Every projected_evidence_item must name a source_claim_type that identifies whether it summarizes
+    a satisfied claim, partial claim, missing evidence condition, conflict, or projection_rule_gap.
+  - Every projected_evidence_item must name summarized_evidence_or_gap so reviewers can inspect the member-owned
+    evidence identifier, missing evidence condition, conflict, or projection-rule gap being summarized.
   - Every projected_evidence_item must preserve enough member-owned identifier context for review to return
     to the owning member spec without treating the aggregate projection as the owning record.
   - Cross-member projected_evidence_item entries may name supporting members, but must still identify

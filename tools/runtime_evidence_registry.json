@@ -3625,6 +3625,7 @@
       "specs/nodes/SG-SPEC-0018.yaml",
       "specs/nodes/SG-SPEC-0020.yaml",
       "specs/nodes/SG-SPEC-0021.yaml",
+      "specs/nodes/SG-SPEC-0066.yaml",
       "docs/proposals/0022_refinement_fan_out_pressure.md",
       "tests/test_supervisor.py"
     ],
