@@ -29663,6 +29663,75 @@ def test_resolve_gate_approve_clears_review_when_status_already_applied(
     assert updated["last_gate_decision"] == "approve"
 
 
+def test_resolve_gate_approve_accepts_canonicalized_review_gate_without_worktree(
+    supervisor_module: object,
+    repo_fixture: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    rel_path = "specs/nodes/SG-SPEC-0001.yaml"
+    proposal_queue_path = repo_fixture / "runs" / "proposal_queue.json"
+    proposal_queue_path.write_text(
+        json.dumps(
+            [
+                {
+                    "id": "governance_proposal::SG-SPEC-0001::stalled_maturity_candidate",
+                    "spec_id": "SG-SPEC-0001",
+                    "signal": "stalled_maturity_candidate",
+                    "status": "proposed",
+                },
+                {
+                    "id": "governance_proposal::SG-SPEC-0002::stalled_maturity_candidate",
+                    "spec_id": "SG-SPEC-0002",
+                    "signal": "stalled_maturity_candidate",
+                    "status": "proposed",
+                },
+            ]
+        ),
+        encoding="utf-8",
+    )
+    data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    data["gate_state"] = "review_pending"
+    data["required_human_action"] = "review graph refactor before merge"
+    data["proposed_status"] = None
+    data["proposed_maturity"] = None
+    data["last_worktree_path"] = ""
+    data["last_branch"] = ""
+    data["last_changed_files"] = [rel_path]
+    data["last_materialized_child_paths"] = [rel_path]
+    data["last_refinement_acceptance"] = {
+        "decision": "review_required",
+        "change_class": "graph_refactor",
+        "checks": {
+            "content_changed": True,
+            "hard_validation": True,
+            "atomicity_clear": True,
+            "within_mutation_budget": True,
+        },
+        "changed_spec_files": [rel_path],
+        "review_reasons": ["run changed graph structure or spec contract paths"],
+    }
+    node_path.write_text(json.dumps(data), encoding="utf-8")
+
+    exit_code = supervisor_module.main(
+        resolve_gate="SG-SPEC-0001",
+        decision="approve",
+        note="canonical graph refactor was already merged through PR review",
+    )
+    assert exit_code == 0
+
+    updated = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    assert updated["gate_state"] == "none"
+    assert updated["required_human_action"] == "-"
+    assert updated["last_worktree_path"] == ""
+    assert updated["last_branch"] == ""
+    assert updated["last_gate_decision"] == "approve"
+    out = capsys.readouterr().out
+    assert "Cleared proposal queue items:" in out
+    queue_items = json.loads(proposal_queue_path.read_text(encoding="utf-8"))
+    assert [item["spec_id"] for item in queue_items] == ["SG-SPEC-0002"]
+
+
 def test_resolve_gate_approve_clears_review_when_proposed_status_already_current(
     supervisor_module: object,
     repo_fixture: Path,
