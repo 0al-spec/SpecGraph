@@ -15,8 +15,8 @@ local ops entry through the `.0al` logging CLI when it is available:
 ```
 
 Use `.0al` only for coordination. Canonical SpecGraph changes belong in this
-repository. Do not edit `.0al/tasks.md` or `.0al/decisions.md` directly unless
-the user explicitly asks for tracker maintenance, and never write secrets,
+repository. Do not edit `../.0al/tasks.md` or `../.0al/decisions.md` directly
+unless the user explicitly asks for tracker maintenance, and never write secrets,
 credentials, private keys, or machine-local tokens to `.0al`.
 
 ## Repository rules
