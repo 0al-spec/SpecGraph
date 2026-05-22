@@ -1,0 +1,123 @@
+id: SG-SPEC-0066
+title: SpecGraph - Aggregate Evidence Projection Semantics
+kind: spec
+created_at: '2026-05-22T20:45:00Z'
+updated_at: '2026-05-22T20:45:00Z'
+status: linked
+maturity: 0.7
+depends_on:
+- SG-SPEC-0017
+- SG-SPEC-0018
+- SG-SPEC-0020
+relates_to:
+- SG-SPEC-0003
+- SG-SPEC-0007
+refines:
+- SG-SPEC-0063
+inputs:
+- specs/nodes/SG-SPEC-0063.yaml
+- specs/nodes/SG-SPEC-0017.yaml
+- specs/nodes/SG-SPEC-0018.yaml
+- specs/nodes/SG-SPEC-0020.yaml
+- specs/nodes/SG-SPEC-0021.yaml
+outputs:
+- specs/nodes/SG-SPEC-0066.yaml
+allowed_paths:
+- specs/nodes/SG-SPEC-0066.yaml
+acceptance:
+- Defines aggregate evidence projection as a derived cluster-level summary over SG-SPEC-0063 member evidence,
+  not as canonical truth or a replacement for member-owned evidence.
+- Defines source attribution requirements so each projected evidence item names the member-owned evidence
+  or gap it summarizes across runtime observability, adoption, executable traceability, or metric-family
+  semantics.
+- Defines unresolved gap routing so projection gaps remain attached to the concrete owning member spec
+  unless the gap is specifically about the projection rule itself.
+- Keeps telemetry collection, dashboards, formulas, storage schemas, ranking, and runtime implementation
+  out of scope for aggregate evidence projection semantics.
+acceptance_evidence:
+- criterion: Defines aggregate evidence projection as a derived cluster-level summary over SG-SPEC-0063
+    member evidence, not as canonical truth or a replacement for member-owned evidence.
+  evidence: specification.projection_contract.summary_boundary states that aggregate_evidence_projection
+    is a derived cluster-level summary over SG-SPEC-0063 member evidence and cannot replace canonical
+    or member-owned evidence.
+- criterion: Defines source attribution requirements so each projected evidence item names the member-owned
+    evidence or gap it summarizes across runtime observability, adoption, executable traceability, or
+    metric-family semantics.
+  evidence: specification.source_attribution_policy requires every projected evidence item to name its
+    source_member, source_claim_type, and summarized_evidence_or_gap across the runtime observability,
+    adoption, executable traceability, or metric-family member boundary.
+- criterion: Defines unresolved gap routing so projection gaps remain attached to the concrete owning
+    member spec unless the gap is specifically about the projection rule itself.
+  evidence: specification.gap_routing_policy routes member-specific evidence gaps to SG-SPEC-0017, SG-SPEC-0018,
+    SG-SPEC-0020, or SG-SPEC-0021 and reserves SG-SPEC-0066 ownership for projection-rule gaps.
+- criterion: Keeps telemetry collection, dashboards, formulas, storage schemas, ranking, and runtime implementation
+    out of scope for aggregate evidence projection semantics.
+  evidence: specification.scope.out excludes telemetry collection, dashboards, formulas, storage schemas,
+    ranking, and runtime implementation.
+prompt: Materialize aggregate evidence projection semantics beneath SG-SPEC-0063 so the realization and
+  observation cluster can summarize member-owned evidence without making the summary canonical or hiding
+  member-specific gaps.
+specification:
+  objective: Define the bounded semantics for derived aggregate evidence projections in the realization
+    and observation cluster so cluster-level review can inspect cross-member evidence summaries while
+    canonical evidence ownership remains with the concrete member specs.
+  scope:
+    in:
+    - Derived aggregate evidence projection semantics beneath SG-SPEC-0063
+    - Source attribution from projected evidence items to member-owned evidence or gaps
+    - Canonical-versus-derived protection for cluster-level evidence summaries
+    - Routing of unresolved projection and member evidence gaps
+    out:
+    - Telemetry collection, instrumentation, storage schemas, or observability backends
+    - Dashboard layout, viewer UI, badges, alerts, ranking, or scheduler behavior
+    - Metric formulas, thresholds, scoring weights, or trend calculations
+    - Adoption operations, campaign execution, analytics event taxonomy, or UX taxonomy
+    - Runtime implementation, executor ownership, code generation, CI behavior, or deployment mechanics
+  terminology:
+    aggregate_evidence_projection: A derived cluster-level summary that presents member-owned realization
+      or observation evidence together without becoming canonical graph truth.
+    projected_evidence_item: One entry in an aggregate_evidence_projection that summarizes a concrete
+      evidence claim, missing evidence condition, or cross-member evidence relationship.
+    source_member: The concrete SG-SPEC-0063 member spec that owns the evidence claim or unresolved gap
+      summarized by a projected_evidence_item.
+    projection_rule_gap: An unresolved condition caused by missing or ambiguous aggregate projection semantics
+      rather than missing evidence inside a member-owned contract.
+  projection_contract:
+    summary_boundary:
+    - aggregate_evidence_projection is a derived cluster-level summary over evidence owned by SG-SPEC-0017,
+      SG-SPEC-0018, SG-SPEC-0020, or SG-SPEC-0021.
+    - aggregate_evidence_projection may help reviewers inspect whether realization and observation evidence
+      is coherent across the cluster.
+    - aggregate_evidence_projection does not create canonical truth, satisfy member acceptance by itself,
+      or replace member-owned evidence records.
+    admissible_projection_subjects:
+    - Runtime observability evidence owned by SG-SPEC-0017.
+    - Adoption-layer evidence owned by SG-SPEC-0018.
+    - Executable traceability evidence owned by SG-SPEC-0020.
+    - Derived metric-family evidence owned by SG-SPEC-0021.
+  source_attribution_policy:
+  - Every projected_evidence_item must name a source_member.
+  - Every projected_evidence_item must identify whether it summarizes a satisfied claim, partial claim,
+    missing evidence condition, conflict, or projection_rule_gap.
+  - Every projected_evidence_item must preserve enough member-owned identifier context for review to return
+    to the owning member spec without treating the aggregate projection as the owning record.
+  - Cross-member projected_evidence_item entries may name supporting members, but must still identify
+    one primary source_member for ownership and follow-up.
+  canonical_derived_boundary:
+  - Member-owned canonical evidence remains governed by the concrete member spec that defines the evidence
+    semantics.
+  - A projection may combine, filter, summarize, or label member-owned evidence, but those derived operations
+    remain rebuildable from member-owned sources.
+  - A projection conflict between member evidence and aggregate presentation is resolved by inspecting
+    the member-owned evidence first; the projection is corrected or marked as a projection_rule_gap.
+  gap_routing_policy:
+  - Missing runtime observability evidence routes to SG-SPEC-0017.
+  - Missing adoption-layer evidence routes to SG-SPEC-0018.
+  - Missing executable traceability evidence routes to SG-SPEC-0020.
+  - Missing derived metric-family evidence routes to SG-SPEC-0021.
+  - Missing, ambiguous, or conflicting aggregate projection rules route to SG-SPEC-0066.
+  invariants:
+    AEP-0066-1: Aggregate evidence projections remain derived summaries over member-owned evidence.
+    AEP-0066-2: Every projected evidence item identifies one primary source member.
+    AEP-0066-3: Member-specific evidence gaps are routed to the member spec that owns the missing evidence
+      semantics.
