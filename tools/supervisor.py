@@ -10305,17 +10305,23 @@ def product_workspace_project_config_payload(
 
 def dump_product_workspace_project_config(payload: dict[str, Any]) -> str:
     yaml_module = get_yaml_module()
-    try:
-        dumped = yaml_module.safe_dump(payload, sort_keys=False, allow_unicode=True)
-    except TypeError:
+    dump_kwargs = {"sort_keys": False, "allow_unicode": True}
+    for kwargs in (dump_kwargs, {}):
+        try:
+            dumped = yaml_module.safe_dump(payload, **kwargs)
+        except TypeError:
+            continue
+        if isinstance(dumped, str):
+            return dumped if dumped.endswith("\n") else dumped + "\n"
+    for kwargs in (dump_kwargs, {}):
         buffer = io.StringIO()
-        yaml_module.safe_dump(payload, buffer, sort_keys=False, allow_unicode=True)
+        try:
+            yaml_module.safe_dump(payload, buffer, **kwargs)
+        except TypeError:
+            continue
         dumped = buffer.getvalue()
-    if not isinstance(dumped, str):
-        buffer = io.StringIO()
-        yaml_module.safe_dump(payload, buffer, sort_keys=False, allow_unicode=True)
-        dumped = buffer.getvalue()
-    return dumped if dumped.endswith("\n") else dumped + "\n"
+        return dumped if dumped.endswith("\n") else dumped + "\n"
+    raise RuntimeError("unable to serialize product workspace project config")
 
 
 def normalize_root_intent_text(root_intent: str | None) -> str:
@@ -10408,9 +10414,23 @@ def product_workspace_conflict_findings(
     if not workspace_root.exists():
         return findings
 
+    try:
+        workspace_children = list(workspace_root.iterdir())
+    except OSError as exc:
+        findings.append(
+            {
+                "finding_id": "unreadable_workspace_root",
+                "severity": "error",
+                "path": ".",
+                "message": f"workspace root is unreadable: {exc}",
+                "next_gap": "repair_workspace_root_access",
+            }
+        )
+        return findings
+
     unexpected_top_level = sorted(
         child.name
-        for child in workspace_root.iterdir()
+        for child in workspace_children
         if child.name not in PRODUCT_WORKSPACE_ALLOWED_TOP_LEVEL_ENTRIES
     )
     if unexpected_top_level:
@@ -10525,6 +10545,44 @@ def initialize_product_workspace(
             )
         )
 
+    report_blocking_findings = {
+        "missing_workspace_root",
+        "workspace_root_inside_specgraph_core",
+        "workspace_root_not_directory",
+    }
+    can_probe_workspace = (
+        root_resolved.exists()
+        and root_resolved.is_dir()
+        and not any(
+            str(finding.get("finding_id", "")).strip() in report_blocking_findings
+            for finding in validation_findings
+        )
+    )
+    root_intent_path = root_resolved / ".specgraph" / "root_intent.md"
+    root_intent_status = "not_provided"
+    root_intent_content_sha256 = ""
+    if root_intent_text:
+        root_intent_status = "captured"
+        root_intent_content_sha256 = hashlib.sha256(root_intent_text.encode("utf-8")).hexdigest()
+    elif can_probe_workspace and root_intent_path.exists():
+        try:
+            existing_root_intent_text = root_intent_path.read_text(encoding="utf-8")
+        except OSError as exc:
+            validation_findings.append(
+                {
+                    "finding_id": "unreadable_existing_root_intent",
+                    "severity": "error",
+                    "path": ".specgraph/root_intent.md",
+                    "message": f"existing root intent is unreadable: {exc}",
+                    "next_gap": "repair_existing_root_intent",
+                }
+            )
+        else:
+            root_intent_status = "captured_existing"
+            root_intent_content_sha256 = hashlib.sha256(
+                existing_root_intent_text.encode("utf-8")
+            ).hexdigest()
+
     created_paths: list[str] = []
     existing_paths: list[str] = []
     written_artifacts: dict[str, Any] = {}
@@ -10561,15 +10619,8 @@ def initialize_product_workspace(
                 created_paths.append(".specgraph/root_intent.md")
             written_artifacts["root_intent"] = {
                 "artifact_path": ".specgraph/root_intent.md",
-                "artifact_sha256": hashlib.sha256(root_intent_text.encode("utf-8")).hexdigest(),
+                "artifact_sha256": root_intent_content_sha256,
             }
-
-    root_intent_path = root_resolved / ".specgraph" / "root_intent.md"
-    root_intent_status = "not_provided"
-    if root_intent_text:
-        root_intent_status = "captured"
-    elif root_intent_path.exists():
-        root_intent_status = "captured_existing"
 
     workspace_status = "blocked" if has_errors else ("initialized" if created_paths else "ready")
     report: dict[str, Any] = {
@@ -10600,9 +10651,7 @@ def initialize_product_workspace(
             "artifact_path": (
                 ".specgraph/root_intent.md" if root_intent_status != "not_provided" else ""
             ),
-            "content_sha256": hashlib.sha256(root_intent_text.encode("utf-8")).hexdigest()
-            if root_intent_text
-            else "",
+            "content_sha256": root_intent_content_sha256,
             "next_gap": "review_before_canonical_materialization",
         },
         "validation_findings": validation_findings,
@@ -10638,11 +10687,6 @@ def initialize_product_workspace(
         },
     }
 
-    report_blocking_findings = {
-        "missing_workspace_root",
-        "workspace_root_inside_specgraph_core",
-        "workspace_root_not_directory",
-    }
     can_write_report = (
         root_resolved.exists()
         and root_resolved.is_dir()

@@ -23498,6 +23498,60 @@ def test_initialize_product_workspace_is_idempotent(
     assert ".specgraph/root_intent.md" in second["workspace"]["existing_paths"]
 
 
+def test_initialize_product_workspace_hashes_existing_root_intent(
+    supervisor_module: object,
+    tmp_path: Path,
+) -> None:
+    workspace = tmp_path / "ExistingIntent"
+    (workspace / ".specgraph").mkdir(parents=True)
+    existing_intent = "Already captured intent.\n"
+    (workspace / ".specgraph" / "root_intent.md").write_text(
+        existing_intent,
+        encoding="utf-8",
+    )
+
+    report = supervisor_module.initialize_product_workspace(
+        project_id="existing-intent",
+        display_name="Existing Intent",
+        workspace_root=workspace,
+    )
+
+    assert report["summary"]["status"] == "initialized"
+    assert report["root_intent"]["status"] == "captured_existing"
+    assert (
+        report["root_intent"]["content_sha256"]
+        == supervisor_module.hashlib.sha256(existing_intent.encode("utf-8")).hexdigest()
+    )
+    assert "Already captured intent" not in json.dumps(report)
+
+
+def test_initialize_product_workspace_reports_unreadable_workspace_root(
+    supervisor_module: object,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    workspace = tmp_path / "Unreadable"
+    workspace.mkdir()
+    original_iterdir = Path.iterdir
+
+    def fake_iterdir(path: Path) -> object:
+        if path == workspace:
+            raise OSError("permission denied")
+        return original_iterdir(path)
+
+    monkeypatch.setattr(Path, "iterdir", fake_iterdir)
+
+    report = supervisor_module.initialize_product_workspace(
+        project_id="unreadable",
+        display_name="Unreadable",
+        workspace_root=workspace,
+    )
+
+    assert report["summary"]["status"] == "blocked"
+    assert report["validation_findings"][0]["finding_id"] == "unreadable_workspace_root"
+    assert (workspace / "runs" / "product_workspace_initialization.json").exists()
+
+
 def test_initialize_product_workspace_blocks_conflicting_config_without_overwrite(
     supervisor_module: object,
     tmp_path: Path,
