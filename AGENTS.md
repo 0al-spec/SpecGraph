@@ -3,6 +3,22 @@
 See [CONSTITUTION.md](CONSTITUTION.md) for the runtime governance model used to grow SpecGraph during bootstrap.
 See [CONTRIBUTING.md](CONTRIBUTING.md) for accumulated project workflow, operational lessons, and human-readable contribution rules.
 
+## 0AL Local Ops Logging
+
+For cross-repo observations, coordination tasks, blockers, or handoffs, write a
+local ops entry through the `.0al` logging CLI when it is available:
+
+```bash
+../.0al/scripts/0al-log.py --project specgraph --kind note --owner unclassified \
+  --title "<short title>" \
+  --text "<what happened, what is needed, and any suggested next action>"
+```
+
+Use `.0al` only for coordination. Canonical SpecGraph changes belong in this
+repository. Do not edit `../.0al/tasks.md` or `../.0al/decisions.md` directly
+unless the user explicitly asks for tracker maintenance, and never write secrets,
+credentials, private keys, or machine-local tokens to `.0al`.
+
 ## Repository rules
 - Merge in main branch ONLY  via Pull (Merge) Request on GitHub
 - Deliver feature changes through a dedicated branch and Pull Request; do not land feature work directly on `main`.
