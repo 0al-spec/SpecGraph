@@ -11701,6 +11701,34 @@ def update_proposal_queue(
     return path, updated
 
 
+def clear_proposal_queue_items_for_spec(spec_id: str) -> list[str]:
+    """Remove derived proposal-queue pressure for a spec after gate resolution."""
+    normalized_spec_id = spec_id.strip()
+    if not normalized_spec_id:
+        return []
+    path = proposal_queue_path()
+    if not path.exists():
+        return []
+    with artifact_lock(path):
+        existing, error = load_json_list_report(path, artifact_kind="proposal queue artifact")
+        if error:
+            raise RuntimeError(error)
+        retained: list[dict[str, Any]] = []
+        cleared_ids: list[str] = []
+        for item in existing or []:
+            if not isinstance(item, dict):
+                continue
+            if str(item.get("spec_id", "")).strip() == normalized_spec_id:
+                item_id = str(item.get("id", "")).strip()
+                if item_id:
+                    cleared_ids.append(item_id)
+                continue
+            retained.append(item)
+        if cleared_ids:
+            atomic_write_json(path, retained)
+    return cleared_ids
+
+
 def summarize_queue_transition(
     *,
     source_spec_id: str,
@@ -34359,6 +34387,8 @@ def gate_worktree_freshness_issue(
 
     if not worktree_value:
         if node.gate_state == "review_pending" and has_pending_worktree_content:
+            if review_gate_has_canonicalized_pending_content(node):
+                return None
             return "missing last_worktree_path for review gate with pending worktree content"
         return None
 
@@ -34388,6 +34418,66 @@ def gate_worktree_freshness_issue(
             f"{registered_branch or '<detached>'}"
         )
     return None
+
+
+def review_gate_has_canonicalized_pending_content(node: SpecNode) -> bool:
+    """Allow approval when a reviewed graph-refactor candidate is already canonical.
+
+    Stacked PR merges can legitimately leave a review gate whose candidate files
+    have already been materialized in the canonical tree while the retained
+    worktree was cleaned or not preserved. This path is intentionally narrow: it
+    only applies when there is no pending status transition and the last
+    acceptance record says the canonical content already passed hard validation.
+    """
+    if node.data.get("proposed_status") is not None:
+        return False
+    if node.data.get("proposed_maturity") is not None:
+        return False
+    if node.data.get("pending_sync_paths"):
+        return False
+    if coerce_pending_digest_map(node.data.get("pending_base_digests")):
+        return False
+    if coerce_pending_digest_map(node.data.get("pending_candidate_digests")):
+        return False
+
+    changed_files = [
+        str(path).strip() for path in node.data.get("last_changed_files", []) if str(path).strip()
+    ]
+    materialized_child_paths = [
+        str(path).strip()
+        for path in node.data.get("last_materialized_child_paths", [])
+        if str(path).strip()
+    ]
+    if not changed_files and not materialized_child_paths:
+        return False
+
+    acceptance = node.data.get("last_refinement_acceptance")
+    if not isinstance(acceptance, dict):
+        return False
+    if acceptance.get("decision") != "review_required":
+        return False
+    checks = acceptance.get("checks")
+    if not isinstance(checks, dict):
+        return False
+    if not (
+        checks.get("hard_validation") is True
+        and checks.get("atomicity_clear") is True
+        and checks.get("within_mutation_budget") is True
+    ):
+        return False
+
+    accepted_files = [
+        str(path).strip() for path in acceptance.get("changed_spec_files", []) if str(path).strip()
+    ]
+    if accepted_files and sorted(dict.fromkeys(changed_files)) != sorted(
+        dict.fromkeys(accepted_files)
+    ):
+        return False
+
+    accepted_or_changed = set(accepted_files or changed_files)
+    if any(path not in accepted_or_changed for path in materialized_child_paths):
+        return False
+    return True
 
 
 def stale_gate_entries(
@@ -35007,11 +35097,12 @@ def resolve_gate_decision(
             )
             return 1
 
-        worktree_path = Path(str(node.data.get("last_worktree_path", ""))).expanduser()
+        worktree_value = str(node.data.get("last_worktree_path", "")).strip()
+        worktree_path = Path(worktree_value).expanduser() if worktree_value else None
         pending_sync_paths = pending_review_sync_paths(node)
         changed_files = list(node.data.get("last_changed_files", []))
         materialized_child_paths = list(node.data.get("last_materialized_child_paths", []))
-        if worktree_path.as_posix() and worktree_path.exists():
+        if worktree_path is not None and worktree_path.exists():
             allowed_changes = pending_sync_paths or select_sync_paths(
                 node.allowed_paths, changed_files
             )
@@ -35089,6 +35180,12 @@ def resolve_gate_decision(
     node.data["last_gate_note"] = note
     node.data["last_gate_at"] = utc_now_iso()
     node.save()
+    cleared_proposal_queue_ids: list[str] = []
+    if decision == "approve":
+        try:
+            cleared_proposal_queue_ids = clear_proposal_queue_items_for_spec(spec_id)
+        except RuntimeError as exc:
+            print(f"Failed to clear proposal queue for {spec_id}: {exc}", file=sys.stderr)
     gate_refresh_id = str(node.data.get("last_run_id", "")).strip()
     if gate_refresh_id:
         gate_refresh_id = f"{gate_refresh_id}-gate-{decision}"
@@ -35111,6 +35208,11 @@ def resolve_gate_decision(
         cleanup_isolated_worktree(retained_worktree_path, retained_branch)
 
     print(f"Resolved gate for {spec_id}: {decision}")
+    if cleared_proposal_queue_ids:
+        print(
+            "Cleared proposal queue items: "
+            + ", ".join(sorted(dict.fromkeys(cleared_proposal_queue_ids)))
+        )
     return 0
 
 

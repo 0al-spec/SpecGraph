@@ -167,8 +167,8 @@ specification:
     surfaces.
   - SG-SPEC-0063 must not hide unresolved member gaps; backlog and evidence projections should continue
     to point to the concrete member when the gap is member-specific.
-gate_state: review_pending
-required_human_action: review graph refactor before merge
+gate_state: none
+required_human_action: '-'
 proposed_status: null
 proposed_maturity: null
 last_outcome: done
@@ -236,3 +236,7 @@ last_reconciliation:
 last_requested_child_materialization: true
 last_materialized_child_paths:
 - specs/nodes/SG-SPEC-0066.yaml
+last_gate_run_id: 20260522T204052Z-SG-SPEC-0063-23ce88c9
+last_gate_decision: approve
+last_gate_note: approved after PR 462 materialized SG-SPEC-0066 and review feedback passed
+last_gate_at: '2026-05-22T21:24:42.403711+00:00'
