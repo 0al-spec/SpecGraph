@@ -69,6 +69,7 @@ Derived artifacts:
 - proposal runtime index: `runs/proposal_runtime_index.json`
 - spec activity feed: `runs/spec_activity_feed.json`
 - project environment: `runs/project_environment.json`
+- product workspace initialization: `runs/product_workspace_initialization.json`
 """
 
 from __future__ import annotations
@@ -80,6 +81,7 @@ import difflib
 import hashlib
 import importlib.util
 import inspect
+import io
 import json
 import os
 import re
@@ -138,6 +140,7 @@ FACTORY_ARCHITECTURE_POLICY_RELATIVE_PATH = "tools/factory_architecture_policy.j
 SWIFT_TYPED_TOOLING_POLICY_RELATIVE_PATH = "tools/swift_typed_tooling_policy.json"
 PROJECT_ENVIRONMENT_POLICY_RELATIVE_PATH = "tools/project_environment_policy.json"
 PROJECT_CONFIG_RELATIVE_PATH = "specgraph.project.yaml"
+PRODUCT_WORKSPACE_INITIALIZATION_REPORT_RELATIVE_PATH = "runs/product_workspace_initialization.json"
 REVIEW_FEEDBACK_POLICY_RELATIVE_PATH = "tools/review_feedback_policy.json"
 VALIDATION_FINDINGS_POLICY_RELATIVE_PATH = "tools/validation_findings_policy.json"
 SAFE_REPAIR_POLICY_RELATIVE_PATH = "tools/safe_repair_policy.json"
@@ -256,6 +259,10 @@ def project_environment_policy_path() -> Path:
 
 def project_config_path() -> Path:
     return ROOT / PROJECT_CONFIG_RELATIVE_PATH
+
+
+def product_workspace_initialization_report_path(workspace_root: Path) -> Path:
+    return workspace_root / PRODUCT_WORKSPACE_INITIALIZATION_REPORT_RELATIVE_PATH
 
 
 def review_feedback_policy_path() -> Path:
@@ -10247,6 +10254,418 @@ def write_project_environment(environment: dict[str, Any]) -> Path:
     with artifact_lock(path):
         atomic_write_json(path, environment)
     return path
+
+
+PRODUCT_WORKSPACE_INITIALIZATION_ARTIFACT_KIND = "product_workspace_initialization"
+PRODUCT_WORKSPACE_INITIALIZATION_SCHEMA_VERSION = 1
+PRODUCT_WORKSPACE_INITIALIZATION_PROPOSAL_ID = "0054"
+PRODUCT_WORKSPACE_REQUIRED_DIRECTORIES = (
+    "specs",
+    "docs/proposals",
+    "runs",
+    ".specgraph",
+)
+PRODUCT_WORKSPACE_ALLOWED_TOP_LEVEL_ENTRIES = {
+    "specgraph.project.yaml",
+    "specs",
+    "docs",
+    "runs",
+    ".specgraph",
+}
+PRODUCT_WORKSPACE_PROJECT_ID_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
+
+
+def product_workspace_project_config_payload(
+    *,
+    project_id: str,
+    display_name: str,
+) -> dict[str, Any]:
+    return {
+        "artifact_kind": "specgraph_project_config",
+        "schema_version": 1,
+        "project_id": project_id,
+        "display_name": display_name,
+        "governance_profile": "product_workspace",
+        "workspace": {
+            "specs_root": "specs/",
+            "proposals_root": "docs/proposals/",
+            "runs_root": "runs/",
+            "publish_root": f"projects/{project_id}/",
+        },
+        "supervisor": {
+            "allow_project_spec_refinement": True,
+            "allow_project_proposals": True,
+            "allow_project_retrospectives": True,
+            "allow_core_policy_mutation": False,
+            "allow_core_tooling_mutation": False,
+            "allow_self_evolution_proposals": False,
+        },
+    }
+
+
+def dump_product_workspace_project_config(payload: dict[str, Any]) -> str:
+    yaml_module = get_yaml_module()
+    try:
+        dumped = yaml_module.safe_dump(payload, sort_keys=False, allow_unicode=True)
+    except TypeError:
+        buffer = io.StringIO()
+        yaml_module.safe_dump(payload, buffer, sort_keys=False, allow_unicode=True)
+        dumped = buffer.getvalue()
+    if not isinstance(dumped, str):
+        buffer = io.StringIO()
+        yaml_module.safe_dump(payload, buffer, sort_keys=False, allow_unicode=True)
+        dumped = buffer.getvalue()
+    return dumped if dumped.endswith("\n") else dumped + "\n"
+
+
+def normalize_root_intent_text(root_intent: str | None) -> str:
+    text = str(root_intent or "").strip()
+    return text + "\n" if text else ""
+
+
+def validate_product_workspace_initializer_inputs(
+    *,
+    project_id: str,
+    workspace_root: Path,
+    workspace_root_text: str | None = None,
+) -> list[dict[str, Any]]:
+    findings: list[dict[str, Any]] = []
+    normalized_project_id = str(project_id).strip()
+    if not normalized_project_id:
+        findings.append(
+            {
+                "finding_id": "missing_project_id",
+                "severity": "error",
+                "field": "project_id",
+                "message": "--project-id is required",
+                "next_gap": "provide_project_identity",
+            }
+        )
+    elif not PRODUCT_WORKSPACE_PROJECT_ID_PATTERN.fullmatch(normalized_project_id):
+        findings.append(
+            {
+                "finding_id": "unsafe_project_id",
+                "severity": "error",
+                "field": "project_id",
+                "message": "project_id must use only letters, numbers, dot, dash, and underscore",
+                "next_gap": "repair_project_identity",
+            }
+        )
+
+    root_value = workspace_root_text if workspace_root_text is not None else workspace_root
+    root_text = str(root_value).strip()
+    if not root_text:
+        findings.append(
+            {
+                "finding_id": "missing_workspace_root",
+                "severity": "error",
+                "field": "workspace_root",
+                "message": "--workspace-root is required",
+                "next_gap": "provide_workspace_root",
+            }
+        )
+        return findings
+
+    root_resolved = workspace_root.expanduser().resolve(strict=False)
+    specgraph_root = ROOT.resolve(strict=False)
+    if root_resolved == specgraph_root or specgraph_root in root_resolved.parents:
+        findings.append(
+            {
+                "finding_id": "workspace_root_inside_specgraph_core",
+                "severity": "error",
+                "field": "workspace_root",
+                "message": "product workspace root must not be inside the SpecGraph core repo",
+                "next_gap": "choose_external_product_workspace_root",
+            }
+        )
+    return findings
+
+
+def product_workspace_path_state(path: Path) -> str:
+    if path.exists():
+        return "directory" if path.is_dir() else "file"
+    return "missing"
+
+
+def product_workspace_conflict_findings(
+    *,
+    workspace_root: Path,
+    expected_config_text: str,
+    root_intent_text: str,
+) -> list[dict[str, Any]]:
+    findings: list[dict[str, Any]] = []
+    if workspace_root.exists() and not workspace_root.is_dir():
+        return [
+            {
+                "finding_id": "workspace_root_not_directory",
+                "severity": "error",
+                "path": ".",
+                "message": "workspace root exists but is not a directory",
+                "next_gap": "choose_external_product_workspace_root",
+            }
+        ]
+
+    if not workspace_root.exists():
+        return findings
+
+    unexpected_top_level = sorted(
+        child.name
+        for child in workspace_root.iterdir()
+        if child.name not in PRODUCT_WORKSPACE_ALLOWED_TOP_LEVEL_ENTRIES
+    )
+    if unexpected_top_level:
+        findings.append(
+            {
+                "finding_id": "unexpected_top_level_entries",
+                "severity": "error",
+                "path": ".",
+                "entries": unexpected_top_level,
+                "message": "existing workspace contains entries outside the initializer layout",
+                "next_gap": "review_existing_workspace_before_initialization",
+            }
+        )
+
+    config_path = workspace_root / PROJECT_CONFIG_RELATIVE_PATH
+    if config_path.exists():
+        try:
+            existing_config_text = config_path.read_text(encoding="utf-8")
+        except OSError as exc:
+            findings.append(
+                {
+                    "finding_id": "unreadable_existing_project_config",
+                    "severity": "error",
+                    "path": PROJECT_CONFIG_RELATIVE_PATH,
+                    "message": f"existing project config is unreadable: {exc}",
+                    "next_gap": "repair_existing_project_config",
+                }
+            )
+        else:
+            if existing_config_text != expected_config_text:
+                findings.append(
+                    {
+                        "finding_id": "conflicting_project_config",
+                        "severity": "error",
+                        "path": PROJECT_CONFIG_RELATIVE_PATH,
+                        "message": (
+                            "existing specgraph.project.yaml differs from initializer output"
+                        ),
+                        "next_gap": "review_existing_workspace_before_initialization",
+                    }
+                )
+
+    root_intent_path = workspace_root / ".specgraph" / "root_intent.md"
+    if root_intent_text and root_intent_path.exists():
+        try:
+            existing_intent_text = root_intent_path.read_text(encoding="utf-8")
+        except OSError as exc:
+            findings.append(
+                {
+                    "finding_id": "unreadable_existing_root_intent",
+                    "severity": "error",
+                    "path": ".specgraph/root_intent.md",
+                    "message": f"existing root intent is unreadable: {exc}",
+                    "next_gap": "repair_existing_root_intent",
+                }
+            )
+        else:
+            if existing_intent_text != root_intent_text:
+                findings.append(
+                    {
+                        "finding_id": "conflicting_root_intent",
+                        "severity": "error",
+                        "path": ".specgraph/root_intent.md",
+                        "message": "existing root intent differs from requested root intent",
+                        "next_gap": "review_existing_workspace_before_initialization",
+                    }
+                )
+
+    return findings
+
+
+def write_product_workspace_initialization_report(
+    report: dict[str, Any],
+    *,
+    workspace_root: Path,
+) -> Path:
+    path = product_workspace_initialization_report_path(workspace_root)
+    with artifact_lock(path):
+        atomic_write_json(path, report)
+    return path
+
+
+def initialize_product_workspace(
+    *,
+    project_id: str,
+    display_name: str | None,
+    workspace_root: str | Path,
+    root_intent: str | None = None,
+) -> dict[str, Any]:
+    normalized_project_id = str(project_id or "").strip()
+    normalized_display_name = str(display_name or "").strip() or normalized_project_id
+    workspace_root_text = str(workspace_root or "").strip()
+    root_path = Path(workspace_root_text).expanduser()
+    root_resolved = root_path.resolve(strict=False)
+    root_intent_text = normalize_root_intent_text(root_intent)
+    config_payload = product_workspace_project_config_payload(
+        project_id=normalized_project_id,
+        display_name=normalized_display_name,
+    )
+    config_text = dump_product_workspace_project_config(config_payload)
+    validation_findings = validate_product_workspace_initializer_inputs(
+        project_id=normalized_project_id,
+        workspace_root=root_path,
+        workspace_root_text=workspace_root_text,
+    )
+    if not validation_findings:
+        validation_findings.extend(
+            product_workspace_conflict_findings(
+                workspace_root=root_resolved,
+                expected_config_text=config_text,
+                root_intent_text=root_intent_text,
+            )
+        )
+
+    created_paths: list[str] = []
+    existing_paths: list[str] = []
+    written_artifacts: dict[str, Any] = {}
+    has_errors = any(str(item.get("severity")) == "error" for item in validation_findings)
+
+    if not has_errors:
+        root_resolved.mkdir(parents=True, exist_ok=True)
+        for rel_dir in PRODUCT_WORKSPACE_REQUIRED_DIRECTORIES:
+            target_dir = root_resolved / rel_dir
+            rel_display = rel_dir.rstrip("/") + "/"
+            if target_dir.exists():
+                existing_paths.append(rel_display)
+            else:
+                target_dir.mkdir(parents=True, exist_ok=True)
+                created_paths.append(rel_display)
+
+        config_path = root_resolved / PROJECT_CONFIG_RELATIVE_PATH
+        if config_path.exists():
+            existing_paths.append(PROJECT_CONFIG_RELATIVE_PATH)
+        else:
+            atomic_write_text(config_path, config_text)
+            created_paths.append(PROJECT_CONFIG_RELATIVE_PATH)
+            written_artifacts["project_config"] = {
+                "artifact_path": PROJECT_CONFIG_RELATIVE_PATH,
+                "artifact_sha256": hashlib.sha256(config_text.encode("utf-8")).hexdigest(),
+            }
+
+        if root_intent_text:
+            root_intent_path = root_resolved / ".specgraph" / "root_intent.md"
+            if root_intent_path.exists():
+                existing_paths.append(".specgraph/root_intent.md")
+            else:
+                atomic_write_text(root_intent_path, root_intent_text)
+                created_paths.append(".specgraph/root_intent.md")
+            written_artifacts["root_intent"] = {
+                "artifact_path": ".specgraph/root_intent.md",
+                "artifact_sha256": hashlib.sha256(root_intent_text.encode("utf-8")).hexdigest(),
+            }
+
+    root_intent_path = root_resolved / ".specgraph" / "root_intent.md"
+    root_intent_status = "not_provided"
+    if root_intent_text:
+        root_intent_status = "captured"
+    elif root_intent_path.exists():
+        root_intent_status = "captured_existing"
+
+    workspace_status = "blocked" if has_errors else ("initialized" if created_paths else "ready")
+    report: dict[str, Any] = {
+        "artifact_kind": PRODUCT_WORKSPACE_INITIALIZATION_ARTIFACT_KIND,
+        "schema_version": PRODUCT_WORKSPACE_INITIALIZATION_SCHEMA_VERSION,
+        "generated_at": utc_now_iso(),
+        "proposal_id": PRODUCT_WORKSPACE_INITIALIZATION_PROPOSAL_ID,
+        "canonical_mutations_allowed": False,
+        "tracked_artifacts_written": False,
+        "project": {
+            "project_id": normalized_project_id,
+            "display_name": normalized_display_name,
+            "governance_profile": "product_workspace",
+        },
+        "workspace": {
+            "root": ".",
+            "root_reference": "workspace_relative",
+            "local_input_path_persisted": False,
+            "created_paths": created_paths,
+            "existing_paths": sorted(set(existing_paths)),
+            "required_paths": [
+                PROJECT_CONFIG_RELATIVE_PATH,
+                *[path.rstrip("/") + "/" for path in PRODUCT_WORKSPACE_REQUIRED_DIRECTORIES],
+            ],
+        },
+        "root_intent": {
+            "status": root_intent_status,
+            "artifact_path": (
+                ".specgraph/root_intent.md" if root_intent_status != "not_provided" else ""
+            ),
+            "content_sha256": hashlib.sha256(root_intent_text.encode("utf-8")).hexdigest()
+            if root_intent_text
+            else "",
+            "next_gap": "review_before_canonical_materialization",
+        },
+        "validation_findings": validation_findings,
+        "review_state": "blocked" if has_errors else "ready_for_review",
+        "next_gap": "repair_product_workspace_initialization"
+        if has_errors
+        else "review_before_first_spec_materialization",
+        "summary": {
+            "status": workspace_status,
+            "project_id": normalized_project_id,
+            "governance_profile": "product_workspace",
+            "root_intent_status": root_intent_status,
+            "created_path_count": len(created_paths),
+            "validation_finding_count": len(validation_findings),
+            "next_gap": "repair_product_workspace_initialization"
+            if has_errors
+            else "review_before_first_spec_materialization",
+        },
+        "written_artifacts": written_artifacts,
+        "viewer_projection": {
+            "initialization_badge": {
+                "status": workspace_status,
+                "project_id": normalized_project_id,
+                "display_name": normalized_display_name,
+                "governance_profile": "product_workspace",
+                "root_intent": root_intent_status,
+            },
+            "safe_next_actions": [
+                "review_root_intent_before_canonical_materialization"
+                if not has_errors
+                else "repair_workspace_conflict_before_retry"
+            ],
+        },
+    }
+
+    report_blocking_findings = {
+        "missing_workspace_root",
+        "workspace_root_inside_specgraph_core",
+        "workspace_root_not_directory",
+    }
+    can_write_report = (
+        root_resolved.exists()
+        and root_resolved.is_dir()
+        and not any(
+            str(finding.get("finding_id", "")).strip() in report_blocking_findings
+            for finding in validation_findings
+        )
+    )
+    if can_write_report:
+        report_path = write_product_workspace_initialization_report(
+            report,
+            workspace_root=root_resolved,
+        )
+        report["written_artifacts"]["initialization_report"] = {
+            "artifact_path": PRODUCT_WORKSPACE_INITIALIZATION_REPORT_RELATIVE_PATH,
+            "artifact_kind": PRODUCT_WORKSPACE_INITIALIZATION_ARTIFACT_KIND,
+        }
+        report["summary"]["report_path"] = PRODUCT_WORKSPACE_INITIALIZATION_REPORT_RELATIVE_PATH
+        # Rewrite once so the on-disk artifact includes its own report pointer.
+        write_product_workspace_initialization_report(report, workspace_root=root_resolved)
+        _ = report_path
+
+    return report
 
 
 def decision_inspector_dir_path() -> Path:
@@ -36518,6 +36937,11 @@ def main(
     build_factory_architecture_index_mode: bool = False,
     build_swift_typed_tooling_index_mode: bool = False,
     build_project_environment_mode: bool = False,
+    init_product_workspace_mode: bool = False,
+    product_workspace_project_id: str | None = None,
+    product_workspace_display_name: str | None = None,
+    product_workspace_root: str | None = None,
+    product_workspace_root_intent: str | None = None,
     supervisor_run_path: str | None = None,
     supervisor_salvage_worktree_path: str | None = None,
     supervisor_raw_artifact_uri: str = "",
@@ -36619,6 +37043,7 @@ def main(
         "--build-factory-architecture-index": build_factory_architecture_index_mode,
         "--build-swift-typed-tooling-index": build_swift_typed_tooling_index_mode,
         "--build-project-environment": build_project_environment_mode,
+        "--init-product-workspace": init_product_workspace_mode,
         "--build-review-feedback-index": build_review_feedback_index_mode,
         "--build-vocabulary-index": build_vocabulary_index_mode,
         "--build-vocabulary-drift-report": build_vocabulary_drift_report_mode,
@@ -36708,6 +37133,19 @@ def main(
         return 1
 
     if (
+        product_workspace_project_id
+        or product_workspace_display_name
+        or product_workspace_root
+        or product_workspace_root_intent
+    ) and not init_product_workspace_mode:
+        print(
+            "--project-id/--display-name/--workspace-root/--root-intent require "
+            "--init-product-workspace",
+            file=sys.stderr,
+        )
+        return 1
+
+    if (
         implementation_target_scope_kind
         or implementation_target_spec_ids
         or implementation_operator_intent
@@ -36789,6 +37227,18 @@ def main(
     ):
         print(
             "--build-project-environment does not accept supervisor run/salvage inputs",
+            file=sys.stderr,
+        )
+        return 1
+
+    if init_product_workspace_mode and (
+        supervisor_salvage_worktree_path
+        or supervisor_run_path
+        or supervisor_raw_artifact_uri
+        or supervisor_raw_retention_expires_at
+    ):
+        print(
+            "--init-product-workspace does not accept supervisor run/salvage inputs",
             file=sys.stderr,
         )
         return 1
@@ -37333,6 +37783,45 @@ def main(
         write_project_environment(environment)
         emit_supervisor_json(environment, output_mode=normalized_output_mode)
         return 0
+
+    if init_product_workspace_mode:
+        if any(
+            (
+                dry_run,
+                auto_approve,
+                loop,
+                resolve_gate,
+                decision,
+                note,
+                target_spec,
+                split_proposal,
+                apply_split_proposal,
+                operator_note,
+                mutation_budget,
+                run_authority,
+                execution_profile,
+                child_model,
+                child_timeout_seconds,
+                verbose,
+                list_stale_runtime,
+                clean_stale_runtime,
+                observe_graph_health_mode,
+                operator_request_packet_path,
+            )
+        ):
+            print(
+                "--init-product-workspace must be used as a standalone command",
+                file=sys.stderr,
+            )
+            return 1
+        report = initialize_product_workspace(
+            project_id=product_workspace_project_id or "",
+            display_name=product_workspace_display_name,
+            workspace_root=product_workspace_root or "",
+            root_intent=product_workspace_root_intent,
+        )
+        emit_supervisor_json(report, output_mode=normalized_output_mode)
+        return 0 if report["summary"]["status"] != "blocked" else 1
 
     if build_review_feedback_index_mode:
         if any(
@@ -40107,6 +40596,32 @@ if __name__ == "__main__":
         ),
     )
     parser.add_argument(
+        "--init-product-workspace",
+        action="store_true",
+        help=(
+            "Initialize a bounded product workspace layout and report without mutating "
+            "SpecGraph core specs, tools, policies, or tests"
+        ),
+    )
+    parser.add_argument(
+        "--project-id",
+        help="Product workspace id used by --init-product-workspace",
+    )
+    parser.add_argument(
+        "--display-name",
+        help="Human-readable product workspace name used by --init-product-workspace",
+    )
+    parser.add_argument(
+        "--workspace-root",
+        help="Product workspace root directory used by --init-product-workspace",
+    )
+    parser.add_argument(
+        "--root-intent",
+        help=(
+            "Optional root intent captured as pre-canonical local input by --init-product-workspace"
+        ),
+    )
+    parser.add_argument(
         "--supervisor-run-path",
         metavar="PATH_OR_RUN_ID",
         help=(
@@ -40653,6 +41168,11 @@ if __name__ == "__main__":
             build_factory_architecture_index_mode=args.build_factory_architecture_index,
             build_swift_typed_tooling_index_mode=args.build_swift_typed_tooling_index,
             build_project_environment_mode=args.build_project_environment,
+            init_product_workspace_mode=args.init_product_workspace,
+            product_workspace_project_id=args.project_id,
+            product_workspace_display_name=args.display_name,
+            product_workspace_root=args.workspace_root,
+            product_workspace_root_intent=args.root_intent,
             supervisor_run_path=args.supervisor_run_path,
             supervisor_salvage_worktree_path=args.salvage_worktree_path,
             supervisor_raw_artifact_uri=args.raw_artifact_uri,

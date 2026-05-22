@@ -23423,6 +23423,158 @@ def test_main_builds_project_environment_as_standalone_command(
     assert artifact["viewer_projection"]["environment_badge"]["project_id"] == "specgraph"
 
 
+def test_initialize_product_workspace_creates_minimal_layout(
+    supervisor_module: object,
+    tmp_path: Path,
+) -> None:
+    workspace = tmp_path / "SwiftUICalculator"
+
+    report = supervisor_module.initialize_product_workspace(
+        project_id="swiftui-calculator",
+        display_name="SwiftUI Calculator",
+        workspace_root=workspace,
+        root_intent="Build a SwiftUI calculator for iOS and macOS.",
+    )
+
+    assert (
+        report["artifact_kind"] == supervisor_module.PRODUCT_WORKSPACE_INITIALIZATION_ARTIFACT_KIND
+    )
+    assert report["canonical_mutations_allowed"] is False
+    assert report["tracked_artifacts_written"] is False
+    assert report["summary"]["status"] == "initialized"
+    assert report["project"] == {
+        "project_id": "swiftui-calculator",
+        "display_name": "SwiftUI Calculator",
+        "governance_profile": "product_workspace",
+    }
+    assert (workspace / "specgraph.project.yaml").exists()
+    assert (workspace / "specs").is_dir()
+    assert (workspace / "docs" / "proposals").is_dir()
+    assert (workspace / "runs").is_dir()
+    assert (workspace / ".specgraph").is_dir()
+    assert (workspace / ".specgraph" / "root_intent.md").read_text(encoding="utf-8") == (
+        "Build a SwiftUI calculator for iOS and macOS.\n"
+    )
+    config = supervisor_module.get_yaml_module().safe_load(
+        (workspace / "specgraph.project.yaml").read_text(encoding="utf-8")
+    )
+    assert config["artifact_kind"] == "specgraph_project_config"
+    assert config["governance_profile"] == "product_workspace"
+    assert config["supervisor"]["allow_core_policy_mutation"] is False
+    assert config["supervisor"]["allow_core_tooling_mutation"] is False
+    artifact = json.loads(
+        (workspace / "runs" / "product_workspace_initialization.json").read_text(encoding="utf-8")
+    )
+    assert artifact["workspace"]["root"] == "."
+    assert artifact["workspace"]["local_input_path_persisted"] is False
+    assert artifact["root_intent"]["status"] == "captured"
+    assert "Build a SwiftUI calculator" not in json.dumps(artifact)
+
+
+def test_initialize_product_workspace_is_idempotent(
+    supervisor_module: object,
+    tmp_path: Path,
+) -> None:
+    workspace = tmp_path / "Product"
+
+    first = supervisor_module.initialize_product_workspace(
+        project_id="product",
+        display_name="Product",
+        workspace_root=workspace,
+        root_intent="Build the product.",
+    )
+    second = supervisor_module.initialize_product_workspace(
+        project_id="product",
+        display_name="Product",
+        workspace_root=workspace,
+        root_intent="Build the product.",
+    )
+
+    assert first["summary"]["status"] == "initialized"
+    assert second["summary"]["status"] == "ready"
+    assert second["validation_findings"] == []
+    assert second["workspace"]["created_paths"] == []
+    assert "specgraph.project.yaml" in second["workspace"]["existing_paths"]
+    assert ".specgraph/root_intent.md" in second["workspace"]["existing_paths"]
+
+
+def test_initialize_product_workspace_blocks_conflicting_config_without_overwrite(
+    supervisor_module: object,
+    tmp_path: Path,
+) -> None:
+    workspace = tmp_path / "ExistingProduct"
+    workspace.mkdir()
+    config_path = workspace / "specgraph.project.yaml"
+    config_path.write_text(
+        "artifact_kind: specgraph_project_config\nproject_id: other\n",
+        encoding="utf-8",
+    )
+
+    report = supervisor_module.initialize_product_workspace(
+        project_id="existing-product",
+        display_name="Existing Product",
+        workspace_root=workspace,
+    )
+
+    assert report["summary"]["status"] == "blocked"
+    assert report["review_state"] == "blocked"
+    assert report["validation_findings"][0]["finding_id"] == "conflicting_project_config"
+    assert config_path.read_text(encoding="utf-8") == (
+        "artifact_kind: specgraph_project_config\nproject_id: other\n"
+    )
+    artifact = json.loads(
+        (workspace / "runs" / "product_workspace_initialization.json").read_text(encoding="utf-8")
+    )
+    assert artifact["summary"]["status"] == "blocked"
+    assert artifact["next_gap"] == "repair_product_workspace_initialization"
+
+
+def test_initialize_product_workspace_refuses_core_repo_paths(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    workspace = repo_fixture / "client-product"
+
+    report = supervisor_module.initialize_product_workspace(
+        project_id="client-product",
+        display_name="Client Product",
+        workspace_root=workspace,
+    )
+
+    assert report["summary"]["status"] == "blocked"
+    assert report["validation_findings"][0]["finding_id"] == (
+        "workspace_root_inside_specgraph_core"
+    )
+    assert not workspace.exists()
+    assert not (repo_fixture / "runs" / "product_workspace_initialization.json").exists()
+
+
+def test_main_initializes_product_workspace_as_standalone_command(
+    supervisor_module: object,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    workspace = tmp_path / "Calculator"
+
+    exit_code = supervisor_module.main(
+        init_product_workspace_mode=True,
+        product_workspace_project_id="calculator",
+        product_workspace_display_name="Calculator",
+        product_workspace_root=str(workspace),
+        product_workspace_root_intent="Build a calculator.",
+        output_mode="full",
+    )
+
+    assert exit_code == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["artifact_kind"] == "product_workspace_initialization"
+    assert report["summary"]["status"] == "initialized"
+    assert report["written_artifacts"]["initialization_report"]["artifact_path"] == (
+        "runs/product_workspace_initialization.json"
+    )
+    assert (workspace / "runs" / "product_workspace_initialization.json").exists()
+
+
 def test_sg_spec_0030_trace_anchor_blocks_non_bypass_prerequisite_gap(
     supervisor_module: object,
 ) -> None:
@@ -25604,6 +25756,24 @@ def test_proposal_0053_product_workspace_stable_mode_runtime_is_covered(
 
     assert "0053" in by_id, "Proposal 0053 missing from proposal_runtime_index"
     entry = by_id["0053"]
+    assert entry["runtime_realization"]["status"] == "implemented"
+    assert entry["validation_closure"]["status"] == "covered"
+    assert entry["observation_coverage"]["status"] == "covered"
+    assert entry["runtime_realization"]["missing_markers"] == []
+    assert entry["validation_closure"]["missing_markers"] == []
+    assert entry["observation_coverage"]["missing_markers"] == []
+    assert entry["reflective_chain"]["next_gap"] == "none"
+
+
+def test_proposal_0054_product_workspace_initialization_runtime_is_covered(
+    supervisor_module: object,
+) -> None:
+    """Proposal 0054 is implemented by the product workspace initializer command."""
+    index = supervisor_module.build_proposal_runtime_index()
+    by_id = {e["proposal_id"]: e for e in index["entries"]}
+
+    assert "0054" in by_id, "Proposal 0054 missing from proposal_runtime_index"
+    entry = by_id["0054"]
     assert entry["runtime_realization"]["status"] == "implemented"
     assert entry["validation_closure"]["status"] == "covered"
     assert entry["observation_coverage"]["status"] == "covered"

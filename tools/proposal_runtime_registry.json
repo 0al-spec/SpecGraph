@@ -2602,5 +2602,76 @@
         "pattern": "\"blocked_moves\":"
       }
     ]
+  },
+  {
+    "proposal_id": "0054",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "tools/supervisor.py",
+      "tests/test_supervisor.py",
+      "docs/product_workspace_initialization_viewer_contract.md"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "PRODUCT_WORKSPACE_INITIALIZATION_ARTIFACT_KIND = \"product_workspace_initialization\""
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def initialize_product_workspace("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "\"--init-product-workspace\""
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "product_workspace_project_config_payload("
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_initialize_product_workspace_creates_minimal_layout("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_initialize_product_workspace_is_idempotent("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_initialize_product_workspace_blocks_conflicting_config_without_overwrite("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_initialize_product_workspace_refuses_core_repo_paths("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_main_initializes_product_workspace_as_standalone_command("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_proposal_0054_product_workspace_initialization_runtime_is_covered("
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "write_product_workspace_initialization_report("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "PRODUCT_WORKSPACE_INITIALIZATION_REPORT_RELATIVE_PATH"
+      },
+      {
+        "path": "docs/product_workspace_initialization_viewer_contract.md",
+        "pattern": "runs/product_workspace_initialization.json"
+      },
+      {
+        "path": "docs/product_workspace_initialization_viewer_contract.md",
+        "pattern": "workspace.local_input_path_persisted: false"
+      }
+    ]
   }
 ]
