@@ -567,5 +567,13 @@
       "tests/test_supervisor.py"
     ],
     "notes": "Intent-and-operator ingress cluster semantics are semantic-surface backed by the runtime evidence registry and a live regression anchor. This trace contract intentionally does not claim UI, chat transport, agent workflow implementation, request execution, queue control, storage layout, or viewer implementation."
+  },
+  {
+    "spec_id": "SG-SPEC-0066",
+    "code_surfaces": [],
+    "test_surfaces": [
+      "tests/test_supervisor.py"
+    ],
+    "notes": "Aggregate evidence projection semantics are semantic-surface backed by the runtime evidence registry and a live regression anchor. This trace contract intentionally does not claim telemetry collection, dashboards, formulas, storage schemas, ranking, or runtime implementation."
   }
 ]

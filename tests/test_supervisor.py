@@ -10051,7 +10051,19 @@ def test_live_sg_spec_0048_evidence_contract_is_chain_complete(
             "SG-SPEC-0063",
             [],
             {
-                "artifact_ref_count": 8,
+                "artifact_ref_count": 9,
+                "runtime_entity_count": 4,
+                "observation_source_count": 3,
+                "outcome_source_count": 3,
+                "adoption_source_count": 2,
+                "chain_status": "chain_complete",
+            },
+        ),
+        (
+            "SG-SPEC-0066",
+            [],
+            {
+                "artifact_ref_count": 7,
                 "runtime_entity_count": 4,
                 "observation_source_count": 3,
                 "outcome_source_count": 3,
@@ -10105,6 +10117,7 @@ def test_live_spec_evidence_contract_is_chain_complete(
         ("SG-SPEC-0050", []),
         ("SG-SPEC-0051", []),
         ("SG-SPEC-0063", []),
+        ("SG-SPEC-0066", []),
         ("SG-SPEC-0064", []),
         ("SG-SPEC-0065", []),
     ],

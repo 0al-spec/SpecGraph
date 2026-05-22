@@ -3625,6 +3625,7 @@
       "specs/nodes/SG-SPEC-0018.yaml",
       "specs/nodes/SG-SPEC-0020.yaml",
       "specs/nodes/SG-SPEC-0021.yaml",
+      "specs/nodes/SG-SPEC-0066.yaml",
       "docs/proposals/0022_refinement_fan_out_pressure.md",
       "tests/test_supervisor.py"
     ],
@@ -3824,5 +3825,75 @@
       }
     ],
     "notes": "Intent-and-operator ingress cluster evidence is registry-backed by SG-SPEC-0065, the root fan-out pressure proposal, the SG-SPEC-0001 delegation wording, and the first reparented intent-mediation member SG-SPEC-0007. This establishes an inspectable semantic cluster parent without claiming UI, chat transport, agent workflow implementation, request execution, queue control, storage layout, or viewer implementation."
+  },
+  {
+    "spec_id": "SG-SPEC-0066",
+    "evidence_scope": "surface_level",
+    "artifact_refs": [
+      "specs/nodes/SG-SPEC-0066.yaml",
+      "specs/nodes/SG-SPEC-0063.yaml",
+      "specs/nodes/SG-SPEC-0017.yaml",
+      "specs/nodes/SG-SPEC-0018.yaml",
+      "specs/nodes/SG-SPEC-0020.yaml",
+      "specs/nodes/SG-SPEC-0021.yaml",
+      "tests/test_supervisor.py"
+    ],
+    "runtime_entities": [
+      {
+        "entity_id": "specgraph.aggregate_evidence_projection",
+        "entity_kind": "derived_evidence_projection"
+      },
+      {
+        "entity_id": "specgraph.projected_evidence_item",
+        "entity_kind": "projection_entry"
+      },
+      {
+        "entity_id": "specgraph.source_member",
+        "entity_kind": "member_evidence_owner"
+      },
+      {
+        "entity_id": "specgraph.projection_rule_gap",
+        "entity_kind": "projection_semantics_gap"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0066.yaml",
+        "pattern": "aggregate_evidence_projection"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0066.yaml",
+        "pattern": "source_member"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0066.yaml",
+        "pattern": "projection_rule_gap"
+      }
+    ],
+    "outcome_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0066.yaml",
+        "pattern": "projection_contract"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0066.yaml",
+        "pattern": "source_attribution_policy"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0066.yaml",
+        "pattern": "gap_routing_policy"
+      }
+    ],
+    "adoption_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0063.yaml",
+        "pattern": "SG-SPEC-0066"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0066.yaml",
+        "pattern": "AEP-0066-1"
+      }
+    ],
+    "notes": "Aggregate evidence projection evidence is registry-backed by SG-SPEC-0066, the SG-SPEC-0063 cluster boundary, concrete member specs, and live regression coverage. This establishes a derived cluster-level evidence summary contract without claiming telemetry collection, dashboards, formulas, storage schemas, ranking, or runtime implementation."
   }
 ]

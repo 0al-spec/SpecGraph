@@ -2,7 +2,7 @@ id: SG-SPEC-0063
 title: SpecGraph - Realization and Observation Semantics Cluster
 kind: spec
 created_at: '2026-05-14T22:30:00Z'
-updated_at: '2026-05-20T06:55:41Z'
+updated_at: '2026-05-22T20:45:00Z'
 status: linked
 maturity: 0.88
 depends_on:
@@ -10,6 +10,7 @@ depends_on:
 - SG-SPEC-0018
 - SG-SPEC-0020
 - SG-SPEC-0021
+- SG-SPEC-0066
 relates_to:
 - SG-SPEC-0003
 - SG-SPEC-0007
@@ -21,6 +22,7 @@ inputs:
 - specs/nodes/SG-SPEC-0018.yaml
 - specs/nodes/SG-SPEC-0020.yaml
 - specs/nodes/SG-SPEC-0021.yaml
+- specs/nodes/SG-SPEC-0066.yaml
 - docs/proposals/0022_refinement_fan_out_pressure.md
 outputs:
 - specs/nodes/SG-SPEC-0063.yaml
@@ -29,8 +31,9 @@ allowed_paths:
 acceptance:
 - Defines SG-SPEC-0063 as the intermediate semantic cluster parent under SG-SPEC-0001 for realization,
   observation, adoption, executable traceability, and derived metric-family semantics.
-- Groups runtime observability entities, adoption-layer entities, executable-layer traceability, and derived
-  metric family boundaries without redefining the bounded contracts owned by those children.
+- Groups runtime observability entities, adoption-layer entities, executable-layer traceability, derived
+  metric family boundaries, and aggregate evidence projection semantics without redefining the bounded
+  contracts owned by those children.
 - Defines root dependency routing so SG-SPEC-0001 can depend on one realization-and-observation aggregate
   while concrete child specs keep their existing semantic ownership and dependencies.
 - Defines cross-member handoff semantics so realization, observation, adoption, executable, and metric-family
@@ -44,9 +47,10 @@ acceptance_evidence:
     define SG-SPEC-0063 as the delegated realization-and-observation cluster beneath SG-SPEC-0001, while
     inputs include the fan-out pressure proposal that motivates intermediate clustering.
 - criterion: Groups runtime observability entities, adoption-layer entities, executable-layer traceability,
-    and derived metric family boundaries without redefining the bounded contracts owned by those children.
-  evidence: specification.member_contracts enumerates SG-SPEC-0017, SG-SPEC-0018, SG-SPEC-0020, and SG-SPEC-0021
-    with explicit member roles and ownership boundaries.
+    derived metric family boundaries, and aggregate evidence projection semantics without redefining the
+    bounded contracts owned by those children.
+  evidence: specification.member_contracts enumerates SG-SPEC-0017, SG-SPEC-0018, SG-SPEC-0020, SG-SPEC-0021,
+    and SG-SPEC-0066 with explicit member roles and ownership boundaries.
 - criterion: Defines root dependency routing so SG-SPEC-0001 can depend on one realization-and-observation
     aggregate while concrete child specs keep their existing semantic ownership and dependencies.
   evidence: specification.cluster_contract.dependency_policy and specification.cluster_contract.refinement_routing_policy
@@ -81,6 +85,7 @@ specification:
     - Canonical-versus-derived protection for observation and metric-family semantics
     - Cross-member handoff semantics for realization and observation concerns spanning more than one member
       boundary
+    - Aggregate evidence projection boundary delegated to SG-SPEC-0066
     out:
     - Runtime instrumentation, telemetry collection, storage schemas, or observability backends
     - Metric formulas, threshold policies, dashboards, ranking, or scheduler behavior
@@ -138,6 +143,10 @@ specification:
     member_role: Derived metric family boundary.
     ownership_boundary: Defines metric-family semantic handles and canonical-versus-derived separation
       without defining formulas, thresholds, dashboards, storage, or scheduler behavior.
+  - spec_id: SG-SPEC-0066
+    member_role: Aggregate evidence projection boundary.
+    ownership_boundary: Defines how cluster-level evidence summaries are derived from member-owned evidence
+      while preserving member ownership, canonical-versus-derived separation, and unresolved gap routing.
   cross_member_handoff_policy:
   - A concern spanning runtime observability, adoption, executable traceability, or metric-family semantics
     must name one primary member spec as the owner of the acceptance claim or unresolved gap.
@@ -158,31 +167,72 @@ specification:
     surfaces.
   - SG-SPEC-0063 must not hide unresolved member gaps; backlog and evidence projections should continue
     to point to the concrete member when the gap is member-specific.
-gate_state: none
+gate_state: review_pending
+required_human_action: review graph refactor before merge
 proposed_status: null
 proposed_maturity: null
-required_human_action: '-'
+last_outcome: done
+last_blocker: none
+last_run_id: 20260522T204052Z-SG-SPEC-0063-23ce88c9
+last_exit_code: 0
+last_changed_files:
+- specs/nodes/SG-SPEC-0063.yaml
+- specs/nodes/SG-SPEC-0066.yaml
+last_run_at: '2026-05-22T20:44:20.731174+00:00'
 last_worktree_path: ''
 last_branch: ''
-last_gate_decision: approve
-last_gate_note: ''
-last_gate_at: '2026-05-20T06:55:41.934026+00:00'
-last_gate_run_id: 20260519T214802Z-SG-SPEC-0063-80e51a2c
-last_prompt_overlay_provenance:
-  enabled: true
-  source_kind: profile
-  prompt_profile_id: default
-  prompt_extension_path: tools/supervisor_prompts/default.md
-  prompt_extension_sha256: 12e2eb9fe436d018cec8e97924fa146b7d4fc8d64ff173a49db80a7a6f6acab5
-  prompt_overlay_authority: project
-  core_prompt_overridden: false
-  policy_reference:
-    artifact_path: tools/supervisor_prompt_policy.json
-    artifact_sha256: 88d2c46d25b2ed732f7cf1694d7a2bcf4455962d1b0dd290cb9993fbe35a728d
-    version: 1
-  non_overridable_invariants:
-  - protocol_markers_required
-  - allowed_paths_required
-  - review_gates_required
-  - evidence_semantics_required
-  - artifact_contract_validation_required
+last_validator_results:
+  outputs: true
+  allowed_paths: true
+  reconciliation: true
+  atomicity: true
+  transition: true
+  executor_environment: true
+  runtime_artifacts: true
+  refinement_acceptance: true
+last_refinement_acceptance:
+  decision: review_required
+  change_class: graph_refactor
+  checks:
+    content_changed: true
+    hard_validation: true
+    single_spec_scope: false
+    constitutional_diff: false
+    graph_refactor_diff: true
+    atomicity_clear: true
+    within_mutation_budget: true
+  diff_paths:
+  - acceptance[1]
+  - acceptance_evidence[1].criterion
+  - acceptance_evidence[1].evidence
+  - depends_on[4]
+  - inputs[5]
+  - inputs[6]
+  - specification.member_contracts[4]
+  - specification.member_contracts[4].spec_id
+  - specification.member_contracts[4].member_role
+  - specification.member_contracts[4].ownership_boundary
+  - specification.scope.in[6]
+  mutation_classes:
+  - policy_text
+  mutation_budget: []
+  budget_exceeded_classes: []
+  changed_spec_files:
+  - specs/nodes/SG-SPEC-0063.yaml
+  - specs/nodes/SG-SPEC-0066.yaml
+  review_reasons:
+  - run changed additional spec files beyond the selected source node
+  - run changed graph structure or spec contract paths
+  errors: []
+  warnings: []
+last_reconciliation:
+  worktree_spec_count: 66
+  changed_spec_ids:
+  - SG-SPEC-0063
+  - SG-SPEC-0066
+  semantic_dependencies_resolved: true
+  work_dependencies_ready: false
+  cycles: []
+last_requested_child_materialization: true
+last_materialized_child_paths:
+- specs/nodes/SG-SPEC-0066.yaml
