@@ -10271,6 +10271,13 @@ PRODUCT_WORKSPACE_ALLOWED_TOP_LEVEL_ENTRIES = {
     "docs",
     "runs",
     ".specgraph",
+    ".git",
+    ".gitignore",
+    ".env.example",
+    "README",
+    "README.md",
+    "LICENSE",
+    "LICENSE.md",
 }
 PRODUCT_WORKSPACE_PROJECT_ID_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 
@@ -10445,6 +10452,34 @@ def product_workspace_conflict_findings(
             }
         )
 
+    for rel_dir in PRODUCT_WORKSPACE_REQUIRED_DIRECTORIES:
+        target_dir = workspace_root / rel_dir
+        parent = target_dir.parent
+        while parent != workspace_root and workspace_root in parent.parents:
+            if parent.exists() and not parent.is_dir():
+                findings.append(
+                    {
+                        "finding_id": "required_workspace_parent_not_directory",
+                        "severity": "error",
+                        "path": rel_dir.rstrip("/") + "/",
+                        "blocking_path": parent.relative_to(workspace_root).as_posix(),
+                        "message": "required workspace directory parent exists as a file",
+                        "next_gap": "repair_existing_workspace_before_initialization",
+                    }
+                )
+                break
+            parent = parent.parent
+        if target_dir.exists() and not target_dir.is_dir():
+            findings.append(
+                {
+                    "finding_id": "required_workspace_path_not_directory",
+                    "severity": "error",
+                    "path": rel_dir.rstrip("/") + "/",
+                    "message": "required workspace directory path exists as a file",
+                    "next_gap": "repair_existing_workspace_before_initialization",
+                }
+            )
+
     config_path = workspace_root / PROJECT_CONFIG_RELATIVE_PATH
     if config_path.exists():
         try:
@@ -10561,10 +10596,10 @@ def initialize_product_workspace(
     root_intent_path = root_resolved / ".specgraph" / "root_intent.md"
     root_intent_status = "not_provided"
     root_intent_content_sha256 = ""
-    if root_intent_text:
-        root_intent_status = "captured"
-        root_intent_content_sha256 = hashlib.sha256(root_intent_text.encode("utf-8")).hexdigest()
-    elif can_probe_workspace and root_intent_path.exists():
+    requested_root_intent_sha256 = (
+        hashlib.sha256(root_intent_text.encode("utf-8")).hexdigest() if root_intent_text else ""
+    )
+    if not root_intent_text and can_probe_workspace and root_intent_path.exists():
         try:
             existing_root_intent_text = root_intent_path.read_text(encoding="utf-8")
         except OSError as exc:
@@ -10617,10 +10652,15 @@ def initialize_product_workspace(
             else:
                 atomic_write_text(root_intent_path, root_intent_text)
                 created_paths.append(".specgraph/root_intent.md")
+            root_intent_status = "captured"
+            root_intent_content_sha256 = requested_root_intent_sha256
             written_artifacts["root_intent"] = {
                 "artifact_path": ".specgraph/root_intent.md",
                 "artifact_sha256": root_intent_content_sha256,
             }
+    elif root_intent_text:
+        root_intent_status = "blocked"
+        root_intent_content_sha256 = ""
 
     workspace_status = "blocked" if has_errors else ("initialized" if created_paths else "ready")
     report: dict[str, Any] = {
@@ -10649,7 +10689,9 @@ def initialize_product_workspace(
         "root_intent": {
             "status": root_intent_status,
             "artifact_path": (
-                ".specgraph/root_intent.md" if root_intent_status != "not_provided" else ""
+                ".specgraph/root_intent.md"
+                if root_intent_status in {"captured", "captured_existing"}
+                else ""
             ),
             "content_sha256": root_intent_content_sha256,
             "next_gap": "review_before_canonical_materialization",
@@ -10696,18 +10738,38 @@ def initialize_product_workspace(
         )
     )
     if can_write_report:
-        report_path = write_product_workspace_initialization_report(
-            report,
-            workspace_root=root_resolved,
-        )
         report["written_artifacts"]["initialization_report"] = {
             "artifact_path": PRODUCT_WORKSPACE_INITIALIZATION_REPORT_RELATIVE_PATH,
             "artifact_kind": PRODUCT_WORKSPACE_INITIALIZATION_ARTIFACT_KIND,
         }
         report["summary"]["report_path"] = PRODUCT_WORKSPACE_INITIALIZATION_REPORT_RELATIVE_PATH
-        # Rewrite once so the on-disk artifact includes its own report pointer.
-        write_product_workspace_initialization_report(report, workspace_root=root_resolved)
-        _ = report_path
+        try:
+            write_product_workspace_initialization_report(
+                report,
+                workspace_root=root_resolved,
+            )
+        except (OSError, RuntimeError) as exc:
+            report["written_artifacts"].pop("initialization_report", None)
+            report["summary"].pop("report_path", None)
+            report["validation_findings"].append(
+                {
+                    "finding_id": "initialization_report_write_failed",
+                    "severity": "error",
+                    "path": PRODUCT_WORKSPACE_INITIALIZATION_REPORT_RELATIVE_PATH,
+                    "message": f"failed to write initialization report: {exc}",
+                    "next_gap": "repair_product_workspace_report_path",
+                }
+            )
+            report["review_state"] = "blocked"
+            report["next_gap"] = "repair_product_workspace_initialization"
+            report["summary"]["status"] = "blocked"
+            report["summary"]["validation_finding_count"] = len(report["validation_findings"])
+            report["summary"]["next_gap"] = "repair_product_workspace_initialization"
+            report["viewer_projection"]["initialization_badge"]["status"] = "blocked"
+            report["viewer_projection"]["safe_next_actions"] = [
+                "repair_workspace_conflict_before_retry"
+            ]
+            return report
 
     return report
 
@@ -12134,9 +12196,11 @@ def artifact_lock(path: Path):
             fd = os.open(lock_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
         except FileExistsError as exc:
             if time.monotonic() >= deadline:
-                raise RuntimeError(
-                    f"Timed out waiting for artifact lock: {lock_path.relative_to(ROOT).as_posix()}"
-                ) from exc
+                try:
+                    lock_display = lock_path.relative_to(ROOT).as_posix()
+                except ValueError:
+                    lock_display = lock_path.as_posix()
+                raise RuntimeError(f"Timed out waiting for artifact lock: {lock_display}") from exc
             time.sleep(ARTIFACT_LOCK_POLL_SECONDS)
             continue
         with os.fdopen(fd, "w", encoding="utf-8") as lock_file:

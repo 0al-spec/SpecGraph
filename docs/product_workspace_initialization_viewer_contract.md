@@ -59,7 +59,7 @@ python3 tools/supervisor.py \
     "required_paths": []
   },
   "root_intent": {
-    "status": "captured|captured_existing|not_provided",
+    "status": "captured|captured_existing|not_provided|blocked",
     "artifact_path": ".specgraph/root_intent.md",
     "content_sha256": "...",
     "next_gap": "review_before_canonical_materialization"

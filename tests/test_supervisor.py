@@ -23552,6 +23552,93 @@ def test_initialize_product_workspace_reports_unreadable_workspace_root(
     assert (workspace / "runs" / "product_workspace_initialization.json").exists()
 
 
+def test_initialize_product_workspace_rejects_required_directory_file_collision(
+    supervisor_module: object,
+    tmp_path: Path,
+) -> None:
+    workspace = tmp_path / "Collision"
+    workspace.mkdir()
+    (workspace / "runs").write_text("not a directory\n", encoding="utf-8")
+
+    report = supervisor_module.initialize_product_workspace(
+        project_id="collision",
+        display_name="Collision",
+        workspace_root=workspace,
+    )
+
+    assert report["summary"]["status"] == "blocked"
+    assert any(
+        finding["finding_id"] == "required_workspace_path_not_directory"
+        and finding["path"] == "runs/"
+        for finding in report["validation_findings"]
+    )
+    assert any(
+        finding["finding_id"] == "initialization_report_write_failed"
+        for finding in report["validation_findings"]
+    )
+
+
+def test_initialize_product_workspace_allows_standard_repo_metadata(
+    supervisor_module: object,
+    tmp_path: Path,
+) -> None:
+    workspace = tmp_path / "RepoProduct"
+    workspace.mkdir()
+    (workspace / ".git").mkdir()
+    (workspace / ".gitignore").write_text("runs/\n", encoding="utf-8")
+    (workspace / "README.md").write_text("# Repo Product\n", encoding="utf-8")
+
+    report = supervisor_module.initialize_product_workspace(
+        project_id="repo-product",
+        display_name="Repo Product",
+        workspace_root=workspace,
+    )
+
+    assert report["summary"]["status"] == "initialized"
+    assert report["validation_findings"] == []
+    assert (workspace / "runs" / "product_workspace_initialization.json").exists()
+
+
+def test_initialize_product_workspace_does_not_report_blocked_root_intent_as_captured(
+    supervisor_module: object,
+    tmp_path: Path,
+) -> None:
+    workspace = tmp_path / "BlockedIntent"
+    workspace.mkdir()
+    (workspace / "specgraph.project.yaml").write_text("project_id: other\n", encoding="utf-8")
+
+    report = supervisor_module.initialize_product_workspace(
+        project_id="blocked-intent",
+        display_name="Blocked Intent",
+        workspace_root=workspace,
+        root_intent="Do not report this as captured.",
+    )
+
+    assert report["summary"]["status"] == "blocked"
+    assert report["root_intent"]["status"] == "blocked"
+    assert report["root_intent"]["artifact_path"] == ""
+    assert report["root_intent"]["content_sha256"] == ""
+    assert not (workspace / ".specgraph" / "root_intent.md").exists()
+
+
+def test_artifact_lock_timeout_message_handles_external_paths(
+    supervisor_module: object,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    report_path = tmp_path / "external" / "runs" / "product_workspace_initialization.json"
+    report_path.parent.mkdir(parents=True)
+    lock_path = supervisor_module.artifact_lock_path(report_path)
+    lock_path.write_text("stale\n", encoding="utf-8")
+    monkeypatch.setattr(supervisor_module, "ARTIFACT_LOCK_TIMEOUT_SECONDS", 0)
+
+    with pytest.raises(RuntimeError) as exc_info:
+        with supervisor_module.artifact_lock(report_path):
+            pass
+
+    assert lock_path.as_posix() in str(exc_info.value)
+
+
 def test_initialize_product_workspace_blocks_conflicting_config_without_overwrite(
     supervisor_module: object,
     tmp_path: Path,
