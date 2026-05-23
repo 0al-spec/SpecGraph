@@ -26879,12 +26879,14 @@ def test_main_split_proposal_accepts_split_required_atomicity_pressure_target(
     node_data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
     node_data["title"] = "Calculator Overview"
     node_data["prompt"] = "Keep the parent as overview and split detailed concerns."
-    node_data["acceptance"] = [f"criterion-{i}" for i in range(1, 6)]
+    acceptance_count = supervisor_module.ATOMICITY_MAX_ACCEPTANCE + 1
+    node_data["acceptance"] = [f"criterion-{i}" for i in range(1, acceptance_count + 1)]
     node_data["gate_state"] = "split_required"
     node_data["last_outcome"] = "split_required"
     node_data["last_validator_results"] = {"atomicity": False}
     node_data["last_errors"] = [
-        "Atomicity gate exceeded: 6 acceptance criteria > 5. "
+        f"Atomicity gate exceeded: {acceptance_count} acceptance criteria > "
+        f"{supervisor_module.ATOMICITY_MAX_ACCEPTANCE}. "
         "Split independent concerns into child specs."
     ]
     node_path.write_text(json.dumps(node_data), encoding="utf-8")
@@ -26933,7 +26935,6 @@ def test_main_split_proposal_accepts_split_required_atomicity_pressure_target(
     )
     assert exit_code == 0
     assert node_path.read_text(encoding="utf-8") == before_text
-
     queue_items = json.loads(
         (repo_fixture / "runs" / "proposal_queue.json").read_text(encoding="utf-8")
     )
@@ -27286,7 +27287,9 @@ def test_main_apply_split_proposal_preserves_cluster_member_dependency_exception
 ) -> None:
     node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
     node_data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
-    member_ids = ["SG-SPEC-0101", "SG-SPEC-0102", "SG-SPEC-0103", "SG-SPEC-0104"]
+    member_ids = [
+        f"SG-SPEC-010{i}" for i in range(1, supervisor_module.ATOMICITY_MAX_BLOCKING_CHILDREN + 2)
+    ]
     node_data["title"] = "Aggregate Evidence Projection"
     node_data["prompt"] = "Cluster boundary with member-owned evidence sources."
     node_data["acceptance"] = [f"criterion-{i}" for i in range(1, 6)]
