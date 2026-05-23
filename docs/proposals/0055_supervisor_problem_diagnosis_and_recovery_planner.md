@@ -127,6 +127,8 @@ Suggested shape:
 {
   "artifact_kind": "supervisor_problem_diagnosis",
   "schema_version": 1,
+  "canonical_mutations_allowed": false,
+  "tracked_artifacts_written": false,
   "generated_at": "2026-05-23T00:00:00Z",
   "target": {
     "spec_id": "SG-SPEC-0066",
@@ -139,8 +141,8 @@ Suggested shape:
   },
   "detected_problems": [
     {
-      "problem_id": "split_required_candidate_without_proposal_path",
-      "problem_class": "graph_recovery",
+      "problem_id": "p-0055-split-required-candidate-without-proposal-path-001",
+      "problem_class": "split_required_candidate_without_proposal_path",
       "severity": "actionable",
       "root_cause": "A rejected candidate hit atomicity, while the canonical node remained bounded.",
       "evidence": [
@@ -170,6 +172,9 @@ Suggested shape:
   ]
 }
 ```
+
+`problem_id` is a per-run unique identifier; it is intentionally distinct from
+`problem_class`, which must match one of the enumerated vocabulary values.
 
 The artifact must not include raw prompt text, secrets, provider credentials,
 or machine-local private tokens.
