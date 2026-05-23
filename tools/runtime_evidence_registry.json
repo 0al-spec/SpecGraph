@@ -1589,10 +1589,14 @@
       },
       {
         "path": "tools/supervisor.py",
-        "pattern": "split_oversized_spec requires an oversized non-seed spec target"
+        "pattern": "split-required atomicity-pressure"
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "test_main_split_proposal_accepts_split_required_atomicity_pressure_target"
       }
     ],
-    "notes": "Proposal/split gateway evidence is registry-backed by split target validation that admits only valid oversized non-seed targets into proposal/split mechanics."
+    "notes": "Proposal/split gateway evidence is registry-backed by split target validation that admits oversized non-seed targets and split-required atomicity-pressure targets into proposal/split mechanics."
   },
   {
     "spec_id": "SG-SPEC-0030",
@@ -3903,5 +3907,80 @@
       }
     ],
     "notes": "Aggregate evidence projection evidence is registry-backed by SG-SPEC-0066, the SG-SPEC-0063 cluster boundary, concrete member specs, and live regression coverage. This establishes a derived cluster-level evidence summary contract without claiming telemetry collection, dashboards, formulas, storage schemas, ranking, or runtime implementation."
+  },
+  {
+    "spec_id": "SG-SPEC-0067",
+    "evidence_scope": "surface_level",
+    "artifact_refs": [
+      "specs/nodes/SG-SPEC-0067.yaml",
+      "specs/nodes/SG-SPEC-0066.yaml",
+      "proposal_lane/nodes/refactor_proposal--sg-spec-0066--oversized_spec--54b140c5.json",
+      "tests/test_supervisor.py"
+    ],
+    "runtime_entities": [
+      {
+        "entity_id": "specgraph.projected_evidence_record_identity",
+        "entity_kind": "derived_record_identity"
+      },
+      {
+        "entity_id": "specgraph.primary_source_member",
+        "entity_kind": "member_evidence_owner_reference"
+      },
+      {
+        "entity_id": "specgraph.rebuild_basis",
+        "entity_kind": "derived_record_reconstruction_basis"
+      },
+      {
+        "entity_id": "specgraph.supporting_member_context",
+        "entity_kind": "cross_member_context_reference"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0067.yaml",
+        "pattern": "projected_evidence_record_identity"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0067.yaml",
+        "pattern": "primary_source_member"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0067.yaml",
+        "pattern": "rebuild_basis"
+      }
+    ],
+    "outcome_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0067.yaml",
+        "pattern": "record_identity_policy"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0067.yaml",
+        "pattern": "source_attribution_policy"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0067.yaml",
+        "pattern": "rebuild_basis_policy"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0067.yaml",
+        "pattern": "canonical_derived_boundary"
+      }
+    ],
+    "adoption_markers": [
+      {
+        "path": "specs/nodes/SG-SPEC-0067.yaml",
+        "pattern": "SG-SPEC-0066"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0067.yaml",
+        "pattern": "AEP-0067-1"
+      },
+      {
+        "path": "specs/nodes/SG-SPEC-0067.yaml",
+        "pattern": "AEP-0067-4"
+      }
+    ],
+    "notes": "Aggregate projection record identity evidence is registry-backed by SG-SPEC-0067, its SG-SPEC-0066 split proposal lane record, and live regression coverage. This establishes a derived projected_evidence_item identity and rebuild-basis contract without claiming storage keys, projection algorithms, dashboards, ranking, telemetry collection, or member evidence ownership changes."
   }
 ]

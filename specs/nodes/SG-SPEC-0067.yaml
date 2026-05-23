@@ -1,0 +1,144 @@
+id: SG-SPEC-0067
+title: SpecGraph - Aggregate Projection Record Identity and Rebuild Basis
+kind: spec
+created_at: '2026-05-23T07:21:13Z'
+updated_at: '2026-05-23T07:27:19Z'
+status: specified
+maturity: 0.4
+depends_on: []
+relates_to: []
+refines:
+- SG-SPEC-0066
+inputs:
+- specs/nodes/SG-SPEC-0066.yaml
+outputs:
+- specs/nodes/SG-SPEC-0067.yaml
+allowed_paths:
+- specs/nodes/SG-SPEC-0067.yaml
+acceptance:
+- Defines source attribution requirements so each projected evidence item names the member-owned evidence
+  or gap it summarizes across runtime observability, adoption, executable traceability, or metric-family
+  semantics.
+- Defines projected evidence record identity so each projected_evidence_item has one primary source member,
+  one source claim type, one summarized member-owned evidence or gap reference, and optional supporting
+  member context.
+- Defines rebuild-basis semantics so projected_evidence_item records remain rebuildable from SG-SPEC-0063
+  member evidence and aggregate projection rules instead of becoming canonical aggregate evidence records.
+- Keeps storage keys, projection algorithms, dashboard presentation, ranking, telemetry collection, and
+  member evidence ownership changes out of scope for projected evidence record identity semantics.
+acceptance_evidence:
+- criterion: Defines source attribution requirements so each projected evidence item names the member-owned
+    evidence or gap it summarizes across runtime observability, adoption, executable traceability, or
+    metric-family semantics.
+  evidence: specification.source_attribution_policy requires every projected evidence item to name its
+    source_member, source_claim_type, and summarized_evidence_or_gap across the runtime observability,
+    adoption, executable traceability, or metric-family member boundary.
+- criterion: Defines projected evidence record identity so each projected_evidence_item has one primary
+    source member, one source claim type, one summarized member-owned evidence or gap reference, and optional
+    supporting member context.
+  evidence: specification.record_identity_policy defines projected_evidence_item identity as source_member,
+    source_claim_type, summarized_evidence_or_gap, projection_subject, and optional supporting_member_context
+    while requiring one primary source_member for ownership and follow-up.
+- criterion: Defines rebuild-basis semantics so projected_evidence_item records remain rebuildable from
+    SG-SPEC-0063 member evidence and aggregate projection rules instead of becoming canonical aggregate
+    evidence records.
+  evidence: specification.rebuild_basis_policy states that projected_evidence_item records are derived
+    from SG-SPEC-0063 member evidence plus SG-SPEC-0066 projection rules and must not be treated as canonical
+    aggregate evidence records.
+- criterion: Keeps storage keys, projection algorithms, dashboard presentation, ranking, telemetry collection,
+    and member evidence ownership changes out of scope for projected evidence record identity semantics.
+  evidence: specification.scope.out excludes storage keys, projection algorithms, dashboard presentation,
+    ranking, telemetry collection, and member evidence ownership changes.
+prompt: Materialize the projected evidence record identity and rebuild-basis semantics beneath SG-SPEC-0066.
+  Define how each projected_evidence_item identifies its primary source member, source claim type, summarized
+  member-owned evidence or gap, and any supporting member context while remaining rebuildable from SG-SPEC-0063
+  member evidence and non-canonical as an aggregate record.
+specification:
+  objective: Define the bounded identity and rebuild basis for projected_evidence_item records so aggregate
+    evidence projections can be inspected as derived records without becoming canonical evidence owned
+    by the aggregate projection.
+  scope:
+    in:
+    - Record identity semantics for one projected_evidence_item within an SG-SPEC-0066 aggregate evidence
+      projection
+    - Source attribution fields that tie each projected_evidence_item back to one SG-SPEC-0063 member
+      evidence claim or gap
+    - Supporting member context for cross-member projected evidence summaries
+    - Rebuild-basis semantics for regenerating projected_evidence_item records from member-owned evidence
+      and aggregate projection rules
+    out:
+    - Storage keys, database schemas, serialization formats, indexes, or cache invalidation behavior
+    - Projection algorithms, ranking, scoring, filtering, dashboards, badges, or viewer presentation
+    - Telemetry collection, instrumentation, metric formulas, adoption analytics, or executable trace
+      runtime behavior
+    - Changes to canonical member evidence ownership, member acceptance criteria, or member gap closure
+      rules
+  terminology:
+    projected_evidence_record_identity: The derived identity tuple that lets reviewers distinguish one
+      projected_evidence_item from another without making the projection a canonical evidence record.
+    primary_source_member: The single SG-SPEC-0063 member spec that owns the evidence claim or unresolved
+      gap summarized by a projected_evidence_item.
+    projection_subject: The aggregate review subject whose evidence is being summarized, such as a runtime
+      observability, adoption, executable traceability, or metric-family concern.
+    supporting_member_context: Optional references to other SG-SPEC-0063 member specs whose evidence provides
+      context for interpreting the projected_evidence_item but does not own the summarized claim.
+    rebuild_basis: The set of member-owned evidence or gap references plus SG-SPEC-0066 projection rules
+      sufficient to regenerate a projected_evidence_item.
+  record_identity_policy:
+  - A projected_evidence_item identity must include exactly one source_member that is the primary owner
+    of the summarized claim or gap.
+  - A projected_evidence_item identity must include one source_claim_type describing whether the source
+    member claim is satisfied, partial, missing, conflicting, or a projection_rule_gap.
+  - A projected_evidence_item identity must include summarized_evidence_or_gap as the member-owned evidence
+    identifier, missing evidence condition, conflict, or projection-rule gap being summarized.
+  - A projected_evidence_item identity must include a projection_subject so the same source member evidence
+    can be projected into more than one aggregate review subject without merging distinct records.
+  - A projected_evidence_item may include supporting_member_context when cross-member evidence helps interpret
+    the summary, but supporting_member_context must not replace the primary source_member for ownership
+    or follow-up.
+  source_attribution_policy:
+  - Runtime observability summaries must identify SG-SPEC-0017 as source_member when the summarized evidence
+    or gap is owned by runtime observability semantics.
+  - Adoption-layer summaries must identify SG-SPEC-0018 as source_member when the summarized evidence
+    or gap is owned by adoption semantics.
+  - Executable traceability summaries must identify SG-SPEC-0020 as source_member when the summarized
+    evidence or gap is owned by executable traceability semantics.
+  - Metric-family summaries must identify SG-SPEC-0021 as source_member when the summarized evidence or
+    gap is owned by metric-family semantics.
+  - Projection-rule gaps must identify SG-SPEC-0066 as source_member only when the missing or ambiguous
+    condition belongs to the aggregate projection rule rather than to member-owned evidence.
+  rebuild_basis_policy:
+  - A projected_evidence_item is derived from SG-SPEC-0063 member evidence, member-owned gaps, and SG-SPEC-0066
+    aggregate projection rules.
+  - The rebuild_basis for a projected_evidence_item must preserve the source_member, source_claim_type,
+    summarized_evidence_or_gap, projection_subject, and any supporting_member_context needed to regenerate
+    the record.
+  - Rebuilding a projected_evidence_item must not require treating the aggregate projection as the canonical
+    evidence source.
+  - If member-owned evidence changes, the projected_evidence_item is regenerated or marked stale according
+    to the projection rule; the aggregate record does not override the member-owned evidence.
+  - If the projection rule cannot determine a stable rebuild_basis, the item must be represented as a
+    projection_rule_gap rather than inventing aggregate evidence.
+  canonical_derived_boundary:
+  - projected_evidence_item records are non-canonical aggregate records.
+  - The owning member spec remains authoritative for the underlying evidence claim, missing evidence condition,
+    or conflict.
+  - A projected_evidence_item may support review navigation and cross-member comparison, but it must not
+    satisfy member acceptance, close member gaps, or change member evidence ownership.
+  invariants:
+    AEP-0067-1: Every projected_evidence_item identifies exactly one primary source_member.
+    AEP-0067-2: Every projected_evidence_item records source_claim_type and summarized_evidence_or_gap.
+    AEP-0067-3: supporting_member_context never transfers evidence ownership away from the primary source_member.
+    AEP-0067-4: projected_evidence_item records remain rebuildable derived aggregate records, not canonical
+      aggregate evidence.
+gate_state: none
+proposed_status: null
+proposed_maturity: null
+required_human_action: '-'
+last_gate_run_id: 20260523T072211Z-SG-SPEC-0067-7ea4ddbe
+last_worktree_path: ''
+last_branch: ''
+last_gate_decision: approve
+last_gate_note: approve bounded aggregate projection record identity and rebuild-basis semantics after
+  candidate review
+last_gate_at: '2026-05-23T07:27:19.578809+00:00'

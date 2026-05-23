@@ -10036,6 +10036,18 @@ def test_live_sg_spec_0048_evidence_contract_is_chain_complete(
             },
         ),
         (
+            "SG-SPEC-0029",
+            ["tools/supervisor.py"],
+            {
+                "artifact_ref_count": 2,
+                "runtime_entity_count": 2,
+                "observation_source_count": 2,
+                "outcome_source_count": 2,
+                "adoption_source_count": 3,
+                "chain_status": "chain_complete",
+            },
+        ),
+        (
             "SG-SPEC-0062",
             [],
             {
@@ -10064,6 +10076,18 @@ def test_live_sg_spec_0048_evidence_contract_is_chain_complete(
             [],
             {
                 "artifact_ref_count": 7,
+                "runtime_entity_count": 4,
+                "observation_source_count": 3,
+                "outcome_source_count": 4,
+                "adoption_source_count": 3,
+                "chain_status": "chain_complete",
+            },
+        ),
+        (
+            "SG-SPEC-0067",
+            [],
+            {
+                "artifact_ref_count": 4,
                 "runtime_entity_count": 4,
                 "observation_source_count": 3,
                 "outcome_source_count": 4,
@@ -10114,10 +10138,12 @@ def test_live_spec_evidence_contract_is_chain_complete(
         ("SG-SPEC-0001", []),
         ("SG-SPEC-0002", []),
         ("SG-SPEC-0003", []),
+        ("SG-SPEC-0029", ["tools/supervisor.py"]),
         ("SG-SPEC-0050", []),
         ("SG-SPEC-0051", []),
         ("SG-SPEC-0063", []),
         ("SG-SPEC-0066", []),
+        ("SG-SPEC-0067", []),
         ("SG-SPEC-0064", []),
         ("SG-SPEC-0065", []),
     ],
@@ -26844,6 +26870,76 @@ def test_main_split_proposal_rejects_non_oversized_target(
     assert not (repo_fixture / "runs" / "proposal_queue.json").exists()
 
 
+def test_main_split_proposal_accepts_split_required_atomicity_pressure_target(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    node_data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    node_data["title"] = "Calculator Overview"
+    node_data["prompt"] = "Keep the parent as overview and split detailed concerns."
+    node_data["acceptance"] = [f"criterion-{i}" for i in range(1, 6)]
+    node_data["gate_state"] = "split_required"
+    node_data["last_outcome"] = "split_required"
+    node_data["last_validator_results"] = {"atomicity": False}
+    node_data["last_errors"] = [
+        "Atomicity gate exceeded: 6 acceptance criteria > 5. "
+        "Split independent concerns into child specs."
+    ]
+    node_path.write_text(json.dumps(node_data), encoding="utf-8")
+    before_text = node_path.read_text(encoding="utf-8")
+
+    worktree = make_fake_worktree(repo_fixture)
+    monkeypatch.setattr(
+        supervisor_module,
+        "create_isolated_worktree",
+        lambda _node_id: (worktree, "codex/sg-spec-0001/split-proposal"),
+    )
+
+    work_item = supervisor_module.build_split_refactor_work_item(supervisor_module.load_specs()[0])
+    changed_snapshots = [[], [work_item["proposal_artifact_relpath"]]]
+    monkeypatch.setattr(
+        supervisor_module, "git_changed_files", lambda _cwd=None: changed_snapshots.pop(0)
+    )
+
+    def fake_executor(
+        node: object,
+        worktree_path: Path,
+        refactor_work_item: dict[str, object],
+    ) -> subprocess.CompletedProcess[str]:
+        proposal_path = worktree_path / str(refactor_work_item["proposal_artifact_relpath"])
+        proposal_path.parent.mkdir(parents=True, exist_ok=True)
+        proposal_path.write_text(
+            json.dumps(
+                make_valid_split_proposal(
+                    node.data,
+                    str(refactor_work_item["planned_run_id"]),
+                )
+            ),
+            encoding="utf-8",
+        )
+        return subprocess.CompletedProcess(
+            args=["codex"],
+            returncode=0,
+            stdout="RUN_OUTCOME: done\nBLOCKER: none\n",
+            stderr="",
+        )
+
+    exit_code = supervisor_module.main(
+        executor=fake_executor,
+        target_spec="SG-SPEC-0001",
+        split_proposal=True,
+    )
+    assert exit_code == 0
+    assert node_path.read_text(encoding="utf-8") == before_text
+
+    queue_items = json.loads(
+        (repo_fixture / "runs" / "proposal_queue.json").read_text(encoding="utf-8")
+    )
+    assert queue_items[0]["id"] == "refactor_proposal::SG-SPEC-0001::oversized_spec"
+
+
 def test_main_split_proposal_rejects_seed_like_target(
     supervisor_module: object,
     repo_fixture: Path,
@@ -27181,6 +27277,109 @@ def test_main_apply_split_proposal_materializes_parent_and_children(
         (repo_fixture / "runs" / "refactor_queue.json").read_text(encoding="utf-8")
     )
     assert refactor_queue == []
+
+
+def test_main_apply_split_proposal_preserves_cluster_member_dependency_exception(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    node_data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    member_ids = ["SG-SPEC-0101", "SG-SPEC-0102", "SG-SPEC-0103", "SG-SPEC-0104"]
+    node_data["title"] = "Aggregate Evidence Projection"
+    node_data["prompt"] = "Cluster boundary with member-owned evidence sources."
+    node_data["acceptance"] = [f"criterion-{i}" for i in range(1, 6)]
+    node_data["depends_on"] = member_ids
+    node_data["gate_state"] = "split_required"
+    node_data["last_outcome"] = "split_required"
+    node_data["last_validator_results"] = {"atomicity": False}
+    node_data["specification"] = {
+        "cluster_contract": {"parent_boundary": ["cluster boundary"]},
+        "member_contracts": [{"spec_id": spec_id} for spec_id in member_ids],
+    }
+    node_path.write_text(json.dumps(node_data), encoding="utf-8")
+
+    for spec_id in member_ids:
+        (repo_fixture / "specs" / "nodes" / f"{spec_id}.yaml").write_text(
+            json.dumps(
+                {
+                    "id": spec_id,
+                    "title": f"Member {spec_id}",
+                    "kind": "spec",
+                    "status": "linked",
+                    "maturity": 0.8,
+                    "depends_on": [],
+                    "relates_to": [],
+                    "refines": [],
+                    "inputs": [],
+                    "outputs": [f"specs/nodes/{spec_id}.yaml"],
+                    "allowed_paths": [f"specs/nodes/{spec_id}.yaml"],
+                    "acceptance": [f"{spec_id} acceptance"],
+                    "acceptance_evidence": [
+                        {
+                            "criterion": f"{spec_id} acceptance",
+                            "evidence": "Member source is already accepted.",
+                        }
+                    ],
+                    "prompt": f"Member source {spec_id}.",
+                }
+            ),
+            encoding="utf-8",
+        )
+
+    proposal_artifact_path = (
+        repo_fixture
+        / "runs"
+        / "proposals"
+        / ("refactor_proposal--sg-spec-0001--oversized_spec.json")
+    )
+    proposal_artifact_path.parent.mkdir(parents=True, exist_ok=True)
+    proposal_artifact_path.write_text(
+        json.dumps(make_valid_split_proposal(node_data, "RUN-1")),
+        encoding="utf-8",
+    )
+    (repo_fixture / "runs" / "proposal_queue.json").write_text(
+        json.dumps(
+            [
+                {
+                    "id": "refactor_proposal::SG-SPEC-0001::oversized_spec",
+                    "proposal_type": "refactor_proposal",
+                    "spec_id": "SG-SPEC-0001",
+                    "signal": "oversized_spec",
+                    "refactor_kind": "split_oversized_spec",
+                    "status": "review_pending",
+                    "execution_policy": "emit_proposal",
+                    "proposal_artifact_path": (
+                        "runs/proposals/refactor_proposal--sg-spec-0001--oversized_spec.json"
+                    ),
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    worktree = make_fake_worktree(repo_fixture)
+    monkeypatch.setattr(
+        supervisor_module,
+        "create_isolated_worktree",
+        lambda _node_id: (worktree, "codex/sg-spec-0001/apply-split"),
+    )
+
+    exit_code = supervisor_module.main(
+        target_spec="SG-SPEC-0001",
+        apply_split_proposal=True,
+    )
+    assert exit_code == 0
+
+    updated_parent = supervisor_module.get_yaml_module().safe_load(
+        node_path.read_text(encoding="utf-8")
+    )
+    assert updated_parent["depends_on"] == member_ids
+    child_two = supervisor_module.get_yaml_module().safe_load(
+        (repo_fixture / "specs" / "nodes" / "SG-SPEC-0002.yaml").read_text(encoding="utf-8")
+    )
+    assert child_two["refines"] == ["SG-SPEC-0001"]
 
 
 def test_main_apply_split_proposal_reuses_existing_refining_child(
