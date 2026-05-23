@@ -218,6 +218,13 @@ make next-move
 - Live trace tests that assert `implementation_state.status = verified` must control dirty-worktree inputs, usually by stubbing `git_status_changed_files`, because local edits to declared code or test surfaces legitimately produce `in_progress`.
 - If generated artifacts show old data, rebuild the specific surface before assuming the viewer is wrong.
 - If a review gate is approved after its candidate already landed through PR review, close the gate through a deterministic resolver path and clear scoped derived queue pressure before trusting `make next-move`.
+- A `split_required` gate can come from a rejected candidate, not from already-oversized canonical content.
+  In that case, preserve the atomicity-pressure evidence and route through split proposal mechanics instead
+  of requiring the current canonical node to be oversized.
+- When applying a split proposal to a cluster parent whose existing dependencies are legal only because
+  they are declared cluster members, do not add the new refining child as another blocking dependency.
+  The child `refines` edge is the structural lineage; adding it to `depends_on` can create a false
+  atomicity violation.
 - If `gh pr checks` reports no required checks after retargeting, verify PR state directly before merging.
 - ContextBuilder often reads artifacts as raw passthrough; most data-shape bugs originate in SpecGraph, not the viewer.
 - Do not let `tasks.md` become a parallel backlog. The graph should surface gaps itself.

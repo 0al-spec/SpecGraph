@@ -2,7 +2,7 @@ id: SG-SPEC-0066
 title: SpecGraph - Aggregate Evidence Projection Semantics
 kind: spec
 created_at: '2026-05-22T20:45:00Z'
-updated_at: '2026-05-22T21:52:42Z'
+updated_at: '2026-05-23T07:21:13Z'
 status: linked
 maturity: 0.9
 depends_on:
@@ -28,9 +28,6 @@ allowed_paths:
 acceptance:
 - Defines aggregate evidence projection as a derived cluster-level summary over SG-SPEC-0063 member evidence,
   not as canonical truth or a replacement for member-owned evidence.
-- Defines source attribution requirements so each projected evidence item names the member-owned evidence
-  or gap it summarizes across runtime observability, adoption, executable traceability, or metric-family
-  semantics.
 - Defines unresolved gap routing so projection gaps remain attached to the concrete owning member spec
   unless the gap is specifically about the projection rule itself.
 - Defines aggregate projection disposition semantics so cluster-level summaries can expose complete, partial,
@@ -43,12 +40,6 @@ acceptance_evidence:
   evidence: specification.projection_contract.summary_boundary states that aggregate_evidence_projection
     is a derived cluster-level summary over SG-SPEC-0063 member evidence and cannot replace canonical
     or member-owned evidence.
-- criterion: Defines source attribution requirements so each projected evidence item names the member-owned
-    evidence or gap it summarizes across runtime observability, adoption, executable traceability, or
-    metric-family semantics.
-  evidence: specification.source_attribution_policy requires every projected evidence item to name its
-    source_member, source_claim_type, and summarized_evidence_or_gap across the runtime observability,
-    adoption, executable traceability, or metric-family member boundary.
 - criterion: Defines unresolved gap routing so projection gaps remain attached to the concrete owning
     member spec unless the gap is specifically about the projection rule itself.
   evidence: specification.gap_routing_policy routes member-specific evidence gaps to SG-SPEC-0017, SG-SPEC-0018,
@@ -63,9 +54,9 @@ acceptance_evidence:
     out of scope for aggregate evidence projection semantics.
   evidence: specification.scope.out excludes telemetry collection, dashboards, formulas, storage schemas,
     ranking, and runtime implementation.
-prompt: Materialize aggregate evidence projection semantics beneath SG-SPEC-0063 so the realization and
-  observation cluster can summarize member-owned evidence without making the summary canonical or hiding
-  member-specific gaps.
+prompt: 'Keep SG-SPEC-0066 as the aggregate evidence projection integration boundary beneath SG-SPEC-0063:
+  it defines the derived, non-canonical summary role, gap routing, aggregate disposition labels, and implementation
+  exclusions while delegating projected record identity and rebuild-basis semantics to one child.'
 specification:
   objective: Define the bounded semantics for derived aggregate evidence projections in the realization
     and observation cluster so cluster-level review can inspect cross-member evidence summaries while
@@ -183,13 +174,3 @@ specification:
       semantics.
     AEP-0066-4: Aggregate projection dispositions remain review-navigation labels and do not decide member
       acceptance or close member-specific gaps.
-gate_state: none
-proposed_status: null
-proposed_maturity: null
-required_human_action: '-'
-last_gate_run_id: 20260522T214910Z-SG-SPEC-0066-5a0f0151
-last_worktree_path: ''
-last_branch: ''
-last_gate_decision: approve
-last_gate_note: approve aggregate projection disposition semantics after candidate review
-last_gate_at: '2026-05-22T21:52:42.982433+00:00'

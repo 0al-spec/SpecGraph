@@ -575,5 +575,13 @@
       "tests/test_supervisor.py"
     ],
     "notes": "Aggregate evidence projection semantics are semantic-surface backed by the runtime evidence registry and a live regression anchor. This trace contract intentionally does not claim telemetry collection, dashboards, formulas, storage schemas, ranking, or runtime implementation."
+  },
+  {
+    "spec_id": "SG-SPEC-0067",
+    "code_surfaces": [],
+    "test_surfaces": [
+      "tests/test_supervisor.py"
+    ],
+    "notes": "Aggregate projection record identity and rebuild-basis semantics are semantic-surface backed by the runtime evidence registry and a live regression anchor. This trace contract intentionally does not claim storage keys, projection algorithms, dashboards, ranking, telemetry collection, or member evidence ownership changes."
   }
 ]

@@ -6906,7 +6906,8 @@ Refinement mode: ancestor_reconcile
 
 Refinement mode: split_refactor_proposal
 - This run was explicitly targeted by the operator for {SPLIT_REFACTOR_KIND}.
-- Analyze this one oversized non-seed spec and emit a structured proposal artifact only.
+- Analyze this one oversized or split-required atomicity-pressure non-seed spec.
+- Emit a structured proposal artifact only.
 - Current run ID: {planned_run_id or "(unspecified)"}
 - Proposal artifact path: {artifact_relpath or "(unspecified)"}
 - Do not edit canonical spec files under specs/nodes/.
@@ -7530,6 +7531,37 @@ def validate_atomicity(node: SpecNode) -> list[str]:
     return errors
 
 
+def has_split_required_atomicity_pressure(node: SpecNode) -> bool:
+    """Return true when a prior candidate hit atomicity even if canonical content stayed bounded."""
+    gate_state = str(node.data.get("gate_state", "")).strip()
+    last_outcome = str(node.data.get("last_outcome", "")).strip()
+    if "split_required" not in {gate_state, last_outcome}:
+        return False
+
+    validator_results = node.data.get("last_validator_results")
+    if isinstance(validator_results, dict) and validator_results.get("atomicity") is False:
+        return True
+
+    refinement_acceptance = node.data.get("last_refinement_acceptance")
+    if isinstance(refinement_acceptance, dict):
+        checks = refinement_acceptance.get("checks")
+        if isinstance(checks, dict) and checks.get("atomicity_clear") is False:
+            return True
+        warnings = refinement_acceptance.get("warnings")
+        if isinstance(warnings, list) and any(
+            "Atomicity gate exceeded" in str(item) for item in warnings
+        ):
+            return True
+
+    last_errors = node.data.get("last_errors")
+    if isinstance(last_errors, list) and any(
+        "Atomicity gate exceeded" in str(item) for item in last_errors
+    ):
+        return True
+
+    return False
+
+
 def validate_split_refactor_target(node: SpecNode) -> list[str]:
     # Trace anchor: SG-SPEC-0029 governs proposal/split availability gating.
     errors: list[str] = []
@@ -7538,8 +7570,11 @@ def validate_split_refactor_target(node: SpecNode) -> list[str]:
     if is_seed_like_spec(node.data):
         errors.append("split_oversized_spec cannot target a seed-like or root overview spec")
     atomicity_errors = validate_atomicity(node)
-    if not atomicity_errors:
-        errors.append("split_oversized_spec requires an oversized non-seed spec target")
+    if not atomicity_errors and not has_split_required_atomicity_pressure(node):
+        errors.append(
+            "split_oversized_spec requires an oversized or split-required atomicity-pressure "
+            "non-seed spec target"
+        )
     return errors
 
 
@@ -33604,6 +33639,23 @@ def proposal_evidence_for_index(
     }
 
 
+def split_application_parent_dependency_additions(
+    node: SpecNode,
+    proposed_depends_on: list[str],
+) -> list[str]:
+    """Return child deps safe to add to the parent during split application."""
+    normalized = [str(dep).strip() for dep in proposed_depends_on if str(dep).strip()]
+    if not normalized:
+        return []
+    current_depends_on = [str(dep).strip() for dep in node.depends_on if str(dep).strip()]
+    tentative = merge_unique_strings(current_depends_on, normalized)
+    if len(
+        tentative
+    ) > ATOMICITY_MAX_BLOCKING_CHILDREN and depends_only_on_declared_cluster_members(node):
+        return []
+    return normalized
+
+
 def validate_split_proposal_application_target(
     *,
     node: SpecNode,
@@ -33719,10 +33771,13 @@ def apply_split_proposal_to_worktree(
     ]
 
     current_depends_on = [str(dep).strip() for dep in node.depends_on if str(dep).strip()]
-    proposed_depends_on = [
-        str(item["suggested_id"]).strip()
-        for item in proposal_artifact["parent_after_split"]["intended_depends_on"]
-    ]
+    proposed_depends_on = split_application_parent_dependency_additions(
+        node,
+        [
+            str(item["suggested_id"]).strip()
+            for item in proposal_artifact["parent_after_split"]["intended_depends_on"]
+        ],
+    )
     node.data["prompt"] = str(
         proposal_artifact["parent_after_split"]["narrowed_role_summary"]
     ).strip()
