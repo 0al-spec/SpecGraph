@@ -16,7 +16,8 @@
       "detected_problems",
       "safe_next_actions",
       "blocked_actions",
-      "validation_plan"
+      "validation_plan",
+      "policy_reference"
     ],
     "overall_statuses": [
       "clean",
@@ -40,7 +41,7 @@
         "rerun_after_provider_recovery"
       ],
       "hard_stop_when": [
-        "residue_changes_canonical_semantics"
+        "would_alter_canonical_semantics"
       ]
     },
     {
@@ -52,7 +53,7 @@
         "retry_after_provider_reset"
       ],
       "hard_stop_when": [
-        "repeated_quota_failure"
+        "repeated_same_failure_after_prior_recovery"
       ]
     },
     {
@@ -63,7 +64,7 @@
         "emit_split_proposal_from_atomicity_pressure"
       ],
       "hard_stop_when": [
-        "split_would_alter_ontology_or_policy"
+        "would_change_policy"
       ]
     },
     {
@@ -74,7 +75,7 @@
         "apply_cluster_or_refinement_safe_normalization"
       ],
       "hard_stop_when": [
-        "dependency_semantics_unclear"
+        "source_authority_unclear_or_missing"
       ]
     },
     {
@@ -85,7 +86,7 @@
         "add_registry_trace_contract_with_focused_tests"
       ],
       "hard_stop_when": [
-        "runtime_implementation_claim_is_ambiguous"
+        "source_authority_unclear_or_missing"
       ]
     },
     {
@@ -97,7 +98,7 @@
         "classify_accepted_evidence_gap"
       ],
       "hard_stop_when": [
-        "evidence_ownership_unclear"
+        "source_authority_unclear_or_missing"
       ]
     },
     {
@@ -108,7 +109,7 @@
         "clear_scoped_queue_item_and_refresh_surfaces"
       ],
       "hard_stop_when": [
-        "active_proposal_still_owns_issue"
+        "would_bypass_live_proposal"
       ]
     },
     {
@@ -120,7 +121,7 @@
         "fail_safe_with_contract_error"
       ],
       "hard_stop_when": [
-        "artifact_is_canonical_input"
+        "would_alter_canonical_semantics"
       ]
     },
     {
@@ -131,7 +132,7 @@
         "stop_and_emit_proposal_or_process_lesson"
       ],
       "hard_stop_when": [
-        "repeated_same_failure"
+        "repeated_same_failure_after_prior_recovery"
       ]
     }
   ],
@@ -155,6 +156,7 @@
     "would_change_policy",
     "would_expand_supervisor_authority",
     "would_alter_approval_boundaries",
+    "would_alter_canonical_semantics",
     "would_rewrite_stable_spec_ids",
     "would_bypass_live_proposal",
     "would_approve_review_gate",

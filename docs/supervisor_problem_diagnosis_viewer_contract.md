@@ -14,11 +14,21 @@ This contract is governed by:
 
 ## Source
 
-The artifact will be produced by:
+The artifact path is reserved at:
+
+```text
+runs/supervisor_problem_diagnosis.json
+```
+
+A CLI builder is **not** introduced by this slice. The planned invocation
+(landing in a follow-up PR of the proposal 0055 stack) will be:
 
 ```bash
 python3 tools/supervisor.py --build-supervisor-problem-diagnosis
 ```
+
+Until that flag exists, viewers and operators should treat the artifact as
+"not yet emitted" rather than running the command above.
 
 The artifact is derived. It is not canonical graph truth and must not be
 treated as an approval, gate decision, or merge authority signal.

@@ -45,6 +45,7 @@ def test_policy_defines_read_only_diagnosis_contract() -> None:
         "safe_next_actions",
         "blocked_actions",
         "validation_plan",
+        "policy_reference",
     } <= required
 
     overall_statuses = set(contract["overall_statuses"])
@@ -80,15 +81,11 @@ def test_each_problem_class_has_required_fields_and_known_severity() -> None:
         assert problem["summary"]
         assert problem["default_severity"] in severities
         assert problem["safe_actions"], problem["id"]
+        assert problem["hard_stop_when"], problem["id"]
         for action in problem["safe_actions"]:
             assert action in safe_actions, (problem["id"], action)
         for stop in problem["hard_stop_when"]:
-            # `hard_stop_when` may carry problem-specific phrasing OR reuse a
-            # global hard_stop_reasons value. We require at least one of the
-            # two — but the entry must never be empty.
-            assert stop
-            if stop in hard_stop_reasons:
-                continue
+            assert stop in hard_stop_reasons, (problem["id"], stop)
 
 
 def test_planner_contract_is_advisory_and_safe() -> None:
