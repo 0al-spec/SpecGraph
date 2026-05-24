@@ -26518,11 +26518,108 @@ def test_main_builds_proposal_runtime_index_as_standalone_command(
     assert report["artifact_kind"] == "proposal_runtime_index"
     assert report["entry_count"] == 1
     assert report["entries"][0]["proposal_id"] == "0023"
-    artifact = json.loads(
-        (repo_fixture / "runs" / "proposal_runtime_index.json").read_text(encoding="utf-8")
+
+
+def test_build_proposal_tracking_report_flags_untracked_proposals(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    proposals_dir = repo_fixture / "docs" / "proposals"
+    tools_dir = repo_fixture / "tools"
+    proposals_dir.mkdir(parents=True, exist_ok=True)
+    tools_dir.mkdir(exist_ok=True)
+    (proposals_dir / "0098_tracked_runtime.md").write_text(
+        "\n".join(
+            [
+                "# Tracked Runtime",
+                "",
+                "## Status",
+                "",
+                "Draft proposal",
+                "",
+                "Runtime work should be tracked.",
+            ]
+        ),
+        encoding="utf-8",
     )
-    assert artifact["artifact_kind"] == "proposal_runtime_index"
-    assert artifact["entries"][0]["runtime_realization"]["status"] == "implemented"
+    (proposals_dir / "0099_missing_tracking.md").write_text(
+        "\n".join(
+            [
+                "# Missing Tracking",
+                "",
+                "## Status",
+                "",
+                "Draft proposal",
+                "",
+                "This proposal defines a supervisor runtime artifact.",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    (proposals_dir / "0100_archived_note.md").write_text(
+        "\n".join(
+            [
+                "# Archived Note",
+                "",
+                "## Status",
+                "",
+                "Archived",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    (tools_dir / "proposal_runtime_registry.json").write_text(
+        json.dumps([{"proposal_id": "0098", "posture": "bounded_runtime_followup"}]),
+        encoding="utf-8",
+    )
+
+    report = supervisor_module.build_proposal_tracking_report()
+    by_id = {entry["proposal_id"]: entry for entry in report["entries"]}
+
+    assert report["artifact_kind"] == supervisor_module.PROPOSAL_TRACKING_REPORT_ARTIFACT_KIND
+    assert by_id["0098"]["tracking_status"] == "tracked"
+    assert by_id["0098"]["tracking_sources"] == ["proposal_runtime_registry"]
+    assert by_id["0099"]["tracking_status"] == "missing_tracking"
+    assert by_id["0099"]["next_gap"] == "define_proposal_tracking"
+    assert by_id["0100"]["tracking_status"] == "no_runtime_required"
+    assert "0099" in report["viewer_projection"]["named_filters"]["missing_tracking"]
+
+
+def test_main_builds_proposal_tracking_report_as_standalone_command(
+    supervisor_module: object,
+    repo_fixture: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    proposals_dir = repo_fixture / "docs" / "proposals"
+    tools_dir = repo_fixture / "tools"
+    proposals_dir.mkdir(parents=True, exist_ok=True)
+    tools_dir.mkdir(exist_ok=True)
+    (proposals_dir / "0099_missing_tracking.md").write_text(
+        "\n".join(
+            [
+                "# Missing Tracking",
+                "",
+                "## Status",
+                "",
+                "Draft proposal",
+                "",
+                "This proposal defines a supervisor runtime artifact.",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    exit_code = supervisor_module.main(build_proposal_tracking_report_mode=True)
+
+    assert exit_code == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["artifact_kind"] == supervisor_module.PROPOSAL_TRACKING_REPORT_ARTIFACT_KIND
+    artifact = json.loads(
+        (repo_fixture / "runs" / "proposal_tracking_report.json").read_text(encoding="utf-8")
+    )
+    assert artifact["summary"]["missing_tracking_count"] == 1
+    assert (repo_fixture / "runs" / "proposal_runtime_index.json").exists()
+    assert (repo_fixture / "runs" / "proposal_spec_trace_index.json").exists()
 
 
 def test_main_split_proposal_accepts_untracked_parent_directory_change(

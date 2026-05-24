@@ -21,6 +21,7 @@ help:
 		'  make spec-activity            Refresh spec activity feed JSON only' \
 		'  make graph-diagnostics        Print compact graph diagnostics from runs JSON' \
 		'  make proposal-spec-trace      Refresh proposal-to-spec trace index JSON' \
+		'  make proposal-tracking        Refresh report-only proposal tracking JSON' \
 		'  make external-consumers       Refresh external consumer bridge JSON' \
 		'  make external-handoffs        Refresh external consumer handoff JSON' \
 		'  make metrics-delivery         Refresh Metrics delivery workflow JSON' \
@@ -77,6 +78,10 @@ graph-diagnostics:
 .PHONY: proposal-spec-trace
 proposal-spec-trace:
 	@$(PYTHON) $(SUPERVISOR) --build-proposal-spec-trace-index
+
+.PHONY: proposal-tracking
+proposal-tracking:
+	@$(PYTHON) $(SUPERVISOR) --build-proposal-tracking-report
 
 .PHONY: external-consumers
 external-consumers:

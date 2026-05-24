@@ -1,0 +1,37 @@
+{
+  "artifact_kind": "proposal_tracking_policy",
+  "schema_version": 1,
+  "tracking_mode": "report_only",
+  "tracking_sources": [
+    "proposal_runtime_registry",
+    "proposal_promotion_registry",
+    "proposal_spec_trace_index"
+  ],
+  "tracking_statuses": [
+    "tracked",
+    "missing_tracking",
+    "document_only_untracked",
+    "no_runtime_required"
+  ],
+  "next_gaps": [
+    "none",
+    "define_proposal_tracking",
+    "classify_proposal_tracking"
+  ],
+  "implemented_statuses": [
+    "Implemented"
+  ],
+  "no_runtime_required_statuses": [
+    "Informational",
+    "Archived",
+    "Superseded",
+    "No runtime required"
+  ],
+  "report_contract": {
+    "artifact_kind": "proposal_tracking_report",
+    "artifact_path": "runs/proposal_tracking_report.json",
+    "strict_ci_enforced": false,
+    "canonical_mutations_allowed": false,
+    "tracked_artifacts_written": false
+  }
+}

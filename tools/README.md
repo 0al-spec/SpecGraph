@@ -301,6 +301,10 @@ Supervisor modes:
   proposal markdown references, proposal-promotion traceability, and
   proposal-lane target regions. The artifact is read-only and normalizes
   textual mentions separately from bounded promotion traces.
+- `--build-proposal-tracking-report`: build `runs/proposal_tracking_report.json`
+  as a report-only check that every proposal doc is either linked to a tracking
+  surface or explicitly classified as document-only / no-runtime-required. This
+  is intentionally advisory before it becomes a strict commit or CI gate.
 - `--list-stale-runtime` / `--clean-stale-runtime`: inspect or clean stale gate/worktree residue.
 
 Key derived artifacts:
@@ -460,6 +464,11 @@ Key derived artifacts:
   `current_scene`, one `recommended_next_move`, alternatives, blocked moves, and
   compact source facts for a viewer "what should I do next?" panel. It is
   derived-only and cannot mutate canonical specs.
+- `runs/proposal_tracking_report.json`: report-only proposal tracking surface
+  that flags proposal markdown without runtime registry, promotion trace, or an
+  explicit no-runtime classification. Use `make proposal-tracking` after adding
+  proposal docs to see whether the graph will keep them visible as follow-up
+  work.
 - `tools/graph_diagnostics.py`: read-only operator diagnostic that summarizes
   the current `runs/*.json` surfaces without relying on ad hoc `jq` assumptions.
   Use `make graph-diagnostics` after `make viewer-surfaces` to print the compact
