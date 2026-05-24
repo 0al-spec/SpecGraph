@@ -43,6 +43,7 @@ Derived artifacts:
 - implementation delta snapshot: `runs/implementation_delta_snapshot.json`
 - implementation work index: `runs/implementation_work_index.json`
 - supervisor evidence packets: `docs/evidence/supervisor-runs/<run_id>.json`
+- supervisor problem diagnosis: `runs/supervisor_problem_diagnosis.json`
 - review feedback index: `runs/review_feedback_index.json`
 - proposal-lane overlay: `runs/proposal_lane_overlay.json`
 - graph health overlay: `runs/graph_health_overlay.json`
@@ -136,6 +137,7 @@ SUPERVISOR_EVIDENCE_PACKET_POLICY_RELATIVE_PATH = "tools/supervisor_evidence_pac
 SUPERVISOR_STALLED_RUN_SALVAGE_POLICY_RELATIVE_PATH = (
     "tools/supervisor_stalled_run_salvage_policy.json"
 )
+SUPERVISOR_PROBLEM_DIAGNOSIS_POLICY_RELATIVE_PATH = "tools/supervisor_problem_diagnosis_policy.json"
 FACTORY_ARCHITECTURE_POLICY_RELATIVE_PATH = "tools/factory_architecture_policy.json"
 SWIFT_TYPED_TOOLING_POLICY_RELATIVE_PATH = "tools/swift_typed_tooling_policy.json"
 PROJECT_ENVIRONMENT_POLICY_RELATIVE_PATH = "tools/project_environment_policy.json"
@@ -243,6 +245,10 @@ def supervisor_evidence_packet_policy_path() -> Path:
 
 def supervisor_stalled_run_salvage_policy_path() -> Path:
     return TOOLS_DIR / "supervisor_stalled_run_salvage_policy.json"
+
+
+def supervisor_problem_diagnosis_policy_path() -> Path:
+    return TOOLS_DIR / "supervisor_problem_diagnosis_policy.json"
 
 
 def factory_architecture_policy_path() -> Path:
@@ -1009,6 +1015,49 @@ def load_supervisor_stalled_run_salvage_policy() -> tuple[dict[str, Any], str]:
 
 SUPERVISOR_STALLED_RUN_SALVAGE_POLICY, SUPERVISOR_STALLED_RUN_SALVAGE_POLICY_SHA256 = (
     load_supervisor_stalled_run_salvage_policy()
+)
+
+
+def load_supervisor_problem_diagnosis_policy() -> tuple[dict[str, Any], str]:
+    path = supervisor_problem_diagnosis_policy_path()
+    try:
+        raw_text = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise RuntimeError(
+            f"failed to read supervisor problem diagnosis policy artifact: "
+            f"{path.as_posix()} ({exc})"
+        ) from exc
+    try:
+        payload = json.loads(raw_text)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(
+            f"malformed supervisor problem diagnosis policy artifact: {path.as_posix()} ({exc})"
+        ) from exc
+    if not isinstance(payload, dict):
+        raise RuntimeError(
+            "malformed supervisor problem diagnosis policy artifact: "
+            f"{path.as_posix()} must contain a JSON object"
+        )
+    required_sections = (
+        "repository_layout",
+        "diagnosis_contract",
+        "severity_levels",
+        "problem_classes",
+        "safe_action_vocabulary",
+        "hard_stop_reasons",
+        "planner_contract",
+    )
+    missing = [section for section in required_sections if section not in payload]
+    if missing:
+        raise RuntimeError(
+            "malformed supervisor problem diagnosis policy artifact: "
+            "missing top-level section(s): " + ", ".join(missing)
+        )
+    return payload, hashlib.sha256(raw_text.encode("utf-8")).hexdigest()
+
+
+SUPERVISOR_PROBLEM_DIAGNOSIS_POLICY, SUPERVISOR_PROBLEM_DIAGNOSIS_POLICY_SHA256 = (
+    load_supervisor_problem_diagnosis_policy()
 )
 
 
@@ -2165,6 +2214,15 @@ def implementation_delta_policy_lookup(policy_path: str) -> Any:
     return copy.deepcopy(current)
 
 
+def supervisor_problem_diagnosis_policy_lookup(policy_path: str) -> Any:
+    current: Any = SUPERVISOR_PROBLEM_DIAGNOSIS_POLICY
+    for part in policy_path.split("."):
+        if not isinstance(current, dict) or part not in current:
+            raise KeyError(policy_path)
+        current = current[part]
+    return copy.deepcopy(current)
+
+
 def review_feedback_policy_lookup(policy_path: str) -> Any:
     current: Any = REVIEW_FEEDBACK_POLICY
     for part in policy_path.split("."):
@@ -2405,6 +2463,14 @@ def supervisor_stalled_run_salvage_policy_reference() -> dict[str, Any]:
         "artifact_path": SUPERVISOR_STALLED_RUN_SALVAGE_POLICY_RELATIVE_PATH,
         "artifact_sha256": SUPERVISOR_STALLED_RUN_SALVAGE_POLICY_SHA256,
         "version": SUPERVISOR_STALLED_RUN_SALVAGE_POLICY.get("version"),
+    }
+
+
+def supervisor_problem_diagnosis_policy_reference() -> dict[str, Any]:
+    return {
+        "artifact_path": SUPERVISOR_PROBLEM_DIAGNOSIS_POLICY_RELATIVE_PATH,
+        "artifact_sha256": SUPERVISOR_PROBLEM_DIAGNOSIS_POLICY_SHA256,
+        "version": SUPERVISOR_PROBLEM_DIAGNOSIS_POLICY.get("version"),
     }
 
 
@@ -3246,6 +3312,15 @@ SUPERVISOR_PERFORMANCE_INDEX_ARTIFACT_KIND = str(
 )
 SUPERVISOR_PERFORMANCE_INDEX_SCHEMA_VERSION = int(
     supervisor_performance_policy_lookup("index_contract.schema_version")
+)
+SUPERVISOR_PROBLEM_DIAGNOSIS_FILENAME = Path(
+    str(supervisor_problem_diagnosis_policy_lookup("repository_layout.diagnosis_artifact"))
+).name
+SUPERVISOR_PROBLEM_DIAGNOSIS_ARTIFACT_KIND = str(
+    supervisor_problem_diagnosis_policy_lookup("diagnosis_contract.artifact_kind")
+)
+SUPERVISOR_PROBLEM_DIAGNOSIS_SCHEMA_VERSION = int(
+    supervisor_problem_diagnosis_policy_lookup("diagnosis_contract.schema_version")
 )
 SUPERVISOR_PERFORMANCE_RUNTIME_STATUSES = list(
     supervisor_performance_policy_lookup("index_contract.runtime_statuses")
@@ -17671,6 +17746,10 @@ def model_usage_telemetry_path() -> Path:
     return RUNS_DIR / MODEL_USAGE_TELEMETRY_FILENAME
 
 
+def supervisor_problem_diagnosis_path() -> Path:
+    return RUNS_DIR / SUPERVISOR_PROBLEM_DIAGNOSIS_FILENAME
+
+
 def supervisor_performance_index_path() -> Path:
     return RUNS_DIR / SUPERVISOR_PERFORMANCE_INDEX_FILENAME
 
@@ -27549,6 +27628,447 @@ def write_metric_pack_runs(report: dict[str, Any]) -> Path:
     return path
 
 
+def supervisor_problem_diagnosis_problem_policy(problem_class: str) -> dict[str, Any]:
+    for problem in supervisor_problem_diagnosis_policy_lookup("problem_classes"):
+        if str(problem.get("id", "")).strip() == problem_class:
+            return problem
+    return {}
+
+
+def supervisor_problem_diagnosis_default_action(problem_class: str) -> str:
+    policy = supervisor_problem_diagnosis_problem_policy(problem_class)
+    actions = policy.get("safe_actions", [])
+    if isinstance(actions, list):
+        for action in actions:
+            normalized = str(action).strip()
+            if normalized:
+                return normalized
+    return ""
+
+
+def supervisor_problem_diagnosis_default_severity(problem_class: str) -> str:
+    policy = supervisor_problem_diagnosis_problem_policy(problem_class)
+    severity = str(policy.get("default_severity", "")).strip()
+    return severity or "actionable"
+
+
+def supervisor_problem_diagnosis_source_reference(path: Path | None) -> dict[str, Any]:
+    if path is None:
+        return {"artifact_path": "", "local_path_redacted": False}
+    resolved = path.resolve(strict=False)
+    try:
+        return {
+            "artifact_path": resolved.relative_to(ROOT.resolve(strict=False)).as_posix(),
+            "local_path_redacted": False,
+        }
+    except ValueError:
+        return {
+            "artifact_path": resolved.name,
+            "local_path_redacted": True,
+        }
+
+
+def supervisor_problem_diagnosis_sanitized_error(error: str, path: Path | None) -> str:
+    text = str(error).strip()
+    if not text or path is None:
+        return text
+    resolved = path.resolve(strict=False)
+    replacement = str(
+        supervisor_problem_diagnosis_source_reference(path).get("artifact_path", "<run-artifact>")
+    )
+    return text.replace(resolved.as_posix(), replacement)
+
+
+SUPERVISOR_PROBLEM_DIAGNOSIS_REQUIRED_RUN_FIELDS = (
+    "run_id",
+    "spec_id",
+    "completion_status",
+    "outcome",
+    "gate_state",
+)
+
+
+def supervisor_problem_diagnosis_run_schema_errors(payload: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    for field in SUPERVISOR_PROBLEM_DIAGNOSIS_REQUIRED_RUN_FIELDS:
+        if not str(payload.get(field, "")).strip():
+            errors.append(f"missing required run field: {field}")
+    return errors
+
+
+def supervisor_problem_diagnosis_run_log_candidate_paths() -> list[Path]:
+    if not RUNS_DIR.exists():
+        return []
+    return sorted(path for path in RUNS_DIR.glob("*.json") if path.is_file())
+
+
+def supervisor_problem_diagnosis_explicit_run_timestamp(
+    payload: dict[str, Any],
+) -> dt.datetime | None:
+    for field in ("finished_at_utc", "started_at_utc", "timestamp_utc"):
+        parsed = parse_iso_datetime(payload.get(field, ""))
+        if parsed is not None:
+            return parsed
+    run_id = str(payload.get("run_id", "")).strip()
+    prefix = run_id.split("-", 1)[0]
+    try:
+        return dt.datetime.strptime(prefix, "%Y%m%dT%H%M%SZ").replace(tzinfo=dt.timezone.utc)
+    except ValueError:
+        return None
+
+
+def latest_supervisor_run_log_path() -> Path | None:
+    records: list[tuple[dt.datetime | None, str, Path]] = []
+    for path in supervisor_problem_diagnosis_run_log_candidate_paths():
+        payload, error = load_json_object_report(path, artifact_kind="run log")
+        if payload is None or supervisor_problem_diagnosis_run_schema_errors(payload):
+            continue
+        run_id = str(payload.get("run_id", path.stem)).strip() or path.stem
+        records.append((supervisor_problem_diagnosis_explicit_run_timestamp(payload), run_id, path))
+    if not records:
+        return None
+    timestamped = [item for item in records if item[0] is not None]
+    if timestamped:
+        timestamped.sort(
+            key=lambda item: (
+                item[0] or dt.datetime.min.replace(tzinfo=dt.timezone.utc),
+                item[1],
+            )
+        )
+        return timestamped[-1][2]
+    records.sort(key=lambda item: (item[2].stat().st_mtime, item[1]))
+    return records[-1][2]
+
+
+def resolve_supervisor_problem_diagnosis_run_path(
+    supervisor_run_path: str | None,
+) -> tuple[Path | None, str]:
+    value = str(supervisor_run_path or "").strip()
+    if value:
+        try:
+            return resolve_supervisor_run_reference(value), ""
+        except RuntimeError as exc:
+            if any(sep in value for sep in ("/", "\\")):
+                return Path(value), str(exc)
+            run_filename = value if Path(value).suffix == ".json" else f"{value}.json"
+            return RUNS_DIR / run_filename, str(exc)
+    path = latest_supervisor_run_log_path()
+    if path is None:
+        return None, "no supervisor run logs found under runs/"
+    return path, ""
+
+
+def supervisor_problem_diagnosis_text_surface(payload: dict[str, Any]) -> str:
+    fields: list[str] = []
+    for key in (
+        "completion_status",
+        "outcome",
+        "blocker",
+        "gate_state",
+        "required_human_action",
+        "recovery_status",
+    ):
+        fields.append(str(payload.get(key, "")))
+    validation_errors = payload.get("validation_errors", [])
+    if isinstance(validation_errors, list):
+        fields.extend(str(item) for item in validation_errors)
+    for finding in coerce_validation_findings(payload.get("validation_findings", [])):
+        fields.extend(
+            str(finding.get(key, ""))
+            for key in ("code", "family", "error_class", "severity", "message")
+        )
+    validator_results = payload.get("validator_results", {})
+    if isinstance(validator_results, dict):
+        for key, value in sorted(validator_results.items()):
+            fields.append(f"{key}:{value}")
+    executor_environment = payload.get("executor_environment", {})
+    if isinstance(executor_environment, dict):
+        fields.append(str(executor_environment.get("primary_failure", "")))
+        issue_kinds = executor_environment.get("issue_kinds", [])
+        if isinstance(issue_kinds, list):
+            fields.extend(str(item) for item in issue_kinds)
+        issues = executor_environment.get("issues", [])
+        if isinstance(issues, list):
+            for issue in issues:
+                if isinstance(issue, dict):
+                    fields.extend(str(issue.get(key, "")) for key in ("kind", "code", "summary"))
+                else:
+                    fields.append(str(issue))
+    return "\n".join(fields).lower()
+
+
+def supervisor_run_has_provider_failure(payload: dict[str, Any]) -> bool:
+    text = supervisor_problem_diagnosis_text_surface(payload)
+    provider_markers = (
+        "quota",
+        "usage limit",
+        "provider",
+        "transport",
+        "rate limit",
+        "account",
+        "authentication",
+        "channel error",
+        "network",
+        "timeout",
+    )
+    executor_environment = payload.get("executor_environment", {})
+    primary_failure = (
+        bool(executor_environment.get("primary_failure"))
+        if isinstance(executor_environment, dict)
+        else False
+    )
+    validator_results = payload.get("validator_results", {})
+    executor_failed = (
+        isinstance(validator_results, dict)
+        and validator_results.get("executor_environment") is False
+    )
+    return (primary_failure or executor_failed) and any(
+        marker in text for marker in provider_markers
+    )
+
+
+def supervisor_run_has_runtime_residue(payload: dict[str, Any]) -> bool:
+    spec_id = str(payload.get("spec_id", "")).strip()
+    changed_files = _supervisor_packet_string_list(payload.get("changed_files"))
+    spec_path = f"specs/nodes/{spec_id}.yaml" if spec_id else ""
+    touched_target = bool(spec_path and spec_path in changed_files)
+    if not touched_target:
+        return False
+    completion_status = str(payload.get("completion_status", "")).strip()
+    outcome = str(payload.get("outcome", "")).strip()
+    gate_state = str(payload.get("gate_state", "")).strip()
+    validator_results = payload.get("validator_results", {})
+    executor_failed = (
+        isinstance(validator_results, dict)
+        and validator_results.get("executor_environment") is False
+    )
+    return (
+        completion_status == "failed"
+        and outcome == "blocked"
+        and (gate_state in {"blocked", "review_pending"} or executor_failed)
+    )
+
+
+def canonical_acceptance_count_for_spec(spec_id: str) -> int | None:
+    normalized = str(spec_id).strip()
+    if not normalized:
+        return None
+    for spec in load_specs():
+        if spec.id == normalized:
+            return node_acceptance_count(spec)
+    return None
+
+
+def supervisor_run_has_split_required_candidate_without_proposal_path(
+    payload: dict[str, Any],
+    *,
+    target_spec: str | None = None,
+) -> tuple[bool, int | None, str]:
+    text = supervisor_problem_diagnosis_text_surface(payload)
+    findings = coerce_validation_findings(payload.get("validation_findings", []))
+    finding_codes = {str(finding.get("code", "")).strip() for finding in findings}
+    has_atomicity_pressure = (
+        "atomicity_violation" in finding_codes
+        or "atomicity gate exceeded" in text
+        or str(payload.get("outcome", "")).strip() == "split_required"
+    )
+    if not has_atomicity_pressure:
+        return False, None, ""
+    decision_inspector = payload.get("decision_inspector", {})
+    if not isinstance(decision_inspector, dict):
+        return False, None, "missing explicit proposal queue evidence"
+    queue_effects = decision_inspector.get("queue_effects")
+    if not isinstance(queue_effects, dict):
+        return False, None, "missing explicit proposal queue evidence"
+    proposal_queue = queue_effects.get("proposal_queue")
+    if not isinstance(proposal_queue, dict) or "emitted_ids" not in proposal_queue:
+        return False, None, "missing explicit proposal queue evidence"
+    emitted_ids = proposal_queue.get("emitted_ids", [])
+    if not isinstance(emitted_ids, list):
+        return False, None, "malformed explicit proposal queue evidence"
+    if isinstance(emitted_ids, list) and any(str(item).strip() for item in emitted_ids):
+        return False, None, ""
+    spec_id = str(target_spec or payload.get("spec_id", "")).strip()
+    canonical_count = canonical_acceptance_count_for_spec(spec_id)
+    if canonical_count is None:
+        return False, None, f"unknown target spec: {spec_id}"
+    return canonical_count <= ATOMICITY_MAX_ACCEPTANCE, canonical_count, ""
+
+
+def supervisor_problem_diagnosis_problem(
+    *,
+    run_id: str,
+    problem_class: str,
+    root_cause: str,
+    evidence: list[str],
+    deterministic: bool = True,
+) -> dict[str, Any]:
+    return {
+        "problem_id": sanitize_for_git(f"{run_id}-{problem_class}")[:96],
+        "problem_class": problem_class,
+        "severity": supervisor_problem_diagnosis_default_severity(problem_class),
+        "root_cause": root_cause,
+        "evidence": evidence,
+        "recommended_action": supervisor_problem_diagnosis_default_action(problem_class),
+        "deterministic": deterministic,
+        "requires_human_review": True,
+    }
+
+
+def build_supervisor_problem_diagnosis(
+    *,
+    supervisor_run_path: str | None = None,
+    target_spec: str | None = None,
+) -> dict[str, Any]:
+    path, path_error = resolve_supervisor_problem_diagnosis_run_path(supervisor_run_path)
+    source_reference = supervisor_problem_diagnosis_source_reference(path)
+    run_payload: dict[str, Any] | None = None
+    load_error = supervisor_problem_diagnosis_sanitized_error(path_error, path)
+    raw_sha256 = ""
+    if path is not None and not path_error:
+        try:
+            run_payload, raw_sha256 = load_supervisor_run_artifact(path)
+        except RuntimeError as exc:
+            load_error = supervisor_problem_diagnosis_sanitized_error(str(exc), path)
+
+    run_id = ""
+    spec_id = str(target_spec or "").strip()
+    detected_problems: list[dict[str, Any]] = []
+    schema_errors: list[str] = []
+    insufficient_evidence_reasons: list[str] = []
+
+    if run_payload is not None:
+        run_id = str(run_payload.get("run_id", "")).strip() or (path.stem if path else "")
+        run_spec_id = str(run_payload.get("spec_id", "")).strip()
+        spec_id = spec_id or run_spec_id
+        schema_errors = supervisor_problem_diagnosis_run_schema_errors(run_payload)
+        if schema_errors:
+            insufficient_evidence_reasons.extend(schema_errors)
+        if not schema_errors and supervisor_run_has_provider_failure(run_payload):
+            detected_problems.append(
+                supervisor_problem_diagnosis_problem(
+                    run_id=run_id,
+                    problem_class="quota_or_provider_failure",
+                    root_cause=(
+                        "Supervisor child execution failed because the provider, transport, "
+                        "quota, or account state blocked the run."
+                    ),
+                    evidence=[
+                        "executor_environment.primary_failure_or_validator_failure",
+                        "run_log.provider_failure_marker_observed",
+                    ],
+                )
+            )
+        if not schema_errors and supervisor_run_has_runtime_residue(run_payload):
+            detected_problems.append(
+                supervisor_problem_diagnosis_problem(
+                    run_id=run_id,
+                    problem_class="runtime_residue",
+                    root_cause=(
+                        "A failed or blocked runtime run touched the target spec and may have "
+                        "left misleading gate or metadata residue."
+                    ),
+                    evidence=[
+                        "completion_status=failed",
+                        "outcome=blocked",
+                        f"changed_files includes specs/nodes/{run_spec_id}.yaml",
+                    ],
+                )
+            )
+        split_problem, canonical_acceptance_count, split_insufficient_evidence = (
+            supervisor_run_has_split_required_candidate_without_proposal_path(
+                run_payload,
+                target_spec=spec_id,
+            )
+        )
+        if schema_errors:
+            split_problem = False
+        if split_insufficient_evidence:
+            insufficient_evidence_reasons.append(split_insufficient_evidence)
+        if not schema_errors and split_problem:
+            detected_problems.append(
+                supervisor_problem_diagnosis_problem(
+                    run_id=run_id,
+                    problem_class="split_required_candidate_without_proposal_path",
+                    root_cause=(
+                        "The candidate hit atomicity pressure, but accepted canonical content "
+                        "does not itself exceed the acceptance-count threshold."
+                    ),
+                    evidence=[
+                        "run_log.atomicity_pressure_observed",
+                        f"canonical_acceptance_count={canonical_acceptance_count}",
+                        f"atomicity_max_acceptance={ATOMICITY_MAX_ACCEPTANCE}",
+                        "proposal_queue.emitted_ids empty_or_absent",
+                    ],
+                )
+            )
+
+    blocking_count = sum(
+        1 for problem in detected_problems if str(problem.get("severity", "")).strip() == "blocking"
+    )
+    if load_error:
+        overall_status = "insufficient_evidence"
+    elif blocking_count:
+        overall_status = "hard_stop"
+    elif detected_problems:
+        overall_status = "actionable"
+    elif insufficient_evidence_reasons:
+        overall_status = "insufficient_evidence"
+    else:
+        overall_status = "clean"
+    source_status = "unavailable" if load_error else "loaded"
+    if not load_error and schema_errors:
+        source_status = "schema_incomplete"
+
+    artifact = {
+        "artifact_kind": SUPERVISOR_PROBLEM_DIAGNOSIS_ARTIFACT_KIND,
+        "schema_version": SUPERVISOR_PROBLEM_DIAGNOSIS_SCHEMA_VERSION,
+        "canonical_mutations_allowed": False,
+        "tracked_artifacts_written": False,
+        "generated_at": utc_now_iso(),
+        "target": {
+            "spec_id": spec_id,
+            "run_id": run_id,
+        },
+        "source": {
+            **source_reference,
+            "source_status": source_status,
+            "content_sha256": f"sha256:{raw_sha256}" if raw_sha256 else "",
+            "error": load_error,
+            "schema_errors": schema_errors,
+        },
+        "diagnosis": {
+            "overall_status": overall_status,
+            "detected_problem_count": len(detected_problems),
+            "hard_stop": overall_status == "hard_stop",
+        },
+        "detected_problems": detected_problems,
+        "safe_next_actions": [],
+        "blocked_actions": [],
+        "validation_plan": [],
+        "insufficient_evidence": insufficient_evidence_reasons,
+        "policy_reference": supervisor_problem_diagnosis_policy_reference(),
+        "summary": {
+            "status": overall_status,
+            "top_problem_class": (
+                str(detected_problems[0].get("problem_class", "")) if detected_problems else ""
+            ),
+            "detected_problem_count": len(detected_problems),
+            "source_status": source_status,
+            "insufficient_evidence_count": len(insufficient_evidence_reasons),
+        },
+    }
+    return artifact
+
+
+def write_supervisor_problem_diagnosis(report: dict[str, Any]) -> Path:
+    RUNS_DIR.mkdir(parents=True, exist_ok=True)
+    path = supervisor_problem_diagnosis_path()
+    with artifact_lock(path):
+        atomic_write_json(path, report)
+    return path
+
+
 def _iso_or_empty(value: dt.datetime | None) -> str:
     if value is None:
         return ""
@@ -37199,6 +37719,7 @@ def main(
     build_implementation_work_index_mode: bool = False,
     build_supervisor_evidence_packet_mode: bool = False,
     build_supervisor_stalled_run_salvage_mode: bool = False,
+    build_supervisor_problem_diagnosis_mode: bool = False,
     build_factory_architecture_index_mode: bool = False,
     build_swift_typed_tooling_index_mode: bool = False,
     build_project_environment_mode: bool = False,
@@ -37305,6 +37826,7 @@ def main(
         "--build-implementation-work-index": build_implementation_work_index_mode,
         "--build-supervisor-evidence-packet": build_supervisor_evidence_packet_mode,
         "--build-supervisor-stalled-run-salvage": build_supervisor_stalled_run_salvage_mode,
+        "--build-supervisor-problem-diagnosis": build_supervisor_problem_diagnosis_mode,
         "--build-factory-architecture-index": build_factory_architecture_index_mode,
         "--build-swift-typed-tooling-index": build_swift_typed_tooling_index_mode,
         "--build-project-environment": build_project_environment_mode,
@@ -37440,11 +37962,13 @@ def main(
         return 1
 
     if supervisor_run_path and not (
-        build_supervisor_evidence_packet_mode or build_supervisor_stalled_run_salvage_mode
+        build_supervisor_evidence_packet_mode
+        or build_supervisor_stalled_run_salvage_mode
+        or build_supervisor_problem_diagnosis_mode
     ):
         print(
             "--supervisor-run-path requires --build-supervisor-evidence-packet or "
-            "--build-supervisor-stalled-run-salvage",
+            "--build-supervisor-stalled-run-salvage or --build-supervisor-problem-diagnosis",
             file=sys.stderr,
         )
         return 1
@@ -37942,6 +38466,54 @@ def main(
         salvage["summary"]["salvage_artifact_path"] = repo_relative_or_absolute_path(salvage_path)
         salvage["summary"]["patch_artifact_path"] = repo_relative_or_absolute_path(patch_path)
         emit_supervisor_json(salvage, output_mode=normalized_output_mode)
+        return 0
+
+    if build_supervisor_problem_diagnosis_mode:
+        if any(
+            (
+                dry_run,
+                auto_approve,
+                loop,
+                resolve_gate,
+                decision,
+                note,
+                split_proposal,
+                apply_split_proposal,
+                operator_note,
+                mutation_budget,
+                run_authority,
+                execution_profile,
+                child_model,
+                child_timeout_seconds,
+                verbose,
+                list_stale_runtime,
+                clean_stale_runtime,
+                observe_graph_health_mode,
+                operator_request_packet_path,
+                supervisor_salvage_worktree_path,
+                supervisor_raw_artifact_uri,
+                supervisor_raw_retention_expires_at,
+            )
+        ):
+            print(
+                "--build-supervisor-problem-diagnosis must be used as a standalone command",
+                file=sys.stderr,
+            )
+            return 1
+        report = build_supervisor_problem_diagnosis(
+            supervisor_run_path=supervisor_run_path,
+            target_spec=target_spec,
+        )
+        report_path = write_supervisor_problem_diagnosis(report)
+        report["written_artifacts"] = {
+            "supervisor_problem_diagnosis": {
+                "artifact_path": repo_relative_or_absolute_path(report_path),
+                "run_id": report.get("target", {}).get("run_id"),
+                "spec_id": report.get("target", {}).get("spec_id"),
+            }
+        }
+        report["summary"]["diagnosis_artifact_path"] = repo_relative_or_absolute_path(report_path)
+        emit_supervisor_json(report, output_mode=normalized_output_mode)
         return 0
 
     if build_factory_architecture_index_mode:
@@ -40840,6 +41412,14 @@ if __name__ == "__main__":
         ),
     )
     parser.add_argument(
+        "--build-supervisor-problem-diagnosis",
+        action="store_true",
+        help=(
+            "Build a read-only diagnosis artifact from a supervisor run log without "
+            "executing recovery actions or mutating canonical specs"
+        ),
+    )
+    parser.add_argument(
         "--build-factory-architecture-index",
         action="store_true",
         help=(
@@ -41430,6 +42010,7 @@ if __name__ == "__main__":
             build_implementation_work_index_mode=args.build_implementation_work_index,
             build_supervisor_evidence_packet_mode=args.build_supervisor_evidence_packet,
             build_supervisor_stalled_run_salvage_mode=(args.build_supervisor_stalled_run_salvage),
+            build_supervisor_problem_diagnosis_mode=args.build_supervisor_problem_diagnosis,
             build_factory_architecture_index_mode=args.build_factory_architecture_index,
             build_swift_typed_tooling_index_mode=args.build_swift_typed_tooling_index,
             build_project_environment_mode=args.build_project_environment,

@@ -20,15 +20,16 @@ The artifact path is reserved at:
 runs/supervisor_problem_diagnosis.json
 ```
 
-A CLI builder is **not** introduced by this slice. The planned invocation
-(landing in a follow-up PR of the proposal 0055 stack) will be:
+The CLI builder is:
 
 ```bash
 python3 tools/supervisor.py --build-supervisor-problem-diagnosis
 ```
 
-Until that flag exists, viewers and operators should treat the artifact as
-"not yet emitted" rather than running the command above.
+By default it diagnoses the latest available supervisor run log under `runs/`.
+Operators may pass `--supervisor-run-path <path-or-run-id>` to diagnose a
+specific run and `--target-spec SG-SPEC-XXXX` to force the target identity used
+for canonical context checks.
 
 The artifact is derived. It is not canonical graph truth and must not be
 treated as an approval, gate decision, or merge authority signal.
@@ -99,6 +100,16 @@ treated as an approval, gate decision, or merge authority signal.
 `problem_id` is per-run unique. `problem_class` must match one of the
 enumerated vocabulary values in
 [tools/supervisor_problem_diagnosis_policy.json](../tools/supervisor_problem_diagnosis_policy.json).
+
+The builder may also include:
+
+- `source`: sanitized source-run metadata such as `artifact_path`,
+  `source_status`, `content_sha256`, `schema_errors`, and `local_path_redacted`.
+- `insufficient_evidence`: machine-readable reasons explaining why the builder
+  refused to classify a sparse, stale, or under-evidenced run as clean.
+
+Viewers should treat `source.source_status = schema_incomplete` and non-empty
+`insufficient_evidence[]` as diagnostic warnings, not as recovery commands.
 
 ## UI Guidance
 
