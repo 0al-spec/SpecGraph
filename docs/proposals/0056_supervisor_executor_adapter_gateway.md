@@ -17,7 +17,7 @@ Source draft:
 ## Context
 
 SpecGraph supervisor currently runs bounded refinement through a nested Codex
-CLI execution path. That path provides important operational guarantees:
+CLI execution path. That path provides important operational behavior:
 
 - isolated child configuration;
 - explicit model and reasoning profile control;
@@ -26,9 +26,12 @@ CLI execution path. That path provides important operational guarantees:
 - required machine protocol markers;
 - validation before canonical synchronization.
 
-The current implementation is effective, but the boundary is Codex-shaped. A
-future experiment with GitHub Copilot CLI, Claude Code, Gemini CLI, OpenCode, or
-another agent executor would have to imitate the same implicit assumptions.
+The current implementation is effective, but the boundary is Codex-shaped. The
+supervisor mostly sends ordinary text prompts plus a small set of CLI settings,
+then judges the result through deterministic checks. A future experiment with
+GitHub Copilot CLI, Claude Code, Gemini CLI, OpenCode, or another agent executor
+should not need a heavyweight formal adapter that proves the agent will obey
+every instruction. It needs a narrow launch-and-observe boundary.
 
 At the same time, external model routing projects such as LiteLLM, Portkey, and
 OpenRouter solve a different layer: they route model API calls. UI/event
@@ -57,6 +60,19 @@ because it edits files, while still failing the properties SpecGraph actually
 needs: non-interactive operation, strict output protocol, deterministic timeout
 behavior, no privilege escalation, or inspectable failure state.
 
+The opposite risk is overengineering. An adapter cannot fully guarantee that an
+LLM-backed agent will follow a written specification. SpecGraph should not spend
+its complexity budget trying to encode an entire theory of agents in the
+adapter layer.
+
+The practical boundary is:
+
+```text
+adapter launches and observes
+supervisor validates and decides
+human/review gate approves when required
+```
+
 ## Goals
 
 - Define a supervisor executor adapter layer.
@@ -64,12 +80,12 @@ behavior, no privilege escalation, or inspectable failure state.
 - Allow alternate backends to be introduced as explicit experimental adapters.
 - Normalize executor results before supervisor gate and validation logic sees
   them.
-- Record backend capabilities and unsupported features explicitly.
+- Record observed backend capabilities and unsupported features explicitly.
 - Distinguish model API gateways from agent CLI executors.
 - Distinguish agent CLI executors from SpecSpace/operator UI protocols.
-- Provide a benchmark path before any alternate executor can participate in
+- Provide a smoke path before any alternate executor can participate in
   canonical graph work.
-- Preserve current sandbox, approval, protocol, and validation guarantees.
+- Preserve current sandbox, approval, protocol, and validation boundaries.
 
 ## Non-Goals
 
@@ -79,6 +95,8 @@ behavior, no privilege escalation, or inspectable failure state.
 - Implementing SpecSpace UI.
 - Allowing backend fallback to broaden privileges.
 - Allowing a backend to skip `RUN_OUTCOME:` and `BLOCKER:` markers.
+- Treating an executor adapter as a formal trust boundary.
+- Specifying agent cognition, planning internals, or complete tool feature sets.
 - Allowing raw prompt text, secrets, credentials, or private local paths into
   viewer-facing artifacts.
 - Letting alternate executors merge PRs or approve gates.
@@ -97,7 +115,19 @@ supervisor task
 ```
 
 The adapter gateway is not a model router. It is a supervisor-runtime boundary
-for nested agent execution.
+for nested agent execution. It should be intentionally thin:
+
+- build the backend-specific command;
+- prepare a minimal environment when possible;
+- pass the assembled prompt;
+- run in the selected worktree;
+- collect stdout, stderr, return code, timeout, and process-level issues;
+- return a normalized result for existing supervisor validation.
+
+It should not try to certify semantic compliance. The trust boundary remains
+the deterministic post-run validation pipeline: git diff inspection, allowed
+paths, YAML validation, machine protocol parsing, evidence checks, gate state,
+and human review when required.
 
 The first implementation should extract the current Codex path into the adapter
 interface without changing behavior. Only after that should an experimental
@@ -148,7 +178,8 @@ tasks or read raw executor logs directly.
 
 ## Adapter Capability Contract
 
-Each executor backend should declare capabilities before it can run:
+Each executor backend should expose observed operational capabilities before it
+can run:
 
 ```json
 {
@@ -171,6 +202,10 @@ Each executor backend should declare capabilities before it can run:
 }
 ```
 
+These fields are not formal safety guarantees. They are compatibility facts used
+to decide whether a backend can be launched, which smoke tests are meaningful,
+and which warnings should be surfaced.
+
 Suggested `authority_state` values:
 
 - `default`: stable backend used by ordinary supervisor runs.
@@ -179,7 +214,7 @@ Suggested `authority_state` values:
 - `deprecated`: retained for compatibility, not for new runs.
 
 Experimental backends should default to read-only smoke tests until their
-capability contract is proven.
+observed behavior is good enough for a bounded trial.
 
 ## Normalized Run Result
 
@@ -206,6 +241,10 @@ The adapter gateway should return a backend-neutral result shape:
 The supervisor should continue to treat missing protocol markers as protocol
 failure, not success. Backends may provide extra metadata, but the normalized
 fields are the contract used by gate and validation logic.
+
+`protocol_status: valid` means only that the expected machine markers were
+observed and parseable. It does not mean the run is acceptable. Acceptance still
+depends on deterministic post-run checks.
 
 ## Candidate Policy Artifact
 
@@ -237,7 +276,7 @@ Candidate shape:
   ],
   "non_overridable_invariants": [
     "protocol_markers_required",
-    "sandbox_must_not_be_weakened",
+    "sandbox_must_not_be_weakened_where_supported",
     "approval_policy_must_not_be_weakened",
     "canonical_validation_required",
     "raw_prompt_text_must_not_be_published"
@@ -268,7 +307,7 @@ Rules:
 ## Benchmark And Smoke Requirements
 
 Before an alternate executor can run canonical graph work, it should pass a
-bounded benchmark suite:
+bounded smoke suite:
 
 - command discovery and version capture;
 - missing-auth failure classification;
@@ -281,7 +320,8 @@ bounded benchmark suite:
 - sandbox/approval non-escalation checks.
 
 The initial GitHub Copilot CLI experiment should probably stop at smoke and
-dry-run modes until it proves non-interactive behavior and protocol reliability.
+dry-run modes until it demonstrates non-interactive behavior and acceptable
+protocol reliability.
 
 ## Derived Artifacts
 
@@ -297,11 +337,11 @@ The adapter index should summarize:
 
 - discovered backends;
 - authority state;
-- capability support;
+- observed capability support;
 - unsupported capability gaps;
 - latest smoke result;
 - safe next action;
-- whether a backend can be selected for canonical runs.
+- whether a backend can be selected for bounded canonical trials.
 
 SpecSpace should consume these artifacts or their projection in existing viewer
 surfaces. It should not parse raw executor stdout/stderr.
@@ -313,6 +353,9 @@ surfaces. It should not parse raw executor stdout/stderr.
 - Missing protocol markers are always executor protocol failure.
 - Backend fallback cannot weaken sandbox, approval policy, allowed paths, or
   validation.
+- If a backend lacks native sandbox or approval controls, the adapter must not
+  pretend otherwise; it should rely on external isolation and surface that gap.
+- Adapter success is never final supervisor success.
 - Backend-specific stdout/stderr is local-only unless projected through a safe
   artifact.
 - Adapter metadata must redact secrets, credentials, raw prompts, and private
@@ -322,14 +365,17 @@ surfaces. It should not parse raw executor stdout/stderr.
 
 ## Implementation Plan
 
-1. Extract the current Codex executor path into an adapter-shaped interface with
-   no behavior change.
-2. Add the adapter policy artifact and tests for capability parsing.
-3. Add adapter index generation for the default Codex backend.
-4. Add smoke-test plumbing for experimental backends without canonical mutation.
-5. Add an experimental GitHub Copilot CLI backend if smoke semantics are
+1. Extract the current Codex executor path into a thin adapter-shaped interface
+   with no behavior change.
+2. Keep the first interface minimal: command construction, environment
+   preparation, process execution, stdout/stderr capture, return-code capture,
+   and timeout handling.
+3. Add the adapter policy artifact and tests for observed capability parsing.
+4. Add adapter index generation for the default Codex backend.
+5. Add smoke-test plumbing for experimental backends without canonical mutation.
+6. Add an experimental GitHub Copilot CLI backend only if smoke semantics are
    sufficient.
-6. Project adapter state into SpecSpace-facing surfaces only after the derived
+7. Project adapter state into SpecSpace-facing surfaces only after the derived
    artifacts are stable.
 
 ## Acceptance Criteria
@@ -346,6 +392,8 @@ Runtime realization should be considered complete only when:
 - smoke fixtures prove protocol, timeout, and failure handling;
 - experimental backends cannot silently mutate canonical specs;
 - viewer-facing artifacts expose adapter state without raw logs.
+- documentation states that adapters launch and observe, while supervisor
+  validation remains the trust boundary.
 
 ## Risks
 
@@ -356,8 +404,10 @@ Runtime realization should be considered complete only when:
   differences.
 - Model API routers may be mistaken for executor adapters unless the layer
   boundary stays explicit.
+- Over-specifying agent behavior can slow the project without adding real
+  enforcement.
 
 The mitigation is to keep the first runtime slice narrow: extract the current
-Codex path into a named adapter, then add experimental backends only through
-read-only smoke contracts.
-
+Codex path into a named adapter, keep enforcement in deterministic supervisor
+validation, then add experimental backends only through read-only smoke
+contracts.

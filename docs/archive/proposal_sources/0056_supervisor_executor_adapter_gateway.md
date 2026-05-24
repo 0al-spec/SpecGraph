@@ -42,17 +42,21 @@ Supervisor
   -> existing protocol, validation, and gate logic
 ```
 
-The adapter layer should preserve the current governance model. Alternate
-executors must prove they can satisfy non-interactive execution, file mutation
-boundaries, timeout behavior, machine protocol markers, and safe failure
-classification before they can influence canonical graph work.
+The adapter layer should preserve the current governance model by staying small.
+It should not try to prove that an agent will obey every instruction. It should
+only launch the backend, pass a prompt, collect stdout/stderr/return code, and
+normalize the observable result.
+
+Compliance remains the job of deterministic supervisor checks after the run:
+allowed paths, git diff inspection, YAML validation, machine protocol parsing,
+evidence checks, and review gates.
 
 ## Desired Outcome
 
 Define:
 
 - a stable executor adapter vocabulary;
-- a capability contract for supported and experimental backends;
+- an operational capability contract for supported and experimental backends;
 - a normalized run result contract;
 - a safety distinction between LLM API gateways, agent CLI executors, and UI
   protocols;
@@ -68,8 +72,8 @@ It should not:
 - make GitHub Copilot CLI the default;
 - weaken sandbox or approval behavior;
 - allow backend-specific prompt output to bypass supervisor protocol markers;
+- treat an adapter as a trust boundary or formal proof of agent behavior;
 - replace the current Codex path before an equivalent adapter passes regression
   tests;
 - confuse model API routing with worktree-mutating agent execution;
 - require SpecSpace to read raw executor logs.
-
