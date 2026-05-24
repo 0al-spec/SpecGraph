@@ -101,6 +101,16 @@ treated as an approval, gate decision, or merge authority signal.
 enumerated vocabulary values in
 [tools/supervisor_problem_diagnosis_policy.json](../tools/supervisor_problem_diagnosis_policy.json).
 
+The builder may also include:
+
+- `source`: sanitized source-run metadata such as `artifact_path`,
+  `source_status`, `content_sha256`, `schema_errors`, and `local_path_redacted`.
+- `insufficient_evidence`: machine-readable reasons explaining why the builder
+  refused to classify a sparse, stale, or under-evidenced run as clean.
+
+Viewers should treat `source.source_status = schema_incomplete` and non-empty
+`insufficient_evidence[]` as diagnostic warnings, not as recovery commands.
+
 ## UI Guidance
 
 - Show `diagnosis.overall_status` as the primary status.

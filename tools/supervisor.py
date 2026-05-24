@@ -27679,23 +27679,64 @@ def supervisor_problem_diagnosis_sanitized_error(error: str, path: Path | None) 
     return text.replace(resolved.as_posix(), replacement)
 
 
+SUPERVISOR_PROBLEM_DIAGNOSIS_REQUIRED_RUN_FIELDS = (
+    "run_id",
+    "spec_id",
+    "completion_status",
+    "outcome",
+    "gate_state",
+)
+
+
+def supervisor_problem_diagnosis_run_schema_errors(payload: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    for field in SUPERVISOR_PROBLEM_DIAGNOSIS_REQUIRED_RUN_FIELDS:
+        if not str(payload.get(field, "")).strip():
+            errors.append(f"missing required run field: {field}")
+    return errors
+
+
+def supervisor_problem_diagnosis_run_log_candidate_paths() -> list[Path]:
+    if not RUNS_DIR.exists():
+        return []
+    return sorted(path for path in RUNS_DIR.glob("*.json") if path.is_file())
+
+
+def supervisor_problem_diagnosis_explicit_run_timestamp(
+    payload: dict[str, Any],
+) -> dt.datetime | None:
+    for field in ("finished_at_utc", "started_at_utc", "timestamp_utc"):
+        parsed = parse_iso_datetime(payload.get(field, ""))
+        if parsed is not None:
+            return parsed
+    run_id = str(payload.get("run_id", "")).strip()
+    prefix = run_id.split("-", 1)[0]
+    try:
+        return dt.datetime.strptime(prefix, "%Y%m%dT%H%M%SZ").replace(tzinfo=dt.timezone.utc)
+    except ValueError:
+        return None
+
+
 def latest_supervisor_run_log_path() -> Path | None:
     records: list[tuple[dt.datetime | None, str, Path]] = []
-    for path in run_log_paths():
+    for path in supervisor_problem_diagnosis_run_log_candidate_paths():
         payload, error = load_json_object_report(path, artifact_kind="run log")
-        if payload is None:
+        if payload is None or supervisor_problem_diagnosis_run_schema_errors(payload):
             continue
         run_id = str(payload.get("run_id", path.stem)).strip() or path.stem
-        records.append((performance_run_timestamp(payload, path), run_id, path))
+        records.append((supervisor_problem_diagnosis_explicit_run_timestamp(payload), run_id, path))
     if not records:
         return None
-    records.sort(
-        key=lambda item: (
-            item[0] is None,
-            item[0] or dt.datetime.min.replace(tzinfo=dt.timezone.utc),
-            item[1],
+    timestamped = [item for item in records if item[0] is not None]
+    if timestamped:
+        timestamped.sort(
+            key=lambda item: (
+                item[0] or dt.datetime.min.replace(tzinfo=dt.timezone.utc),
+                item[1],
+            )
         )
-    )
+        return timestamped[-1][2]
+    records.sort(key=lambda item: (item[2].stat().st_mtime, item[1]))
     return records[-1][2]
 
 
@@ -27707,7 +27748,10 @@ def resolve_supervisor_problem_diagnosis_run_path(
         try:
             return resolve_supervisor_run_reference(value), ""
         except RuntimeError as exc:
-            return None, str(exc)
+            if any(sep in value for sep in ("/", "\\")):
+                return Path(value), str(exc)
+            run_filename = value if Path(value).suffix == ".json" else f"{value}.json"
+            return RUNS_DIR / run_filename, str(exc)
     path = latest_supervisor_run_log_path()
     if path is None:
         return None, "no supervisor run logs found under runs/"
@@ -27819,7 +27863,7 @@ def supervisor_run_has_split_required_candidate_without_proposal_path(
     payload: dict[str, Any],
     *,
     target_spec: str | None = None,
-) -> tuple[bool, int | None]:
+) -> tuple[bool, int | None, str]:
     text = supervisor_problem_diagnosis_text_surface(payload)
     findings = coerce_validation_findings(payload.get("validation_findings", []))
     finding_codes = {str(finding.get("code", "")).strip() for finding in findings}
@@ -27829,22 +27873,26 @@ def supervisor_run_has_split_required_candidate_without_proposal_path(
         or str(payload.get("outcome", "")).strip() == "split_required"
     )
     if not has_atomicity_pressure:
-        return False, None
+        return False, None, ""
     decision_inspector = payload.get("decision_inspector", {})
-    queue_effects = (
-        decision_inspector.get("queue_effects", {}) if isinstance(decision_inspector, dict) else {}
-    )
-    proposal_queue = (
-        queue_effects.get("proposal_queue", {}) if isinstance(queue_effects, dict) else {}
-    )
-    emitted_ids = proposal_queue.get("emitted_ids", []) if isinstance(proposal_queue, dict) else []
+    if not isinstance(decision_inspector, dict):
+        return False, None, "missing explicit proposal queue evidence"
+    queue_effects = decision_inspector.get("queue_effects")
+    if not isinstance(queue_effects, dict):
+        return False, None, "missing explicit proposal queue evidence"
+    proposal_queue = queue_effects.get("proposal_queue")
+    if not isinstance(proposal_queue, dict) or "emitted_ids" not in proposal_queue:
+        return False, None, "missing explicit proposal queue evidence"
+    emitted_ids = proposal_queue.get("emitted_ids", [])
+    if not isinstance(emitted_ids, list):
+        return False, None, "malformed explicit proposal queue evidence"
     if isinstance(emitted_ids, list) and any(str(item).strip() for item in emitted_ids):
-        return False, None
+        return False, None, ""
     spec_id = str(target_spec or payload.get("spec_id", "")).strip()
     canonical_count = canonical_acceptance_count_for_spec(spec_id)
     if canonical_count is None:
-        return False, None
-    return canonical_count <= ATOMICITY_MAX_ACCEPTANCE, canonical_count
+        return False, None, f"unknown target spec: {spec_id}"
+    return canonical_count <= ATOMICITY_MAX_ACCEPTANCE, canonical_count, ""
 
 
 def supervisor_problem_diagnosis_problem(
@@ -27886,11 +27934,17 @@ def build_supervisor_problem_diagnosis(
     run_id = ""
     spec_id = str(target_spec or "").strip()
     detected_problems: list[dict[str, Any]] = []
+    schema_errors: list[str] = []
+    insufficient_evidence_reasons: list[str] = []
 
     if run_payload is not None:
         run_id = str(run_payload.get("run_id", "")).strip() or (path.stem if path else "")
-        spec_id = spec_id or str(run_payload.get("spec_id", "")).strip()
-        if supervisor_run_has_provider_failure(run_payload):
+        run_spec_id = str(run_payload.get("spec_id", "")).strip()
+        spec_id = spec_id or run_spec_id
+        schema_errors = supervisor_problem_diagnosis_run_schema_errors(run_payload)
+        if schema_errors:
+            insufficient_evidence_reasons.extend(schema_errors)
+        if not schema_errors and supervisor_run_has_provider_failure(run_payload):
             detected_problems.append(
                 supervisor_problem_diagnosis_problem(
                     run_id=run_id,
@@ -27905,7 +27959,7 @@ def build_supervisor_problem_diagnosis(
                     ],
                 )
             )
-        if supervisor_run_has_runtime_residue(run_payload):
+        if not schema_errors and supervisor_run_has_runtime_residue(run_payload):
             detected_problems.append(
                 supervisor_problem_diagnosis_problem(
                     run_id=run_id,
@@ -27917,17 +27971,21 @@ def build_supervisor_problem_diagnosis(
                     evidence=[
                         "completion_status=failed",
                         "outcome=blocked",
-                        f"changed_files includes specs/nodes/{spec_id}.yaml",
+                        f"changed_files includes specs/nodes/{run_spec_id}.yaml",
                     ],
                 )
             )
-        split_problem, canonical_acceptance_count = (
+        split_problem, canonical_acceptance_count, split_insufficient_evidence = (
             supervisor_run_has_split_required_candidate_without_proposal_path(
                 run_payload,
                 target_spec=spec_id,
             )
         )
-        if split_problem:
+        if schema_errors:
+            split_problem = False
+        if split_insufficient_evidence:
+            insufficient_evidence_reasons.append(split_insufficient_evidence)
+        if not schema_errors and split_problem:
             detected_problems.append(
                 supervisor_problem_diagnosis_problem(
                     run_id=run_id,
@@ -27954,8 +28012,13 @@ def build_supervisor_problem_diagnosis(
         overall_status = "hard_stop"
     elif detected_problems:
         overall_status = "actionable"
+    elif insufficient_evidence_reasons:
+        overall_status = "insufficient_evidence"
     else:
         overall_status = "clean"
+    source_status = "unavailable" if load_error else "loaded"
+    if not load_error and schema_errors:
+        source_status = "schema_incomplete"
 
     artifact = {
         "artifact_kind": SUPERVISOR_PROBLEM_DIAGNOSIS_ARTIFACT_KIND,
@@ -27969,9 +28032,10 @@ def build_supervisor_problem_diagnosis(
         },
         "source": {
             **source_reference,
-            "source_status": "unavailable" if load_error else "loaded",
+            "source_status": source_status,
             "content_sha256": f"sha256:{raw_sha256}" if raw_sha256 else "",
             "error": load_error,
+            "schema_errors": schema_errors,
         },
         "diagnosis": {
             "overall_status": overall_status,
@@ -27982,6 +28046,7 @@ def build_supervisor_problem_diagnosis(
         "safe_next_actions": [],
         "blocked_actions": [],
         "validation_plan": [],
+        "insufficient_evidence": insufficient_evidence_reasons,
         "policy_reference": supervisor_problem_diagnosis_policy_reference(),
         "summary": {
             "status": overall_status,
@@ -27989,7 +28054,8 @@ def build_supervisor_problem_diagnosis(
                 str(detected_problems[0].get("problem_class", "")) if detected_problems else ""
             ),
             "detected_problem_count": len(detected_problems),
-            "source_status": "unavailable" if load_error else "loaded",
+            "source_status": source_status,
+            "insufficient_evidence_count": len(insufficient_evidence_reasons),
         },
     }
     return artifact

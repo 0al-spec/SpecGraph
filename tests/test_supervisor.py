@@ -31077,3 +31077,20 @@ def test_loop_respects_max_iterations(
 
     run_logs = sorted((repo_fixture / "runs").glob("*-SG-SPEC-*.json"))
     assert len(run_logs) == 1
+
+
+def test_supervisor_problem_diagnosis_run_schema_guard(supervisor_module: object) -> None:
+    errors = supervisor_module.supervisor_problem_diagnosis_run_schema_errors(
+        {
+            "run_id": "20260524T000000Z-SG-SPEC-0001-test",
+            "spec_id": "SG-SPEC-0001",
+            "completion_status": "ok",
+            "outcome": "done",
+            "gate_state": "none",
+        }
+    )
+    assert errors == []
+
+    sparse_errors = supervisor_module.supervisor_problem_diagnosis_run_schema_errors({})
+    assert "missing required run field: run_id" in sparse_errors
+    assert "missing required run field: spec_id" in sparse_errors
