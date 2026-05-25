@@ -16,7 +16,8 @@ Source draft:
 External Feature Passport authority:
 
 - Feature Passport repository: <https://github.com/0al-spec/FeaturePassport>
-- Feature Passport RFC: <https://github.com/0al-spec/FeaturePassport/blob/main/docs/proposals/0001_specgraph_feature_runtime_evidence_layer.md>
+- Feature Passport RFC:
+  <https://github.com/0al-spec/FeaturePassport/blob/a56467a02f4f45457e6d1d5085874880799a4529/docs/proposals/0001_specgraph_feature_runtime_evidence_layer.md>
 - RFC id/version: `FP-RFC-0001` / `0.1.0`
 
 External standards and transport anchors remain non-authoritative inputs:
@@ -264,8 +265,8 @@ SpecGraph should preserve the Feature Passport honesty model:
 - absence of evidence is not automatically evidence of absence;
 - adoption metrics must declare sampling, retention, and upload policies.
 
-Critical product proof should prefer backend-confirmed `effect_committed` and
-`outcome_completed` receipts.
+Critical product proof should prefer backend-confirmed L7/L8 evidence. The exact
+receipt and event names remain defined by `FP-RFC-0001`.
 
 ## Implementation Plan
 
