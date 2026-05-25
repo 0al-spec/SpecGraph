@@ -13,10 +13,10 @@ Source draft:
 
 - `docs/archive/proposal_sources/0058_feature_runtime_evidence_layer.md`
 
-External FeaturePassport authority:
+External Feature Passport authority:
 
-- FeaturePassport repository: <https://github.com/0al-spec/FeaturePassport>
-- FeaturePassport RFC: <https://github.com/0al-spec/FeaturePassport/blob/main/docs/proposals/0001_specgraph_feature_runtime_evidence_layer.md>
+- Feature Passport repository: <https://github.com/0al-spec/FeaturePassport>
+- Feature Passport RFC: <https://github.com/0al-spec/FeaturePassport/blob/main/docs/proposals/0001_specgraph_feature_runtime_evidence_layer.md>
 - RFC id/version: `FP-RFC-0001` / `0.1.0`
 
 External standards and transport anchors remain non-authoritative inputs:
@@ -52,8 +52,8 @@ Did this user request become a shipped feature that real production users
 actually saw, executed, and completed?
 ```
 
-The FeaturePassport repository now owns the architecture-level contract for
-FeaturePassport, evidence claims, observations, attestations, receipts, evidence
+The Feature Passport repository now owns the architecture-level contract for
+Feature Passport, evidence claims, observations, attestations, receipts, evidence
 levels, canonical event envelopes, and honesty boundaries. SpecGraph should not
 copy that contract. SpecGraph should consume it, reference it, and project its
 evidence into graph-native surfaces.
@@ -71,7 +71,7 @@ Current engineering signals often stop too early:
 None of those alone proves that a specific SpecGraph request produced a
 specific user-visible outcome in production.
 
-SpecGraph needs a first-class integration point for FeaturePassport evidence.
+SpecGraph needs a first-class integration point for Feature Passport evidence.
 Without it, operators and viewers may confuse weak signals with strong proof:
 
 - `merged` is not the same as `built`;
@@ -82,19 +82,19 @@ Without it, operators and viewers may confuse weak signals with strong proof:
 - client-side telemetry is not adversarially perfect proof.
 
 The graph should expose those distinctions explicitly while delegating the
-canonical feature-evidence vocabulary to FeaturePassport.
+canonical feature-evidence vocabulary to Feature Passport.
 
 ## Goals
 
-- Adopt `FP-RFC-0001` as the external authority for FeaturePassport evidence
+- Adopt `FP-RFC-0001` as the external authority for Feature Passport evidence
   terminology and contract shape.
-- Link SpecGraph request/spec/proposal identifiers to FeaturePassport
+- Link SpecGraph request/spec/proposal identifiers to Feature Passport
   `request_id` and `feature_id`.
-- Define SpecGraph-owned derived surfaces for imported FeaturePassport evidence.
-- Preserve evidence strength levels from the FeaturePassport RFC without
+- Define SpecGraph-owned derived surfaces for imported Feature Passport evidence.
+- Preserve evidence strength levels from the Feature Passport RFC without
   redefining them locally.
 - Allow supply-chain provenance systems to satisfy build/release evidence
-  through FeaturePassport-compatible adapters.
+  through Feature Passport-compatible adapters.
 - Allow telemetry systems to transport runtime observations without becoming
   graph authority.
 - Treat signed or hash-linked receipts as the trusted ingestion output.
@@ -104,8 +104,8 @@ canonical feature-evidence vocabulary to FeaturePassport.
 
 ## Non-Goals
 
-- Redefining the FeaturePassport RFC inside SpecGraph.
-- Duplicating the FeaturePassport schema, event envelope, or receipt schema.
+- Redefining the Feature Passport RFC inside SpecGraph.
+- Duplicating the Feature Passport schema, event envelope, or receipt schema.
 - Implementing a telemetry SDK.
 - Implementing an evidence ingestion backend.
 - Implementing a database, queue, or ledger.
@@ -124,14 +124,14 @@ projection layer above implementation work:
 
 ```text
 SpecGraph request/spec/proposal
-  -> FeaturePassport reference
+  -> Feature Passport reference
   -> implementation linkage
   -> build/release evidence projection
   -> runtime observation/receipt projection
   -> viewer evidence ladder
 ```
 
-SpecGraph should report the strongest FeaturePassport evidence level currently
+SpecGraph should report the strongest Feature Passport evidence level currently
 observed for each linked request or feature. It should not claim that a feature
 is "done" merely because code exists.
 
@@ -139,7 +139,7 @@ is "done" merely because code exists.
 
 `FP-RFC-0001` is the source of truth for:
 
-- `FeaturePassport`;
+- `Feature Passport`;
 - `EvidenceClaim`;
 - `Observation`;
 - `Attestation`;
@@ -154,7 +154,7 @@ is "done" merely because code exists.
 
 SpecGraph is responsible for:
 
-- storing or referencing FeaturePassport identities;
+- storing or referencing Feature Passport identities;
 - linking graph nodes to `request_id` and `feature_id`;
 - building read-only derived indexes from available passports and receipts;
 - surfacing gaps when required evidence is missing;
@@ -163,7 +163,7 @@ SpecGraph is responsible for:
 
 ## Evidence Level Adoption
 
-SpecGraph should display and query the FeaturePassport evidence ladder using the
+SpecGraph should display and query the Feature Passport evidence ladder using the
 external RFC labels:
 
 ```text
@@ -178,7 +178,7 @@ L7 Effect Committed
 L8 Outcome Completed
 ```
 
-The phrases should keep their FeaturePassport meaning:
+The phrases should keep their Feature Passport meaning:
 
 - "commit reached production" requires at least `L4`.
 - "feature worked for users" requires `L7` or `L8`.
@@ -239,7 +239,7 @@ The viewer must distinguish:
 - server-confirmed evidence;
 - tamper-evident receipt evidence.
 
-The viewer should link to the FeaturePassport RFC rather than embedding the full
+The viewer should link to the Feature Passport RFC rather than embedding the full
 passport schema or receipt schema in SpecGraph UI documentation.
 
 ## Relationship To Existing SpecGraph Layers
@@ -249,14 +249,14 @@ passport schema or receipt schema in SpecGraph UI documentation.
 - Implementation work links specs to work candidates and delivery deltas.
 - Metric packs may compute adoption, drift, or cost signals from evidence.
 - Feature Runtime Evidence Layer connects delivery and production usage to
-  request-level proof through FeaturePassport.
+  request-level proof through Feature Passport.
 
 This proposal extends the evidence plane toward product runtime. It does not
 replace existing trace or evidence contracts.
 
 ## Honesty Boundary
 
-SpecGraph should preserve the FeaturePassport honesty model:
+SpecGraph should preserve the Feature Passport honesty model:
 
 - client-side events are observations, not final proof;
 - server-issued receipts are canonical evidence;
@@ -271,10 +271,10 @@ Critical product proof should prefer backend-confirmed `effect_committed` and
 
 Suggested bounded slices:
 
-1. FeaturePassport external authority policy and import/reference contract.
-2. FeaturePassport index derived from known external/passport sources.
+1. Feature Passport external authority policy and import/reference contract.
+2. Feature Passport index derived from known external/passport sources.
 3. Build/release provenance projection linked by `request_id` and `feature_id`.
-4. Runtime receipt projection linked by FeaturePassport evidence claims.
+4. Runtime receipt projection linked by Feature Passport evidence claims.
 5. Feature evidence ladder derived from passports, provenance, and receipts.
 6. Viewer contract for evidence ladder and honesty boundary badges.
 7. Product workspace integration so non-SpecGraph projects can emit compatible
@@ -283,8 +283,8 @@ Suggested bounded slices:
 ## Acceptance Criteria
 
 - SpecGraph proposal references `FP-RFC-0001` instead of duplicating the
-  FeaturePassport RFC content.
-- The proposal names FeaturePassport as external authority for passport,
+  Feature Passport RFC content.
+- The proposal names Feature Passport as external authority for passport,
   envelope, receipt, and evidence-level semantics.
 - The proposal defines SpecGraph-owned derived surfaces for passport/evidence
   observation.
@@ -296,7 +296,7 @@ Suggested bounded slices:
 
 ## Risks
 
-- Duplicating FeaturePassport semantics inside SpecGraph and creating drift.
+- Duplicating Feature Passport semantics inside SpecGraph and creating drift.
 - Overclaiming proof from client-side telemetry.
 - Collecting user-identifiable data when pseudonymous evidence is enough.
 - Treating feature flags as proof of execution.
@@ -307,7 +307,7 @@ Suggested bounded slices:
 
 ## Open Questions
 
-- Should SpecGraph discover FeaturePassport contracts through SpecPM packages,
+- Should SpecGraph discover Feature Passport contracts through SpecPM packages,
   product workspaces, or direct repository references first?
 - Should evidence receipts be stored locally, in a product backend, or in a
   dedicated Platform service?

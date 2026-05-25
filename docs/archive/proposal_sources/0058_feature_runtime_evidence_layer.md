@@ -51,7 +51,7 @@ sources or transports, not as the canonical SpecGraph model.
 
 Define a proposal for:
 
-- a `FeaturePassport` contract;
+- a `Feature Passport` contract;
 - a delivery and runtime evidence graph;
 - feature probe levels from commit to user-visible outcome;
 - signed or hash-linked evidence receipts;
