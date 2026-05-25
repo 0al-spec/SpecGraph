@@ -2673,5 +2673,75 @@
         "pattern": "workspace.local_input_path_persisted: false"
       }
     ]
+  },
+  {
+    "proposal_id": "0055",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "tools/supervisor.py",
+      "tests/test_supervisor.py",
+      "tools/supervisor_problem_diagnosis_policy.json",
+      "docs/supervisor_problem_diagnosis_viewer_contract.md",
+      "docs/proposals/0055_supervisor_problem_diagnosis_and_recovery_planner.md"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/supervisor_problem_diagnosis_policy.json",
+        "pattern": "\"artifact_kind\": \"supervisor_problem_diagnosis_policy\""
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def build_supervisor_problem_diagnosis("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def write_supervisor_problem_diagnosis("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "\"--build-supervisor-problem-diagnosis\""
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_supervisor_problem_diagnosis_run_schema_guard("
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "write_supervisor_problem_diagnosis(report)"
+      },
+      {
+        "path": "docs/supervisor_problem_diagnosis_viewer_contract.md",
+        "pattern": "runs/supervisor_problem_diagnosis.json"
+      }
+    ]
+  },
+  {
+    "proposal_id": "0056",
+    "posture": "bounded_runtime_followup",
+    "runtime_surfaces": [
+      "tools/supervisor.py",
+      "tests/test_supervisor.py",
+      "docs/proposals/0056_supervisor_executor_adapter_gateway.md"
+    ],
+    "runtime_markers": [],
+    "validation_markers": [],
+    "observation_markers": []
+  },
+  {
+    "proposal_id": "0057",
+    "posture": "bounded_runtime_followup",
+    "runtime_surfaces": [
+      "tools/operator_request_bridge_policy.json",
+      "tools/supervisor.py",
+      "tests/test_supervisor.py",
+      "docs/proposals/0057_graph_operator_surface_request_preparation.md"
+    ],
+    "runtime_markers": [],
+    "validation_markers": [],
+    "observation_markers": []
   }
 ]

@@ -700,5 +700,44 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0055",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0055_supervisor_problem_diagnosis_and_recovery_planner.md"
+    ],
+    "motivating_concern": "supervisor operation needs first-class problem diagnosis and deterministic recovery planning instead of ad hoc operator memory",
+    "normalized_title": "Supervisor Problem Diagnosis and Recovery Planner",
+    "bounded_scope": "Define a supervisor problem diagnosis artifact, problem vocabulary, safe recovery planner, hard stops, and future operator surface boundary without implementing autopilot, merge authority, or automatic recovery execution.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
+  },
+  {
+    "proposal_id": "0056",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0056_supervisor_executor_adapter_gateway.md"
+    ],
+    "motivating_concern": "supervisor executor behavior is Codex-shaped and needs a pragmatic launch-and-observe boundary before alternate agent CLI experiments",
+    "normalized_title": "Supervisor Executor Adapter Gateway",
+    "bounded_scope": "Define executor adapters as launch-and-observe boundaries with observed capabilities, normalized run results, smoke contracts, and layer separation without replacing Codex, implementing Copilot support, or treating adapters as trust boundaries.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
+  },
+  {
+    "proposal_id": "0057",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0057_graph_operator_surface_request_preparation.md"
+    ],
+    "motivating_concern": "graph-context chat and viewer-driven request preparation need an implementation-agnostic operator surface boundary rather than hardcoded SpecSpace semantics",
+    "normalized_title": "Graph Operator Surface Request Preparation",
+    "bounded_scope": "Define Graph Operator Surface as a human-facing request-preparation layer that emits or prepares operator_request_packet handoffs with explicit human confirmation, without implementing UI, autonomous agent loops, or direct canonical graph mutation.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]
