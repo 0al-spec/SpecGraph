@@ -224,7 +224,7 @@ The adapter gateway should return a backend-neutral result shape:
 {
   "backend_id": "codex",
   "run_status": "completed",
-  "returncode": 0,
+  "exit_code": 0,
   "protocol_status": "valid",
   "outcome": "done",
   "blocker": "none",
@@ -251,7 +251,7 @@ depends on deterministic post-run checks.
 Runtime implementation may introduce:
 
 ```text
-tools/supervisor_executor_adapters.json
+tools/supervisor_executor_adapter_policy.json
 ```
 
 Candidate shape:
@@ -304,7 +304,7 @@ Rules:
 - smoke mode must not mutate canonical specs;
 - direct backend fallback must not broaden permissions.
 
-## Benchmark And Smoke Requirements
+## Benchmark and Smoke Requirements
 
 Before an alternate executor can run canonical graph work, it should pass a
 bounded smoke suite:
