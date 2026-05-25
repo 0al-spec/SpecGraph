@@ -178,8 +178,16 @@ feature code path.
 
 Required probe examples:
 
-- `sg.feature.exposed`
 - `sg.feature.code_path.executed`
+
+Conditional probe examples:
+
+- `sg.feature.exposed`
+
+`sg.feature.exposed` is required for UI or user-entry-point features. Backend,
+headless, background, scheduled, or migration-style features may satisfy Level 3
+without exposure evidence when their Feature Passport explicitly marks exposure
+as not applicable.
 
 This proves execution of instrumented code paths, but not necessarily
 successful user-visible outcome.
@@ -208,8 +216,8 @@ FeaturePassport
 Suggested shape:
 
 ```yaml
-apiVersion: specgraph.io/v1alpha1
-kind: FeaturePassport
+artifact_kind: feature_passport
+schema_version: 1
 metadata:
   feature_id: feature.invoice.smart_summary
   request_id: SG-REQ-2026-001
@@ -244,6 +252,7 @@ spec:
     - event: sg.feature.exposed
       probe_id: invoice_summary.visible.v1
       min_count: 1
+      required_when: ui_or_user_entry_point
     - event: sg.feature.code_path.executed
       probe_id: invoice_summary.render.v1
       min_count: 1
@@ -263,6 +272,11 @@ spec:
 
 The passport is not runtime proof by itself. It declares what proof must exist
 for a feature to satisfy the graph request.
+
+`metadata.request_id` is the canonical request identifier key for Feature
+Passport and runtime events. Older or external sources may expose a field named
+`specgraph_request_id`, but ingestion must normalize that alias into
+`request_id` before validating events against passports.
 
 ## Runtime Event Vocabulary
 
@@ -284,7 +298,7 @@ Common event fields:
 {
   "event": "sg.feature.code_path.executed",
   "feature_id": "feature.invoice.smart_summary",
-  "specgraph_request_id": "SG-REQ-2026-001",
+  "request_id": "SG-REQ-2026-001",
   "probe_id": "invoice_summary.render.v1",
   "env": "production",
   "platform": "ios",
@@ -299,6 +313,13 @@ Common event fields:
   "timestamp": "2026-05-25T15:03:44Z"
 }
 ```
+
+Required common fields are `event`, `feature_id`, `request_id`, `probe_id`,
+`env`, `platform`, and `timestamp`. Build and provenance fields are required
+when the event claims release or artifact linkage. `user_hash` and `session_id`
+are conditional: UI/session evidence should include them when privacy policy
+allows pseudonymous identity, while backend-only or batch evidence may omit
+them and rely on server-side operation identifiers instead.
 
 Raw PII, raw prompt text, secrets, access tokens, private local paths, and
 unredacted user content must not appear in viewer-facing evidence artifacts.
@@ -335,8 +356,11 @@ Receipt storage should be append-only or tamper-evident. A hash chain is the
 minimum useful model:
 
 ```text
-receipt_hash_n = sha256(canonical_json(event_n) + receipt_hash_n-1)
+receipt_hash_n = sha256(canonical_json(event_n) + previous_hash)
 ```
+
+where `previous_hash` is the sealed receipt hash for receipt `n-1` or a
+well-known genesis value for the first receipt in a chain.
 
 The graph should consume receipts or receipt summaries, not raw untrusted
 client events.
@@ -403,7 +427,7 @@ Build
 
 Release
   production release active
-  runtime build_seen received
+  runtime sg.release_seen received
 
 Adoption
   feature exposed
