@@ -68,6 +68,7 @@ Derived artifacts:
 - spec trace index: `runs/spec_trace_index.json`
 - spec trace projection: `runs/spec_trace_projection.json`
 - proposal runtime index: `runs/proposal_runtime_index.json`
+- proposal tracking report: `runs/proposal_tracking_report.json`
 - spec activity feed: `runs/spec_activity_feed.json`
 - project environment: `runs/project_environment.json`
 - product workspace initialization: `runs/product_workspace_initialization.json`
@@ -3612,8 +3613,11 @@ SPEC_TRACE_PROJECTION_FILENAME = "spec_trace_projection.json"
 PROPOSAL_RUNTIME_INDEX_FILENAME = "proposal_runtime_index.json"
 PROPOSAL_PROMOTION_INDEX_FILENAME = "proposal_promotion_index.json"
 PROPOSAL_SPEC_TRACE_INDEX_FILENAME = "proposal_spec_trace_index.json"
+PROPOSAL_TRACKING_REPORT_FILENAME = "proposal_tracking_report.json"
 PROPOSAL_SPEC_TRACE_INDEX_ARTIFACT_KIND = "proposal_spec_trace_index"
 PROPOSAL_SPEC_TRACE_INDEX_SCHEMA_VERSION = 1
+PROPOSAL_TRACKING_REPORT_ARTIFACT_KIND = "proposal_tracking_report"
+PROPOSAL_TRACKING_REPORT_SCHEMA_VERSION = 1
 PROPOSAL_DOC_FILENAME_RE = re.compile(r"^(?P<proposal_id>\d{4})_(?P<slug>.+)\.md$")
 TASK_LINE_RE = re.compile(r"^(?P<task_id>\d+)\.\s+\[(?P<status>[a-z_]+)\]\s+(?P<body>.+)$")
 PR_NUMBER_FROM_SUBJECT_RE = re.compile(
@@ -28953,6 +28957,10 @@ def proposal_spec_trace_index_path() -> Path:
     return RUNS_DIR / PROPOSAL_SPEC_TRACE_INDEX_FILENAME
 
 
+def proposal_tracking_report_path() -> Path:
+    return RUNS_DIR / PROPOSAL_TRACKING_REPORT_FILENAME
+
+
 def graph_dashboard_path() -> Path:
     return RUNS_DIR / GRAPH_DASHBOARD_FILENAME
 
@@ -29001,6 +29009,15 @@ def load_proposal_promotion_registry() -> dict[str, dict[str, Any]]:
             continue
         registry[proposal_id] = item
     return registry
+
+
+def load_proposal_tracking_policy() -> dict[str, Any]:
+    path = ROOT / "tools" / "proposal_tracking_policy.json"
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    return payload if isinstance(payload, dict) else {}
 
 
 def load_task_status_index() -> dict[int, dict[str, str]]:
@@ -30048,6 +30065,233 @@ def write_proposal_spec_trace_index(index: dict[str, Any]) -> Path:
     path = proposal_spec_trace_index_path()
     with artifact_lock(path):
         atomic_write_json(path, index)
+    return path
+
+
+def proposal_tracking_status_for_entry(
+    *,
+    proposal: dict[str, Any],
+    runtime_entry: dict[str, Any] | None,
+    promotion_entry: dict[str, Any] | None,
+    trace_entry: dict[str, Any] | None,
+    policy: dict[str, Any],
+) -> dict[str, Any]:
+    tracking_sources: list[str] = []
+    if runtime_entry is not None:
+        tracking_sources.append("proposal_runtime_registry")
+    if promotion_entry is not None:
+        tracking_sources.append("proposal_promotion_registry")
+    if trace_entry is not None:
+        tracking_sources.append("proposal_spec_trace_index")
+
+    status_text = str(proposal.get("status", "")).strip()
+    normalized_status = status_text.lower()
+    posture = infer_proposal_posture(
+        text=str(proposal.get("text", "")),
+        runtime_surfaces=list((runtime_entry or {}).get("runtime_surfaces", []) or []),
+    )
+    no_runtime_statuses = {
+        str(item).strip().lower()
+        for item in policy.get("no_runtime_required_statuses", [])
+        if str(item).strip()
+    } or {"informational", "archived", "superseded", "no runtime required"}
+    implemented_statuses = {
+        str(item).strip().lower()
+        for item in policy.get("implemented_statuses", [])
+        if str(item).strip()
+    } or {"implemented"}
+
+    if tracking_sources:
+        tracking_status = "tracked"
+        next_gap = "none"
+        severity = "info"
+    elif normalized_status in no_runtime_statuses:
+        tracking_status = "no_runtime_required"
+        next_gap = "none"
+        severity = "info"
+    elif normalized_status in implemented_statuses:
+        tracking_status = "missing_tracking"
+        next_gap = "define_proposal_tracking"
+        severity = "high"
+    elif posture == "document_only":
+        tracking_status = "document_only_untracked"
+        next_gap = "classify_proposal_tracking"
+        severity = "low"
+    else:
+        tracking_status = "missing_tracking"
+        next_gap = "define_proposal_tracking"
+        severity = "medium"
+
+    return {
+        "tracking_status": tracking_status,
+        "next_gap": next_gap,
+        "severity": severity,
+        "tracking_sources": tracking_sources,
+        "posture": posture,
+        "has_runtime_registry_entry": runtime_entry is not None,
+        "has_promotion_registry_entry": promotion_entry is not None,
+        "has_spec_trace_entry": trace_entry is not None,
+    }
+
+
+def build_proposal_tracking_report(
+    *,
+    proposal_runtime_index: dict[str, Any] | None = None,
+    proposal_spec_trace_index: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    policy = load_proposal_tracking_policy()
+    runtime_registry = load_proposal_runtime_registry()
+    promotion_registry = load_proposal_promotion_registry()
+    runtime_index = (
+        copy.deepcopy(proposal_runtime_index)
+        if isinstance(proposal_runtime_index, dict)
+        else build_proposal_runtime_index()
+    )
+    trace_index = (
+        copy.deepcopy(proposal_spec_trace_index)
+        if isinstance(proposal_spec_trace_index, dict)
+        else build_proposal_spec_trace_index()
+    )
+    runtime_by_id = {
+        str(entry.get("proposal_id", "")).strip(): entry
+        for entry in runtime_index.get("entries", [])
+        if isinstance(entry, dict) and str(entry.get("proposal_id", "")).strip()
+    }
+    trace_by_id = {
+        str(entry.get("proposal_id", "")).strip(): entry
+        for entry in trace_index.get("entries", [])
+        if isinstance(entry, dict) and str(entry.get("proposal_id", "")).strip()
+    }
+
+    entries: list[dict[str, Any]] = []
+    status_groups: dict[str, list[str]] = {}
+    next_gap_groups: dict[str, list[str]] = {}
+    source_groups: dict[str, list[str]] = {}
+    severity_groups: dict[str, list[str]] = {}
+    for proposal in iter_proposal_documents():
+        proposal_id = str(proposal.get("proposal_id", "")).strip()
+        runtime_entry = runtime_registry.get(proposal_id)
+        promotion_entry = promotion_registry.get(proposal_id)
+        trace_entry = trace_by_id.get(proposal_id)
+        trace_tracking_entry = None
+        if isinstance(trace_entry, dict):
+            promotion_trace = trace_entry.get("promotion_trace", {})
+            if isinstance(promotion_trace, dict):
+                trace_status = str(promotion_trace.get("trace_status", "")).strip()
+                promotion_next_gap = str(promotion_trace.get("next_gap", "")).strip()
+                if trace_status in {"declared", "bounded"} or promotion_next_gap == "none":
+                    trace_tracking_entry = trace_entry
+        tracking = proposal_tracking_status_for_entry(
+            proposal=proposal,
+            runtime_entry=runtime_entry,
+            promotion_entry=promotion_entry,
+            trace_entry=trace_tracking_entry,
+            policy=policy,
+        )
+        tracking_status = str(tracking["tracking_status"])
+        next_gap = str(tracking["next_gap"])
+        severity = str(tracking["severity"])
+        status_groups.setdefault(tracking_status, []).append(proposal_id)
+        next_gap_groups.setdefault(next_gap, []).append(proposal_id)
+        severity_groups.setdefault(severity, []).append(proposal_id)
+        for source in tracking["tracking_sources"]:
+            source_groups.setdefault(str(source), []).append(proposal_id)
+        if not tracking["tracking_sources"]:
+            source_groups.setdefault("none", []).append(proposal_id)
+
+        runtime_index_entry = runtime_by_id.get(proposal_id, {})
+        trace_index_entry = trace_by_id.get(proposal_id, {})
+        entries.append(
+            {
+                "proposal_id": proposal_id,
+                "title": str(proposal.get("title", "")),
+                "path": str(proposal.get("path", "")),
+                "status": str(proposal.get("status", "")),
+                "tracking_status": tracking_status,
+                "severity": severity,
+                "next_gap": next_gap,
+                "tracking_sources": tracking["tracking_sources"],
+                "posture": tracking["posture"],
+                "runtime_next_gap": (
+                    runtime_index_entry.get("reflective_chain", {}).get("next_gap")
+                    if isinstance(runtime_index_entry.get("reflective_chain"), dict)
+                    else None
+                ),
+                "promotion_next_gap": (
+                    trace_index_entry.get("promotion_trace", {}).get("next_gap")
+                    if isinstance(trace_index_entry.get("promotion_trace"), dict)
+                    else None
+                ),
+                "has_runtime_registry_entry": tracking["has_runtime_registry_entry"],
+                "has_promotion_registry_entry": tracking["has_promotion_registry_entry"],
+                "has_spec_trace_entry": tracking["has_spec_trace_entry"],
+            }
+        )
+
+    def sorted_groups(groups: dict[str, list[str]]) -> dict[str, list[str]]:
+        return {key: sorted(set(value)) for key, value in sorted(groups.items())}
+
+    sorted_status_groups = sorted_groups(status_groups)
+    sorted_next_gap_groups = sorted_groups(next_gap_groups)
+    sorted_source_groups = sorted_groups(source_groups)
+    sorted_severity_groups = sorted_groups(severity_groups)
+    untracked_ids = sorted_status_groups.get("missing_tracking", [])
+    return {
+        "artifact_kind": PROPOSAL_TRACKING_REPORT_ARTIFACT_KIND,
+        "schema_version": PROPOSAL_TRACKING_REPORT_SCHEMA_VERSION,
+        "generated_at": utc_now_iso(),
+        "tracking_mode": "report_only",
+        "strict_ci_enforced": False,
+        "source_artifacts": {
+            "proposal_markdown": "docs/proposals/*.md",
+            "proposal_tracking_policy": "tools/proposal_tracking_policy.json",
+            "proposal_runtime_registry": "tools/proposal_runtime_registry.json",
+            "proposal_promotion_registry": "tools/proposal_promotion_registry.json",
+            "proposal_runtime_index": {
+                "artifact_kind": runtime_index.get("artifact_kind"),
+                "generated_at": runtime_index.get("generated_at"),
+                "entry_count": runtime_index.get("entry_count", 0),
+            },
+            "proposal_spec_trace_index": {
+                "artifact_kind": trace_index.get("artifact_kind"),
+                "generated_at": trace_index.get("generated_at"),
+                "entry_count": trace_index.get("entry_count", 0),
+            },
+        },
+        "entry_count": len(entries),
+        "entries": sorted(entries, key=lambda item: item["proposal_id"]),
+        "summary": {
+            "proposal_count": len(entries),
+            "missing_tracking_count": len(untracked_ids),
+            "status_counts": grouped_identifier_counts(sorted_status_groups),
+            "next_gap_counts": grouped_identifier_counts(sorted_next_gap_groups),
+            "tracking_source_counts": grouped_identifier_counts(sorted_source_groups),
+            "severity_counts": grouped_identifier_counts(sorted_severity_groups),
+        },
+        "viewer_projection": {
+            "tracking_status": sorted_status_groups,
+            "next_gap": sorted_next_gap_groups,
+            "tracking_source": sorted_source_groups,
+            "severity": sorted_severity_groups,
+            "named_filters": {
+                "missing_tracking": untracked_ids,
+                "needs_classification": sorted_next_gap_groups.get(
+                    "classify_proposal_tracking",
+                    [],
+                ),
+                "tracked": sorted_status_groups.get("tracked", []),
+            },
+        },
+        "canonical_mutations_allowed": False,
+        "tracked_artifacts_written": False,
+    }
+
+
+def write_proposal_tracking_report(report: dict[str, Any]) -> Path:
+    RUNS_DIR.mkdir(parents=True, exist_ok=True)
+    path = proposal_tracking_report_path()
+    with artifact_lock(path):
+        atomic_write_json(path, report)
     return path
 
 
@@ -33348,6 +33592,11 @@ def build_viewer_surfaces(specs: list[SpecNode]) -> dict[str, Any]:
         proposal_lane_overlay=proposal_lane_overlay,
     )
     proposal_spec_trace_path = write_proposal_spec_trace_index(proposal_spec_trace_index)
+    proposal_tracking_report = build_proposal_tracking_report(
+        proposal_runtime_index=proposal_runtime_index,
+        proposal_spec_trace_index=proposal_spec_trace_index,
+    )
+    proposal_tracking_path = write_proposal_tracking_report(proposal_tracking_report)
     intent_overlay_path_result = write_intent_layer_overlay(intent_overlay)
     proposal_lane_path = write_proposal_lane_overlay(proposal_lane_overlay)
     spec_trace_index_path_result = write_spec_trace_index(spec_trace_index)
@@ -33555,6 +33804,17 @@ def build_viewer_surfaces(specs: list[SpecNode]) -> dict[str, Any]:
                 "generated_at": proposal_spec_trace_index.get("generated_at"),
                 "entry_count": proposal_spec_trace_index.get("entry_count"),
                 "lane_ref_count": proposal_spec_trace_index.get("lane_ref_count"),
+            },
+            "proposal_tracking_report": {
+                "artifact_path": proposal_tracking_path.relative_to(ROOT).as_posix(),
+                "generated_at": proposal_tracking_report.get("generated_at"),
+                "entry_count": proposal_tracking_report.get("entry_count"),
+                "missing_tracking_count": (
+                    proposal_tracking_report.get("summary", {}).get(
+                        "missing_tracking_count",
+                        0,
+                    )
+                ),
             },
             "metrics_source_promotion_index": {
                 "artifact_path": promotion_path.relative_to(ROOT).as_posix(),
@@ -37778,6 +38038,7 @@ def main(
     build_proposal_runtime_index_mode: bool = False,
     build_proposal_promotion_index_mode: bool = False,
     build_proposal_spec_trace_index_mode: bool = False,
+    build_proposal_tracking_report_mode: bool = False,
     supervisor_prompt_profile: str | None = None,
     supervisor_prompt_extension_file: str | None = None,
     output_mode: str = "summary",
@@ -37879,6 +38140,7 @@ def main(
         "--build-proposal-runtime-index": build_proposal_runtime_index_mode,
         "--build-proposal-promotion-index": build_proposal_promotion_index_mode,
         "--build-proposal-spec-trace-index": build_proposal_spec_trace_index_mode,
+        "--build-proposal-tracking-report": build_proposal_tracking_report_mode,
     }
     enabled_standalone_modes = [name for name, enabled in standalone_modes.items() if enabled]
     if len(enabled_standalone_modes) > 1:
@@ -40730,6 +40992,64 @@ def main(
         emit_supervisor_json(index, output_mode=normalized_output_mode)
         return 0
 
+    if build_proposal_tracking_report_mode:
+        if any(
+            (
+                dry_run,
+                auto_approve,
+                loop,
+                resolve_gate,
+                decision,
+                note,
+                target_spec,
+                split_proposal,
+                apply_split_proposal,
+                operator_note,
+                mutation_budget,
+                run_authority,
+                execution_profile,
+                child_model,
+                child_timeout_seconds,
+                verbose,
+                list_stale_runtime,
+                clean_stale_runtime,
+                observe_graph_health_mode,
+                operator_request_packet_path,
+                build_vocabulary_index_mode,
+                build_vocabulary_drift_report_mode,
+                build_pre_spec_semantics_index_mode,
+                build_proposal_lane_overlay_mode,
+                build_evidence_plane_index_mode,
+                build_evidence_plane_overlay_mode,
+                build_proposal_promotion_index_mode,
+                build_proposal_runtime_index_mode,
+                build_proposal_spec_trace_index_mode,
+            )
+        ):
+            print(
+                "--build-proposal-tracking-report must be used as a standalone command",
+                file=sys.stderr,
+            )
+            return 1
+        runtime_index = build_proposal_runtime_index()
+        write_proposal_runtime_index(runtime_index)
+        promotion_index = build_proposal_promotion_index()
+        write_proposal_promotion_index(promotion_index)
+        lane_overlay = build_proposal_lane_overlay()
+        write_proposal_lane_overlay(lane_overlay)
+        trace_index = build_proposal_spec_trace_index(
+            proposal_promotion_index=promotion_index,
+            proposal_lane_overlay=lane_overlay,
+        )
+        write_proposal_spec_trace_index(trace_index)
+        report = build_proposal_tracking_report(
+            proposal_runtime_index=runtime_index,
+            proposal_spec_trace_index=trace_index,
+        )
+        write_proposal_tracking_report(report)
+        emit_supervisor_json(report, output_mode=normalized_output_mode)
+        return 0
+
     if list_stale_runtime and clean_stale_runtime:
         print(
             "--list-stale-runtime cannot be combined with --clean-stale-runtime",
@@ -41867,6 +42187,14 @@ if __name__ == "__main__":
             "promotion traceability, and proposal-lane targets"
         ),
     )
+    parser.add_argument(
+        "--build-proposal-tracking-report",
+        action="store_true",
+        help=(
+            "Build a report-only proposal tracking artifact that flags proposal docs "
+            "without registry, trace, or explicit no-runtime classification"
+        ),
+    )
     parser.add_argument("--resolve-gate", metavar="SPEC_ID", help="Resolve gate for a spec id")
     parser.add_argument(
         "--decision",
@@ -42071,6 +42399,7 @@ if __name__ == "__main__":
             build_proposal_runtime_index_mode=args.build_proposal_runtime_index,
             build_proposal_promotion_index_mode=args.build_proposal_promotion_index,
             build_proposal_spec_trace_index_mode=args.build_proposal_spec_trace_index,
+            build_proposal_tracking_report_mode=args.build_proposal_tracking_report,
             supervisor_prompt_profile=args.supervisor_prompt_profile,
             supervisor_prompt_extension_file=args.supervisor_prompt_extension_file,
             output_mode=args.output_mode,
