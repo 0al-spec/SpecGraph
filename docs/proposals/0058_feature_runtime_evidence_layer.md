@@ -13,7 +13,13 @@ Source draft:
 
 - `docs/archive/proposal_sources/0058_feature_runtime_evidence_layer.md`
 
-External reference anchors:
+External FeaturePassport authority:
+
+- FeaturePassport repository: <https://github.com/0al-spec/FeaturePassport>
+- FeaturePassport RFC: <https://github.com/0al-spec/FeaturePassport/blob/main/docs/proposals/0001_specgraph_feature_runtime_evidence_layer.md>
+- RFC id/version: `FP-RFC-0001` / `0.1.0`
+
+External standards and transport anchors remain non-authoritative inputs:
 
 - GitHub Artifact Attestations:
   <https://docs.github.com/en/actions/security-for-github-actions/using-artifact-attestations/using-artifact-attestations-to-establish-provenance-for-builds>
@@ -46,30 +52,18 @@ Did this user request become a shipped feature that real production users
 actually saw, executed, and completed?
 ```
 
-The intended direction is a SpecGraph evidence layer that connects intent to
-delivery and runtime use:
-
-```text
-User request / spec node
-  -> PR / commit
-  -> build artifact / binary / image
-  -> release / deployment
-  -> runtime session
-  -> feature exposure
-  -> feature code path executed
-  -> user-visible outcome
-  -> signed or hash-linked evidence receipt
-```
-
-This is not continuous profiling. It is product evidence: a governed chain of
-facts showing how a graph request became observable production behavior.
+The FeaturePassport repository now owns the architecture-level contract for
+FeaturePassport, evidence claims, observations, attestations, receipts, evidence
+levels, canonical event envelopes, and honesty boundaries. SpecGraph should not
+copy that contract. SpecGraph should consume it, reference it, and project its
+evidence into graph-native surfaces.
 
 ## Problem
 
 Current engineering signals often stop too early:
 
 - a commit exists;
-- a PR is merged;
+- a pull request is merged;
 - an artifact was built;
 - a release was created;
 - analytics reports a page view or flag exposure.
@@ -77,8 +71,8 @@ Current engineering signals often stop too early:
 None of those alone proves that a specific SpecGraph request produced a
 specific user-visible outcome in production.
 
-SpecGraph needs a first-class contract for evidence strength. Without it,
-operators and viewers may confuse weak signals with strong proof:
+SpecGraph needs a first-class integration point for FeaturePassport evidence.
+Without it, operators and viewers may confuse weak signals with strong proof:
 
 - `merged` is not the same as `built`;
 - `built` is not the same as `deployed`;
@@ -87,28 +81,31 @@ operators and viewers may confuse weak signals with strong proof:
 - `code path executed` is not always the same as `intended outcome completed`;
 - client-side telemetry is not adversarially perfect proof.
 
-The graph should expose those distinctions explicitly.
+The graph should expose those distinctions explicitly while delegating the
+canonical feature-evidence vocabulary to FeaturePassport.
 
 ## Goals
 
-- Define a Feature Passport contract for graph-owned feature identity and
-  required probes.
-- Define a delivery-to-runtime evidence chain from request to outcome.
-- Distinguish evidence strength levels from weak Git visibility to strong
-  production outcome evidence.
-- Define a small feature probe vocabulary for exposure, execution, effect, and
-  outcome.
-- Allow supply-chain provenance systems to satisfy build/release evidence.
-- Allow telemetry systems to transport runtime events without making them graph
-  authority.
-- Define signed or hash-linked evidence receipts as the trusted ingestion
-  output.
+- Adopt `FP-RFC-0001` as the external authority for FeaturePassport evidence
+  terminology and contract shape.
+- Link SpecGraph request/spec/proposal identifiers to FeaturePassport
+  `request_id` and `feature_id`.
+- Define SpecGraph-owned derived surfaces for imported FeaturePassport evidence.
+- Preserve evidence strength levels from the FeaturePassport RFC without
+  redefining them locally.
+- Allow supply-chain provenance systems to satisfy build/release evidence
+  through FeaturePassport-compatible adapters.
+- Allow telemetry systems to transport runtime observations without becoming
+  graph authority.
+- Treat signed or hash-linked receipts as the trusted ingestion output.
 - Define viewer-facing evidence ladder semantics for SpecSpace or other Graph
   Operator Surfaces.
 - Preserve honest limits for client-side telemetry and hostile endpoints.
 
 ## Non-Goals
 
+- Redefining the FeaturePassport RFC inside SpecGraph.
+- Duplicating the FeaturePassport schema, event envelope, or receipt schema.
 - Implementing a telemetry SDK.
 - Implementing an evidence ingestion backend.
 - Implementing a database, queue, or ledger.
@@ -122,287 +119,94 @@ The graph should expose those distinctions explicitly.
 
 ## Core Proposal
 
-Introduce **Feature Runtime Evidence Layer** as a governed evidence layer above
-implementation work:
+Introduce **Feature Runtime Evidence Layer** in SpecGraph as an integration and
+projection layer above implementation work:
 
 ```text
-specification graph
-  -> feature passport
+SpecGraph request/spec/proposal
+  -> FeaturePassport reference
   -> implementation linkage
-  -> build provenance
-  -> release/deployment observation
-  -> runtime feature probes
-  -> backend evidence receipts
+  -> build/release evidence projection
+  -> runtime observation/receipt projection
   -> viewer evidence ladder
 ```
 
-The layer should not claim that a feature is "done" merely because code exists.
-It should report the strongest verified evidence level currently observed for
-each request or feature.
+SpecGraph should report the strongest FeaturePassport evidence level currently
+observed for each linked request or feature. It should not claim that a feature
+is "done" merely because code exists.
 
-## Evidence Strength Levels
+## External Contract Boundary
 
-### Level 0: Commit Visible
+`FP-RFC-0001` is the source of truth for:
 
-The request is linked to a PR or commit.
+- `FeaturePassport`;
+- `EvidenceClaim`;
+- `Observation`;
+- `Attestation`;
+- `EvidenceReceipt`;
+- `EvidenceChain`;
+- evidence levels `L0` through `L8`;
+- canonical event envelope shape;
+- receipt field contract;
+- honesty and trust boundaries;
+- absence semantics;
+- vendor compatibility model.
 
-This is weak evidence. It is useful for development traceability, but it does
-not prove delivery.
+SpecGraph is responsible for:
 
-### Level 1: Commit Built Into Artifact
+- storing or referencing FeaturePassport identities;
+- linking graph nodes to `request_id` and `feature_id`;
+- building read-only derived indexes from available passports and receipts;
+- surfacing gaps when required evidence is missing;
+- projecting the evidence ladder to viewer-facing artifacts;
+- preventing weak observations from being displayed as strong proof.
 
-The commit is included in a build artifact with a digest and build provenance.
+## Evidence Level Adoption
 
-Compatible evidence may come from:
-
-- GitHub Artifact Attestations;
-- SLSA provenance;
-- Sigstore/Cosign or equivalent artifact signatures;
-- a local build-provenance artifact generated by the project.
-
-This proves that a build artifact was produced from the implementation input,
-but not that it reached production.
-
-### Level 2: Artifact Released Or Deployed To Production
-
-The artifact digest is connected to a release, deployment, app build, container
-image rollout, or equivalent production delivery record.
-
-This proves production delivery intent and deployment state, but not that a
-user session exercised the feature.
-
-### Level 3: Feature Code Path Executed In Production
-
-Production runtime sessions emitted feature-specific probes from inside the
-feature code path.
-
-Required probe examples:
-
-- `sg.feature.code_path.executed`
-
-Conditional probe examples:
-
-- `sg.feature.exposed`
-
-`sg.feature.exposed` is required for UI or user-entry-point features. Backend,
-headless, background, scheduled, or migration-style features may satisfy Level 3
-without exposure evidence when their Feature Passport explicitly marks exposure
-as not applicable.
-
-This proves execution of instrumented code paths, but not necessarily
-successful user-visible outcome.
-
-### Level 4: Intended Outcome Completed
-
-Production evidence confirms the feature produced the intended effect or
-user-visible outcome.
-
-Required probe examples:
-
-- `sg.feature.effect_committed`
-- `sg.feature.outcome_completed`
-
-For server-backed features, `effect_committed` should be emitted by or confirmed
-through the backend whenever possible.
-
-## Feature Passport
-
-Introduce a future artifact family:
+SpecGraph should display and query the FeaturePassport evidence ladder using the
+external RFC labels:
 
 ```text
-FeaturePassport
+L0 Specified
+L1 Implemented
+L2 Built
+L3 Released
+L4 Runtime Seen
+L5 Feature Exposed
+L6 Code Path Executed
+L7 Effect Committed
+L8 Outcome Completed
 ```
 
-Suggested shape:
+The phrases should keep their FeaturePassport meaning:
 
-```yaml
-artifact_kind: feature_passport
-schema_version: 1
-metadata:
-  feature_id: feature.invoice.smart_summary
-  request_id: SG-REQ-2026-001
-  title: Smart invoice summary
-  owner: product-ios
-  created_at: "2026-05-25T12:00:00Z"
-spec:
-  intent:
-    source_spec_ids:
-      - SG-SPEC-XXXX
-    acceptance_criteria:
-      - Summary block is visible on invoice screen.
-      - User can expand summary.
-      - Backend records summary generation result.
-  source:
-    repo: github.com/org/product-ios
-    pull_requests:
-      - 1842
-    commits:
-      - 8ae73a0f
-  rollout:
-    platforms:
-      - ios
-      - macos
-      - backend
-    environments:
-      - production
-    feature_flag:
-      provider: openfeature
-      key: invoice.smart_summary
-  required_runtime_evidence:
-    - event: sg.feature.exposed
-      probe_id: invoice_summary.visible.v1
-      min_count: 1
-      required_when: ui_or_user_entry_point
-    - event: sg.feature.code_path.executed
-      probe_id: invoice_summary.render.v1
-      min_count: 1
-    - event: sg.feature.effect_committed
-      probe_id: invoice_summary.backend_accepted.v1
-      min_count: 1
-    - event: sg.feature.outcome_completed
-      probe_id: invoice_summary.completed.v1
-      min_count: 1
-  privacy:
-    user_identifier: pseudonymous_hash
-    pii_allowed: false
-    retention_days: 90
-  evidence_strength:
-    required_level: 4
-```
+- "commit reached production" requires at least `L4`.
+- "feature worked for users" requires `L7` or `L8`.
 
-The passport is not runtime proof by itself. It declares what proof must exist
-for a feature to satisfy the graph request.
+SpecGraph may compute summaries, gaps, and viewer projections from these
+levels, but it must not locally redefine the level semantics.
 
-`metadata.request_id` is the canonical request identifier key for Feature
-Passport and runtime events. Older or external sources may expose a field named
-`specgraph_request_id`, but ingestion must normalize that alias into
-`request_id` before validating events against passports.
+## Proposed SpecGraph Artifacts
 
-## Runtime Event Vocabulary
-
-The first runtime event vocabulary should be small:
-
-- `sg.release_seen`: runtime reports build/release identity in production.
-- `sg.feature.flag_evaluated`: feature flag or configuration decision was
-  evaluated for a session.
-- `sg.feature.exposed`: user could see or access the feature entry point.
-- `sg.feature.code_path.executed`: instrumented feature code path ran.
-- `sg.feature.effect_committed`: backend, local state, or durable side effect
-  was committed.
-- `sg.feature.outcome_completed`: intended user-visible outcome completed.
-- `sg.feature.failed`: feature path failed before outcome.
-
-Common event fields:
-
-```json
-{
-  "event": "sg.feature.code_path.executed",
-  "feature_id": "feature.invoice.smart_summary",
-  "request_id": "SG-REQ-2026-001",
-  "probe_id": "invoice_summary.render.v1",
-  "env": "production",
-  "platform": "ios",
-  "app_version": "2.7.0",
-  "build_number": "134",
-  "git_sha": "8ae73a0f",
-  "artifact_digest": "sha256:abc123",
-  "provenance_id": "gh-attestation://...",
-  "user_hash": "u_6d12",
-  "session_id": "s_9a81",
-  "trace_id": "01HV...",
-  "timestamp": "2026-05-25T15:03:44Z"
-}
-```
-
-Required common fields are `event`, `feature_id`, `request_id`, `probe_id`,
-`env`, `platform`, and `timestamp`. Build and provenance fields are required
-when the event claims release or artifact linkage. `user_hash` and `session_id`
-are conditional: UI/session evidence should include them when privacy policy
-allows pseudonymous identity, while backend-only or batch evidence may omit
-them and rely on server-side operation identifiers instead.
-
-Raw PII, raw prompt text, secrets, access tokens, private local paths, and
-unredacted user content must not appear in viewer-facing evidence artifacts.
-
-## Evidence Receipts
-
-Client and runtime events should not be the final trust anchor. A backend
-ingestion layer should normalize and seal events as evidence receipts:
-
-```json
-{
-  "receipt_id": "rcpt_01J...",
-  "event_hash": "sha256:...",
-  "previous_hash": "sha256:...",
-  "ingested_at": "2026-05-25T15:04:00Z",
-  "source": "ios",
-  "validated": true,
-  "validation": {
-    "known_release": true,
-    "known_artifact_digest": true,
-    "known_feature_passport": true,
-    "probe_declared_in_passport": true,
-    "user_session_valid": true
-  },
-  "signature": {
-    "algorithm": "Ed25519",
-    "signed_by": "specgraph-evidence-ingestor-prod",
-    "value": "..."
-  }
-}
-```
-
-Receipt storage should be append-only or tamper-evident. A hash chain is the
-minimum useful model:
+Future bounded implementation slices may introduce these derived artifacts:
 
 ```text
-receipt_hash_n = sha256(canonical_json(event_n) + previous_hash)
+runs/feature_passport_index.json
+runs/feature_evidence_index.json
+runs/feature_evidence_ladder.json
 ```
 
-where `previous_hash` is the sealed receipt hash for receipt `n-1` or a
-well-known genesis value for the first receipt in a chain.
+Suggested responsibilities:
 
-The graph should consume receipts or receipt summaries, not raw untrusted
-client events.
+- `feature_passport_index`: known passports, source repository, RFC version,
+  linked SpecGraph request/spec/proposal IDs, and import validity.
+- `feature_evidence_index`: observed attestations, observations, receipts, and
+  evidence gaps grouped by `feature_id` and `request_id`.
+- `feature_evidence_ladder`: viewer-facing projection of current evidence level,
+  missing requirements, strongest proof, and honesty boundary notes.
 
-## Evidence Graph Model
-
-The logical evidence graph may contain:
-
-```text
-(:UserRequest)
-(:Feature)
-(:Probe)
-(:PullRequest)
-(:Commit)
-(:Build)
-(:Artifact)
-(:Release)
-(:Deployment)
-(:RuntimeSession)
-(:FeatureEvent)
-(:Outcome)
-(:EvidenceReceipt)
-```
-
-Suggested relations:
-
-```text
-(:UserRequest)-[:REQUESTED]->(:Feature)
-(:Feature)-[:REQUIRES_PROBE]->(:Probe)
-(:Feature)-[:IMPLEMENTED_BY]->(:Commit)
-(:Commit)-[:BUILT_IN]->(:Build)
-(:Build)-[:PRODUCED]->(:Artifact)
-(:Artifact)-[:RELEASED_AS]->(:Release)
-(:Release)-[:DEPLOYED_TO]->(:Deployment)
-(:Deployment)-[:OBSERVED_IN]->(:RuntimeSession)
-(:RuntimeSession)-[:EMITTED]->(:FeatureEvent)
-(:FeatureEvent)-[:SATISFIES]->(:Probe)
-(:FeatureEvent)-[:SEALED_BY]->(:EvidenceReceipt)
-```
-
-This graph can be represented as JSON artifacts first. It does not require a
-graph database in the first implementation.
+These artifacts should be derived/read-only. They must not mutate canonical
+specs, proposals, or product workspaces automatically.
 
 ## Viewer Surface
 
@@ -412,30 +216,17 @@ Viewers should show an evidence ladder instead of a single boolean:
 Request: SG-REQ-2026-001
 Feature: feature.invoice.smart_summary
 
-Intent
-  captured
-  acceptance approved
+L0 Specified            yes
+L1 Implemented          yes, PR/commit linked
+L2 Built                yes, artifact digest observed
+L3 Released             yes, production release active
+L4 Runtime Seen         yes, runtime sg.release_seen received
+L5 Feature Exposed      yes, user/session evidence observed
+L6 Code Path Executed   yes, feature probe observed
+L7 Effect Committed     yes, server-confirmed effect observed
+L8 Outcome Completed    missing or satisfied
 
-Implementation
-  PR linked
-  commit linked
-  required probes declared
-
-Build
-  artifact digest observed
-  provenance verified
-
-Release
-  production release active
-  runtime sg.release_seen received
-
-Adoption
-  feature exposed
-  code path executed
-  effect committed
-  outcome completed
-
-Evidence strength: Level 4 / strong
+Evidence strength: L7 / server-confirmed
 ```
 
 The viewer must distinguish:
@@ -448,6 +239,9 @@ The viewer must distinguish:
 - server-confirmed evidence;
 - tamper-evident receipt evidence.
 
+The viewer should link to the FeaturePassport RFC rather than embedding the full
+passport schema or receipt schema in SpecGraph UI documentation.
+
 ## Relationship To Existing SpecGraph Layers
 
 - Trace plane links specs to code and tests.
@@ -455,54 +249,46 @@ The viewer must distinguish:
 - Implementation work links specs to work candidates and delivery deltas.
 - Metric packs may compute adoption, drift, or cost signals from evidence.
 - Feature Runtime Evidence Layer connects delivery and production usage to
-  request-level proof.
+  request-level proof through FeaturePassport.
 
 This proposal extends the evidence plane toward product runtime. It does not
 replace existing trace or evidence contracts.
 
 ## Honesty Boundary
 
-Backend production evidence can approach strong cryptographic assurance when it
-uses signed artifacts, verified deployments, server-side runtime events, and
-signed receipts.
+SpecGraph should preserve the FeaturePassport honesty model:
 
-Client-side evidence cannot fully prove that an endpoint was not compromised.
-For iOS, macOS, desktop, or browser clients, the graph should report the
-strength honestly:
-
-| Claim | Evidence strength |
-|---|---|
-| Commit was included in artifact | Strong with provenance or attestation |
-| Artifact was released or deployed | Strong with release/deployment receipt |
-| Runtime with build identity was seen | Strong for operational visibility |
-| Feature flag was evaluated | Good if SDK event is sealed by backend |
-| Feature code path executed | Good if probe is inside code path |
-| Feature produced outcome | Strongest when confirmed by backend state |
-| Client event cannot be forged | Not guaranteed without trusted hardware or remote attestation |
+- client-side events are observations, not final proof;
+- server-issued receipts are canonical evidence;
+- server-confirmed effects have stronger evidence value than client-only events;
+- absence of evidence is not automatically evidence of absence;
+- adoption metrics must declare sampling, retention, and upload policies.
 
 Critical product proof should prefer backend-confirmed `effect_committed` and
-`outcome_completed` events.
+`outcome_completed` receipts.
 
 ## Implementation Plan
 
 Suggested bounded slices:
 
-1. Feature Passport policy and viewer contract.
-2. Build/release provenance index for commit-to-artifact-to-release evidence.
-3. Runtime evidence event vocabulary and sample SDK contracts.
-4. Evidence receipt contract and append-only ledger shape.
-5. Feature evidence index derived from passports and receipts.
-6. Viewer projection showing evidence ladder per request or feature.
+1. FeaturePassport external authority policy and import/reference contract.
+2. FeaturePassport index derived from known external/passport sources.
+3. Build/release provenance projection linked by `request_id` and `feature_id`.
+4. Runtime receipt projection linked by FeaturePassport evidence claims.
+5. Feature evidence ladder derived from passports, provenance, and receipts.
+6. Viewer contract for evidence ladder and honesty boundary badges.
 7. Product workspace integration so non-SpecGraph projects can emit compatible
    evidence without enabling SpecGraph self-evolution.
 
 ## Acceptance Criteria
 
-- A proposal exists for Feature Runtime Evidence Layer with clear evidence
-  levels and honesty boundaries.
-- The proposal defines Feature Passport as declaration, not proof.
-- The proposal defines runtime probe vocabulary and required common fields.
-- The proposal defines evidence receipts as the trusted ingestion output.
+- SpecGraph proposal references `FP-RFC-0001` instead of duplicating the
+  FeaturePassport RFC content.
+- The proposal names FeaturePassport as external authority for passport,
+  envelope, receipt, and evidence-level semantics.
+- The proposal defines SpecGraph-owned derived surfaces for passport/evidence
+  observation.
+- The proposal preserves evidence ladder semantics and honesty boundaries.
 - The proposal identifies compatible external standards without binding
   SpecGraph to a specific vendor.
 - The proposal names future implementation slices and keeps this PR
@@ -510,6 +296,7 @@ Suggested bounded slices:
 
 ## Risks
 
+- Duplicating FeaturePassport semantics inside SpecGraph and creating drift.
 - Overclaiming proof from client-side telemetry.
 - Collecting user-identifiable data when pseudonymous evidence is enough.
 - Treating feature flags as proof of execution.
@@ -520,8 +307,8 @@ Suggested bounded slices:
 
 ## Open Questions
 
-- Should Feature Passport live in SpecGraph, product workspaces, or SpecPM
-  packages first?
+- Should SpecGraph discover FeaturePassport contracts through SpecPM packages,
+  product workspaces, or direct repository references first?
 - Should evidence receipts be stored locally, in a product backend, or in a
   dedicated Platform service?
 - Which product should provide the first end-to-end proof pilot?
