@@ -1,8 +1,13 @@
 # Agent Passport Adoption for Graph Agents
 
-## Status
+RFC: SG-RFC-0059
+Version: 0.1.0
+Status: Draft / ADR-level Proposal
 
-Draft proposal
+Decision scope: adoption path and graph integration contract.
+
+This document does not define Agent Passport itself, signing, verification,
+sandboxing, SpecSpace UI, hosted registry behavior, or runtime enforcement.
 
 ## Source Material
 
@@ -20,31 +25,20 @@ External Agent Passport authority:
   <https://github.com/0al-spec/agent-passport/blob/12b1fbd9cabd91adaea1989e3958f5cf90e2e449/drafts/agent-passport.md>
 - RFC status at referenced commit: Experimental RFC.
 
-## Context
+## Summary
 
-SpecGraph and SpecSpace already contain agent-shaped actors:
+SpecGraph and SpecSpace already expose graph-facing agent surfaces:
+supervisors, executor adapters, nested CLI agents, and operator assistant flows.
+These surfaces need stable identity, capability, security-policy, integrity, and
+verification semantics.
 
-- the SpecGraph supervisor;
-- nested supervisor executor backends such as Codex CLI and future alternative
-  agent CLI executors;
-- graph operator assistant flows that prepare requests, drafts, diagnostics, and
-  supervisor handoffs in SpecSpace or another operator surface;
-- future product-workspace agents that may implement specs, run diagnostics, or
-  produce evidence packets.
+This proposal adopts Agent Passport as the external authority for graph-facing
+agent declarations. SpecGraph does not duplicate the Agent Passport RFC.
+SpecGraph stores graph-specific references, derived indexes, verification
+summaries, and gaps. SpecSpace consumes safe derived surfaces instead of parsing
+raw executor logs, prompts, private passport material, or local-only files.
 
-Today those actors are identified by local implementation names, CLI commands,
-model settings, prompt profiles, or UI surfaces. That is useful operationally,
-but it is not a durable identity/capability/security contract.
-
-Agent Passport already defines the stronger external model: a human-readable and
-machine-parsable declaration of agent identity, capabilities, resource
-requirements, security policies, integrity checks, digital signature, issuing
-authority, verification, and lifecycle.
-
-SpecGraph should adopt Agent Passport as the authority for graph-agent
-declarations rather than inventing another local passport format.
-
-## Problem
+## Motivation
 
 SpecGraph is moving toward a multi-service AI software factory:
 
@@ -56,7 +50,11 @@ SpecSpace operator surface
   -> evidence and implementation artifacts
 ```
 
-Without an explicit Agent Passport boundary, several risks appear:
+Today those actors are identified by local implementation names, CLI commands,
+model settings, prompt profiles, or UI surfaces. That is useful operationally,
+but it is not a durable identity/capability/security contract.
+
+Without an explicit Agent Passport boundary:
 
 - executor adapters can accumulate ad hoc capability fields;
 - SpecSpace can display agent state without a stable identity contract;
@@ -66,9 +64,39 @@ Without an explicit Agent Passport boundary, several risks appear:
 - review and evidence surfaces cannot say which agent was authorized to do what;
 - future Platform orchestration has no shared declaration to inspect.
 
-The practical need is not immediate runtime enforcement. The first need is a
-stable, external, verifiable declaration model that SpecGraph can reference and
+The first need is not immediate runtime enforcement. The first need is a stable,
+external, verifiable declaration model that SpecGraph can reference, index, and
 project.
+
+## Architecture Decision
+
+SpecGraph and SpecSpace must not define ad hoc agent identity, capability, or
+authority fields as canonical truth.
+
+Agent Passport is adopted as the canonical external authority for:
+
+- agent identity;
+- declared capabilities;
+- resource requirements;
+- security policies;
+- integrity metadata;
+- issuer and signature metadata;
+- verification and lifecycle state.
+
+SpecGraph may store references, indexes, snapshots, verification states, and
+graph-specific usage relationships derived from Agent Passports. It may cache
+derived fields for search and inspection, but Agent Passport remains the source
+of truth.
+
+This prevents authority drift such as:
+
+```text
+Agent Passport says: executor has read-only filesystem authority.
+SpecGraph says: executor can write arbitrary workspace files.
+SpecSpace says: operator assistant can hand off unrestricted shell work.
+```
+
+Such drift is incompatible with the zero-trust agent model.
 
 ## Goals
 
@@ -76,129 +104,35 @@ project.
   capability, security policy, integrity, and verification concepts.
 - Define which SpecGraph/SpecSpace actors count as graph agents for future
   passporting.
-- Define the SpecGraph integration boundary without copying the full Agent
-  Passport RFC.
+- Define a minimal graph-side `GraphAgentPassportRef` binding instead of copying
+  passports into SpecGraph.
+- Define read-only derived indexes for known passports, verification gaps, and
+  agent surfaces.
+- Preserve the distinction between declared authority, verified identity,
+  runtime enforcement, and observed execution.
 - Link supervisor executor adapter backends to declared agent identities.
-- Prepare read-only derived surfaces for passport inventory, verification gaps,
-  and viewer-facing agent authority.
-- Preserve the distinction between declared capabilities and enforced runtime
-  constraints.
-- Keep SpecSpace as a consumer of derived surfaces, not a parser of raw local
-  executor logs or private passport material.
+- Keep SpecSpace as a consumer of safe derived surfaces, not raw local executor
+  logs or private passport material.
 
 ## Non-Goals
 
-- Redefining the Agent Passport RFC inside SpecGraph.
-- Implementing passport signing or verification in this proposal.
-- Implementing `agentifyd`, `zeroald`, sandboxing, seccomp, chroot, or runtime
-  enforcement.
-- Replacing supervisor deterministic validation with passport declarations.
-- Treating a passport as proof that an LLM agent will follow instructions.
-- Publishing raw prompts, credentials, private keys, local auth paths, or
-  machine-local secrets.
-- Implementing SpecSpace UI.
-- Requiring all existing local development tools to have operational passports
-  before ordinary SpecGraph work can continue.
+This proposal does not define:
 
-## Core Proposal
+- the Agent Passport schema;
+- passport signing;
+- passport verification implementation;
+- key management;
+- sandboxing;
+- seccomp, chroot, or capability enforcement;
+- `zeroald` or `agentifyd` runtime behavior;
+- supervisor executor enforcement;
+- SpecSpace UI implementation;
+- hosted passport registry behavior;
+- policy engine implementation;
+- replacement of supervisor deterministic validation or human review;
+- proof that an LLM-backed agent will obey instructions.
 
-Introduce **Agent Passport Adoption for Graph Agents** as a governance and
-observability layer:
-
-```text
-Agent Passport RFC
-  -> graph-agent declaration
-  -> SpecGraph passport index
-  -> executor adapter / operator surface linkage
-  -> verification and capability gaps
-  -> viewer-facing agent authority surface
-```
-
-SpecGraph should treat Agent Passport as the external authority for agent
-declaration semantics. SpecGraph should own only the integration surfaces that
-connect passports to graph agents, supervisor runs, executor adapters, and
-operator-facing views.
-
-## Agent Classes
-
-### Supervisor Agent
-
-The SpecGraph supervisor is the graph-governance execution agent. Its passport
-should eventually describe:
-
-- identity and version of the supervisor runtime;
-- allowed graph operations;
-- required validation gates;
-- prompt overlay boundaries;
-- filesystem authority profile;
-- allowed derived artifact writes;
-- non-overridable invariants.
-
-The passport does not replace SpecGraph's constitutional governance or
-deterministic validation. It declares the agent's intended authority and
-security posture.
-
-### Executor Agent
-
-A supervisor executor backend is a nested worktree-mutating agent launched
-through the executor adapter gateway.
-
-Examples:
-
-- Codex CLI;
-- future GitHub Copilot CLI backend;
-- future Claude Code, Gemini CLI, or OpenCode backend.
-
-The executor passport should eventually describe:
-
-- command surface;
-- expected non-interactive behavior;
-- worktree mutation capability;
-- sandbox/approval support;
-- model/profile controls;
-- output protocol obligations;
-- local-only log boundaries.
-
-This extends proposal `0056_supervisor_executor_adapter_gateway.md`: adapter
-capability facts describe observed backend behavior, while Agent Passport
-declares identity, authority, resource needs, integrity, and policy boundaries.
-
-### Operator Assistant Agent
-
-A SpecSpace or operator-surface assistant may help prepare graph requests,
-drafts, diagnostics, preview plans, and supervisor handoffs.
-
-Its passport should eventually describe:
-
-- user-facing role;
-- read/write authority over graph artifacts;
-- allowed request preparation actions;
-- forbidden direct canonical mutations;
-- privacy and transcript handling;
-- handoff boundaries to the supervisor.
-
-SpecSpace should consume a derived passport/authority projection. It should not
-parse raw executor logs, raw prompts, private keys, or local-only passport
-material.
-
-### Product Workspace Agent
-
-Future product-workspace agents may implement specs, run tests, generate
-evidence, or prepare pull requests for product codebases.
-
-Their passports should eventually describe:
-
-- product workspace scope;
-- allowed repositories and paths;
-- build/test authority;
-- network and credential boundaries;
-- evidence packet emission authority;
-- handoff obligations back to SpecGraph.
-
-This class is especially important for stable product workspaces where SpecGraph
-must not self-evolve while working on a customer's software.
-
-## External Contract Boundary
+## Canonical Authority
 
 The Agent Passport RFC is the source of truth for:
 
@@ -217,49 +151,246 @@ SpecGraph is responsible for:
 
 - referencing known agent passport sources;
 - linking passports to graph-agent roles;
-- projecting passport verification state into derived artifacts;
-- surfacing missing or stale passports as gaps;
+- building read-only derived indexes and summaries;
+- surfacing missing, stale, unverifiable, or unenforceable passports as gaps;
 - preserving local-only secrecy boundaries;
 - refusing to treat a passport declaration as runtime success.
 
-## Proposed SpecGraph Artifacts
+## Graph Agent Surfaces
+
+The following graph-facing surfaces eventually require Agent Passports:
+
+| Surface | Description | Passport Priority |
+| --- | --- | --- |
+| `specgraph.supervisor` | Bounded graph work planner and coordinator | required |
+| `specgraph.supervisor.executor_adapter` | Adapter that launches nested executors | required |
+| `specgraph.executor.codex` | Codex-style CLI executor launched from supervisor | required |
+| `specgraph.executor.copilot` | Future Copilot-style executor | required before production |
+| `specgraph.executor.claude` | Future Claude-style executor | required before production |
+| `specgraph.executor.gemini` | Future Gemini-style executor | required before production |
+| `specspace.operator_assistant` | Assistant flow preparing operator requests and handoffs | required |
+| `specspace.diagnostics_assistant` | Assistant flow preparing diagnostics or reports | recommended |
+| `product_workspace.implementation_agent` | Future implementation agent acting in a product workspace | required before production |
+| `product_workspace.evidence_agent` | Future agent emitting product evidence packets | required before production |
+
+## Staged Adoption
+
+Adoption should be staged rather than all-or-nothing:
+
+| Tier | Status | Meaning |
+| --- | --- | --- |
+| Tier 0 | `known_unpassportized` | Agent surface is known, but no passport reference exists. |
+| Tier 1 | `passport_referenced` | SpecGraph knows a passport URI/digest but does not fully verify it. |
+| Tier 2 | `passport_verified` | Schema, signature, issuer, lifecycle, and revocation checks pass. |
+| Tier 3 | `runtime_enforceable` | Declared policies can be mapped to an enforcement target. |
+| Tier 4 | `runtime_enforced_observed` | Future state: runtime enforcement is observed and evidenced. |
+
+Tier 4 is future work. This proposal stops at adoption and graph integration.
+
+## Agent Passport Reference Model
+
+SpecGraph should not copy Agent Passports as canonical source data. It should
+store graph-side references and derived summaries.
+
+Candidate graph-side binding:
+
+```yaml
+artifact_kind: graph_agent_passport_ref
+schema_version: 1
+metadata:
+  ref_id: "gapref_specgraph_supervisor_v1"
+  agent_surface: "specgraph.supervisor"
+  owner: "specgraph-core"
+  created_at: "2026-05-26T00:00:00Z"
+spec:
+  agent_passport:
+    uri: "agent-passport://specgraph/supervisor/0.1.0"
+    digest: "sha256:..."
+    api_version: "agent-passport.io/v1alpha1"
+    metadata_name: "specgraph-supervisor"
+    metadata_uid: "did:0al:agent:specgraph-supervisor"
+    metadata_version: "0.1.0"
+  graph_binding:
+    graph_roles:
+      - "supervisor"
+      - "bounded_graph_worker"
+    surfaces:
+      - "SpecGraph supervisor"
+    allowed_invocation_contexts:
+      - "operator_requested_graph_work"
+      - "supervisor_bounded_handoff"
+  verification:
+    expected_minimum_state: "V4_signature_verified"
+    required_for_merge: false
+    required_for_production: true
+```
+
+`GraphAgentPassportRef` is not a passport. It is the graph-side binding between
+SpecGraph surfaces and an external Agent Passport.
+
+## Derived Indexes
 
 Future bounded implementation slices may introduce:
 
 ```text
 tools/agent_passport_adoption_policy.json
-runs/agent_passport_index.json
-runs/agent_authority_surface.json
+runs/known_agent_passport_index.json
+runs/agent_verification_gap_index.json
+runs/agent_surface_index.json
 ```
 
-Suggested responsibilities:
+### KnownAgentPassportIndex
 
-- `agent_passport_adoption_policy`: configured passport sources, recognized
-  graph-agent roles, required fields, local-only redaction rules, and allowed
-  authority states.
-- `agent_passport_index`: discovered passports, linked graph-agent roles,
-  RFC/source revision, verification status, freshness, and gaps.
-- `agent_authority_surface`: viewer-facing summary of which agents exist, what
-  they claim authority to do, whether verification is available, and what is
-  missing before operational trust.
+Shows every agent surface known to SpecGraph or SpecSpace and its current
+passport reference state.
 
-These artifacts should be read-only derived surfaces. They must not grant new
+```json
+{
+  "artifact_kind": "known_agent_passport_index",
+  "schema_version": 1,
+  "agents": [
+    {
+      "agent_surface": "specgraph.supervisor",
+      "passport_ref": "agent-passport://specgraph/supervisor/0.1.0",
+      "verification_state": "V4_signature_verified",
+      "last_checked_at": "2026-05-26T00:00:00Z"
+    },
+    {
+      "agent_surface": "specgraph.executor.codex",
+      "passport_ref": null,
+      "verification_state": "V1_known_surface",
+      "last_checked_at": null
+    }
+  ]
+}
+```
+
+### AgentVerificationGapIndex
+
+Shows where an agent surface exists but passport reference, verification, or
+policy mapping is incomplete.
+
+```json
+{
+  "artifact_kind": "agent_verification_gap_index",
+  "schema_version": 1,
+  "gaps": [
+    {
+      "agent_surface": "specgraph.executor.codex",
+      "gap": "missing_passport",
+      "severity": "high",
+      "reason": "Executor adapter launches nested CLI agent without passport reference."
+    },
+    {
+      "agent_surface": "specspace.operator_assistant",
+      "gap": "unsigned_passport",
+      "severity": "medium",
+      "reason": "Passport draft exists but signature verification is not available."
+    }
+  ]
+}
+```
+
+### AgentSurfaceIndex
+
+Shows where agents appear in the graph and whether a passport is expected.
+
+```json
+{
+  "artifact_kind": "agent_surface_index",
+  "schema_version": 1,
+  "surfaces": [
+    {
+      "surface_id": "specgraph.supervisor",
+      "surface_type": "graph_runtime",
+      "launches_agents": true,
+      "requires_passport": true
+    },
+    {
+      "surface_id": "specspace.operator_assistant",
+      "surface_type": "operator_ui_flow",
+      "launches_agents": false,
+      "prepares_handoffs": true,
+      "requires_passport": true
+    }
+  ]
+}
+```
+
+These artifacts are read-only derived surfaces. They must not grant new
 authority by themselves.
 
-## Authority States
+## Verification State Model
 
-Suggested viewer-facing authority states:
+SpecGraph should present verification state as a ladder, not a boolean:
 
-- `declared`: passport exists but is not verified.
-- `verified`: signature/integrity/lifecycle checks passed.
-- `stale`: passport exists but version, validity, or source revision is stale.
-- `missing`: expected agent has no known passport.
-- `unsupported`: passport exists but declares requirements SpecGraph cannot
-  inspect or enforce.
-- `local_only`: passport is intentionally local and must not be published.
+| State | Meaning |
+| --- | --- |
+| `V0_unknown` | SpecGraph has no reliable information about this agent. |
+| `V1_known_surface` | SpecGraph knows this agent surface exists. |
+| `V2_passport_referenced` | A passport URI or digest is known. |
+| `V3_schema_valid` | Passport parses and conforms to Agent Passport schema. |
+| `V4_signature_verified` | Passport signature and issuer chain are verified. |
+| `V5_lifecycle_valid` | Passport is not expired or revoked. |
+| `V6_integrity_declared` | Passport contains `agentIntegrity` data when applicable. |
+| `V7_policies_mappable` | Declared policies can be mapped to an enforcement target. |
+| `V8_runtime_enforcement_observed` | Future state: runtime enforcement is evidenced. |
 
-Authority state is not the same as run success. A verified passport can still
-produce a failed supervisor or executor run.
+This proposal uses `V0` through `V7` for adoption. `V8` is future work because
+runtime enforcement is outside this proposal.
+
+## Declaration vs Runtime Enforcement Boundary
+
+Agent Passport declares identity, capabilities, resources, security policies,
+integrity metadata, issuer, signature, and lifecycle.
+
+SpecGraph adoption records whether a graph-facing agent has a passport, where it
+is referenced, and what verification state is known.
+
+This proposal does not claim that declared policies are enforced at runtime.
+Runtime enforcement is the responsibility of compatible runtimes, executor
+adapters, policy engines, `zeroald`, `agentifyd`, sandboxing layers, or future
+SpecGraph supervisor enforcement components.
+
+Observed executor capabilities and verified passport claims must remain
+separate:
+
+```text
+observed capability: Codex CLI edited a temp worktree during smoke.
+passport claim: specgraph.executor.codex declares bounded workspace writes.
+runtime enforcement: external sandbox actually constrained writes.
+```
+
+Only the third line is enforcement. This proposal does not implement it.
+
+## SpecGraph Agent Record
+
+SpecGraph may cache derived fields for search, viewer display, and diagnostics:
+
+```yaml
+agent_surface: "specgraph.executor.codex"
+passport_ref:
+  uri: "agent-passport://executors/codex-cli/0.1.0"
+  digest: "sha256:..."
+verification:
+  state: "V4_signature_verified"
+  checked_at: "2026-05-26T00:00:00Z"
+  verifier: "specgraph-passport-indexer"
+derived:
+  declared_capability_names:
+    - "codex.execute"
+    - "codex.patch"
+  declared_policy_summary:
+    filesystem: "workspace-bounded"
+    network: "deny-by-default"
+    shell: "bounded"
+gaps:
+  - "integrity_metadata_missing"
+  - "runtime_enforcement_unknown"
+```
+
+This record is a derived cache. It must not become a parallel canonical passport
+model.
 
 ## Relationship To Existing Proposals
 
@@ -274,76 +405,112 @@ produce a failed supervisor or executor run.
   Feature Passport. This proposal delegates agent identity/capability/security
   to Agent Passport.
 
-Together, Feature Passport answers "what feature evidence must be proven?"
-Agent Passport answers "which agent was authorized to act, with what declared
-capabilities and constraints?"
+Feature Passport answers "what feature evidence must be proven?" Agent Passport
+answers "which agent was authorized to act, with what declared capabilities and
+constraints?"
 
-## Viewer Surface
+## Viewer Model
 
 SpecSpace or another Graph Operator Surface should eventually show an agent
 authority panel:
 
 ```text
-Agent: specgraph.supervisor
-Role: supervisor
-Passport: declared / verified / missing
-Issuer: local project authority
-Authority: graph refinement, derived artifacts, proposal preparation
-Gaps: signature verification not configured
-
-Agent: specgraph.executor.codex
-Role: executor
-Passport: declared
-Authority: bounded worktree mutation through adapter gateway
-Gaps: sandbox support is observed, not passport-verified
+Agent: specgraph-supervisor
+Surface: SpecGraph supervisor
+Passport
+  yes Referenced
+  yes Schema valid
+  yes Signature verified
+  yes Issuer trusted
+  yes Lifecycle valid
+  yes Integrity metadata present
+  warning Runtime enforcement not observed
+Declared authority
+  capabilities:
+    - graph.plan
+    - graph.execute_bounded
+    - supervisor.handoff
+  resources:
+    - workspace read/write bounded by graph context
+  policies:
+    - no unbounded shell
+    - nested executors require passport ref
+Verification state: V6 / integrity declared
+Gap: runtime enforcement not yet wired
 ```
 
 The viewer must distinguish:
 
 - passport missing;
-- passport declared but unverified;
+- passport referenced but unverified;
 - passport verified;
 - declared capability versus observed capability;
 - passport authority versus runtime success;
-- local-only information versus publishable summary.
+- local-only information versus publishable summary;
+- runtime enforcement missing versus runtime enforcement observed.
+
+## Minimum Viable Adoption
+
+The first implementation should stop at read-only observation:
+
+- define `tools/agent_passport_adoption_policy.json`;
+- define expected graph-agent surfaces;
+- build `runs/agent_surface_index.json`;
+- build `runs/known_agent_passport_index.json`;
+- build `runs/agent_verification_gap_index.json`;
+- project summary fields into viewer-facing surfaces only after artifact shape is
+  stable.
+
+No passport should be required to merge ordinary SpecGraph work until the
+adoption policy explicitly says so.
 
 ## Implementation Plan
 
 Suggested bounded slices:
 
 1. Agent Passport adoption policy and viewer contract.
-2. Read-only agent passport index builder for configured sources.
-3. Link executor adapter index entries to agent passport identities.
-4. Link supervisor run provenance to supervisor/executor passport identities.
-5. Project agent authority summary into viewer-facing surfaces.
-6. Add optional verification checks for signature, validity, integrity hashes,
+2. Agent surface index builder.
+3. Known passport index builder for configured references.
+4. Verification gap index builder.
+5. Link executor adapter index entries to agent passport identities.
+6. Link supervisor run provenance to supervisor/executor passport identities.
+7. Project agent authority summary into viewer-facing surfaces.
+8. Add optional verification checks for signature, validity, integrity hashes,
    and stale passport source revisions.
-7. Coordinate with SpecSpace for an agent authority panel after artifacts are
+9. Coordinate with SpecSpace for an agent authority panel after artifacts are
    stable.
 
 ## Acceptance Criteria
 
 - SpecGraph references the external Agent Passport RFC instead of duplicating
   its full schema.
+- The proposal includes an ADR-level architecture decision that forbids
+  parallel canonical agent identity/capability models.
+- The proposal defines `GraphAgentPassportRef` as a graph-side reference, not a
+  passport copy.
 - The proposal identifies supervisor, executor, operator assistant, and product
   workspace agents as future passport subjects.
-- The proposal defines read-only SpecGraph artifacts for passport inventory and
-  authority projection.
+- The proposal defines read-only SpecGraph artifacts for agent surfaces, known
+  passports, and verification gaps.
 - The proposal states that passports declare authority but do not replace
-  runtime validation or human review.
+  runtime validation, human review, or runtime enforcement.
 - The proposal names relationships to existing executor adapter and operator
   surface proposals.
 - The proposal keeps this PR documentation-only.
 
-## Risks
+## Risks and Mitigations
 
-- Treating a passport as proof of safe behavior rather than a declared contract.
-- Duplicating Agent Passport semantics inside SpecGraph and creating drift.
-- Publishing local-only auth, prompts, paths, or secrets.
-- Blocking ordinary local development before operational passport tooling
-  exists.
-- Confusing observed executor capabilities with verified passport claims.
-- Making SpecSpace parse raw passport material instead of derived safe surfaces.
+| Risk | Why It Matters | Mitigation |
+| --- | --- | --- |
+| Ad hoc capability drift | SpecGraph and SpecSpace could grow separate permission models. | Agent Passport is canonical authority. |
+| False trust | A passport URI may be mistaken for verified identity. | Use verification state ladder. |
+| Runtime gap hidden | Passport declares policy, but executor does not enforce it. | Declaration vs enforcement boundary. |
+| Nested executor ambiguity | Supervisor launches Codex/Claude/Gemini without separate identity. | Passport required per executor surface. |
+| UI overconfidence | Viewer may show "trusted" despite gaps. | Show verification gaps explicitly. |
+| Stale passport | Agent changed while passport stayed old. | Digest, lifecycle, version, and freshness checks. |
+| Secret leakage | Passport material can reveal internal endpoints or credentials. | Redacted derived surfaces and local-only states. |
+| Issuer compromise | False passports can be signed. | Trust anchors, revocation, and issuer registry future work. |
+| Development friction | Mandatory passports too early can block local work. | Stage adoption and keep initial artifacts read-only. |
 
 ## Open Questions
 
