@@ -2,7 +2,10 @@
 
 RFC: SG-RFC-0059
 Version: 0.1.0
-Status: Draft / ADR-level Proposal
+
+## Status
+
+Draft proposal
 
 Decision scope: adoption path and graph integration contract.
 
@@ -248,6 +251,8 @@ passport reference state.
 {
   "artifact_kind": "known_agent_passport_index",
   "schema_version": 1,
+  "canonical_mutations_allowed": false,
+  "tracked_artifacts_written": false,
   "agents": [
     {
       "agent_surface": "specgraph.supervisor",
@@ -274,6 +279,8 @@ policy mapping is incomplete.
 {
   "artifact_kind": "agent_verification_gap_index",
   "schema_version": 1,
+  "canonical_mutations_allowed": false,
+  "tracked_artifacts_written": false,
   "gaps": [
     {
       "agent_surface": "specgraph.executor.codex",
@@ -299,6 +306,8 @@ Shows where agents appear in the graph and whether a passport is expected.
 {
   "artifact_kind": "agent_surface_index",
   "schema_version": 1,
+  "canonical_mutations_allowed": false,
+  "tracked_artifacts_written": false,
   "surfaces": [
     {
       "surface_id": "specgraph.supervisor",
