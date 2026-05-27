@@ -3618,6 +3618,8 @@ PROPOSAL_SPEC_TRACE_INDEX_ARTIFACT_KIND = "proposal_spec_trace_index"
 PROPOSAL_SPEC_TRACE_INDEX_SCHEMA_VERSION = 1
 PROPOSAL_TRACKING_REPORT_ARTIFACT_KIND = "proposal_tracking_report"
 PROPOSAL_TRACKING_REPORT_SCHEMA_VERSION = 1
+PROPOSAL_TRACKING_GATE_ARTIFACT_KIND = "proposal_tracking_gate"
+PROPOSAL_TRACKING_GATE_SCHEMA_VERSION = 1
 PROPOSAL_DOC_FILENAME_RE = re.compile(r"^(?P<proposal_id>\d{4})_(?P<slug>.+)\.md$")
 TASK_LINE_RE = re.compile(r"^(?P<task_id>\d+)\.\s+\[(?P<status>[a-z_]+)\]\s+(?P<body>.+)$")
 PR_NUMBER_FROM_SUBJECT_RE = re.compile(
@@ -30287,6 +30289,85 @@ def build_proposal_tracking_report(
     }
 
 
+def proposal_tracking_gate_blocking_statuses(policy: dict[str, Any]) -> set[str]:
+    gate_contract = policy.get("gate_contract", {})
+    statuses = []
+    if isinstance(gate_contract, dict):
+        statuses = [
+            str(item).strip()
+            for item in gate_contract.get("blocking_statuses", [])
+            if str(item).strip()
+        ]
+    return set(statuses or ["missing_tracking", "document_only_untracked"])
+
+
+def build_proposal_tracking_gate(
+    report: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    policy = load_proposal_tracking_policy()
+    tracking_report = (
+        copy.deepcopy(report) if isinstance(report, dict) else build_proposal_tracking_report()
+    )
+    blocking_statuses = proposal_tracking_gate_blocking_statuses(policy)
+    blocking_entries = [
+        {
+            "proposal_id": str(entry.get("proposal_id", "")),
+            "path": str(entry.get("path", "")),
+            "tracking_status": str(entry.get("tracking_status", "")),
+            "severity": str(entry.get("severity", "")),
+            "next_gap": str(entry.get("next_gap", "")),
+        }
+        for entry in tracking_report.get("entries", [])
+        if isinstance(entry, dict) and str(entry.get("tracking_status", "")) in blocking_statuses
+    ]
+    blocking_ids = sorted(
+        {entry["proposal_id"] for entry in blocking_entries if entry["proposal_id"]}
+    )
+    passed = not blocking_entries
+    return {
+        "artifact_kind": PROPOSAL_TRACKING_GATE_ARTIFACT_KIND,
+        "schema_version": PROPOSAL_TRACKING_GATE_SCHEMA_VERSION,
+        "generated_at": utc_now_iso(),
+        "status": "passed" if passed else "failed",
+        "ok": passed,
+        "strict_ci_enforced": True,
+        "blocking_statuses": sorted(blocking_statuses),
+        "blocking_count": len(blocking_entries),
+        "blocking_proposal_ids": blocking_ids,
+        "blocking_entries": sorted(
+            blocking_entries,
+            key=lambda item: (item["proposal_id"], item["tracking_status"]),
+        ),
+        "summary": {
+            "proposal_count": tracking_report.get("summary", {}).get(
+                "proposal_count",
+                tracking_report.get("entry_count", 0),
+            ),
+            "blocking_count": len(blocking_entries),
+            "blocking_status_counts": grouped_identifier_counts(
+                {
+                    status: [
+                        entry["proposal_id"]
+                        for entry in blocking_entries
+                        if entry["tracking_status"] == status
+                    ]
+                    for status in blocking_statuses
+                }
+            ),
+            "tracking_status_counts": tracking_report.get("summary", {}).get(
+                "status_counts",
+                {},
+            ),
+        },
+        "source_artifacts": {
+            "proposal_tracking_report": PROPOSAL_TRACKING_REPORT_FILENAME,
+            "proposal_tracking_policy": "tools/proposal_tracking_policy.json",
+        },
+        "canonical_mutations_allowed": False,
+        "tracked_artifacts_written": False,
+    }
+
+
 def write_proposal_tracking_report(report: dict[str, Any]) -> Path:
     RUNS_DIR.mkdir(parents=True, exist_ok=True)
     path = proposal_tracking_report_path()
@@ -38039,6 +38120,7 @@ def main(
     build_proposal_promotion_index_mode: bool = False,
     build_proposal_spec_trace_index_mode: bool = False,
     build_proposal_tracking_report_mode: bool = False,
+    check_proposal_tracking_gate_mode: bool = False,
     supervisor_prompt_profile: str | None = None,
     supervisor_prompt_extension_file: str | None = None,
     output_mode: str = "summary",
@@ -38141,6 +38223,7 @@ def main(
         "--build-proposal-promotion-index": build_proposal_promotion_index_mode,
         "--build-proposal-spec-trace-index": build_proposal_spec_trace_index_mode,
         "--build-proposal-tracking-report": build_proposal_tracking_report_mode,
+        "--check-proposal-tracking-gate": check_proposal_tracking_gate_mode,
     }
     enabled_standalone_modes = [name for name, enabled in standalone_modes.items() if enabled]
     if len(enabled_standalone_modes) > 1:
@@ -41050,6 +41133,66 @@ def main(
         emit_supervisor_json(report, output_mode=normalized_output_mode)
         return 0
 
+    if check_proposal_tracking_gate_mode:
+        if any(
+            (
+                dry_run,
+                auto_approve,
+                loop,
+                resolve_gate,
+                decision,
+                note,
+                target_spec,
+                split_proposal,
+                apply_split_proposal,
+                operator_note,
+                mutation_budget,
+                run_authority,
+                execution_profile,
+                child_model,
+                child_timeout_seconds,
+                verbose,
+                list_stale_runtime,
+                clean_stale_runtime,
+                observe_graph_health_mode,
+                operator_request_packet_path,
+                build_vocabulary_index_mode,
+                build_vocabulary_drift_report_mode,
+                build_pre_spec_semantics_index_mode,
+                build_proposal_lane_overlay_mode,
+                build_evidence_plane_index_mode,
+                build_evidence_plane_overlay_mode,
+                build_proposal_promotion_index_mode,
+                build_proposal_runtime_index_mode,
+                build_proposal_spec_trace_index_mode,
+                build_proposal_tracking_report_mode,
+            )
+        ):
+            print(
+                "--check-proposal-tracking-gate must be used as a standalone command",
+                file=sys.stderr,
+            )
+            return 1
+        runtime_index = build_proposal_runtime_index()
+        write_proposal_runtime_index(runtime_index)
+        promotion_index = build_proposal_promotion_index()
+        write_proposal_promotion_index(promotion_index)
+        lane_overlay = build_proposal_lane_overlay()
+        write_proposal_lane_overlay(lane_overlay)
+        trace_index = build_proposal_spec_trace_index(
+            proposal_promotion_index=promotion_index,
+            proposal_lane_overlay=lane_overlay,
+        )
+        write_proposal_spec_trace_index(trace_index)
+        report = build_proposal_tracking_report(
+            proposal_runtime_index=runtime_index,
+            proposal_spec_trace_index=trace_index,
+        )
+        write_proposal_tracking_report(report)
+        gate = build_proposal_tracking_gate(report)
+        emit_supervisor_json(gate, output_mode=normalized_output_mode)
+        return 0 if gate["ok"] else 1
+
     if list_stale_runtime and clean_stale_runtime:
         print(
             "--list-stale-runtime cannot be combined with --clean-stale-runtime",
@@ -42195,6 +42338,11 @@ if __name__ == "__main__":
             "without registry, trace, or explicit no-runtime classification"
         ),
     )
+    parser.add_argument(
+        "--check-proposal-tracking-gate",
+        action="store_true",
+        help=("Fail if proposal docs lack registry, trace, or explicit no-runtime classification"),
+    )
     parser.add_argument("--resolve-gate", metavar="SPEC_ID", help="Resolve gate for a spec id")
     parser.add_argument(
         "--decision",
@@ -42400,6 +42548,7 @@ if __name__ == "__main__":
             build_proposal_promotion_index_mode=args.build_proposal_promotion_index,
             build_proposal_spec_trace_index_mode=args.build_proposal_spec_trace_index,
             build_proposal_tracking_report_mode=args.build_proposal_tracking_report,
+            check_proposal_tracking_gate_mode=args.check_proposal_tracking_gate,
             supervisor_prompt_profile=args.supervisor_prompt_profile,
             supervisor_prompt_extension_file=args.supervisor_prompt_extension_file,
             output_mode=args.output_mode,

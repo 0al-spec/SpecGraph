@@ -48,3 +48,6 @@ jobs:
 
       - name: Run tests
         run: pytest -q
+
+      - name: Check proposal tracking gate
+        run: make proposal-tracking-gate
