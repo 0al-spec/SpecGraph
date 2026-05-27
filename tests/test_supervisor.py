@@ -26572,13 +26572,27 @@ def test_build_proposal_tracking_report_flags_untracked_proposals(
         json.dumps([{"proposal_id": "0098", "posture": "bounded_runtime_followup"}]),
         encoding="utf-8",
     )
+    (tools_dir / "proposal_promotion_registry.json").write_text(
+        json.dumps(
+            [
+                {
+                    "proposal_id": "0098",
+                    "source_refs": ["docs/archive/proposal_sources/0098_tracked_runtime.md"],
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
 
     report = supervisor_module.build_proposal_tracking_report()
     by_id = {entry["proposal_id"]: entry for entry in report["entries"]}
 
     assert report["artifact_kind"] == supervisor_module.PROPOSAL_TRACKING_REPORT_ARTIFACT_KIND
     assert by_id["0098"]["tracking_status"] == "tracked"
-    assert by_id["0098"]["tracking_sources"] == ["proposal_runtime_registry"]
+    assert by_id["0098"]["tracking_sources"] == [
+        "proposal_runtime_registry",
+        "proposal_promotion_registry",
+    ]
     assert by_id["0099"]["tracking_status"] == "missing_tracking"
     assert by_id["0099"]["next_gap"] == "define_proposal_tracking"
     assert by_id["0100"]["tracking_status"] == "no_runtime_required"
@@ -26683,10 +26697,13 @@ def test_build_proposal_tracking_gate_blocks_untracked_proposals(
     assert gate["artifact_kind"] == supervisor_module.PROPOSAL_TRACKING_GATE_ARTIFACT_KIND
     assert gate["ok"] is False
     assert gate["status"] == "failed"
-    assert gate["blocking_proposal_ids"] == ["0099", "0100"]
+    assert gate["blocking_proposal_ids"] == ["0098", "0099", "0100"]
     assert gate["summary"]["blocking_status_counts"] == {
         "document_only_untracked": 1,
         "missing_tracking": 1,
+    }
+    assert gate["summary"]["missing_required_source_counts"] == {
+        "proposal_promotion_registry": 3,
     }
 
 
@@ -26715,6 +26732,17 @@ def test_main_checks_proposal_tracking_gate_as_ci_gate(
     )
     (tools_dir / "proposal_runtime_registry.json").write_text(
         json.dumps([{"proposal_id": "0098", "posture": "bounded_runtime_followup"}]),
+        encoding="utf-8",
+    )
+    (tools_dir / "proposal_promotion_registry.json").write_text(
+        json.dumps(
+            [
+                {
+                    "proposal_id": "0098",
+                    "source_refs": ["docs/archive/proposal_sources/0098_tracked_runtime.md"],
+                }
+            ]
+        ),
         encoding="utf-8",
     )
 

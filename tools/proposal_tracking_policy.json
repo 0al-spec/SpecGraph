@@ -41,6 +41,9 @@
       "missing_tracking",
       "document_only_untracked"
     ],
+    "required_tracking_sources": [
+      "proposal_promotion_registry"
+    ],
     "canonical_mutations_allowed": false,
     "tracked_artifacts_written": false
   }

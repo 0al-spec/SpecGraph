@@ -30301,6 +30301,18 @@ def proposal_tracking_gate_blocking_statuses(policy: dict[str, Any]) -> set[str]
     return set(statuses or ["missing_tracking", "document_only_untracked"])
 
 
+def proposal_tracking_gate_required_sources(policy: dict[str, Any]) -> set[str]:
+    gate_contract = policy.get("gate_contract", {})
+    sources = []
+    if isinstance(gate_contract, dict):
+        sources = [
+            str(item).strip()
+            for item in gate_contract.get("required_tracking_sources", [])
+            if str(item).strip()
+        ]
+    return set(sources or ["proposal_promotion_registry"])
+
+
 def build_proposal_tracking_gate(
     report: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
@@ -30309,17 +30321,35 @@ def build_proposal_tracking_gate(
         copy.deepcopy(report) if isinstance(report, dict) else build_proposal_tracking_report()
     )
     blocking_statuses = proposal_tracking_gate_blocking_statuses(policy)
-    blocking_entries = [
-        {
-            "proposal_id": str(entry.get("proposal_id", "")),
+    required_sources = proposal_tracking_gate_required_sources(policy)
+    blocking_entries_by_id: dict[str, dict[str, Any]] = {}
+    for entry in tracking_report.get("entries", []):
+        if not isinstance(entry, dict):
+            continue
+        proposal_id = str(entry.get("proposal_id", ""))
+        tracking_status = str(entry.get("tracking_status", ""))
+        tracking_sources = {
+            str(source).strip()
+            for source in entry.get("tracking_sources", [])
+            if str(source).strip()
+        }
+        blocking_reasons: list[str] = []
+        if tracking_status in blocking_statuses:
+            blocking_reasons.append(f"blocking_status:{tracking_status}")
+        missing_sources = sorted(required_sources - tracking_sources)
+        blocking_reasons.extend(f"missing_source:{source}" for source in missing_sources)
+        if not blocking_reasons:
+            continue
+        blocking_entries_by_id[proposal_id] = {
+            "proposal_id": proposal_id,
             "path": str(entry.get("path", "")),
-            "tracking_status": str(entry.get("tracking_status", "")),
+            "tracking_status": tracking_status,
             "severity": str(entry.get("severity", "")),
             "next_gap": str(entry.get("next_gap", "")),
+            "tracking_sources": sorted(tracking_sources),
+            "blocking_reasons": blocking_reasons,
         }
-        for entry in tracking_report.get("entries", [])
-        if isinstance(entry, dict) and str(entry.get("tracking_status", "")) in blocking_statuses
-    ]
+    blocking_entries = list(blocking_entries_by_id.values())
     blocking_ids = sorted(
         {entry["proposal_id"] for entry in blocking_entries if entry["proposal_id"]}
     )
@@ -30332,6 +30362,7 @@ def build_proposal_tracking_gate(
         "ok": passed,
         "strict_ci_enforced": True,
         "blocking_statuses": sorted(blocking_statuses),
+        "required_tracking_sources": sorted(required_sources),
         "blocking_count": len(blocking_entries),
         "blocking_proposal_ids": blocking_ids,
         "blocking_entries": sorted(
@@ -30354,13 +30385,23 @@ def build_proposal_tracking_gate(
                     for status in blocking_statuses
                 }
             ),
+            "missing_required_source_counts": grouped_identifier_counts(
+                {
+                    source: [
+                        entry["proposal_id"]
+                        for entry in blocking_entries
+                        if f"missing_source:{source}" in entry["blocking_reasons"]
+                    ]
+                    for source in required_sources
+                }
+            ),
             "tracking_status_counts": tracking_report.get("summary", {}).get(
                 "status_counts",
                 {},
             ),
         },
         "source_artifacts": {
-            "proposal_tracking_report": PROPOSAL_TRACKING_REPORT_FILENAME,
+            "proposal_tracking_report": f"runs/{PROPOSAL_TRACKING_REPORT_FILENAME}",
             "proposal_tracking_policy": "tools/proposal_tracking_policy.json",
         },
         "canonical_mutations_allowed": False,
