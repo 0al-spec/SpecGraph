@@ -739,5 +739,31 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0058",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0058_feature_runtime_evidence_layer.md"
+    ],
+    "motivating_concern": "product feature delivery needs evidence stronger than merged PRs, release notes, or generic analytics events",
+    "normalized_title": "Feature Runtime Evidence Layer",
+    "bounded_scope": "Define SpecGraph integration with the external Feature Passport evidence model, including graph links, derived indexes, evidence ladder projection, and honesty boundaries without duplicating the Feature Passport RFC or implementing SDK, ingestion, storage, or UI.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
+  },
+  {
+    "proposal_id": "0059",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0059_agent_passport_adoption_for_graph_agents.md"
+    ],
+    "motivating_concern": "SpecGraph and SpecSpace already use graph-facing agents without a stable external identity and authority contract",
+    "normalized_title": "Agent Passport Adoption for Graph Agents",
+    "bounded_scope": "Define graph-side Agent Passport references, verification gaps, agent surface indexes, and declaration/enforcement boundaries without redefining Agent Passport, signing, sandboxing, hosted registry behavior, or runtime enforcement.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

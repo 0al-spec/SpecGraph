@@ -303,8 +303,10 @@ Supervisor modes:
   textual mentions separately from bounded promotion traces.
 - `--build-proposal-tracking-report`: build `runs/proposal_tracking_report.json`
   as a report-only check that every proposal doc is either linked to a tracking
-  surface or explicitly classified as document-only / no-runtime-required. This
-  is intentionally advisory before it becomes a strict commit or CI gate.
+  surface or explicitly classified as no-runtime-required.
+- `--check-proposal-tracking-gate`: build the proposal tracking report and fail
+  if proposal docs are not represented by runtime registry, promotion trace,
+  proposal-spec trace, or an explicit no-runtime classification.
 - `--list-stale-runtime` / `--clean-stale-runtime`: inspect or clean stale gate/worktree residue.
 
 Key derived artifacts:
@@ -469,6 +471,8 @@ Key derived artifacts:
   explicit no-runtime classification. Use `make proposal-tracking` after adding
   proposal docs to see whether the graph will keep them visible as follow-up
   work.
+- `make proposal-tracking-gate`: CI-enforced proposal tracking check. Run it
+  before opening a PR that adds or changes proposal markdown.
 - `tools/graph_diagnostics.py`: read-only operator diagnostic that summarizes
   the current `runs/*.json` surfaces without relying on ad hoc `jq` assumptions.
   Use `make graph-diagnostics` after `make viewer-surfaces` to print the compact

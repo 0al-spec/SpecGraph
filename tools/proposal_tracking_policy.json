@@ -33,5 +33,18 @@
     "strict_ci_enforced": false,
     "canonical_mutations_allowed": false,
     "tracked_artifacts_written": false
+  },
+  "gate_contract": {
+    "artifact_kind": "proposal_tracking_gate",
+    "strict_ci_enforced": true,
+    "blocking_statuses": [
+      "missing_tracking",
+      "document_only_untracked"
+    ],
+    "required_tracking_sources": [
+      "proposal_promotion_registry"
+    ],
+    "canonical_mutations_allowed": false,
+    "tracked_artifacts_written": false
   }
 }

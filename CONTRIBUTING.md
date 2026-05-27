@@ -83,6 +83,10 @@ Useful patterns:
 - Proposal first for new capabilities such as branch rewrite, conversation memory, metric packs, or standalone deployment.
 - Runtime registry update when a proposal already has implementation artifacts.
 - Evidence or trace contract update when a spec is implemented but not yet explainable to the graph.
+- Proposal tracking is now a gate, not just an advisory report. A proposal PR must
+  add the proposal markdown, source draft, and either runtime/promotion tracking
+  entries or an explicit no-runtime classification. Run
+  `make proposal-tracking-gate` before opening or merging proposal PRs.
 
 ## Evidence and Backlog
 

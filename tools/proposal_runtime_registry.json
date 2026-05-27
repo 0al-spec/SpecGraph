@@ -2743,5 +2743,32 @@
     "runtime_markers": [],
     "validation_markers": [],
     "observation_markers": []
+  },
+  {
+    "proposal_id": "0058",
+    "posture": "bounded_runtime_followup",
+    "runtime_surfaces": [
+      "docs/proposals/0058_feature_runtime_evidence_layer.md",
+      "runs/feature_passport_index.json",
+      "runs/feature_evidence_index.json",
+      "runs/feature_evidence_ladder.json"
+    ],
+    "runtime_markers": [],
+    "validation_markers": [],
+    "observation_markers": []
+  },
+  {
+    "proposal_id": "0059",
+    "posture": "bounded_runtime_followup",
+    "runtime_surfaces": [
+      "docs/proposals/0059_agent_passport_adoption_for_graph_agents.md",
+      "tools/agent_passport_adoption_policy.json",
+      "runs/known_agent_passport_index.json",
+      "runs/agent_verification_gap_index.json",
+      "runs/agent_surface_index.json"
+    ],
+    "runtime_markers": [],
+    "validation_markers": [],
+    "observation_markers": []
   }
 ]
