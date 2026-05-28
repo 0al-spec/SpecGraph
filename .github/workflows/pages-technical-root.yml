@@ -1,4 +1,4 @@
-name: Deploy Landing to GitHub Pages
+name: Deploy Technical Root to GitHub Pages
 
 on:
   push:
@@ -6,8 +6,8 @@ on:
       - main
       - master
     paths:
-      - "landing/**"
-      - ".github/workflows/pages-landing.yml"
+      - "docs/github-pages-root/**"
+      - ".github/workflows/pages-technical-root.yml"
   workflow_dispatch:
 
 permissions:
@@ -24,7 +24,7 @@ env:
 
 jobs:
   deploy:
-    name: Deploy landing
+    name: Deploy technical root
     runs-on: ubuntu-latest
     environment:
       name: github-pages
@@ -34,20 +34,20 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Verify landing source
+      - name: Verify technical root source
         run: |
-          test -f landing/index.html || {
-            echo "landing/index.html is missing. Commit landing/ to the target branch before deploying."
+          test -f docs/github-pages-root/index.html || {
+            echo "docs/github-pages-root/index.html is missing."
             exit 1
           }
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
 
-      - name: Upload landing artifact
+      - name: Upload technical root artifact
         uses: actions/upload-pages-artifact@v4
         with:
-          path: landing
+          path: docs/github-pages-root
 
       - name: Deploy to GitHub Pages
         id: deployment
