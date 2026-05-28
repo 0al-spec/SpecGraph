@@ -9,6 +9,8 @@ __pycache__/
 htmlcov/
 dist/
 build/
+.build/
+.docc-build/
 
 # Supervisor runtime scratch state and generated run artifacts are local by default.
 .worktrees/

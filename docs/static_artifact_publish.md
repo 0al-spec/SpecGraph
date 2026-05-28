@@ -54,11 +54,10 @@ surface.
 
 GitHub Pages is not the product landing surface. The repository Pages root is
 published from `docs/github-pages-root/` as a technical entrypoint with links to
-the repository docs, public artifact manifest, generated runs, and the custom
-landing page. Do not deploy `landing/` to GitHub Pages root; doing so can create
-navigation loops where documentation links return to the marketing page. A DocC
-entrypoint should only be linked here after the repository has a DocC
-source/build/deploy pipeline.
+the canonical DocC entrypoint at `documentation/specgraph/`, the public artifact
+manifest, generated runs, and the custom landing page. Do not deploy `landing/`
+to GitHub Pages root; doing so can create navigation loops where documentation
+links return to the marketing page.
 
 The source `runs/` directory remains local and unchanged. The publish bundle is
 a redacted mirror: local absolute paths such as `/Users/...` are replaced with
