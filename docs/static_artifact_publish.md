@@ -55,9 +55,10 @@ surface.
 GitHub Pages is not the product landing surface. The repository Pages root is
 published from `docs/github-pages-root/` as a technical entrypoint with links to
 the operator-facing DocC entrypoint at `documentation/specgraph/`, the public
-artifact manifest, generated runs, and the custom landing page. The custom
-static host owns the product landing page; GitHub Pages owns only the technical
-documentation and integration entrypoints. The workflow publishes a mixed-case
+artifact manifest, generated runs, and the custom landing page at
+`https://specgraph.tech/`. The specgraph.tech static host owns the product
+landing page; GitHub Pages owns only the technical documentation and integration
+entrypoints. The workflow publishes a mixed-case
 `documentation/SpecGraph/` compatibility redirect for old links, but new links
 should use the lowercase DocC path emitted by the plugin. Do not deploy
 `landing/` to GitHub Pages root; doing so can create navigation loops where

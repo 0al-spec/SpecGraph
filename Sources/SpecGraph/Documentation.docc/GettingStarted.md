@@ -11,8 +11,8 @@ The repository keeps the following surfaces separate:
 - `tools/` contains Python tooling for derived surfaces and validation gates.
 - `runs/` contains local runtime artifacts and is not published directly.
 - GitHub Pages publishes the technical entrypoint and DocC documentation.
-- The custom static host publishes product-facing landing content and generated
-  public artifacts.
+- The specgraph.tech static host publishes product-facing landing content and
+  generated public artifacts.
 
 ## Routine Validation
 

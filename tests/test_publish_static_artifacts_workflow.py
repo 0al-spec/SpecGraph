@@ -118,7 +118,7 @@ def test_github_pages_root_docs_card_points_to_docc_entrypoint() -> None:
         Path(__file__).resolve().parents[1] / "docs" / "github-pages-root" / "index.html"
     ).read_text(encoding="utf-8")
 
-    assert "https://0al-spec.github.io/SpecGraph/documentation/SpecGraph/" in root_page
+    assert "https://0al-spec.github.io/SpecGraph/documentation/specgraph/" in root_page
     assert "https://github.com/0al-spec/SpecGraph/tree/main/docs" not in root_page
 
 

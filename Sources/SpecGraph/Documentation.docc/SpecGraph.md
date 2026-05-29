@@ -18,11 +18,11 @@ The current public surfaces are:
 - a GitHub Pages technical root;
 - generated static artifacts for read-only consumers;
 - proposal and runtime-evidence documentation under `docs/`;
-- product landing content on the custom static host.
+- product landing content on the specgraph.tech static host.
 
 Product landing and technical documentation are separate publication surfaces.
-The custom/static host owns product-facing landing content. GitHub Pages owns
-generated technical documentation and public artifact entrypoints.
+The specgraph.tech static host owns product-facing landing content. GitHub Pages
+owns generated technical documentation and public artifact entrypoints.
 
 ## Source Documents
 
