@@ -104,7 +104,9 @@ def test_pages_technical_root_builds_docc_surface() -> None:
     assert "--target SpecGraph" in workflow
     assert "--hosting-base-path SpecGraph" in workflow
     assert "cp docs/github-pages-root/index.html ./.docc-build/index.html" in workflow
+    assert "Add mixed-case DocC compatibility redirect" in workflow
     assert "test -f ./.docc-build/documentation/specgraph/index.html" in workflow
+    assert "test -f ./.docc-build/documentation/SpecGraph/index.html" in workflow
     assert "if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'" in workflow
     assert "actions/upload-pages-artifact@v4" in workflow
     assert "path: ./.docc-build" in workflow
@@ -116,7 +118,7 @@ def test_github_pages_root_docs_card_points_to_docc_entrypoint() -> None:
         Path(__file__).resolve().parents[1] / "docs" / "github-pages-root" / "index.html"
     ).read_text(encoding="utf-8")
 
-    assert "https://0al-spec.github.io/SpecGraph/documentation/specgraph/" in root_page
+    assert "https://0al-spec.github.io/SpecGraph/documentation/SpecGraph/" in root_page
     assert "https://github.com/0al-spec/SpecGraph/tree/main/docs" not in root_page
 
 
