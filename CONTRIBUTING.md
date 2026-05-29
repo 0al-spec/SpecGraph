@@ -76,7 +76,10 @@ Proposals are not a parking lot. If a proposal introduces a new surface or proce
 observe -> propose -> improve tools -> observe again
 ```
 
-Use proposals for new semantics, governance rules, viewer contracts, or runtime processes. Use runtime realization PRs when the proposal already exists and the task is to register or implement its derived surface.
+Use proposals under `docs/proposals/` for new semantics, governance rules,
+viewer contracts, or runtime processes. Use runtime realization PRs when the
+proposal already exists and the task is to register or implement its derived
+surface or runtime evidence.
 
 Useful patterns:
 
@@ -162,6 +165,30 @@ Common viewer-facing surfaces include:
 - `runs/metric_pack_*.json`
 - `runs/spec_activity_feed.json`
 - `runs/conversation_memory_*.json`
+
+## DocC Documentation Sync
+
+DocC is the hosted technical documentation surface, but repository Markdown
+remains the canonical working documentation for contributors and operators.
+When changing ordinary docs in a way that affects public technical guidance,
+update the matching DocC mirror in `Sources/SpecGraph/Documentation.docc/`.
+
+The synchronization contract lives in
+`tools/docc_sync_contract.json`. It names documentation groups, the ordinary
+source files, the DocC mirror pages, and required anchors that must appear in
+all grouped files. Use this when adding a new documentation surface or changing
+the terms that prove the surfaces still describe the same operational contract.
+
+Run the gate before opening or merging documentation PRs that touch synchronized
+surfaces:
+
+```bash
+make docc-sync
+```
+
+This gate is intentionally anchor-based rather than byte-for-byte comparison:
+DocC pages can have different navigation and formatting, but they must preserve
+the same operational facts, paths, commands, and boundary terms.
 
 ## Metrics
 
