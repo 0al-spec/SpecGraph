@@ -94,6 +94,32 @@ def test_landing_page_deploys_as_separate_non_destructive_job() -> None:
     assert "--delete" not in landing_job
 
 
+def test_pages_technical_root_builds_docc_surface() -> None:
+    workflow = _workflow_text("pages-technical-root.yml")
+
+    assert "name: Deploy DocC Technical Surface" in workflow
+    assert "pull_request:" in workflow
+    assert "runs-on: macos-14" in workflow
+    assert "generate-documentation" in workflow
+    assert "--target SpecGraph" in workflow
+    assert "--hosting-base-path SpecGraph" in workflow
+    assert "cp docs/github-pages-root/index.html ./.docc-build/index.html" in workflow
+    assert "test -f ./.docc-build/documentation/specgraph/index.html" in workflow
+    assert "if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'" in workflow
+    assert "actions/upload-pages-artifact@v4" in workflow
+    assert "path: ./.docc-build" in workflow
+    assert "actions/deploy-pages@v4" in workflow
+
+
+def test_github_pages_root_docs_card_points_to_docc_entrypoint() -> None:
+    root_page = (
+        Path(__file__).resolve().parents[1] / "docs" / "github-pages-root" / "index.html"
+    ).read_text(encoding="utf-8")
+
+    assert "https://0al-spec.github.io/SpecGraph/documentation/specgraph/" in root_page
+    assert "https://github.com/0al-spec/SpecGraph/tree/main/docs" not in root_page
+
+
 def test_workflows_opt_into_node24_actions_runtime() -> None:
     workflow_dir = Path(__file__).resolve().parents[1] / ".github" / "workflows"
     workflow_paths = sorted(workflow_dir.glob("*.yml"))

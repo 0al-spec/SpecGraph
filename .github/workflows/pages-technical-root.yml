@@ -1,4 +1,4 @@
-name: Deploy Technical Root to GitHub Pages
+name: Deploy DocC Technical Surface
 
 on:
   push:
@@ -6,14 +6,25 @@ on:
       - main
       - master
     paths:
+      - "Package.swift"
+      - "Package.resolved"
+      - "Sources/SpecGraph/**"
+      - "docs/github-pages-root/**"
+      - ".github/workflows/pages-technical-root.yml"
+  pull_request:
+    branches:
+      - main
+      - master
+    paths:
+      - "Package.swift"
+      - "Package.resolved"
+      - "Sources/SpecGraph/**"
       - "docs/github-pages-root/**"
       - ".github/workflows/pages-technical-root.yml"
   workflow_dispatch:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
   group: github-pages
@@ -23,16 +34,18 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  deploy:
-    name: Deploy technical root
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+  build:
+    name: Build DocC technical surface
+    runs-on: macos-14
 
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
 
       - name: Verify technical root source
         run: |
@@ -41,14 +54,49 @@ jobs:
             exit 1
           }
 
-      - name: Configure GitHub Pages
-        uses: actions/configure-pages@v5
+      - name: Build DocC documentation
+        run: |
+          swift package --allow-writing-to-directory ./.docc-build \
+            generate-documentation \
+            --target SpecGraph \
+            --output-path ./.docc-build \
+            --transform-for-static-hosting \
+            --hosting-base-path SpecGraph
 
-      - name: Upload technical root artifact
+      - name: Add technical root
+        run: |
+          cp docs/github-pages-root/index.html ./.docc-build/index.html
+
+      - name: Verify Pages artifact
+        run: |
+          test -f ./.docc-build/index.html
+          test -f ./.docc-build/documentation/specgraph/index.html
+
+      - name: Upload Pages artifact
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         uses: actions/upload-pages-artifact@v4
         with:
-          path: docs/github-pages-root
+          path: ./.docc-build
 
+  deploy:
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      (
+        github.event_name == 'push' &&
+        (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+      )
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
