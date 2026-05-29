@@ -67,10 +67,32 @@ jobs:
         run: |
           cp docs/github-pages-root/index.html ./.docc-build/index.html
 
+      - name: Add mixed-case DocC compatibility redirect
+        run: |
+          mkdir -p ./.docc-build/documentation/SpecGraph
+          cat > ./.docc-build/documentation/SpecGraph/index.html <<'HTML'
+          <!doctype html>
+          <html lang="en">
+            <head>
+              <meta charset="utf-8" />
+              <meta http-equiv="refresh" content="0; url=../specgraph/" />
+              <link rel="canonical" href="../specgraph/" />
+              <title>SpecGraph documentation</title>
+            </head>
+            <body>
+              <p>
+                Redirecting to
+                <a href="../specgraph/">SpecGraph DocC documentation</a>.
+              </p>
+            </body>
+          </html>
+          HTML
+
       - name: Verify Pages artifact
         run: |
           test -f ./.docc-build/index.html
           test -f ./.docc-build/documentation/specgraph/index.html
+          test -f ./.docc-build/documentation/SpecGraph/index.html
 
       - name: Upload Pages artifact
         if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'

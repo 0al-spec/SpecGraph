@@ -8,7 +8,8 @@ channels.
 GitHub Pages owns the technical surface:
 
 - the repository root technical entrypoint;
-- DocC documentation under `documentation/specgraph/`;
+- DocC documentation under `documentation/SpecGraph/`, which redirects to the
+  generated lowercase DocC module path `documentation/specgraph/`;
 - future generated technical artifacts that belong next to documentation.
 
 The root page is intentionally not the product landing page.
