@@ -1,0 +1,72 @@
+{
+  "groups": [
+    {
+      "id": "static-artifact-publishing",
+      "description": "Static artifact and GitHub Pages publication rules must stay aligned between repository docs and DocC.",
+      "docs": [
+        "docs/static_artifact_publish.md"
+      ],
+      "docc": [
+        "Sources/SpecGraph/Documentation.docc/ArtifactPublishing.md"
+      ],
+      "required_terms": [
+        "GitHub Pages",
+        "documentation/SpecGraph/",
+        "documentation/specgraph/",
+        "landing/"
+      ],
+      "docs_required_terms": [
+        "artifact_manifest.json",
+        "checksums.sha256",
+        "make publish-bundle"
+      ],
+      "docc_required_terms": [
+        "Static Host",
+        "product-facing surfaces"
+      ]
+    },
+    {
+      "id": "proposal-runtime-evidence",
+      "description": "Proposal tracking and runtime evidence rules must stay visible in both contributor docs and DocC.",
+      "docs": [
+        "CONTRIBUTING.md"
+      ],
+      "docc": [
+        "Sources/SpecGraph/Documentation.docc/ProposalsAndRuntime.md"
+      ],
+      "required_terms": [
+        "proposal",
+        "runtime evidence",
+        "docs/proposals/",
+        "make proposal-tracking-gate"
+      ],
+      "docs_required_terms": [
+        "Proposal tracking"
+      ],
+      "docc_required_terms": [
+        "proposal tracking"
+      ]
+    },
+    {
+      "id": "operator-source-map",
+      "description": "The DocC root must keep pointing operators back to canonical repository documentation sources.",
+      "docs": [
+        "README.md",
+        "AGENTS.md",
+        "tools/README.md"
+      ],
+      "docc": [
+        "Sources/SpecGraph/Documentation.docc/SpecGraph.md"
+      ],
+      "docs_required_terms": [
+        "SpecGraph"
+      ],
+      "docc_required_terms": [
+        "README.md",
+        "CONTRIBUTING.md",
+        "AGENTS.md",
+        "tools/README.md"
+      ]
+    }
+  ]
+}

@@ -48,6 +48,7 @@ help:
 		'  make project-environment      Refresh project environment governance profile JSON' \
 		'  make init-product-workspace PRODUCT_WORKSPACE_PROJECT_ID=<id> PRODUCT_WORKSPACE_ROOT=<path>' \
 		'  make review-feedback          Refresh review feedback index' \
+		'  make docc-sync                Validate DocC mirrors against repository docs' \
 		'  make publish-bundle           Build static specs/ + runs/ publish bundle' \
 		'  make test                     Run full Python test suite quietly' \
 		'  make test-supervisor          Run supervisor tests quietly'
@@ -196,6 +197,10 @@ init-product-workspace:
 .PHONY: review-feedback
 review-feedback:
 	@$(PYTHON) $(SUPERVISOR) --build-review-feedback-index
+
+.PHONY: docc-sync
+docc-sync:
+	@$(PYTHON) tools/validate_docc_sync.py
 
 .PHONY: publish-bundle
 publish-bundle:
