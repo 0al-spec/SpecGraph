@@ -67,6 +67,36 @@ jobs:
         run: |
           cp docs/github-pages-root/index.html ./.docc-build/index.html
 
+      - name: Verify Pages artifact
+        run: |
+          test -f ./.docc-build/index.html
+          test -f ./.docc-build/documentation/specgraph/index.html
+
+      - name: Archive DocC artifact
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: docc-build-pages
+          path: ./.docc-build
+
+  prepare-pages-artifact:
+    name: Prepare case-sensitive redirect artifact
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      (
+        github.event_name == 'push' &&
+        (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+      )
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download DocC artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: docc-build-pages
+          path: ./.docc-build
+
       - name: Add mixed-case DocC compatibility redirect
         run: |
           mkdir -p ./.docc-build/documentation/SpecGraph
@@ -95,7 +125,6 @@ jobs:
           test -f ./.docc-build/documentation/SpecGraph/index.html
 
       - name: Upload Pages artifact
-        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         uses: actions/upload-pages-artifact@v4
         with:
           path: ./.docc-build
@@ -107,7 +136,7 @@ jobs:
         github.event_name == 'push' &&
         (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
       )
-    needs: build
+    needs: prepare-pages-artifact
     runs-on: ubuntu-latest
     permissions:
       contents: read
