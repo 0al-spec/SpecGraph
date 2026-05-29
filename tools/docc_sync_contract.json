@@ -51,10 +51,15 @@
       "id": "operator-source-map",
       "description": "The DocC root must keep pointing operators back to canonical repository documentation sources.",
       "docs": [
-        "README.md"
+        "README.md",
+        "AGENTS.md",
+        "tools/README.md"
       ],
       "docc": [
         "Sources/SpecGraph/Documentation.docc/SpecGraph.md"
+      ],
+      "docs_required_terms": [
+        "SpecGraph"
       ],
       "docc_required_terms": [
         "README.md",

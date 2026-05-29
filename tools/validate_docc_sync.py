@@ -27,7 +27,9 @@ def _load_contract(path: Path) -> dict[str, Any]:
 
 
 def _read_text(relative_path: str, errors: list[str]) -> str:
-    path = ROOT / relative_path
+    path = Path(relative_path)
+    if not path.is_absolute():
+        path = ROOT / path
     if not path.is_file():
         errors.append(f"missing file: {relative_path}")
         return ""
@@ -73,8 +75,8 @@ def _validate_group(group: dict[str, Any], errors: list[str]) -> None:
         term_sets[str(path)] = [*required_terms, *docc_required_terms]
 
     for path, text in texts.items():
-        if not text:
-            continue
+        if not text.strip():
+            errors.append(f"{group_id}: {path} is empty")
         for term in term_sets[path]:
             if not isinstance(term, str) or not term:
                 errors.append(f"{group_id}: required term must be a non-empty string")

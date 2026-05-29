@@ -51,3 +51,6 @@ jobs:
 
       - name: Check proposal tracking gate
         run: make proposal-tracking-gate
+
+      - name: Check DocC documentation sync
+        run: make docc-sync
