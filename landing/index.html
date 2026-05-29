@@ -19,8 +19,8 @@
     --rule-soft: rgba(11,11,12,.14);
     --muted:#55524b;
     --muted-2:#7a766d;
-    --signal: oklch(74% 0.14 62);  /* single amber accent */
-    --signal-ink: oklch(46% 0.13 55);
+    --signal: oklch(74% 0.14 240);
+    --signal-ink: oklch(46% 0.13 240);
     --serif:'Instrument Serif', 'Times New Roman', serif;
     --sans:'Inter','Helvetica Neue',Helvetica,Arial,sans-serif;
     --mono:'JetBrains Mono', ui-monospace, Menlo, monospace;
@@ -80,6 +80,16 @@
   .btn.ghost{border-color:var(--rule-soft)}
   .btn .arrow{font-family:var(--mono);font-size:14px;line-height:1;transform:translateY(-1px)}
   .btn.sm{height:32px;padding:0 12px;font-size:12px}
+  .mobile-copy{display:none}
+  @media (max-width:720px){
+    .nav-inner{grid-template-columns:auto minmax(0,1fr);gap:8px}
+    .brand{gap:8px;font-size:20px;min-width:0}
+    .brand .glyph,.brand .glyph svg{width:28px;height:28px}
+    .nav-cta{justify-self:end;min-width:0;gap:6px}
+    .nav-cta .btn.sm{height:32px;padding:0 10px;font-size:11px;gap:8px}
+    .nav-cta .desktop-copy{display:none}
+    .nav-cta .mobile-copy{display:inline}
+  }
 
   /* ---------- Hero ---------- */
   .hero{position:relative;overflow:hidden}
@@ -318,6 +328,7 @@
   /* ---------- CONTACT ---------- */
   .contact{padding:120px 0;border-bottom:1px solid var(--rule);background:var(--paper)}
   .contact-grid{display:grid;grid-template-columns:1fr 1fr;gap:80px}
+  .contact-grid.form-disabled{grid-template-columns:minmax(0, 720px)}
   .contact h2{font-family:var(--serif);font-weight:400;font-size:clamp(48px,6vw,96px);line-height:.98;letter-spacing:-0.02em;margin:20px 0 0}
   .contact h2 .i{font-style:italic;color:var(--muted-2)}
   .contact .lede{margin-top:24px;color:var(--muted);max-width:40ch;font-size:16px}
@@ -433,8 +444,8 @@
       <a href="#contact">Contact</a>
     </nav>
     <div class="nav-cta">
-      <a class="btn ghost sm" href="#contact">Pilot proposal</a>
-      <a class="btn primary sm" href="https://specgraph.space">Open SpecGraph Space <span class="arrow">→</span></a>
+      <a class="btn ghost sm" href="#contact"><span class="desktop-copy">Pilot proposal</span><span class="mobile-copy">Pilot</span></a>
+      <a class="btn primary sm" href="https://specgraph.space"><span class="desktop-copy">Open SpecGraph Space</span><span class="mobile-copy">Open Space</span> <span class="arrow">→</span></a>
     </div>
   </div>
 </header>
@@ -795,7 +806,7 @@
 
 <!-- ============ CONTACT ============ -->
 <section class="contact" id="contact">
-  <div class="wrap contact-grid">
+  <div class="wrap contact-grid form-disabled">
     <div class="reveal">
       <div class="eyebrow">§ 06 &middot; Contact</div>
       <h2>Talk to an<br><span class="i">engineer.</span></h2>
@@ -804,14 +815,13 @@
         compliance team.</p>
 
       <div class="contact-info">
-        <div class="row"><div class="k">Email</div><div class="v">team@specgraph.io</div></div>
-        <div class="row"><div class="k">Phone</div><div class="v">+1 (555) 000‑0000</div></div>
-        <div class="row"><div class="k">Location</div><div class="v">San Francisco, CA</div></div>
-        <div class="row"><div class="k">Hours</div><div class="v">Mon–Fri · 09:00–18:00 PT</div></div>
+        <div class="row"><div class="k">LinkedIn</div><div class="v"><a href="https://www.linkedin.com/in/egormerkushev">linkedin.com/in/egormerkushev</a></div></div>
+        <div class="row"><div class="k">GitHub</div><div class="v"><a href="https://github.com/SoundBlaster">github.com/SoundBlaster</a></div></div>
+        <div class="row"><div class="k">VK.com</div><div class="v"><a href="https://vk.com/objc">vk.com/objc</a></div></div>
       </div>
     </div>
 
-    <form class="cform reveal" onsubmit="event.preventDefault();this.querySelector('.submit button').innerHTML='Request received · we\\'ll be in touch <span class=&quot;arrow&quot;>✓</span>'">
+    <form class="cform reveal" hidden onsubmit="event.preventDefault();this.querySelector('.submit button').innerHTML='Request received · we\\'ll be in touch <span class=&quot;arrow&quot;>✓</span>'">
       <div class="field"><label>Name</label><input placeholder="Maya Ortega" required/></div>
       <div class="field"><label>Email</label><input type="email" placeholder="maya@company.com" required/></div>
       <div class="field"><label>Company</label><input placeholder="Company Inc." /></div>
@@ -869,7 +879,7 @@
     <div class="rule"></div>
     <div class="meta">
       <span>© 2026 SpecGraph — All rights reserved.</span>
-      <span>BUILT IN SF &middot; SOC 2 · ISO 27001</span>
+      <span>BUILT IN SF &middot; SOC 2</span>
     </div>
   </div>
 </footer>
@@ -880,9 +890,8 @@
   <div class="row">
     <label>Accent</label>
     <div class="swatches" id="sw">
-      <div class="sw active" data-h="62" style="background:oklch(74% 0.14 62)"></div>
       <div class="sw" data-h="140" style="background:oklch(74% 0.14 140)"></div>
-      <div class="sw" data-h="240" style="background:oklch(74% 0.14 240)"></div>
+      <div class="sw active" data-h="240" style="background:oklch(74% 0.14 240)"></div>
       <div class="sw" data-h="340" style="background:oklch(74% 0.14 340)"></div>
     </div>
   </div>
