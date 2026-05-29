@@ -80,6 +80,16 @@
   .btn.ghost{border-color:var(--rule-soft)}
   .btn .arrow{font-family:var(--mono);font-size:14px;line-height:1;transform:translateY(-1px)}
   .btn.sm{height:32px;padding:0 12px;font-size:12px}
+  .mobile-copy{display:none}
+  @media (max-width:720px){
+    .nav-inner{grid-template-columns:auto minmax(0,1fr);gap:8px}
+    .brand{gap:8px;font-size:20px;min-width:0}
+    .brand .glyph,.brand .glyph svg{width:28px;height:28px}
+    .nav-cta{justify-self:end;min-width:0;gap:6px}
+    .nav-cta .btn.sm{height:32px;padding:0 10px;font-size:11px;gap:8px}
+    .nav-cta .desktop-copy{display:none}
+    .nav-cta .mobile-copy{display:inline}
+  }
 
   /* ---------- Hero ---------- */
   .hero{position:relative;overflow:hidden}
@@ -434,8 +444,8 @@
       <a href="#contact">Contact</a>
     </nav>
     <div class="nav-cta">
-      <a class="btn ghost sm" href="#contact">Pilot proposal</a>
-      <a class="btn primary sm" href="https://specgraph.space">Open SpecGraph Space <span class="arrow">→</span></a>
+      <a class="btn ghost sm" href="#contact"><span class="desktop-copy">Pilot proposal</span><span class="mobile-copy">Pilot</span></a>
+      <a class="btn primary sm" href="https://specgraph.space"><span class="desktop-copy">Open SpecGraph Space</span><span class="mobile-copy">Open Space</span> <span class="arrow">→</span></a>
     </div>
   </div>
 </header>
