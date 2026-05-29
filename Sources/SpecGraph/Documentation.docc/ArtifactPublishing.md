@@ -8,17 +8,17 @@ channels.
 GitHub Pages owns the technical surface:
 
 - the repository root technical entrypoint;
-- DocC documentation under `documentation/SpecGraph/`, which redirects to the
-  generated lowercase DocC module path `documentation/specgraph/`;
+- DocC documentation under `documentation/specgraph/`;
+- a mixed-case `documentation/SpecGraph/` compatibility redirect for old links;
 - future generated technical artifacts that belong next to documentation.
 
 The root page is intentionally not the product landing page.
 
 ## Static Host
 
-The custom static host owns product-facing landing content and generated public
-artifact bundles. Static-host uploads must remain non-destructive so separate
-jobs do not delete each other's files.
+The specgraph.tech static host owns product-facing landing content and generated
+public artifact bundles. Static-host uploads must remain non-destructive so
+separate jobs do not delete each other's files.
 
 ## Boundary
 
