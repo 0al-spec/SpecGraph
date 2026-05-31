@@ -26,6 +26,33 @@ The adapter gateway is not the trust boundary. It prepares a backend-specific
 run and reports what happened. Existing deterministic supervisor validation
 continues to decide whether the run is acceptable.
 
+## Responsibility Split
+
+The executor adapter gateway is the current in-repository anti-corruption layer
+between deterministic SpecGraph core behavior and future non-deterministic agent
+runtime behavior.
+
+SpecGraph owns:
+
+- canonical graph state;
+- specification and proposal records;
+- deterministic validation;
+- search, indexing, reports, and lifecycle state;
+- supervisor planning state and review gates.
+
+The gateway owns only the boundary:
+
+- normalize a bounded execution request;
+- invoke an external executor adapter;
+- collect the structured report contract;
+- classify execution results without deciding graph acceptance.
+
+A future dedicated SpecAgent runtime may own provider adapters, sandbox runtime,
+agent identity, capability enforcement, BYOK execution, and tool policy. That
+future extraction is justified only after real runtime use cases prove the
+boundary: for example a second executor backend, direct SpecSpace job execution,
+separate deploy secrets, or provider-dependent release cadence.
+
 ## Request Contract
 
 A bounded executor request must contain:
