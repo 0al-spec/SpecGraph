@@ -346,6 +346,32 @@ The adapter index should summarize:
 SpecSpace should consume these artifacts or their projection in existing viewer
 surfaces. It should not parse raw executor stdout/stderr.
 
+## Contract-Only Realization Slice
+
+The first bounded realization slice is intentionally smaller than a runnable
+executor backend. It introduces the contract surfaces that future BYOK/demo
+runners and alternate executor backends must satisfy:
+
+- `tools/supervisor_executor_adapter_policy.json`
+- `docs/supervisor_executor_adapter_gateway_contract.md`
+
+This slice defines the request and report boundary:
+
+- executor request contains workspace root, target reference, provider config
+  reference, policy envelope, and capability envelope;
+- executor report returns status, run id, logs reference, produced artifacts,
+  policy decisions, and normalized error class;
+- API keys, raw provider secrets, web auth sessions, billing/account details,
+  and raw prompts remain outside persisted artifacts;
+- BYOK is represented as an injected `provider_config_ref`, not as stored
+  credentials;
+- adapter success remains advisory until normal supervisor validation and gates
+  accept the result.
+
+This contract slice does not implement SpecSpace login, BYOK UI, Timeweb deploy,
+real Codex/Copilot/Claude/Gemini runner wiring, or Agent Passport enforcement.
+Those remain later runtime layers.
+
 ## Safety Rules
 
 - Codex remains default until an explicit policy changes it.

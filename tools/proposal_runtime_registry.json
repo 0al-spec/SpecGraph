@@ -2723,13 +2723,52 @@
     "proposal_id": "0056",
     "posture": "bounded_runtime_followup",
     "runtime_surfaces": [
-      "tools/supervisor.py",
-      "tests/test_supervisor.py",
+      "tools/supervisor_executor_adapter_policy.json",
+      "docs/supervisor_executor_adapter_gateway_contract.md",
       "docs/proposals/0056_supervisor_executor_adapter_gateway.md"
     ],
-    "runtime_markers": [],
-    "validation_markers": [],
-    "observation_markers": []
+    "runtime_markers": [
+      {
+        "path": "tools/supervisor_executor_adapter_policy.json",
+        "pattern": "\"artifact_kind\": \"supervisor_executor_adapter_policy\""
+      },
+      {
+        "path": "tools/supervisor_executor_adapter_policy.json",
+        "pattern": "\"request_contract\""
+      },
+      {
+        "path": "tools/supervisor_executor_adapter_policy.json",
+        "pattern": "\"report_contract\""
+      },
+      {
+        "path": "docs/supervisor_executor_adapter_gateway_contract.md",
+        "pattern": "## Request Contract"
+      },
+      {
+        "path": "docs/supervisor_executor_adapter_gateway_contract.md",
+        "pattern": "## Report Contract"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_supervisor_executor_adapter_policy_declares_request_report_contract("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_proposal_0056_executor_adapter_contract_runtime_is_covered("
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/supervisor_executor_adapter_gateway_contract.md",
+        "pattern": "tools/supervisor_executor_adapter_policy.json"
+      },
+      {
+        "path": "docs/proposals/0056_supervisor_executor_adapter_gateway.md",
+        "pattern": "## Contract-Only Realization Slice"
+      }
+    ]
   },
   {
     "proposal_id": "0057",

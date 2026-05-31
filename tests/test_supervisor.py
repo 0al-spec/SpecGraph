@@ -25963,6 +25963,62 @@ def test_proposal_0054_product_workspace_initialization_runtime_is_covered(
     assert entry["reflective_chain"]["next_gap"] == "none"
 
 
+def test_supervisor_executor_adapter_policy_declares_request_report_contract() -> None:
+    """Proposal 0056 starts with a contract-only executor gateway policy surface."""
+    policy_path = SPECGRAPH_ROOT / "tools" / "supervisor_executor_adapter_policy.json"
+    policy = json.loads(policy_path.read_text(encoding="utf-8"))
+
+    assert policy["artifact_kind"] == "supervisor_executor_adapter_policy"
+    assert policy["schema_version"] == 1
+    assert policy["default_backend_id"] == "codex"
+
+    request = policy["request_contract"]
+    assert request["artifact_kind"] == "supervisor_executor_request"
+    for field in (
+        "request_id",
+        "workspace_root",
+        "target_ref",
+        "provider_config_ref",
+        "policy_envelope",
+        "capability_envelope",
+    ):
+        assert field in request["required_fields"]
+
+    report = policy["report_contract"]
+    assert report["artifact_kind"] == "supervisor_executor_report"
+    assert report["status_values"] == ["ready", "blocked", "failed"]
+    assert "provider_config_missing" in report["error_classes"]
+    assert "protocol_failure" in report["error_classes"]
+    assert report["logs_ref"]["raw_logs_are_local_only"] is True
+
+    byok = policy["future_byok_boundary"]
+    assert byok["supported_mechanism"] == "provider_config_ref"
+    assert "api_key_value" in byok["forbidden_in_gateway_artifacts"]
+    assert "BYOK form" in byok["out_of_scope"]
+
+    invariants = set(policy["non_overridable_invariants"])
+    assert "secrets_must_not_be_persisted" in invariants
+    assert "adapter_success_is_not_supervisor_success" in invariants
+
+
+def test_proposal_0056_executor_adapter_contract_runtime_is_covered(
+    supervisor_module: object,
+) -> None:
+    """Proposal 0056 is covered by the executor adapter request/report contract slice."""
+    index = supervisor_module.build_proposal_runtime_index()
+    by_id = {e["proposal_id"]: e for e in index["entries"]}
+
+    assert "0056" in by_id, "Proposal 0056 missing from proposal_runtime_index"
+    entry = by_id["0056"]
+    assert entry["runtime_realization"]["status"] == "implemented"
+    assert entry["validation_closure"]["status"] == "covered"
+    assert entry["observation_coverage"]["status"] == "covered"
+    assert entry["runtime_realization"]["missing_markers"] == []
+    assert entry["validation_closure"]["missing_markers"] == []
+    assert entry["observation_coverage"]["missing_markers"] == []
+    assert entry["reflective_chain"]["next_gap"] == "none"
+
+
 def test_all_implemented_proposals_have_registry_entries() -> None:
     """Every Implemented proposal must have a registry entry with at least one marker."""
     registry_path = SPECGRAPH_ROOT / "tools" / "proposal_runtime_registry.json"
