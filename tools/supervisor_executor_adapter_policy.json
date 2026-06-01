@@ -1,0 +1,139 @@
+{
+  "artifact_kind": "supervisor_executor_adapter_policy",
+  "schema_version": 1,
+  "default_backend_id": "codex",
+  "authority_states": [
+    "default",
+    "experimental",
+    "unsupported",
+    "deprecated"
+  ],
+  "request_contract": {
+    "artifact_kind": "supervisor_executor_request",
+    "schema_version": 1,
+    "required_fields": [
+      "request_id",
+      "backend_id",
+      "workspace_root",
+      "target_ref",
+      "provider_config_ref",
+      "policy_envelope",
+      "capability_envelope"
+    ],
+    "workspace_root": {
+      "format": "repo_relative_or_sandbox_root",
+      "must_not_contain": [
+        "secrets",
+        "api_keys",
+        "private_tokens"
+      ]
+    },
+    "target_ref": {
+      "allowed_kinds": [
+        "spec",
+        "proposal",
+        "operator_request",
+        "smoke_fixture"
+      ]
+    },
+    "backend_id": {
+      "description": "Explicit executor backend selector carried with the request. Omitted or unsupported backends must not be inferred from out-of-band state.",
+      "default": "codex",
+      "experimental_requires_explicit_operator_selection": true
+    },
+    "provider_config_ref": {
+      "description": "Opaque runtime configuration reference. The gateway must not store provider secrets or raw BYOK values.",
+      "allowed_authority": [
+        "environment",
+        "local_profile",
+        "platform_secret_ref"
+      ]
+    },
+    "policy_envelope": {
+      "required_fields": [
+        "sandbox_mode",
+        "approval_policy",
+        "allowed_paths",
+        "timeout_seconds"
+      ]
+    },
+    "capability_envelope": {
+      "required_fields": [
+        "can_edit_worktree",
+        "can_read_repo",
+        "can_use_network",
+        "can_access_provider_config"
+      ]
+    }
+  },
+  "report_contract": {
+    "artifact_kind": "supervisor_executor_report",
+    "schema_version": 1,
+    "required_fields": [
+      "request_id",
+      "run_id",
+      "backend_id",
+      "status",
+      "logs_ref",
+      "produced_artifacts",
+      "policy_decisions",
+      "error_class"
+    ],
+    "status_values": [
+      "ready",
+      "blocked",
+      "failed"
+    ],
+    "error_classes": [
+      "none",
+      "provider_config_missing",
+      "auth_unavailable",
+      "unsupported_backend",
+      "policy_denied",
+      "timeout",
+      "protocol_failure",
+      "executor_crash",
+      "unknown"
+    ],
+    "logs_ref": {
+      "raw_logs_are_local_only": true,
+      "viewer_projection_must_be_redacted": true
+    },
+    "produced_artifacts": {
+      "paths_must_be_repo_relative": true,
+      "canonical_mutations_require_supervisor_validation": true
+    }
+  },
+  "backend_contract": {
+    "default_backend_id": "codex",
+    "experimental_backends_require_explicit_operator_selection": true,
+    "unsupported_backends_fail_before_launch": true,
+    "fallback_must_not_broaden_permissions": true
+  },
+  "future_byok_boundary": {
+    "supported": true,
+    "supported_mechanism": "provider_config_ref",
+    "forbidden_in_gateway_artifacts": [
+      "api_key_value",
+      "raw_provider_secret",
+      "billing_account_details",
+      "web_auth_session"
+    ],
+    "out_of_scope": [
+      "SpecSpace login",
+      "BYOK form",
+      "OpenAI billing/account logic",
+      "Timeweb production wiring",
+      "real container runner"
+    ]
+  },
+  "non_overridable_invariants": [
+    "protocol_markers_required",
+    "sandbox_must_not_be_weakened_where_supported",
+    "approval_policy_must_not_be_weakened",
+    "canonical_validation_required",
+    "raw_prompt_text_must_not_be_published",
+    "secrets_must_not_be_persisted",
+    "adapter_success_is_not_supervisor_success"
+  ]
+}

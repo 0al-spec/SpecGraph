@@ -246,6 +246,33 @@ fields are the contract used by gate and validation logic.
 observed and parseable. It does not mean the run is acceptable. Acceptance still
 depends on deterministic post-run checks.
 
+## SpecGraph and Future SpecAgent Boundary
+
+### Responsibility Split
+
+This gateway is also the first explicit boundary between deterministic SpecGraph
+core responsibilities and future non-deterministic agent runtime
+responsibilities.
+
+SpecGraph owns canonical graph state, specification/proposal records,
+deterministic validation, search/indexing, structured reports, lifecycle state,
+supervisor planning state, and review gates.
+
+The executor adapter gateway owns only the launch-and-observe boundary:
+normalizing execution requests, invoking an external executor adapter,
+collecting structured reports, and classifying execution results before normal
+supervisor validation.
+
+A future dedicated **SpecAgent** runtime may eventually own provider adapters,
+sandbox runtime, agent identity, capability enforcement, BYOK execution, and
+tool policy. That extraction should not happen just because the name exists. It
+becomes justified only after real use cases create pressure: a second executor,
+direct SpecSpace runtime jobs, separate runtime deploy secrets, provider-specific
+release cadence, or external-model behavior leaking into SpecGraph core tests.
+
+Until then, `0056` keeps the boundary inside SpecGraph as a contract and
+anti-corruption layer.
+
 ## Candidate Policy Artifact
 
 Runtime implementation may introduce:
@@ -345,6 +372,33 @@ The adapter index should summarize:
 
 SpecSpace should consume these artifacts or their projection in existing viewer
 surfaces. It should not parse raw executor stdout/stderr.
+
+## Contract-Only Realization Slice
+
+The first bounded realization slice is intentionally smaller than a runnable
+executor backend. It introduces the contract surfaces that future BYOK/demo
+runners and alternate executor backends must satisfy:
+
+- `tools/supervisor_executor_adapter_policy.json`
+- `docs/supervisor_executor_adapter_gateway_contract.md`
+
+This slice defines the request and report boundary:
+
+- executor request contains workspace root, target reference, provider config
+  reference, explicit backend id, `policy_envelope`, and
+  `capability_envelope`;
+- executor report returns status, run id, backend id, logs reference, produced
+  artifacts, policy decisions, and normalized error class;
+- API keys, raw provider secrets, web auth sessions, billing/account details,
+  and raw prompts remain outside persisted artifacts;
+- BYOK is represented as an injected `provider_config_ref`, not as stored
+  credentials;
+- adapter success remains advisory until normal supervisor validation and gates
+  accept the result.
+
+This contract slice does not implement SpecSpace login, BYOK UI, Timeweb deploy,
+real Codex/Copilot/Claude/Gemini runner wiring, or Agent Passport enforcement.
+Those remain later runtime layers.
 
 ## Safety Rules
 
