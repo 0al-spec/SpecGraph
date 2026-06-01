@@ -13,6 +13,7 @@
     "schema_version": 1,
     "required_fields": [
       "request_id",
+      "backend_id",
       "workspace_root",
       "target_ref",
       "provider_config_ref",
@@ -34,6 +35,11 @@
         "operator_request",
         "smoke_fixture"
       ]
+    },
+    "backend_id": {
+      "description": "Explicit executor backend selector carried with the request. Omitted or unsupported backends must not be inferred from out-of-band state.",
+      "default": "codex",
+      "experimental_requires_explicit_operator_selection": true
     },
     "provider_config_ref": {
       "description": "Opaque runtime configuration reference. The gateway must not store provider secrets or raw BYOK values.",
@@ -66,6 +72,7 @@
     "required_fields": [
       "request_id",
       "run_id",
+      "backend_id",
       "status",
       "logs_ref",
       "produced_artifacts",

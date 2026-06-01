@@ -48,6 +48,33 @@
       ]
     },
     {
+      "id": "executor-adapter-gateway",
+      "description": "Supervisor executor adapter gateway contracts must stay aligned between repository docs and DocC.",
+      "docs": [
+        "docs/supervisor_executor_adapter_gateway_contract.md",
+        "docs/proposals/0056_supervisor_executor_adapter_gateway.md"
+      ],
+      "docc": [
+        "Sources/SpecGraph/Documentation.docc/ExecutorAdapterGateway.md"
+      ],
+      "required_terms": [
+        "executor adapter gateway",
+        "backend_id",
+        "provider_config_ref",
+        "policy_envelope",
+        "capability_envelope",
+        "SpecAgent"
+      ],
+      "docs_required_terms": [
+        "Responsibility Split",
+        "Contract-Only Realization Slice"
+      ],
+      "docc_required_terms": [
+        "Request Contract",
+        "Report Contract"
+      ]
+    },
+    {
       "id": "operator-source-map",
       "description": "The DocC root must keep pointing operators back to canonical repository documentation sources.",
       "docs": [

@@ -25976,6 +25976,7 @@ def test_supervisor_executor_adapter_policy_declares_request_report_contract() -
     assert request["artifact_kind"] == "supervisor_executor_request"
     for field in (
         "request_id",
+        "backend_id",
         "workspace_root",
         "target_ref",
         "provider_config_ref",
@@ -25983,9 +25984,12 @@ def test_supervisor_executor_adapter_policy_declares_request_report_contract() -
         "capability_envelope",
     ):
         assert field in request["required_fields"]
+    assert request["backend_id"]["default"] == "codex"
+    assert request["backend_id"]["experimental_requires_explicit_operator_selection"] is True
 
     report = policy["report_contract"]
     assert report["artifact_kind"] == "supervisor_executor_report"
+    assert "backend_id" in report["required_fields"]
     assert report["status_values"] == ["ready", "blocked", "failed"]
     assert "provider_config_missing" in report["error_classes"]
     assert "protocol_failure" in report["error_classes"]
@@ -26001,22 +26005,25 @@ def test_supervisor_executor_adapter_policy_declares_request_report_contract() -
     assert "adapter_success_is_not_supervisor_success" in invariants
 
 
-def test_proposal_0056_executor_adapter_contract_runtime_is_covered(
+def test_proposal_0056_executor_adapter_contract_keeps_runtime_followup_open(
     supervisor_module: object,
 ) -> None:
-    """Proposal 0056 is covered by the executor adapter request/report contract slice."""
+    """Proposal 0056 contract exists, but runtime gateway implementation remains open."""
     index = supervisor_module.build_proposal_runtime_index()
     by_id = {e["proposal_id"]: e for e in index["entries"]}
 
     assert "0056" in by_id, "Proposal 0056 missing from proposal_runtime_index"
     entry = by_id["0056"]
-    assert entry["runtime_realization"]["status"] == "implemented"
+    assert entry["runtime_realization"]["status"] != "implemented"
     assert entry["validation_closure"]["status"] == "covered"
     assert entry["observation_coverage"]["status"] == "covered"
-    assert entry["runtime_realization"]["missing_markers"] == []
+    assert {marker["pattern"] for marker in entry["runtime_realization"]["missing_markers"]} == {
+        "def build_supervisor_executor_adapter_index(",
+        '"--build-supervisor-executor-adapter-index"',
+    }
     assert entry["validation_closure"]["missing_markers"] == []
     assert entry["observation_coverage"]["missing_markers"] == []
-    assert entry["reflective_chain"]["next_gap"] == "none"
+    assert entry["reflective_chain"]["next_gap"] == "runtime_realization"
 
 
 def test_all_implemented_proposals_have_registry_entries() -> None:

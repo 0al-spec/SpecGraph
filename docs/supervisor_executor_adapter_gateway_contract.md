@@ -53,16 +53,24 @@ future extraction is justified only after real runtime use cases prove the
 boundary: for example a second executor backend, direct SpecSpace job execution,
 separate deploy secrets, or provider-dependent release cadence.
 
+This is a Contract-Only Realization Slice: it defines the boundary without
+implementing a runnable executor backend.
+
 ## Request Contract
 
 A bounded executor request must contain:
 
 - `request_id`: stable request identifier for correlation.
+- `backend_id`: explicit executor backend selector.
 - `workspace_root`: repo-relative or sandbox-root workspace reference.
 - `target_ref`: target spec, proposal, operator request, or smoke fixture.
 - `provider_config_ref`: opaque runtime provider configuration reference.
 - `policy_envelope`: sandbox, approval, allowed-path, and timeout constraints.
 - `capability_envelope`: declared backend capabilities for this run.
+
+`backend_id` must travel with the request so experimental or non-default
+executor choices are auditable. Future implementations must not infer backend
+selection from out-of-band process state.
 
 The gateway must not store API key values, raw provider secrets, billing account
 details, or web authentication session data. BYOK-style provider configuration
@@ -74,6 +82,7 @@ A normalized executor report must contain:
 
 - `request_id`: the request being answered.
 - `run_id`: concrete executor run identifier.
+- `backend_id`: executor backend that answered the request.
 - `status`: `ready`, `blocked`, or `failed`.
 - `logs_ref`: redacted/local-only log reference.
 - `produced_artifacts`: repo-relative artifacts produced by the run.

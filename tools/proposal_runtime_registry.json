@@ -2724,6 +2724,8 @@
     "posture": "bounded_runtime_followup",
     "runtime_surfaces": [
       "tools/supervisor_executor_adapter_policy.json",
+      "tools/supervisor.py",
+      "tests/test_supervisor.py",
       "docs/supervisor_executor_adapter_gateway_contract.md",
       "docs/proposals/0056_supervisor_executor_adapter_gateway.md"
     ],
@@ -2747,6 +2749,14 @@
       {
         "path": "docs/supervisor_executor_adapter_gateway_contract.md",
         "pattern": "## Report Contract"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def build_supervisor_executor_adapter_index("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "\"--build-supervisor-executor-adapter-index\""
       }
     ],
     "validation_markers": [
@@ -2756,7 +2766,7 @@
       },
       {
         "path": "tests/test_supervisor.py",
-        "pattern": "def test_proposal_0056_executor_adapter_contract_runtime_is_covered("
+        "pattern": "def test_proposal_0056_executor_adapter_contract_keeps_runtime_followup_open("
       }
     ],
     "observation_markers": [

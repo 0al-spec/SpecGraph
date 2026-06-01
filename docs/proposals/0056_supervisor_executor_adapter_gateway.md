@@ -248,6 +248,8 @@ depends on deterministic post-run checks.
 
 ## SpecGraph and Future SpecAgent Boundary
 
+### Responsibility Split
+
 This gateway is also the first explicit boundary between deterministic SpecGraph
 core responsibilities and future non-deterministic agent runtime
 responsibilities.
@@ -383,9 +385,10 @@ runners and alternate executor backends must satisfy:
 This slice defines the request and report boundary:
 
 - executor request contains workspace root, target reference, provider config
-  reference, policy envelope, and capability envelope;
-- executor report returns status, run id, logs reference, produced artifacts,
-  policy decisions, and normalized error class;
+  reference, explicit backend id, `policy_envelope`, and
+  `capability_envelope`;
+- executor report returns status, run id, backend id, logs reference, produced
+  artifacts, policy decisions, and normalized error class;
 - API keys, raw provider secrets, web auth sessions, billing/account details,
   and raw prompts remain outside persisted artifacts;
 - BYOK is represented as an injected `provider_config_ref`, not as stored
