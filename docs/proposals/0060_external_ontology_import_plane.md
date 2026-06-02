@@ -128,7 +128,7 @@ candidates, not as silent canonical mutations.
 
 - Redefining the Ontology package schema inside SpecGraph.
 - Migrating existing SpecGraph nodes into Ontology packages.
-- Letting `ontologyc` write `SPECS/nodes/*.yaml`.
+- Letting `ontologyc` write `specs/nodes/*.yaml`.
 - Letting prompt agents write canonical SpecGraph files.
 - Implementing `ontologyc` invocation in the supervisor.
 - Implementing prompt-agent execution or SpecAgent runtime.
@@ -218,7 +218,7 @@ bindings:
       namespace: agent
       version: 0.1.0
       concept_id: agent.passport
-    binding_authority: authored
+    authority_class: authored
 ```
 
 ### OntologyImportLock
@@ -230,7 +230,7 @@ review.
 Candidate path:
 
 ```text
-SPECS/imports/ontology.lock.yaml
+specs/imports/ontology.lock.yaml
 ```
 
 Candidate shape:
@@ -340,9 +340,9 @@ capabilities:
     - hypercode.ir
   write:
     - runs/ontology/*
-    - proposal_artifacts/*
+    - runs/proposals/*
   forbidden:
-    - SPECS/nodes/*
+    - specs/nodes/*
     - canonical_graph.write
     - secrets.read
 ```
@@ -364,7 +364,7 @@ authority class by viewer inference.
 ## Storage Boundary
 
 Canonical ontology packages should not live inside SpecGraph as ordinary
-`SPECS/nodes/*.yaml` records.
+`specs/nodes/*.yaml` records.
 
 Recommended storage roles:
 
@@ -471,7 +471,7 @@ Candidate future commands:
 Any runtime slice must preserve:
 
 - `canonical_mutations_allowed: false` for derived reports;
-- no automatic writes to `SPECS/nodes/*.yaml`;
+- no automatic writes to `specs/nodes/*.yaml`;
 - no automatic import lock update;
 - explicit proposal artifact emission for reviewable changes;
 - package source/version/digest in every package reference.
