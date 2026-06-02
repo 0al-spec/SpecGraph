@@ -14,6 +14,27 @@ It turns product intent into a structured, governed, and execution-ready graph t
 
 SpecGraph makes it possible to move from intent to implementation through specifications that remain understandable to humans, verifiable by machines, and traceable across the full software lifecycle.
 
+## Python Environment
+
+SpecGraph tooling requires Python 3.10 or newer. CI currently runs Python 3.10,
+and `pyproject.toml` declares `requires-python = ">=3.10"`.
+
+On macOS, `python3` may still point to the Xcode/system Python 3.9 runtime. In
+that case, pass `PYTHON` explicitly or create a local virtual environment:
+
+```bash
+python3.10 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -e '.[dev]'
+
+make test PYTHON="$PWD/.venv/bin/python"
+make test-supervisor PYTHON="$PWD/.venv/bin/python"
+```
+
+The Makefile runs `make check-python` before Python-backed targets and fails
+fast with a clear message when the selected interpreter is too old.
+
 ## Model Layers
 
 SpecGraph is built on four foundational layers:

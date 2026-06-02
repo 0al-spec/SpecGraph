@@ -1,6 +1,7 @@
 PYTHON ?= python3
 SUPERVISOR ?= tools/supervisor.py
 PYTEST ?= $(PYTHON) -m pytest
+CHECK_PYTHON ?= tools/check_python_version.py
 PRODUCT_WORKSPACE_PROJECT_ID ?=
 PRODUCT_WORKSPACE_DISPLAY_NAME ?=
 PRODUCT_WORKSPACE_ROOT ?=
@@ -9,6 +10,17 @@ IMPLEMENTATION_TARGET_SCOPE_KIND ?= active_subtree
 IMPLEMENTATION_TARGET_SPEC_IDS ?= SG-SPEC-0001
 IMPLEMENTATION_OPERATOR_INTENT ?= Build publishable implementation work surface for SpecSpace static artifact consumers.
 SUPERVISOR_RUN_PATH ?=
+
+PYTHON_TARGETS := viewer-surfaces dashboard backlog next-move spec-activity graph-diagnostics \
+	proposal-spec-trace proposal-tracking proposal-tracking-gate external-consumers external-handoffs \
+	metrics-delivery metrics-feedback metrics-source-promotion metric-signals metric-thresholds \
+	metric-packs metric-pack-drift metric-pack-adapters metric-pack-runs metric-pricing model-usage \
+	conversation-memory conversation-memory-map conversation-memory-pressure pre-spec-semantics \
+	implementation-delta implementation-work supervisor-evidence-packet supervisor-stalled-run-salvage \
+	factory-architecture swift-typed-tooling project-environment init-product-workspace review-feedback \
+	docc-sync publish-bundle test test-supervisor
+
+$(PYTHON_TARGETS): check-python
 
 .PHONY: help
 help:
@@ -48,10 +60,15 @@ help:
 		'  make project-environment      Refresh project environment governance profile JSON' \
 		'  make init-product-workspace PRODUCT_WORKSPACE_PROJECT_ID=<id> PRODUCT_WORKSPACE_ROOT=<path>' \
 		'  make review-feedback          Refresh review feedback index' \
+		'  make check-python             Verify selected Python runtime is supported' \
 		'  make docc-sync                Validate DocC mirrors against repository docs' \
 		'  make publish-bundle           Build static specs/ + runs/ publish bundle' \
 		'  make test                     Run full Python test suite quietly' \
 		'  make test-supervisor          Run supervisor tests quietly'
+
+.PHONY: check-python
+check-python:
+	@$(PYTHON) $(CHECK_PYTHON)
 
 .PHONY: viewer-surfaces
 viewer-surfaces:
