@@ -2828,6 +2828,7 @@
       "tools/ontology_import_policy.json",
       "runs/ontology_package_index.json",
       "runs/ontology_import_gap_index.json",
+      "runs/ontology_governance_evidence_index.json",
       "runs/ontology_binding_preview.json",
       "runs/ontology_prompt_invocation_index.json"
     ],

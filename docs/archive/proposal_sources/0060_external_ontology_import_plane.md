@@ -17,6 +17,9 @@ The motivating operator concerns are:
   Agent Passport constraints, bounded model policy, and typed outputs.
 - Ontology packages need a storage and lock model comparable in care to the
   SpecPM handoff/import work.
+- Ontology now has golden intent semantic expectations, a repeatability harness,
+  and a governance protocol; SpecGraph imports must preserve references to that
+  evidence instead of treating package digests alone as sufficient approval.
 
 The desired first step is a bridge proposal, not runtime implementation. It
 should define:
@@ -43,7 +46,8 @@ Successful adoption should make later work sequenced and reviewable:
 
 1. external ontology import plane;
 2. `ontologyc` adapter/report contract;
-3. prompt-agent invocation contract;
-4. Agent Passport capability profiles for prompt agents;
-5. Platform package/cache/deploy materialization;
-6. SpecSpace review surface for ontology proposals.
+3. ontology governance evidence and decision-record references;
+4. prompt-agent invocation contract;
+5. Agent Passport capability profiles for prompt agents;
+6. Platform package/cache/deploy materialization;
+7. SpecSpace review surface for ontology proposals.

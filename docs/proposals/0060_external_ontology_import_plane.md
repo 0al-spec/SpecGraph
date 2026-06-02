@@ -27,9 +27,18 @@ Source draft:
 External Ontology authority:
 
 - Ontology repository: <https://github.com/0al-spec/Ontology>
-- Local observed Ontology main: `402889c`
+- Latest accepted Ontology main anchor observed for this proposal: `f678fbf`
 - Current relevant tool contract: `ontologyc import-hypercode` consumes
   `hypercode.ir/v1` and emits a draft `DomainOntologyPackage`.
+- Current semantic-evidence anchors:
+  - ONT-021 Golden Intent Semantic Expectations define minimum semantic criteria
+    for stable induction inputs.
+  - ONT-022 Golden Intent Repeatability Harness adds
+    `ontologyc validate-golden-intent` and repeatability reports for candidate
+    `DomainOntologyPackage` artifacts.
+  - ONT-023 Ontology Governance Protocol defines the evidence and human-review
+    boundary for promoting generated packages or deltas into accepted ontology
+    versions.
 
 External Hypercode authority:
 
@@ -82,6 +91,7 @@ The correct boundary is:
 ```text
 Ontology / Hypercode / Prompt Agent
   -> typed draft or report artifact
+  -> compiler, repeatability, and governance evidence
   -> ontology import proposal
   -> SpecGraph proposal review
   -> accepted canonical update, if approved
@@ -99,6 +109,9 @@ Without an explicit external ontology import plane:
   prose instead of reviewable references.
 - Future `ontologyc` adapter work has no artifact contract.
 - Future prompt-agent work has no isolation, capability, or authority boundary.
+- Golden intent repeatability and ontology governance decisions may be separated
+  from import proposals, leaving reviewers unable to distinguish valid generated
+  drafts from accepted ontology versions.
 - Platform packaging has no stable target for `ontologyc`, prompt packs, or
   package cache materialization.
 - SpecSpace cannot safely display ontology import status or review actions.
@@ -118,6 +131,8 @@ candidates, not as silent canonical mutations.
   SpecGraph.
 - Treat compiler outputs and prompt-agent outputs as proposal artifacts until
   accepted by SpecGraph review.
+- Preserve references to repeatability reports and governance decisions when
+  external ontology packages claim accepted or trusted status.
 - Map ontology import and prompt output authority through existing
   `authority_class` semantics.
 - Establish adjacency and sequencing for the later `ontologyc` adapter, prompt
@@ -149,6 +164,8 @@ Hypercode source
   -> hypercode.ir/v1
   -> ontologyc import-hypercode
   -> DomainOntologyPackage draft
+  -> ontologyc check + golden-intent repeatability report
+  -> Ontology governance decision evidence
   -> OntologyImportProposal
   -> SpecGraph review
   -> accepted import lock or semantic binding change
@@ -181,7 +198,14 @@ package:
   source_ref: v0.1.0
   digest: sha256:...
   authority_class: imported
+  governance:
+    lifecycle_state: approved
+    decision_ref: ontology-governance://0al.agent/0.1.0/decision/...
+    repeatability_report_ref: reports/golden-intent-agent-0.1.0.yaml
 ```
+
+Governance fields are references to Ontology-owned evidence. They do not make
+SpecGraph the owner of the Ontology Governance Protocol or decision schema.
 
 ### ConceptRef
 
@@ -284,6 +308,10 @@ inputs:
     - 0al.agent@0.1.0
   compiler_reports:
     - runs/ontology/ontologyc-check-agent-0.1.0.json
+  repeatability_reports:
+    - runs/ontology/golden-intent-agent-0.1.0.yaml
+  governance_decisions:
+    - ontology-governance://0al.agent/0.1.0/decision/...
   prompt_invocations:
     - runs/ontology/prompt-invocation-agent-gap-0001.json
 proposed_changes:
@@ -405,6 +433,9 @@ multi-repository effort sequenced rather than amorphous.
   with isolated prompt-agent invocation.
 - Proposal 0056: executor adapter gateway as launch-and-observe boundary.
 - Proposal 0059: Agent Passport adoption for graph agents.
+- Ontology ONT-021, ONT-022, and ONT-023: golden semantic expectations,
+  repeatability reports, and governance protocol evidence that distinguish
+  generated ontology candidates from accepted ontology versions.
 
 ### Introduces
 
@@ -421,12 +452,29 @@ multi-repository effort sequenced rather than amorphous.
 
 1. `ontologyc` adapter/report contract for SpecGraph.
 2. Ontology package index and import gap derived surfaces.
-3. Prompt-agent invocation proposal with isolated context and typed outputs.
-4. Agent Passport capability profile for ontology prompt agents.
-5. Platform packaging for `ontologyc`, prompt packs, package cache, and Docker
+3. Ontology governance evidence index that can reference repeatability reports
+   and decision records without validating their future schema locally.
+4. Prompt-agent invocation proposal with isolated context and typed outputs.
+5. Agent Passport capability profile for ontology prompt agents.
+6. Platform packaging for `ontologyc`, prompt packs, package cache, and Docker
    materialization.
-6. SpecSpace review surface for ontology import proposals and semantic binding
+7. SpecSpace review surface for ontology import proposals and semantic binding
    review.
+
+### External Ontology Follow-Ups
+
+The Ontology repository is already staging the enforcement side of this
+boundary:
+
+1. ONT-024 Governance Decision YAML Schema defines the decision artifact shape.
+2. ONT-025 Governance Decision CLI Validation makes the decision artifact
+   deterministically checkable.
+3. ONT-026 Registry Publish Governance Gate connects governance validation to
+   package publication.
+
+SpecGraph should reference those artifacts after they are accepted, but this
+proposal must not pre-standardize their schema or block import-plane definition
+on in-flight Ontology work.
 
 ### Blocked Until Accepted
 
@@ -456,6 +504,7 @@ Candidate future artifacts:
 tools/ontology_import_policy.json
 runs/ontology_package_index.json
 runs/ontology_import_gap_index.json
+runs/ontology_governance_evidence_index.json
 runs/ontology_binding_preview.json
 runs/ontology_prompt_invocation_index.json
 ```
@@ -465,6 +514,7 @@ Candidate future commands:
 ```text
 --build-ontology-package-index
 --build-ontology-import-gap-index
+--build-ontology-governance-evidence-index
 --build-ontology-binding-preview
 ```
 
@@ -475,6 +525,8 @@ Any runtime slice must preserve:
 - no automatic import lock update;
 - explicit proposal artifact emission for reviewable changes;
 - package source/version/digest in every package reference.
+- repeatability and governance evidence as references to Ontology-owned
+  artifacts until ONT-024/025/026 make them enforceable.
 
 ## Acceptance Criteria
 
@@ -485,6 +537,8 @@ Any runtime slice must preserve:
   actions, not supervisor prompt replacement.
 - Maps imported packages and prompt/compiler outputs to existing
   authority-class semantics.
+- Accounts for golden intent expectations, repeatability reports, and ontology
+  governance decisions as evidence references rather than automatic trust.
 - Defines storage responsibility across Ontology, product workspaces, Platform,
   Docker images, and SpecGraph.
 - Names upstream anchors and downstream work sequence so follow-up PRs have

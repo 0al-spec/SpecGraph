@@ -774,7 +774,7 @@
     ],
     "motivating_concern": "SpecGraph needs a proposal-first lower semantic import plane for external Ontology packages, compiler outputs, and prompt-agent drafts",
     "normalized_title": "External Ontology Import Plane",
-    "bounded_scope": "Define graph-side ontology package references, concept references, semantic bindings, import locks, gaps, prompt-pack references, and proposal-only authority boundaries without implementing ontologyc invocation, prompt-agent execution, registry service, Docker packaging, SpecAgent runtime, or SpecSpace UI.",
+    "bounded_scope": "Define graph-side ontology package references, concept references, semantic bindings, import locks, gaps, prompt-pack references, governance evidence references, and proposal-only authority boundaries without implementing ontologyc invocation, prompt-agent execution, registry service, Docker packaging, SpecAgent runtime, or SpecSpace UI.",
     "required_provenance_links": [
       "source_draft_ref"
     ]
