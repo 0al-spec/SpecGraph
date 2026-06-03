@@ -98,20 +98,21 @@ Candidate shape:
 {
   "artifact_kind": "proposal_debt_report",
   "schema_version": 1,
-  "generated_at": "2026-06-04T00:00:00+00:00",
+  "generated_at": "2026-06-03T00:00:00+00:00",
+  "canonical_mutations_allowed": false,
+  "tracked_artifacts_written": false,
   "source_artifacts": [
     "runs/proposal_runtime_index.json",
     "runs/graph_backlog_projection.json"
   ],
   "summary": {
-    "proposal_count": 60,
-    "debt_count": 5,
+    "proposal_count": 1,
+    "debt_count": 1,
     "by_next_gap": {
-      "runtime_realization": 5
+      "runtime_realization": 1
     },
     "by_runtime_status": {
-      "partial": 1,
-      "untracked": 4
+      "partial": 1
     }
   },
   "entries": [
