@@ -18,8 +18,10 @@ The motivating operator concerns are:
 - Ontology packages need a storage and lock model comparable in care to the
   SpecPM handoff/import work.
 - Ontology now has golden intent semantic expectations, a repeatability harness,
-  and a governance protocol; SpecGraph imports must preserve references to that
-  evidence instead of treating package digests alone as sufficient approval.
+  governance protocol, governance decision validation, and trusted registry
+  publish gating; SpecGraph imports must preserve references to that evidence
+  instead of treating package digests or registry publication alone as
+  sufficient SpecGraph approval.
 
 The desired first step is a bridge proposal, not runtime implementation. It
 should define:
@@ -46,7 +48,8 @@ Successful adoption should make later work sequenced and reviewable:
 
 1. external ontology import plane;
 2. `ontologyc` adapter/report contract;
-3. ontology governance evidence and decision-record references;
+3. ontology governance evidence, decision-record, and trusted registry gate
+   references;
 4. prompt-agent invocation contract;
 5. Agent Passport capability profiles for prompt agents;
 6. Platform package/cache/deploy materialization;

@@ -27,7 +27,7 @@ Source draft:
 External Ontology authority:
 
 - Ontology repository: <https://github.com/0al-spec/Ontology>
-- Latest accepted Ontology main anchor observed for this proposal: `f678fbf`
+- Latest accepted Ontology main anchor observed for this proposal: `644a5de`
 - Current relevant tool contract: `ontologyc import-hypercode` consumes
   `hypercode.ir/v1` and emits a draft `DomainOntologyPackage`.
 - Current semantic-evidence anchors:
@@ -39,6 +39,12 @@ External Ontology authority:
   - ONT-023 Ontology Governance Protocol defines the evidence and human-review
     boundary for promoting generated packages or deltas into accepted ontology
     versions.
+  - ONT-024 Governance Decision YAML Schema defines the governance decision
+    artifact shape.
+  - ONT-025 `validate-governance-decision` makes governance decision artifacts
+    deterministically checkable.
+  - ONT-026 Trusted Registry Publish Governance Gate connects governance
+    validation to trusted package publication.
 
 External Hypercode authority:
 
@@ -433,8 +439,9 @@ multi-repository effort sequenced rather than amorphous.
   with isolated prompt-agent invocation.
 - Proposal 0056: executor adapter gateway as launch-and-observe boundary.
 - Proposal 0059: Agent Passport adoption for graph agents.
-- Ontology ONT-021, ONT-022, and ONT-023: golden semantic expectations,
-  repeatability reports, and governance protocol evidence that distinguish
+- Ontology ONT-021 through ONT-026: golden semantic expectations,
+  repeatability reports, governance protocol evidence, governance decision
+  schema/validation, and trusted registry publish gating that distinguish
   generated ontology candidates from accepted ontology versions.
 
 ### Introduces
@@ -461,9 +468,9 @@ multi-repository effort sequenced rather than amorphous.
 7. SpecSpace review surface for ontology import proposals and semantic binding
    review.
 
-### External Ontology Follow-Ups
+### External Ontology Anchors
 
-The Ontology repository is already staging the enforcement side of this
+The Ontology repository now has the first accepted enforcement side of this
 boundary:
 
 1. ONT-024 Governance Decision YAML Schema defines the decision artifact shape.
@@ -472,9 +479,9 @@ boundary:
 3. ONT-026 Registry Publish Governance Gate connects governance validation to
    package publication.
 
-SpecGraph should reference those artifacts after they are accepted, but this
-proposal must not pre-standardize their schema or block import-plane definition
-on in-flight Ontology work.
+SpecGraph should reference those artifacts as upstream governance evidence, but
+this proposal still must not copy their schema into SpecGraph or turn trusted
+Ontology registry publication into automatic SpecGraph canonical acceptance.
 
 ### Blocked Until Accepted
 
@@ -525,8 +532,8 @@ Any runtime slice must preserve:
 - no automatic import lock update;
 - explicit proposal artifact emission for reviewable changes;
 - package source/version/digest in every package reference.
-- repeatability and governance evidence as references to Ontology-owned
-  artifacts until ONT-024/025/026 make them enforceable.
+- repeatability, governance decision, validation, and trusted registry gate
+  evidence as references to Ontology-owned artifacts.
 
 ## Acceptance Criteria
 
@@ -537,8 +544,9 @@ Any runtime slice must preserve:
   actions, not supervisor prompt replacement.
 - Maps imported packages and prompt/compiler outputs to existing
   authority-class semantics.
-- Accounts for golden intent expectations, repeatability reports, and ontology
-  governance decisions as evidence references rather than automatic trust.
+- Accounts for golden intent expectations, repeatability reports, governance
+  decision validation, and trusted registry publish gates as evidence references
+  rather than automatic SpecGraph trust.
 - Defines storage responsibility across Ontology, product workspaces, Platform,
   Docker images, and SpecGraph.
 - Names upstream anchors and downstream work sequence so follow-up PRs have
