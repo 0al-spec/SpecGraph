@@ -11,6 +11,8 @@ IMPLEMENTATION_TARGET_SPEC_IDS ?= SG-SPEC-0001
 IMPLEMENTATION_OPERATOR_INTENT ?= Build publishable implementation work surface for SpecSpace static artifact consumers.
 SUPERVISOR_RUN_PATH ?=
 
+.DEFAULT_GOAL := help
+
 PYTHON_TARGETS := viewer-surfaces dashboard backlog next-move spec-activity graph-diagnostics \
 	proposal-spec-trace proposal-tracking proposal-tracking-gate external-consumers external-handoffs \
 	metrics-delivery metrics-feedback metrics-source-promotion metric-signals metric-thresholds \
@@ -18,7 +20,7 @@ PYTHON_TARGETS := viewer-surfaces dashboard backlog next-move spec-activity grap
 	conversation-memory conversation-memory-map conversation-memory-pressure pre-spec-semantics \
 	implementation-delta implementation-work supervisor-evidence-packet supervisor-stalled-run-salvage \
 	factory-architecture swift-typed-tooling project-environment init-product-workspace review-feedback \
-	docc-sync publish-bundle test test-supervisor
+	docc-sync publish-bundle
 
 $(PYTHON_TARGETS): check-python
 

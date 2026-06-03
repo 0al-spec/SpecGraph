@@ -9,10 +9,17 @@ MIN_VERSION = (3, 10)
 
 
 def version_tuple(version_info: object) -> tuple[int, int, int]:
+    if all(hasattr(version_info, name) for name in ("major", "minor", "micro")):
+        return (
+            int(version_info.major),
+            int(version_info.minor),
+            int(version_info.micro),
+        )
+
     return (
-        int(getattr(version_info, "major", version_info[0])),
-        int(getattr(version_info, "minor", version_info[1])),
-        int(getattr(version_info, "micro", version_info[2])),
+        int(version_info[0]),
+        int(version_info[1]),
+        int(version_info[2]),
     )
 
 
