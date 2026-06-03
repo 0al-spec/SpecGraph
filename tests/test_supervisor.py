@@ -14,6 +14,19 @@ from pathlib import Path
 
 import pytest
 
+LIVE_REPO_ROOT = Path(__file__).resolve().parents[1]
+_LIVE_TRACE_INDEX_CACHE: dict[str, object] | None = None
+_LIVE_EVIDENCE_PLANE_INDEX_CACHE: dict[str, object] | None = None
+
+
+def _is_live_repo_specs(module: object, specs: object) -> bool:
+    return (
+        getattr(module, "ROOT", None) == LIVE_REPO_ROOT
+        and isinstance(specs, list)
+        and len(specs) > 10
+        and all(hasattr(spec, "id") for spec in specs)
+    )
+
 
 @pytest.fixture()
 def supervisor_module() -> object:
@@ -46,6 +59,34 @@ def supervisor_module() -> object:
                     raise TypeError("file_obj must support write()")
 
         module.yaml = JsonYamlShim()
+    original_build_spec_trace_index = module.build_spec_trace_index
+    original_build_evidence_plane_index = module.build_evidence_plane_index
+    original_git_status_changed_files = module.git_status_changed_files
+
+    def cached_build_spec_trace_index(specs: object) -> dict[str, object]:
+        global _LIVE_TRACE_INDEX_CACHE
+        if (
+            module.git_status_changed_files is original_git_status_changed_files
+            and _is_live_repo_specs(module, specs)
+        ):
+            if _LIVE_TRACE_INDEX_CACHE is None:
+                _LIVE_TRACE_INDEX_CACHE = original_build_spec_trace_index(specs)
+            return _LIVE_TRACE_INDEX_CACHE
+        return original_build_spec_trace_index(specs)
+
+    def cached_build_evidence_plane_index(specs: object) -> dict[str, object]:
+        global _LIVE_EVIDENCE_PLANE_INDEX_CACHE
+        if (
+            module.git_status_changed_files is original_git_status_changed_files
+            and _is_live_repo_specs(module, specs)
+        ):
+            if _LIVE_EVIDENCE_PLANE_INDEX_CACHE is None:
+                _LIVE_EVIDENCE_PLANE_INDEX_CACHE = original_build_evidence_plane_index(specs)
+            return _LIVE_EVIDENCE_PLANE_INDEX_CACHE
+        return original_build_evidence_plane_index(specs)
+
+    module.build_spec_trace_index = cached_build_spec_trace_index
+    module.build_evidence_plane_index = cached_build_evidence_plane_index
     return module
 
 
