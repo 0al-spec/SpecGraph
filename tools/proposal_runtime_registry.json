@@ -2819,5 +2819,21 @@
     "runtime_markers": [],
     "validation_markers": [],
     "observation_markers": []
+  },
+  {
+    "proposal_id": "0060",
+    "posture": "bounded_runtime_followup",
+    "runtime_surfaces": [
+      "docs/proposals/0060_external_ontology_import_plane.md",
+      "tools/ontology_import_policy.json",
+      "runs/ontology_package_index.json",
+      "runs/ontology_import_gap_index.json",
+      "runs/ontology_governance_evidence_index.json",
+      "runs/ontology_binding_preview.json",
+      "runs/ontology_prompt_invocation_index.json"
+    ],
+    "runtime_markers": [],
+    "validation_markers": [],
+    "observation_markers": []
   }
 ]
