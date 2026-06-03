@@ -20,8 +20,10 @@ _LIVE_EVIDENCE_PLANE_INDEX_CACHE: dict[str, object] | None = None
 
 
 def _is_live_repo_specs(module: object, specs: object) -> bool:
+    root = getattr(module, "ROOT", None)
+    resolved_root = root.resolve() if isinstance(root, Path) else root
     return (
-        getattr(module, "ROOT", None) == LIVE_REPO_ROOT
+        resolved_root == LIVE_REPO_ROOT
         and isinstance(specs, list)
         and len(specs) > 10
         and all(hasattr(spec, "id") for spec in specs)
