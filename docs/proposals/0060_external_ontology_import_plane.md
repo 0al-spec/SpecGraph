@@ -7,8 +7,7 @@ Version: 0.1.0
 
 Draft proposal
 
-Decision scope: graph-side ontology import, binding, proposal, and adjacency
-contract.
+Decision scope: graph-side ontology import, binding, proposal, and adjacency contract.
 
 This document does not define the Ontology package schema, implement
 `ontologyc`, execute prompt agents, implement Agent Passport enforcement,
