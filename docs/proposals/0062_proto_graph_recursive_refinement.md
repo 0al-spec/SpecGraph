@@ -7,8 +7,7 @@ Version: 0.1.0
 
 Draft proposal
 
-Decision scope: ontology-backed proto-graph generation and recursive refinement
-protocol for turning raw product intent into reviewable graph seed material.
+Decision scope: ontology-backed proto-graph generation and recursive refinement protocol for turning raw product intent into reviewable graph seed material.
 
 This document does not implement a generator, mutate canonical specs, define a
 complete Ontology package schema, build SpecSpace UI, or execute implementation
