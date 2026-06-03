@@ -2835,5 +2835,19 @@
     "runtime_markers": [],
     "validation_markers": [],
     "observation_markers": []
+  },
+  {
+    "proposal_id": "0061",
+    "posture": "bounded_runtime_followup",
+    "runtime_surfaces": [
+      "docs/proposals/0061_proposal_debt_report_viewer_api.md",
+      "docs/archive/proposal_sources/0061_proposal_debt_report_viewer_api.md",
+      "tools/supervisor.py",
+      "tests/test_supervisor.py",
+      "runs/proposal_debt_report.json"
+    ],
+    "runtime_markers": [],
+    "validation_markers": [],
+    "observation_markers": []
   }
 ]

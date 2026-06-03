@@ -778,5 +778,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0061",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0061_proposal_debt_report_viewer_api.md"
+    ],
+    "motivating_concern": "SpecSpace needs a deterministic proposal materialization debt surface instead of reconstructing proposal debt from lower-level runtime and backlog artifacts",
+    "normalized_title": "Proposal Debt Report Viewer API",
+    "bounded_scope": "Define a viewer-facing proposal debt report derived from proposal_runtime_index and graph_backlog_projection, including summary counts, grouped status, missing markers, suggested actions, and safe read-only fields without implementing the report, SpecSpace UI, automatic proposal materialization, or priority changes.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]
