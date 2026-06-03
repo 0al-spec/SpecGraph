@@ -16,6 +16,27 @@ Use [AGENTS.md](AGENTS.md) for executable agent rules. Use this file for the hum
 
 Do not treat this as a batch-edit repository. The graph is the coordination system, so the graph should remain explainable after every PR.
 
+## Local Python Environment
+
+SpecGraph tooling requires Python 3.10 or newer. GitHub Actions installs Python
+3.10, while the local Makefile uses `PYTHON ?= python3` unless overridden.
+
+If `python3` resolves to the macOS/Xcode Python 3.9 runtime, use a Python 3.10+
+virtual environment or pass `PYTHON` explicitly:
+
+```bash
+python3.10 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -e '.[dev]'
+
+make test PYTHON="$PWD/.venv/bin/python"
+make proposal-tracking-gate PYTHON="$PWD/.venv/bin/python"
+```
+
+Use `make check-python PYTHON=/path/to/python` to verify the interpreter before
+running a broader validation command.
+
 ## Branches and PRs
 
 - Feature work must go through a dedicated branch and PR.
