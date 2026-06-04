@@ -791,5 +791,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0062",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0062_proto_graph_recursive_refinement.md"
+    ],
+    "motivating_concern": "SpecGraph should turn a small raw product intent into a fast ontology-backed proto-graph without confusing generated placeholders with mature canonical specs",
+    "normalized_title": "Proto-Graph Recursive Refinement",
+    "bounded_scope": "Define ontology-backed proto-graph seed generation, placeholder node lifecycle, recursive refinement queues, compute and attention budget semantics, and promotion boundaries without implementing the generator, invoking ontologyc, building SpecSpace UI, or auto-mutating canonical specs.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

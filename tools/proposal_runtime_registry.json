@@ -2849,5 +2849,21 @@
     "runtime_markers": [],
     "validation_markers": [],
     "observation_markers": []
+  },
+  {
+    "proposal_id": "0062",
+    "posture": "bounded_runtime_followup",
+    "runtime_surfaces": [
+      "docs/proposals/0062_proto_graph_recursive_refinement.md",
+      "docs/archive/proposal_sources/0062_proto_graph_recursive_refinement.md",
+      "tools/proto_graph_generation_policy.json",
+      "tools/supervisor.py",
+      "tests/test_supervisor.py",
+      "runs/proto_graph_preview.json",
+      "runs/proto_graph_refinement_queue.json"
+    ],
+    "runtime_markers": [],
+    "validation_markers": [],
+    "observation_markers": []
   }
 ]
