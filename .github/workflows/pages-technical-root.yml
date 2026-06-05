@@ -78,6 +78,7 @@ jobs:
         with:
           name: docc-build-pages
           path: ./.docc-build
+          include-hidden-files: true
 
   prepare-pages-artifact:
     name: Prepare case-sensitive redirect artifact
@@ -128,6 +129,7 @@ jobs:
         uses: actions/upload-pages-artifact@v5
         with:
           path: ./.docc-build
+          include-hidden-files: true
 
   deploy:
     if: |
