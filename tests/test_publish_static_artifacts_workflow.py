@@ -8,6 +8,12 @@ def _workflow_text(relative_path: str = "publish-static-artifacts.yml") -> str:
     return workflow_path.read_text(encoding="utf-8")
 
 
+def _step_block(workflow: str, step_name: str) -> str:
+    marker = f"      - name: {step_name}"
+    block = workflow.split(marker, 1)[1]
+    return block.split("\n      - name:", 1)[0]
+
+
 def test_ftps_deploy_requires_password_secret_without_private_key_fallback() -> None:
     workflow = _workflow_text()
 
@@ -108,9 +114,14 @@ def test_pages_technical_root_builds_docc_surface() -> None:
     assert "test -f ./.docc-build/documentation/specgraph/index.html" in workflow
     assert "test -f ./.docc-build/documentation/SpecGraph/index.html" in workflow
     assert "if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'" in workflow
-    assert "actions/upload-pages-artifact@v5" in workflow
-    assert "include-hidden-files: true" in workflow
-    assert "path: ./.docc-build" in workflow
+    archive_step = _step_block(workflow, "Archive DocC artifact")
+    assert "actions/upload-artifact@v7" in archive_step
+    assert "include-hidden-files: true" in archive_step
+    assert "path: ./.docc-build" in archive_step
+    pages_upload_step = _step_block(workflow, "Upload Pages artifact")
+    assert "actions/upload-pages-artifact@v5" in pages_upload_step
+    assert "include-hidden-files: true" in pages_upload_step
+    assert "path: ./.docc-build" in pages_upload_step
     assert "actions/deploy-pages@v5" in workflow
 
 
