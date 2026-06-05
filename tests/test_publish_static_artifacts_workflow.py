@@ -109,6 +109,7 @@ def test_pages_technical_root_builds_docc_surface() -> None:
     assert "test -f ./.docc-build/documentation/SpecGraph/index.html" in workflow
     assert "if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'" in workflow
     assert "actions/upload-pages-artifact@v5" in workflow
+    assert "include-hidden-files: true" in workflow
     assert "path: ./.docc-build" in workflow
     assert "actions/deploy-pages@v5" in workflow
 
