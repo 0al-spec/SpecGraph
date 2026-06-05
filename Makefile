@@ -20,7 +20,7 @@ PYTHON_TARGETS := viewer-surfaces dashboard backlog next-move spec-activity grap
 	conversation-memory conversation-memory-map conversation-memory-pressure pre-spec-semantics \
 	implementation-delta implementation-work supervisor-evidence-packet supervisor-stalled-run-salvage \
 	factory-architecture swift-typed-tooling project-environment init-product-workspace review-feedback \
-	docc-sync publish-bundle
+	docc-sync publish-bundle test test-supervisor
 
 $(PYTHON_TARGETS): check-python
 
