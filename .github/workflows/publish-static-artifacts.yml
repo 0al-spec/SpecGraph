@@ -38,16 +38,16 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Checkout Metrics sibling
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: 0al-spec/Metrics
           path: external/Metrics
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.10"
 
@@ -62,7 +62,7 @@ jobs:
         run: make publish-bundle
 
       - name: Upload bundle as GitHub Actions artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: specgraph-static-artifacts
           path: dist/specgraph-public
@@ -87,10 +87,10 @@ jobs:
 
     steps:
       - name: Checkout deploy tooling
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Download bundle artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: specgraph-static-artifacts
           path: dist/specgraph-public
@@ -184,7 +184,7 @@ jobs:
 
     steps:
       - name: Checkout landing page
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Validate deploy contract
         if: env.SFTP_HOST != ''
