@@ -20467,30 +20467,35 @@ def is_specspace_external_consumer(entry: dict[str, Any]) -> bool:
 
 def external_consumer_handoff_contract(entry: dict[str, Any]) -> dict[str, Any]:
     raw_contract = entry.get("handoff_contract", {})
-    contract = copy.deepcopy(raw_contract) if isinstance(raw_contract, dict) else {}
-    if not contract:
-        contract = {
-            "consumer_category": str(
-                external_consumer_handoff_policy_lookup(
-                    "specspace_handoff.default_consumer_category"
-                )
-            ).strip(),
-            "artifact_contract": copy.deepcopy(
-                external_consumer_handoff_policy_lookup(
-                    "specspace_handoff.default_artifact_contract"
-                )
-            ),
-            "expected_consumer_behavior": copy.deepcopy(
-                external_consumer_handoff_policy_lookup(
-                    "specspace_handoff.default_expected_consumer_behavior"
-                )
-            ),
-            "evidence_contract": copy.deepcopy(
-                external_consumer_handoff_policy_lookup(
-                    "specspace_handoff.default_evidence_contract"
-                )
-            ),
-        }
+    contract = {
+        "consumer_category": str(
+            external_consumer_handoff_policy_lookup("specspace_handoff.default_consumer_category")
+        ).strip(),
+        "artifact_contract": copy.deepcopy(
+            external_consumer_handoff_policy_lookup("specspace_handoff.default_artifact_contract")
+        ),
+        "expected_consumer_behavior": copy.deepcopy(
+            external_consumer_handoff_policy_lookup(
+                "specspace_handoff.default_expected_consumer_behavior"
+            )
+        ),
+        "evidence_contract": copy.deepcopy(
+            external_consumer_handoff_policy_lookup("specspace_handoff.default_evidence_contract")
+        ),
+    }
+    if not isinstance(raw_contract, dict):
+        return contract
+    for key, value in raw_contract.items():
+        if key in {"artifact_contract", "evidence_contract"} and isinstance(value, dict):
+            current = contract.get(key, {})
+            merged = copy.deepcopy(current) if isinstance(current, dict) else {}
+            merged.update(copy.deepcopy(value))
+            contract[key] = merged
+            continue
+        if key == "expected_consumer_behavior" and isinstance(value, list):
+            contract[key] = copy.deepcopy(value) if value else contract[key]
+            continue
+        contract[key] = copy.deepcopy(value)
     return contract
 
 
@@ -20511,7 +20516,12 @@ def specspace_handoff_contract_ready(entry: dict[str, Any]) -> bool:
     ).strip()
     status = str(artifact_contract.get("status", "")).strip()
     paths = [str(path).strip() for path in artifact_contract.get("paths", []) if str(path).strip()]
-    return bool(status == required_status and paths)
+    stable_fields = [
+        str(field).strip()
+        for field in artifact_contract.get("stable_fields", [])
+        if str(field).strip()
+    ]
+    return bool(status == required_status and paths and stable_fields)
 
 
 def derive_external_consumer_handoff_status(
@@ -20642,17 +20652,18 @@ def build_external_consumer_handoff_packets(
         specspace_contract_ready = (
             specspace_handoff_contract_ready(raw_entry) if specspace_consumer else False
         )
-        if (
+        specspace_contract_blocked = (
             specspace_consumer
             and handoff_status == "ready_for_handoff"
             and not specspace_contract_ready
-        ):
+        )
+        if specspace_contract_blocked:
             handoff_status = "blocked_by_bridge_gap"
         next_gap = derive_external_consumer_handoff_next_gap(
             handoff_status=handoff_status,
             overlay_entry=overlay_entry if isinstance(overlay_entry, dict) else {},
         )
-        if specspace_consumer and not specspace_contract_ready:
+        if specspace_contract_blocked:
             next_gap = (
                 str(
                     external_consumer_handoff_policy_lookup("specspace_handoff.blocked_next_gap")
@@ -20762,6 +20773,12 @@ def build_external_consumer_handoff_packets(
             "review_state": review_state,
             "next_gap": next_gap,
             "consumer_category": str(handoff_contract.get("consumer_category", "")).strip(),
+            "source_proposal_ids": [
+                str(proposal_id).strip()
+                for proposal_id in handoff_contract.get("source_proposal_ids", [])
+                if str(proposal_id).strip()
+            ],
+            "source_gap": str(handoff_contract.get("source_gap", "")).strip(),
             "policy_reference": external_consumer_handoff_policy_reference(),
             "artifact_contract": artifact_contract,
             "expected_consumer_behavior": expected_consumer_behavior,
