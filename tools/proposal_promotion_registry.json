@@ -882,5 +882,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0069",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0069_external_consumer_evidence_acceptance.md"
+    ],
+    "motivating_concern": "SpecGraph can emit a ready SpecSpace handoff, but downstream implementation and deploy evidence still lives outside the graph-visible external consumer loop",
+    "normalized_title": "External Consumer Evidence Acceptance",
+    "bounded_scope": "Add a tracked external-consumer evidence registry, derived evidence acceptance index, standalone builder command, docs, and tests for the SpecSpace agent surface visibility handoff without mutating SpecSpace, polling GitHub live, changing Platform deploy packaging, closing Agent Passport verification gaps, or making evidence acceptance canonical.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

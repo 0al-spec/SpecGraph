@@ -1,0 +1,46 @@
+{
+  "artifact_kind": "external_consumer_evidence_registry",
+  "version": 1,
+  "entries": [
+    {
+      "evidence_id": "specspace-agent-surface-visibility-20260606",
+      "handoff_id": "external_consumer_handoff::specspace",
+      "consumer_id": "specspace",
+      "consumer": "SpecSpace",
+      "implementation_ref": "https://github.com/0al-spec/SpecSpace/pull/225",
+      "consumed_artifacts": [
+        "runs/supervisor_executor_adapter_index.json",
+        "runs/agent_surface_index.json",
+        "runs/agent_verification_gap_index.json"
+      ],
+      "evidence": [
+        {
+          "kind": "pull_request",
+          "ref": "0al-spec/SpecSpace#225",
+          "status": "merged",
+          "url": "https://github.com/0al-spec/SpecSpace/pull/225"
+        },
+        {
+          "kind": "test",
+          "ref": "SpecSpace CI",
+          "status": "success",
+          "url": "https://github.com/0al-spec/SpecSpace/actions/runs/27067315048"
+        },
+        {
+          "kind": "smoke",
+          "ref": "SpecSpace Production Deploy Smoke",
+          "status": "success",
+          "url": "https://github.com/0al-spec/SpecSpace/actions/runs/27067315048"
+        },
+        {
+          "kind": "smoke",
+          "ref": "Platform Timeweb Publish 27067340747",
+          "status": "success",
+          "url": "https://github.com/0al-spec/Platform/actions/runs/27067340747"
+        }
+      ],
+      "result": "implemented",
+      "notes": "SpecSpace implemented the agent surface visibility panel against the stable SpecGraph handoff contract and Platform published the Timeweb deploy branch."
+    }
+  ]
+}

@@ -162,6 +162,7 @@ AGENT_PASSPORT_ADOPTION_POLICY_RELATIVE_PATH = "tools/agent_passport_adoption_po
 EXTERNAL_CONSUMER_REGISTRY_RELATIVE_PATH = "tools/external_consumers.json"
 EXTERNAL_CONSUMER_OVERLAY_POLICY_RELATIVE_PATH = "tools/external_consumer_overlay_policy.json"
 EXTERNAL_CONSUMER_HANDOFF_POLICY_RELATIVE_PATH = "tools/external_consumer_handoff_policy.json"
+EXTERNAL_CONSUMER_EVIDENCE_REGISTRY_RELATIVE_PATH = "tools/external_consumer_evidence_registry.json"
 SPECPM_EXPORT_POLICY_RELATIVE_PATH = "tools/specpm_export_policy.json"
 SPECPM_HANDOFF_POLICY_RELATIVE_PATH = "tools/specpm_handoff_policy.json"
 SPECPM_MATERIALIZATION_POLICY_RELATIVE_PATH = "tools/specpm_materialization_policy.json"
@@ -340,6 +341,17 @@ def external_consumer_overlay_policy_path() -> Path:
 
 def external_consumer_handoff_policy_path() -> Path:
     return TOOLS_DIR / "external_consumer_handoff_policy.json"
+
+
+def external_consumer_evidence_registry_relative_path() -> str:
+    return (
+        EXTERNAL_CONSUMER_EVIDENCE_REGISTRY_PATH_FROM_POLICY
+        or EXTERNAL_CONSUMER_EVIDENCE_REGISTRY_RELATIVE_PATH
+    )
+
+
+def external_consumer_evidence_registry_path() -> Path:
+    return ROOT / external_consumer_evidence_registry_relative_path()
 
 
 def specpm_export_policy_path() -> Path:
@@ -3209,6 +3221,31 @@ EXTERNAL_CONSUMER_HANDOFF_REVIEW_STATES = list(
 EXTERNAL_CONSUMER_HANDOFF_NAMED_FILTERS = list(
     external_consumer_handoff_policy_lookup("handoff_contract.named_filters")
 )
+EXTERNAL_CONSUMER_EVIDENCE_FILENAME = Path(
+    str(external_consumer_handoff_policy_lookup("evidence_acceptance.index_artifact"))
+).name
+EXTERNAL_CONSUMER_EVIDENCE_ARTIFACT_KIND = str(
+    external_consumer_handoff_policy_lookup("evidence_acceptance.artifact_kind")
+)
+EXTERNAL_CONSUMER_EVIDENCE_SCHEMA_VERSION = int(
+    external_consumer_handoff_policy_lookup("evidence_acceptance.schema_version")
+)
+EXTERNAL_CONSUMER_EVIDENCE_STATUSES = list(
+    external_consumer_handoff_policy_lookup("evidence_acceptance.acceptance_statuses")
+)
+EXTERNAL_CONSUMER_EVIDENCE_ACCEPTED_ITEM_STATUSES = {
+    str(status).strip()
+    for status in external_consumer_handoff_policy_lookup(
+        "evidence_acceptance.accepted_evidence_statuses"
+    )
+    if str(status).strip()
+}
+EXTERNAL_CONSUMER_EVIDENCE_NAMED_FILTERS = list(
+    external_consumer_handoff_policy_lookup("evidence_acceptance.named_filters")
+)
+EXTERNAL_CONSUMER_EVIDENCE_REGISTRY_PATH_FROM_POLICY = str(
+    external_consumer_handoff_policy_lookup("evidence_acceptance.registry_path")
+).strip()
 SPECPM_EXPORT_PREVIEW_FILENAME = Path(
     str(specpm_export_policy_lookup("repository_layout.preview_artifact"))
 ).name
@@ -17844,6 +17881,10 @@ def external_consumer_handoff_packets_path() -> Path:
     return RUNS_DIR / EXTERNAL_CONSUMER_HANDOFF_FILENAME
 
 
+def external_consumer_evidence_index_path() -> Path:
+    return RUNS_DIR / EXTERNAL_CONSUMER_EVIDENCE_FILENAME
+
+
 def specpm_export_preview_path() -> Path:
     return RUNS_DIR / SPECPM_EXPORT_PREVIEW_FILENAME
 
@@ -21849,6 +21890,399 @@ def write_external_consumer_handoff_packets(report: dict[str, Any]) -> Path:
     path = external_consumer_handoff_packets_path()
     with artifact_lock(path):
         atomic_write_json(path, report)
+    return path
+
+
+def external_consumer_evidence_policy_reference() -> dict[str, Any]:
+    return {
+        "artifact_path": EXTERNAL_CONSUMER_HANDOFF_POLICY_RELATIVE_PATH,
+        "artifact_sha256": EXTERNAL_CONSUMER_HANDOFF_POLICY_SHA256,
+        "registry_path": external_consumer_evidence_registry_relative_path(),
+        "schema_version": EXTERNAL_CONSUMER_EVIDENCE_SCHEMA_VERSION,
+        "accepted_evidence_statuses": sorted(EXTERNAL_CONSUMER_EVIDENCE_ACCEPTED_ITEM_STATUSES),
+    }
+
+
+def load_external_consumer_evidence_registry() -> dict[str, Any]:
+    data = load_json_object(external_consumer_evidence_registry_path())
+    if not isinstance(data, dict):
+        return {"artifact_kind": "external_consumer_evidence_registry", "version": 1, "entries": []}
+    entries = data.get("entries", [])
+    if not isinstance(entries, list):
+        data = {**data, "entries": []}
+    return data
+
+
+def external_consumer_evidence_entries(registry: dict[str, Any]) -> list[dict[str, Any]]:
+    return [copy.deepcopy(item) for item in registry.get("entries", []) if isinstance(item, dict)]
+
+
+def external_consumer_evidence_items_value(evidence_entry: dict[str, Any]) -> list[dict[str, Any]]:
+    evidence_value = evidence_entry.get("evidence", [])
+    if not isinstance(evidence_value, list):
+        return []
+    return [item for item in evidence_value if isinstance(item, dict)]
+
+
+def local_only_path_marker_present(payload: dict[str, Any]) -> bool:
+    dumped = json.dumps(payload, ensure_ascii=False, sort_keys=True)
+    return any(
+        marker in dumped
+        for marker in (
+            "/Users/",
+            "/home/",
+            "/root/",
+            "/private/tmp/",
+            "file://",
+            "C:/Users/",
+            "C:\\\\Users\\\\",
+        )
+    ) or bool(re.search(r"[A-Za-z]:\\\\Users\\\\", dumped))
+
+
+def normalize_external_consumer_evidence_ref(item: dict[str, Any]) -> dict[str, Any]:
+    normalized = {
+        "kind": str(item.get("kind", "")).strip(),
+        "ref": str(item.get("ref", "")).strip(),
+        "status": str(item.get("status", "")).strip(),
+    }
+    url = str(item.get("url", "")).strip()
+    if url:
+        normalized["url"] = url
+    return normalized
+
+
+def derive_external_consumer_evidence_acceptance(
+    *,
+    evidence_entry: dict[str, Any],
+    handoff_entry: dict[str, Any] | None,
+) -> dict[str, Any]:
+    result = str(evidence_entry.get("result", "")).strip()
+    evidence_items = [
+        normalize_external_consumer_evidence_ref(item)
+        for item in external_consumer_evidence_items_value(evidence_entry)
+    ]
+    diagnostics: list[dict[str, Any]] = []
+
+    if handoff_entry is None:
+        diagnostics.append(
+            {
+                "severity": "error",
+                "code": "handoff_missing",
+                "message": "No external consumer handoff packet matches this evidence entry.",
+            }
+        )
+        return {
+            "acceptance_status": "handoff_missing",
+            "next_gap": "restore_external_consumer_handoff",
+            "diagnostics": diagnostics,
+            "accepted_evidence_kinds": [],
+            "required_fields": [],
+            "missing_required_fields": [],
+            "invalid_evidence_kinds": [],
+            "invalid_evidence_statuses": [],
+            "missing_consumed_artifacts": [],
+            "privacy_violation": local_only_path_marker_present(evidence_entry),
+        }
+
+    evidence_contract = handoff_entry.get("evidence_contract", {})
+    if not isinstance(evidence_contract, dict):
+        evidence_contract = {}
+    required_fields = [
+        str(field).strip()
+        for field in evidence_contract.get("required_fields", [])
+        if str(field).strip()
+    ]
+    accepted_kinds = {
+        str(kind).strip()
+        for kind in evidence_contract.get("accepted_evidence_kinds", [])
+        if str(kind).strip()
+    }
+    result_values = {
+        str(value).strip()
+        for value in evidence_contract.get("result_values", [])
+        if str(value).strip()
+    }
+    missing_required_fields = [
+        field
+        for field in required_fields
+        if field not in evidence_entry or evidence_entry.get(field) in (None, "", [], {})
+    ]
+    invalid_evidence_kinds = sorted(
+        {
+            str(item.get("kind", "")).strip()
+            for item in evidence_items
+            if str(item.get("kind", "")).strip() not in accepted_kinds
+        }
+    )
+    invalid_evidence_statuses = sorted(
+        {
+            str(item.get("status", "")).strip()
+            for item in evidence_items
+            if str(item.get("status", "")).strip()
+            and str(item.get("status", "")).strip()
+            not in EXTERNAL_CONSUMER_EVIDENCE_ACCEPTED_ITEM_STATUSES
+        }
+    )
+    consumed_artifacts = {
+        str(path).strip()
+        for path in evidence_entry.get("consumed_artifacts", [])
+        if str(path).strip()
+    }
+    artifact_contract = handoff_entry.get("artifact_contract", {})
+    if not isinstance(artifact_contract, dict):
+        artifact_contract = {}
+    required_consumed_artifacts = [
+        str(path).strip() for path in artifact_contract.get("paths", []) if str(path).strip()
+    ]
+    missing_consumed_artifacts = sorted(
+        path for path in required_consumed_artifacts if path not in consumed_artifacts
+    )
+    privacy_violation = local_only_path_marker_present(evidence_entry)
+
+    if missing_required_fields:
+        diagnostics.append(
+            {
+                "severity": "error",
+                "code": "missing_required_fields",
+                "message": "Evidence entry is missing required contract field(s).",
+                "fields": missing_required_fields,
+            }
+        )
+    if result_values and result not in result_values:
+        diagnostics.append(
+            {
+                "severity": "error",
+                "code": "invalid_result",
+                "message": "Evidence result is not allowed by the handoff evidence contract.",
+                "result": result,
+            }
+        )
+    if invalid_evidence_kinds:
+        diagnostics.append(
+            {
+                "severity": "error",
+                "code": "invalid_evidence_kinds",
+                "message": (
+                    "Evidence item kind(s) are not allowed by the handoff evidence contract."
+                ),
+                "kinds": invalid_evidence_kinds,
+            }
+        )
+    if "evidence" in evidence_entry and not isinstance(evidence_entry.get("evidence"), list):
+        diagnostics.append(
+            {
+                "severity": "error",
+                "code": "invalid_evidence_shape",
+                "message": "Evidence field must be a list of evidence item objects.",
+            }
+        )
+    if invalid_evidence_statuses:
+        diagnostics.append(
+            {
+                "severity": "error",
+                "code": "invalid_evidence_statuses",
+                "message": "Evidence item status(es) do not prove successful downstream work.",
+                "statuses": invalid_evidence_statuses,
+            }
+        )
+    if missing_consumed_artifacts:
+        diagnostics.append(
+            {
+                "severity": "error",
+                "code": "missing_consumed_artifacts",
+                "message": "Evidence did not name every producer artifact required by the handoff.",
+                "paths": missing_consumed_artifacts,
+            }
+        )
+    if privacy_violation:
+        diagnostics.append(
+            {
+                "severity": "error",
+                "code": "privacy_violation",
+                "message": "Evidence entry contains a local-only path marker.",
+            }
+        )
+    handoff_status = str(handoff_entry.get("handoff_status", "")).strip()
+    stable_producer_contract = str(artifact_contract.get("status", "")).strip() == "stable"
+    handoff_status_acceptable = handoff_status == "ready_for_handoff" or (
+        handoff_status == "blocked_by_bridge_gap" and stable_producer_contract
+    )
+    if not handoff_status_acceptable:
+        diagnostics.append(
+            {
+                "severity": "error",
+                "code": "handoff_not_ready",
+                "message": (
+                    "Evidence cannot be accepted until the handoff is ready or "
+                    "has a stable producer contract."
+                ),
+                "handoff_status": handoff_status,
+            }
+        )
+
+    if diagnostics:
+        acceptance_status = "contract_mismatch"
+    elif result == "implemented":
+        acceptance_status = "accepted"
+    elif result == "blocked":
+        acceptance_status = "blocked"
+    elif result == "deferred":
+        acceptance_status = "deferred"
+    else:
+        acceptance_status = "contract_mismatch"
+
+    next_gap = str(
+        external_consumer_handoff_policy_lookup(
+            f"evidence_acceptance.next_gap_defaults.{acceptance_status}"
+        )
+    ).strip()
+    return {
+        "acceptance_status": acceptance_status,
+        "next_gap": next_gap or "none",
+        "diagnostics": diagnostics,
+        "accepted_evidence_kinds": sorted(accepted_kinds),
+        "required_fields": required_fields,
+        "missing_required_fields": missing_required_fields,
+        "invalid_evidence_kinds": invalid_evidence_kinds,
+        "invalid_evidence_statuses": invalid_evidence_statuses,
+        "missing_consumed_artifacts": missing_consumed_artifacts,
+        "privacy_violation": privacy_violation,
+    }
+
+
+def build_external_consumer_evidence_index(
+    handoff_packets: dict[str, Any],
+    evidence_registry: dict[str, Any],
+) -> dict[str, Any]:
+    handoffs_by_id = {
+        str(entry.get("handoff_id", "")).strip(): entry
+        for entry in handoff_packets.get("entries", [])
+        if isinstance(entry, dict) and str(entry.get("handoff_id", "")).strip()
+    }
+    entries: list[dict[str, Any]] = []
+    status_groups: dict[str, list[str]] = {}
+    result_groups: dict[str, list[str]] = {}
+    named_filters = {name: [] for name in EXTERNAL_CONSUMER_EVIDENCE_NAMED_FILTERS}
+    backlog_items: list[dict[str, Any]] = []
+    grouped_backlog: dict[str, list[str]] = {}
+
+    for raw_entry in external_consumer_evidence_entries(evidence_registry):
+        evidence_id = str(raw_entry.get("evidence_id", "")).strip()
+        handoff_id = str(raw_entry.get("handoff_id", "")).strip()
+        consumer_id = str(raw_entry.get("consumer_id", "")).strip()
+        result = str(raw_entry.get("result", "")).strip()
+        evidence_items = [
+            normalize_external_consumer_evidence_ref(item)
+            for item in external_consumer_evidence_items_value(raw_entry)
+        ]
+        handoff_entry = handoffs_by_id.get(handoff_id)
+        acceptance = derive_external_consumer_evidence_acceptance(
+            evidence_entry=raw_entry,
+            handoff_entry=handoff_entry,
+        )
+        acceptance_status = str(acceptance["acceptance_status"])
+        next_gap = str(acceptance["next_gap"])
+        entry = {
+            "evidence_id": evidence_id,
+            "handoff_id": handoff_id,
+            "consumer_id": consumer_id,
+            "consumer": str(raw_entry.get("consumer", "")).strip(),
+            "implementation_ref": str(raw_entry.get("implementation_ref", "")).strip(),
+            "result": result,
+            "acceptance_status": acceptance_status,
+            "next_gap": next_gap,
+            "consumed_artifacts": [
+                str(path).strip()
+                for path in raw_entry.get("consumed_artifacts", [])
+                if str(path).strip()
+            ],
+            "evidence": evidence_items,
+            "handoff_reference": (
+                {
+                    "handoff_status": str(handoff_entry.get("handoff_status", "")).strip(),
+                    "review_state": str(handoff_entry.get("review_state", "")).strip(),
+                    "source_proposal_ids": copy.deepcopy(
+                        handoff_entry.get("source_proposal_ids", [])
+                    ),
+                    "source_gap": str(handoff_entry.get("source_gap", "")).strip(),
+                    "artifact_contract": copy.deepcopy(handoff_entry.get("artifact_contract", {})),
+                }
+                if isinstance(handoff_entry, dict)
+                else {}
+            ),
+            "contract_evaluation": acceptance,
+            "notes": str(raw_entry.get("notes", "")).strip(),
+        }
+        entries.append(entry)
+        status_groups.setdefault(acceptance_status, []).append(evidence_id)
+        result_groups.setdefault(result or "unknown", []).append(evidence_id)
+        if acceptance_status in named_filters:
+            named_filters[acceptance_status].append(evidence_id)
+        if consumer_id == "specspace":
+            named_filters["specspace_consumer"].append(evidence_id)
+        if acceptance["privacy_violation"]:
+            named_filters["privacy_violation"].append(evidence_id)
+        if next_gap != "none":
+            backlog_items.append(
+                {
+                    "evidence_id": evidence_id,
+                    "handoff_id": handoff_id,
+                    "consumer_id": consumer_id,
+                    "acceptance_status": acceptance_status,
+                    "next_gap": next_gap,
+                }
+            )
+            grouped_backlog.setdefault(next_gap, []).append(evidence_id)
+
+    for bucket in (status_groups, result_groups, named_filters, grouped_backlog):
+        for key in list(bucket):
+            bucket[key] = sorted(set(bucket[key]))
+
+    return {
+        "artifact_kind": EXTERNAL_CONSUMER_EVIDENCE_ARTIFACT_KIND,
+        "schema_version": EXTERNAL_CONSUMER_EVIDENCE_SCHEMA_VERSION,
+        "generated_at": utc_now_iso(),
+        "policy_reference": external_consumer_evidence_policy_reference(),
+        "acceptance_statuses": list(EXTERNAL_CONSUMER_EVIDENCE_STATUSES),
+        "registry_reference": {
+            "artifact_path": external_consumer_evidence_registry_relative_path(),
+            "artifact_kind": str(evidence_registry.get("artifact_kind", "")).strip(),
+            "version": evidence_registry.get("version"),
+        },
+        "source_artifacts": {
+            "external_consumer_handoff_packets": {
+                "artifact_path": external_consumer_handoff_packets_path()
+                .relative_to(ROOT)
+                .as_posix(),
+                "generated_at": handoff_packets.get("generated_at"),
+            }
+        },
+        "entry_count": len(entries),
+        "accepted_count": sum(1 for entry in entries if entry["acceptance_status"] == "accepted"),
+        "entries": entries,
+        "viewer_projection": {
+            "acceptance_status": {
+                key: sorted(value) for key, value in sorted(status_groups.items())
+            },
+            "result": {key: sorted(value) for key, value in sorted(result_groups.items())},
+            "named_filters": {key: sorted(value) for key, value in sorted(named_filters.items())},
+        },
+        "evidence_backlog": {
+            "entry_count": len(backlog_items),
+            "items": backlog_items,
+            "grouped_by_next_gap": {
+                key: sorted(value) for key, value in sorted(grouped_backlog.items())
+            },
+        },
+    }
+
+
+def write_external_consumer_evidence_index(index: dict[str, Any]) -> Path:
+    RUNS_DIR.mkdir(parents=True, exist_ok=True)
+    path = external_consumer_evidence_index_path()
+    with artifact_lock(path):
+        atomic_write_json(path, index)
     return path
 
 
@@ -39779,6 +40213,7 @@ def main(
     build_external_consumer_index_mode: bool = False,
     build_external_consumer_overlay_mode: bool = False,
     build_external_consumer_handoffs_mode: bool = False,
+    build_external_consumer_evidence_mode: bool = False,
     build_specpm_export_preview_mode: bool = False,
     build_specpm_handoff_packets_mode: bool = False,
     materialize_specpm_export_bundles_mode: bool = False,
@@ -39887,6 +40322,7 @@ def main(
         "--build-external-consumer-index": build_external_consumer_index_mode,
         "--build-external-consumer-overlay": build_external_consumer_overlay_mode,
         "--build-external-consumer-handoffs": build_external_consumer_handoffs_mode,
+        "--build-external-consumer-evidence": build_external_consumer_evidence_mode,
         "--build-specpm-export-preview": build_specpm_export_preview_mode,
         "--build-specpm-handoff-packets": build_specpm_handoff_packets_mode,
         "--materialize-specpm-export-bundles": materialize_specpm_export_bundles_mode,
@@ -41622,6 +42058,73 @@ def main(
         )
         write_external_consumer_handoff_packets(handoff_packets)
         emit_supervisor_json(handoff_packets, output_mode=normalized_output_mode)
+        return 0
+
+    if build_external_consumer_evidence_mode:
+        if any(
+            (
+                dry_run,
+                auto_approve,
+                loop,
+                resolve_gate,
+                decision,
+                note,
+                target_spec,
+                split_proposal,
+                apply_split_proposal,
+                operator_note,
+                mutation_budget,
+                run_authority,
+                execution_profile,
+                child_model,
+                child_timeout_seconds,
+                verbose,
+                list_stale_runtime,
+                clean_stale_runtime,
+                observe_graph_health_mode,
+                operator_request_packet_path,
+                build_vocabulary_index_mode,
+                build_vocabulary_drift_report_mode,
+                build_pre_spec_semantics_index_mode,
+                build_intent_layer_overlay_mode,
+                build_graph_health_overlay_mode,
+                build_graph_health_trends_mode,
+                build_spec_trace_index_mode,
+                build_spec_trace_projection_mode,
+                build_evidence_plane_index_mode,
+                build_evidence_plane_overlay_mode,
+                build_proposal_lane_overlay_mode,
+                build_proposal_runtime_index_mode,
+                build_proposal_promotion_index_mode,
+            )
+        ):
+            print(
+                "--build-external-consumer-evidence must be used as a standalone command",
+                file=sys.stderr,
+            )
+            return 1
+        consumer_index = build_external_consumer_index()
+        write_external_consumer_index(consumer_index)
+        metric_index = build_metric_signal_index(specs)
+        write_metric_signal_index(metric_index)
+        overlay = build_external_consumer_overlay(consumer_index, metric_index)
+        write_external_consumer_overlay(overlay)
+        threshold_proposals = build_metric_threshold_proposals(metric_index)
+        write_metric_threshold_proposals(threshold_proposals)
+        handoff_packets = build_external_consumer_handoff_packets(
+            consumer_index,
+            overlay,
+            metric_index,
+            threshold_proposals,
+        )
+        write_external_consumer_handoff_packets(handoff_packets)
+        evidence_registry = load_external_consumer_evidence_registry()
+        evidence_index = build_external_consumer_evidence_index(
+            handoff_packets,
+            evidence_registry,
+        )
+        write_external_consumer_evidence_index(evidence_index)
+        emit_supervisor_json(evidence_index, output_mode=normalized_output_mode)
         return 0
 
     if build_specpm_export_preview_mode:
@@ -43864,6 +44367,14 @@ if __name__ == "__main__":
         ),
     )
     parser.add_argument(
+        "--build-external-consumer-evidence",
+        action="store_true",
+        help=(
+            "Build a derived external-consumer evidence index from accepted downstream "
+            "implementation evidence and current handoff packets"
+        ),
+    )
+    parser.add_argument(
         "--build-specpm-export-preview",
         action="store_true",
         help=(
@@ -44349,6 +44860,7 @@ if __name__ == "__main__":
             build_external_consumer_index_mode=args.build_external_consumer_index,
             build_external_consumer_overlay_mode=args.build_external_consumer_overlay,
             build_external_consumer_handoffs_mode=args.build_external_consumer_handoffs,
+            build_external_consumer_evidence_mode=args.build_external_consumer_evidence,
             build_specpm_export_preview_mode=args.build_specpm_export_preview,
             build_specpm_handoff_packets_mode=args.build_specpm_handoff_packets,
             materialize_specpm_export_bundles_mode=args.materialize_specpm_export_bundles,
