@@ -107,10 +107,10 @@
       "requires_passport": true,
       "launches_agents": true,
       "prepares_handoffs": true,
-      "passport_ref": "",
-      "verification_state": "V1_known_surface",
+      "passport_ref": "agent-passport://specgraph/supervisor-executor-adapter/0.1.0",
+      "verification_state": "V2_passport_referenced",
       "runtime_enforcement_state": "not_observed",
-      "notes": "Gateway surface launches nested executors; backend-specific passport refs are derived from the 0056 executor adapter index."
+      "notes": "Gateway surface launches nested executors; this declaration names the gateway authority separately from backend-specific passport refs derived from the 0056 executor adapter index. Verification and runtime enforcement remain report-only gaps."
     },
     {
       "surface_id": "specspace.operator_assistant",
@@ -125,11 +125,11 @@
       "requires_passport": true,
       "launches_agents": false,
       "prepares_handoffs": true,
-      "passport_ref": "",
-      "verification_state": "V1_known_surface",
+      "passport_ref": "agent-passport://specspace/operator-assistant/0.1.0",
+      "verification_state": "V2_passport_referenced",
       "runtime_enforcement_state": "not_observed",
       "consumer_id": "specspace",
-      "notes": "SpecSpace consumes derived surfaces and prepares operator handoffs; it is not mutated by this SpecGraph slice."
+      "notes": "SpecSpace consumes derived surfaces and prepares operator handoffs; this graph-side reference declares the required operator assistant identity without mutating SpecSpace or claiming verification."
     },
     {
       "surface_id": "product_workspace.implementation_agent",
@@ -142,11 +142,11 @@
       "requires_passport": true,
       "launches_agents": true,
       "prepares_handoffs": false,
-      "passport_ref": "",
-      "verification_state": "V1_known_surface",
+      "passport_ref": "agent-passport://product-workspace/implementation-agent/0.1.0",
+      "verification_state": "V2_passport_referenced",
       "runtime_enforcement_state": "not_observed",
       "future_surface": true,
-      "notes": "Future product workspace agent is listed so missing passport work is visible without claiming runtime availability."
+      "notes": "Future product workspace agent is listed so implementation-agent identity is declared before runtime availability; verification and enforcement remain future gaps."
     }
   ],
   "executor_adapter_binding": {

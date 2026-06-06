@@ -895,5 +895,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0070",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0070_agent_passport_reference_declaration.md"
+    ],
+    "motivating_concern": "Agent Passport derived surfaces report missing required passport references for graph-facing agent surfaces after the SpecSpace external consumer loop has accepted implementation evidence",
+    "normalized_title": "Agent Passport Reference Declaration",
+    "bounded_scope": "Declare graph-side Agent Passport references for the remaining required surfaces and prove missing_passport gaps disappear while preserving report-only verification_not_attempted and runtime_enforcement_unknown gaps, without fetching passport documents, verifying signatures, enforcing policies, mutating SpecSpace, or changing Platform deploy.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]
