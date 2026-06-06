@@ -245,7 +245,7 @@
         "source_gap": "agent_executor_passport_visibility_not_projected_to_specspace",
         "artifact_contract": {
           "producer": "SpecGraph",
-          "status": "draft",
+          "status": "stable",
           "paths": [
             "runs/supervisor_executor_adapter_index.json",
             "runs/agent_surface_index.json",

@@ -869,5 +869,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0068",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0068_specspace_handoff_contract_stabilization.md"
+    ],
+    "motivating_concern": "SpecSpace external consumer handoff remains blocked by a draft producer artifact contract even after 0056 and 0059 producer surfaces became available",
+    "normalized_title": "SpecSpace Handoff Contract Stabilization",
+    "bounded_scope": "Mark the SpecSpace producer artifact contract stable and add regression coverage that the existing external_consumer_handoff_packets plane emits a ready SpecSpace handoff when the bridge is ready, without implementing SpecSpace UI, evidence ingestion, Platform packaging, Agent Passport enforcement, or executor smoke benchmarks.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]
