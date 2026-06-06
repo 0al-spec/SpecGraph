@@ -17855,6 +17855,10 @@ def supervisor_executor_adapter_policy_reference() -> dict[str, Any]:
     }
 
 
+def is_executable_file(candidate: Path) -> bool:
+    return candidate.is_file() and os.access(candidate, os.X_OK)
+
+
 def command_availability_from_policy(
     *,
     executable_names: list[str],
@@ -17867,7 +17871,7 @@ def command_availability_from_policy(
     )
     if env_override_present:
         candidate = Path(str(os.environ.get(executable_env_var, "")).strip()).expanduser()
-        status = "available" if candidate.exists() and os.access(candidate, os.X_OK) else "missing"
+        status = "available" if is_executable_file(candidate) else "missing"
         return {
             "status": status,
             "resolution_source": "env_override",
@@ -17888,7 +17892,7 @@ def command_availability_from_policy(
 
     for raw_path in preferred_paths or []:
         candidate = Path(str(raw_path)).expanduser()
-        if candidate.exists() and os.access(candidate, os.X_OK):
+        if is_executable_file(candidate):
             return {
                 "status": "available",
                 "resolution_source": "preferred_path",
@@ -17899,7 +17903,7 @@ def command_availability_from_policy(
 
     if sibling_release_binary:
         candidate = (ROOT / sibling_release_binary).resolve()
-        if candidate.exists() and os.access(candidate, os.X_OK):
+        if is_executable_file(candidate):
             return {
                 "status": "available",
                 "resolution_source": "sibling_release_binary",
@@ -39243,6 +39247,7 @@ def main(
         "--build-project-environment": build_project_environment_mode,
         "--init-product-workspace": init_product_workspace_mode,
         "--build-review-feedback-index": build_review_feedback_index_mode,
+        "--build-supervisor-executor-adapter-index": build_supervisor_executor_adapter_index_mode,
         "--build-vocabulary-index": build_vocabulary_index_mode,
         "--build-vocabulary-drift-report": build_vocabulary_drift_report_mode,
         "--build-pre-spec-semantics-index": build_pre_spec_semantics_index_mode,

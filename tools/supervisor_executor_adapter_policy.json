@@ -48,9 +48,7 @@
         "codex"
       ],
       "executable_env_var": "SPECGRAPH_CODEX_EXECUTABLE",
-      "preferred_paths": [
-        "/opt/homebrew/bin/codex"
-      ],
+      "preferred_paths": [],
       "protocol_contract": "run_outcome_blocker",
       "auth_isolation": "isolated_child_home",
       "config_isolation": "isolated_child_home",

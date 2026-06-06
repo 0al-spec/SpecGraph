@@ -26301,7 +26301,9 @@ def test_supervisor_executor_adapter_policy_declares_request_report_contract() -
     assert policy["index_contract"]["artifact_kind"] == "supervisor_executor_adapter_index"
     assert "entries" in policy["index_contract"]["stable_fields"]
     assert "passport_diagnostics" in policy["index_contract"]["stable_fields"]
-    assert "codex" in {backend["backend_id"] for backend in policy["backend_registry"]}
+    backends_by_id = {backend["backend_id"]: backend for backend in policy["backend_registry"]}
+    assert "codex" in backends_by_id
+    assert backends_by_id["codex"]["preferred_paths"] == []
     assert policy["agent_passport_cli"]["tool_id"] == "agent-passport"
 
     request = policy["request_contract"]
@@ -26417,6 +26419,39 @@ def test_build_supervisor_executor_adapter_index_blocks_missing_codex(
     assert missing_codex.as_posix() not in json.dumps(index, sort_keys=True)
 
 
+def test_command_availability_rejects_directory_candidates(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    executable_directory = repo_fixture / "directory-with-exec-bit"
+    executable_directory.mkdir()
+    sibling_directory = repo_fixture / "sibling-cli"
+    sibling_directory.mkdir()
+    monkeypatch.setenv("SPECGRAPH_FAKE_EXECUTABLE", executable_directory.as_posix())
+    monkeypatch.setattr(supervisor_module.shutil, "which", lambda _name: None)
+
+    env_result = supervisor_module.command_availability_from_policy(
+        executable_names=["fake-cli"],
+        executable_env_var="SPECGRAPH_FAKE_EXECUTABLE",
+    )
+    preferred_result = supervisor_module.command_availability_from_policy(
+        executable_names=["fake-cli"],
+        preferred_paths=[executable_directory.as_posix()],
+    )
+    sibling_result = supervisor_module.command_availability_from_policy(
+        executable_names=["fake-cli"],
+        sibling_release_binary="sibling-cli",
+    )
+
+    assert env_result["status"] == "missing"
+    assert env_result["resolution_source"] == "env_override"
+    assert preferred_result["status"] == "missing"
+    assert preferred_result["resolution_source"] == "not_found"
+    assert sibling_result["status"] == "missing"
+    assert sibling_result["resolution_source"] == "not_found"
+
+
 def test_main_builds_supervisor_executor_adapter_index_as_standalone_command(
     supervisor_module: object,
     repo_fixture: Path,
@@ -26451,6 +26486,19 @@ def test_main_builds_supervisor_executor_adapter_index_as_standalone_command(
         )
     )
     assert artifact["entries"] == [{"backend_id": "codex"}]
+
+
+def test_main_build_supervisor_executor_adapter_index_rejects_other_standalone_modes(
+    supervisor_module: object,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    exit_code = supervisor_module.main(
+        build_supervisor_executor_adapter_index_mode=True,
+        build_specpm_export_preview_mode=True,
+    )
+
+    assert exit_code == 1
+    assert "standalone commands cannot be combined" in capsys.readouterr().err
 
 
 def test_proposal_0056_executor_adapter_index_runtime_is_covered(

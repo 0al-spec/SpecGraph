@@ -76,3 +76,17 @@ docs/supervisor_executor_adapter_gateway_contract.md
 The contract supports future BYOK execution through `provider_config_ref`, not
 through persisted API key values, raw provider secrets, web authentication
 sessions, billing account details, or raw prompts.
+
+## Runtime Index Artifact
+
+The first runtime realization surface is:
+
+```text
+runs/supervisor_executor_adapter_index.json
+```
+
+The index reports executor backend availability, declared capability support,
+Agent Passport CLI availability diagnostics, smoke state, canonical-trial
+eligibility, and safe next actions. It is read-only and report-only: it does not
+launch executors, perform passport enforcement, or publish absolute executable
+paths, raw prompts, raw logs, provider secrets, credentials, or API keys.
