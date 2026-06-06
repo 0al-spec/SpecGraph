@@ -18704,6 +18704,9 @@ def write_agent_verification_gap_index(index: dict[str, Any]) -> Path:
 
 def write_agent_passport_derived_surfaces(surfaces: dict[str, Any]) -> dict[str, Path]:
     return {
+        "supervisor_executor_adapter_index": write_supervisor_executor_adapter_index(
+            surfaces["supervisor_executor_adapter_index"]
+        ),
         "agent_surface_index": write_agent_surface_index(surfaces["agent_surface_index"]),
         "known_agent_passport_index": write_known_agent_passport_index(
             surfaces["known_agent_passport_index"]

@@ -26688,6 +26688,16 @@ def test_main_builds_agent_passport_derived_surfaces_as_standalone_command(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     surfaces = {
+        "supervisor_executor_adapter_index": {
+            "artifact_kind": supervisor_module.SUPERVISOR_EXECUTOR_ADAPTER_INDEX_ARTIFACT_KIND,
+            "schema_version": supervisor_module.SUPERVISOR_EXECUTOR_ADAPTER_INDEX_SCHEMA_VERSION,
+            "generated_at": "2026-06-06T00:00:00Z",
+            "summary": {"backend_count": 1, "agent_passport_cli_status": "available"},
+            "entries": [{"backend_id": "codex"}],
+            "capability_gaps": [],
+            "passport_diagnostics": [],
+            "viewer_projection": {"named_filters": {}},
+        },
         "agent_surface_index": {
             "artifact_kind": supervisor_module.AGENT_SURFACE_INDEX_ARTIFACT_KIND,
             "schema_version": supervisor_module.AGENT_SURFACE_INDEX_SCHEMA_VERSION,
@@ -26728,6 +26738,12 @@ def test_main_builds_agent_passport_derived_surfaces_as_standalone_command(
     assert report["summary"]["surface_count"] == 1
     assert report["summary"]["known_agent_count"] == 1
     assert report["summary"]["gap_count"] == 0
+    assert (
+        json.loads((repo_fixture / "runs" / "supervisor_executor_adapter_index.json").read_text())[
+            "artifact_kind"
+        ]
+        == "supervisor_executor_adapter_index"
+    )
     assert (
         json.loads((repo_fixture / "runs" / "agent_surface_index.json").read_text())[
             "artifact_kind"
