@@ -3369,5 +3369,67 @@
         "pattern": "declared Agent Passport references"
       }
     ]
+  },
+  {
+    "proposal_id": "0071",
+    "posture": "bounded_runtime_followup",
+    "runtime_surfaces": [
+      "docs/proposals/0071_agent_passport_report_only_verification.md",
+      "docs/archive/proposal_sources/0071_agent_passport_report_only_verification.md",
+      "tools/agent_passport_adoption_policy.json",
+      "tools/agent_passports/product-workspace-implementation-agent.passport.yaml",
+      "tools/agent_passports/specgraph-executor-codex-cli.passport.yaml",
+      "tools/agent_passports/specgraph-supervisor-executor-adapter.passport.yaml",
+      "tools/agent_passports/specgraph-supervisor.passport.yaml",
+      "tools/agent_passports/specspace-operator-assistant.passport.yaml",
+      "tools/supervisor.py",
+      "tests/test_supervisor.py",
+      "tools/README.md",
+      "runs/agent_passport_verification_report.json",
+      "runs/known_agent_passport_index.json",
+      "runs/agent_verification_gap_index.json"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/agent_passport_adoption_policy.json",
+        "pattern": "verification_report_artifact"
+      },
+      {
+        "path": "tools/agent_passport_adoption_policy.json",
+        "pattern": "passport_ref_registry"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def build_agent_passport_verification_report("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def run_agent_passport_validate("
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_agent_passport_verification_report_marks_valid_passports("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_agent_passport_verification_report_reports_unavailable_document("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_agent_verification_gap_index_uses_report_only_verification_results("
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0071_agent_passport_report_only_verification.md",
+        "pattern": "agent-passport validate --json"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "runs/agent_passport_verification_report.json"
+      }
+    ]
   }
 ]

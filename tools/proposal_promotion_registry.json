@@ -908,5 +908,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0071",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0071_agent_passport_report_only_verification.md"
+    ],
+    "motivating_concern": "Agent Passport references are declared for all graph-facing agent surfaces, but verification remains not_attempted even though the Agent Passport CLI is available",
+    "normalized_title": "Agent Passport Report-Only Verification",
+    "bounded_scope": "Map declared Agent Passport refs to repository-relative draft passport documents, run the Agent Passport CLI in report-only JSON validation mode, produce sanitized verification reports, and remove verification_not_attempted gaps while keeping signature trust-store verification, lifecycle checks, integrity verification, runtime enforcement, SpecSpace changes, and Platform deploy changes out of scope.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

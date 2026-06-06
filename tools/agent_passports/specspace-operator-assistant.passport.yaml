@@ -1,0 +1,47 @@
+passport:
+  apiVersion: "agent-passport.io/v1alpha1"
+  kind: "AgentPassport"
+  metadata:
+    name: "specspace-operator-assistant"
+    uid: "cf0a8f89-21d4-4213-afd0-78fe9a09920a"
+    version: "0.1.0"
+    issueDate: "2026-01-01T00:00:00Z"
+    expiryDate: "9999-12-31T23:59:59Z"
+    issuer: "0AL Internal Draft Authority"
+  spec:
+    entity:
+      type: "LLM-agent"
+      description: "Prepares operator-facing SpecSpace handoffs and displays safe derived graph surfaces."
+      owner: "0AL SpecSpace"
+      contact: "https://github.com/0al-spec/SpecSpace"
+    capabilities:
+      - name: "prepare_operator_handoff"
+        description: "Presents graph-derived agent visibility and prepares operator request packets."
+        signature:
+          parameters: []
+          returns:
+            type: "object"
+            description: "Operator-facing handoff state and evidence links."
+        accessControl:
+          - "specspace-operators"
+    resources:
+      cpu: "500m"
+      memory: "512Mi"
+      fileSystemAccess:
+        - path: "/app/artifacts"
+          permissions:
+            - "read"
+    securityPolicies:
+      capabilities: []
+      networkRestrictions:
+        denyList:
+          - "0.0.0.0/0"
+      executionEnvironment:
+        isolated: true
+        privileged: false
+  signature:
+    algorithm: "EdDSA"
+    value: "ZHJhZnQtc2lnbmF0dXJl"
+    publicKeyRef: "did:example:0al:specspace-operator-assistant:key1"
+    signedBy: "0ALInternalDraftSigner"
+

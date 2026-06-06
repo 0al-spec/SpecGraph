@@ -27146,6 +27146,204 @@ def test_build_agent_passport_indexes_handle_optional_and_observed_surfaces(
     assert ("specspace.operator_assistant", "runtime_enforcement_unknown") in gaps
 
 
+def test_build_agent_passport_verification_report_marks_valid_passports(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        supervisor_module,
+        "agent_passport_cli_availability",
+        lambda: {"status": "available", "resolution_source": "path", "path_persisted": False},
+    )
+    monkeypatch.setattr(supervisor_module, "agent_passport_cli_command", lambda: "agent-passport")
+    for registry_entry in supervisor_module.agent_passport_adoption_policy_lookup(
+        "passport_ref_registry"
+    ):
+        document_path = repo_fixture / str(registry_entry["document_path"])
+        document_path.parent.mkdir(parents=True, exist_ok=True)
+        document_path.write_text("passport: {}\n", encoding="utf-8")
+
+    def fake_validate(command: str, document_path: Path) -> dict[str, object]:
+        assert command == "agent-passport"
+        assert document_path.exists()
+        assert (
+            document_path.relative_to(supervisor_module.ROOT)
+            .as_posix()
+            .startswith("tools/agent_passports/")
+        )
+        return {
+            "verification_status": "valid",
+            "verification_state": "V3_schema_valid",
+            "valid": True,
+            "exit_code": 0,
+            "checks": [],
+            "diagnostics": [],
+        }
+
+    monkeypatch.setattr(supervisor_module, "run_agent_passport_validate", fake_validate)
+    executor_index = {
+        "artifact_kind": supervisor_module.SUPERVISOR_EXECUTOR_ADAPTER_INDEX_ARTIFACT_KIND,
+        "schema_version": supervisor_module.SUPERVISOR_EXECUTOR_ADAPTER_INDEX_SCHEMA_VERSION,
+        "summary": {"agent_passport_cli_status": "available"},
+        "entries": [
+            {
+                "backend_id": "codex",
+                "display_name": "Codex CLI",
+                "backend_status": "available",
+                "passport_ref": "agent-passport://executors/codex-cli/0.1.0",
+            }
+        ],
+        "passport_diagnostics": [],
+    }
+
+    surface_index = supervisor_module.build_agent_surface_index(executor_index)
+    preliminary_known_index = supervisor_module.build_known_agent_passport_index(surface_index)
+    report = supervisor_module.build_agent_passport_verification_report(preliminary_known_index)
+    known_index = supervisor_module.build_known_agent_passport_index(surface_index, report)
+    gap_index = supervisor_module.build_agent_verification_gap_index(
+        surface_index,
+        known_index,
+        executor_index,
+    )
+
+    assert report["artifact_kind"] == "agent_passport_verification_report"
+    assert report["summary"]["valid_count"] == 5
+    assert report["summary"]["invalid_count"] == 0
+    assert report["summary"]["unavailable_count"] == 0
+    assert report["summary"]["next_gap"] == "none"
+    assert known_index["summary"]["schema_valid_count"] == 5
+    assert known_index["summary"]["next_gap"] == "close_agent_verification_gaps"
+    assert gap_index["summary"]["verification_not_attempted_count"] == 0
+    assert gap_index["summary"]["runtime_enforcement_unknown_count"] == 5
+    dumped = json.dumps([report, known_index, gap_index], sort_keys=True)
+    assert repo_fixture.as_posix() not in dumped
+    assert "apiVersion" not in dumped
+
+
+def test_build_agent_passport_verification_report_reports_unavailable_document(
+    supervisor_module: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    original_lookup = supervisor_module.agent_passport_adoption_policy_lookup
+
+    def fake_lookup(policy_path: str) -> object:
+        if policy_path == "passport_ref_registry":
+            return [
+                {
+                    "passport_ref": "agent-passport://specgraph/missing-document/0.1.0",
+                    "document_path": "tools/agent_passports/missing-document.passport.yaml",
+                }
+            ]
+        return original_lookup(policy_path)
+
+    monkeypatch.setattr(
+        supervisor_module,
+        "agent_passport_adoption_policy_lookup",
+        fake_lookup,
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "agent_passport_cli_availability",
+        lambda: {"status": "available", "resolution_source": "path", "path_persisted": False},
+    )
+    monkeypatch.setattr(supervisor_module, "agent_passport_cli_command", lambda: "agent-passport")
+    monkeypatch.setattr(
+        supervisor_module,
+        "run_agent_passport_validate",
+        lambda _command, _document_path: pytest.fail("missing documents must not be validated"),
+    )
+    known_index = {
+        "entries": [
+            {
+                "agent_surface": "specgraph.missing_document",
+                "surface_type": "graph_runtime",
+                "passport_ref": "agent-passport://specgraph/missing-document/0.1.0",
+                "source_proposal_ids": ["0071"],
+            }
+        ]
+    }
+
+    report = supervisor_module.build_agent_passport_verification_report(known_index)
+
+    assert report["summary"]["unavailable_count"] == 1
+    entry = report["entries"][0]
+    assert entry["verification_status"] == "unavailable"
+    assert entry["document_path"] == "tools/agent_passports/missing-document.passport.yaml"
+    assert entry["diagnostics"][0]["code"] == "agent_passport_document_missing"
+
+
+def test_build_agent_verification_gap_index_uses_report_only_verification_results(
+    supervisor_module: object,
+) -> None:
+    surface_index = {
+        "surfaces": [
+            {
+                "surface_id": "specgraph.valid_agent",
+                "surface_type": "graph_runtime",
+                "requires_passport": True,
+                "passport_ref": "agent-passport://specgraph/valid/0.1.0",
+                "runtime_enforcement_state": "not_observed",
+                "source_proposal_ids": ["0071"],
+            },
+            {
+                "surface_id": "specgraph.invalid_agent",
+                "surface_type": "graph_runtime",
+                "requires_passport": True,
+                "passport_ref": "agent-passport://specgraph/invalid/0.1.0",
+                "runtime_enforcement_state": "not_observed",
+                "source_proposal_ids": ["0071"],
+            },
+            {
+                "surface_id": "specgraph.unavailable_agent",
+                "surface_type": "graph_runtime",
+                "requires_passport": True,
+                "passport_ref": "agent-passport://specgraph/unavailable/0.1.0",
+                "runtime_enforcement_state": "not_observed",
+                "source_proposal_ids": ["0071"],
+            },
+        ]
+    }
+    known_index = {
+        "entries": [
+            {
+                "agent_surface": "specgraph.valid_agent",
+                "requires_passport": True,
+                "passport_ref": "agent-passport://specgraph/valid/0.1.0",
+                "verification_result": {"verification_status": "valid"},
+            },
+            {
+                "agent_surface": "specgraph.invalid_agent",
+                "requires_passport": True,
+                "passport_ref": "agent-passport://specgraph/invalid/0.1.0",
+                "verification_result": {"verification_status": "invalid"},
+            },
+            {
+                "agent_surface": "specgraph.unavailable_agent",
+                "requires_passport": True,
+                "passport_ref": "agent-passport://specgraph/unavailable/0.1.0",
+                "verification_result": {"verification_status": "unavailable"},
+            },
+        ]
+    }
+
+    gap_index = supervisor_module.build_agent_verification_gap_index(
+        surface_index,
+        known_index,
+        {"summary": {"agent_passport_cli_status": "available"}},
+    )
+
+    gaps = {(gap["agent_surface"], gap["gap"]) for gap in gap_index["gaps"]}
+    assert ("specgraph.valid_agent", "verification_not_attempted") not in gaps
+    assert ("specgraph.valid_agent", "verification_failed") not in gaps
+    assert ("specgraph.invalid_agent", "verification_failed") in gaps
+    assert ("specgraph.unavailable_agent", "verification_unavailable") in gaps
+    assert gap_index["summary"]["verification_not_attempted_count"] == 0
+    assert gap_index["summary"]["verification_failed_count"] == 1
+    assert gap_index["summary"]["verification_unavailable_count"] == 1
+    assert gap_index["summary"]["runtime_enforcement_unknown_count"] == 3
+
+
 def test_main_builds_agent_passport_derived_surfaces_as_standalone_command(
     supervisor_module: object,
     repo_fixture: Path,
@@ -27180,6 +27378,14 @@ def test_main_builds_agent_passport_derived_surfaces_as_standalone_command(
             "agents": [{"agent_surface": "specgraph.supervisor"}],
             "viewer_projection": {"named_filters": {}},
         },
+        "agent_passport_verification_report": {
+            "artifact_kind": supervisor_module.AGENT_PASSPORT_VERIFICATION_REPORT_ARTIFACT_KIND,
+            "schema_version": supervisor_module.AGENT_PASSPORT_VERIFICATION_REPORT_SCHEMA_VERSION,
+            "generated_at": "2026-06-06T00:00:00Z",
+            "summary": {"valid_count": 1},
+            "entries": [{"agent_surface": "specgraph.supervisor"}],
+            "viewer_projection": {"named_filters": {}},
+        },
         "agent_verification_gap_index": {
             "artifact_kind": supervisor_module.AGENT_VERIFICATION_GAP_INDEX_ARTIFACT_KIND,
             "schema_version": supervisor_module.AGENT_VERIFICATION_GAP_INDEX_SCHEMA_VERSION,
@@ -27202,6 +27408,7 @@ def test_main_builds_agent_passport_derived_surfaces_as_standalone_command(
     assert report["artifact_kind"] == "agent_passport_derived_surfaces_build_report"
     assert report["summary"]["surface_count"] == 1
     assert report["summary"]["known_agent_count"] == 1
+    assert report["summary"]["passport_verification_valid_count"] == 1
     assert report["summary"]["gap_count"] == 0
     assert (
         json.loads((repo_fixture / "runs" / "supervisor_executor_adapter_index.json").read_text())[
@@ -27220,6 +27427,12 @@ def test_main_builds_agent_passport_derived_surfaces_as_standalone_command(
             "artifact_kind"
         ]
         == "known_agent_passport_index"
+    )
+    assert (
+        json.loads((repo_fixture / "runs" / "agent_passport_verification_report.json").read_text())[
+            "artifact_kind"
+        ]
+        == "agent_passport_verification_report"
     )
     assert (
         json.loads((repo_fixture / "runs" / "agent_verification_gap_index.json").read_text())[

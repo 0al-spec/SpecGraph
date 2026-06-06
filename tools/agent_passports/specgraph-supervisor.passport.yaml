@@ -1,0 +1,48 @@
+passport:
+  apiVersion: "agent-passport.io/v1alpha1"
+  kind: "AgentPassport"
+  metadata:
+    name: "specgraph-supervisor"
+    uid: "c7ffb65d-21a8-46f0-9df3-43d8f9d513a1"
+    version: "0.1.0"
+    issueDate: "2026-01-01T00:00:00Z"
+    expiryDate: "9999-12-31T23:59:59Z"
+    issuer: "0AL Internal Draft Authority"
+  spec:
+    entity:
+      type: "LLM-agent"
+      description: "Coordinates bounded SpecGraph refinement, proposal tracking, and derived artifact production."
+      owner: "0AL SpecGraph"
+      contact: "https://github.com/0al-spec/SpecGraph"
+    capabilities:
+      - name: "coordinate_specgraph_work"
+        description: "Plans bounded graph work and emits reviewable supervisor artifacts."
+        signature:
+          parameters: []
+          returns:
+            type: "object"
+            description: "Supervisor run summary and produced artifact references."
+        accessControl:
+          - "specgraph-operators"
+    resources:
+      cpu: "1000m"
+      memory: "2Gi"
+      fileSystemAccess:
+        - path: "/workspace/specgraph"
+          permissions:
+            - "read"
+            - "write"
+    securityPolicies:
+      capabilities: []
+      networkRestrictions:
+        denyList:
+          - "0.0.0.0/0"
+      executionEnvironment:
+        isolated: true
+        privileged: false
+  signature:
+    algorithm: "EdDSA"
+    value: "ZHJhZnQtc2lnbmF0dXJl"
+    publicKeyRef: "did:example:0al:specgraph-supervisor:key1"
+    signedBy: "0ALInternalDraftSigner"
+

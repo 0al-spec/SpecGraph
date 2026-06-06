@@ -1,0 +1,48 @@
+passport:
+  apiVersion: "agent-passport.io/v1alpha1"
+  kind: "AgentPassport"
+  metadata:
+    name: "specgraph-executor-codex-cli"
+    uid: "ad9e0c38-69d6-4be1-8ac6-fc2e3d909dc1"
+    version: "0.1.0"
+    issueDate: "2026-01-01T00:00:00Z"
+    expiryDate: "9999-12-31T23:59:59Z"
+    issuer: "0AL Internal Draft Authority"
+  spec:
+    entity:
+      type: "LLM-agent"
+      description: "Codex-style CLI executor backend launched through the SpecGraph supervisor executor adapter."
+      owner: "0AL SpecGraph"
+      contact: "https://github.com/0al-spec/SpecGraph"
+    capabilities:
+      - name: "execute_bounded_cli_task"
+        description: "Executes bounded CLI tasks in a prepared worktree with policy-scoped permissions."
+        signature:
+          parameters: []
+          returns:
+            type: "object"
+            description: "Executor report with produced artifacts and normalized errors."
+        accessControl:
+          - "specgraph-supervisor"
+    resources:
+      cpu: "2000m"
+      memory: "4Gi"
+      fileSystemAccess:
+        - path: "/workspace/task"
+          permissions:
+            - "read"
+            - "write"
+    securityPolicies:
+      capabilities: []
+      networkRestrictions:
+        denyList:
+          - "0.0.0.0/0"
+      executionEnvironment:
+        isolated: true
+        privileged: false
+  signature:
+    algorithm: "EdDSA"
+    value: "ZHJhZnQtc2lnbmF0dXJl"
+    publicKeyRef: "did:example:0al:specgraph-executor-codex-cli:key1"
+    signedBy: "0ALInternalDraftSigner"
+

@@ -115,7 +115,9 @@ Supervisor modes:
   diagnostics are visible without launching nested executors.
 - `--build-agent-passport-derived-surfaces`: build Agent Passport derived
   surfaces from `tools/agent_passport_adoption_policy.json` and the 0056
-  executor adapter index without verifying signatures or enforcing passports.
+  executor adapter index, including report-only Agent Passport CLI validation
+  when the CLI and repository-local passport documents are available. This does
+  not verify signatures or enforce passports.
 - `--build-specpm-export-preview`: build `runs/specpm_export_preview.json`
   from the tracked `SpecPM` consumer contract and
   `tools/specpm_export_registry.json`, producing a reviewable package preview
@@ -419,11 +421,15 @@ Key derived artifacts:
   index for graph-facing agents, including policy-declared surfaces and
   executor backends derived from the 0056 adapter index
 - `runs/known_agent_passport_index.json`: read-only graph-side Agent Passport
-  reference index that distinguishes known surfaces from referenced but
-  unverified passports
+  reference index that distinguishes known surfaces, referenced passports, and
+  report-only schema-valid passports
+- `runs/agent_passport_verification_report.json`: sanitized report-only Agent
+  Passport CLI validation output for repository-local draft passport documents,
+  grouped by verification status without storing raw passport material or local
+  machine paths
 - `runs/agent_verification_gap_index.json`: read-only verification gap index
-  for missing passports, unavailable validator tooling, unattempted
-  verification, and unknown runtime enforcement
+  for missing passports, unavailable validator tooling, invalid or unavailable
+  passport documents, unattempted verification, and unknown runtime enforcement
 - `runs/specpm_export_preview.json`: reviewable `SpecPM` package preview
   artifact, including manifest preview, boundary-source preview, export
   status, and next-gap backlog for future full package emission
@@ -598,6 +604,10 @@ Key derived artifacts:
   report-only Agent Passport adoption surfaces, declared Agent Passport
   references, and verification gap indexes consumed by SpecSpace-oriented
   handoff planning
+- `tools/agent_passports/*.passport.yaml`: repository-local draft Agent
+  Passport documents used by `make agent-passports` for report-only CLI
+  validation; these are schema/content validation fixtures, not trusted signed
+  runtime credentials
 - `tools/specpm_export_policy.json`: declarative contract for `SpecPM` export
   previews, including review status, next-gap defaults, and required export
   registry fields
