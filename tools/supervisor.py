@@ -18856,6 +18856,18 @@ def build_known_agent_passport_index(
             bucket[key] = sorted(set(bucket[key]))
 
     entries = sorted(entries, key=lambda item: item["agent_surface"])
+    verification_attempted_count = sum(
+        1
+        for entry in entries
+        if str((entry.get("verification_result", {}) or {}).get("verification_status", "")).strip()
+        in {"valid", "invalid"}
+    )
+    if named_filters["missing_passport"]:
+        next_gap = "declare_missing_agent_passports"
+    elif agent_passport_verification_report is None or verification_attempted_count == 0:
+        next_gap = "run_report_only_passport_verification"
+    else:
+        next_gap = "close_agent_verification_gaps"
     return {
         "artifact_kind": KNOWN_AGENT_PASSPORT_INDEX_ARTIFACT_KIND,
         "schema_version": KNOWN_AGENT_PASSPORT_INDEX_SCHEMA_VERSION,
@@ -18880,15 +18892,8 @@ def build_known_agent_passport_index(
             "missing_passport_count": len(named_filters["missing_passport"]),
             "verified_count": len(verification_state.get("V4_signature_verified", [])),
             "schema_valid_count": len(verification_state.get("V3_schema_valid", [])),
-            "next_gap": (
-                "declare_missing_agent_passports"
-                if named_filters["missing_passport"]
-                else (
-                    "run_report_only_passport_verification"
-                    if agent_passport_verification_report is None
-                    else "close_agent_verification_gaps"
-                )
-            ),
+            "verification_attempted_count": verification_attempted_count,
+            "next_gap": next_gap,
         },
         "entries": entries,
         "agents": copy.deepcopy(entries),

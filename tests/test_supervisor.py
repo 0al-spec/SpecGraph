@@ -27284,6 +27284,46 @@ def test_run_agent_passport_validate_uses_relative_paths_and_accepts_json_object
     assert repo_fixture.as_posix() not in json.dumps(result, sort_keys=True)
 
 
+def test_build_known_agent_passport_index_keeps_verification_pending_without_attempts(
+    supervisor_module: object,
+) -> None:
+    surface_index = {
+        "surfaces": [
+            {
+                "surface_id": "specgraph.supervisor",
+                "surface_type": "graph_runtime",
+                "requires_passport": True,
+                "passport_ref": "agent-passport://specgraph/supervisor/0.1.0",
+                "verification_state": "V2_passport_referenced",
+                "runtime_enforcement_state": "not_observed",
+                "source_proposal_ids": ["0071"],
+                "source": "policy",
+            }
+        ]
+    }
+    report = {
+        "entries": [
+            {
+                "agent_surface": "specgraph.supervisor",
+                "passport_ref": "agent-passport://specgraph/supervisor/0.1.0",
+                "document_path": "tools/agent_passports/specgraph-supervisor.passport.yaml",
+                "verification_status": "tool_unavailable",
+                "verification_state": "V2_passport_referenced",
+                "valid": False,
+                "tool_status": "missing",
+                "checks": [],
+                "diagnostics": [],
+            }
+        ]
+    }
+
+    known_index = supervisor_module.build_known_agent_passport_index(surface_index, report)
+
+    assert known_index["summary"]["schema_valid_count"] == 0
+    assert known_index["summary"]["verification_attempted_count"] == 0
+    assert known_index["summary"]["next_gap"] == "run_report_only_passport_verification"
+
+
 def test_build_agent_passport_verification_report_reports_unavailable_document(
     supervisor_module: object,
     monkeypatch: pytest.MonkeyPatch,
