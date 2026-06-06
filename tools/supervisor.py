@@ -18351,7 +18351,7 @@ def build_agent_surface_index(
             named_filters["requires_passport"].append(surface_id)
         if surface.get("passport_ref"):
             named_filters["passport_referenced"].append(surface_id)
-        else:
+        if surface.get("requires_passport") and not surface.get("passport_ref"):
             named_filters["missing_passport"].append(surface_id)
         if surface_type == "executor_backend":
             named_filters["executor_backend"].append(surface_id)
@@ -18366,6 +18366,16 @@ def build_agent_surface_index(
 
     passport_referenced_count = sum(1 for surface in surfaces if surface.get("passport_ref"))
     requires_passport_count = sum(1 for surface in surfaces if surface.get("requires_passport"))
+    required_passport_referenced_count = sum(
+        1
+        for surface in surfaces
+        if surface.get("requires_passport") and surface.get("passport_ref")
+    )
+    missing_passport_count = sum(
+        1
+        for surface in surfaces
+        if surface.get("requires_passport") and not surface.get("passport_ref")
+    )
     return {
         "artifact_kind": AGENT_SURFACE_INDEX_ARTIFACT_KIND,
         "schema_version": AGENT_SURFACE_INDEX_SCHEMA_VERSION,
@@ -18380,7 +18390,8 @@ def build_agent_surface_index(
             "surface_count": len(surfaces),
             "requires_passport_count": requires_passport_count,
             "passport_referenced_count": passport_referenced_count,
-            "missing_passport_count": requires_passport_count - passport_referenced_count,
+            "required_passport_referenced_count": required_passport_referenced_count,
+            "missing_passport_count": missing_passport_count,
             "executor_backend_surface_count": len(by_surface_type.get("executor_backend", [])),
             "agent_passport_cli_status": str(
                 supervisor_executor_adapter_index.get("summary", {}).get(
@@ -18389,7 +18400,7 @@ def build_agent_surface_index(
             ).strip(),
             "next_gap": (
                 "close_agent_verification_gaps"
-                if requires_passport_count != passport_referenced_count
+                if missing_passport_count
                 else "run_report_only_passport_verification"
             ),
         },
@@ -18446,7 +18457,7 @@ def build_known_agent_passport_index(agent_surface_index: dict[str, Any]) -> dic
         verification_state.setdefault(state, []).append(surface_id)
         if passport_ref:
             named_filters["passport_referenced"].append(surface_id)
-        else:
+        if entry["requires_passport"] and not passport_ref:
             named_filters["missing_passport"].append(surface_id)
         if entry["surface_type"] == "executor_backend":
             named_filters["executor_backend"].append(surface_id)
@@ -18580,7 +18591,10 @@ def build_agent_verification_gap_index(
                         source_artifacts=source_artifacts,
                     )
                 )
-        if known.get("requires_passport"):
+        if (
+            known.get("requires_passport")
+            and str(surface.get("runtime_enforcement_state", "")).strip() != "observed"
+        ):
             gaps.append(
                 agent_verification_gap_record(
                     surface=surface,

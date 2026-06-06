@@ -26603,6 +26603,84 @@ def test_build_agent_passport_indexes_consume_executor_adapter_diagnostics(
     assert repo_fixture.as_posix() not in json.dumps(gap_index, sort_keys=True)
 
 
+def test_build_agent_passport_indexes_handle_optional_and_observed_surfaces(
+    supervisor_module: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    original_lookup = supervisor_module.agent_passport_adoption_policy_lookup
+
+    def fake_lookup(policy_path: str) -> object:
+        value = original_lookup(policy_path)
+        if policy_path == "agent_surfaces":
+            surfaces = list(value)
+            surfaces.append(
+                {
+                    "surface_id": "specgraph.optional_observer",
+                    "title": "Optional Observer",
+                    "surface_type": "diagnostic_observer",
+                    "source": "policy",
+                    "requires_passport": False,
+                    "launches_agents": False,
+                    "prepares_handoffs": False,
+                    "passport_ref": "agent-passport://specgraph/optional-observer/0.1.0",
+                    "verification_state": "V2_passport_referenced",
+                    "runtime_enforcement_state": "not_observed",
+                }
+            )
+            surfaces.append(
+                {
+                    "surface_id": "specgraph.observed_runtime",
+                    "title": "Observed Runtime",
+                    "surface_type": "graph_runtime",
+                    "source": "policy",
+                    "requires_passport": True,
+                    "launches_agents": False,
+                    "prepares_handoffs": False,
+                    "passport_ref": "agent-passport://specgraph/observed-runtime/0.1.0",
+                    "verification_state": "V2_passport_referenced",
+                    "runtime_enforcement_state": "observed",
+                }
+            )
+            return surfaces
+        return value
+
+    monkeypatch.setattr(
+        supervisor_module,
+        "agent_passport_adoption_policy_lookup",
+        fake_lookup,
+    )
+    executor_index = {
+        "artifact_kind": supervisor_module.SUPERVISOR_EXECUTOR_ADAPTER_INDEX_ARTIFACT_KIND,
+        "schema_version": supervisor_module.SUPERVISOR_EXECUTOR_ADAPTER_INDEX_SCHEMA_VERSION,
+        "summary": {"agent_passport_cli_status": "available"},
+        "entries": [],
+        "passport_diagnostics": [],
+    }
+
+    surface_index = supervisor_module.build_agent_surface_index(executor_index)
+    known_index = supervisor_module.build_known_agent_passport_index(surface_index)
+    gap_index = supervisor_module.build_agent_verification_gap_index(
+        surface_index,
+        known_index,
+        executor_index,
+    )
+
+    assert surface_index["summary"]["passport_referenced_count"] == 3
+    assert surface_index["summary"]["required_passport_referenced_count"] == 2
+    assert surface_index["summary"]["missing_passport_count"] == 3
+    assert (
+        "specgraph.optional_observer"
+        not in (surface_index["viewer_projection"]["named_filters"]["missing_passport"])
+    )
+    assert (
+        "specgraph.optional_observer"
+        not in (known_index["viewer_projection"]["named_filters"]["missing_passport"])
+    )
+    gaps = {(gap["agent_surface"], gap["gap"]) for gap in gap_index["gaps"]}
+    assert ("specgraph.observed_runtime", "runtime_enforcement_unknown") not in gaps
+    assert ("specgraph.observed_runtime", "verification_not_attempted") in gaps
+
+
 def test_main_builds_agent_passport_derived_surfaces_as_standalone_command(
     supervisor_module: object,
     repo_fixture: Path,
