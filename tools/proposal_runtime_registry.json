@@ -2726,6 +2726,9 @@
       "tools/supervisor_executor_adapter_policy.json",
       "tools/supervisor.py",
       "tests/test_supervisor.py",
+      "Makefile",
+      "tools/README.md",
+      "runs/supervisor_executor_adapter_index.json",
       "docs/supervisor_executor_adapter_gateway_contract.md",
       "docs/proposals/0056_supervisor_executor_adapter_gateway.md"
     ],
@@ -2757,6 +2760,18 @@
       {
         "path": "tools/supervisor.py",
         "pattern": "\"--build-supervisor-executor-adapter-index\""
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def supervisor_executor_adapter_passport_diagnostic("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def write_supervisor_executor_adapter_index("
+      },
+      {
+        "path": "Makefile",
+        "pattern": "executor-adapters:"
       }
     ],
     "validation_markers": [
@@ -2766,7 +2781,19 @@
       },
       {
         "path": "tests/test_supervisor.py",
-        "pattern": "def test_proposal_0056_executor_adapter_contract_keeps_runtime_followup_open("
+        "pattern": "def test_build_supervisor_executor_adapter_index_reports_codex_and_passport_gap("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_supervisor_executor_adapter_index_blocks_missing_codex("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_main_builds_supervisor_executor_adapter_index_as_standalone_command("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_proposal_0056_executor_adapter_index_runtime_is_covered("
       }
     ],
     "observation_markers": [
@@ -2776,7 +2803,15 @@
       },
       {
         "path": "docs/proposals/0056_supervisor_executor_adapter_gateway.md",
-        "pattern": "## Contract-Only Realization Slice"
+        "pattern": "## Runtime Index Realization Slice"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "runs/supervisor_executor_adapter_index.json"
+      },
+      {
+        "path": "Makefile",
+        "pattern": "make executor-adapters"
       }
     ]
   },
@@ -2999,6 +3034,72 @@
       {
         "path": "tools/README.md",
         "pattern": "runs/external_consumer_handoff_packets.json"
+      }
+    ]
+  },
+  {
+    "proposal_id": "0066",
+    "posture": "bounded_runtime_followup",
+    "runtime_surfaces": [
+      "docs/proposals/0066_supervisor_executor_adapter_index_runtime.md",
+      "docs/archive/proposal_sources/0066_supervisor_executor_adapter_index_runtime.md",
+      "tools/supervisor_executor_adapter_policy.json",
+      "tools/supervisor.py",
+      "tests/test_supervisor.py",
+      "Makefile",
+      "tools/README.md",
+      "docs/supervisor_executor_adapter_gateway_contract.md",
+      "docs/proposals/0056_supervisor_executor_adapter_gateway.md",
+      "runs/supervisor_executor_adapter_index.json"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def build_supervisor_executor_adapter_index("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "\"--build-supervisor-executor-adapter-index\""
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def supervisor_executor_adapter_passport_diagnostic("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def supervisor_executor_adapter_index_path("
+      },
+      {
+        "path": "Makefile",
+        "pattern": "executor-adapters:"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_supervisor_executor_adapter_index_reports_codex_and_passport_gap("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_supervisor_executor_adapter_index_blocks_missing_codex("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_main_builds_supervisor_executor_adapter_index_as_standalone_command("
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "tools/README.md",
+        "pattern": "Agent Passport CLI diagnostics"
+      },
+      {
+        "path": "docs/proposals/0066_supervisor_executor_adapter_index_runtime.md",
+        "pattern": "runs/supervisor_executor_adapter_index.json"
+      },
+      {
+        "path": "Makefile",
+        "pattern": "make executor-adapters"
       }
     ]
   }

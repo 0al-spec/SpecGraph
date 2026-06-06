@@ -843,5 +843,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0066",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0066_supervisor_executor_adapter_index_runtime.md"
+    ],
+    "motivating_concern": "SpecGraph needs a stable producer artifact for the 0056 executor adapter gateway before SpecSpace can consume agent/executor/passport visibility through the external handoff plane",
+    "normalized_title": "Supervisor Executor Adapter Index Runtime",
+    "bounded_scope": "Implement a read-only supervisor_executor_adapter_index artifact, policy-driven backend registry fields, Agent Passport CLI availability diagnostics, a standalone build command, Makefile shortcut, docs, and tests without launching nested executors, running smoke benchmarks, enforcing passports, implementing SpecSpace UI, or changing Platform/deploy packaging.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

@@ -64,6 +64,7 @@ Derived artifacts:
 - Metric pack runs: `runs/metric_pack_runs.json`
 - Metric pricing provenance: `runs/metric_pricing_provenance.json`
 - Model usage telemetry index: `runs/model_usage_telemetry_index.json`
+- supervisor executor adapter index: `runs/supervisor_executor_adapter_index.json`
 - bootstrap smoke benchmark: `runs/bootstrap_smoke_benchmark.json`
 - spec trace index: `runs/spec_trace_index.json`
 - spec trace projection: `runs/spec_trace_projection.json`
@@ -153,6 +154,7 @@ EVIDENCE_PLANE_POLICY_RELATIVE_PATH = "tools/evidence_plane_policy.json"
 METRIC_SIGNAL_POLICY_RELATIVE_PATH = "tools/metric_signal_policy.json"
 SUPERVISOR_PERFORMANCE_POLICY_RELATIVE_PATH = "tools/supervisor_performance_policy.json"
 BOOTSTRAP_SMOKE_BENCHMARK_POLICY_RELATIVE_PATH = "tools/bootstrap_smoke_benchmark_policy.json"
+SUPERVISOR_EXECUTOR_ADAPTER_POLICY_RELATIVE_PATH = "tools/supervisor_executor_adapter_policy.json"
 EXTERNAL_CONSUMER_REGISTRY_RELATIVE_PATH = "tools/external_consumers.json"
 EXTERNAL_CONSUMER_OVERLAY_POLICY_RELATIVE_PATH = "tools/external_consumer_overlay_policy.json"
 EXTERNAL_CONSUMER_HANDOFF_POLICY_RELATIVE_PATH = "tools/external_consumer_handoff_policy.json"
@@ -173,6 +175,7 @@ METRIC_PACK_ADAPTER_INDEX_RELATIVE_PATH = "runs/metric_pack_adapter_index.json"
 METRIC_PACK_RUNS_RELATIVE_PATH = "runs/metric_pack_runs.json"
 METRIC_PRICING_PROVENANCE_RELATIVE_PATH = "runs/metric_pricing_provenance.json"
 MODEL_USAGE_TELEMETRY_RELATIVE_PATH = "runs/model_usage_telemetry_index.json"
+SUPERVISOR_EXECUTOR_ADAPTER_INDEX_RELATIVE_PATH = "runs/supervisor_executor_adapter_index.json"
 SPECPM_EXPORT_REGISTRY_RELATIVE_PATH = "tools/specpm_export_registry.json"
 
 
@@ -314,6 +317,10 @@ def supervisor_performance_policy_path() -> Path:
 
 def bootstrap_smoke_benchmark_policy_path() -> Path:
     return TOOLS_DIR / "bootstrap_smoke_benchmark_policy.json"
+
+
+def supervisor_executor_adapter_policy_path() -> Path:
+    return TOOLS_DIR / "supervisor_executor_adapter_policy.json"
 
 
 def external_consumer_overlay_policy_path() -> Path:
@@ -1553,6 +1560,49 @@ BOOTSTRAP_SMOKE_BENCHMARK_POLICY, BOOTSTRAP_SMOKE_BENCHMARK_POLICY_SHA256 = (
 )
 
 
+def load_supervisor_executor_adapter_policy() -> tuple[dict[str, Any], str]:
+    path = supervisor_executor_adapter_policy_path()
+    try:
+        raw_text = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise RuntimeError(
+            f"failed to read supervisor executor adapter policy artifact: {path.as_posix()} ({exc})"
+        ) from exc
+    try:
+        payload = json.loads(raw_text)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(
+            f"malformed supervisor executor adapter policy artifact: {path.as_posix()} ({exc})"
+        ) from exc
+    if not isinstance(payload, dict):
+        raise RuntimeError(
+            "malformed supervisor executor adapter policy artifact: "
+            f"{path.as_posix()} must contain a JSON object"
+        )
+    required_sections = (
+        "repository_layout",
+        "index_contract",
+        "request_contract",
+        "report_contract",
+        "backend_contract",
+        "backend_registry",
+        "agent_passport_cli",
+        "non_overridable_invariants",
+    )
+    missing = [section for section in required_sections if section not in payload]
+    if missing:
+        raise RuntimeError(
+            "malformed supervisor executor adapter policy artifact: "
+            "missing top-level section(s): " + ", ".join(missing)
+        )
+    return payload, hashlib.sha256(raw_text.encode("utf-8")).hexdigest()
+
+
+SUPERVISOR_EXECUTOR_ADAPTER_POLICY, SUPERVISOR_EXECUTOR_ADAPTER_POLICY_SHA256 = (
+    load_supervisor_executor_adapter_policy()
+)
+
+
 def load_external_consumer_overlay_policy() -> tuple[dict[str, Any], str]:
     path = external_consumer_overlay_policy_path()
     try:
@@ -2055,6 +2105,15 @@ def intent_layer_policy_lookup(policy_path: str) -> Any:
 
 def operator_request_bridge_policy_lookup(policy_path: str) -> Any:
     current: Any = OPERATOR_REQUEST_BRIDGE_POLICY
+    for part in policy_path.split("."):
+        if not isinstance(current, dict) or part not in current:
+            raise KeyError(policy_path)
+        current = current[part]
+    return copy.deepcopy(current)
+
+
+def supervisor_executor_adapter_policy_lookup(policy_path: str) -> Any:
+    current: Any = SUPERVISOR_EXECUTOR_ADAPTER_POLICY
     for part in policy_path.split("."):
         if not isinstance(current, dict) or part not in current:
             raise KeyError(policy_path)
@@ -2995,6 +3054,18 @@ EVIDENCE_PLANE_OVERLAY_SCHEMA_VERSION = int(
     evidence_plane_policy_lookup("overlay_contract.schema_version")
 )
 EVIDENCE_PLANE_NAMED_FILTERS = list(evidence_plane_policy_lookup("overlay_contract.named_filters"))
+SUPERVISOR_EXECUTOR_ADAPTER_INDEX_FILENAME = Path(
+    str(supervisor_executor_adapter_policy_lookup("repository_layout.index_artifact"))
+).name
+SUPERVISOR_EXECUTOR_ADAPTER_INDEX_ARTIFACT_KIND = str(
+    supervisor_executor_adapter_policy_lookup("index_contract.artifact_kind")
+)
+SUPERVISOR_EXECUTOR_ADAPTER_INDEX_SCHEMA_VERSION = int(
+    supervisor_executor_adapter_policy_lookup("index_contract.schema_version")
+)
+SUPERVISOR_EXECUTOR_ADAPTER_NAMED_FILTERS = list(
+    supervisor_executor_adapter_policy_lookup("index_contract.named_filters")
+)
 EXTERNAL_CONSUMER_INDEX_FILENAME = "external_consumer_index.json"
 EXTERNAL_CONSUMER_INDEX_ARTIFACT_KIND = "external_consumer_index"
 EXTERNAL_CONSUMER_INDEX_SCHEMA_VERSION = 1
@@ -17724,6 +17795,10 @@ def evidence_plane_overlay_path() -> Path:
     return RUNS_DIR / EVIDENCE_PLANE_OVERLAY_FILENAME
 
 
+def supervisor_executor_adapter_index_path() -> Path:
+    return RUNS_DIR / SUPERVISOR_EXECUTOR_ADAPTER_INDEX_FILENAME
+
+
 def metric_signal_index_path() -> Path:
     return RUNS_DIR / METRIC_SIGNAL_INDEX_FILENAME
 
@@ -17770,6 +17845,273 @@ def supervisor_performance_index_path() -> Path:
 
 def bootstrap_smoke_benchmark_path() -> Path:
     return RUNS_DIR / BOOTSTRAP_SMOKE_BENCHMARK_FILENAME
+
+
+def supervisor_executor_adapter_policy_reference() -> dict[str, Any]:
+    return {
+        "artifact_path": SUPERVISOR_EXECUTOR_ADAPTER_POLICY_RELATIVE_PATH,
+        "artifact_sha256": SUPERVISOR_EXECUTOR_ADAPTER_POLICY_SHA256,
+        "schema_version": SUPERVISOR_EXECUTOR_ADAPTER_POLICY.get("schema_version"),
+    }
+
+
+def command_availability_from_policy(
+    *,
+    executable_names: list[str],
+    preferred_paths: list[str] | None = None,
+    executable_env_var: str = "",
+    sibling_release_binary: str = "",
+) -> dict[str, Any]:
+    env_override_present = bool(
+        executable_env_var and os.environ.get(executable_env_var, "").strip()
+    )
+    if env_override_present:
+        candidate = Path(str(os.environ.get(executable_env_var, "")).strip()).expanduser()
+        status = "available" if candidate.exists() and os.access(candidate, os.X_OK) else "missing"
+        return {
+            "status": status,
+            "resolution_source": "env_override",
+            "env_var": executable_env_var,
+            "command_name": candidate.name,
+            "path_persisted": False,
+        }
+
+    for name in executable_names:
+        if shutil.which(name):
+            return {
+                "status": "available",
+                "resolution_source": "path",
+                "env_var": executable_env_var,
+                "command_name": name,
+                "path_persisted": False,
+            }
+
+    for raw_path in preferred_paths or []:
+        candidate = Path(str(raw_path)).expanduser()
+        if candidate.exists() and os.access(candidate, os.X_OK):
+            return {
+                "status": "available",
+                "resolution_source": "preferred_path",
+                "env_var": executable_env_var,
+                "command_name": candidate.name,
+                "path_persisted": False,
+            }
+
+    if sibling_release_binary:
+        candidate = (ROOT / sibling_release_binary).resolve()
+        if candidate.exists() and os.access(candidate, os.X_OK):
+            return {
+                "status": "available",
+                "resolution_source": "sibling_release_binary",
+                "env_var": executable_env_var,
+                "command_name": candidate.name,
+                "path_persisted": False,
+            }
+
+    return {
+        "status": "missing",
+        "resolution_source": "not_found",
+        "env_var": executable_env_var,
+        "command_name": executable_names[0] if executable_names else "",
+        "path_persisted": False,
+    }
+
+
+def supervisor_executor_adapter_passport_diagnostic() -> dict[str, Any]:
+    policy = supervisor_executor_adapter_policy_lookup("agent_passport_cli")
+    executable_names = [
+        str(name).strip() for name in policy.get("executable_names", []) if str(name).strip()
+    ]
+    availability = command_availability_from_policy(
+        executable_names=executable_names,
+        sibling_release_binary=str(policy.get("sibling_release_binary", "")).strip(),
+    )
+    status = "available" if availability["status"] == "available" else "missing"
+    return {
+        "tool_id": str(policy.get("tool_id", "")).strip(),
+        "diagnostic_kind": str(policy.get("diagnostic_kind", "")).strip(),
+        "tool_status": status,
+        "required_for_index": bool(policy.get("required_for_index", False)),
+        "validation_state": "not_attempted",
+        "availability": availability,
+        "diagnostics": (
+            []
+            if status == "available"
+            else [
+                {
+                    "severity": "warning",
+                    "code": "agent_passport_cli_missing",
+                    "message": "Agent Passport CLI is not available for report-only diagnostics.",
+                }
+            ]
+        ),
+    }
+
+
+def build_supervisor_executor_adapter_index() -> dict[str, Any]:
+    backend_registry = supervisor_executor_adapter_policy_lookup("backend_registry")
+    default_backend_id = str(
+        supervisor_executor_adapter_policy_lookup("default_backend_id")
+    ).strip()
+    passport_diagnostic = supervisor_executor_adapter_passport_diagnostic()
+    named_filters = {name: [] for name in SUPERVISOR_EXECUTOR_ADAPTER_NAMED_FILTERS}
+    backend_status: dict[str, list[str]] = {}
+    authority_state: dict[str, list[str]] = {}
+    entries: list[dict[str, Any]] = []
+    capability_gaps: list[dict[str, Any]] = []
+
+    for backend in backend_registry:
+        if not isinstance(backend, dict):
+            continue
+        backend_id = str(backend.get("backend_id", "")).strip()
+        if not backend_id:
+            continue
+        executable_names = [
+            str(name).strip() for name in backend.get("executable_names", []) if str(name).strip()
+        ]
+        executable_availability = command_availability_from_policy(
+            executable_names=executable_names,
+            preferred_paths=[
+                str(path).strip()
+                for path in backend.get("preferred_paths", [])
+                if str(path).strip()
+            ],
+            executable_env_var=str(backend.get("executable_env_var", "")).strip(),
+        )
+        status = (
+            "available"
+            if executable_availability["status"] == "available"
+            else "missing_executable"
+        )
+        backend_authority_state = str(backend.get("authority_state", "")).strip()
+        gaps: list[dict[str, Any]] = []
+        if status == "missing_executable":
+            gaps.append(
+                {
+                    "gap_kind": "missing_executable",
+                    "severity": "blocker",
+                    "next_action": "configure_backend_executable",
+                }
+            )
+        if passport_diagnostic["tool_status"] != "available":
+            gaps.append(
+                {
+                    "gap_kind": "missing_agent_passport_cli",
+                    "severity": "warning",
+                    "next_action": "install_or_package_agent_passport_cli",
+                }
+            )
+        gaps.append(
+            {
+                "gap_kind": "smoke_not_run",
+                "severity": "advisory",
+                "next_action": "run_executor_adapter_smoke_benchmark",
+            }
+        )
+        gaps.append(
+            {
+                "gap_kind": "canonical_trial_blocked",
+                "severity": "advisory",
+                "next_action": "complete_smoke_before_canonical_trial",
+            }
+        )
+        entry = {
+            "backend_id": backend_id,
+            "display_name": str(backend.get("display_name", "")).strip(),
+            "backend_status": status,
+            "authority_state": backend_authority_state,
+            "command_surface": str(backend.get("command_surface", "")).strip(),
+            "protocol_contract": str(backend.get("protocol_contract", "")).strip(),
+            "executable_availability": executable_availability,
+            "capabilities": copy.deepcopy(backend.get("capabilities", {})),
+            "auth_isolation": str(backend.get("auth_isolation", "")).strip(),
+            "config_isolation": str(backend.get("config_isolation", "")).strip(),
+            "passport_ref": str(backend.get("passport_ref", "")).strip(),
+            "passport_validation": {
+                **copy.deepcopy(backend.get("passport_validation", {})),
+                "tool_status": passport_diagnostic["tool_status"],
+                "diagnostic_kind": passport_diagnostic["diagnostic_kind"],
+            },
+            "smoke_status": "not_run",
+            "canonical_trial_allowed": False,
+            "safe_next_action": (
+                "run_executor_adapter_smoke_benchmark"
+                if status == "available"
+                else "configure_backend_executable"
+            ),
+            "capability_gaps": gaps,
+        }
+        entries.append(entry)
+        backend_status.setdefault(status, []).append(backend_id)
+        authority_state.setdefault(backend_authority_state, []).append(backend_id)
+        if backend_id == default_backend_id:
+            named_filters["default_backend"].append(backend_id)
+        if status == "available":
+            named_filters["available"].append(backend_id)
+            named_filters["safe_for_smoke"].append(backend_id)
+        if status == "missing_executable":
+            named_filters["missing_executable"].append(backend_id)
+        if passport_diagnostic["tool_status"] != "available":
+            named_filters["passport_diagnostic"].append(backend_id)
+        named_filters["canonical_trial_blocked"].append(backend_id)
+        capability_gaps.extend(
+            {
+                "backend_id": backend_id,
+                **gap,
+            }
+            for gap in gaps
+        )
+
+    for bucket in (backend_status, authority_state, named_filters):
+        for key in list(bucket):
+            bucket[key] = sorted(set(bucket[key]))
+
+    default_entry = next(
+        (entry for entry in entries if entry["backend_id"] == default_backend_id),
+        None,
+    )
+    stable_fields = [
+        str(field).strip()
+        for field in supervisor_executor_adapter_policy_lookup("index_contract.stable_fields")
+        if str(field).strip()
+    ]
+    return {
+        "artifact_kind": SUPERVISOR_EXECUTOR_ADAPTER_INDEX_ARTIFACT_KIND,
+        "schema_version": SUPERVISOR_EXECUTOR_ADAPTER_INDEX_SCHEMA_VERSION,
+        "generated_at": utc_now_iso(),
+        "policy_reference": supervisor_executor_adapter_policy_reference(),
+        "stable_fields": stable_fields,
+        "summary": {
+            "backend_count": len(entries),
+            "available_backend_count": len(backend_status.get("available", [])),
+            "default_backend_id": default_backend_id,
+            "default_backend_status": (
+                str(default_entry.get("backend_status", "")).strip() if default_entry else "missing"
+            ),
+            "agent_passport_cli_status": passport_diagnostic["tool_status"],
+            "canonical_trial_ready_count": 0,
+            "next_gap": (
+                "run_executor_adapter_smoke_benchmark"
+                if default_entry and default_entry.get("backend_status") == "available"
+                else "configure_default_executor_backend"
+            ),
+        },
+        "entries": entries,
+        "capability_gaps": capability_gaps,
+        "passport_diagnostics": [passport_diagnostic],
+        "viewer_projection": {
+            "backend_status": backend_status,
+            "authority_state": authority_state,
+            "named_filters": named_filters,
+        },
+    }
+
+
+def write_supervisor_executor_adapter_index(index: dict[str, Any]) -> Path:
+    path = supervisor_executor_adapter_index_path()
+    with artifact_lock(path):
+        atomic_write_json(path, index)
+    return path
 
 
 def load_spec_trace_registry() -> dict[str, dict[str, Any]]:
@@ -38830,6 +39172,7 @@ def main(
     build_conversation_memory_promotion_pressure_mode: bool = False,
     build_metric_signal_index_mode: bool = False,
     build_metric_threshold_proposals_mode: bool = False,
+    build_supervisor_executor_adapter_index_mode: bool = False,
     build_supervisor_performance_index_mode: bool = False,
     build_bootstrap_smoke_benchmark_mode: bool = False,
     build_viewer_surfaces_mode: bool = False,
@@ -39769,6 +40112,56 @@ def main(
             print(str(exc), file=sys.stderr)
             return 1
         write_review_feedback_index(index)
+        emit_supervisor_json(index, output_mode=normalized_output_mode)
+        return 0
+
+    if build_supervisor_executor_adapter_index_mode:
+        if any(
+            (
+                dry_run,
+                auto_approve,
+                loop,
+                resolve_gate,
+                decision,
+                note,
+                target_spec,
+                split_proposal,
+                apply_split_proposal,
+                operator_note,
+                mutation_budget,
+                run_authority,
+                execution_profile,
+                child_model,
+                child_timeout_seconds,
+                verbose,
+                list_stale_runtime,
+                clean_stale_runtime,
+                observe_graph_health_mode,
+                operator_request_packet_path,
+                build_vocabulary_index_mode,
+                build_vocabulary_drift_report_mode,
+                build_pre_spec_semantics_index_mode,
+                build_graph_health_overlay_mode,
+                build_graph_health_trends_mode,
+                build_spec_trace_index_mode,
+                build_spec_trace_projection_mode,
+                build_evidence_plane_index_mode,
+                build_evidence_plane_overlay_mode,
+                build_external_consumer_index_mode,
+                build_external_consumer_overlay_mode,
+                build_external_consumer_handoffs_mode,
+                build_proposal_lane_overlay_mode,
+                build_proposal_runtime_index_mode,
+                build_proposal_promotion_index_mode,
+            )
+        ):
+            print(
+                "--build-supervisor-executor-adapter-index must be used as a standalone command",
+                file=sys.stderr,
+            )
+            return 1
+        index = build_supervisor_executor_adapter_index()
+        write_supervisor_executor_adapter_index(index)
         emit_supervisor_json(index, output_mode=normalized_output_mode)
         return 0
 
@@ -42980,6 +43373,14 @@ if __name__ == "__main__":
         ),
     )
     parser.add_argument(
+        "--build-supervisor-executor-adapter-index",
+        action="store_true",
+        help=(
+            "Build a read-only supervisor executor adapter index from the 0056 policy "
+            "without launching nested executors"
+        ),
+    )
+    parser.add_argument(
         "--build-supervisor-performance-index",
         action="store_true",
         help=(
@@ -43297,6 +43698,9 @@ if __name__ == "__main__":
             ),
             build_metric_signal_index_mode=args.build_metric_signal_index,
             build_metric_threshold_proposals_mode=args.build_metric_threshold_proposals,
+            build_supervisor_executor_adapter_index_mode=(
+                args.build_supervisor_executor_adapter_index
+            ),
             build_supervisor_performance_index_mode=args.build_supervisor_performance_index,
             build_bootstrap_smoke_benchmark_mode=args.build_bootstrap_smoke_benchmark,
             build_viewer_surfaces_mode=args.build_viewer_surfaces,

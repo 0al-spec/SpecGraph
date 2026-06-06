@@ -144,3 +144,17 @@ tools/supervisor_executor_adapter_policy.json
 
 The policy declares request/report required fields, status vocabulary, error
 classes, BYOK boundary rules, and non-overridable invariants.
+
+## Runtime Index Artifact
+
+The first runtime realization surface is:
+
+```text
+runs/supervisor_executor_adapter_index.json
+```
+
+The index reports executor backend availability, declared capability support,
+Agent Passport CLI availability diagnostics, smoke state, canonical-trial
+eligibility, and safe next actions. It is read-only and report-only: it does not
+launch executors, perform passport enforcement, or publish absolute executable
+paths, raw prompts, raw logs, provider secrets, credentials, or API keys.
