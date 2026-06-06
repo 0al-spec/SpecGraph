@@ -11118,6 +11118,46 @@ def test_build_external_consumer_handoff_packets_emits_ready_specspace_contract(
     assert "supervisor stdout" not in json.dumps(ready, sort_keys=True)
 
 
+def test_specspace_registry_handoff_contract_is_stable_and_ready(
+    supervisor_module: object,
+) -> None:
+    registry = supervisor_module.load_external_consumers_registry()
+    specspace = copy.deepcopy(
+        next(entry for entry in registry["consumers"] if entry["consumer_id"] == "specspace")
+    )
+    report = supervisor_module.build_external_consumer_handoff_packets(
+        {
+            "generated_at": "2026-04-20T00:00:00Z",
+            "entries": [specspace],
+        },
+        {
+            "generated_at": "2026-04-20T00:00:01Z",
+            "entries": [
+                {
+                    "consumer_id": "specspace",
+                    "bridge_state": "stable_ready",
+                    "next_gap": "none",
+                }
+            ],
+        },
+        {"generated_at": "2026-04-20T00:00:02Z", "metrics": []},
+        {"generated_at": "2026-04-20T00:00:03Z", "entries": []},
+    )
+
+    ready = report["entries"][0]
+    assert ready["consumer_id"] == "specspace"
+    assert ready["handoff_status"] == "ready_for_handoff"
+    assert ready["review_state"] == "ready_for_review"
+    assert ready["next_gap"] == "review_handoff_packet"
+    assert ready["source_proposal_ids"] == ["0056", "0059"]
+    assert ready["artifact_contract"]["status"] == "stable"
+    assert ready["transition_packet_validation"]["ok"] is True
+    assert report["viewer_projection"]["named_filters"]["ready_for_handoff"] == ["specspace"]
+    assert report["handoff_backlog"]["grouped_by_next_gap"] == {
+        "review_handoff_packet": ["specspace"]
+    }
+
+
 def test_build_external_consumer_handoff_packets_blocks_draft_specspace_contract(
     supervisor_module: object,
 ) -> None:
