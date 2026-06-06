@@ -595,8 +595,9 @@ Key derived artifacts:
   backend registry metadata, index contract fields, and Agent Passport CLI
   availability diagnostics
 - `tools/agent_passport_adoption_policy.json`: declarative contract for
-  report-only Agent Passport adoption surfaces, known passport references, and
-  verification gap indexes consumed by SpecSpace-oriented handoff planning
+  report-only Agent Passport adoption surfaces, declared Agent Passport
+  references, and verification gap indexes consumed by SpecSpace-oriented
+  handoff planning
 - `tools/specpm_export_policy.json`: declarative contract for `SpecPM` export
   previews, including review status, next-gap defaults, and required export
   registry fields

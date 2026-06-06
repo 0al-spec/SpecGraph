@@ -26963,6 +26963,15 @@ def test_agent_passport_adoption_policy_declares_surface_and_gap_contract(
     assert "specgraph.supervisor" in surfaces
     assert "specspace.operator_assistant" in surfaces
     assert surfaces["specspace.operator_assistant"]["consumer_id"] == "specspace"
+    assert surfaces["specgraph.supervisor.executor_adapter"]["passport_ref"] == (
+        "agent-passport://specgraph/supervisor-executor-adapter/0.1.0"
+    )
+    assert surfaces["specspace.operator_assistant"]["passport_ref"] == (
+        "agent-passport://specspace/operator-assistant/0.1.0"
+    )
+    assert surfaces["product_workspace.implementation_agent"]["passport_ref"] == (
+        "agent-passport://product-workspace/implementation-agent/0.1.0"
+    )
     assert policy["privacy_boundary"]["machine_local_paths_forbidden"] is True
 
 
@@ -27031,18 +27040,20 @@ def test_build_agent_passport_indexes_consume_executor_adapter_diagnostics(
     assert by_agent["specgraph.executor.codex"]["passport_ref"] == (
         "agent-passport://executors/codex-cli/0.1.0"
     )
-    assert by_agent["specspace.operator_assistant"]["passport_ref"] is None
-    assert known_index["viewer_projection"]["named_filters"]["missing_passport"] == [
-        "product_workspace.implementation_agent",
-        "specgraph.supervisor.executor_adapter",
-        "specspace.operator_assistant",
-    ]
+    assert by_agent["specspace.operator_assistant"]["passport_ref"] == (
+        "agent-passport://specspace/operator-assistant/0.1.0"
+    )
+    assert known_index["summary"]["missing_passport_count"] == 0
+    assert known_index["summary"]["next_gap"] == "run_report_only_passport_verification"
+    assert known_index["viewer_projection"]["named_filters"]["missing_passport"] == []
 
     gaps = {(gap["agent_surface"], gap["gap"]) for gap in gap_index["gaps"]}
     assert ("specgraph.executor.codex", "verification_tool_unavailable") in gaps
-    assert ("specspace.operator_assistant", "missing_passport") in gaps
+    assert ("specspace.operator_assistant", "missing_passport") not in gaps
+    assert ("specspace.operator_assistant", "verification_tool_unavailable") in gaps
     assert ("specgraph.executor.codex", "runtime_enforcement_unknown") in gaps
-    assert gap_index["summary"]["verification_tool_unavailable_count"] == 2
+    assert gap_index["summary"]["missing_passport_count"] == 0
+    assert gap_index["summary"]["verification_tool_unavailable_count"] == 5
     assert gap_index["viewer_projection"]["named_filters"]["executor_backend"] == [
         "specgraph.executor.codex"
     ]
@@ -27113,9 +27124,10 @@ def test_build_agent_passport_indexes_handle_optional_and_observed_surfaces(
         executor_index,
     )
 
-    assert surface_index["summary"]["passport_referenced_count"] == 3
-    assert surface_index["summary"]["required_passport_referenced_count"] == 2
-    assert surface_index["summary"]["missing_passport_count"] == 3
+    assert surface_index["summary"]["passport_referenced_count"] == 6
+    assert surface_index["summary"]["required_passport_referenced_count"] == 5
+    assert surface_index["summary"]["missing_passport_count"] == 0
+    assert surface_index["summary"]["next_gap"] == "run_report_only_passport_verification"
     assert (
         "specgraph.optional_observer"
         not in (surface_index["viewer_projection"]["named_filters"]["missing_passport"])
@@ -27124,9 +27136,14 @@ def test_build_agent_passport_indexes_handle_optional_and_observed_surfaces(
         "specgraph.optional_observer"
         not in (known_index["viewer_projection"]["named_filters"]["missing_passport"])
     )
+    assert known_index["summary"]["missing_passport_count"] == 0
+    assert known_index["summary"]["next_gap"] == "run_report_only_passport_verification"
     gaps = {(gap["agent_surface"], gap["gap"]) for gap in gap_index["gaps"]}
+    assert not any(gap == "missing_passport" for _, gap in gaps)
     assert ("specgraph.observed_runtime", "runtime_enforcement_unknown") not in gaps
     assert ("specgraph.observed_runtime", "verification_not_attempted") in gaps
+    assert ("specspace.operator_assistant", "verification_not_attempted") in gaps
+    assert ("specspace.operator_assistant", "runtime_enforcement_unknown") in gaps
 
 
 def test_main_builds_agent_passport_derived_surfaces_as_standalone_command(
@@ -27259,6 +27276,52 @@ def test_proposal_0059_agent_passport_runtime_is_covered(
     assert entry["validation_closure"]["missing_markers"] == []
     assert entry["observation_coverage"]["missing_markers"] == []
     assert entry["reflective_chain"]["next_gap"] == "none"
+
+
+def test_proposal_0070_agent_passport_reference_declaration_is_covered(
+    supervisor_module: object,
+) -> None:
+    """Proposal 0070 declares required Agent Passport refs without closing verification."""
+    surface_index = supervisor_module.build_agent_surface_index(
+        {
+            "artifact_kind": supervisor_module.SUPERVISOR_EXECUTOR_ADAPTER_INDEX_ARTIFACT_KIND,
+            "schema_version": supervisor_module.SUPERVISOR_EXECUTOR_ADAPTER_INDEX_SCHEMA_VERSION,
+            "summary": {"agent_passport_cli_status": "available"},
+            "entries": [
+                {
+                    "backend_id": "codex",
+                    "display_name": "Codex CLI",
+                    "backend_status": "available",
+                    "passport_ref": "agent-passport://executors/codex-cli/0.1.0",
+                }
+            ],
+        }
+    )
+    known_index = supervisor_module.build_known_agent_passport_index(surface_index)
+    gap_index = supervisor_module.build_agent_verification_gap_index(
+        surface_index,
+        known_index,
+        {
+            "summary": {"agent_passport_cli_status": "available"},
+        },
+    )
+
+    refs = {entry["agent_surface"]: entry["passport_ref"] for entry in known_index["entries"]}
+    assert refs["specgraph.supervisor.executor_adapter"] == (
+        "agent-passport://specgraph/supervisor-executor-adapter/0.1.0"
+    )
+    assert refs["specspace.operator_assistant"] == (
+        "agent-passport://specspace/operator-assistant/0.1.0"
+    )
+    assert refs["product_workspace.implementation_agent"] == (
+        "agent-passport://product-workspace/implementation-agent/0.1.0"
+    )
+    assert known_index["summary"]["missing_passport_count"] == 0
+
+    gaps = {(gap["agent_surface"], gap["gap"]) for gap in gap_index["gaps"]}
+    assert not any(gap == "missing_passport" for _, gap in gaps)
+    assert ("specspace.operator_assistant", "verification_not_attempted") in gaps
+    assert ("specspace.operator_assistant", "runtime_enforcement_unknown") in gaps
 
 
 def test_proposal_work_claim_report_flags_expired_and_duplicate_claims(

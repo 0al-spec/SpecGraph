@@ -3321,5 +3321,53 @@
         "pattern": "SpecSpace PR `0al-spec/SpecSpace#225`"
       }
     ]
+  },
+  {
+    "proposal_id": "0070",
+    "posture": "bounded_runtime_followup",
+    "runtime_surfaces": [
+      "docs/proposals/0070_agent_passport_reference_declaration.md",
+      "docs/archive/proposal_sources/0070_agent_passport_reference_declaration.md",
+      "tools/agent_passport_adoption_policy.json",
+      "tests/test_supervisor.py",
+      "tools/README.md",
+      "runs/agent_surface_index.json",
+      "runs/known_agent_passport_index.json",
+      "runs/agent_verification_gap_index.json"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/agent_passport_adoption_policy.json",
+        "pattern": "agent-passport://specgraph/supervisor-executor-adapter/0.1.0"
+      },
+      {
+        "path": "tools/agent_passport_adoption_policy.json",
+        "pattern": "agent-passport://specspace/operator-assistant/0.1.0"
+      },
+      {
+        "path": "tools/agent_passport_adoption_policy.json",
+        "pattern": "agent-passport://product-workspace/implementation-agent/0.1.0"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_proposal_0070_agent_passport_reference_declaration_is_covered("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "known_index[\"summary\"][\"missing_passport_count\"] == 0"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0070_agent_passport_reference_declaration.md",
+        "pattern": "missing_passport_count: 3 -> 0"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "declared Agent Passport references"
+      }
+    ]
   }
 ]
