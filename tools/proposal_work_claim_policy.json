@@ -18,12 +18,17 @@
     "missing_claim_id",
     "invalid_proposal_id",
     "missing_scope",
+    "invalid_status",
+    "missing_owner",
     "missing_branch",
+    "missing_claimed_at",
+    "invalid_allowed_paths",
     "missing_allowed_paths",
     "missing_expires_at",
     "invalid_expires_at",
     "expired_claim",
-    "duplicate_active_claim"
+    "duplicate_active_claim",
+    "malformed_claim_registry"
   ],
   "claim_contract": {
     "required_active_fields": [

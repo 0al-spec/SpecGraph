@@ -26085,7 +26085,7 @@ def test_proposal_work_claim_report_flags_expired_and_duplicate_claims(
                 "allowed_paths": ["docs/proposals/0063_proposal_work_claim_locks.md"],
             },
             {
-                "claim_id": "claim-b",
+                "claim_id": "claim-a",
                 "proposal_id": "0063",
                 "scope": "contract",
                 "owner": "codex",
@@ -26113,6 +26113,34 @@ def test_proposal_work_claim_report_flags_expired_and_duplicate_claims(
     assert "expired_claim" in blocking_codes
     assert report["summary"]["active_count"] == 2
     assert report["summary"]["blocking_count"] == 2
+
+
+def test_proposal_work_claim_report_flags_malformed_active_claim_fields(
+    supervisor_module: object,
+) -> None:
+    report = supervisor_module.build_proposal_work_claim_report(
+        claims=[
+            {
+                "claim_id": "claim-malformed",
+                "proposal_id": "0063",
+                "scope": "contract",
+                "status": "activ",
+                "branch": "codex/malformed",
+                "expires_at": "2026-06-13T00:00:00Z",
+                "allowed_paths": "tools/supervisor.py",
+            }
+        ],
+        generated_at="2026-06-06T00:00:00Z",
+    )
+
+    blocking_codes = {finding["code"] for finding in report["blocking_findings"]}
+    assert {
+        "invalid_status",
+        "missing_owner",
+        "missing_claimed_at",
+        "invalid_allowed_paths",
+        "missing_allowed_paths",
+    }.issubset(blocking_codes)
 
 
 def test_proposal_work_claim_report_requires_expiry_only_for_active_claims(
@@ -26191,11 +26219,51 @@ def test_proposal_id_allocator_uses_docs_registries_and_claims(
     assert allocation["summary"]["used_id_count"] == 6
 
 
+def test_proposal_id_allocator_blocks_unreadable_registries(
+    repo_fixture: Path,
+    supervisor_module: object,
+) -> None:
+    (repo_fixture / "tools").mkdir()
+    (repo_fixture / "tools" / "proposal_runtime_registry.json").write_text(
+        "[",
+        encoding="utf-8",
+    )
+    (repo_fixture / "tools" / "proposal_promotion_registry.json").write_text(
+        "[]\n",
+        encoding="utf-8",
+    )
+    (repo_fixture / "tools" / "proposal_work_claims.json").write_text(
+        "[]\n",
+        encoding="utf-8",
+    )
+
+    allocation = supervisor_module.build_proposal_id_allocation()
+
+    assert allocation["ok"] is False
+    assert allocation["next_proposal_id"] is None
+    assert {finding["code"] for finding in allocation["blocking_findings"]} == {
+        "unreadable_proposal_id_source",
+    }
+
+
 def test_proposal_id_allocator_blocks_conflicting_markdown_slugs(
     repo_fixture: Path,
     supervisor_module: object,
 ) -> None:
     (repo_fixture / "docs" / "proposals").mkdir(parents=True)
+    (repo_fixture / "tools").mkdir()
+    (repo_fixture / "tools" / "proposal_runtime_registry.json").write_text(
+        "[]\n",
+        encoding="utf-8",
+    )
+    (repo_fixture / "tools" / "proposal_promotion_registry.json").write_text(
+        "[]\n",
+        encoding="utf-8",
+    )
+    (repo_fixture / "tools" / "proposal_work_claims.json").write_text(
+        "[]\n",
+        encoding="utf-8",
+    )
     (repo_fixture / "docs" / "proposals" / "0001_first.md").write_text(
         "# First\n",
         encoding="utf-8",
@@ -26270,6 +26338,25 @@ def test_main_proposal_work_claim_gate_blocks_duplicate_active_scope(
     )
     assert {finding["code"] for finding in report["blocking_findings"]} == {
         "duplicate_active_claim",
+    }
+
+
+def test_main_proposal_work_claim_gate_blocks_malformed_registry(
+    repo_fixture: Path,
+    supervisor_module: object,
+) -> None:
+    tools_dir = repo_fixture / "tools"
+    tools_dir.mkdir()
+    (tools_dir / "proposal_work_claims.json").write_text("[", encoding="utf-8")
+
+    exit_code = supervisor_module.main(check_proposal_work_claim_gate_mode=True)
+
+    assert exit_code == 1
+    report = json.loads(
+        (repo_fixture / "runs" / "proposal_work_claim_report.json").read_text(encoding="utf-8")
+    )
+    assert {finding["code"] for finding in report["blocking_findings"]} == {
+        "malformed_claim_registry",
     }
 
 

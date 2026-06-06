@@ -135,12 +135,17 @@ The gate fails only on claim health problems:
 - missing `claim_id`;
 - invalid four-digit `proposal_id`;
 - missing `scope`;
+- unknown `status`;
+- active claim without `owner`;
 - active claim without `branch`;
+- active claim without `claimed_at`;
+- active claim where `allowed_paths` is not a list;
 - active claim without `allowed_paths`;
 - active claim without `expires_at`;
 - invalid `expires_at`;
 - expired active claim;
-- duplicate active claim for the same `(proposal_id, scope)`.
+- duplicate active claim entries for the same `(proposal_id, scope)`;
+- malformed claim registry JSON.
 
 The gate does not fail because a proposal has no claim. That stricter policy can
 be added later after the workflow proves useful.

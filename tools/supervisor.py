@@ -29048,6 +29048,21 @@ def load_proposal_work_claims() -> list[dict[str, Any]]:
     return load_json_list(path)
 
 
+def load_proposal_work_claims_report() -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    path = ROOT / "tools" / "proposal_work_claims.json"
+    claims, error = load_json_list_report(path, artifact_kind="proposal work claim registry")
+    if error:
+        return [], [
+            {
+                "code": "malformed_claim_registry",
+                "severity": "error",
+                "path": display_artifact_path(path),
+                "message": error,
+            }
+        ]
+    return list(claims or []), []
+
+
 def load_task_status_index() -> dict[int, dict[str, str]]:
     tasks: dict[int, dict[str, str]] = {}
     for path in (tasks_archive_file_path(), tasks_file_path()):
@@ -29154,7 +29169,19 @@ def proposal_id_registry_entries(
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     entries: list[dict[str, Any]] = []
     findings: list[dict[str, Any]] = []
-    for index, item in enumerate(load_json_list(path), start=1):
+    registry_items, error = load_json_list_report(path, artifact_kind=source)
+    if error:
+        findings.append(
+            {
+                "code": "unreadable_proposal_id_source",
+                "severity": "error",
+                "source": source,
+                "path": display_artifact_path(path),
+                "message": error,
+            }
+        )
+        return entries, findings
+    for index, item in enumerate(registry_items or [], start=1):
         proposal_id = str(item.get("proposal_id", "")).strip()
         if not proposal_id:
             continue
@@ -30609,8 +30636,35 @@ def write_proposal_tracking_report(report: dict[str, Any]) -> Path:
     return path
 
 
-def normalize_work_claim_status(raw_status: object, *, expires_at: object, now: dt.datetime) -> str:
+def proposal_work_claim_allowed_statuses(policy: dict[str, Any]) -> set[str]:
+    claim_contract = policy.get("claim_contract", {})
+    statuses = []
+    if isinstance(claim_contract, dict):
+        statuses = [
+            str(status).strip()
+            for status in claim_contract.get("allowed_statuses", [])
+            if str(status).strip()
+        ]
+    return set(statuses or ["active", "released", "expired", "abandoned"])
+
+
+def normalize_work_claim_allowed_paths(claim: dict[str, Any]) -> list[str]:
+    raw_paths = claim.get("allowed_paths", [])
+    if not isinstance(raw_paths, list):
+        return []
+    return [str(path).strip() for path in raw_paths if str(path).strip()]
+
+
+def normalize_work_claim_status(
+    raw_status: object,
+    *,
+    expires_at: object,
+    now: dt.datetime,
+    allowed_statuses: set[str],
+) -> str:
     status = str(raw_status or "active").strip() or "active"
+    if status not in allowed_statuses:
+        return "active"
     if status != "active":
         return status
     expiry = parse_iso_datetime(expires_at)
@@ -30623,17 +30677,20 @@ def proposal_work_claim_findings(
     claim: dict[str, Any],
     *,
     effective_status: str,
+    allowed_statuses: set[str],
 ) -> list[dict[str, Any]]:
     findings: list[dict[str, Any]] = []
     claim_id = str(claim.get("claim_id", "")).strip()
     proposal_id = str(claim.get("proposal_id", "")).strip()
     scope = str(claim.get("scope", "")).strip()
+    owner = str(claim.get("owner", "")).strip()
     branch = str(claim.get("branch", "")).strip()
+    claimed_at = str(claim.get("claimed_at", "")).strip()
     declared_status = str(claim.get("status", "active")).strip() or "active"
-    allowed_paths = [
-        str(path).strip() for path in claim.get("allowed_paths", []) if str(path).strip()
-    ]
+    raw_allowed_paths = claim.get("allowed_paths", [])
+    allowed_paths = normalize_work_claim_allowed_paths(claim)
     expires_at = str(claim.get("expires_at", "")).strip()
+    active_like = declared_status == "active" or declared_status not in allowed_statuses
 
     def add(code: str, severity: str, message: str) -> None:
         findings.append(
@@ -30656,19 +30713,27 @@ def proposal_work_claim_findings(
         )
     if not scope:
         add("missing_scope", "error", "Proposal work claim must declare a bounded scope.")
-    if effective_status == "active" and not branch:
+    if declared_status not in allowed_statuses:
+        add("invalid_status", "error", "Proposal work claim status is not allowed.")
+    if active_like and not owner:
+        add("missing_owner", "error", "Active proposal work claim must declare owner.")
+    if active_like and not branch:
         add("missing_branch", "error", "Active proposal work claim must declare a branch.")
-    if effective_status == "active" and not allowed_paths:
+    if active_like and not claimed_at:
+        add("missing_claimed_at", "error", "Active proposal work claim must declare claimed_at.")
+    if active_like and not isinstance(raw_allowed_paths, list):
+        add("invalid_allowed_paths", "error", "Proposal work claim allowed_paths must be a list.")
+    if active_like and not allowed_paths:
         add(
             "missing_allowed_paths",
             "error",
             "Active proposal work claim must declare allowed_paths.",
         )
-    if declared_status == "active" and not expires_at:
+    if active_like and not expires_at:
         add("missing_expires_at", "error", "Active proposal work claim must declare expires_at.")
     if expires_at and parse_iso_datetime(expires_at) is None:
         add("invalid_expires_at", "error", "Proposal work claim expires_at must be ISO-8601.")
-    if declared_status == "active" and effective_status == "expired":
+    if active_like and effective_status == "expired":
         add("expired_claim", "error", "Active proposal work claim has passed expires_at.")
     return findings
 
@@ -30679,13 +30744,18 @@ def build_proposal_work_claim_report(
     generated_at: str | None = None,
 ) -> dict[str, Any]:
     policy = load_proposal_work_claim_policy()
-    raw_claims = copy.deepcopy(claims) if isinstance(claims, list) else load_proposal_work_claims()
+    allowed_statuses = proposal_work_claim_allowed_statuses(policy)
+    if isinstance(claims, list):
+        raw_claims = copy.deepcopy(claims)
+        registry_findings: list[dict[str, Any]] = []
+    else:
+        raw_claims, registry_findings = load_proposal_work_claims_report()
     generated_text = str(generated_at or utc_now_iso())
     now = parse_iso_datetime(generated_text) or dt.datetime.now(dt.timezone.utc)
     now = now.astimezone(dt.timezone.utc)
 
     entries: list[dict[str, Any]] = []
-    active_keys: dict[tuple[str, str], list[str]] = {}
+    active_keys: dict[tuple[str, str], list[dict[str, str]]] = {}
     for raw_claim in raw_claims:
         if not isinstance(raw_claim, dict):
             continue
@@ -30693,13 +30763,23 @@ def build_proposal_work_claim_report(
             raw_claim.get("status", "active"),
             expires_at=raw_claim.get("expires_at", ""),
             now=now,
+            allowed_statuses=allowed_statuses,
         )
         claim_id = str(raw_claim.get("claim_id", "")).strip()
         proposal_id = str(raw_claim.get("proposal_id", "")).strip()
         scope = str(raw_claim.get("scope", "")).strip()
-        findings = proposal_work_claim_findings(raw_claim, effective_status=effective_status)
+        findings = proposal_work_claim_findings(
+            raw_claim,
+            effective_status=effective_status,
+            allowed_statuses=allowed_statuses,
+        )
         if effective_status == "active" and proposal_id and scope:
-            active_keys.setdefault((proposal_id, scope), []).append(claim_id)
+            active_keys.setdefault((proposal_id, scope), []).append(
+                {
+                    "claim_id": claim_id,
+                    "branch": str(raw_claim.get("branch", "")).strip(),
+                }
+            )
         entries.append(
             {
                 "claim_id": claim_id,
@@ -30711,50 +30791,62 @@ def build_proposal_work_claim_report(
                 "effective_status": effective_status,
                 "claimed_at": str(raw_claim.get("claimed_at", "")).strip(),
                 "expires_at": str(raw_claim.get("expires_at", "")).strip(),
-                "allowed_paths": [
-                    str(path).strip()
-                    for path in raw_claim.get("allowed_paths", [])
-                    if str(path).strip()
-                ],
+                "allowed_paths": normalize_work_claim_allowed_paths(raw_claim),
                 "related_pr": str(raw_claim.get("related_pr", "")).strip(),
                 "findings": findings,
             }
         )
 
     duplicate_findings: list[dict[str, Any]] = []
-    for (proposal_id, scope), claim_ids in sorted(active_keys.items()):
-        unique_claim_ids = sorted({claim_id for claim_id in claim_ids if claim_id})
-        if len(unique_claim_ids) <= 1:
+    for (proposal_id, scope), claim_entries in sorted(active_keys.items()):
+        if len(claim_entries) <= 1:
             continue
+        claim_ids = sorted(
+            {
+                str(entry.get("claim_id", "")).strip()
+                for entry in claim_entries
+                if str(entry.get("claim_id", "")).strip()
+            }
+        )
         duplicate_findings.append(
             {
                 "code": "duplicate_active_claim",
                 "severity": "error",
                 "proposal_id": proposal_id,
                 "scope": scope,
-                "claim_ids": unique_claim_ids,
+                "claim_ids": claim_ids,
+                "entry_count": len(claim_entries),
                 "message": "Only one active proposal work claim may own a proposal_id/scope pair.",
             }
         )
 
-    all_findings = [
-        finding
-        for entry in entries
-        for finding in entry.get("findings", [])
-        if isinstance(finding, dict)
-    ] + duplicate_findings
+    all_findings = (
+        registry_findings
+        + [
+            finding
+            for entry in entries
+            for finding in entry.get("findings", [])
+            if isinstance(finding, dict)
+        ]
+        + duplicate_findings
+    )
     blocking_codes = {
         str(code).strip() for code in policy.get("blocking_finding_codes", []) if str(code).strip()
     } or {
         "missing_claim_id",
         "invalid_proposal_id",
         "missing_scope",
+        "invalid_status",
+        "missing_owner",
         "missing_branch",
+        "missing_claimed_at",
+        "invalid_allowed_paths",
         "missing_allowed_paths",
         "missing_expires_at",
         "invalid_expires_at",
         "expired_claim",
         "duplicate_active_claim",
+        "malformed_claim_registry",
     }
     blocking_findings = [
         finding
