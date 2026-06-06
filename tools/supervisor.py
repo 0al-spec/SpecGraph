@@ -18520,10 +18520,48 @@ def safe_repo_relative_path(raw_path: str) -> str:
     return path.as_posix()
 
 
+def repo_relative_path_for_artifact(path: Path) -> str:
+    try:
+        return path.resolve().relative_to(ROOT.resolve()).as_posix()
+    except (OSError, ValueError):
+        return safe_repo_relative_path(path.as_posix())
+
+
+def sanitized_cli_report_path(raw_path: str) -> str:
+    candidate = str(raw_path).strip()
+    if not candidate:
+        return ""
+    path = Path(candidate)
+    if path.is_absolute():
+        try:
+            return path.resolve().relative_to(ROOT.resolve()).as_posix()
+        except (OSError, ValueError):
+            return ""
+    return safe_repo_relative_path(candidate)
+
+
 def run_agent_passport_validate(command: str, document_path: Path) -> dict[str, Any]:
+    cli_document_path = repo_relative_path_for_artifact(document_path)
+    if not cli_document_path:
+        return {
+            "verification_status": "invalid",
+            "verification_state": "V2_passport_referenced",
+            "valid": False,
+            "exit_code": None,
+            "checks": [],
+            "diagnostics": [
+                {
+                    "severity": "error",
+                    "code": "agent_passport_document_path_unsafe",
+                    "message": (
+                        "Agent Passport document path is not safe for report-only validation."
+                    ),
+                }
+            ],
+        }
     try:
         result = subprocess.run(
-            [command, "validate", "--json", document_path.as_posix()],
+            [command, "validate", "--json", cli_document_path],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -18560,13 +18598,32 @@ def run_agent_passport_validate(command: str, document_path: Path) -> dict[str, 
                 }
             ],
         }
+    diagnostics: list[dict[str, Any]] = []
     try:
         payload = json.loads(result.stdout)
     except json.JSONDecodeError:
-        payload = []
-    report = (
-        payload[0] if isinstance(payload, list) and payload and isinstance(payload[0], dict) else {}
-    )
+        payload = None
+        diagnostics.append(
+            {
+                "severity": "error",
+                "code": "agent_passport_cli_json_unparseable",
+                "message": "Agent Passport CLI did not emit parseable JSON.",
+            }
+        )
+    if isinstance(payload, list):
+        report = payload[0] if payload and isinstance(payload[0], dict) else {}
+    elif isinstance(payload, dict):
+        report = payload
+    else:
+        report = {}
+    if payload is not None and not report:
+        diagnostics.append(
+            {
+                "severity": "error",
+                "code": "agent_passport_cli_json_unexpected_shape",
+                "message": "Agent Passport CLI JSON did not contain a validation report object.",
+            }
+        )
     checks = []
     for check in report.get("checks", []):
         if not isinstance(check, dict):
@@ -18574,7 +18631,7 @@ def run_agent_passport_validate(command: str, document_path: Path) -> dict[str, 
         checks.append(
             {
                 "severity": str(check.get("severity", "")).strip(),
-                "path": str(check.get("path", "")).strip(),
+                "path": sanitized_cli_report_path(str(check.get("path", ""))),
                 "message": str(check.get("message", "")).strip(),
             }
         )
@@ -18585,17 +18642,7 @@ def run_agent_passport_validate(command: str, document_path: Path) -> dict[str, 
         "valid": valid,
         "exit_code": result.returncode,
         "checks": checks,
-        "diagnostics": (
-            []
-            if payload
-            else [
-                {
-                    "severity": "error",
-                    "code": "agent_passport_cli_json_unparseable",
-                    "message": "Agent Passport CLI did not emit parseable JSON.",
-                }
-            ]
-        ),
+        "diagnostics": diagnostics,
     }
 
 

@@ -27221,6 +27221,69 @@ def test_build_agent_passport_verification_report_marks_valid_passports(
     assert "apiVersion" not in dumped
 
 
+def test_run_agent_passport_validate_uses_relative_paths_and_accepts_json_object(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    document_path = repo_fixture / "tools" / "agent_passports" / "example.passport.yaml"
+    document_path.parent.mkdir(parents=True, exist_ok=True)
+    document_path.write_text("passport: {}\n", encoding="utf-8")
+
+    def fake_run(
+        args: list[str],
+        *,
+        cwd: Path,
+        capture_output: bool,
+        text: bool,
+        check: bool,
+        timeout: int,
+    ) -> subprocess.CompletedProcess[str]:
+        assert cwd == repo_fixture
+        assert capture_output is True
+        assert text is True
+        assert check is False
+        assert timeout == 30
+        assert args == [
+            "agent-passport",
+            "validate",
+            "--json",
+            "tools/agent_passports/example.passport.yaml",
+        ]
+        return subprocess.CompletedProcess(
+            args,
+            0,
+            stdout=json.dumps(
+                {
+                    "valid": True,
+                    "checks": [
+                        {
+                            "severity": "info",
+                            "path": document_path.as_posix(),
+                            "message": "ok",
+                        }
+                    ],
+                }
+            ),
+            stderr="",
+        )
+
+    monkeypatch.setattr(supervisor_module.subprocess, "run", fake_run)
+
+    result = supervisor_module.run_agent_passport_validate("agent-passport", document_path)
+
+    assert result["verification_status"] == "valid"
+    assert result["valid"] is True
+    assert result["checks"] == [
+        {
+            "severity": "info",
+            "path": "tools/agent_passports/example.passport.yaml",
+            "message": "ok",
+        }
+    ]
+    assert repo_fixture.as_posix() not in json.dumps(result, sort_keys=True)
+
+
 def test_build_agent_passport_verification_report_reports_unavailable_document(
     supervisor_module: object,
     monkeypatch: pytest.MonkeyPatch,
