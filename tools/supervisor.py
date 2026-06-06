@@ -18051,17 +18051,39 @@ def inspect_external_consumer_checkout(checkout_hint: str, repo_url: str) -> dic
             )
             if revision_result.returncode == 0:
                 repo_revision = revision_result.stdout.strip()
-            remote_result = subprocess.run(
-                ["git", "remote", "get-url", "origin"],
+            remote_names_result = subprocess.run(
+                ["git", "remote"],
                 cwd=checkout_path,
                 capture_output=True,
                 text=True,
                 check=False,
             )
-            if remote_result.returncode == 0:
-                remote_url = remote_result.stdout.strip()
-            if remote_url and repo_url:
-                remote_matches = normalize_repo_url(remote_url) == normalize_repo_url(repo_url)
+            remote_names = (
+                [line.strip() for line in remote_names_result.stdout.splitlines() if line.strip()]
+                if remote_names_result.returncode == 0
+                else ["origin"]
+            )
+            for remote_name in remote_names:
+                remote_result = subprocess.run(
+                    ["git", "remote", "get-url", remote_name],
+                    cwd=checkout_path,
+                    capture_output=True,
+                    text=True,
+                    check=False,
+                )
+                if remote_result.returncode != 0:
+                    continue
+                candidate_url = remote_result.stdout.strip()
+                if not remote_url:
+                    remote_url = candidate_url
+                if candidate_url and repo_url:
+                    candidate_matches = normalize_repo_url(candidate_url) == normalize_repo_url(
+                        repo_url
+                    )
+                    remote_matches = bool(remote_matches) or candidate_matches
+                    if candidate_matches:
+                        remote_url = candidate_url
+                        break
 
     return {
         "status": "available",
@@ -20135,6 +20157,7 @@ def build_external_consumer_index() -> dict[str, Any]:
             "artifacts": artifact_reports,
             "metric_bindings": metric_bindings,
             "registry": copy.deepcopy(consumer.get("registry", {})),
+            "handoff_contract": copy.deepcopy(consumer.get("handoff_contract", {})),
             "notes": str(consumer.get("notes", "")).strip(),
         }
         entries.append(entry)
@@ -20429,6 +20452,68 @@ def write_external_consumer_overlay(overlay: dict[str, Any]) -> Path:
     return path
 
 
+def external_consumer_specspace_profiles() -> set[str]:
+    return {
+        str(item).strip()
+        for item in external_consumer_handoff_policy_lookup("specspace_handoff.consumer_profiles")
+        if str(item).strip()
+    }
+
+
+def is_specspace_external_consumer(entry: dict[str, Any]) -> bool:
+    profile = str(entry.get("profile", "")).strip()
+    return bool(profile and profile in external_consumer_specspace_profiles())
+
+
+def external_consumer_handoff_contract(entry: dict[str, Any]) -> dict[str, Any]:
+    raw_contract = entry.get("handoff_contract", {})
+    contract = copy.deepcopy(raw_contract) if isinstance(raw_contract, dict) else {}
+    if not contract:
+        contract = {
+            "consumer_category": str(
+                external_consumer_handoff_policy_lookup(
+                    "specspace_handoff.default_consumer_category"
+                )
+            ).strip(),
+            "artifact_contract": copy.deepcopy(
+                external_consumer_handoff_policy_lookup(
+                    "specspace_handoff.default_artifact_contract"
+                )
+            ),
+            "expected_consumer_behavior": copy.deepcopy(
+                external_consumer_handoff_policy_lookup(
+                    "specspace_handoff.default_expected_consumer_behavior"
+                )
+            ),
+            "evidence_contract": copy.deepcopy(
+                external_consumer_handoff_policy_lookup(
+                    "specspace_handoff.default_evidence_contract"
+                )
+            ),
+        }
+    return contract
+
+
+def external_consumer_handoff_artifact_contract(entry: dict[str, Any]) -> dict[str, Any]:
+    contract = external_consumer_handoff_contract(entry)
+    artifact_contract = contract.get("artifact_contract", {})
+    if isinstance(artifact_contract, dict):
+        return copy.deepcopy(artifact_contract)
+    return copy.deepcopy(
+        external_consumer_handoff_policy_lookup("specspace_handoff.default_artifact_contract")
+    )
+
+
+def specspace_handoff_contract_ready(entry: dict[str, Any]) -> bool:
+    artifact_contract = external_consumer_handoff_artifact_contract(entry)
+    required_status = str(
+        external_consumer_handoff_policy_lookup("specspace_handoff.required_contract_status")
+    ).strip()
+    status = str(artifact_contract.get("status", "")).strip()
+    paths = [str(path).strip() for path in artifact_contract.get("paths", []) if str(path).strip()]
+    return bool(status == required_status and paths)
+
+
 def derive_external_consumer_handoff_status(
     *,
     reference_state: str,
@@ -20553,10 +20638,27 @@ def build_external_consumer_handoff_packets(
             reference_state=reference_state,
             bridge_state=bridge_state,
         )
+        specspace_consumer = is_specspace_external_consumer(raw_entry)
+        specspace_contract_ready = (
+            specspace_handoff_contract_ready(raw_entry) if specspace_consumer else False
+        )
+        if (
+            specspace_consumer
+            and handoff_status == "ready_for_handoff"
+            and not specspace_contract_ready
+        ):
+            handoff_status = "blocked_by_bridge_gap"
         next_gap = derive_external_consumer_handoff_next_gap(
             handoff_status=handoff_status,
             overlay_entry=overlay_entry if isinstance(overlay_entry, dict) else {},
         )
+        if specspace_consumer and not specspace_contract_ready:
+            next_gap = (
+                str(
+                    external_consumer_handoff_policy_lookup("specspace_handoff.blocked_next_gap")
+                ).strip()
+                or next_gap
+            )
         metric_ids = sorted(
             {
                 str(binding.get("metric_id", "")).strip()
@@ -20599,13 +20701,19 @@ def build_external_consumer_handoff_packets(
         transition_packet = None
         validation_report = None
         if handoff_status == "ready_for_handoff":
+            transition_intent = (
+                "handoff bounded SpecGraph metric and bridge surfaces to external consumer "
+                f"{str(raw_entry.get('title', consumer_id)).strip()}"
+            )
+            if specspace_consumer:
+                transition_intent = (
+                    "handoff bounded SpecGraph artifact contracts to SpecSpace consumer "
+                    f"{str(raw_entry.get('title', consumer_id)).strip()}"
+                )
             transition_packet = {
                 "packet_type": EXTERNAL_CONSUMER_HANDOFF_PACKET_TYPE,
                 "transition_profile": EXTERNAL_CONSUMER_HANDOFF_TRANSITION_PROFILE,
-                "transition_intent": (
-                    "handoff bounded SpecGraph metric and bridge surfaces to external consumer "
-                    f"{str(raw_entry.get('title', consumer_id)).strip()}"
-                ),
+                "transition_intent": transition_intent,
                 "source_refs": copy.deepcopy(source_refs),
                 "actor_class": "supervisor_derived",
                 "target_artifact_class": EXTERNAL_CONSUMER_HANDOFF_TARGET_ARTIFACT_CLASS,
@@ -20620,6 +20728,30 @@ def build_external_consumer_handoff_packets(
                 validator_profile=EXTERNAL_CONSUMER_HANDOFF_TRANSITION_PROFILE,
             )
 
+        handoff_contract = (
+            external_consumer_handoff_contract(raw_entry) if specspace_consumer else {}
+        )
+        artifact_contract = (
+            external_consumer_handoff_artifact_contract(raw_entry) if specspace_consumer else {}
+        )
+        expected_consumer_behavior = (
+            copy.deepcopy(handoff_contract.get("expected_consumer_behavior", []))
+            if specspace_consumer
+            else []
+        )
+        evidence_contract = (
+            copy.deepcopy(handoff_contract.get("evidence_contract", {}))
+            if specspace_consumer
+            else {}
+        )
+        privacy_boundary = (
+            copy.deepcopy(
+                external_consumer_handoff_policy_lookup("specspace_handoff.privacy_boundary")
+            )
+            if specspace_consumer
+            else {}
+        )
+        local_checkout_hint_for_packet = "" if specspace_consumer else local_checkout_hint
         entry = {
             "handoff_id": f"external_consumer_handoff::{consumer_id}",
             "consumer_id": consumer_id,
@@ -20629,7 +20761,12 @@ def build_external_consumer_handoff_packets(
             "handoff_status": handoff_status,
             "review_state": review_state,
             "next_gap": next_gap,
+            "consumer_category": str(handoff_contract.get("consumer_category", "")).strip(),
             "policy_reference": external_consumer_handoff_policy_reference(),
+            "artifact_contract": artifact_contract,
+            "expected_consumer_behavior": expected_consumer_behavior,
+            "evidence_contract": evidence_contract,
+            "privacy_boundary": privacy_boundary,
             "bound_metric_ids": metric_ids,
             "legacy_bound_metric_ids": legacy_metric_ids,
             "bound_metrics": bound_metrics,
@@ -20639,7 +20776,7 @@ def build_external_consumer_handoff_packets(
                 "consumer_id": consumer_id,
                 "profile": str(raw_entry.get("profile", "")).strip(),
                 "repo_url": str(raw_entry.get("repo_url", "")).strip(),
-                "local_checkout_hint": local_checkout_hint,
+                "local_checkout_hint": local_checkout_hint_for_packet,
             },
             "transition_packet": transition_packet,
             "transition_packet_validation": validation_report,
@@ -20654,6 +20791,8 @@ def build_external_consumer_handoff_packets(
             named_filters["blocked_by_bridge_gap"].append(consumer_id)
         if handoff_status == "draft_reference_only":
             named_filters["draft_reference_only"].append(consumer_id)
+        if specspace_consumer:
+            named_filters["specspace_consumer"].append(consumer_id)
         if threshold_proposal_ids:
             named_filters["threshold_driven"].append(consumer_id)
         if validation_report and not validation_report.get("ok"):

@@ -830,5 +830,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0065",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0065_specspace_external_consumer_handoff_realization.md"
+    ],
+    "motivating_concern": "SpecGraph needs to turn the SpecSpace external-consumer meta-plan into a concrete handoff packet slice without creating a parallel task or handoff surface",
+    "normalized_title": "SpecSpace External Consumer Handoff Realization",
+    "bounded_scope": "Extend the existing external_consumer_handoff_packets plane with a SpecSpace consumer profile, producer artifact contract fields, expected consumer behavior, privacy boundary, and report-only evidence contract without implementing SpecSpace UI, cross-repo evidence ingestion, Platform deploy changes, or a new handoff index artifact.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

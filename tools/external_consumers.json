@@ -10,7 +10,8 @@
   ],
   "consumer_profiles": [
     "sibling_metric_consumer",
-    "boundary_package_consumer"
+    "boundary_package_consumer",
+    "graph_operator_surface_consumer"
   ],
   "contract_statuses": [
     "ready",
@@ -204,6 +205,93 @@
         }
       ],
       "notes": "Draft boundary package consumer for SpecGraph -> SpecPM export preview and later package import/export bridge work."
+    },
+    {
+      "consumer_id": "specspace",
+      "title": "SpecSpace / Graph Operator Surface",
+      "reference_state": "stable_reference",
+      "profile": "graph_operator_surface_consumer",
+      "repo_url": "https://github.com/0al-spec/SpecSpace",
+      "local_checkout_hint": "/Users/egor/Development/GitHub/0AL/SpecSpace",
+      "metric_bindings": [],
+      "declared_artifacts": [
+        {
+          "artifact_id": "specspace_readme",
+          "path": "README.md",
+          "kind": "consumer_readme",
+          "required": true,
+          "markers": [
+            "# ContextBuilder",
+            "Graph-to-Context Pipeline"
+          ]
+        },
+        {
+          "artifact_id": "specspace_graphspace_package",
+          "path": "graphspace/package.json",
+          "kind": "consumer_package_manifest",
+          "required": true,
+          "markers": [
+            "\"name\": \"graphspace\"",
+            "\"@xyflow/react\""
+          ]
+        }
+      ],
+      "handoff_contract": {
+        "consumer_category": "specspace_operator_surface",
+        "source_proposal_ids": [
+          "0056",
+          "0059"
+        ],
+        "source_gap": "agent_executor_passport_visibility_not_projected_to_specspace",
+        "artifact_contract": {
+          "producer": "SpecGraph",
+          "status": "draft",
+          "paths": [
+            "runs/supervisor_executor_adapter_index.json",
+            "runs/agent_surface_index.json",
+            "runs/agent_verification_gap_index.json"
+          ],
+          "stable_fields": [
+            "artifact_kind",
+            "schema_version",
+            "summary",
+            "entries",
+            "surfaces",
+            "gaps"
+          ],
+          "local_only_fields_forbidden": true
+        },
+        "expected_consumer_behavior": [
+          "show agent and executor authority surfaces when producer artifacts are available",
+          "show verification gaps without exposing raw local paths or supervisor logs",
+          "show fallback state when producer artifacts are absent or draft"
+        ],
+        "evidence_contract": {
+          "artifact_kind": "external_consumer_evidence",
+          "schema_version": 1,
+          "required_fields": [
+            "handoff_id",
+            "consumer",
+            "implementation_ref",
+            "consumed_artifacts",
+            "evidence",
+            "result"
+          ],
+          "accepted_evidence_kinds": [
+            "test",
+            "smoke",
+            "screenshot",
+            "operator_note",
+            "pull_request"
+          ],
+          "result_values": [
+            "implemented",
+            "blocked",
+            "deferred"
+          ]
+        }
+      },
+      "notes": "Stable SpecSpace consumer entry for supervisor-derived handoff packets. The initial 0056/0059 producer contract is draft until the executor and Agent Passport indexes exist."
     }
   ]
 }
