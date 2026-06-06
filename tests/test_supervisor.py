@@ -26069,6 +26069,173 @@ def test_proposal_0056_executor_adapter_contract_keeps_runtime_followup_open(
     assert entry["reflective_chain"]["next_gap"] == "runtime_realization"
 
 
+def test_proposal_work_claim_report_flags_expired_and_duplicate_claims(
+    supervisor_module: object,
+) -> None:
+    report = supervisor_module.build_proposal_work_claim_report(
+        claims=[
+            {
+                "claim_id": "claim-a",
+                "proposal_id": "0063",
+                "scope": "contract",
+                "owner": "codex",
+                "branch": "codex/claim-a",
+                "claimed_at": "2026-06-01T00:00:00Z",
+                "expires_at": "2026-06-13T00:00:00Z",
+                "allowed_paths": ["docs/proposals/0063_proposal_work_claim_locks.md"],
+            },
+            {
+                "claim_id": "claim-b",
+                "proposal_id": "0063",
+                "scope": "contract",
+                "owner": "codex",
+                "branch": "codex/claim-b",
+                "claimed_at": "2026-06-01T00:00:00Z",
+                "expires_at": "2026-06-13T00:00:00Z",
+                "allowed_paths": ["tools/supervisor.py"],
+            },
+            {
+                "claim_id": "claim-stale",
+                "proposal_id": "0062",
+                "scope": "runtime",
+                "owner": "codex",
+                "branch": "codex/stale",
+                "claimed_at": "2026-05-01T00:00:00Z",
+                "expires_at": "2026-05-02T00:00:00Z",
+                "allowed_paths": ["docs/proposals/0062_proto_graph_recursive_refinement.md"],
+            },
+        ],
+        generated_at="2026-06-06T00:00:00Z",
+    )
+
+    blocking_codes = {finding["code"] for finding in report["blocking_findings"]}
+    assert "duplicate_active_claim" in blocking_codes
+    assert "expired_claim" in blocking_codes
+    assert report["summary"]["active_count"] == 2
+    assert report["summary"]["blocking_count"] == 2
+
+
+def test_proposal_id_allocator_uses_docs_registries_and_claims(
+    repo_fixture: Path,
+    supervisor_module: object,
+) -> None:
+    (repo_fixture / "docs" / "proposals").mkdir(parents=True)
+    (repo_fixture / "docs" / "archive" / "proposal_sources").mkdir(parents=True)
+    (repo_fixture / "docs" / "proposals_drafts").mkdir(parents=True)
+    (repo_fixture / "tools").mkdir()
+    (repo_fixture / "docs" / "proposals" / "0001_first.md").write_text(
+        "# First\n",
+        encoding="utf-8",
+    )
+    source_path = repo_fixture / "docs" / "archive" / "proposal_sources" / "0002_second.md"
+    source_path.write_text("# Second\n", encoding="utf-8")
+    (repo_fixture / "docs" / "proposals_drafts" / "0003_third.md").write_text(
+        "# Third\n",
+        encoding="utf-8",
+    )
+    (repo_fixture / "tools" / "proposal_runtime_registry.json").write_text(
+        json.dumps([{"proposal_id": "0004"}]),
+        encoding="utf-8",
+    )
+    (repo_fixture / "tools" / "proposal_promotion_registry.json").write_text(
+        json.dumps([{"proposal_id": "0005"}]),
+        encoding="utf-8",
+    )
+    (repo_fixture / "tools" / "proposal_work_claims.json").write_text(
+        json.dumps([{"proposal_id": "0006", "claim_id": "claim-0006"}]),
+        encoding="utf-8",
+    )
+
+    allocation = supervisor_module.build_proposal_id_allocation()
+
+    assert allocation["ok"] is True
+    assert allocation["next_proposal_id"] == "0007"
+    assert allocation["summary"]["highest_used_id"] == "0006"
+    assert allocation["summary"]["used_id_count"] == 6
+
+
+def test_proposal_id_allocator_blocks_conflicting_markdown_slugs(
+    repo_fixture: Path,
+    supervisor_module: object,
+) -> None:
+    (repo_fixture / "docs" / "proposals").mkdir(parents=True)
+    (repo_fixture / "docs" / "proposals" / "0001_first.md").write_text(
+        "# First\n",
+        encoding="utf-8",
+    )
+    (repo_fixture / "docs" / "proposals" / "0001_other.md").write_text(
+        "# Other\n",
+        encoding="utf-8",
+    )
+
+    allocation = supervisor_module.build_proposal_id_allocation()
+
+    assert allocation["ok"] is False
+    assert allocation["next_proposal_id"] is None
+    assert {finding["code"] for finding in allocation["blocking_findings"]} == {
+        "conflicting_proposal_slugs",
+    }
+
+
+def test_main_proposal_work_claim_gate_passes_empty_registry(
+    repo_fixture: Path,
+    supervisor_module: object,
+) -> None:
+    tools_dir = repo_fixture / "tools"
+    tools_dir.mkdir()
+    (tools_dir / "proposal_work_claims.json").write_text("[]\n", encoding="utf-8")
+
+    exit_code = supervisor_module.main(check_proposal_work_claim_gate_mode=True)
+
+    assert exit_code == 0
+    report = json.loads(
+        (repo_fixture / "runs" / "proposal_work_claim_report.json").read_text(encoding="utf-8")
+    )
+    assert report["artifact_kind"] == "proposal_work_claim_report"
+    assert report["summary"]["blocking_count"] == 0
+
+
+def test_main_proposal_work_claim_gate_blocks_duplicate_active_scope(
+    repo_fixture: Path,
+    supervisor_module: object,
+) -> None:
+    tools_dir = repo_fixture / "tools"
+    tools_dir.mkdir()
+    claims = [
+        {
+            "claim_id": "claim-a",
+            "proposal_id": "0063",
+            "scope": "contract",
+            "owner": "codex",
+            "branch": "codex/claim-a",
+            "claimed_at": "2026-06-01T00:00:00Z",
+            "expires_at": "2099-01-01T00:00:00Z",
+            "allowed_paths": ["docs/proposals/0063_proposal_work_claim_locks.md"],
+        },
+        {
+            "claim_id": "claim-b",
+            "proposal_id": "0063",
+            "scope": "contract",
+            "owner": "codex",
+            "branch": "codex/claim-b",
+            "claimed_at": "2026-06-01T00:00:00Z",
+            "expires_at": "2099-01-01T00:00:00Z",
+            "allowed_paths": ["tools/supervisor.py"],
+        },
+    ]
+    (tools_dir / "proposal_work_claims.json").write_text(json.dumps(claims), encoding="utf-8")
+
+    exit_code = supervisor_module.main(check_proposal_work_claim_gate_mode=True)
+
+    assert exit_code == 1
+    report = json.loads(
+        (repo_fixture / "runs" / "proposal_work_claim_report.json").read_text(encoding="utf-8")
+    )
+    assert {finding["code"] for finding in report["blocking_findings"]} == {
+        "duplicate_active_claim",
+    }
+
+
 def test_all_implemented_proposals_have_registry_entries() -> None:
     """Every Implemented proposal must have a registry entry with at least one marker."""
     registry_path = SPECGRAPH_ROOT / "tools" / "proposal_runtime_registry.json"

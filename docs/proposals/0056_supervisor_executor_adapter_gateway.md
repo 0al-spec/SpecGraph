@@ -198,7 +198,14 @@ can run:
   "supports_tool_allowlist": false,
   "protocol_contract": "run_outcome_blocker",
   "auth_isolation": "isolated_child_home",
-  "config_isolation": "isolated_child_home"
+  "config_isolation": "isolated_child_home",
+  "passport_ref": "agent-passport://executors/codex-cli/0.1.0",
+  "passport_validation": {
+    "required": false,
+    "tool_status": "available",
+    "validation_state": "not_attempted",
+    "diagnostics": []
+  }
 }
 ```
 
@@ -215,6 +222,34 @@ Suggested `authority_state` values:
 
 Experimental backends should default to read-only smoke tests until their
 observed behavior is good enough for a bounded trial.
+
+## Agent Passport CLI Discovery Contract
+
+The executor adapter gateway is the lowest SpecGraph layer that should discover
+and diagnose Agent Passport tooling for executor backends.
+
+Discovery is intentionally operational, not authoritative:
+
+- `AGENT_PASSPORT_BIN` may point to an explicit local validator binary;
+- otherwise the gateway may look for `agent-passport` on `PATH`;
+- missing or unusable tooling is reported as a verification gap, not as proof
+  that an executor is trusted or untrusted;
+- raw passport files, signatures, local paths, and validator stderr remain
+  local-only unless a later reviewed contract explicitly permits safe
+  projection.
+
+Candidate diagnostic values:
+
+| Field | Values |
+| --- | --- |
+| `tool_status` | `available`, `missing`, `not_executable`, `version_check_failed` |
+| `validation_state` | `not_attempted`, `schema_valid`, `signature_verified`, `failed` |
+| `gap` | `verification_tool_unavailable`, `passport_ref_missing`, `signature_unverified`, `runtime_enforcement_unknown` |
+
+The gateway may include these fields in an executor adapter index or smoke
+report. It must not make Agent Passport CLI availability a hard dependency for
+ordinary Codex-backed supervisor operation until `0059` defines a stricter
+adoption gate.
 
 ## Normalized Run Result
 

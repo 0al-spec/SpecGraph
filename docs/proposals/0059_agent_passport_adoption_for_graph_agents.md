@@ -114,6 +114,8 @@ Such drift is incompatible with the zero-trust agent model.
 - Preserve the distinction between declared authority, verified identity,
   runtime enforcement, and observed execution.
 - Link supervisor executor adapter backends to declared agent identities.
+- Consume executor-side Agent Passport CLI discovery diagnostics from `0056`
+  instead of adding a second direct validator discovery path.
 - Keep SpecSpace as a consumer of safe derived surfaces, not raw local executor
   logs or private passport material.
 
@@ -293,6 +295,12 @@ policy mapping is incomplete.
       "gap": "unsigned_passport",
       "severity": "medium",
       "reason": "Passport draft exists but signature verification is not available."
+    },
+    {
+      "agent_surface": "specgraph.executor.codex",
+      "gap": "verification_tool_unavailable",
+      "severity": "medium",
+      "reason": "Executor adapter gateway did not find an Agent Passport validator CLI."
     }
   ]
 }
@@ -404,7 +412,9 @@ model.
 ## Relationship To Existing Proposals
 
 - `0056_supervisor_executor_adapter_gateway.md` defines the launch-and-observe
-  boundary for nested executor agents.
+  boundary for nested executor agents. It is also the owner of Agent Passport
+  CLI discovery diagnostics for executor backends; this proposal consumes those
+  diagnostics as verification gaps rather than rediscovering validator tooling.
 - `0057_graph_operator_surface_request_preparation.md` defines the operator
   surface preparation boundary where assistant agents may appear.
 - `0052_product_workspace_governance_profile.md` and
@@ -481,12 +491,14 @@ Suggested bounded slices:
 2. Agent surface index builder.
 3. Known passport index builder for configured references.
 4. Verification gap index builder.
-5. Link executor adapter index entries to agent passport identities.
-6. Link supervisor run provenance to supervisor/executor passport identities.
-7. Project agent authority summary into viewer-facing surfaces.
-8. Add optional verification checks for signature, validity, integrity hashes,
+5. Consume `0056` executor adapter Agent Passport CLI diagnostics and normalize
+   them into `agent_verification_gap_index`.
+6. Link executor adapter index entries to agent passport identities.
+7. Link supervisor run provenance to supervisor/executor passport identities.
+8. Project agent authority summary into viewer-facing surfaces.
+9. Add optional verification checks for signature, validity, integrity hashes,
    and stale passport source revisions.
-9. Coordinate with SpecSpace for an agent authority panel after artifacts are
+10. Coordinate with SpecSpace for an agent authority panel after artifacts are
    stable.
 
 ## Acceptance Criteria

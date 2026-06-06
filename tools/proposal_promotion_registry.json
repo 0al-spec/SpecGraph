@@ -804,5 +804,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0063",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0063_proposal_work_claim_locks.md"
+    ],
+    "motivating_concern": "proposal implementation work needs a visible ownership signal and deterministic ID allocation so overlapping, stale, or conflicting proposal work can be reviewed before merge",
+    "normalized_title": "Proposal Work Claim Locks",
+    "bounded_scope": "Define repository-tracked proposal work claims, a derived claim report, a gate for malformed, expired, or duplicate active claims, and a read-only proposal ID allocator without implementing a distributed lock service, mandatory claims for every PR, automatic proposal file creation, or mutation authority.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]
