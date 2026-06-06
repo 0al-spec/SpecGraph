@@ -2932,5 +2932,19 @@
         "pattern": "runs/proposal_work_claim_report.json"
       }
     ]
+  },
+  {
+    "proposal_id": "0064",
+    "posture": "bounded_runtime_followup",
+    "runtime_surfaces": [
+      "docs/proposals/0064_supervisor_external_consumer_handoff_loop.md",
+      "docs/archive/proposal_sources/0064_supervisor_external_consumer_handoff_loop.md",
+      "runs/external_consumer_handoff_index.json",
+      "runs/external_consumer_evidence_index.json",
+      "tools/external_consumer_handoff_policy.json"
+    ],
+    "runtime_markers": [],
+    "validation_markers": [],
+    "observation_markers": []
   }
 ]
