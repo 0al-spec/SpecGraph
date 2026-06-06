@@ -40,6 +40,12 @@
       "contract_mismatch",
       "handoff_missing"
     ],
+    "accepted_evidence_statuses": [
+      "merged",
+      "pass",
+      "passed",
+      "success"
+    ],
     "named_filters": [
       "accepted",
       "blocked",

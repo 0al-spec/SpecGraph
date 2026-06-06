@@ -3233,6 +3233,13 @@ EXTERNAL_CONSUMER_EVIDENCE_SCHEMA_VERSION = int(
 EXTERNAL_CONSUMER_EVIDENCE_STATUSES = list(
     external_consumer_handoff_policy_lookup("evidence_acceptance.acceptance_statuses")
 )
+EXTERNAL_CONSUMER_EVIDENCE_ACCEPTED_ITEM_STATUSES = {
+    str(status).strip()
+    for status in external_consumer_handoff_policy_lookup(
+        "evidence_acceptance.accepted_evidence_statuses"
+    )
+    if str(status).strip()
+}
 EXTERNAL_CONSUMER_EVIDENCE_NAMED_FILTERS = list(
     external_consumer_handoff_policy_lookup("evidence_acceptance.named_filters")
 )
@@ -21892,6 +21899,7 @@ def external_consumer_evidence_policy_reference() -> dict[str, Any]:
         "artifact_sha256": EXTERNAL_CONSUMER_HANDOFF_POLICY_SHA256,
         "registry_path": external_consumer_evidence_registry_relative_path(),
         "schema_version": EXTERNAL_CONSUMER_EVIDENCE_SCHEMA_VERSION,
+        "accepted_evidence_statuses": sorted(EXTERNAL_CONSUMER_EVIDENCE_ACCEPTED_ITEM_STATUSES),
     }
 
 
@@ -21909,9 +21917,27 @@ def external_consumer_evidence_entries(registry: dict[str, Any]) -> list[dict[st
     return [copy.deepcopy(item) for item in registry.get("entries", []) if isinstance(item, dict)]
 
 
+def external_consumer_evidence_items_value(evidence_entry: dict[str, Any]) -> list[dict[str, Any]]:
+    evidence_value = evidence_entry.get("evidence", [])
+    if not isinstance(evidence_value, list):
+        return []
+    return [item for item in evidence_value if isinstance(item, dict)]
+
+
 def local_only_path_marker_present(payload: dict[str, Any]) -> bool:
     dumped = json.dumps(payload, ensure_ascii=False, sort_keys=True)
-    return any(marker in dumped for marker in ("/Users/", "file://", "/private/tmp/"))
+    return any(
+        marker in dumped
+        for marker in (
+            "/Users/",
+            "/home/",
+            "/root/",
+            "/private/tmp/",
+            "file://",
+            "C:/Users/",
+            "C:\\\\Users\\\\",
+        )
+    ) or bool(re.search(r"[A-Za-z]:\\\\Users\\\\", dumped))
 
 
 def normalize_external_consumer_evidence_ref(item: dict[str, Any]) -> dict[str, Any]:
@@ -21934,8 +21960,7 @@ def derive_external_consumer_evidence_acceptance(
     result = str(evidence_entry.get("result", "")).strip()
     evidence_items = [
         normalize_external_consumer_evidence_ref(item)
-        for item in evidence_entry.get("evidence", [])
-        if isinstance(item, dict)
+        for item in external_consumer_evidence_items_value(evidence_entry)
     ]
     diagnostics: list[dict[str, Any]] = []
 
@@ -21955,6 +21980,7 @@ def derive_external_consumer_evidence_acceptance(
             "required_fields": [],
             "missing_required_fields": [],
             "invalid_evidence_kinds": [],
+            "invalid_evidence_statuses": [],
             "missing_consumed_artifacts": [],
             "privacy_violation": local_only_path_marker_present(evidence_entry),
         }
@@ -21980,13 +22006,22 @@ def derive_external_consumer_evidence_acceptance(
     missing_required_fields = [
         field
         for field in required_fields
-        if field not in evidence_entry or evidence_entry.get(field) in ("", [], {})
+        if field not in evidence_entry or evidence_entry.get(field) in (None, "", [], {})
     ]
     invalid_evidence_kinds = sorted(
         {
             str(item.get("kind", "")).strip()
             for item in evidence_items
             if str(item.get("kind", "")).strip() not in accepted_kinds
+        }
+    )
+    invalid_evidence_statuses = sorted(
+        {
+            str(item.get("status", "")).strip()
+            for item in evidence_items
+            if str(item.get("status", "")).strip()
+            and str(item.get("status", "")).strip()
+            not in EXTERNAL_CONSUMER_EVIDENCE_ACCEPTED_ITEM_STATUSES
         }
     )
     consumed_artifacts = {
@@ -22034,6 +22069,23 @@ def derive_external_consumer_evidence_acceptance(
                 "kinds": invalid_evidence_kinds,
             }
         )
+    if "evidence" in evidence_entry and not isinstance(evidence_entry.get("evidence"), list):
+        diagnostics.append(
+            {
+                "severity": "error",
+                "code": "invalid_evidence_shape",
+                "message": "Evidence field must be a list of evidence item objects.",
+            }
+        )
+    if invalid_evidence_statuses:
+        diagnostics.append(
+            {
+                "severity": "error",
+                "code": "invalid_evidence_statuses",
+                "message": "Evidence item status(es) do not prove successful downstream work.",
+                "statuses": invalid_evidence_statuses,
+            }
+        )
     if missing_consumed_artifacts:
         diagnostics.append(
             {
@@ -22051,13 +22103,21 @@ def derive_external_consumer_evidence_acceptance(
                 "message": "Evidence entry contains a local-only path marker.",
             }
         )
-    if str(handoff_entry.get("handoff_status", "")).strip() != "ready_for_handoff":
+    handoff_status = str(handoff_entry.get("handoff_status", "")).strip()
+    stable_producer_contract = str(artifact_contract.get("status", "")).strip() == "stable"
+    handoff_status_acceptable = handoff_status == "ready_for_handoff" or (
+        handoff_status == "blocked_by_bridge_gap" and stable_producer_contract
+    )
+    if not handoff_status_acceptable:
         diagnostics.append(
             {
                 "severity": "error",
                 "code": "handoff_not_ready",
-                "message": "Evidence cannot be accepted until the handoff is ready_for_handoff.",
-                "handoff_status": str(handoff_entry.get("handoff_status", "")).strip(),
+                "message": (
+                    "Evidence cannot be accepted until the handoff is ready or "
+                    "has a stable producer contract."
+                ),
+                "handoff_status": handoff_status,
             }
         )
 
@@ -22085,6 +22145,7 @@ def derive_external_consumer_evidence_acceptance(
         "required_fields": required_fields,
         "missing_required_fields": missing_required_fields,
         "invalid_evidence_kinds": invalid_evidence_kinds,
+        "invalid_evidence_statuses": invalid_evidence_statuses,
         "missing_consumed_artifacts": missing_consumed_artifacts,
         "privacy_violation": privacy_violation,
     }
@@ -22113,8 +22174,7 @@ def build_external_consumer_evidence_index(
         result = str(raw_entry.get("result", "")).strip()
         evidence_items = [
             normalize_external_consumer_evidence_ref(item)
-            for item in raw_entry.get("evidence", [])
-            if isinstance(item, dict)
+            for item in external_consumer_evidence_items_value(raw_entry)
         ]
         handoff_entry = handoffs_by_id.get(handoff_id)
         acceptance = derive_external_consumer_evidence_acceptance(

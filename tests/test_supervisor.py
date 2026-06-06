@@ -11587,6 +11587,154 @@ def test_external_consumer_evidence_uses_policy_registry_path(
     assert index["entries"][0]["evidence_id"] == "custom-evidence"
 
 
+def test_build_external_consumer_evidence_index_rejects_invalid_evidence_payloads(
+    supervisor_module: object,
+) -> None:
+    handoffs = {
+        "entries": [
+            {
+                "handoff_id": "external_consumer_handoff::specspace",
+                "handoff_status": "ready_for_handoff",
+                "artifact_contract": {
+                    "status": "stable",
+                    "paths": ["runs/agent_surface_index.json"],
+                },
+                "evidence_contract": {
+                    "required_fields": [
+                        "handoff_id",
+                        "consumer",
+                        "implementation_ref",
+                        "consumed_artifacts",
+                        "evidence",
+                        "result",
+                    ],
+                    "accepted_evidence_kinds": ["pull_request", "test"],
+                    "result_values": ["implemented"],
+                },
+            }
+        ]
+    }
+    registry = {
+        "entries": [
+            {
+                "evidence_id": "shape",
+                "handoff_id": "external_consumer_handoff::specspace",
+                "consumer_id": "specspace",
+                "consumer": "SpecSpace",
+                "implementation_ref": "https://github.com/0al-spec/SpecSpace/pull/225",
+                "consumed_artifacts": ["runs/agent_surface_index.json"],
+                "evidence": {"kind": "pull_request", "status": "merged"},
+                "result": "implemented",
+            },
+            {
+                "evidence_id": "failed-status",
+                "handoff_id": "external_consumer_handoff::specspace",
+                "consumer_id": "specspace",
+                "consumer": "SpecSpace",
+                "implementation_ref": "https://github.com/0al-spec/SpecSpace/pull/225",
+                "consumed_artifacts": ["runs/agent_surface_index.json"],
+                "evidence": [{"kind": "test", "status": "failed"}],
+                "result": "implemented",
+            },
+            {
+                "evidence_id": "local-path",
+                "handoff_id": "external_consumer_handoff::specspace",
+                "consumer_id": "specspace",
+                "consumer": "SpecSpace",
+                "implementation_ref": "https://github.com/0al-spec/SpecSpace/pull/225",
+                "consumed_artifacts": ["runs/agent_surface_index.json"],
+                "evidence": [{"kind": "test", "status": "success"}],
+                "result": "implemented",
+                "notes": "local run log: /home/alice/run.log",
+            },
+            {
+                "evidence_id": "windows-path",
+                "handoff_id": "external_consumer_handoff::specspace",
+                "consumer_id": "specspace",
+                "consumer": "SpecSpace",
+                "implementation_ref": "https://github.com/0al-spec/SpecSpace/pull/225",
+                "consumed_artifacts": ["runs/agent_surface_index.json"],
+                "evidence": [{"kind": "test", "status": "success"}],
+                "result": "implemented",
+                "notes": "local run log: C:\\Users\\alice\\run.log",
+            },
+        ]
+    }
+
+    index = supervisor_module.build_external_consumer_evidence_index(handoffs, registry)
+
+    diagnostics_by_id = {
+        entry["evidence_id"]: {
+            diagnostic["code"] for diagnostic in entry["contract_evaluation"]["diagnostics"]
+        }
+        for entry in index["entries"]
+    }
+    assert diagnostics_by_id["shape"] == {"invalid_evidence_shape"}
+    assert diagnostics_by_id["failed-status"] == {"invalid_evidence_statuses"}
+    assert diagnostics_by_id["local-path"] == {"privacy_violation"}
+    assert diagnostics_by_id["windows-path"] == {"privacy_violation"}
+    assert index["viewer_projection"]["named_filters"]["contract_mismatch"] == [
+        "failed-status",
+        "local-path",
+        "shape",
+        "windows-path",
+    ]
+
+
+def test_build_external_consumer_evidence_accepts_stable_contract_bridge_gap(
+    supervisor_module: object,
+) -> None:
+    handoffs = {
+        "entries": [
+            {
+                "handoff_id": "external_consumer_handoff::specspace",
+                "handoff_status": "blocked_by_bridge_gap",
+                "artifact_contract": {
+                    "status": "stable",
+                    "paths": ["runs/agent_surface_index.json"],
+                },
+                "evidence_contract": {
+                    "required_fields": [
+                        "handoff_id",
+                        "consumer",
+                        "implementation_ref",
+                        "consumed_artifacts",
+                        "evidence",
+                        "result",
+                    ],
+                    "accepted_evidence_kinds": ["pull_request", "test"],
+                    "result_values": ["implemented"],
+                },
+            }
+        ]
+    }
+    registry = {
+        "entries": [
+            {
+                "evidence_id": "specspace-without-local-checkout",
+                "handoff_id": "external_consumer_handoff::specspace",
+                "consumer_id": "specspace",
+                "consumer": "SpecSpace",
+                "implementation_ref": "https://github.com/0al-spec/SpecSpace/pull/225",
+                "consumed_artifacts": ["runs/agent_surface_index.json"],
+                "evidence": [
+                    {"kind": "pull_request", "status": "merged"},
+                    {"kind": "test", "status": "success"},
+                ],
+                "result": "implemented",
+            }
+        ]
+    }
+
+    index = supervisor_module.build_external_consumer_evidence_index(handoffs, registry)
+
+    entry = index["entries"][0]
+    assert entry["acceptance_status"] == "accepted"
+    assert entry["next_gap"] == "none"
+    assert entry["handoff_reference"]["handoff_status"] == "blocked_by_bridge_gap"
+    assert entry["contract_evaluation"]["diagnostics"] == []
+
+
 def test_main_builds_external_consumer_evidence_as_standalone_command(
     supervisor_module: object,
     repo_fixture: Path,
