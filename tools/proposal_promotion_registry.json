@@ -817,5 +817,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0064",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0064_supervisor_external_consumer_handoff_loop.md"
+    ],
+    "motivating_concern": "SpecGraph supervisor is the canonical gap finder, but SpecSpace implements neighboring product surfaces outside the supervisor execution loop",
+    "normalized_title": "Supervisor External Consumer Handoff Loop",
+    "bounded_scope": "Define SpecGraph-to-SpecSpace handoff and evidence contracts, responsibility boundaries, and consumer-gap closure rules without implementing SpecSpace UI, cross-repository task execution, automatic deploy changes, or Platform orchestration.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]
