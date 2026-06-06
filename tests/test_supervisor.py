@@ -10612,6 +10612,37 @@ def test_external_consumer_checkout_uses_sibling_fallback_when_hint_missing(
     assert checkout["remote_matches"] is True
 
 
+def test_external_consumer_checkout_matches_named_remote(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    if shutil.which("git") is None:
+        pytest.skip("git is required for checkout inspection")
+
+    specspace_root = repo_fixture.parent / "SpecSpace"
+    shutil.rmtree(specspace_root, ignore_errors=True)
+    specspace_root.mkdir()
+    subprocess.run(["git", "init"], cwd=specspace_root, check=True, capture_output=True, text=True)
+    subprocess.run(
+        ["git", "remote", "add", "specspace", "git@github.com:0al-spec/SpecSpace.git"],
+        cwd=specspace_root,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    checkout = supervisor_module.inspect_external_consumer_checkout(
+        specspace_root.as_posix(),
+        "https://github.com/0al-spec/SpecSpace",
+    )
+
+    assert checkout["status"] == "available"
+    assert checkout["checkout_path"] == specspace_root.as_posix()
+    assert checkout["is_git_checkout"] is True
+    assert checkout["remote_url"] == "git@github.com:0al-spec/SpecSpace.git"
+    assert checkout["remote_matches"] is True
+
+
 def test_external_consumer_checkout_uses_configured_checkout_root(
     supervisor_module: object,
     repo_fixture: Path,
@@ -11000,6 +11031,256 @@ def test_build_external_consumer_handoff_packets_links_canonical_sib_proposals_f
     assert entry["bound_metric_ids"] == ["sib_proxy"]
     assert entry["threshold_proposal_ids"] == ["metric-sib-followup"]
     assert report["viewer_projection"]["named_filters"]["threshold_driven"] == ["metrics_sib"]
+
+
+def test_build_external_consumer_handoff_packets_emits_ready_specspace_contract(
+    supervisor_module: object,
+) -> None:
+    consumer_index = {
+        "generated_at": "2026-04-20T00:00:00Z",
+        "entries": [
+            {
+                "consumer_id": "specspace",
+                "title": "SpecSpace / Graph Operator Surface",
+                "reference_state": "stable_reference",
+                "profile": "graph_operator_surface_consumer",
+                "repo_url": "https://github.com/0al-spec/SpecSpace",
+                "local_checkout": {
+                    "checkout_path": "/Users/egor/Development/GitHub/0AL/SpecSpace",
+                },
+                "metric_bindings": [],
+                "handoff_contract": {
+                    "source_proposal_ids": ["0056", "0059"],
+                    "source_gap": "agent_executor_passport_visibility_not_projected_to_specspace",
+                    "artifact_contract": {
+                        "producer": "SpecGraph",
+                        "status": "stable",
+                        "paths": [
+                            "runs/supervisor_executor_adapter_index.json",
+                            "runs/agent_surface_index.json",
+                            "runs/agent_verification_gap_index.json",
+                        ],
+                        "stable_fields": [
+                            "artifact_kind",
+                            "schema_version",
+                            "summary",
+                            "entries",
+                        ],
+                        "local_only_fields_forbidden": True,
+                    },
+                },
+            }
+        ],
+    }
+    overlay = {
+        "generated_at": "2026-04-20T00:00:01Z",
+        "entries": [
+            {
+                "consumer_id": "specspace",
+                "bridge_state": "stable_ready",
+                "next_gap": "none",
+            }
+        ],
+    }
+
+    report = supervisor_module.build_external_consumer_handoff_packets(
+        consumer_index,
+        overlay,
+        {"generated_at": "2026-04-20T00:00:02Z", "metrics": []},
+        {"generated_at": "2026-04-20T00:00:03Z", "entries": []},
+    )
+
+    ready = report["entries"][0]
+    assert ready["consumer_id"] == "specspace"
+    assert ready["handoff_status"] == "ready_for_handoff"
+    assert ready["review_state"] == "ready_for_review"
+    assert ready["consumer_category"] == "specspace_operator_surface"
+    assert ready["source_proposal_ids"] == ["0056", "0059"]
+    assert ready["source_gap"] == "agent_executor_passport_visibility_not_projected_to_specspace"
+    assert ready["artifact_contract"]["status"] == "stable"
+    assert ready["artifact_contract"]["paths"] == [
+        "runs/supervisor_executor_adapter_index.json",
+        "runs/agent_surface_index.json",
+        "runs/agent_verification_gap_index.json",
+    ]
+    assert ready["evidence_contract"]["artifact_kind"] == "external_consumer_evidence"
+    assert "pull_request" in ready["evidence_contract"]["accepted_evidence_kinds"]
+    assert ready["expected_consumer_behavior"] == [
+        "render artifact availability and fallback states",
+        "show verification or contract gaps without exposing raw local paths",
+        "link implementation evidence back to the handoff id",
+    ]
+    assert ready["privacy_boundary"]["machine_local_paths_forbidden"] is True
+    assert ready["target_consumer"]["local_checkout_hint"] == ""
+    assert ready["transition_packet_validation"]["ok"] is True
+    assert report["viewer_projection"]["named_filters"]["specspace_consumer"] == ["specspace"]
+    assert "/Users/" not in json.dumps(ready, sort_keys=True)
+    assert "supervisor stdout" not in json.dumps(ready, sort_keys=True)
+
+
+def test_build_external_consumer_handoff_packets_blocks_draft_specspace_contract(
+    supervisor_module: object,
+) -> None:
+    consumer_index = {
+        "generated_at": "2026-04-20T00:00:00Z",
+        "entries": [
+            {
+                "consumer_id": "specspace",
+                "title": "SpecSpace / Graph Operator Surface",
+                "reference_state": "stable_reference",
+                "profile": "graph_operator_surface_consumer",
+                "repo_url": "https://github.com/0al-spec/SpecSpace",
+                "local_checkout": {
+                    "checkout_path": "/Users/egor/Development/GitHub/0AL/SpecSpace",
+                },
+                "metric_bindings": [],
+                "handoff_contract": {
+                    "consumer_category": "specspace_operator_surface",
+                    "artifact_contract": {
+                        "producer": "SpecGraph",
+                        "status": "draft",
+                        "paths": [
+                            "runs/supervisor_executor_adapter_index.json",
+                            "runs/agent_surface_index.json",
+                        ],
+                        "stable_fields": ["artifact_kind", "schema_version"],
+                        "local_only_fields_forbidden": True,
+                    },
+                },
+            }
+        ],
+    }
+    overlay = {
+        "generated_at": "2026-04-20T00:00:01Z",
+        "entries": [
+            {
+                "consumer_id": "specspace",
+                "bridge_state": "stable_ready",
+                "next_gap": "none",
+            }
+        ],
+    }
+
+    report = supervisor_module.build_external_consumer_handoff_packets(
+        consumer_index,
+        overlay,
+        {"generated_at": "2026-04-20T00:00:02Z", "metrics": []},
+        {"generated_at": "2026-04-20T00:00:03Z", "entries": []},
+    )
+
+    blocked = report["entries"][0]
+    assert blocked["consumer_id"] == "specspace"
+    assert blocked["handoff_status"] == "blocked_by_bridge_gap"
+    assert blocked["review_state"] == "not_emitted"
+    assert blocked["next_gap"] == "stabilize_specspace_handoff_contract"
+    assert blocked["transition_packet"] is None
+    assert blocked["target_consumer"]["local_checkout_hint"] == ""
+    assert report["viewer_projection"]["named_filters"]["specspace_consumer"] == ["specspace"]
+    assert report["handoff_backlog"]["grouped_by_next_gap"] == {
+        "stabilize_specspace_handoff_contract": ["specspace"]
+    }
+    assert "/Users/" not in json.dumps(blocked, sort_keys=True)
+
+
+def test_build_external_consumer_handoff_packets_blocks_specspace_without_stable_fields(
+    supervisor_module: object,
+) -> None:
+    consumer_index = {
+        "generated_at": "2026-04-20T00:00:00Z",
+        "entries": [
+            {
+                "consumer_id": "specspace",
+                "title": "SpecSpace / Graph Operator Surface",
+                "reference_state": "stable_reference",
+                "profile": "graph_operator_surface_consumer",
+                "repo_url": "https://github.com/0al-spec/SpecSpace",
+                "local_checkout": {
+                    "checkout_path": "/Users/egor/Development/GitHub/0AL/SpecSpace",
+                },
+                "metric_bindings": [],
+                "handoff_contract": {
+                    "artifact_contract": {
+                        "producer": "SpecGraph",
+                        "status": "stable",
+                        "paths": ["runs/agent_surface_index.json"],
+                        "stable_fields": [],
+                    },
+                },
+            }
+        ],
+    }
+    overlay = {
+        "generated_at": "2026-04-20T00:00:01Z",
+        "entries": [
+            {
+                "consumer_id": "specspace",
+                "bridge_state": "stable_ready",
+                "next_gap": "none",
+            }
+        ],
+    }
+
+    report = supervisor_module.build_external_consumer_handoff_packets(
+        consumer_index,
+        overlay,
+        {"generated_at": "2026-04-20T00:00:02Z", "metrics": []},
+        {"generated_at": "2026-04-20T00:00:03Z", "entries": []},
+    )
+
+    blocked = report["entries"][0]
+    assert blocked["handoff_status"] == "blocked_by_bridge_gap"
+    assert blocked["next_gap"] == "stabilize_specspace_handoff_contract"
+    assert blocked["transition_packet"] is None
+
+
+def test_build_external_consumer_handoff_packets_preserves_specspace_bridge_gap(
+    supervisor_module: object,
+) -> None:
+    consumer_index = {
+        "generated_at": "2026-04-20T00:00:00Z",
+        "entries": [
+            {
+                "consumer_id": "specspace",
+                "title": "SpecSpace / Graph Operator Surface",
+                "reference_state": "stable_reference",
+                "profile": "graph_operator_surface_consumer",
+                "repo_url": "https://github.com/0al-spec/SpecSpace",
+                "metric_bindings": [],
+                "handoff_contract": {
+                    "artifact_contract": {
+                        "producer": "SpecGraph",
+                        "status": "draft",
+                        "paths": ["runs/agent_surface_index.json"],
+                        "stable_fields": ["artifact_kind"],
+                    },
+                },
+            }
+        ],
+    }
+    overlay = {
+        "generated_at": "2026-04-20T00:00:01Z",
+        "entries": [
+            {
+                "consumer_id": "specspace",
+                "bridge_state": "stable_checkout_missing",
+                "next_gap": "attach_local_checkout",
+            }
+        ],
+    }
+
+    report = supervisor_module.build_external_consumer_handoff_packets(
+        consumer_index,
+        overlay,
+        {"generated_at": "2026-04-20T00:00:02Z", "metrics": []},
+        {"generated_at": "2026-04-20T00:00:03Z", "entries": []},
+    )
+
+    blocked = report["entries"][0]
+    assert blocked["handoff_status"] == "blocked_by_bridge_gap"
+    assert blocked["next_gap"] == "attach_local_checkout"
+    assert report["handoff_backlog"]["grouped_by_next_gap"] == {
+        "attach_local_checkout": ["specspace"]
+    }
 
 
 def test_main_builds_external_consumer_handoffs_as_standalone_command(

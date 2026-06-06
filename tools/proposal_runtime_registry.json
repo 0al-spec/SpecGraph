@@ -2946,5 +2946,60 @@
     "runtime_markers": [],
     "validation_markers": [],
     "observation_markers": []
+  },
+  {
+    "proposal_id": "0065",
+    "posture": "bounded_runtime_followup",
+    "runtime_surfaces": [
+      "docs/proposals/0065_specspace_external_consumer_handoff_realization.md",
+      "docs/archive/proposal_sources/0065_specspace_external_consumer_handoff_realization.md",
+      "tools/external_consumers.json",
+      "tools/external_consumer_handoff_policy.json",
+      "tools/supervisor.py",
+      "tests/test_supervisor.py",
+      "runs/external_consumer_handoff_packets.json"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/external_consumers.json",
+        "pattern": "graph_operator_surface_consumer"
+      },
+      {
+        "path": "tools/external_consumer_handoff_policy.json",
+        "pattern": "specspace_handoff"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def specspace_handoff_contract_ready("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "specspace_consumer"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "test_build_external_consumer_handoff_packets_emits_ready_specspace_contract"
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "test_build_external_consumer_handoff_packets_blocks_draft_specspace_contract"
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "test_external_consumer_checkout_matches_named_remote"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "tools/README.md",
+        "pattern": "SpecSpace-oriented artifact contract handoffs"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "runs/external_consumer_handoff_packets.json"
+      }
+    ]
   }
 ]

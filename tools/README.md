@@ -101,7 +101,9 @@ Supervisor modes:
 - `--build-external-consumer-handoffs`: build
   `runs/external_consumer_handoff_packets.json` so stable sibling consumers
   receive explicit reviewable downstream handoff packets while draft references
-  remain visible but non-operational.
+  remain visible but non-operational. The same packet plane also carries
+  SpecSpace-oriented artifact contract handoffs when graph-operator consumer
+  contracts are declared.
 - `--build-specpm-export-preview`: build `runs/specpm_export_preview.json`
   from the tracked `SpecPM` consumer contract and
   `tools/specpm_export_registry.json`, producing a reviewable package preview
@@ -391,7 +393,8 @@ Key derived artifacts:
   remediation pressure
 - `runs/external_consumer_handoff_packets.json`: reviewable downstream handoff
   artifact for sibling consumers, grouped by handoff status, review state, and
-  next-gap backlog
+  next-gap backlog; includes SpecSpace-oriented artifact contract handoffs and
+  report-only evidence contract shapes when declared by the consumer registry
 - `runs/specpm_export_preview.json`: reviewable `SpecPM` package preview
   artifact, including manifest preview, boundary-source preview, export
   status, and next-gap backlog for future full package emission
@@ -544,14 +547,16 @@ Key derived artifacts:
   advisory bootstrap smoke benchmark, including seed fixture metadata, run
   selection, fixed budget, and structural pass criteria
 - `tools/external_consumers.json`: tracked registry of stable and draft
-  external consumers, such as `Metrics/SIB` and `Metrics/SIB_FULL`, used by
-  the bridge index and bridge-backed metric derivation
+  external consumers, such as `Metrics/SIB`, `Metrics/SIB_FULL`, and
+  `SpecSpace`, used by the bridge index, bridge-backed metric derivation, and
+  external handoff packet emission
 - `tools/external_consumer_overlay_policy.json`: declarative contract for the
   external-consumer overlay, including bridge states, named filters, and
   backlog next-gap defaults
 - `tools/external_consumer_handoff_policy.json`: declarative contract for
   sibling-consumer handoff packets, including handoff states, packet
-  provenance, and review-state defaults
+  provenance, review-state defaults, and SpecSpace artifact/evidence contract
+  defaults
 - `tools/specpm_export_policy.json`: declarative contract for `SpecPM` export
   previews, including review status, next-gap defaults, and required export
   registry fields

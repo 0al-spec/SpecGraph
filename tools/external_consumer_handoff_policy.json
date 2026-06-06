@@ -23,9 +23,59 @@
       "ready_for_handoff",
       "blocked_by_bridge_gap",
       "draft_reference_only",
+      "specspace_consumer",
       "threshold_driven",
       "packet_validation_failed"
     ]
+  },
+  "specspace_handoff": {
+    "consumer_profiles": [
+      "graph_operator_surface_consumer"
+    ],
+    "default_consumer_category": "specspace_operator_surface",
+    "required_contract_status": "stable",
+    "blocked_next_gap": "stabilize_specspace_handoff_contract",
+    "privacy_boundary": {
+      "local_only_fields_forbidden": true,
+      "raw_supervisor_logs_forbidden": true,
+      "machine_local_paths_forbidden": true
+    },
+    "default_artifact_contract": {
+      "producer": "SpecGraph",
+      "status": "draft",
+      "paths": [],
+      "stable_fields": [],
+      "local_only_fields_forbidden": true
+    },
+    "default_expected_consumer_behavior": [
+      "render artifact availability and fallback states",
+      "show verification or contract gaps without exposing raw local paths",
+      "link implementation evidence back to the handoff id"
+    ],
+    "default_evidence_contract": {
+      "artifact_kind": "external_consumer_evidence",
+      "schema_version": 1,
+      "required_fields": [
+        "handoff_id",
+        "consumer",
+        "implementation_ref",
+        "consumed_artifacts",
+        "evidence",
+        "result"
+      ],
+      "accepted_evidence_kinds": [
+        "test",
+        "smoke",
+        "screenshot",
+        "operator_note",
+        "pull_request"
+      ],
+      "result_values": [
+        "implemented",
+        "blocked",
+        "deferred"
+      ]
+    }
   },
   "eligibility_rules": {
     "stable_reference_state": "stable_reference",
