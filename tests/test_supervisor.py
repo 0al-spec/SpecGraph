@@ -26295,6 +26295,16 @@ def test_supervisor_executor_adapter_policy_declares_request_report_contract() -
     assert policy["artifact_kind"] == "supervisor_executor_adapter_policy"
     assert policy["schema_version"] == 1
     assert policy["default_backend_id"] == "codex"
+    assert policy["repository_layout"]["index_artifact"] == (
+        "runs/supervisor_executor_adapter_index.json"
+    )
+    assert policy["index_contract"]["artifact_kind"] == "supervisor_executor_adapter_index"
+    assert "entries" in policy["index_contract"]["stable_fields"]
+    assert "passport_diagnostics" in policy["index_contract"]["stable_fields"]
+    backends_by_id = {backend["backend_id"]: backend for backend in policy["backend_registry"]}
+    assert "codex" in backends_by_id
+    assert backends_by_id["codex"]["preferred_paths"] == []
+    assert policy["agent_passport_cli"]["tool_id"] == "agent-passport"
 
     request = policy["request_contract"]
     assert request["artifact_kind"] == "supervisor_executor_request"
@@ -26329,25 +26339,184 @@ def test_supervisor_executor_adapter_policy_declares_request_report_contract() -
     assert "adapter_success_is_not_supervisor_success" in invariants
 
 
-def test_proposal_0056_executor_adapter_contract_keeps_runtime_followup_open(
+def test_build_supervisor_executor_adapter_index_reports_codex_and_passport_gap(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv(supervisor_module.CODEX_EXECUTABLE_ENV_VAR, raising=False)
+    monkeypatch.setattr(
+        supervisor_module.shutil,
+        "which",
+        lambda name: f"/fake/bin/{name}" if name == "codex" else None,
+    )
+
+    index = supervisor_module.build_supervisor_executor_adapter_index()
+
+    assert index["artifact_kind"] == "supervisor_executor_adapter_index"
+    assert index["schema_version"] == 1
+    assert index["summary"]["default_backend_id"] == "codex"
+    assert index["summary"]["default_backend_status"] == "available"
+    assert index["summary"]["agent_passport_cli_status"] == "missing"
+    assert index["summary"]["next_gap"] == "run_executor_adapter_smoke_benchmark"
+    assert index["stable_fields"] == [
+        "artifact_kind",
+        "schema_version",
+        "summary",
+        "entries",
+        "capability_gaps",
+        "passport_diagnostics",
+        "viewer_projection",
+    ]
+    assert index["viewer_projection"]["named_filters"]["default_backend"] == ["codex"]
+    assert index["viewer_projection"]["named_filters"]["available"] == ["codex"]
+    assert index["viewer_projection"]["named_filters"]["passport_diagnostic"] == ["codex"]
+
+    entry = index["entries"][0]
+    assert entry["backend_id"] == "codex"
+    assert entry["backend_status"] == "available"
+    assert entry["authority_state"] == "default"
+    assert entry["executable_availability"] == {
+        "status": "available",
+        "resolution_source": "path",
+        "env_var": "SPECGRAPH_CODEX_EXECUTABLE",
+        "command_name": "codex",
+        "path_persisted": False,
+    }
+    assert entry["passport_validation"]["tool_status"] == "missing"
+    assert entry["canonical_trial_allowed"] is False
+    assert {gap["gap_kind"] for gap in entry["capability_gaps"]} == {
+        "missing_agent_passport_cli",
+        "smoke_not_run",
+        "canonical_trial_blocked",
+    }
+    assert index["passport_diagnostics"][0]["tool_id"] == "agent-passport"
+    assert index["passport_diagnostics"][0]["tool_status"] == "missing"
+    dumped = json.dumps(index, sort_keys=True)
+    assert "/fake/bin/codex" not in dumped
+    assert repo_fixture.as_posix() not in dumped
+
+
+def test_build_supervisor_executor_adapter_index_blocks_missing_codex(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    missing_codex = repo_fixture / "missing-codex"
+    monkeypatch.setenv(supervisor_module.CODEX_EXECUTABLE_ENV_VAR, missing_codex.as_posix())
+    monkeypatch.setattr(supervisor_module.shutil, "which", lambda _name: None)
+
+    index = supervisor_module.build_supervisor_executor_adapter_index()
+
+    entry = index["entries"][0]
+    assert index["summary"]["default_backend_status"] == "missing_executable"
+    assert index["summary"]["next_gap"] == "configure_default_executor_backend"
+    assert entry["backend_status"] == "missing_executable"
+    assert entry["safe_next_action"] == "configure_backend_executable"
+    assert entry["executable_availability"]["resolution_source"] == "env_override"
+    assert entry["executable_availability"]["path_persisted"] is False
+    assert "missing_executable" in {gap["gap_kind"] for gap in entry["capability_gaps"]}
+    assert missing_codex.as_posix() not in json.dumps(index, sort_keys=True)
+
+
+def test_command_availability_rejects_directory_candidates(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    executable_directory = repo_fixture / "directory-with-exec-bit"
+    executable_directory.mkdir()
+    sibling_directory = repo_fixture / "sibling-cli"
+    sibling_directory.mkdir()
+    monkeypatch.setenv("SPECGRAPH_FAKE_EXECUTABLE", executable_directory.as_posix())
+    monkeypatch.setattr(supervisor_module.shutil, "which", lambda _name: None)
+
+    env_result = supervisor_module.command_availability_from_policy(
+        executable_names=["fake-cli"],
+        executable_env_var="SPECGRAPH_FAKE_EXECUTABLE",
+    )
+    preferred_result = supervisor_module.command_availability_from_policy(
+        executable_names=["fake-cli"],
+        preferred_paths=[executable_directory.as_posix()],
+    )
+    sibling_result = supervisor_module.command_availability_from_policy(
+        executable_names=["fake-cli"],
+        sibling_release_binary="sibling-cli",
+    )
+
+    assert env_result["status"] == "missing"
+    assert env_result["resolution_source"] == "env_override"
+    assert preferred_result["status"] == "missing"
+    assert preferred_result["resolution_source"] == "not_found"
+    assert sibling_result["status"] == "missing"
+    assert sibling_result["resolution_source"] == "not_found"
+
+
+def test_main_builds_supervisor_executor_adapter_index_as_standalone_command(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_supervisor_executor_adapter_index",
+        lambda: {
+            "artifact_kind": supervisor_module.SUPERVISOR_EXECUTOR_ADAPTER_INDEX_ARTIFACT_KIND,
+            "schema_version": supervisor_module.SUPERVISOR_EXECUTOR_ADAPTER_INDEX_SCHEMA_VERSION,
+            "generated_at": "2026-06-06T00:00:00Z",
+            "summary": {"backend_count": 1},
+            "entries": [{"backend_id": "codex"}],
+            "capability_gaps": [],
+            "passport_diagnostics": [],
+            "viewer_projection": {"named_filters": {}},
+        },
+    )
+
+    exit_code = supervisor_module.main(build_supervisor_executor_adapter_index_mode=True)
+
+    assert exit_code == 0
+    report = json.loads(capsys.readouterr().out)
+    assert (
+        report["artifact_kind"] == supervisor_module.SUPERVISOR_EXECUTOR_ADAPTER_INDEX_ARTIFACT_KIND
+    )
+    artifact = json.loads(
+        (repo_fixture / "runs" / "supervisor_executor_adapter_index.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert artifact["entries"] == [{"backend_id": "codex"}]
+
+
+def test_main_build_supervisor_executor_adapter_index_rejects_other_standalone_modes(
+    supervisor_module: object,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    exit_code = supervisor_module.main(
+        build_supervisor_executor_adapter_index_mode=True,
+        build_specpm_export_preview_mode=True,
+    )
+
+    assert exit_code == 1
+    assert "standalone commands cannot be combined" in capsys.readouterr().err
+
+
+def test_proposal_0056_executor_adapter_index_runtime_is_covered(
     supervisor_module: object,
 ) -> None:
-    """Proposal 0056 contract exists, but runtime gateway implementation remains open."""
+    """Proposal 0056 now has a report-only executor adapter index runtime surface."""
     index = supervisor_module.build_proposal_runtime_index()
     by_id = {e["proposal_id"]: e for e in index["entries"]}
 
     assert "0056" in by_id, "Proposal 0056 missing from proposal_runtime_index"
     entry = by_id["0056"]
-    assert entry["runtime_realization"]["status"] != "implemented"
+    assert entry["runtime_realization"]["status"] == "implemented"
     assert entry["validation_closure"]["status"] == "covered"
     assert entry["observation_coverage"]["status"] == "covered"
-    assert {marker["pattern"] for marker in entry["runtime_realization"]["missing_markers"]} == {
-        "def build_supervisor_executor_adapter_index(",
-        '"--build-supervisor-executor-adapter-index"',
-    }
+    assert entry["runtime_realization"]["missing_markers"] == []
     assert entry["validation_closure"]["missing_markers"] == []
     assert entry["observation_coverage"]["missing_markers"] == []
-    assert entry["reflective_chain"]["next_gap"] == "runtime_realization"
+    assert entry["reflective_chain"]["next_gap"] == "none"
 
 
 def test_proposal_work_claim_report_flags_expired_and_duplicate_claims(

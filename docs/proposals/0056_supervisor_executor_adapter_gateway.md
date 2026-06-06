@@ -408,6 +408,21 @@ The adapter index should summarize:
 SpecSpace should consume these artifacts or their projection in existing viewer
 surfaces. It should not parse raw executor stdout/stderr.
 
+## Runtime Index Realization Slice
+
+Proposal `0066` realizes the first read-only runtime index for this gateway:
+
+```text
+runs/supervisor_executor_adapter_index.json
+```
+
+The index is policy-driven from `tools/supervisor_executor_adapter_policy.json`
+and reports backend availability, declared capabilities, Agent Passport CLI
+availability diagnostics, smoke status, canonical-trial eligibility, and safe
+next actions. It does not launch nested executors, run smoke benchmarks, perform
+Agent Passport validation, enforce passports, or publish raw logs, prompts,
+secrets, credentials, or absolute executable paths.
+
 ## Contract-Only Realization Slice
 
 The first bounded realization slice is intentionally smaller than a runnable

@@ -21,7 +21,7 @@ PYTHON_TARGETS := viewer-surfaces dashboard backlog next-move spec-activity grap
 	conversation-memory conversation-memory-map conversation-memory-pressure pre-spec-semantics \
 	implementation-delta implementation-work supervisor-evidence-packet supervisor-stalled-run-salvage \
 	factory-architecture swift-typed-tooling project-environment init-product-workspace review-feedback \
-	docc-sync publish-bundle test test-supervisor
+	executor-adapters docc-sync publish-bundle test test-supervisor
 
 $(PYTHON_TARGETS): check-python
 
@@ -64,9 +64,10 @@ help:
 		'  make factory-architecture     Refresh multi-service factory architecture index' \
 		'  make swift-typed-tooling      Refresh Swift typed tooling lane index' \
 		'  make project-environment      Refresh project environment governance profile JSON' \
-		'  make init-product-workspace PRODUCT_WORKSPACE_PROJECT_ID=<id> PRODUCT_WORKSPACE_ROOT=<path>' \
-		'  make review-feedback          Refresh review feedback index' \
-		'  make check-python             Verify selected Python runtime is supported' \
+			'  make init-product-workspace PRODUCT_WORKSPACE_PROJECT_ID=<id> PRODUCT_WORKSPACE_ROOT=<path>' \
+			'  make review-feedback          Refresh review feedback index' \
+			'  make executor-adapters        Refresh supervisor executor adapter index' \
+			'  make check-python             Verify selected Python runtime is supported' \
 		'  make docc-sync                Validate DocC mirrors against repository docs' \
 		'  make publish-bundle           Build static specs/ + runs/ publish bundle' \
 		'  make test                     Run full Python test suite quietly' \
@@ -232,6 +233,10 @@ init-product-workspace:
 .PHONY: review-feedback
 review-feedback:
 	@$(PYTHON) $(SUPERVISOR) --build-review-feedback-index
+
+.PHONY: executor-adapters
+executor-adapters:
+	@$(PYTHON) $(SUPERVISOR) --build-supervisor-executor-adapter-index
 
 .PHONY: docc-sync
 docc-sync:
