@@ -3260,5 +3260,66 @@
         "pattern": "agent_executor_passport_visibility_not_projected_to_specspace"
       }
     ]
+  },
+  {
+    "proposal_id": "0069",
+    "posture": "bounded_runtime_followup",
+    "runtime_surfaces": [
+      "docs/proposals/0069_external_consumer_evidence_acceptance.md",
+      "docs/archive/proposal_sources/0069_external_consumer_evidence_acceptance.md",
+      "tools/external_consumer_evidence_registry.json",
+      "tools/external_consumer_handoff_policy.json",
+      "tools/supervisor.py",
+      "tests/test_supervisor.py",
+      "Makefile",
+      "tools/README.md",
+      "runs/external_consumer_evidence_index.json"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def build_external_consumer_evidence_index("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "\"--build-external-consumer-evidence\""
+      },
+      {
+        "path": "tools/external_consumer_evidence_registry.json",
+        "pattern": "\"artifact_kind\": \"external_consumer_evidence_registry\""
+      },
+      {
+        "path": "tools/external_consumer_handoff_policy.json",
+        "pattern": "\"evidence_acceptance\""
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_external_consumer_evidence_index_accepts_specspace_evidence("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_external_consumer_evidence_index_reports_contract_mismatch("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_main_builds_external_consumer_evidence_as_standalone_command("
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "Makefile",
+        "pattern": "external-consumer-evidence:"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "runs/external_consumer_evidence_index.json"
+      },
+      {
+        "path": "docs/proposals/0069_external_consumer_evidence_acceptance.md",
+        "pattern": "SpecSpace PR `0al-spec/SpecSpace#225`"
+      }
+    ]
   }
 ]

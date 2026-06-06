@@ -104,6 +104,11 @@ Supervisor modes:
   remain visible but non-operational. The same packet plane also carries
   SpecSpace-oriented artifact contract handoffs when graph-operator consumer
   contracts are declared.
+- `--build-external-consumer-evidence`: build
+  `runs/external_consumer_evidence_index.json` from curated downstream
+  implementation evidence and current handoff packets so consumer adoption can
+  be accepted, blocked, or marked contract-mismatched without mutating the
+  downstream repository.
 - `--build-supervisor-executor-adapter-index`: build
   `runs/supervisor_executor_adapter_index.json` from the 0056 policy so
   executor backend availability, capability gaps, and Agent Passport CLI
@@ -402,6 +407,10 @@ Key derived artifacts:
   artifact for sibling consumers, grouped by handoff status, review state, and
   next-gap backlog; includes SpecSpace-oriented artifact contract handoffs and
   report-only evidence contract shapes when declared by the consumer registry
+- `runs/external_consumer_evidence_index.json`: report-only evidence acceptance
+  surface for downstream consumer implementations, grouped by acceptance status,
+  result, named filters, and next evidence gaps while rejecting local-only path
+  leakage
 - `runs/supervisor_executor_adapter_index.json`: read-only executor adapter
   surface for proposal 0056, including backend availability, declared
   capabilities, Agent Passport CLI diagnostics, capability gaps, and safe next
@@ -575,8 +584,12 @@ Key derived artifacts:
   backlog next-gap defaults
 - `tools/external_consumer_handoff_policy.json`: declarative contract for
   sibling-consumer handoff packets, including handoff states, packet
-  provenance, review-state defaults, and SpecSpace artifact/evidence contract
-  defaults
+  provenance, review-state defaults, SpecSpace artifact/evidence contract
+  defaults, and evidence acceptance status defaults
+- `tools/external_consumer_evidence_registry.json`: operator-curated downstream
+  implementation evidence records, initially binding the SpecSpace agent
+  surface visibility PR, CI smoke, and Platform Timeweb publish run to the
+  matching external-consumer handoff packet
 - `tools/supervisor_executor_adapter_policy.json`: declarative contract for the
   supervisor executor adapter gateway, including request/report contracts,
   backend registry metadata, index contract fields, and Agent Passport CLI

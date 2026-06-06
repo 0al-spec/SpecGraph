@@ -28,6 +28,35 @@
       "packet_validation_failed"
     ]
   },
+  "evidence_acceptance": {
+    "registry_path": "tools/external_consumer_evidence_registry.json",
+    "index_artifact": "runs/external_consumer_evidence_index.json",
+    "artifact_kind": "external_consumer_evidence_index",
+    "schema_version": 1,
+    "acceptance_statuses": [
+      "accepted",
+      "blocked",
+      "deferred",
+      "contract_mismatch",
+      "handoff_missing"
+    ],
+    "named_filters": [
+      "accepted",
+      "blocked",
+      "deferred",
+      "contract_mismatch",
+      "handoff_missing",
+      "specspace_consumer",
+      "privacy_violation"
+    ],
+    "next_gap_defaults": {
+      "accepted": "none",
+      "blocked": "resolve_consumer_blocker",
+      "deferred": "schedule_consumer_followup",
+      "contract_mismatch": "repair_consumer_evidence_contract",
+      "handoff_missing": "restore_external_consumer_handoff"
+    }
+  },
   "specspace_handoff": {
     "consumer_profiles": [
       "graph_operator_surface_consumer"
