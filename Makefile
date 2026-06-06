@@ -15,6 +15,7 @@ SUPERVISOR_RUN_PATH ?=
 
 PYTHON_TARGETS := viewer-surfaces dashboard backlog next-move spec-activity graph-diagnostics \
 	proposal-spec-trace proposal-tracking proposal-tracking-gate external-consumers external-handoffs \
+	proposal-work-claims proposal-work-claims-gate proposal-id \
 	metrics-delivery metrics-feedback metrics-source-promotion metric-signals metric-thresholds \
 	metric-packs metric-pack-drift metric-pack-adapters metric-pack-runs metric-pricing model-usage \
 	conversation-memory conversation-memory-map conversation-memory-pressure pre-spec-semantics \
@@ -37,6 +38,9 @@ help:
 		'  make proposal-spec-trace      Refresh proposal-to-spec trace index JSON' \
 		'  make proposal-tracking        Refresh report-only proposal tracking JSON' \
 		'  make proposal-tracking-gate   Fail on proposal docs without tracking' \
+		'  make proposal-work-claims     Refresh proposal work claim report JSON' \
+		'  make proposal-work-claims-gate Fail on stale or duplicate proposal work claims' \
+		'  make proposal-id              Print the next deterministic proposal id' \
 		'  make external-consumers       Refresh external consumer bridge JSON' \
 		'  make external-handoffs        Refresh external consumer handoff JSON' \
 		'  make metrics-delivery         Refresh Metrics delivery workflow JSON' \
@@ -107,6 +111,18 @@ proposal-tracking:
 .PHONY: proposal-tracking-gate
 proposal-tracking-gate:
 	@$(PYTHON) $(SUPERVISOR) --check-proposal-tracking-gate
+
+.PHONY: proposal-work-claims
+proposal-work-claims:
+	@$(PYTHON) $(SUPERVISOR) --build-proposal-work-claim-report
+
+.PHONY: proposal-work-claims-gate
+proposal-work-claims-gate:
+	@$(PYTHON) $(SUPERVISOR) --check-proposal-work-claim-gate
+
+.PHONY: proposal-id
+proposal-id:
+	@$(PYTHON) $(SUPERVISOR) --allocate-proposal-id
 
 .PHONY: external-consumers
 external-consumers:

@@ -3614,12 +3614,20 @@ PROPOSAL_RUNTIME_INDEX_FILENAME = "proposal_runtime_index.json"
 PROPOSAL_PROMOTION_INDEX_FILENAME = "proposal_promotion_index.json"
 PROPOSAL_SPEC_TRACE_INDEX_FILENAME = "proposal_spec_trace_index.json"
 PROPOSAL_TRACKING_REPORT_FILENAME = "proposal_tracking_report.json"
+PROPOSAL_WORK_CLAIM_REPORT_FILENAME = "proposal_work_claim_report.json"
+PROPOSAL_ID_ALLOCATION_ARTIFACT_KIND = "proposal_id_allocation"
+PROPOSAL_ID_ALLOCATION_SCHEMA_VERSION = 1
 PROPOSAL_SPEC_TRACE_INDEX_ARTIFACT_KIND = "proposal_spec_trace_index"
 PROPOSAL_SPEC_TRACE_INDEX_SCHEMA_VERSION = 1
 PROPOSAL_TRACKING_REPORT_ARTIFACT_KIND = "proposal_tracking_report"
 PROPOSAL_TRACKING_REPORT_SCHEMA_VERSION = 1
 PROPOSAL_TRACKING_GATE_ARTIFACT_KIND = "proposal_tracking_gate"
 PROPOSAL_TRACKING_GATE_SCHEMA_VERSION = 1
+PROPOSAL_WORK_CLAIM_REPORT_ARTIFACT_KIND = "proposal_work_claim_report"
+PROPOSAL_WORK_CLAIM_REPORT_SCHEMA_VERSION = 1
+PROPOSAL_WORK_CLAIM_GATE_ARTIFACT_KIND = "proposal_work_claim_gate"
+PROPOSAL_WORK_CLAIM_GATE_SCHEMA_VERSION = 1
+PROPOSAL_NUMERICAL_RE = re.compile(r"^\d{4}$")
 PROPOSAL_DOC_FILENAME_RE = re.compile(r"^(?P<proposal_id>\d{4})_(?P<slug>.+)\.md$")
 TASK_LINE_RE = re.compile(r"^(?P<task_id>\d+)\.\s+\[(?P<status>[a-z_]+)\]\s+(?P<body>.+)$")
 PR_NUMBER_FROM_SUBJECT_RE = re.compile(
@@ -28963,6 +28971,10 @@ def proposal_tracking_report_path() -> Path:
     return RUNS_DIR / PROPOSAL_TRACKING_REPORT_FILENAME
 
 
+def proposal_work_claim_report_path() -> Path:
+    return RUNS_DIR / PROPOSAL_WORK_CLAIM_REPORT_FILENAME
+
+
 def graph_dashboard_path() -> Path:
     return RUNS_DIR / GRAPH_DASHBOARD_FILENAME
 
@@ -29020,6 +29032,35 @@ def load_proposal_tracking_policy() -> dict[str, Any]:
     except (OSError, json.JSONDecodeError):
         return {}
     return payload if isinstance(payload, dict) else {}
+
+
+def load_proposal_work_claim_policy() -> dict[str, Any]:
+    path = ROOT / "tools" / "proposal_work_claim_policy.json"
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    return payload if isinstance(payload, dict) else {}
+
+
+def load_proposal_work_claims() -> list[dict[str, Any]]:
+    path = ROOT / "tools" / "proposal_work_claims.json"
+    return load_json_list(path)
+
+
+def load_proposal_work_claims_report() -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    path = ROOT / "tools" / "proposal_work_claims.json"
+    claims, error = load_json_list_report(path, artifact_kind="proposal work claim registry")
+    if error:
+        return [], [
+            {
+                "code": "malformed_claim_registry",
+                "severity": "error",
+                "path": display_artifact_path(path),
+                "message": error,
+            }
+        ]
+    return list(claims or []), []
 
 
 def load_task_status_index() -> dict[int, dict[str, str]]:
@@ -29100,6 +29141,184 @@ def iter_proposal_documents() -> list[dict[str, Any]]:
         if parsed is not None:
             documents.append(parsed)
     return documents
+
+
+def proposal_id_filename_entries(directory: Path, *, source: str) -> list[dict[str, Any]]:
+    if not directory.exists():
+        return []
+    entries: list[dict[str, Any]] = []
+    for path in sorted(directory.glob("*.md")):
+        match = PROPOSAL_DOC_FILENAME_RE.match(path.name)
+        if match is None:
+            continue
+        entries.append(
+            {
+                "proposal_id": match.group("proposal_id"),
+                "slug": match.group("slug"),
+                "source": source,
+                "path": path.relative_to(ROOT).as_posix(),
+            }
+        )
+    return entries
+
+
+def proposal_id_registry_entries(
+    path: Path,
+    *,
+    source: str,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    entries: list[dict[str, Any]] = []
+    findings: list[dict[str, Any]] = []
+    registry_items, error = load_json_list_report(path, artifact_kind=source)
+    if error:
+        findings.append(
+            {
+                "code": "unreadable_proposal_id_source",
+                "severity": "error",
+                "source": source,
+                "path": display_artifact_path(path),
+                "message": error,
+            }
+        )
+        return entries, findings
+    for index, item in enumerate(registry_items or [], start=1):
+        proposal_id = str(item.get("proposal_id", "")).strip()
+        if not proposal_id:
+            continue
+        if not PROPOSAL_NUMERICAL_RE.fullmatch(proposal_id):
+            findings.append(
+                {
+                    "code": "invalid_proposal_id",
+                    "severity": "error",
+                    "source": source,
+                    "path": path.relative_to(ROOT).as_posix(),
+                    "entry_index": index,
+                    "proposal_id": proposal_id,
+                    "message": "Proposal registry entry must use a four-digit proposal_id.",
+                }
+            )
+            continue
+        entries.append(
+            {
+                "proposal_id": proposal_id,
+                "slug": "",
+                "source": source,
+                "path": path.relative_to(ROOT).as_posix(),
+            }
+        )
+    return entries, findings
+
+
+def build_proposal_id_allocation() -> dict[str, Any]:
+    entries: list[dict[str, Any]] = []
+    findings: list[dict[str, Any]] = []
+    entries.extend(
+        proposal_id_filename_entries(
+            proposal_docs_dir(),
+            source="proposal_markdown",
+        )
+    )
+    entries.extend(
+        proposal_id_filename_entries(
+            ROOT / "docs" / "archive" / "proposal_sources",
+            source="proposal_source",
+        )
+    )
+    entries.extend(
+        proposal_id_filename_entries(
+            ROOT / "docs" / "proposals_drafts",
+            source="proposal_draft",
+        )
+    )
+    for registry_path, source in (
+        (proposal_runtime_registry_path(), "proposal_runtime_registry"),
+        (proposal_promotion_registry_path(), "proposal_promotion_registry"),
+        (ROOT / "tools" / "proposal_work_claims.json", "proposal_work_claims"),
+    ):
+        registry_entries, registry_findings = proposal_id_registry_entries(
+            registry_path,
+            source=source,
+        )
+        entries.extend(registry_entries)
+        findings.extend(registry_findings)
+
+    by_id: dict[str, list[dict[str, Any]]] = {}
+    slug_groups: dict[tuple[str, str], set[str]] = {}
+    for entry in entries:
+        proposal_id = str(entry.get("proposal_id", "")).strip()
+        if not PROPOSAL_NUMERICAL_RE.fullmatch(proposal_id):
+            continue
+        by_id.setdefault(proposal_id, []).append(entry)
+        slug = str(entry.get("slug", "")).strip()
+        if slug:
+            source = str(entry.get("source", "")).strip()
+            slug_groups.setdefault((proposal_id, source), set()).add(slug)
+
+    for (proposal_id, source), slugs in sorted(slug_groups.items()):
+        if len(slugs) <= 1:
+            continue
+        severity = "warning" if source == "proposal_source" else "error"
+        findings.append(
+            {
+                "code": "conflicting_proposal_slugs",
+                "severity": severity,
+                "proposal_id": proposal_id,
+                "slugs": sorted(slugs),
+                "source": source,
+                "message": (
+                    "A proposal_id should not be used with multiple slugs in one source namespace."
+                ),
+            }
+        )
+
+    used_ids = sorted(by_id)
+    highest = max((int(proposal_id) for proposal_id in used_ids), default=0)
+    next_proposal_id = f"{highest + 1:04d}"
+    blocking_findings = [
+        finding for finding in findings if str(finding.get("severity", "")).strip() == "error"
+    ]
+    ok = not blocking_findings
+    return {
+        "artifact_kind": PROPOSAL_ID_ALLOCATION_ARTIFACT_KIND,
+        "schema_version": PROPOSAL_ID_ALLOCATION_SCHEMA_VERSION,
+        "generated_at": utc_now_iso(),
+        "status": "ready" if ok else "blocked",
+        "ok": ok,
+        "next_proposal_id": next_proposal_id if ok else None,
+        "highest_used_id": f"{highest:04d}" if highest else None,
+        "used_id_count": len(used_ids),
+        "used_ids": used_ids,
+        "entries": sorted(
+            entries,
+            key=lambda item: (
+                str(item.get("proposal_id", "")),
+                str(item.get("source", "")),
+                str(item.get("path", "")),
+            ),
+        ),
+        "findings": findings,
+        "blocking_findings": blocking_findings,
+        "summary": {
+            "status": "ready" if ok else "blocked",
+            "next_proposal_id": next_proposal_id if ok else None,
+            "highest_used_id": f"{highest:04d}" if highest else None,
+            "used_id_count": len(used_ids),
+            "blocking_count": len(blocking_findings),
+        },
+        "allocation_rule": (
+            "next integer after highest four-digit proposal_id across tracked sources"
+        ),
+        "source_artifacts": {
+            "proposal_markdown": "docs/proposals/*.md",
+            "proposal_sources": "docs/archive/proposal_sources/*.md",
+            "proposal_drafts": "docs/proposals_drafts/*.md",
+            "proposal_runtime_registry": "tools/proposal_runtime_registry.json",
+            "proposal_promotion_registry": "tools/proposal_promotion_registry.json",
+            "proposal_work_claims": "tools/proposal_work_claims.json",
+        },
+        "canonical_mutations_allowed": False,
+        "tracked_artifacts_written": False,
+    }
 
 
 def classify_proposal_repository_projection(
@@ -30412,6 +30631,312 @@ def build_proposal_tracking_gate(
 def write_proposal_tracking_report(report: dict[str, Any]) -> Path:
     RUNS_DIR.mkdir(parents=True, exist_ok=True)
     path = proposal_tracking_report_path()
+    with artifact_lock(path):
+        atomic_write_json(path, report)
+    return path
+
+
+def proposal_work_claim_allowed_statuses(policy: dict[str, Any]) -> set[str]:
+    claim_contract = policy.get("claim_contract", {})
+    statuses = []
+    if isinstance(claim_contract, dict):
+        statuses = [
+            str(status).strip()
+            for status in claim_contract.get("allowed_statuses", [])
+            if str(status).strip()
+        ]
+    return set(statuses or ["active", "released", "expired", "abandoned"])
+
+
+def normalize_work_claim_allowed_paths(claim: dict[str, Any]) -> list[str]:
+    raw_paths = claim.get("allowed_paths", [])
+    if not isinstance(raw_paths, list):
+        return []
+    return [str(path).strip() for path in raw_paths if str(path).strip()]
+
+
+def normalize_work_claim_status(
+    raw_status: object,
+    *,
+    expires_at: object,
+    now: dt.datetime,
+    allowed_statuses: set[str],
+) -> str:
+    status = str(raw_status or "active").strip() or "active"
+    if status not in allowed_statuses:
+        return "active"
+    if status != "active":
+        return status
+    expiry = parse_iso_datetime(expires_at)
+    if expiry is not None and expiry.astimezone(dt.timezone.utc) < now:
+        return "expired"
+    return "active"
+
+
+def proposal_work_claim_findings(
+    claim: dict[str, Any],
+    *,
+    effective_status: str,
+    allowed_statuses: set[str],
+) -> list[dict[str, Any]]:
+    findings: list[dict[str, Any]] = []
+    claim_id = str(claim.get("claim_id", "")).strip()
+    proposal_id = str(claim.get("proposal_id", "")).strip()
+    scope = str(claim.get("scope", "")).strip()
+    owner = str(claim.get("owner", "")).strip()
+    branch = str(claim.get("branch", "")).strip()
+    claimed_at = str(claim.get("claimed_at", "")).strip()
+    declared_status = str(claim.get("status", "active")).strip() or "active"
+    raw_allowed_paths = claim.get("allowed_paths", [])
+    allowed_paths = normalize_work_claim_allowed_paths(claim)
+    expires_at = str(claim.get("expires_at", "")).strip()
+    active_like = declared_status == "active" or declared_status not in allowed_statuses
+
+    def add(code: str, severity: str, message: str) -> None:
+        findings.append(
+            {
+                "code": code,
+                "severity": severity,
+                "claim_id": claim_id,
+                "proposal_id": proposal_id,
+                "message": message,
+            }
+        )
+
+    if not claim_id:
+        add("missing_claim_id", "error", "Proposal work claim must declare claim_id.")
+    if not proposal_id or not PROPOSAL_NUMERICAL_RE.fullmatch(proposal_id):
+        add(
+            "invalid_proposal_id",
+            "error",
+            "Proposal work claim must target a four-digit proposal_id.",
+        )
+    if not scope:
+        add("missing_scope", "error", "Proposal work claim must declare a bounded scope.")
+    if declared_status not in allowed_statuses:
+        add("invalid_status", "error", "Proposal work claim status is not allowed.")
+    if active_like and not owner:
+        add("missing_owner", "error", "Active proposal work claim must declare owner.")
+    if active_like and not branch:
+        add("missing_branch", "error", "Active proposal work claim must declare a branch.")
+    if active_like and not claimed_at:
+        add("missing_claimed_at", "error", "Active proposal work claim must declare claimed_at.")
+    if active_like and not isinstance(raw_allowed_paths, list):
+        add("invalid_allowed_paths", "error", "Proposal work claim allowed_paths must be a list.")
+    if active_like and not allowed_paths:
+        add(
+            "missing_allowed_paths",
+            "error",
+            "Active proposal work claim must declare allowed_paths.",
+        )
+    if active_like and not expires_at:
+        add("missing_expires_at", "error", "Active proposal work claim must declare expires_at.")
+    if expires_at and parse_iso_datetime(expires_at) is None:
+        add("invalid_expires_at", "error", "Proposal work claim expires_at must be ISO-8601.")
+    if active_like and effective_status == "expired":
+        add("expired_claim", "error", "Active proposal work claim has passed expires_at.")
+    return findings
+
+
+def build_proposal_work_claim_report(
+    *,
+    claims: list[dict[str, Any]] | None = None,
+    generated_at: str | None = None,
+) -> dict[str, Any]:
+    policy = load_proposal_work_claim_policy()
+    allowed_statuses = proposal_work_claim_allowed_statuses(policy)
+    if isinstance(claims, list):
+        raw_claims = copy.deepcopy(claims)
+        registry_findings: list[dict[str, Any]] = []
+    else:
+        raw_claims, registry_findings = load_proposal_work_claims_report()
+    generated_text = str(generated_at or utc_now_iso())
+    now = parse_iso_datetime(generated_text) or dt.datetime.now(dt.timezone.utc)
+    now = now.astimezone(dt.timezone.utc)
+
+    entries: list[dict[str, Any]] = []
+    active_keys: dict[tuple[str, str], list[dict[str, str]]] = {}
+    for raw_claim in raw_claims:
+        if not isinstance(raw_claim, dict):
+            continue
+        effective_status = normalize_work_claim_status(
+            raw_claim.get("status", "active"),
+            expires_at=raw_claim.get("expires_at", ""),
+            now=now,
+            allowed_statuses=allowed_statuses,
+        )
+        claim_id = str(raw_claim.get("claim_id", "")).strip()
+        proposal_id = str(raw_claim.get("proposal_id", "")).strip()
+        scope = str(raw_claim.get("scope", "")).strip()
+        findings = proposal_work_claim_findings(
+            raw_claim,
+            effective_status=effective_status,
+            allowed_statuses=allowed_statuses,
+        )
+        if effective_status == "active" and proposal_id and scope:
+            active_keys.setdefault((proposal_id, scope), []).append(
+                {
+                    "claim_id": claim_id,
+                    "branch": str(raw_claim.get("branch", "")).strip(),
+                }
+            )
+        entries.append(
+            {
+                "claim_id": claim_id,
+                "proposal_id": proposal_id,
+                "scope": scope,
+                "owner": str(raw_claim.get("owner", "")).strip(),
+                "branch": str(raw_claim.get("branch", "")).strip(),
+                "status": str(raw_claim.get("status", "active")).strip() or "active",
+                "effective_status": effective_status,
+                "claimed_at": str(raw_claim.get("claimed_at", "")).strip(),
+                "expires_at": str(raw_claim.get("expires_at", "")).strip(),
+                "allowed_paths": normalize_work_claim_allowed_paths(raw_claim),
+                "related_pr": str(raw_claim.get("related_pr", "")).strip(),
+                "findings": findings,
+            }
+        )
+
+    duplicate_findings: list[dict[str, Any]] = []
+    for (proposal_id, scope), claim_entries in sorted(active_keys.items()):
+        if len(claim_entries) <= 1:
+            continue
+        claim_ids = sorted(
+            {
+                str(entry.get("claim_id", "")).strip()
+                for entry in claim_entries
+                if str(entry.get("claim_id", "")).strip()
+            }
+        )
+        duplicate_findings.append(
+            {
+                "code": "duplicate_active_claim",
+                "severity": "error",
+                "proposal_id": proposal_id,
+                "scope": scope,
+                "claim_ids": claim_ids,
+                "entry_count": len(claim_entries),
+                "message": "Only one active proposal work claim may own a proposal_id/scope pair.",
+            }
+        )
+
+    all_findings = (
+        registry_findings
+        + [
+            finding
+            for entry in entries
+            for finding in entry.get("findings", [])
+            if isinstance(finding, dict)
+        ]
+        + duplicate_findings
+    )
+    blocking_codes = {
+        str(code).strip() for code in policy.get("blocking_finding_codes", []) if str(code).strip()
+    } or {
+        "missing_claim_id",
+        "invalid_proposal_id",
+        "missing_scope",
+        "invalid_status",
+        "missing_owner",
+        "missing_branch",
+        "missing_claimed_at",
+        "invalid_allowed_paths",
+        "missing_allowed_paths",
+        "missing_expires_at",
+        "invalid_expires_at",
+        "expired_claim",
+        "duplicate_active_claim",
+        "malformed_claim_registry",
+    }
+    blocking_findings = [
+        finding
+        for finding in all_findings
+        if str(finding.get("code", "")).strip() in blocking_codes
+    ]
+    status_groups: dict[str, list[str]] = {}
+    proposal_groups: dict[str, list[str]] = {}
+    for entry in entries:
+        claim_id = str(entry.get("claim_id", "")).strip()
+        proposal_id = str(entry.get("proposal_id", "")).strip()
+        status = str(entry.get("effective_status", "")).strip()
+        if status:
+            status_groups.setdefault(status, []).append(claim_id)
+        if proposal_id:
+            proposal_groups.setdefault(proposal_id, []).append(claim_id)
+
+    def sorted_groups(groups: dict[str, list[str]]) -> dict[str, list[str]]:
+        return {key: sorted(set(value)) for key, value in sorted(groups.items())}
+
+    return {
+        "artifact_kind": PROPOSAL_WORK_CLAIM_REPORT_ARTIFACT_KIND,
+        "schema_version": PROPOSAL_WORK_CLAIM_REPORT_SCHEMA_VERSION,
+        "generated_at": generated_text,
+        "claim_count": len(entries),
+        "entries": sorted(
+            entries,
+            key=lambda item: (item["proposal_id"], item["scope"], item["claim_id"]),
+        ),
+        "findings": all_findings,
+        "blocking_findings": blocking_findings,
+        "summary": {
+            "claim_count": len(entries),
+            "active_count": len(status_groups.get("active", [])),
+            "blocking_count": len(blocking_findings),
+            "status_counts": grouped_identifier_counts(sorted_groups(status_groups)),
+            "proposal_counts": grouped_identifier_counts(sorted_groups(proposal_groups)),
+        },
+        "viewer_projection": {
+            "effective_status": sorted_groups(status_groups),
+            "proposal_id": sorted_groups(proposal_groups),
+        },
+        "source_artifacts": {
+            "proposal_work_claims": "tools/proposal_work_claims.json",
+            "proposal_work_claim_policy": "tools/proposal_work_claim_policy.json",
+        },
+        "canonical_mutations_allowed": False,
+        "tracked_artifacts_written": False,
+    }
+
+
+def build_proposal_work_claim_gate(
+    report: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    claim_report = (
+        copy.deepcopy(report) if isinstance(report, dict) else build_proposal_work_claim_report()
+    )
+    blocking_findings = [
+        finding
+        for finding in claim_report.get("blocking_findings", [])
+        if isinstance(finding, dict)
+    ]
+    passed = not blocking_findings
+    return {
+        "artifact_kind": PROPOSAL_WORK_CLAIM_GATE_ARTIFACT_KIND,
+        "schema_version": PROPOSAL_WORK_CLAIM_GATE_SCHEMA_VERSION,
+        "generated_at": utc_now_iso(),
+        "status": "passed" if passed else "failed",
+        "ok": passed,
+        "blocking_count": len(blocking_findings),
+        "blocking_findings": blocking_findings,
+        "summary": {
+            "claim_count": claim_report.get("summary", {}).get("claim_count", 0),
+            "active_count": claim_report.get("summary", {}).get("active_count", 0),
+            "blocking_count": len(blocking_findings),
+            "status_counts": claim_report.get("summary", {}).get("status_counts", {}),
+        },
+        "source_artifacts": {
+            "proposal_work_claim_report": f"runs/{PROPOSAL_WORK_CLAIM_REPORT_FILENAME}",
+            "proposal_work_claims": "tools/proposal_work_claims.json",
+            "proposal_work_claim_policy": "tools/proposal_work_claim_policy.json",
+        },
+        "canonical_mutations_allowed": False,
+        "tracked_artifacts_written": False,
+    }
+
+
+def write_proposal_work_claim_report(report: dict[str, Any]) -> Path:
+    RUNS_DIR.mkdir(parents=True, exist_ok=True)
+    path = proposal_work_claim_report_path()
     with artifact_lock(path):
         atomic_write_json(path, report)
     return path
@@ -38162,6 +38687,9 @@ def main(
     build_proposal_spec_trace_index_mode: bool = False,
     build_proposal_tracking_report_mode: bool = False,
     check_proposal_tracking_gate_mode: bool = False,
+    build_proposal_work_claim_report_mode: bool = False,
+    check_proposal_work_claim_gate_mode: bool = False,
+    allocate_proposal_id_mode: bool = False,
     supervisor_prompt_profile: str | None = None,
     supervisor_prompt_extension_file: str | None = None,
     output_mode: str = "summary",
@@ -38265,6 +38793,9 @@ def main(
         "--build-proposal-spec-trace-index": build_proposal_spec_trace_index_mode,
         "--build-proposal-tracking-report": build_proposal_tracking_report_mode,
         "--check-proposal-tracking-gate": check_proposal_tracking_gate_mode,
+        "--build-proposal-work-claim-report": build_proposal_work_claim_report_mode,
+        "--check-proposal-work-claim-gate": check_proposal_work_claim_gate_mode,
+        "--allocate-proposal-id": allocate_proposal_id_mode,
     }
     enabled_standalone_modes = [name for name, enabled in standalone_modes.items() if enabled]
     if len(enabled_standalone_modes) > 1:
@@ -41174,6 +41705,24 @@ def main(
         emit_supervisor_json(report, output_mode=normalized_output_mode)
         return 0
 
+    if build_proposal_work_claim_report_mode:
+        report = build_proposal_work_claim_report()
+        write_proposal_work_claim_report(report)
+        emit_supervisor_json(report, output_mode=normalized_output_mode)
+        return 0
+
+    if check_proposal_work_claim_gate_mode:
+        report = build_proposal_work_claim_report()
+        write_proposal_work_claim_report(report)
+        gate = build_proposal_work_claim_gate(report)
+        emit_supervisor_json(gate, output_mode=normalized_output_mode)
+        return 0 if gate["ok"] else 1
+
+    if allocate_proposal_id_mode:
+        allocation = build_proposal_id_allocation()
+        emit_supervisor_json(allocation, output_mode=normalized_output_mode)
+        return 0 if allocation["ok"] else 1
+
     if check_proposal_tracking_gate_mode:
         if any(
             (
@@ -42384,6 +42933,21 @@ if __name__ == "__main__":
         action="store_true",
         help=("Fail if proposal docs lack registry, trace, or explicit no-runtime classification"),
     )
+    parser.add_argument(
+        "--build-proposal-work-claim-report",
+        action="store_true",
+        help=("Build a read-only proposal work claim report from tools/proposal_work_claims.json"),
+    )
+    parser.add_argument(
+        "--check-proposal-work-claim-gate",
+        action="store_true",
+        help="Fail if proposal work claims are stale, malformed, or duplicate active scope locks",
+    )
+    parser.add_argument(
+        "--allocate-proposal-id",
+        action="store_true",
+        help="Print the next deterministic proposal id from proposal docs, registries, and claims",
+    )
     parser.add_argument("--resolve-gate", metavar="SPEC_ID", help="Resolve gate for a spec id")
     parser.add_argument(
         "--decision",
@@ -42590,6 +43154,9 @@ if __name__ == "__main__":
             build_proposal_spec_trace_index_mode=args.build_proposal_spec_trace_index,
             build_proposal_tracking_report_mode=args.build_proposal_tracking_report,
             check_proposal_tracking_gate_mode=args.check_proposal_tracking_gate,
+            build_proposal_work_claim_report_mode=args.build_proposal_work_claim_report,
+            check_proposal_work_claim_gate_mode=args.check_proposal_work_claim_gate,
+            allocate_proposal_id_mode=args.allocate_proposal_id,
             supervisor_prompt_profile=args.supervisor_prompt_profile,
             supervisor_prompt_extension_file=args.supervisor_prompt_extension_file,
             output_mode=args.output_mode,

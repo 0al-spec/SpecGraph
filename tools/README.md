@@ -307,6 +307,18 @@ Supervisor modes:
 - `--check-proposal-tracking-gate`: build the proposal tracking report and fail
   if proposal docs are not represented by runtime registry, promotion trace,
   proposal-spec trace, or an explicit no-runtime classification.
+- `--build-proposal-work-claim-report`: build
+  `runs/proposal_work_claim_report.json` from `tools/proposal_work_claims.json`
+  to show active, released, expired, malformed, and duplicate proposal work
+  claims.
+- `--check-proposal-work-claim-gate`: build the proposal work claim report and
+  fail on malformed, expired, or duplicate active claims. The gate does not
+  require every proposal PR to have a claim.
+- `--allocate-proposal-id`: print the next deterministic four-digit proposal ID
+  from proposal docs, source drafts, runtime/promotion registries, and work
+  claims. The command is read-only and fails on active proposal/draft slug
+  conflicts or malformed registry IDs; historical source-draft slug collisions
+  are reported as warnings.
 - `--list-stale-runtime` / `--clean-stale-runtime`: inspect or clean stale gate/worktree residue.
 
 Key derived artifacts:
@@ -473,6 +485,13 @@ Key derived artifacts:
   work.
 - `make proposal-tracking-gate`: CI-enforced proposal tracking check. Run it
   before opening a PR that adds or changes proposal markdown.
+- `runs/proposal_work_claim_report.json`: report-only proposal work ownership
+  surface derived from `tools/proposal_work_claims.json`. Use
+  `make proposal-work-claims-gate` before merging branches that add active work
+  claims or change proposal ownership policy.
+- `make proposal-id`: read-only deterministic proposal ID allocator. Run it
+  before creating a new proposal or source draft instead of choosing the next
+  number manually.
 - `tools/graph_diagnostics.py`: read-only operator diagnostic that summarizes
   the current `runs/*.json` surfaces without relying on ad hoc `jq` assumptions.
   Use `make graph-diagnostics` after `make viewer-surfaces` to print the compact

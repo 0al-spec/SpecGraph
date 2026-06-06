@@ -2865,5 +2865,72 @@
     "runtime_markers": [],
     "validation_markers": [],
     "observation_markers": []
+  },
+  {
+    "proposal_id": "0063",
+    "posture": "bounded_runtime_followup",
+    "runtime_surfaces": [
+      "docs/proposals/0063_proposal_work_claim_locks.md",
+      "docs/archive/proposal_sources/0063_proposal_work_claim_locks.md",
+      "tools/proposal_work_claim_policy.json",
+      "tools/proposal_work_claims.json",
+      "tools/supervisor.py",
+      "tests/test_supervisor.py",
+      "runs/proposal_work_claim_report.json"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def build_proposal_work_claim_report("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def build_proposal_work_claim_gate("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "\"--check-proposal-work-claim-gate\""
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def build_proposal_id_allocation("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "\"--allocate-proposal-id\""
+      },
+      {
+        "path": "tools/proposal_work_claim_policy.json",
+        "pattern": "\"artifact_kind\": \"proposal_work_claim_policy\""
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_proposal_work_claim_report_flags_expired_and_duplicate_claims("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_main_proposal_work_claim_gate_blocks_duplicate_active_scope("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_proposal_id_allocator_uses_docs_registries_and_claims("
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "Makefile",
+        "pattern": "proposal-work-claims-gate:"
+      },
+      {
+        "path": "Makefile",
+        "pattern": "proposal-id:"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "runs/proposal_work_claim_report.json"
+      }
+    ]
   }
 ]

@@ -1,0 +1,57 @@
+{
+  "artifact_kind": "proposal_work_claim_policy",
+  "schema_version": 1,
+  "registry_path": "tools/proposal_work_claims.json",
+  "report_contract": {
+    "artifact_kind": "proposal_work_claim_report",
+    "artifact_path": "runs/proposal_work_claim_report.json",
+    "canonical_mutations_allowed": false,
+    "tracked_artifacts_written": false
+  },
+  "gate_contract": {
+    "artifact_kind": "proposal_work_claim_gate",
+    "strict_ci_enforced": false,
+    "canonical_mutations_allowed": false,
+    "tracked_artifacts_written": false
+  },
+  "blocking_finding_codes": [
+    "missing_claim_id",
+    "invalid_proposal_id",
+    "missing_scope",
+    "invalid_status",
+    "missing_owner",
+    "missing_branch",
+    "missing_claimed_at",
+    "invalid_allowed_paths",
+    "missing_allowed_paths",
+    "missing_expires_at",
+    "invalid_expires_at",
+    "expired_claim",
+    "duplicate_active_claim",
+    "malformed_claim_registry"
+  ],
+  "claim_contract": {
+    "required_active_fields": [
+      "claim_id",
+      "proposal_id",
+      "scope",
+      "owner",
+      "branch",
+      "claimed_at",
+      "expires_at",
+      "allowed_paths"
+    ],
+    "proposal_id_format": "four_digit_proposal_id",
+    "duplicate_key": [
+      "proposal_id",
+      "scope"
+    ],
+    "default_status": "active",
+    "allowed_statuses": [
+      "active",
+      "released",
+      "expired",
+      "abandoned"
+    ]
+  }
+}
