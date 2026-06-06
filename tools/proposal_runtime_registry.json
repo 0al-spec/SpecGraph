@@ -2851,9 +2851,60 @@
       "runs/agent_verification_gap_index.json",
       "runs/agent_surface_index.json"
     ],
-    "runtime_markers": [],
-    "validation_markers": [],
-    "observation_markers": []
+    "runtime_markers": [
+      {
+        "path": "tools/agent_passport_adoption_policy.json",
+        "pattern": "\"artifact_kind\": \"agent_passport_adoption_policy\""
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def build_agent_surface_index("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def build_known_agent_passport_index("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def build_agent_verification_gap_index("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "\"--build-agent-passport-derived-surfaces\""
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_agent_passport_adoption_policy_declares_surface_and_gap_contract("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_agent_passport_indexes_consume_executor_adapter_diagnostics("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_main_builds_agent_passport_derived_surfaces_as_standalone_command("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_proposal_0059_agent_passport_runtime_is_covered("
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "Makefile",
+        "pattern": "agent-passports:"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "runs/agent_surface_index.json"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "tools/agent_passport_adoption_policy.json"
+      }
+    ]
   },
   {
     "proposal_id": "0060",
@@ -3100,6 +3151,72 @@
       {
         "path": "Makefile",
         "pattern": "make executor-adapters"
+      }
+    ]
+  },
+  {
+    "proposal_id": "0067",
+    "posture": "bounded_runtime_followup",
+    "runtime_surfaces": [
+      "docs/proposals/0067_agent_passport_derived_surface_runtime.md",
+      "docs/archive/proposal_sources/0067_agent_passport_derived_surface_runtime.md",
+      "tools/agent_passport_adoption_policy.json",
+      "tools/supervisor.py",
+      "tests/test_supervisor.py",
+      "Makefile",
+      "tools/README.md",
+      "runs/agent_surface_index.json",
+      "runs/known_agent_passport_index.json",
+      "runs/agent_verification_gap_index.json"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/agent_passport_adoption_policy.json",
+        "pattern": "\"artifact_kind\": \"agent_passport_adoption_policy\""
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def build_agent_passport_derived_surfaces("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def build_agent_verification_gap_index("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "\"--build-agent-passport-derived-surfaces\""
+      },
+      {
+        "path": "Makefile",
+        "pattern": "agent-passports:"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_agent_passport_adoption_policy_declares_surface_and_gap_contract("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_agent_passport_indexes_consume_executor_adapter_diagnostics("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_main_builds_agent_passport_derived_surfaces_as_standalone_command("
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0067_agent_passport_derived_surface_runtime.md",
+        "pattern": "make agent-passports"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "Agent Passport derived surfaces"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "runs/agent_verification_gap_index.json"
       }
     ]
   }

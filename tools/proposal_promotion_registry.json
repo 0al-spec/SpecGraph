@@ -856,5 +856,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0067",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0067_agent_passport_derived_surface_runtime.md"
+    ],
+    "motivating_concern": "SpecGraph needs stable report-only Agent Passport derived surfaces before SpecSpace can consume agent/executor/passport visibility through the external handoff plane",
+    "normalized_title": "Agent Passport Derived Surface Runtime",
+    "bounded_scope": "Implement read-only agent surface, known Agent Passport, and verification gap indexes from policy and 0056 executor adapter diagnostics without verifying signatures, enforcing passports, launching agents, implementing SpecSpace UI, or changing Platform/deploy packaging.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

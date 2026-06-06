@@ -1,0 +1,187 @@
+{
+  "artifact_kind": "agent_passport_adoption_policy",
+  "schema_version": 1,
+  "repository_layout": {
+    "surface_index_artifact": "runs/agent_surface_index.json",
+    "known_passport_index_artifact": "runs/known_agent_passport_index.json",
+    "verification_gap_index_artifact": "runs/agent_verification_gap_index.json",
+    "executor_adapter_index_artifact": "runs/supervisor_executor_adapter_index.json"
+  },
+  "surface_index_contract": {
+    "artifact_kind": "agent_surface_index",
+    "schema_version": 1,
+    "stable_fields": [
+      "artifact_kind",
+      "schema_version",
+      "summary",
+      "surfaces",
+      "viewer_projection"
+    ],
+    "named_filters": [
+      "requires_passport",
+      "passport_referenced",
+      "missing_passport",
+      "executor_backend",
+      "specspace_consumer",
+      "runtime_enforcement_unknown"
+    ]
+  },
+  "known_passport_index_contract": {
+    "artifact_kind": "known_agent_passport_index",
+    "schema_version": 1,
+    "stable_fields": [
+      "artifact_kind",
+      "schema_version",
+      "summary",
+      "entries",
+      "agents",
+      "viewer_projection"
+    ]
+  },
+  "verification_gap_index_contract": {
+    "artifact_kind": "agent_verification_gap_index",
+    "schema_version": 1,
+    "stable_fields": [
+      "artifact_kind",
+      "schema_version",
+      "summary",
+      "gaps",
+      "viewer_projection"
+    ],
+    "gap_kinds": [
+      "missing_passport",
+      "verification_tool_unavailable",
+      "verification_not_attempted",
+      "runtime_enforcement_unknown"
+    ],
+    "severity_values": [
+      "high",
+      "medium",
+      "low"
+    ],
+    "named_filters": [
+      "missing_passport",
+      "verification_tool_unavailable",
+      "runtime_enforcement_unknown",
+      "executor_backend",
+      "specspace_consumer"
+    ]
+  },
+  "verification_states": [
+    "V0_unknown",
+    "V1_known_surface",
+    "V2_passport_referenced",
+    "V3_schema_valid",
+    "V4_signature_verified",
+    "V5_lifecycle_valid",
+    "V6_integrity_declared",
+    "V7_policies_mappable",
+    "V8_runtime_enforcement_observed"
+  ],
+  "agent_surfaces": [
+    {
+      "surface_id": "specgraph.supervisor",
+      "title": "SpecGraph Supervisor",
+      "surface_type": "graph_runtime",
+      "source": "policy",
+      "source_proposal_ids": [
+        "0059"
+      ],
+      "requires_passport": true,
+      "launches_agents": true,
+      "prepares_handoffs": true,
+      "passport_ref": "agent-passport://specgraph/supervisor/0.1.0",
+      "verification_state": "V2_passport_referenced",
+      "runtime_enforcement_state": "not_observed",
+      "notes": "Supervisor identity is referenced for graph-facing authority, but this slice does not verify signatures or enforce policy."
+    },
+    {
+      "surface_id": "specgraph.supervisor.executor_adapter",
+      "title": "Supervisor Executor Adapter Gateway",
+      "surface_type": "executor_gateway",
+      "source": "policy",
+      "source_proposal_ids": [
+        "0056",
+        "0059"
+      ],
+      "requires_passport": true,
+      "launches_agents": true,
+      "prepares_handoffs": true,
+      "passport_ref": "",
+      "verification_state": "V1_known_surface",
+      "runtime_enforcement_state": "not_observed",
+      "notes": "Gateway surface launches nested executors; backend-specific passport refs are derived from the 0056 executor adapter index."
+    },
+    {
+      "surface_id": "specspace.operator_assistant",
+      "title": "SpecSpace Operator Assistant",
+      "surface_type": "operator_ui_flow",
+      "source": "policy",
+      "source_proposal_ids": [
+        "0057",
+        "0059",
+        "0065"
+      ],
+      "requires_passport": true,
+      "launches_agents": false,
+      "prepares_handoffs": true,
+      "passport_ref": "",
+      "verification_state": "V1_known_surface",
+      "runtime_enforcement_state": "not_observed",
+      "consumer_id": "specspace",
+      "notes": "SpecSpace consumes derived surfaces and prepares operator handoffs; it is not mutated by this SpecGraph slice."
+    },
+    {
+      "surface_id": "product_workspace.implementation_agent",
+      "title": "Product Workspace Implementation Agent",
+      "surface_type": "future_product_workspace_agent",
+      "source": "policy",
+      "source_proposal_ids": [
+        "0059"
+      ],
+      "requires_passport": true,
+      "launches_agents": true,
+      "prepares_handoffs": false,
+      "passport_ref": "",
+      "verification_state": "V1_known_surface",
+      "runtime_enforcement_state": "not_observed",
+      "future_surface": true,
+      "notes": "Future product workspace agent is listed so missing passport work is visible without claiming runtime availability."
+    }
+  ],
+  "executor_adapter_binding": {
+    "enabled": true,
+    "source_artifact": "runs/supervisor_executor_adapter_index.json",
+    "surface_id_prefix": "specgraph.executor",
+    "surface_type": "executor_backend",
+    "source_proposal_ids": [
+      "0056",
+      "0059",
+      "0066"
+    ]
+  },
+  "gap_defaults": {
+    "missing_passport": {
+      "severity": "high",
+      "next_action": "declare_agent_passport_ref"
+    },
+    "verification_tool_unavailable": {
+      "severity": "medium",
+      "next_action": "install_or_package_agent_passport_cli"
+    },
+    "verification_not_attempted": {
+      "severity": "medium",
+      "next_action": "run_report_only_passport_verification"
+    },
+    "runtime_enforcement_unknown": {
+      "severity": "low",
+      "next_action": "keep_runtime_enforcement_out_of_scope_until_policy_runtime_exists"
+    }
+  },
+  "privacy_boundary": {
+    "raw_passport_material_forbidden": true,
+    "raw_validator_logs_forbidden": true,
+    "machine_local_paths_forbidden": true,
+    "secrets_forbidden": true
+  }
+}

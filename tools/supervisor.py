@@ -65,6 +65,9 @@ Derived artifacts:
 - Metric pricing provenance: `runs/metric_pricing_provenance.json`
 - Model usage telemetry index: `runs/model_usage_telemetry_index.json`
 - supervisor executor adapter index: `runs/supervisor_executor_adapter_index.json`
+- agent surface index: `runs/agent_surface_index.json`
+- known agent passport index: `runs/known_agent_passport_index.json`
+- agent verification gap index: `runs/agent_verification_gap_index.json`
 - bootstrap smoke benchmark: `runs/bootstrap_smoke_benchmark.json`
 - spec trace index: `runs/spec_trace_index.json`
 - spec trace projection: `runs/spec_trace_projection.json`
@@ -155,6 +158,7 @@ METRIC_SIGNAL_POLICY_RELATIVE_PATH = "tools/metric_signal_policy.json"
 SUPERVISOR_PERFORMANCE_POLICY_RELATIVE_PATH = "tools/supervisor_performance_policy.json"
 BOOTSTRAP_SMOKE_BENCHMARK_POLICY_RELATIVE_PATH = "tools/bootstrap_smoke_benchmark_policy.json"
 SUPERVISOR_EXECUTOR_ADAPTER_POLICY_RELATIVE_PATH = "tools/supervisor_executor_adapter_policy.json"
+AGENT_PASSPORT_ADOPTION_POLICY_RELATIVE_PATH = "tools/agent_passport_adoption_policy.json"
 EXTERNAL_CONSUMER_REGISTRY_RELATIVE_PATH = "tools/external_consumers.json"
 EXTERNAL_CONSUMER_OVERLAY_POLICY_RELATIVE_PATH = "tools/external_consumer_overlay_policy.json"
 EXTERNAL_CONSUMER_HANDOFF_POLICY_RELATIVE_PATH = "tools/external_consumer_handoff_policy.json"
@@ -176,6 +180,9 @@ METRIC_PACK_RUNS_RELATIVE_PATH = "runs/metric_pack_runs.json"
 METRIC_PRICING_PROVENANCE_RELATIVE_PATH = "runs/metric_pricing_provenance.json"
 MODEL_USAGE_TELEMETRY_RELATIVE_PATH = "runs/model_usage_telemetry_index.json"
 SUPERVISOR_EXECUTOR_ADAPTER_INDEX_RELATIVE_PATH = "runs/supervisor_executor_adapter_index.json"
+AGENT_SURFACE_INDEX_RELATIVE_PATH = "runs/agent_surface_index.json"
+KNOWN_AGENT_PASSPORT_INDEX_RELATIVE_PATH = "runs/known_agent_passport_index.json"
+AGENT_VERIFICATION_GAP_INDEX_RELATIVE_PATH = "runs/agent_verification_gap_index.json"
 SPECPM_EXPORT_REGISTRY_RELATIVE_PATH = "tools/specpm_export_registry.json"
 
 
@@ -321,6 +328,10 @@ def bootstrap_smoke_benchmark_policy_path() -> Path:
 
 def supervisor_executor_adapter_policy_path() -> Path:
     return TOOLS_DIR / "supervisor_executor_adapter_policy.json"
+
+
+def agent_passport_adoption_policy_path() -> Path:
+    return TOOLS_DIR / "agent_passport_adoption_policy.json"
 
 
 def external_consumer_overlay_policy_path() -> Path:
@@ -1603,6 +1614,50 @@ SUPERVISOR_EXECUTOR_ADAPTER_POLICY, SUPERVISOR_EXECUTOR_ADAPTER_POLICY_SHA256 = 
 )
 
 
+def load_agent_passport_adoption_policy() -> tuple[dict[str, Any], str]:
+    path = agent_passport_adoption_policy_path()
+    try:
+        raw_text = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise RuntimeError(
+            f"failed to read Agent Passport adoption policy artifact: {path.as_posix()} ({exc})"
+        ) from exc
+    try:
+        payload = json.loads(raw_text)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(
+            f"malformed Agent Passport adoption policy artifact: {path.as_posix()} ({exc})"
+        ) from exc
+    if not isinstance(payload, dict):
+        raise RuntimeError(
+            "malformed Agent Passport adoption policy artifact: "
+            f"{path.as_posix()} must contain a JSON object"
+        )
+    required_sections = (
+        "repository_layout",
+        "surface_index_contract",
+        "known_passport_index_contract",
+        "verification_gap_index_contract",
+        "verification_states",
+        "agent_surfaces",
+        "executor_adapter_binding",
+        "gap_defaults",
+        "privacy_boundary",
+    )
+    missing = [section for section in required_sections if section not in payload]
+    if missing:
+        raise RuntimeError(
+            "malformed Agent Passport adoption policy artifact: missing top-level section(s): "
+            + ", ".join(missing)
+        )
+    return payload, hashlib.sha256(raw_text.encode("utf-8")).hexdigest()
+
+
+AGENT_PASSPORT_ADOPTION_POLICY, AGENT_PASSPORT_ADOPTION_POLICY_SHA256 = (
+    load_agent_passport_adoption_policy()
+)
+
+
 def load_external_consumer_overlay_policy() -> tuple[dict[str, Any], str]:
     path = external_consumer_overlay_policy_path()
     try:
@@ -2114,6 +2169,15 @@ def operator_request_bridge_policy_lookup(policy_path: str) -> Any:
 
 def supervisor_executor_adapter_policy_lookup(policy_path: str) -> Any:
     current: Any = SUPERVISOR_EXECUTOR_ADAPTER_POLICY
+    for part in policy_path.split("."):
+        if not isinstance(current, dict) or part not in current:
+            raise KeyError(policy_path)
+        current = current[part]
+    return copy.deepcopy(current)
+
+
+def agent_passport_adoption_policy_lookup(policy_path: str) -> Any:
+    current: Any = AGENT_PASSPORT_ADOPTION_POLICY
     for part in policy_path.split("."):
         if not isinstance(current, dict) or part not in current:
             raise KeyError(policy_path)
@@ -3062,6 +3126,39 @@ SUPERVISOR_EXECUTOR_ADAPTER_INDEX_ARTIFACT_KIND = str(
 )
 SUPERVISOR_EXECUTOR_ADAPTER_INDEX_SCHEMA_VERSION = int(
     supervisor_executor_adapter_policy_lookup("index_contract.schema_version")
+)
+AGENT_SURFACE_INDEX_FILENAME = Path(
+    str(agent_passport_adoption_policy_lookup("repository_layout.surface_index_artifact"))
+).name
+KNOWN_AGENT_PASSPORT_INDEX_FILENAME = Path(
+    str(agent_passport_adoption_policy_lookup("repository_layout.known_passport_index_artifact"))
+).name
+AGENT_VERIFICATION_GAP_INDEX_FILENAME = Path(
+    str(agent_passport_adoption_policy_lookup("repository_layout.verification_gap_index_artifact"))
+).name
+AGENT_SURFACE_INDEX_ARTIFACT_KIND = str(
+    agent_passport_adoption_policy_lookup("surface_index_contract.artifact_kind")
+)
+AGENT_SURFACE_INDEX_SCHEMA_VERSION = int(
+    agent_passport_adoption_policy_lookup("surface_index_contract.schema_version")
+)
+KNOWN_AGENT_PASSPORT_INDEX_ARTIFACT_KIND = str(
+    agent_passport_adoption_policy_lookup("known_passport_index_contract.artifact_kind")
+)
+KNOWN_AGENT_PASSPORT_INDEX_SCHEMA_VERSION = int(
+    agent_passport_adoption_policy_lookup("known_passport_index_contract.schema_version")
+)
+AGENT_VERIFICATION_GAP_INDEX_ARTIFACT_KIND = str(
+    agent_passport_adoption_policy_lookup("verification_gap_index_contract.artifact_kind")
+)
+AGENT_VERIFICATION_GAP_INDEX_SCHEMA_VERSION = int(
+    agent_passport_adoption_policy_lookup("verification_gap_index_contract.schema_version")
+)
+AGENT_SURFACE_NAMED_FILTERS = list(
+    agent_passport_adoption_policy_lookup("surface_index_contract.named_filters")
+)
+AGENT_VERIFICATION_GAP_NAMED_FILTERS = list(
+    agent_passport_adoption_policy_lookup("verification_gap_index_contract.named_filters")
 )
 SUPERVISOR_EXECUTOR_ADAPTER_NAMED_FILTERS = list(
     supervisor_executor_adapter_policy_lookup("index_contract.named_filters")
@@ -17847,11 +17944,31 @@ def bootstrap_smoke_benchmark_path() -> Path:
     return RUNS_DIR / BOOTSTRAP_SMOKE_BENCHMARK_FILENAME
 
 
+def agent_surface_index_path() -> Path:
+    return RUNS_DIR / AGENT_SURFACE_INDEX_FILENAME
+
+
+def known_agent_passport_index_path() -> Path:
+    return RUNS_DIR / KNOWN_AGENT_PASSPORT_INDEX_FILENAME
+
+
+def agent_verification_gap_index_path() -> Path:
+    return RUNS_DIR / AGENT_VERIFICATION_GAP_INDEX_FILENAME
+
+
 def supervisor_executor_adapter_policy_reference() -> dict[str, Any]:
     return {
         "artifact_path": SUPERVISOR_EXECUTOR_ADAPTER_POLICY_RELATIVE_PATH,
         "artifact_sha256": SUPERVISOR_EXECUTOR_ADAPTER_POLICY_SHA256,
         "schema_version": SUPERVISOR_EXECUTOR_ADAPTER_POLICY.get("schema_version"),
+    }
+
+
+def agent_passport_adoption_policy_reference() -> dict[str, Any]:
+    return {
+        "artifact_path": AGENT_PASSPORT_ADOPTION_POLICY_RELATIVE_PATH,
+        "artifact_sha256": AGENT_PASSPORT_ADOPTION_POLICY_SHA256,
+        "schema_version": AGENT_PASSPORT_ADOPTION_POLICY.get("schema_version"),
     }
 
 
@@ -18116,6 +18233,514 @@ def write_supervisor_executor_adapter_index(index: dict[str, Any]) -> Path:
     with artifact_lock(path):
         atomic_write_json(path, index)
     return path
+
+
+def agent_passport_contract_stable_fields(contract_name: str) -> list[str]:
+    return [
+        str(field).strip()
+        for field in agent_passport_adoption_policy_lookup(f"{contract_name}.stable_fields")
+        if str(field).strip()
+    ]
+
+
+def agent_passport_surface_from_policy(raw_surface: dict[str, Any]) -> dict[str, Any]:
+    passport_ref = str(raw_surface.get("passport_ref", "")).strip()
+    verification_state = str(raw_surface.get("verification_state", "")).strip()
+    if not verification_state:
+        verification_state = "V2_passport_referenced" if passport_ref else "V1_known_surface"
+    return {
+        "surface_id": str(raw_surface.get("surface_id", "")).strip(),
+        "title": str(raw_surface.get("title", "")).strip(),
+        "surface_type": str(raw_surface.get("surface_type", "")).strip(),
+        "source": str(raw_surface.get("source", "policy")).strip() or "policy",
+        "source_proposal_ids": [
+            str(proposal_id).strip()
+            for proposal_id in raw_surface.get("source_proposal_ids", [])
+            if str(proposal_id).strip()
+        ],
+        "requires_passport": bool(raw_surface.get("requires_passport", False)),
+        "launches_agents": bool(raw_surface.get("launches_agents", False)),
+        "prepares_handoffs": bool(raw_surface.get("prepares_handoffs", False)),
+        "passport_ref": passport_ref or None,
+        "verification_state": verification_state,
+        "runtime_enforcement_state": str(
+            raw_surface.get("runtime_enforcement_state", "not_observed")
+        ).strip()
+        or "not_observed",
+        "consumer_id": str(raw_surface.get("consumer_id", "")).strip(),
+        "future_surface": bool(raw_surface.get("future_surface", False)),
+        "notes": str(raw_surface.get("notes", "")).strip(),
+    }
+
+
+def agent_passport_surface_from_executor_entry(entry: dict[str, Any]) -> dict[str, Any]:
+    binding = agent_passport_adoption_policy_lookup("executor_adapter_binding")
+    backend_id = str(entry.get("backend_id", "")).strip()
+    surface_id_prefix = str(binding.get("surface_id_prefix", "specgraph.executor")).strip()
+    passport_ref = str(entry.get("passport_ref", "")).strip()
+    passport_validation = entry.get("passport_validation", {})
+    passport_validation = passport_validation if isinstance(passport_validation, dict) else {}
+    verification_state = "V2_passport_referenced" if passport_ref else "V1_known_surface"
+    return {
+        "surface_id": f"{surface_id_prefix}.{backend_id}",
+        "title": str(entry.get("display_name", backend_id)).strip() or backend_id,
+        "surface_type": str(binding.get("surface_type", "executor_backend")).strip(),
+        "source": "supervisor_executor_adapter_index",
+        "source_proposal_ids": [
+            str(proposal_id).strip()
+            for proposal_id in binding.get("source_proposal_ids", [])
+            if str(proposal_id).strip()
+        ],
+        "requires_passport": True,
+        "launches_agents": True,
+        "prepares_handoffs": False,
+        "passport_ref": passport_ref or None,
+        "verification_state": verification_state,
+        "runtime_enforcement_state": "not_observed",
+        "executor_backend_id": backend_id,
+        "backend_status": str(entry.get("backend_status", "")).strip(),
+        "passport_validation": {
+            "required": bool(passport_validation.get("required", False)),
+            "validation_state": str(
+                passport_validation.get("validation_state", "not_attempted")
+            ).strip()
+            or "not_attempted",
+            "tool_status": str(passport_validation.get("tool_status", "")).strip(),
+            "diagnostic_kind": str(passport_validation.get("diagnostic_kind", "")).strip(),
+        },
+        "notes": "Derived from the 0056 supervisor executor adapter index.",
+    }
+
+
+def build_agent_surface_index(
+    supervisor_executor_adapter_index: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    if supervisor_executor_adapter_index is None:
+        supervisor_executor_adapter_index = build_supervisor_executor_adapter_index()
+    surfaces_by_id: dict[str, dict[str, Any]] = {}
+
+    for raw_surface in agent_passport_adoption_policy_lookup("agent_surfaces"):
+        if not isinstance(raw_surface, dict):
+            continue
+        surface = agent_passport_surface_from_policy(raw_surface)
+        if surface["surface_id"]:
+            surfaces_by_id[surface["surface_id"]] = surface
+
+    binding = agent_passport_adoption_policy_lookup("executor_adapter_binding")
+    if bool(binding.get("enabled", False)):
+        for entry in supervisor_executor_adapter_index.get("entries", []):
+            if not isinstance(entry, dict):
+                continue
+            backend_id = str(entry.get("backend_id", "")).strip()
+            if not backend_id:
+                continue
+            surface = agent_passport_surface_from_executor_entry(entry)
+            surfaces_by_id[surface["surface_id"]] = surface
+
+    surfaces = [copy.deepcopy(surfaces_by_id[key]) for key in sorted(surfaces_by_id)]
+    by_surface_type: dict[str, list[str]] = {}
+    by_verification_state: dict[str, list[str]] = {}
+    named_filters = {name: [] for name in AGENT_SURFACE_NAMED_FILTERS}
+    for surface in surfaces:
+        surface_id = str(surface.get("surface_id", "")).strip()
+        surface_type = str(surface.get("surface_type", "")).strip()
+        verification_state = str(surface.get("verification_state", "")).strip()
+        by_surface_type.setdefault(surface_type, []).append(surface_id)
+        by_verification_state.setdefault(verification_state, []).append(surface_id)
+        if surface.get("requires_passport"):
+            named_filters["requires_passport"].append(surface_id)
+        if surface.get("passport_ref"):
+            named_filters["passport_referenced"].append(surface_id)
+        if surface.get("requires_passport") and not surface.get("passport_ref"):
+            named_filters["missing_passport"].append(surface_id)
+        if surface_type == "executor_backend":
+            named_filters["executor_backend"].append(surface_id)
+        if str(surface.get("consumer_id", "")).strip() == "specspace":
+            named_filters["specspace_consumer"].append(surface_id)
+        if str(surface.get("runtime_enforcement_state", "")).strip() != "observed":
+            named_filters["runtime_enforcement_unknown"].append(surface_id)
+
+    for bucket in (by_surface_type, by_verification_state, named_filters):
+        for key in list(bucket):
+            bucket[key] = sorted(set(bucket[key]))
+
+    passport_referenced_count = sum(1 for surface in surfaces if surface.get("passport_ref"))
+    requires_passport_count = sum(1 for surface in surfaces if surface.get("requires_passport"))
+    required_passport_referenced_count = sum(
+        1
+        for surface in surfaces
+        if surface.get("requires_passport") and surface.get("passport_ref")
+    )
+    missing_passport_count = sum(
+        1
+        for surface in surfaces
+        if surface.get("requires_passport") and not surface.get("passport_ref")
+    )
+    return {
+        "artifact_kind": AGENT_SURFACE_INDEX_ARTIFACT_KIND,
+        "schema_version": AGENT_SURFACE_INDEX_SCHEMA_VERSION,
+        "generated_at": utc_now_iso(),
+        "policy_reference": agent_passport_adoption_policy_reference(),
+        "stable_fields": agent_passport_contract_stable_fields("surface_index_contract"),
+        "source_artifacts": {
+            "policy": AGENT_PASSPORT_ADOPTION_POLICY_RELATIVE_PATH,
+            "supervisor_executor_adapter_index": (SUPERVISOR_EXECUTOR_ADAPTER_INDEX_RELATIVE_PATH),
+        },
+        "summary": {
+            "surface_count": len(surfaces),
+            "requires_passport_count": requires_passport_count,
+            "passport_referenced_count": passport_referenced_count,
+            "required_passport_referenced_count": required_passport_referenced_count,
+            "missing_passport_count": missing_passport_count,
+            "executor_backend_surface_count": len(by_surface_type.get("executor_backend", [])),
+            "agent_passport_cli_status": str(
+                supervisor_executor_adapter_index.get("summary", {}).get(
+                    "agent_passport_cli_status", ""
+                )
+            ).strip(),
+            "next_gap": (
+                "close_agent_verification_gaps"
+                if missing_passport_count
+                else "run_report_only_passport_verification"
+            ),
+        },
+        "surfaces": surfaces,
+        "viewer_projection": {
+            "surface_type": by_surface_type,
+            "verification_state": by_verification_state,
+            "named_filters": named_filters,
+        },
+    }
+
+
+def build_known_agent_passport_index(agent_surface_index: dict[str, Any]) -> dict[str, Any]:
+    entries: list[dict[str, Any]] = []
+    verification_state: dict[str, list[str]] = {}
+    named_filters = {
+        "passport_referenced": [],
+        "missing_passport": [],
+        "executor_backend": [],
+        "specspace_consumer": [],
+    }
+    for surface in agent_surface_index.get("surfaces", []):
+        if not isinstance(surface, dict):
+            continue
+        surface_id = str(surface.get("surface_id", "")).strip()
+        if not surface_id:
+            continue
+        passport_ref = surface.get("passport_ref")
+        passport_ref = str(passport_ref).strip() if passport_ref else None
+        state = str(surface.get("verification_state", "")).strip() or "V1_known_surface"
+        entry = {
+            "agent_surface": surface_id,
+            "surface_type": str(surface.get("surface_type", "")).strip(),
+            "passport_ref": passport_ref,
+            "verification_state": state,
+            "verification_source": (
+                "declared_reference" if passport_ref else "known_surface_without_reference"
+            ),
+            "last_checked_at": None,
+            "requires_passport": bool(surface.get("requires_passport", False)),
+            "runtime_enforcement_state": str(surface.get("runtime_enforcement_state", "")).strip(),
+            "source_proposal_ids": [
+                str(proposal_id).strip()
+                for proposal_id in surface.get("source_proposal_ids", [])
+                if str(proposal_id).strip()
+            ],
+            "source": str(surface.get("source", "")).strip(),
+        }
+        if "executor_backend_id" in surface:
+            entry["executor_backend_id"] = str(surface.get("executor_backend_id", "")).strip()
+        if str(surface.get("consumer_id", "")).strip():
+            entry["consumer_id"] = str(surface.get("consumer_id", "")).strip()
+        entries.append(entry)
+        verification_state.setdefault(state, []).append(surface_id)
+        if passport_ref:
+            named_filters["passport_referenced"].append(surface_id)
+        if entry["requires_passport"] and not passport_ref:
+            named_filters["missing_passport"].append(surface_id)
+        if entry["surface_type"] == "executor_backend":
+            named_filters["executor_backend"].append(surface_id)
+        if entry.get("consumer_id") == "specspace":
+            named_filters["specspace_consumer"].append(surface_id)
+
+    for bucket in (verification_state, named_filters):
+        for key in list(bucket):
+            bucket[key] = sorted(set(bucket[key]))
+
+    entries = sorted(entries, key=lambda item: item["agent_surface"])
+    return {
+        "artifact_kind": KNOWN_AGENT_PASSPORT_INDEX_ARTIFACT_KIND,
+        "schema_version": KNOWN_AGENT_PASSPORT_INDEX_SCHEMA_VERSION,
+        "generated_at": utc_now_iso(),
+        "policy_reference": agent_passport_adoption_policy_reference(),
+        "stable_fields": agent_passport_contract_stable_fields("known_passport_index_contract"),
+        "source_artifacts": {
+            "agent_surface_index": AGENT_SURFACE_INDEX_RELATIVE_PATH,
+        },
+        "summary": {
+            "agent_count": len(entries),
+            "passport_referenced_count": len(named_filters["passport_referenced"]),
+            "missing_passport_count": len(named_filters["missing_passport"]),
+            "verified_count": len(verification_state.get("V4_signature_verified", [])),
+            "next_gap": (
+                "declare_missing_agent_passports"
+                if named_filters["missing_passport"]
+                else "run_report_only_passport_verification"
+            ),
+        },
+        "entries": entries,
+        "agents": copy.deepcopy(entries),
+        "viewer_projection": {
+            "verification_state": verification_state,
+            "named_filters": named_filters,
+        },
+    }
+
+
+def agent_passport_gap_default(gap_kind: str, field: str) -> str:
+    return str(agent_passport_adoption_policy_lookup(f"gap_defaults.{gap_kind}.{field}")).strip()
+
+
+def agent_verification_gap_record(
+    *,
+    surface: dict[str, Any],
+    gap_kind: str,
+    reason: str,
+    source_artifacts: list[str],
+) -> dict[str, Any]:
+    surface_id = str(surface.get("surface_id") or surface.get("agent_surface", "")).strip()
+    return {
+        "gap_id": f"agent_verification_gap::{surface_id}::{gap_kind}",
+        "agent_surface": surface_id,
+        "surface_type": str(surface.get("surface_type", "")).strip(),
+        "gap": gap_kind,
+        "severity": agent_passport_gap_default(gap_kind, "severity"),
+        "reason": reason,
+        "next_action": agent_passport_gap_default(gap_kind, "next_action"),
+        "source_artifacts": source_artifacts,
+        "source_proposal_ids": [
+            str(proposal_id).strip()
+            for proposal_id in surface.get("source_proposal_ids", [])
+            if str(proposal_id).strip()
+        ],
+    }
+
+
+def build_agent_verification_gap_index(
+    agent_surface_index: dict[str, Any],
+    known_agent_passport_index: dict[str, Any],
+    supervisor_executor_adapter_index: dict[str, Any],
+) -> dict[str, Any]:
+    executor_cli_status = str(
+        supervisor_executor_adapter_index.get("summary", {}).get("agent_passport_cli_status", "")
+    ).strip()
+    source_artifacts = [
+        AGENT_SURFACE_INDEX_RELATIVE_PATH,
+        KNOWN_AGENT_PASSPORT_INDEX_RELATIVE_PATH,
+        SUPERVISOR_EXECUTOR_ADAPTER_INDEX_RELATIVE_PATH,
+    ]
+    surfaces_by_id = {
+        str(surface.get("surface_id", "")).strip(): surface
+        for surface in agent_surface_index.get("surfaces", [])
+        if isinstance(surface, dict) and str(surface.get("surface_id", "")).strip()
+    }
+    gaps: list[dict[str, Any]] = []
+    for known in known_agent_passport_index.get("entries", []):
+        if not isinstance(known, dict):
+            continue
+        surface_id = str(known.get("agent_surface", "")).strip()
+        surface = surfaces_by_id.get(surface_id, {})
+        if not surface:
+            continue
+        passport_ref = known.get("passport_ref")
+        if known.get("requires_passport") and not passport_ref:
+            gaps.append(
+                agent_verification_gap_record(
+                    surface=surface,
+                    gap_kind="missing_passport",
+                    reason=(
+                        "Agent surface requires an Agent Passport reference, but none is "
+                        "declared in the adoption policy or executor adapter index."
+                    ),
+                    source_artifacts=source_artifacts,
+                )
+            )
+        if passport_ref:
+            if executor_cli_status != "available":
+                gaps.append(
+                    agent_verification_gap_record(
+                        surface=surface,
+                        gap_kind="verification_tool_unavailable",
+                        reason=(
+                            "The 0056 executor adapter index reports Agent Passport CLI "
+                            "diagnostics as unavailable, so report-only verification cannot run."
+                        ),
+                        source_artifacts=source_artifacts,
+                    )
+                )
+            else:
+                gaps.append(
+                    agent_verification_gap_record(
+                        surface=surface,
+                        gap_kind="verification_not_attempted",
+                        reason=(
+                            "A passport reference is declared, but this slice does not perform "
+                            "schema, signature, lifecycle, or revocation verification."
+                        ),
+                        source_artifacts=source_artifacts,
+                    )
+                )
+        if (
+            known.get("requires_passport")
+            and str(surface.get("runtime_enforcement_state", "")).strip() != "observed"
+        ):
+            gaps.append(
+                agent_verification_gap_record(
+                    surface=surface,
+                    gap_kind="runtime_enforcement_unknown",
+                    reason=(
+                        "Agent Passport adoption is report-only in this slice; runtime "
+                        "enforcement has not been observed."
+                    ),
+                    source_artifacts=source_artifacts,
+                )
+            )
+
+    gap_kind: dict[str, list[str]] = {}
+    severity: dict[str, list[str]] = {}
+    named_filters = {name: [] for name in AGENT_VERIFICATION_GAP_NAMED_FILTERS}
+    for gap in gaps:
+        surface_id = str(gap.get("agent_surface", "")).strip()
+        kind = str(gap.get("gap", "")).strip()
+        gap_kind.setdefault(kind, []).append(surface_id)
+        severity.setdefault(str(gap.get("severity", "")).strip(), []).append(gap["gap_id"])
+        if kind in named_filters:
+            named_filters[kind].append(surface_id)
+        surface = surfaces_by_id.get(surface_id, {})
+        if str(surface.get("surface_type", "")).strip() == "executor_backend":
+            named_filters["executor_backend"].append(surface_id)
+        if str(surface.get("consumer_id", "")).strip() == "specspace":
+            named_filters["specspace_consumer"].append(surface_id)
+
+    for bucket in (gap_kind, severity, named_filters):
+        for key in list(bucket):
+            bucket[key] = sorted(set(bucket[key]))
+
+    gaps = sorted(gaps, key=lambda item: item["gap_id"])
+    return {
+        "artifact_kind": AGENT_VERIFICATION_GAP_INDEX_ARTIFACT_KIND,
+        "schema_version": AGENT_VERIFICATION_GAP_INDEX_SCHEMA_VERSION,
+        "generated_at": utc_now_iso(),
+        "policy_reference": agent_passport_adoption_policy_reference(),
+        "stable_fields": agent_passport_contract_stable_fields("verification_gap_index_contract"),
+        "source_artifacts": {
+            "agent_surface_index": AGENT_SURFACE_INDEX_RELATIVE_PATH,
+            "known_agent_passport_index": KNOWN_AGENT_PASSPORT_INDEX_RELATIVE_PATH,
+            "supervisor_executor_adapter_index": SUPERVISOR_EXECUTOR_ADAPTER_INDEX_RELATIVE_PATH,
+        },
+        "summary": {
+            "gap_count": len(gaps),
+            "missing_passport_count": len(gap_kind.get("missing_passport", [])),
+            "verification_tool_unavailable_count": len(
+                gap_kind.get("verification_tool_unavailable", [])
+            ),
+            "runtime_enforcement_unknown_count": len(
+                gap_kind.get("runtime_enforcement_unknown", [])
+            ),
+            "agent_passport_cli_status": executor_cli_status,
+            "next_gap": "close_agent_verification_gaps" if gaps else "none",
+        },
+        "gaps": gaps,
+        "viewer_projection": {
+            "gap": gap_kind,
+            "severity": severity,
+            "named_filters": named_filters,
+        },
+    }
+
+
+def build_agent_passport_derived_surfaces() -> dict[str, Any]:
+    supervisor_executor_adapter_index = build_supervisor_executor_adapter_index()
+    agent_surface_index = build_agent_surface_index(supervisor_executor_adapter_index)
+    known_agent_passport_index = build_known_agent_passport_index(agent_surface_index)
+    agent_verification_gap_index = build_agent_verification_gap_index(
+        agent_surface_index,
+        known_agent_passport_index,
+        supervisor_executor_adapter_index,
+    )
+    return {
+        "artifact_kind": "agent_passport_derived_surfaces",
+        "schema_version": 1,
+        "generated_at": utc_now_iso(),
+        "policy_reference": agent_passport_adoption_policy_reference(),
+        "supervisor_executor_adapter_index": supervisor_executor_adapter_index,
+        "agent_surface_index": agent_surface_index,
+        "known_agent_passport_index": known_agent_passport_index,
+        "agent_verification_gap_index": agent_verification_gap_index,
+    }
+
+
+def write_agent_surface_index(index: dict[str, Any]) -> Path:
+    path = agent_surface_index_path()
+    with artifact_lock(path):
+        atomic_write_json(path, index)
+    return path
+
+
+def write_known_agent_passport_index(index: dict[str, Any]) -> Path:
+    path = known_agent_passport_index_path()
+    with artifact_lock(path):
+        atomic_write_json(path, index)
+    return path
+
+
+def write_agent_verification_gap_index(index: dict[str, Any]) -> Path:
+    path = agent_verification_gap_index_path()
+    with artifact_lock(path):
+        atomic_write_json(path, index)
+    return path
+
+
+def write_agent_passport_derived_surfaces(surfaces: dict[str, Any]) -> dict[str, Path]:
+    return {
+        "supervisor_executor_adapter_index": write_supervisor_executor_adapter_index(
+            surfaces["supervisor_executor_adapter_index"]
+        ),
+        "agent_surface_index": write_agent_surface_index(surfaces["agent_surface_index"]),
+        "known_agent_passport_index": write_known_agent_passport_index(
+            surfaces["known_agent_passport_index"]
+        ),
+        "agent_verification_gap_index": write_agent_verification_gap_index(
+            surfaces["agent_verification_gap_index"]
+        ),
+    }
+
+
+def agent_passport_derived_surfaces_report(surfaces: dict[str, Any]) -> dict[str, Any]:
+    written_paths = write_agent_passport_derived_surfaces(surfaces)
+    surface_index = surfaces["agent_surface_index"]
+    known_index = surfaces["known_agent_passport_index"]
+    gap_index = surfaces["agent_verification_gap_index"]
+    return {
+        "artifact_kind": "agent_passport_derived_surfaces_build_report",
+        "schema_version": 1,
+        "generated_at": utc_now_iso(),
+        "policy_reference": agent_passport_adoption_policy_reference(),
+        "written_artifacts": {
+            key: {"artifact_path": path.relative_to(ROOT).as_posix()}
+            for key, path in written_paths.items()
+        },
+        "summary": {
+            "surface_count": surface_index.get("summary", {}).get("surface_count", 0),
+            "known_agent_count": known_index.get("summary", {}).get("agent_count", 0),
+            "gap_count": gap_index.get("summary", {}).get("gap_count", 0),
+            "agent_passport_cli_status": gap_index.get("summary", {}).get(
+                "agent_passport_cli_status", ""
+            ),
+            "next_gap": gap_index.get("summary", {}).get("next_gap", "none"),
+        },
+    }
 
 
 def load_spec_trace_registry() -> dict[str, dict[str, Any]]:
@@ -39177,6 +39802,7 @@ def main(
     build_metric_signal_index_mode: bool = False,
     build_metric_threshold_proposals_mode: bool = False,
     build_supervisor_executor_adapter_index_mode: bool = False,
+    build_agent_passport_derived_surfaces_mode: bool = False,
     build_supervisor_performance_index_mode: bool = False,
     build_bootstrap_smoke_benchmark_mode: bool = False,
     build_viewer_surfaces_mode: bool = False,
@@ -39248,6 +39874,7 @@ def main(
         "--init-product-workspace": init_product_workspace_mode,
         "--build-review-feedback-index": build_review_feedback_index_mode,
         "--build-supervisor-executor-adapter-index": build_supervisor_executor_adapter_index_mode,
+        "--build-agent-passport-derived-surfaces": build_agent_passport_derived_surfaces_mode,
         "--build-vocabulary-index": build_vocabulary_index_mode,
         "--build-vocabulary-drift-report": build_vocabulary_drift_report_mode,
         "--build-pre-spec-semantics-index": build_pre_spec_semantics_index_mode,
@@ -40168,6 +40795,41 @@ def main(
         index = build_supervisor_executor_adapter_index()
         write_supervisor_executor_adapter_index(index)
         emit_supervisor_json(index, output_mode=normalized_output_mode)
+        return 0
+
+    if build_agent_passport_derived_surfaces_mode:
+        if any(
+            (
+                dry_run,
+                auto_approve,
+                loop,
+                resolve_gate,
+                decision,
+                note,
+                target_spec,
+                split_proposal,
+                apply_split_proposal,
+                operator_note,
+                mutation_budget,
+                run_authority,
+                execution_profile,
+                child_model,
+                child_timeout_seconds,
+                verbose,
+                list_stale_runtime,
+                clean_stale_runtime,
+                observe_graph_health_mode,
+                operator_request_packet_path,
+            )
+        ):
+            print(
+                "--build-agent-passport-derived-surfaces must be used as a standalone command",
+                file=sys.stderr,
+            )
+            return 1
+        surfaces = build_agent_passport_derived_surfaces()
+        report = agent_passport_derived_surfaces_report(surfaces)
+        emit_supervisor_json(report, output_mode=normalized_output_mode)
         return 0
 
     if build_external_consumer_index_mode:
@@ -43386,6 +44048,14 @@ if __name__ == "__main__":
         ),
     )
     parser.add_argument(
+        "--build-agent-passport-derived-surfaces",
+        action="store_true",
+        help=(
+            "Build read-only 0059 Agent Passport derived surfaces from policy and the "
+            "0056 executor adapter index without verifying or enforcing passports"
+        ),
+    )
+    parser.add_argument(
         "--build-supervisor-performance-index",
         action="store_true",
         help=(
@@ -43706,6 +44376,7 @@ if __name__ == "__main__":
             build_supervisor_executor_adapter_index_mode=(
                 args.build_supervisor_executor_adapter_index
             ),
+            build_agent_passport_derived_surfaces_mode=(args.build_agent_passport_derived_surfaces),
             build_supervisor_performance_index_mode=args.build_supervisor_performance_index,
             build_bootstrap_smoke_benchmark_mode=args.build_bootstrap_smoke_benchmark,
             build_viewer_surfaces_mode=args.build_viewer_surfaces,
