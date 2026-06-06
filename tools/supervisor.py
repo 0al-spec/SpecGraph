@@ -343,8 +343,15 @@ def external_consumer_handoff_policy_path() -> Path:
     return TOOLS_DIR / "external_consumer_handoff_policy.json"
 
 
+def external_consumer_evidence_registry_relative_path() -> str:
+    return (
+        EXTERNAL_CONSUMER_EVIDENCE_REGISTRY_PATH_FROM_POLICY
+        or EXTERNAL_CONSUMER_EVIDENCE_REGISTRY_RELATIVE_PATH
+    )
+
+
 def external_consumer_evidence_registry_path() -> Path:
-    return ROOT / EXTERNAL_CONSUMER_EVIDENCE_REGISTRY_RELATIVE_PATH
+    return ROOT / external_consumer_evidence_registry_relative_path()
 
 
 def specpm_export_policy_path() -> Path:
@@ -21883,8 +21890,7 @@ def external_consumer_evidence_policy_reference() -> dict[str, Any]:
     return {
         "artifact_path": EXTERNAL_CONSUMER_HANDOFF_POLICY_RELATIVE_PATH,
         "artifact_sha256": EXTERNAL_CONSUMER_HANDOFF_POLICY_SHA256,
-        "registry_path": EXTERNAL_CONSUMER_EVIDENCE_REGISTRY_PATH_FROM_POLICY
-        or EXTERNAL_CONSUMER_EVIDENCE_REGISTRY_RELATIVE_PATH,
+        "registry_path": external_consumer_evidence_registry_relative_path(),
         "schema_version": EXTERNAL_CONSUMER_EVIDENCE_SCHEMA_VERSION,
     }
 
@@ -22180,9 +22186,7 @@ def build_external_consumer_evidence_index(
         "policy_reference": external_consumer_evidence_policy_reference(),
         "acceptance_statuses": list(EXTERNAL_CONSUMER_EVIDENCE_STATUSES),
         "registry_reference": {
-            "artifact_path": external_consumer_evidence_registry_path()
-            .relative_to(ROOT)
-            .as_posix(),
+            "artifact_path": external_consumer_evidence_registry_relative_path(),
             "artifact_kind": str(evidence_registry.get("artifact_kind", "")).strip(),
             "version": evidence_registry.get("version"),
         },

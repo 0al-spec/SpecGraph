@@ -11541,6 +11541,52 @@ def test_build_external_consumer_evidence_index_reports_contract_mismatch(
     }
 
 
+def test_external_consumer_evidence_uses_policy_registry_path(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    registry_path = repo_fixture / "tools" / "custom_external_consumer_evidence.json"
+    registry_path.parent.mkdir(parents=True, exist_ok=True)
+    registry_path.write_text(
+        json.dumps(
+            {
+                "artifact_kind": "external_consumer_evidence_registry",
+                "version": 7,
+                "entries": [
+                    {
+                        "evidence_id": "custom-evidence",
+                        "handoff_id": "missing",
+                        "consumer_id": "specspace",
+                        "result": "implemented",
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "EXTERNAL_CONSUMER_EVIDENCE_REGISTRY_PATH_FROM_POLICY",
+        "tools/custom_external_consumer_evidence.json",
+    )
+
+    registry = supervisor_module.load_external_consumer_evidence_registry()
+    index = supervisor_module.build_external_consumer_evidence_index(
+        {"entries": []},
+        registry,
+    )
+
+    assert registry["version"] == 7
+    assert index["policy_reference"]["registry_path"] == (
+        "tools/custom_external_consumer_evidence.json"
+    )
+    assert index["registry_reference"]["artifact_path"] == (
+        "tools/custom_external_consumer_evidence.json"
+    )
+    assert index["entries"][0]["evidence_id"] == "custom-evidence"
+
+
 def test_main_builds_external_consumer_evidence_as_standalone_command(
     supervisor_module: object,
     repo_fixture: Path,

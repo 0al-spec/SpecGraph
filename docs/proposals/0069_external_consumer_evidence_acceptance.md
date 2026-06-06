@@ -105,7 +105,8 @@ The index uses these acceptance statuses:
 For the initial SpecSpace evidence, acceptance requires:
 
 - `handoff_id: external_consumer_handoff::specspace`;
-- `implementation_ref` pointing to `0al-spec/SpecSpace#225`;
+- `implementation_ref` pointing to
+  `https://github.com/0al-spec/SpecSpace/pull/225`;
 - consumed artifacts matching the stable producer artifact contract;
 - evidence items for PR merge, SpecSpace CI/smoke, and Platform Timeweb publish;
 - result `implemented`;
@@ -123,4 +124,3 @@ The first evidence record binds:
 This proves consumer implementation and deploy publication for the first
 SpecSpace agent/executor/passport visibility handoff without claiming that
 Agent Passport verification gaps or runtime enforcement are closed.
-
