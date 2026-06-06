@@ -483,6 +483,23 @@ The first implementation should stop at read-only observation:
 No passport should be required to merge ordinary SpecGraph work until the
 adoption policy explicitly says so.
 
+## Runtime Derived Surface Slice
+
+Proposal `0067 Agent Passport Derived Surface Runtime` materializes the first
+read-only runtime slice for this proposal:
+
+```text
+tools/agent_passport_adoption_policy.json
+runs/agent_surface_index.json
+runs/known_agent_passport_index.json
+runs/agent_verification_gap_index.json
+make agent-passports
+```
+
+The slice consumes Agent Passport CLI availability diagnostics from the `0056`
+executor adapter index. It does not verify signatures, enforce passports,
+launch agents, mutate SpecSpace, or change Platform packaging.
+
 ## Implementation Plan
 
 Suggested bounded slices:

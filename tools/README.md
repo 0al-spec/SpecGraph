@@ -108,6 +108,9 @@ Supervisor modes:
   `runs/supervisor_executor_adapter_index.json` from the 0056 policy so
   executor backend availability, capability gaps, and Agent Passport CLI
   diagnostics are visible without launching nested executors.
+- `--build-agent-passport-derived-surfaces`: build Agent Passport derived
+  surfaces from `tools/agent_passport_adoption_policy.json` and the 0056
+  executor adapter index without verifying signatures or enforcing passports.
 - `--build-specpm-export-preview`: build `runs/specpm_export_preview.json`
   from the tracked `SpecPM` consumer contract and
   `tools/specpm_export_registry.json`, producing a reviewable package preview
@@ -403,6 +406,15 @@ Key derived artifacts:
   surface for proposal 0056, including backend availability, declared
   capabilities, Agent Passport CLI diagnostics, capability gaps, and safe next
   actions without publishing absolute executable paths or raw logs
+- `runs/agent_surface_index.json`: read-only Agent Passport adoption surface
+  index for graph-facing agents, including policy-declared surfaces and
+  executor backends derived from the 0056 adapter index
+- `runs/known_agent_passport_index.json`: read-only graph-side Agent Passport
+  reference index that distinguishes known surfaces from referenced but
+  unverified passports
+- `runs/agent_verification_gap_index.json`: read-only verification gap index
+  for missing passports, unavailable validator tooling, unattempted
+  verification, and unknown runtime enforcement
 - `runs/specpm_export_preview.json`: reviewable `SpecPM` package preview
   artifact, including manifest preview, boundary-source preview, export
   status, and next-gap backlog for future full package emission
@@ -569,6 +581,9 @@ Key derived artifacts:
   supervisor executor adapter gateway, including request/report contracts,
   backend registry metadata, index contract fields, and Agent Passport CLI
   availability diagnostics
+- `tools/agent_passport_adoption_policy.json`: declarative contract for
+  report-only Agent Passport adoption surfaces, known passport references, and
+  verification gap indexes consumed by SpecSpace-oriented handoff planning
 - `tools/specpm_export_policy.json`: declarative contract for `SpecPM` export
   previews, including review status, next-gap defaults, and required export
   registry fields
