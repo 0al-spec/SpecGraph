@@ -122,7 +122,7 @@ The report is derived and read-only:
 {
   "artifact_kind": "proposal_work_claim_report",
   "schema_version": 1,
-  "claim_count": 1,
+  "claim_count": 0,
   "entries": [],
   "blocking_findings": [],
   "canonical_mutations_allowed": false,
@@ -137,6 +137,7 @@ The gate fails only on claim health problems:
 - missing `scope`;
 - active claim without `branch`;
 - active claim without `allowed_paths`;
+- active claim without `expires_at`;
 - invalid `expires_at`;
 - expired active claim;
 - duplicate active claim for the same `(proposal_id, scope)`.

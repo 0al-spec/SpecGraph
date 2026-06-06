@@ -26115,6 +26115,43 @@ def test_proposal_work_claim_report_flags_expired_and_duplicate_claims(
     assert report["summary"]["blocking_count"] == 2
 
 
+def test_proposal_work_claim_report_requires_expiry_only_for_active_claims(
+    supervisor_module: object,
+) -> None:
+    report = supervisor_module.build_proposal_work_claim_report(
+        claims=[
+            {
+                "claim_id": "claim-missing-expiry",
+                "proposal_id": "0063",
+                "scope": "contract",
+                "owner": "codex",
+                "branch": "codex/missing-expiry",
+                "claimed_at": "2026-06-01T00:00:00Z",
+                "allowed_paths": ["docs/proposals/0063_proposal_work_claim_locks.md"],
+            },
+            {
+                "claim_id": "claim-explicitly-expired",
+                "proposal_id": "0062",
+                "scope": "runtime",
+                "owner": "codex",
+                "status": "expired",
+                "claimed_at": "2026-05-01T00:00:00Z",
+                "expires_at": "2026-05-02T00:00:00Z",
+                "allowed_paths": ["docs/proposals/0062_proto_graph_recursive_refinement.md"],
+            },
+        ],
+        generated_at="2026-06-06T00:00:00Z",
+    )
+
+    blocking_codes = {finding["code"] for finding in report["blocking_findings"]}
+    assert blocking_codes == {"missing_expires_at"}
+    expired_entry = next(
+        entry for entry in report["entries"] if entry["claim_id"] == "claim-explicitly-expired"
+    )
+    assert expired_entry["effective_status"] == "expired"
+    assert expired_entry["findings"] == []
+
+
 def test_proposal_id_allocator_uses_docs_registries_and_claims(
     repo_fixture: Path,
     supervisor_module: object,

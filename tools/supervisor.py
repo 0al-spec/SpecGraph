@@ -30629,6 +30629,7 @@ def proposal_work_claim_findings(
     proposal_id = str(claim.get("proposal_id", "")).strip()
     scope = str(claim.get("scope", "")).strip()
     branch = str(claim.get("branch", "")).strip()
+    declared_status = str(claim.get("status", "active")).strip() or "active"
     allowed_paths = [
         str(path).strip() for path in claim.get("allowed_paths", []) if str(path).strip()
     ]
@@ -30663,9 +30664,11 @@ def proposal_work_claim_findings(
             "error",
             "Active proposal work claim must declare allowed_paths.",
         )
+    if declared_status == "active" and not expires_at:
+        add("missing_expires_at", "error", "Active proposal work claim must declare expires_at.")
     if expires_at and parse_iso_datetime(expires_at) is None:
         add("invalid_expires_at", "error", "Proposal work claim expires_at must be ISO-8601.")
-    if effective_status == "expired":
+    if declared_status == "active" and effective_status == "expired":
         add("expired_claim", "error", "Active proposal work claim has passed expires_at.")
     return findings
 
@@ -30748,6 +30751,7 @@ def build_proposal_work_claim_report(
         "missing_scope",
         "missing_branch",
         "missing_allowed_paths",
+        "missing_expires_at",
         "invalid_expires_at",
         "expired_claim",
         "duplicate_active_claim",

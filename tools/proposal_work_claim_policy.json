@@ -20,6 +20,7 @@
     "missing_scope",
     "missing_branch",
     "missing_allowed_paths",
+    "missing_expires_at",
     "invalid_expires_at",
     "expired_claim",
     "duplicate_active_claim"
