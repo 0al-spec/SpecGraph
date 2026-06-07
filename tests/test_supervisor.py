@@ -11185,6 +11185,8 @@ def test_agent_passport_policy_declares_specspace_posture_consumer_contract(
     assert contract["required_display_states"]["verification_states"] == [
         "V2_passport_referenced",
         "V3_schema_valid",
+    ]
+    assert contract["required_display_states"]["verification_gap_kinds"] == [
         "verification_failed",
         "verification_unavailable",
     ]

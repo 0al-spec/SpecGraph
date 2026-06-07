@@ -85,12 +85,20 @@ runs/agent_passport_verification_report.json
 runs/agent_verification_gap_index.json
 ```
 
-SpecSpace may display these verification states/statuses:
+SpecSpace may display these verification states from the Agent Passport indexes:
 
 - `V2_passport_referenced`;
-- `V3_schema_valid`;
+- `V3_schema_valid`.
+
+SpecSpace may display these verification gap kinds from
+`runs/agent_verification_gap_index.json`:
+
 - `verification_failed`;
-- `verification_unavailable`;
+- `verification_unavailable`.
+
+SpecSpace may display these verification statuses from
+`runs/agent_passport_verification_report.json`:
+
 - `valid`;
 - `invalid`;
 - `unavailable`;
@@ -118,4 +126,3 @@ This slice is valid when:
   `ready_for_handoff`;
 - `make agent-passports`, `make external-handoffs`, proposal gates, and the full
   test suite pass.
-

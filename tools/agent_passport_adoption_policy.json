@@ -21,7 +21,9 @@
     "required_display_states": {
       "verification_states": [
         "V2_passport_referenced",
-        "V3_schema_valid",
+        "V3_schema_valid"
+      ],
+      "verification_gap_kinds": [
         "verification_failed",
         "verification_unavailable"
       ],
