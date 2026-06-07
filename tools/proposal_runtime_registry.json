@@ -3828,5 +3828,55 @@
         "pattern": "runs/agent_runtime_enforcement_evidence_index.json"
       }
     ]
+  },
+  {
+    "proposal_id": "0080",
+    "posture": "bounded_runtime_followup",
+    "runtime_surfaces": [
+      "docs/proposals/0080_supervisor_executor_adapter_enforcement_smoke.md",
+      "docs/archive/proposal_sources/0080_supervisor_executor_adapter_enforcement_smoke.md",
+      "tools/agent_passport_adoption_policy.json",
+      "tools/supervisor.py",
+      "tests/test_supervisor.py",
+      "tools/README.md"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/agent_passport_adoption_policy.json",
+        "pattern": "executor_adapter_invocation_boundary"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def supervisor_executor_adapter_invocation_boundary_check("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "executor_adapter_invocation_boundary"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_supervisor_executor_adapter_invocation_boundary_rejects_shell_policy("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_supervisor_executor_adapter_invocation_boundary_rejects_persisted_paths("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "executor_adapter_invocation_boundary"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0080_supervisor_executor_adapter_enforcement_smoke.md",
+        "pattern": "make agent-runtime-evidence"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "supervisor executor adapter invocation-boundary smoke"
+      }
+    ]
   }
 ]

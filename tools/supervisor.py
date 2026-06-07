@@ -19450,6 +19450,85 @@ def agent_runtime_enforcement_evidence_status(checks: list[dict[str, Any]]) -> s
     return "failed"
 
 
+def supervisor_executor_adapter_invocation_boundary_check(
+    supervisor_executor_adapter_index: dict[str, Any],
+) -> dict[str, Any]:
+    policy_backends = [
+        backend
+        for backend in SUPERVISOR_EXECUTOR_ADAPTER_POLICY.get("backend_registry", [])
+        if isinstance(backend, dict)
+    ]
+    index_entries = [
+        entry
+        for entry in supervisor_executor_adapter_index.get("entries", [])
+        if isinstance(entry, dict)
+    ]
+    forbidden_policy_fields = {
+        "command",
+        "command_line",
+        "command_template",
+        "shell",
+        "shell_command",
+    }
+    policy_forbidden_hits = sorted(
+        {
+            field
+            for backend in policy_backends
+            for field in forbidden_policy_fields
+            if field in backend
+        }
+    )
+    index_forbidden_hits = sorted(
+        {field for entry in index_entries for field in forbidden_policy_fields if field in entry}
+    )
+    cli_backends = [
+        backend
+        for backend in policy_backends
+        if str(backend.get("command_surface", "")).strip() == "cli"
+        and any(str(name).strip() for name in backend.get("executable_names", []))
+    ]
+    persisted_paths = [
+        str(entry.get("backend_id", "")).strip()
+        for entry in index_entries
+        if bool(entry.get("executable_availability", {}).get("path_persisted", False))
+    ]
+    passed = (
+        bool(policy_backends)
+        and len(cli_backends) == len(policy_backends)
+        and not policy_forbidden_hits
+        and not index_forbidden_hits
+        and not persisted_paths
+    )
+    if passed:
+        message = (
+            "Supervisor executor adapter policy uses declarative CLI executable lookup, and "
+            "the generated adapter index does not persist executable paths or command lines."
+        )
+    else:
+        details = []
+        if not policy_backends:
+            details.append("backend_registry is empty")
+        if len(cli_backends) != len(policy_backends):
+            details.append("one or more backends lack CLI executable lookup metadata")
+        if policy_forbidden_hits:
+            details.append(
+                "policy declares forbidden shell/command fields: "
+                + ", ".join(policy_forbidden_hits)
+            )
+        if index_forbidden_hits:
+            details.append(
+                "index persists forbidden shell/command fields: " + ", ".join(index_forbidden_hits)
+            )
+        if persisted_paths:
+            details.append("index persists executable paths for: " + ", ".join(persisted_paths))
+        message = "Supervisor executor adapter invocation boundary failed: " + "; ".join(details)
+    return agent_runtime_enforcement_evidence_check(
+        check_id="executor_adapter_invocation_boundary",
+        status="passed" if passed else "failed",
+        message=message,
+    )
+
+
 def build_agent_runtime_enforcement_evidence_record(
     *,
     smoke: dict[str, Any],
@@ -19528,6 +19607,7 @@ def build_agent_runtime_enforcement_evidence_record(
                 else "Smoke evidence must not be used to claim observed runtime enforcement."
             ),
         ),
+        supervisor_executor_adapter_invocation_boundary_check(supervisor_executor_adapter_index),
     ]
     required_check_ids = [
         str(check_id).strip()
