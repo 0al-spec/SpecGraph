@@ -11523,6 +11523,13 @@ def test_build_external_consumer_evidence_index_accepts_specspace_evidence(
                     "runs/agent_passport_verification_report.json",
                     "runs/agent_verification_gap_index.json",
                 ],
+                "accepted_contract_artifacts": [
+                    "runs/supervisor_executor_adapter_index.json",
+                    "runs/agent_surface_index.json",
+                    "runs/known_agent_passport_index.json",
+                    "runs/agent_passport_verification_report.json",
+                    "runs/agent_verification_gap_index.json",
+                ],
                 "evidence": [
                     {"kind": "pull_request", "ref": "0al-spec/SpecSpace#227"},
                     {"kind": "test", "ref": "SpecSpace CI", "status": "success"},
@@ -11557,6 +11564,13 @@ def test_build_external_consumer_evidence_index_accepts_specspace_evidence(
     posture_entry = entries_by_id["specspace-agent-passport-posture-20260607"]
     assert posture_entry["acceptance_status"] == "accepted"
     assert posture_entry["consumed_artifacts"] == [
+        "runs/supervisor_executor_adapter_index.json",
+        "runs/agent_surface_index.json",
+        "runs/known_agent_passport_index.json",
+        "runs/agent_passport_verification_report.json",
+        "runs/agent_verification_gap_index.json",
+    ]
+    assert posture_entry["accepted_contract_artifacts"] == [
         "runs/supervisor_executor_adapter_index.json",
         "runs/agent_surface_index.json",
         "runs/known_agent_passport_index.json",
