@@ -18307,6 +18307,10 @@ def agent_passport_surface_from_policy(raw_surface: dict[str, Any]) -> dict[str,
     verification_state = str(raw_surface.get("verification_state", "")).strip()
     if not verification_state:
         verification_state = "V2_passport_referenced" if passport_ref else "V1_known_surface"
+    raw_runtime_enforcement_state = raw_surface.get("runtime_enforcement_state")
+    runtime_enforcement_state = (
+        str(raw_runtime_enforcement_state).strip() if raw_runtime_enforcement_state else "unknown"
+    )
     return {
         "surface_id": str(raw_surface.get("surface_id", "")).strip(),
         "title": str(raw_surface.get("title", "")).strip(),
@@ -18322,10 +18326,7 @@ def agent_passport_surface_from_policy(raw_surface: dict[str, Any]) -> dict[str,
         "prepares_handoffs": bool(raw_surface.get("prepares_handoffs", False)),
         "passport_ref": passport_ref or None,
         "verification_state": verification_state,
-        "runtime_enforcement_state": str(
-            raw_surface.get("runtime_enforcement_state", "unknown")
-        ).strip()
-        or "unknown",
+        "runtime_enforcement_state": runtime_enforcement_state,
         "consumer_id": str(raw_surface.get("consumer_id", "")).strip(),
         "future_surface": bool(raw_surface.get("future_surface", False)),
         "notes": str(raw_surface.get("notes", "")).strip(),

@@ -27157,6 +27157,25 @@ def test_build_agent_passport_indexes_handle_optional_and_observed_surfaces(
     assert ("specgraph.optional_observer", "runtime_enforcement_unknown") not in gaps
 
 
+def test_agent_passport_surface_from_policy_treats_null_runtime_enforcement_as_unknown(
+    supervisor_module: object,
+) -> None:
+    surface = supervisor_module.agent_passport_surface_from_policy(
+        {
+            "surface_id": "specgraph.malformed_runtime",
+            "title": "Malformed Runtime",
+            "surface_type": "graph_runtime",
+            "source": "policy",
+            "requires_passport": True,
+            "passport_ref": "agent-passport://specgraph/malformed-runtime/0.1.0",
+            "runtime_enforcement_state": None,
+        }
+    )
+
+    assert surface["runtime_enforcement_state"] == "unknown"
+    assert surface["runtime_enforcement_state"] != "None"
+
+
 def test_build_agent_passport_verification_report_marks_valid_passports(
     supervisor_module: object,
     repo_fixture: Path,
