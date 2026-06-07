@@ -18504,6 +18504,9 @@ def align_agent_surface_index_next_gap(
     summary["next_gap"] = (
         gap_next_gap or known_next_gap or str(summary.get("next_gap", "")).strip() or "none"
     )
+    source_artifacts = aligned.setdefault("source_artifacts", {})
+    source_artifacts["known_agent_passport_index"] = KNOWN_AGENT_PASSPORT_INDEX_RELATIVE_PATH
+    source_artifacts["agent_verification_gap_index"] = AGENT_VERIFICATION_GAP_INDEX_RELATIVE_PATH
     return aligned
 
 

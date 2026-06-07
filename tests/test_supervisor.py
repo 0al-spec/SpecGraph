@@ -27361,6 +27361,12 @@ def test_build_agent_passport_verification_report_marks_valid_passports(
         gap_index,
     )
     assert aligned_surface_index["summary"]["next_gap"] == "close_agent_verification_gaps"
+    assert aligned_surface_index["source_artifacts"]["known_agent_passport_index"] == (
+        "runs/known_agent_passport_index.json"
+    )
+    assert aligned_surface_index["source_artifacts"]["agent_verification_gap_index"] == (
+        "runs/agent_verification_gap_index.json"
+    )
     assert gap_index["summary"]["verification_not_attempted_count"] == 0
     assert gap_index["summary"]["runtime_enforcement_policy_only_count"] == 3
     assert gap_index["summary"]["runtime_enforcement_boundary_only_count"] == 1
@@ -27369,6 +27375,45 @@ def test_build_agent_passport_verification_report_marks_valid_passports(
     dumped = json.dumps([report, known_index, gap_index], sort_keys=True)
     assert repo_fixture.as_posix() not in dumped
     assert "apiVersion" not in dumped
+
+
+def test_agent_passport_verification_gap_next_gap_classifies_blocking_order(
+    supervisor_module: object,
+) -> None:
+    assert (
+        supervisor_module.agent_passport_verification_gap_next_gap(
+            {
+                "missing_passport": ["specspace.operator_assistant"],
+                "verification_not_attempted": ["specgraph.supervisor"],
+            }
+        )
+        == "declare_missing_agent_passports"
+    )
+    assert (
+        supervisor_module.agent_passport_verification_gap_next_gap(
+            {
+                "missing_passport": [],
+                "verification_tool_unavailable": ["specgraph.supervisor"],
+            }
+        )
+        == "run_report_only_passport_verification"
+    )
+    assert (
+        supervisor_module.agent_passport_verification_gap_next_gap(
+            {
+                "missing_passport": [],
+                "verification_not_attempted": ["specgraph.executor.codex"],
+            }
+        )
+        == "run_report_only_passport_verification"
+    )
+    assert (
+        supervisor_module.agent_passport_verification_gap_next_gap(
+            {"runtime_enforcement_policy_only": ["specgraph.supervisor"]}
+        )
+        == "close_agent_verification_gaps"
+    )
+    assert supervisor_module.agent_passport_verification_gap_next_gap({}) == "none"
 
 
 def test_run_agent_passport_validate_uses_relative_paths_and_accepts_json_object(
