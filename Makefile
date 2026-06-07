@@ -22,7 +22,7 @@ PYTHON_TARGETS := viewer-surfaces dashboard backlog next-move spec-activity grap
 	conversation-memory conversation-memory-map conversation-memory-pressure pre-spec-semantics \
 	implementation-delta implementation-work supervisor-evidence-packet supervisor-stalled-run-salvage \
 	factory-architecture swift-typed-tooling project-environment init-product-workspace review-feedback \
-	executor-adapters agent-passports docc-sync publish-bundle test test-supervisor
+	executor-adapters agent-passports agent-runtime-evidence docc-sync publish-bundle test test-supervisor
 
 $(PYTHON_TARGETS): check-python
 
@@ -70,6 +70,7 @@ help:
 			'  make review-feedback          Refresh review feedback index' \
 			'  make executor-adapters        Refresh supervisor executor adapter index' \
 			'  make agent-passports          Refresh Agent Passport derived surfaces' \
+			'  make agent-runtime-evidence   Refresh Agent Passport runtime evidence JSON' \
 			'  make check-python             Verify selected Python runtime is supported' \
 		'  make docc-sync                Validate DocC mirrors against repository docs' \
 		'  make publish-bundle           Build static specs/ + runs/ publish bundle' \
@@ -248,6 +249,10 @@ executor-adapters:
 .PHONY: agent-passports
 agent-passports:
 	@$(PYTHON) $(SUPERVISOR) --build-agent-passport-derived-surfaces
+
+.PHONY: agent-runtime-evidence
+agent-runtime-evidence:
+	@$(PYTHON) $(SUPERVISOR) --build-agent-runtime-enforcement-evidence
 
 .PHONY: docc-sync
 docc-sync:

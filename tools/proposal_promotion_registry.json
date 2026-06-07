@@ -986,5 +986,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0077",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0077_agent_runtime_enforcement_evidence_registry.md"
+    ],
+    "motivating_concern": "Agent Passport runtime enforcement evidence is defined as a plan, but no generated evidence artifact or registry exists for report-only runtime smoke evidence",
+    "normalized_title": "Agent Runtime Enforcement Evidence Registry",
+    "bounded_scope": "Materialize a report-only Agent Passport runtime enforcement evidence index and one supervisor executor adapter smoke detail artifact without implementing runtime enforcement, mutating SpecSpace, changing Platform deploy, or claiming observed enforcement.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

@@ -6,7 +6,9 @@
     "known_passport_index_artifact": "runs/known_agent_passport_index.json",
     "verification_gap_index_artifact": "runs/agent_verification_gap_index.json",
     "verification_report_artifact": "runs/agent_passport_verification_report.json",
-    "executor_adapter_index_artifact": "runs/supervisor_executor_adapter_index.json"
+    "executor_adapter_index_artifact": "runs/supervisor_executor_adapter_index.json",
+    "runtime_enforcement_evidence_index_artifact": "runs/agent_runtime_enforcement_evidence_index.json",
+    "runtime_enforcement_evidence_artifact_dir": "runs/agent_runtime_enforcement_evidence"
   },
   "specspace_consumer_contract": {
     "consumer_id": "specspace",
@@ -158,10 +160,12 @@
   "runtime_enforcement_evidence_contract": {
     "artifact_kind": "agent_runtime_enforcement_evidence",
     "schema_version": 1,
-    "status": "plan_only",
+    "status": "report_only",
     "required_fields": [
+      "evidence_id",
       "agent_surface",
       "runtime_enforcement_state",
+      "posture_claim",
       "evidence",
       "result"
     ],
@@ -211,6 +215,56 @@
       }
     }
   },
+  "runtime_enforcement_evidence_index_contract": {
+    "artifact_kind": "agent_runtime_enforcement_evidence_index",
+    "schema_version": 1,
+    "stable_fields": [
+      "artifact_kind",
+      "schema_version",
+      "summary",
+      "entries",
+      "viewer_projection"
+    ],
+    "statuses": [
+      "passed",
+      "failed",
+      "missing"
+    ],
+    "named_filters": [
+      "passed",
+      "failed",
+      "missing",
+      "runtime_smoke",
+      "policy_only",
+      "boundary_only",
+      "deferred",
+      "executor_gateway"
+    ]
+  },
+  "runtime_enforcement_evidence_smokes": [
+    {
+      "evidence_id": "agent_runtime_enforcement_evidence::specgraph.supervisor.executor_adapter::runtime_smoke",
+      "agent_surface": "specgraph.supervisor.executor_adapter",
+      "evidence_kind": "runtime_smoke",
+      "artifact_path": "runs/agent_runtime_enforcement_evidence/supervisor-executor-adapter-smoke.json",
+      "posture_claim": "runtime_enforcement_policy_only",
+      "runtime_enforcement_state": "policy_only",
+      "source_proposal_ids": [
+        "0056",
+        "0059",
+        "0076",
+        "0077"
+      ],
+      "required_checks": [
+        "agent_surface_present",
+        "agent_passport_ref_declared",
+        "executor_adapter_index_present",
+        "evidence_ref_safe",
+        "no_observed_enforcement_claim"
+      ],
+      "notes": "Report-only smoke evidence for the supervisor executor adapter gateway. It proves the derived adapter/passport surfaces are internally consistent and safe to reference; it does not prove sandbox or runtime policy enforcement."
+    }
+  ],
   "runtime_enforcement_states": [
     "observed",
     "policy_only",

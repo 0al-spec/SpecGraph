@@ -118,6 +118,11 @@ Supervisor modes:
   executor adapter index, including report-only Agent Passport CLI validation
   when the CLI and repository-local passport documents are available. This does
   not verify signatures or enforce passports.
+- `--build-agent-runtime-enforcement-evidence`: build report-only Agent
+  Passport runtime enforcement evidence artifacts and
+  `runs/agent_runtime_enforcement_evidence_index.json` for current
+  runtime-smoke declarations. This records safe evidence refs for review without
+  claiming observed runtime enforcement.
 - `--build-specpm-export-preview`: build `runs/specpm_export_preview.json`
   from the tracked `SpecPM` consumer contract and
   `tools/specpm_export_registry.json`, producing a reviewable package preview
@@ -432,6 +437,14 @@ Key derived artifacts:
   passport documents, unattempted verification, and classified runtime
   enforcement posture, including runtime enforcement evidence plan metadata for
   future observed-enforcement promotion
+- `runs/agent_runtime_enforcement_evidence_index.json`: report-only Agent
+  Passport runtime enforcement evidence registry that summarizes safe
+  runtime-smoke evidence refs by surface, status, evidence kind, and viewer
+  filters without claiming observed enforcement
+- `runs/agent_runtime_enforcement_evidence/*.json`: curated report-only runtime
+  evidence detail artifacts. The initial supervisor executor adapter smoke
+  proves derived adapter/passport surfaces are internally consistent and safe to
+  reference; it does not prove sandbox or runtime policy enforcement.
 - `runs/specpm_export_preview.json`: reviewable `SpecPM` package preview
   artifact, including manifest preview, boundary-source preview, export
   status, and next-gap backlog for future full package emission
@@ -606,8 +619,8 @@ Key derived artifacts:
   report-only Agent Passport adoption surfaces, declared Agent Passport
   references, classified runtime enforcement posture, and verification gap
   indexes consumed by SpecSpace-oriented handoff planning, including the Agent
-  Passport posture consumer contract for SpecSpace UI surfaces and a plan-only
-  runtime enforcement evidence plan contract
+  Passport posture consumer contract for SpecSpace UI surfaces, a report-only
+  runtime enforcement evidence contract, and runtime-smoke declarations
 - `tools/agent_passports/*.passport.yaml`: repository-local draft Agent
   Passport documents used by `make agent-passports` for report-only CLI
   validation; these are schema/content validation fixtures, not trusted signed

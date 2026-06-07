@@ -69,6 +69,8 @@ Derived artifacts:
 - known agent passport index: `runs/known_agent_passport_index.json`
 - agent passport verification report: `runs/agent_passport_verification_report.json`
 - agent verification gap index: `runs/agent_verification_gap_index.json`
+- agent runtime enforcement evidence index:
+  `runs/agent_runtime_enforcement_evidence_index.json`
 - bootstrap smoke benchmark: `runs/bootstrap_smoke_benchmark.json`
 - spec trace index: `runs/spec_trace_index.json`
 - spec trace projection: `runs/spec_trace_projection.json`
@@ -186,6 +188,10 @@ AGENT_SURFACE_INDEX_RELATIVE_PATH = "runs/agent_surface_index.json"
 KNOWN_AGENT_PASSPORT_INDEX_RELATIVE_PATH = "runs/known_agent_passport_index.json"
 AGENT_VERIFICATION_GAP_INDEX_RELATIVE_PATH = "runs/agent_verification_gap_index.json"
 AGENT_PASSPORT_VERIFICATION_REPORT_RELATIVE_PATH = "runs/agent_passport_verification_report.json"
+AGENT_RUNTIME_ENFORCEMENT_EVIDENCE_INDEX_RELATIVE_PATH = (
+    "runs/agent_runtime_enforcement_evidence_index.json"
+)
+AGENT_RUNTIME_ENFORCEMENT_EVIDENCE_DIR_RELATIVE_PATH = "runs/agent_runtime_enforcement_evidence"
 SPECPM_EXPORT_REGISTRY_RELATIVE_PATH = "tools/specpm_export_registry.json"
 
 
@@ -3153,6 +3159,20 @@ AGENT_VERIFICATION_GAP_INDEX_FILENAME = Path(
 AGENT_PASSPORT_VERIFICATION_REPORT_FILENAME = Path(
     str(agent_passport_adoption_policy_lookup("repository_layout.verification_report_artifact"))
 ).name
+AGENT_RUNTIME_ENFORCEMENT_EVIDENCE_INDEX_FILENAME = Path(
+    str(
+        agent_passport_adoption_policy_lookup(
+            "repository_layout.runtime_enforcement_evidence_index_artifact"
+        )
+    )
+).name
+AGENT_RUNTIME_ENFORCEMENT_EVIDENCE_DIR = Path(
+    str(
+        agent_passport_adoption_policy_lookup(
+            "repository_layout.runtime_enforcement_evidence_artifact_dir"
+        )
+    )
+)
 AGENT_SURFACE_INDEX_ARTIFACT_KIND = str(
     agent_passport_adoption_policy_lookup("surface_index_contract.artifact_kind")
 )
@@ -3177,6 +3197,16 @@ AGENT_PASSPORT_VERIFICATION_REPORT_ARTIFACT_KIND = str(
 AGENT_PASSPORT_VERIFICATION_REPORT_SCHEMA_VERSION = int(
     agent_passport_adoption_policy_lookup("verification_report_contract.schema_version")
 )
+AGENT_RUNTIME_ENFORCEMENT_EVIDENCE_INDEX_ARTIFACT_KIND = str(
+    agent_passport_adoption_policy_lookup(
+        "runtime_enforcement_evidence_index_contract.artifact_kind"
+    )
+)
+AGENT_RUNTIME_ENFORCEMENT_EVIDENCE_INDEX_SCHEMA_VERSION = int(
+    agent_passport_adoption_policy_lookup(
+        "runtime_enforcement_evidence_index_contract.schema_version"
+    )
+)
 AGENT_SURFACE_NAMED_FILTERS = list(
     agent_passport_adoption_policy_lookup("surface_index_contract.named_filters")
 )
@@ -3185,6 +3215,11 @@ AGENT_PASSPORT_VERIFICATION_NAMED_FILTERS = list(
 )
 AGENT_VERIFICATION_GAP_NAMED_FILTERS = list(
     agent_passport_adoption_policy_lookup("verification_gap_index_contract.named_filters")
+)
+AGENT_RUNTIME_ENFORCEMENT_EVIDENCE_NAMED_FILTERS = list(
+    agent_passport_adoption_policy_lookup(
+        "runtime_enforcement_evidence_index_contract.named_filters"
+    )
 )
 SUPERVISOR_EXECUTOR_ADAPTER_NAMED_FILTERS = list(
     supervisor_executor_adapter_policy_lookup("index_contract.named_filters")
@@ -18015,6 +18050,14 @@ def agent_passport_verification_report_path() -> Path:
     return RUNS_DIR / AGENT_PASSPORT_VERIFICATION_REPORT_FILENAME
 
 
+def agent_runtime_enforcement_evidence_index_path() -> Path:
+    return RUNS_DIR / AGENT_RUNTIME_ENFORCEMENT_EVIDENCE_INDEX_FILENAME
+
+
+def agent_runtime_enforcement_evidence_dir() -> Path:
+    return ROOT / AGENT_RUNTIME_ENFORCEMENT_EVIDENCE_DIR
+
+
 def supervisor_executor_adapter_policy_reference() -> dict[str, Any]:
     return {
         "artifact_path": SUPERVISOR_EXECUTOR_ADAPTER_POLICY_RELATIVE_PATH,
@@ -18319,6 +18362,29 @@ def safe_runtime_enforcement_evidence_ref(raw_ref: object) -> str:
     if candidate == "~" or candidate.startswith(("~/", "~\\")):
         return ""
     return safe_repo_relative_path(candidate)
+
+
+def safe_agent_runtime_enforcement_evidence_artifact_path(raw_ref: object) -> str:
+    if raw_ref is None:
+        return ""
+    candidate = str(raw_ref).strip()
+    if not candidate:
+        return ""
+    if candidate.lower().startswith("file:") or "://" in candidate:
+        return ""
+    if "\\" in candidate:
+        return ""
+    if re.match(r"^[A-Za-z]:[\\/]", candidate):
+        return ""
+    if candidate == "~" or candidate.startswith(("~/", "~\\")):
+        return ""
+    evidence_ref = safe_repo_relative_path(candidate)
+    if not evidence_ref:
+        return ""
+    evidence_dir = AGENT_RUNTIME_ENFORCEMENT_EVIDENCE_DIR.as_posix().rstrip("/")
+    if evidence_ref == evidence_dir or not evidence_ref.startswith(f"{evidence_dir}/"):
+        return ""
+    return evidence_ref
 
 
 def agent_passport_surface_from_policy(raw_surface: dict[str, Any]) -> dict[str, Any]:
@@ -19344,6 +19410,350 @@ def agent_passport_derived_surfaces_report(surfaces: dict[str, Any]) -> dict[str
                 "agent_passport_cli_status", ""
             ),
             "next_gap": gap_index.get("summary", {}).get("next_gap", "none"),
+        },
+    }
+
+
+def agent_runtime_enforcement_evidence_contract() -> dict[str, Any]:
+    contract = agent_passport_adoption_policy_lookup("runtime_enforcement_evidence_contract")
+    return contract if isinstance(contract, dict) else {}
+
+
+def agent_runtime_enforcement_evidence_smokes() -> list[dict[str, Any]]:
+    smokes = agent_passport_adoption_policy_lookup("runtime_enforcement_evidence_smokes")
+    return [copy.deepcopy(smoke) for smoke in smokes if isinstance(smoke, dict)]
+
+
+def agent_runtime_enforcement_evidence_check(
+    *,
+    check_id: str,
+    status: str,
+    message: str,
+) -> dict[str, Any]:
+    return {
+        "check_id": check_id,
+        "status": status,
+        "message": message,
+    }
+
+
+def agent_runtime_enforcement_evidence_status(checks: list[dict[str, Any]]) -> str:
+    statuses = {str(check.get("status", "")).strip() for check in checks}
+    if not statuses:
+        return "missing"
+    if "failed" in statuses:
+        return "failed"
+    if "missing" in statuses:
+        return "missing"
+    if statuses == {"passed"}:
+        return "passed"
+    return "failed"
+
+
+def build_agent_runtime_enforcement_evidence_record(
+    *,
+    smoke: dict[str, Any],
+    agent_surface_index: dict[str, Any],
+    known_agent_passport_index: dict[str, Any],
+    supervisor_executor_adapter_index: dict[str, Any],
+) -> dict[str, Any]:
+    evidence_id = str(smoke.get("evidence_id", "")).strip()
+    agent_surface = str(smoke.get("agent_surface", "")).strip()
+    evidence_kind = str(smoke.get("evidence_kind", "")).strip()
+    evidence_ref = safe_agent_runtime_enforcement_evidence_artifact_path(smoke.get("artifact_path"))
+    surfaces_by_id = {
+        str(surface.get("surface_id", "")).strip(): surface
+        for surface in agent_surface_index.get("surfaces", [])
+        if isinstance(surface, dict) and str(surface.get("surface_id", "")).strip()
+    }
+    known_by_surface = {
+        str(entry.get("agent_surface", "")).strip(): entry
+        for entry in known_agent_passport_index.get("entries", [])
+        if isinstance(entry, dict) and str(entry.get("agent_surface", "")).strip()
+    }
+    surface = surfaces_by_id.get(agent_surface, {})
+    known = known_by_surface.get(agent_surface, {})
+    runtime_enforcement_state = str(
+        surface.get("runtime_enforcement_state", smoke.get("runtime_enforcement_state", ""))
+    ).strip()
+    posture_claim = str(smoke.get("posture_claim", "")).strip()
+    passport_ref = str(surface.get("passport_ref") or known.get("passport_ref") or "").strip()
+    executor_adapter_index_present = (
+        str(supervisor_executor_adapter_index.get("artifact_kind", "")).strip()
+        == SUPERVISOR_EXECUTOR_ADAPTER_INDEX_ARTIFACT_KIND
+    )
+    checks = [
+        agent_runtime_enforcement_evidence_check(
+            check_id="agent_surface_present",
+            status="passed" if surface else "missing",
+            message=(
+                "Agent surface is present in runs/agent_surface_index.json."
+                if surface
+                else "Agent surface is missing from runs/agent_surface_index.json."
+            ),
+        ),
+        agent_runtime_enforcement_evidence_check(
+            check_id="agent_passport_ref_declared",
+            status="passed" if passport_ref else "failed",
+            message=(
+                "Agent Passport reference is declared for the surface."
+                if passport_ref
+                else "Agent Passport reference is not declared for the surface."
+            ),
+        ),
+        agent_runtime_enforcement_evidence_check(
+            check_id="executor_adapter_index_present",
+            status="passed" if executor_adapter_index_present else "missing",
+            message=(
+                "Supervisor executor adapter index is available."
+                if executor_adapter_index_present
+                else "Supervisor executor adapter index is unavailable."
+            ),
+        ),
+        agent_runtime_enforcement_evidence_check(
+            check_id="evidence_ref_safe",
+            status="passed" if evidence_ref else "missing",
+            message=(
+                "Evidence artifact path is a safe repository-relative reference."
+                if evidence_ref
+                else "Evidence artifact path is missing or unsafe."
+            ),
+        ),
+        agent_runtime_enforcement_evidence_check(
+            check_id="no_observed_enforcement_claim",
+            status="passed" if runtime_enforcement_state != "observed" else "failed",
+            message=(
+                "Smoke evidence does not claim observed runtime enforcement."
+                if runtime_enforcement_state != "observed"
+                else "Smoke evidence must not be used to claim observed runtime enforcement."
+            ),
+        ),
+    ]
+    required_check_ids = [
+        str(check_id).strip()
+        for check_id in smoke.get("required_checks", [])
+        if str(check_id).strip()
+    ]
+    checks_by_id = {str(check.get("check_id", "")).strip(): check for check in checks}
+    missing_required_checks = [
+        check_id for check_id in required_check_ids if check_id not in checks_by_id
+    ]
+    nonpassing_required_checks = [
+        check_id
+        for check_id in required_check_ids
+        if str(checks_by_id.get(check_id, {}).get("status", "")).strip() != "passed"
+    ]
+    checks.append(
+        agent_runtime_enforcement_evidence_check(
+            check_id="policy_required_checks_satisfied",
+            status=(
+                "passed"
+                if not missing_required_checks and not nonpassing_required_checks
+                else "failed"
+            ),
+            message=(
+                "All policy-declared runtime evidence smoke checks are present and passing."
+                if not missing_required_checks and not nonpassing_required_checks
+                else (
+                    "Policy-declared runtime evidence smoke checks are missing or non-passing: "
+                    + ", ".join(sorted(set(missing_required_checks + nonpassing_required_checks)))
+                    + "."
+                )
+            ),
+        )
+    )
+    status = agent_runtime_enforcement_evidence_status(checks)
+    return {
+        "artifact_kind": agent_runtime_enforcement_evidence_contract().get(
+            "artifact_kind", "agent_runtime_enforcement_evidence"
+        ),
+        "schema_version": agent_runtime_enforcement_evidence_contract().get("schema_version", 1),
+        "generated_at": utc_now_iso(),
+        "evidence_id": evidence_id,
+        "agent_surface": agent_surface,
+        "surface_id": agent_surface,
+        "evidence_kind": evidence_kind,
+        "runtime_enforcement_state": runtime_enforcement_state,
+        "posture_claim": posture_claim,
+        "status": status,
+        "safe_evidence_ref": evidence_ref,
+        "source_proposal_ids": [
+            str(proposal_id).strip()
+            for proposal_id in smoke.get("source_proposal_ids", [])
+            if str(proposal_id).strip()
+        ],
+        "source_artifacts": {
+            "agent_surface_index": AGENT_SURFACE_INDEX_RELATIVE_PATH,
+            "known_agent_passport_index": KNOWN_AGENT_PASSPORT_INDEX_RELATIVE_PATH,
+            "supervisor_executor_adapter_index": SUPERVISOR_EXECUTOR_ADAPTER_INDEX_RELATIVE_PATH,
+            "policy": AGENT_PASSPORT_ADOPTION_POLICY_RELATIVE_PATH,
+        },
+        "evidence": {
+            "kind": evidence_kind,
+            "checks": checks,
+            "privacy_boundary": copy.deepcopy(
+                agent_runtime_enforcement_evidence_contract().get("privacy_boundary", {})
+            ),
+        },
+        "result": {
+            "status": status,
+            "summary": (
+                "Report-only runtime smoke passed; no observed enforcement is claimed."
+                if status == "passed"
+                else "Report-only runtime smoke is not sufficient evidence."
+            ),
+        },
+        "limitations": [
+            "Does not launch agents.",
+            "Does not verify signatures, trust stores, lifecycle, revocation, or integrity.",
+            "Does not prove sandbox, seccomp, or runtime policy enforcement.",
+            "Does not include raw supervisor logs, raw prompts, secrets, or machine-local paths.",
+        ],
+        "notes": str(smoke.get("notes", "")).strip(),
+    }
+
+
+def build_agent_runtime_enforcement_evidence_index(
+    agent_passport_surfaces: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    if agent_passport_surfaces is None:
+        agent_passport_surfaces = build_agent_passport_derived_surfaces()
+    supervisor_executor_adapter_index = agent_passport_surfaces["supervisor_executor_adapter_index"]
+    agent_surface_index = agent_passport_surfaces["agent_surface_index"]
+    known_agent_passport_index = agent_passport_surfaces["known_agent_passport_index"]
+    records = [
+        build_agent_runtime_enforcement_evidence_record(
+            smoke=smoke,
+            agent_surface_index=agent_surface_index,
+            known_agent_passport_index=known_agent_passport_index,
+            supervisor_executor_adapter_index=supervisor_executor_adapter_index,
+        )
+        for smoke in agent_runtime_enforcement_evidence_smokes()
+    ]
+    named_filters = {name: [] for name in AGENT_RUNTIME_ENFORCEMENT_EVIDENCE_NAMED_FILTERS}
+    status: dict[str, list[str]] = {}
+    evidence_kind: dict[str, list[str]] = {}
+    entries: list[dict[str, Any]] = []
+    for record in records:
+        evidence_id = str(record.get("evidence_id", "")).strip()
+        agent_surface = str(record.get("agent_surface", "")).strip()
+        record_status = str(record.get("status", "")).strip()
+        kind = str(record.get("evidence_kind", "")).strip()
+        runtime_state = str(record.get("runtime_enforcement_state", "")).strip()
+        status.setdefault(record_status, []).append(evidence_id)
+        evidence_kind.setdefault(kind, []).append(evidence_id)
+        if record_status in named_filters:
+            named_filters[record_status].append(evidence_id)
+        if kind == "runtime_smoke":
+            named_filters["runtime_smoke"].append(evidence_id)
+        if runtime_state in {"policy_only", "boundary_only", "deferred"}:
+            named_filters[runtime_state].append(evidence_id)
+        if agent_surface == "specgraph.supervisor.executor_adapter":
+            named_filters["executor_gateway"].append(evidence_id)
+        entries.append(
+            {
+                "evidence_id": evidence_id,
+                "agent_surface": agent_surface,
+                "surface_id": agent_surface,
+                "evidence_kind": kind,
+                "runtime_enforcement_state": runtime_state,
+                "posture_claim": str(record.get("posture_claim", "")).strip(),
+                "status": record_status,
+                "evidence_ref": str(record.get("safe_evidence_ref", "")).strip(),
+                "result_status": str(record.get("result", {}).get("status", "")).strip(),
+                "source_proposal_ids": copy.deepcopy(record.get("source_proposal_ids", [])),
+            }
+        )
+    for bucket in (status, evidence_kind, named_filters):
+        for key in list(bucket):
+            bucket[key] = sorted(set(bucket[key]))
+    entries = sorted(entries, key=lambda item: item["evidence_id"])
+    return {
+        "artifact_kind": AGENT_RUNTIME_ENFORCEMENT_EVIDENCE_INDEX_ARTIFACT_KIND,
+        "schema_version": AGENT_RUNTIME_ENFORCEMENT_EVIDENCE_INDEX_SCHEMA_VERSION,
+        "generated_at": utc_now_iso(),
+        "policy_reference": agent_passport_adoption_policy_reference(),
+        "stable_fields": agent_passport_contract_stable_fields(
+            "runtime_enforcement_evidence_index_contract"
+        ),
+        "source_artifacts": {
+            "agent_surface_index": AGENT_SURFACE_INDEX_RELATIVE_PATH,
+            "known_agent_passport_index": KNOWN_AGENT_PASSPORT_INDEX_RELATIVE_PATH,
+            "supervisor_executor_adapter_index": SUPERVISOR_EXECUTOR_ADAPTER_INDEX_RELATIVE_PATH,
+            "policy": AGENT_PASSPORT_ADOPTION_POLICY_RELATIVE_PATH,
+        },
+        "summary": {
+            "evidence_count": len(entries),
+            "passed_count": len(status.get("passed", [])),
+            "failed_count": len(status.get("failed", [])),
+            "missing_count": len(status.get("missing", [])),
+            "runtime_smoke_count": len(evidence_kind.get("runtime_smoke", [])),
+            "runtime_smoke_passed_count": len(
+                [
+                    entry
+                    for entry in entries
+                    if entry["evidence_kind"] == "runtime_smoke" and entry["status"] == "passed"
+                ]
+            ),
+            "observed_enforcement_claim_count": 0,
+            "next_gap": (
+                "review_runtime_enforcement_evidence"
+                if entries and len(status.get("passed", [])) == len(entries)
+                else "repair_runtime_enforcement_evidence"
+            ),
+        },
+        "entries": entries,
+        "viewer_projection": {
+            "status": status,
+            "evidence_kind": evidence_kind,
+            "named_filters": named_filters,
+        },
+        "_records": records,
+    }
+
+
+def write_agent_runtime_enforcement_evidence_index(index: dict[str, Any]) -> dict[str, Path]:
+    written: dict[str, Path] = {}
+    for record in index.pop("_records", []):
+        evidence_ref = safe_agent_runtime_enforcement_evidence_artifact_path(
+            record.get("safe_evidence_ref")
+        )
+        if not evidence_ref:
+            continue
+        path = ROOT / evidence_ref
+        with artifact_lock(path):
+            atomic_write_json(path, record)
+        written[str(record.get("evidence_id", "")).strip()] = path
+    index_path = agent_runtime_enforcement_evidence_index_path()
+    with artifact_lock(index_path):
+        atomic_write_json(index_path, index)
+    written["agent_runtime_enforcement_evidence_index"] = index_path
+    return written
+
+
+def agent_runtime_enforcement_evidence_report(
+    agent_passport_surfaces: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    if agent_passport_surfaces is None:
+        agent_passport_surfaces = build_agent_passport_derived_surfaces()
+    write_agent_passport_derived_surfaces(agent_passport_surfaces)
+    index = build_agent_runtime_enforcement_evidence_index(agent_passport_surfaces)
+    written_paths = write_agent_runtime_enforcement_evidence_index(index)
+    return {
+        "artifact_kind": "agent_runtime_enforcement_evidence_build_report",
+        "schema_version": 1,
+        "generated_at": utc_now_iso(),
+        "policy_reference": agent_passport_adoption_policy_reference(),
+        "written_artifacts": {
+            key: {"artifact_path": path.relative_to(ROOT).as_posix()}
+            for key, path in written_paths.items()
+        },
+        "summary": {
+            "evidence_count": index.get("summary", {}).get("evidence_count", 0),
+            "passed_count": index.get("summary", {}).get("passed_count", 0),
+            "failed_count": index.get("summary", {}).get("failed_count", 0),
+            "missing_count": index.get("summary", {}).get("missing_count", 0),
+            "next_gap": index.get("summary", {}).get("next_gap", ""),
         },
     }
 
@@ -40819,6 +41229,7 @@ def main(
     build_metric_threshold_proposals_mode: bool = False,
     build_supervisor_executor_adapter_index_mode: bool = False,
     build_agent_passport_derived_surfaces_mode: bool = False,
+    build_agent_runtime_enforcement_evidence_mode: bool = False,
     build_supervisor_performance_index_mode: bool = False,
     build_bootstrap_smoke_benchmark_mode: bool = False,
     build_viewer_surfaces_mode: bool = False,
@@ -40891,6 +41302,9 @@ def main(
         "--build-review-feedback-index": build_review_feedback_index_mode,
         "--build-supervisor-executor-adapter-index": build_supervisor_executor_adapter_index_mode,
         "--build-agent-passport-derived-surfaces": build_agent_passport_derived_surfaces_mode,
+        "--build-agent-runtime-enforcement-evidence": (
+            build_agent_runtime_enforcement_evidence_mode
+        ),
         "--build-vocabulary-index": build_vocabulary_index_mode,
         "--build-vocabulary-drift-report": build_vocabulary_drift_report_mode,
         "--build-pre-spec-semantics-index": build_pre_spec_semantics_index_mode,
@@ -41802,6 +42216,7 @@ def main(
                 build_proposal_lane_overlay_mode,
                 build_proposal_runtime_index_mode,
                 build_proposal_promotion_index_mode,
+                build_agent_runtime_enforcement_evidence_mode,
             )
         ):
             print(
@@ -41846,6 +42261,40 @@ def main(
             return 1
         surfaces = build_agent_passport_derived_surfaces()
         report = agent_passport_derived_surfaces_report(surfaces)
+        emit_supervisor_json(report, output_mode=normalized_output_mode)
+        return 0
+
+    if build_agent_runtime_enforcement_evidence_mode:
+        if any(
+            (
+                dry_run,
+                auto_approve,
+                loop,
+                resolve_gate,
+                decision,
+                note,
+                target_spec,
+                split_proposal,
+                apply_split_proposal,
+                operator_note,
+                mutation_budget,
+                run_authority,
+                execution_profile,
+                child_model,
+                child_timeout_seconds,
+                verbose,
+                list_stale_runtime,
+                clean_stale_runtime,
+                observe_graph_health_mode,
+                operator_request_packet_path,
+            )
+        ):
+            print(
+                "--build-agent-runtime-enforcement-evidence must be used as a standalone command",
+                file=sys.stderr,
+            )
+            return 1
+        report = agent_runtime_enforcement_evidence_report()
         emit_supervisor_json(report, output_mode=normalized_output_mode)
         return 0
 
@@ -45148,6 +45597,14 @@ if __name__ == "__main__":
         ),
     )
     parser.add_argument(
+        "--build-agent-runtime-enforcement-evidence",
+        action="store_true",
+        help=(
+            "Build report-only Agent Passport runtime enforcement evidence artifacts "
+            "without claiming observed runtime enforcement"
+        ),
+    )
+    parser.add_argument(
         "--build-supervisor-performance-index",
         action="store_true",
         help=(
@@ -45470,6 +45927,9 @@ if __name__ == "__main__":
                 args.build_supervisor_executor_adapter_index
             ),
             build_agent_passport_derived_surfaces_mode=(args.build_agent_passport_derived_surfaces),
+            build_agent_runtime_enforcement_evidence_mode=(
+                args.build_agent_runtime_enforcement_evidence
+            ),
             build_supervisor_performance_index_mode=args.build_supervisor_performance_index,
             build_bootstrap_smoke_benchmark_mode=args.build_bootstrap_smoke_benchmark,
             build_viewer_surfaces_mode=args.build_viewer_surfaces,

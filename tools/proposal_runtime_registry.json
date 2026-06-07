@@ -3673,5 +3673,58 @@
         "pattern": "runtime enforcement evidence plan"
       }
     ]
+  },
+  {
+    "proposal_id": "0077",
+    "posture": "bounded_runtime_followup",
+    "runtime_surfaces": [
+      "docs/proposals/0077_agent_runtime_enforcement_evidence_registry.md",
+      "docs/archive/proposal_sources/0077_agent_runtime_enforcement_evidence_registry.md",
+      "tools/agent_passport_adoption_policy.json",
+      "tools/supervisor.py",
+      "tests/test_supervisor.py",
+      "tools/README.md",
+      "Makefile",
+      "runs/agent_runtime_enforcement_evidence_index.json",
+      "runs/agent_runtime_enforcement_evidence/supervisor-executor-adapter-smoke.json"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/agent_passport_adoption_policy.json",
+        "pattern": "runtime_enforcement_evidence_index_contract"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def build_agent_runtime_enforcement_evidence_index("
+      },
+      {
+        "path": "Makefile",
+        "pattern": "agent-runtime-evidence"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_agent_runtime_enforcement_evidence_index_emits_passed_smoke("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_agent_runtime_enforcement_evidence_index_blocks_missing_producer("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_main_builds_agent_runtime_enforcement_evidence_artifacts("
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0077_agent_runtime_enforcement_evidence_registry.md",
+        "pattern": "runs/agent_runtime_enforcement_evidence_index.json"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "report-only Agent Passport runtime enforcement evidence registry"
+      }
+    ]
   }
 ]
