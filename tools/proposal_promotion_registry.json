@@ -921,5 +921,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0072",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0072_agent_passport_runtime_enforcement_posture.md"
+    ],
+    "motivating_concern": "Agent Passport report-only verification is complete, but every graph-facing surface still reports runtime_enforcement_unknown even though the actual postures differ by SpecGraph runtime, SpecSpace boundary, and future product workspace surface",
+    "normalized_title": "Agent Passport Runtime Enforcement Posture",
+    "bounded_scope": "Classify runtime enforcement posture for graph-facing Agent Passport surfaces and replace default runtime_enforcement_unknown gaps with policy-only, boundary-only, and deferred gap kinds without implementing runtime enforcement, launching agents, mutating SpecSpace, changing Platform deploy, or claiming V8_runtime_enforcement_observed.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

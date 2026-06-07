@@ -24,6 +24,10 @@
       "missing_passport",
       "executor_backend",
       "specspace_consumer",
+      "runtime_enforcement_policy_only",
+      "runtime_enforcement_boundary_only",
+      "runtime_enforcement_deferred",
+      "runtime_enforcement_observed",
       "runtime_enforcement_unknown"
     ]
   },
@@ -80,6 +84,9 @@
       "verification_not_attempted",
       "verification_failed",
       "verification_unavailable",
+      "runtime_enforcement_policy_only",
+      "runtime_enforcement_boundary_only",
+      "runtime_enforcement_deferred",
       "runtime_enforcement_unknown"
     ],
     "severity_values": [
@@ -92,11 +99,21 @@
       "verification_tool_unavailable",
       "verification_failed",
       "verification_unavailable",
+      "runtime_enforcement_policy_only",
+      "runtime_enforcement_boundary_only",
+      "runtime_enforcement_deferred",
       "runtime_enforcement_unknown",
       "executor_backend",
       "specspace_consumer"
     ]
   },
+  "runtime_enforcement_states": [
+    "observed",
+    "policy_only",
+    "boundary_only",
+    "deferred",
+    "unknown"
+  ],
   "verification_states": [
     "V0_unknown",
     "V1_known_surface",
@@ -122,8 +139,8 @@
       "prepares_handoffs": true,
       "passport_ref": "agent-passport://specgraph/supervisor/0.1.0",
       "verification_state": "V2_passport_referenced",
-      "runtime_enforcement_state": "not_observed",
-      "notes": "Supervisor identity is referenced for graph-facing authority, but this slice does not verify signatures or enforce policy."
+      "runtime_enforcement_state": "policy_only",
+      "notes": "Supervisor identity is referenced for graph-facing authority. Runtime enforcement is known to be policy-only until a dedicated enforcement runtime is introduced."
     },
     {
       "surface_id": "specgraph.supervisor.executor_adapter",
@@ -139,8 +156,8 @@
       "prepares_handoffs": true,
       "passport_ref": "agent-passport://specgraph/supervisor-executor-adapter/0.1.0",
       "verification_state": "V2_passport_referenced",
-      "runtime_enforcement_state": "not_observed",
-      "notes": "Gateway surface launches nested executors; this declaration names the gateway authority separately from backend-specific passport refs derived from the 0056 executor adapter index. Verification and runtime enforcement remain report-only gaps."
+      "runtime_enforcement_state": "policy_only",
+      "notes": "Gateway surface launches nested executors; this declaration names the gateway authority separately from backend-specific passport refs derived from the 0056 executor adapter index. Runtime enforcement is known to be policy-only until a dedicated enforcement runtime is introduced."
     },
     {
       "surface_id": "specspace.operator_assistant",
@@ -157,9 +174,9 @@
       "prepares_handoffs": true,
       "passport_ref": "agent-passport://specspace/operator-assistant/0.1.0",
       "verification_state": "V2_passport_referenced",
-      "runtime_enforcement_state": "not_observed",
+      "runtime_enforcement_state": "boundary_only",
       "consumer_id": "specspace",
-      "notes": "SpecSpace consumes derived surfaces and prepares operator handoffs; this graph-side reference declares the required operator assistant identity without mutating SpecSpace or claiming verification."
+      "notes": "SpecSpace consumes derived surfaces and prepares operator handoffs. This graph-side reference declares the required operator assistant identity while runtime enforcement remains a consumer-boundary concern outside SpecGraph authority."
     },
     {
       "surface_id": "product_workspace.implementation_agent",
@@ -174,9 +191,9 @@
       "prepares_handoffs": false,
       "passport_ref": "agent-passport://product-workspace/implementation-agent/0.1.0",
       "verification_state": "V2_passport_referenced",
-      "runtime_enforcement_state": "not_observed",
+      "runtime_enforcement_state": "deferred",
       "future_surface": true,
-      "notes": "Future product workspace agent is listed so implementation-agent identity is declared before runtime availability; verification and enforcement remain future gaps."
+      "notes": "Future product workspace agent is listed so implementation-agent identity is declared before runtime availability; runtime enforcement is explicitly deferred until the product-workspace runtime exists."
     }
   ],
   "executor_adapter_binding": {
@@ -233,9 +250,21 @@
       "severity": "medium",
       "next_action": "provide_agent_passport_document"
     },
+    "runtime_enforcement_policy_only": {
+      "severity": "low",
+      "next_action": "define_runtime_enforcement_runtime"
+    },
+    "runtime_enforcement_boundary_only": {
+      "severity": "low",
+      "next_action": "define_consumer_boundary_enforcement_contract"
+    },
+    "runtime_enforcement_deferred": {
+      "severity": "low",
+      "next_action": "wait_for_runtime_surface_before_enforcement"
+    },
     "runtime_enforcement_unknown": {
       "severity": "low",
-      "next_action": "keep_runtime_enforcement_out_of_scope_until_policy_runtime_exists"
+      "next_action": "classify_runtime_enforcement_posture"
     }
   },
   "privacy_boundary": {
