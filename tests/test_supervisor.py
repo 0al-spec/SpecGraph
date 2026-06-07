@@ -27301,7 +27301,18 @@ def agent_runtime_evidence_test_surfaces(supervisor_module: object) -> dict[str,
             "artifact_kind": supervisor_module.SUPERVISOR_EXECUTOR_ADAPTER_INDEX_ARTIFACT_KIND,
             "schema_version": supervisor_module.SUPERVISOR_EXECUTOR_ADAPTER_INDEX_SCHEMA_VERSION,
             "summary": {"agent_passport_cli_status": "available"},
-            "entries": [],
+            "entries": [
+                {
+                    "backend_id": "codex",
+                    "command_surface": "cli",
+                    "executable_availability": {
+                        "status": "available",
+                        "resolution_source": "path",
+                        "command_name": "codex",
+                        "path_persisted": False,
+                    },
+                }
+            ],
         },
         "agent_surface_index": {
             "artifact_kind": supervisor_module.AGENT_SURFACE_INDEX_ARTIFACT_KIND,
@@ -27492,6 +27503,75 @@ def test_supervisor_executor_adapter_invocation_boundary_rejects_persisted_paths
             },
         }
     ]
+
+    index = supervisor_module.build_agent_runtime_enforcement_evidence_index(surfaces)
+
+    record = index["_records"][0]
+    checks = {check["check_id"]: check["status"] for check in record["evidence"]["checks"]}
+    assert record["status"] == "failed"
+    assert checks["executor_adapter_invocation_boundary"] == "failed"
+    assert checks["policy_required_checks_satisfied"] == "failed"
+
+
+def test_supervisor_executor_adapter_invocation_boundary_rejects_malformed_executable_names(
+    supervisor_module: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    policy = copy.deepcopy(supervisor_module.SUPERVISOR_EXECUTOR_ADAPTER_POLICY)
+    policy["backend_registry"][0]["executable_names"] = None
+    monkeypatch.setattr(supervisor_module, "SUPERVISOR_EXECUTOR_ADAPTER_POLICY", policy)
+
+    index = supervisor_module.build_agent_runtime_enforcement_evidence_index(
+        agent_runtime_evidence_test_surfaces(supervisor_module)
+    )
+
+    record = index["_records"][0]
+    checks = {check["check_id"]: check["status"] for check in record["evidence"]["checks"]}
+    assert record["status"] == "failed"
+    assert checks["executor_adapter_invocation_boundary"] == "failed"
+    assert checks["policy_required_checks_satisfied"] == "failed"
+
+
+def test_supervisor_executor_adapter_invocation_boundary_rejects_malformed_availability(
+    supervisor_module: object,
+) -> None:
+    surfaces = agent_runtime_evidence_test_surfaces(supervisor_module)
+    surfaces["supervisor_executor_adapter_index"]["entries"][0]["executable_availability"] = None
+
+    index = supervisor_module.build_agent_runtime_enforcement_evidence_index(surfaces)
+
+    record = index["_records"][0]
+    checks = {check["check_id"]: check["status"] for check in record["evidence"]["checks"]}
+    assert record["status"] == "failed"
+    assert checks["executor_adapter_invocation_boundary"] == "failed"
+    assert checks["policy_required_checks_satisfied"] == "failed"
+
+
+def test_supervisor_executor_adapter_invocation_boundary_rejects_path_fields(
+    supervisor_module: object,
+) -> None:
+    surfaces = agent_runtime_evidence_test_surfaces(supervisor_module)
+    surfaces["supervisor_executor_adapter_index"]["entries"][0]["executable_availability"][
+        "path"
+    ] = "/opt/homebrew/bin/codex"
+    surfaces["supervisor_executor_adapter_index"]["entries"][0]["executable_availability"][
+        "path_persisted"
+    ] = False
+
+    index = supervisor_module.build_agent_runtime_enforcement_evidence_index(surfaces)
+
+    record = index["_records"][0]
+    checks = {check["check_id"]: check["status"] for check in record["evidence"]["checks"]}
+    assert record["status"] == "failed"
+    assert checks["executor_adapter_invocation_boundary"] == "failed"
+    assert checks["policy_required_checks_satisfied"] == "failed"
+
+
+def test_supervisor_executor_adapter_invocation_boundary_rejects_empty_index_entries(
+    supervisor_module: object,
+) -> None:
+    surfaces = agent_runtime_evidence_test_surfaces(supervisor_module)
+    surfaces["supervisor_executor_adapter_index"]["entries"] = []
 
     index = supervisor_module.build_agent_runtime_enforcement_evidence_index(surfaces)
 
