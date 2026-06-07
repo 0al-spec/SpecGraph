@@ -947,5 +947,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0074",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0074_specspace_agent_passport_posture_evidence.md"
+    ],
+    "motivating_concern": "SpecSpace implemented the Agent Passport posture consumer contract, but SpecGraph has not yet accepted downstream evidence for the expanded 0073 artifact set",
+    "normalized_title": "SpecSpace Agent Passport Posture Evidence",
+    "bounded_scope": "Record report-only evidence for SpecSpace PR #227 consuming the full Agent Passport posture artifact set, while preserving historical PR #225 evidence, avoiding live GitHub polling, avoiding SpecSpace or Platform mutations, and making no runtime enforcement claims.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

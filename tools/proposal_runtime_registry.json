@@ -3534,5 +3534,50 @@
         "pattern": "Agent Passport posture consumer contract"
       }
     ]
+  },
+  {
+    "proposal_id": "0074",
+    "posture": "bounded_runtime_followup",
+    "runtime_surfaces": [
+      "docs/proposals/0074_specspace_agent_passport_posture_evidence.md",
+      "docs/archive/proposal_sources/0074_specspace_agent_passport_posture_evidence.md",
+      "tools/external_consumer_evidence_registry.json",
+      "tests/test_supervisor.py",
+      "runs/external_consumer_evidence_index.json"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/external_consumer_evidence_registry.json",
+        "pattern": "specspace-agent-passport-posture-20260607"
+      },
+      {
+        "path": "tools/external_consumer_evidence_registry.json",
+        "pattern": "https://github.com/0al-spec/SpecSpace/pull/227"
+      },
+      {
+        "path": "tools/external_consumer_evidence_registry.json",
+        "pattern": "runs/agent_passport_verification_report.json"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "specspace-agent-passport-posture-20260607"
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "https://github.com/0al-spec/SpecSpace/pull/227"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0074_specspace_agent_passport_posture_evidence.md",
+        "pattern": "SpecSpace PR `0al-spec/SpecSpace#227`"
+      },
+      {
+        "path": "docs/proposals/0074_specspace_agent_passport_posture_evidence.md",
+        "pattern": "Platform Timeweb Publish run"
+      }
+    ]
   }
 ]

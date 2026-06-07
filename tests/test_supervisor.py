@@ -11509,16 +11509,37 @@ def test_build_external_consumer_evidence_index_accepts_specspace_evidence(
                     {"kind": "smoke", "ref": "Platform Timeweb Publish", "status": "success"},
                 ],
                 "result": "implemented",
-            }
+            },
+            {
+                "evidence_id": "specspace-agent-passport-posture-20260607",
+                "handoff_id": "external_consumer_handoff::specspace",
+                "consumer_id": "specspace",
+                "consumer": "SpecSpace",
+                "implementation_ref": "https://github.com/0al-spec/SpecSpace/pull/227",
+                "consumed_artifacts": [
+                    "runs/supervisor_executor_adapter_index.json",
+                    "runs/agent_surface_index.json",
+                    "runs/known_agent_passport_index.json",
+                    "runs/agent_passport_verification_report.json",
+                    "runs/agent_verification_gap_index.json",
+                ],
+                "evidence": [
+                    {"kind": "pull_request", "ref": "0al-spec/SpecSpace#227"},
+                    {"kind": "test", "ref": "SpecSpace CI", "status": "success"},
+                    {"kind": "smoke", "ref": "Platform Timeweb Publish", "status": "success"},
+                ],
+                "result": "implemented",
+            },
         ],
     }
 
     index = supervisor_module.build_external_consumer_evidence_index(handoffs, registry)
 
     assert index["artifact_kind"] == supervisor_module.EXTERNAL_CONSUMER_EVIDENCE_ARTIFACT_KIND
-    assert index["entry_count"] == 1
-    assert index["accepted_count"] == 1
-    entry = index["entries"][0]
+    assert index["entry_count"] == 2
+    assert index["accepted_count"] == 2
+    entries_by_id = {entry["evidence_id"]: entry for entry in index["entries"]}
+    entry = entries_by_id["specspace-agent-surface-visibility-20260606"]
     assert entry["acceptance_status"] == "accepted"
     assert entry["next_gap"] == "none"
     assert entry["handoff_reference"]["source_proposal_ids"] == ["0056", "0059"]
@@ -11533,11 +11554,23 @@ def test_build_external_consumer_evidence_index_accepts_specspace_evidence(
         "runs/agent_verification_gap_index.json",
     ]
     assert entry["contract_evaluation"]["diagnostics"] == []
+    posture_entry = entries_by_id["specspace-agent-passport-posture-20260607"]
+    assert posture_entry["acceptance_status"] == "accepted"
+    assert posture_entry["consumed_artifacts"] == [
+        "runs/supervisor_executor_adapter_index.json",
+        "runs/agent_surface_index.json",
+        "runs/known_agent_passport_index.json",
+        "runs/agent_passport_verification_report.json",
+        "runs/agent_verification_gap_index.json",
+    ]
+    assert posture_entry["contract_evaluation"]["diagnostics"] == []
     assert index["viewer_projection"]["named_filters"]["accepted"] == [
-        "specspace-agent-surface-visibility-20260606"
+        "specspace-agent-passport-posture-20260607",
+        "specspace-agent-surface-visibility-20260606",
     ]
     assert index["viewer_projection"]["named_filters"]["specspace_consumer"] == [
-        "specspace-agent-surface-visibility-20260606"
+        "specspace-agent-passport-posture-20260607",
+        "specspace-agent-surface-visibility-20260606",
     ]
     assert index["evidence_backlog"]["entry_count"] == 0
     assert "/Users/" not in json.dumps(index, sort_keys=True)
