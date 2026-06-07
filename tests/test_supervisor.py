@@ -27073,6 +27073,23 @@ def test_agent_passport_adoption_policy_declares_surface_and_gap_contract(
         in (policy["verification_gap_index_contract"]["gap_kinds"])
     )
     assert "runtime_enforcement_deferred" in policy["verification_gap_index_contract"]["gap_kinds"]
+    assert (
+        "runtime_enforcement_evidence_missing"
+        in policy["verification_gap_index_contract"]["gap_kinds"]
+    )
+    evidence_contract = policy["runtime_enforcement_evidence_contract"]
+    assert evidence_contract["artifact_kind"] == "agent_runtime_enforcement_evidence"
+    assert evidence_contract["status"] == "plan_only"
+    assert "policy_decision" in evidence_contract["accepted_evidence_kinds"]
+    assert evidence_contract["posture_requirements"]["runtime_enforcement_policy_only"][
+        "required_evidence_kinds"
+    ] == ["policy_decision", "runtime_smoke"]
+    assert (
+        evidence_contract["posture_requirements"]["runtime_enforcement_deferred"][
+            "eligible_for_observed"
+        ]
+        is False
+    )
     assert policy["executor_adapter_binding"]["source_artifact"] == (
         "runs/supervisor_executor_adapter_index.json"
     )
@@ -27172,6 +27189,28 @@ def test_build_agent_passport_indexes_consume_executor_adapter_diagnostics(
     assert ("specspace.operator_assistant", "runtime_enforcement_boundary_only") in gaps
     assert ("product_workspace.implementation_agent", "runtime_enforcement_deferred") in gaps
     assert not any(gap == "runtime_enforcement_unknown" for _, gap in gaps)
+    codex_runtime_gap = next(
+        gap
+        for gap in gap_index["gaps"]
+        if gap["agent_surface"] == "specgraph.executor.codex"
+        and gap["gap"] == "runtime_enforcement_policy_only"
+    )
+    assert codex_runtime_gap["runtime_enforcement_evidence_plan"]["contract_artifact_kind"] == (
+        "agent_runtime_enforcement_evidence"
+    )
+    assert codex_runtime_gap["runtime_enforcement_evidence_plan"]["required_evidence_kinds"] == [
+        "policy_decision",
+        "runtime_smoke",
+    ]
+    product_runtime_gap = next(
+        gap
+        for gap in gap_index["gaps"]
+        if gap["agent_surface"] == "product_workspace.implementation_agent"
+        and gap["gap"] == "runtime_enforcement_deferred"
+    )
+    assert (
+        product_runtime_gap["runtime_enforcement_evidence_plan"]["eligible_for_observed"] is False
+    )
     assert gap_index["summary"]["missing_passport_count"] == 0
     assert gap_index["summary"]["verification_tool_unavailable_count"] == 5
     assert gap_index["viewer_projection"]["named_filters"]["executor_backend"] == [
@@ -27220,6 +27259,23 @@ def test_build_agent_passport_indexes_handle_optional_and_observed_surfaces(
                     "runtime_enforcement_state": "observed",
                 }
             )
+            surfaces.append(
+                {
+                    "surface_id": "specgraph.observed_runtime_with_evidence",
+                    "title": "Observed Runtime With Evidence",
+                    "surface_type": "graph_runtime",
+                    "source": "policy",
+                    "requires_passport": True,
+                    "launches_agents": False,
+                    "prepares_handoffs": False,
+                    "passport_ref": "agent-passport://specgraph/observed-runtime-evidence/0.1.0",
+                    "verification_state": "V2_passport_referenced",
+                    "runtime_enforcement_state": "observed",
+                    "runtime_enforcement_evidence_ref": (
+                        "runs/agent_runtime_enforcement_evidence/observed-runtime.json"
+                    ),
+                }
+            )
             return surfaces
         return value
 
@@ -27244,8 +27300,8 @@ def test_build_agent_passport_indexes_handle_optional_and_observed_surfaces(
         executor_index,
     )
 
-    assert surface_index["summary"]["passport_referenced_count"] == 6
-    assert surface_index["summary"]["required_passport_referenced_count"] == 5
+    assert surface_index["summary"]["passport_referenced_count"] == 7
+    assert surface_index["summary"]["required_passport_referenced_count"] == 6
     assert surface_index["summary"]["missing_passport_count"] == 0
     assert surface_index["summary"]["next_gap"] == "run_report_only_passport_verification"
     assert (
@@ -27261,10 +27317,24 @@ def test_build_agent_passport_indexes_handle_optional_and_observed_surfaces(
     gaps = {(gap["agent_surface"], gap["gap"]) for gap in gap_index["gaps"]}
     assert not any(gap == "missing_passport" for _, gap in gaps)
     assert ("specgraph.observed_runtime", "runtime_enforcement_unknown") not in gaps
+    assert ("specgraph.observed_runtime", "runtime_enforcement_evidence_missing") in gaps
+    assert (
+        "specgraph.observed_runtime_with_evidence",
+        "runtime_enforcement_evidence_missing",
+    ) not in gaps
+    observed_surface = next(
+        surface
+        for surface in surface_index["surfaces"]
+        if surface["surface_id"] == "specgraph.observed_runtime_with_evidence"
+    )
+    assert observed_surface["runtime_enforcement_evidence_ref"] == (
+        "runs/agent_runtime_enforcement_evidence/observed-runtime.json"
+    )
     assert ("specgraph.observed_runtime", "verification_not_attempted") in gaps
     assert ("specspace.operator_assistant", "verification_not_attempted") in gaps
     assert ("specspace.operator_assistant", "runtime_enforcement_boundary_only") in gaps
     assert ("specgraph.optional_observer", "runtime_enforcement_unknown") not in gaps
+    assert gap_index["summary"]["runtime_enforcement_evidence_missing_count"] == 1
 
 
 def test_agent_passport_surface_from_policy_treats_null_runtime_enforcement_as_unknown(

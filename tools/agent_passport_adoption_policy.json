@@ -133,6 +133,7 @@
       "runtime_enforcement_policy_only",
       "runtime_enforcement_boundary_only",
       "runtime_enforcement_deferred",
+      "runtime_enforcement_evidence_missing",
       "runtime_enforcement_unknown"
     ],
     "severity_values": [
@@ -148,10 +149,67 @@
       "runtime_enforcement_policy_only",
       "runtime_enforcement_boundary_only",
       "runtime_enforcement_deferred",
+      "runtime_enforcement_evidence_missing",
       "runtime_enforcement_unknown",
       "executor_backend",
       "specspace_consumer"
     ]
+  },
+  "runtime_enforcement_evidence_contract": {
+    "artifact_kind": "agent_runtime_enforcement_evidence",
+    "schema_version": 1,
+    "status": "plan_only",
+    "required_fields": [
+      "agent_surface",
+      "runtime_enforcement_state",
+      "evidence",
+      "result"
+    ],
+    "accepted_evidence_kinds": [
+      "policy_decision",
+      "sandbox_trace",
+      "runtime_smoke",
+      "audit_log",
+      "test_report",
+      "operator_attestation"
+    ],
+    "privacy_boundary": {
+      "machine_local_paths_forbidden": true,
+      "raw_supervisor_logs_forbidden": true,
+      "raw_prompts_forbidden": true,
+      "secrets_forbidden": true
+    },
+    "posture_requirements": {
+      "runtime_enforcement_policy_only": {
+        "eligible_for_observed": true,
+        "required_evidence_kinds": [
+          "policy_decision",
+          "runtime_smoke"
+        ],
+        "next_action": "attach_runtime_enforcement_evidence"
+      },
+      "runtime_enforcement_boundary_only": {
+        "eligible_for_observed": true,
+        "required_evidence_kinds": [
+          "policy_decision",
+          "audit_log"
+        ],
+        "next_action": "attach_consumer_boundary_enforcement_evidence"
+      },
+      "runtime_enforcement_deferred": {
+        "eligible_for_observed": false,
+        "required_evidence_kinds": [],
+        "next_action": "materialize_runtime_surface_before_evidence"
+      },
+      "runtime_enforcement_evidence_missing": {
+        "eligible_for_observed": true,
+        "required_evidence_kinds": [
+          "policy_decision",
+          "runtime_smoke"
+        ],
+        "next_action": "attach_runtime_enforcement_evidence"
+      }
+    }
   },
   "runtime_enforcement_states": [
     "observed",
@@ -307,6 +365,10 @@
     "runtime_enforcement_deferred": {
       "severity": "low",
       "next_action": "wait_for_runtime_surface_before_enforcement"
+    },
+    "runtime_enforcement_evidence_missing": {
+      "severity": "medium",
+      "next_action": "attach_runtime_enforcement_evidence"
     },
     "runtime_enforcement_unknown": {
       "severity": "low",
