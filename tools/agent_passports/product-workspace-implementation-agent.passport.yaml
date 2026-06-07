@@ -1,0 +1,48 @@
+passport:
+  apiVersion: "agent-passport.io/v1alpha1"
+  kind: "AgentPassport"
+  metadata:
+    name: "product-workspace-implementation-agent"
+    uid: "e789503a-23d3-478d-8a49-bd2c33f98d9c"
+    version: "0.1.0"
+    issueDate: "2026-01-01T00:00:00Z"
+    expiryDate: "9999-12-31T23:59:59Z"
+    issuer: "0AL Internal Draft Authority"
+  spec:
+    entity:
+      type: "LLM-agent"
+      description: "Future product workspace implementation agent for bounded code changes and evidence emission."
+      owner: "0AL Product Workspace"
+      contact: "https://github.com/0al-spec"
+    capabilities:
+      - name: "implement_product_workspace_task"
+        description: "Applies bounded product workspace implementation tasks under an operator-approved contract."
+        signature:
+          parameters: []
+          returns:
+            type: "object"
+            description: "Implementation result and evidence packet references."
+        accessControl:
+          - "product-workspace-operators"
+    resources:
+      cpu: "1000m"
+      memory: "2Gi"
+      fileSystemAccess:
+        - path: "/workspace/product"
+          permissions:
+            - "read"
+            - "write"
+    securityPolicies:
+      capabilities: []
+      networkRestrictions:
+        denyList:
+          - "0.0.0.0/0"
+      executionEnvironment:
+        isolated: true
+        privileged: false
+  signature:
+    algorithm: "EdDSA"
+    value: "ZHJhZnQtc2lnbmF0dXJl"
+    publicKeyRef: "did:example:0al:product-workspace-implementation-agent:key1"
+    signedBy: "0ALInternalDraftSigner"
+

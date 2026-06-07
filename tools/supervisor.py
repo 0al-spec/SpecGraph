@@ -67,6 +67,7 @@ Derived artifacts:
 - supervisor executor adapter index: `runs/supervisor_executor_adapter_index.json`
 - agent surface index: `runs/agent_surface_index.json`
 - known agent passport index: `runs/known_agent_passport_index.json`
+- agent passport verification report: `runs/agent_passport_verification_report.json`
 - agent verification gap index: `runs/agent_verification_gap_index.json`
 - bootstrap smoke benchmark: `runs/bootstrap_smoke_benchmark.json`
 - spec trace index: `runs/spec_trace_index.json`
@@ -184,6 +185,7 @@ SUPERVISOR_EXECUTOR_ADAPTER_INDEX_RELATIVE_PATH = "runs/supervisor_executor_adap
 AGENT_SURFACE_INDEX_RELATIVE_PATH = "runs/agent_surface_index.json"
 KNOWN_AGENT_PASSPORT_INDEX_RELATIVE_PATH = "runs/known_agent_passport_index.json"
 AGENT_VERIFICATION_GAP_INDEX_RELATIVE_PATH = "runs/agent_verification_gap_index.json"
+AGENT_PASSPORT_VERIFICATION_REPORT_RELATIVE_PATH = "runs/agent_passport_verification_report.json"
 SPECPM_EXPORT_REGISTRY_RELATIVE_PATH = "tools/specpm_export_registry.json"
 
 
@@ -3148,6 +3150,9 @@ KNOWN_AGENT_PASSPORT_INDEX_FILENAME = Path(
 AGENT_VERIFICATION_GAP_INDEX_FILENAME = Path(
     str(agent_passport_adoption_policy_lookup("repository_layout.verification_gap_index_artifact"))
 ).name
+AGENT_PASSPORT_VERIFICATION_REPORT_FILENAME = Path(
+    str(agent_passport_adoption_policy_lookup("repository_layout.verification_report_artifact"))
+).name
 AGENT_SURFACE_INDEX_ARTIFACT_KIND = str(
     agent_passport_adoption_policy_lookup("surface_index_contract.artifact_kind")
 )
@@ -3166,8 +3171,17 @@ AGENT_VERIFICATION_GAP_INDEX_ARTIFACT_KIND = str(
 AGENT_VERIFICATION_GAP_INDEX_SCHEMA_VERSION = int(
     agent_passport_adoption_policy_lookup("verification_gap_index_contract.schema_version")
 )
+AGENT_PASSPORT_VERIFICATION_REPORT_ARTIFACT_KIND = str(
+    agent_passport_adoption_policy_lookup("verification_report_contract.artifact_kind")
+)
+AGENT_PASSPORT_VERIFICATION_REPORT_SCHEMA_VERSION = int(
+    agent_passport_adoption_policy_lookup("verification_report_contract.schema_version")
+)
 AGENT_SURFACE_NAMED_FILTERS = list(
     agent_passport_adoption_policy_lookup("surface_index_contract.named_filters")
+)
+AGENT_PASSPORT_VERIFICATION_NAMED_FILTERS = list(
+    agent_passport_adoption_policy_lookup("verification_report_contract.named_filters")
 )
 AGENT_VERIFICATION_GAP_NAMED_FILTERS = list(
     agent_passport_adoption_policy_lookup("verification_gap_index_contract.named_filters")
@@ -17997,6 +18011,10 @@ def agent_verification_gap_index_path() -> Path:
     return RUNS_DIR / AGENT_VERIFICATION_GAP_INDEX_FILENAME
 
 
+def agent_passport_verification_report_path() -> Path:
+    return RUNS_DIR / AGENT_PASSPORT_VERIFICATION_REPORT_FILENAME
+
+
 def supervisor_executor_adapter_policy_reference() -> dict[str, Any]:
     return {
         "artifact_path": SUPERVISOR_EXECUTOR_ADAPTER_POLICY_RELATIVE_PATH,
@@ -18454,7 +18472,319 @@ def build_agent_surface_index(
     }
 
 
-def build_known_agent_passport_index(agent_surface_index: dict[str, Any]) -> dict[str, Any]:
+def agent_passport_ref_registry() -> dict[str, dict[str, Any]]:
+    registry: dict[str, dict[str, Any]] = {}
+    for entry in agent_passport_adoption_policy_lookup("passport_ref_registry"):
+        if not isinstance(entry, dict):
+            continue
+        passport_ref = str(entry.get("passport_ref", "")).strip()
+        if passport_ref:
+            registry[passport_ref] = copy.deepcopy(entry)
+    return registry
+
+
+def agent_passport_cli_availability() -> dict[str, Any]:
+    policy = supervisor_executor_adapter_policy_lookup("agent_passport_cli")
+    executable_names = [
+        str(name).strip() for name in policy.get("executable_names", []) if str(name).strip()
+    ]
+    return command_availability_from_policy(
+        executable_names=executable_names,
+        sibling_release_binary=str(policy.get("sibling_release_binary", "")).strip(),
+    )
+
+
+def agent_passport_cli_command() -> str:
+    policy = supervisor_executor_adapter_policy_lookup("agent_passport_cli")
+    for name in policy.get("executable_names", []):
+        candidate = shutil.which(str(name).strip())
+        if candidate:
+            return candidate
+    sibling_release_binary = str(policy.get("sibling_release_binary", "")).strip()
+    if sibling_release_binary:
+        candidate = (ROOT / sibling_release_binary).resolve()
+        if is_executable_file(candidate):
+            return candidate.as_posix()
+    return ""
+
+
+def safe_repo_relative_path(raw_path: str) -> str:
+    candidate = str(raw_path).strip()
+    if not candidate:
+        return ""
+    path = Path(candidate)
+    if path.is_absolute():
+        return ""
+    if any(part == ".." for part in path.parts):
+        return ""
+    return path.as_posix()
+
+
+def repo_relative_path_for_artifact(path: Path) -> str:
+    try:
+        return path.resolve().relative_to(ROOT.resolve()).as_posix()
+    except (OSError, ValueError):
+        return safe_repo_relative_path(path.as_posix())
+
+
+def sanitized_cli_report_path(raw_path: str) -> str:
+    candidate = str(raw_path).strip()
+    if not candidate:
+        return ""
+    path = Path(candidate)
+    if path.is_absolute():
+        try:
+            return path.resolve().relative_to(ROOT.resolve()).as_posix()
+        except (OSError, ValueError):
+            return ""
+    return safe_repo_relative_path(candidate)
+
+
+def run_agent_passport_validate(command: str, document_path: Path) -> dict[str, Any]:
+    cli_document_path = repo_relative_path_for_artifact(document_path)
+    if not cli_document_path:
+        return {
+            "verification_status": "invalid",
+            "verification_state": "V2_passport_referenced",
+            "valid": False,
+            "exit_code": None,
+            "checks": [],
+            "diagnostics": [
+                {
+                    "severity": "error",
+                    "code": "agent_passport_document_path_unsafe",
+                    "message": (
+                        "Agent Passport document path is not safe for report-only validation."
+                    ),
+                }
+            ],
+        }
+    try:
+        result = subprocess.run(
+            [command, "validate", "--json", cli_document_path],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=30,
+        )
+    except subprocess.TimeoutExpired:
+        return {
+            "verification_status": "invalid",
+            "verification_state": "V2_passport_referenced",
+            "valid": False,
+            "exit_code": None,
+            "checks": [],
+            "diagnostics": [
+                {
+                    "severity": "error",
+                    "code": "agent_passport_cli_timeout",
+                    "message": "Agent Passport CLI validation timed out.",
+                }
+            ],
+        }
+    except OSError:
+        return {
+            "verification_status": "tool_unavailable",
+            "verification_state": "V2_passport_referenced",
+            "valid": False,
+            "exit_code": None,
+            "checks": [],
+            "diagnostics": [
+                {
+                    "severity": "warning",
+                    "code": "agent_passport_cli_unavailable",
+                    "message": "Agent Passport CLI could not be executed.",
+                }
+            ],
+        }
+    diagnostics: list[dict[str, Any]] = []
+    try:
+        payload = json.loads(result.stdout)
+    except json.JSONDecodeError:
+        payload = None
+        diagnostics.append(
+            {
+                "severity": "error",
+                "code": "agent_passport_cli_json_unparseable",
+                "message": "Agent Passport CLI did not emit parseable JSON.",
+            }
+        )
+    if isinstance(payload, list):
+        report = payload[0] if payload and isinstance(payload[0], dict) else {}
+    elif isinstance(payload, dict):
+        report = payload
+    else:
+        report = {}
+    if payload is not None and not report:
+        diagnostics.append(
+            {
+                "severity": "error",
+                "code": "agent_passport_cli_json_unexpected_shape",
+                "message": "Agent Passport CLI JSON did not contain a validation report object.",
+            }
+        )
+    checks = []
+    for check in report.get("checks", []):
+        if not isinstance(check, dict):
+            continue
+        checks.append(
+            {
+                "severity": str(check.get("severity", "")).strip(),
+                "path": sanitized_cli_report_path(str(check.get("path", ""))),
+                "message": str(check.get("message", "")).strip(),
+            }
+        )
+    valid = bool(report.get("valid", False)) and result.returncode == 0
+    return {
+        "verification_status": "valid" if valid else "invalid",
+        "verification_state": "V3_schema_valid" if valid else "V2_passport_referenced",
+        "valid": valid,
+        "exit_code": result.returncode,
+        "checks": checks,
+        "diagnostics": diagnostics,
+    }
+
+
+def build_agent_passport_verification_report(
+    known_agent_passport_index: dict[str, Any],
+) -> dict[str, Any]:
+    cli_availability = agent_passport_cli_availability()
+    cli_status = "available" if cli_availability.get("status") == "available" else "missing"
+    cli_command = agent_passport_cli_command() if cli_status == "available" else ""
+    registry = agent_passport_ref_registry()
+    entries: list[dict[str, Any]] = []
+    by_status: dict[str, list[str]] = {}
+    named_filters = {name: [] for name in AGENT_PASSPORT_VERIFICATION_NAMED_FILTERS}
+
+    for known in known_agent_passport_index.get("entries", []):
+        if not isinstance(known, dict):
+            continue
+        passport_ref = str(known.get("passport_ref") or "").strip()
+        agent_surface = str(known.get("agent_surface", "")).strip()
+        if not passport_ref or not agent_surface:
+            continue
+        registry_entry = registry.get(passport_ref, {})
+        document_path = safe_repo_relative_path(str(registry_entry.get("document_path", "")))
+        status = "tool_unavailable" if cli_status != "available" else "unavailable"
+        verification_state = "V2_passport_referenced"
+        valid = False
+        checks: list[dict[str, Any]] = []
+        diagnostics: list[dict[str, Any]] = []
+
+        if cli_status != "available":
+            diagnostics.append(
+                {
+                    "severity": "warning",
+                    "code": "agent_passport_cli_missing",
+                    "message": "Agent Passport CLI is not available for report-only verification.",
+                }
+            )
+        elif not document_path:
+            diagnostics.append(
+                {
+                    "severity": "error",
+                    "code": "agent_passport_ref_unmapped",
+                    "message": "Passport ref has no safe repository-relative document path.",
+                }
+            )
+        else:
+            absolute_document_path = ROOT / document_path
+            if not absolute_document_path.exists():
+                diagnostics.append(
+                    {
+                        "severity": "error",
+                        "code": "agent_passport_document_missing",
+                        "message": (
+                            "Passport document is not present at the declared repository path."
+                        ),
+                    }
+                )
+            else:
+                validation = run_agent_passport_validate(cli_command, absolute_document_path)
+                status = str(validation.get("verification_status", "invalid")).strip()
+                verification_state = str(
+                    validation.get("verification_state", "V2_passport_referenced")
+                ).strip()
+                valid = bool(validation.get("valid", False))
+                checks = copy.deepcopy(validation.get("checks", []))
+                diagnostics = copy.deepcopy(validation.get("diagnostics", []))
+
+        entry = {
+            "agent_surface": agent_surface,
+            "surface_type": str(known.get("surface_type", "")).strip(),
+            "passport_ref": passport_ref,
+            "document_path": document_path,
+            "verification_status": status,
+            "verification_state": verification_state,
+            "valid": valid,
+            "tool_status": cli_status,
+            "checks": checks,
+            "diagnostics": diagnostics,
+            "source_proposal_ids": [
+                str(proposal_id).strip()
+                for proposal_id in known.get("source_proposal_ids", [])
+                if str(proposal_id).strip()
+            ],
+        }
+        if str(known.get("consumer_id", "")).strip():
+            entry["consumer_id"] = str(known.get("consumer_id", "")).strip()
+        if str(known.get("executor_backend_id", "")).strip():
+            entry["executor_backend_id"] = str(known.get("executor_backend_id", "")).strip()
+        entries.append(entry)
+        by_status.setdefault(status, []).append(agent_surface)
+        if status in named_filters:
+            named_filters[status].append(agent_surface)
+        if entry["surface_type"] == "executor_backend":
+            named_filters["executor_backend"].append(agent_surface)
+        if entry.get("consumer_id") == "specspace":
+            named_filters["specspace_consumer"].append(agent_surface)
+
+    for bucket in (by_status, named_filters):
+        for key in list(bucket):
+            bucket[key] = sorted(set(bucket[key]))
+
+    entries = sorted(entries, key=lambda item: item["agent_surface"])
+    return {
+        "artifact_kind": AGENT_PASSPORT_VERIFICATION_REPORT_ARTIFACT_KIND,
+        "schema_version": AGENT_PASSPORT_VERIFICATION_REPORT_SCHEMA_VERSION,
+        "generated_at": utc_now_iso(),
+        "policy_reference": agent_passport_adoption_policy_reference(),
+        "stable_fields": agent_passport_contract_stable_fields("verification_report_contract"),
+        "source_artifacts": {
+            "known_agent_passport_index": KNOWN_AGENT_PASSPORT_INDEX_RELATIVE_PATH,
+            "policy": AGENT_PASSPORT_ADOPTION_POLICY_RELATIVE_PATH,
+        },
+        "summary": {
+            "entry_count": len(entries),
+            "valid_count": len(by_status.get("valid", [])),
+            "invalid_count": len(by_status.get("invalid", [])),
+            "unavailable_count": len(by_status.get("unavailable", [])),
+            "tool_unavailable_count": len(by_status.get("tool_unavailable", [])),
+            "agent_passport_cli_status": cli_status,
+            "next_gap": (
+                "none"
+                if entries and len(by_status.get("valid", [])) == len(entries)
+                else "repair_or_provide_agent_passport_documents"
+            ),
+        },
+        "entries": entries,
+        "viewer_projection": {
+            "verification_status": by_status,
+            "named_filters": named_filters,
+        },
+    }
+
+
+def build_known_agent_passport_index(
+    agent_surface_index: dict[str, Any],
+    agent_passport_verification_report: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    verification_by_surface = {
+        str(entry.get("agent_surface", "")).strip(): entry
+        for entry in (agent_passport_verification_report or {}).get("entries", [])
+        if isinstance(entry, dict) and str(entry.get("agent_surface", "")).strip()
+    }
     entries: list[dict[str, Any]] = []
     verification_state: dict[str, list[str]] = {}
     named_filters = {
@@ -18471,7 +18801,12 @@ def build_known_agent_passport_index(agent_surface_index: dict[str, Any]) -> dic
             continue
         passport_ref = surface.get("passport_ref")
         passport_ref = str(passport_ref).strip() if passport_ref else None
-        state = str(surface.get("verification_state", "")).strip() or "V1_known_surface"
+        verification_result = copy.deepcopy(verification_by_surface.get(surface_id, {}))
+        state = (
+            str(verification_result.get("verification_state", "")).strip()
+            or str(surface.get("verification_state", "")).strip()
+            or "V1_known_surface"
+        )
         entry = {
             "agent_surface": surface_id,
             "surface_type": str(surface.get("surface_type", "")).strip(),
@@ -18490,6 +18825,17 @@ def build_known_agent_passport_index(agent_surface_index: dict[str, Any]) -> dic
             ],
             "source": str(surface.get("source", "")).strip(),
         }
+        if verification_result:
+            entry["verification_result"] = {
+                "verification_status": str(
+                    verification_result.get("verification_status", "")
+                ).strip(),
+                "document_path": str(verification_result.get("document_path", "")).strip(),
+                "valid": bool(verification_result.get("valid", False)),
+                "tool_status": str(verification_result.get("tool_status", "")).strip(),
+                "check_count": len(verification_result.get("checks", [])),
+                "diagnostic_count": len(verification_result.get("diagnostics", [])),
+            }
         if "executor_backend_id" in surface:
             entry["executor_backend_id"] = str(surface.get("executor_backend_id", "")).strip()
         if str(surface.get("consumer_id", "")).strip():
@@ -18510,6 +18856,18 @@ def build_known_agent_passport_index(agent_surface_index: dict[str, Any]) -> dic
             bucket[key] = sorted(set(bucket[key]))
 
     entries = sorted(entries, key=lambda item: item["agent_surface"])
+    verification_attempted_count = sum(
+        1
+        for entry in entries
+        if str((entry.get("verification_result", {}) or {}).get("verification_status", "")).strip()
+        in {"valid", "invalid"}
+    )
+    if named_filters["missing_passport"]:
+        next_gap = "declare_missing_agent_passports"
+    elif agent_passport_verification_report is None or verification_attempted_count == 0:
+        next_gap = "run_report_only_passport_verification"
+    else:
+        next_gap = "close_agent_verification_gaps"
     return {
         "artifact_kind": KNOWN_AGENT_PASSPORT_INDEX_ARTIFACT_KIND,
         "schema_version": KNOWN_AGENT_PASSPORT_INDEX_SCHEMA_VERSION,
@@ -18518,17 +18876,24 @@ def build_known_agent_passport_index(agent_surface_index: dict[str, Any]) -> dic
         "stable_fields": agent_passport_contract_stable_fields("known_passport_index_contract"),
         "source_artifacts": {
             "agent_surface_index": AGENT_SURFACE_INDEX_RELATIVE_PATH,
+            **(
+                {
+                    "agent_passport_verification_report": (
+                        AGENT_PASSPORT_VERIFICATION_REPORT_RELATIVE_PATH
+                    )
+                }
+                if agent_passport_verification_report is not None
+                else {}
+            ),
         },
         "summary": {
             "agent_count": len(entries),
             "passport_referenced_count": len(named_filters["passport_referenced"]),
             "missing_passport_count": len(named_filters["missing_passport"]),
             "verified_count": len(verification_state.get("V4_signature_verified", [])),
-            "next_gap": (
-                "declare_missing_agent_passports"
-                if named_filters["missing_passport"]
-                else "run_report_only_passport_verification"
-            ),
+            "schema_valid_count": len(verification_state.get("V3_schema_valid", [])),
+            "verification_attempted_count": verification_attempted_count,
+            "next_gap": next_gap,
         },
         "entries": entries,
         "agents": copy.deepcopy(entries),
@@ -18579,6 +18944,7 @@ def build_agent_verification_gap_index(
     source_artifacts = [
         AGENT_SURFACE_INDEX_RELATIVE_PATH,
         KNOWN_AGENT_PASSPORT_INDEX_RELATIVE_PATH,
+        AGENT_PASSPORT_VERIFICATION_REPORT_RELATIVE_PATH,
         SUPERVISOR_EXECUTOR_ADAPTER_INDEX_RELATIVE_PATH,
     ]
     surfaces_by_id = {
@@ -18608,7 +18974,16 @@ def build_agent_verification_gap_index(
                 )
             )
         if passport_ref:
-            if executor_cli_status != "available":
+            verification_result = known.get("verification_result", {})
+            verification_result = (
+                verification_result if isinstance(verification_result, dict) else {}
+            )
+            verification_status = str(verification_result.get("verification_status", "")).strip()
+            if verification_status == "valid":
+                pass
+            elif verification_status == "tool_unavailable" or (
+                not verification_status and executor_cli_status != "available"
+            ):
                 gaps.append(
                     agent_verification_gap_record(
                         surface=surface,
@@ -18616,6 +18991,30 @@ def build_agent_verification_gap_index(
                         reason=(
                             "The 0056 executor adapter index reports Agent Passport CLI "
                             "diagnostics as unavailable, so report-only verification cannot run."
+                        ),
+                        source_artifacts=source_artifacts,
+                    )
+                )
+            elif verification_status == "invalid":
+                gaps.append(
+                    agent_verification_gap_record(
+                        surface=surface,
+                        gap_kind="verification_failed",
+                        reason=(
+                            "Agent Passport CLI report-only verification found an invalid "
+                            "passport document for the declared reference."
+                        ),
+                        source_artifacts=source_artifacts,
+                    )
+                )
+            elif verification_status == "unavailable":
+                gaps.append(
+                    agent_verification_gap_record(
+                        surface=surface,
+                        gap_kind="verification_unavailable",
+                        reason=(
+                            "Agent Passport reference is declared, but no safe repository "
+                            "passport document was available for report-only verification."
                         ),
                         source_artifacts=source_artifacts,
                     )
@@ -18678,6 +19077,9 @@ def build_agent_verification_gap_index(
         "source_artifacts": {
             "agent_surface_index": AGENT_SURFACE_INDEX_RELATIVE_PATH,
             "known_agent_passport_index": KNOWN_AGENT_PASSPORT_INDEX_RELATIVE_PATH,
+            "agent_passport_verification_report": (
+                AGENT_PASSPORT_VERIFICATION_REPORT_RELATIVE_PATH
+            ),
             "supervisor_executor_adapter_index": SUPERVISOR_EXECUTOR_ADAPTER_INDEX_RELATIVE_PATH,
         },
         "summary": {
@@ -18686,6 +19088,9 @@ def build_agent_verification_gap_index(
             "verification_tool_unavailable_count": len(
                 gap_kind.get("verification_tool_unavailable", [])
             ),
+            "verification_failed_count": len(gap_kind.get("verification_failed", [])),
+            "verification_unavailable_count": len(gap_kind.get("verification_unavailable", [])),
+            "verification_not_attempted_count": len(gap_kind.get("verification_not_attempted", [])),
             "runtime_enforcement_unknown_count": len(
                 gap_kind.get("runtime_enforcement_unknown", [])
             ),
@@ -18705,6 +19110,13 @@ def build_agent_passport_derived_surfaces() -> dict[str, Any]:
     supervisor_executor_adapter_index = build_supervisor_executor_adapter_index()
     agent_surface_index = build_agent_surface_index(supervisor_executor_adapter_index)
     known_agent_passport_index = build_known_agent_passport_index(agent_surface_index)
+    agent_passport_verification_report = build_agent_passport_verification_report(
+        known_agent_passport_index
+    )
+    known_agent_passport_index = build_known_agent_passport_index(
+        agent_surface_index,
+        agent_passport_verification_report,
+    )
     agent_verification_gap_index = build_agent_verification_gap_index(
         agent_surface_index,
         known_agent_passport_index,
@@ -18718,6 +19130,7 @@ def build_agent_passport_derived_surfaces() -> dict[str, Any]:
         "supervisor_executor_adapter_index": supervisor_executor_adapter_index,
         "agent_surface_index": agent_surface_index,
         "known_agent_passport_index": known_agent_passport_index,
+        "agent_passport_verification_report": agent_passport_verification_report,
         "agent_verification_gap_index": agent_verification_gap_index,
     }
 
@@ -18733,6 +19146,13 @@ def write_known_agent_passport_index(index: dict[str, Any]) -> Path:
     path = known_agent_passport_index_path()
     with artifact_lock(path):
         atomic_write_json(path, index)
+    return path
+
+
+def write_agent_passport_verification_report(report: dict[str, Any]) -> Path:
+    path = agent_passport_verification_report_path()
+    with artifact_lock(path):
+        atomic_write_json(path, report)
     return path
 
 
@@ -18752,6 +19172,9 @@ def write_agent_passport_derived_surfaces(surfaces: dict[str, Any]) -> dict[str,
         "known_agent_passport_index": write_known_agent_passport_index(
             surfaces["known_agent_passport_index"]
         ),
+        "agent_passport_verification_report": write_agent_passport_verification_report(
+            surfaces["agent_passport_verification_report"]
+        ),
         "agent_verification_gap_index": write_agent_verification_gap_index(
             surfaces["agent_verification_gap_index"]
         ),
@@ -18762,6 +19185,7 @@ def agent_passport_derived_surfaces_report(surfaces: dict[str, Any]) -> dict[str
     written_paths = write_agent_passport_derived_surfaces(surfaces)
     surface_index = surfaces["agent_surface_index"]
     known_index = surfaces["known_agent_passport_index"]
+    verification_report = surfaces["agent_passport_verification_report"]
     gap_index = surfaces["agent_verification_gap_index"]
     return {
         "artifact_kind": "agent_passport_derived_surfaces_build_report",
@@ -18775,6 +19199,9 @@ def agent_passport_derived_surfaces_report(surfaces: dict[str, Any]) -> dict[str
         "summary": {
             "surface_count": surface_index.get("summary", {}).get("surface_count", 0),
             "known_agent_count": known_index.get("summary", {}).get("agent_count", 0),
+            "passport_verification_valid_count": verification_report.get("summary", {}).get(
+                "valid_count", 0
+            ),
             "gap_count": gap_index.get("summary", {}).get("gap_count", 0),
             "agent_passport_cli_status": gap_index.get("summary", {}).get(
                 "agent_passport_cli_status", ""

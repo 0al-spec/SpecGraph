@@ -5,6 +5,7 @@
     "surface_index_artifact": "runs/agent_surface_index.json",
     "known_passport_index_artifact": "runs/known_agent_passport_index.json",
     "verification_gap_index_artifact": "runs/agent_verification_gap_index.json",
+    "verification_report_artifact": "runs/agent_passport_verification_report.json",
     "executor_adapter_index_artifact": "runs/supervisor_executor_adapter_index.json"
   },
   "surface_index_contract": {
@@ -38,6 +39,31 @@
       "viewer_projection"
     ]
   },
+  "verification_report_contract": {
+    "artifact_kind": "agent_passport_verification_report",
+    "schema_version": 1,
+    "stable_fields": [
+      "artifact_kind",
+      "schema_version",
+      "summary",
+      "entries",
+      "viewer_projection"
+    ],
+    "verification_statuses": [
+      "valid",
+      "invalid",
+      "unavailable",
+      "tool_unavailable"
+    ],
+    "named_filters": [
+      "valid",
+      "invalid",
+      "unavailable",
+      "tool_unavailable",
+      "executor_backend",
+      "specspace_consumer"
+    ]
+  },
   "verification_gap_index_contract": {
     "artifact_kind": "agent_verification_gap_index",
     "schema_version": 1,
@@ -52,6 +78,8 @@
       "missing_passport",
       "verification_tool_unavailable",
       "verification_not_attempted",
+      "verification_failed",
+      "verification_unavailable",
       "runtime_enforcement_unknown"
     ],
     "severity_values": [
@@ -62,6 +90,8 @@
     "named_filters": [
       "missing_passport",
       "verification_tool_unavailable",
+      "verification_failed",
+      "verification_unavailable",
       "runtime_enforcement_unknown",
       "executor_backend",
       "specspace_consumer"
@@ -160,6 +190,28 @@
       "0066"
     ]
   },
+  "passport_ref_registry": [
+    {
+      "passport_ref": "agent-passport://specgraph/supervisor/0.1.0",
+      "document_path": "tools/agent_passports/specgraph-supervisor.passport.yaml"
+    },
+    {
+      "passport_ref": "agent-passport://specgraph/supervisor-executor-adapter/0.1.0",
+      "document_path": "tools/agent_passports/specgraph-supervisor-executor-adapter.passport.yaml"
+    },
+    {
+      "passport_ref": "agent-passport://specspace/operator-assistant/0.1.0",
+      "document_path": "tools/agent_passports/specspace-operator-assistant.passport.yaml"
+    },
+    {
+      "passport_ref": "agent-passport://product-workspace/implementation-agent/0.1.0",
+      "document_path": "tools/agent_passports/product-workspace-implementation-agent.passport.yaml"
+    },
+    {
+      "passport_ref": "agent-passport://executors/codex-cli/0.1.0",
+      "document_path": "tools/agent_passports/specgraph-executor-codex-cli.passport.yaml"
+    }
+  ],
   "gap_defaults": {
     "missing_passport": {
       "severity": "high",
@@ -172,6 +224,14 @@
     "verification_not_attempted": {
       "severity": "medium",
       "next_action": "run_report_only_passport_verification"
+    },
+    "verification_failed": {
+      "severity": "medium",
+      "next_action": "repair_agent_passport_document"
+    },
+    "verification_unavailable": {
+      "severity": "medium",
+      "next_action": "provide_agent_passport_document"
     },
     "runtime_enforcement_unknown": {
       "severity": "low",

@@ -1,0 +1,47 @@
+passport:
+  apiVersion: "agent-passport.io/v1alpha1"
+  kind: "AgentPassport"
+  metadata:
+    name: "specgraph-supervisor-executor-adapter"
+    uid: "9d14cd04-8c2f-4828-af30-6e228651aefc"
+    version: "0.1.0"
+    issueDate: "2026-01-01T00:00:00Z"
+    expiryDate: "9999-12-31T23:59:59Z"
+    issuer: "0AL Internal Draft Authority"
+  spec:
+    entity:
+      type: "system-agent"
+      description: "Mediates report-only executor adapter discovery and bounded executor launch contracts."
+      owner: "0AL SpecGraph"
+      contact: "https://github.com/0al-spec/SpecGraph"
+    capabilities:
+      - name: "inspect_executor_adapters"
+        description: "Inspects executor adapter availability and capability diagnostics without launching canonical work."
+        signature:
+          parameters: []
+          returns:
+            type: "object"
+            description: "Executor adapter index and capability gaps."
+        accessControl:
+          - "specgraph-supervisor"
+    resources:
+      cpu: "500m"
+      memory: "512Mi"
+      fileSystemAccess:
+        - path: "/workspace/specgraph"
+          permissions:
+            - "read"
+    securityPolicies:
+      capabilities: []
+      networkRestrictions:
+        denyList:
+          - "0.0.0.0/0"
+      executionEnvironment:
+        isolated: true
+        privileged: false
+  signature:
+    algorithm: "EdDSA"
+    value: "ZHJhZnQtc2lnbmF0dXJl"
+    publicKeyRef: "did:example:0al:specgraph-executor-adapter:key1"
+    signedBy: "0ALInternalDraftSigner"
+
