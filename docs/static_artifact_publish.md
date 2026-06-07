@@ -74,9 +74,12 @@ The order matters and is intentionally two-pass:
    surfaces used by the implementation delta.
 2. `make implementation-delta` and `make implementation-work` build the publish
    implementation surface from those prerequisites.
-3. The final `make viewer-surfaces` rebuilds `graph_backlog_projection.json` and
-   `graph_next_moves.json` from the same `implementation_work_index.json` that
-   is copied into the bundle.
+3. `make executor-adapters`, `make agent-passports`, and
+   `make agent-runtime-evidence` build the Agent Passport producer artifacts
+   consumed by SpecSpace.
+4. The final `make viewer-surfaces` rebuilds `graph_backlog_projection.json`,
+   `graph_next_moves.json`, and external handoff packets from the same
+   implementation and agent/runtime artifacts that are copied into the bundle.
 
 ## Safety Gate
 
@@ -91,6 +94,14 @@ The bundle builder fails before upload when it finds:
   - `runs/graph_next_moves.json`
   - `runs/implementation_work_index.json`
   - `runs/spec_activity_feed.json`
+- missing Agent Passport producer surfaces required by SpecSpace:
+  - `runs/supervisor_executor_adapter_index.json`
+  - `runs/agent_surface_index.json`
+  - `runs/known_agent_passport_index.json`
+  - `runs/agent_passport_verification_report.json`
+  - `runs/agent_verification_gap_index.json`
+  - `runs/agent_runtime_enforcement_evidence_index.json`
+  - `runs/agent_runtime_enforcement_evidence/supervisor-executor-adapter-smoke.json`
 
 Junk files such as `.DS_Store` and `.gitkeep` are not published.
 

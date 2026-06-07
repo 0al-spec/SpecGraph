@@ -47,8 +47,18 @@ def make_repo(root: Path) -> Path:
         "graph_next_moves.json",
         "implementation_work_index.json",
         "spec_activity_feed.json",
+        "supervisor_executor_adapter_index.json",
+        "agent_surface_index.json",
+        "known_agent_passport_index.json",
+        "agent_passport_verification_report.json",
+        "agent_verification_gap_index.json",
+        "agent_runtime_enforcement_evidence_index.json",
     ):
         write_json(runs_dir / name, {"artifact_kind": name.removesuffix(".json")})
+    write_json(
+        runs_dir / "agent_runtime_enforcement_evidence" / "supervisor-executor-adapter-smoke.json",
+        {"artifact_kind": "agent_runtime_enforcement_evidence"},
+    )
     return root
 
 
@@ -84,6 +94,13 @@ def test_build_public_bundle_copies_specs_and_runs_with_manifest(
     assert manifest["artifact_kind"] == "specgraph_static_artifact_manifest"
     assert manifest["published_roots"] == ["specs", "runs"]
     assert manifest["required_surfaces"]["implementation_work_index.json"] is True
+    assert manifest["required_surfaces"]["agent_runtime_enforcement_evidence_index.json"] is True
+    assert (
+        manifest["required_surfaces"][
+            "agent_runtime_enforcement_evidence/supervisor-executor-adapter-smoke.json"
+        ]
+        is True
+    )
     assert any(
         file_info["path"] == "runs/implementation_work_index.json"
         for file_info in manifest["files"]
@@ -204,7 +221,24 @@ def test_build_public_bundle_requires_implementation_work_surface(
         )
 
 
-def test_refresh_publish_surfaces_builds_viewer_and_implementation_work(
+def test_build_public_bundle_requires_agent_runtime_surface(
+    tmp_path: Path,
+    bundle_module: object,
+) -> None:
+    repo = make_repo(tmp_path / "repo")
+    (repo / "runs" / "agent_runtime_enforcement_evidence_index.json").unlink()
+
+    with pytest.raises(
+        bundle_module.PublishBundleError,
+        match="agent_runtime_enforcement_evidence_index",
+    ):
+        bundle_module.build_public_bundle(
+            repo_root=repo,
+            output_dir=repo / "dist" / "specgraph-public",
+        )
+
+
+def test_refresh_publish_surfaces_builds_viewer_implementation_and_agent_surfaces(
     tmp_path: Path,
     bundle_module: object,
     monkeypatch: pytest.MonkeyPatch,
@@ -223,6 +257,9 @@ def test_refresh_publish_surfaces_builds_viewer_and_implementation_work(
         "viewer-surfaces",
         "implementation-delta",
         "implementation-work",
+        "executor-adapters",
+        "agent-passports",
+        "agent-runtime-evidence",
         "viewer-surfaces",
     ]
 

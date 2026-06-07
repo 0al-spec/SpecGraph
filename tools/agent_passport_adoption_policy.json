@@ -260,16 +260,18 @@
         "0056",
         "0059",
         "0076",
-        "0077"
+        "0077",
+        "0080"
       ],
       "required_checks": [
         "agent_surface_present",
         "agent_passport_ref_declared",
         "executor_adapter_index_present",
         "evidence_ref_safe",
-        "no_observed_enforcement_claim"
+        "no_observed_enforcement_claim",
+        "executor_adapter_invocation_boundary"
       ],
-      "notes": "Report-only smoke evidence for the supervisor executor adapter gateway. It proves the derived adapter/passport surfaces are internally consistent and safe to reference; it does not prove sandbox or runtime policy enforcement."
+      "notes": "Report-only smoke evidence for the supervisor executor adapter gateway. It proves the derived adapter/passport surfaces are internally consistent, safe to reference, and constrained to declarative CLI executable lookup without shell command persistence; it does not prove sandbox or runtime policy enforcement."
     }
   ],
   "runtime_enforcement_states": [

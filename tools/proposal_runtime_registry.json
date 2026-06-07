@@ -3828,5 +3828,83 @@
         "pattern": "runs/agent_runtime_enforcement_evidence_index.json"
       }
     ]
+  },
+  {
+    "proposal_id": "0080",
+    "posture": "bounded_runtime_followup",
+    "runtime_surfaces": [
+      "docs/proposals/0080_supervisor_executor_adapter_enforcement_smoke.md",
+      "docs/archive/proposal_sources/0080_supervisor_executor_adapter_enforcement_smoke.md",
+      "tools/agent_passport_adoption_policy.json",
+      "tools/build_static_artifact_bundle.py",
+      "tools/supervisor.py",
+      "tests/test_supervisor.py",
+      "tests/test_static_artifact_bundle.py",
+      "tools/README.md",
+      "docs/static_artifact_publish.md",
+      "Sources/SpecGraph/Documentation.docc/ArtifactPublishing.md"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/agent_passport_adoption_policy.json",
+        "pattern": "executor_adapter_invocation_boundary"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def supervisor_executor_adapter_invocation_boundary_check("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "executor_adapter_invocation_boundary"
+      },
+      {
+        "path": "tools/build_static_artifact_bundle.py",
+        "pattern": "\"agent_runtime_enforcement_evidence_index.json\""
+      },
+      {
+        "path": "tools/build_static_artifact_bundle.py",
+        "pattern": "run_make_target(repo_root, \"agent-runtime-evidence\")"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_supervisor_executor_adapter_invocation_boundary_rejects_shell_policy("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_supervisor_executor_adapter_invocation_boundary_rejects_persisted_paths("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "executor_adapter_invocation_boundary"
+      },
+      {
+        "path": "tests/test_static_artifact_bundle.py",
+        "pattern": "def test_build_public_bundle_requires_agent_runtime_surface("
+      },
+      {
+        "path": "tests/test_static_artifact_bundle.py",
+        "pattern": "\"agent-runtime-evidence\""
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0080_supervisor_executor_adapter_enforcement_smoke.md",
+        "pattern": "make agent-runtime-evidence"
+      },
+      {
+        "path": "docs/proposals/0080_supervisor_executor_adapter_enforcement_smoke.md",
+        "pattern": "make publish-bundle"
+      },
+      {
+        "path": "docs/static_artifact_publish.md",
+        "pattern": "missing Agent Passport producer surfaces required by SpecSpace"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "supervisor executor adapter invocation-boundary smoke"
+      }
+    ]
   }
 ]

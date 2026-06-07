@@ -121,7 +121,8 @@ Supervisor modes:
 - `--build-agent-runtime-enforcement-evidence`: build report-only Agent
   Passport runtime enforcement evidence artifacts and
   `runs/agent_runtime_enforcement_evidence_index.json` for current
-  runtime-smoke declarations. This records safe evidence refs for review without
+  runtime-smoke declarations. This records safe evidence refs and the
+  supervisor executor adapter invocation-boundary smoke for review without
   claiming observed runtime enforcement.
 - `--build-specpm-export-preview`: build `runs/specpm_export_preview.json`
   from the tracked `SpecPM` consumer contract and
@@ -443,8 +444,9 @@ Key derived artifacts:
   filters without claiming observed enforcement
 - `runs/agent_runtime_enforcement_evidence/*.json`: curated report-only runtime
   evidence detail artifacts. The initial supervisor executor adapter smoke
-  proves derived adapter/passport surfaces are internally consistent and safe to
-  reference; it does not prove sandbox or runtime policy enforcement.
+  proves derived adapter/passport surfaces are internally consistent, safe to
+  reference, and constrained to declarative CLI executable lookup without shell
+  command persistence; it does not prove sandbox or runtime policy enforcement.
 - `runs/specpm_export_preview.json`: reviewable `SpecPM` package preview
   artifact, including manifest preview, boundary-source preview, export
   status, and next-gap backlog for future full package emission
@@ -623,7 +625,8 @@ Key derived artifacts:
   indexes consumed by SpecSpace-oriented handoff planning, including the Agent
   Passport posture consumer contract for SpecSpace UI surfaces, a report-only
   runtime enforcement evidence contract, the runtime enforcement evidence index
-  consumer contract, and runtime-smoke declarations
+  consumer contract, and runtime-smoke declarations including the supervisor
+  executor adapter invocation-boundary check
 - `tools/agent_passports/*.passport.yaml`: repository-local draft Agent
   Passport documents used by `make agent-passports` for report-only CLI
   validation; these are schema/content validation fixtures, not trusted signed

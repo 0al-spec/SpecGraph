@@ -19450,6 +19450,155 @@ def agent_runtime_enforcement_evidence_status(checks: list[dict[str, Any]]) -> s
     return "failed"
 
 
+def supervisor_executor_adapter_invocation_boundary_check(
+    supervisor_executor_adapter_index: dict[str, Any],
+) -> dict[str, Any]:
+    def executable_names(raw_backend: dict[str, Any]) -> list[str]:
+        raw_names = raw_backend.get("executable_names", [])
+        if not isinstance(raw_names, list):
+            return []
+        return [str(name).strip() for name in raw_names if str(name).strip()]
+
+    def path_like_value(value: object) -> bool:
+        if value is None:
+            return False
+        candidate = str(value).strip()
+        if not candidate:
+            return False
+        if candidate.lower().startswith("file:"):
+            return True
+        if candidate == "~" or candidate.startswith(("~/", "~\\")):
+            return True
+        if re.match(r"^[A-Za-z]:[\\/]", candidate):
+            return True
+        return Path(candidate).is_absolute()
+
+    policy_backends = [
+        backend
+        for backend in SUPERVISOR_EXECUTOR_ADAPTER_POLICY.get("backend_registry", [])
+        if isinstance(backend, dict)
+    ]
+    index_entries = [
+        entry
+        for entry in supervisor_executor_adapter_index.get("entries", [])
+        if isinstance(entry, dict)
+    ]
+    forbidden_policy_fields = {
+        "command",
+        "command_line",
+        "command_template",
+        "shell",
+        "shell_command",
+    }
+    policy_forbidden_hits = sorted(
+        {
+            field
+            for backend in policy_backends
+            for field in forbidden_policy_fields
+            if field in backend
+        }
+    )
+    index_forbidden_hits = sorted(
+        {field for entry in index_entries for field in forbidden_policy_fields if field in entry}
+    )
+    cli_backends = [
+        backend
+        for backend in policy_backends
+        if str(backend.get("command_surface", "")).strip() == "cli" and executable_names(backend)
+    ]
+    policy_backend_ids = {
+        str(backend.get("backend_id", "")).strip()
+        for backend in policy_backends
+        if str(backend.get("backend_id", "")).strip()
+    }
+    index_backend_ids = {
+        str(entry.get("backend_id", "")).strip()
+        for entry in index_entries
+        if str(entry.get("backend_id", "")).strip()
+    }
+    missing_index_backend_ids = sorted(policy_backend_ids - index_backend_ids)
+    malformed_availability_entries = []
+    persisted_paths = [
+        str(entry.get("backend_id", "")).strip()
+        for entry in index_entries
+        if isinstance(entry.get("executable_availability"), dict)
+        and bool(entry.get("executable_availability", {}).get("path_persisted", False))
+    ]
+    persisted_path_fields = []
+    path_field_names = {
+        "absolute_path",
+        "command_path",
+        "executable_path",
+        "path",
+        "resolved_path",
+    }
+    for entry in index_entries:
+        backend_id = str(entry.get("backend_id", "")).strip()
+        availability = entry.get("executable_availability")
+        if not isinstance(availability, dict):
+            malformed_availability_entries.append(backend_id or "<missing backend_id>")
+            continue
+        for field, value in availability.items():
+            field_text = str(field)
+            if (field_text in path_field_names and str(value).strip()) or path_like_value(value):
+                persisted_path_fields.append(f"{backend_id or '<missing backend_id>'}.{field_text}")
+    passed = (
+        bool(policy_backends)
+        and len(cli_backends) == len(policy_backends)
+        and bool(index_entries)
+        and not missing_index_backend_ids
+        and not malformed_availability_entries
+        and not policy_forbidden_hits
+        and not index_forbidden_hits
+        and not persisted_paths
+        and not persisted_path_fields
+    )
+    if passed:
+        message = (
+            "Supervisor executor adapter policy uses declarative CLI executable lookup, and "
+            "the generated adapter index does not persist executable paths or command lines."
+        )
+    else:
+        details = []
+        if not policy_backends:
+            details.append("backend_registry is empty")
+        if len(cli_backends) != len(policy_backends):
+            details.append("one or more backends lack CLI executable lookup metadata")
+        if not index_entries:
+            details.append("executor adapter index has no entries")
+        if missing_index_backend_ids:
+            details.append(
+                "executor adapter index is missing policy backends: "
+                + ", ".join(missing_index_backend_ids)
+            )
+        if malformed_availability_entries:
+            details.append(
+                "index has malformed executable availability for: "
+                + ", ".join(malformed_availability_entries)
+            )
+        if policy_forbidden_hits:
+            details.append(
+                "policy declares forbidden shell/command fields: "
+                + ", ".join(policy_forbidden_hits)
+            )
+        if index_forbidden_hits:
+            details.append(
+                "index persists forbidden shell/command fields: " + ", ".join(index_forbidden_hits)
+            )
+        if persisted_paths:
+            details.append("index persists executable paths for: " + ", ".join(persisted_paths))
+        if persisted_path_fields:
+            details.append(
+                "index persists executable path fields: " + ", ".join(persisted_path_fields)
+            )
+        message = "Supervisor executor adapter invocation boundary failed: " + "; ".join(details)
+    return agent_runtime_enforcement_evidence_check(
+        check_id="executor_adapter_invocation_boundary",
+        status="passed" if passed else "failed",
+        message=message,
+    )
+
+
 def build_agent_runtime_enforcement_evidence_record(
     *,
     smoke: dict[str, Any],
@@ -19528,6 +19677,7 @@ def build_agent_runtime_enforcement_evidence_record(
                 else "Smoke evidence must not be used to claim observed runtime enforcement."
             ),
         ),
+        supervisor_executor_adapter_invocation_boundary_check(supervisor_executor_adapter_index),
     ]
     required_check_ids = [
         str(check_id).strip()

@@ -1025,5 +1025,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0080",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0080_supervisor_executor_adapter_enforcement_smoke.md"
+    ],
+    "motivating_concern": "SpecGraph emits report-only runtime evidence for the supervisor executor adapter, but the smoke does not yet verify a concrete executable invocation boundary",
+    "normalized_title": "Supervisor Executor Adapter Enforcement Smoke",
+    "bounded_scope": "Add one report-only invocation-boundary smoke check for specgraph.supervisor.executor_adapter, proving declarative CLI executable lookup and no persisted shell command or executable path data, without implementing sandboxing, launching agents, mutating SpecSpace, changing Platform deploy, or claiming observed runtime enforcement.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]
