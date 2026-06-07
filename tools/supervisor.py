@@ -18364,6 +18364,29 @@ def safe_runtime_enforcement_evidence_ref(raw_ref: object) -> str:
     return safe_repo_relative_path(candidate)
 
 
+def safe_agent_runtime_enforcement_evidence_artifact_path(raw_ref: object) -> str:
+    if raw_ref is None:
+        return ""
+    candidate = str(raw_ref).strip()
+    if not candidate:
+        return ""
+    if candidate.lower().startswith("file:") or "://" in candidate:
+        return ""
+    if "\\" in candidate:
+        return ""
+    if re.match(r"^[A-Za-z]:[\\/]", candidate):
+        return ""
+    if candidate == "~" or candidate.startswith(("~/", "~\\")):
+        return ""
+    evidence_ref = safe_repo_relative_path(candidate)
+    if not evidence_ref:
+        return ""
+    evidence_dir = AGENT_RUNTIME_ENFORCEMENT_EVIDENCE_DIR.as_posix().rstrip("/")
+    if evidence_ref == evidence_dir or not evidence_ref.startswith(f"{evidence_dir}/"):
+        return ""
+    return evidence_ref
+
+
 def agent_passport_surface_from_policy(raw_surface: dict[str, Any]) -> dict[str, Any]:
     passport_ref = str(raw_surface.get("passport_ref", "")).strip()
     verification_state = str(raw_surface.get("verification_state", "")).strip()
@@ -19416,10 +19439,14 @@ def agent_runtime_enforcement_evidence_check(
 
 def agent_runtime_enforcement_evidence_status(checks: list[dict[str, Any]]) -> str:
     statuses = {str(check.get("status", "")).strip() for check in checks}
-    if statuses == {"passed"}:
-        return "passed"
+    if not statuses:
+        return "missing"
+    if "failed" in statuses:
+        return "failed"
     if "missing" in statuses:
         return "missing"
+    if statuses == {"passed"}:
+        return "passed"
     return "failed"
 
 
@@ -19433,7 +19460,7 @@ def build_agent_runtime_enforcement_evidence_record(
     evidence_id = str(smoke.get("evidence_id", "")).strip()
     agent_surface = str(smoke.get("agent_surface", "")).strip()
     evidence_kind = str(smoke.get("evidence_kind", "")).strip()
-    evidence_ref = safe_runtime_enforcement_evidence_ref(smoke.get("artifact_path"))
+    evidence_ref = safe_agent_runtime_enforcement_evidence_artifact_path(smoke.get("artifact_path"))
     surfaces_by_id = {
         str(surface.get("surface_id", "")).strip(): surface
         for surface in agent_surface_index.get("surfaces", [])
@@ -19502,6 +19529,39 @@ def build_agent_runtime_enforcement_evidence_record(
             ),
         ),
     ]
+    required_check_ids = [
+        str(check_id).strip()
+        for check_id in smoke.get("required_checks", [])
+        if str(check_id).strip()
+    ]
+    checks_by_id = {str(check.get("check_id", "")).strip(): check for check in checks}
+    missing_required_checks = [
+        check_id for check_id in required_check_ids if check_id not in checks_by_id
+    ]
+    nonpassing_required_checks = [
+        check_id
+        for check_id in required_check_ids
+        if str(checks_by_id.get(check_id, {}).get("status", "")).strip() != "passed"
+    ]
+    checks.append(
+        agent_runtime_enforcement_evidence_check(
+            check_id="policy_required_checks_satisfied",
+            status=(
+                "passed"
+                if not missing_required_checks and not nonpassing_required_checks
+                else "failed"
+            ),
+            message=(
+                "All policy-declared runtime evidence smoke checks are present and passing."
+                if not missing_required_checks and not nonpassing_required_checks
+                else (
+                    "Policy-declared runtime evidence smoke checks are missing or non-passing: "
+                    + ", ".join(sorted(set(missing_required_checks + nonpassing_required_checks)))
+                    + "."
+                )
+            ),
+        )
+    )
     status = agent_runtime_enforcement_evidence_status(checks)
     return {
         "artifact_kind": agent_runtime_enforcement_evidence_contract().get(
@@ -19655,7 +19715,9 @@ def build_agent_runtime_enforcement_evidence_index(
 def write_agent_runtime_enforcement_evidence_index(index: dict[str, Any]) -> dict[str, Path]:
     written: dict[str, Path] = {}
     for record in index.pop("_records", []):
-        evidence_ref = safe_runtime_enforcement_evidence_ref(record.get("safe_evidence_ref"))
+        evidence_ref = safe_agent_runtime_enforcement_evidence_artifact_path(
+            record.get("safe_evidence_ref")
+        )
         if not evidence_ref:
             continue
         path = ROOT / evidence_ref

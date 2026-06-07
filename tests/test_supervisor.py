@@ -27317,11 +27317,99 @@ def test_build_agent_runtime_enforcement_evidence_index_blocks_missing_producer(
     index = supervisor_module.build_agent_runtime_enforcement_evidence_index(surfaces)
 
     assert index["summary"]["passed_count"] == 0
-    assert index["summary"]["missing_count"] == 1
+    assert index["summary"]["failed_count"] == 1
     assert index["summary"]["next_gap"] == "repair_runtime_enforcement_evidence"
     record = index["_records"][0]
     checks = {check["check_id"]: check["status"] for check in record["evidence"]["checks"]}
     assert checks["executor_adapter_index_present"] == "missing"
+    assert checks["policy_required_checks_satisfied"] == "failed"
+
+
+def test_agent_runtime_enforcement_evidence_status_prioritizes_failed(
+    supervisor_module: object,
+) -> None:
+    status = supervisor_module.agent_runtime_enforcement_evidence_status(
+        [
+            {"check_id": "missing_check", "status": "missing"},
+            {"check_id": "failed_check", "status": "failed"},
+        ]
+    )
+
+    assert status == "failed"
+
+
+@pytest.mark.parametrize(
+    ("raw_ref", "expected"),
+    [
+        (
+            "runs/agent_runtime_enforcement_evidence/smoke.json",
+            "runs/agent_runtime_enforcement_evidence/smoke.json",
+        ),
+        ("https://example.test/evidence.json", ""),
+        ("file:///Users/example/evidence.json", ""),
+        ("runs/other/smoke.json", ""),
+        ("runs/agent_runtime_enforcement_evidence", ""),
+        ("runs/agent_runtime_enforcement_evidence/../smoke.json", ""),
+        ("C:/Users/example/evidence.json", ""),
+        ("~/evidence.json", ""),
+    ],
+)
+def test_safe_agent_runtime_enforcement_evidence_artifact_path_stays_under_evidence_dir(
+    supervisor_module: object,
+    raw_ref: object,
+    expected: str,
+) -> None:
+    assert (
+        supervisor_module.safe_agent_runtime_enforcement_evidence_artifact_path(raw_ref) == expected
+    )
+
+
+def test_build_agent_runtime_enforcement_evidence_rejects_unsafe_artifact_paths(
+    supervisor_module: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    smokes = supervisor_module.agent_runtime_enforcement_evidence_smokes()
+    smoke = copy.deepcopy(smokes[0])
+    smoke["artifact_path"] = "https://example.test/evidence.json"
+    monkeypatch.setattr(
+        supervisor_module,
+        "agent_runtime_enforcement_evidence_smokes",
+        lambda: [copy.deepcopy(smoke)],
+    )
+
+    index = supervisor_module.build_agent_runtime_enforcement_evidence_index(
+        agent_runtime_evidence_test_surfaces(supervisor_module)
+    )
+
+    record = index["_records"][0]
+    checks = {check["check_id"]: check["status"] for check in record["evidence"]["checks"]}
+    assert record["safe_evidence_ref"] == ""
+    assert record["status"] == "failed"
+    assert checks["evidence_ref_safe"] == "missing"
+    assert checks["policy_required_checks_satisfied"] == "failed"
+
+
+def test_build_agent_runtime_enforcement_evidence_enforces_policy_required_checks(
+    supervisor_module: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    smokes = supervisor_module.agent_runtime_enforcement_evidence_smokes()
+    smoke = copy.deepcopy(smokes[0])
+    smoke["required_checks"] = [*smoke["required_checks"], "future_policy_required_check"]
+    monkeypatch.setattr(
+        supervisor_module,
+        "agent_runtime_enforcement_evidence_smokes",
+        lambda: [copy.deepcopy(smoke)],
+    )
+
+    index = supervisor_module.build_agent_runtime_enforcement_evidence_index(
+        agent_runtime_evidence_test_surfaces(supervisor_module)
+    )
+
+    record = index["_records"][0]
+    checks = {check["check_id"]: check["status"] for check in record["evidence"]["checks"]}
+    assert record["status"] == "failed"
+    assert checks["policy_required_checks_satisfied"] == "failed"
 
 
 def test_main_builds_agent_runtime_enforcement_evidence_artifacts(
