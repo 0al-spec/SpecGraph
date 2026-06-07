@@ -27356,6 +27356,58 @@ def test_agent_passport_surface_from_policy_treats_null_runtime_enforcement_as_u
     assert surface["runtime_enforcement_state"] != "None"
 
 
+@pytest.mark.parametrize(
+    ("raw_ref", "expected"),
+    [
+        (None, ""),
+        ("", ""),
+        (
+            "runs/agent_runtime_enforcement_evidence/smoke.json",
+            "runs/agent_runtime_enforcement_evidence/smoke.json",
+        ),
+        ("https://example.test/evidence.json", "https://example.test/evidence.json"),
+        ("http://example.test/evidence.json", "http://example.test/evidence.json"),
+        ("file:///Users/example/evidence.json", ""),
+        ("C:/Users/example/evidence.json", ""),
+        ("C:\\Users\\example\\evidence.json", ""),
+        ("~/evidence.json", ""),
+        ("../runs/evidence.json", ""),
+    ],
+)
+def test_safe_runtime_enforcement_evidence_ref_rejects_machine_local_paths(
+    supervisor_module: object,
+    raw_ref: object,
+    expected: str,
+) -> None:
+    assert supervisor_module.safe_runtime_enforcement_evidence_ref(raw_ref) == expected
+
+
+def test_agent_passport_surface_from_policy_sanitizes_runtime_evidence_refs(
+    supervisor_module: object,
+) -> None:
+    null_surface = supervisor_module.agent_passport_surface_from_policy(
+        {
+            "surface_id": "specgraph.null_evidence_ref",
+            "title": "Null Evidence Ref",
+            "surface_type": "graph_runtime",
+            "runtime_enforcement_state": "observed",
+            "runtime_enforcement_evidence_ref": None,
+        }
+    )
+    local_surface = supervisor_module.agent_passport_surface_from_policy(
+        {
+            "surface_id": "specgraph.local_evidence_ref",
+            "title": "Local Evidence Ref",
+            "surface_type": "graph_runtime",
+            "runtime_enforcement_state": "observed",
+            "runtime_enforcement_evidence_ref": "file:///Users/example/evidence.json",
+        }
+    )
+
+    assert null_surface["runtime_enforcement_evidence_ref"] == ""
+    assert local_surface["runtime_enforcement_evidence_ref"] == ""
+
+
 def test_build_agent_passport_verification_report_marks_valid_passports(
     supervisor_module: object,
     repo_fixture: Path,

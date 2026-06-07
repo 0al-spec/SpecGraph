@@ -18302,12 +18302,22 @@ def agent_passport_contract_stable_fields(contract_name: str) -> list[str]:
     ]
 
 
-def safe_runtime_enforcement_evidence_ref(raw_ref: str) -> str:
+def safe_runtime_enforcement_evidence_ref(raw_ref: object) -> str:
+    if raw_ref is None:
+        return ""
     candidate = str(raw_ref).strip()
     if not candidate:
         return ""
     if candidate.startswith(("https://", "http://")):
         return candidate
+    if candidate.lower().startswith("file:") or "://" in candidate:
+        return ""
+    if "\\" in candidate:
+        return ""
+    if re.match(r"^[A-Za-z]:[\\/]", candidate):
+        return ""
+    if candidate == "~" or candidate.startswith(("~/", "~\\")):
+        return ""
     return safe_repo_relative_path(candidate)
 
 
@@ -18321,7 +18331,7 @@ def agent_passport_surface_from_policy(raw_surface: dict[str, Any]) -> dict[str,
         str(raw_runtime_enforcement_state).strip() if raw_runtime_enforcement_state else "unknown"
     )
     runtime_enforcement_evidence_ref = safe_runtime_enforcement_evidence_ref(
-        str(raw_surface.get("runtime_enforcement_evidence_ref", ""))
+        raw_surface.get("runtime_enforcement_evidence_ref")
     )
     return {
         "surface_id": str(raw_surface.get("surface_id", "")).strip(),
