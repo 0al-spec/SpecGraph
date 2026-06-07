@@ -34,6 +34,9 @@ without claiming full sandbox or runtime policy enforcement.
   paths or command lines.
 - Keep the result in the existing
   `runs/agent_runtime_enforcement_evidence_index.json` and detail artifact.
+- Keep the generated executor/passport/runtime evidence artifacts in the static
+  publish bundle so HTTP consumers such as SpecSpace do not see stale
+  `missing` agent surfaces after a green publish workflow.
 - Preserve report-only semantics and keep generated JSON free of local paths,
   raw supervisor logs, raw prompts, raw passport material, and secrets.
 
@@ -85,6 +88,12 @@ The generated detail artifact now includes the invocation-boundary check in
 slice because it already consumes evidence rows and statuses from the stable
 runtime evidence index.
 
+`make publish-bundle` refreshes the executor adapter, Agent Passport, and
+runtime evidence surfaces before its final viewer-surface rebuild. The static
+bundle safety gate treats those agent/runtime artifacts as required surfaces,
+so a green publish workflow cannot upload a bundle that omits the producer
+artifacts required by the SpecSpace Agent surfaces panel.
+
 ## Acceptance
 
 This slice is complete when:
@@ -94,6 +103,9 @@ This slice is complete when:
 - focused tests prove shell command/template policy fields fail the evidence;
 - focused tests prove persisted executable paths fail the evidence;
 - `make agent-runtime-evidence` succeeds and reports one passing evidence entry;
+- `make publish-bundle` includes the executor adapter, Agent Passport, runtime
+  evidence index, and runtime evidence detail artifacts in
+  `artifact_manifest.json`;
 - proposal gates and the full Python suite pass;
 - generated artifacts contain no machine-local paths, raw logs, prompts,
   secrets, or raw passport material.

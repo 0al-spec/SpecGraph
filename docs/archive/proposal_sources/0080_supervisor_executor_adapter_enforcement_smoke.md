@@ -15,6 +15,9 @@ minimal executable-boundary smoke for `specgraph.supervisor.executor_adapter`.
   or command lines.
 - Keep the evidence report-only and continue publishing it through the existing
   `agent_runtime_enforcement_evidence_index` surface.
+- Ensure the static artifact publish bundle refreshes and requires the
+  executor/passport/runtime evidence producer artifacts so HTTP consumers can
+  see the evidence after deployment.
 
 ## Out of Scope
 
@@ -31,5 +34,6 @@ minimal executable-boundary smoke for `specgraph.supervisor.executor_adapter`.
 
 The slice is valid if focused tests prove the new invocation-boundary check
 passes for the current declarative executor adapter policy, fails when shell
-command fields are introduced, fails when executable paths are persisted, and
-the usual proposal gates plus full tests pass.
+command fields are introduced, fails when executable paths are persisted,
+`make publish-bundle` includes the generated agent/runtime evidence artifacts,
+and the usual proposal gates plus full tests pass.

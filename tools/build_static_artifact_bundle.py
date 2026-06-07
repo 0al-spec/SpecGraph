@@ -20,6 +20,13 @@ REQUIRED_RUN_SURFACES = (
     "graph_next_moves.json",
     "implementation_work_index.json",
     "spec_activity_feed.json",
+    "supervisor_executor_adapter_index.json",
+    "agent_surface_index.json",
+    "known_agent_passport_index.json",
+    "agent_passport_verification_report.json",
+    "agent_verification_gap_index.json",
+    "agent_runtime_enforcement_evidence_index.json",
+    "agent_runtime_enforcement_evidence/supervisor-executor-adapter-smoke.json",
 )
 JUNK_FILENAMES = {".DS_Store", ".gitkeep"}
 JUNK_DIRNAMES = {"__pycache__", ".pytest_cache", ".ruff_cache"}
@@ -220,6 +227,9 @@ def refresh_publish_surfaces(repo_root: Path) -> None:
     run_make_target(repo_root, "viewer-surfaces")
     run_make_target(repo_root, "implementation-delta")
     run_make_target(repo_root, "implementation-work")
+    run_make_target(repo_root, "executor-adapters")
+    run_make_target(repo_root, "agent-passports")
+    run_make_target(repo_root, "agent-runtime-evidence")
     run_make_target(repo_root, "viewer-surfaces")
 
 
