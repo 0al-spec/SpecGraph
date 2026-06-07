@@ -11111,6 +11111,8 @@ def test_build_external_consumer_handoff_packets_emits_ready_specspace_contract(
         "link implementation evidence back to the handoff id",
     ]
     assert ready["privacy_boundary"]["machine_local_paths_forbidden"] is True
+    assert ready["privacy_boundary"]["raw_validator_logs_forbidden"] is True
+    assert ready["privacy_boundary"]["raw_passport_material_forbidden"] is True
     assert ready["target_consumer"]["local_checkout_hint"] == ""
     assert ready["transition_packet_validation"]["ok"] is True
     assert report["viewer_projection"]["named_filters"]["specspace_consumer"] == ["specspace"]
@@ -11461,6 +11463,8 @@ def test_build_external_consumer_evidence_index_accepts_specspace_evidence(
                     "paths": [
                         "runs/supervisor_executor_adapter_index.json",
                         "runs/agent_surface_index.json",
+                        "runs/known_agent_passport_index.json",
+                        "runs/agent_passport_verification_report.json",
                         "runs/agent_verification_gap_index.json",
                     ]
                 },
@@ -11494,6 +11498,11 @@ def test_build_external_consumer_evidence_index_accepts_specspace_evidence(
                     "runs/agent_surface_index.json",
                     "runs/agent_verification_gap_index.json",
                 ],
+                "accepted_contract_artifacts": [
+                    "runs/supervisor_executor_adapter_index.json",
+                    "runs/agent_surface_index.json",
+                    "runs/agent_verification_gap_index.json",
+                ],
                 "evidence": [
                     {"kind": "pull_request", "ref": "0al-spec/SpecSpace#225"},
                     {"kind": "test", "ref": "SpecSpace CI", "status": "success"},
@@ -11513,6 +11522,16 @@ def test_build_external_consumer_evidence_index_accepts_specspace_evidence(
     assert entry["acceptance_status"] == "accepted"
     assert entry["next_gap"] == "none"
     assert entry["handoff_reference"]["source_proposal_ids"] == ["0056", "0059"]
+    assert entry["accepted_contract_artifacts"] == [
+        "runs/supervisor_executor_adapter_index.json",
+        "runs/agent_surface_index.json",
+        "runs/agent_verification_gap_index.json",
+    ]
+    assert entry["contract_evaluation"]["accepted_contract_artifacts"] == [
+        "runs/supervisor_executor_adapter_index.json",
+        "runs/agent_surface_index.json",
+        "runs/agent_verification_gap_index.json",
+    ]
     assert entry["contract_evaluation"]["diagnostics"] == []
     assert index["viewer_projection"]["named_filters"]["accepted"] == [
         "specspace-agent-surface-visibility-20260606"
