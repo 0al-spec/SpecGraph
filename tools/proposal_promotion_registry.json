@@ -960,5 +960,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0075",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0075_agent_passport_enforcement_next_gap_consistency.md"
+    ],
+    "motivating_concern": "Agent Passport report-only verification and runtime posture classification are complete, but derived Agent Passport indexes can emit inconsistent next-gap guidance after the full build",
+    "normalized_title": "Agent Passport Enforcement Next-Gap Consistency",
+    "bounded_scope": "Align Agent Passport derived next-gap summaries across surface, known-passport, and verification-gap indexes after report-only verification, without implementing runtime enforcement, changing Agent Passport documents, mutating SpecSpace, changing Platform deploy, or claiming observed enforcement.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]
