@@ -3726,5 +3726,57 @@
         "pattern": "report-only Agent Passport runtime enforcement evidence registry"
       }
     ]
+  },
+  {
+    "proposal_id": "0078",
+    "posture": "bounded_runtime_followup",
+    "runtime_surfaces": [
+      "docs/proposals/0078_specspace_runtime_evidence_handoff_contract.md",
+      "docs/archive/proposal_sources/0078_specspace_runtime_evidence_handoff_contract.md",
+      "tools/external_consumers.json",
+      "tools/agent_passport_adoption_policy.json",
+      "tools/supervisor.py",
+      "tests/test_supervisor.py",
+      "tools/README.md",
+      "runs/external_consumer_handoff_packets.json"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/external_consumers.json",
+        "pattern": "runs/agent_runtime_enforcement_evidence_index.json"
+      },
+      {
+        "path": "tools/agent_passport_adoption_policy.json",
+        "pattern": "runtime_enforcement_evidence_statuses"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def build_external_consumer_handoff_packets("
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "runs/agent_runtime_enforcement_evidence_index.json"
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "runtime_enforcement_evidence_statuses"
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_specspace_registry_handoff_contract_is_stable_and_ready("
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0078_specspace_runtime_evidence_handoff_contract.md",
+        "pattern": "SpecSpace is expected to render runtime evidence states"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "runtime enforcement evidence index"
+      }
+    ]
   }
 ]

@@ -599,7 +599,9 @@ Key derived artifacts:
 - `tools/external_consumers.json`: tracked registry of stable and draft
   external consumers, such as `Metrics/SIB`, `Metrics/SIB_FULL`, and
   `SpecSpace`, used by the bridge index, bridge-backed metric derivation, and
-  external handoff packet emission
+  external handoff packet emission; the SpecSpace contract includes the Agent
+  Passport posture artifacts and the report-only runtime enforcement evidence
+  index
 - `tools/external_consumer_overlay_policy.json`: declarative contract for the
   external-consumer overlay, including bridge states, named filters, and
   backlog next-gap defaults
@@ -620,7 +622,8 @@ Key derived artifacts:
   references, classified runtime enforcement posture, and verification gap
   indexes consumed by SpecSpace-oriented handoff planning, including the Agent
   Passport posture consumer contract for SpecSpace UI surfaces, a report-only
-  runtime enforcement evidence contract, and runtime-smoke declarations
+  runtime enforcement evidence contract, the runtime enforcement evidence index
+  consumer contract, and runtime-smoke declarations
 - `tools/agent_passports/*.passport.yaml`: repository-local draft Agent
   Passport documents used by `make agent-passports` for report-only CLI
   validation; these are schema/content validation fixtures, not trusted signed

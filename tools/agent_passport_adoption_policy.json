@@ -18,7 +18,8 @@
       "runs/agent_surface_index.json",
       "runs/known_agent_passport_index.json",
       "runs/agent_passport_verification_report.json",
-      "runs/agent_verification_gap_index.json"
+      "runs/agent_verification_gap_index.json",
+      "runs/agent_runtime_enforcement_evidence_index.json"
     ],
     "required_display_states": {
       "verification_states": [
@@ -41,13 +42,19 @@
         "deferred",
         "observed",
         "unknown"
+      ],
+      "runtime_enforcement_evidence_statuses": [
+        "passed",
+        "failed",
+        "missing"
       ]
     },
     "required_fallbacks": [
       "producer_artifact_missing",
       "producer_artifact_schema_mismatch",
       "verification_report_unavailable",
-      "runtime_enforcement_not_observed"
+      "runtime_enforcement_not_observed",
+      "runtime_enforcement_evidence_unavailable"
     ],
     "privacy_boundary": {
       "local_only_fields_forbidden": true,

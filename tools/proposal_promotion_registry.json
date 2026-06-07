@@ -999,5 +999,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0078",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0078_specspace_runtime_evidence_handoff_contract.md"
+    ],
+    "motivating_concern": "SpecGraph emits a runtime enforcement evidence index, but SpecSpace has no stable external-consumer handoff contract for consuming it",
+    "normalized_title": "SpecSpace Runtime Evidence Handoff Contract",
+    "bounded_scope": "Extend the existing SpecSpace external-consumer handoff and Agent Passport consumer contract with the report-only runtime enforcement evidence index, display states, stable fields, and privacy boundary without implementing SpecSpace UI, accepting downstream evidence, changing Platform deploy, or claiming observed runtime enforcement.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

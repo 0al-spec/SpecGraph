@@ -11151,7 +11151,15 @@ def test_specspace_registry_handoff_contract_is_stable_and_ready(
     assert ready["handoff_status"] == "ready_for_handoff"
     assert ready["review_state"] == "ready_for_review"
     assert ready["next_gap"] == "review_handoff_packet"
-    assert ready["source_proposal_ids"] == ["0056", "0059", "0067", "0071", "0072", "0073"]
+    assert ready["source_proposal_ids"] == [
+        "0056",
+        "0059",
+        "0067",
+        "0071",
+        "0072",
+        "0073",
+        "0078",
+    ]
     assert ready["artifact_contract"]["status"] == "stable"
     assert ready["artifact_contract"]["paths"] == [
         "runs/supervisor_executor_adapter_index.json",
@@ -11159,9 +11167,15 @@ def test_specspace_registry_handoff_contract_is_stable_and_ready(
         "runs/known_agent_passport_index.json",
         "runs/agent_passport_verification_report.json",
         "runs/agent_verification_gap_index.json",
+        "runs/agent_runtime_enforcement_evidence_index.json",
     ]
     assert "viewer_projection" in ready["artifact_contract"]["stable_fields"]
+    assert "required_checks" in ready["artifact_contract"]["stable_fields"]
+    assert "policy_required_checks_satisfied" in ready["artifact_contract"]["stable_fields"]
     assert "show runtime enforcement posture" in " ".join(ready["expected_consumer_behavior"])
+    assert "show runtime enforcement evidence status" in " ".join(
+        ready["expected_consumer_behavior"]
+    )
     assert ready["transition_packet_validation"]["ok"] is True
     assert report["viewer_projection"]["named_filters"]["ready_for_handoff"] == ["specspace"]
     assert report["handoff_backlog"]["grouped_by_next_gap"] == {
@@ -11183,6 +11197,7 @@ def test_agent_passport_policy_declares_specspace_posture_consumer_contract(
         "runs/known_agent_passport_index.json",
         "runs/agent_passport_verification_report.json",
         "runs/agent_verification_gap_index.json",
+        "runs/agent_runtime_enforcement_evidence_index.json",
     ]
     assert contract["required_display_states"]["verification_states"] == [
         "V2_passport_referenced",
@@ -11200,7 +11215,13 @@ def test_agent_passport_policy_declares_specspace_posture_consumer_contract(
         "observed",
         "unknown",
     ]
+    assert contract["required_display_states"]["runtime_enforcement_evidence_statuses"] == [
+        "passed",
+        "failed",
+        "missing",
+    ]
     assert "producer_artifact_missing" in contract["required_fallbacks"]
+    assert "runtime_enforcement_evidence_unavailable" in contract["required_fallbacks"]
     assert contract["privacy_boundary"]["raw_passport_material_forbidden"] is True
 
 
