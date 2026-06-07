@@ -27079,7 +27079,7 @@ def test_agent_passport_adoption_policy_declares_surface_and_gap_contract(
     )
     evidence_contract = policy["runtime_enforcement_evidence_contract"]
     assert evidence_contract["artifact_kind"] == "agent_runtime_enforcement_evidence"
-    assert evidence_contract["status"] == "plan_only"
+    assert evidence_contract["status"] == "report_only"
     assert "policy_decision" in evidence_contract["accepted_evidence_kinds"]
     assert evidence_contract["posture_requirements"]["runtime_enforcement_policy_only"][
         "required_evidence_kinds"
@@ -27089,6 +27089,14 @@ def test_agent_passport_adoption_policy_declares_surface_and_gap_contract(
             "eligible_for_observed"
         ]
         is False
+    )
+    evidence_index_contract = policy["runtime_enforcement_evidence_index_contract"]
+    assert evidence_index_contract["artifact_kind"] == "agent_runtime_enforcement_evidence_index"
+    assert "runtime_smoke" in evidence_index_contract["named_filters"]
+    evidence_smokes = policy["runtime_enforcement_evidence_smokes"]
+    assert evidence_smokes[0]["agent_surface"] == "specgraph.supervisor.executor_adapter"
+    assert evidence_smokes[0]["artifact_path"] == (
+        "runs/agent_runtime_enforcement_evidence/supervisor-executor-adapter-smoke.json"
     )
     assert policy["executor_adapter_binding"]["source_artifact"] == (
         "runs/supervisor_executor_adapter_index.json"
@@ -27219,6 +27227,139 @@ def test_build_agent_passport_indexes_consume_executor_adapter_diagnostics(
     assert repo_fixture.as_posix() not in json.dumps(surface_index, sort_keys=True)
     assert repo_fixture.as_posix() not in json.dumps(known_index, sort_keys=True)
     assert repo_fixture.as_posix() not in json.dumps(gap_index, sort_keys=True)
+
+
+def agent_runtime_evidence_test_surfaces(supervisor_module: object) -> dict[str, object]:
+    return {
+        "supervisor_executor_adapter_index": {
+            "artifact_kind": supervisor_module.SUPERVISOR_EXECUTOR_ADAPTER_INDEX_ARTIFACT_KIND,
+            "schema_version": supervisor_module.SUPERVISOR_EXECUTOR_ADAPTER_INDEX_SCHEMA_VERSION,
+            "summary": {"agent_passport_cli_status": "available"},
+            "entries": [],
+        },
+        "agent_surface_index": {
+            "artifact_kind": supervisor_module.AGENT_SURFACE_INDEX_ARTIFACT_KIND,
+            "schema_version": supervisor_module.AGENT_SURFACE_INDEX_SCHEMA_VERSION,
+            "surfaces": [
+                {
+                    "surface_id": "specgraph.supervisor.executor_adapter",
+                    "surface_type": "executor_gateway",
+                    "requires_passport": True,
+                    "passport_ref": "agent-passport://specgraph/supervisor-executor-adapter/0.1.0",
+                    "verification_state": "V3_schema_valid",
+                    "runtime_enforcement_state": "policy_only",
+                    "source_proposal_ids": ["0056", "0059"],
+                }
+            ],
+        },
+        "known_agent_passport_index": {
+            "artifact_kind": supervisor_module.KNOWN_AGENT_PASSPORT_INDEX_ARTIFACT_KIND,
+            "schema_version": supervisor_module.KNOWN_AGENT_PASSPORT_INDEX_SCHEMA_VERSION,
+            "entries": [
+                {
+                    "agent_surface": "specgraph.supervisor.executor_adapter",
+                    "requires_passport": True,
+                    "passport_ref": "agent-passport://specgraph/supervisor-executor-adapter/0.1.0",
+                    "verification_result": {"verification_status": "valid"},
+                }
+            ],
+        },
+        "agent_passport_verification_report": {
+            "artifact_kind": supervisor_module.AGENT_PASSPORT_VERIFICATION_REPORT_ARTIFACT_KIND,
+            "schema_version": supervisor_module.AGENT_PASSPORT_VERIFICATION_REPORT_SCHEMA_VERSION,
+            "summary": {"valid_count": 1},
+            "entries": [],
+        },
+        "agent_verification_gap_index": {
+            "artifact_kind": supervisor_module.AGENT_VERIFICATION_GAP_INDEX_ARTIFACT_KIND,
+            "schema_version": supervisor_module.AGENT_VERIFICATION_GAP_INDEX_SCHEMA_VERSION,
+            "summary": {"gap_count": 0},
+            "gaps": [],
+        },
+    }
+
+
+def test_build_agent_runtime_enforcement_evidence_index_emits_passed_smoke(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    surfaces = agent_runtime_evidence_test_surfaces(supervisor_module)
+
+    index = supervisor_module.build_agent_runtime_enforcement_evidence_index(surfaces)
+
+    assert index["artifact_kind"] == "agent_runtime_enforcement_evidence_index"
+    assert index["summary"]["evidence_count"] == 1
+    assert index["summary"]["passed_count"] == 1
+    assert index["summary"]["observed_enforcement_claim_count"] == 0
+    entry = index["entries"][0]
+    assert entry["agent_surface"] == "specgraph.supervisor.executor_adapter"
+    assert entry["evidence_kind"] == "runtime_smoke"
+    assert entry["runtime_enforcement_state"] == "policy_only"
+    assert entry["status"] == "passed"
+    assert entry["evidence_ref"] == (
+        "runs/agent_runtime_enforcement_evidence/supervisor-executor-adapter-smoke.json"
+    )
+    assert index["viewer_projection"]["named_filters"]["executor_gateway"] == [
+        "agent_runtime_enforcement_evidence::specgraph.supervisor.executor_adapter::runtime_smoke"
+    ]
+    assert repo_fixture.as_posix() not in json.dumps(index, sort_keys=True)
+
+
+def test_build_agent_runtime_enforcement_evidence_index_blocks_missing_producer(
+    supervisor_module: object,
+) -> None:
+    surfaces = agent_runtime_evidence_test_surfaces(supervisor_module)
+    surfaces["supervisor_executor_adapter_index"] = {
+        "artifact_kind": "unexpected_artifact_kind",
+        "entries": [],
+    }
+
+    index = supervisor_module.build_agent_runtime_enforcement_evidence_index(surfaces)
+
+    assert index["summary"]["passed_count"] == 0
+    assert index["summary"]["missing_count"] == 1
+    assert index["summary"]["next_gap"] == "repair_runtime_enforcement_evidence"
+    record = index["_records"][0]
+    checks = {check["check_id"]: check["status"] for check in record["evidence"]["checks"]}
+    assert checks["executor_adapter_index_present"] == "missing"
+
+
+def test_main_builds_agent_runtime_enforcement_evidence_artifacts(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    surfaces = agent_runtime_evidence_test_surfaces(supervisor_module)
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_agent_passport_derived_surfaces",
+        lambda: copy.deepcopy(surfaces),
+    )
+
+    exit_code = supervisor_module.main(
+        build_agent_runtime_enforcement_evidence_mode=True,
+        output_mode="full",
+    )
+
+    assert exit_code == 0
+    stdout = capsys.readouterr().out
+    report = json.loads(stdout)
+    assert report["summary"]["passed_count"] == 1
+    evidence_path = (
+        repo_fixture
+        / "runs"
+        / "agent_runtime_enforcement_evidence"
+        / "supervisor-executor-adapter-smoke.json"
+    )
+    index_path = repo_fixture / "runs" / "agent_runtime_enforcement_evidence_index.json"
+    assert evidence_path.exists()
+    assert index_path.exists()
+    evidence = json.loads(evidence_path.read_text(encoding="utf-8"))
+    assert evidence["status"] == "passed"
+    assert evidence["result"]["status"] == "passed"
+    assert repo_fixture.as_posix() not in evidence_path.read_text(encoding="utf-8")
+    assert repo_fixture.as_posix() not in index_path.read_text(encoding="utf-8")
 
 
 def test_build_agent_passport_indexes_handle_optional_and_observed_surfaces(
