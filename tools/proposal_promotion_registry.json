@@ -1012,5 +1012,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0079",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0079_specspace_runtime_evidence_acceptance.md"
+    ],
+    "motivating_concern": "SpecSpace implemented the runtime evidence handoff contract, but SpecGraph has not accepted downstream evidence for the new runtime evidence artifact",
+    "normalized_title": "SpecSpace Runtime Evidence Acceptance",
+    "bounded_scope": "Record report-only external consumer evidence for SpecSpace PR #228 consuming the runtime enforcement evidence index, while preserving earlier SpecSpace evidence, avoiding live production scraping, avoiding SpecSpace or Platform mutations, and making no observed runtime enforcement claim.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]
