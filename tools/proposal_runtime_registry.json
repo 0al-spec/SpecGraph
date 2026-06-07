@@ -3622,5 +3622,56 @@
         "pattern": "close_agent_verification_gaps"
       }
     ]
+  },
+  {
+    "proposal_id": "0076",
+    "posture": "bounded_runtime_followup",
+    "runtime_surfaces": [
+      "docs/proposals/0076_agent_passport_runtime_enforcement_evidence_plan.md",
+      "docs/archive/proposal_sources/0076_agent_passport_runtime_enforcement_evidence_plan.md",
+      "tools/agent_passport_adoption_policy.json",
+      "tools/supervisor.py",
+      "tests/test_supervisor.py",
+      "tools/README.md",
+      "runs/agent_verification_gap_index.json"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/agent_passport_adoption_policy.json",
+        "pattern": "runtime_enforcement_evidence_contract"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def runtime_enforcement_evidence_plan_for_gap("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "runtime_enforcement_evidence_missing"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "evidence_contract[\"artifact_kind\"] == \"agent_runtime_enforcement_evidence\""
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "runtime_enforcement_evidence_plan"
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "(\"specgraph.observed_runtime\", \"runtime_enforcement_evidence_missing\") in gaps"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0076_agent_passport_runtime_enforcement_evidence_plan.md",
+        "pattern": "runtime_enforcement_evidence_missing"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "runtime enforcement evidence plan"
+      }
+    ]
   }
 ]

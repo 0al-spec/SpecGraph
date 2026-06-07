@@ -18302,6 +18302,25 @@ def agent_passport_contract_stable_fields(contract_name: str) -> list[str]:
     ]
 
 
+def safe_runtime_enforcement_evidence_ref(raw_ref: object) -> str:
+    if raw_ref is None:
+        return ""
+    candidate = str(raw_ref).strip()
+    if not candidate:
+        return ""
+    if candidate.startswith(("https://", "http://")):
+        return candidate
+    if candidate.lower().startswith("file:") or "://" in candidate:
+        return ""
+    if "\\" in candidate:
+        return ""
+    if re.match(r"^[A-Za-z]:[\\/]", candidate):
+        return ""
+    if candidate == "~" or candidate.startswith(("~/", "~\\")):
+        return ""
+    return safe_repo_relative_path(candidate)
+
+
 def agent_passport_surface_from_policy(raw_surface: dict[str, Any]) -> dict[str, Any]:
     passport_ref = str(raw_surface.get("passport_ref", "")).strip()
     verification_state = str(raw_surface.get("verification_state", "")).strip()
@@ -18310,6 +18329,9 @@ def agent_passport_surface_from_policy(raw_surface: dict[str, Any]) -> dict[str,
     raw_runtime_enforcement_state = raw_surface.get("runtime_enforcement_state")
     runtime_enforcement_state = (
         str(raw_runtime_enforcement_state).strip() if raw_runtime_enforcement_state else "unknown"
+    )
+    runtime_enforcement_evidence_ref = safe_runtime_enforcement_evidence_ref(
+        raw_surface.get("runtime_enforcement_evidence_ref")
     )
     return {
         "surface_id": str(raw_surface.get("surface_id", "")).strip(),
@@ -18327,6 +18349,7 @@ def agent_passport_surface_from_policy(raw_surface: dict[str, Any]) -> dict[str,
         "passport_ref": passport_ref or None,
         "verification_state": verification_state,
         "runtime_enforcement_state": runtime_enforcement_state,
+        "runtime_enforcement_evidence_ref": runtime_enforcement_evidence_ref,
         "consumer_id": str(raw_surface.get("consumer_id", "")).strip(),
         "future_surface": bool(raw_surface.get("future_surface", False)),
         "notes": str(raw_surface.get("notes", "")).strip(),
@@ -18357,6 +18380,7 @@ def agent_passport_surface_from_executor_entry(entry: dict[str, Any]) -> dict[st
         "passport_ref": passport_ref or None,
         "verification_state": verification_state,
         "runtime_enforcement_state": "policy_only",
+        "runtime_enforcement_evidence_ref": "",
         "executor_backend_id": backend_id,
         "backend_status": str(entry.get("backend_status", "")).strip(),
         "passport_validation": {
@@ -18946,6 +18970,30 @@ def agent_passport_gap_default(gap_kind: str, field: str) -> str:
     return str(agent_passport_adoption_policy_lookup(f"gap_defaults.{gap_kind}.{field}")).strip()
 
 
+def runtime_enforcement_evidence_plan_for_gap(gap_kind: str) -> dict[str, Any]:
+    contract = agent_passport_adoption_policy_lookup("runtime_enforcement_evidence_contract")
+    if not isinstance(contract, dict):
+        return {}
+    requirements = contract.get("posture_requirements", {})
+    requirements = requirements if isinstance(requirements, dict) else {}
+    posture_requirement = requirements.get(gap_kind, {})
+    if not isinstance(posture_requirement, dict):
+        return {}
+    return {
+        "contract_artifact_kind": str(contract.get("artifact_kind", "")).strip(),
+        "contract_schema_version": contract.get("schema_version"),
+        "contract_status": str(contract.get("status", "")).strip(),
+        "eligible_for_observed": bool(posture_requirement.get("eligible_for_observed", False)),
+        "required_evidence_kinds": [
+            str(kind).strip()
+            for kind in posture_requirement.get("required_evidence_kinds", [])
+            if str(kind).strip()
+        ],
+        "next_action": str(posture_requirement.get("next_action", "")).strip(),
+        "privacy_boundary": copy.deepcopy(contract.get("privacy_boundary", {})),
+    }
+
+
 def agent_verification_gap_record(
     *,
     surface: dict[str, Any],
@@ -18954,7 +19002,7 @@ def agent_verification_gap_record(
     source_artifacts: list[str],
 ) -> dict[str, Any]:
     surface_id = str(surface.get("surface_id") or surface.get("agent_surface", "")).strip()
-    return {
+    record = {
         "gap_id": f"agent_verification_gap::{surface_id}::{gap_kind}",
         "agent_surface": surface_id,
         "surface_type": str(surface.get("surface_type", "")).strip(),
@@ -18969,6 +19017,10 @@ def agent_verification_gap_record(
             if str(proposal_id).strip()
         ],
     }
+    evidence_plan = runtime_enforcement_evidence_plan_for_gap(gap_kind)
+    if evidence_plan:
+        record["runtime_enforcement_evidence_plan"] = evidence_plan
+    return record
 
 
 def build_agent_verification_gap_index(
@@ -19074,7 +19126,12 @@ def build_agent_verification_gap_index(
             runtime_gap_kind = ""
             runtime_gap_reason = ""
             if runtime_enforcement_state == "observed":
-                pass
+                if not str(surface.get("runtime_enforcement_evidence_ref", "")).strip():
+                    runtime_gap_kind = "runtime_enforcement_evidence_missing"
+                    runtime_gap_reason = (
+                        "Agent Passport runtime enforcement is marked observed, but no safe "
+                        "runtime enforcement evidence reference is attached to the surface."
+                    )
             elif runtime_enforcement_state == "policy_only":
                 runtime_gap_kind = "runtime_enforcement_policy_only"
                 runtime_gap_reason = (
@@ -19162,6 +19219,9 @@ def build_agent_verification_gap_index(
             ),
             "runtime_enforcement_deferred_count": len(
                 gap_kind.get("runtime_enforcement_deferred", [])
+            ),
+            "runtime_enforcement_evidence_missing_count": len(
+                gap_kind.get("runtime_enforcement_evidence_missing", [])
             ),
             "runtime_enforcement_unknown_count": len(
                 gap_kind.get("runtime_enforcement_unknown", [])

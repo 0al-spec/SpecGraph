@@ -973,5 +973,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0076",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0076_agent_passport_runtime_enforcement_evidence_plan.md"
+    ],
+    "motivating_concern": "Agent Passport runtime posture gaps are classified, but future observed enforcement needs a safe evidence contract so policy declarations cannot silently become runtime facts",
+    "normalized_title": "Agent Passport Runtime Enforcement Evidence Plan",
+    "bounded_scope": "Define the plan-only runtime enforcement evidence contract, attach evidence requirements to existing Agent Passport runtime posture gaps, and reject observed enforcement without a safe evidence reference, without implementing runtime enforcement, mutating SpecSpace, changing Platform deploy, or creating a new generated artifact family.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]
