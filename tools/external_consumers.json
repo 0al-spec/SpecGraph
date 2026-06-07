@@ -244,7 +244,8 @@
           "0067",
           "0071",
           "0072",
-          "0073"
+          "0073",
+          "0078"
         ],
         "source_gap": "agent_executor_passport_visibility_not_projected_to_specspace",
         "artifact_contract": {
@@ -255,7 +256,8 @@
             "runs/agent_surface_index.json",
             "runs/known_agent_passport_index.json",
             "runs/agent_passport_verification_report.json",
-            "runs/agent_verification_gap_index.json"
+            "runs/agent_verification_gap_index.json",
+            "runs/agent_runtime_enforcement_evidence_index.json"
           ],
           "stable_fields": [
             "artifact_kind",
@@ -265,7 +267,12 @@
             "surfaces",
             "agents",
             "viewer_projection",
-            "gaps"
+            "gaps",
+            "required_checks",
+            "policy_required_checks_satisfied",
+            "evidence_ref",
+            "safe_evidence_ref",
+            "status"
           ],
           "local_only_fields_forbidden": true
         },
@@ -273,6 +280,7 @@
           "show agent and executor authority surfaces when producer artifacts are available",
           "show Agent Passport verification states without exposing raw local paths or validator logs",
           "show runtime enforcement posture as policy-only, boundary-only, deferred, observed, or unknown without claiming enforcement unless observed evidence exists",
+          "show runtime enforcement evidence status as passed, failed, or missing from the evidence index",
           "show verification gaps without exposing raw local paths, raw passport material, or supervisor logs",
           "show fallback state when producer artifacts are absent or draft"
         ],
@@ -301,7 +309,7 @@
           ]
         }
       },
-      "notes": "Stable SpecSpace consumer entry for supervisor-derived handoff packets. The 0073 contract adds report-only Agent Passport verification and runtime posture artifacts for SpecSpace UI consumption without claiming runtime enforcement."
+      "notes": "Stable SpecSpace consumer entry for supervisor-derived handoff packets. The 0078 contract adds report-only Agent runtime enforcement evidence artifacts for SpecSpace UI consumption without claiming runtime enforcement."
     }
   ]
 }
