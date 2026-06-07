@@ -3579,5 +3579,48 @@
         "pattern": "Platform Timeweb Publish run"
       }
     ]
+  },
+  {
+    "proposal_id": "0075",
+    "posture": "bounded_runtime_followup",
+    "runtime_surfaces": [
+      "docs/proposals/0075_agent_passport_enforcement_next_gap_consistency.md",
+      "docs/archive/proposal_sources/0075_agent_passport_enforcement_next_gap_consistency.md",
+      "tools/supervisor.py",
+      "tests/test_supervisor.py",
+      "runs/agent_surface_index.json",
+      "runs/known_agent_passport_index.json",
+      "runs/agent_verification_gap_index.json"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def agent_passport_verification_gap_next_gap("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def align_agent_surface_index_next_gap("
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "aligned_surface_index[\"summary\"][\"next_gap\"] == \"close_agent_verification_gaps\""
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "gap_index[\"summary\"][\"next_gap\"] == \"close_agent_verification_gaps\""
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0075_agent_passport_enforcement_next_gap_consistency.md",
+        "pattern": "run_report_only_passport_verification"
+      },
+      {
+        "path": "docs/proposals/0075_agent_passport_enforcement_next_gap_consistency.md",
+        "pattern": "close_agent_verification_gaps"
+      }
+    ]
   }
 ]

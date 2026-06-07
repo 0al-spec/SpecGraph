@@ -18482,6 +18482,31 @@ def build_agent_surface_index(
     }
 
 
+def agent_passport_verification_gap_next_gap(gap_kind: dict[str, list[str]]) -> str:
+    if gap_kind.get("missing_passport"):
+        return "declare_missing_agent_passports"
+    if gap_kind.get("verification_tool_unavailable") or gap_kind.get("verification_not_attempted"):
+        return "run_report_only_passport_verification"
+    if any(gap_kind.get(key) for key in gap_kind):
+        return "close_agent_verification_gaps"
+    return "none"
+
+
+def align_agent_surface_index_next_gap(
+    agent_surface_index: dict[str, Any],
+    known_agent_passport_index: dict[str, Any],
+    agent_verification_gap_index: dict[str, Any],
+) -> dict[str, Any]:
+    aligned = copy.deepcopy(agent_surface_index)
+    summary = aligned.setdefault("summary", {})
+    known_next_gap = str(known_agent_passport_index.get("summary", {}).get("next_gap", "")).strip()
+    gap_next_gap = str(agent_verification_gap_index.get("summary", {}).get("next_gap", "")).strip()
+    summary["next_gap"] = (
+        gap_next_gap or known_next_gap or str(summary.get("next_gap", "")).strip() or "none"
+    )
+    return aligned
+
+
 def agent_passport_ref_registry() -> dict[str, dict[str, Any]]:
     registry: dict[str, dict[str, Any]] = {}
     for entry in agent_passport_adoption_policy_lookup("passport_ref_registry"):
@@ -19139,7 +19164,7 @@ def build_agent_verification_gap_index(
                 gap_kind.get("runtime_enforcement_unknown", [])
             ),
             "agent_passport_cli_status": executor_cli_status,
-            "next_gap": "close_agent_verification_gaps" if gaps else "none",
+            "next_gap": agent_passport_verification_gap_next_gap(gap_kind),
         },
         "gaps": gaps,
         "viewer_projection": {
@@ -19165,6 +19190,11 @@ def build_agent_passport_derived_surfaces() -> dict[str, Any]:
         agent_surface_index,
         known_agent_passport_index,
         supervisor_executor_adapter_index,
+    )
+    agent_surface_index = align_agent_surface_index_next_gap(
+        agent_surface_index,
+        known_agent_passport_index,
+        agent_verification_gap_index,
     )
     return {
         "artifact_kind": "agent_passport_derived_surfaces",

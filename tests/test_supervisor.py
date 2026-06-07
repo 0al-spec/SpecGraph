@@ -27354,6 +27354,13 @@ def test_build_agent_passport_verification_report_marks_valid_passports(
     assert report["summary"]["next_gap"] == "none"
     assert known_index["summary"]["schema_valid_count"] == 5
     assert known_index["summary"]["next_gap"] == "close_agent_verification_gaps"
+    assert gap_index["summary"]["next_gap"] == "close_agent_verification_gaps"
+    aligned_surface_index = supervisor_module.align_agent_surface_index_next_gap(
+        surface_index,
+        known_index,
+        gap_index,
+    )
+    assert aligned_surface_index["summary"]["next_gap"] == "close_agent_verification_gaps"
     assert gap_index["summary"]["verification_not_attempted_count"] == 0
     assert gap_index["summary"]["runtime_enforcement_policy_only_count"] == 3
     assert gap_index["summary"]["runtime_enforcement_boundary_only_count"] == 1
@@ -27590,6 +27597,7 @@ def test_build_agent_verification_gap_index_uses_report_only_verification_result
     assert gap_index["summary"]["runtime_enforcement_policy_only_count"] == 2
     assert gap_index["summary"]["runtime_enforcement_boundary_only_count"] == 1
     assert gap_index["summary"]["runtime_enforcement_unknown_count"] == 0
+    assert gap_index["summary"]["next_gap"] == "close_agent_verification_gaps"
 
 
 def test_main_builds_agent_passport_derived_surfaces_as_standalone_command(
