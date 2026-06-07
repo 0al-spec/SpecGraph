@@ -3483,5 +3483,56 @@
         "pattern": "classified runtime enforcement posture"
       }
     ]
+  },
+  {
+    "proposal_id": "0073",
+    "posture": "bounded_runtime_followup",
+    "runtime_surfaces": [
+      "docs/proposals/0073_agent_passport_posture_consumer_contract.md",
+      "docs/archive/proposal_sources/0073_agent_passport_posture_consumer_contract.md",
+      "tools/agent_passport_adoption_policy.json",
+      "tools/external_consumers.json",
+      "tests/test_supervisor.py",
+      "tools/README.md",
+      "runs/agent_surface_index.json",
+      "runs/known_agent_passport_index.json",
+      "runs/agent_passport_verification_report.json",
+      "runs/agent_verification_gap_index.json",
+      "runs/external_consumer_handoff_packets.json"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/agent_passport_adoption_policy.json",
+        "pattern": "specspace_consumer_contract"
+      },
+      {
+        "path": "tools/external_consumers.json",
+        "pattern": "runs/agent_passport_verification_report.json"
+      },
+      {
+        "path": "tools/external_consumers.json",
+        "pattern": "show runtime enforcement posture"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "test_agent_passport_policy_declares_specspace_posture_consumer_contract"
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "test_specspace_registry_handoff_contract_is_stable_and_ready"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0073_agent_passport_posture_consumer_contract.md",
+        "pattern": "runtime enforcement states"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "Agent Passport posture consumer contract"
+      }
+    ]
   }
 ]

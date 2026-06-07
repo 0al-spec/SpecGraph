@@ -604,7 +604,8 @@ Key derived artifacts:
 - `tools/agent_passport_adoption_policy.json`: declarative contract for
   report-only Agent Passport adoption surfaces, declared Agent Passport
   references, classified runtime enforcement posture, and verification gap
-  indexes consumed by SpecSpace-oriented handoff planning
+  indexes consumed by SpecSpace-oriented handoff planning, including the Agent
+  Passport posture consumer contract for SpecSpace UI surfaces
 - `tools/agent_passports/*.passport.yaml`: repository-local draft Agent
   Passport documents used by `make agent-passports` for report-only CLI
   validation; these are schema/content validation fixtures, not trusted signed

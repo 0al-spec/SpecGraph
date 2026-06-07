@@ -8,6 +8,50 @@
     "verification_report_artifact": "runs/agent_passport_verification_report.json",
     "executor_adapter_index_artifact": "runs/supervisor_executor_adapter_index.json"
   },
+  "specspace_consumer_contract": {
+    "consumer_id": "specspace",
+    "consumer_category": "specspace_operator_surface",
+    "artifact_paths": [
+      "runs/supervisor_executor_adapter_index.json",
+      "runs/agent_surface_index.json",
+      "runs/known_agent_passport_index.json",
+      "runs/agent_passport_verification_report.json",
+      "runs/agent_verification_gap_index.json"
+    ],
+    "required_display_states": {
+      "verification_states": [
+        "V2_passport_referenced",
+        "V3_schema_valid",
+        "verification_failed",
+        "verification_unavailable"
+      ],
+      "verification_statuses": [
+        "valid",
+        "invalid",
+        "unavailable",
+        "tool_unavailable"
+      ],
+      "runtime_enforcement_states": [
+        "policy_only",
+        "boundary_only",
+        "deferred",
+        "observed",
+        "unknown"
+      ]
+    },
+    "required_fallbacks": [
+      "producer_artifact_missing",
+      "producer_artifact_schema_mismatch",
+      "verification_report_unavailable",
+      "runtime_enforcement_not_observed"
+    ],
+    "privacy_boundary": {
+      "local_only_fields_forbidden": true,
+      "raw_validator_logs_forbidden": true,
+      "raw_passport_material_forbidden": true,
+      "raw_supervisor_logs_forbidden": true
+    }
+  },
   "surface_index_contract": {
     "artifact_kind": "agent_surface_index",
     "schema_version": 1,

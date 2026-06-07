@@ -240,7 +240,11 @@
         "consumer_category": "specspace_operator_surface",
         "source_proposal_ids": [
           "0056",
-          "0059"
+          "0059",
+          "0067",
+          "0071",
+          "0072",
+          "0073"
         ],
         "source_gap": "agent_executor_passport_visibility_not_projected_to_specspace",
         "artifact_contract": {
@@ -249,6 +253,8 @@
           "paths": [
             "runs/supervisor_executor_adapter_index.json",
             "runs/agent_surface_index.json",
+            "runs/known_agent_passport_index.json",
+            "runs/agent_passport_verification_report.json",
             "runs/agent_verification_gap_index.json"
           ],
           "stable_fields": [
@@ -257,13 +263,17 @@
             "summary",
             "entries",
             "surfaces",
+            "agents",
+            "viewer_projection",
             "gaps"
           ],
           "local_only_fields_forbidden": true
         },
         "expected_consumer_behavior": [
           "show agent and executor authority surfaces when producer artifacts are available",
-          "show verification gaps without exposing raw local paths or supervisor logs",
+          "show Agent Passport verification states without exposing raw local paths or validator logs",
+          "show runtime enforcement posture as policy-only, boundary-only, deferred, observed, or unknown without claiming enforcement unless observed evidence exists",
+          "show verification gaps without exposing raw local paths, raw passport material, or supervisor logs",
           "show fallback state when producer artifacts are absent or draft"
         ],
         "evidence_contract": {
@@ -291,7 +301,7 @@
           ]
         }
       },
-      "notes": "Stable SpecSpace consumer entry for supervisor-derived handoff packets. The initial 0056/0059 producer contract is draft until the executor and Agent Passport indexes exist."
+      "notes": "Stable SpecSpace consumer entry for supervisor-derived handoff packets. The 0073 contract adds report-only Agent Passport verification and runtime posture artifacts for SpecSpace UI consumption without claiming runtime enforcement."
     }
   ]
 }
