@@ -3431,5 +3431,57 @@
         "pattern": "runs/agent_passport_verification_report.json"
       }
     ]
+  },
+  {
+    "proposal_id": "0072",
+    "posture": "bounded_runtime_followup",
+    "runtime_surfaces": [
+      "docs/proposals/0072_agent_passport_runtime_enforcement_posture.md",
+      "docs/archive/proposal_sources/0072_agent_passport_runtime_enforcement_posture.md",
+      "tools/agent_passport_adoption_policy.json",
+      "tools/supervisor.py",
+      "tests/test_supervisor.py",
+      "tools/README.md",
+      "runs/agent_surface_index.json",
+      "runs/agent_verification_gap_index.json"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/agent_passport_adoption_policy.json",
+        "pattern": "runtime_enforcement_states"
+      },
+      {
+        "path": "tools/agent_passport_adoption_policy.json",
+        "pattern": "runtime_enforcement_policy_only"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "runtime_enforcement_policy_only_count"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "runtime_enforcement_unknown_count\"] == 0"
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "runtime_enforcement_boundary_only"
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "runtime_enforcement_deferred"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0072_agent_passport_runtime_enforcement_posture.md",
+        "pattern": "runtime_enforcement_unknown_count"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "classified runtime enforcement posture"
+      }
+    ]
   }
 ]

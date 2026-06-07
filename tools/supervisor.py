@@ -18323,9 +18323,9 @@ def agent_passport_surface_from_policy(raw_surface: dict[str, Any]) -> dict[str,
         "passport_ref": passport_ref or None,
         "verification_state": verification_state,
         "runtime_enforcement_state": str(
-            raw_surface.get("runtime_enforcement_state", "not_observed")
+            raw_surface.get("runtime_enforcement_state", "unknown")
         ).strip()
-        or "not_observed",
+        or "unknown",
         "consumer_id": str(raw_surface.get("consumer_id", "")).strip(),
         "future_surface": bool(raw_surface.get("future_surface", False)),
         "notes": str(raw_surface.get("notes", "")).strip(),
@@ -18355,7 +18355,7 @@ def agent_passport_surface_from_executor_entry(entry: dict[str, Any]) -> dict[st
         "prepares_handoffs": False,
         "passport_ref": passport_ref or None,
         "verification_state": verification_state,
-        "runtime_enforcement_state": "not_observed",
+        "runtime_enforcement_state": "policy_only",
         "executor_backend_id": backend_id,
         "backend_status": str(entry.get("backend_status", "")).strip(),
         "passport_validation": {
@@ -18416,7 +18416,16 @@ def build_agent_surface_index(
             named_filters["executor_backend"].append(surface_id)
         if str(surface.get("consumer_id", "")).strip() == "specspace":
             named_filters["specspace_consumer"].append(surface_id)
-        if str(surface.get("runtime_enforcement_state", "")).strip() != "observed":
+        runtime_enforcement_state = str(surface.get("runtime_enforcement_state", "")).strip()
+        if runtime_enforcement_state == "observed":
+            named_filters["runtime_enforcement_observed"].append(surface_id)
+        elif runtime_enforcement_state == "policy_only":
+            named_filters["runtime_enforcement_policy_only"].append(surface_id)
+        elif runtime_enforcement_state == "boundary_only":
+            named_filters["runtime_enforcement_boundary_only"].append(surface_id)
+        elif runtime_enforcement_state == "deferred":
+            named_filters["runtime_enforcement_deferred"].append(surface_id)
+        else:
             named_filters["runtime_enforcement_unknown"].append(surface_id)
 
     for bucket in (by_surface_type, by_verification_state, named_filters):
@@ -19031,21 +19040,46 @@ def build_agent_verification_gap_index(
                         source_artifacts=source_artifacts,
                     )
                 )
-        if (
-            known.get("requires_passport")
-            and str(surface.get("runtime_enforcement_state", "")).strip() != "observed"
-        ):
-            gaps.append(
-                agent_verification_gap_record(
-                    surface=surface,
-                    gap_kind="runtime_enforcement_unknown",
-                    reason=(
-                        "Agent Passport adoption is report-only in this slice; runtime "
-                        "enforcement has not been observed."
-                    ),
-                    source_artifacts=source_artifacts,
+        if known.get("requires_passport"):
+            runtime_enforcement_state = str(surface.get("runtime_enforcement_state", "")).strip()
+            runtime_gap_kind = ""
+            runtime_gap_reason = ""
+            if runtime_enforcement_state == "observed":
+                pass
+            elif runtime_enforcement_state == "policy_only":
+                runtime_gap_kind = "runtime_enforcement_policy_only"
+                runtime_gap_reason = (
+                    "Agent Passport runtime enforcement posture is known: policy is declared, "
+                    "but no dedicated enforcement runtime is implemented for this surface yet."
                 )
-            )
+            elif runtime_enforcement_state == "boundary_only":
+                runtime_gap_kind = "runtime_enforcement_boundary_only"
+                runtime_gap_reason = (
+                    "Agent Passport runtime enforcement posture is known: this surface is an "
+                    "external consumer or handoff boundary, so enforcement belongs to a "
+                    "consumer-boundary contract rather than SpecGraph core runtime."
+                )
+            elif runtime_enforcement_state == "deferred":
+                runtime_gap_kind = "runtime_enforcement_deferred"
+                runtime_gap_reason = (
+                    "Agent Passport runtime enforcement posture is known: this future surface "
+                    "is declared before the runtime exists, so enforcement is deferred."
+                )
+            else:
+                runtime_gap_kind = "runtime_enforcement_unknown"
+                runtime_gap_reason = (
+                    "Agent Passport runtime enforcement posture has not been classified for "
+                    "this surface."
+                )
+            if runtime_gap_kind:
+                gaps.append(
+                    agent_verification_gap_record(
+                        surface=surface,
+                        gap_kind=runtime_gap_kind,
+                        reason=runtime_gap_reason,
+                        source_artifacts=source_artifacts,
+                    )
+                )
 
     gap_kind: dict[str, list[str]] = {}
     severity: dict[str, list[str]] = {}
@@ -19091,6 +19125,15 @@ def build_agent_verification_gap_index(
             "verification_failed_count": len(gap_kind.get("verification_failed", [])),
             "verification_unavailable_count": len(gap_kind.get("verification_unavailable", [])),
             "verification_not_attempted_count": len(gap_kind.get("verification_not_attempted", [])),
+            "runtime_enforcement_policy_only_count": len(
+                gap_kind.get("runtime_enforcement_policy_only", [])
+            ),
+            "runtime_enforcement_boundary_only_count": len(
+                gap_kind.get("runtime_enforcement_boundary_only", [])
+            ),
+            "runtime_enforcement_deferred_count": len(
+                gap_kind.get("runtime_enforcement_deferred", [])
+            ),
             "runtime_enforcement_unknown_count": len(
                 gap_kind.get("runtime_enforcement_unknown", [])
             ),

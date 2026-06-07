@@ -429,7 +429,8 @@ Key derived artifacts:
   machine paths
 - `runs/agent_verification_gap_index.json`: read-only verification gap index
   for missing passports, unavailable validator tooling, invalid or unavailable
-  passport documents, unattempted verification, and unknown runtime enforcement
+  passport documents, unattempted verification, and classified runtime
+  enforcement posture
 - `runs/specpm_export_preview.json`: reviewable `SpecPM` package preview
   artifact, including manifest preview, boundary-source preview, export
   status, and next-gap backlog for future full package emission
@@ -602,8 +603,8 @@ Key derived artifacts:
   availability diagnostics
 - `tools/agent_passport_adoption_policy.json`: declarative contract for
   report-only Agent Passport adoption surfaces, declared Agent Passport
-  references, and verification gap indexes consumed by SpecSpace-oriented
-  handoff planning
+  references, classified runtime enforcement posture, and verification gap
+  indexes consumed by SpecSpace-oriented handoff planning
 - `tools/agent_passports/*.passport.yaml`: repository-local draft Agent
   Passport documents used by `make agent-passports` for report-only CLI
   validation; these are schema/content validation fixtures, not trusted signed

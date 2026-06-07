@@ -26955,7 +26955,14 @@ def test_agent_passport_adoption_policy_declares_surface_and_gap_contract(
     assert "entries" in policy["known_passport_index_contract"]["stable_fields"]
     assert "gaps" in policy["verification_gap_index_contract"]["stable_fields"]
     assert "V2_passport_referenced" in policy["verification_states"]
-    assert "runtime_enforcement_unknown" in policy["verification_gap_index_contract"]["gap_kinds"]
+    assert (
+        "runtime_enforcement_policy_only" in policy["verification_gap_index_contract"]["gap_kinds"]
+    )
+    assert (
+        "runtime_enforcement_boundary_only"
+        in (policy["verification_gap_index_contract"]["gap_kinds"])
+    )
+    assert "runtime_enforcement_deferred" in policy["verification_gap_index_contract"]["gap_kinds"]
     assert policy["executor_adapter_binding"]["source_artifact"] == (
         "runs/supervisor_executor_adapter_index.json"
     )
@@ -27051,7 +27058,10 @@ def test_build_agent_passport_indexes_consume_executor_adapter_diagnostics(
     assert ("specgraph.executor.codex", "verification_tool_unavailable") in gaps
     assert ("specspace.operator_assistant", "missing_passport") not in gaps
     assert ("specspace.operator_assistant", "verification_tool_unavailable") in gaps
-    assert ("specgraph.executor.codex", "runtime_enforcement_unknown") in gaps
+    assert ("specgraph.executor.codex", "runtime_enforcement_policy_only") in gaps
+    assert ("specspace.operator_assistant", "runtime_enforcement_boundary_only") in gaps
+    assert ("product_workspace.implementation_agent", "runtime_enforcement_deferred") in gaps
+    assert not any(gap == "runtime_enforcement_unknown" for _, gap in gaps)
     assert gap_index["summary"]["missing_passport_count"] == 0
     assert gap_index["summary"]["verification_tool_unavailable_count"] == 5
     assert gap_index["viewer_projection"]["named_filters"]["executor_backend"] == [
@@ -27083,7 +27093,7 @@ def test_build_agent_passport_indexes_handle_optional_and_observed_surfaces(
                     "prepares_handoffs": False,
                     "passport_ref": "agent-passport://specgraph/optional-observer/0.1.0",
                     "verification_state": "V2_passport_referenced",
-                    "runtime_enforcement_state": "not_observed",
+                    "runtime_enforcement_state": "unknown",
                 }
             )
             surfaces.append(
@@ -27143,7 +27153,8 @@ def test_build_agent_passport_indexes_handle_optional_and_observed_surfaces(
     assert ("specgraph.observed_runtime", "runtime_enforcement_unknown") not in gaps
     assert ("specgraph.observed_runtime", "verification_not_attempted") in gaps
     assert ("specspace.operator_assistant", "verification_not_attempted") in gaps
-    assert ("specspace.operator_assistant", "runtime_enforcement_unknown") in gaps
+    assert ("specspace.operator_assistant", "runtime_enforcement_boundary_only") in gaps
+    assert ("specgraph.optional_observer", "runtime_enforcement_unknown") not in gaps
 
 
 def test_build_agent_passport_verification_report_marks_valid_passports(
@@ -27215,7 +27226,10 @@ def test_build_agent_passport_verification_report_marks_valid_passports(
     assert known_index["summary"]["schema_valid_count"] == 5
     assert known_index["summary"]["next_gap"] == "close_agent_verification_gaps"
     assert gap_index["summary"]["verification_not_attempted_count"] == 0
-    assert gap_index["summary"]["runtime_enforcement_unknown_count"] == 5
+    assert gap_index["summary"]["runtime_enforcement_policy_only_count"] == 3
+    assert gap_index["summary"]["runtime_enforcement_boundary_only_count"] == 1
+    assert gap_index["summary"]["runtime_enforcement_deferred_count"] == 1
+    assert gap_index["summary"]["runtime_enforcement_unknown_count"] == 0
     dumped = json.dumps([report, known_index, gap_index], sort_keys=True)
     assert repo_fixture.as_posix() not in dumped
     assert "apiVersion" not in dumped
@@ -27295,7 +27309,7 @@ def test_build_known_agent_passport_index_keeps_verification_pending_without_att
                 "requires_passport": True,
                 "passport_ref": "agent-passport://specgraph/supervisor/0.1.0",
                 "verification_state": "V2_passport_referenced",
-                "runtime_enforcement_state": "not_observed",
+                "runtime_enforcement_state": "policy_only",
                 "source_proposal_ids": ["0071"],
                 "source": "policy",
             }
@@ -27386,7 +27400,7 @@ def test_build_agent_verification_gap_index_uses_report_only_verification_result
                 "surface_type": "graph_runtime",
                 "requires_passport": True,
                 "passport_ref": "agent-passport://specgraph/valid/0.1.0",
-                "runtime_enforcement_state": "not_observed",
+                "runtime_enforcement_state": "policy_only",
                 "source_proposal_ids": ["0071"],
             },
             {
@@ -27394,7 +27408,7 @@ def test_build_agent_verification_gap_index_uses_report_only_verification_result
                 "surface_type": "graph_runtime",
                 "requires_passport": True,
                 "passport_ref": "agent-passport://specgraph/invalid/0.1.0",
-                "runtime_enforcement_state": "not_observed",
+                "runtime_enforcement_state": "boundary_only",
                 "source_proposal_ids": ["0071"],
             },
             {
@@ -27402,7 +27416,7 @@ def test_build_agent_verification_gap_index_uses_report_only_verification_result
                 "surface_type": "graph_runtime",
                 "requires_passport": True,
                 "passport_ref": "agent-passport://specgraph/unavailable/0.1.0",
-                "runtime_enforcement_state": "not_observed",
+                "runtime_enforcement_state": "policy_only",
                 "source_proposal_ids": ["0071"],
             },
         ]
@@ -27444,7 +27458,9 @@ def test_build_agent_verification_gap_index_uses_report_only_verification_result
     assert gap_index["summary"]["verification_not_attempted_count"] == 0
     assert gap_index["summary"]["verification_failed_count"] == 1
     assert gap_index["summary"]["verification_unavailable_count"] == 1
-    assert gap_index["summary"]["runtime_enforcement_unknown_count"] == 3
+    assert gap_index["summary"]["runtime_enforcement_policy_only_count"] == 2
+    assert gap_index["summary"]["runtime_enforcement_boundary_only_count"] == 1
+    assert gap_index["summary"]["runtime_enforcement_unknown_count"] == 0
 
 
 def test_main_builds_agent_passport_derived_surfaces_as_standalone_command(
@@ -27637,7 +27653,69 @@ def test_proposal_0070_agent_passport_reference_declaration_is_covered(
     gaps = {(gap["agent_surface"], gap["gap"]) for gap in gap_index["gaps"]}
     assert not any(gap == "missing_passport" for _, gap in gaps)
     assert ("specspace.operator_assistant", "verification_not_attempted") in gaps
-    assert ("specspace.operator_assistant", "runtime_enforcement_unknown") in gaps
+    assert ("specspace.operator_assistant", "runtime_enforcement_boundary_only") in gaps
+    assert not any(gap == "runtime_enforcement_unknown" for _, gap in gaps)
+
+
+def test_proposal_0072_agent_passport_runtime_enforcement_posture_is_covered(
+    supervisor_module: object,
+) -> None:
+    """Proposal 0072 classifies runtime enforcement posture without claiming enforcement."""
+    executor_index = {
+        "artifact_kind": supervisor_module.SUPERVISOR_EXECUTOR_ADAPTER_INDEX_ARTIFACT_KIND,
+        "schema_version": supervisor_module.SUPERVISOR_EXECUTOR_ADAPTER_INDEX_SCHEMA_VERSION,
+        "summary": {"agent_passport_cli_status": "available"},
+        "entries": [
+            {
+                "backend_id": "codex",
+                "display_name": "Codex CLI",
+                "backend_status": "available",
+                "passport_ref": "agent-passport://executors/codex-cli/0.1.0",
+            }
+        ],
+    }
+    surface_index = supervisor_module.build_agent_surface_index(executor_index)
+    preliminary_known_index = supervisor_module.build_known_agent_passport_index(surface_index)
+    verification_report = {
+        "entries": [
+            {
+                "agent_surface": entry["agent_surface"],
+                "verification_status": "valid",
+                "verification_state": "V3_schema_valid",
+                "document_path": f"tools/agent_passports/{entry['agent_surface']}.passport.yaml",
+                "valid": True,
+                "tool_status": "available",
+                "checks": [],
+                "diagnostics": [],
+            }
+            for entry in preliminary_known_index["entries"]
+        ]
+    }
+    known_index = supervisor_module.build_known_agent_passport_index(
+        surface_index,
+        verification_report,
+    )
+    gap_index = supervisor_module.build_agent_verification_gap_index(
+        surface_index,
+        known_index,
+        executor_index,
+    )
+
+    assert gap_index["summary"]["runtime_enforcement_policy_only_count"] == 3
+    assert gap_index["summary"]["runtime_enforcement_boundary_only_count"] == 1
+    assert gap_index["summary"]["runtime_enforcement_deferred_count"] == 1
+    assert gap_index["summary"]["runtime_enforcement_unknown_count"] == 0
+    gaps = {(gap["agent_surface"], gap["gap"]) for gap in gap_index["gaps"]}
+    assert ("specgraph.supervisor", "runtime_enforcement_policy_only") in gaps
+    assert ("specgraph.executor.codex", "runtime_enforcement_policy_only") in gaps
+    assert ("specspace.operator_assistant", "runtime_enforcement_boundary_only") in gaps
+    assert ("product_workspace.implementation_agent", "runtime_enforcement_deferred") in gaps
+
+    index = supervisor_module.build_proposal_runtime_index()
+    by_id = {e["proposal_id"]: e for e in index["entries"]}
+    assert by_id["0072"]["runtime_realization"]["status"] == "implemented"
+    assert by_id["0072"]["validation_closure"]["status"] == "covered"
+    assert by_id["0072"]["observation_coverage"]["status"] == "covered"
 
 
 def test_proposal_work_claim_report_flags_expired_and_duplicate_claims(
