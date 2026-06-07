@@ -22245,6 +22245,12 @@ def build_external_consumer_handoff_packets(
             if specspace_consumer
             else {}
         )
+        if specspace_consumer:
+            agent_passport_privacy_boundary = agent_passport_adoption_policy_lookup(
+                "specspace_consumer_contract.privacy_boundary"
+            )
+            if isinstance(agent_passport_privacy_boundary, dict):
+                privacy_boundary.update(copy.deepcopy(agent_passport_privacy_boundary))
         local_checkout_hint_for_packet = "" if specspace_consumer else local_checkout_hint
         entry = {
             "handoff_id": f"external_consumer_handoff::{consumer_id}",
@@ -22503,7 +22509,12 @@ def derive_external_consumer_evidence_acceptance(
     artifact_contract = handoff_entry.get("artifact_contract", {})
     if not isinstance(artifact_contract, dict):
         artifact_contract = {}
-    required_consumed_artifacts = [
+    accepted_contract_artifacts = [
+        str(path).strip()
+        for path in evidence_entry.get("accepted_contract_artifacts", [])
+        if str(path).strip()
+    ]
+    required_consumed_artifacts = accepted_contract_artifacts or [
         str(path).strip() for path in artifact_contract.get("paths", []) if str(path).strip()
     ]
     missing_consumed_artifacts = sorted(
@@ -22618,6 +22629,7 @@ def derive_external_consumer_evidence_acceptance(
         "invalid_evidence_kinds": invalid_evidence_kinds,
         "invalid_evidence_statuses": invalid_evidence_statuses,
         "missing_consumed_artifacts": missing_consumed_artifacts,
+        "accepted_contract_artifacts": accepted_contract_artifacts,
         "privacy_violation": privacy_violation,
     }
 
@@ -22666,6 +22678,11 @@ def build_external_consumer_evidence_index(
             "consumed_artifacts": [
                 str(path).strip()
                 for path in raw_entry.get("consumed_artifacts", [])
+                if str(path).strip()
+            ],
+            "accepted_contract_artifacts": [
+                str(path).strip()
+                for path in raw_entry.get("accepted_contract_artifacts", [])
                 if str(path).strip()
             ],
             "evidence": evidence_items,

@@ -13,6 +13,11 @@
         "runs/agent_surface_index.json",
         "runs/agent_verification_gap_index.json"
       ],
+      "accepted_contract_artifacts": [
+        "runs/supervisor_executor_adapter_index.json",
+        "runs/agent_surface_index.json",
+        "runs/agent_verification_gap_index.json"
+      ],
       "evidence": [
         {
           "kind": "pull_request",

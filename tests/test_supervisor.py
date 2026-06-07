@@ -11111,6 +11111,8 @@ def test_build_external_consumer_handoff_packets_emits_ready_specspace_contract(
         "link implementation evidence back to the handoff id",
     ]
     assert ready["privacy_boundary"]["machine_local_paths_forbidden"] is True
+    assert ready["privacy_boundary"]["raw_validator_logs_forbidden"] is True
+    assert ready["privacy_boundary"]["raw_passport_material_forbidden"] is True
     assert ready["target_consumer"]["local_checkout_hint"] == ""
     assert ready["transition_packet_validation"]["ok"] is True
     assert report["viewer_projection"]["named_filters"]["specspace_consumer"] == ["specspace"]
@@ -11149,13 +11151,57 @@ def test_specspace_registry_handoff_contract_is_stable_and_ready(
     assert ready["handoff_status"] == "ready_for_handoff"
     assert ready["review_state"] == "ready_for_review"
     assert ready["next_gap"] == "review_handoff_packet"
-    assert ready["source_proposal_ids"] == ["0056", "0059"]
+    assert ready["source_proposal_ids"] == ["0056", "0059", "0067", "0071", "0072", "0073"]
     assert ready["artifact_contract"]["status"] == "stable"
+    assert ready["artifact_contract"]["paths"] == [
+        "runs/supervisor_executor_adapter_index.json",
+        "runs/agent_surface_index.json",
+        "runs/known_agent_passport_index.json",
+        "runs/agent_passport_verification_report.json",
+        "runs/agent_verification_gap_index.json",
+    ]
+    assert "viewer_projection" in ready["artifact_contract"]["stable_fields"]
+    assert "show runtime enforcement posture" in " ".join(ready["expected_consumer_behavior"])
     assert ready["transition_packet_validation"]["ok"] is True
     assert report["viewer_projection"]["named_filters"]["ready_for_handoff"] == ["specspace"]
     assert report["handoff_backlog"]["grouped_by_next_gap"] == {
         "review_handoff_packet": ["specspace"]
     }
+
+
+def test_agent_passport_policy_declares_specspace_posture_consumer_contract(
+    supervisor_module: object,
+) -> None:
+    contract = supervisor_module.agent_passport_adoption_policy_lookup(
+        "specspace_consumer_contract"
+    )
+
+    assert contract["consumer_id"] == "specspace"
+    assert contract["artifact_paths"] == [
+        "runs/supervisor_executor_adapter_index.json",
+        "runs/agent_surface_index.json",
+        "runs/known_agent_passport_index.json",
+        "runs/agent_passport_verification_report.json",
+        "runs/agent_verification_gap_index.json",
+    ]
+    assert contract["required_display_states"]["verification_states"] == [
+        "V2_passport_referenced",
+        "V3_schema_valid",
+    ]
+    assert contract["required_display_states"]["verification_gap_kinds"] == [
+        "verification_failed",
+        "verification_unavailable",
+    ]
+    assert "valid" in contract["required_display_states"]["verification_statuses"]
+    assert contract["required_display_states"]["runtime_enforcement_states"] == [
+        "policy_only",
+        "boundary_only",
+        "deferred",
+        "observed",
+        "unknown",
+    ]
+    assert "producer_artifact_missing" in contract["required_fallbacks"]
+    assert contract["privacy_boundary"]["raw_passport_material_forbidden"] is True
 
 
 def test_build_external_consumer_handoff_packets_blocks_draft_specspace_contract(
@@ -11417,6 +11463,8 @@ def test_build_external_consumer_evidence_index_accepts_specspace_evidence(
                     "paths": [
                         "runs/supervisor_executor_adapter_index.json",
                         "runs/agent_surface_index.json",
+                        "runs/known_agent_passport_index.json",
+                        "runs/agent_passport_verification_report.json",
                         "runs/agent_verification_gap_index.json",
                     ]
                 },
@@ -11450,6 +11498,11 @@ def test_build_external_consumer_evidence_index_accepts_specspace_evidence(
                     "runs/agent_surface_index.json",
                     "runs/agent_verification_gap_index.json",
                 ],
+                "accepted_contract_artifacts": [
+                    "runs/supervisor_executor_adapter_index.json",
+                    "runs/agent_surface_index.json",
+                    "runs/agent_verification_gap_index.json",
+                ],
                 "evidence": [
                     {"kind": "pull_request", "ref": "0al-spec/SpecSpace#225"},
                     {"kind": "test", "ref": "SpecSpace CI", "status": "success"},
@@ -11469,6 +11522,16 @@ def test_build_external_consumer_evidence_index_accepts_specspace_evidence(
     assert entry["acceptance_status"] == "accepted"
     assert entry["next_gap"] == "none"
     assert entry["handoff_reference"]["source_proposal_ids"] == ["0056", "0059"]
+    assert entry["accepted_contract_artifacts"] == [
+        "runs/supervisor_executor_adapter_index.json",
+        "runs/agent_surface_index.json",
+        "runs/agent_verification_gap_index.json",
+    ]
+    assert entry["contract_evaluation"]["accepted_contract_artifacts"] == [
+        "runs/supervisor_executor_adapter_index.json",
+        "runs/agent_surface_index.json",
+        "runs/agent_verification_gap_index.json",
+    ]
     assert entry["contract_evaluation"]["diagnostics"] == []
     assert index["viewer_projection"]["named_filters"]["accepted"] == [
         "specspace-agent-surface-visibility-20260606"

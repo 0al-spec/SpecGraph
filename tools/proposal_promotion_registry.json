@@ -934,5 +934,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0073",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0073_agent_passport_posture_consumer_contract.md"
+    ],
+    "motivating_concern": "SpecSpace needs a stable consumer-facing contract for Agent Passport verification and runtime posture artifacts before implementing the posture UI surface",
+    "normalized_title": "Agent Passport Posture Consumer Contract",
+    "bounded_scope": "Extend the existing SpecSpace external consumer handoff and Agent Passport adoption policy with the full report-only posture artifact set, display states, fallback states, and privacy boundary without implementing SpecSpace UI, runtime enforcement, Platform deploy changes, or a new handoff artifact family.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]
