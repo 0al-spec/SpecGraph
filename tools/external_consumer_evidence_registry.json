@@ -46,6 +46,55 @@
       ],
       "result": "implemented",
       "notes": "SpecSpace implemented the agent surface visibility panel against the stable SpecGraph handoff contract and Platform published the Timeweb deploy branch."
+    },
+    {
+      "evidence_id": "specspace-agent-passport-posture-20260607",
+      "handoff_id": "external_consumer_handoff::specspace",
+      "consumer_id": "specspace",
+      "consumer": "SpecSpace",
+      "implementation_ref": "https://github.com/0al-spec/SpecSpace/pull/227",
+      "consumed_artifacts": [
+        "runs/supervisor_executor_adapter_index.json",
+        "runs/agent_surface_index.json",
+        "runs/known_agent_passport_index.json",
+        "runs/agent_passport_verification_report.json",
+        "runs/agent_verification_gap_index.json"
+      ],
+      "accepted_contract_artifacts": [
+        "runs/supervisor_executor_adapter_index.json",
+        "runs/agent_surface_index.json",
+        "runs/known_agent_passport_index.json",
+        "runs/agent_passport_verification_report.json",
+        "runs/agent_verification_gap_index.json"
+      ],
+      "evidence": [
+        {
+          "kind": "pull_request",
+          "ref": "0al-spec/SpecSpace#227",
+          "status": "merged",
+          "url": "https://github.com/0al-spec/SpecSpace/pull/227"
+        },
+        {
+          "kind": "test",
+          "ref": "SpecSpace CI",
+          "status": "success",
+          "url": "https://github.com/0al-spec/SpecSpace/actions/runs/27086013200"
+        },
+        {
+          "kind": "smoke",
+          "ref": "SpecSpace Production Deploy Smoke",
+          "status": "success",
+          "url": "https://github.com/0al-spec/SpecSpace/actions/runs/27086013200"
+        },
+        {
+          "kind": "smoke",
+          "ref": "Platform Timeweb Publish 27086037221",
+          "status": "success",
+          "url": "https://github.com/0al-spec/Platform/actions/runs/27086037221"
+        }
+      ],
+      "result": "implemented",
+      "notes": "SpecSpace implemented the Agent Passport posture UI against the 0073 handoff contract and Platform published the Timeweb deploy branch."
     }
   ]
 }
