@@ -51,6 +51,7 @@ The SpecSpace handoff artifact contract now includes:
 
 ```text
 runs/agent_runtime_enforcement_evidence_index.json
+runs/agent_runtime_enforcement_evidence/supervisor-executor-adapter-smoke.json
 ```
 
 The stable consumer-facing fields include:
@@ -87,7 +88,8 @@ existing Agent Passport posture artifacts.
 This slice is complete when:
 
 - the SpecSpace handoff packet includes
-  `runs/agent_runtime_enforcement_evidence_index.json`;
+  `runs/agent_runtime_enforcement_evidence_index.json` and the supervisor
+  executor adapter smoke detail artifact;
 - `tools/agent_passport_adoption_policy.json` declares the same consumer
   artifact and display states;
 - focused tests prove the registry-level SpecSpace handoff remains

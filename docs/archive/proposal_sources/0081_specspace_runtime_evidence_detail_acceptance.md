@@ -12,6 +12,7 @@ from aggregate rows to safe detail artifact checks in PR `#229`.
 - Keep using `runs/external_consumer_evidence_index.json`.
 - Include the runtime evidence index and the supervisor executor adapter smoke
   detail artifact as consumed artifacts.
+- Add the detail artifact to the stable SpecSpace handoff contract.
 - Do not mutate SpecSpace or Platform in this slice.
 - Do not claim observed runtime enforcement.
 

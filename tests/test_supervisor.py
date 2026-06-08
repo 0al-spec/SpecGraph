@@ -11159,6 +11159,7 @@ def test_specspace_registry_handoff_contract_is_stable_and_ready(
         "0072",
         "0073",
         "0078",
+        "0081",
     ]
     assert ready["artifact_contract"]["status"] == "stable"
     assert ready["artifact_contract"]["paths"] == [
@@ -11168,6 +11169,7 @@ def test_specspace_registry_handoff_contract_is_stable_and_ready(
         "runs/agent_passport_verification_report.json",
         "runs/agent_verification_gap_index.json",
         "runs/agent_runtime_enforcement_evidence_index.json",
+        "runs/agent_runtime_enforcement_evidence/supervisor-executor-adapter-smoke.json",
     ]
     assert "viewer_projection" in ready["artifact_contract"]["stable_fields"]
     assert "required_checks" in ready["artifact_contract"]["stable_fields"]
@@ -11488,6 +11490,10 @@ def test_build_external_consumer_evidence_index_accepts_specspace_evidence(
                         "runs/agent_passport_verification_report.json",
                         "runs/agent_verification_gap_index.json",
                         "runs/agent_runtime_enforcement_evidence_index.json",
+                        (
+                            "runs/agent_runtime_enforcement_evidence/"
+                            "supervisor-executor-adapter-smoke.json"
+                        ),
                     ]
                 },
                 "evidence_contract": {
@@ -11773,6 +11779,73 @@ def test_build_external_consumer_evidence_index_reports_contract_mismatch(
     assert index["evidence_backlog"]["grouped_by_next_gap"] == {
         "repair_consumer_evidence_contract": ["bad-specspace-evidence"]
     }
+
+
+def test_build_external_consumer_evidence_rejects_non_contract_accepted_artifacts(
+    supervisor_module: object,
+) -> None:
+    handoffs = {
+        "generated_at": "2026-06-06T00:00:00Z",
+        "entries": [
+            {
+                "handoff_id": "external_consumer_handoff::specspace",
+                "consumer_id": "specspace",
+                "handoff_status": "ready_for_handoff",
+                "artifact_contract": {
+                    "status": "stable",
+                    "paths": [
+                        "runs/supervisor_executor_adapter_index.json",
+                        "runs/agent_surface_index.json",
+                    ],
+                },
+                "evidence_contract": {
+                    "required_fields": [
+                        "handoff_id",
+                        "consumer",
+                        "implementation_ref",
+                        "consumed_artifacts",
+                        "evidence",
+                        "result",
+                    ],
+                    "accepted_evidence_kinds": ["pull_request"],
+                    "result_values": ["implemented"],
+                },
+            }
+        ],
+    }
+    registry = {
+        "entries": [
+            {
+                "evidence_id": "drifted-specspace-evidence",
+                "handoff_id": "external_consumer_handoff::specspace",
+                "consumer_id": "specspace",
+                "consumer": "SpecSpace",
+                "implementation_ref": "https://github.com/0al-spec/SpecSpace/pull/229",
+                "consumed_artifacts": [
+                    "runs/supervisor_executor_adapter_index.json",
+                    "runs/agent_surface_index.json",
+                    "runs/agent_runtime_enforcement_evidence/detail.json",
+                ],
+                "accepted_contract_artifacts": [
+                    "runs/supervisor_executor_adapter_index.json",
+                    "runs/agent_surface_index.json",
+                    "runs/agent_runtime_enforcement_evidence/detail.json",
+                ],
+                "evidence": [{"kind": "pull_request", "ref": "0al-spec/SpecSpace#229"}],
+                "result": "implemented",
+            }
+        ]
+    }
+
+    index = supervisor_module.build_external_consumer_evidence_index(handoffs, registry)
+
+    entry = index["entries"][0]
+    assert entry["acceptance_status"] == "contract_mismatch"
+    diagnostics = {diagnostic["code"] for diagnostic in entry["contract_evaluation"]["diagnostics"]}
+    assert diagnostics == {"accepted_artifacts_not_in_handoff_contract"}
+    assert entry["contract_evaluation"]["non_contract_accepted_artifacts"] == [
+        "runs/agent_runtime_enforcement_evidence/detail.json"
+    ]
 
 
 def test_external_consumer_evidence_uses_policy_registry_path(

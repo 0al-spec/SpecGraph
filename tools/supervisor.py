@@ -23170,6 +23170,12 @@ def derive_external_consumer_evidence_acceptance(
     required_consumed_artifacts = accepted_contract_artifacts or [
         str(path).strip() for path in artifact_contract.get("paths", []) if str(path).strip()
     ]
+    handoff_contract_artifacts = {
+        str(path).strip() for path in artifact_contract.get("paths", []) if str(path).strip()
+    }
+    non_contract_accepted_artifacts = sorted(
+        path for path in accepted_contract_artifacts if path not in handoff_contract_artifacts
+    )
     missing_consumed_artifacts = sorted(
         path for path in required_consumed_artifacts if path not in consumed_artifacts
     )
@@ -23230,6 +23236,18 @@ def derive_external_consumer_evidence_acceptance(
                 "paths": missing_consumed_artifacts,
             }
         )
+    if non_contract_accepted_artifacts:
+        diagnostics.append(
+            {
+                "severity": "error",
+                "code": "accepted_artifacts_not_in_handoff_contract",
+                "message": (
+                    "Accepted contract artifact(s) are not declared by the handoff artifact "
+                    "contract."
+                ),
+                "paths": non_contract_accepted_artifacts,
+            }
+        )
     if privacy_violation:
         diagnostics.append(
             {
@@ -23282,6 +23300,7 @@ def derive_external_consumer_evidence_acceptance(
         "invalid_evidence_kinds": invalid_evidence_kinds,
         "invalid_evidence_statuses": invalid_evidence_statuses,
         "missing_consumed_artifacts": missing_consumed_artifacts,
+        "non_contract_accepted_artifacts": non_contract_accepted_artifacts,
         "accepted_contract_artifacts": accepted_contract_artifacts,
         "privacy_violation": privacy_violation,
     }

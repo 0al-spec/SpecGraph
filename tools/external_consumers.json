@@ -245,7 +245,8 @@
           "0071",
           "0072",
           "0073",
-          "0078"
+          "0078",
+          "0081"
         ],
         "source_gap": "agent_executor_passport_visibility_not_projected_to_specspace",
         "artifact_contract": {
@@ -257,7 +258,8 @@
             "runs/known_agent_passport_index.json",
             "runs/agent_passport_verification_report.json",
             "runs/agent_verification_gap_index.json",
-            "runs/agent_runtime_enforcement_evidence_index.json"
+            "runs/agent_runtime_enforcement_evidence_index.json",
+            "runs/agent_runtime_enforcement_evidence/supervisor-executor-adapter-smoke.json"
           ],
           "stable_fields": [
             "artifact_kind",

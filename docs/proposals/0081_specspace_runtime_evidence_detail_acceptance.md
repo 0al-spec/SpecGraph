@@ -34,6 +34,8 @@ external consumer evidence acceptance plane.
   handoff.
 - Include both the runtime evidence index and the supervisor executor adapter
   smoke detail artifact in consumed and accepted contract artifacts.
+- Promote that detail artifact into the stable SpecSpace handoff contract so
+  accepted downstream evidence cannot drift beyond advertised producer paths.
 - Reference SpecSpace CI/deploy smoke and Platform Timeweb publish evidence.
 
 ## Non-Goals
