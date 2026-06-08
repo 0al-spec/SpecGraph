@@ -56,10 +56,46 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -e .[dev]
 
+      - name: Install Agent Passport CLI
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          release_tag="$(
+            gh release view \
+              --repo 0al-spec/agent-passport \
+              --json tagName \
+              --jq '.tagName'
+          )"
+          if [ -z "$release_tag" ]; then
+            echo "No Agent Passport release tag found." >&2
+            exit 1
+          fi
+          version="${release_tag#v}"
+          host="x86_64-unknown-linux-gnu"
+          asset="agent-passport-${version}-${host}"
+          artifact_dir="$RUNNER_TEMP/agent-passport-linux-amd64"
+          install_dir="$RUNNER_TEMP/agent-passport-bin"
+          mkdir -p "$artifact_dir" "$install_dir"
+
+          gh release download "$release_tag" \
+            --repo 0al-spec/agent-passport \
+            --pattern "${asset}*" \
+            --dir "$artifact_dir"
+
+          (
+            cd "$artifact_dir"
+            sha256sum -c "${asset}.sha256"
+          )
+          install -m 0755 "$artifact_dir/$asset" "$install_dir/agent-passport"
+          echo "$install_dir" >> "$GITHUB_PATH"
+          "$install_dir/agent-passport" --help >/dev/null
+
       - name: Build bundle
         env:
           SPECGRAPH_EXTERNAL_CHECKOUT_ROOT: ${{ github.workspace }}/external
-        run: make publish-bundle
+        run: make publish-bundle PUBLISH_BUNDLE_FLAGS=
 
       - name: Upload bundle as GitHub Actions artifact
         uses: actions/upload-artifact@v7

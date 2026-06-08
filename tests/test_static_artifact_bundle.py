@@ -41,20 +41,41 @@ def make_repo(root: Path) -> Path:
         + "\n",
         encoding="utf-8",
     )
-    for name in (
-        "graph_dashboard.json",
-        "graph_backlog_projection.json",
-        "graph_next_moves.json",
-        "implementation_work_index.json",
-        "spec_activity_feed.json",
-        "supervisor_executor_adapter_index.json",
-        "agent_surface_index.json",
-        "known_agent_passport_index.json",
-        "agent_passport_verification_report.json",
-        "agent_verification_gap_index.json",
-        "agent_runtime_enforcement_evidence_index.json",
-    ):
-        write_json(runs_dir / name, {"artifact_kind": name.removesuffix(".json")})
+    artifacts = {
+        "graph_dashboard.json": {"artifact_kind": "graph_dashboard"},
+        "graph_backlog_projection.json": {"artifact_kind": "graph_backlog_projection"},
+        "graph_next_moves.json": {"artifact_kind": "graph_next_moves"},
+        "implementation_work_index.json": {"artifact_kind": "implementation_work_index"},
+        "spec_activity_feed.json": {"artifact_kind": "spec_activity_feed"},
+        "supervisor_executor_adapter_index.json": {
+            "artifact_kind": "supervisor_executor_adapter_index",
+            "summary": {"agent_passport_cli_status": "available"},
+        },
+        "agent_surface_index.json": {"artifact_kind": "agent_surface_index"},
+        "known_agent_passport_index.json": {"artifact_kind": "known_agent_passport_index"},
+        "agent_passport_verification_report.json": {
+            "artifact_kind": "agent_passport_verification_report",
+            "summary": {
+                "entry_count": 5,
+                "valid_count": 5,
+                "tool_unavailable_count": 0,
+                "agent_passport_cli_status": "available",
+            },
+        },
+        "agent_verification_gap_index.json": {
+            "artifact_kind": "agent_verification_gap_index",
+            "summary": {
+                "verification_tool_unavailable_count": 0,
+                "verification_not_attempted_count": 0,
+                "agent_passport_cli_status": "available",
+            },
+        },
+        "agent_runtime_enforcement_evidence_index.json": {
+            "artifact_kind": "agent_runtime_enforcement_evidence_index"
+        },
+    }
+    for name, payload in artifacts.items():
+        write_json(runs_dir / name, payload)
     write_json(
         runs_dir / "agent_runtime_enforcement_evidence" / "supervisor-executor-adapter-smoke.json",
         {"artifact_kind": "agent_runtime_enforcement_evidence"},
@@ -236,6 +257,86 @@ def test_build_public_bundle_requires_agent_runtime_surface(
             repo_root=repo,
             output_dir=repo / "dist" / "specgraph-public",
         )
+
+
+def test_build_public_bundle_requires_agent_passport_cli_available(
+    tmp_path: Path,
+    bundle_module: object,
+) -> None:
+    repo = make_repo(tmp_path / "repo")
+    write_json(
+        repo / "runs" / "agent_passport_verification_report.json",
+        {
+            "artifact_kind": "agent_passport_verification_report",
+            "summary": {
+                "entry_count": 5,
+                "valid_count": 0,
+                "tool_unavailable_count": 5,
+                "agent_passport_cli_status": "missing",
+            },
+        },
+    )
+
+    with pytest.raises(
+        bundle_module.PublishBundleError,
+        match="agent_passport_verification_report.json.summary.agent_passport_cli_status",
+    ):
+        bundle_module.build_public_bundle(
+            repo_root=repo,
+            output_dir=repo / "dist" / "specgraph-public",
+        )
+
+
+def test_build_public_bundle_requires_all_agent_passports_valid(
+    tmp_path: Path,
+    bundle_module: object,
+) -> None:
+    repo = make_repo(tmp_path / "repo")
+    write_json(
+        repo / "runs" / "agent_passport_verification_report.json",
+        {
+            "artifact_kind": "agent_passport_verification_report",
+            "summary": {
+                "entry_count": 5,
+                "valid_count": 4,
+                "tool_unavailable_count": 0,
+                "agent_passport_cli_status": "available",
+            },
+        },
+    )
+
+    with pytest.raises(bundle_module.PublishBundleError, match="all report-only passport"):
+        bundle_module.build_public_bundle(
+            repo_root=repo,
+            output_dir=repo / "dist" / "specgraph-public",
+        )
+
+
+def test_build_public_bundle_can_opt_out_of_verified_agent_passports_for_local_drafts(
+    tmp_path: Path,
+    bundle_module: object,
+) -> None:
+    repo = make_repo(tmp_path / "repo")
+    write_json(
+        repo / "runs" / "agent_passport_verification_report.json",
+        {
+            "artifact_kind": "agent_passport_verification_report",
+            "summary": {
+                "entry_count": 5,
+                "valid_count": 0,
+                "tool_unavailable_count": 5,
+                "agent_passport_cli_status": "missing",
+            },
+        },
+    )
+
+    result = bundle_module.build_public_bundle(
+        repo_root=repo,
+        output_dir=repo / "dist" / "specgraph-public",
+        require_verified_agent_passports=False,
+    )
+
+    assert result.manifest["safety_gate"]["status"] == "passed"
 
 
 def test_refresh_publish_surfaces_builds_viewer_implementation_and_agent_surfaces(

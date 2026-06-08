@@ -3965,5 +3965,78 @@
         "pattern": "executor_adapter_invocation_boundary"
       }
     ]
+  },
+  {
+    "proposal_id": "0082",
+    "posture": "bounded_runtime_followup",
+    "runtime_surfaces": [
+      "docs/proposals/0082_agent_passport_cli_static_publish.md",
+      "docs/archive/proposal_sources/0082_agent_passport_cli_static_publish.md",
+      ".github/workflows/publish-static-artifacts.yml",
+      "Makefile",
+      "tools/build_static_artifact_bundle.py",
+      "tests/test_static_artifact_bundle.py",
+      "docs/static_artifact_publish.md",
+      "Sources/SpecGraph/Documentation.docc/ArtifactPublishing.md",
+      "tools/README.md"
+    ],
+    "runtime_markers": [
+      {
+        "path": ".github/workflows/publish-static-artifacts.yml",
+        "pattern": "Install Agent Passport CLI"
+      },
+      {
+        "path": ".github/workflows/publish-static-artifacts.yml",
+        "pattern": "0al-spec/agent-passport"
+      },
+      {
+        "path": ".github/workflows/publish-static-artifacts.yml",
+        "pattern": "make publish-bundle PUBLISH_BUNDLE_FLAGS="
+      },
+      {
+        "path": "Makefile",
+        "pattern": "PUBLISH_BUNDLE_FLAGS ?= --allow-unverified-agent-passports"
+      },
+      {
+        "path": "tools/build_static_artifact_bundle.py",
+        "pattern": "def validate_agent_passport_publish_surfaces("
+      },
+      {
+        "path": "tools/build_static_artifact_bundle.py",
+        "pattern": "--allow-unverified-agent-passports"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_static_artifact_bundle.py",
+        "pattern": "def test_build_public_bundle_requires_agent_passport_cli_available("
+      },
+      {
+        "path": "tests/test_static_artifact_bundle.py",
+        "pattern": "def test_build_public_bundle_requires_all_agent_passports_valid("
+      },
+      {
+        "path": "tests/test_static_artifact_bundle.py",
+        "pattern": "def test_build_public_bundle_can_opt_out_of_verified_agent_passports_for_local_drafts("
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0082_agent_passport_cli_static_publish.md",
+        "pattern": "agent_passport_cli_status: available"
+      },
+      {
+        "path": "docs/static_artifact_publish.md",
+        "pattern": "Agent Passport CLI is installed during the publish workflow"
+      },
+      {
+        "path": "Sources/SpecGraph/Documentation.docc/ArtifactPublishing.md",
+        "pattern": "Public static publishing also requires successful report-only Agent Passport CLI validation"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "public static publish requires successful report-only Agent Passport CLI validation"
+      }
+    ]
   }
 ]

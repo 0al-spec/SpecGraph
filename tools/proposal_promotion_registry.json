@@ -1051,5 +1051,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0082",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0082_agent_passport_cli_static_publish.md"
+    ],
+    "motivating_concern": "Public SpecGraph static artifacts can still report Agent Passport CLI missing because the publish runner does not install the Agent Passport release binary before refreshing producer artifacts",
+    "normalized_title": "Agent Passport CLI Availability in Static Publish",
+    "bounded_scope": "Install the Agent Passport CLI in the static publish build job and fail closed when public bundles do not contain successful report-only Agent Passport validation, without committing binaries, changing Agent Passport schema, mutating SpecSpace or Platform, or claiming runtime enforcement.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]
