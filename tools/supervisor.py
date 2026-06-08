@@ -18180,7 +18180,16 @@ def current_supervisor_executor_runtime_environment() -> str:
     }
     default_environment = str(contract.get("default_environment", "")).strip()
     ci_environment = str(contract.get("ci_environment", "")).strip()
-    override = os.environ.get(SUPERVISOR_EXECUTOR_RUNTIME_ENVIRONMENT_ENV_VAR, "").strip()
+    override_env_var = (
+        str(
+            contract.get(
+                "producer_environment_env_var",
+                SUPERVISOR_EXECUTOR_RUNTIME_ENVIRONMENT_ENV_VAR,
+            )
+        ).strip()
+        or SUPERVISOR_EXECUTOR_RUNTIME_ENVIRONMENT_ENV_VAR
+    )
+    override = os.environ.get(override_env_var, "").strip()
     if override:
         return (
             override

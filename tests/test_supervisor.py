@@ -27240,6 +27240,27 @@ def test_agent_surface_index_carries_executor_runtime_environment(
     assert surface["runtime_environment"]["missing_executable_is_static_publish_gap"] is True
 
 
+def test_supervisor_executor_runtime_environment_uses_policy_env_var(
+    supervisor_module: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    policy = copy.deepcopy(supervisor_module.SUPERVISOR_EXECUTOR_ADAPTER_POLICY)
+    policy["runtime_environment_contract"]["producer_environment_env_var"] = (
+        "SPECGRAPH_TEST_RUNTIME_ENVIRONMENT"
+    )
+    monkeypatch.setattr(supervisor_module, "SUPERVISOR_EXECUTOR_ADAPTER_POLICY", policy)
+    monkeypatch.setenv("SPECGRAPH_TEST_RUNTIME_ENVIRONMENT", "static_publish_environment")
+    monkeypatch.setenv(
+        supervisor_module.SUPERVISOR_EXECUTOR_RUNTIME_ENVIRONMENT_ENV_VAR,
+        "local_operator_environment",
+    )
+
+    assert (
+        supervisor_module.current_supervisor_executor_runtime_environment()
+        == "static_publish_environment"
+    )
+
+
 def test_command_availability_rejects_directory_candidates(
     supervisor_module: object,
     repo_fixture: Path,
