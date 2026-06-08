@@ -4041,7 +4041,7 @@
   },
   {
     "proposal_id": "0083",
-    "posture": "deferred_runtime_candidate",
+    "posture": "deferred_until_canonicalized",
     "runtime_surfaces": [
       "docs/proposals/0083_pi_harness_candidate_deferred.md",
       "docs/archive/proposal_sources/0083_pi_harness_candidate_deferred.md"
