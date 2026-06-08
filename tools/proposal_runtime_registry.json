@@ -3906,5 +3906,64 @@
         "pattern": "supervisor executor adapter invocation-boundary smoke"
       }
     ]
+  },
+  {
+    "proposal_id": "0081",
+    "posture": "bounded_runtime_followup",
+    "runtime_surfaces": [
+      "docs/proposals/0081_specspace_runtime_evidence_detail_acceptance.md",
+      "docs/archive/proposal_sources/0081_specspace_runtime_evidence_detail_acceptance.md",
+      "tools/external_consumers.json",
+      "tools/external_consumer_evidence_registry.json",
+      "tools/supervisor.py",
+      "tests/test_supervisor.py",
+      "runs/external_consumer_evidence_index.json"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/external_consumers.json",
+        "pattern": "runs/agent_runtime_enforcement_evidence/supervisor-executor-adapter-smoke.json"
+      },
+      {
+        "path": "tools/external_consumer_evidence_registry.json",
+        "pattern": "specspace-agent-runtime-evidence-detail-20260608"
+      },
+      {
+        "path": "tools/external_consumer_evidence_registry.json",
+        "pattern": "runs/agent_runtime_enforcement_evidence/supervisor-executor-adapter-smoke.json"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def build_external_consumer_evidence_index("
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "specspace-agent-runtime-evidence-detail-20260608"
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "runs/agent_runtime_enforcement_evidence/supervisor-executor-adapter-smoke.json"
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_external_consumer_evidence_rejects_non_contract_accepted_artifacts("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_external_consumer_evidence_index_accepts_specspace_evidence("
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0081_specspace_runtime_evidence_detail_acceptance.md",
+        "pattern": "SpecSpace PR: `https://github.com/0al-spec/SpecSpace/pull/229`"
+      },
+      {
+        "path": "docs/proposals/0081_specspace_runtime_evidence_detail_acceptance.md",
+        "pattern": "executor_adapter_invocation_boundary"
+      }
+    ]
   }
 ]
