@@ -1038,5 +1038,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0081",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0081_specspace_runtime_evidence_detail_acceptance.md"
+    ],
+    "motivating_concern": "SpecSpace renders aggregate runtime evidence, but SpecGraph has not accepted downstream evidence for the nested runtime evidence detail checks added in SpecSpace PR #229",
+    "normalized_title": "SpecSpace Runtime Evidence Detail Acceptance",
+    "bounded_scope": "Record report-only external consumer evidence for SpecSpace PR #229 consuming runtime enforcement evidence detail artifacts, while preserving earlier SpecSpace evidence, avoiding SpecSpace or Platform mutations, and making no observed runtime enforcement claim.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

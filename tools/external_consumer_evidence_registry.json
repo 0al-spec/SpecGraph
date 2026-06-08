@@ -146,6 +146,59 @@
       ],
       "result": "implemented",
       "notes": "SpecSpace implemented the Agent runtime enforcement evidence UI/API projection against the 0078 handoff contract and Platform published the Timeweb deploy branch."
+    },
+    {
+      "evidence_id": "specspace-agent-runtime-evidence-detail-20260608",
+      "handoff_id": "external_consumer_handoff::specspace",
+      "consumer_id": "specspace",
+      "consumer": "SpecSpace",
+      "implementation_ref": "https://github.com/0al-spec/SpecSpace/pull/229",
+      "consumed_artifacts": [
+        "runs/supervisor_executor_adapter_index.json",
+        "runs/agent_surface_index.json",
+        "runs/known_agent_passport_index.json",
+        "runs/agent_passport_verification_report.json",
+        "runs/agent_verification_gap_index.json",
+        "runs/agent_runtime_enforcement_evidence_index.json",
+        "runs/agent_runtime_enforcement_evidence/supervisor-executor-adapter-smoke.json"
+      ],
+      "accepted_contract_artifacts": [
+        "runs/supervisor_executor_adapter_index.json",
+        "runs/agent_surface_index.json",
+        "runs/known_agent_passport_index.json",
+        "runs/agent_passport_verification_report.json",
+        "runs/agent_verification_gap_index.json",
+        "runs/agent_runtime_enforcement_evidence_index.json",
+        "runs/agent_runtime_enforcement_evidence/supervisor-executor-adapter-smoke.json"
+      ],
+      "evidence": [
+        {
+          "kind": "pull_request",
+          "ref": "0al-spec/SpecSpace#229",
+          "status": "merged",
+          "url": "https://github.com/0al-spec/SpecSpace/pull/229"
+        },
+        {
+          "kind": "test",
+          "ref": "SpecSpace CI",
+          "status": "success",
+          "url": "https://github.com/0al-spec/SpecSpace/actions/runs/27107160978"
+        },
+        {
+          "kind": "smoke",
+          "ref": "SpecSpace Production Deploy Smoke",
+          "status": "success",
+          "url": "https://github.com/0al-spec/SpecSpace/actions/runs/27107160978"
+        },
+        {
+          "kind": "smoke",
+          "ref": "Platform Timeweb Publish 27107183404",
+          "status": "success",
+          "url": "https://github.com/0al-spec/Platform/actions/runs/27107183404"
+        }
+      ],
+      "result": "implemented",
+      "notes": "SpecSpace expanded the Agent runtime evidence UI/API projection to read safe detail artifacts and render nested evidence checks, including executor_adapter_invocation_boundary, after Platform published the Timeweb deploy branch."
     }
   ]
 }
