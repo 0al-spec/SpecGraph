@@ -59,13 +59,19 @@ adds that directory to `PATH`.
 `make publish-bundle` then refreshes Agent Passport surfaces and fails closed if
 the generated publish bundle does not show:
 
-- `agent_passport_cli_status: available`;
-- `agent_passport_verification_report.summary.valid_count ==
-  agent_passport_verification_report.summary.entry_count`;
-- no `verification_tool_unavailable` or `verification_not_attempted` gaps.
+- `runs/supervisor_executor_adapter_index.json` summary field
+  `agent_passport_cli_status: available`;
+- `runs/agent_passport_verification_report.json` summary field `valid_count`
+  equal to `runs/agent_passport_verification_report.json` summary field
+  `entry_count`;
+- `runs/agent_verification_gap_index.json` summary fields
+  `verification_tool_unavailable_count: 0` and
+  `verification_not_attempted_count: 0`.
 
-The bundle builder exposes `--allow-unverified-agent-passports` only for
-explicit local/draft builds. The default public path remains strict.
+The bundle builder defaults to strict verification. The local Makefile
+shortcut passes `--allow-unverified-agent-passports` by default for draft
+operator builds, while the public publish workflow clears that local flag and
+keeps the static host path strict.
 
 ## Acceptance
 

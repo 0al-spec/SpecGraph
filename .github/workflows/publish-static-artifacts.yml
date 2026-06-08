@@ -95,7 +95,7 @@ jobs:
       - name: Build bundle
         env:
           SPECGRAPH_EXTERNAL_CHECKOUT_ROOT: ${{ github.workspace }}/external
-        run: make publish-bundle
+        run: make publish-bundle PUBLISH_BUNDLE_FLAGS=
 
       - name: Upload bundle as GitHub Actions artifact
         uses: actions/upload-artifact@v7

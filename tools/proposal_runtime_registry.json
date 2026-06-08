@@ -3973,9 +3973,11 @@
       "docs/proposals/0082_agent_passport_cli_static_publish.md",
       "docs/archive/proposal_sources/0082_agent_passport_cli_static_publish.md",
       ".github/workflows/publish-static-artifacts.yml",
+      "Makefile",
       "tools/build_static_artifact_bundle.py",
       "tests/test_static_artifact_bundle.py",
       "docs/static_artifact_publish.md",
+      "Sources/SpecGraph/Documentation.docc/ArtifactPublishing.md",
       "tools/README.md"
     ],
     "runtime_markers": [
@@ -3986,6 +3988,14 @@
       {
         "path": ".github/workflows/publish-static-artifacts.yml",
         "pattern": "0al-spec/agent-passport"
+      },
+      {
+        "path": ".github/workflows/publish-static-artifacts.yml",
+        "pattern": "make publish-bundle PUBLISH_BUNDLE_FLAGS="
+      },
+      {
+        "path": "Makefile",
+        "pattern": "PUBLISH_BUNDLE_FLAGS ?= --allow-unverified-agent-passports"
       },
       {
         "path": "tools/build_static_artifact_bundle.py",
@@ -4018,6 +4028,10 @@
       {
         "path": "docs/static_artifact_publish.md",
         "pattern": "Agent Passport CLI is installed during the publish workflow"
+      },
+      {
+        "path": "Sources/SpecGraph/Documentation.docc/ArtifactPublishing.md",
+        "pattern": "Public static publishing also requires successful report-only Agent Passport CLI validation"
       },
       {
         "path": "tools/README.md",

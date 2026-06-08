@@ -2,6 +2,7 @@ PYTHON ?= python3
 SUPERVISOR ?= tools/supervisor.py
 PYTEST ?= $(PYTHON) -m pytest
 CHECK_PYTHON ?= tools/check_python_version.py
+PUBLISH_BUNDLE_FLAGS ?= --allow-unverified-agent-passports
 PRODUCT_WORKSPACE_PROJECT_ID ?=
 PRODUCT_WORKSPACE_DISPLAY_NAME ?=
 PRODUCT_WORKSPACE_ROOT ?=
@@ -260,7 +261,7 @@ docc-sync:
 
 .PHONY: publish-bundle
 publish-bundle:
-	@$(PYTHON) tools/build_static_artifact_bundle.py --refresh-publish-surfaces
+	@$(PYTHON) tools/build_static_artifact_bundle.py --refresh-publish-surfaces $(PUBLISH_BUNDLE_FLAGS)
 
 .PHONY: test
 test:
