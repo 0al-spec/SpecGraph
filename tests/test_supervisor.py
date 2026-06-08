@@ -27060,6 +27060,12 @@ def test_supervisor_executor_adapter_policy_declares_request_report_contract() -
     assert "codex" in backends_by_id
     assert backends_by_id["codex"]["preferred_paths"] == []
     assert policy["agent_passport_cli"]["tool_id"] == "agent-passport"
+    runtime_environment = policy["runtime_environment_contract"]
+    assert runtime_environment["producer_environment_env_var"] == (
+        "SPECGRAPH_EXECUTOR_RUNTIME_ENVIRONMENT"
+    )
+    assert "static_publish_environment" in runtime_environment["environment_values"]
+    assert "local_operator_environment" in runtime_environment["environment_values"]
 
     request = policy["request_contract"]
     assert request["artifact_kind"] == "supervisor_executor_request"
@@ -27100,6 +27106,10 @@ def test_build_supervisor_executor_adapter_index_reports_codex_and_passport_gap(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.delenv(supervisor_module.CODEX_EXECUTABLE_ENV_VAR, raising=False)
+    monkeypatch.setenv(
+        supervisor_module.SUPERVISOR_EXECUTOR_RUNTIME_ENVIRONMENT_ENV_VAR,
+        "local_operator_environment",
+    )
     monkeypatch.setattr(
         supervisor_module.shutil,
         "which",
@@ -27112,6 +27122,10 @@ def test_build_supervisor_executor_adapter_index_reports_codex_and_passport_gap(
     assert index["schema_version"] == 1
     assert index["summary"]["default_backend_id"] == "codex"
     assert index["summary"]["default_backend_status"] == "available"
+    assert index["summary"]["producer_environment"] == "local_operator_environment"
+    assert index["summary"]["default_backend_intended_environment"] == (
+        "local_operator_environment"
+    )
     assert index["summary"]["agent_passport_cli_status"] == "missing"
     assert index["summary"]["next_gap"] == "run_executor_adapter_smoke_benchmark"
     assert index["stable_fields"] == [
@@ -27131,6 +27145,16 @@ def test_build_supervisor_executor_adapter_index_reports_codex_and_passport_gap(
     assert entry["backend_id"] == "codex"
     assert entry["backend_status"] == "available"
     assert entry["authority_state"] == "default"
+    assert entry["runtime_environment"] == {
+        "producer_environment": "local_operator_environment",
+        "intended_environment": "local_operator_environment",
+        "executable_probe_scope": "current_process_environment",
+        "backend_status_semantics": "executable_available_in_current_process_environment",
+        "static_publish_executable_required": False,
+        "local_operator_executable_required": True,
+        "missing_executable_is_static_publish_gap": False,
+        "operator_next_action": "run_executor_adapter_smoke_benchmark",
+    }
     assert entry["executable_availability"] == {
         "status": "available",
         "resolution_source": "path",
@@ -27158,6 +27182,10 @@ def test_build_supervisor_executor_adapter_index_blocks_missing_codex(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     missing_codex = repo_fixture / "missing-codex"
+    monkeypatch.setenv(
+        supervisor_module.SUPERVISOR_EXECUTOR_RUNTIME_ENVIRONMENT_ENV_VAR,
+        "static_publish_environment",
+    )
     monkeypatch.setenv(supervisor_module.CODEX_EXECUTABLE_ENV_VAR, missing_codex.as_posix())
     monkeypatch.setattr(supervisor_module.shutil, "which", lambda _name: None)
 
@@ -27165,13 +27193,51 @@ def test_build_supervisor_executor_adapter_index_blocks_missing_codex(
 
     entry = index["entries"][0]
     assert index["summary"]["default_backend_status"] == "missing_executable"
+    assert index["summary"]["producer_environment"] == "static_publish_environment"
+    assert index["summary"]["default_backend_intended_environment"] == (
+        "local_operator_environment"
+    )
     assert index["summary"]["next_gap"] == "configure_default_executor_backend"
     assert entry["backend_status"] == "missing_executable"
+    assert entry["runtime_environment"]["producer_environment"] == "static_publish_environment"
+    assert entry["runtime_environment"]["intended_environment"] == "local_operator_environment"
+    assert entry["runtime_environment"]["backend_status_semantics"] == (
+        "executable_not_available_in_current_process_environment"
+    )
+    assert entry["runtime_environment"]["missing_executable_is_static_publish_gap"] is True
+    assert entry["runtime_environment"]["operator_next_action"] == (
+        "configure_local_operator_executable"
+    )
     assert entry["safe_next_action"] == "configure_backend_executable"
     assert entry["executable_availability"]["resolution_source"] == "env_override"
     assert entry["executable_availability"]["path_persisted"] is False
     assert "missing_executable" in {gap["gap_kind"] for gap in entry["capability_gaps"]}
     assert missing_codex.as_posix() not in json.dumps(index, sort_keys=True)
+
+
+def test_agent_surface_index_carries_executor_runtime_environment(
+    supervisor_module: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv(
+        supervisor_module.SUPERVISOR_EXECUTOR_RUNTIME_ENVIRONMENT_ENV_VAR,
+        "static_publish_environment",
+    )
+    monkeypatch.delenv(supervisor_module.CODEX_EXECUTABLE_ENV_VAR, raising=False)
+    monkeypatch.setattr(supervisor_module.shutil, "which", lambda _name: None)
+
+    executor_index = supervisor_module.build_supervisor_executor_adapter_index()
+    agent_surface_index = supervisor_module.build_agent_surface_index(executor_index)
+
+    surface = next(
+        entry
+        for entry in agent_surface_index["surfaces"]
+        if entry["surface_id"] == "specgraph.executor.codex"
+    )
+    assert surface["backend_status"] == "missing_executable"
+    assert surface["runtime_environment"]["producer_environment"] == "static_publish_environment"
+    assert surface["runtime_environment"]["intended_environment"] == "local_operator_environment"
+    assert surface["runtime_environment"]["missing_executable_is_static_publish_gap"] is True
 
 
 def test_command_availability_rejects_directory_candidates(

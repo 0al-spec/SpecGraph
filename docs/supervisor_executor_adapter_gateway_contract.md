@@ -158,3 +158,21 @@ Agent Passport CLI availability diagnostics, smoke state, canonical-trial
 eligibility, and safe next actions. It is read-only and report-only: it does not
 launch executors, perform passport enforcement, or publish absolute executable
 paths, raw prompts, raw logs, provider secrets, credentials, or API keys.
+
+## Runtime Environment Boundary
+
+Executor availability is an environment probe, not a global backend truth. The
+index records the environment that produced the probe and the intended runtime
+environment for each backend.
+
+The initial runtime environment vocabulary is:
+
+- `static_publish_environment`
+- `local_operator_environment`
+- `external_harness_environment`
+
+For example, public static publish may report the Codex backend as
+`missing_executable` while also reporting that Codex is intended for
+`local_operator_environment`. That means the executable is unavailable in the
+current static publish process, not that the Codex backend contract, Agent
+Passport declaration, or public deploy is broken.

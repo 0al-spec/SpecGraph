@@ -4636,6 +4636,7 @@ DERIVED_SPEC_TRACKING_KEYS = {"created_at", "updated_at", "last_pre_spec_provena
 IMMUTABLE_CANONICAL_METADATA_KEYS = ("id", "created_at")
 DEFAULT_CODEX_HOME = Path(os.environ.get("CODEX_HOME", "~/.codex")).expanduser()
 CODEX_EXECUTABLE_ENV_VAR = "SPECGRAPH_CODEX_EXECUTABLE"
+SUPERVISOR_EXECUTOR_RUNTIME_ENVIRONMENT_ENV_VAR = "SPECGRAPH_EXECUTOR_RUNTIME_ENVIRONMENT"
 PREFERRED_CODEX_EXECUTABLE_PATHS = (Path("/opt/homebrew/bin/codex"),)
 
 STATUS_PROGRESSION: dict[str, str] = {
@@ -18171,12 +18172,72 @@ def supervisor_executor_adapter_passport_diagnostic() -> dict[str, Any]:
     }
 
 
+def current_supervisor_executor_runtime_environment() -> str:
+    contract = supervisor_executor_adapter_policy_lookup("runtime_environment_contract")
+    contract = contract if isinstance(contract, dict) else {}
+    allowed = {
+        str(value).strip() for value in contract.get("environment_values", []) if str(value).strip()
+    }
+    default_environment = str(contract.get("default_environment", "")).strip()
+    ci_environment = str(contract.get("ci_environment", "")).strip()
+    override = os.environ.get(SUPERVISOR_EXECUTOR_RUNTIME_ENVIRONMENT_ENV_VAR, "").strip()
+    if override:
+        return (
+            override
+            if override in allowed
+            else (default_environment or "local_operator_environment")
+        )
+    if os.environ.get("GITHUB_ACTIONS", "").strip().lower() == "true":
+        return ci_environment if ci_environment in allowed else "static_publish_environment"
+    return default_environment if default_environment in allowed else "local_operator_environment"
+
+
+def supervisor_executor_runtime_environment(
+    *,
+    backend: dict[str, Any],
+    backend_status: str,
+    producer_environment: str,
+) -> dict[str, Any]:
+    contract = supervisor_executor_adapter_policy_lookup("runtime_environment_contract")
+    contract = contract if isinstance(contract, dict) else {}
+    status_semantics = contract.get("status_semantics", {})
+    status_semantics = status_semantics if isinstance(status_semantics, dict) else {}
+    intended_environment = str(backend.get("intended_runtime_environment", "")).strip()
+    intended_environment = (
+        intended_environment or str(contract.get("default_environment", "")).strip()
+    )
+    probe_scope = str(contract.get("executable_probe_scope", "")).strip()
+    return {
+        "producer_environment": producer_environment,
+        "intended_environment": intended_environment,
+        "executable_probe_scope": probe_scope or "current_process_environment",
+        "backend_status_semantics": str(status_semantics.get(backend_status, "")).strip(),
+        "static_publish_executable_required": bool(
+            backend.get("static_publish_executable_required", False)
+        ),
+        "local_operator_executable_required": bool(
+            backend.get("local_operator_executable_required", False)
+        ),
+        "missing_executable_is_static_publish_gap": (
+            backend_status == "missing_executable"
+            and producer_environment == "static_publish_environment"
+            and intended_environment != "static_publish_environment"
+        ),
+        "operator_next_action": (
+            "configure_local_operator_executable"
+            if backend_status == "missing_executable"
+            else "run_executor_adapter_smoke_benchmark"
+        ),
+    }
+
+
 def build_supervisor_executor_adapter_index() -> dict[str, Any]:
     backend_registry = supervisor_executor_adapter_policy_lookup("backend_registry")
     default_backend_id = str(
         supervisor_executor_adapter_policy_lookup("default_backend_id")
     ).strip()
     passport_diagnostic = supervisor_executor_adapter_passport_diagnostic()
+    producer_environment = current_supervisor_executor_runtime_environment()
     named_filters = {name: [] for name in SUPERVISOR_EXECUTOR_ADAPTER_NAMED_FILTERS}
     backend_status: dict[str, list[str]] = {}
     authority_state: dict[str, list[str]] = {}
@@ -18205,6 +18266,11 @@ def build_supervisor_executor_adapter_index() -> dict[str, Any]:
             "available"
             if executable_availability["status"] == "available"
             else "missing_executable"
+        )
+        runtime_environment = supervisor_executor_runtime_environment(
+            backend=backend,
+            backend_status=status,
+            producer_environment=producer_environment,
         )
         backend_authority_state = str(backend.get("authority_state", "")).strip()
         gaps: list[dict[str, Any]] = []
@@ -18243,6 +18309,7 @@ def build_supervisor_executor_adapter_index() -> dict[str, Any]:
             "display_name": str(backend.get("display_name", "")).strip(),
             "backend_status": status,
             "authority_state": backend_authority_state,
+            "runtime_environment": runtime_environment,
             "command_surface": str(backend.get("command_surface", "")).strip(),
             "protocol_contract": str(backend.get("protocol_contract", "")).strip(),
             "executable_availability": executable_availability,
@@ -18307,9 +18374,19 @@ def build_supervisor_executor_adapter_index() -> dict[str, Any]:
         "summary": {
             "backend_count": len(entries),
             "available_backend_count": len(backend_status.get("available", [])),
+            "producer_environment": producer_environment,
             "default_backend_id": default_backend_id,
             "default_backend_status": (
                 str(default_entry.get("backend_status", "")).strip() if default_entry else "missing"
+            ),
+            "default_backend_intended_environment": (
+                str(
+                    (default_entry.get("runtime_environment", {}) if default_entry else {}).get(
+                        "intended_environment", ""
+                    )
+                ).strip()
+                if default_entry
+                else ""
             ),
             "agent_passport_cli_status": passport_diagnostic["tool_status"],
             "canonical_trial_ready_count": 0,
@@ -18449,6 +18526,7 @@ def agent_passport_surface_from_executor_entry(entry: dict[str, Any]) -> dict[st
         "runtime_enforcement_evidence_ref": "",
         "executor_backend_id": backend_id,
         "backend_status": str(entry.get("backend_status", "")).strip(),
+        "runtime_environment": copy.deepcopy(entry.get("runtime_environment", {})),
         "passport_validation": {
             "required": bool(passport_validation.get("required", False)),
             "validation_state": str(
