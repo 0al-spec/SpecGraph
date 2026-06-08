@@ -12,8 +12,10 @@ def test_presentation_shell_is_static_slide_deck():
     assert html.count("data-slide") == 6
     assert 'id="prevSlide"' in html
     assert 'id="nextSlide"' in html
+    assert 'viewBox="0 0 1091 1091"' in html
     assert 'class="graph-links"' in html
     assert 'class="edge ' not in html
+    assert "Use arrow keys" not in html
     slide_4 = html.split('id="slide-4"', 1)[1].split('id="slide-5"', 1)[0]
     assert 'class="copy-block specspace-copy"' in slide_4
     assert "aspect-ratio: 16 / 9" in css

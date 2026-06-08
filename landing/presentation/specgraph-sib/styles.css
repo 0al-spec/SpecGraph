@@ -598,7 +598,7 @@ h3 {
 }
 
 .deck-footer {
-  grid-template-columns: minmax(180px, 1fr) auto;
+  grid-template-columns: minmax(180px, 1fr);
 }
 
 .progress-track {
