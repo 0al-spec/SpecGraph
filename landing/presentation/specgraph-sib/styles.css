@@ -204,6 +204,10 @@ svg {
   padding-right: clamp(22px, 3vw, 54px);
 }
 
+.specspace-copy {
+  padding-left: clamp(34px, 5vw, 70px);
+}
+
 .eyebrow {
   display: flex;
   align-items: center;
@@ -303,8 +307,24 @@ h3 {
   min-height: 100%;
 }
 
+.graph-links {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  color: rgba(243, 241, 236, .48);
+}
+
+.graph-links path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: .32;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
 .node {
   position: absolute;
+  z-index: 1;
   min-width: 112px;
   min-height: 44px;
   display: grid;
@@ -337,41 +357,6 @@ h3 {
 .node-metric {
   right: 12%;
   bottom: 15%;
-}
-
-.edge {
-  position: absolute;
-  height: 1px;
-  transform-origin: left center;
-  background: rgba(243, 241, 236, .46);
-}
-
-.edge-a {
-  left: 33%;
-  top: 24%;
-  width: 28%;
-  transform: rotate(14deg);
-}
-
-.edge-b {
-  left: 36%;
-  top: 61%;
-  width: 39%;
-  transform: rotate(-19deg);
-}
-
-.edge-c {
-  left: 36%;
-  top: 31%;
-  width: 34%;
-  transform: rotate(83deg);
-}
-
-.edge-d {
-  right: 24%;
-  top: 45%;
-  width: 24%;
-  transform: rotate(74deg);
 }
 
 .panel-caption {
@@ -654,4 +639,3 @@ h3 {
     width: 100%;
   }
 }
-
