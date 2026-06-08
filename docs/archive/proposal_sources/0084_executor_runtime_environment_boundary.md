@@ -10,7 +10,7 @@ Codex executor backend:
 ```text
 agent_passport_cli_status: available
 default_backend_id: codex
-default_backend_status: missing_executable
+default_backend_status: not_applicable_in_producer_environment
 ```
 
 This is expected in static publish, but without an explicit environment field a
@@ -54,7 +54,7 @@ executor-backed surfaces.
 SpecSpace and other consumers can display:
 
 ```text
-missing_executable
+not_applicable_in_producer_environment
 producer: static_publish_environment
 intended: local_operator_environment
 ```

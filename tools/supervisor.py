@@ -18172,7 +18172,7 @@ def supervisor_executor_adapter_passport_diagnostic() -> dict[str, Any]:
     }
 
 
-def current_supervisor_executor_runtime_environment() -> str:
+def supervisor_executor_runtime_environment_report() -> dict[str, Any]:
     contract = supervisor_executor_adapter_policy_lookup("runtime_environment_contract")
     contract = contract if isinstance(contract, dict) else {}
     allowed = {
@@ -18191,14 +18191,88 @@ def current_supervisor_executor_runtime_environment() -> str:
     )
     override = os.environ.get(override_env_var, "").strip()
     if override:
-        return (
-            override
-            if override in allowed
-            else (default_environment or "local_operator_environment")
-        )
+        if override in allowed:
+            return {
+                "producer_environment": override,
+                "override_env_var": override_env_var,
+                "override_status": "valid",
+                "diagnostics": [],
+            }
+        return {
+            "producer_environment": "invalid_runtime_environment_override",
+            "override_env_var": override_env_var,
+            "override_status": "invalid",
+            "diagnostics": [
+                {
+                    "severity": "error",
+                    "code": "invalid_runtime_environment_override",
+                    "message": (
+                        "Executor runtime environment override is not one of the "
+                        "policy-declared environment values."
+                    ),
+                    "invalid_value_persisted": False,
+                }
+            ],
+        }
     if os.environ.get("GITHUB_ACTIONS", "").strip().lower() == "true":
-        return ci_environment if ci_environment in allowed else "static_publish_environment"
-    return default_environment if default_environment in allowed else "local_operator_environment"
+        environment = ci_environment if ci_environment in allowed else "static_publish_environment"
+    else:
+        environment = (
+            default_environment if default_environment in allowed else "local_operator_environment"
+        )
+    return {
+        "producer_environment": environment,
+        "override_env_var": override_env_var,
+        "override_status": "not_set",
+        "diagnostics": [],
+    }
+
+
+def current_supervisor_executor_runtime_environment() -> str:
+    return str(
+        supervisor_executor_runtime_environment_report().get(
+            "producer_environment", "local_operator_environment"
+        )
+    ).strip()
+
+
+def supervisor_executor_backend_executable_required(
+    *,
+    backend: dict[str, Any],
+    producer_environment: str,
+) -> bool:
+    if producer_environment == "static_publish_environment":
+        return bool(backend.get("static_publish_executable_required", False))
+    if producer_environment == "local_operator_environment":
+        return bool(backend.get("local_operator_executable_required", True))
+    return True
+
+
+def supervisor_executor_backend_status(
+    *,
+    backend: dict[str, Any],
+    executable_availability: dict[str, Any],
+    producer_environment: str,
+    runtime_environment_valid: bool,
+) -> str:
+    if not runtime_environment_valid:
+        return "runtime_environment_invalid"
+    intended_environment = str(backend.get("intended_runtime_environment", "")).strip()
+    executable_required = supervisor_executor_backend_executable_required(
+        backend=backend,
+        producer_environment=producer_environment,
+    )
+    if (
+        intended_environment
+        and producer_environment != intended_environment
+        and not executable_required
+    ):
+        return "not_applicable_in_producer_environment"
+    return (
+        "available"
+        if executable_availability.get("status") == "available"
+        else "missing_executable"
+    )
 
 
 def supervisor_executor_runtime_environment(
@@ -18227,14 +18301,27 @@ def supervisor_executor_runtime_environment(
         "local_operator_executable_required": bool(
             backend.get("local_operator_executable_required", False)
         ),
+        "producer_environment_executable_required": (
+            supervisor_executor_backend_executable_required(
+                backend=backend,
+                producer_environment=producer_environment,
+            )
+        ),
         "missing_executable_is_static_publish_gap": (
-            backend_status == "missing_executable"
+            backend_status == "not_applicable_in_producer_environment"
             and producer_environment == "static_publish_environment"
             and intended_environment != "static_publish_environment"
+        ),
+        "producer_environment_execution_suppressed": (
+            backend_status == "not_applicable_in_producer_environment"
         ),
         "operator_next_action": (
             "configure_local_operator_executable"
             if backend_status == "missing_executable"
+            else "repair_executor_runtime_environment_override"
+            if backend_status == "runtime_environment_invalid"
+            else "run_in_intended_runtime_environment"
+            if backend_status == "not_applicable_in_producer_environment"
             else "run_executor_adapter_smoke_benchmark"
         ),
     }
@@ -18246,7 +18333,11 @@ def build_supervisor_executor_adapter_index() -> dict[str, Any]:
         supervisor_executor_adapter_policy_lookup("default_backend_id")
     ).strip()
     passport_diagnostic = supervisor_executor_adapter_passport_diagnostic()
-    producer_environment = current_supervisor_executor_runtime_environment()
+    runtime_environment_report = supervisor_executor_runtime_environment_report()
+    producer_environment = str(runtime_environment_report.get("producer_environment", "")).strip()
+    runtime_environment_valid = (
+        str(runtime_environment_report.get("override_status", "")).strip() != "invalid"
+    )
     named_filters = {name: [] for name in SUPERVISOR_EXECUTOR_ADAPTER_NAMED_FILTERS}
     backend_status: dict[str, list[str]] = {}
     authority_state: dict[str, list[str]] = {}
@@ -18271,10 +18362,11 @@ def build_supervisor_executor_adapter_index() -> dict[str, Any]:
             ],
             executable_env_var=str(backend.get("executable_env_var", "")).strip(),
         )
-        status = (
-            "available"
-            if executable_availability["status"] == "available"
-            else "missing_executable"
+        status = supervisor_executor_backend_status(
+            backend=backend,
+            executable_availability=executable_availability,
+            producer_environment=producer_environment,
+            runtime_environment_valid=runtime_environment_valid,
         )
         runtime_environment = supervisor_executor_runtime_environment(
             backend=backend,
@@ -18291,6 +18383,22 @@ def build_supervisor_executor_adapter_index() -> dict[str, Any]:
                     "next_action": "configure_backend_executable",
                 }
             )
+        elif status == "not_applicable_in_producer_environment":
+            gaps.append(
+                {
+                    "gap_kind": "producer_environment_not_executor_runtime",
+                    "severity": "info",
+                    "next_action": "run_in_intended_runtime_environment",
+                }
+            )
+        elif status == "runtime_environment_invalid":
+            gaps.append(
+                {
+                    "gap_kind": "invalid_runtime_environment_override",
+                    "severity": "error",
+                    "next_action": "repair_executor_runtime_environment_override",
+                }
+            )
         if passport_diagnostic["tool_status"] != "available":
             gaps.append(
                 {
@@ -18299,20 +18407,21 @@ def build_supervisor_executor_adapter_index() -> dict[str, Any]:
                     "next_action": "install_or_package_agent_passport_cli",
                 }
             )
-        gaps.append(
-            {
-                "gap_kind": "smoke_not_run",
-                "severity": "advisory",
-                "next_action": "run_executor_adapter_smoke_benchmark",
-            }
-        )
-        gaps.append(
-            {
-                "gap_kind": "canonical_trial_blocked",
-                "severity": "advisory",
-                "next_action": "complete_smoke_before_canonical_trial",
-            }
-        )
+        if status == "available":
+            gaps.append(
+                {
+                    "gap_kind": "smoke_not_run",
+                    "severity": "advisory",
+                    "next_action": "run_executor_adapter_smoke_benchmark",
+                }
+            )
+            gaps.append(
+                {
+                    "gap_kind": "canonical_trial_blocked",
+                    "severity": "advisory",
+                    "next_action": "complete_smoke_before_canonical_trial",
+                }
+            )
         entry = {
             "backend_id": backend_id,
             "display_name": str(backend.get("display_name", "")).strip(),
@@ -18337,6 +18446,10 @@ def build_supervisor_executor_adapter_index() -> dict[str, Any]:
                 "run_executor_adapter_smoke_benchmark"
                 if status == "available"
                 else "configure_backend_executable"
+                if status == "missing_executable"
+                else "repair_executor_runtime_environment_override"
+                if status == "runtime_environment_invalid"
+                else "run_in_intended_runtime_environment"
             ),
             "capability_gaps": gaps,
         }
@@ -18350,9 +18463,14 @@ def build_supervisor_executor_adapter_index() -> dict[str, Any]:
             named_filters["safe_for_smoke"].append(backend_id)
         if status == "missing_executable":
             named_filters["missing_executable"].append(backend_id)
+        if status == "not_applicable_in_producer_environment":
+            named_filters["not_applicable_in_producer_environment"].append(backend_id)
+        if status == "runtime_environment_invalid":
+            named_filters["runtime_environment_invalid"].append(backend_id)
         if passport_diagnostic["tool_status"] != "available":
             named_filters["passport_diagnostic"].append(backend_id)
-        named_filters["canonical_trial_blocked"].append(backend_id)
+        if status == "available":
+            named_filters["canonical_trial_blocked"].append(backend_id)
         capability_gaps.extend(
             {
                 "backend_id": backend_id,
@@ -18384,6 +18502,9 @@ def build_supervisor_executor_adapter_index() -> dict[str, Any]:
             "backend_count": len(entries),
             "available_backend_count": len(backend_status.get("available", [])),
             "producer_environment": producer_environment,
+            "runtime_environment_override_status": str(
+                runtime_environment_report.get("override_status", "")
+            ).strip(),
             "default_backend_id": default_backend_id,
             "default_backend_status": (
                 str(default_entry.get("backend_status", "")).strip() if default_entry else "missing"
@@ -18402,12 +18523,21 @@ def build_supervisor_executor_adapter_index() -> dict[str, Any]:
             "next_gap": (
                 "run_executor_adapter_smoke_benchmark"
                 if default_entry and default_entry.get("backend_status") == "available"
+                else "repair_executor_runtime_environment_override"
+                if default_entry
+                and default_entry.get("backend_status") == "runtime_environment_invalid"
+                else "none"
+                if default_entry
+                and default_entry.get("backend_status") == "not_applicable_in_producer_environment"
                 else "configure_default_executor_backend"
             ),
         },
         "entries": entries,
         "capability_gaps": capability_gaps,
         "passport_diagnostics": [passport_diagnostic],
+        "runtime_environment_diagnostics": copy.deepcopy(
+            runtime_environment_report.get("diagnostics", [])
+        ),
         "viewer_projection": {
             "backend_status": backend_status,
             "authority_state": authority_state,

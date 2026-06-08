@@ -27,7 +27,7 @@ The live static artifact bundle can therefore show:
 
 ```text
 default_backend_id: codex
-default_backend_status: missing_executable
+default_backend_status: not_applicable_in_producer_environment
 agent_passport_cli_status: available
 ```
 
@@ -50,9 +50,9 @@ The initial environment vocabulary is:
 - `external_harness_environment`
 
 The Codex backend remains intended for `local_operator_environment`. Static
-publish may probe the executable and report it missing, but that means
-`executable_not_available_in_current_process_environment`, not "Codex backend
-contract is invalid".
+publish may probe the executable, but the viewer-facing backend status remains
+`not_applicable_in_producer_environment`, not "Codex backend contract is
+invalid" and not "static publish can run Codex smoke".
 
 The generated entry carries a `runtime_environment` object:
 
@@ -61,11 +61,13 @@ The generated entry carries a `runtime_environment` object:
   "producer_environment": "static_publish_environment",
   "intended_environment": "local_operator_environment",
   "executable_probe_scope": "current_process_environment",
-  "backend_status_semantics": "executable_not_available_in_current_process_environment",
+  "backend_status_semantics": "executable_probe_not_required_for_producer_environment",
   "static_publish_executable_required": false,
   "local_operator_executable_required": true,
+  "producer_environment_executable_required": false,
   "missing_executable_is_static_publish_gap": true,
-  "operator_next_action": "configure_local_operator_executable"
+  "producer_environment_execution_suppressed": true,
+  "operator_next_action": "run_in_intended_runtime_environment"
 }
 ```
 
@@ -86,9 +88,12 @@ This proposal does not:
 - persist executable absolute paths, auth caches, API keys, or provider
   secrets.
 
-`missing_executable` remains a blocker for actually launching the backend in
-the current process environment. The new fields only explain which environment
-was probed and where the backend is intended to run.
+`missing_executable` remains a blocker for actually launching the backend in an
+intended executor environment. When a producer environment is explicitly not an
+executor runtime, the viewer-facing backend status is
+`not_applicable_in_producer_environment`; the raw executable probe remains
+available under `executable_availability` without making static publish
+smoke-ready.
 
 ## Consumer Guidance
 
@@ -114,7 +119,7 @@ This slice is complete when:
   for executor backend availability;
 - `runs/agent_surface_index.json` carries those semantics for executor-backed
   agent surfaces;
-- tests prove static publish `missing_executable` is explained as an
-  environment probe without persisting local executable paths;
+- tests prove static publish does not report Codex as a configuration blocker
+  or smoke-ready backend, even when the executable probe finds a binary;
 - proposal tracking, executor adapter generation, Agent Passport generation,
   and the full Python suite pass.

@@ -2785,7 +2785,7 @@
       },
       {
         "path": "tests/test_supervisor.py",
-        "pattern": "def test_build_supervisor_executor_adapter_index_blocks_missing_codex("
+        "pattern": "def test_build_supervisor_executor_adapter_index_marks_static_publish_not_applicable("
       },
       {
         "path": "tests/test_supervisor.py",
@@ -3132,7 +3132,7 @@
       },
       {
         "path": "tests/test_supervisor.py",
-        "pattern": "def test_build_supervisor_executor_adapter_index_blocks_missing_codex("
+        "pattern": "def test_build_supervisor_executor_adapter_index_marks_static_publish_not_applicable("
       },
       {
         "path": "tests/test_supervisor.py",

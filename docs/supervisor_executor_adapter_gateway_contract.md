@@ -172,7 +172,8 @@ The initial runtime environment vocabulary is:
 - `external_harness_environment`
 
 For example, public static publish may report the Codex backend as
-`missing_executable` while also reporting that Codex is intended for
-`local_operator_environment`. That means the executable is unavailable in the
-current static publish process, not that the Codex backend contract, Agent
-Passport declaration, or public deploy is broken.
+`not_applicable_in_producer_environment` while also reporting that Codex is
+intended for `local_operator_environment`. That means static publish is not a
+Codex executor runtime, even if the raw executable probe is missing or happens
+to find a binary on the runner. It does not mean that the Codex backend
+contract, Agent Passport declaration, or public deploy is broken.

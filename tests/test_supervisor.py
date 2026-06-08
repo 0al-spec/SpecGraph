@@ -27066,6 +27066,11 @@ def test_supervisor_executor_adapter_policy_declares_request_report_contract() -
     )
     assert "static_publish_environment" in runtime_environment["environment_values"]
     assert "local_operator_environment" in runtime_environment["environment_values"]
+    assert (
+        "not_applicable_in_producer_environment"
+        in (policy["index_contract"]["backend_status_values"])
+    )
+    assert "runtime_environment_invalid" in policy["index_contract"]["backend_status_values"]
 
     request = policy["request_contract"]
     assert request["artifact_kind"] == "supervisor_executor_request"
@@ -27152,7 +27157,9 @@ def test_build_supervisor_executor_adapter_index_reports_codex_and_passport_gap(
         "backend_status_semantics": "executable_available_in_current_process_environment",
         "static_publish_executable_required": False,
         "local_operator_executable_required": True,
+        "producer_environment_executable_required": True,
         "missing_executable_is_static_publish_gap": False,
+        "producer_environment_execution_suppressed": False,
         "operator_next_action": "run_executor_adapter_smoke_benchmark",
     }
     assert entry["executable_availability"] == {
@@ -27176,7 +27183,7 @@ def test_build_supervisor_executor_adapter_index_reports_codex_and_passport_gap(
     assert repo_fixture.as_posix() not in dumped
 
 
-def test_build_supervisor_executor_adapter_index_blocks_missing_codex(
+def test_build_supervisor_executor_adapter_index_marks_static_publish_not_applicable(
     supervisor_module: object,
     repo_fixture: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -27192,26 +27199,36 @@ def test_build_supervisor_executor_adapter_index_blocks_missing_codex(
     index = supervisor_module.build_supervisor_executor_adapter_index()
 
     entry = index["entries"][0]
-    assert index["summary"]["default_backend_status"] == "missing_executable"
+    assert index["summary"]["default_backend_status"] == ("not_applicable_in_producer_environment")
     assert index["summary"]["producer_environment"] == "static_publish_environment"
     assert index["summary"]["default_backend_intended_environment"] == (
         "local_operator_environment"
     )
-    assert index["summary"]["next_gap"] == "configure_default_executor_backend"
-    assert entry["backend_status"] == "missing_executable"
+    assert index["summary"]["next_gap"] == "none"
+    assert entry["backend_status"] == "not_applicable_in_producer_environment"
     assert entry["runtime_environment"]["producer_environment"] == "static_publish_environment"
     assert entry["runtime_environment"]["intended_environment"] == "local_operator_environment"
     assert entry["runtime_environment"]["backend_status_semantics"] == (
-        "executable_not_available_in_current_process_environment"
+        "executable_probe_not_required_for_producer_environment"
     )
+    assert entry["runtime_environment"]["producer_environment_executable_required"] is False
     assert entry["runtime_environment"]["missing_executable_is_static_publish_gap"] is True
+    assert entry["runtime_environment"]["producer_environment_execution_suppressed"] is True
     assert entry["runtime_environment"]["operator_next_action"] == (
-        "configure_local_operator_executable"
+        "run_in_intended_runtime_environment"
     )
-    assert entry["safe_next_action"] == "configure_backend_executable"
+    assert entry["safe_next_action"] == "run_in_intended_runtime_environment"
     assert entry["executable_availability"]["resolution_source"] == "env_override"
     assert entry["executable_availability"]["path_persisted"] is False
-    assert "missing_executable" in {gap["gap_kind"] for gap in entry["capability_gaps"]}
+    assert {gap["gap_kind"] for gap in entry["capability_gaps"]} == {
+        "missing_agent_passport_cli",
+        "producer_environment_not_executor_runtime",
+    }
+    assert index["viewer_projection"]["named_filters"]["missing_executable"] == []
+    assert index["viewer_projection"]["named_filters"]["safe_for_smoke"] == []
+    assert index["viewer_projection"]["named_filters"][
+        "not_applicable_in_producer_environment"
+    ] == ["codex"]
     assert missing_codex.as_posix() not in json.dumps(index, sort_keys=True)
 
 
@@ -27234,10 +27251,36 @@ def test_agent_surface_index_carries_executor_runtime_environment(
         for entry in agent_surface_index["surfaces"]
         if entry["surface_id"] == "specgraph.executor.codex"
     )
-    assert surface["backend_status"] == "missing_executable"
+    assert surface["backend_status"] == "not_applicable_in_producer_environment"
     assert surface["runtime_environment"]["producer_environment"] == "static_publish_environment"
     assert surface["runtime_environment"]["intended_environment"] == "local_operator_environment"
     assert surface["runtime_environment"]["missing_executable_is_static_publish_gap"] is True
+
+
+def test_static_publish_codex_on_path_is_not_smoke_ready(
+    supervisor_module: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv(
+        supervisor_module.SUPERVISOR_EXECUTOR_RUNTIME_ENVIRONMENT_ENV_VAR,
+        "static_publish_environment",
+    )
+    monkeypatch.delenv(supervisor_module.CODEX_EXECUTABLE_ENV_VAR, raising=False)
+    monkeypatch.setattr(
+        supervisor_module.shutil,
+        "which",
+        lambda name: f"/fake/bin/{name}" if name == "codex" else None,
+    )
+
+    index = supervisor_module.build_supervisor_executor_adapter_index()
+    entry = index["entries"][0]
+
+    assert entry["executable_availability"]["status"] == "available"
+    assert entry["backend_status"] == "not_applicable_in_producer_environment"
+    assert entry["safe_next_action"] == "run_in_intended_runtime_environment"
+    assert index["summary"]["next_gap"] == "none"
+    assert index["viewer_projection"]["named_filters"]["available"] == []
+    assert index["viewer_projection"]["named_filters"]["safe_for_smoke"] == []
 
 
 def test_supervisor_executor_runtime_environment_uses_policy_env_var(
@@ -27259,6 +27302,37 @@ def test_supervisor_executor_runtime_environment_uses_policy_env_var(
         supervisor_module.current_supervisor_executor_runtime_environment()
         == "static_publish_environment"
     )
+
+
+def test_invalid_supervisor_executor_runtime_environment_override_is_reported(
+    supervisor_module: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv(
+        supervisor_module.SUPERVISOR_EXECUTOR_RUNTIME_ENVIRONMENT_ENV_VAR,
+        "static_publish",
+    )
+    monkeypatch.setattr(
+        supervisor_module.shutil,
+        "which",
+        lambda name: f"/fake/bin/{name}" if name == "codex" else None,
+    )
+
+    index = supervisor_module.build_supervisor_executor_adapter_index()
+
+    assert index["summary"]["producer_environment"] == "invalid_runtime_environment_override"
+    assert index["summary"]["runtime_environment_override_status"] == "invalid"
+    assert index["summary"]["default_backend_status"] == "runtime_environment_invalid"
+    assert index["summary"]["next_gap"] == "repair_executor_runtime_environment_override"
+    assert index["runtime_environment_diagnostics"][0]["code"] == (
+        "invalid_runtime_environment_override"
+    )
+    assert index["runtime_environment_diagnostics"][0]["invalid_value_persisted"] is False
+    assert index["entries"][0]["backend_status"] == "runtime_environment_invalid"
+    assert index["entries"][0]["safe_next_action"] == (
+        "repair_executor_runtime_environment_override"
+    )
+    assert index["viewer_projection"]["named_filters"]["runtime_environment_invalid"] == ["codex"]
 
 
 def test_command_availability_rejects_directory_candidates(

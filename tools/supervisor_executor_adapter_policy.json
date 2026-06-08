@@ -20,12 +20,16 @@
     "backend_status_values": [
       "available",
       "missing_executable",
-      "unsupported"
+      "unsupported",
+      "not_applicable_in_producer_environment",
+      "runtime_environment_invalid"
     ],
     "capability_gap_kinds": [
       "missing_executable",
       "missing_agent_passport_cli",
       "unsupported_backend",
+      "producer_environment_not_executor_runtime",
+      "invalid_runtime_environment_override",
       "smoke_not_run",
       "canonical_trial_blocked"
     ],
@@ -35,7 +39,9 @@
       "missing_executable",
       "passport_diagnostic",
       "safe_for_smoke",
-      "canonical_trial_blocked"
+      "canonical_trial_blocked",
+      "not_applicable_in_producer_environment",
+      "runtime_environment_invalid"
     ]
   },
   "runtime_environment_contract": {
@@ -51,7 +57,9 @@
     "status_semantics": {
       "available": "executable_available_in_current_process_environment",
       "missing_executable": "executable_not_available_in_current_process_environment",
-      "unsupported": "backend_declared_but_not_supported"
+      "unsupported": "backend_declared_but_not_supported",
+      "not_applicable_in_producer_environment": "executable_probe_not_required_for_producer_environment",
+      "runtime_environment_invalid": "producer_runtime_environment_override_invalid"
     }
   },
   "backend_registry": [
