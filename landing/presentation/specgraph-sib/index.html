@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>SpecGraph / SpecSpace / SIB Metrics - Presentation Shell</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="deck-shell" aria-label="SpecGraph presentation deck">
+    <header class="deck-topbar" aria-label="Presentation controls">
+      <a class="brand" href="#slide-1" aria-label="Go to title slide">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 36 36" role="img">
+            <circle cx="18" cy="18" r="15.5" fill="none" stroke="currentColor" stroke-width="1.5" />
+            <path d="M11 20.5 17 10l8 15h-9l4-7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+            <circle cx="25" cy="25" r="2.8" fill="currentColor" />
+          </svg>
+        </span>
+        <span>SpecGraph</span>
+      </a>
+      <div class="topbar-meta">
+        <span>Presentation shell</span>
+        <span>SpecSpace + SIB Metrics</span>
+      </div>
+      <nav class="deck-nav" aria-label="Slide navigation">
+        <button class="icon-button" id="prevSlide" type="button" aria-label="Previous slide" title="Previous slide">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="m15 18-6-6 6-6" />
+          </svg>
+        </button>
+        <output class="slide-count" id="slideCount" aria-live="polite">01 / 06</output>
+        <button class="icon-button" id="nextSlide" type="button" aria-label="Next slide" title="Next slide">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="m9 18 6-6-6-6" />
+          </svg>
+        </button>
+      </nav>
+    </header>
+
+    <section class="stage" aria-live="polite">
+      <article class="slide is-active title-slide" id="slide-1" data-slide aria-label="Title">
+        <div class="slide-grid two-column">
+          <div class="copy-block">
+            <p class="eyebrow">AI-driven SDLC observability</p>
+            <h1>SpecGraph, <span class="muted-serif">SpecSpace</span> and SIB Metrics</h1>
+            <p class="lede">A landing-style deck for explaining specification-first development, operator-guided agents, and measurable software delivery loops.</p>
+          </div>
+          <div class="hero-panel" aria-label="Conceptual graph diagram">
+            <div class="graph-field">
+              <span class="node node-intent">Intent</span>
+              <span class="node node-spec">Spec</span>
+              <span class="node node-runtime">Runtime</span>
+              <span class="node node-metric">Metric</span>
+              <span class="edge edge-a"></span>
+              <span class="edge edge-b"></span>
+              <span class="edge edge-c"></span>
+              <span class="edge edge-d"></span>
+            </div>
+            <div class="panel-caption">
+              <span>governed graph</span>
+              <span>measured lifecycle</span>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <article class="slide" id="slide-2" data-slide aria-label="Problem framing">
+        <div class="slide-grid split-rule">
+          <div>
+            <p class="eyebrow">Problem frame</p>
+            <h2>LLM work needs a stable evidence plane.</h2>
+          </div>
+          <div class="statement-stack">
+            <section class="statement">
+              <span class="statement-index">01</span>
+              <h3>Intent drifts</h3>
+              <p>Prompts, diffs, reviews, and runtime behavior often live in different systems.</p>
+            </section>
+            <section class="statement">
+              <span class="statement-index">02</span>
+              <h3>Progress is opaque</h3>
+              <p>Teams see activity, but not always specification coverage or verification depth.</p>
+            </section>
+            <section class="statement">
+              <span class="statement-index">03</span>
+              <h3>Metrics lack lineage</h3>
+              <p>SIB-style signals become useful only when they are tied back to governed artifacts.</p>
+            </section>
+          </div>
+        </div>
+      </article>
+
+      <article class="slide" id="slide-3" data-slide aria-label="SpecGraph role">
+        <div class="slide-grid diagram-layout">
+          <div class="copy-block">
+            <p class="eyebrow">SpecGraph role</p>
+            <h2>Executable product ontology.</h2>
+            <p class="body-copy">SpecGraph keeps product intent, decomposition, readiness, evidence, and downstream handoffs connected as reviewable graph state.</p>
+          </div>
+          <div class="flow-diagram" aria-label="SpecGraph ontology flow">
+            <div class="flow-row">
+              <span>Intent</span>
+              <span>Pre-Spec</span>
+              <span>Spec Node</span>
+            </div>
+            <div class="flow-row offset">
+              <span>Proposal</span>
+              <span>Evidence</span>
+              <span>Handoff</span>
+            </div>
+            <div class="diagram-note">canonical state + derived surfaces</div>
+          </div>
+        </div>
+      </article>
+
+      <article class="slide" id="slide-4" data-slide aria-label="SpecSpace role">
+        <div class="slide-grid two-column">
+          <div class="surface-panel">
+            <div class="window-bar">
+              <span></span><span></span><span></span>
+            </div>
+            <div class="surface-grid">
+              <div class="surface-main">Graph canvas</div>
+              <div class="surface-side">
+                <span>Inspector</span>
+                <span>Metrics</span>
+                <span>Agent context</span>
+              </div>
+            </div>
+          </div>
+          <div class="copy-block">
+            <p class="eyebrow">SpecSpace role</p>
+            <h2>Operator surface for graph-guided agents.</h2>
+            <p class="body-copy">SpecSpace turns graph state into a human-operable interface: inspect, steer, compare, and pass context to agents without making derived metrics canonical truth.</p>
+          </div>
+        </div>
+      </article>
+
+      <article class="slide" id="slide-5" data-slide aria-label="SIB Metrics bridge">
+        <div class="slide-grid split-rule">
+          <div>
+            <p class="eyebrow">SIB Metrics bridge</p>
+            <h2>Measure the SDLC as a governed loop.</h2>
+          </div>
+          <div class="metric-band">
+            <section>
+              <span class="metric-label">Input</span>
+              <strong>Spec quality</strong>
+              <p>Structure, verifiability, lineage, and readiness before implementation.</p>
+            </section>
+            <section>
+              <span class="metric-label">Behavior</span>
+              <strong>Process observability</strong>
+              <p>Agent runs, interventions, review gates, and evidence production.</p>
+            </section>
+            <section>
+              <span class="metric-label">Outcome</span>
+              <strong>SIB signal</strong>
+              <p>Derived diagnostic pressure, not automatic policy authority.</p>
+            </section>
+          </div>
+        </div>
+      </article>
+
+      <article class="slide" id="slide-6" data-slide aria-label="Content roadmap">
+        <div class="slide-grid closing-layout">
+          <div class="copy-block">
+            <p class="eyebrow">Content next</p>
+            <h2>Few words, strong diagrams, clear measurement story.</h2>
+          </div>
+          <ol class="roadmap">
+            <li><span>01</span> Define the AI-driven SDLC loop.</li>
+            <li><span>02</span> Map SpecGraph and SpecSpace responsibilities.</li>
+            <li><span>03</span> Introduce SIB metric families and authority boundaries.</li>
+            <li><span>04</span> Show how evidence becomes reviewable graph state.</li>
+          </ol>
+        </div>
+      </article>
+    </section>
+
+    <footer class="deck-footer">
+      <div class="progress-track" aria-hidden="true">
+        <span id="progressBar"></span>
+      </div>
+      <span>Use arrow keys, Page Up / Page Down, Home / End.</span>
+    </footer>
+  </main>
+
+  <script src="slides.js"></script>
+</body>
+</html>
+
