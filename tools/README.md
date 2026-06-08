@@ -630,7 +630,10 @@ Key derived artifacts:
 - `tools/agent_passports/*.passport.yaml`: repository-local draft Agent
   Passport documents used by `make agent-passports` for report-only CLI
   validation; these are schema/content validation fixtures, not trusted signed
-  runtime credentials
+  runtime credentials. The public static publish requires successful
+  report-only Agent Passport CLI validation and installs the CLI from the
+  `0al-spec/agent-passport` release before `make publish-bundle`; local draft
+  bundles must explicitly opt out if they are built without the CLI
 - `tools/specpm_export_policy.json`: declarative contract for `SpecPM` export
   previews, including review status, next-gap defaults, and required export
   registry fields

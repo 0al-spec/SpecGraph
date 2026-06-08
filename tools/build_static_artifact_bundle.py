@@ -64,6 +64,13 @@ class PublishBundleError(RuntimeError):
     pass
 
 
+AGENT_PASSPORT_PUBLISH_SURFACES = (
+    "supervisor_executor_adapter_index.json",
+    "agent_passport_verification_report.json",
+    "agent_verification_gap_index.json",
+)
+
+
 def utc_now() -> str:
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
@@ -160,6 +167,95 @@ def ensure_required_surfaces(output_dir: Path) -> dict[str, bool]:
     return {surface: (output_dir / "runs" / surface).is_file() for surface in REQUIRED_RUN_SURFACES}
 
 
+def load_published_run_json(output_dir: Path, relative_path: str) -> dict[str, object]:
+    path = output_dir / "runs" / relative_path
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except FileNotFoundError as exc:
+        raise PublishBundleError(
+            f"missing Agent Passport publish surface: {relative_path}"
+        ) from exc
+    except json.JSONDecodeError as exc:
+        raise PublishBundleError(
+            f"malformed Agent Passport publish surface: {relative_path}: {exc}"
+        ) from exc
+    if not isinstance(data, dict):
+        raise PublishBundleError(
+            f"malformed Agent Passport publish surface: {relative_path}: expected object"
+        )
+    return data
+
+
+def require_summary_value(
+    *,
+    summary: dict[str, object],
+    field: str,
+    expected: object,
+    artifact_path: str,
+) -> None:
+    observed = summary.get(field)
+    if observed != expected:
+        raise PublishBundleError(
+            f"Agent Passport static publish requires {artifact_path}.summary.{field} "
+            f"to be {expected!r}; got {observed!r}"
+        )
+
+
+def validate_agent_passport_publish_surfaces(output_dir: Path) -> None:
+    artifacts = {
+        relative_path: load_published_run_json(output_dir, relative_path)
+        for relative_path in AGENT_PASSPORT_PUBLISH_SURFACES
+    }
+    for relative_path, artifact in artifacts.items():
+        summary = artifact.get("summary")
+        if not isinstance(summary, dict):
+            raise PublishBundleError(
+                f"Agent Passport static publish requires {relative_path}.summary to be an object"
+            )
+        require_summary_value(
+            summary=summary,
+            field="agent_passport_cli_status",
+            expected="available",
+            artifact_path=relative_path,
+        )
+
+    verification_summary = artifacts["agent_passport_verification_report.json"]["summary"]
+    assert isinstance(verification_summary, dict)
+    entry_count = verification_summary.get("entry_count")
+    valid_count = verification_summary.get("valid_count")
+    if not isinstance(entry_count, int) or entry_count <= 0:
+        raise PublishBundleError(
+            "Agent Passport static publish requires "
+            "agent_passport_verification_report.json.summary.entry_count > 0"
+        )
+    if valid_count != entry_count:
+        raise PublishBundleError(
+            "Agent Passport static publish requires all report-only passport validations "
+            f"to be valid; got valid_count={valid_count!r}, entry_count={entry_count!r}"
+        )
+    require_summary_value(
+        summary=verification_summary,
+        field="tool_unavailable_count",
+        expected=0,
+        artifact_path="agent_passport_verification_report.json",
+    )
+
+    gap_summary = artifacts["agent_verification_gap_index.json"]["summary"]
+    assert isinstance(gap_summary, dict)
+    require_summary_value(
+        summary=gap_summary,
+        field="verification_tool_unavailable_count",
+        expected=0,
+        artifact_path="agent_verification_gap_index.json",
+    )
+    require_summary_value(
+        summary=gap_summary,
+        field="verification_not_attempted_count",
+        expected=0,
+        artifact_path="agent_verification_gap_index.json",
+    )
+
+
 def build_manifest(
     *,
     repo_root: Path,
@@ -239,6 +335,7 @@ def build_public_bundle(
     output_dir: Path,
     refresh_surfaces: bool = False,
     strict_required_surfaces: bool = True,
+    require_verified_agent_passports: bool = True,
 ) -> BuildResult:
     repo_root = repo_root.resolve()
     output_dir = (
@@ -299,6 +396,12 @@ def build_public_bundle(
     if strict_required_surfaces and missing_required:
         shutil.rmtree(output_dir)
         raise PublishBundleError("missing required run surfaces: " + ", ".join(missing_required))
+    if require_verified_agent_passports:
+        try:
+            validate_agent_passport_publish_surfaces(output_dir)
+        except PublishBundleError:
+            shutil.rmtree(output_dir)
+            raise
 
     manifest_path = output_dir / "artifact_manifest.json"
     write_text_atomic(manifest_path, json.dumps(manifest, indent=2, sort_keys=True) + "\n")
@@ -349,6 +452,14 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         action="store_true",
         help="Build even if core viewer-facing runs artifacts are missing.",
     )
+    parser.add_argument(
+        "--allow-unverified-agent-passports",
+        action="store_true",
+        help=(
+            "Build even if Agent Passport CLI verification did not run successfully. "
+            "Do not use for public static publishing."
+        ),
+    )
     return parser.parse_args(argv)
 
 
@@ -360,6 +471,7 @@ def main(argv: list[str] | None = None) -> int:
             output_dir=args.output_dir,
             refresh_surfaces=args.refresh_publish_surfaces,
             strict_required_surfaces=not args.allow_missing_required_surfaces,
+            require_verified_agent_passports=not args.allow_unverified_agent_passports,
         )
     except PublishBundleError as exc:
         print(f"ERROR: {exc}", file=sys.stderr)

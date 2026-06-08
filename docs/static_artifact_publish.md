@@ -102,8 +102,23 @@ The bundle builder fails before upload when it finds:
   - `runs/agent_verification_gap_index.json`
   - `runs/agent_runtime_enforcement_evidence_index.json`
   - `runs/agent_runtime_enforcement_evidence/supervisor-executor-adapter-smoke.json`
+- Agent Passport producer artifacts that were built without successful
+  report-only CLI validation:
+  - `agent_passport_cli_status` must be `available`;
+  - `agent_passport_verification_report.summary.valid_count` must equal
+    `agent_passport_verification_report.summary.entry_count`;
+  - `agent_verification_gap_index.summary.verification_tool_unavailable_count`
+    and `verification_not_attempted_count` must both be `0`.
 
 Junk files such as `.DS_Store` and `.gitkeep` are not published.
+
+Agent Passport CLI is installed during the publish workflow from the latest
+`0al-spec/agent-passport` GitHub Release into runner temp storage and added to
+`PATH` before `make publish-bundle`. The CLI binary is not committed or copied
+into the static bundle, and generated JSON must not persist the runner-local
+binary path. Local draft builds can opt out with
+`--allow-unverified-agent-passports`, but public static publishing should keep
+the default fail-closed behavior.
 
 ## Static Host Deployment
 
