@@ -1064,5 +1064,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0083",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0083_pi_harness_candidate_deferred.md"
+    ],
+    "motivating_concern": "Pi is a useful external coding-agent harness candidate, but it is not yet represented in SpecGraph proposals and should not be implemented before credential, runtime-mode, and canonical-mutation boundaries are explicit",
+    "normalized_title": "Pi Harness Candidate Deferred",
+    "bounded_scope": "Record Pi as a deferred experimental external harness candidate while preserving Codex as the default stable local executor and avoiding runtime policy, Agent Passport surface, SpecSpace, Platform, or static publish implementation changes.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

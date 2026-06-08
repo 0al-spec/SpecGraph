@@ -4038,5 +4038,51 @@
         "pattern": "public static publish requires successful report-only Agent Passport CLI validation"
       }
     ]
+  },
+  {
+    "proposal_id": "0083",
+    "posture": "deferred_runtime_candidate",
+    "runtime_surfaces": [
+      "docs/proposals/0083_pi_harness_candidate_deferred.md",
+      "docs/archive/proposal_sources/0083_pi_harness_candidate_deferred.md"
+    ],
+    "runtime_markers": [
+      {
+        "path": "docs/proposals/0083_pi_harness_candidate_deferred.md",
+        "pattern": "Pi is recorded as a planned external harness candidate only"
+      },
+      {
+        "path": "docs/proposals/0083_pi_harness_candidate_deferred.md",
+        "pattern": "Codex remains the default stable backend for local operator work"
+      },
+      {
+        "path": "docs/proposals/0083_pi_harness_candidate_deferred.md",
+        "pattern": "static_publish_environment"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "docs/proposals/0083_pi_harness_candidate_deferred.md",
+        "pattern": "existing executor adapter runtime artifacts remain unchanged"
+      },
+      {
+        "path": "docs/proposals/0083_pi_harness_candidate_deferred.md",
+        "pattern": "proposal gates and the full Python suite pass"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0083_pi_harness_candidate_deferred.md",
+        "pattern": "Pi must not become canonical authority"
+      },
+      {
+        "path": "docs/proposals/0083_pi_harness_candidate_deferred.md",
+        "pattern": "no public Timeweb demo container with a private ChatGPT/Codex identity"
+      },
+      {
+        "path": "docs/proposals/0083_pi_harness_candidate_deferred.md",
+        "pattern": "OpenAI API key / BYOK provider_config_ref"
+      }
+    ]
   }
 ]
