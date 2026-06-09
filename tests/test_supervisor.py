@@ -11631,14 +11631,38 @@ def test_build_external_consumer_evidence_index_accepts_specspace_evidence(
                 ],
                 "result": "implemented",
             },
+            {
+                "evidence_id": "specspace-executor-runtime-environment-boundary-20260609",
+                "handoff_id": "external_consumer_handoff::specspace",
+                "consumer_id": "specspace",
+                "consumer": "SpecSpace",
+                "implementation_ref": "https://github.com/0al-spec/SpecSpace/pull/231",
+                "consumed_artifacts": [
+                    "runs/supervisor_executor_adapter_index.json",
+                    "runs/agent_surface_index.json",
+                ],
+                "accepted_contract_artifacts": [
+                    "runs/supervisor_executor_adapter_index.json",
+                    "runs/agent_surface_index.json",
+                ],
+                "evidence": [
+                    {"kind": "pull_request", "ref": "0al-spec/SpecSpace#231"},
+                    {"kind": "test", "ref": "SpecSpace CI", "status": "success"},
+                    {"kind": "smoke", "ref": "Platform Timeweb Publish", "status": "success"},
+                ],
+                "result": "implemented",
+                "notes": (
+                    "SpecSpace shows not_applicable_in_producer_environment for static publish."
+                ),
+            },
         ],
     }
 
     index = supervisor_module.build_external_consumer_evidence_index(handoffs, registry)
 
     assert index["artifact_kind"] == supervisor_module.EXTERNAL_CONSUMER_EVIDENCE_ARTIFACT_KIND
-    assert index["entry_count"] == 4
-    assert index["accepted_count"] == 4
+    assert index["entry_count"] == 5
+    assert index["accepted_count"] == 5
     entries_by_id = {entry["evidence_id"]: entry for entry in index["entries"]}
     entry = entries_by_id["specspace-agent-surface-visibility-20260606"]
     assert entry["acceptance_status"] == "accepted"
@@ -11704,17 +11728,36 @@ def test_build_external_consumer_evidence_index_accepts_specspace_evidence(
         "runs/agent_runtime_enforcement_evidence/supervisor-executor-adapter-smoke.json",
     ]
     assert runtime_detail_entry["contract_evaluation"]["diagnostics"] == []
+    runtime_environment_entry = entries_by_id[
+        "specspace-executor-runtime-environment-boundary-20260609"
+    ]
+    assert runtime_environment_entry["acceptance_status"] == "accepted"
+    assert runtime_environment_entry["implementation_ref"] == (
+        "https://github.com/0al-spec/SpecSpace/pull/231"
+    )
+    assert runtime_environment_entry["consumed_artifacts"] == [
+        "runs/supervisor_executor_adapter_index.json",
+        "runs/agent_surface_index.json",
+    ]
+    assert runtime_environment_entry["accepted_contract_artifacts"] == [
+        "runs/supervisor_executor_adapter_index.json",
+        "runs/agent_surface_index.json",
+    ]
+    assert runtime_environment_entry["contract_evaluation"]["diagnostics"] == []
+    assert "not_applicable_in_producer_environment" in runtime_environment_entry["notes"]
     assert index["viewer_projection"]["named_filters"]["accepted"] == [
         "specspace-agent-passport-posture-20260607",
         "specspace-agent-runtime-evidence-20260607",
         "specspace-agent-runtime-evidence-detail-20260608",
         "specspace-agent-surface-visibility-20260606",
+        "specspace-executor-runtime-environment-boundary-20260609",
     ]
     assert index["viewer_projection"]["named_filters"]["specspace_consumer"] == [
         "specspace-agent-passport-posture-20260607",
         "specspace-agent-runtime-evidence-20260607",
         "specspace-agent-runtime-evidence-detail-20260608",
         "specspace-agent-surface-visibility-20260606",
+        "specspace-executor-runtime-environment-boundary-20260609",
     ]
     assert index["evidence_backlog"]["entry_count"] == 0
     assert "/Users/" not in json.dumps(index, sort_keys=True)

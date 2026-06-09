@@ -4153,5 +4153,58 @@
         "pattern": "SpecSpace can show the boundary"
       }
     ]
+  },
+  {
+    "proposal_id": "0085",
+    "posture": "bounded_runtime_followup",
+    "runtime_surfaces": [
+      "docs/proposals/0085_specspace_executor_runtime_environment_boundary_acceptance.md",
+      "docs/archive/proposal_sources/0085_specspace_executor_runtime_environment_boundary_acceptance.md",
+      "tools/external_consumer_evidence_registry.json",
+      "tests/test_supervisor.py",
+      "runs/external_consumer_evidence_index.json"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/external_consumer_evidence_registry.json",
+        "pattern": "specspace-executor-runtime-environment-boundary-20260609"
+      },
+      {
+        "path": "tools/external_consumer_evidence_registry.json",
+        "pattern": "https://github.com/0al-spec/SpecSpace/pull/231"
+      },
+      {
+        "path": "tools/external_consumer_evidence_registry.json",
+        "pattern": "not_applicable_in_producer_environment"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def build_external_consumer_evidence_index("
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "specspace-executor-runtime-environment-boundary-20260609"
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "not_applicable_in_producer_environment"
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_external_consumer_evidence_index_accepts_specspace_evidence("
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0085_specspace_executor_runtime_environment_boundary_acceptance.md",
+        "pattern": "SpecSpace PR: `https://github.com/0al-spec/SpecSpace/pull/231`"
+      },
+      {
+        "path": "docs/proposals/0085_specspace_executor_runtime_environment_boundary_acceptance.md",
+        "pattern": "backend_status: not_applicable_in_producer_environment"
+      }
+    ]
   }
 ]

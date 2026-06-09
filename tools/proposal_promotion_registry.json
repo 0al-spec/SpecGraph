@@ -1090,5 +1090,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0085",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0085_specspace_executor_runtime_environment_boundary_acceptance.md"
+    ],
+    "motivating_concern": "SpecSpace implemented the executor runtime environment boundary consumer surface, but SpecGraph has not accepted downstream evidence for PR #231",
+    "normalized_title": "SpecSpace Executor Runtime Environment Boundary Acceptance",
+    "bounded_scope": "Record report-only external consumer evidence for SpecSpace PR #231 consuming the executor runtime environment fields from supervisor executor adapter and agent surface artifacts, while preserving earlier SpecSpace evidence, avoiding SpecSpace or Platform mutations, and making no observed runtime enforcement claim.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]
