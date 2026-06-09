@@ -77,12 +77,13 @@ The order matters and is intentionally two-pass:
 3. `make executor-adapters`, `make agent-passports`, and
    `make agent-runtime-evidence` build the Agent Passport producer artifacts
    consumed by SpecSpace.
-4. `make external-handoffs` and `make external-consumer-evidence` rebuild the
-   downstream handoff and evidence acceptance artifacts from the same producer
-   surfaces.
-5. The final `make viewer-surfaces` rebuilds `graph_backlog_projection.json`,
+4. The final `make viewer-surfaces` rebuilds `graph_backlog_projection.json`,
    `graph_next_moves.json`, and external handoff packets from the same
    implementation and agent/runtime artifacts that are copied into the bundle.
+5. `make external-handoffs` and `make external-consumer-evidence` rebuild the
+   downstream handoff and evidence acceptance artifacts after the final viewer
+   pass, so the published evidence index references the published handoff
+   packet state.
 
 ## Safety Gate
 

@@ -384,9 +384,9 @@ def test_refresh_publish_surfaces_builds_viewer_implementation_and_agent_surface
         "executor-adapters",
         "agent-passports",
         "agent-runtime-evidence",
+        "viewer-surfaces",
         "external-handoffs",
         "external-consumer-evidence",
-        "viewer-surfaces",
     ]
 
 

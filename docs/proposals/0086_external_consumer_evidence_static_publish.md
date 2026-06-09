@@ -30,7 +30,8 @@ publishable.
   bundle.
 - Treat the evidence index as a required run surface for public static publish.
 - Refresh `external-handoffs` and `external-consumer-evidence` before collecting
-  bundle files.
+  bundle files, after the final viewer surface refresh that rewrites handoff
+  packets.
 - Keep existing safety checks for malformed JSON, local path leakage, and
   Agent Passport verification.
 - Document the new published surface.
@@ -52,4 +53,6 @@ This slice is complete when:
 - the generated bundle manifest marks
   `external_consumer_evidence_index.json` as a required present surface;
 - focused static bundle tests cover both presence and missing-surface failure;
+- publish refresh order keeps `external-consumer-evidence` after the final
+  handoff packet rewrite;
 - `make docc-sync`, proposal gates, and the full Python suite pass.

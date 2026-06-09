@@ -327,9 +327,9 @@ def refresh_publish_surfaces(repo_root: Path) -> None:
     run_make_target(repo_root, "executor-adapters")
     run_make_target(repo_root, "agent-passports")
     run_make_target(repo_root, "agent-runtime-evidence")
+    run_make_target(repo_root, "viewer-surfaces")
     run_make_target(repo_root, "external-handoffs")
     run_make_target(repo_root, "external-consumer-evidence")
-    run_make_target(repo_root, "viewer-surfaces")
 
 
 def build_public_bundle(
@@ -442,8 +442,8 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         help=(
             "Run publish surface refresh targets before collecting specs/ and runs/: "
             "viewer-surfaces, implementation-delta, implementation-work, executor-adapters, "
-            "agent-passports, agent-runtime-evidence, external-handoffs, "
-            "external-consumer-evidence, then viewer-surfaces."
+            "agent-passports, agent-runtime-evidence, viewer-surfaces, external-handoffs, "
+            "then external-consumer-evidence."
         ),
     )
     parser.add_argument(
