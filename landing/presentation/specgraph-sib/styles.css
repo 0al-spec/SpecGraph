@@ -12,6 +12,9 @@
   --serif: "Instrument Serif", "Times New Roman", serif;
   --sans: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
   --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+  --diagram-label-lg: clamp(17px, 1.25vw, 20px);
+  --diagram-label: clamp(15px, 1.08vw, 18px);
+  --diagram-label-sm: clamp(14px, .98vw, 16px);
 }
 
 * {
@@ -332,15 +335,15 @@ h3 {
 .node {
   position: absolute;
   z-index: 1;
-  min-width: 112px;
-  min-height: 44px;
+  min-width: 132px;
+  min-height: 56px;
   display: grid;
   place-items: center;
   border: 1px solid rgba(243, 241, 236, .72);
   background: rgba(11, 11, 12, .62);
   font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: .1em;
+  font-size: var(--diagram-label);
+  letter-spacing: .06em;
   text-transform: uppercase;
 }
 
@@ -374,8 +377,8 @@ h3 {
   padding: 20px 22px;
   border-top: 1px solid rgba(243, 241, 236, .28);
   font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: .08em;
+  font-size: var(--diagram-label-sm);
+  letter-spacing: .06em;
   text-transform: uppercase;
   color: rgba(243, 241, 236, .72);
 }
@@ -415,14 +418,14 @@ h3 {
 
 .artifact-field span,
 .artifact-field strong {
-  min-height: 76px;
+  min-height: 86px;
   display: grid;
   place-items: center;
   border: 1px solid rgba(243, 241, 236, .42);
   background: rgba(11, 11, 12, .5);
   font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: .1em;
+  font-size: var(--diagram-label-lg);
+  letter-spacing: .06em;
   text-transform: uppercase;
 }
 
@@ -474,8 +477,8 @@ h3 {
   place-items: center;
   border-right: 1px solid var(--rule-soft);
   font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: .1em;
+  font-size: var(--diagram-label);
+  letter-spacing: .06em;
   text-transform: uppercase;
   color: var(--muted);
 }
@@ -512,16 +515,19 @@ h3 {
 
 .pipeline span {
   position: relative;
-  min-height: 82px;
+  min-height: 94px;
+  padding: 0 8px;
   display: grid;
   place-items: center;
   border: 1px solid var(--rule);
   background: var(--paper);
   font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: .08em;
+  font-size: var(--diagram-label-sm);
+  letter-spacing: .04em;
+  line-height: 1.18;
   text-align: center;
   text-transform: uppercase;
+  overflow-wrap: anywhere;
 }
 
 .pyramid {
@@ -533,15 +539,15 @@ h3 {
 }
 
 .pyramid span {
-  height: 52px;
+  height: 64px;
   display: grid;
   place-items: center;
   justify-self: center;
   border: 1px solid var(--rule);
   background: var(--paper);
   font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: .1em;
+  font-size: var(--diagram-label);
+  letter-spacing: .06em;
   text-transform: uppercase;
 }
 
@@ -562,12 +568,16 @@ h3 {
 .balance-board span {
   display: grid;
   place-items: center;
+  padding: 0 18px;
   border-right: 1px solid var(--rule-soft);
   border-bottom: 1px solid var(--rule-soft);
   font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: .1em;
+  font-size: var(--diagram-label);
+  letter-spacing: .05em;
+  line-height: 1.2;
+  text-align: center;
   text-transform: uppercase;
+  overflow-wrap: anywhere;
 }
 
 .balance-board span:nth-child(2n) {
@@ -604,14 +614,14 @@ h3 {
 }
 
 .preflight-list span {
-  min-height: 64px;
+  min-height: 74px;
   display: flex;
   align-items: center;
   gap: 16px;
   border-bottom: 1px solid var(--rule-soft);
   font-family: var(--mono);
-  font-size: 12px;
-  letter-spacing: .1em;
+  font-size: var(--diagram-label-lg);
+  letter-spacing: .06em;
   text-transform: uppercase;
 }
 
@@ -633,7 +643,7 @@ h3 {
 }
 
 .funnel span {
-  height: 54px;
+  height: 66px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -641,9 +651,10 @@ h3 {
   border: 1px solid var(--rule);
   background: var(--paper);
   font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: .08em;
+  font-size: var(--diagram-label-sm);
+  letter-spacing: .04em;
   text-transform: uppercase;
+  text-align: center;
 }
 
 .funnel span:nth-child(1) { width: 92%; }
@@ -715,8 +726,8 @@ h3 {
 .label {
   position: absolute;
   font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: .1em;
+  font-size: var(--diagram-label);
+  letter-spacing: .06em;
   text-transform: uppercase;
 }
 
@@ -748,16 +759,17 @@ h3 {
 }
 
 .state-triad span {
-  width: 112px;
-  height: 112px;
+  width: 142px;
+  height: 142px;
   display: grid;
   place-items: center;
   border: 1px solid var(--rule);
   border-radius: 50%;
   text-align: center;
   font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: .08em;
+  font-size: var(--diagram-label-sm);
+  letter-spacing: .04em;
+  line-height: 1.2;
   text-transform: uppercase;
 }
 
@@ -778,8 +790,8 @@ h3 {
   border-right: 1px solid var(--rule-soft);
   border-bottom: 1px solid var(--rule-soft);
   font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: .1em;
+  font-size: var(--diagram-label);
+  letter-spacing: .06em;
   text-transform: uppercase;
 }
 
@@ -800,15 +812,16 @@ h3 {
 }
 
 .metric-lanes span {
-  min-height: 62px;
+  min-height: 76px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 18px;
   border-bottom: 1px solid var(--rule-soft);
   font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: .06em;
+  font-size: var(--diagram-label-sm);
+  letter-spacing: .03em;
+  line-height: 1.25;
   text-transform: uppercase;
 }
 
@@ -825,8 +838,8 @@ h3 {
   background: transparent;
   color: var(--ink);
   font-family: var(--mono);
-  font-size: clamp(17px, 1.6vw, 24px);
-  line-height: 1.75;
+  font-size: clamp(20px, 1.9vw, 28px);
+  line-height: 1.62;
 }
 
 .event-log {
@@ -842,8 +855,8 @@ h3 {
   padding: 14px 18px;
   border: 1px solid var(--rule-soft);
   font-family: var(--mono);
-  font-size: 12px;
-  letter-spacing: .08em;
+  font-size: var(--diagram-label);
+  letter-spacing: .04em;
   color: var(--muted);
 }
 
@@ -864,15 +877,17 @@ h3 {
 
 .loop-board span {
   position: absolute;
-  width: 136px;
-  min-height: 46px;
+  width: 168px;
+  min-height: 58px;
   display: grid;
   place-items: center;
+  padding: 0 10px;
   border: 1px solid var(--rule);
   background: var(--paper);
   font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: .08em;
+  font-size: var(--diagram-label-sm);
+  letter-spacing: .04em;
+  line-height: 1.18;
   text-transform: uppercase;
   text-align: center;
 }
@@ -900,8 +915,8 @@ h3 {
     linear-gradient(to bottom, rgba(11, 11, 12, .07) 1px, transparent 1px);
   background-size: 36px 36px;
   font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: .12em;
+  font-size: var(--diagram-label);
+  letter-spacing: .06em;
   text-transform: uppercase;
 }
 
@@ -918,8 +933,8 @@ h3 {
   place-items: center;
   border-right: 1px solid var(--rule-soft);
   font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: .1em;
+  font-size: var(--diagram-label-sm);
+  letter-spacing: .06em;
   text-transform: uppercase;
 }
 
@@ -944,8 +959,8 @@ h3 {
 .thesis-output span,
 .thesis-output small {
   font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: .12em;
+  font-size: var(--diagram-label-sm);
+  letter-spacing: .08em;
   text-transform: uppercase;
   color: var(--muted);
 }
@@ -1043,8 +1058,8 @@ h3 {
   border-top: 1px solid var(--rule-soft);
   padding-top: 18px;
   font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: .12em;
+  font-size: var(--diagram-label-sm);
+  letter-spacing: .06em;
   text-transform: uppercase;
   color: var(--muted);
 }
