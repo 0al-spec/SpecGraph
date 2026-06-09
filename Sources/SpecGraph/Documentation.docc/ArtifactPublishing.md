@@ -39,6 +39,11 @@ release checksum, and adds the binary to `PATH` before building the bundle. The
 CLI is not committed or copied into the static bundle, and generated JSON must
 not persist the runner-local binary path.
 
+The public bundle also includes
+`runs/external_consumer_evidence_index.json` so downstream consumer evidence
+accepted by SpecGraph is HTTP-readable alongside the handoff and Agent surface
+producer artifacts.
+
 The public safety gate requires:
 
 - `runs/supervisor_executor_adapter_index.json` summary field

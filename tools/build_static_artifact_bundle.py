@@ -27,6 +27,7 @@ REQUIRED_RUN_SURFACES = (
     "agent_verification_gap_index.json",
     "agent_runtime_enforcement_evidence_index.json",
     "agent_runtime_enforcement_evidence/supervisor-executor-adapter-smoke.json",
+    "external_consumer_evidence_index.json",
 )
 JUNK_FILENAMES = {".DS_Store", ".gitkeep"}
 JUNK_DIRNAMES = {"__pycache__", ".pytest_cache", ".ruff_cache"}
@@ -327,6 +328,8 @@ def refresh_publish_surfaces(repo_root: Path) -> None:
     run_make_target(repo_root, "agent-passports")
     run_make_target(repo_root, "agent-runtime-evidence")
     run_make_target(repo_root, "viewer-surfaces")
+    run_make_target(repo_root, "external-handoffs")
+    run_make_target(repo_root, "external-consumer-evidence")
 
 
 def build_public_bundle(
@@ -438,7 +441,9 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         dest="refresh_publish_surfaces",
         help=(
             "Run publish surface refresh targets before collecting specs/ and runs/: "
-            "viewer-surfaces, implementation-delta, implementation-work, then viewer-surfaces."
+            "viewer-surfaces, implementation-delta, implementation-work, executor-adapters, "
+            "agent-passports, agent-runtime-evidence, viewer-surfaces, external-handoffs, "
+            "then external-consumer-evidence."
         ),
     )
     parser.add_argument(

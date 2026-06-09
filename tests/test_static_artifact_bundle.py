@@ -73,6 +73,11 @@ def make_repo(root: Path) -> Path:
         "agent_runtime_enforcement_evidence_index.json": {
             "artifact_kind": "agent_runtime_enforcement_evidence_index"
         },
+        "external_consumer_evidence_index.json": {
+            "artifact_kind": "external_consumer_evidence_index",
+            "entry_count": 5,
+            "accepted_count": 5,
+        },
     }
     for name, payload in artifacts.items():
         write_json(runs_dir / name, payload)
@@ -116,6 +121,7 @@ def test_build_public_bundle_copies_specs_and_runs_with_manifest(
     assert manifest["published_roots"] == ["specs", "runs"]
     assert manifest["required_surfaces"]["implementation_work_index.json"] is True
     assert manifest["required_surfaces"]["agent_runtime_enforcement_evidence_index.json"] is True
+    assert manifest["required_surfaces"]["external_consumer_evidence_index.json"] is True
     assert (
         manifest["required_surfaces"][
             "agent_runtime_enforcement_evidence/supervisor-executor-adapter-smoke.json"
@@ -259,6 +265,23 @@ def test_build_public_bundle_requires_agent_runtime_surface(
         )
 
 
+def test_build_public_bundle_requires_external_consumer_evidence_surface(
+    tmp_path: Path,
+    bundle_module: object,
+) -> None:
+    repo = make_repo(tmp_path / "repo")
+    (repo / "runs" / "external_consumer_evidence_index.json").unlink()
+
+    with pytest.raises(
+        bundle_module.PublishBundleError,
+        match="external_consumer_evidence_index",
+    ):
+        bundle_module.build_public_bundle(
+            repo_root=repo,
+            output_dir=repo / "dist" / "specgraph-public",
+        )
+
+
 def test_build_public_bundle_requires_agent_passport_cli_available(
     tmp_path: Path,
     bundle_module: object,
@@ -362,6 +385,8 @@ def test_refresh_publish_surfaces_builds_viewer_implementation_and_agent_surface
         "agent-passports",
         "agent-runtime-evidence",
         "viewer-surfaces",
+        "external-handoffs",
+        "external-consumer-evidence",
     ]
 
 

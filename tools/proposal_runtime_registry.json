@@ -4207,5 +4207,60 @@
         "pattern": "backend_status: not_applicable_in_producer_environment"
       }
     ]
+  },
+  {
+    "proposal_id": "0086",
+    "posture": "bounded_runtime_followup",
+    "runtime_surfaces": [
+      "docs/proposals/0086_external_consumer_evidence_static_publish.md",
+      "docs/archive/proposal_sources/0086_external_consumer_evidence_static_publish.md",
+      "tools/build_static_artifact_bundle.py",
+      "tests/test_static_artifact_bundle.py",
+      "docs/static_artifact_publish.md",
+      "Sources/SpecGraph/Documentation.docc/ArtifactPublishing.md",
+      "runs/external_consumer_evidence_index.json"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/build_static_artifact_bundle.py",
+        "pattern": "\"external_consumer_evidence_index.json\""
+      },
+      {
+        "path": "tools/build_static_artifact_bundle.py",
+        "pattern": "run_make_target(repo_root, \"external-consumer-evidence\")"
+      },
+      {
+        "path": "docs/static_artifact_publish.md",
+        "pattern": "runs/external_consumer_evidence_index.json"
+      },
+      {
+        "path": "Sources/SpecGraph/Documentation.docc/ArtifactPublishing.md",
+        "pattern": "runs/external_consumer_evidence_index.json"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_static_artifact_bundle.py",
+        "pattern": "def test_build_public_bundle_requires_external_consumer_evidence_surface("
+      },
+      {
+        "path": "tests/test_static_artifact_bundle.py",
+        "pattern": "external_consumer_evidence_index.json"
+      },
+      {
+        "path": "docs/proposals/0086_external_consumer_evidence_static_publish.md",
+        "pattern": "make publish-bundle PUBLISH_BUNDLE_FLAGS="
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0086_external_consumer_evidence_static_publish.md",
+        "pattern": "https://specgraph.tech/runs/external_consumer_evidence_index.json"
+      },
+      {
+        "path": "docs/proposals/0086_external_consumer_evidence_static_publish.md",
+        "pattern": "404"
+      }
+    ]
   }
 ]
