@@ -122,6 +122,12 @@ The bundle builder fails before upload when it finds:
 
 Junk files such as `.DS_Store` and `.gitkeep` are not published.
 
+Local-only operator diagnostics are also excluded from the public bundle. In
+particular, `runs/local_operator_executor_readiness.json` may exist in a local
+checkout after `make executor-readiness`, but it is intentionally not uploaded to
+the static host because it describes the current operator process environment
+rather than a public producer artifact.
+
 Agent Passport CLI is installed during the publish workflow from the latest
 `0al-spec/agent-passport` GitHub Release into runner temp storage and added to
 `PATH` before `make publish-bundle`. The CLI binary is not committed or copied

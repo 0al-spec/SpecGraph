@@ -184,6 +184,7 @@ METRIC_PACK_RUNS_RELATIVE_PATH = "runs/metric_pack_runs.json"
 METRIC_PRICING_PROVENANCE_RELATIVE_PATH = "runs/metric_pricing_provenance.json"
 MODEL_USAGE_TELEMETRY_RELATIVE_PATH = "runs/model_usage_telemetry_index.json"
 SUPERVISOR_EXECUTOR_ADAPTER_INDEX_RELATIVE_PATH = "runs/supervisor_executor_adapter_index.json"
+LOCAL_OPERATOR_EXECUTOR_READINESS_RELATIVE_PATH = "runs/local_operator_executor_readiness.json"
 AGENT_SURFACE_INDEX_RELATIVE_PATH = "runs/agent_surface_index.json"
 KNOWN_AGENT_PASSPORT_INDEX_RELATIVE_PATH = "runs/known_agent_passport_index.json"
 AGENT_VERIFICATION_GAP_INDEX_RELATIVE_PATH = "runs/agent_verification_gap_index.json"
@@ -3141,11 +3142,24 @@ EVIDENCE_PLANE_NAMED_FILTERS = list(evidence_plane_policy_lookup("overlay_contra
 SUPERVISOR_EXECUTOR_ADAPTER_INDEX_FILENAME = Path(
     str(supervisor_executor_adapter_policy_lookup("repository_layout.index_artifact"))
 ).name
+LOCAL_OPERATOR_EXECUTOR_READINESS_FILENAME = Path(
+    str(
+        supervisor_executor_adapter_policy_lookup(
+            "repository_layout.local_operator_readiness_artifact"
+        )
+    )
+).name
 SUPERVISOR_EXECUTOR_ADAPTER_INDEX_ARTIFACT_KIND = str(
     supervisor_executor_adapter_policy_lookup("index_contract.artifact_kind")
 )
 SUPERVISOR_EXECUTOR_ADAPTER_INDEX_SCHEMA_VERSION = int(
     supervisor_executor_adapter_policy_lookup("index_contract.schema_version")
+)
+LOCAL_OPERATOR_EXECUTOR_READINESS_ARTIFACT_KIND = str(
+    supervisor_executor_adapter_policy_lookup("local_operator_readiness_contract.artifact_kind")
+)
+LOCAL_OPERATOR_EXECUTOR_READINESS_SCHEMA_VERSION = int(
+    supervisor_executor_adapter_policy_lookup("local_operator_readiness_contract.schema_version")
 )
 AGENT_SURFACE_INDEX_FILENAME = Path(
     str(agent_passport_adoption_policy_lookup("repository_layout.surface_index_artifact"))
@@ -17987,6 +18001,10 @@ def supervisor_executor_adapter_index_path() -> Path:
     return RUNS_DIR / SUPERVISOR_EXECUTOR_ADAPTER_INDEX_FILENAME
 
 
+def local_operator_executor_readiness_path() -> Path:
+    return RUNS_DIR / LOCAL_OPERATOR_EXECUTOR_READINESS_FILENAME
+
+
 def metric_signal_index_path() -> Path:
     return RUNS_DIR / METRIC_SIGNAL_INDEX_FILENAME
 
@@ -18548,6 +18566,263 @@ def build_supervisor_executor_adapter_index() -> dict[str, Any]:
 
 def write_supervisor_executor_adapter_index(index: dict[str, Any]) -> Path:
     path = supervisor_executor_adapter_index_path()
+    with artifact_lock(path):
+        atomic_write_json(path, index)
+    return path
+
+
+def local_operator_readiness_check(
+    *,
+    check_id: str,
+    status: str,
+    message: str,
+) -> dict[str, Any]:
+    return {
+        "check_id": check_id,
+        "status": status,
+        "message": message,
+    }
+
+
+def sanitize_executor_availability_for_readiness(
+    availability: dict[str, Any],
+) -> dict[str, Any]:
+    return {
+        "status": str(availability.get("status", "")).strip() or "missing",
+        "resolution_source": str(availability.get("resolution_source", "")).strip(),
+        "env_var": str(availability.get("env_var", "")).strip(),
+        "command_name": str(availability.get("command_name", "")).strip(),
+        "path_persisted": bool(availability.get("path_persisted", False)),
+    }
+
+
+def agent_passport_report_only_readiness_check() -> dict[str, Any]:
+    surfaces = build_agent_passport_derived_surfaces()
+    report = surfaces.get("agent_passport_verification_report", {})
+    report = report if isinstance(report, dict) else {}
+    summary = report.get("summary", {})
+    summary = summary if isinstance(summary, dict) else {}
+    cli_status = str(summary.get("agent_passport_cli_status", "")).strip()
+    entry_count = int(summary.get("entry_count", 0) or 0)
+    valid_count = int(summary.get("valid_count", 0) or 0)
+    invalid_count = int(summary.get("invalid_count", 0) or 0)
+    unavailable_count = int(summary.get("unavailable_count", 0) or 0)
+    tool_unavailable_count = int(summary.get("tool_unavailable_count", 0) or 0)
+    if cli_status != "available":
+        status = "missing"
+        message = "Agent Passport CLI is not available for report-only validation."
+    elif (
+        entry_count > 0
+        and valid_count == entry_count
+        and invalid_count == 0
+        and unavailable_count == 0
+        and tool_unavailable_count == 0
+    ):
+        status = "passed"
+        message = "Agent Passport report-only validation is available and all entries are valid."
+    else:
+        status = "failed"
+        message = "Agent Passport report-only validation is incomplete or has invalid entries."
+    return local_operator_readiness_check(
+        check_id="agent_passport_report_only_valid",
+        status=status,
+        message=message,
+    )
+
+
+def local_operator_executor_readiness_status(
+    *,
+    producer_environment: str,
+    backend_status: str,
+    checks: list[dict[str, Any]],
+) -> str:
+    if producer_environment == "invalid_runtime_environment_override":
+        return "blocked_invalid_runtime_environment"
+    if producer_environment != "local_operator_environment":
+        return "not_applicable_non_local_environment"
+    if backend_status == "runtime_environment_invalid":
+        return "blocked_invalid_runtime_environment"
+    if backend_status == "missing_executable":
+        return "blocked_missing_executable"
+    check_status_by_id = {
+        str(check.get("check_id", "")).strip(): str(check.get("status", "")).strip()
+        for check in checks
+    }
+    if check_status_by_id.get("executor_adapter_invocation_boundary") != "passed":
+        return "blocked_policy_contract"
+    if check_status_by_id.get("agent_passport_report_only_valid") != "passed":
+        return "blocked_passport_validation"
+    if backend_status == "available":
+        return "ready_for_local_smoke"
+    return "blocked_policy_contract"
+
+
+def local_operator_executor_readiness_next_gap(readiness_status: str) -> str:
+    return {
+        "ready_for_local_smoke": "run_executor_adapter_smoke_benchmark",
+        "blocked_missing_executable": "configure_local_operator_executable",
+        "blocked_invalid_runtime_environment": "repair_executor_runtime_environment_override",
+        "blocked_policy_contract": "repair_executor_adapter_policy_contract",
+        "blocked_passport_validation": "repair_agent_passport_report_only_validation",
+        "not_applicable_non_local_environment": "run_in_local_operator_environment",
+    }.get(readiness_status, "repair_executor_readiness")
+
+
+def build_local_operator_executor_readiness() -> dict[str, Any]:
+    adapter_index = build_supervisor_executor_adapter_index()
+    contract = supervisor_executor_adapter_policy_lookup("local_operator_readiness_contract")
+    contract = contract if isinstance(contract, dict) else {}
+    producer_environment = str(
+        adapter_index.get("summary", {}).get("producer_environment", "")
+    ).strip()
+    runtime_diagnostics = copy.deepcopy(adapter_index.get("runtime_environment_diagnostics", []))
+    invocation_boundary_check = supervisor_executor_adapter_invocation_boundary_check(adapter_index)
+    passport_check = agent_passport_report_only_readiness_check()
+    named_filters = {
+        str(name).strip(): [] for name in contract.get("named_filters", []) if str(name).strip()
+    }
+    entries: list[dict[str, Any]] = []
+
+    for entry in adapter_index.get("entries", []):
+        if not isinstance(entry, dict):
+            continue
+        backend_id = str(entry.get("backend_id", "")).strip()
+        if not backend_id:
+            continue
+        backend_status = str(entry.get("backend_status", "")).strip()
+        runtime_environment = copy.deepcopy(entry.get("runtime_environment", {}))
+        runtime_environment = runtime_environment if isinstance(runtime_environment, dict) else {}
+        environment_check_status = (
+            "passed"
+            if producer_environment == "local_operator_environment"
+            else "failed"
+            if producer_environment == "invalid_runtime_environment_override"
+            else "not_applicable"
+        )
+        executable_check_status = (
+            "passed"
+            if producer_environment == "local_operator_environment"
+            and backend_status == "available"
+            else "missing"
+            if producer_environment == "local_operator_environment"
+            and backend_status == "missing_executable"
+            else "failed"
+            if backend_status == "runtime_environment_invalid"
+            else "not_applicable"
+        )
+        checks = [
+            local_operator_readiness_check(
+                check_id="local_operator_environment_selected",
+                status=environment_check_status,
+                message=(
+                    "Producer environment is local_operator_environment."
+                    if environment_check_status == "passed"
+                    else "Readiness was requested outside local_operator_environment."
+                    if environment_check_status == "not_applicable"
+                    else "Executor runtime environment override is invalid."
+                ),
+            ),
+            local_operator_readiness_check(
+                check_id="executable_available_in_local_operator_environment",
+                status=executable_check_status,
+                message=(
+                    "Backend executable is available in the local operator environment."
+                    if executable_check_status == "passed"
+                    else "Backend executable is missing in the local operator environment."
+                    if executable_check_status == "missing"
+                    else "Executable readiness is not applicable outside local operator execution."
+                    if executable_check_status == "not_applicable"
+                    else "Runtime environment is invalid; executable readiness cannot be trusted."
+                ),
+            ),
+            copy.deepcopy(invocation_boundary_check),
+            copy.deepcopy(passport_check),
+        ]
+        readiness_status = local_operator_executor_readiness_status(
+            producer_environment=producer_environment,
+            backend_status=backend_status,
+            checks=checks,
+        )
+        named_filters.setdefault(readiness_status, []).append(backend_id)
+        entries.append(
+            {
+                "backend_id": backend_id,
+                "display_name": str(entry.get("display_name", "")).strip(),
+                "intended_environment": str(
+                    runtime_environment.get("intended_environment", "")
+                ).strip(),
+                "producer_environment": producer_environment,
+                "backend_status": backend_status,
+                "readiness_status": readiness_status,
+                "runtime_environment": runtime_environment,
+                "executable_availability": sanitize_executor_availability_for_readiness(
+                    entry.get("executable_availability", {})
+                    if isinstance(entry.get("executable_availability", {}), dict)
+                    else {}
+                ),
+                "checks": checks,
+                "safe_next_action": local_operator_executor_readiness_next_gap(readiness_status),
+            }
+        )
+
+    for key in list(named_filters):
+        named_filters[key] = sorted(set(named_filters[key]))
+
+    default_backend_id = str(adapter_index.get("summary", {}).get("default_backend_id", "")).strip()
+    default_entry = next(
+        (entry for entry in entries if entry["backend_id"] == default_backend_id),
+        None,
+    )
+    status_counts: dict[str, int] = {}
+    for entry in entries:
+        status = str(entry.get("readiness_status", "")).strip()
+        status_counts[status] = status_counts.get(status, 0) + 1
+
+    return {
+        "artifact_kind": LOCAL_OPERATOR_EXECUTOR_READINESS_ARTIFACT_KIND,
+        "schema_version": LOCAL_OPERATOR_EXECUTOR_READINESS_SCHEMA_VERSION,
+        "generated_at": utc_now_iso(),
+        "policy_reference": supervisor_executor_adapter_policy_reference(),
+        "local_only": bool(contract.get("local_only", True)),
+        "privacy_boundary": copy.deepcopy(contract.get("privacy_boundary", {})),
+        "producer_environment": producer_environment,
+        "runtime_environment_diagnostics": runtime_diagnostics,
+        "summary": {
+            "backend_count": len(entries),
+            "ready_backend_count": status_counts.get("ready_for_local_smoke", 0),
+            "blocked_backend_count": sum(
+                count for status, count in status_counts.items() if status.startswith("blocked_")
+            ),
+            "not_applicable_backend_count": status_counts.get(
+                "not_applicable_non_local_environment", 0
+            ),
+            "default_backend_id": default_backend_id,
+            "default_backend_readiness": (
+                str(default_entry.get("readiness_status", "")).strip()
+                if default_entry
+                else "blocked_policy_contract"
+            ),
+            "next_gap": local_operator_executor_readiness_next_gap(
+                str(default_entry.get("readiness_status", "")).strip()
+                if default_entry
+                else "blocked_policy_contract"
+            ),
+        },
+        "entries": entries,
+        "viewer_projection": {
+            "readiness_status": {
+                status: sorted(
+                    entry["backend_id"] for entry in entries if entry["readiness_status"] == status
+                )
+                for status in sorted(status_counts)
+            },
+            "named_filters": named_filters,
+        },
+    }
+
+
+def write_local_operator_executor_readiness(index: dict[str, Any]) -> Path:
+    path = local_operator_executor_readiness_path()
     with artifact_lock(path):
         atomic_write_json(path, index)
     return path
@@ -41614,6 +41889,7 @@ def main(
     build_metric_signal_index_mode: bool = False,
     build_metric_threshold_proposals_mode: bool = False,
     build_supervisor_executor_adapter_index_mode: bool = False,
+    build_local_operator_executor_readiness_mode: bool = False,
     build_agent_passport_derived_surfaces_mode: bool = False,
     build_agent_runtime_enforcement_evidence_mode: bool = False,
     build_supervisor_performance_index_mode: bool = False,
@@ -41687,6 +41963,7 @@ def main(
         "--init-product-workspace": init_product_workspace_mode,
         "--build-review-feedback-index": build_review_feedback_index_mode,
         "--build-supervisor-executor-adapter-index": build_supervisor_executor_adapter_index_mode,
+        "--build-local-operator-executor-readiness": (build_local_operator_executor_readiness_mode),
         "--build-agent-passport-derived-surfaces": build_agent_passport_derived_surfaces_mode,
         "--build-agent-runtime-enforcement-evidence": (
             build_agent_runtime_enforcement_evidence_mode
@@ -42602,6 +42879,7 @@ def main(
                 build_proposal_lane_overlay_mode,
                 build_proposal_runtime_index_mode,
                 build_proposal_promotion_index_mode,
+                build_local_operator_executor_readiness_mode,
                 build_agent_runtime_enforcement_evidence_mode,
             )
         ):
@@ -42612,6 +42890,41 @@ def main(
             return 1
         index = build_supervisor_executor_adapter_index()
         write_supervisor_executor_adapter_index(index)
+        emit_supervisor_json(index, output_mode=normalized_output_mode)
+        return 0
+
+    if build_local_operator_executor_readiness_mode:
+        if any(
+            (
+                dry_run,
+                auto_approve,
+                loop,
+                resolve_gate,
+                decision,
+                note,
+                target_spec,
+                split_proposal,
+                apply_split_proposal,
+                operator_note,
+                mutation_budget,
+                run_authority,
+                execution_profile,
+                child_model,
+                child_timeout_seconds,
+                verbose,
+                list_stale_runtime,
+                clean_stale_runtime,
+                observe_graph_health_mode,
+                operator_request_packet_path,
+            )
+        ):
+            print(
+                "--build-local-operator-executor-readiness must be used as a standalone command",
+                file=sys.stderr,
+            )
+            return 1
+        index = build_local_operator_executor_readiness()
+        write_local_operator_executor_readiness(index)
         emit_supervisor_json(index, output_mode=normalized_output_mode)
         return 0
 
@@ -45975,6 +46288,14 @@ if __name__ == "__main__":
         ),
     )
     parser.add_argument(
+        "--build-local-operator-executor-readiness",
+        action="store_true",
+        help=(
+            "Build a local-only executor readiness report for the operator environment "
+            "without launching nested executors"
+        ),
+    )
+    parser.add_argument(
         "--build-agent-passport-derived-surfaces",
         action="store_true",
         help=(
@@ -46311,6 +46632,9 @@ if __name__ == "__main__":
             build_metric_threshold_proposals_mode=args.build_metric_threshold_proposals,
             build_supervisor_executor_adapter_index_mode=(
                 args.build_supervisor_executor_adapter_index
+            ),
+            build_local_operator_executor_readiness_mode=(
+                args.build_local_operator_executor_readiness
             ),
             build_agent_passport_derived_surfaces_mode=(args.build_agent_passport_derived_surfaces),
             build_agent_runtime_enforcement_evidence_mode=(

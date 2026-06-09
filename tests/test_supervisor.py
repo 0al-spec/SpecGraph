@@ -27114,6 +27114,14 @@ def test_supervisor_executor_adapter_policy_declares_request_report_contract() -
         in (policy["index_contract"]["backend_status_values"])
     )
     assert "runtime_environment_invalid" in policy["index_contract"]["backend_status_values"]
+    readiness = policy["local_operator_readiness_contract"]
+    assert readiness["artifact_kind"] == "local_operator_executor_readiness"
+    assert readiness["local_only"] is True
+    assert "ready_for_local_smoke" in readiness["status_values"]
+    assert "blocked_missing_executable" in readiness["status_values"]
+    assert "not_applicable_non_local_environment" in readiness["status_values"]
+    assert "executor_adapter_invocation_boundary" in readiness["check_ids"]
+    assert readiness["privacy_boundary"]["public_static_publish"] is False
 
     request = policy["request_contract"]
     assert request["artifact_kind"] == "supervisor_executor_request"
@@ -27378,6 +27386,177 @@ def test_invalid_supervisor_executor_runtime_environment_override_is_reported(
     assert index["viewer_projection"]["named_filters"]["runtime_environment_invalid"] == ["codex"]
 
 
+def passed_passport_readiness_check(supervisor_module: object) -> dict[str, object]:
+    return supervisor_module.local_operator_readiness_check(
+        check_id="agent_passport_report_only_valid",
+        status="passed",
+        message="Agent Passport report-only validation passed.",
+    )
+
+
+def test_build_local_operator_executor_readiness_reports_ready_backend(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv(
+        supervisor_module.SUPERVISOR_EXECUTOR_RUNTIME_ENVIRONMENT_ENV_VAR,
+        "local_operator_environment",
+    )
+    monkeypatch.delenv(supervisor_module.CODEX_EXECUTABLE_ENV_VAR, raising=False)
+    monkeypatch.setattr(
+        supervisor_module.shutil,
+        "which",
+        lambda name: f"/fake/bin/{name}" if name == "codex" else None,
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "agent_passport_report_only_readiness_check",
+        lambda: passed_passport_readiness_check(supervisor_module),
+    )
+
+    readiness = supervisor_module.build_local_operator_executor_readiness()
+
+    assert readiness["artifact_kind"] == "local_operator_executor_readiness"
+    assert readiness["local_only"] is True
+    assert readiness["producer_environment"] == "local_operator_environment"
+    assert readiness["summary"]["ready_backend_count"] == 1
+    assert readiness["summary"]["blocked_backend_count"] == 0
+    assert readiness["summary"]["default_backend_readiness"] == "ready_for_local_smoke"
+    assert readiness["summary"]["next_gap"] == "run_executor_adapter_smoke_benchmark"
+    entry = readiness["entries"][0]
+    assert entry["backend_id"] == "codex"
+    assert entry["backend_status"] == "available"
+    assert entry["readiness_status"] == "ready_for_local_smoke"
+    assert entry["safe_next_action"] == "run_executor_adapter_smoke_benchmark"
+    assert entry["executable_availability"] == {
+        "status": "available",
+        "resolution_source": "path",
+        "env_var": "SPECGRAPH_CODEX_EXECUTABLE",
+        "command_name": "codex",
+        "path_persisted": False,
+    }
+    checks = {check["check_id"]: check["status"] for check in entry["checks"]}
+    assert checks == {
+        "local_operator_environment_selected": "passed",
+        "executable_available_in_local_operator_environment": "passed",
+        "executor_adapter_invocation_boundary": "passed",
+        "agent_passport_report_only_valid": "passed",
+    }
+    assert readiness["viewer_projection"]["named_filters"]["ready_for_local_smoke"] == ["codex"]
+    dumped = json.dumps(readiness, sort_keys=True)
+    assert "/fake/bin/codex" not in dumped
+    assert repo_fixture.as_posix() not in dumped
+
+
+def test_build_local_operator_executor_readiness_blocks_missing_executable(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    missing_codex = repo_fixture / "missing-codex"
+    monkeypatch.setenv(
+        supervisor_module.SUPERVISOR_EXECUTOR_RUNTIME_ENVIRONMENT_ENV_VAR,
+        "local_operator_environment",
+    )
+    monkeypatch.setenv(supervisor_module.CODEX_EXECUTABLE_ENV_VAR, missing_codex.as_posix())
+    monkeypatch.setattr(supervisor_module.shutil, "which", lambda _name: None)
+    monkeypatch.setattr(
+        supervisor_module,
+        "agent_passport_report_only_readiness_check",
+        lambda: passed_passport_readiness_check(supervisor_module),
+    )
+
+    readiness = supervisor_module.build_local_operator_executor_readiness()
+
+    entry = readiness["entries"][0]
+    assert readiness["summary"]["ready_backend_count"] == 0
+    assert readiness["summary"]["blocked_backend_count"] == 1
+    assert readiness["summary"]["default_backend_readiness"] == "blocked_missing_executable"
+    assert readiness["summary"]["next_gap"] == "configure_local_operator_executable"
+    assert entry["readiness_status"] == "blocked_missing_executable"
+    checks = {check["check_id"]: check["status"] for check in entry["checks"]}
+    assert checks["executable_available_in_local_operator_environment"] == "missing"
+    assert readiness["viewer_projection"]["named_filters"]["blocked_missing_executable"] == [
+        "codex"
+    ]
+    assert missing_codex.as_posix() not in json.dumps(readiness, sort_keys=True)
+
+
+def test_build_local_operator_executor_readiness_marks_static_publish_not_applicable(
+    supervisor_module: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv(
+        supervisor_module.SUPERVISOR_EXECUTOR_RUNTIME_ENVIRONMENT_ENV_VAR,
+        "static_publish_environment",
+    )
+    monkeypatch.setattr(
+        supervisor_module.shutil,
+        "which",
+        lambda name: f"/fake/bin/{name}" if name == "codex" else None,
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "agent_passport_report_only_readiness_check",
+        lambda: passed_passport_readiness_check(supervisor_module),
+    )
+
+    readiness = supervisor_module.build_local_operator_executor_readiness()
+
+    entry = readiness["entries"][0]
+    assert readiness["producer_environment"] == "static_publish_environment"
+    assert readiness["summary"]["not_applicable_backend_count"] == 1
+    assert readiness["summary"]["default_backend_readiness"] == (
+        "not_applicable_non_local_environment"
+    )
+    assert readiness["summary"]["next_gap"] == "run_in_local_operator_environment"
+    assert entry["backend_status"] == "not_applicable_in_producer_environment"
+    assert entry["readiness_status"] == "not_applicable_non_local_environment"
+    checks = {check["check_id"]: check["status"] for check in entry["checks"]}
+    assert checks["local_operator_environment_selected"] == "not_applicable"
+    assert checks["executable_available_in_local_operator_environment"] == "not_applicable"
+    assert readiness["viewer_projection"]["named_filters"][
+        "not_applicable_non_local_environment"
+    ] == ["codex"]
+
+
+def test_build_local_operator_executor_readiness_reports_invalid_runtime_override(
+    supervisor_module: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv(
+        supervisor_module.SUPERVISOR_EXECUTOR_RUNTIME_ENVIRONMENT_ENV_VAR,
+        "static_publish",
+    )
+    monkeypatch.setattr(
+        supervisor_module.shutil,
+        "which",
+        lambda name: f"/fake/bin/{name}" if name == "codex" else None,
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "agent_passport_report_only_readiness_check",
+        lambda: passed_passport_readiness_check(supervisor_module),
+    )
+
+    readiness = supervisor_module.build_local_operator_executor_readiness()
+
+    entry = readiness["entries"][0]
+    assert readiness["producer_environment"] == "invalid_runtime_environment_override"
+    assert readiness["summary"]["default_backend_readiness"] == (
+        "blocked_invalid_runtime_environment"
+    )
+    assert readiness["summary"]["next_gap"] == "repair_executor_runtime_environment_override"
+    assert readiness["runtime_environment_diagnostics"][0]["code"] == (
+        "invalid_runtime_environment_override"
+    )
+    assert entry["readiness_status"] == "blocked_invalid_runtime_environment"
+    assert readiness["viewer_projection"]["named_filters"][
+        "blocked_invalid_runtime_environment"
+    ] == ["codex"]
+
+
 def test_command_availability_rejects_directory_candidates(
     supervisor_module: object,
     repo_fixture: Path,
@@ -27445,6 +27624,44 @@ def test_main_builds_supervisor_executor_adapter_index_as_standalone_command(
         )
     )
     assert artifact["entries"] == [{"backend_id": "codex"}]
+
+
+def test_main_builds_local_operator_executor_readiness_as_standalone_command(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_local_operator_executor_readiness",
+        lambda: {
+            "artifact_kind": supervisor_module.LOCAL_OPERATOR_EXECUTOR_READINESS_ARTIFACT_KIND,
+            "schema_version": supervisor_module.LOCAL_OPERATOR_EXECUTOR_READINESS_SCHEMA_VERSION,
+            "generated_at": "2026-06-09T00:00:00Z",
+            "local_only": True,
+            "producer_environment": "local_operator_environment",
+            "summary": {"backend_count": 1, "default_backend_readiness": "ready_for_local_smoke"},
+            "entries": [{"backend_id": "codex", "readiness_status": "ready_for_local_smoke"}],
+            "viewer_projection": {"named_filters": {"ready_for_local_smoke": ["codex"]}},
+        },
+    )
+
+    exit_code = supervisor_module.main(build_local_operator_executor_readiness_mode=True)
+
+    assert exit_code == 0
+    report = json.loads(capsys.readouterr().out)
+    assert (
+        report["artifact_kind"] == supervisor_module.LOCAL_OPERATOR_EXECUTOR_READINESS_ARTIFACT_KIND
+    )
+    artifact = json.loads(
+        (repo_fixture / "runs" / "local_operator_executor_readiness.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert artifact["entries"] == [
+        {"backend_id": "codex", "readiness_status": "ready_for_local_smoke"}
+    ]
 
 
 def test_agent_passport_adoption_policy_declares_surface_and_gap_contract(

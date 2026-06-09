@@ -3,7 +3,8 @@
   "schema_version": 1,
   "default_backend_id": "codex",
   "repository_layout": {
-    "index_artifact": "runs/supervisor_executor_adapter_index.json"
+    "index_artifact": "runs/supervisor_executor_adapter_index.json",
+    "local_operator_readiness_artifact": "runs/local_operator_executor_readiness.json"
   },
   "index_contract": {
     "artifact_kind": "supervisor_executor_adapter_index",
@@ -60,6 +61,40 @@
       "unsupported": "backend_declared_but_not_supported",
       "not_applicable_in_producer_environment": "executable_probe_not_required_for_producer_environment",
       "runtime_environment_invalid": "producer_runtime_environment_override_invalid"
+    }
+  },
+  "local_operator_readiness_contract": {
+    "artifact_kind": "local_operator_executor_readiness",
+    "schema_version": 1,
+    "producer_environment": "local_operator_environment",
+    "local_only": true,
+    "status_values": [
+      "ready_for_local_smoke",
+      "blocked_missing_executable",
+      "blocked_invalid_runtime_environment",
+      "blocked_policy_contract",
+      "blocked_passport_validation",
+      "not_applicable_non_local_environment"
+    ],
+    "check_ids": [
+      "local_operator_environment_selected",
+      "executable_available_in_local_operator_environment",
+      "executor_adapter_invocation_boundary",
+      "agent_passport_report_only_valid"
+    ],
+    "named_filters": [
+      "ready_for_local_smoke",
+      "blocked_missing_executable",
+      "blocked_invalid_runtime_environment",
+      "blocked_policy_contract",
+      "blocked_passport_validation",
+      "not_applicable_non_local_environment"
+    ],
+    "privacy_boundary": {
+      "must_not_persist_absolute_paths": true,
+      "must_not_persist_raw_logs": true,
+      "must_not_persist_secrets": true,
+      "public_static_publish": false
     }
   },
   "backend_registry": [

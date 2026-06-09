@@ -113,6 +113,11 @@ Supervisor modes:
   `runs/supervisor_executor_adapter_index.json` from the 0056 policy so
   executor backend availability, capability gaps, and Agent Passport CLI
   diagnostics are visible without launching nested executors.
+- `--build-local-operator-executor-readiness`: build local-only
+  `runs/local_operator_executor_readiness.json` so an operator can see whether
+  the current checkout is ready for the next bounded executor smoke step. This
+  does not launch Codex, does not claim runtime enforcement, and is excluded
+  from public static publishing.
 - `--build-agent-passport-derived-surfaces`: build Agent Passport derived
   surfaces from `tools/agent_passport_adoption_policy.json` and the 0056
   executor adapter index, including report-only Agent Passport CLI validation
@@ -423,6 +428,10 @@ Key derived artifacts:
   surface for proposal 0056, including backend availability, declared
   capabilities, Agent Passport CLI diagnostics, capability gaps, and safe next
   actions without publishing absolute executable paths or raw logs
+- `runs/local_operator_executor_readiness.json`: local-only readiness report for
+  operator executor smoke preparation, including sanitized executable
+  availability, invocation-boundary, and report-only Agent Passport checks;
+  this artifact is intentionally not published in the static bundle
 - `runs/agent_surface_index.json`: read-only Agent Passport adoption surface
   index for graph-facing agents, including policy-declared surfaces and
   executor backends derived from the 0056 adapter index
