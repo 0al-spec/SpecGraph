@@ -185,6 +185,7 @@ METRIC_PRICING_PROVENANCE_RELATIVE_PATH = "runs/metric_pricing_provenance.json"
 MODEL_USAGE_TELEMETRY_RELATIVE_PATH = "runs/model_usage_telemetry_index.json"
 SUPERVISOR_EXECUTOR_ADAPTER_INDEX_RELATIVE_PATH = "runs/supervisor_executor_adapter_index.json"
 LOCAL_OPERATOR_EXECUTOR_READINESS_RELATIVE_PATH = "runs/local_operator_executor_readiness.json"
+LOCAL_OPERATOR_EXECUTOR_SMOKE_RELATIVE_PATH = "runs/local_operator_executor_smoke.json"
 AGENT_SURFACE_INDEX_RELATIVE_PATH = "runs/agent_surface_index.json"
 KNOWN_AGENT_PASSPORT_INDEX_RELATIVE_PATH = "runs/known_agent_passport_index.json"
 AGENT_VERIFICATION_GAP_INDEX_RELATIVE_PATH = "runs/agent_verification_gap_index.json"
@@ -3149,6 +3150,11 @@ LOCAL_OPERATOR_EXECUTOR_READINESS_FILENAME = Path(
         )
     )
 ).name
+LOCAL_OPERATOR_EXECUTOR_SMOKE_FILENAME = Path(
+    str(
+        supervisor_executor_adapter_policy_lookup("repository_layout.local_operator_smoke_artifact")
+    )
+).name
 SUPERVISOR_EXECUTOR_ADAPTER_INDEX_ARTIFACT_KIND = str(
     supervisor_executor_adapter_policy_lookup("index_contract.artifact_kind")
 )
@@ -3160,6 +3166,12 @@ LOCAL_OPERATOR_EXECUTOR_READINESS_ARTIFACT_KIND = str(
 )
 LOCAL_OPERATOR_EXECUTOR_READINESS_SCHEMA_VERSION = int(
     supervisor_executor_adapter_policy_lookup("local_operator_readiness_contract.schema_version")
+)
+LOCAL_OPERATOR_EXECUTOR_SMOKE_ARTIFACT_KIND = str(
+    supervisor_executor_adapter_policy_lookup("local_operator_smoke_contract.artifact_kind")
+)
+LOCAL_OPERATOR_EXECUTOR_SMOKE_SCHEMA_VERSION = int(
+    supervisor_executor_adapter_policy_lookup("local_operator_smoke_contract.schema_version")
 )
 AGENT_SURFACE_INDEX_FILENAME = Path(
     str(agent_passport_adoption_policy_lookup("repository_layout.surface_index_artifact"))
@@ -18005,6 +18017,10 @@ def local_operator_executor_readiness_path() -> Path:
     return RUNS_DIR / LOCAL_OPERATOR_EXECUTOR_READINESS_FILENAME
 
 
+def local_operator_executor_smoke_path() -> Path:
+    return RUNS_DIR / LOCAL_OPERATOR_EXECUTOR_SMOKE_FILENAME
+
+
 def metric_signal_index_path() -> Path:
     return RUNS_DIR / METRIC_SIGNAL_INDEX_FILENAME
 
@@ -18823,6 +18839,376 @@ def build_local_operator_executor_readiness() -> dict[str, Any]:
 
 def write_local_operator_executor_readiness(index: dict[str, Any]) -> Path:
     path = local_operator_executor_readiness_path()
+    with artifact_lock(path):
+        atomic_write_json(path, index)
+    return path
+
+
+def local_operator_smoke_check(
+    *,
+    check_id: str,
+    status: str,
+    message: str,
+) -> dict[str, Any]:
+    return {
+        "check_id": check_id,
+        "status": status,
+        "message": message,
+    }
+
+
+def local_operator_executor_smoke_next_gap(status: str) -> str:
+    return {
+        "passed": "define_bounded_executor_task_smoke",
+        "blocked_readiness_not_ready": "run_executor_readiness_until_ready",
+        "failed_probe_invocation": "repair_executor_probe_invocation",
+        "blocked_policy_contract": "repair_executor_adapter_policy_contract",
+    }.get(status, "repair_executor_smoke")
+
+
+def local_operator_executor_smoke_status(checks: list[dict[str, Any]]) -> str:
+    status_by_id = {
+        str(check.get("check_id", "")).strip(): str(check.get("status", "")).strip()
+        for check in checks
+    }
+    if status_by_id.get("readiness_artifact_present") != "passed":
+        return "blocked_readiness_not_ready"
+    if status_by_id.get("readiness_allows_local_smoke") != "passed":
+        return "blocked_readiness_not_ready"
+    if status_by_id.get("executor_probe_invocation_completed") != "passed":
+        return "failed_probe_invocation"
+    if status_by_id.get("no_canonical_mutation_attempted") != "passed":
+        return "blocked_policy_contract"
+    return "passed"
+
+
+def load_local_operator_executor_readiness_artifact() -> dict[str, Any] | None:
+    path = local_operator_executor_readiness_path()
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    return payload if isinstance(payload, dict) else None
+
+
+def local_operator_executor_smoke_contract() -> dict[str, Any]:
+    contract = supervisor_executor_adapter_policy_lookup("local_operator_smoke_contract")
+    return contract if isinstance(contract, dict) else {}
+
+
+def local_operator_smoke_probe_for_backend(backend_id: str) -> dict[str, Any]:
+    contract = local_operator_executor_smoke_contract()
+    default_args = [
+        str(arg).strip() for arg in contract.get("default_probe_args", []) if str(arg).strip()
+    ] or ["--version"]
+    default_timeout = int(contract.get("default_timeout_seconds", 15) or 15)
+    for backend in supervisor_executor_adapter_policy_lookup("backend_registry"):
+        if not isinstance(backend, dict):
+            continue
+        if str(backend.get("backend_id", "")).strip() != backend_id:
+            continue
+        probe = backend.get("local_smoke_probe", {})
+        probe = probe if isinstance(probe, dict) else {}
+        args = [str(arg).strip() for arg in probe.get("args", []) if str(arg).strip()]
+        timeout = int(probe.get("timeout_seconds", default_timeout) or default_timeout)
+        return {
+            "args": args or default_args,
+            "timeout_seconds": max(1, min(timeout, 60)),
+        }
+    return {"args": default_args, "timeout_seconds": max(1, min(default_timeout, 60))}
+
+
+def executable_invocation_command_from_backend(
+    *,
+    backend_id: str,
+    probe_args: list[str],
+) -> tuple[list[str], dict[str, Any]]:
+    for backend in supervisor_executor_adapter_policy_lookup("backend_registry"):
+        if not isinstance(backend, dict):
+            continue
+        if str(backend.get("backend_id", "")).strip() != backend_id:
+            continue
+        executable_env_var = str(backend.get("executable_env_var", "")).strip()
+        if executable_env_var and os.environ.get(executable_env_var, "").strip():
+            candidate = Path(str(os.environ.get(executable_env_var, "")).strip()).expanduser()
+            if is_executable_file(candidate):
+                return [
+                    candidate.as_posix(),
+                    *probe_args,
+                ], {
+                    "command_name": candidate.name,
+                    "resolution_source": "env_override",
+                    "env_var": executable_env_var,
+                    "path_persisted": False,
+                }
+        for name in [
+            str(item).strip() for item in backend.get("executable_names", []) if str(item).strip()
+        ]:
+            if shutil.which(name):
+                return [
+                    name,
+                    *probe_args,
+                ], {
+                    "command_name": name,
+                    "resolution_source": "path",
+                    "env_var": executable_env_var,
+                    "path_persisted": False,
+                }
+        for raw_path in [
+            str(item).strip() for item in backend.get("preferred_paths", []) if str(item).strip()
+        ]:
+            candidate = Path(raw_path).expanduser()
+            if is_executable_file(candidate):
+                return [
+                    candidate.as_posix(),
+                    *probe_args,
+                ], {
+                    "command_name": candidate.name,
+                    "resolution_source": "preferred_path",
+                    "env_var": executable_env_var,
+                    "path_persisted": False,
+                }
+    return [], {
+        "command_name": "",
+        "resolution_source": "not_found",
+        "env_var": "",
+        "path_persisted": False,
+    }
+
+
+def git_tracked_status_snapshot() -> str | None:
+    try:
+        result = subprocess.run(
+            ["git", "status", "--porcelain", "--untracked-files=all"],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=10,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    return result.stdout if result.returncode == 0 else None
+
+
+def run_local_operator_executor_probe(
+    *,
+    backend_id: str,
+    probe_args: list[str],
+    timeout_seconds: int,
+) -> dict[str, Any]:
+    command, invocation = executable_invocation_command_from_backend(
+        backend_id=backend_id,
+        probe_args=probe_args,
+    )
+    if not command:
+        return {
+            "status": "failed",
+            "exit_code": None,
+            "timed_out": False,
+            "command": invocation,
+            "command_executed": False,
+            "stdout_persisted": False,
+            "stderr_persisted": False,
+            "tracked_status_unchanged": None,
+        }
+    before_status = git_tracked_status_snapshot()
+    try:
+        result = subprocess.run(
+            command,
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=timeout_seconds,
+        )
+        timed_out = False
+        exit_code: int | None = result.returncode
+    except subprocess.TimeoutExpired:
+        timed_out = True
+        exit_code = None
+    after_status = git_tracked_status_snapshot()
+    return {
+        "status": "passed" if exit_code == 0 and not timed_out else "failed",
+        "exit_code": exit_code,
+        "timed_out": timed_out,
+        "command": invocation,
+        "command_executed": True,
+        "stdout_persisted": False,
+        "stderr_persisted": False,
+        "tracked_status_unchanged": (
+            before_status is not None and after_status is not None and before_status == after_status
+        ),
+    }
+
+
+def build_local_operator_executor_smoke(
+    readiness: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    contract = local_operator_executor_smoke_contract()
+    readiness = (
+        readiness
+        if isinstance(readiness, dict)
+        else load_local_operator_executor_readiness_artifact()
+    )
+    readiness_present = isinstance(readiness, dict)
+    readiness_summary = readiness.get("summary", {}) if readiness_present else {}
+    readiness_summary = readiness_summary if isinstance(readiness_summary, dict) else {}
+    default_backend_id = str(readiness_summary.get("default_backend_id", "")).strip()
+    default_readiness = str(readiness_summary.get("default_backend_readiness", "")).strip()
+    readiness_entries = readiness.get("entries", []) if readiness_present else []
+    readiness_entries = readiness_entries if isinstance(readiness_entries, list) else []
+    readiness_entry = next(
+        (
+            entry
+            for entry in readiness_entries
+            if isinstance(entry, dict)
+            and str(entry.get("backend_id", "")).strip() == default_backend_id
+        ),
+        None,
+    )
+    readiness_allows_smoke = default_readiness == "ready_for_local_smoke"
+    probe = local_operator_smoke_probe_for_backend(default_backend_id)
+    probe_args = [str(arg).strip() for arg in probe.get("args", []) if str(arg).strip()]
+    timeout_seconds = int(probe.get("timeout_seconds", 15) or 15)
+    checks = [
+        local_operator_smoke_check(
+            check_id="readiness_artifact_present",
+            status="passed" if readiness_present else "missing",
+            message=(
+                "Local operator executor readiness artifact is present."
+                if readiness_present
+                else "Local operator executor readiness artifact is missing."
+            ),
+        ),
+        local_operator_smoke_check(
+            check_id="readiness_allows_local_smoke",
+            status="passed" if readiness_allows_smoke else "failed",
+            message=(
+                "Readiness status allows local executor smoke."
+                if readiness_allows_smoke
+                else "Readiness status does not allow local executor smoke."
+            ),
+        ),
+    ]
+    probe_result: dict[str, Any] = {
+        "status": "not_run",
+        "exit_code": None,
+        "timed_out": False,
+        "command": {"path_persisted": False},
+        "command_executed": False,
+        "stdout_persisted": False,
+        "stderr_persisted": False,
+        "tracked_status_unchanged": None,
+    }
+    if readiness_allows_smoke and default_backend_id:
+        probe_result = run_local_operator_executor_probe(
+            backend_id=default_backend_id,
+            probe_args=probe_args,
+            timeout_seconds=timeout_seconds,
+        )
+    checks.append(
+        local_operator_smoke_check(
+            check_id="executor_probe_invocation_completed",
+            status=(
+                "not_run"
+                if probe_result.get("status") == "not_run"
+                else "passed"
+                if probe_result.get("status") == "passed"
+                else "failed"
+            ),
+            message=(
+                "Executor probe invocation completed successfully."
+                if probe_result.get("status") == "passed"
+                else "Executor probe invocation was not run because readiness gated it off."
+                if probe_result.get("status") == "not_run"
+                else "Executor probe invocation did not complete successfully."
+            ),
+        )
+    )
+    command_executed_value = probe_result.get("command_executed")
+    probe_command_executed = (
+        bool(command_executed_value)
+        if command_executed_value is not None
+        else probe_result.get("status") != "not_run" and bool(probe_result.get("command"))
+    )
+    checks.append(
+        local_operator_smoke_check(
+            check_id="no_canonical_mutation_attempted",
+            status=(
+                "not_run"
+                if not probe_command_executed
+                else "passed"
+                if probe_result.get("tracked_status_unchanged") is True
+                else "failed"
+            ),
+            message=(
+                "No executor command was executed, so the mutation check was not run."
+                if not probe_command_executed
+                else "Worktree status did not change during the executor probe."
+                if probe_result.get("tracked_status_unchanged") is True
+                else (
+                    "Worktree status changed or could not be proven unchanged "
+                    "during the executor probe."
+                )
+            ),
+        )
+    )
+    smoke_status = local_operator_executor_smoke_status(checks)
+    entry = {
+        "backend_id": default_backend_id,
+        "readiness_status": default_readiness,
+        "smoke_status": smoke_status,
+        "source_readiness_entry_present": readiness_entry is not None,
+        "probe": {
+            "args": probe_args,
+            "timeout_seconds": timeout_seconds,
+            "exit_code": probe_result.get("exit_code"),
+            "timed_out": bool(probe_result.get("timed_out", False)),
+            "command": copy.deepcopy(probe_result.get("command", {})),
+            "stdout_persisted": False,
+            "stderr_persisted": False,
+        },
+        "checks": checks,
+        "safe_next_action": local_operator_executor_smoke_next_gap(smoke_status),
+    }
+    named_filters = {
+        str(name).strip(): [] for name in contract.get("named_filters", []) if str(name).strip()
+    }
+    named_filters.setdefault(smoke_status, []).append(
+        default_backend_id or "missing_default_backend"
+    )
+    for key in list(named_filters):
+        named_filters[key] = sorted(set(named_filters[key]))
+    return {
+        "artifact_kind": LOCAL_OPERATOR_EXECUTOR_SMOKE_ARTIFACT_KIND,
+        "schema_version": LOCAL_OPERATOR_EXECUTOR_SMOKE_SCHEMA_VERSION,
+        "generated_at": utc_now_iso(),
+        "policy_reference": supervisor_executor_adapter_policy_reference(),
+        "source_readiness_artifact": str(
+            contract.get(
+                "source_readiness_artifact",
+                LOCAL_OPERATOR_EXECUTOR_READINESS_RELATIVE_PATH,
+            )
+        ).strip(),
+        "local_only": bool(contract.get("local_only", True)),
+        "privacy_boundary": copy.deepcopy(contract.get("privacy_boundary", {})),
+        "summary": {
+            "status": smoke_status,
+            "backend_id": default_backend_id,
+            "consumed_readiness_status": default_readiness,
+            "next_gap": local_operator_executor_smoke_next_gap(smoke_status),
+        },
+        "entries": [entry],
+        "checks": checks,
+        "viewer_projection": {
+            "named_filters": named_filters,
+        },
+    }
+
+
+def write_local_operator_executor_smoke(index: dict[str, Any]) -> Path:
+    path = local_operator_executor_smoke_path()
     with artifact_lock(path):
         atomic_write_json(path, index)
     return path
@@ -41890,6 +42276,7 @@ def main(
     build_metric_threshold_proposals_mode: bool = False,
     build_supervisor_executor_adapter_index_mode: bool = False,
     build_local_operator_executor_readiness_mode: bool = False,
+    build_local_operator_executor_smoke_mode: bool = False,
     build_agent_passport_derived_surfaces_mode: bool = False,
     build_agent_runtime_enforcement_evidence_mode: bool = False,
     build_supervisor_performance_index_mode: bool = False,
@@ -41964,6 +42351,7 @@ def main(
         "--build-review-feedback-index": build_review_feedback_index_mode,
         "--build-supervisor-executor-adapter-index": build_supervisor_executor_adapter_index_mode,
         "--build-local-operator-executor-readiness": (build_local_operator_executor_readiness_mode),
+        "--build-local-operator-executor-smoke": build_local_operator_executor_smoke_mode,
         "--build-agent-passport-derived-surfaces": build_agent_passport_derived_surfaces_mode,
         "--build-agent-runtime-enforcement-evidence": (
             build_agent_runtime_enforcement_evidence_mode
@@ -42880,6 +43268,7 @@ def main(
                 build_proposal_runtime_index_mode,
                 build_proposal_promotion_index_mode,
                 build_local_operator_executor_readiness_mode,
+                build_local_operator_executor_smoke_mode,
                 build_agent_runtime_enforcement_evidence_mode,
             )
         ):
@@ -42927,6 +43316,41 @@ def main(
         write_local_operator_executor_readiness(index)
         emit_supervisor_json(index, output_mode=normalized_output_mode)
         return 0
+
+    if build_local_operator_executor_smoke_mode:
+        if any(
+            (
+                dry_run,
+                auto_approve,
+                loop,
+                resolve_gate,
+                decision,
+                note,
+                target_spec,
+                split_proposal,
+                apply_split_proposal,
+                operator_note,
+                mutation_budget,
+                run_authority,
+                execution_profile,
+                child_model,
+                child_timeout_seconds,
+                verbose,
+                list_stale_runtime,
+                clean_stale_runtime,
+                observe_graph_health_mode,
+                operator_request_packet_path,
+            )
+        ):
+            print(
+                "--build-local-operator-executor-smoke must be used as a standalone command",
+                file=sys.stderr,
+            )
+            return 1
+        index = build_local_operator_executor_smoke()
+        write_local_operator_executor_smoke(index)
+        emit_supervisor_json(index, output_mode=normalized_output_mode)
+        return 0 if index.get("summary", {}).get("status") == "passed" else 1
 
     if build_agent_passport_derived_surfaces_mode:
         if any(
@@ -46296,6 +46720,14 @@ if __name__ == "__main__":
         ),
     )
     parser.add_argument(
+        "--build-local-operator-executor-smoke",
+        action="store_true",
+        help=(
+            "Run a local-only executor probe after readiness is ready, without running "
+            "an agent task or mutating canonical specs"
+        ),
+    )
+    parser.add_argument(
         "--build-agent-passport-derived-surfaces",
         action="store_true",
         help=(
@@ -46636,6 +47068,7 @@ if __name__ == "__main__":
             build_local_operator_executor_readiness_mode=(
                 args.build_local_operator_executor_readiness
             ),
+            build_local_operator_executor_smoke_mode=args.build_local_operator_executor_smoke,
             build_agent_passport_derived_surfaces_mode=(args.build_agent_passport_derived_surfaces),
             build_agent_runtime_enforcement_evidence_mode=(
                 args.build_agent_runtime_enforcement_evidence

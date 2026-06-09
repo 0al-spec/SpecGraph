@@ -4,7 +4,8 @@
   "default_backend_id": "codex",
   "repository_layout": {
     "index_artifact": "runs/supervisor_executor_adapter_index.json",
-    "local_operator_readiness_artifact": "runs/local_operator_executor_readiness.json"
+    "local_operator_readiness_artifact": "runs/local_operator_executor_readiness.json",
+    "local_operator_smoke_artifact": "runs/local_operator_executor_smoke.json"
   },
   "index_contract": {
     "artifact_kind": "supervisor_executor_adapter_index",
@@ -97,6 +98,41 @@
       "public_static_publish": false
     }
   },
+  "local_operator_smoke_contract": {
+    "artifact_kind": "local_operator_executor_smoke",
+    "schema_version": 1,
+    "source_readiness_artifact": "runs/local_operator_executor_readiness.json",
+    "local_only": true,
+    "status_values": [
+      "passed",
+      "blocked_readiness_not_ready",
+      "failed_probe_invocation",
+      "blocked_policy_contract"
+    ],
+    "check_ids": [
+      "readiness_artifact_present",
+      "readiness_allows_local_smoke",
+      "executor_probe_invocation_completed",
+      "no_canonical_mutation_attempted"
+    ],
+    "named_filters": [
+      "passed",
+      "blocked_readiness_not_ready",
+      "failed_probe_invocation",
+      "blocked_policy_contract"
+    ],
+    "default_probe_args": [
+      "--version"
+    ],
+    "default_timeout_seconds": 15,
+    "privacy_boundary": {
+      "must_not_persist_absolute_paths": true,
+      "must_not_persist_raw_logs": true,
+      "must_not_persist_secrets": true,
+      "public_static_publish": false,
+      "canonical_mutations_allowed": false
+    }
+  },
   "backend_registry": [
     {
       "backend_id": "codex",
@@ -111,6 +147,12 @@
       ],
       "executable_env_var": "SPECGRAPH_CODEX_EXECUTABLE",
       "preferred_paths": [],
+      "local_smoke_probe": {
+        "args": [
+          "--version"
+        ],
+        "timeout_seconds": 15
+      },
       "protocol_contract": "run_outcome_blocker",
       "auth_isolation": "isolated_child_home",
       "config_isolation": "isolated_child_home",
