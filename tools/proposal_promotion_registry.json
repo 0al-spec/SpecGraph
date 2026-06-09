@@ -1129,5 +1129,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0088",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0088_local_operator_executor_smoke.md"
+    ],
+    "motivating_concern": "Local operator executor readiness can report ready_for_local_smoke, but SpecGraph still lacks a bounded probe-only smoke that consumes readiness before any real executor task",
+    "normalized_title": "Local Operator Executor Smoke",
+    "bounded_scope": "Add a local-only executor smoke artifact and Make target that consumes local operator readiness, runs only the policy-declared backend probe, records sanitized outcome, and excludes the artifact from public static publish without running an agent task, mutating canonical specs, or claiming runtime enforcement.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

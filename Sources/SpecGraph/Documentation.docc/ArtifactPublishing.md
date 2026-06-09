@@ -46,8 +46,9 @@ producer artifacts.
 
 Local-only operator diagnostics are excluded from the public bundle.
 `runs/local_operator_executor_readiness.json` may exist after
-`make executor-readiness`, but it describes the current operator process
-environment and must not be uploaded as a public producer artifact.
+`make executor-readiness`, and `runs/local_operator_executor_smoke.json` may
+exist after `make executor-smoke`, but they describe the current operator
+process environment and must not be uploaded as public producer artifacts.
 
 The public safety gate requires:
 

@@ -118,6 +118,11 @@ Supervisor modes:
   the current checkout is ready for the next bounded executor smoke step. This
   does not launch Codex, does not claim runtime enforcement, and is excluded
   from public static publishing.
+- `--build-local-operator-executor-smoke`: build local-only
+  `runs/local_operator_executor_smoke.json` by consuming
+  `runs/local_operator_executor_readiness.json` and running only a bounded
+  backend probe such as `codex --version`. This does not run an agent task, does
+  not claim runtime enforcement, and is excluded from public static publishing.
 - `--build-agent-passport-derived-surfaces`: build Agent Passport derived
   surfaces from `tools/agent_passport_adoption_policy.json` and the 0056
   executor adapter index, including report-only Agent Passport CLI validation
@@ -432,6 +437,10 @@ Key derived artifacts:
   operator executor smoke preparation, including sanitized executable
   availability, invocation-boundary, and report-only Agent Passport checks;
   this artifact is intentionally not published in the static bundle
+- `runs/local_operator_executor_smoke.json`: local-only executor probe result
+  that consumes the readiness artifact, runs only the policy-declared probe, and
+  records sanitized status without raw logs, absolute executable paths, canonical
+  mutations, or public static publication
 - `runs/agent_surface_index.json`: read-only Agent Passport adoption surface
   index for graph-facing agents, including policy-declared surfaces and
   executor backends derived from the 0056 adapter index

@@ -4338,5 +4338,81 @@
         "pattern": "runs/local_operator_executor_readiness.json"
       }
     ]
+  },
+  {
+    "proposal_id": "0088",
+    "posture": "bounded_runtime_followup",
+    "runtime_surfaces": [
+      "docs/proposals/0088_local_operator_executor_smoke.md",
+      "docs/archive/proposal_sources/0088_local_operator_executor_smoke.md",
+      "tools/supervisor_executor_adapter_policy.json",
+      "tools/supervisor.py",
+      "tools/build_static_artifact_bundle.py",
+      "Makefile",
+      "tools/README.md",
+      "docs/static_artifact_publish.md",
+      "Sources/SpecGraph/Documentation.docc/ArtifactPublishing.md",
+      "tests/test_supervisor.py",
+      "tests/test_static_artifact_bundle.py",
+      "runs/local_operator_executor_smoke.json"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/supervisor_executor_adapter_policy.json",
+        "pattern": "local_operator_smoke_contract"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def build_local_operator_executor_smoke("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "\"--build-local-operator-executor-smoke\""
+      },
+      {
+        "path": "Makefile",
+        "pattern": "executor-smoke:"
+      },
+      {
+        "path": "tools/build_static_artifact_bundle.py",
+        "pattern": "\"local_operator_executor_smoke.json\""
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_local_operator_executor_smoke_runs_probe_after_ready_readiness("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_local_operator_executor_smoke_blocks_missing_readiness("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_local_operator_executor_smoke_blocks_not_ready_readiness("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_main_builds_local_operator_executor_smoke_as_standalone_command("
+      },
+      {
+        "path": "tests/test_static_artifact_bundle.py",
+        "pattern": "local_operator_executor_smoke.json"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0088_local_operator_executor_smoke.md",
+        "pattern": "define_bounded_executor_task_smoke"
+      },
+      {
+        "path": "docs/proposals/0088_local_operator_executor_smoke.md",
+        "pattern": "does not mean Codex can perform SpecGraph work"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "runs/local_operator_executor_smoke.json"
+      }
+    ]
   }
 ]
