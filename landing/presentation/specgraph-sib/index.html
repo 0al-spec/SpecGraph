@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>SpecGraph / SpecSpace / SIB Metrics - Presentation Shell</title>
+<title>SIB Metrics for AI-Native Feature Pipelines</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -24,8 +24,8 @@
         <span>SpecGraph</span>
       </a>
       <div class="topbar-meta">
-        <span>Presentation shell</span>
-        <span>SpecSpace + SIB Metrics</span>
+        <span>Vision deck</span>
+        <span>AI-native feature pipelines</span>
       </div>
       <nav class="deck-nav" aria-label="Slide navigation">
         <button class="icon-button" id="prevSlide" type="button" aria-label="Previous slide" title="Previous slide">
@@ -33,7 +33,7 @@
             <path d="m15 18-6-6 6-6" />
           </svg>
         </button>
-        <output class="slide-count" id="slideCount" aria-live="polite">01 / 06</output>
+        <output class="slide-count" id="slideCount" aria-live="polite">01 / 18</output>
         <button class="icon-button" id="nextSlide" type="button" aria-label="Next slide" title="Next slide">
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="m9 18 6-6-6-6" />
@@ -43,142 +43,310 @@
     </header>
 
     <section class="stage" aria-live="polite">
-      <article class="slide is-active title-slide" id="slide-1" data-slide aria-label="Title">
+      <article class="slide is-active" id="slide-1" data-slide aria-label="AI changed the factory">
         <div class="slide-grid two-column">
           <div class="copy-block">
-            <p class="eyebrow">AI-driven SDLC observability</p>
-            <h1>SpecGraph, <span class="muted-serif">SpecSpace</span> and SIB Metrics</h1>
-            <p class="lede">A landing-style deck for explaining specification-first development, operator-guided agents, and measurable software delivery loops.</p>
+            <p class="eyebrow">AI changed the factory</p>
+            <h1>Artifacts are cheap. <span class="muted-serif">Meaning is scarce.</span></h1>
+            <p class="lede">SIB Metrics for AI-native feature pipelines.</p>
           </div>
-          <div class="hero-panel" aria-label="Conceptual graph diagram">
+          <div class="visual-panel dark-panel" aria-label="Artifact stream">
+            <div class="artifact-field">
+              <span>Code</span>
+              <span>Tests</span>
+              <span>Docs</span>
+              <span>PRs</span>
+              <span>Plans</span>
+              <span>Specs</span>
+              <strong>Intent?</strong>
+            </div>
+            <div class="panel-caption">
+              <span>output abundance</span>
+              <span>semantic bottleneck</span>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <article class="slide" id="slide-2" data-slide aria-label="Old question">
+        <div class="center-slide">
+          <p class="eyebrow">Old question</p>
+          <h2 class="strike-title">How productive are developers?</h2>
+          <div class="dashboard-strip" aria-label="Legacy activity metrics">
+            <span>PRs</span>
+            <span>Commits</span>
+            <span>LOC</span>
+            <span>Cycle time</span>
+          </div>
+        </div>
+      </article>
+
+      <article class="slide" id="slide-3" data-slide aria-label="New question">
+        <div class="slide-grid diagram-layout">
+          <div class="copy-block">
+            <p class="eyebrow">New question</p>
+            <h2>Does the pipeline preserve intent?</h2>
+          </div>
+          <div class="pipeline-panel" aria-label="Feature pipeline">
+            <div class="pipeline">
+              <span>Intent</span>
+              <span>Spec</span>
+              <span>Implementation</span>
+              <span>Evidence</span>
+              <span>Adoption</span>
+            </div>
+            <div class="diagram-note">feature production becomes a measurable path</div>
+          </div>
+        </div>
+      </article>
+
+      <article class="slide" id="slide-4" data-slide aria-label="Feature is not code">
+        <div class="slide-grid two-column">
+          <div class="copy-block">
+            <p class="eyebrow">Unit of value</p>
+            <h2>Feature != Code</h2>
+            <p class="lede">Feature = accepted capability.</p>
+          </div>
+          <div class="pyramid" aria-label="Accepted capability pyramid">
+            <span>Adoption</span>
+            <span>Evidence</span>
+            <span>Implementation</span>
+            <span>Specification</span>
+            <span>Intent</span>
+          </div>
+        </div>
+      </article>
+
+      <article class="slide" id="slide-5" data-slide aria-label="SIB balance">
+        <div class="slide-grid split-rule">
+          <div>
+            <p class="eyebrow">SIB</p>
+            <h2>SIB measures pipeline integrity.</h2>
+          </div>
+          <div class="balance-board" aria-label="SIB balance board">
+            <span>Spec</span>
+            <span>Implementation</span>
+            <span>Evidence</span>
+            <span>Adoption</span>
+            <strong>SIB</strong>
+          </div>
+        </div>
+      </article>
+
+      <article class="slide" id="slide-6" data-slide aria-label="pre-SIB">
+        <div class="slide-grid split-rule">
+          <div class="copy-block">
+            <p class="eyebrow">pre-SIB</p>
+            <h2>Catch failure before generation.</h2>
+          </div>
+          <div class="preflight-list" aria-label="pre-SIB readiness checks">
+            <span>Context?</span>
+            <span>Scope?</span>
+            <span>Acceptance?</span>
+            <span>Evidence?</span>
+          </div>
+        </div>
+      </article>
+
+      <article class="slide" id="slide-7" data-slide aria-label="Yield">
+        <div class="slide-grid two-column">
+          <div class="copy-block">
+            <p class="eyebrow">Yield</p>
+            <h2>Where does intent disappear?</h2>
+          </div>
+          <div class="funnel" aria-label="Intent yield funnel">
+            <span><b>100</b> intents</span>
+            <span><b>72</b> specs</span>
+            <span><b>51</b> implementations</span>
+            <span><b>38</b> evidence-backed</span>
+            <span><b>19</b> adopted</span>
+          </div>
+        </div>
+      </article>
+
+      <article class="slide" id="slide-8" data-slide aria-label="Cost per accepted capability">
+        <div class="slide-grid split-rule">
+          <div>
+            <p class="eyebrow">Cost</p>
+            <h2>Cost per accepted capability.</h2>
+          </div>
+          <div class="cost-board" aria-label="Cost pipeline">
+            <div class="coin-stack" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+            <div class="pipeline compact">
+              <span>Runtime</span>
+              <span>Review</span>
+              <span>CI</span>
+              <span>Rework</span>
+            </div>
+            <strong>Accepted capability</strong>
+          </div>
+        </div>
+      </article>
+
+      <article class="slide" id="slide-9" data-slide aria-label="Drift">
+        <div class="slide-grid two-column">
+          <div class="copy-block">
+            <p class="eyebrow">Drift</p>
+            <h2>Did we build the wrong thing?</h2>
+          </div>
+          <div class="drift-map" aria-label="Intent drift diagram">
+            <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+              <path class="intended" d="M8 24 C28 24 43 31 57 41 C70 51 82 59 94 59" />
+              <path class="actual" d="M8 24 C29 32 41 50 56 64 C71 78 84 78 94 84" />
+            </svg>
+            <span class="label intended-label">intended</span>
+            <span class="label actual-label">actual</span>
+          </div>
+        </div>
+      </article>
+
+      <article class="slide" id="slide-10" data-slide aria-label="Confidence and unknown">
+        <div class="slide-grid split-rule">
+          <div>
+            <p class="eyebrow">Confidence</p>
+            <h2>Unknown is not bad. No evidence is not good.</h2>
+          </div>
+          <div class="state-triad" aria-label="Known and unknown states">
+            <section><span>Known good</span></section>
+            <section><span>Known bad</span></section>
+            <section><span>Unknown</span></section>
+          </div>
+        </div>
+      </article>
+
+      <article class="slide" id="slide-11" data-slide aria-label="SpecGraph in one picture">
+        <div class="slide-grid two-column">
+          <div class="copy-block">
+            <p class="eyebrow">SpecGraph</p>
+            <h2>A graph of intent, work, evidence, and feedback.</h2>
+          </div>
+          <div class="visual-panel dark-panel" aria-label="SpecGraph map">
             <div class="graph-field">
               <svg class="graph-links" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-                <path d="M24 25 L72 37 L75 78 L34 70 Z" />
-                <path d="M34 70 L72 37" />
+                <path d="M19 25 L48 20 L77 33 L70 70 L38 78 L19 25" />
+                <path d="M48 20 L38 78 L77 33" />
               </svg>
               <span class="node node-intent">Intent</span>
               <span class="node node-spec">Spec</span>
-              <span class="node node-runtime">Runtime</span>
-              <span class="node node-metric">Metric</span>
+              <span class="node node-runtime">Agent</span>
+              <span class="node node-metric">Signal</span>
             </div>
             <div class="panel-caption">
-              <span>governed graph</span>
-              <span>measured lifecycle</span>
+              <span>semantic graph</span>
+              <span>operator memory</span>
             </div>
           </div>
         </div>
       </article>
 
-      <article class="slide" id="slide-2" data-slide aria-label="Problem framing">
+      <article class="slide" id="slide-12" data-slide aria-label="Node types">
         <div class="slide-grid split-rule">
           <div>
-            <p class="eyebrow">Problem frame</p>
-            <h2>LLM work needs a stable evidence plane.</h2>
+            <p class="eyebrow">First model</p>
+            <h2>Six nodes are enough to start.</h2>
           </div>
-          <div class="statement-stack">
-            <section class="statement">
-              <span class="statement-index">01</span>
-              <h3>Intent drifts</h3>
-              <p>Prompts, diffs, reviews, and runtime behavior often live in different systems.</p>
-            </section>
-            <section class="statement">
-              <span class="statement-index">02</span>
-              <h3>Progress is opaque</h3>
-              <p>Teams see activity, but not always specification coverage or verification depth.</p>
-            </section>
-            <section class="statement">
-              <span class="statement-index">03</span>
-              <h3>Metrics lack lineage</h3>
-              <p>SIB-style signals become useful only when they are tied back to governed artifacts.</p>
-            </section>
+          <div class="node-grid" aria-label="Prototype node types">
+            <span>Intent</span>
+            <span>Spec</span>
+            <span>Impl</span>
+            <span>Evidence</span>
+            <span>Adoption</span>
+            <span>Intervention</span>
           </div>
         </div>
       </article>
 
-      <article class="slide" id="slide-3" data-slide aria-label="SpecGraph role">
-        <div class="slide-grid diagram-layout">
-          <div class="copy-block">
-            <p class="eyebrow">SpecGraph role</p>
-            <h2>Executable product ontology.</h2>
-            <p class="body-copy">SpecGraph keeps product intent, decomposition, readiness, evidence, and downstream handoffs connected as reviewable graph state.</p>
-          </div>
-          <div class="flow-diagram" aria-label="SpecGraph ontology flow">
-            <div class="flow-row">
-              <span>Intent</span>
-              <span>Pre-Spec</span>
-              <span>Spec Node</span>
-            </div>
-            <div class="flow-row offset">
-              <span>Proposal</span>
-              <span>Evidence</span>
-              <span>Handoff</span>
-            </div>
-            <div class="diagram-note">canonical state + derived surfaces</div>
-          </div>
-        </div>
-      </article>
-
-      <article class="slide" id="slide-4" data-slide aria-label="SpecSpace role">
+      <article class="slide" id="slide-13" data-slide aria-label="Metrics live on transitions">
         <div class="slide-grid two-column">
-          <div class="surface-panel">
-            <div class="window-bar">
-              <span></span><span></span><span></span>
-            </div>
-            <div class="surface-grid">
-              <div class="surface-main">Graph canvas</div>
-              <div class="surface-side">
-                <span>Inspector</span>
-                <span>Metrics</span>
-                <span>Agent context</span>
-              </div>
-            </div>
+          <div class="copy-block">
+            <p class="eyebrow">Graph metrics</p>
+            <h2>Metrics live on transitions.</h2>
           </div>
-          <div class="copy-block specspace-copy">
-            <p class="eyebrow">SpecSpace role</p>
-            <h2>Operator surface for graph-guided agents.</h2>
-            <p class="body-copy">SpecSpace turns graph state into a human-operable interface: inspect, steer, compare, and pass context to agents without making derived metrics canonical truth.</p>
+          <div class="metric-lanes" aria-label="Metrics on graph edges">
+            <span>Intent <b>yield / cost</b> Spec</span>
+            <span>Spec <b>drift / readiness</b> Impl</span>
+            <span>Impl <b>coverage / confidence</b> Evidence</span>
+            <span>Evidence <b>usage / adoption</b> Adoption</span>
           </div>
         </div>
       </article>
 
-      <article class="slide" id="slide-5" data-slide aria-label="SIB Metrics bridge">
+      <article class="slide" id="slide-14" data-slide aria-label="Agent session passport">
+        <div class="slide-grid two-column">
+          <div class="copy-block">
+            <p class="eyebrow">Agent session</p>
+            <h2>Declared work unit.</h2>
+          </div>
+          <pre class="passport-card" aria-label="Agent session declaration"><code>goal:
+scope:
+context:
+allowed_files:
+expected_evidence:
+result:</code></pre>
+        </div>
+      </article>
+
+      <article class="slide" id="slide-15" data-slide aria-label="Observable pipeline">
         <div class="slide-grid split-rule">
           <div>
-            <p class="eyebrow">SIB Metrics bridge</p>
-            <h2>Measure the SDLC as a governed loop.</h2>
+            <p class="eyebrow">Observable pipeline</p>
+            <h2>Every important transition emits evidence.</h2>
           </div>
-          <div class="metric-band">
-            <section>
-              <span class="metric-label">Input</span>
-              <strong>Spec quality</strong>
-              <p>Structure, verifiability, lineage, and readiness before implementation.</p>
-            </section>
-            <section>
-              <span class="metric-label">Behavior</span>
-              <strong>Process observability</strong>
-              <p>Agent runs, interventions, review gates, and evidence production.</p>
-            </section>
-            <section>
-              <span class="metric-label">Outcome</span>
-              <strong>SIB signal</strong>
-              <p>Derived diagnostic pressure, not automatic policy authority.</p>
-            </section>
+          <div class="event-log" aria-label="Event log">
+            <span>intent.created</span>
+            <span>spec.accepted</span>
+            <span>agent.started</span>
+            <span>patch.generated</span>
+            <span>test.passed</span>
+            <span>usage.observed</span>
           </div>
         </div>
       </article>
 
-      <article class="slide" id="slide-6" data-slide aria-label="Content roadmap">
-        <div class="slide-grid closing-layout">
+      <article class="slide" id="slide-16" data-slide aria-label="Self-improving loop">
+        <div class="slide-grid two-column">
           <div class="copy-block">
-            <p class="eyebrow">Content next</p>
-            <h2>Few words, strong diagrams, clear measurement story.</h2>
+            <p class="eyebrow">Feedback loop</p>
+            <h2>Observe. Diagnose. Intervene. Measure delta.</h2>
           </div>
-          <ol class="roadmap">
-            <li><span>01</span> Define the AI-driven SDLC loop.</li>
-            <li><span>02</span> Map SpecGraph and SpecSpace responsibilities.</li>
-            <li><span>03</span> Introduce SIB metric families and authority boundaries.</li>
-            <li><span>04</span> Show how evidence becomes reviewable graph state.</li>
-          </ol>
+          <div class="loop-board" aria-label="Self-improving loop">
+            <span>Observe</span>
+            <span>Diagnose</span>
+            <span>Intervene</span>
+            <span>Measure delta</span>
+          </div>
+        </div>
+      </article>
+
+      <article class="slide" id="slide-17" data-slide aria-label="Human is the optimizer">
+        <div class="slide-grid two-column">
+          <div class="copy-block">
+            <p class="eyebrow">Human role</p>
+            <h2>Human output down. Human leverage up.</h2>
+          </div>
+          <div class="control-room" aria-label="Pipeline control room">
+            <div class="control-screen">Feature pipeline</div>
+            <div class="control-grid">
+              <span>SIB</span>
+              <span>Yield</span>
+              <span>Drift</span>
+              <span>Cost</span>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <article class="slide" id="slide-18" data-slide aria-label="SIB thesis">
+        <div class="slide-grid two-column">
+          <div class="copy-block">
+            <p class="eyebrow">SIB thesis</p>
+            <h1>AI makes artifacts cheap. <span class="muted-serif">SIB measures intent preservation.</span></h1>
+          </div>
+          <div class="thesis-output" aria-label="Validated capability">
+            <span>Validated</span>
+            <strong>Accepted capability</strong>
+            <small>intent preserved</small>
+          </div>
         </div>
       </article>
     </section>
