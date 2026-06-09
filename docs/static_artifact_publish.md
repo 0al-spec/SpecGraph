@@ -77,7 +77,10 @@ The order matters and is intentionally two-pass:
 3. `make executor-adapters`, `make agent-passports`, and
    `make agent-runtime-evidence` build the Agent Passport producer artifacts
    consumed by SpecSpace.
-4. The final `make viewer-surfaces` rebuilds `graph_backlog_projection.json`,
+4. `make external-handoffs` and `make external-consumer-evidence` rebuild the
+   downstream handoff and evidence acceptance artifacts from the same producer
+   surfaces.
+5. The final `make viewer-surfaces` rebuilds `graph_backlog_projection.json`,
    `graph_next_moves.json`, and external handoff packets from the same
    implementation and agent/runtime artifacts that are copied into the bundle.
 
@@ -102,6 +105,9 @@ The bundle builder fails before upload when it finds:
   - `runs/agent_verification_gap_index.json`
   - `runs/agent_runtime_enforcement_evidence_index.json`
   - `runs/agent_runtime_enforcement_evidence/supervisor-executor-adapter-smoke.json`
+- missing external consumer evidence surfaces required by downstream evidence
+  acceptance:
+  - `runs/external_consumer_evidence_index.json`
 - Agent Passport producer artifacts that were built without successful
   report-only CLI validation:
   - `runs/supervisor_executor_adapter_index.json` summary field

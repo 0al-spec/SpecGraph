@@ -1103,5 +1103,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0086",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0086_external_consumer_evidence_static_publish.md"
+    ],
+    "motivating_concern": "SpecGraph accepts downstream consumer evidence locally, but the public static bundle does not publish the evidence index for HTTP consumers",
+    "normalized_title": "External Consumer Evidence Static Publish",
+    "bounded_scope": "Publish the report-only external consumer evidence index as a required static run surface and refresh external handoffs/evidence before bundle collection, without changing evidence semantics, mutating SpecSpace or Platform, or adding a new artifact family.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]
