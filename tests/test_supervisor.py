@@ -27779,6 +27779,8 @@ def test_build_local_operator_executor_smoke_blocks_missing_readiness(
     checks = {check["check_id"]: check["status"] for check in smoke["checks"]}
     assert checks["readiness_artifact_present"] == "missing"
     assert checks["readiness_allows_local_smoke"] == "failed"
+    assert checks["executor_probe_invocation_completed"] == "not_run"
+    assert checks["no_canonical_mutation_attempted"] == "not_run"
 
 
 def test_build_local_operator_executor_smoke_blocks_not_ready_readiness(
@@ -27798,6 +27800,9 @@ def test_build_local_operator_executor_smoke_blocks_not_ready_readiness(
     assert smoke["summary"]["status"] == "blocked_readiness_not_ready"
     assert smoke["summary"]["consumed_readiness_status"] == "blocked_missing_executable"
     assert smoke["entries"][0]["probe"]["exit_code"] is None
+    checks = {check["check_id"]: check["status"] for check in smoke["checks"]}
+    assert checks["executor_probe_invocation_completed"] == "not_run"
+    assert checks["no_canonical_mutation_attempted"] == "not_run"
 
 
 def test_build_local_operator_executor_smoke_reports_failed_probe(
@@ -27833,10 +27838,10 @@ def test_build_local_operator_executor_smoke_reports_failed_probe(
 
 def test_run_local_operator_executor_probe_does_not_persist_absolute_command_path(
     supervisor_module: object,
-    repo_fixture: Path,
+    git_repo_fixture: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setattr(supervisor_module, "ROOT", repo_fixture)
+    monkeypatch.setattr(supervisor_module, "ROOT", git_repo_fixture)
     monkeypatch.setattr(
         supervisor_module,
         "executable_invocation_command_from_backend",
@@ -27861,7 +27866,95 @@ def test_run_local_operator_executor_probe_does_not_persist_absolute_command_pat
     assert result["stderr_persisted"] is False
     dumped = json.dumps(result, sort_keys=True)
     assert sys.executable not in dumped
-    assert repo_fixture.as_posix() not in dumped
+    assert git_repo_fixture.as_posix() not in dumped
+
+
+def test_build_local_operator_executor_smoke_marks_mutation_not_run_when_command_missing(
+    supervisor_module: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        supervisor_module,
+        "executable_invocation_command_from_backend",
+        lambda **_kwargs: (
+            [],
+            {
+                "command_name": "",
+                "resolution_source": "not_found",
+                "path_persisted": False,
+            },
+        ),
+    )
+
+    smoke = supervisor_module.build_local_operator_executor_smoke(ready_local_operator_readiness())
+
+    assert smoke["summary"]["status"] == "failed_probe_invocation"
+    checks = {check["check_id"]: check["status"] for check in smoke["checks"]}
+    assert checks["executor_probe_invocation_completed"] == "failed"
+    assert checks["no_canonical_mutation_attempted"] == "not_run"
+
+
+def test_build_local_operator_executor_smoke_blocks_when_git_status_unavailable(
+    supervisor_module: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(supervisor_module, "git_tracked_status_snapshot", lambda: None)
+    monkeypatch.setattr(
+        supervisor_module,
+        "executable_invocation_command_from_backend",
+        lambda **_kwargs: (
+            [sys.executable, "-c", "pass"],
+            {
+                "command_name": Path(sys.executable).name,
+                "resolution_source": "test",
+                "path_persisted": False,
+            },
+        ),
+    )
+
+    smoke = supervisor_module.build_local_operator_executor_smoke(ready_local_operator_readiness())
+
+    assert smoke["summary"]["status"] == "blocked_policy_contract"
+    checks = {check["check_id"]: check["status"] for check in smoke["checks"]}
+    assert checks["executor_probe_invocation_completed"] == "passed"
+    assert checks["no_canonical_mutation_attempted"] == "failed"
+
+
+def test_run_local_operator_executor_probe_detects_untracked_mutation(
+    supervisor_module: object,
+    git_repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(supervisor_module, "ROOT", git_repo_fixture)
+    monkeypatch.setattr(
+        supervisor_module,
+        "executable_invocation_command_from_backend",
+        lambda **_kwargs: (
+            [
+                sys.executable,
+                "-c",
+                (
+                    "from pathlib import Path; "
+                    "Path('specs/nodes/SG-SPEC-9999.yaml').write_text('new', encoding='utf-8')"
+                ),
+            ],
+            {
+                "command_name": Path(sys.executable).name,
+                "resolution_source": "test",
+                "path_persisted": False,
+            },
+        ),
+    )
+
+    result = supervisor_module.run_local_operator_executor_probe(
+        backend_id="codex",
+        probe_args=["--version"],
+        timeout_seconds=15,
+    )
+
+    assert result["status"] == "passed"
+    assert result["command_executed"] is True
+    assert result["tracked_status_unchanged"] is False
 
 
 def test_main_builds_local_operator_executor_smoke_as_standalone_command(

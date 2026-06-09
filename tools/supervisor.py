@@ -18976,16 +18976,19 @@ def executable_invocation_command_from_backend(
     }
 
 
-def git_tracked_status_snapshot() -> str:
-    result = subprocess.run(
-        ["git", "status", "--porcelain", "--untracked-files=no"],
-        cwd=ROOT,
-        capture_output=True,
-        text=True,
-        check=False,
-        timeout=10,
-    )
-    return result.stdout if result.returncode == 0 else ""
+def git_tracked_status_snapshot() -> str | None:
+    try:
+        result = subprocess.run(
+            ["git", "status", "--porcelain", "--untracked-files=all"],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=10,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    return result.stdout if result.returncode == 0 else None
 
 
 def run_local_operator_executor_probe(
@@ -19004,8 +19007,10 @@ def run_local_operator_executor_probe(
             "exit_code": None,
             "timed_out": False,
             "command": invocation,
+            "command_executed": False,
             "stdout_persisted": False,
             "stderr_persisted": False,
+            "tracked_status_unchanged": None,
         }
     before_status = git_tracked_status_snapshot()
     try:
@@ -19028,9 +19033,12 @@ def run_local_operator_executor_probe(
         "exit_code": exit_code,
         "timed_out": timed_out,
         "command": invocation,
+        "command_executed": True,
         "stdout_persisted": False,
         "stderr_persisted": False,
-        "tracked_status_unchanged": before_status == after_status,
+        "tracked_status_unchanged": (
+            before_status is not None and after_status is not None and before_status == after_status
+        ),
     }
 
 
@@ -19088,9 +19096,10 @@ def build_local_operator_executor_smoke(
         "exit_code": None,
         "timed_out": False,
         "command": {"path_persisted": False},
+        "command_executed": False,
         "stdout_persisted": False,
         "stderr_persisted": False,
-        "tracked_status_unchanged": True,
+        "tracked_status_unchanged": None,
     }
     if readiness_allows_smoke and default_backend_id:
         probe_result = run_local_operator_executor_probe(
@@ -19101,22 +19110,47 @@ def build_local_operator_executor_smoke(
     checks.append(
         local_operator_smoke_check(
             check_id="executor_probe_invocation_completed",
-            status="passed" if probe_result.get("status") == "passed" else "failed",
+            status=(
+                "not_run"
+                if probe_result.get("status") == "not_run"
+                else "passed"
+                if probe_result.get("status") == "passed"
+                else "failed"
+            ),
             message=(
                 "Executor probe invocation completed successfully."
                 if probe_result.get("status") == "passed"
+                else "Executor probe invocation was not run because readiness gated it off."
+                if probe_result.get("status") == "not_run"
                 else "Executor probe invocation did not complete successfully."
             ),
         )
     )
+    command_executed_value = probe_result.get("command_executed")
+    probe_command_executed = (
+        bool(command_executed_value)
+        if command_executed_value is not None
+        else probe_result.get("status") != "not_run" and bool(probe_result.get("command"))
+    )
     checks.append(
         local_operator_smoke_check(
             check_id="no_canonical_mutation_attempted",
-            status="passed" if probe_result.get("tracked_status_unchanged") else "failed",
+            status=(
+                "not_run"
+                if not probe_command_executed
+                else "passed"
+                if probe_result.get("tracked_status_unchanged") is True
+                else "failed"
+            ),
             message=(
-                "Tracked worktree status did not change during the executor probe."
-                if probe_result.get("tracked_status_unchanged")
-                else "Tracked worktree status changed during the executor probe."
+                "No executor command was executed, so the mutation check was not run."
+                if not probe_command_executed
+                else "Worktree status did not change during the executor probe."
+                if probe_result.get("tracked_status_unchanged") is True
+                else (
+                    "Worktree status changed or could not be proven unchanged "
+                    "during the executor probe."
+                )
             ),
         )
     )
