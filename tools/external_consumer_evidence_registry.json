@@ -199,6 +199,49 @@
       ],
       "result": "implemented",
       "notes": "SpecSpace expanded the Agent runtime evidence UI/API projection to read safe detail artifacts and render nested evidence checks, including executor_adapter_invocation_boundary, after Platform published the Timeweb deploy branch."
+    },
+    {
+      "evidence_id": "specspace-executor-runtime-environment-boundary-20260609",
+      "handoff_id": "external_consumer_handoff::specspace",
+      "consumer_id": "specspace",
+      "consumer": "SpecSpace",
+      "implementation_ref": "https://github.com/0al-spec/SpecSpace/pull/231",
+      "consumed_artifacts": [
+        "runs/supervisor_executor_adapter_index.json",
+        "runs/agent_surface_index.json"
+      ],
+      "accepted_contract_artifacts": [
+        "runs/supervisor_executor_adapter_index.json",
+        "runs/agent_surface_index.json"
+      ],
+      "evidence": [
+        {
+          "kind": "pull_request",
+          "ref": "0al-spec/SpecSpace#231",
+          "status": "merged",
+          "url": "https://github.com/0al-spec/SpecSpace/pull/231"
+        },
+        {
+          "kind": "test",
+          "ref": "SpecSpace CI",
+          "status": "success",
+          "url": "https://github.com/0al-spec/SpecSpace/actions/runs/27185889613"
+        },
+        {
+          "kind": "smoke",
+          "ref": "SpecSpace Production Deploy Smoke",
+          "status": "success",
+          "url": "https://github.com/0al-spec/SpecSpace/actions/runs/27185889613"
+        },
+        {
+          "kind": "smoke",
+          "ref": "Platform Timeweb Publish 27185926531",
+          "status": "success",
+          "url": "https://github.com/0al-spec/Platform/actions/runs/27185926531"
+        }
+      ],
+      "result": "implemented",
+      "notes": "SpecSpace projected the executor runtime environment boundary for static publish vs local operator execution, showing not_applicable_in_producer_environment instead of a broken missing_executable configuration after Platform published the Timeweb deploy branch."
     }
   ]
 }
