@@ -441,8 +441,9 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         dest="refresh_publish_surfaces",
         help=(
             "Run publish surface refresh targets before collecting specs/ and runs/: "
-            "viewer, implementation, Agent Passport, runtime evidence, and external consumer "
-            "evidence surfaces."
+            "viewer-surfaces, implementation-delta, implementation-work, executor-adapters, "
+            "agent-passports, agent-runtime-evidence, external-handoffs, "
+            "external-consumer-evidence, then viewer-surfaces."
         ),
     )
     parser.add_argument(
