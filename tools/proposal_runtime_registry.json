@@ -2785,7 +2785,7 @@
       },
       {
         "path": "tests/test_supervisor.py",
-        "pattern": "def test_build_supervisor_executor_adapter_index_blocks_missing_codex("
+        "pattern": "def test_build_supervisor_executor_adapter_index_marks_static_publish_not_applicable("
       },
       {
         "path": "tests/test_supervisor.py",
@@ -3132,7 +3132,7 @@
       },
       {
         "path": "tests/test_supervisor.py",
-        "pattern": "def test_build_supervisor_executor_adapter_index_blocks_missing_codex("
+        "pattern": "def test_build_supervisor_executor_adapter_index_marks_static_publish_not_applicable("
       },
       {
         "path": "tests/test_supervisor.py",
@@ -4082,6 +4082,75 @@
       {
         "path": "docs/proposals/0083_pi_harness_candidate_deferred.md",
         "pattern": "OpenAI API key / BYOK provider_config_ref"
+      }
+    ]
+  },
+  {
+    "proposal_id": "0084",
+    "posture": "bounded_runtime_followup",
+    "runtime_surfaces": [
+      "docs/proposals/0084_executor_runtime_environment_boundary.md",
+      "docs/archive/proposal_sources/0084_executor_runtime_environment_boundary.md",
+      "tools/supervisor_executor_adapter_policy.json",
+      "tools/agent_passport_adoption_policy.json",
+      "tools/supervisor.py",
+      "tests/test_supervisor.py",
+      "docs/supervisor_executor_adapter_gateway_contract.md",
+      "runs/supervisor_executor_adapter_index.json",
+      "runs/agent_surface_index.json"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/supervisor_executor_adapter_policy.json",
+        "pattern": "runtime_environment_contract"
+      },
+      {
+        "path": "tools/supervisor_executor_adapter_policy.json",
+        "pattern": "static_publish_environment"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def current_supervisor_executor_runtime_environment("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def supervisor_executor_runtime_environment("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "\"runtime_environment\": runtime_environment"
+      },
+      {
+        "path": "tools/agent_passport_adoption_policy.json",
+        "pattern": "\"0084\""
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_agent_surface_index_carries_executor_runtime_environment("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "missing_executable_is_static_publish_gap"
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "SPECGRAPH_EXECUTOR_RUNTIME_ENVIRONMENT"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0084_executor_runtime_environment_boundary.md",
+        "pattern": "Codex remains a local operator backend"
+      },
+      {
+        "path": "docs/supervisor_executor_adapter_gateway_contract.md",
+        "pattern": "Executor availability is an environment probe"
+      },
+      {
+        "path": "docs/proposals/0084_executor_runtime_environment_boundary.md",
+        "pattern": "SpecSpace can show the boundary"
       }
     ]
   }

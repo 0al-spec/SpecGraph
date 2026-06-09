@@ -1077,5 +1077,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0084",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0084_executor_runtime_environment_boundary.md"
+    ],
+    "motivating_concern": "Static publish can correctly report the Codex backend executable as missing, but without runtime environment semantics that state looks like a broken deploy or Agent Passport failure",
+    "normalized_title": "Executor Runtime Environment Boundary",
+    "bounded_scope": "Add report-only runtime environment semantics to executor backend availability and derived agent surfaces, without installing Codex in static publish, changing default backend behavior, implementing Pi, mutating SpecSpace, changing Platform deploy, or claiming runtime enforcement.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]
