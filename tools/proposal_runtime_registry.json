@@ -4161,6 +4161,7 @@
       "docs/proposals/0085_specspace_executor_runtime_environment_boundary_acceptance.md",
       "docs/archive/proposal_sources/0085_specspace_executor_runtime_environment_boundary_acceptance.md",
       "tools/external_consumer_evidence_registry.json",
+      "tools/supervisor.py",
       "tests/test_supervisor.py",
       "runs/external_consumer_evidence_index.json"
     ],
