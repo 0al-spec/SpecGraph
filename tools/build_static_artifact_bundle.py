@@ -29,6 +29,9 @@ REQUIRED_RUN_SURFACES = (
     "agent_runtime_enforcement_evidence/supervisor-executor-adapter-smoke.json",
     "external_consumer_evidence_index.json",
 )
+LOCAL_ONLY_RUN_SURFACES = {
+    "local_operator_executor_readiness.json",
+}
 JUNK_FILENAMES = {".DS_Store", ".gitkeep"}
 JUNK_DIRNAMES = {"__pycache__", ".pytest_cache", ".ruff_cache"}
 LOCAL_PATH_RE = re.compile(
@@ -120,6 +123,10 @@ def iter_publish_sources(repo_root: Path) -> Iterable[tuple[str, Path, PurePosix
             ):
                 continue
             rel = PurePosixPath(root_name, path.relative_to(source_root).as_posix())
+            if root_name == "runs":
+                run_rel = rel.relative_to("runs").as_posix()
+                if run_rel in LOCAL_ONLY_RUN_SURFACES:
+                    continue
             yield root_name, path, rel
 
 

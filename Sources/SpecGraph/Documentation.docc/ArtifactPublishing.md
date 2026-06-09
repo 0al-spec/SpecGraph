@@ -44,6 +44,11 @@ The public bundle also includes
 accepted by SpecGraph is HTTP-readable alongside the handoff and Agent surface
 producer artifacts.
 
+Local-only operator diagnostics are excluded from the public bundle.
+`runs/local_operator_executor_readiness.json` may exist after
+`make executor-readiness`, but it describes the current operator process
+environment and must not be uploaded as a public producer artifact.
+
 The public safety gate requires:
 
 - `runs/supervisor_executor_adapter_index.json` summary field

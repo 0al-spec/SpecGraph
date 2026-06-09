@@ -4262,5 +4262,81 @@
         "pattern": "404"
       }
     ]
+  },
+  {
+    "proposal_id": "0087",
+    "posture": "bounded_runtime_followup",
+    "runtime_surfaces": [
+      "docs/proposals/0087_local_operator_executor_readiness.md",
+      "docs/archive/proposal_sources/0087_local_operator_executor_readiness.md",
+      "tools/supervisor_executor_adapter_policy.json",
+      "tools/supervisor.py",
+      "tools/build_static_artifact_bundle.py",
+      "Makefile",
+      "tools/README.md",
+      "docs/static_artifact_publish.md",
+      "Sources/SpecGraph/Documentation.docc/ArtifactPublishing.md",
+      "tests/test_supervisor.py",
+      "tests/test_static_artifact_bundle.py",
+      "runs/local_operator_executor_readiness.json"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/supervisor_executor_adapter_policy.json",
+        "pattern": "local_operator_readiness_contract"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def build_local_operator_executor_readiness("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "\"--build-local-operator-executor-readiness\""
+      },
+      {
+        "path": "Makefile",
+        "pattern": "executor-readiness:"
+      },
+      {
+        "path": "tools/build_static_artifact_bundle.py",
+        "pattern": "\"local_operator_executor_readiness.json\""
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_local_operator_executor_readiness_reports_ready_backend("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_local_operator_executor_readiness_blocks_missing_executable("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_local_operator_executor_readiness_marks_static_publish_not_applicable("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_main_builds_local_operator_executor_readiness_as_standalone_command("
+      },
+      {
+        "path": "tests/test_static_artifact_bundle.py",
+        "pattern": "local_operator_executor_readiness.json"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0087_local_operator_executor_readiness.md",
+        "pattern": "ready_for_local_smoke"
+      },
+      {
+        "path": "docs/proposals/0087_local_operator_executor_readiness.md",
+        "pattern": "not publish"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "runs/local_operator_executor_readiness.json"
+      }
+    ]
   }
 ]

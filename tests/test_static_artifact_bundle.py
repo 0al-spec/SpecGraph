@@ -97,6 +97,10 @@ def test_build_public_bundle_copies_specs_and_runs_with_manifest(
         repo / "runs" / "raw_run.json",
         {"worktree_path": "/Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/x"},
     )
+    write_json(
+        repo / "runs" / "local_operator_executor_readiness.json",
+        {"artifact_kind": "local_operator_executor_readiness", "local_only": True},
+    )
     (repo / "runs" / ".DS_Store").write_text("junk", encoding="utf-8")
     (repo / "runs" / ".gitkeep").write_text("", encoding="utf-8")
 
@@ -107,6 +111,7 @@ def test_build_public_bundle_copies_specs_and_runs_with_manifest(
 
     assert (result.output_dir / "specs" / "nodes" / "SG-SPEC-0001.yaml").is_file()
     assert (result.output_dir / "runs" / "graph_dashboard.json").is_file()
+    assert not (result.output_dir / "runs" / "local_operator_executor_readiness.json").exists()
     assert not (result.output_dir / "runs" / ".DS_Store").exists()
     assert not (result.output_dir / "runs" / ".gitkeep").exists()
     assert "$LOCAL_PATH" in (result.output_dir / "runs" / "raw_run.json").read_text(
@@ -136,6 +141,9 @@ def test_build_public_bundle_copies_specs_and_runs_with_manifest(
     assert manifest["safety_gate"]["redacted_local_path_occurrences"] == 1
     assert "artifact_manifest.json" in result.checksums_path.read_text(encoding="utf-8")
     assert "runs/implementation_work_index.json" in result.checksums_path.read_text(
+        encoding="utf-8"
+    )
+    assert "runs/local_operator_executor_readiness.json" not in result.checksums_path.read_text(
         encoding="utf-8"
     )
 

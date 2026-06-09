@@ -1116,5 +1116,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0087",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0087_local_operator_executor_readiness.md"
+    ],
+    "motivating_concern": "SpecGraph distinguishes static publish from local operator executor semantics, but operators still need a local-only readiness surface before running bounded executor smoke",
+    "normalized_title": "Local Operator Executor Readiness",
+    "bounded_scope": "Add a local-only executor readiness artifact and Make target that checks local environment selection, executable availability, invocation-boundary policy, and report-only Agent Passport validation without launching Codex, publishing local diagnostics, mutating SpecSpace or Platform, or claiming observed runtime enforcement.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]
