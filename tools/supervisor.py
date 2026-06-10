@@ -19774,6 +19774,10 @@ def executor_report_finding(*, code: str, field: str, message: str) -> dict[str,
     }
 
 
+def normalized_executor_report_key(raw_key: object) -> str:
+    return re.sub(r"[^a-z0-9]+", "_", str(raw_key).strip().lower()).strip("_")
+
+
 def executor_report_forbidden_key_findings(payload: object) -> list[dict[str, str]]:
     forbidden_keys = {
         "api_key",
@@ -19792,8 +19796,9 @@ def executor_report_forbidden_key_findings(payload: object) -> list[dict[str, st
         if isinstance(value, dict):
             for key, child in value.items():
                 key_text = str(key).strip()
+                normalized_key = normalized_executor_report_key(key)
                 child_path = f"{path}.{key_text}" if path else key_text
-                if key_text in forbidden_keys:
+                if normalized_key in forbidden_keys:
                     findings.append(
                         executor_report_finding(
                             code="forbidden_raw_or_secret_field",
@@ -19805,6 +19810,49 @@ def executor_report_forbidden_key_findings(payload: object) -> list[dict[str, st
         elif isinstance(value, list):
             for index, child in enumerate(value):
                 visit(child, f"{path}[{index}]")
+
+    visit(payload, "")
+    return findings
+
+
+def executor_report_string_contains_machine_local_path(value: str) -> bool:
+    text = value.strip()
+    if not text:
+        return False
+    if text.startswith(("file://", "~/", "~\\")):
+        return True
+    if re.search(r"(?<![A-Za-z0-9_])[A-Za-z]:[\\/]", text):
+        return True
+    if re.search(
+        r"(^|[\s\"'=(])/(Users|tmp|private|var|home|Volumes|opt|etc|app|mnt|root|workspace)(/|$)",
+        text,
+    ):
+        return True
+    return bool(re.search(r"(^|[\s\"'=(])\\\\(Users|tmp|private|home)(\\\\|$)", text))
+
+
+def executor_report_machine_local_path_findings(payload: object) -> list[dict[str, str]]:
+    findings: list[dict[str, str]] = []
+
+    def visit(value: object, path: str) -> None:
+        if isinstance(value, dict):
+            for key, child in value.items():
+                key_text = str(key).strip()
+                child_path = f"{path}.{key_text}" if path else key_text
+                visit(child, child_path)
+        elif isinstance(value, list):
+            for index, child in enumerate(value):
+                visit(child, f"{path}[{index}]")
+        elif isinstance(value, str) and executor_report_string_contains_machine_local_path(value):
+            findings.append(
+                executor_report_finding(
+                    code="machine_local_path_persisted",
+                    field=path or "report",
+                    message=(
+                        f"{path or 'report'} must not persist machine-local filesystem paths."
+                    ),
+                )
+            )
 
     visit(payload, "")
     return findings
@@ -19878,6 +19926,7 @@ def validate_local_operator_executor_report(report: object) -> dict[str, Any]:
             "normalized": {},
         }
     findings.extend(executor_report_forbidden_key_findings(report))
+    findings.extend(executor_report_machine_local_path_findings(report))
     required_fields = [
         str(field).strip()
         for field in contract.get("required_report_fields", [])
@@ -20147,6 +20196,103 @@ def validate_local_operator_executor_report(report: object) -> dict[str, Any]:
     }
 
 
+def validate_local_operator_executor_task_smoke_source(
+    task_smoke: object,
+) -> dict[str, Any]:
+    contract = local_operator_executor_task_smoke_contract()
+    required_check_ids = [
+        str(check_id).strip() for check_id in contract.get("check_ids", []) if str(check_id).strip()
+    ]
+    findings: list[dict[str, str]] = []
+    if not isinstance(task_smoke, dict):
+        return {
+            "valid": False,
+            "status": "",
+            "required_check_ids": required_check_ids,
+            "findings": [
+                executor_report_finding(
+                    code="source_task_smoke_missing",
+                    field="source_task_smoke_artifact",
+                    message="Local operator executor task smoke artifact is missing.",
+                )
+            ],
+        }
+    if task_smoke.get("artifact_kind") != LOCAL_OPERATOR_EXECUTOR_TASK_SMOKE_ARTIFACT_KIND:
+        findings.append(
+            executor_report_finding(
+                code="invalid_source_task_smoke_artifact_kind",
+                field="source_task_smoke_artifact.artifact_kind",
+                message="Source task smoke artifact has an unexpected artifact_kind.",
+            )
+        )
+    if task_smoke.get("schema_version") != LOCAL_OPERATOR_EXECUTOR_TASK_SMOKE_SCHEMA_VERSION:
+        findings.append(
+            executor_report_finding(
+                code="invalid_source_task_smoke_schema_version",
+                field="source_task_smoke_artifact.schema_version",
+                message="Source task smoke artifact has an unexpected schema_version.",
+            )
+        )
+    if task_smoke.get("local_only") is not True:
+        findings.append(
+            executor_report_finding(
+                code="source_task_smoke_local_only_required",
+                field="source_task_smoke_artifact.local_only",
+                message="Source task smoke artifact must declare local_only=true.",
+            )
+        )
+    summary = task_smoke.get("summary", {})
+    summary = summary if isinstance(summary, dict) else {}
+    task_smoke_status = str(summary.get("status", "")).strip()
+    if task_smoke_status != "passed":
+        findings.append(
+            executor_report_finding(
+                code="source_task_smoke_not_passed",
+                field="source_task_smoke_artifact.summary.status",
+                message="Source task smoke artifact summary.status must be passed.",
+            )
+        )
+    checks = task_smoke.get("checks", [])
+    if not isinstance(checks, list):
+        findings.append(
+            executor_report_finding(
+                code="source_task_smoke_checks_not_list",
+                field="source_task_smoke_artifact.checks",
+                message="Source task smoke artifact checks must be a list.",
+            )
+        )
+        checks = []
+    check_status_by_id = {
+        str(check.get("check_id", "")).strip(): str(check.get("status", "")).strip()
+        for check in checks
+        if isinstance(check, dict)
+    }
+    for check_id in required_check_ids:
+        check_status = check_status_by_id.get(check_id, "")
+        if not check_status:
+            findings.append(
+                executor_report_finding(
+                    code="missing_source_task_smoke_check",
+                    field=f"source_task_smoke_artifact.checks.{check_id}",
+                    message=f"Source task smoke artifact is missing check {check_id}.",
+                )
+            )
+        elif check_status != "passed":
+            findings.append(
+                executor_report_finding(
+                    code="source_task_smoke_check_not_passed",
+                    field=f"source_task_smoke_artifact.checks.{check_id}",
+                    message=f"Source task smoke check {check_id} must be passed.",
+                )
+            )
+    return {
+        "valid": not findings,
+        "status": task_smoke_status,
+        "required_check_ids": required_check_ids,
+        "findings": findings,
+    }
+
+
 def local_operator_executor_report_contract_status(checks: list[dict[str, Any]]) -> str:
     status_by_id = {
         str(check.get("check_id", "")).strip(): str(check.get("status", "")).strip()
@@ -20174,10 +20320,9 @@ def build_local_operator_executor_report_contract(
         if isinstance(task_smoke, dict)
         else load_local_operator_executor_task_smoke_artifact()
     )
-    task_smoke_summary = task_smoke.get("summary", {}) if isinstance(task_smoke, dict) else {}
-    task_smoke_summary = task_smoke_summary if isinstance(task_smoke_summary, dict) else {}
-    task_smoke_status = str(task_smoke_summary.get("status", "")).strip()
-    task_smoke_passed = task_smoke_status == "passed"
+    task_smoke_validation = validate_local_operator_executor_task_smoke_source(task_smoke)
+    task_smoke_status = str(task_smoke_validation.get("status", "")).strip()
+    task_smoke_passed = task_smoke_validation.get("valid") is True
     sample_report = (
         sample_report
         if isinstance(sample_report, dict)
@@ -20203,9 +20348,9 @@ def build_local_operator_executor_report_contract(
             check_id="task_smoke_passed",
             status="passed" if task_smoke_passed else "failed",
             message=(
-                "Local operator executor task smoke passed."
+                "Local operator executor task smoke passed and matched the source contract."
                 if task_smoke_passed
-                else "Local operator executor task smoke is missing or not passed."
+                else "Local operator executor task smoke is missing, malformed, or not passed."
             ),
         ),
         local_operator_smoke_check(
@@ -20283,6 +20428,14 @@ def build_local_operator_executor_report_contract(
             "findings": copy.deepcopy(sample_validation.get("findings", [])),
             "normalized": copy.deepcopy(normalized_sample),
             "raw_sample_persisted": False,
+        },
+        "source_task_smoke_validation": {
+            "valid": bool(task_smoke_validation.get("valid", False)),
+            "finding_count": len(task_smoke_validation.get("findings", [])),
+            "findings": copy.deepcopy(task_smoke_validation.get("findings", [])),
+            "required_check_ids": copy.deepcopy(
+                task_smoke_validation.get("required_check_ids", [])
+            ),
         },
         "summary": {
             "status": contract_status,

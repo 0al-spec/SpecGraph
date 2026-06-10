@@ -27778,6 +27778,13 @@ def passed_local_operator_task_smoke() -> dict[str, object]:
                 "task_smoke_status": "passed",
             }
         ],
+        "checks": [
+            {"check_id": "readiness_allows_task_smoke", "status": "passed"},
+            {"check_id": "executor_smoke_passed", "status": "passed"},
+            {"check_id": "executor_task_invocation_completed", "status": "passed"},
+            {"check_id": "executor_task_response_valid", "status": "passed"},
+            {"check_id": "no_canonical_mutation_attempted", "status": "passed"},
+        ],
     }
 
 
@@ -28561,6 +28568,42 @@ def test_validate_local_operator_executor_report_rejects_raw_log_fields(
     )
 
 
+def test_validate_local_operator_executor_report_rejects_case_variant_secret_fields(
+    supervisor_module: object,
+) -> None:
+    report = supervisor_module.default_local_operator_executor_report_sample()
+    report["report"]["Authorization"] = "Bearer local-token"
+    report["producer"]["Api_Key"] = "secret-key"
+
+    validation = supervisor_module.validate_local_operator_executor_report(report)
+
+    assert validation["valid"] is False
+    forbidden_fields = {
+        finding["field"]
+        for finding in validation["findings"]
+        if finding["code"] == "forbidden_raw_or_secret_field"
+    }
+    assert forbidden_fields >= {"report.Authorization", "producer.Api_Key"}
+
+
+def test_validate_local_operator_executor_report_rejects_machine_local_paths_in_payload(
+    supervisor_module: object,
+) -> None:
+    report = supervisor_module.default_local_operator_executor_report_sample()
+    report["report"]["findings"] = [
+        {"message": "temporary report was written to /Users/egor/private/report.json"}
+    ]
+
+    validation = supervisor_module.validate_local_operator_executor_report(report)
+
+    assert validation["valid"] is False
+    assert any(
+        finding["code"] == "machine_local_path_persisted"
+        and finding["field"] == "report.findings[0].message"
+        for finding in validation["findings"]
+    )
+
+
 def test_build_local_operator_executor_report_contract_is_ready_after_task_smoke(
     supervisor_module: object,
 ) -> None:
@@ -28589,6 +28632,28 @@ def test_build_local_operator_executor_report_contract_is_ready_after_task_smoke
         "privacy_boundary_declared": "passed",
         "static_publish_excluded": "passed",
     }
+
+
+def test_build_local_operator_executor_report_contract_blocks_malformed_task_smoke(
+    supervisor_module: object,
+) -> None:
+    report_contract = supervisor_module.build_local_operator_executor_report_contract(
+        {"summary": {"status": "passed"}}
+    )
+
+    assert report_contract["summary"]["status"] == "blocked_task_smoke_not_passed"
+    assert report_contract["source_task_smoke_validation"]["valid"] is False
+    finding_codes = {
+        finding["code"] for finding in report_contract["source_task_smoke_validation"]["findings"]
+    }
+    assert finding_codes >= {
+        "invalid_source_task_smoke_artifact_kind",
+        "invalid_source_task_smoke_schema_version",
+        "source_task_smoke_local_only_required",
+        "missing_source_task_smoke_check",
+    }
+    checks = {check["check_id"]: check["status"] for check in report_contract["checks"]}
+    assert checks["task_smoke_passed"] == "failed"
 
 
 def test_build_local_operator_executor_report_contract_blocks_without_task_smoke(
