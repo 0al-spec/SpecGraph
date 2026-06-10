@@ -5,7 +5,8 @@
   "repository_layout": {
     "index_artifact": "runs/supervisor_executor_adapter_index.json",
     "local_operator_readiness_artifact": "runs/local_operator_executor_readiness.json",
-    "local_operator_smoke_artifact": "runs/local_operator_executor_smoke.json"
+    "local_operator_smoke_artifact": "runs/local_operator_executor_smoke.json",
+    "local_operator_task_smoke_artifact": "runs/local_operator_executor_task_smoke.json"
   },
   "index_contract": {
     "artifact_kind": "supervisor_executor_adapter_index",
@@ -133,6 +134,58 @@
       "canonical_mutations_allowed": false
     }
   },
+  "local_operator_task_smoke_contract": {
+    "artifact_kind": "local_operator_executor_task_smoke",
+    "schema_version": 1,
+    "source_readiness_artifact": "runs/local_operator_executor_readiness.json",
+    "source_smoke_artifact": "runs/local_operator_executor_smoke.json",
+    "local_only": true,
+    "task_kind": "bounded_executor_task_smoke",
+    "expected_response_format": "json_object",
+    "expected_response_fields": [
+      "task_kind",
+      "status",
+      "canonical_mutation_attempted",
+      "message"
+    ],
+    "status_values": [
+      "passed",
+      "blocked_readiness_not_ready",
+      "blocked_smoke_not_passed",
+      "blocked_executor_unavailable",
+      "failed_executor_nonzero",
+      "failed_invalid_response",
+      "failed_mutation_guard",
+      "blocked_policy_contract"
+    ],
+    "check_ids": [
+      "readiness_allows_task_smoke",
+      "executor_smoke_passed",
+      "executor_task_invocation_completed",
+      "executor_task_response_valid",
+      "no_canonical_mutation_attempted"
+    ],
+    "named_filters": [
+      "passed",
+      "blocked_readiness_not_ready",
+      "blocked_smoke_not_passed",
+      "blocked_executor_unavailable",
+      "failed_executor_nonzero",
+      "failed_invalid_response",
+      "failed_mutation_guard",
+      "blocked_policy_contract"
+    ],
+    "default_timeout_seconds": 120,
+    "prompt": "Return only a JSON object with task_kind=bounded_executor_task_smoke, status=acknowledged, canonical_mutation_attempted=false, and a short message. Do not inspect, edit, or create repository files.",
+    "privacy_boundary": {
+      "must_not_persist_absolute_paths": true,
+      "must_not_persist_raw_logs": true,
+      "must_not_persist_raw_response": true,
+      "must_not_persist_secrets": true,
+      "public_static_publish": false,
+      "canonical_mutations_allowed": false
+    }
+  },
   "backend_registry": [
     {
       "backend_id": "codex",
@@ -152,6 +205,15 @@
           "--version"
         ],
         "timeout_seconds": 15
+      },
+      "local_task_smoke": {
+        "args": [
+          "exec",
+          "--ephemeral",
+          "--sandbox",
+          "read-only"
+        ],
+        "timeout_seconds": 120
       },
       "protocol_contract": "run_outcome_blocker",
       "auth_isolation": "isolated_child_home",

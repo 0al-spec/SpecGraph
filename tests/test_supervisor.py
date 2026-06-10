@@ -27099,6 +27099,9 @@ def test_supervisor_executor_adapter_policy_declares_request_report_contract() -
     assert policy["repository_layout"]["local_operator_smoke_artifact"] == (
         "runs/local_operator_executor_smoke.json"
     )
+    assert policy["repository_layout"]["local_operator_task_smoke_artifact"] == (
+        "runs/local_operator_executor_task_smoke.json"
+    )
     assert policy["index_contract"]["artifact_kind"] == "supervisor_executor_adapter_index"
     assert "entries" in policy["index_contract"]["stable_fields"]
     assert "passport_diagnostics" in policy["index_contract"]["stable_fields"]
@@ -27134,6 +27137,19 @@ def test_supervisor_executor_adapter_policy_declares_request_report_contract() -
     assert "executor_probe_invocation_completed" in smoke["check_ids"]
     assert "no_canonical_mutation_attempted" in smoke["check_ids"]
     assert smoke["privacy_boundary"]["public_static_publish"] is False
+    task_smoke = policy["local_operator_task_smoke_contract"]
+    assert task_smoke["artifact_kind"] == "local_operator_executor_task_smoke"
+    assert task_smoke["source_readiness_artifact"] == (
+        "runs/local_operator_executor_readiness.json"
+    )
+    assert task_smoke["source_smoke_artifact"] == "runs/local_operator_executor_smoke.json"
+    assert task_smoke["local_only"] is True
+    assert task_smoke["task_kind"] == "bounded_executor_task_smoke"
+    assert "passed" in task_smoke["status_values"]
+    assert "blocked_smoke_not_passed" in task_smoke["status_values"]
+    assert "executor_task_response_valid" in task_smoke["check_ids"]
+    assert task_smoke["privacy_boundary"]["public_static_publish"] is False
+    assert task_smoke["privacy_boundary"]["canonical_mutations_allowed"] is False
 
     request = policy["request_contract"]
     assert request["artifact_kind"] == "supervisor_executor_request"
@@ -27698,6 +27714,28 @@ def ready_local_operator_readiness() -> dict[str, object]:
     }
 
 
+def passed_local_operator_smoke() -> dict[str, object]:
+    return {
+        "artifact_kind": "local_operator_executor_smoke",
+        "schema_version": 1,
+        "local_only": True,
+        "source_readiness_artifact": "runs/local_operator_executor_readiness.json",
+        "summary": {
+            "status": "passed",
+            "backend_id": "codex",
+            "consumed_readiness_status": "ready_for_local_smoke",
+            "next_gap": "define_bounded_executor_task_smoke",
+        },
+        "entries": [
+            {
+                "backend_id": "codex",
+                "readiness_status": "ready_for_local_smoke",
+                "smoke_status": "passed",
+            }
+        ],
+    }
+
+
 def test_build_local_operator_executor_smoke_runs_probe_after_ready_readiness(
     supervisor_module: object,
     monkeypatch: pytest.MonkeyPatch,
@@ -27987,6 +28025,398 @@ def test_main_builds_local_operator_executor_smoke_as_standalone_command(
         (repo_fixture / "runs" / "local_operator_executor_smoke.json").read_text(encoding="utf-8")
     )
     assert artifact["entries"] == [{"backend_id": "codex", "smoke_status": "passed"}]
+
+
+def test_build_local_operator_executor_task_smoke_runs_after_ready_smoke(
+    supervisor_module: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        supervisor_module,
+        "run_local_operator_executor_task",
+        lambda **_kwargs: {
+            "status": "passed",
+            "exit_code": 0,
+            "timed_out": False,
+            "command": {
+                "command_name": "codex",
+                "resolution_source": "path",
+                "path_persisted": False,
+            },
+            "command_executed": True,
+            "stdout_persisted": False,
+            "stderr_persisted": False,
+            "raw_response_persisted": False,
+            "tracked_status_unchanged": True,
+            "response": {
+                "parsed": True,
+                "valid": True,
+                "task_kind": "bounded_executor_task_smoke",
+                "status": "acknowledged",
+                "canonical_mutation_attempted": False,
+                "message_length": 42,
+            },
+        },
+    )
+
+    task_smoke = supervisor_module.build_local_operator_executor_task_smoke(
+        ready_local_operator_readiness(),
+        passed_local_operator_smoke(),
+    )
+
+    assert task_smoke["artifact_kind"] == "local_operator_executor_task_smoke"
+    assert task_smoke["local_only"] is True
+    assert task_smoke["summary"] == {
+        "status": "passed",
+        "backend_id": "codex",
+        "consumed_readiness_status": "ready_for_local_smoke",
+        "consumed_smoke_status": "passed",
+        "next_gap": "define_executor_report_artifact_contract",
+    }
+    entry = task_smoke["entries"][0]
+    assert entry["task_smoke_status"] == "passed"
+    assert entry["request_contract"] == {
+        "task_kind": "bounded_executor_task_smoke",
+        "canonical_mutation_allowed": False,
+        "expected_response_format": "json_object",
+        "prompt_persisted": False,
+    }
+    assert entry["execution"]["command"] == {
+        "command_name": "codex",
+        "resolution_source": "path",
+        "path_persisted": False,
+    }
+    assert entry["execution"]["stdout_persisted"] is False
+    assert entry["execution"]["stderr_persisted"] is False
+    assert entry["execution"]["raw_response_persisted"] is False
+    assert entry["response"]["valid"] is True
+    checks = {check["check_id"]: check["status"] for check in task_smoke["checks"]}
+    assert checks == {
+        "readiness_allows_task_smoke": "passed",
+        "executor_smoke_passed": "passed",
+        "executor_task_invocation_completed": "passed",
+        "executor_task_response_valid": "passed",
+        "no_canonical_mutation_attempted": "passed",
+    }
+    assert task_smoke["viewer_projection"]["named_filters"]["passed"] == ["codex"]
+    dumped = json.dumps(task_smoke, sort_keys=True)
+    assert "/fake/bin/codex" not in dumped
+    assert "bounded executor task smoke acknowledged" not in dumped.lower()
+
+
+def test_build_local_operator_executor_task_smoke_blocks_missing_readiness(
+    supervisor_module: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    task_called = False
+
+    def fail_task(**_kwargs: object) -> dict[str, object]:
+        nonlocal task_called
+        task_called = True
+        return {"status": "passed"}
+
+    monkeypatch.setattr(
+        supervisor_module,
+        "load_local_operator_executor_readiness_artifact",
+        lambda: None,
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "load_local_operator_executor_smoke_artifact",
+        passed_local_operator_smoke,
+    )
+    monkeypatch.setattr(supervisor_module, "run_local_operator_executor_task", fail_task)
+
+    task_smoke = supervisor_module.build_local_operator_executor_task_smoke()
+
+    assert task_called is False
+    assert task_smoke["summary"]["status"] == "blocked_readiness_not_ready"
+    assert task_smoke["summary"]["next_gap"] == "run_executor_readiness_until_ready"
+    checks = {check["check_id"]: check["status"] for check in task_smoke["checks"]}
+    assert checks["readiness_allows_task_smoke"] == "failed"
+    assert checks["executor_smoke_passed"] == "passed"
+    assert checks["executor_task_invocation_completed"] == "not_run"
+    assert checks["executor_task_response_valid"] == "not_run"
+    assert checks["no_canonical_mutation_attempted"] == "not_run"
+
+
+def test_build_local_operator_executor_task_smoke_blocks_failed_smoke(
+    supervisor_module: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    smoke = passed_local_operator_smoke()
+    smoke["summary"]["status"] = "failed_probe_invocation"
+    monkeypatch.setattr(
+        supervisor_module,
+        "run_local_operator_executor_task",
+        lambda **_kwargs: pytest.fail("task must not run when source smoke is blocked"),
+    )
+
+    task_smoke = supervisor_module.build_local_operator_executor_task_smoke(
+        ready_local_operator_readiness(),
+        smoke,
+    )
+
+    assert task_smoke["summary"]["status"] == "blocked_smoke_not_passed"
+    assert task_smoke["summary"]["next_gap"] == "run_executor_smoke_until_passed"
+    assert task_smoke["summary"]["consumed_smoke_status"] == "failed_probe_invocation"
+    checks = {check["check_id"]: check["status"] for check in task_smoke["checks"]}
+    assert checks["readiness_allows_task_smoke"] == "passed"
+    assert checks["executor_smoke_passed"] == "failed"
+    assert checks["executor_task_invocation_completed"] == "not_run"
+
+
+def test_build_local_operator_executor_task_smoke_blocks_missing_default_backend(
+    supervisor_module: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    readiness = ready_local_operator_readiness()
+    readiness["summary"]["default_backend_id"] = ""
+    smoke = passed_local_operator_smoke()
+    smoke["summary"]["backend_id"] = ""
+    monkeypatch.setattr(
+        supervisor_module,
+        "run_local_operator_executor_task",
+        lambda **_kwargs: pytest.fail("task must not run without a backend id"),
+    )
+
+    task_smoke = supervisor_module.build_local_operator_executor_task_smoke(readiness, smoke)
+
+    assert task_smoke["summary"]["status"] == "blocked_policy_contract"
+    assert task_smoke["summary"]["next_gap"] == "repair_executor_adapter_policy_contract"
+    assert task_smoke["summary"]["backend_id"] == ""
+    checks = {check["check_id"]: check["status"] for check in task_smoke["checks"]}
+    assert checks["readiness_allows_task_smoke"] == "passed"
+    assert checks["executor_smoke_passed"] == "passed"
+    assert checks["executor_task_invocation_completed"] == "not_run"
+    assert checks["executor_task_response_valid"] == "not_run"
+    assert checks["no_canonical_mutation_attempted"] == "not_run"
+
+
+def test_build_local_operator_executor_task_smoke_blocks_missing_command(
+    supervisor_module: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        supervisor_module,
+        "run_local_operator_executor_task",
+        lambda **_kwargs: {
+            "status": "missing",
+            "exit_code": None,
+            "timed_out": False,
+            "command": {
+                "command_name": "",
+                "resolution_source": "not_found",
+                "path_persisted": False,
+            },
+            "command_executed": False,
+            "stdout_persisted": False,
+            "stderr_persisted": False,
+            "raw_response_persisted": False,
+            "tracked_status_unchanged": None,
+            "response": {"parsed": False, "valid": False},
+        },
+    )
+
+    task_smoke = supervisor_module.build_local_operator_executor_task_smoke(
+        ready_local_operator_readiness(),
+        passed_local_operator_smoke(),
+    )
+
+    assert task_smoke["summary"]["status"] == "blocked_executor_unavailable"
+    assert task_smoke["summary"]["next_gap"] == "configure_local_operator_executable"
+    checks = {check["check_id"]: check["status"] for check in task_smoke["checks"]}
+    assert checks["executor_task_invocation_completed"] == "missing"
+    assert checks["no_canonical_mutation_attempted"] == "not_run"
+
+
+def test_build_local_operator_executor_task_smoke_rejects_invalid_response(
+    supervisor_module: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        supervisor_module,
+        "run_local_operator_executor_task",
+        lambda **_kwargs: {
+            "status": "failed",
+            "exit_code": 0,
+            "timed_out": False,
+            "command": {
+                "command_name": "codex",
+                "resolution_source": "path",
+                "path_persisted": False,
+            },
+            "command_executed": True,
+            "stdout_persisted": False,
+            "stderr_persisted": False,
+            "raw_response_persisted": False,
+            "tracked_status_unchanged": True,
+            "response": {
+                "parsed": True,
+                "valid": False,
+                "task_kind": "bounded_executor_task_smoke",
+                "status": "needs_files",
+                "canonical_mutation_attempted": False,
+                "message_length": 18,
+            },
+        },
+    )
+
+    task_smoke = supervisor_module.build_local_operator_executor_task_smoke(
+        ready_local_operator_readiness(),
+        passed_local_operator_smoke(),
+    )
+
+    assert task_smoke["summary"]["status"] == "failed_invalid_response"
+    assert task_smoke["summary"]["next_gap"] == "repair_executor_task_smoke_response_contract"
+    checks = {check["check_id"]: check["status"] for check in task_smoke["checks"]}
+    assert checks["executor_task_invocation_completed"] == "passed"
+    assert checks["executor_task_response_valid"] == "failed"
+    assert checks["no_canonical_mutation_attempted"] == "passed"
+
+
+def test_build_local_operator_executor_task_smoke_blocks_mutation_guard(
+    supervisor_module: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        supervisor_module,
+        "run_local_operator_executor_task",
+        lambda **_kwargs: {
+            "status": "passed",
+            "exit_code": 0,
+            "timed_out": False,
+            "command": {
+                "command_name": "codex",
+                "resolution_source": "path",
+                "path_persisted": False,
+            },
+            "command_executed": True,
+            "stdout_persisted": False,
+            "stderr_persisted": False,
+            "raw_response_persisted": False,
+            "tracked_status_unchanged": False,
+            "response": {
+                "parsed": True,
+                "valid": True,
+                "task_kind": "bounded_executor_task_smoke",
+                "status": "acknowledged",
+                "canonical_mutation_attempted": False,
+                "message_length": 42,
+            },
+        },
+    )
+
+    task_smoke = supervisor_module.build_local_operator_executor_task_smoke(
+        ready_local_operator_readiness(),
+        passed_local_operator_smoke(),
+    )
+
+    assert task_smoke["summary"]["status"] == "failed_mutation_guard"
+    assert task_smoke["summary"]["next_gap"] == "repair_executor_task_smoke_mutation_boundary"
+    checks = {check["check_id"]: check["status"] for check in task_smoke["checks"]}
+    assert checks["executor_task_response_valid"] == "passed"
+    assert checks["no_canonical_mutation_attempted"] == "failed"
+
+
+def test_run_local_operator_executor_task_does_not_persist_raw_output_or_paths(
+    supervisor_module: object,
+    git_repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(supervisor_module, "ROOT", git_repo_fixture)
+
+    def fake_command(
+        *,
+        backend_id: str,
+        output_schema_path: Path,
+        output_last_message_path: Path,
+        prompt: str,
+    ) -> tuple[list[str], dict[str, object]]:
+        del backend_id, output_schema_path, prompt
+        response = json.dumps(
+            {
+                "task_kind": "bounded_executor_task_smoke",
+                "status": "acknowledged",
+                "canonical_mutation_attempted": False,
+                "message": "bounded executor task smoke acknowledged",
+            }
+        )
+        script = (
+            "from pathlib import Path; "
+            f"Path({str(output_last_message_path)!r}).write_text({response!r}, "
+            "encoding='utf-8'); "
+            "print('raw stdout with /private/tmp/secret')"
+        )
+        return [
+            sys.executable,
+            "-c",
+            script,
+        ], {
+            "command_name": Path(sys.executable).name,
+            "resolution_source": "test",
+            "path_persisted": False,
+        }
+
+    monkeypatch.setattr(
+        supervisor_module,
+        "executor_task_invocation_command_from_backend",
+        fake_command,
+    )
+
+    result = supervisor_module.run_local_operator_executor_task(
+        backend_id="codex",
+        timeout_seconds=15,
+    )
+
+    assert result["status"] == "passed"
+    assert result["stdout_persisted"] is False
+    assert result["stderr_persisted"] is False
+    assert result["raw_response_persisted"] is False
+    assert result["response"]["valid"] is True
+    assert result["tracked_status_unchanged"] is True
+    dumped = json.dumps(result, sort_keys=True)
+    assert sys.executable not in dumped
+    assert git_repo_fixture.as_posix() not in dumped
+    assert "raw stdout" not in dumped
+    assert "bounded executor task smoke acknowledged" not in dumped
+
+
+def test_main_builds_local_operator_executor_task_smoke_as_standalone_command(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_local_operator_executor_task_smoke",
+        lambda: {
+            "artifact_kind": supervisor_module.LOCAL_OPERATOR_EXECUTOR_TASK_SMOKE_ARTIFACT_KIND,
+            "schema_version": supervisor_module.LOCAL_OPERATOR_EXECUTOR_TASK_SMOKE_SCHEMA_VERSION,
+            "generated_at": "2026-06-10T00:00:00Z",
+            "local_only": True,
+            "summary": {"status": "passed", "backend_id": "codex"},
+            "entries": [{"backend_id": "codex", "task_smoke_status": "passed"}],
+            "checks": [],
+            "viewer_projection": {"named_filters": {"passed": ["codex"]}},
+        },
+    )
+
+    exit_code = supervisor_module.main(build_local_operator_executor_task_smoke_mode=True)
+
+    assert exit_code == 0
+    report = json.loads(capsys.readouterr().out)
+    assert (
+        report["artifact_kind"]
+        == supervisor_module.LOCAL_OPERATOR_EXECUTOR_TASK_SMOKE_ARTIFACT_KIND
+    )
+    artifact = json.loads(
+        (repo_fixture / "runs" / "local_operator_executor_task_smoke.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert artifact["entries"] == [{"backend_id": "codex", "task_smoke_status": "passed"}]
 
 
 def test_agent_passport_adoption_policy_declares_surface_and_gap_contract(

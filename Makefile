@@ -23,7 +23,7 @@ PYTHON_TARGETS := viewer-surfaces dashboard backlog next-move spec-activity grap
 	conversation-memory conversation-memory-map conversation-memory-pressure pre-spec-semantics \
 	implementation-delta implementation-work supervisor-evidence-packet supervisor-stalled-run-salvage \
 	factory-architecture swift-typed-tooling project-environment init-product-workspace review-feedback \
-	executor-adapters executor-readiness executor-smoke agent-passports agent-runtime-evidence docc-sync publish-bundle test test-supervisor
+	executor-adapters executor-readiness executor-smoke executor-task-smoke agent-passports agent-runtime-evidence docc-sync publish-bundle test test-supervisor
 
 $(PYTHON_TARGETS): check-python
 
@@ -72,6 +72,7 @@ help:
 			'  make executor-adapters        Refresh supervisor executor adapter index' \
 			'  make executor-readiness       Refresh local operator executor readiness JSON' \
 			'  make executor-smoke           Run local operator executor probe smoke' \
+			'  make executor-task-smoke      Run local operator bounded executor task smoke' \
 			'  make agent-passports          Refresh Agent Passport derived surfaces' \
 			'  make agent-runtime-evidence   Refresh Agent Passport runtime evidence JSON' \
 			'  make check-python             Verify selected Python runtime is supported' \
@@ -256,6 +257,10 @@ executor-readiness:
 .PHONY: executor-smoke
 executor-smoke:
 	@$(PYTHON) $(SUPERVISOR) --build-local-operator-executor-smoke
+
+.PHONY: executor-task-smoke
+executor-task-smoke:
+	@$(PYTHON) $(SUPERVISOR) --build-local-operator-executor-task-smoke
 
 .PHONY: agent-passports
 agent-passports:
