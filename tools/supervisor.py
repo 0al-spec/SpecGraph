@@ -69,6 +69,8 @@ Derived artifacts:
 - local operator executor smoke: `runs/local_operator_executor_smoke.json`
 - local operator executor task smoke:
   `runs/local_operator_executor_task_smoke.json`
+- local operator executor report contract:
+  `runs/local_operator_executor_report_contract.json`
 - agent surface index: `runs/agent_surface_index.json`
 - known agent passport index: `runs/known_agent_passport_index.json`
 - agent passport verification report: `runs/agent_passport_verification_report.json`
@@ -191,6 +193,10 @@ SUPERVISOR_EXECUTOR_ADAPTER_INDEX_RELATIVE_PATH = "runs/supervisor_executor_adap
 LOCAL_OPERATOR_EXECUTOR_READINESS_RELATIVE_PATH = "runs/local_operator_executor_readiness.json"
 LOCAL_OPERATOR_EXECUTOR_SMOKE_RELATIVE_PATH = "runs/local_operator_executor_smoke.json"
 LOCAL_OPERATOR_EXECUTOR_TASK_SMOKE_RELATIVE_PATH = "runs/local_operator_executor_task_smoke.json"
+LOCAL_OPERATOR_EXECUTOR_REPORT_CONTRACT_RELATIVE_PATH = (
+    "runs/local_operator_executor_report_contract.json"
+)
+LOCAL_OPERATOR_EXECUTOR_REPORT_RELATIVE_PATH = "runs/local_operator_executor_report.json"
 AGENT_SURFACE_INDEX_RELATIVE_PATH = "runs/agent_surface_index.json"
 KNOWN_AGENT_PASSPORT_INDEX_RELATIVE_PATH = "runs/known_agent_passport_index.json"
 AGENT_VERIFICATION_GAP_INDEX_RELATIVE_PATH = "runs/agent_verification_gap_index.json"
@@ -3167,6 +3173,20 @@ LOCAL_OPERATOR_EXECUTOR_TASK_SMOKE_FILENAME = Path(
         )
     )
 ).name
+LOCAL_OPERATOR_EXECUTOR_REPORT_CONTRACT_FILENAME = Path(
+    str(
+        supervisor_executor_adapter_policy_lookup(
+            "repository_layout.local_operator_report_contract_artifact"
+        )
+    )
+).name
+LOCAL_OPERATOR_EXECUTOR_REPORT_FILENAME = Path(
+    str(
+        supervisor_executor_adapter_policy_lookup(
+            "repository_layout.local_operator_report_artifact"
+        )
+    )
+).name
 SUPERVISOR_EXECUTOR_ADAPTER_INDEX_ARTIFACT_KIND = str(
     supervisor_executor_adapter_policy_lookup("index_contract.artifact_kind")
 )
@@ -3190,6 +3210,17 @@ LOCAL_OPERATOR_EXECUTOR_TASK_SMOKE_ARTIFACT_KIND = str(
 )
 LOCAL_OPERATOR_EXECUTOR_TASK_SMOKE_SCHEMA_VERSION = int(
     supervisor_executor_adapter_policy_lookup("local_operator_task_smoke_contract.schema_version")
+)
+LOCAL_OPERATOR_EXECUTOR_REPORT_CONTRACT_ARTIFACT_KIND = str(
+    supervisor_executor_adapter_policy_lookup("executor_report_contract.artifact_kind")
+)
+LOCAL_OPERATOR_EXECUTOR_REPORT_CONTRACT_SCHEMA_VERSION = int(
+    supervisor_executor_adapter_policy_lookup("executor_report_contract.schema_version")
+)
+LOCAL_OPERATOR_EXECUTOR_REPORT_ARTIFACT_KIND = str(
+    supervisor_executor_adapter_policy_lookup(
+        "executor_report_contract.target_report_artifact_kind"
+    )
 )
 AGENT_SURFACE_INDEX_FILENAME = Path(
     str(agent_passport_adoption_policy_lookup("repository_layout.surface_index_artifact"))
@@ -18043,6 +18074,10 @@ def local_operator_executor_task_smoke_path() -> Path:
     return RUNS_DIR / LOCAL_OPERATOR_EXECUTOR_TASK_SMOKE_FILENAME
 
 
+def local_operator_executor_report_contract_path() -> Path:
+    return RUNS_DIR / LOCAL_OPERATOR_EXECUTOR_REPORT_CONTRACT_FILENAME
+
+
 def metric_signal_index_path() -> Path:
     return RUNS_DIR / METRIC_SIGNAL_INDEX_FILENAME
 
@@ -19695,6 +19730,575 @@ def build_local_operator_executor_task_smoke(
 
 def write_local_operator_executor_task_smoke(index: dict[str, Any]) -> Path:
     path = local_operator_executor_task_smoke_path()
+    with artifact_lock(path):
+        atomic_write_json(path, index)
+    return path
+
+
+def local_operator_executor_report_contract_next_gap(status: str) -> str:
+    return {
+        "ready_for_report_smoke": "run_bounded_executor_report_smoke",
+        "blocked_task_smoke_not_passed": "run_executor_task_smoke_until_passed",
+        "invalid_contract": "repair_executor_report_contract",
+        "blocked_policy_contract": "repair_executor_adapter_policy_contract",
+    }.get(status, "repair_executor_report_contract")
+
+
+def load_local_operator_executor_task_smoke_artifact() -> dict[str, Any] | None:
+    path = local_operator_executor_task_smoke_path()
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    return payload if isinstance(payload, dict) else None
+
+
+def local_operator_executor_report_contract() -> dict[str, Any]:
+    contract = supervisor_executor_adapter_policy_lookup("executor_report_contract")
+    return contract if isinstance(contract, dict) else {}
+
+
+def executor_report_contract_values(key: str) -> set[str]:
+    contract = local_operator_executor_report_contract()
+    values = contract.get(key, [])
+    if not isinstance(values, list):
+        return set()
+    return {str(value).strip() for value in values if str(value).strip()}
+
+
+def executor_report_finding(*, code: str, field: str, message: str) -> dict[str, str]:
+    return {
+        "code": code,
+        "field": field,
+        "message": message,
+    }
+
+
+def executor_report_forbidden_key_findings(payload: object) -> list[dict[str, str]]:
+    forbidden_keys = {
+        "api_key",
+        "authorization",
+        "password",
+        "raw_logs",
+        "raw_prompt",
+        "raw_response",
+        "secret",
+        "stderr",
+        "stdout",
+    }
+    findings: list[dict[str, str]] = []
+
+    def visit(value: object, path: str) -> None:
+        if isinstance(value, dict):
+            for key, child in value.items():
+                key_text = str(key).strip()
+                child_path = f"{path}.{key_text}" if path else key_text
+                if key_text in forbidden_keys:
+                    findings.append(
+                        executor_report_finding(
+                            code="forbidden_raw_or_secret_field",
+                            field=child_path,
+                            message=f"{child_path} must not be persisted in executor reports.",
+                        )
+                    )
+                visit(child, child_path)
+        elif isinstance(value, list):
+            for index, child in enumerate(value):
+                visit(child, f"{path}[{index}]")
+
+    visit(payload, "")
+    return findings
+
+
+def safe_executor_report_evidence_ref(raw_ref: object) -> str:
+    candidate = safe_repo_relative_path_text(raw_ref)
+    if not candidate:
+        return ""
+    if candidate.startswith("."):
+        return ""
+    return candidate
+
+
+def default_local_operator_executor_report_sample(
+    *,
+    producer_kind: str = "coding_agent",
+    producer_id: str = "codex",
+    report_kind: str = "analysis_report",
+    authority_level: str = "report_only",
+) -> dict[str, Any]:
+    return {
+        "artifact_kind": LOCAL_OPERATOR_EXECUTOR_REPORT_ARTIFACT_KIND,
+        "schema_version": LOCAL_OPERATOR_EXECUTOR_REPORT_CONTRACT_SCHEMA_VERSION,
+        "local_only": True,
+        "source_task_smoke_artifact": LOCAL_OPERATOR_EXECUTOR_TASK_SMOKE_RELATIVE_PATH,
+        "producer": {
+            "producer_kind": producer_kind,
+            "producer_id": producer_id,
+            "authority_level": authority_level,
+        },
+        "summary": {
+            "status": "valid_report",
+            "report_kind": report_kind,
+            "curation_required": True,
+            "canonical_mutation_attempted": False,
+            "next_gap": "run_bounded_executor_report_smoke",
+        },
+        "report": {
+            "report_kind": report_kind,
+            "status": "completed",
+            "findings": [],
+            "source_evidence_refs": [
+                LOCAL_OPERATOR_EXECUTOR_TASK_SMOKE_RELATIVE_PATH,
+            ],
+            "proposed_artifacts": [],
+        },
+        "privacy_boundary": {
+            "absolute_paths_persisted": False,
+            "raw_logs_persisted": False,
+            "raw_prompt_persisted": False,
+            "raw_response_persisted": False,
+            "secrets_persisted": False,
+        },
+    }
+
+
+def validate_local_operator_executor_report(report: object) -> dict[str, Any]:
+    contract = local_operator_executor_report_contract()
+    findings: list[dict[str, str]] = []
+    if not isinstance(report, dict):
+        return {
+            "valid": False,
+            "findings": [
+                executor_report_finding(
+                    code="report_not_object",
+                    field="report",
+                    message="Executor report must be a JSON object.",
+                )
+            ],
+            "normalized": {},
+        }
+    findings.extend(executor_report_forbidden_key_findings(report))
+    required_fields = [
+        str(field).strip()
+        for field in contract.get("required_report_fields", [])
+        if str(field).strip()
+    ]
+    for field in required_fields:
+        if field not in report:
+            findings.append(
+                executor_report_finding(
+                    code="missing_required_field",
+                    field=field,
+                    message=f"Executor report is missing required field {field}.",
+                )
+            )
+    if report.get("artifact_kind") != LOCAL_OPERATOR_EXECUTOR_REPORT_ARTIFACT_KIND:
+        findings.append(
+            executor_report_finding(
+                code="invalid_artifact_kind",
+                field="artifact_kind",
+                message=(
+                    "Executor report artifact_kind must be "
+                    f"{LOCAL_OPERATOR_EXECUTOR_REPORT_ARTIFACT_KIND}."
+                ),
+            )
+        )
+    if report.get("schema_version") != LOCAL_OPERATOR_EXECUTOR_REPORT_CONTRACT_SCHEMA_VERSION:
+        findings.append(
+            executor_report_finding(
+                code="invalid_schema_version",
+                field="schema_version",
+                message=(
+                    "Executor report schema_version must match the report contract "
+                    f"schema version {LOCAL_OPERATOR_EXECUTOR_REPORT_CONTRACT_SCHEMA_VERSION}."
+                ),
+            )
+        )
+    if report.get("local_only") is not True:
+        findings.append(
+            executor_report_finding(
+                code="local_only_required",
+                field="local_only",
+                message="Executor report must be local_only=true.",
+            )
+        )
+    if report.get("source_task_smoke_artifact") != LOCAL_OPERATOR_EXECUTOR_TASK_SMOKE_RELATIVE_PATH:
+        findings.append(
+            executor_report_finding(
+                code="invalid_source_task_smoke_artifact",
+                field="source_task_smoke_artifact",
+                message="Executor report must reference the local task smoke artifact.",
+            )
+        )
+
+    producer = report.get("producer", {})
+    producer = producer if isinstance(producer, dict) else {}
+    for field in [
+        str(field).strip()
+        for field in contract.get("required_producer_fields", [])
+        if str(field).strip()
+    ]:
+        if field not in producer or not str(producer.get(field, "")).strip():
+            findings.append(
+                executor_report_finding(
+                    code="missing_required_producer_field",
+                    field=f"producer.{field}",
+                    message=f"Executor report producer is missing required field {field}.",
+                )
+            )
+    producer_kind = str(producer.get("producer_kind", "")).strip()
+    producer_id = str(producer.get("producer_id", "")).strip()
+    authority_level = str(producer.get("authority_level", "")).strip()
+    if producer_kind not in executor_report_contract_values("producer_kinds"):
+        findings.append(
+            executor_report_finding(
+                code="unknown_producer_kind",
+                field="producer.producer_kind",
+                message=f"Unknown executor report producer_kind: {producer_kind}.",
+            )
+        )
+    if authority_level not in executor_report_contract_values("authority_levels"):
+        findings.append(
+            executor_report_finding(
+                code="unknown_authority_level",
+                field="producer.authority_level",
+                message=f"Unknown executor report authority_level: {authority_level}.",
+            )
+        )
+
+    summary = report.get("summary", {})
+    summary = summary if isinstance(summary, dict) else {}
+    for field in [
+        str(field).strip()
+        for field in contract.get("required_summary_fields", [])
+        if str(field).strip()
+    ]:
+        if field not in summary:
+            findings.append(
+                executor_report_finding(
+                    code="missing_required_summary_field",
+                    field=f"summary.{field}",
+                    message=f"Executor report summary is missing required field {field}.",
+                )
+            )
+    summary_status = str(summary.get("status", "")).strip()
+    if summary_status not in executor_report_contract_values("report_status_values"):
+        findings.append(
+            executor_report_finding(
+                code="unknown_report_status",
+                field="summary.status",
+                message=f"Unknown executor report summary.status: {summary_status}.",
+            )
+        )
+    report_kind = str(summary.get("report_kind", "")).strip()
+    if report_kind not in executor_report_contract_values("report_kinds"):
+        findings.append(
+            executor_report_finding(
+                code="unknown_report_kind",
+                field="summary.report_kind",
+                message=f"Unknown executor report report_kind: {report_kind}.",
+            )
+        )
+    curation_required = summary.get("curation_required")
+    if not isinstance(curation_required, bool):
+        findings.append(
+            executor_report_finding(
+                code="curation_required_not_boolean",
+                field="summary.curation_required",
+                message="Executor report summary.curation_required must be boolean.",
+            )
+        )
+    canonical_mutation_attempted = summary.get("canonical_mutation_attempted")
+    if canonical_mutation_attempted is not False:
+        findings.append(
+            executor_report_finding(
+                code="canonical_mutation_attempted",
+                field="summary.canonical_mutation_attempted",
+                message="Executor report must declare canonical_mutation_attempted=false.",
+            )
+        )
+
+    nested_report = report.get("report", {})
+    nested_report = nested_report if isinstance(nested_report, dict) else {}
+    for field in [
+        str(field).strip()
+        for field in contract.get("required_report_fields_nested", [])
+        if str(field).strip()
+    ]:
+        if field not in nested_report:
+            findings.append(
+                executor_report_finding(
+                    code="missing_required_nested_report_field",
+                    field=f"report.{field}",
+                    message=f"Executor report payload is missing required field {field}.",
+                )
+            )
+    nested_report_kind = str(nested_report.get("report_kind", "")).strip()
+    if nested_report_kind != report_kind:
+        findings.append(
+            executor_report_finding(
+                code="report_kind_mismatch",
+                field="report.report_kind",
+                message="Executor report payload report_kind must match summary.report_kind.",
+            )
+        )
+    if not isinstance(nested_report.get("findings", []), list):
+        findings.append(
+            executor_report_finding(
+                code="findings_not_list",
+                field="report.findings",
+                message="Executor report findings must be a list.",
+            )
+        )
+    source_evidence_refs = nested_report.get("source_evidence_refs", [])
+    if not isinstance(source_evidence_refs, list):
+        findings.append(
+            executor_report_finding(
+                code="source_evidence_refs_not_list",
+                field="report.source_evidence_refs",
+                message="Executor report source_evidence_refs must be a list.",
+            )
+        )
+        source_evidence_refs = []
+    safe_source_evidence_refs = []
+    for index, raw_ref in enumerate(source_evidence_refs):
+        safe_ref = safe_executor_report_evidence_ref(raw_ref)
+        if not safe_ref:
+            findings.append(
+                executor_report_finding(
+                    code="unsafe_source_evidence_ref",
+                    field=f"report.source_evidence_refs[{index}]",
+                    message=(
+                        "Executor report source evidence refs must be safe repo-relative paths."
+                    ),
+                )
+            )
+        else:
+            safe_source_evidence_refs.append(safe_ref)
+    proposed_artifacts = nested_report.get("proposed_artifacts", [])
+    if not isinstance(proposed_artifacts, list):
+        findings.append(
+            executor_report_finding(
+                code="proposed_artifacts_not_list",
+                field="report.proposed_artifacts",
+                message="Executor report proposed_artifacts must be a list.",
+            )
+        )
+        proposed_artifacts = []
+    for index, proposed_artifact in enumerate(proposed_artifacts):
+        if not isinstance(proposed_artifact, dict):
+            continue
+        for field in ("artifact_ref", "artifact_path", "path"):
+            if field in proposed_artifact and not safe_executor_report_evidence_ref(
+                proposed_artifact.get(field)
+            ):
+                findings.append(
+                    executor_report_finding(
+                        code="unsafe_proposed_artifact_ref",
+                        field=f"report.proposed_artifacts[{index}].{field}",
+                        message=(
+                            "Executor report proposed artifact refs must be safe "
+                            "repo-relative paths."
+                        ),
+                    )
+                )
+    if nested_report.get("canonical_mutation_attempted") is True:
+        findings.append(
+            executor_report_finding(
+                code="canonical_mutation_attempted",
+                field="report.canonical_mutation_attempted",
+                message="Executor report payload must not declare canonical mutation attempts.",
+            )
+        )
+
+    privacy = report.get("privacy_boundary", {})
+    privacy = privacy if isinstance(privacy, dict) else {}
+    for field in (
+        "absolute_paths_persisted",
+        "raw_logs_persisted",
+        "raw_prompt_persisted",
+        "raw_response_persisted",
+        "secrets_persisted",
+    ):
+        if privacy.get(field) is not False:
+            findings.append(
+                executor_report_finding(
+                    code="privacy_boundary_not_closed",
+                    field=f"privacy_boundary.{field}",
+                    message=f"Executor report privacy_boundary.{field} must be false.",
+                )
+            )
+
+    normalized = {
+        "producer_kind": producer_kind,
+        "producer_id": producer_id,
+        "authority_level": authority_level,
+        "report_kind": report_kind,
+        "summary_status": summary_status,
+        "curation_required": curation_required if isinstance(curation_required, bool) else None,
+        "canonical_mutation_attempted": canonical_mutation_attempted,
+        "source_evidence_ref_count": len(safe_source_evidence_refs),
+        "proposed_artifact_count": len(proposed_artifacts),
+    }
+    return {
+        "valid": not findings,
+        "findings": findings,
+        "normalized": normalized,
+    }
+
+
+def local_operator_executor_report_contract_status(checks: list[dict[str, Any]]) -> str:
+    status_by_id = {
+        str(check.get("check_id", "")).strip(): str(check.get("status", "")).strip()
+        for check in checks
+    }
+    if status_by_id.get("task_smoke_passed") != "passed":
+        return "blocked_task_smoke_not_passed"
+    if status_by_id.get("report_contract_sample_valid") != "passed":
+        return "invalid_contract"
+    if (
+        status_by_id.get("privacy_boundary_declared") != "passed"
+        or status_by_id.get("static_publish_excluded") != "passed"
+    ):
+        return "blocked_policy_contract"
+    return "ready_for_report_smoke"
+
+
+def build_local_operator_executor_report_contract(
+    task_smoke: dict[str, Any] | None = None,
+    sample_report: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    contract = local_operator_executor_report_contract()
+    task_smoke = (
+        task_smoke
+        if isinstance(task_smoke, dict)
+        else load_local_operator_executor_task_smoke_artifact()
+    )
+    task_smoke_summary = task_smoke.get("summary", {}) if isinstance(task_smoke, dict) else {}
+    task_smoke_summary = task_smoke_summary if isinstance(task_smoke_summary, dict) else {}
+    task_smoke_status = str(task_smoke_summary.get("status", "")).strip()
+    task_smoke_passed = task_smoke_status == "passed"
+    sample_report = (
+        sample_report
+        if isinstance(sample_report, dict)
+        else default_local_operator_executor_report_sample()
+    )
+    sample_validation = validate_local_operator_executor_report(sample_report)
+    privacy_boundary = contract.get("privacy_boundary", {})
+    privacy_boundary = privacy_boundary if isinstance(privacy_boundary, dict) else {}
+    privacy_declared = (
+        privacy_boundary.get("public_static_publish") is False
+        and privacy_boundary.get("canonical_mutations_allowed") is False
+        and privacy_boundary.get("must_not_persist_absolute_paths") is True
+        and privacy_boundary.get("must_not_persist_raw_logs") is True
+        and privacy_boundary.get("must_not_persist_raw_prompt") is True
+        and privacy_boundary.get("must_not_persist_raw_response") is True
+        and privacy_boundary.get("must_not_persist_secrets") is True
+    )
+    static_excluded = bool(contract.get("local_only", True)) and (
+        privacy_boundary.get("public_static_publish") is False
+    )
+    checks = [
+        local_operator_smoke_check(
+            check_id="task_smoke_passed",
+            status="passed" if task_smoke_passed else "failed",
+            message=(
+                "Local operator executor task smoke passed."
+                if task_smoke_passed
+                else "Local operator executor task smoke is missing or not passed."
+            ),
+        ),
+        local_operator_smoke_check(
+            check_id="report_contract_sample_valid",
+            status="passed" if sample_validation.get("valid") is True else "failed",
+            message=(
+                "Executor report contract sample is valid."
+                if sample_validation.get("valid") is True
+                else "Executor report contract sample is invalid."
+            ),
+        ),
+        local_operator_smoke_check(
+            check_id="privacy_boundary_declared",
+            status="passed" if privacy_declared else "failed",
+            message=(
+                "Executor report contract declares a closed privacy boundary."
+                if privacy_declared
+                else "Executor report contract does not declare a closed privacy boundary."
+            ),
+        ),
+        local_operator_smoke_check(
+            check_id="static_publish_excluded",
+            status="passed" if static_excluded else "failed",
+            message=(
+                "Executor report contract is local-only and excluded from static publish."
+                if static_excluded
+                else "Executor report contract is not safely excluded from static publish."
+            ),
+        ),
+    ]
+    contract_status = local_operator_executor_report_contract_status(checks)
+    normalized_sample = sample_validation.get("normalized", {})
+    normalized_sample = normalized_sample if isinstance(normalized_sample, dict) else {}
+    named_filters = {
+        str(name).strip(): [] for name in contract.get("named_filters", []) if str(name).strip()
+    }
+    named_filters.setdefault(contract_status, []).append(
+        str(normalized_sample.get("producer_id") or "contract")
+    )
+    for key in list(named_filters):
+        named_filters[key] = sorted(set(named_filters[key]))
+    return {
+        "artifact_kind": LOCAL_OPERATOR_EXECUTOR_REPORT_CONTRACT_ARTIFACT_KIND,
+        "schema_version": LOCAL_OPERATOR_EXECUTOR_REPORT_CONTRACT_SCHEMA_VERSION,
+        "generated_at": utc_now_iso(),
+        "policy_reference": supervisor_executor_adapter_policy_reference(),
+        "source_task_smoke_artifact": str(
+            contract.get(
+                "source_task_smoke_artifact",
+                LOCAL_OPERATOR_EXECUTOR_TASK_SMOKE_RELATIVE_PATH,
+            )
+        ).strip(),
+        "target_report_artifact": str(
+            contract.get("target_report_artifact", LOCAL_OPERATOR_EXECUTOR_REPORT_RELATIVE_PATH)
+        ).strip(),
+        "target_report_artifact_kind": LOCAL_OPERATOR_EXECUTOR_REPORT_ARTIFACT_KIND,
+        "local_only": bool(contract.get("local_only", True)),
+        "privacy_boundary": copy.deepcopy(privacy_boundary),
+        "producer_contract": {
+            "producer_kinds": sorted(executor_report_contract_values("producer_kinds")),
+            "authority_levels": sorted(executor_report_contract_values("authority_levels")),
+        },
+        "report_contract": {
+            "report_kinds": sorted(executor_report_contract_values("report_kinds")),
+            "report_status_values": sorted(executor_report_contract_values("report_status_values")),
+            "required_report_fields": [
+                str(field).strip()
+                for field in contract.get("required_report_fields", [])
+                if str(field).strip()
+            ],
+        },
+        "sample_report_validation": {
+            "valid": bool(sample_validation.get("valid", False)),
+            "finding_count": len(sample_validation.get("findings", [])),
+            "findings": copy.deepcopy(sample_validation.get("findings", [])),
+            "normalized": copy.deepcopy(normalized_sample),
+            "raw_sample_persisted": False,
+        },
+        "summary": {
+            "status": contract_status,
+            "source_task_smoke_status": task_smoke_status,
+            "sample_report_valid": bool(sample_validation.get("valid", False)),
+            "next_gap": local_operator_executor_report_contract_next_gap(contract_status),
+        },
+        "checks": checks,
+        "viewer_projection": {
+            "named_filters": named_filters,
+        },
+    }
+
+
+def write_local_operator_executor_report_contract(index: dict[str, Any]) -> Path:
+    path = local_operator_executor_report_contract_path()
     with artifact_lock(path):
         atomic_write_json(path, index)
     return path
@@ -42764,6 +43368,7 @@ def main(
     build_local_operator_executor_readiness_mode: bool = False,
     build_local_operator_executor_smoke_mode: bool = False,
     build_local_operator_executor_task_smoke_mode: bool = False,
+    build_local_operator_executor_report_contract_mode: bool = False,
     build_agent_passport_derived_surfaces_mode: bool = False,
     build_agent_runtime_enforcement_evidence_mode: bool = False,
     build_supervisor_performance_index_mode: bool = False,
@@ -42841,6 +43446,9 @@ def main(
         "--build-local-operator-executor-smoke": build_local_operator_executor_smoke_mode,
         "--build-local-operator-executor-task-smoke": (
             build_local_operator_executor_task_smoke_mode
+        ),
+        "--build-local-operator-executor-report-contract": (
+            build_local_operator_executor_report_contract_mode
         ),
         "--build-agent-passport-derived-surfaces": build_agent_passport_derived_surfaces_mode,
         "--build-agent-runtime-enforcement-evidence": (
@@ -43760,6 +44368,7 @@ def main(
                 build_local_operator_executor_readiness_mode,
                 build_local_operator_executor_smoke_mode,
                 build_local_operator_executor_task_smoke_mode,
+                build_local_operator_executor_report_contract_mode,
                 build_agent_runtime_enforcement_evidence_mode,
             )
         ):
@@ -43877,6 +44486,42 @@ def main(
         write_local_operator_executor_task_smoke(index)
         emit_supervisor_json(index, output_mode=normalized_output_mode)
         return 0 if index.get("summary", {}).get("status") == "passed" else 1
+
+    if build_local_operator_executor_report_contract_mode:
+        if any(
+            (
+                dry_run,
+                auto_approve,
+                loop,
+                resolve_gate,
+                decision,
+                note,
+                target_spec,
+                split_proposal,
+                apply_split_proposal,
+                operator_note,
+                mutation_budget,
+                run_authority,
+                execution_profile,
+                child_model,
+                child_timeout_seconds,
+                verbose,
+                list_stale_runtime,
+                clean_stale_runtime,
+                observe_graph_health_mode,
+                operator_request_packet_path,
+            )
+        ):
+            print(
+                "--build-local-operator-executor-report-contract must be used "
+                "as a standalone command",
+                file=sys.stderr,
+            )
+            return 1
+        index = build_local_operator_executor_report_contract()
+        write_local_operator_executor_report_contract(index)
+        emit_supervisor_json(index, output_mode=normalized_output_mode)
+        return 0 if index.get("summary", {}).get("status") == "ready_for_report_smoke" else 1
 
     if build_agent_passport_derived_surfaces_mode:
         if any(
@@ -47262,6 +47907,14 @@ if __name__ == "__main__":
         ),
     )
     parser.add_argument(
+        "--build-local-operator-executor-report-contract",
+        action="store_true",
+        help=(
+            "Build a local-only generic executor/producer report contract preview after "
+            "task smoke, without running a new executor task or publishing local artifacts"
+        ),
+    )
+    parser.add_argument(
         "--build-agent-passport-derived-surfaces",
         action="store_true",
         help=(
@@ -47605,6 +48258,9 @@ if __name__ == "__main__":
             build_local_operator_executor_smoke_mode=args.build_local_operator_executor_smoke,
             build_local_operator_executor_task_smoke_mode=(
                 args.build_local_operator_executor_task_smoke
+            ),
+            build_local_operator_executor_report_contract_mode=(
+                args.build_local_operator_executor_report_contract
             ),
             build_agent_passport_derived_surfaces_mode=(args.build_agent_passport_derived_surfaces),
             build_agent_runtime_enforcement_evidence_mode=(

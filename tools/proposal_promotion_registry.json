@@ -1155,5 +1155,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0090",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0090_bounded_executor_report_artifact_contract.md"
+    ],
+    "motivating_concern": "Bounded executor task smoke can prove a safe task acknowledgement, but SpecGraph still lacks a generic report artifact contract for future executor or producer outputs before real analysis, proposal, patch, or package-candidate workflows",
+    "normalized_title": "Bounded Executor Report Artifact Contract",
+    "bounded_scope": "Add a local-only executor/producer report contract preview and validator that supports coding-agent, harvester, operator-tool, and external-harness producers, rejects unsafe report shapes, and excludes local report artifacts from public static publish without running a new agent task, mutating canonical specs, or implementing SpecPM intake.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]
