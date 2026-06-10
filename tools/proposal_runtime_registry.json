@@ -4494,5 +4494,98 @@
         "pattern": "runs/local_operator_executor_task_smoke.json"
       }
     ]
+  },
+  {
+    "proposal_id": "0090",
+    "posture": "bounded_runtime_followup",
+    "runtime_surfaces": [
+      "docs/proposals/0090_bounded_executor_report_artifact_contract.md",
+      "docs/archive/proposal_sources/0090_bounded_executor_report_artifact_contract.md",
+      "tools/supervisor_executor_adapter_policy.json",
+      "tools/supervisor.py",
+      "tools/build_static_artifact_bundle.py",
+      "Makefile",
+      "tools/README.md",
+      "docs/static_artifact_publish.md",
+      "Sources/SpecGraph/Documentation.docc/ArtifactPublishing.md",
+      "tests/test_supervisor.py",
+      "tests/test_static_artifact_bundle.py",
+      "runs/local_operator_executor_report_contract.json",
+      "runs/local_operator_executor_report.json"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/supervisor_executor_adapter_policy.json",
+        "pattern": "executor_report_contract"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def validate_local_operator_executor_report("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def build_local_operator_executor_report_contract("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "\"--build-local-operator-executor-report-contract\""
+      },
+      {
+        "path": "Makefile",
+        "pattern": "executor-report-contract:"
+      },
+      {
+        "path": "tools/build_static_artifact_bundle.py",
+        "pattern": "\"local_operator_executor_report_contract.json\""
+      },
+      {
+        "path": "tools/build_static_artifact_bundle.py",
+        "pattern": "\"local_operator_executor_report.json\""
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_validate_local_operator_executor_report_accepts_coding_agent_analysis_report("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_validate_local_operator_executor_report_accepts_harvester_package_candidate_report("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_validate_local_operator_executor_report_rejects_unknown_report_kind("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_local_operator_executor_report_contract_is_ready_after_task_smoke("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_main_builds_local_operator_executor_report_contract_as_standalone_command("
+      },
+      {
+        "path": "tests/test_static_artifact_bundle.py",
+        "pattern": "local_operator_executor_report_contract.json"
+      },
+      {
+        "path": "tests/test_static_artifact_bundle.py",
+        "pattern": "local_operator_executor_report.json"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0090_bounded_executor_report_artifact_contract.md",
+        "pattern": "run_bounded_executor_report_smoke"
+      },
+      {
+        "path": "docs/proposals/0090_bounded_executor_report_artifact_contract.md",
+        "pattern": "SpecHarvester"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "runs/local_operator_executor_report_contract.json"
+      }
+    ]
   }
 ]

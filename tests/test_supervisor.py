@@ -27102,6 +27102,12 @@ def test_supervisor_executor_adapter_policy_declares_request_report_contract() -
     assert policy["repository_layout"]["local_operator_task_smoke_artifact"] == (
         "runs/local_operator_executor_task_smoke.json"
     )
+    assert policy["repository_layout"]["local_operator_report_contract_artifact"] == (
+        "runs/local_operator_executor_report_contract.json"
+    )
+    assert policy["repository_layout"]["local_operator_report_artifact"] == (
+        "runs/local_operator_executor_report.json"
+    )
     assert policy["index_contract"]["artifact_kind"] == "supervisor_executor_adapter_index"
     assert "entries" in policy["index_contract"]["stable_fields"]
     assert "passport_diagnostics" in policy["index_contract"]["stable_fields"]
@@ -27150,6 +27156,22 @@ def test_supervisor_executor_adapter_policy_declares_request_report_contract() -
     assert "executor_task_response_valid" in task_smoke["check_ids"]
     assert task_smoke["privacy_boundary"]["public_static_publish"] is False
     assert task_smoke["privacy_boundary"]["canonical_mutations_allowed"] is False
+    report_contract = policy["executor_report_contract"]
+    assert report_contract["artifact_kind"] == "local_operator_executor_report_contract"
+    assert report_contract["target_report_artifact_kind"] == "local_operator_executor_report"
+    assert report_contract["target_report_artifact"] == "runs/local_operator_executor_report.json"
+    assert report_contract["source_task_smoke_artifact"] == (
+        "runs/local_operator_executor_task_smoke.json"
+    )
+    assert report_contract["local_only"] is True
+    assert "coding_agent" in report_contract["producer_kinds"]
+    assert "harvester" in report_contract["producer_kinds"]
+    assert "report_only" in report_contract["authority_levels"]
+    assert "package_candidate_report" in report_contract["report_kinds"]
+    assert "ready_for_report_smoke" in report_contract["status_values"]
+    assert "report_contract_sample_valid" in report_contract["check_ids"]
+    assert report_contract["privacy_boundary"]["public_static_publish"] is False
+    assert report_contract["privacy_boundary"]["canonical_mutations_allowed"] is False
 
     request = policy["request_contract"]
     assert request["artifact_kind"] == "supervisor_executor_request"
@@ -27732,6 +27754,36 @@ def passed_local_operator_smoke() -> dict[str, object]:
                 "readiness_status": "ready_for_local_smoke",
                 "smoke_status": "passed",
             }
+        ],
+    }
+
+
+def passed_local_operator_task_smoke() -> dict[str, object]:
+    return {
+        "artifact_kind": "local_operator_executor_task_smoke",
+        "schema_version": 1,
+        "local_only": True,
+        "source_readiness_artifact": "runs/local_operator_executor_readiness.json",
+        "source_smoke_artifact": "runs/local_operator_executor_smoke.json",
+        "summary": {
+            "status": "passed",
+            "backend_id": "codex",
+            "consumed_readiness_status": "ready_for_local_smoke",
+            "consumed_smoke_status": "passed",
+            "next_gap": "define_executor_report_artifact_contract",
+        },
+        "entries": [
+            {
+                "backend_id": "codex",
+                "task_smoke_status": "passed",
+            }
+        ],
+        "checks": [
+            {"check_id": "readiness_allows_task_smoke", "status": "passed"},
+            {"check_id": "executor_smoke_passed", "status": "passed"},
+            {"check_id": "executor_task_invocation_completed", "status": "passed"},
+            {"check_id": "executor_task_response_valid", "status": "passed"},
+            {"check_id": "no_canonical_mutation_attempted", "status": "passed"},
         ],
     }
 
@@ -28417,6 +28469,250 @@ def test_main_builds_local_operator_executor_task_smoke_as_standalone_command(
         )
     )
     assert artifact["entries"] == [{"backend_id": "codex", "task_smoke_status": "passed"}]
+
+
+def test_validate_local_operator_executor_report_accepts_coding_agent_analysis_report(
+    supervisor_module: object,
+) -> None:
+    report = supervisor_module.default_local_operator_executor_report_sample()
+
+    validation = supervisor_module.validate_local_operator_executor_report(report)
+
+    assert validation["valid"] is True
+    assert validation["findings"] == []
+    assert validation["normalized"]["producer_kind"] == "coding_agent"
+    assert validation["normalized"]["authority_level"] == "report_only"
+    assert validation["normalized"]["report_kind"] == "analysis_report"
+
+
+def test_validate_local_operator_executor_report_accepts_harvester_package_candidate_report(
+    supervisor_module: object,
+) -> None:
+    report = supervisor_module.default_local_operator_executor_report_sample(
+        producer_kind="harvester",
+        producer_id="specharvester",
+        report_kind="package_candidate_report",
+    )
+    report["report"]["source_evidence_refs"] = [
+        "runs/local_operator_executor_task_smoke.json",
+        "runs/specharvester/xyflow/candidate_bundle_receipt.json",
+    ]
+
+    validation = supervisor_module.validate_local_operator_executor_report(report)
+
+    assert validation["valid"] is True
+    assert validation["findings"] == []
+    assert validation["normalized"]["producer_kind"] == "harvester"
+    assert validation["normalized"]["producer_id"] == "specharvester"
+    assert validation["normalized"]["report_kind"] == "package_candidate_report"
+    assert validation["normalized"]["source_evidence_ref_count"] == 2
+
+
+def test_validate_local_operator_executor_report_rejects_unknown_report_kind(
+    supervisor_module: object,
+) -> None:
+    report = supervisor_module.default_local_operator_executor_report_sample(
+        report_kind="freeform_markdown"
+    )
+
+    validation = supervisor_module.validate_local_operator_executor_report(report)
+
+    assert validation["valid"] is False
+    assert {finding["code"] for finding in validation["findings"]} >= {
+        "unknown_report_kind",
+    }
+
+
+def test_validate_local_operator_executor_report_rejects_canonical_mutation_attempt(
+    supervisor_module: object,
+) -> None:
+    report = supervisor_module.default_local_operator_executor_report_sample()
+    report["summary"]["canonical_mutation_attempted"] = True
+
+    validation = supervisor_module.validate_local_operator_executor_report(report)
+
+    assert validation["valid"] is False
+    assert any(
+        finding["code"] == "canonical_mutation_attempted"
+        and finding["field"] == "summary.canonical_mutation_attempted"
+        for finding in validation["findings"]
+    )
+
+
+def test_validate_local_operator_executor_report_rejects_unsafe_evidence_ref(
+    supervisor_module: object,
+) -> None:
+    report = supervisor_module.default_local_operator_executor_report_sample()
+    report["report"]["source_evidence_refs"] = ["/Users/egor/secret/report.json"]
+
+    validation = supervisor_module.validate_local_operator_executor_report(report)
+
+    assert validation["valid"] is False
+    assert any(
+        finding["code"] == "unsafe_source_evidence_ref" for finding in validation["findings"]
+    )
+
+
+def test_validate_local_operator_executor_report_rejects_raw_log_fields(
+    supervisor_module: object,
+) -> None:
+    report = supervisor_module.default_local_operator_executor_report_sample()
+    report["report"]["raw_logs"] = "sensitive execution transcript"
+
+    validation = supervisor_module.validate_local_operator_executor_report(report)
+
+    assert validation["valid"] is False
+    assert any(
+        finding["code"] == "forbidden_raw_or_secret_field" and finding["field"] == "report.raw_logs"
+        for finding in validation["findings"]
+    )
+
+
+def test_validate_local_operator_executor_report_rejects_case_variant_secret_fields(
+    supervisor_module: object,
+) -> None:
+    report = supervisor_module.default_local_operator_executor_report_sample()
+    report["report"]["Authorization"] = "Bearer local-token"
+    report["producer"]["Api_Key"] = "secret-key"
+
+    validation = supervisor_module.validate_local_operator_executor_report(report)
+
+    assert validation["valid"] is False
+    forbidden_fields = {
+        finding["field"]
+        for finding in validation["findings"]
+        if finding["code"] == "forbidden_raw_or_secret_field"
+    }
+    assert forbidden_fields >= {"report.Authorization", "producer.Api_Key"}
+
+
+def test_validate_local_operator_executor_report_rejects_machine_local_paths_in_payload(
+    supervisor_module: object,
+) -> None:
+    report = supervisor_module.default_local_operator_executor_report_sample()
+    report["report"]["findings"] = [
+        {"message": "temporary report was written to /Users/egor/private/report.json"}
+    ]
+
+    validation = supervisor_module.validate_local_operator_executor_report(report)
+
+    assert validation["valid"] is False
+    assert any(
+        finding["code"] == "machine_local_path_persisted"
+        and finding["field"] == "report.findings[0].message"
+        for finding in validation["findings"]
+    )
+
+
+def test_build_local_operator_executor_report_contract_is_ready_after_task_smoke(
+    supervisor_module: object,
+) -> None:
+    report_contract = supervisor_module.build_local_operator_executor_report_contract(
+        passed_local_operator_task_smoke()
+    )
+
+    assert report_contract["artifact_kind"] == "local_operator_executor_report_contract"
+    assert report_contract["local_only"] is True
+    assert report_contract["target_report_artifact"] == "runs/local_operator_executor_report.json"
+    assert report_contract["target_report_artifact_kind"] == "local_operator_executor_report"
+    assert report_contract["summary"] == {
+        "status": "ready_for_report_smoke",
+        "source_task_smoke_status": "passed",
+        "sample_report_valid": True,
+        "next_gap": "run_bounded_executor_report_smoke",
+    }
+    assert report_contract["sample_report_validation"]["valid"] is True
+    assert report_contract["sample_report_validation"]["raw_sample_persisted"] is False
+    assert "harvester" in report_contract["producer_contract"]["producer_kinds"]
+    assert "package_candidate_report" in report_contract["report_contract"]["report_kinds"]
+    checks = {check["check_id"]: check["status"] for check in report_contract["checks"]}
+    assert checks == {
+        "task_smoke_passed": "passed",
+        "report_contract_sample_valid": "passed",
+        "privacy_boundary_declared": "passed",
+        "static_publish_excluded": "passed",
+    }
+
+
+def test_build_local_operator_executor_report_contract_blocks_malformed_task_smoke(
+    supervisor_module: object,
+) -> None:
+    report_contract = supervisor_module.build_local_operator_executor_report_contract(
+        {"summary": {"status": "passed"}}
+    )
+
+    assert report_contract["summary"]["status"] == "blocked_task_smoke_not_passed"
+    assert report_contract["source_task_smoke_validation"]["valid"] is False
+    finding_codes = {
+        finding["code"] for finding in report_contract["source_task_smoke_validation"]["findings"]
+    }
+    assert finding_codes >= {
+        "invalid_source_task_smoke_artifact_kind",
+        "invalid_source_task_smoke_schema_version",
+        "source_task_smoke_local_only_required",
+        "missing_source_task_smoke_check",
+    }
+    checks = {check["check_id"]: check["status"] for check in report_contract["checks"]}
+    assert checks["task_smoke_passed"] == "failed"
+
+
+def test_build_local_operator_executor_report_contract_blocks_without_task_smoke(
+    supervisor_module: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        supervisor_module,
+        "load_local_operator_executor_task_smoke_artifact",
+        lambda: None,
+    )
+
+    report_contract = supervisor_module.build_local_operator_executor_report_contract()
+
+    assert report_contract["summary"]["status"] == "blocked_task_smoke_not_passed"
+    assert report_contract["summary"]["next_gap"] == "run_executor_task_smoke_until_passed"
+    checks = {check["check_id"]: check["status"] for check in report_contract["checks"]}
+    assert checks["task_smoke_passed"] == "failed"
+    assert checks["report_contract_sample_valid"] == "passed"
+
+
+def test_main_builds_local_operator_executor_report_contract_as_standalone_command(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_local_operator_executor_report_contract",
+        lambda: {
+            "artifact_kind": (
+                supervisor_module.LOCAL_OPERATOR_EXECUTOR_REPORT_CONTRACT_ARTIFACT_KIND
+            ),
+            "schema_version": (
+                supervisor_module.LOCAL_OPERATOR_EXECUTOR_REPORT_CONTRACT_SCHEMA_VERSION
+            ),
+            "generated_at": "2026-06-10T00:00:00Z",
+            "local_only": True,
+            "summary": {"status": "ready_for_report_smoke"},
+            "checks": [],
+            "viewer_projection": {"named_filters": {"ready_for_report_smoke": ["codex"]}},
+        },
+    )
+
+    exit_code = supervisor_module.main(build_local_operator_executor_report_contract_mode=True)
+
+    assert exit_code == 0
+    report = json.loads(capsys.readouterr().out)
+    assert (
+        report["artifact_kind"]
+        == supervisor_module.LOCAL_OPERATOR_EXECUTOR_REPORT_CONTRACT_ARTIFACT_KIND
+    )
+    artifact = json.loads(
+        (repo_fixture / "runs" / "local_operator_executor_report_contract.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert artifact["summary"] == {"status": "ready_for_report_smoke"}
 
 
 def test_agent_passport_adoption_policy_declares_surface_and_gap_contract(

@@ -127,7 +127,11 @@ particular, `runs/local_operator_executor_readiness.json` may exist in a local
 checkout after `make executor-readiness`, and
 `runs/local_operator_executor_smoke.json` may exist after `make executor-smoke`,
 and `runs/local_operator_executor_task_smoke.json` may exist after
-`make executor-task-smoke`, but they are intentionally not uploaded to the
+`make executor-task-smoke`,
+`runs/local_operator_executor_report_contract.json` may exist after
+`make executor-report-contract`, and future
+`runs/local_operator_executor_report.json` artifacts may exist after bounded
+executor report smoke runs, but they are intentionally not uploaded to the
 static host because they describe the current operator process environment
 rather than public producer artifacts.
 

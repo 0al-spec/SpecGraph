@@ -6,7 +6,9 @@
     "index_artifact": "runs/supervisor_executor_adapter_index.json",
     "local_operator_readiness_artifact": "runs/local_operator_executor_readiness.json",
     "local_operator_smoke_artifact": "runs/local_operator_executor_smoke.json",
-    "local_operator_task_smoke_artifact": "runs/local_operator_executor_task_smoke.json"
+    "local_operator_task_smoke_artifact": "runs/local_operator_executor_task_smoke.json",
+    "local_operator_report_contract_artifact": "runs/local_operator_executor_report_contract.json",
+    "local_operator_report_artifact": "runs/local_operator_executor_report.json"
   },
   "index_contract": {
     "artifact_kind": "supervisor_executor_adapter_index",
@@ -180,6 +182,91 @@
     "privacy_boundary": {
       "must_not_persist_absolute_paths": true,
       "must_not_persist_raw_logs": true,
+      "must_not_persist_raw_response": true,
+      "must_not_persist_secrets": true,
+      "public_static_publish": false,
+      "canonical_mutations_allowed": false
+    }
+  },
+  "executor_report_contract": {
+    "artifact_kind": "local_operator_executor_report_contract",
+    "schema_version": 1,
+    "target_report_artifact_kind": "local_operator_executor_report",
+    "target_report_artifact": "runs/local_operator_executor_report.json",
+    "source_task_smoke_artifact": "runs/local_operator_executor_task_smoke.json",
+    "local_only": true,
+    "producer_kinds": [
+      "coding_agent",
+      "harvester",
+      "operator_tool",
+      "external_harness"
+    ],
+    "authority_levels": [
+      "report_only",
+      "proposal_only"
+    ],
+    "report_kinds": [
+      "analysis_report",
+      "package_candidate_report",
+      "proposal_draft",
+      "patch_suggestion",
+      "validation_summary"
+    ],
+    "report_status_values": [
+      "valid_report",
+      "invalid_report"
+    ],
+    "status_values": [
+      "ready_for_report_smoke",
+      "blocked_task_smoke_not_passed",
+      "invalid_contract",
+      "blocked_policy_contract"
+    ],
+    "check_ids": [
+      "task_smoke_passed",
+      "report_contract_sample_valid",
+      "privacy_boundary_declared",
+      "static_publish_excluded"
+    ],
+    "named_filters": [
+      "ready_for_report_smoke",
+      "blocked_task_smoke_not_passed",
+      "invalid_contract",
+      "blocked_policy_contract"
+    ],
+    "required_report_fields": [
+      "artifact_kind",
+      "schema_version",
+      "local_only",
+      "source_task_smoke_artifact",
+      "producer",
+      "summary",
+      "report",
+      "privacy_boundary"
+    ],
+    "required_producer_fields": [
+      "producer_kind",
+      "producer_id",
+      "authority_level"
+    ],
+    "required_summary_fields": [
+      "status",
+      "report_kind",
+      "curation_required",
+      "canonical_mutation_attempted",
+      "next_gap"
+    ],
+    "required_report_fields_nested": [
+      "report_kind",
+      "status",
+      "findings",
+      "source_evidence_refs",
+      "proposed_artifacts"
+    ],
+    "privacy_boundary": {
+      "must_not_persist_absolute_paths": true,
+      "must_not_persist_raw_logs": true,
+      "must_not_persist_raw_prompt": true,
       "must_not_persist_raw_response": true,
       "must_not_persist_secrets": true,
       "public_static_publish": false,
