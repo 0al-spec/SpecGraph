@@ -17,7 +17,13 @@ def test_presentation_shell_is_static_slide_deck():
     assert 'class="edge ' not in html
     assert "Use arrow keys" not in html
     assert "Feature != Code" in html
+    assert html.count('class="speaker-notes"') == 18
+    assert "Activity is not intent preservation." in html
+    assert "Agent Session" in html
+    assert "Usage Signal" in html
+    assert "review.changed" in html
     assert "SIB measures intent preservation" in html
+    assert "speaker-notes" in (PRESENTATION_DIR / "README.md").read_text(encoding="utf-8")
     assert "aspect-ratio: 16 / 9" in css
     assert "@keyframes" not in css
     assert "transition" not in css

@@ -257,6 +257,11 @@ h1 {
   line-height: .98;
 }
 
+.title-long {
+  max-width: 13ch;
+  font-size: clamp(52px, 6.1vw, 88px);
+}
+
 h2 {
   max-width: 12ch;
   font-size: clamp(54px, 6.3vw, 92px);
@@ -283,6 +288,14 @@ h3 {
   color: var(--muted);
   font-size: clamp(15px, 1.35vw, 19px);
   line-height: 1.55;
+}
+
+.micro-copy {
+  max-width: 34ch;
+  margin-top: 22px;
+  color: var(--muted);
+  font-size: clamp(16px, 1.35vw, 20px);
+  line-height: 1.35;
 }
 
 .hero-panel,
@@ -367,6 +380,63 @@ h3 {
 .node-metric {
   right: 12%;
   bottom: 15%;
+}
+
+.graph-field-expanded .node {
+  min-width: 118px;
+  min-height: 50px;
+  padding: 0 10px;
+  font-size: var(--diagram-label-sm);
+  line-height: 1.15;
+  text-align: center;
+}
+
+.graph-field-expanded .node-intent {
+  left: 5%;
+  top: 8%;
+}
+
+.graph-field-expanded .node-spec {
+  left: 37%;
+  right: auto;
+  top: 8%;
+}
+
+.node-task {
+  right: 5%;
+  top: 18%;
+}
+
+.node-agent {
+  left: 8%;
+  top: 42%;
+}
+
+.node-code {
+  left: 39%;
+  top: 42%;
+}
+
+.node-test {
+  right: 5%;
+  top: 49%;
+}
+
+.node-review {
+  left: 16%;
+  bottom: 14%;
+}
+
+.node-deploy {
+  left: 43%;
+  bottom: 14%;
+}
+
+.node-usage {
+  right: 3%;
+  bottom: 6%;
+  border-color: var(--signal);
+  color: var(--signal);
 }
 
 .panel-caption {
