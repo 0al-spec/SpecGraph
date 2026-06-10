@@ -1142,5 +1142,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0089",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0089_bounded_executor_task_smoke.md"
+    ],
+    "motivating_concern": "Local operator executor smoke can prove a bounded probe, but SpecGraph still lacks a gated task-level smoke that exercises the executor task boundary without canonical mutation",
+    "normalized_title": "Bounded Executor Task Smoke",
+    "bounded_scope": "Add a local-only bounded executor task smoke artifact and Make target that consumes readiness and probe smoke artifacts, runs only the policy-declared JSON acknowledgement task, records sanitized outcome and mutation guard evidence, and excludes the artifact from public static publish without creating proposals, mutating canonical specs, or claiming full runtime enforcement.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

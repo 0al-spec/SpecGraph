@@ -65,6 +65,10 @@ Derived artifacts:
 - Metric pricing provenance: `runs/metric_pricing_provenance.json`
 - Model usage telemetry index: `runs/model_usage_telemetry_index.json`
 - supervisor executor adapter index: `runs/supervisor_executor_adapter_index.json`
+- local operator executor readiness: `runs/local_operator_executor_readiness.json`
+- local operator executor smoke: `runs/local_operator_executor_smoke.json`
+- local operator executor task smoke:
+  `runs/local_operator_executor_task_smoke.json`
 - agent surface index: `runs/agent_surface_index.json`
 - known agent passport index: `runs/known_agent_passport_index.json`
 - agent passport verification report: `runs/agent_passport_verification_report.json`
@@ -186,6 +190,7 @@ MODEL_USAGE_TELEMETRY_RELATIVE_PATH = "runs/model_usage_telemetry_index.json"
 SUPERVISOR_EXECUTOR_ADAPTER_INDEX_RELATIVE_PATH = "runs/supervisor_executor_adapter_index.json"
 LOCAL_OPERATOR_EXECUTOR_READINESS_RELATIVE_PATH = "runs/local_operator_executor_readiness.json"
 LOCAL_OPERATOR_EXECUTOR_SMOKE_RELATIVE_PATH = "runs/local_operator_executor_smoke.json"
+LOCAL_OPERATOR_EXECUTOR_TASK_SMOKE_RELATIVE_PATH = "runs/local_operator_executor_task_smoke.json"
 AGENT_SURFACE_INDEX_RELATIVE_PATH = "runs/agent_surface_index.json"
 KNOWN_AGENT_PASSPORT_INDEX_RELATIVE_PATH = "runs/known_agent_passport_index.json"
 AGENT_VERIFICATION_GAP_INDEX_RELATIVE_PATH = "runs/agent_verification_gap_index.json"
@@ -3155,6 +3160,13 @@ LOCAL_OPERATOR_EXECUTOR_SMOKE_FILENAME = Path(
         supervisor_executor_adapter_policy_lookup("repository_layout.local_operator_smoke_artifact")
     )
 ).name
+LOCAL_OPERATOR_EXECUTOR_TASK_SMOKE_FILENAME = Path(
+    str(
+        supervisor_executor_adapter_policy_lookup(
+            "repository_layout.local_operator_task_smoke_artifact"
+        )
+    )
+).name
 SUPERVISOR_EXECUTOR_ADAPTER_INDEX_ARTIFACT_KIND = str(
     supervisor_executor_adapter_policy_lookup("index_contract.artifact_kind")
 )
@@ -3172,6 +3184,12 @@ LOCAL_OPERATOR_EXECUTOR_SMOKE_ARTIFACT_KIND = str(
 )
 LOCAL_OPERATOR_EXECUTOR_SMOKE_SCHEMA_VERSION = int(
     supervisor_executor_adapter_policy_lookup("local_operator_smoke_contract.schema_version")
+)
+LOCAL_OPERATOR_EXECUTOR_TASK_SMOKE_ARTIFACT_KIND = str(
+    supervisor_executor_adapter_policy_lookup("local_operator_task_smoke_contract.artifact_kind")
+)
+LOCAL_OPERATOR_EXECUTOR_TASK_SMOKE_SCHEMA_VERSION = int(
+    supervisor_executor_adapter_policy_lookup("local_operator_task_smoke_contract.schema_version")
 )
 AGENT_SURFACE_INDEX_FILENAME = Path(
     str(agent_passport_adoption_policy_lookup("repository_layout.surface_index_artifact"))
@@ -18021,6 +18039,10 @@ def local_operator_executor_smoke_path() -> Path:
     return RUNS_DIR / LOCAL_OPERATOR_EXECUTOR_SMOKE_FILENAME
 
 
+def local_operator_executor_task_smoke_path() -> Path:
+    return RUNS_DIR / LOCAL_OPERATOR_EXECUTOR_TASK_SMOKE_FILENAME
+
+
 def metric_signal_index_path() -> Path:
     return RUNS_DIR / METRIC_SIGNAL_INDEX_FILENAME
 
@@ -19209,6 +19231,468 @@ def build_local_operator_executor_smoke(
 
 def write_local_operator_executor_smoke(index: dict[str, Any]) -> Path:
     path = local_operator_executor_smoke_path()
+    with artifact_lock(path):
+        atomic_write_json(path, index)
+    return path
+
+
+def local_operator_executor_task_smoke_next_gap(status: str) -> str:
+    return {
+        "passed": "define_executor_report_artifact_contract",
+        "blocked_readiness_not_ready": "run_executor_readiness_until_ready",
+        "blocked_smoke_not_passed": "run_executor_smoke_until_passed",
+        "blocked_executor_unavailable": "configure_local_operator_executable",
+        "failed_executor_nonzero": "repair_executor_task_smoke_invocation",
+        "failed_invalid_response": "repair_executor_task_smoke_response_contract",
+        "failed_mutation_guard": "repair_executor_task_smoke_mutation_boundary",
+        "blocked_policy_contract": "repair_executor_adapter_policy_contract",
+    }.get(status, "repair_executor_task_smoke")
+
+
+def local_operator_executor_task_smoke_status(checks: list[dict[str, Any]]) -> str:
+    status_by_id = {
+        str(check.get("check_id", "")).strip(): str(check.get("status", "")).strip()
+        for check in checks
+    }
+    if status_by_id.get("readiness_allows_task_smoke") != "passed":
+        return "blocked_readiness_not_ready"
+    if status_by_id.get("executor_smoke_passed") != "passed":
+        return "blocked_smoke_not_passed"
+    invocation_status = status_by_id.get("executor_task_invocation_completed")
+    if invocation_status == "missing":
+        return "blocked_executor_unavailable"
+    if invocation_status != "passed":
+        return "failed_executor_nonzero"
+    if status_by_id.get("executor_task_response_valid") != "passed":
+        return "failed_invalid_response"
+    if status_by_id.get("no_canonical_mutation_attempted") != "passed":
+        return "failed_mutation_guard"
+    return "passed"
+
+
+def load_local_operator_executor_smoke_artifact() -> dict[str, Any] | None:
+    path = local_operator_executor_smoke_path()
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    return payload if isinstance(payload, dict) else None
+
+
+def local_operator_executor_task_smoke_contract() -> dict[str, Any]:
+    contract = supervisor_executor_adapter_policy_lookup("local_operator_task_smoke_contract")
+    return contract if isinstance(contract, dict) else {}
+
+
+def local_operator_task_smoke_for_backend(backend_id: str) -> dict[str, Any]:
+    contract = local_operator_executor_task_smoke_contract()
+    default_timeout = int(contract.get("default_timeout_seconds", 120) or 120)
+    for backend in supervisor_executor_adapter_policy_lookup("backend_registry"):
+        if not isinstance(backend, dict):
+            continue
+        if str(backend.get("backend_id", "")).strip() != backend_id:
+            continue
+        task = backend.get("local_task_smoke", {})
+        task = task if isinstance(task, dict) else {}
+        args = [str(arg).strip() for arg in task.get("args", []) if str(arg).strip()]
+        timeout = int(task.get("timeout_seconds", default_timeout) or default_timeout)
+        return {
+            "args": args,
+            "timeout_seconds": max(1, min(timeout, 300)),
+        }
+    return {"args": [], "timeout_seconds": max(1, min(default_timeout, 300))}
+
+
+def bounded_executor_task_smoke_response_schema() -> dict[str, Any]:
+    return {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "additionalProperties": False,
+        "required": [
+            "task_kind",
+            "status",
+            "canonical_mutation_attempted",
+            "message",
+        ],
+        "properties": {
+            "task_kind": {"const": "bounded_executor_task_smoke"},
+            "status": {"const": "acknowledged"},
+            "canonical_mutation_attempted": {"const": False},
+            "message": {"type": "string", "minLength": 1, "maxLength": 240},
+        },
+    }
+
+
+def bounded_executor_task_smoke_prompt() -> str:
+    contract = local_operator_executor_task_smoke_contract()
+    prompt = str(contract.get("prompt", "")).strip()
+    return prompt or (
+        "Return only a JSON object with task_kind=bounded_executor_task_smoke, "
+        "status=acknowledged, canonical_mutation_attempted=false, and a short message. "
+        "Do not inspect, edit, or create repository files."
+    )
+
+
+def parse_bounded_executor_task_smoke_response(raw_text: str) -> dict[str, Any]:
+    try:
+        payload = json.loads(raw_text.strip())
+    except json.JSONDecodeError:
+        return {
+            "parsed": False,
+            "valid": False,
+            "task_kind": "",
+            "status": "",
+            "canonical_mutation_attempted": None,
+            "message_length": 0,
+        }
+    if not isinstance(payload, dict):
+        return {
+            "parsed": True,
+            "valid": False,
+            "task_kind": "",
+            "status": "",
+            "canonical_mutation_attempted": None,
+            "message_length": 0,
+        }
+    task_kind = str(payload.get("task_kind", "")).strip()
+    status = str(payload.get("status", "")).strip()
+    canonical_mutation_attempted = payload.get("canonical_mutation_attempted")
+    message = payload.get("message", "")
+    message_length = len(message) if isinstance(message, str) else 0
+    valid = (
+        task_kind == "bounded_executor_task_smoke"
+        and status == "acknowledged"
+        and canonical_mutation_attempted is False
+        and isinstance(message, str)
+        and 0 < message_length <= 240
+    )
+    return {
+        "parsed": True,
+        "valid": valid,
+        "task_kind": task_kind,
+        "status": status,
+        "canonical_mutation_attempted": canonical_mutation_attempted,
+        "message_length": message_length,
+    }
+
+
+def executor_task_invocation_command_from_backend(
+    *,
+    backend_id: str,
+    output_schema_path: Path,
+    output_last_message_path: Path,
+    prompt: str,
+) -> tuple[list[str], dict[str, Any]]:
+    task = local_operator_task_smoke_for_backend(backend_id)
+    base_args = [str(arg).strip() for arg in task.get("args", []) if str(arg).strip()]
+    task_args = [
+        *base_args,
+        "-C",
+        ROOT.as_posix(),
+        "--output-schema",
+        output_schema_path.as_posix(),
+        "--output-last-message",
+        output_last_message_path.as_posix(),
+        prompt,
+    ]
+    return executable_invocation_command_from_backend(
+        backend_id=backend_id,
+        probe_args=task_args,
+    )
+
+
+def run_local_operator_executor_task(
+    *,
+    backend_id: str,
+    timeout_seconds: int,
+) -> dict[str, Any]:
+    with tempfile.TemporaryDirectory(prefix="specgraph-executor-task-smoke-") as temp_dir:
+        temp_path = Path(temp_dir)
+        output_schema_path = temp_path / "response.schema.json"
+        output_last_message_path = temp_path / "last-message.json"
+        output_schema_path.write_text(
+            json.dumps(bounded_executor_task_smoke_response_schema(), indent=2, sort_keys=True)
+            + "\n",
+            encoding="utf-8",
+        )
+        command, invocation = executor_task_invocation_command_from_backend(
+            backend_id=backend_id,
+            output_schema_path=output_schema_path,
+            output_last_message_path=output_last_message_path,
+            prompt=bounded_executor_task_smoke_prompt(),
+        )
+        if not command:
+            return {
+                "status": "missing",
+                "exit_code": None,
+                "timed_out": False,
+                "command": invocation,
+                "command_executed": False,
+                "stdout_persisted": False,
+                "stderr_persisted": False,
+                "raw_response_persisted": False,
+                "tracked_status_unchanged": None,
+                "response": {
+                    "parsed": False,
+                    "valid": False,
+                    "task_kind": "",
+                    "status": "",
+                    "canonical_mutation_attempted": None,
+                    "message_length": 0,
+                },
+            }
+        before_status = git_tracked_status_snapshot()
+        try:
+            result = subprocess.run(
+                command,
+                cwd=ROOT,
+                capture_output=True,
+                text=True,
+                check=False,
+                timeout=timeout_seconds,
+            )
+            timed_out = False
+            exit_code: int | None = result.returncode
+        except subprocess.TimeoutExpired:
+            timed_out = True
+            exit_code = None
+        after_status = git_tracked_status_snapshot()
+        try:
+            raw_response = output_last_message_path.read_text(encoding="utf-8")
+        except OSError:
+            raw_response = ""
+        response = parse_bounded_executor_task_smoke_response(raw_response)
+        return {
+            "status": (
+                "passed"
+                if exit_code == 0 and not timed_out and bool(response.get("valid"))
+                else "failed"
+            ),
+            "exit_code": exit_code,
+            "timed_out": timed_out,
+            "command": invocation,
+            "command_executed": True,
+            "stdout_persisted": False,
+            "stderr_persisted": False,
+            "raw_response_persisted": False,
+            "tracked_status_unchanged": (
+                before_status is not None
+                and after_status is not None
+                and before_status == after_status
+            ),
+            "response": response,
+        }
+
+
+def build_local_operator_executor_task_smoke(
+    readiness: dict[str, Any] | None = None,
+    smoke: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    contract = local_operator_executor_task_smoke_contract()
+    readiness = (
+        readiness
+        if isinstance(readiness, dict)
+        else load_local_operator_executor_readiness_artifact()
+    )
+    smoke = smoke if isinstance(smoke, dict) else load_local_operator_executor_smoke_artifact()
+    readiness_summary = readiness.get("summary", {}) if isinstance(readiness, dict) else {}
+    readiness_summary = readiness_summary if isinstance(readiness_summary, dict) else {}
+    smoke_summary = smoke.get("summary", {}) if isinstance(smoke, dict) else {}
+    smoke_summary = smoke_summary if isinstance(smoke_summary, dict) else {}
+    default_backend_id = str(
+        readiness_summary.get("default_backend_id") or smoke_summary.get("backend_id") or ""
+    ).strip()
+    readiness_status = str(readiness_summary.get("default_backend_readiness", "")).strip()
+    smoke_status = str(smoke_summary.get("status", "")).strip()
+    readiness_allows_task = readiness_status == "ready_for_local_smoke"
+    smoke_passed = smoke_status == "passed"
+    task = local_operator_task_smoke_for_backend(default_backend_id)
+    timeout_seconds = int(task.get("timeout_seconds", 120) or 120)
+    checks = [
+        local_operator_smoke_check(
+            check_id="readiness_allows_task_smoke",
+            status="passed" if readiness_allows_task else "failed",
+            message=(
+                "Readiness allows bounded executor task smoke."
+                if readiness_allows_task
+                else "Readiness does not allow bounded executor task smoke."
+            ),
+        ),
+        local_operator_smoke_check(
+            check_id="executor_smoke_passed",
+            status="passed" if smoke_passed else "failed",
+            message=(
+                "Local operator executor smoke passed."
+                if smoke_passed
+                else "Local operator executor smoke is missing or not passed."
+            ),
+        ),
+    ]
+    task_result: dict[str, Any] = {
+        "status": "not_run",
+        "exit_code": None,
+        "timed_out": False,
+        "command": {"path_persisted": False},
+        "command_executed": False,
+        "stdout_persisted": False,
+        "stderr_persisted": False,
+        "raw_response_persisted": False,
+        "tracked_status_unchanged": None,
+        "response": {
+            "parsed": False,
+            "valid": False,
+            "task_kind": "",
+            "status": "",
+            "canonical_mutation_attempted": None,
+            "message_length": 0,
+        },
+    }
+    if readiness_allows_task and smoke_passed and default_backend_id:
+        task_result = run_local_operator_executor_task(
+            backend_id=default_backend_id,
+            timeout_seconds=timeout_seconds,
+        )
+    checks.append(
+        local_operator_smoke_check(
+            check_id="executor_task_invocation_completed",
+            status=(
+                "not_run"
+                if task_result.get("status") == "not_run"
+                else "missing"
+                if task_result.get("status") == "missing"
+                else "passed"
+                if task_result.get("exit_code") == 0 and not task_result.get("timed_out")
+                else "failed"
+            ),
+            message=(
+                "Executor task invocation completed successfully."
+                if task_result.get("exit_code") == 0 and not task_result.get("timed_out")
+                else "Executor task invocation was not run because source artifacts gated it off."
+                if task_result.get("status") == "not_run"
+                else "Executor executable was not available for bounded task smoke."
+                if task_result.get("status") == "missing"
+                else "Executor task invocation did not complete successfully."
+            ),
+        )
+    )
+    response = task_result.get("response", {})
+    response = response if isinstance(response, dict) else {}
+    checks.append(
+        local_operator_smoke_check(
+            check_id="executor_task_response_valid",
+            status=(
+                "not_run"
+                if task_result.get("status") == "not_run"
+                else "passed"
+                if response.get("valid") is True
+                else "failed"
+            ),
+            message=(
+                "Executor task response matched the bounded JSON contract."
+                if response.get("valid") is True
+                else "Executor task response was not checked because invocation was gated off."
+                if task_result.get("status") == "not_run"
+                else "Executor task response did not match the bounded JSON contract."
+            ),
+        )
+    )
+    task_command_executed = bool(task_result.get("command_executed"))
+    checks.append(
+        local_operator_smoke_check(
+            check_id="no_canonical_mutation_attempted",
+            status=(
+                "not_run"
+                if not task_command_executed
+                else "passed"
+                if task_result.get("tracked_status_unchanged") is True
+                else "failed"
+            ),
+            message=(
+                "No executor task command was executed, so the mutation check was not run."
+                if not task_command_executed
+                else "Worktree status did not change during the executor task smoke."
+                if task_result.get("tracked_status_unchanged") is True
+                else (
+                    "Worktree status changed or could not be proven unchanged "
+                    "during the executor task smoke."
+                )
+            ),
+        )
+    )
+    task_smoke_status = local_operator_executor_task_smoke_status(checks)
+    entry = {
+        "backend_id": default_backend_id,
+        "readiness_status": readiness_status,
+        "smoke_status": smoke_status,
+        "task_smoke_status": task_smoke_status,
+        "source_readiness_artifact_present": isinstance(readiness, dict),
+        "source_smoke_artifact_present": isinstance(smoke, dict),
+        "request_contract": {
+            "task_kind": str(contract.get("task_kind", "bounded_executor_task_smoke")).strip(),
+            "canonical_mutation_allowed": False,
+            "expected_response_format": str(
+                contract.get("expected_response_format", "json_object")
+            ).strip(),
+            "prompt_persisted": False,
+        },
+        "execution": {
+            "timeout_seconds": timeout_seconds,
+            "exit_code": task_result.get("exit_code"),
+            "timed_out": bool(task_result.get("timed_out", False)),
+            "command": copy.deepcopy(task_result.get("command", {})),
+            "command_executed": bool(task_result.get("command_executed", False)),
+            "stdout_persisted": False,
+            "stderr_persisted": False,
+            "raw_response_persisted": False,
+        },
+        "response": copy.deepcopy(response),
+        "checks": checks,
+        "safe_next_action": local_operator_executor_task_smoke_next_gap(task_smoke_status),
+    }
+    named_filters = {
+        str(name).strip(): [] for name in contract.get("named_filters", []) if str(name).strip()
+    }
+    named_filters.setdefault(task_smoke_status, []).append(
+        default_backend_id or "missing_default_backend"
+    )
+    for key in list(named_filters):
+        named_filters[key] = sorted(set(named_filters[key]))
+    return {
+        "artifact_kind": LOCAL_OPERATOR_EXECUTOR_TASK_SMOKE_ARTIFACT_KIND,
+        "schema_version": LOCAL_OPERATOR_EXECUTOR_TASK_SMOKE_SCHEMA_VERSION,
+        "generated_at": utc_now_iso(),
+        "policy_reference": supervisor_executor_adapter_policy_reference(),
+        "source_readiness_artifact": str(
+            contract.get(
+                "source_readiness_artifact",
+                LOCAL_OPERATOR_EXECUTOR_READINESS_RELATIVE_PATH,
+            )
+        ).strip(),
+        "source_smoke_artifact": str(
+            contract.get(
+                "source_smoke_artifact",
+                LOCAL_OPERATOR_EXECUTOR_SMOKE_RELATIVE_PATH,
+            )
+        ).strip(),
+        "local_only": bool(contract.get("local_only", True)),
+        "privacy_boundary": copy.deepcopy(contract.get("privacy_boundary", {})),
+        "summary": {
+            "status": task_smoke_status,
+            "backend_id": default_backend_id,
+            "consumed_readiness_status": readiness_status,
+            "consumed_smoke_status": smoke_status,
+            "next_gap": local_operator_executor_task_smoke_next_gap(task_smoke_status),
+        },
+        "entries": [entry],
+        "checks": checks,
+        "viewer_projection": {
+            "named_filters": named_filters,
+        },
+    }
+
+
+def write_local_operator_executor_task_smoke(index: dict[str, Any]) -> Path:
+    path = local_operator_executor_task_smoke_path()
     with artifact_lock(path):
         atomic_write_json(path, index)
     return path
@@ -42277,6 +42761,7 @@ def main(
     build_supervisor_executor_adapter_index_mode: bool = False,
     build_local_operator_executor_readiness_mode: bool = False,
     build_local_operator_executor_smoke_mode: bool = False,
+    build_local_operator_executor_task_smoke_mode: bool = False,
     build_agent_passport_derived_surfaces_mode: bool = False,
     build_agent_runtime_enforcement_evidence_mode: bool = False,
     build_supervisor_performance_index_mode: bool = False,
@@ -42352,6 +42837,9 @@ def main(
         "--build-supervisor-executor-adapter-index": build_supervisor_executor_adapter_index_mode,
         "--build-local-operator-executor-readiness": (build_local_operator_executor_readiness_mode),
         "--build-local-operator-executor-smoke": build_local_operator_executor_smoke_mode,
+        "--build-local-operator-executor-task-smoke": (
+            build_local_operator_executor_task_smoke_mode
+        ),
         "--build-agent-passport-derived-surfaces": build_agent_passport_derived_surfaces_mode,
         "--build-agent-runtime-enforcement-evidence": (
             build_agent_runtime_enforcement_evidence_mode
@@ -43269,6 +43757,7 @@ def main(
                 build_proposal_promotion_index_mode,
                 build_local_operator_executor_readiness_mode,
                 build_local_operator_executor_smoke_mode,
+                build_local_operator_executor_task_smoke_mode,
                 build_agent_runtime_enforcement_evidence_mode,
             )
         ):
@@ -43349,6 +43838,41 @@ def main(
             return 1
         index = build_local_operator_executor_smoke()
         write_local_operator_executor_smoke(index)
+        emit_supervisor_json(index, output_mode=normalized_output_mode)
+        return 0 if index.get("summary", {}).get("status") == "passed" else 1
+
+    if build_local_operator_executor_task_smoke_mode:
+        if any(
+            (
+                dry_run,
+                auto_approve,
+                loop,
+                resolve_gate,
+                decision,
+                note,
+                target_spec,
+                split_proposal,
+                apply_split_proposal,
+                operator_note,
+                mutation_budget,
+                run_authority,
+                execution_profile,
+                child_model,
+                child_timeout_seconds,
+                verbose,
+                list_stale_runtime,
+                clean_stale_runtime,
+                observe_graph_health_mode,
+                operator_request_packet_path,
+            )
+        ):
+            print(
+                "--build-local-operator-executor-task-smoke must be used as a standalone command",
+                file=sys.stderr,
+            )
+            return 1
+        index = build_local_operator_executor_task_smoke()
+        write_local_operator_executor_task_smoke(index)
         emit_supervisor_json(index, output_mode=normalized_output_mode)
         return 0 if index.get("summary", {}).get("status") == "passed" else 1
 
@@ -46728,6 +47252,14 @@ if __name__ == "__main__":
         ),
     )
     parser.add_argument(
+        "--build-local-operator-executor-task-smoke",
+        action="store_true",
+        help=(
+            "Run a local-only bounded executor task after readiness and probe smoke pass, "
+            "without mutating canonical specs or publishing local artifacts"
+        ),
+    )
+    parser.add_argument(
         "--build-agent-passport-derived-surfaces",
         action="store_true",
         help=(
@@ -47069,6 +47601,9 @@ if __name__ == "__main__":
                 args.build_local_operator_executor_readiness
             ),
             build_local_operator_executor_smoke_mode=args.build_local_operator_executor_smoke,
+            build_local_operator_executor_task_smoke_mode=(
+                args.build_local_operator_executor_task_smoke
+            ),
             build_agent_passport_derived_surfaces_mode=(args.build_agent_passport_derived_surfaces),
             build_agent_runtime_enforcement_evidence_mode=(
                 args.build_agent_runtime_enforcement_evidence

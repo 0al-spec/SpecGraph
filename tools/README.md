@@ -123,6 +123,14 @@ Supervisor modes:
   `runs/local_operator_executor_readiness.json` and running only a bounded
   backend probe such as `codex --version`. This does not run an agent task, does
   not claim runtime enforcement, and is excluded from public static publishing.
+- `--build-local-operator-executor-task-smoke`: build local-only
+  `runs/local_operator_executor_task_smoke.json` by consuming both
+  `runs/local_operator_executor_readiness.json` and
+  `runs/local_operator_executor_smoke.json`, then running a bounded executor
+  task with a strict JSON response contract. The artifact stores only sanitized
+  status, response shape, and mutation guard results; it does not persist raw
+  executor logs, raw responses, absolute executable paths, or public static
+  output.
 - `--build-agent-passport-derived-surfaces`: build Agent Passport derived
   surfaces from `tools/agent_passport_adoption_policy.json` and the 0056
   executor adapter index, including report-only Agent Passport CLI validation
@@ -441,6 +449,12 @@ Key derived artifacts:
   that consumes the readiness artifact, runs only the policy-declared probe, and
   records sanitized status without raw logs, absolute executable paths, canonical
   mutations, or public static publication
+- `runs/local_operator_executor_task_smoke.json`: local-only bounded executor
+  task result that consumes readiness and smoke artifacts, asks the configured
+  backend for a strict `bounded_executor_task_smoke` JSON acknowledgement, and
+  records sanitized response and mutation guard evidence without raw logs, raw
+  responses, absolute executable paths, canonical mutations, or public static
+  publication
 - `runs/agent_surface_index.json`: read-only Agent Passport adoption surface
   index for graph-facing agents, including policy-declared surfaces and
   executor backends derived from the 0056 adapter index
