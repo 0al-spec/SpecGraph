@@ -19259,6 +19259,8 @@ def local_operator_executor_task_smoke_status(checks: list[dict[str, Any]]) -> s
     if status_by_id.get("executor_smoke_passed") != "passed":
         return "blocked_smoke_not_passed"
     invocation_status = status_by_id.get("executor_task_invocation_completed")
+    if invocation_status == "not_run":
+        return "blocked_policy_contract"
     if invocation_status == "missing":
         return "blocked_executor_unavailable"
     if invocation_status != "passed":

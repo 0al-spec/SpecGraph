@@ -28166,6 +28166,33 @@ def test_build_local_operator_executor_task_smoke_blocks_failed_smoke(
     assert checks["executor_task_invocation_completed"] == "not_run"
 
 
+def test_build_local_operator_executor_task_smoke_blocks_missing_default_backend(
+    supervisor_module: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    readiness = ready_local_operator_readiness()
+    readiness["summary"]["default_backend_id"] = ""
+    smoke = passed_local_operator_smoke()
+    smoke["summary"]["backend_id"] = ""
+    monkeypatch.setattr(
+        supervisor_module,
+        "run_local_operator_executor_task",
+        lambda **_kwargs: pytest.fail("task must not run without a backend id"),
+    )
+
+    task_smoke = supervisor_module.build_local_operator_executor_task_smoke(readiness, smoke)
+
+    assert task_smoke["summary"]["status"] == "blocked_policy_contract"
+    assert task_smoke["summary"]["next_gap"] == "repair_executor_adapter_policy_contract"
+    assert task_smoke["summary"]["backend_id"] == ""
+    checks = {check["check_id"]: check["status"] for check in task_smoke["checks"]}
+    assert checks["readiness_allows_task_smoke"] == "passed"
+    assert checks["executor_smoke_passed"] == "passed"
+    assert checks["executor_task_invocation_completed"] == "not_run"
+    assert checks["executor_task_response_valid"] == "not_run"
+    assert checks["no_canonical_mutation_attempted"] == "not_run"
+
+
 def test_build_local_operator_executor_task_smoke_blocks_missing_command(
     supervisor_module: object,
     monkeypatch: pytest.MonkeyPatch,
