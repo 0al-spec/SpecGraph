@@ -1168,5 +1168,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0091",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0091_bounded_executor_report_smoke.md"
+    ],
+    "motivating_concern": "SpecGraph has a generic executor report contract, but it has not yet proven that a local executor can produce a contract-valid report artifact without canonical mutation or unsafe payload persistence",
+    "normalized_title": "Bounded Executor Report Smoke",
+    "bounded_scope": "Add a local-only bounded executor report smoke artifact and Make target that consumes task smoke and report contract artifacts, runs only the policy-declared report task, validates the response with the generic report validator, records sanitized outcome and mutation guard evidence, and excludes the report from public static publish without creating proposals, applying patches, mutating canonical specs, or implementing Pi/SpecHarvester runtime integration.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

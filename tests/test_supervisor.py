@@ -27788,6 +27788,29 @@ def passed_local_operator_task_smoke() -> dict[str, object]:
     }
 
 
+def ready_local_operator_executor_report_contract() -> dict[str, object]:
+    return {
+        "artifact_kind": "local_operator_executor_report_contract",
+        "schema_version": 1,
+        "local_only": True,
+        "source_task_smoke_artifact": "runs/local_operator_executor_task_smoke.json",
+        "target_report_artifact": "runs/local_operator_executor_report.json",
+        "target_report_artifact_kind": "local_operator_executor_report",
+        "summary": {
+            "status": "ready_for_report_smoke",
+            "source_task_smoke_status": "passed",
+            "sample_report_valid": True,
+            "next_gap": "run_bounded_executor_report_smoke",
+        },
+        "checks": [
+            {"check_id": "task_smoke_passed", "status": "passed"},
+            {"check_id": "report_contract_sample_valid", "status": "passed"},
+            {"check_id": "privacy_boundary_declared", "status": "passed"},
+            {"check_id": "static_publish_excluded", "status": "passed"},
+        ],
+    }
+
+
 def test_build_local_operator_executor_smoke_runs_probe_after_ready_readiness(
     supervisor_module: object,
     monkeypatch: pytest.MonkeyPatch,
@@ -28713,6 +28736,387 @@ def test_main_builds_local_operator_executor_report_contract_as_standalone_comma
         )
     )
     assert artifact["summary"] == {"status": "ready_for_report_smoke"}
+
+
+def test_build_local_operator_executor_report_smoke_runs_after_ready_contract(
+    supervisor_module: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    safe_report = supervisor_module.default_local_operator_executor_report_sample()
+    validation = supervisor_module.validate_local_operator_executor_report(safe_report)
+    monkeypatch.setattr(
+        supervisor_module,
+        "run_local_operator_executor_report_task",
+        lambda **_kwargs: {
+            "status": "passed",
+            "exit_code": 0,
+            "timed_out": False,
+            "command": {
+                "command_name": "codex",
+                "resolution_source": "path",
+                "path_persisted": False,
+            },
+            "command_executed": True,
+            "stdout_persisted": False,
+            "stderr_persisted": False,
+            "raw_response_persisted": False,
+            "tracked_status_unchanged": True,
+            "response": {
+                "parsed": True,
+                "valid": True,
+                "safe_report": safe_report,
+                "validation": {
+                    "valid": True,
+                    "finding_count": 0,
+                    "findings": [],
+                    "normalized": validation["normalized"],
+                },
+            },
+        },
+    )
+
+    report = supervisor_module.build_local_operator_executor_report_smoke(
+        passed_local_operator_task_smoke(),
+        ready_local_operator_executor_report_contract(),
+    )
+
+    assert report["artifact_kind"] == "local_operator_executor_report"
+    assert report["schema_version"] == 1
+    assert report["local_only"] is True
+    assert report["summary"]["status"] == "valid_report"
+    assert report["smoke_summary"] == {
+        "status": "passed",
+        "backend_id": "codex",
+        "source_task_smoke_status": "passed",
+        "source_report_contract_status": "ready_for_report_smoke",
+        "report_valid": True,
+        "next_gap": "define_executor_report_consumption_policy",
+    }
+    assert report["execution"]["command"] == {
+        "command_name": "codex",
+        "resolution_source": "path",
+        "path_persisted": False,
+    }
+    assert report["execution"]["stdout_persisted"] is False
+    assert report["execution"]["stderr_persisted"] is False
+    assert report["execution"]["raw_response_persisted"] is False
+    assert report["report_validation"]["valid"] is True
+    assert report["report_validation"]["raw_report_persisted"] is True
+    checks = {check["check_id"]: check["status"] for check in report["checks"]}
+    assert checks == {
+        "task_smoke_passed": "passed",
+        "report_contract_ready": "passed",
+        "executor_report_invocation_completed": "passed",
+        "executor_report_valid": "passed",
+        "no_canonical_mutation_attempted": "passed",
+    }
+    assert report["viewer_projection"]["named_filters"]["passed"] == ["codex"]
+    assert supervisor_module.validate_local_operator_executor_report(report)["valid"] is True
+    dumped = json.dumps(report, sort_keys=True)
+    assert "/fake/bin/codex" not in dumped
+    assert "raw stdout" not in dumped.lower()
+
+
+def test_build_local_operator_executor_report_smoke_blocks_missing_task_smoke(
+    supervisor_module: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        supervisor_module,
+        "load_local_operator_executor_task_smoke_artifact",
+        lambda: None,
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "load_local_operator_executor_report_contract_artifact",
+        ready_local_operator_executor_report_contract,
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "run_local_operator_executor_report_task",
+        lambda **_kwargs: pytest.fail("report task must not run without task smoke"),
+    )
+
+    report = supervisor_module.build_local_operator_executor_report_smoke()
+
+    assert report["summary"]["status"] == "invalid_report"
+    assert report["smoke_summary"]["status"] == "blocked_task_smoke_not_passed"
+    assert report["smoke_summary"]["next_gap"] == "run_executor_task_smoke_until_passed"
+    checks = {check["check_id"]: check["status"] for check in report["checks"]}
+    assert checks["task_smoke_passed"] == "failed"
+    assert checks["report_contract_ready"] == "passed"
+    assert checks["executor_report_invocation_completed"] == "not_run"
+    assert checks["no_canonical_mutation_attempted"] == "not_run"
+
+
+def test_build_local_operator_executor_report_smoke_blocks_unready_report_contract(
+    supervisor_module: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    report_contract = ready_local_operator_executor_report_contract()
+    report_contract["summary"]["status"] = "blocked_task_smoke_not_passed"
+    monkeypatch.setattr(
+        supervisor_module,
+        "run_local_operator_executor_report_task",
+        lambda **_kwargs: pytest.fail("report task must not run without ready contract"),
+    )
+
+    report = supervisor_module.build_local_operator_executor_report_smoke(
+        passed_local_operator_task_smoke(),
+        report_contract,
+    )
+
+    assert report["smoke_summary"]["status"] == "blocked_report_contract_not_ready"
+    assert report["smoke_summary"]["next_gap"] == "run_executor_report_contract_until_ready"
+    checks = {check["check_id"]: check["status"] for check in report["checks"]}
+    assert checks["task_smoke_passed"] == "passed"
+    assert checks["report_contract_ready"] == "failed"
+    assert checks["executor_report_invocation_completed"] == "not_run"
+
+
+def test_build_local_operator_executor_report_smoke_blocks_missing_command(
+    supervisor_module: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        supervisor_module,
+        "run_local_operator_executor_report_task",
+        lambda **_kwargs: {
+            "status": "missing",
+            "exit_code": None,
+            "timed_out": False,
+            "command": {
+                "command_name": "",
+                "resolution_source": "not_found",
+                "path_persisted": False,
+            },
+            "command_executed": False,
+            "stdout_persisted": False,
+            "stderr_persisted": False,
+            "raw_response_persisted": False,
+            "tracked_status_unchanged": None,
+            "response": {
+                "parsed": False,
+                "valid": False,
+                "safe_report": None,
+                "validation": {
+                    "valid": False,
+                    "finding_count": 0,
+                    "findings": [],
+                    "normalized": {},
+                },
+            },
+        },
+    )
+
+    report = supervisor_module.build_local_operator_executor_report_smoke(
+        passed_local_operator_task_smoke(),
+        ready_local_operator_executor_report_contract(),
+    )
+
+    assert report["smoke_summary"]["status"] == "blocked_executor_unavailable"
+    assert report["smoke_summary"]["next_gap"] == "configure_local_operator_executable"
+    checks = {check["check_id"]: check["status"] for check in report["checks"]}
+    assert checks["executor_report_invocation_completed"] == "missing"
+    assert checks["no_canonical_mutation_attempted"] == "not_run"
+
+
+def test_build_local_operator_executor_report_smoke_rejects_invalid_report(
+    supervisor_module: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    finding = {
+        "code": "forbidden_raw_or_secret_field",
+        "field": "report.Authorization",
+        "message": "report.Authorization must not be persisted in executor reports.",
+    }
+    monkeypatch.setattr(
+        supervisor_module,
+        "run_local_operator_executor_report_task",
+        lambda **_kwargs: {
+            "status": "failed",
+            "exit_code": 0,
+            "timed_out": False,
+            "command": {
+                "command_name": "codex",
+                "resolution_source": "path",
+                "path_persisted": False,
+            },
+            "command_executed": True,
+            "stdout_persisted": False,
+            "stderr_persisted": False,
+            "raw_response_persisted": False,
+            "tracked_status_unchanged": True,
+            "response": {
+                "parsed": True,
+                "valid": False,
+                "safe_report": None,
+                "validation": {
+                    "valid": False,
+                    "finding_count": 1,
+                    "findings": [finding],
+                    "normalized": {},
+                },
+            },
+        },
+    )
+
+    report = supervisor_module.build_local_operator_executor_report_smoke(
+        passed_local_operator_task_smoke(),
+        ready_local_operator_executor_report_contract(),
+    )
+
+    assert report["summary"]["status"] == "invalid_report"
+    assert report["smoke_summary"]["status"] == "failed_invalid_report"
+    assert report["smoke_summary"]["next_gap"] == "repair_executor_report_contract"
+    assert report["report_validation"]["valid"] is False
+    assert report["report_validation"]["raw_report_persisted"] is False
+    checks = {check["check_id"]: check["status"] for check in report["checks"]}
+    assert checks["executor_report_invocation_completed"] == "passed"
+    assert checks["executor_report_valid"] == "failed"
+    assert checks["no_canonical_mutation_attempted"] == "passed"
+    dumped = json.dumps(report, sort_keys=True)
+    assert "Bearer" not in dumped
+    assert "local-token" not in dumped
+
+
+def test_build_local_operator_executor_report_smoke_blocks_mutation_guard(
+    supervisor_module: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    safe_report = supervisor_module.default_local_operator_executor_report_sample()
+    validation = supervisor_module.validate_local_operator_executor_report(safe_report)
+    monkeypatch.setattr(
+        supervisor_module,
+        "run_local_operator_executor_report_task",
+        lambda **_kwargs: {
+            "status": "passed",
+            "exit_code": 0,
+            "timed_out": False,
+            "command": {
+                "command_name": "codex",
+                "resolution_source": "path",
+                "path_persisted": False,
+            },
+            "command_executed": True,
+            "stdout_persisted": False,
+            "stderr_persisted": False,
+            "raw_response_persisted": False,
+            "tracked_status_unchanged": False,
+            "response": {
+                "parsed": True,
+                "valid": True,
+                "safe_report": safe_report,
+                "validation": {
+                    "valid": True,
+                    "finding_count": 0,
+                    "findings": [],
+                    "normalized": validation["normalized"],
+                },
+            },
+        },
+    )
+
+    report = supervisor_module.build_local_operator_executor_report_smoke(
+        passed_local_operator_task_smoke(),
+        ready_local_operator_executor_report_contract(),
+    )
+
+    assert report["smoke_summary"]["status"] == "failed_mutation_guard"
+    assert report["smoke_summary"]["next_gap"] == "repair_executor_report_smoke_mutation_boundary"
+    assert report["report_validation"]["raw_report_persisted"] is False
+    checks = {check["check_id"]: check["status"] for check in report["checks"]}
+    assert checks["executor_report_valid"] == "passed"
+    assert checks["no_canonical_mutation_attempted"] == "failed"
+
+
+def test_run_local_operator_executor_report_task_does_not_persist_raw_output_or_paths(
+    supervisor_module: object,
+    git_repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(supervisor_module, "ROOT", git_repo_fixture)
+
+    def fake_command(
+        *,
+        backend_id: str,
+        output_schema_path: Path,
+        output_last_message_path: Path,
+        prompt: str,
+    ) -> tuple[list[str], dict[str, object]]:
+        del backend_id, output_schema_path, prompt
+        response = json.dumps(supervisor_module.default_local_operator_executor_report_sample())
+        script = (
+            "from pathlib import Path; "
+            f"Path({str(output_last_message_path)!r}).write_text({response!r}, "
+            "encoding='utf-8'); "
+            "print('raw stdout with /private/tmp/secret-report')"
+        )
+        return [
+            sys.executable,
+            "-c",
+            script,
+        ], {
+            "command_name": Path(sys.executable).name,
+            "resolution_source": "test",
+            "path_persisted": False,
+        }
+
+    monkeypatch.setattr(
+        supervisor_module,
+        "executor_report_invocation_command_from_backend",
+        fake_command,
+    )
+
+    result = supervisor_module.run_local_operator_executor_report_task(
+        backend_id="codex",
+        timeout_seconds=15,
+    )
+
+    assert result["status"] == "passed"
+    assert result["stdout_persisted"] is False
+    assert result["stderr_persisted"] is False
+    assert result["raw_response_persisted"] is False
+    assert result["response"]["valid"] is True
+    assert result["tracked_status_unchanged"] is True
+    dumped = json.dumps(result, sort_keys=True)
+    assert sys.executable not in dumped
+    assert git_repo_fixture.as_posix() not in dumped
+    assert "raw stdout" not in dumped
+    assert "secret-report" not in dumped
+
+
+def test_main_builds_local_operator_executor_report_smoke_as_standalone_command(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_local_operator_executor_report_smoke",
+        lambda: {
+            "artifact_kind": supervisor_module.LOCAL_OPERATOR_EXECUTOR_REPORT_ARTIFACT_KIND,
+            "schema_version": (
+                supervisor_module.LOCAL_OPERATOR_EXECUTOR_REPORT_CONTRACT_SCHEMA_VERSION
+            ),
+            "local_only": True,
+            "summary": {"status": "valid_report"},
+            "smoke_summary": {"status": "passed", "backend_id": "codex"},
+            "checks": [],
+            "viewer_projection": {"named_filters": {"passed": ["codex"]}},
+        },
+    )
+
+    exit_code = supervisor_module.main(build_local_operator_executor_report_smoke_mode=True)
+
+    assert exit_code == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["artifact_kind"] == supervisor_module.LOCAL_OPERATOR_EXECUTOR_REPORT_ARTIFACT_KIND
+    artifact = json.loads(
+        (repo_fixture / "runs" / "local_operator_executor_report.json").read_text(encoding="utf-8")
+    )
+    assert artifact["smoke_summary"] == {"status": "passed", "backend_id": "codex"}
 
 
 def test_agent_passport_adoption_policy_declares_surface_and_gap_contract(

@@ -137,6 +137,12 @@ Supervisor modes:
   `coding_agent`, `harvester`, `operator_tool`, and `external_harness`
   producers, validates sample report shape without running a new executor task,
   and keeps report contract diagnostics out of public static publishing.
+- `--build-local-operator-executor-report-smoke`: build local-only
+  `runs/local_operator_executor_report.json` by consuming the task smoke and
+  report contract artifacts, running a bounded report-only executor task,
+  validating the returned report through the generic report validator, and
+  recording sanitized smoke and mutation metadata without publishing the
+  artifact.
 - `--build-agent-passport-derived-surfaces`: build Agent Passport derived
   surfaces from `tools/agent_passport_adoption_policy.json` and the 0056
   executor adapter index, including report-only Agent Passport CLI validation
@@ -466,6 +472,11 @@ Key derived artifacts:
   producer kinds, authority levels, report kinds, sanitized sample validation,
   and next-gap guidance without persisting raw report bodies or public static
   publication
+- `runs/local_operator_executor_report.json`: local-only bounded executor
+  report smoke artifact that contains a contract-valid report when the smoke
+  passes, or a sanitized `invalid_report` fallback when validation fails, with
+  `smoke_summary`, source validations, execution metadata, and mutation guard
+  checks excluded from public static publishing
 - `runs/agent_surface_index.json`: read-only Agent Passport adoption surface
   index for graph-facing agents, including policy-declared surfaces and
   executor backends derived from the 0056 adapter index
