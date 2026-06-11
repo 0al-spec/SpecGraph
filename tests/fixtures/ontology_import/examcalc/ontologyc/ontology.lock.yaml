@@ -1,0 +1,14 @@
+apiVersion: specgraph.io/v1alpha1
+kind: OntologyLockfile
+metadata:
+  project: ontologyc-adapter-report-fixture
+spec:
+  resolved:
+    - ontology: edu.university.examcalc
+      namespace: examcalc
+      version: 0.1.0
+      digest: sha256:7cdf061c1c845e0d0d801c7d935b6d4b765db1317ec595910da2cb910eca9e2f
+      registryUri: git+https://github.com/0al-spec/Ontology.git
+      aliases:
+        Exam: examcalc:Exam
+        requires_policy: examcalc:requires_policy

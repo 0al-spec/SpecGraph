@@ -11,6 +11,9 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURE = ROOT / "tests" / "fixtures" / "ontology_import" / "examcalc" / "import-fixture.yaml"
+ADAPTER_REPORT = (
+    ROOT / "tests" / "fixtures" / "ontology_import" / "examcalc" / "ontologyc-adapter-report.yaml"
+)
 
 
 def load_ontology_imports_module() -> object:
@@ -25,6 +28,12 @@ def load_ontology_imports_module() -> object:
 
 def load_fixture_payload() -> dict[str, object]:
     payload = yaml.safe_load(FIXTURE.read_text(encoding="utf-8"))
+    assert isinstance(payload, dict)
+    return payload
+
+
+def load_adapter_report_payload() -> dict[str, object]:
+    payload = yaml.safe_load(ADAPTER_REPORT.read_text(encoding="utf-8"))
     assert isinstance(payload, dict)
     return payload
 
@@ -51,6 +60,23 @@ def write_temp_fixture(tmp_path: Path, payload: dict[str, object]) -> Path:
     return fixture_path
 
 
+def write_temp_adapter_report(tmp_path: Path, payload: dict[str, object]) -> Path:
+    fixture_dir = tmp_path / "tests" / "fixtures" / "ontology_import" / "examcalc"
+    fixture_dir.mkdir(parents=True, exist_ok=True)
+    source_dir = ROOT / "tests" / "fixtures" / "ontology_import" / "examcalc"
+    for relative in (
+        "ontologyc/concept-refs.yaml",
+        "ontologyc/ontology.lock.yaml",
+        "ontologyc/ontology-gaps.yaml",
+    ):
+        target = fixture_dir / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text((source_dir / relative).read_text(encoding="utf-8"), encoding="utf-8")
+    report_path = fixture_dir / "ontologyc-adapter-report.yaml"
+    report_path.write_text(yaml.safe_dump(payload, sort_keys=False), encoding="utf-8")
+    return report_path
+
+
 def test_ontology_import_policy_defines_read_only_contract() -> None:
     policy = json.loads((ROOT / "tools" / "ontology_import_policy.json").read_text())
 
@@ -63,6 +89,12 @@ def test_ontology_import_policy_defines_read_only_contract() -> None:
     )
     assert "local_pseudo_concepts" in policy["package_ref_contract"]["forbidden_sources"]
     assert policy["concept_ref_contract"]["unresolved_ref_action"] == "emit_ontology_gap"
+    contract = policy["ontologyc_adapter_report_contract"]
+    assert contract["accepted_tool"] == "ontologyc"
+    assert contract["accepted_command"] == "validate-specgraph"
+    assert contract["digest_validation"] == ("package.digest_must_match_normalized_ir_sourceDigest")
+    assert contract["ontology_lock_output_authority"] == "non_canonical_report_artifact"
+    assert "canonical_spec_mutation" in contract["forbidden_effects"]
 
 
 def test_ontology_import_fixture_resolves_known_refs_and_gaps() -> None:
@@ -143,6 +175,44 @@ def test_ontology_import_governance_and_prompt_surfaces_are_derived() -> None:
     }
 
 
+def test_ontologyc_adapter_report_smoke_validates_report_contract() -> None:
+    module = load_ontology_imports_module()
+
+    surfaces = module.build_ontology_import_surfaces(
+        FIXTURE,
+        adapter_report_path=ADAPTER_REPORT,
+    )
+
+    smoke = surfaces["adapter_report_smoke"]
+    assert smoke["artifact_kind"] == "ontologyc_adapter_report_smoke"
+    assert smoke["canonical_mutations_allowed"] is False
+    assert smoke["tracked_artifacts_written"] is False
+    assert smoke["accepted_report_kind"] == "ontologyc_adapter_report"
+    assert smoke["adapter_command"] == "validate-specgraph"
+    assert smoke["source_authority"] == {
+        "package_id": "edu.university.examcalc",
+        "namespace": "examcalc",
+        "version": "0.1.0",
+        "source_uri": "git+https://github.com/0al-spec/Ontology.git",
+        "source_ref": "main",
+        "digest": ("sha256:7cdf061c1c845e0d0d801c7d935b6d4b765db1317ec595910da2cb910eca9e2f"),
+        "digest_validation": "package.digest_must_match_normalized_ir_sourceDigest",
+    }
+    assert smoke["summary"] == {
+        "status": "passed",
+        "resolved_ref_count": 2,
+        "gap_count": 1,
+        "next_gap": "review_ontology_import_gap",
+    }
+    assert {check["check_id"] for check in smoke["checks"]} == {
+        "adapter_report_shape_valid",
+        "adapter_report_source_version_digest_match",
+        "adapter_report_outputs_resolve",
+        "adapter_report_counts_match_outputs",
+        "adapter_report_authority_boundary_preserved",
+    }
+
+
 def test_make_ontology_imports_writes_declared_surfaces() -> None:
     subprocess.run(
         ["make", "ontology-imports", f"PYTHON={sys.executable}"],
@@ -157,6 +227,7 @@ def test_make_ontology_imports_writes_declared_surfaces() -> None:
         "runs/ontology_governance_evidence_index.json": "ontology_governance_evidence_index",
         "runs/ontology_binding_preview.json": "ontology_binding_preview",
         "runs/ontology_prompt_invocation_index.json": "ontology_prompt_invocation_index",
+        "runs/ontologyc_adapter_report_smoke.json": "ontologyc_adapter_report_smoke",
     }
     for relative_path, artifact_kind in expected.items():
         payload = json.loads((ROOT / relative_path).read_text())
@@ -241,6 +312,44 @@ def test_ontology_import_missing_governance_emits_evidence_gap(tmp_path: Path) -
     }
 
 
+def test_ontologyc_adapter_report_rejects_digest_mismatch(tmp_path: Path) -> None:
+    module = load_ontology_imports_module()
+    module.ROOT = tmp_path
+    fixture_path = write_temp_fixture(tmp_path, load_fixture_payload())
+    policy_path = write_temp_policy(tmp_path)
+    report = load_adapter_report_payload()
+    assert isinstance(report["package"], dict)
+    report["package"]["digest"] = (
+        "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+    )
+    report_path = write_temp_adapter_report(tmp_path, report)
+
+    with pytest.raises(ValueError, match="digest"):
+        module.build_ontology_import_surfaces(
+            fixture_path,
+            policy_path=policy_path,
+            adapter_report_path=report_path,
+        )
+
+
+def test_ontologyc_adapter_report_rejects_authority_expansion(tmp_path: Path) -> None:
+    module = load_ontology_imports_module()
+    module.ROOT = tmp_path
+    fixture_path = write_temp_fixture(tmp_path, load_fixture_payload())
+    policy_path = write_temp_policy(tmp_path)
+    report = load_adapter_report_payload()
+    assert isinstance(report["authority_boundary"], dict)
+    report["authority_boundary"]["automatic_canonical_node_update"] = True
+    report_path = write_temp_adapter_report(tmp_path, report)
+
+    with pytest.raises(ValueError, match="automatic_canonical_node_update"):
+        module.build_ontology_import_surfaces(
+            fixture_path,
+            policy_path=policy_path,
+            adapter_report_path=report_path,
+        )
+
+
 def test_ontology_import_write_rejects_outputs_outside_allowed_roots(tmp_path: Path) -> None:
     module = load_ontology_imports_module()
     surfaces = module.build_ontology_import_surfaces(FIXTURE)
@@ -271,7 +380,15 @@ def test_proposal_0060_runtime_registry_tracks_slice() -> None:
 
     assert ("tools/ontology_imports.py", "def build_ontology_import_surfaces(") in runtime_markers
     assert (
+        "tools/ontology_imports.py",
+        "def build_ontologyc_adapter_report_smoke(",
+    ) in runtime_markers
+    assert (
         "tests/test_ontology_import_policy.py",
         "def test_ontology_import_fixture_resolves_known_refs_and_gaps(",
+    ) in validation_markers
+    assert (
+        "tests/test_ontology_import_policy.py",
+        "def test_ontologyc_adapter_report_smoke_validates_report_contract(",
     ) in validation_markers
     assert ("Makefile", "ontology-imports:") in observation_markers

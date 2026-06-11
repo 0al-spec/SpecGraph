@@ -1,0 +1,33 @@
+artifact_kind: ontologyc_adapter_report
+schema_version: 1
+proposal_id: "0060"
+producer:
+  tool: ontologyc
+  command: validate-specgraph
+  command_contract_ref: Ontology:SPECS/ontology/ontologyc.md#validate-specgraph
+package:
+  package_id: edu.university.examcalc
+  namespace: examcalc
+  version: 0.1.0
+  source_uri: git+https://github.com/0al-spec/Ontology.git
+  source_ref: main
+  digest: sha256:7cdf061c1c845e0d0d801c7d935b6d4b765db1317ec595910da2cb910eca9e2f
+inputs:
+  binding_ref: import-fixture.yaml
+  normalized_ir_ref: ontology.normalized.json
+outputs:
+  concept_refs_ref: ontologyc/concept-refs.yaml
+  ontology_lock_ref: ontologyc/ontology.lock.yaml
+  ontology_gaps_ref: ontologyc/ontology-gaps.yaml
+summary:
+  status: passed
+  resolved_ref_count: 2
+  gap_count: 1
+  canonical_mutations_allowed: false
+  tracked_artifacts_written: false
+authority_boundary:
+  report_is_authority: false
+  digest_authority: normalized_ir_sourceDigest
+  ontology_lock_is_canonical: false
+  automatic_import_lock_update: false
+  automatic_canonical_node_update: false

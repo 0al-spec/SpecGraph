@@ -1,0 +1,18 @@
+apiVersion: specgraph.io/v1alpha1
+kind: OntologyGapSet
+metadata:
+  source: import-fixture.yaml
+spec:
+  gaps:
+    - apiVersion: specgraph.io/v1alpha1
+      kind: OntologyGap
+      metadata:
+        id: gap-001
+      spec:
+        sourceArtifact:
+          kind: requirement
+          id: REQ-EXAMCALC-0060
+        missingConcept: examcalc:CASFunction
+        targetOntology: edu.university.examcalc
+        requestedAction:
+          type: proposeOntologyDelta

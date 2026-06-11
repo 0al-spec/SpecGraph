@@ -14,6 +14,7 @@ import yaml
 ROOT = Path(__file__).resolve().parents[1]
 POLICY_PATH = ROOT / "tools" / "ontology_import_policy.json"
 CONCEPT_REF_PATTERN = re.compile(r"^[A-Za-z][A-Za-z0-9_]*:[A-Za-z][A-Za-z0-9_]*$")
+DIGEST_PATTERN = re.compile(r"^sha256:[0-9a-f]{64}$")
 
 REF_CATEGORIES = {
     "classes": "class",
@@ -212,10 +213,332 @@ def require_layout_path(layout: dict[str, Any], key: str) -> str:
     return value
 
 
+def require_bool(mapping: dict[str, Any], field: str, context: str) -> bool:
+    value = mapping.get(field)
+    if not isinstance(value, bool):
+        raise ValueError(f"{context}.{field} must be a boolean")
+    return value
+
+
+def require_int(mapping: dict[str, Any], field: str, context: str) -> int:
+    value = mapping.get(field)
+    if not isinstance(value, int):
+        raise ValueError(f"{context}.{field} must be an integer")
+    return value
+
+
+def require_string_list(mapping: dict[str, Any], field: str, context: str) -> list[str]:
+    value = mapping.get(field)
+    if not isinstance(value, list) or not all(isinstance(item, str) for item in value):
+        raise ValueError(f"{context}.{field} must be a list of strings")
+    return value
+
+
+def require_digest(value: str, context: str) -> None:
+    if not DIGEST_PATTERN.fullmatch(value):
+        raise ValueError(f"{context} must be a sha256:<64 lowercase hex> digest")
+
+
+def ontologyc_adapter_report_contract(policy: dict[str, Any]) -> dict[str, Any]:
+    contract = policy.get("ontologyc_adapter_report_contract")
+    if not isinstance(contract, dict):
+        raise ValueError("policy.ontologyc_adapter_report_contract must be an object")
+    return contract
+
+
+def resolve_report_file(report_path: Path, relative: str, context: str) -> Path:
+    return resolve_fixture_file(report_path, relative, context)
+
+
+def output_ref_aliases(payload: dict[str, Any]) -> list[str]:
+    spec = require_object(payload, "spec", "adapter_output")
+    refs = spec.get("refs")
+    if not isinstance(refs, list):
+        raise ValueError("adapter_output.spec.refs must be a list")
+    aliases = []
+    for index, item in enumerate(refs):
+        if not isinstance(item, dict):
+            raise ValueError(f"adapter_output.spec.refs[{index}] must be an object")
+        aliases.append(require_string(item, "alias", f"adapter_output.spec.refs[{index}]"))
+    return aliases
+
+
+def output_gap_refs(payload: dict[str, Any]) -> list[str]:
+    spec = require_object(payload, "spec", "adapter_output")
+    gaps = spec.get("gaps")
+    if not isinstance(gaps, list):
+        raise ValueError("adapter_output.spec.gaps must be a list")
+    missing_refs = []
+    for index, item in enumerate(gaps):
+        if not isinstance(item, dict):
+            raise ValueError(f"adapter_output.spec.gaps[{index}] must be an object")
+        gap_spec = require_object(item, "spec", f"adapter_output.spec.gaps[{index}]")
+        missing_refs.append(
+            require_string(gap_spec, "missingConcept", f"adapter_output.spec.gaps[{index}].spec")
+        )
+    return missing_refs
+
+
+def validate_ontology_lock_output(payload: dict[str, Any], package: dict[str, Any]) -> None:
+    if require_string(payload, "kind", "ontology_lock_output") != "OntologyLockfile":
+        raise ValueError("ontology_lock_output.kind must be OntologyLockfile")
+    spec = require_object(payload, "spec", "ontology_lock_output")
+    resolved = spec.get("resolved")
+    if not isinstance(resolved, list) or not resolved:
+        raise ValueError("ontology_lock_output.spec.resolved must be a non-empty list")
+    first = resolved[0]
+    if not isinstance(first, dict):
+        raise ValueError("ontology_lock_output.spec.resolved[0] must be an object")
+    expected = {
+        "ontology": package["package_id"],
+        "namespace": package["namespace"],
+        "version": package["version"],
+    }
+    mismatches = [
+        f"{field} expected {expected_value!r}, got {first.get(field)!r}"
+        for field, expected_value in expected.items()
+        if first.get(field) != expected_value
+    ]
+    if mismatches:
+        raise ValueError(f"ontology_lock_output metadata mismatch: {'; '.join(mismatches)}")
+
+
+def validate_ontologyc_adapter_report(
+    policy: dict[str, Any],
+    *,
+    fixture_path: Path,
+    report_path: Path,
+    fixture: dict[str, Any],
+    package: dict[str, Any],
+    ir: dict[str, Any],
+    ir_path: Path,
+    resolved_refs: list[dict[str, Any]],
+    unresolved_refs: list[str],
+) -> list[dict[str, Any]]:
+    contract = ontologyc_adapter_report_contract(policy)
+    report = load_yaml(report_path)
+
+    accepted_kind = require_string(contract, "accepted_report_kind", "adapter_report_contract")
+    if require_string(report, "artifact_kind", "adapter_report") != accepted_kind:
+        raise ValueError(f"adapter_report.artifact_kind must be {accepted_kind}")
+    if require_int(report, "schema_version", "adapter_report") != int(
+        contract.get("schema_version", 1)
+    ):
+        raise ValueError("adapter_report.schema_version does not match policy")
+    if require_string(report, "proposal_id", "adapter_report") != fixture["proposal_id"]:
+        raise ValueError("adapter_report.proposal_id does not match fixture")
+
+    producer = require_object(report, "producer", "adapter_report")
+    if require_string(producer, "tool", "adapter_report.producer") != require_string(
+        contract, "accepted_tool", "adapter_report_contract"
+    ):
+        raise ValueError("adapter_report.producer.tool is not accepted")
+    if require_string(producer, "command", "adapter_report.producer") != require_string(
+        contract, "accepted_command", "adapter_report_contract"
+    ):
+        raise ValueError("adapter_report.producer.command is not accepted")
+
+    report_package = require_object(report, "package", "adapter_report")
+    required_fields = require_string_list(
+        contract, "required_package_fields", "adapter_report_contract"
+    )
+    for field in required_fields:
+        require_string(report_package, field, "adapter_report.package")
+    require_digest(report_package["digest"], "adapter_report.package.digest")
+
+    authority_fields = require_string_list(contract, "authority_fields", "adapter_report_contract")
+    for field in authority_fields:
+        _, _, package_field = field.partition(".")
+        if not package_field:
+            raise ValueError("adapter_report_contract.authority_fields must use package.<field>")
+        if report_package.get(package_field) != package.get(package_field):
+            raise ValueError(f"adapter_report.package.{package_field} does not match fixture")
+
+    validate_ir_metadata(ir, report_package)
+    if ir_path != resolve_report_file(
+        report_path,
+        require_string(
+            require_object(report, "inputs", "adapter_report"),
+            "normalized_ir_ref",
+            "adapter_report.inputs",
+        ),
+        "adapter_report.inputs.normalized_ir_ref",
+    ):
+        raise ValueError("adapter_report.inputs.normalized_ir_ref does not match fixture IR")
+
+    inputs = require_object(report, "inputs", "adapter_report")
+    binding_ref = resolve_report_file(
+        report_path,
+        require_string(inputs, "binding_ref", "adapter_report.inputs"),
+        "adapter_report.inputs.binding_ref",
+    )
+    if binding_ref != fixture_path.resolve():
+        raise ValueError("adapter_report.inputs.binding_ref does not match fixture")
+
+    outputs = require_object(report, "outputs", "adapter_report")
+    required_output_refs = require_string_list(
+        contract, "required_output_refs", "adapter_report_contract"
+    )
+    for field in required_output_refs:
+        require_string(outputs, field, "adapter_report.outputs")
+
+    concept_refs_output = load_yaml(
+        resolve_report_file(
+            report_path,
+            outputs["concept_refs_ref"],
+            "adapter_report.outputs.concept_refs_ref",
+        )
+    )
+    if require_string(concept_refs_output, "kind", "concept_refs_output") != "ConceptRefSet":
+        raise ValueError("concept_refs_output.kind must be ConceptRefSet")
+    concept_metadata = require_object(concept_refs_output, "metadata", "concept_refs_output")
+    for field, expected in (
+        ("ontology", report_package["package_id"]),
+        ("namespace", report_package["namespace"]),
+        ("version", report_package["version"]),
+    ):
+        if concept_metadata.get(field) != expected:
+            raise ValueError(f"concept_refs_output.metadata.{field} does not match package")
+    output_aliases = sorted(output_ref_aliases(concept_refs_output))
+    expected_aliases = sorted(entry["source_ref"] for entry in resolved_refs)
+    if output_aliases != expected_aliases:
+        raise ValueError("concept_refs_output aliases do not match resolved report refs")
+
+    ontology_gaps_output = load_yaml(
+        resolve_report_file(
+            report_path,
+            outputs["ontology_gaps_ref"],
+            "adapter_report.outputs.ontology_gaps_ref",
+        )
+    )
+    if require_string(ontology_gaps_output, "kind", "ontology_gaps_output") != "OntologyGapSet":
+        raise ValueError("ontology_gaps_output.kind must be OntologyGapSet")
+    output_gaps = sorted(output_gap_refs(ontology_gaps_output))
+    if output_gaps != sorted(unresolved_refs):
+        raise ValueError("ontology_gaps_output gaps do not match unresolved report refs")
+
+    ontology_lock_output = load_yaml(
+        resolve_report_file(
+            report_path,
+            outputs["ontology_lock_ref"],
+            "adapter_report.outputs.ontology_lock_ref",
+        )
+    )
+    validate_ontology_lock_output(ontology_lock_output, report_package)
+
+    summary = require_object(report, "summary", "adapter_report")
+    status = require_string(summary, "status", "adapter_report.summary")
+    if status not in require_string_list(contract, "status_values", "adapter_report_contract"):
+        raise ValueError("adapter_report.summary.status is not accepted")
+    if status != require_string(contract, "smoke_required_status", "adapter_report_contract"):
+        raise ValueError("adapter_report.summary.status is not ready for smoke")
+    if require_int(summary, "resolved_ref_count", "adapter_report.summary") != len(resolved_refs):
+        raise ValueError("adapter_report.summary.resolved_ref_count does not match outputs")
+    if require_int(summary, "gap_count", "adapter_report.summary") != len(unresolved_refs):
+        raise ValueError("adapter_report.summary.gap_count does not match outputs")
+    for field in ("canonical_mutations_allowed", "tracked_artifacts_written"):
+        if require_bool(summary, field, "adapter_report.summary") is not False:
+            raise ValueError(f"adapter_report.summary.{field} must be false")
+
+    boundary = require_object(report, "authority_boundary", "adapter_report")
+    for field in (
+        "report_is_authority",
+        "ontology_lock_is_canonical",
+        "automatic_import_lock_update",
+        "automatic_canonical_node_update",
+    ):
+        if require_bool(boundary, field, "adapter_report.authority_boundary") is not False:
+            raise ValueError(f"adapter_report.authority_boundary.{field} must be false")
+
+    return [
+        {
+            "check_id": "adapter_report_shape_valid",
+            "status": "passed",
+            "detail": "accepted ontologyc adapter report shape",
+        },
+        {
+            "check_id": "adapter_report_source_version_digest_match",
+            "status": "passed",
+            "detail": "package source, version, and digest match fixture and normalized IR",
+        },
+        {
+            "check_id": "adapter_report_outputs_resolve",
+            "status": "passed",
+            "detail": "concept refs, ontology lock, and ontology gaps resolve under fixture root",
+        },
+        {
+            "check_id": "adapter_report_counts_match_outputs",
+            "status": "passed",
+            "detail": "reported resolved refs and gaps match output artifacts",
+        },
+        {
+            "check_id": "adapter_report_authority_boundary_preserved",
+            "status": "passed",
+            "detail": "report remains evidence only and cannot mutate canonical SpecGraph state",
+        },
+    ]
+
+
+def build_ontologyc_adapter_report_smoke(
+    policy: dict[str, Any],
+    *,
+    fixture_path: Path,
+    report_path: Path,
+    fixture: dict[str, Any],
+    package: dict[str, Any],
+    ir: dict[str, Any],
+    ir_path: Path,
+    resolved_refs: list[dict[str, Any]],
+    unresolved_refs: list[str],
+) -> dict[str, Any]:
+    checks = validate_ontologyc_adapter_report(
+        policy,
+        fixture_path=fixture_path,
+        report_path=report_path,
+        fixture=fixture,
+        package=package,
+        ir=ir,
+        ir_path=ir_path,
+        resolved_refs=resolved_refs,
+        unresolved_refs=unresolved_refs,
+    )
+    contract = ontologyc_adapter_report_contract(policy)
+    return {
+        "artifact_kind": "ontologyc_adapter_report_smoke",
+        "schema_version": 1,
+        "proposal_id": fixture["proposal_id"],
+        "source_fixture": relative_path(fixture_path),
+        "source_report": relative_path(report_path),
+        "canonical_mutations_allowed": False,
+        "tracked_artifacts_written": False,
+        "accepted_report_kind": require_string(
+            contract, "accepted_report_kind", "adapter_report_contract"
+        ),
+        "adapter_command": require_string(contract, "accepted_command", "adapter_report_contract"),
+        "source_authority": {
+            "package_id": package["package_id"],
+            "namespace": package["namespace"],
+            "version": package["version"],
+            "source_uri": package["source_uri"],
+            "source_ref": package.get("source_ref"),
+            "digest": package["digest"],
+            "digest_validation": contract.get("digest_validation"),
+        },
+        "checks": checks,
+        "summary": {
+            "status": "passed",
+            "resolved_ref_count": len(resolved_refs),
+            "gap_count": len(unresolved_refs),
+            "next_gap": "review_ontology_import_gap" if unresolved_refs else "none",
+        },
+    }
+
+
 def build_ontology_import_surfaces(
     fixture_path: Path,
     *,
     policy_path: Path = POLICY_PATH,
+    adapter_report_path: Path | None = None,
 ) -> dict[str, dict[str, Any]]:
     policy = load_json(policy_path)
     fixture = load_yaml(fixture_path)
@@ -359,13 +682,28 @@ def build_ontology_import_surfaces(
         },
     }
 
-    return {
+    surfaces = {
         "package_index": package_index,
         "gap_index": gap_index,
         "governance_evidence_index": governance_evidence_index,
         "binding_preview": binding_preview,
         "prompt_invocation_index": prompt_invocation_index,
     }
+    if adapter_report_path is not None:
+        if not adapter_report_path.is_absolute():
+            adapter_report_path = ROOT / adapter_report_path
+        surfaces["adapter_report_smoke"] = build_ontologyc_adapter_report_smoke(
+            policy,
+            fixture_path=fixture_path,
+            report_path=adapter_report_path,
+            fixture=fixture,
+            package=package,
+            ir=ir,
+            ir_path=ir_path,
+            resolved_refs=resolved_refs,
+            unresolved_refs=unresolved_refs,
+        )
+    return surfaces
 
 
 def write_ontology_import_surfaces(
@@ -386,6 +724,8 @@ def write_ontology_import_surfaces(
         "binding_preview": require_layout_path(layout, "binding_preview"),
         "prompt_invocation_index": require_layout_path(layout, "prompt_invocation_index"),
     }
+    if "adapter_report_smoke" in surfaces:
+        destinations["adapter_report_smoke"] = require_layout_path(layout, "adapter_report_smoke")
     written = []
     for key, relative in destinations.items():
         payload = surfaces[key]
@@ -410,6 +750,11 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Write derived surfaces to the paths declared in tools/ontology_import_policy.json.",
     )
+    parser.add_argument(
+        "--adapter-report",
+        default=str(ROOT / str(layout["default_adapter_report"])),
+        help="Ontologyc adapter report fixture YAML path.",
+    )
     return parser.parse_args()
 
 
@@ -418,7 +763,13 @@ def main() -> int:
     fixture_path = Path(args.fixture)
     if not fixture_path.is_absolute():
         fixture_path = ROOT / fixture_path
-    surfaces = build_ontology_import_surfaces(fixture_path)
+    adapter_report_path = Path(args.adapter_report)
+    if not adapter_report_path.is_absolute():
+        adapter_report_path = ROOT / adapter_report_path
+    surfaces = build_ontology_import_surfaces(
+        fixture_path,
+        adapter_report_path=adapter_report_path,
+    )
     if args.write:
         written = write_ontology_import_surfaces(surfaces)
         for path in written:
