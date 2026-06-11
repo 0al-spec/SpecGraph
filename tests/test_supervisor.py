@@ -28659,6 +28659,42 @@ def test_validate_local_operator_executor_report_rejects_machine_local_paths_in_
     )
 
 
+def test_validate_local_operator_executor_report_rejects_machine_local_paths_in_keys(
+    supervisor_module: object,
+) -> None:
+    report = supervisor_module.default_local_operator_executor_report_sample()
+    report["report"]["findings"] = [{"/Users/alice/tmp/report.json": "leaked key"}]
+
+    validation = supervisor_module.validate_local_operator_executor_report(report)
+
+    assert validation["valid"] is False
+    assert any(
+        finding["code"] == "machine_local_path_persisted"
+        and finding["field"] == "report.findings[0]"
+        for finding in validation["findings"]
+    )
+    dumped = json.dumps(validation, sort_keys=True)
+    assert "/Users/alice" not in dumped
+
+
+def test_validate_local_operator_executor_report_rejects_secret_like_values(
+    supervisor_module: object,
+) -> None:
+    report = supervisor_module.default_local_operator_executor_report_sample()
+    report["report"]["findings"] = [{"message": "API_KEY=sk-local-test"}]
+
+    validation = supervisor_module.validate_local_operator_executor_report(report)
+
+    assert validation["valid"] is False
+    assert any(
+        finding["code"] == "secret_like_value_persisted"
+        and finding["field"] == "report.findings[0].message"
+        for finding in validation["findings"]
+    )
+    dumped = json.dumps(validation, sort_keys=True)
+    assert "sk-local-test" not in dumped
+
+
 def test_parse_bounded_executor_report_response_marks_non_object_json_parsed(
     supervisor_module: object,
 ) -> None:
@@ -29560,6 +29596,61 @@ def test_build_local_operator_executor_report_review_packet_blocks_invalid_sourc
     )
     assert packet["review_packet"]["findings"] == []
     assert packet["review_packet"]["evidence_refs"] == []
+
+
+def test_build_local_operator_executor_report_review_packet_blocks_invalid_report_status(
+    supervisor_module: object,
+) -> None:
+    report = supervisor_module.sanitized_local_operator_executor_report_fallback(
+        smoke_status="failed_invalid_report",
+        backend_id="codex",
+        report_validation={"valid": False, "finding_count": 0, "findings": [], "normalized": {}},
+    )
+
+    packet = supervisor_module.build_local_operator_executor_report_review_packet(report)
+
+    assert packet["summary"]["status"] == "blocked_invalid_source_report"
+    assert packet["summary"]["next_gap"] == "repair_executor_report_smoke_output"
+    checks = {check["check_id"]: check["status"] for check in packet["checks"]}
+    assert checks["source_report_valid"] == "failed"
+    assert packet["source_report_validation"]["valid"] is True
+    assert packet["source_report_validation"]["normalized"] == {}
+
+
+def test_build_local_operator_executor_report_review_packet_blocks_machine_local_finding_keys(
+    supervisor_module: object,
+) -> None:
+    report = supervisor_module.default_local_operator_executor_report_sample()
+    report["report"]["findings"] = [{"/Users/alice/tmp/report.json": "leaked key"}]
+
+    packet = supervisor_module.build_local_operator_executor_report_review_packet(report)
+
+    assert packet["summary"]["status"] == "blocked_invalid_source_report"
+    assert packet["review_packet"]["findings"] == []
+    dumped = json.dumps(packet, sort_keys=True)
+    assert "/Users/alice" not in dumped
+    assert any(
+        finding["code"] == "machine_local_path_persisted"
+        for finding in packet["source_report_validation"]["findings"]
+    )
+
+
+def test_build_local_operator_executor_report_review_packet_blocks_secret_like_finding_values(
+    supervisor_module: object,
+) -> None:
+    report = supervisor_module.default_local_operator_executor_report_sample()
+    report["report"]["findings"] = [{"message": "API_KEY=sk-local-test"}]
+
+    packet = supervisor_module.build_local_operator_executor_report_review_packet(report)
+
+    assert packet["summary"]["status"] == "blocked_invalid_source_report"
+    assert packet["review_packet"]["findings"] == []
+    dumped = json.dumps(packet, sort_keys=True)
+    assert "sk-local-test" not in dumped
+    assert any(
+        finding["code"] == "secret_like_value_persisted"
+        for finding in packet["source_report_validation"]["findings"]
+    )
 
 
 def test_build_local_operator_executor_report_review_packet_blocks_forbidden_effect(

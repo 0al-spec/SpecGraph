@@ -18106,7 +18106,7 @@ def local_operator_executor_report_path() -> Path:
 
 
 def local_operator_executor_report_review_packet_path() -> Path:
-    return RUNS_DIR / LOCAL_OPERATOR_EXECUTOR_REPORT_REVIEW_PACKET_FILENAME
+    return ROOT / LOCAL_OPERATOR_EXECUTOR_REPORT_REVIEW_PACKET_RELATIVE_PATH
 
 
 def metric_signal_index_path() -> Path:
@@ -19884,6 +19884,18 @@ def executor_report_string_contains_machine_local_path(value: str) -> bool:
     return bool(re.search(r"(^|[\s\"'=(])\\\\(Users|tmp|private|home)(\\\\|$)", text))
 
 
+def executor_report_string_contains_secret_like_value(value: str) -> bool:
+    text = value.strip()
+    if not text:
+        return False
+    return bool(
+        re.search(
+            r"(?i)\b(api[_-]?key|authorization|bearer|password|secret|token)\b\s*[:=]",
+            text,
+        )
+    )
+
+
 def executor_report_machine_local_path_findings(payload: object) -> list[dict[str, str]]:
     findings: list[dict[str, str]] = []
 
@@ -19892,6 +19904,15 @@ def executor_report_machine_local_path_findings(payload: object) -> list[dict[st
             for key, child in value.items():
                 key_text = str(key).strip()
                 child_path = f"{path}.{key_text}" if path else key_text
+                if executor_report_string_contains_machine_local_path(key_text):
+                    field = path or "report"
+                    findings.append(
+                        executor_report_finding(
+                            code="machine_local_path_persisted",
+                            field=field,
+                            message=(f"{field} must not persist machine-local filesystem paths."),
+                        )
+                    )
                 visit(child, child_path)
         elif isinstance(value, list):
             for index, child in enumerate(value):
@@ -19909,6 +19930,40 @@ def executor_report_machine_local_path_findings(payload: object) -> list[dict[st
 
     visit(payload, "")
     return findings
+
+
+def executor_report_secret_like_value_findings(payload: object) -> list[dict[str, str]]:
+    findings: list[dict[str, str]] = []
+
+    def visit(value: object, path: str) -> None:
+        if isinstance(value, dict):
+            for key, child in value.items():
+                key_text = str(key).strip()
+                child_path = f"{path}.{key_text}" if path else key_text
+                visit(child, child_path)
+        elif isinstance(value, list):
+            for index, child in enumerate(value):
+                visit(child, f"{path}[{index}]")
+        elif isinstance(value, str) and executor_report_string_contains_secret_like_value(value):
+            findings.append(
+                executor_report_finding(
+                    code="secret_like_value_persisted",
+                    field=path or "report",
+                    message=f"{path or 'report'} must not persist secret-like values.",
+                )
+            )
+
+    visit(payload, "")
+    return findings
+
+
+def safe_executor_report_finding_field(raw_field: object) -> str:
+    field = str(raw_field or "report").strip() or "report"
+    if executor_report_string_contains_machine_local_path(field):
+        return "report"
+    if executor_report_string_contains_secret_like_value(field):
+        return "report"
+    return field
 
 
 def safe_executor_report_evidence_ref(raw_ref: object) -> str:
@@ -19980,6 +20035,7 @@ def validate_local_operator_executor_report(report: object) -> dict[str, Any]:
         }
     findings.extend(executor_report_forbidden_key_findings(report))
     findings.extend(executor_report_machine_local_path_findings(report))
+    findings.extend(executor_report_secret_like_value_findings(report))
     required_fields = [
         str(field).strip()
         for field in contract.get("required_report_fields", [])
@@ -20565,7 +20621,7 @@ def redacted_executor_report_validation(
     for finding in findings:
         finding = finding if isinstance(finding, dict) else {}
         code = str(finding.get("code", "invalid_report")).strip() or "invalid_report"
-        field = str(finding.get("field", "report")).strip() or "report"
+        field = safe_executor_report_finding_field(finding.get("field", "report"))
         redacted_findings.append(
             executor_report_finding(
                 code=code,
@@ -21820,6 +21876,7 @@ def validate_local_operator_executor_report_review_packet(packet: object) -> dic
         }
     findings.extend(executor_report_forbidden_key_findings(packet))
     findings.extend(executor_report_machine_local_path_findings(packet))
+    findings.extend(executor_report_secret_like_value_findings(packet))
     for field in [
         str(field).strip()
         for field in contract.get("required_packet_fields", [])
@@ -21913,8 +21970,16 @@ def build_local_operator_executor_report_review_packet(
     report_validation = (
         validate_local_operator_executor_report(report) if source_report_present else None
     )
+    normalized_report_validation = (
+        report_validation.get("normalized", {}) if isinstance(report_validation, dict) else {}
+    )
+    normalized_report_validation = (
+        normalized_report_validation if isinstance(normalized_report_validation, dict) else {}
+    )
     source_report_valid = bool(
-        isinstance(report_validation, dict) and report_validation.get("valid") is True
+        isinstance(report_validation, dict)
+        and report_validation.get("valid") is True
+        and normalized_report_validation.get("summary_status") == "valid_report"
     )
     request = default_executor_report_consumption_request(
         consumer=str(contract.get("consumer", "human_review_packet_builder")).strip(),
@@ -21965,6 +22030,7 @@ def build_local_operator_executor_report_review_packet(
     if source_report_present:
         privacy_findings.extend(executor_report_forbidden_key_findings(report))
         privacy_findings.extend(executor_report_machine_local_path_findings(report))
+        privacy_findings.extend(executor_report_secret_like_value_findings(report))
     checks = [
         local_operator_smoke_check(
             check_id="source_report_present",
