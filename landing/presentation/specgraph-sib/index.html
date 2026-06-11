@@ -24,8 +24,8 @@
         <span>SpecGraph</span>
       </a>
       <div class="topbar-meta">
-        <span>SIB vision deck</span>
-        <span>SpecGraph prototype story</span>
+        <span>10-minute SIB deck</span>
+        <span>SpecGraph demo follows</span>
       </div>
       <nav class="deck-nav" aria-label="Slide navigation">
         <button class="icon-button" id="prevSlide" type="button" aria-label="Previous slide" title="Previous slide">
@@ -33,7 +33,7 @@
             <path d="m15 18-6-6 6-6" />
           </svg>
         </button>
-        <output class="slide-count" id="slideCount" aria-live="polite">01 / 18</output>
+        <output class="slide-count" id="slideCount" aria-live="polite">01 / 12</output>
         <button class="icon-button" id="nextSlide" type="button" aria-label="Next slide" title="Next slide">
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="m9 18 6-6-6-6" />
@@ -43,377 +43,328 @@
     </header>
 
     <section class="stage" aria-live="polite">
-      <article class="slide is-active" id="slide-1" data-slide aria-label="AI changed the factory">
+      <article class="slide is-active" id="slide-1" data-slide aria-label="AI makes artifacts cheap">
         <div class="slide-grid two-column">
           <div class="copy-block">
-            <p class="eyebrow">Act I / AI changed the factory</p>
-            <h1 class="title-long">AI makes artifacts cheap. <span class="muted-serif">Meaning becomes the bottleneck.</span></h1>
-            <p class="lede">SIB Metrics for AI-native feature pipelines.</p>
+            <p class="eyebrow">01 / AI makes artifacts cheap</p>
+            <h1 class="title-long">Artifact volume stopped being signal.</h1>
+            <p class="lede">The new question is whether intent survived the fan-out.</p>
           </div>
-          <div class="visual-panel dark-panel" aria-label="Artifact stream">
-            <div class="artifact-field">
-              <span>Code</span>
-              <span>Tests</span>
-              <span>Docs</span>
+          <div class="factory-comparison" aria-label="Old manual output and new AI fan-out">
+            <section class="factory-lane">
+              <span class="lane-label">Before</span>
+              <div class="keyboard-glyph" aria-hidden="true">
+                <span></span><span></span><span></span><span></span>
+              </div>
+              <div class="artifact-row" aria-hidden="true">
+                <span></span><span></span><span></span><span></span><span></span>
+              </div>
+              <strong>Effort -> code</strong>
+            </section>
+            <section class="factory-lane active-lane">
+              <span class="lane-label">AI era</span>
+              <div class="intent-atom">Intent Atom</div>
+              <div class="llm-node">LLM</div>
+              <div class="fanout-cloud" aria-hidden="true">
+                <span></span><span></span><span></span><span></span><span></span><span></span>
+                <span></span><span></span><span></span><span></span><span></span><span></span>
+                <span></span><span></span><span></span><span></span><span></span><span></span>
+              </div>
+              <strong>Intent -> plausible artifacts</strong>
+            </section>
+          </div>
+        </div>
+        <aside class="speaker-notes" hidden>
+          AI резко удешевил производство кода, тестов, документации и PR descriptions. Когда артефакт дешевеет, его количество перестаёт быть сигналом. Главный вопрос меняется: не сколько мы произвели, а сохранили ли мы смысл.
+        </aside>
+      </article>
+
+      <article class="slide" id="slide-2" data-slide aria-label="Measure the pipeline not the person">
+        <div class="slide-grid split-rule">
+          <div>
+            <p class="eyebrow">02 / Measure the pipeline</p>
+            <h2>Measure the pipeline, not the person.</h2>
+            <p class="micro-copy">More activity can mean less confidence.</p>
+          </div>
+          <div class="pipeline-ownership" aria-label="Human and agent roles in a feature pipeline">
+            <div class="old-metrics">
               <span>PRs</span>
-              <span>Plans</span>
-              <span>Specs</span>
-              <strong>Intent?</strong>
+              <span>Lead time</span>
+              <span>Deploy frequency</span>
             </div>
-            <div class="panel-caption">
-              <span>output abundance</span>
-              <span>semantic bottleneck</span>
+            <div class="pipeline-strip">
+              <span>Intent</span>
+              <span>Agent work</span>
+              <span>Evidence</span>
+              <span>Review</span>
+            </div>
+            <div class="optimizer-panel">
+              <strong>Human role</strong>
+              <span>scope</span>
+              <span>acceptance</span>
+              <span>evidence design</span>
             </div>
           </div>
         </div>
         <aside class="speaker-notes" hidden>
-          AI moved the bottleneck from manual artifact production to meaning preservation. The risk is not slow coding; it is fast semantic drift across many convincing artifacts.
+          Классические метрики измеряют output. Агент может улучшить эти числа и одновременно ухудшить систему: расширить scope, сместить смысл, написать тесты под собственную реализацию. Если человек всё чаще улучшает пайплайн, измерять нужно пайплайн.
         </aside>
       </article>
 
-      <article class="slide" id="slide-2" data-slide aria-label="Old question">
-        <div class="center-slide">
-          <p class="eyebrow">Act I / Old question</p>
-          <h2 class="strike-title">How productive are developers?</h2>
-          <p class="micro-copy">Activity is not intent preservation.</p>
-          <div class="dashboard-strip" aria-label="Legacy activity metrics">
-            <span>PRs</span>
-            <span>Commits</span>
-            <span>LOC</span>
-            <span>Cycle time</span>
-          </div>
-        </div>
-        <aside class="speaker-notes" hidden>
-          PRs, commits, LOC, and cycle time still matter operationally, but they should not be the foundation. They measure activity traces, not whether intent survived.
-        </aside>
-      </article>
-
-      <article class="slide" id="slide-3" data-slide aria-label="New question">
+      <article class="slide" id="slide-3" data-slide aria-label="Capability pipeline">
         <div class="slide-grid diagram-layout">
           <div class="copy-block">
-            <p class="eyebrow">Act I / New question</p>
-            <h2>Does the pipeline preserve intent?</h2>
+            <p class="eyebrow">03 / Capability pipeline</p>
+            <h2>Intent becomes capability through gates.</h2>
+            <p class="micro-copy">Outcome is separate: a good build can still be a wrong bet.</p>
           </div>
-          <div class="pipeline-panel" aria-label="Feature pipeline">
-            <div class="pipeline">
+          <div class="capability-flow" aria-label="Intent to outcome capability pipeline">
+            <div class="capability-main">
               <span>Intent</span>
-              <span>Spec</span>
+              <span>Specification</span>
               <span>Implementation</span>
               <span>Evidence</span>
-              <span>Adoption</span>
+              <span>Internal acceptance</span>
             </div>
-            <div class="diagram-note">feature production becomes a measurable path</div>
+            <div class="outcome-layer">
+              <span>Outcome</span>
+              <small>usage / business impact</small>
+            </div>
           </div>
         </div>
         <aside class="speaker-notes" hidden>
-          In AI-native development, the pipeline becomes the producer of features. Humans improve context, constraints, specs, evidence, and feedback loops.
+          Пайплайн: intent, specification, implementation, evidence, internal acceptance, outcome. Outcome вынесен отдельно: пайплайн может идеально сохранить смысл, а продуктовая гипотеза может оказаться неверной. Это разные виды отказа.
         </aside>
       </article>
 
-      <article class="slide" id="slide-4" data-slide aria-label="Feature is not code">
-        <div class="slide-grid two-column">
-          <div class="copy-block">
-            <p class="eyebrow">Act I / Unit of value</p>
-            <h2>Feature != Code</h2>
-            <p class="lede">Feature = adopted capability.</p>
-          </div>
-          <div class="pyramid" aria-label="Accepted capability pyramid">
-            <span>Adoption</span>
-            <span>Evidence</span>
-            <span>Implementation</span>
-            <span>Specification</span>
-            <span>Intent</span>
-          </div>
-        </div>
-        <aside class="speaker-notes" hidden>
-          A feature is not produced when code exists, or even when a PR merges. It is produced when intent reaches an adopted capability with evidence.
-        </aside>
-      </article>
-
-      <article class="slide" id="slide-5" data-slide aria-label="SIB balance">
+      <article class="slide dense-slide" id="slide-4" data-slide aria-label="Five observable quantities">
         <div class="slide-grid split-rule">
           <div>
-            <p class="eyebrow">Act II / SIB</p>
-            <h2>SIB = balance, not output.</h2>
-            <p class="micro-copy">Spec / Implementation / Evidence / Adoption.</p>
+            <p class="eyebrow">04 / Five observables</p>
+            <h2>Five quantities live on the pipeline.</h2>
+            <p class="example-intent">Intent: retry failed checkout payment without duplicate charge.</p>
           </div>
-          <div class="balance-board" aria-label="SIB balance board">
-            <span>Spec</span>
-            <span>Implementation</span>
-            <span>Evidence</span>
-            <span>Adoption</span>
-            <strong>SIB</strong>
-          </div>
-        </div>
-        <aside class="speaker-notes" hidden>
-          SIB is not a human productivity score. It is a pipeline integrity signal: too much code without evidence, too many specs without implementation, or tests without adoption all show imbalance.
-        </aside>
-      </article>
-
-      <article class="slide" id="slide-6" data-slide aria-label="pre-SIB">
-        <div class="slide-grid split-rule">
-          <div class="copy-block">
-            <p class="eyebrow">Act II / pre-SIB</p>
-            <h2>pre-SIB = early warning.</h2>
-          </div>
-          <div class="preflight-list" aria-label="pre-SIB readiness checks">
-            <span>Context?</span>
-            <span>Scope?</span>
-            <span>Acceptance criteria?</span>
-            <span>Evidence template?</span>
+          <div class="observables-table" aria-label="SIB observables">
+            <section>
+              <strong>SIB</strong>
+              <span>spec meaning / implementation mass</span>
+            </section>
+            <section>
+              <strong>Yield</strong>
+              <span>where tasks leak from the pipeline</span>
+            </section>
+            <section>
+              <strong>Cost</strong>
+              <span>tokens + review + rework + steering</span>
+            </section>
+            <section>
+              <strong>Drift</strong>
+              <span>are we still solving the original problem?</span>
+            </section>
+            <section>
+              <strong>pre-SIB</strong>
+              <span>readiness before agent execution</span>
+            </section>
           </div>
         </div>
         <aside class="speaker-notes" hidden>
-          pre-SIB is a leading indicator before an agent generates too much wrong work. It asks whether a task is ready to travel through the pipeline.
+          На одном примере видны пять величин: SIB как баланс смысла и реализации, Yield как утечки, Cost как стоимость принятой capability, Drift как смысловой сдвиг и pre-SIB как готовность пути до запуска агента. Для всех действует принцип: unknown не good и не bad.
         </aside>
       </article>
 
-      <article class="slide" id="slide-7" data-slide aria-label="Yield">
+      <article class="slide" id="slide-5" data-slide aria-label="SIB is signal not score">
         <div class="slide-grid two-column">
           <div class="copy-block">
-            <p class="eyebrow">Act II / Yield</p>
-            <h2>Where does intent disappear?</h2>
+            <p class="eyebrow">05 / Signal, not score</p>
+            <h2>SIB is a telescope, not a scoreboard.</h2>
+            <p class="micro-copy">Pipeline Integrity Index is the normative layer. SIB stays decomposable.</p>
           </div>
-          <div class="funnel" aria-label="Intent yield funnel">
-            <span><b>100</b> intents</span>
-            <span><b>72</b> specs</span>
-            <span><b>51</b> implementations</span>
-            <span><b>38</b> evidence-backed</span>
-            <span><b>19</b> adopted</span>
+          <div class="signal-scale" aria-label="SIB balance as a diagnostic signal">
+            <div class="scale-beam">
+              <span class="blue-dot" aria-hidden="true"></span>
+              <div class="fulcrum" aria-hidden="true"></div>
+              <div class="red-stack" aria-hidden="true">
+                <span></span><span></span><span></span><span></span><span></span><span></span>
+                <span></span><span></span><span></span><span></span><span></span><span></span>
+              </div>
+            </div>
+            <div class="guardrail-strip">
+              <span>decomposable</span>
+              <span>unknown visible</span>
+              <span>never people ranking</span>
+            </div>
           </div>
         </div>
         <aside class="speaker-notes" hidden>
-          Yield shows where the pipeline loses intent and energy. It makes the failure concrete: maybe the largest drop is not coding, but evidence or adoption.
+          SIB не должен превращаться в общий индекс здоровья и KPI. Это дескриптивный сигнал: посмотри сюда, здесь дисбаланс. Нормативный управляющий слой, если он нужен, должен быть отдельным Pipeline Integrity Index с guardrails и без ранжирования людей.
         </aside>
       </article>
 
-      <article class="slide" id="slide-8" data-slide aria-label="Cost per accepted capability">
+      <article class="slide" id="slide-6" data-slide aria-label="Evidence must prove intent">
+        <div class="slide-grid two-column">
+          <div class="copy-block">
+            <p class="eyebrow">06 / Evidence must prove intent</p>
+            <h2>Coverage is not semantic proof.</h2>
+            <p class="micro-copy">Break the self-confirming agent loop.</p>
+          </div>
+          <div class="evidence-chain" aria-label="Intent atom evidence claim and judge receipt">
+            <section>
+              <strong>Intent Atom</strong>
+              <span>no duplicate charge</span>
+            </section>
+            <section>
+              <strong>Evidence Claim</strong>
+              <span>test + scenario + signal</span>
+            </section>
+            <section>
+              <strong>Judge Receipt</strong>
+              <span>confirmed / partial / weak</span>
+            </section>
+            <div class="anchor-row">
+              <span>deterministic checks</span>
+              <span>mutation tests</span>
+              <span>human sampling</span>
+              <span>judge drift</span>
+            </div>
+          </div>
+        </div>
+        <aside class="speaker-notes" hidden>
+          Coverage отвечает на вопрос о строках, а нам нужно доказательство intent. Агент может написать реализацию, тесты под неё и объяснение, почему всё хорошо. Мы размыкаем петлю через Intent Atom, Evidence Claim и Judge Receipt с детерминированными якорями и мониторингом drift judge.
+        </aside>
+      </article>
+
+      <article class="slide" id="slide-7" data-slide aria-label="What must be proven">
         <div class="slide-grid split-rule">
           <div>
-            <p class="eyebrow">Act II / Cost</p>
-            <h2>Cost per full-SIB.</h2>
-            <p class="micro-copy">Runtime, review, rework, CI, debugging, steering.</p>
+            <p class="eyebrow">07 / What must be proven</p>
+            <h2>These are hypotheses, not laws.</h2>
           </div>
-          <div class="cost-board" aria-label="Cost pipeline">
-            <div class="coin-stack" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
-            <div class="pipeline compact">
-              <span>Runtime</span>
-              <span>Review</span>
-              <span>CI</span>
-              <span>Rework</span>
-            </div>
-            <strong>Accepted capability</strong>
+          <div class="hypothesis-grid" aria-label="SIB validation hypotheses">
+            <section>
+              <span>H1</span>
+              <strong>pre-SIB predicts internal acceptance better than PR count.</strong>
+            </section>
+            <section>
+              <span>H2</span>
+              <strong>High output with low evidence confidence predicts rework.</strong>
+            </section>
+            <section>
+              <span>H3</span>
+              <strong>Semantic evidence confidence predicts regressions better than coverage.</strong>
+            </section>
           </div>
         </div>
         <aside class="speaker-notes" hidden>
-          Cost should be counted per accepted capability, not per token, line, or PR. It includes runtime, review, rework, CI, debugging, steering, and incidents.
+          Это не закон природы, а набор гипотез. pre-SIB должен предсказывать acceptance лучше, чем PR count; output при низкой evidence confidence должен предсказывать rework; semantic confidence должен предсказывать регрессии лучше coverage. Сначала валидирую на своём workflow.
         </aside>
       </article>
 
-      <article class="slide" id="slide-9" data-slide aria-label="Drift">
+      <article class="slide" id="slide-8" data-slide aria-label="Final thesis to demo">
         <div class="slide-grid two-column">
           <div class="copy-block">
-            <p class="eyebrow">Act II / Drift</p>
-            <h2>Did we build the wrong thing?</h2>
+            <p class="eyebrow">08 / Thesis -> demo</p>
+            <h1 class="title-long">AI makes artifacts cheap. <span class="muted-serif">SIB watches meaning.</span></h1>
           </div>
-          <div class="drift-map" aria-label="Intent drift diagram">
-            <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-              <path class="intended" d="M8 24 C28 24 43 31 57 41 C70 51 82 59 94 59" />
-              <path class="actual" d="M8 24 C29 32 41 50 56 64 C71 78 84 78 94 84" />
+          <div class="demo-bridge" aria-label="Transition from SIB thesis to SpecGraph demo">
+            <div class="artifact-field compact-artifacts">
+              <span>code</span>
+              <span>tests</span>
+              <span>docs</span>
+              <span>PR</span>
+              <strong>meaning?</strong>
+            </div>
+            <div class="demo-card">
+              <span>Next</span>
+              <strong>SpecGraph demo</strong>
+              <small>capability pipeline in vivo</small>
+            </div>
+          </div>
+        </div>
+        <aside class="speaker-notes" hidden>
+          Сжатый тезис: AI удешевляет артефакты. SIB наблюдает, сохраняет ли реализация смысл спецификации. SpecGraph превращает это наблюдение в управляемый capability pipeline. Дальше переход к демо.
+        </aside>
+      </article>
+
+      <article class="slide backup-slide" id="slide-9" data-slide aria-label="False Progress Mass backup">
+        <div class="slide-grid two-column">
+          <div class="copy-block">
+            <p class="eyebrow">Backup / False Progress Mass</p>
+            <h2>False progress has mass.</h2>
+            <p class="micro-copy">Late semantic defect discovery creates retroactive waste.</p>
+          </div>
+          <div class="fpm-timeline" aria-label="False progress mass timeline">
+            <div class="timeline-axis"><span>t1</span><span>t2</span><span>t3</span><span>t4</span><span>t5</span></div>
+            <div class="bad-premise">bad premise</div>
+            <div class="false-mass" aria-hidden="true">
+              <span></span><span></span><span></span><span></span><span></span><span></span>
+              <span></span><span></span><span></span><span></span><span></span><span></span>
+              <span></span><span></span><span></span><span></span><span></span><span></span>
+            </div>
+            <div class="defect-marker">!</div>
+          </div>
+        </div>
+        <aside class="speaker-notes" hidden>
+          Backup для вопроса про поздно обнаруженные дефекты. False Progress Mass показывает объём реализации и стоимость AI-вывода, накопленные после неверной исходной предпосылки до момента обнаружения.
+        </aside>
+      </article>
+
+      <article class="slide backup-slide" id="slide-10" data-slide aria-label="Intent yield cost triangle backup">
+        <div class="slide-grid split-rule">
+          <div>
+            <p class="eyebrow">Backup / IY FC ICC</p>
+            <h2>Economics of intent conversion.</h2>
+          </div>
+          <div class="conversion-triangle" aria-label="Intent yield functional cost intent conversion cost">
+            <div class="triangle-node spec-node">Specification</div>
+            <div class="triangle-node cost-node">AI cost</div>
+            <div class="triangle-node func-node">Functionality</div>
+            <span class="edge-label label-iy">Intent Yield</span>
+            <span class="edge-label label-fc">Functional Cost</span>
+            <span class="edge-label label-icc">Conversion Cost</span>
+          </div>
+        </div>
+        <aside class="speaker-notes" hidden>
+          Backup для вопроса про экономические метрики. Intent Yield, Functional Cost и Intent Conversion Cost связывают заявленное намерение, стоимость AI-вывода и рождение функциональности.
+        </aside>
+      </article>
+
+      <article class="slide backup-slide" id="slide-11" data-slide aria-label="Probabilistic friction curve backup">
+        <div class="slide-grid two-column">
+          <div class="copy-block">
+            <p class="eyebrow">Backup / Generation stability</p>
+            <h2>Generation has a friction curve.</h2>
+            <p class="micro-copy">PFI counts turbulence. CSI measures stabilization.</p>
+          </div>
+          <div class="friction-chart" aria-label="Probabilistic friction curve">
+            <svg viewBox="0 0 100 60" preserveAspectRatio="none" aria-hidden="true">
+              <polyline points="2,10 6,52 10,18 14,45 18,8 22,50 26,21 30,42 34,26 38,38 42,30 48,34 56,33 64,32 72,32 82,32 96,32" />
+              <line x1="56" y1="32" x2="96" y2="32" />
             </svg>
-            <span class="label intended-label">intended</span>
-            <span class="label actual-label">actual</span>
+            <div class="chart-labels"><span>unstable attempts</span><span>stable state</span></div>
           </div>
         </div>
         <aside class="speaker-notes" hidden>
-          AI often fails semantically, not syntactically. It builds something plausible, expands scope, writes tests around its own mistake, and leaves drift invisible unless the graph measures it.
+          Backup для вопроса про стабильность генерации. Probabilistic Friction Index считает хаотичные итерации до стабильности, а Checkpoint Stability Index показывает, насколько уточнения вызывают лавинообразные изменения.
         </aside>
       </article>
 
-      <article class="slide" id="slide-10" data-slide aria-label="Confidence and unknown">
-        <div class="slide-grid split-rule">
-          <div>
-            <p class="eyebrow">Act II / Confidence</p>
-            <h2>Unknown != Bad. No evidence != Good.</h2>
-          </div>
-          <div class="state-triad" aria-label="Known and unknown states">
-            <section><span>Known good</span></section>
-            <section><span>Known bad</span></section>
-            <section><span>Unknown</span></section>
-          </div>
-        </div>
-        <aside class="speaker-notes" hidden>
-          The prototype must not collapse unknown into failure or success. Missing incident data is not quality, and missing usage data is not proof that the feature has no value.
-        </aside>
-      </article>
-
-      <article class="slide" id="slide-11" data-slide aria-label="SpecGraph in one picture">
+      <article class="slide backup-slide" id="slide-12" data-slide aria-label="Agent Session Passport backup">
         <div class="slide-grid two-column">
           <div class="copy-block">
-            <p class="eyebrow">Act III / SpecGraph</p>
-            <h2>A graph of intent, work, evidence, and feedback.</h2>
+            <p class="eyebrow">Backup / Agent Session Passport</p>
+            <h2>pre-SIB checks the declared work unit.</h2>
+            <p class="micro-copy">The agent run needs scope, permissions, and expected evidence.</p>
           </div>
-          <div class="visual-panel dark-panel" aria-label="SpecGraph map">
-            <div class="graph-field graph-field-expanded">
-              <svg class="graph-links" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-                <path d="M12 16 L45 16 L76 27" />
-                <path d="M45 16 L24 48 L48 48 L78 55" />
-                <path d="M48 48 L31 78 L58 78 L82 82" />
-                <path d="M78 55 L58 78" />
-                <path d="M82 82 C60 92 32 92 12 16" />
-              </svg>
-              <span class="node node-intent">Intent</span>
-              <span class="node node-spec">Spec</span>
-              <span class="node node-task">Task</span>
-              <span class="node node-agent">Agent Session</span>
-              <span class="node node-code">Code Change</span>
-              <span class="node node-test">Test</span>
-              <span class="node node-review">Review</span>
-              <span class="node node-deploy">Deployment</span>
-              <span class="node node-usage">Usage Signal</span>
-            </div>
-            <div class="panel-caption">
-              <span>semantic graph</span>
-              <span>runtime feedback</span>
-            </div>
-          </div>
-        </div>
-        <aside class="speaker-notes" hidden>
-          SpecGraph is not only a backlog or architecture diagram. It connects intent, specification, implementation, evidence, runtime signals, and adoption into reviewable state.
-        </aside>
-      </article>
-
-      <article class="slide" id="slide-12" data-slide aria-label="Node types">
-        <div class="slide-grid split-rule">
-          <div>
-            <p class="eyebrow">Act III / First model</p>
-            <h2>Six nodes are enough to start.</h2>
-          </div>
-          <div class="node-grid" aria-label="Prototype node types">
-            <span>Intent</span>
-            <span>Spec</span>
-            <span>Impl</span>
-            <span>Evidence</span>
-            <span>Adoption</span>
-            <span>Intervention</span>
-          </div>
-        </div>
-        <aside class="speaker-notes" hidden>
-          The first prototype does not need to model the whole world. It needs just enough node types to make transitions observable and interventions measurable.
-        </aside>
-      </article>
-
-      <article class="slide" id="slide-13" data-slide aria-label="Metrics live on transitions">
-        <div class="slide-grid two-column">
-          <div class="copy-block">
-            <p class="eyebrow">Act III / Graph metrics</p>
-            <h2>Metrics live on transitions.</h2>
-          </div>
-          <div class="metric-lanes" aria-label="Metrics on graph edges">
-            <span>Intent <b>yield / cost</b> Spec</span>
-            <span>Spec <b>drift / readiness</b> Impl</span>
-            <span>Impl <b>coverage / confidence</b> Evidence</span>
-            <span>Evidence <b>usage / adoption</b> Adoption</span>
-          </div>
-        </div>
-        <aside class="speaker-notes" hidden>
-          Metrics should not live only on a final dashboard. They belong on graph transitions, because that is where the production function breaks.
-        </aside>
-      </article>
-
-      <article class="slide" id="slide-14" data-slide aria-label="Agent session passport">
-        <div class="slide-grid two-column">
-          <div class="copy-block">
-            <p class="eyebrow">Act III / Agent Session Passport</p>
-            <h2>Declared work unit.</h2>
-            <p class="micro-copy">A bounded invocation becomes a contract.</p>
-          </div>
-          <pre class="passport-card" aria-label="Agent session declaration"><code>goal:
+          <pre class="passport-card" aria-label="Agent session passport"><code>goal:
 scope:
 context:
 allowed_files:
+acceptance_criteria:
 expected_evidence:
 result:</code></pre>
         </div>
         <aside class="speaker-notes" hidden>
-          This borrows the Agent Passport idea: identity, capabilities, resources, policies, and verification. In SpecGraph, each agent session should declare scope and expected evidence.
-        </aside>
-      </article>
-
-      <article class="slide" id="slide-15" data-slide aria-label="Observable pipeline">
-        <div class="slide-grid split-rule">
-          <div>
-            <p class="eyebrow">Act IV / Observable pipeline</p>
-            <h2>Every transition emits an event.</h2>
-          </div>
-          <div class="event-log" aria-label="Event log">
-            <span>intent.created</span>
-            <span>spec.accepted</span>
-            <span>agent.started</span>
-            <span>patch.generated</span>
-            <span>test.passed</span>
-            <span>review.changed</span>
-            <span>usage.observed</span>
-          </div>
-        </div>
-        <aside class="speaker-notes" hidden>
-          The prototype should begin with an event log, not a polished dashboard. If transitions are not logged, SIB is philosophy; if they are logged, it becomes measurement.
-        </aside>
-      </article>
-
-      <article class="slide" id="slide-16" data-slide aria-label="Self-improving loop">
-        <div class="slide-grid two-column">
-          <div class="copy-block">
-            <p class="eyebrow">Act IV / Feedback loop</p>
-            <h2>Observe -> Diagnose -> Intervene -> Measure delta.</h2>
-          </div>
-          <div class="loop-board" aria-label="Self-improving loop">
-            <span>Observe</span>
-            <span>Diagnose</span>
-            <span>Intervene</span>
-            <span>Measure delta</span>
-          </div>
-        </div>
-        <aside class="speaker-notes" hidden>
-          Self-improvement is not magic. The system observes bottlenecks, proposes an intervention, then measures whether SIB, Yield, Drift, Cost, or Confidence improved.
-        </aside>
-      </article>
-
-      <article class="slide" id="slide-17" data-slide aria-label="Human is the optimizer">
-        <div class="slide-grid two-column">
-          <div class="copy-block">
-            <p class="eyebrow">Act IV / Human role</p>
-            <h2>Human output down. Human leverage up.</h2>
-          </div>
-          <div class="control-room" aria-label="Pipeline control room">
-            <div class="control-screen">Feature pipeline</div>
-            <div class="control-grid">
-              <span>SIB</span>
-              <span>Yield</span>
-              <span>Drift</span>
-              <span>Cost</span>
-            </div>
-          </div>
-        </div>
-        <aside class="speaker-notes" hidden>
-          This is not a story about removing the human. It stops measuring developers with bad output metrics and reframes the human as the optimizer of the system.
-        </aside>
-      </article>
-
-      <article class="slide" id="slide-18" data-slide aria-label="SIB thesis">
-        <div class="slide-grid two-column">
-          <div class="copy-block">
-            <p class="eyebrow">Act IV / SIB thesis</p>
-            <h1 class="title-long">AI makes artifacts cheap. <span class="muted-serif">SIB measures intent preservation.</span></h1>
-          </div>
-          <div class="thesis-output" aria-label="Validated capability">
-            <span>Validated</span>
-            <strong>Accepted capability</strong>
-            <small>intent preserved</small>
-          </div>
-        </div>
-        <aside class="speaker-notes" hidden>
-          The takeaway is simple: SpecGraph is the control plane for AI-native feature production, and SIB measures whether the pipeline preserves meaning from intent to adoption.
+          Backup для вопроса о том, что именно проверяет pre-SIB. Agent Session Passport делает запуск агента явным рабочим контрактом: goal, scope, context, allowed files, acceptance criteria, expected evidence и result.
         </aside>
       </article>
     </section>
