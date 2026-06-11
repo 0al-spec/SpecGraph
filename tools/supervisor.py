@@ -74,6 +74,8 @@ Derived artifacts:
 - local operator executor report: `runs/local_operator_executor_report.json`
 - local operator executor report review packet:
   `runs/local_operator_executor_report_review_packet.json`
+- local operator executor proposal draft candidate:
+  `runs/local_operator_executor_proposal_draft_candidate.json`
 - agent surface index: `runs/agent_surface_index.json`
 - known agent passport index: `runs/known_agent_passport_index.json`
 - agent passport verification report: `runs/agent_passport_verification_report.json`
@@ -202,6 +204,9 @@ LOCAL_OPERATOR_EXECUTOR_REPORT_CONTRACT_RELATIVE_PATH = (
 LOCAL_OPERATOR_EXECUTOR_REPORT_RELATIVE_PATH = "runs/local_operator_executor_report.json"
 LOCAL_OPERATOR_EXECUTOR_REPORT_REVIEW_PACKET_RELATIVE_PATH = (
     "runs/local_operator_executor_report_review_packet.json"
+)
+LOCAL_OPERATOR_EXECUTOR_PROPOSAL_DRAFT_CANDIDATE_RELATIVE_PATH = (
+    "runs/local_operator_executor_proposal_draft_candidate.json"
 )
 AGENT_SURFACE_INDEX_RELATIVE_PATH = "runs/agent_surface_index.json"
 KNOWN_AGENT_PASSPORT_INDEX_RELATIVE_PATH = "runs/known_agent_passport_index.json"
@@ -3200,6 +3205,13 @@ LOCAL_OPERATOR_EXECUTOR_REPORT_REVIEW_PACKET_FILENAME = Path(
         )
     )
 ).name
+LOCAL_OPERATOR_EXECUTOR_PROPOSAL_DRAFT_CANDIDATE_FILENAME = Path(
+    str(
+        supervisor_executor_adapter_policy_lookup(
+            "repository_layout.local_operator_proposal_draft_candidate_artifact"
+        )
+    )
+).name
 SUPERVISOR_EXECUTOR_ADAPTER_INDEX_ARTIFACT_KIND = str(
     supervisor_executor_adapter_policy_lookup("index_contract.artifact_kind")
 )
@@ -3243,6 +3255,16 @@ LOCAL_OPERATOR_EXECUTOR_REPORT_REVIEW_PACKET_ARTIFACT_KIND = str(
 LOCAL_OPERATOR_EXECUTOR_REPORT_REVIEW_PACKET_SCHEMA_VERSION = int(
     supervisor_executor_adapter_policy_lookup(
         "executor_report_review_packet_contract.schema_version"
+    )
+)
+LOCAL_OPERATOR_EXECUTOR_PROPOSAL_DRAFT_CANDIDATE_ARTIFACT_KIND = str(
+    supervisor_executor_adapter_policy_lookup(
+        "executor_report_to_proposal_draft_policy.proposal_draft_candidate_contract.artifact_kind"
+    )
+)
+LOCAL_OPERATOR_EXECUTOR_PROPOSAL_DRAFT_CANDIDATE_SCHEMA_VERSION = int(
+    supervisor_executor_adapter_policy_lookup(
+        "executor_report_to_proposal_draft_policy.proposal_draft_candidate_contract.schema_version"
     )
 )
 AGENT_SURFACE_INDEX_FILENAME = Path(
@@ -18109,6 +18131,10 @@ def local_operator_executor_report_review_packet_path() -> Path:
     return ROOT / LOCAL_OPERATOR_EXECUTOR_REPORT_REVIEW_PACKET_RELATIVE_PATH
 
 
+def local_operator_executor_proposal_draft_candidate_path() -> Path:
+    return RUNS_DIR / LOCAL_OPERATOR_EXECUTOR_PROPOSAL_DRAFT_CANDIDATE_FILENAME
+
+
 def metric_signal_index_path() -> Path:
     return RUNS_DIR / METRIC_SIGNAL_INDEX_FILENAME
 
@@ -22675,6 +22701,543 @@ def build_local_operator_executor_report_review_packet(
 
 def write_local_operator_executor_report_review_packet(index: dict[str, Any]) -> Path:
     path = local_operator_executor_report_review_packet_path()
+    with artifact_lock(path):
+        atomic_write_json(path, index)
+    return path
+
+
+def load_local_operator_executor_report_review_packet_artifact() -> dict[str, Any] | None:
+    path = local_operator_executor_report_review_packet_path()
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    return payload if isinstance(payload, dict) else None
+
+
+def proposal_draft_candidate_contract() -> dict[str, Any]:
+    policy = executor_report_to_proposal_draft_policy()
+    contract = policy.get("proposal_draft_candidate_contract", {})
+    return contract if isinstance(contract, dict) else {}
+
+
+def local_operator_executor_proposal_draft_candidate_next_gap(status: str) -> str:
+    return {
+        "ready_for_promotion_review": "define_proposal_draft_candidate_promotion_policy",
+        "blocked_missing_review_packet": "run_executor_report_review_packet_until_ready",
+        "blocked_invalid_review_packet": "repair_executor_report_review_packet",
+        "blocked_proposal_draft_policy": "repair_executor_report_to_proposal_draft_policy",
+        "blocked_authority_boundary": "repair_executor_report_to_proposal_draft_policy",
+        "blocked_privacy_boundary": "repair_executor_proposal_draft_candidate_privacy",
+        "blocked_policy_contract": "repair_executor_proposal_draft_candidate_contract",
+    }.get(status, "repair_executor_proposal_draft_candidate")
+
+
+def local_operator_executor_proposal_draft_candidate_status(
+    checks: list[dict[str, Any]],
+    *,
+    policy_findings: list[dict[str, Any]] | None = None,
+) -> str:
+    status_by_id = {
+        str(check.get("check_id", "")).strip(): str(check.get("status", "")).strip()
+        for check in checks
+    }
+    if status_by_id.get("source_review_packet_present") != "passed":
+        return "blocked_missing_review_packet"
+    if status_by_id.get("source_review_packet_valid") != "passed":
+        return "blocked_invalid_review_packet"
+    if status_by_id.get("proposal_draft_policy_allows_candidate") != "passed":
+        finding_codes = {
+            str(finding.get("code", "")).strip()
+            for finding in (policy_findings or [])
+            if isinstance(finding, dict)
+        }
+        if any("authority_boundary" in code for code in finding_codes):
+            return "blocked_authority_boundary"
+        return "blocked_proposal_draft_policy"
+    if status_by_id.get("promotion_boundary_preserved") != "passed":
+        return "blocked_authority_boundary"
+    if status_by_id.get("privacy_boundary_preserved") != "passed":
+        return "blocked_privacy_boundary"
+    if (
+        "candidate_contract_valid" in status_by_id
+        and status_by_id.get("candidate_contract_valid") != "passed"
+    ):
+        return "blocked_policy_contract"
+    return "ready_for_promotion_review"
+
+
+def validate_executor_report_proposal_draft_candidate(candidate: object) -> dict[str, Any]:
+    contract = proposal_draft_candidate_contract()
+    findings: list[dict[str, str]] = []
+    if not isinstance(candidate, dict):
+        return {
+            "valid": False,
+            "findings": [
+                executor_report_finding(
+                    code="proposal_draft_candidate_not_object",
+                    field="candidate",
+                    message="Proposal draft candidate must be a JSON object.",
+                )
+            ],
+            "normalized": {},
+        }
+    findings.extend(executor_report_forbidden_key_findings(candidate))
+    findings.extend(executor_report_machine_local_path_findings(candidate))
+    findings.extend(executor_report_secret_like_value_findings(candidate))
+    for field in [
+        str(field).strip() for field in contract.get("required_fields", []) if str(field).strip()
+    ]:
+        if field not in candidate:
+            findings.append(
+                executor_report_finding(
+                    code="missing_proposal_draft_candidate_field",
+                    field=field,
+                    message=f"Proposal draft candidate is missing required field {field}.",
+                )
+            )
+    if (
+        candidate.get("artifact_kind")
+        != LOCAL_OPERATOR_EXECUTOR_PROPOSAL_DRAFT_CANDIDATE_ARTIFACT_KIND
+    ):
+        findings.append(
+            executor_report_finding(
+                code="invalid_proposal_draft_candidate_artifact_kind",
+                field="artifact_kind",
+                message="Proposal draft candidate artifact kind does not match policy.",
+            )
+        )
+    if (
+        candidate.get("schema_version")
+        != LOCAL_OPERATOR_EXECUTOR_PROPOSAL_DRAFT_CANDIDATE_SCHEMA_VERSION
+    ):
+        findings.append(
+            executor_report_finding(
+                code="invalid_proposal_draft_candidate_schema_version",
+                field="schema_version",
+                message="Proposal draft candidate schema version does not match policy.",
+            )
+        )
+    if candidate.get("local_only") is not True:
+        findings.append(
+            executor_report_finding(
+                code="proposal_draft_candidate_local_only_required",
+                field="local_only",
+                message="Proposal draft candidate must remain local-only.",
+            )
+        )
+    if (
+        candidate.get("source_review_packet_artifact")
+        != LOCAL_OPERATOR_EXECUTOR_REPORT_REVIEW_PACKET_RELATIVE_PATH
+    ):
+        findings.append(
+            executor_report_finding(
+                code="invalid_proposal_draft_candidate_source_review_packet",
+                field="source_review_packet_artifact",
+                message="Proposal draft candidate must reference the local review packet.",
+            )
+        )
+    if candidate.get("source_report_artifact") != LOCAL_OPERATOR_EXECUTOR_REPORT_RELATIVE_PATH:
+        findings.append(
+            executor_report_finding(
+                code="invalid_proposal_draft_candidate_source_report",
+                field="source_report_artifact",
+                message="Proposal draft candidate must reference the local executor report.",
+            )
+        )
+    allowed_draft_kinds = {
+        str(value).strip()
+        for value in contract.get("allowed_draft_kinds", [])
+        if str(value).strip()
+    }
+    draft_kind = str(candidate.get("draft_kind", "")).strip()
+    if draft_kind not in allowed_draft_kinds:
+        findings.append(
+            executor_report_finding(
+                code="invalid_proposal_draft_candidate_draft_kind",
+                field="draft_kind",
+                message="Proposal draft candidate draft_kind is not allowed.",
+            )
+        )
+    allowed_statuses = {
+        str(value).strip()
+        for value in contract.get("allowed_proposal_status", [])
+        if str(value).strip()
+    }
+    proposal_status = str(candidate.get("proposal_status", "")).strip()
+    if proposal_status not in allowed_statuses:
+        findings.append(
+            executor_report_finding(
+                code="invalid_proposal_draft_candidate_status",
+                field="proposal_status",
+                message="Proposal draft candidate status is not allowed.",
+            )
+        )
+    authority_boundary = candidate.get("authority_boundary", {})
+    authority_validation = validate_executor_report_proposal_draft_authority_boundary(
+        authority_boundary
+    )
+    findings.extend(copy.deepcopy(authority_validation.get("findings", [])))
+    promotion = candidate.get("promotion", {})
+    promotion = promotion if isinstance(promotion, dict) else {}
+    if not isinstance(candidate.get("promotion"), dict):
+        findings.append(
+            executor_report_finding(
+                code="proposal_draft_candidate_promotion_not_object",
+                field="promotion",
+                message="Proposal draft candidate promotion must be an object.",
+            )
+        )
+    for field in [
+        str(field).strip()
+        for field in contract.get("required_promotion_fields", [])
+        if str(field).strip()
+    ]:
+        if field not in promotion:
+            findings.append(
+                executor_report_finding(
+                    code="missing_proposal_draft_candidate_promotion_field",
+                    field=f"promotion.{field}",
+                    message=f"Proposal draft candidate promotion is missing field {field}.",
+                )
+            )
+    if promotion.get("requires_human_promotion") is not True:
+        findings.append(
+            executor_report_finding(
+                code="proposal_draft_candidate_human_promotion_required",
+                field="promotion.requires_human_promotion",
+                message="Proposal draft candidate must require human promotion.",
+            )
+        )
+    if promotion.get("target_lane") != "proposal_lane":
+        findings.append(
+            executor_report_finding(
+                code="proposal_draft_candidate_target_lane_invalid",
+                field="promotion.target_lane",
+                message="Proposal draft candidate may only target the proposal lane.",
+            )
+        )
+    if promotion.get("canonical_mutations_allowed") is not False:
+        findings.append(
+            executor_report_finding(
+                code="proposal_draft_candidate_allows_canonical_mutation",
+                field="promotion.canonical_mutations_allowed",
+                message="Proposal draft candidate must not allow canonical mutations.",
+            )
+        )
+    if promotion.get("proposal_status_mutations_allowed") is not False:
+        findings.append(
+            executor_report_finding(
+                code="proposal_draft_candidate_allows_status_mutation",
+                field="promotion.proposal_status_mutations_allowed",
+                message="Proposal draft candidate must not allow proposal status mutation.",
+            )
+        )
+    proposal_draft = candidate.get("proposal_draft", {})
+    proposal_draft = proposal_draft if isinstance(proposal_draft, dict) else {}
+    if not isinstance(candidate.get("proposal_draft"), dict):
+        findings.append(
+            executor_report_finding(
+                code="proposal_draft_candidate_payload_not_object",
+                field="proposal_draft",
+                message="Proposal draft candidate proposal_draft must be an object.",
+            )
+        )
+    if str(proposal_draft.get("title", "")).strip() == "":
+        findings.append(
+            executor_report_finding(
+                code="proposal_draft_candidate_title_missing",
+                field="proposal_draft.title",
+                message="Proposal draft candidate must include a draft title.",
+            )
+        )
+    if str(proposal_draft.get("motivating_concern", "")).strip() == "":
+        findings.append(
+            executor_report_finding(
+                code="proposal_draft_candidate_motivating_concern_missing",
+                field="proposal_draft.motivating_concern",
+                message="Proposal draft candidate must include a motivating concern.",
+            )
+        )
+    if str(proposal_draft.get("bounded_scope", "")).strip() == "":
+        findings.append(
+            executor_report_finding(
+                code="proposal_draft_candidate_bounded_scope_missing",
+                field="proposal_draft.bounded_scope",
+                message="Proposal draft candidate must include a bounded scope.",
+            )
+        )
+    return {
+        "valid": not findings,
+        "findings": findings,
+        "normalized": {
+            "draft_kind": draft_kind,
+            "proposal_status": proposal_status,
+            "requires_human_promotion": promotion.get("requires_human_promotion"),
+            "target_lane": str(promotion.get("target_lane", "")).strip(),
+        },
+    }
+
+
+def build_local_operator_executor_proposal_draft_candidate(
+    review_packet: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    contract = proposal_draft_candidate_contract()
+    review_packet = (
+        review_packet
+        if isinstance(review_packet, dict)
+        else load_local_operator_executor_report_review_packet_artifact()
+    )
+    source_packet_present = isinstance(review_packet, dict)
+    request = default_executor_report_to_proposal_draft_request()
+    policy_validation = validate_executor_report_to_proposal_draft_request(
+        request,
+        review_packet=review_packet if source_packet_present else None,
+    )
+    policy_findings = policy_validation.get("findings", [])
+    policy_findings = policy_findings if isinstance(policy_findings, list) else []
+    normalized_policy = policy_validation.get("normalized", {})
+    normalized_policy = normalized_policy if isinstance(normalized_policy, dict) else {}
+    source_validation = policy_validation.get("source_review_packet_validation", {})
+    source_validation = source_validation if isinstance(source_validation, dict) else {}
+    source_packet_validation = source_validation.get("packet_validation", {})
+    source_packet_validation = (
+        source_packet_validation if isinstance(source_packet_validation, dict) else {}
+    )
+    source_packet_valid = bool(
+        source_packet_present
+        and source_packet_validation.get("valid") is True
+        and normalized_policy.get("source_review_packet_status") == "ready_for_review"
+    )
+    authority_boundary = request.get("authority_boundary", {})
+    authority_boundary = authority_boundary if isinstance(authority_boundary, dict) else {}
+    promotion_boundary_preserved = (
+        authority_boundary.get("executor_report_is_authority") is False
+        and authority_boundary.get("review_packet_is_authority") is False
+        and authority_boundary.get("human_or_supervisor_review_required") is True
+        and authority_boundary.get("canonical_mutations_allowed") is False
+        and authority_boundary.get("proposal_status_mutations_allowed") is False
+        and authority_boundary.get("gap_closure_allowed") is False
+        and authority_boundary.get("patch_application_allowed") is False
+        and authority_boundary.get("static_publish_of_local_report_allowed") is False
+    )
+    privacy_findings: list[dict[str, str]] = []
+    if source_packet_present:
+        privacy_findings.extend(executor_report_forbidden_key_findings(review_packet))
+        privacy_findings.extend(executor_report_machine_local_path_findings(review_packet))
+        privacy_findings.extend(executor_report_secret_like_value_findings(review_packet))
+    checks = [
+        local_operator_smoke_check(
+            check_id="source_review_packet_present",
+            status="passed" if source_packet_present else "missing",
+            message=(
+                "Local operator executor report review packet is present."
+                if source_packet_present
+                else "Local operator executor report review packet is missing."
+            ),
+        ),
+        local_operator_smoke_check(
+            check_id="source_review_packet_valid",
+            status="passed" if source_packet_valid else "failed",
+            message=(
+                "Local operator executor report review packet is valid."
+                if source_packet_valid
+                else "Local operator executor report review packet is missing or invalid."
+            ),
+        ),
+        local_operator_smoke_check(
+            check_id="proposal_draft_policy_allows_candidate",
+            status="passed" if policy_validation.get("valid") is True else "failed",
+            message=(
+                "Proposal draft policy allows building a draft candidate."
+                if policy_validation.get("valid") is True
+                else "Proposal draft policy does not allow this review packet."
+            ),
+        ),
+        local_operator_smoke_check(
+            check_id="promotion_boundary_preserved",
+            status="passed" if promotion_boundary_preserved else "failed",
+            message=(
+                "Proposal draft candidate preserves the review-packet-as-input boundary."
+                if promotion_boundary_preserved
+                else "Proposal draft candidate would expand authority."
+            ),
+        ),
+        local_operator_smoke_check(
+            check_id="privacy_boundary_preserved",
+            status="passed" if not privacy_findings else "failed",
+            message=(
+                "Proposal draft candidate preserves the source review packet privacy boundary."
+                if not privacy_findings
+                else "Proposal draft candidate would expose unsafe review packet payload data."
+            ),
+        ),
+    ]
+    status_before_contract = local_operator_executor_proposal_draft_candidate_status(
+        checks,
+        policy_findings=policy_findings,
+    )
+    summary = review_packet.get("summary", {}) if source_packet_present else {}
+    summary = summary if isinstance(summary, dict) else {}
+    nested_packet = review_packet.get("review_packet", {}) if source_packet_present else {}
+    nested_packet = nested_packet if isinstance(nested_packet, dict) else {}
+    source_report_validation = (
+        review_packet.get("source_report_validation", {}) if source_packet_present else {}
+    )
+    source_report_validation = (
+        source_report_validation if isinstance(source_report_validation, dict) else {}
+    )
+    normalized_report = source_report_validation.get("normalized", {})
+    normalized_report = normalized_report if isinstance(normalized_report, dict) else {}
+    evidence_refs = nested_packet.get("evidence_refs", []) if source_packet_present else []
+    evidence_refs = (
+        [
+            safe_ref
+            for safe_ref in (safe_executor_report_evidence_ref(ref) for ref in evidence_refs)
+            if safe_ref
+        ]
+        if isinstance(evidence_refs, list)
+        else []
+    )
+    proposal_title = "Executor Report Proposal Draft Candidate"
+    report_kind = str(summary.get("report_kind", "")).strip()
+    motivating_concern = (
+        "A human-review-ready executor report review packet requested a proposal draft "
+        "candidate, but the candidate still requires explicit human promotion before "
+        "entering the proposal lane."
+    )
+    bounded_scope = (
+        "Represent the validated executor report review packet as a local-only proposal "
+        "draft candidate without writing proposal markdown, mutating proposal registries, "
+        "changing canonical specs, applying patches, closing gaps, or changing proposal status."
+    )
+    named_filters = {
+        "ready_for_promotion_review": [],
+        "blocked_missing_review_packet": [],
+        "blocked_invalid_review_packet": [],
+        "blocked_proposal_draft_policy": [],
+        "blocked_authority_boundary": [],
+        "blocked_privacy_boundary": [],
+        "blocked_policy_contract": [],
+    }
+    producer_kind = str(summary.get("producer_kind", "")).strip()
+    candidate_is_ready = status_before_contract == "ready_for_promotion_review"
+    source_review_packet_artifact = LOCAL_OPERATOR_EXECUTOR_REPORT_REVIEW_PACKET_RELATIVE_PATH
+    source_report_artifact = LOCAL_OPERATOR_EXECUTOR_REPORT_RELATIVE_PATH
+    candidate = {
+        "artifact_kind": LOCAL_OPERATOR_EXECUTOR_PROPOSAL_DRAFT_CANDIDATE_ARTIFACT_KIND,
+        "schema_version": LOCAL_OPERATOR_EXECUTOR_PROPOSAL_DRAFT_CANDIDATE_SCHEMA_VERSION,
+        "generated_at": utc_now_iso(),
+        "policy_reference": {
+            **supervisor_executor_adapter_policy_reference(),
+            "policy_section": "executor_report_to_proposal_draft_policy",
+            "candidate_contract_section": "proposal_draft_candidate_contract",
+        },
+        "source_review_packet_artifact": source_review_packet_artifact,
+        "source_report_artifact": source_report_artifact,
+        "local_only": bool(contract.get("local_only", True)),
+        "draft_kind": "proposal_draft_candidate",
+        "proposal_status": "draft_candidate",
+        "proposal_draft": {
+            "title": proposal_title,
+            "motivating_concern": motivating_concern if candidate_is_ready else "",
+            "bounded_scope": bounded_scope if candidate_is_ready else "",
+            "source_report_kind": report_kind,
+            "source_evidence_refs": evidence_refs,
+            "proposed_artifacts": copy.deepcopy(nested_packet.get("proposed_artifacts", []))
+            if isinstance(nested_packet.get("proposed_artifacts", []), list) and candidate_is_ready
+            else [],
+        },
+        "authority_boundary": copy.deepcopy(authority_boundary),
+        "promotion": {
+            "requires_human_promotion": True,
+            "target_lane": "proposal_lane",
+            "canonical_mutations_allowed": False,
+            "proposal_status_mutations_allowed": False,
+            "writes_proposal_markdown": False,
+            "writes_proposal_registry": False,
+        },
+        "provenance": {
+            "source_review_packet_artifact": source_review_packet_artifact,
+            "source_report_artifact": source_report_artifact,
+            "source_report_kind": str(normalized_report.get("report_kind", "")).strip(),
+            "source_review_state": str(normalized_policy.get("source_review_state", "")).strip(),
+            "consumer": str(normalized_policy.get("consumer", "")).strip(),
+            "transformation": str(normalized_policy.get("transformation", "")).strip(),
+            "requested_effects": copy.deepcopy(normalized_policy.get("requested_effects", [])),
+            "producer_kind": producer_kind,
+        },
+        "proposal_draft_policy_request": request,
+        "proposal_draft_policy_validation": {
+            "valid": bool(policy_validation.get("valid", False)),
+            "finding_count": len(policy_findings),
+            "findings": copy.deepcopy(policy_findings),
+            "normalized": copy.deepcopy(normalized_policy),
+        },
+        "source_review_packet_validation": {
+            "valid": bool(source_packet_validation.get("valid", False)),
+            "finding_count": int(source_packet_validation.get("finding_count", 0) or 0),
+            "findings": copy.deepcopy(source_packet_validation.get("findings", [])),
+        },
+        "privacy_boundary": copy.deepcopy(contract.get("privacy_boundary", {})),
+        "checks": checks,
+        "summary": {
+            "status": status_before_contract,
+            "report_kind": report_kind,
+            "producer_kind": producer_kind,
+            "draft_kind": "proposal_draft_candidate",
+            "proposal_status": "draft_candidate",
+            "requires_human_promotion": True,
+            "canonical_mutations_allowed": False,
+            "next_gap": local_operator_executor_proposal_draft_candidate_next_gap(
+                status_before_contract
+            ),
+        },
+        "viewer_projection": {
+            "named_filters": named_filters,
+        },
+    }
+    candidate_validation = validate_executor_report_proposal_draft_candidate(candidate)
+    candidate["candidate_validation"] = {
+        "valid": bool(candidate_validation.get("valid", False)),
+        "finding_count": len(candidate_validation.get("findings", [])),
+        "findings": copy.deepcopy(candidate_validation.get("findings", [])),
+        "normalized": copy.deepcopy(candidate_validation.get("normalized", {})),
+    }
+    checks.append(
+        local_operator_smoke_check(
+            check_id="candidate_contract_valid",
+            status="passed" if candidate_validation.get("valid") is True else "failed",
+            message=(
+                "Proposal draft candidate matches the candidate contract."
+                if candidate_validation.get("valid") is True
+                else "Proposal draft candidate does not match the candidate contract."
+            ),
+        )
+    )
+    final_status = local_operator_executor_proposal_draft_candidate_status(
+        checks,
+        policy_findings=policy_findings,
+    )
+    candidate["summary"]["status"] = final_status
+    candidate["summary"]["next_gap"] = local_operator_executor_proposal_draft_candidate_next_gap(
+        final_status
+    )
+    candidate["viewer_projection"]["named_filters"] = {
+        key: [] for key in candidate["viewer_projection"]["named_filters"]
+    }
+    candidate["viewer_projection"]["named_filters"].setdefault(final_status, []).append(
+        producer_kind or "missing_producer"
+    )
+    for key in list(candidate["viewer_projection"]["named_filters"]):
+        candidate["viewer_projection"]["named_filters"][key] = sorted(
+            set(candidate["viewer_projection"]["named_filters"][key])
+        )
+    return candidate
+
+
+def write_local_operator_executor_proposal_draft_candidate(index: dict[str, Any]) -> Path:
+    path = local_operator_executor_proposal_draft_candidate_path()
     with artifact_lock(path):
         atomic_write_json(path, index)
     return path
@@ -45747,6 +46310,7 @@ def main(
     build_local_operator_executor_report_contract_mode: bool = False,
     build_local_operator_executor_report_smoke_mode: bool = False,
     build_local_operator_executor_report_review_packet_mode: bool = False,
+    build_local_operator_executor_proposal_draft_candidate_mode: bool = False,
     build_agent_passport_derived_surfaces_mode: bool = False,
     build_agent_runtime_enforcement_evidence_mode: bool = False,
     build_supervisor_performance_index_mode: bool = False,
@@ -45833,6 +46397,9 @@ def main(
         ),
         "--build-local-operator-executor-report-review-packet": (
             build_local_operator_executor_report_review_packet_mode
+        ),
+        "--build-local-operator-executor-proposal-draft-candidate": (
+            build_local_operator_executor_proposal_draft_candidate_mode
         ),
         "--build-agent-passport-derived-surfaces": build_agent_passport_derived_surfaces_mode,
         "--build-agent-runtime-enforcement-evidence": (
@@ -46755,6 +47322,7 @@ def main(
                 build_local_operator_executor_report_contract_mode,
                 build_local_operator_executor_report_smoke_mode,
                 build_local_operator_executor_report_review_packet_mode,
+                build_local_operator_executor_proposal_draft_candidate_mode,
                 build_agent_runtime_enforcement_evidence_mode,
             )
         ):
@@ -46979,6 +47547,42 @@ def main(
         write_local_operator_executor_report_review_packet(index)
         emit_supervisor_json(index, output_mode=normalized_output_mode)
         return 0 if index.get("summary", {}).get("status") == "ready_for_review" else 1
+
+    if build_local_operator_executor_proposal_draft_candidate_mode:
+        if any(
+            (
+                dry_run,
+                auto_approve,
+                loop,
+                resolve_gate,
+                decision,
+                note,
+                target_spec,
+                split_proposal,
+                apply_split_proposal,
+                operator_note,
+                mutation_budget,
+                run_authority,
+                execution_profile,
+                child_model,
+                child_timeout_seconds,
+                verbose,
+                list_stale_runtime,
+                clean_stale_runtime,
+                observe_graph_health_mode,
+                operator_request_packet_path,
+            )
+        ):
+            print(
+                "--build-local-operator-executor-proposal-draft-candidate must be used "
+                "as a standalone command",
+                file=sys.stderr,
+            )
+            return 1
+        index = build_local_operator_executor_proposal_draft_candidate()
+        write_local_operator_executor_proposal_draft_candidate(index)
+        emit_supervisor_json(index, output_mode=normalized_output_mode)
+        return 0 if index.get("summary", {}).get("status") == "ready_for_promotion_review" else 1
 
     if build_agent_passport_derived_surfaces_mode:
         if any(
@@ -50388,6 +50992,14 @@ if __name__ == "__main__":
         ),
     )
     parser.add_argument(
+        "--build-local-operator-executor-proposal-draft-candidate",
+        action="store_true",
+        help=(
+            "Build a local-only proposal draft candidate from a valid executor report "
+            "review packet, without writing proposal docs or mutating canonical specs"
+        ),
+    )
+    parser.add_argument(
         "--build-agent-passport-derived-surfaces",
         action="store_true",
         help=(
@@ -50740,6 +51352,9 @@ if __name__ == "__main__":
             ),
             build_local_operator_executor_report_review_packet_mode=(
                 args.build_local_operator_executor_report_review_packet
+            ),
+            build_local_operator_executor_proposal_draft_candidate_mode=(
+                args.build_local_operator_executor_proposal_draft_candidate
             ),
             build_agent_passport_derived_surfaces_mode=(args.build_agent_passport_derived_surfaces),
             build_agent_runtime_enforcement_evidence_mode=(

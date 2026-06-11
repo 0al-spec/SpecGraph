@@ -9,7 +9,8 @@
     "local_operator_task_smoke_artifact": "runs/local_operator_executor_task_smoke.json",
     "local_operator_report_contract_artifact": "runs/local_operator_executor_report_contract.json",
     "local_operator_report_artifact": "runs/local_operator_executor_report.json",
-    "local_operator_report_review_packet_artifact": "runs/local_operator_executor_report_review_packet.json"
+    "local_operator_report_review_packet_artifact": "runs/local_operator_executor_report_review_packet.json",
+    "local_operator_proposal_draft_candidate_artifact": "runs/local_operator_executor_proposal_draft_candidate.json"
   },
   "index_contract": {
     "artifact_kind": "supervisor_executor_adapter_index",
@@ -475,23 +476,43 @@
       "artifact_kind": "executor_report_proposal_draft_candidate",
       "schema_version": 1,
       "local_only": true,
+      "artifact": "runs/local_operator_executor_proposal_draft_candidate.json",
       "required_fields": [
         "artifact_kind",
         "schema_version",
         "local_only",
         "source_review_packet_artifact",
         "source_report_artifact",
+        "proposal_draft",
         "draft_kind",
         "proposal_status",
         "authority_boundary",
-        "provenance"
+        "provenance",
+        "promotion"
       ],
       "allowed_draft_kinds": [
         "proposal_draft_candidate"
       ],
       "allowed_proposal_status": [
         "draft_candidate"
-      ]
+      ],
+      "required_promotion_fields": [
+        "requires_human_promotion",
+        "target_lane",
+        "canonical_mutations_allowed",
+        "proposal_status_mutations_allowed"
+      ],
+      "next_gap": "define_proposal_draft_candidate_promotion_policy",
+      "privacy_boundary": {
+        "must_not_persist_absolute_paths": true,
+        "must_not_persist_raw_logs": true,
+        "must_not_persist_raw_prompt": true,
+        "must_not_persist_raw_response": true,
+        "must_not_persist_secrets": true,
+        "public_static_publish": false,
+        "canonical_mutations_allowed": false,
+        "proposal_status_mutations_allowed": false
+      }
     },
     "authority_boundary": {
       "executor_report_is_authority": false,

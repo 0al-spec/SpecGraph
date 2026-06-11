@@ -4919,5 +4919,85 @@
         "pattern": "executor_report_to_proposal_draft_policy"
       }
     ]
+  },
+  {
+    "proposal_id": "0095",
+    "posture": "bounded_runtime_followup",
+    "runtime_surfaces": [
+      "docs/proposals/0095_build_executor_report_proposal_draft_candidate.md",
+      "docs/archive/proposal_sources/0095_build_executor_report_proposal_draft_candidate.md",
+      "tools/supervisor_executor_adapter_policy.json",
+      "tools/supervisor.py",
+      "tools/build_static_artifact_bundle.py",
+      "Makefile",
+      "tools/README.md",
+      "docs/static_artifact_publish.md",
+      "Sources/SpecGraph/Documentation.docc/ArtifactPublishing.md",
+      "tests/test_supervisor.py",
+      "tests/test_static_artifact_bundle.py",
+      "runs/local_operator_executor_proposal_draft_candidate.json"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/supervisor_executor_adapter_policy.json",
+        "pattern": "local_operator_proposal_draft_candidate_artifact"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def build_local_operator_executor_proposal_draft_candidate("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "\"--build-local-operator-executor-proposal-draft-candidate\""
+      },
+      {
+        "path": "Makefile",
+        "pattern": "executor-proposal-draft-candidate:"
+      },
+      {
+        "path": "tools/build_static_artifact_bundle.py",
+        "pattern": "\"local_operator_executor_proposal_draft_candidate.json\""
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_local_operator_executor_proposal_draft_candidate_from_valid_packet("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_local_operator_executor_proposal_draft_candidate_blocks_missing_packet("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_local_operator_executor_proposal_draft_candidate_blocks_analysis_packet("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_validate_executor_report_proposal_draft_candidate_rejects_promotion_authority("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_main_builds_local_operator_executor_proposal_draft_candidate_as_standalone_command("
+      },
+      {
+        "path": "tests/test_static_artifact_bundle.py",
+        "pattern": "local_operator_executor_proposal_draft_candidate.json"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0095_build_executor_report_proposal_draft_candidate.md",
+        "pattern": "It does not write a proposal"
+      },
+      {
+        "path": "docs/proposals/0095_build_executor_report_proposal_draft_candidate.md",
+        "pattern": "define_proposal_draft_candidate_promotion_policy"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "runs/local_operator_executor_proposal_draft_candidate.json"
+      }
+    ]
   }
 ]

@@ -161,6 +161,13 @@ Supervisor modes:
   a reviewable packet that requires human/operator review without creating
   proposals, applying patches, mutating canonical specs, or publishing local
   artifacts.
+- `--build-local-operator-executor-proposal-draft-candidate`: build local-only
+  `runs/local_operator_executor_proposal_draft_candidate.json` by consuming a
+  valid `proposal_draft` review packet and the
+  `executor_report_to_proposal_draft_policy`, producing a draft candidate that
+  still requires explicit human promotion without writing proposal markdown,
+  mutating proposal registries, changing proposal status, applying patches, or
+  publishing local artifacts.
 - `executor_report_consumption_policy` in
   `tools/supervisor_executor_adapter_policy.json`: defines which supervisor or
   downstream surfaces may consume a valid local executor report, which
@@ -512,6 +519,12 @@ Key derived artifacts:
   preserving findings/evidence as review input while requiring human/operator
   review and forbidding canonical mutation, proposal status mutation, patch
   application, gap closure, and public static publication
+- `runs/local_operator_executor_proposal_draft_candidate.json`: local-only
+  proposal draft candidate built from a valid `proposal_draft` review packet,
+  requiring explicit human promotion into the proposal lane while forbidding
+  proposal markdown writes, proposal registry mutation, proposal status
+  mutation, canonical mutation, patch application, gap closure, and public
+  static publication
 - `executor_report_consumption_policy`: policy-only surface that allows valid
   local executor reports to become review packet, proposal draft candidate,
   implementation planning, evidence reference, or handoff input while rejecting
