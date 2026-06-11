@@ -1181,5 +1181,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0092",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0092_executor_report_consumption_policy.md"
+    ],
+    "motivating_concern": "SpecGraph can now produce a valid local executor report, but it lacks a policy boundary that defines who may consume that report and which downstream effects are allowed before proposal or patch workflows are implemented",
+    "normalized_title": "Executor Report Consumption Policy",
+    "bounded_scope": "Add a report-only consumption policy and validators for valid local executor reports, defining allowed consumers, transformations, allowed effects, forbidden effects, and authority boundaries without running a new executor task, creating proposals, applying patches, mutating canonical specs, or changing SpecSpace/Platform behavior.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

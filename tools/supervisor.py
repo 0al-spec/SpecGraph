@@ -19357,9 +19357,9 @@ def bounded_executor_task_smoke_response_schema() -> dict[str, Any]:
             "message",
         ],
         "properties": {
-            "task_kind": {"const": "bounded_executor_task_smoke"},
-            "status": {"const": "acknowledged"},
-            "canonical_mutation_attempted": {"const": False},
+            "task_kind": {"type": "string", "const": "bounded_executor_task_smoke"},
+            "status": {"type": "string", "const": "acknowledged"},
+            "canonical_mutation_attempted": {"type": "boolean", "const": False},
             "message": {"type": "string", "minLength": 1, "maxLength": 240},
         },
     }
@@ -19775,6 +19775,19 @@ def supervisor_executor_backend_ids() -> set[str]:
 def executor_report_contract_values(key: str) -> set[str]:
     contract = local_operator_executor_report_contract()
     values = contract.get(key, [])
+    if not isinstance(values, list):
+        return set()
+    return {str(value).strip() for value in values if str(value).strip()}
+
+
+def executor_report_consumption_policy() -> dict[str, Any]:
+    policy = supervisor_executor_adapter_policy_lookup("executor_report_consumption_policy")
+    return policy if isinstance(policy, dict) else {}
+
+
+def executor_report_consumption_values(key: str) -> set[str]:
+    policy = executor_report_consumption_policy()
+    values = policy.get(key, [])
     if not isinstance(values, list):
         return set()
     return {str(value).strip() for value in values if str(value).strip()}
@@ -20207,6 +20220,311 @@ def validate_local_operator_executor_report(report: object) -> dict[str, Any]:
         "valid": not findings,
         "findings": findings,
         "normalized": normalized,
+    }
+
+
+def default_executor_report_consumption_request(
+    *,
+    consumer: str = "human_review_packet_builder",
+    transformation: str = "report_to_review_packet",
+    requested_effects: list[str] | None = None,
+) -> dict[str, Any]:
+    policy = executor_report_consumption_policy()
+    authority_boundary = policy.get("authority_boundary", {})
+    authority_boundary = authority_boundary if isinstance(authority_boundary, dict) else {}
+    return {
+        "source_report_artifact": LOCAL_OPERATOR_EXECUTOR_REPORT_RELATIVE_PATH,
+        "consumer": consumer,
+        "transformation": transformation,
+        "requested_effects": (
+            requested_effects if requested_effects is not None else ["review_packet_candidate"]
+        ),
+        "authority_boundary": {
+            "report_is_authority": False,
+            "human_or_supervisor_review_required": bool(
+                authority_boundary.get("human_or_supervisor_review_required", True)
+            ),
+            "canonical_mutations_allowed": False,
+            "proposal_status_mutations_allowed": False,
+            "gap_closure_allowed": False,
+            "static_publish_of_local_report_allowed": False,
+        },
+    }
+
+
+def validate_executor_report_consumer(consumer: object) -> dict[str, Any]:
+    consumer_text = str(consumer or "").strip()
+    allowed = executor_report_consumption_values("allowed_consumers")
+    findings: list[dict[str, str]] = []
+    if not consumer_text:
+        findings.append(
+            executor_report_finding(
+                code="missing_report_consumer",
+                field="consumer",
+                message="Executor report consumption request must declare a consumer.",
+            )
+        )
+    elif consumer_text not in allowed:
+        findings.append(
+            executor_report_finding(
+                code="unknown_report_consumer",
+                field="consumer",
+                message=f"Unknown executor report consumer: {consumer_text}.",
+            )
+        )
+    return {
+        "valid": not findings,
+        "consumer": consumer_text,
+        "findings": findings,
+        "allowed_consumers": sorted(allowed),
+    }
+
+
+def validate_executor_report_transformation(transformation: object) -> dict[str, Any]:
+    transformation_text = str(transformation or "").strip()
+    allowed = executor_report_consumption_values("allowed_transformations")
+    findings: list[dict[str, str]] = []
+    if not transformation_text:
+        findings.append(
+            executor_report_finding(
+                code="missing_report_transformation",
+                field="transformation",
+                message="Executor report consumption request must declare a transformation.",
+            )
+        )
+    elif transformation_text not in allowed:
+        findings.append(
+            executor_report_finding(
+                code="unknown_report_transformation",
+                field="transformation",
+                message=f"Unknown executor report transformation: {transformation_text}.",
+            )
+        )
+    return {
+        "valid": not findings,
+        "transformation": transformation_text,
+        "findings": findings,
+        "allowed_transformations": sorted(allowed),
+    }
+
+
+def validate_executor_report_effects(effects: object) -> dict[str, Any]:
+    allowed = executor_report_consumption_values("allowed_effects")
+    forbidden = executor_report_consumption_values("forbidden_effects")
+    findings: list[dict[str, str]] = []
+    if not isinstance(effects, list):
+        return {
+            "valid": False,
+            "effects": [],
+            "findings": [
+                executor_report_finding(
+                    code="requested_effects_not_list",
+                    field="requested_effects",
+                    message="Executor report requested_effects must be a list.",
+                )
+            ],
+            "allowed_effects": sorted(allowed),
+            "forbidden_effects": sorted(forbidden),
+        }
+    normalized_effects: list[str] = []
+    if not effects:
+        findings.append(
+            executor_report_finding(
+                code="requested_effects_empty",
+                field="requested_effects",
+                message="Executor report requested_effects must declare at least one effect.",
+            )
+        )
+    for index, raw_effect in enumerate(effects):
+        effect = str(raw_effect or "").strip()
+        if not effect:
+            findings.append(
+                executor_report_finding(
+                    code="empty_report_effect",
+                    field=f"requested_effects[{index}]",
+                    message="Executor report requested effects must be non-empty strings.",
+                )
+            )
+            continue
+        normalized_effects.append(effect)
+        if effect in forbidden:
+            findings.append(
+                executor_report_finding(
+                    code="forbidden_report_effect",
+                    field=f"requested_effects[{index}]",
+                    message=f"Executor report consumption must not request effect {effect}.",
+                )
+            )
+        elif effect not in allowed:
+            findings.append(
+                executor_report_finding(
+                    code="unknown_report_effect",
+                    field=f"requested_effects[{index}]",
+                    message=f"Unknown executor report requested effect: {effect}.",
+                )
+            )
+    return {
+        "valid": not findings,
+        "effects": normalized_effects,
+        "findings": findings,
+        "allowed_effects": sorted(allowed),
+        "forbidden_effects": sorted(forbidden),
+    }
+
+
+def validate_executor_report_consumption_request(
+    request: object,
+    *,
+    report: object | None = None,
+) -> dict[str, Any]:
+    policy = executor_report_consumption_policy()
+    findings: list[dict[str, str]] = []
+    if not isinstance(request, dict):
+        return {
+            "valid": False,
+            "findings": [
+                executor_report_finding(
+                    code="consumption_request_not_object",
+                    field="request",
+                    message="Executor report consumption request must be a JSON object.",
+                )
+            ],
+            "normalized": {},
+        }
+    required_fields = [
+        str(field).strip()
+        for field in policy.get("required_request_fields", [])
+        if str(field).strip()
+    ]
+    for field in required_fields:
+        if field not in request:
+            findings.append(
+                executor_report_finding(
+                    code="missing_consumption_request_field",
+                    field=field,
+                    message=f"Executor report consumption request is missing field {field}.",
+                )
+            )
+    source_report_artifact = str(request.get("source_report_artifact", "")).strip()
+    expected_source = str(
+        policy.get("source_report_artifact", LOCAL_OPERATOR_EXECUTOR_REPORT_RELATIVE_PATH)
+    ).strip()
+    if source_report_artifact != expected_source:
+        findings.append(
+            executor_report_finding(
+                code="invalid_consumption_source_report_artifact",
+                field="source_report_artifact",
+                message="Executor report consumption request must reference the local report.",
+            )
+        )
+    consumer_validation = validate_executor_report_consumer(request.get("consumer"))
+    transformation_validation = validate_executor_report_transformation(
+        request.get("transformation")
+    )
+    effects_validation = validate_executor_report_effects(request.get("requested_effects"))
+    findings.extend(copy.deepcopy(consumer_validation.get("findings", [])))
+    findings.extend(copy.deepcopy(transformation_validation.get("findings", [])))
+    findings.extend(copy.deepcopy(effects_validation.get("findings", [])))
+
+    authority_boundary = request.get("authority_boundary", {})
+    authority_boundary = authority_boundary if isinstance(authority_boundary, dict) else {}
+    expected_boundary = policy.get("authority_boundary", {})
+    expected_boundary = expected_boundary if isinstance(expected_boundary, dict) else {}
+    boundary_expectations = {
+        "report_is_authority": False,
+        "human_or_supervisor_review_required": True,
+        "canonical_mutations_allowed": False,
+        "proposal_status_mutations_allowed": False,
+        "gap_closure_allowed": False,
+        "static_publish_of_local_report_allowed": False,
+    }
+    extra_boundary_fields = sorted(
+        str(field).strip()
+        for field in authority_boundary
+        if str(field).strip() not in boundary_expectations
+    )
+    for field in extra_boundary_fields:
+        findings.append(
+            executor_report_finding(
+                code="unexpected_consumption_authority_boundary_field",
+                field=f"authority_boundary.{field}",
+                message=(
+                    "Executor report consumption request must not add authority-boundary "
+                    f"field {field}."
+                ),
+            )
+        )
+    for field, expected_value in boundary_expectations.items():
+        if field in expected_boundary:
+            expected_value = expected_boundary.get(field)
+        if authority_boundary.get(field) is not expected_value:
+            findings.append(
+                executor_report_finding(
+                    code="invalid_consumption_authority_boundary",
+                    field=f"authority_boundary.{field}",
+                    message=(
+                        "Executor report consumption request must preserve the report-as-input "
+                        f"authority boundary for {field}."
+                    ),
+                )
+            )
+
+    report_validation = {"valid": False, "findings": [], "normalized": {}}
+    redacted_report_validation: dict[str, Any] = {
+        "valid": None,
+        "validation_performed": False,
+        "finding_count": 0,
+        "findings": [],
+        "normalized": {},
+    }
+    source_report_valid = None
+    if report is not None:
+        report_validation = validate_local_operator_executor_report(report)
+        redacted_report_validation = redacted_executor_report_validation(
+            report_validation,
+            include_normalized=bool(report_validation.get("valid", False)),
+        )
+        findings.extend(copy.deepcopy(redacted_report_validation.get("findings", [])))
+        normalized_report = report_validation.get("normalized", {})
+        normalized_report = normalized_report if isinstance(normalized_report, dict) else {}
+        if (
+            report_validation.get("valid") is True
+            and normalized_report.get("summary_status") != "valid_report"
+        ):
+            findings.append(
+                executor_report_finding(
+                    code="source_report_not_valid_report",
+                    field="source_report.summary.status",
+                    message="Executor report consumption requires a valid_report source report.",
+                )
+            )
+        source_report_valid = bool(report_validation.get("valid", False)) and not any(
+            finding.get("code") == "source_report_not_valid_report" for finding in findings
+        )
+    else:
+        findings.append(
+            executor_report_finding(
+                code="source_report_not_provided",
+                field="report",
+                message="Executor report consumption requires a validated source report.",
+            )
+        )
+
+    return {
+        "valid": not findings,
+        "findings": findings,
+        "normalized": {
+            "source_report_artifact": source_report_artifact,
+            "consumer": consumer_validation.get("consumer", ""),
+            "transformation": transformation_validation.get("transformation", ""),
+            "requested_effects": copy.deepcopy(effects_validation.get("effects", [])),
+            "source_report_valid": source_report_valid,
+            "next_gap": str(policy.get("next_gap", "build_executor_report_review_packet")).strip(),
+        },
+        "consumer_validation": consumer_validation,
+        "transformation_validation": transformation_validation,
+        "effects_validation": effects_validation,
+        "report_validation": redacted_report_validation,
     }
 
 
@@ -20680,7 +20998,7 @@ def write_local_operator_executor_report_contract(index: dict[str, Any]) -> Path
 
 def local_operator_executor_report_smoke_next_gap(status: str) -> str:
     return {
-        "passed": "define_executor_report_consumption_policy",
+        "passed": "build_executor_report_review_packet",
         "blocked_task_smoke_not_passed": "run_executor_task_smoke_until_passed",
         "blocked_report_contract_not_ready": "run_executor_report_contract_until_ready",
         "blocked_executor_unavailable": "configure_local_operator_executable",
@@ -20878,20 +21196,27 @@ def bounded_executor_report_response_schema() -> dict[str, Any]:
             "privacy_boundary",
         ],
         "properties": {
-            "artifact_kind": {"const": LOCAL_OPERATOR_EXECUTOR_REPORT_ARTIFACT_KIND},
-            "schema_version": {"const": LOCAL_OPERATOR_EXECUTOR_REPORT_CONTRACT_SCHEMA_VERSION},
-            "local_only": {"const": True},
+            "artifact_kind": {
+                "type": "string",
+                "const": LOCAL_OPERATOR_EXECUTOR_REPORT_ARTIFACT_KIND,
+            },
+            "schema_version": {
+                "type": "integer",
+                "const": LOCAL_OPERATOR_EXECUTOR_REPORT_CONTRACT_SCHEMA_VERSION,
+            },
+            "local_only": {"type": "boolean", "const": True},
             "source_task_smoke_artifact": {
-                "const": LOCAL_OPERATOR_EXECUTOR_TASK_SMOKE_RELATIVE_PATH
+                "type": "string",
+                "const": LOCAL_OPERATOR_EXECUTOR_TASK_SMOKE_RELATIVE_PATH,
             },
             "producer": {
                 "type": "object",
                 "additionalProperties": False,
                 "required": ["producer_kind", "producer_id", "authority_level"],
                 "properties": {
-                    "producer_kind": {"const": "coding_agent"},
-                    "producer_id": {"const": "codex"},
-                    "authority_level": {"const": "report_only"},
+                    "producer_kind": {"type": "string", "const": "coding_agent"},
+                    "producer_id": {"type": "string", "const": "codex"},
+                    "authority_level": {"type": "string", "const": "report_only"},
                 },
             },
             "summary": {
@@ -20905,11 +21230,14 @@ def bounded_executor_report_response_schema() -> dict[str, Any]:
                     "next_gap",
                 ],
                 "properties": {
-                    "status": {"const": "valid_report"},
-                    "report_kind": {"const": "analysis_report"},
-                    "curation_required": {"const": True},
-                    "canonical_mutation_attempted": {"const": False},
-                    "next_gap": {"const": "run_bounded_executor_report_smoke"},
+                    "status": {"type": "string", "const": "valid_report"},
+                    "report_kind": {"type": "string", "const": "analysis_report"},
+                    "curation_required": {"type": "boolean", "const": True},
+                    "canonical_mutation_attempted": {"type": "boolean", "const": False},
+                    "next_gap": {
+                        "type": "string",
+                        "const": "run_bounded_executor_report_smoke",
+                    },
                 },
             },
             "report": {
@@ -20923,8 +21251,8 @@ def bounded_executor_report_response_schema() -> dict[str, Any]:
                     "proposed_artifacts",
                 ],
                 "properties": {
-                    "report_kind": {"const": "analysis_report"},
-                    "status": {"const": "completed"},
+                    "report_kind": {"type": "string", "const": "analysis_report"},
+                    "status": {"type": "string", "const": "completed"},
                     "findings": {
                         "type": "array",
                         "items": {
@@ -20936,7 +21264,10 @@ def bounded_executor_report_response_schema() -> dict[str, Any]:
                     },
                     "source_evidence_refs": {
                         "type": "array",
-                        "items": {"const": LOCAL_OPERATOR_EXECUTOR_TASK_SMOKE_RELATIVE_PATH},
+                        "items": {
+                            "type": "string",
+                            "const": LOCAL_OPERATOR_EXECUTOR_TASK_SMOKE_RELATIVE_PATH,
+                        },
                         "minItems": 1,
                         "maxItems": 1,
                     },
@@ -20962,11 +21293,11 @@ def bounded_executor_report_response_schema() -> dict[str, Any]:
                     "secrets_persisted",
                 ],
                 "properties": {
-                    "absolute_paths_persisted": {"const": False},
-                    "raw_logs_persisted": {"const": False},
-                    "raw_prompt_persisted": {"const": False},
-                    "raw_response_persisted": {"const": False},
-                    "secrets_persisted": {"const": False},
+                    "absolute_paths_persisted": {"type": "boolean", "const": False},
+                    "raw_logs_persisted": {"type": "boolean", "const": False},
+                    "raw_prompt_persisted": {"type": "boolean", "const": False},
+                    "raw_response_persisted": {"type": "boolean", "const": False},
+                    "secrets_persisted": {"type": "boolean", "const": False},
                 },
             },
         },

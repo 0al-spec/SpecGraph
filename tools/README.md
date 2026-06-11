@@ -152,6 +152,12 @@ Supervisor modes:
   validating the returned report through the generic report validator, and
   recording sanitized smoke and mutation metadata without publishing the
   artifact.
+- `executor_report_consumption_policy` in
+  `tools/supervisor_executor_adapter_policy.json`: defines which supervisor or
+  downstream surfaces may consume a valid local executor report, which
+  transformations/effects are allowed, and which effects remain forbidden. This
+  is a policy/validator surface rather than a new executor command; reports are
+  admissible input/evidence, not authority.
 - `--build-agent-passport-derived-surfaces`: build Agent Passport derived
   surfaces from `tools/agent_passport_adoption_policy.json` and the 0056
   executor adapter index, including report-only Agent Passport CLI validation
@@ -486,6 +492,11 @@ Key derived artifacts:
   passes, or a sanitized `invalid_report` fallback when validation fails, with
   `smoke_summary`, source validations, execution metadata, and mutation guard
   checks excluded from public static publishing
+- `executor_report_consumption_policy`: policy-only surface that allows valid
+  local executor reports to become review packet, proposal draft candidate,
+  implementation planning, evidence reference, or handoff input while rejecting
+  direct canonical mutation, patch application, gap closure, proposal status
+  mutation, static publication, and canonical fact assertion effects
 - `runs/agent_surface_index.json`: read-only Agent Passport adoption surface
   index for graph-facing agents, including policy-declared surfaces and
   executor backends derived from the 0056 adapter index
