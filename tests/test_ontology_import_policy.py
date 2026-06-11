@@ -369,6 +369,25 @@ def test_ontologyc_adapter_report_enforces_required_input_refs(tmp_path: Path) -
         )
 
 
+def test_ontologyc_adapter_report_rejects_bad_authority_field_prefix(tmp_path: Path) -> None:
+    module = load_ontology_imports_module()
+    module.ROOT = tmp_path
+    fixture_path = write_temp_fixture(tmp_path, load_fixture_payload())
+    policy = json.loads((ROOT / "tools" / "ontology_import_policy.json").read_text())
+    contract = policy["ontologyc_adapter_report_contract"]
+    assert isinstance(contract, dict)
+    contract["authority_fields"] = ["report.package_id"]
+    policy_path = write_temp_policy(tmp_path, policy)
+    report_path = write_temp_adapter_report(tmp_path, load_adapter_report_payload())
+
+    with pytest.raises(ValueError, match=r"package\.<field>"):
+        module.build_ontology_import_surfaces(
+            fixture_path,
+            policy_path=policy_path,
+            adapter_report_path=report_path,
+        )
+
+
 def test_ontologyc_adapter_report_rejects_authority_expansion(tmp_path: Path) -> None:
     module = load_ontology_imports_module()
     module.ROOT = tmp_path
@@ -380,6 +399,24 @@ def test_ontologyc_adapter_report_rejects_authority_expansion(tmp_path: Path) ->
     report_path = write_temp_adapter_report(tmp_path, report)
 
     with pytest.raises(ValueError, match="automatic_canonical_node_update"):
+        module.build_ontology_import_surfaces(
+            fixture_path,
+            policy_path=policy_path,
+            adapter_report_path=report_path,
+        )
+
+
+def test_ontologyc_adapter_report_rejects_wrong_digest_authority(tmp_path: Path) -> None:
+    module = load_ontology_imports_module()
+    module.ROOT = tmp_path
+    fixture_path = write_temp_fixture(tmp_path, load_fixture_payload())
+    policy_path = write_temp_policy(tmp_path)
+    report = load_adapter_report_payload()
+    assert isinstance(report["authority_boundary"], dict)
+    report["authority_boundary"]["digest_authority"] = "ontology_lock_digest"
+    report_path = write_temp_adapter_report(tmp_path, report)
+
+    with pytest.raises(ValueError, match="digest_authority"):
         module.build_ontology_import_surfaces(
             fixture_path,
             policy_path=policy_path,
@@ -408,6 +445,24 @@ def test_ontologyc_adapter_report_rejects_lock_digest_mismatch(tmp_path: Path) -
         )
 
 
+def test_ontologyc_adapter_report_requires_fixture_source_ref(tmp_path: Path) -> None:
+    module = load_ontology_imports_module()
+    module.ROOT = tmp_path
+    fixture = load_fixture_payload()
+    assert isinstance(fixture["package"], dict)
+    del fixture["package"]["source_ref"]
+    fixture_path = write_temp_fixture(tmp_path, fixture)
+    policy_path = write_temp_policy(tmp_path)
+    report_path = write_temp_adapter_report(tmp_path, load_adapter_report_payload())
+
+    with pytest.raises(ValueError, match=r"fixture\.package\.source_ref"):
+        module.build_ontology_import_surfaces(
+            fixture_path,
+            policy_path=policy_path,
+            adapter_report_path=report_path,
+        )
+
+
 def test_ontologyc_adapter_report_rejects_corrupt_concept_ref_payload(tmp_path: Path) -> None:
     module = load_ontology_imports_module()
     module.ROOT = tmp_path
@@ -420,6 +475,45 @@ def test_ontologyc_adapter_report_rejects_corrupt_concept_ref_payload(tmp_path: 
     refs_path.write_text(yaml.safe_dump(refs, sort_keys=False), encoding="utf-8")
 
     with pytest.raises(ValueError, match="concept_refs_output examcalc:Exam.concept"):
+        module.build_ontology_import_surfaces(
+            fixture_path,
+            policy_path=policy_path,
+            adapter_report_path=report_path,
+        )
+
+
+def test_ontologyc_adapter_report_rejects_duplicate_concept_ref_alias(tmp_path: Path) -> None:
+    module = load_ontology_imports_module()
+    module.ROOT = tmp_path
+    fixture_path = write_temp_fixture(tmp_path, load_fixture_payload())
+    policy_path = write_temp_policy(tmp_path)
+    report_path = write_temp_adapter_report(tmp_path, load_adapter_report_payload())
+    refs_path = report_path.parent / "ontologyc" / "concept-refs.yaml"
+    refs = yaml.safe_load(refs_path.read_text(encoding="utf-8"))
+    duplicate = dict(refs["spec"]["refs"][0])
+    refs["spec"]["refs"].append(duplicate)
+    refs_path.write_text(yaml.safe_dump(refs, sort_keys=False), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="concept_refs_output.*duplicates"):
+        module.build_ontology_import_surfaces(
+            fixture_path,
+            policy_path=policy_path,
+            adapter_report_path=report_path,
+        )
+
+
+def test_ontologyc_adapter_report_uses_gap_output_context(tmp_path: Path) -> None:
+    module = load_ontology_imports_module()
+    module.ROOT = tmp_path
+    fixture_path = write_temp_fixture(tmp_path, load_fixture_payload())
+    policy_path = write_temp_policy(tmp_path)
+    report_path = write_temp_adapter_report(tmp_path, load_adapter_report_payload())
+    gaps_path = report_path.parent / "ontologyc" / "ontology-gaps.yaml"
+    gaps = yaml.safe_load(gaps_path.read_text(encoding="utf-8"))
+    gaps["spec"]["gaps"] = "not-a-list"
+    gaps_path.write_text(yaml.safe_dump(gaps, sort_keys=False), encoding="utf-8")
+
+    with pytest.raises(ValueError, match=r"ontology_gaps_output\.spec\.gaps"):
         module.build_ontology_import_surfaces(
             fixture_path,
             policy_path=policy_path,

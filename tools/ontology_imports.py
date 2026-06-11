@@ -254,16 +254,18 @@ def resolve_report_file(report_path: Path, relative: str, context: str) -> Path:
     return resolve_fixture_file(report_path, relative, context)
 
 
-def output_ref_entries(payload: dict[str, Any]) -> dict[str, dict[str, Any]]:
-    spec = require_object(payload, "spec", "adapter_output")
+def output_ref_entries(payload: dict[str, Any], context: str) -> dict[str, dict[str, Any]]:
+    spec = require_object(payload, "spec", context)
     refs = spec.get("refs")
     if not isinstance(refs, list):
-        raise ValueError("adapter_output.spec.refs must be a list")
+        raise ValueError(f"{context}.spec.refs must be a list")
     entries = {}
     for index, item in enumerate(refs):
         if not isinstance(item, dict):
-            raise ValueError(f"adapter_output.spec.refs[{index}] must be an object")
-        alias = require_string(item, "alias", f"adapter_output.spec.refs[{index}]")
+            raise ValueError(f"{context}.spec.refs[{index}] must be an object")
+        alias = require_string(item, "alias", f"{context}.spec.refs[{index}]")
+        if alias in entries:
+            raise ValueError(f"{context}.spec.refs[{index}].alias duplicates {alias!r}")
         entries[alias] = item
     return entries
 
@@ -306,18 +308,18 @@ def ontologyc_output_ref_map(ir: dict[str, Any]) -> dict[str, dict[str, Any]]:
     return refs
 
 
-def output_gap_refs(payload: dict[str, Any]) -> list[str]:
-    spec = require_object(payload, "spec", "adapter_output")
+def output_gap_refs(payload: dict[str, Any], context: str) -> list[str]:
+    spec = require_object(payload, "spec", context)
     gaps = spec.get("gaps")
     if not isinstance(gaps, list):
-        raise ValueError("adapter_output.spec.gaps must be a list")
+        raise ValueError(f"{context}.spec.gaps must be a list")
     missing_refs = []
     for index, item in enumerate(gaps):
         if not isinstance(item, dict):
-            raise ValueError(f"adapter_output.spec.gaps[{index}] must be an object")
-        gap_spec = require_object(item, "spec", f"adapter_output.spec.gaps[{index}]")
+            raise ValueError(f"{context}.spec.gaps[{index}] must be an object")
+        gap_spec = require_object(item, "spec", f"{context}.spec.gaps[{index}]")
         missing_refs.append(
-            require_string(gap_spec, "missingConcept", f"adapter_output.spec.gaps[{index}].spec")
+            require_string(gap_spec, "missingConcept", f"{context}.spec.gaps[{index}].spec")
         )
     return missing_refs
 
@@ -393,8 +395,8 @@ def validate_ontologyc_adapter_report(
 
     authority_fields = require_string_list(contract, "authority_fields", "adapter_report_contract")
     for field in authority_fields:
-        _, _, package_field = field.partition(".")
-        if not package_field:
+        prefix, _, package_field = field.partition(".")
+        if prefix != "package" or not package_field:
             raise ValueError("adapter_report_contract.authority_fields must use package.<field>")
         if report_package.get(package_field) != package.get(package_field):
             raise ValueError(f"adapter_report.package.{package_field} does not match fixture")
@@ -447,7 +449,7 @@ def validate_ontologyc_adapter_report(
     ):
         if concept_metadata.get(field) != expected:
             raise ValueError(f"concept_refs_output.metadata.{field} does not match package")
-    output_entries = output_ref_entries(concept_refs_output)
+    output_entries = output_ref_entries(concept_refs_output, "concept_refs_output")
     expected_aliases = sorted(entry["source_ref"] for entry in resolved_refs)
     if sorted(output_entries) != expected_aliases:
         raise ValueError("concept_refs_output aliases do not match resolved report refs")
@@ -473,7 +475,7 @@ def validate_ontologyc_adapter_report(
     )
     if require_string(ontology_gaps_output, "kind", "ontology_gaps_output") != "OntologyGapSet":
         raise ValueError("ontology_gaps_output.kind must be OntologyGapSet")
-    output_gaps = sorted(output_gap_refs(ontology_gaps_output))
+    output_gaps = sorted(output_gap_refs(ontology_gaps_output, "ontology_gaps_output"))
     if output_gaps != sorted(unresolved_refs):
         raise ValueError("ontology_gaps_output gaps do not match unresolved report refs")
 
@@ -501,6 +503,13 @@ def validate_ontologyc_adapter_report(
             raise ValueError(f"adapter_report.summary.{field} must be false")
 
     boundary = require_object(report, "authority_boundary", "adapter_report")
+    if (
+        require_string(boundary, "digest_authority", "adapter_report.authority_boundary")
+        != "normalized_ir_sourceDigest"
+    ):
+        raise ValueError(
+            "adapter_report.authority_boundary.digest_authority must be normalized_ir_sourceDigest"
+        )
     for field in (
         "report_is_authority",
         "ontology_lock_is_canonical",
@@ -752,6 +761,7 @@ def build_ontology_import_surfaces(
     if adapter_report_path is not None:
         if not adapter_report_path.is_absolute():
             adapter_report_path = ROOT / adapter_report_path
+        require_string(package, "source_ref", "fixture.package")
         surfaces["adapter_report_smoke"] = build_ontologyc_adapter_report_smoke(
             policy,
             fixture_path=fixture_path,
