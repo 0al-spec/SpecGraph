@@ -8,7 +8,8 @@
     "local_operator_smoke_artifact": "runs/local_operator_executor_smoke.json",
     "local_operator_task_smoke_artifact": "runs/local_operator_executor_task_smoke.json",
     "local_operator_report_contract_artifact": "runs/local_operator_executor_report_contract.json",
-    "local_operator_report_artifact": "runs/local_operator_executor_report.json"
+    "local_operator_report_artifact": "runs/local_operator_executor_report.json",
+    "local_operator_report_review_packet_artifact": "runs/local_operator_executor_report_review_packet.json"
   },
   "index_contract": {
     "artifact_kind": "supervisor_executor_adapter_index",
@@ -367,6 +368,71 @@
       "static_publish_of_local_report_allowed": false
     },
     "next_gap": "build_executor_report_review_packet"
+  },
+  "executor_report_review_packet_contract": {
+    "artifact_kind": "local_operator_executor_report_review_packet",
+    "schema_version": 1,
+    "source_report_artifact": "runs/local_operator_executor_report.json",
+    "local_only": true,
+    "packet_kind": "executor_report_review",
+    "allowed_source_report_status": "valid_report",
+    "consumer": "human_review_packet_builder",
+    "transformation": "report_to_review_packet",
+    "requested_effects": [
+      "review_packet_candidate"
+    ],
+    "status_values": [
+      "ready_for_review",
+      "blocked_missing_source_report",
+      "blocked_invalid_source_report",
+      "blocked_consumption_policy",
+      "blocked_forbidden_effect",
+      "blocked_authority_boundary",
+      "blocked_privacy_boundary",
+      "blocked_policy_contract"
+    ],
+    "check_ids": [
+      "source_report_present",
+      "source_report_valid",
+      "consumption_policy_allows_review_packet",
+      "human_review_required",
+      "authority_boundary_preserved",
+      "privacy_boundary_preserved"
+    ],
+    "named_filters": [
+      "ready_for_review",
+      "blocked_missing_source_report",
+      "blocked_invalid_source_report",
+      "blocked_consumption_policy",
+      "blocked_forbidden_effect",
+      "blocked_authority_boundary",
+      "blocked_privacy_boundary",
+      "blocked_policy_contract"
+    ],
+    "required_packet_fields": [
+      "artifact_kind",
+      "schema_version",
+      "local_only",
+      "source_report_artifact",
+      "policy_reference",
+      "summary",
+      "review_packet",
+      "checks"
+    ],
+    "review_state": "ready_for_human_review",
+    "human_review_required": true,
+    "operator_decision_required": true,
+    "canonical_mutations_allowed": false,
+    "next_gap": "define_executor_report_to_proposal_draft_policy",
+    "privacy_boundary": {
+      "must_not_persist_absolute_paths": true,
+      "must_not_persist_raw_logs": true,
+      "must_not_persist_raw_prompt": true,
+      "must_not_persist_raw_response": true,
+      "must_not_persist_secrets": true,
+      "public_static_publish": false,
+      "canonical_mutations_allowed": false
+    }
   },
   "backend_registry": [
     {

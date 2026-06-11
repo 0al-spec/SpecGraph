@@ -117,6 +117,13 @@ def test_build_public_bundle_copies_specs_and_runs_with_manifest(
         repo / "runs" / "local_operator_executor_report.json",
         {"artifact_kind": "local_operator_executor_report", "local_only": True},
     )
+    write_json(
+        repo / "runs" / "local_operator_executor_report_review_packet.json",
+        {
+            "artifact_kind": "local_operator_executor_report_review_packet",
+            "local_only": True,
+        },
+    )
     (repo / "runs" / ".DS_Store").write_text("junk", encoding="utf-8")
     (repo / "runs" / ".gitkeep").write_text("", encoding="utf-8")
 
@@ -134,6 +141,9 @@ def test_build_public_bundle_copies_specs_and_runs_with_manifest(
         result.output_dir / "runs" / "local_operator_executor_report_contract.json"
     ).exists()
     assert not (result.output_dir / "runs" / "local_operator_executor_report.json").exists()
+    assert not (
+        result.output_dir / "runs" / "local_operator_executor_report_review_packet.json"
+    ).exists()
     assert not (result.output_dir / "runs" / ".DS_Store").exists()
     assert not (result.output_dir / "runs" / ".gitkeep").exists()
     assert "$LOCAL_PATH" in (result.output_dir / "runs" / "raw_run.json").read_text(
@@ -180,6 +190,10 @@ def test_build_public_bundle_copies_specs_and_runs_with_manifest(
     )
     assert "runs/local_operator_executor_report.json" not in result.checksums_path.read_text(
         encoding="utf-8"
+    )
+    assert (
+        "runs/local_operator_executor_report_review_packet.json"
+        not in result.checksums_path.read_text(encoding="utf-8")
     )
 
 

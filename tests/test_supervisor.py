@@ -27108,6 +27108,9 @@ def test_supervisor_executor_adapter_policy_declares_request_report_contract() -
     assert policy["repository_layout"]["local_operator_report_artifact"] == (
         "runs/local_operator_executor_report.json"
     )
+    assert policy["repository_layout"]["local_operator_report_review_packet_artifact"] == (
+        "runs/local_operator_executor_report_review_packet.json"
+    )
     assert policy["index_contract"]["artifact_kind"] == "supervisor_executor_adapter_index"
     assert "entries" in policy["index_contract"]["stable_fields"]
     assert "passport_diagnostics" in policy["index_contract"]["stable_fields"]
@@ -27188,6 +27191,19 @@ def test_supervisor_executor_adapter_policy_declares_request_report_contract() -
     assert consumption_policy["authority_boundary"]["report_is_authority"] is False
     assert consumption_policy["authority_boundary"]["canonical_mutations_allowed"] is False
     assert consumption_policy["next_gap"] == "build_executor_report_review_packet"
+    review_packet = policy["executor_report_review_packet_contract"]
+    assert review_packet["artifact_kind"] == "local_operator_executor_report_review_packet"
+    assert review_packet["source_report_artifact"] == "runs/local_operator_executor_report.json"
+    assert review_packet["local_only"] is True
+    assert review_packet["packet_kind"] == "executor_report_review"
+    assert review_packet["consumer"] == "human_review_packet_builder"
+    assert review_packet["transformation"] == "report_to_review_packet"
+    assert review_packet["requested_effects"] == ["review_packet_candidate"]
+    assert "ready_for_review" in review_packet["status_values"]
+    assert "source_report_valid" in review_packet["check_ids"]
+    assert review_packet["human_review_required"] is True
+    assert review_packet["canonical_mutations_allowed"] is False
+    assert review_packet["privacy_boundary"]["public_static_publish"] is False
 
     request = policy["request_contract"]
     assert request["artifact_kind"] == "supervisor_executor_request"
@@ -29460,6 +29476,217 @@ def test_main_builds_local_operator_executor_report_smoke_as_standalone_command(
         (repo_fixture / "runs" / "local_operator_executor_report.json").read_text(encoding="utf-8")
     )
     assert artifact["smoke_summary"] == {"status": "passed", "backend_id": "codex"}
+
+
+def test_build_local_operator_executor_report_review_packet_from_valid_report(
+    supervisor_module: object,
+) -> None:
+    report = supervisor_module.default_local_operator_executor_report_sample()
+
+    packet = supervisor_module.build_local_operator_executor_report_review_packet(report)
+
+    assert packet["artifact_kind"] == "local_operator_executor_report_review_packet"
+    assert packet["local_only"] is True
+    assert packet["source_report_artifact"] == "runs/local_operator_executor_report.json"
+    assert packet["summary"] == {
+        "status": "ready_for_review",
+        "report_kind": "analysis_report",
+        "producer_kind": "coding_agent",
+        "authority_level": "review_only",
+        "human_review_required": True,
+        "canonical_mutations_allowed": False,
+        "next_gap": "define_executor_report_to_proposal_draft_policy",
+    }
+    assert packet["review_packet"]["packet_kind"] == "executor_report_review"
+    assert packet["review_packet"]["source_report_status"] == "valid_report"
+    assert packet["review_packet"]["review_state"] == "ready_for_human_review"
+    assert packet["review_packet"]["operator_decision_required"] is True
+    assert packet["review_packet"]["report_is_authority"] is False
+    assert packet["review_packet"]["evidence_refs"] == [
+        "runs/local_operator_executor_task_smoke.json"
+    ]
+    assert packet["consumption_validation"]["valid"] is True
+    assert packet["source_report_validation"]["valid"] is True
+    assert packet["packet_validation"]["valid"] is True
+    checks = {check["check_id"]: check["status"] for check in packet["checks"]}
+    assert checks == {
+        "source_report_present": "passed",
+        "source_report_valid": "passed",
+        "consumption_policy_allows_review_packet": "passed",
+        "human_review_required": "passed",
+        "authority_boundary_preserved": "passed",
+        "privacy_boundary_preserved": "passed",
+    }
+    dumped = json.dumps(packet, sort_keys=True)
+    assert "/Users/" not in dumped
+    assert "raw stdout" not in dumped.lower()
+
+
+def test_build_local_operator_executor_report_review_packet_blocks_missing_source_report(
+    supervisor_module: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        supervisor_module,
+        "load_local_operator_executor_report_artifact",
+        lambda: None,
+    )
+
+    packet = supervisor_module.build_local_operator_executor_report_review_packet()
+
+    assert packet["summary"]["status"] == "blocked_missing_source_report"
+    assert packet["summary"]["next_gap"] == "run_executor_report_smoke_until_passed"
+    assert packet["review_packet"]["review_state"] == "blocked"
+    checks = {check["check_id"]: check["status"] for check in packet["checks"]}
+    assert checks["source_report_present"] == "missing"
+    assert checks["source_report_valid"] == "failed"
+    assert packet["consumption_validation"]["valid"] is False
+
+
+def test_build_local_operator_executor_report_review_packet_blocks_invalid_source_report(
+    supervisor_module: object,
+) -> None:
+    report = supervisor_module.default_local_operator_executor_report_sample()
+    report["summary"]["canonical_mutation_attempted"] = True
+
+    packet = supervisor_module.build_local_operator_executor_report_review_packet(report)
+
+    assert packet["summary"]["status"] == "blocked_invalid_source_report"
+    assert packet["summary"]["next_gap"] == "repair_executor_report_smoke_output"
+    assert packet["source_report_validation"]["valid"] is False
+    assert any(
+        finding["code"] == "canonical_mutation_attempted"
+        for finding in packet["source_report_validation"]["findings"]
+    )
+    assert packet["review_packet"]["findings"] == []
+    assert packet["review_packet"]["evidence_refs"] == []
+
+
+def test_build_local_operator_executor_report_review_packet_blocks_forbidden_effect(
+    supervisor_module: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    contract = copy.deepcopy(supervisor_module.SUPERVISOR_EXECUTOR_ADAPTER_POLICY)
+    contract["executor_report_review_packet_contract"]["requested_effects"] = [
+        "review_packet_candidate",
+        "patch_application",
+    ]
+    monkeypatch.setattr(supervisor_module, "SUPERVISOR_EXECUTOR_ADAPTER_POLICY", contract)
+
+    packet = supervisor_module.build_local_operator_executor_report_review_packet(
+        supervisor_module.default_local_operator_executor_report_sample()
+    )
+
+    assert packet["summary"]["status"] == "blocked_forbidden_effect"
+    assert packet["summary"]["next_gap"] == "repair_executor_report_consumption_policy"
+    assert any(
+        finding["code"] == "forbidden_report_effect"
+        for finding in packet["consumption_validation"]["findings"]
+    )
+
+
+def test_build_local_operator_executor_report_review_packet_blocks_authority_expansion(
+    supervisor_module: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    original = supervisor_module.default_executor_report_consumption_request
+
+    def unsafe_request(**kwargs: object) -> dict[str, object]:
+        request = original(**kwargs)
+        request["authority_boundary"]["canonical_mutations_allowed"] = True
+        return request
+
+    monkeypatch.setattr(
+        supervisor_module,
+        "default_executor_report_consumption_request",
+        unsafe_request,
+    )
+
+    packet = supervisor_module.build_local_operator_executor_report_review_packet(
+        supervisor_module.default_local_operator_executor_report_sample()
+    )
+
+    assert packet["summary"]["status"] == "blocked_authority_boundary"
+    assert any(
+        finding["field"] == "authority_boundary.canonical_mutations_allowed"
+        for finding in packet["consumption_validation"]["findings"]
+    )
+    checks = {check["check_id"]: check["status"] for check in packet["checks"]}
+    assert checks["authority_boundary_preserved"] == "failed"
+
+
+def test_build_local_operator_executor_report_review_packet_blocks_privacy_leakage(
+    supervisor_module: object,
+) -> None:
+    report = supervisor_module.default_local_operator_executor_report_sample()
+    report["report"]["findings"] = [{"message": "see /Users/egor/secret"}]
+
+    packet = supervisor_module.build_local_operator_executor_report_review_packet(report)
+
+    assert packet["summary"]["status"] == "blocked_invalid_source_report"
+    assert packet["source_report_validation"]["valid"] is False
+    dumped = json.dumps(packet, sort_keys=True)
+    assert "/Users/egor/secret" not in dumped
+    assert any(
+        finding["code"] == "machine_local_path_persisted"
+        for finding in packet["source_report_validation"]["findings"]
+    )
+
+
+def test_validate_local_operator_executor_report_review_packet_rejects_authority(
+    supervisor_module: object,
+) -> None:
+    packet = supervisor_module.build_local_operator_executor_report_review_packet(
+        supervisor_module.default_local_operator_executor_report_sample()
+    )
+    packet["summary"]["canonical_mutations_allowed"] = True
+
+    validation = supervisor_module.validate_local_operator_executor_report_review_packet(packet)
+
+    assert validation["valid"] is False
+    assert any(
+        finding["code"] == "canonical_mutations_allowed" for finding in validation["findings"]
+    )
+
+
+def test_main_builds_local_operator_executor_report_review_packet_as_standalone_command(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_local_operator_executor_report_review_packet",
+        lambda: {
+            "artifact_kind": (
+                supervisor_module.LOCAL_OPERATOR_EXECUTOR_REPORT_REVIEW_PACKET_ARTIFACT_KIND
+            ),
+            "schema_version": (
+                supervisor_module.LOCAL_OPERATOR_EXECUTOR_REPORT_REVIEW_PACKET_SCHEMA_VERSION
+            ),
+            "local_only": True,
+            "summary": {"status": "ready_for_review"},
+            "review_packet": {"review_state": "ready_for_human_review"},
+            "checks": [],
+            "viewer_projection": {"named_filters": {"ready_for_review": ["codex"]}},
+        },
+    )
+
+    exit_code = supervisor_module.main(build_local_operator_executor_report_review_packet_mode=True)
+
+    assert exit_code == 0
+    report = json.loads(capsys.readouterr().out)
+    assert (
+        report["artifact_kind"]
+        == supervisor_module.LOCAL_OPERATOR_EXECUTOR_REPORT_REVIEW_PACKET_ARTIFACT_KIND
+    )
+    artifact = json.loads(
+        (repo_fixture / "runs" / "local_operator_executor_report_review_packet.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert artifact["summary"] == {"status": "ready_for_review"}
 
 
 def test_agent_passport_adoption_policy_declares_surface_and_gap_contract(

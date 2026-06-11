@@ -131,9 +131,11 @@ and `runs/local_operator_executor_task_smoke.json` may exist after
 `runs/local_operator_executor_report_contract.json` may exist after
 `make executor-report-contract`, and
 `runs/local_operator_executor_report.json` may exist after
-`make executor-report-smoke`, but they are intentionally not uploaded to the
-static host because they describe the current operator process environment
-rather than public producer artifacts.
+`make executor-report-smoke`, and
+`runs/local_operator_executor_report_review_packet.json` may exist after
+`make executor-report-review-packet`, but they are intentionally not uploaded
+to the static host because they describe the current operator process
+environment rather than public producer artifacts.
 
 Agent Passport CLI is installed during the publish workflow from the latest
 `0al-spec/agent-passport` GitHub Release into runner temp storage and added to

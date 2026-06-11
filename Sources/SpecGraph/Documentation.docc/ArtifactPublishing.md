@@ -53,8 +53,10 @@ exist after `make executor-smoke`, and
 `runs/local_operator_executor_report_contract.json` may exist after
 `make executor-report-contract`, and
 `runs/local_operator_executor_report.json` may exist after
-`make executor-report-smoke`, but they describe the current operator process
-environment and must not be uploaded as public producer artifacts.
+`make executor-report-smoke`, and
+`runs/local_operator_executor_report_review_packet.json` may exist after
+`make executor-report-review-packet`, but they describe the current operator
+process environment and must not be uploaded as public producer artifacts.
 
 The public safety gate requires:
 
