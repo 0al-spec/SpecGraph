@@ -22156,9 +22156,34 @@ def validate_executor_report_review_packet_source_for_proposal_draft(
     summary = summary if isinstance(summary, dict) else {}
     nested_packet = packet.get("review_packet", {}) if isinstance(packet, dict) else {}
     nested_packet = nested_packet if isinstance(nested_packet, dict) else {}
+    source_report_validation = (
+        packet.get("source_report_validation", {}) if isinstance(packet, dict) else {}
+    )
+    source_report_validation = (
+        source_report_validation if isinstance(source_report_validation, dict) else {}
+    )
+    source_report_normalized = source_report_validation.get("normalized", {})
+    source_report_normalized = (
+        source_report_normalized if isinstance(source_report_normalized, dict) else {}
+    )
+    consumption_validation = (
+        packet.get("consumption_validation", {}) if isinstance(packet, dict) else {}
+    )
+    consumption_validation = (
+        consumption_validation if isinstance(consumption_validation, dict) else {}
+    )
+    checks = packet.get("checks", []) if isinstance(packet, dict) else []
+    checks = checks if isinstance(checks, list) else []
+    check_status_by_id = {
+        str(check.get("check_id", "")).strip(): str(check.get("status", "")).strip()
+        for check in checks
+        if isinstance(check, dict)
+    }
     packet_status = str(summary.get("status", "")).strip()
     review_state = str(nested_packet.get("review_state", "")).strip()
     report_kind = str(summary.get("report_kind", "")).strip()
+    source_report_kind = str(source_report_normalized.get("report_kind", "")).strip()
+    source_summary_status = str(source_report_normalized.get("summary_status", "")).strip()
     allowed_status = executor_report_to_proposal_draft_values("allowed_source_packet_status")
     allowed_review_states = executor_report_to_proposal_draft_values("allowed_source_review_states")
     allowed_report_kinds = executor_report_to_proposal_draft_values("allowed_source_report_kinds")
@@ -22184,6 +22209,65 @@ def validate_executor_report_review_packet_source_for_proposal_draft(
                 code="source_review_packet_report_kind_not_allowed",
                 field="review_packet.summary.report_kind",
                 message="Proposal draft policy requires a proposal_draft source report kind.",
+            )
+        )
+    if source_report_validation.get("valid") is not True:
+        findings.append(
+            executor_report_finding(
+                code="source_review_packet_source_report_validation_missing",
+                field="review_packet.source_report_validation.valid",
+                message=(
+                    "Proposal draft policy requires builder-produced source report validation."
+                ),
+            )
+        )
+    if source_summary_status != "valid_report":
+        findings.append(
+            executor_report_finding(
+                code="source_review_packet_source_report_not_valid_report",
+                field="review_packet.source_report_validation.normalized.summary_status",
+                message="Proposal draft policy requires a valid_report source report.",
+            )
+        )
+    if source_report_kind not in allowed_report_kinds:
+        findings.append(
+            executor_report_finding(
+                code="source_review_packet_source_report_kind_not_allowed",
+                field="review_packet.source_report_validation.normalized.report_kind",
+                message=(
+                    "Proposal draft policy requires the validated source report kind to be "
+                    "proposal_draft."
+                ),
+            )
+        )
+    if source_report_kind and source_report_kind != report_kind:
+        findings.append(
+            executor_report_finding(
+                code="source_review_packet_report_kind_mismatch",
+                field="review_packet.summary.report_kind",
+                message=(
+                    "Proposal draft policy requires summary.report_kind to match the "
+                    "validated source report kind."
+                ),
+            )
+        )
+    if check_status_by_id.get("source_report_valid") != "passed":
+        findings.append(
+            executor_report_finding(
+                code="source_review_packet_source_report_valid_check_missing",
+                field="review_packet.checks.source_report_valid",
+                message=(
+                    "Proposal draft policy requires the review packet source_report_valid "
+                    "check to pass."
+                ),
+            )
+        )
+    if consumption_validation.get("valid") is not True:
+        findings.append(
+            executor_report_finding(
+                code="source_review_packet_consumption_validation_missing",
+                field="review_packet.consumption_validation.valid",
+                message=("Proposal draft policy requires builder-produced consumption validation."),
             )
         )
     if summary.get("human_review_required") is not True:
@@ -22218,6 +22302,7 @@ def validate_executor_report_review_packet_source_for_proposal_draft(
             "source_review_packet_status": packet_status,
             "source_review_state": review_state,
             "report_kind": report_kind,
+            "source_report_kind": source_report_kind,
             "producer_kind": str(summary.get("producer_kind", "")).strip(),
         },
         "packet_validation": {
@@ -22344,6 +22429,7 @@ def validate_executor_report_to_proposal_draft_request(
             "source_review_packet_valid": source_normalized.get("source_review_packet_valid"),
             "source_review_packet_status": source_normalized.get("source_review_packet_status", ""),
             "source_review_state": source_normalized.get("source_review_state", ""),
+            "source_report_kind": source_normalized.get("source_report_kind", ""),
             "draft_artifact_kind": str(draft_contract.get("artifact_kind", "")).strip(),
             "next_gap": str(
                 policy.get("next_gap", "build_executor_report_proposal_draft_candidate")

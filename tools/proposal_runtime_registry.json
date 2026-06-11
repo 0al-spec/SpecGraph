@@ -4899,7 +4899,7 @@
     "observation_markers": [
       {
         "path": "docs/proposals/0094_executor_report_to_proposal_draft_policy.md",
-        "pattern": "analysis_report review packet remains reviewable"
+        "pattern": "`analysis_report` review packet remains reviewable"
       },
       {
         "path": "docs/proposals/0094_executor_report_to_proposal_draft_policy.md",

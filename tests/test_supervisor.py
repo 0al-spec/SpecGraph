@@ -29787,6 +29787,7 @@ def test_validate_executor_report_to_proposal_draft_request_accepts_proposal_pac
         "source_review_packet_valid": True,
         "source_review_packet_status": "ready_for_review",
         "source_review_state": "ready_for_human_review",
+        "source_report_kind": "proposal_draft",
         "draft_artifact_kind": "executor_report_proposal_draft_candidate",
         "next_gap": "build_executor_report_proposal_draft_candidate",
     }
@@ -29826,6 +29827,63 @@ def test_validate_executor_report_to_proposal_draft_request_rejects_missing_pack
     assert any(
         finding["code"] == "source_review_packet_not_provided" for finding in validation["findings"]
     )
+
+
+def test_validate_executor_report_to_proposal_draft_request_rejects_summary_kind_spoof(
+    supervisor_module: object,
+) -> None:
+    packet = supervisor_module.build_local_operator_executor_report_review_packet(
+        supervisor_module.default_local_operator_executor_report_sample()
+    )
+    packet["summary"]["report_kind"] = "proposal_draft"
+    request = supervisor_module.default_executor_report_to_proposal_draft_request()
+
+    validation = supervisor_module.validate_executor_report_to_proposal_draft_request(
+        request,
+        review_packet=packet,
+    )
+
+    assert validation["valid"] is False
+    assert validation["normalized"]["source_report_kind"] == "analysis_report"
+    assert any(
+        finding["code"] == "source_review_packet_source_report_kind_not_allowed"
+        for finding in validation["findings"]
+    )
+    assert any(
+        finding["code"] == "source_review_packet_report_kind_mismatch"
+        for finding in validation["findings"]
+    )
+
+
+def test_validate_executor_report_to_proposal_draft_request_requires_packet_provenance(
+    supervisor_module: object,
+) -> None:
+    packet = supervisor_module.build_local_operator_executor_report_review_packet(
+        supervisor_module.default_local_operator_executor_report_sample(
+            report_kind="proposal_draft"
+        )
+    )
+    packet.pop("source_report_validation")
+    packet.pop("consumption_validation")
+    packet["checks"] = [
+        check for check in packet["checks"] if check["check_id"] != "source_report_valid"
+    ]
+    request = supervisor_module.default_executor_report_to_proposal_draft_request()
+
+    validation = supervisor_module.validate_executor_report_to_proposal_draft_request(
+        request,
+        review_packet=packet,
+    )
+
+    assert validation["valid"] is False
+    finding_codes = {finding["code"] for finding in validation["findings"]}
+    assert finding_codes >= {
+        "source_review_packet_source_report_validation_missing",
+        "source_review_packet_source_report_not_valid_report",
+        "source_review_packet_source_report_kind_not_allowed",
+        "source_review_packet_source_report_valid_check_missing",
+        "source_review_packet_consumption_validation_missing",
+    }
 
 
 def test_validate_executor_report_to_proposal_draft_request_rejects_forbidden_effect(
