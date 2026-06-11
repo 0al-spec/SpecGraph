@@ -16,7 +16,7 @@ SUPERVISOR_RUN_PATH ?=
 
 PYTHON_TARGETS := viewer-surfaces dashboard backlog next-move spec-activity graph-diagnostics \
 	proposal-spec-trace proposal-tracking proposal-tracking-gate external-consumers external-handoffs \
-	external-consumer-evidence \
+	external-consumer-evidence ontology-imports \
 	proposal-work-claims proposal-work-claims-gate proposal-id \
 	metrics-delivery metrics-feedback metrics-source-promotion metric-signals metric-thresholds \
 	metric-packs metric-pack-drift metric-pack-adapters metric-pack-runs metric-pricing model-usage \
@@ -46,7 +46,8 @@ help:
 		'  make proposal-id              Print the next deterministic proposal id' \
 		'  make external-consumers       Refresh external consumer bridge JSON' \
 		'  make external-handoffs        Refresh external consumer handoff JSON' \
-		'  make external-consumer-evidence Refresh external consumer evidence JSON' \
+			'  make external-consumer-evidence Refresh external consumer evidence JSON' \
+			'  make ontology-imports          Refresh ontology import derived surfaces' \
 		'  make metrics-delivery         Refresh Metrics delivery workflow JSON' \
 		'  make metrics-feedback         Refresh Metrics feedback JSON' \
 		'  make metrics-source-promotion Refresh Metrics source promotion candidates JSON' \
@@ -146,6 +147,10 @@ external-handoffs:
 .PHONY: external-consumer-evidence
 external-consumer-evidence:
 	@$(PYTHON) $(SUPERVISOR) --build-external-consumer-evidence
+
+.PHONY: ontology-imports
+ontology-imports:
+	@$(PYTHON) tools/ontology_imports.py --write
 
 .PHONY: metrics-delivery
 metrics-delivery:

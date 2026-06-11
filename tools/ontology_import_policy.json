@@ -1,0 +1,61 @@
+{
+  "artifact_kind": "ontology_import_policy",
+  "schema_version": 1,
+  "proposal_id": "0060",
+  "source_proposal": "docs/proposals/0060_external_ontology_import_plane.md",
+  "repository_layout": {
+    "default_fixture": "tests/fixtures/ontology_import/examcalc/import-fixture.yaml",
+    "package_index": "runs/ontology_package_index.json",
+    "gap_index": "runs/ontology_import_gap_index.json",
+    "governance_evidence_index": "runs/ontology_governance_evidence_index.json",
+    "binding_preview": "runs/ontology_binding_preview.json",
+    "prompt_invocation_index": "runs/ontology_prompt_invocation_index.json"
+  },
+  "derived_output_contract": {
+    "canonical_mutations_allowed": false,
+    "writes_canonical_specs": false,
+    "allowed_output_roots": [
+      "runs/"
+    ]
+  },
+  "package_ref_contract": {
+    "required_fields": [
+      "package_id",
+      "namespace",
+      "version",
+      "source_uri",
+      "digest",
+      "materialized_ir"
+    ],
+    "semantic_source": "ontology_normalized_ir_or_registry_materialization",
+    "forbidden_sources": [
+      "domain_ontology_package_yaml_clone",
+      "local_pseudo_concepts"
+    ]
+  },
+  "concept_ref_contract": {
+    "accepted_ref_shape": "<namespace>:<symbol>",
+    "known_ref_resolution": "resolve_from_imported_ir",
+    "unresolved_ref_action": "emit_ontology_gap",
+    "gap_artifact_kind": "ontology_import_gap_index"
+  },
+  "review_contract": {
+    "trusted_status_source": "ontology_governance_evidence_ref",
+    "specgraph_acceptance_source": "proposal_review",
+    "automatic_import_lock_update": false,
+    "automatic_canonical_node_update": false
+  },
+  "accepted_artifact_kinds": [
+    "ontology_package_index",
+    "ontology_import_gap_index",
+    "ontology_governance_evidence_index",
+    "ontology_binding_preview",
+    "ontology_prompt_invocation_index"
+  ],
+  "next_gap_defaults": {
+    "clean": "none",
+    "has_gaps": "review_ontology_import_gap",
+    "missing_governance_evidence": "attach_ontology_governance_evidence",
+    "not_invoked": "none"
+  }
+}
