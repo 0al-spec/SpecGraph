@@ -70,4 +70,3 @@
   window.addEventListener("hashchange", () => updateSlide(slideFromHash()));
   updateSlide(slideFromHash());
 })();
-
