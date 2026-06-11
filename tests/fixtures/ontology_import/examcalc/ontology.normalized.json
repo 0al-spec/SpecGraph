@@ -1,0 +1,444 @@
+{
+  "classes" : [
+    {
+      "aliases" : [
+
+      ],
+      "central" : false,
+      "description" : "Durable audit record for policy enforcement and review.",
+      "extends" : "sg:DomainEntity",
+      "fqid" : "examcalc:AuditLogEntry",
+      "id" : "AuditLogEntry",
+      "implements" : [
+        "sg:Auditable"
+      ],
+      "kind" : "DomainEntity",
+      "uri" : "ontology://edu.university.examcalc/0.1.0/classes/AuditLogEntry"
+    },
+    {
+      "aliases" : [
+
+      ],
+      "central" : false,
+      "description" : "Calculator capability that can be allowed or denied by an exam policy.",
+      "extends" : "sg:Capability",
+      "fqid" : "examcalc:CalculatorFunction",
+      "id" : "CalculatorFunction",
+      "implements" : [
+        "sg:RestrictableCapability"
+      ],
+      "kind" : "Capability",
+      "uri" : "ontology://edu.university.examcalc/0.1.0/classes/CalculatorFunction"
+    },
+    {
+      "aliases" : [
+
+      ],
+      "central" : false,
+      "description" : "Request to complete an active exam mode session.",
+      "extends" : "sg:Command",
+      "fqid" : "examcalc:EndExamMode",
+      "id" : "EndExamMode",
+      "implements" : [
+
+      ],
+      "kind" : "Command",
+      "uri" : "ontology://edu.university.examcalc/0.1.0/classes/EndExamMode"
+    },
+    {
+      "aliases" : [
+
+      ],
+      "central" : false,
+      "description" : "University exam that requires a controlled calculator policy.",
+      "extends" : "sg:DomainEntity",
+      "fields" : [
+        {
+          "description" : "Planned exam duration in minutes.",
+          "id" : "durationMinutes",
+          "required" : false,
+          "type" : "integer"
+        },
+        {
+          "description" : "Human-readable exam title.",
+          "id" : "title",
+          "required" : true,
+          "type" : "string"
+        }
+      ],
+      "fqid" : "examcalc:Exam",
+      "id" : "Exam",
+      "implements" : [
+        "sg:Auditable"
+      ],
+      "kind" : "DomainEntity",
+      "uri" : "ontology://edu.university.examcalc/0.1.0/classes/Exam"
+    },
+    {
+      "aliases" : [
+
+      ],
+      "central" : false,
+      "description" : "Runtime enforcement session for controlled calculator use.",
+      "extends" : "sg:DomainEntity",
+      "fqid" : "examcalc:ExamModeSession",
+      "id" : "ExamModeSession",
+      "implements" : [
+        "sg:Auditable",
+        "sg:DeviceBound"
+      ],
+      "kind" : "DomainEntity",
+      "lifecycle" : "ExamModeSessionState",
+      "uri" : "ontology://edu.university.examcalc/0.1.0/classes/ExamModeSession"
+    },
+    {
+      "aliases" : [
+
+      ],
+      "central" : true,
+      "description" : "Signed and approved policy that governs allowed calculator behavior for an exam.",
+      "extends" : "sg:DomainEntity",
+      "fqid" : "examcalc:ExamPolicyProfile",
+      "id" : "ExamPolicyProfile",
+      "implements" : [
+        "sg:Approvable",
+        "sg:Auditable",
+        "sg:Signable",
+        "sg:TimeBound",
+        "sg:Versioned"
+      ],
+      "kind" : "DomainEntity",
+      "uri" : "ontology://edu.university.examcalc/0.1.0/classes/ExamPolicyProfile"
+    },
+    {
+      "aliases" : [
+
+      ],
+      "central" : false,
+      "description" : "Time-bounded sitting of an exam.",
+      "extends" : "sg:DomainEntity",
+      "fqid" : "examcalc:ExamSession",
+      "id" : "ExamSession",
+      "implements" : [
+        "sg:TimeBound"
+      ],
+      "kind" : "DomainEntity",
+      "uri" : "ontology://edu.university.examcalc/0.1.0/classes/ExamSession"
+    },
+    {
+      "aliases" : [
+
+      ],
+      "central" : false,
+      "description" : "Named collection of calculator functions.",
+      "extends" : "sg:DomainEntity",
+      "fqid" : "examcalc:FunctionSet",
+      "id" : "FunctionSet",
+      "implements" : [
+
+      ],
+      "kind" : "DomainEntity",
+      "uri" : "ontology://edu.university.examcalc/0.1.0/classes/FunctionSet"
+    },
+    {
+      "aliases" : [
+
+      ],
+      "central" : false,
+      "description" : "Request to lock calculator access after a detected policy violation.",
+      "extends" : "sg:Command",
+      "fqid" : "examcalc:LockCalculator",
+      "id" : "LockCalculator",
+      "implements" : [
+
+      ],
+      "kind" : "Command",
+      "uri" : "ontology://edu.university.examcalc/0.1.0/classes/LockCalculator"
+    },
+    {
+      "aliases" : [
+
+      ],
+      "central" : false,
+      "description" : "Attempted or detected violation of the active exam calculator policy.",
+      "extends" : "sg:Event",
+      "fqid" : "examcalc:PolicyViolation",
+      "id" : "PolicyViolation",
+      "implements" : [
+        "sg:Auditable"
+      ],
+      "kind" : "Event",
+      "uri" : "ontology://edu.university.examcalc/0.1.0/classes/PolicyViolation"
+    },
+    {
+      "aliases" : [
+
+      ],
+      "central" : false,
+      "description" : "Request to start exam mode for a tablet and selected exam policy.",
+      "extends" : "sg:Command",
+      "fqid" : "examcalc:StartExamMode",
+      "id" : "StartExamMode",
+      "implements" : [
+
+      ],
+      "kind" : "Command",
+      "uri" : "ontology://edu.university.examcalc/0.1.0/classes/StartExamMode"
+    },
+    {
+      "aliases" : [
+
+      ],
+      "central" : false,
+      "description" : "Managed tablet used during an exam.",
+      "extends" : "sg:DomainEntity",
+      "fqid" : "examcalc:TabletDevice",
+      "id" : "TabletDevice",
+      "implements" : [
+        "sg:Auditable",
+        "sg:DeviceBound"
+      ],
+      "kind" : "DomainEntity",
+      "uri" : "ontology://edu.university.examcalc/0.1.0/classes/TabletDevice"
+    },
+    {
+      "aliases" : [
+
+      ],
+      "central" : false,
+      "description" : "Request to verify that the active policy is signed and available on the target device.",
+      "extends" : "sg:Command",
+      "fqid" : "examcalc:VerifyDeviceAndPolicy",
+      "id" : "VerifyDeviceAndPolicy",
+      "implements" : [
+
+      ],
+      "kind" : "Command",
+      "uri" : "ontology://edu.university.examcalc/0.1.0/classes/VerifyDeviceAndPolicy"
+    }
+  ],
+  "compatibility" : {
+    "major" : {
+      "requires" : [
+        "remove class",
+        "remove relation",
+        "change relation domain",
+        "change relation range",
+        "make optional field required",
+        "change meaning of central concept"
+      ]
+    },
+    "minor" : {
+      "allowed" : [
+        "add class",
+        "add relation",
+        "add optional property",
+        "add protocol"
+      ]
+    },
+    "patch" : {
+      "allowed" : [
+        "add description",
+        "add alias",
+        "add non-breaking metadata"
+      ]
+    }
+  },
+  "diagnostics" : [
+
+  ],
+  "id" : "edu.university.examcalc",
+  "imports" : [
+    {
+      "id" : "specgraph.foundation",
+      "namespace" : "sg",
+      "version" : "0.1.0"
+    }
+  ],
+  "namespace" : "examcalc",
+  "policies" : [
+    {
+      "appliesTo" : [
+        "examcalc:ExamPolicyProfile"
+      ],
+      "enforceability" : "runtime",
+      "extends" : "sg:Policy",
+      "fqid" : "examcalc:DenyByDefaultPolicy",
+      "id" : "DenyByDefaultPolicy",
+      "text" : "Any calculator function not explicitly allowed by the active policy must be denied."
+    },
+    {
+      "appliesTo" : [
+        "examcalc:ExamModeSession"
+      ],
+      "enforceability" : "runtime",
+      "extends" : "sg:Policy",
+      "fqid" : "examcalc:NoNetworkDuringExam",
+      "id" : "NoNetworkDuringExam",
+      "text" : "Calculator app must not access network during exam mode unless explicitly allowed."
+    },
+    {
+      "appliesTo" : [
+        "examcalc:ExamModeSession"
+      ],
+      "enforceability" : "runtime",
+      "extends" : "sg:Policy",
+      "fqid" : "examcalc:PolicyMustBeDeviceVerifiable",
+      "id" : "PolicyMustBeDeviceVerifiable",
+      "text" : "Exam mode session must verify the active policy on the device before entering active state."
+    },
+    {
+      "appliesTo" : [
+        "examcalc:ExamPolicyProfile"
+      ],
+      "enforceability" : "runtime",
+      "extends" : "sg:Policy",
+      "fqid" : "examcalc:PolicyMustBeSigned",
+      "id" : "PolicyMustBeSigned",
+      "text" : "Exam policy profile must be signed before activation."
+    }
+  ],
+  "protocols" : [
+
+  ],
+  "relations" : [
+    {
+      "cardinality" : {
+        "max" : "*",
+        "min" : 0
+      },
+      "domain" : "examcalc:ExamPolicyProfile",
+      "fqid" : "examcalc:allows",
+      "id" : "allows",
+      "range" : "examcalc:CalculatorFunction",
+      "uri" : "ontology://edu.university.examcalc/0.1.0/relations/allows"
+    },
+    {
+      "cardinality" : {
+        "max" : "*",
+        "min" : 0
+      },
+      "domain" : "examcalc:ExamPolicyProfile",
+      "fqid" : "examcalc:denies",
+      "id" : "denies",
+      "range" : "examcalc:CalculatorFunction",
+      "uri" : "ontology://edu.university.examcalc/0.1.0/relations/denies"
+    },
+    {
+      "cardinality" : {
+        "max" : 1,
+        "min" : 1
+      },
+      "domain" : "examcalc:ExamModeSession",
+      "fqid" : "examcalc:enforces",
+      "id" : "enforces",
+      "range" : "examcalc:ExamPolicyProfile",
+      "uri" : "ontology://edu.university.examcalc/0.1.0/relations/enforces"
+    },
+    {
+      "cardinality" : {
+        "max" : "*",
+        "min" : 0
+      },
+      "domain" : "examcalc:Exam",
+      "fqid" : "examcalc:has_session",
+      "id" : "has_session",
+      "range" : "examcalc:ExamSession",
+      "uri" : "ontology://edu.university.examcalc/0.1.0/relations/has_session"
+    },
+    {
+      "cardinality" : {
+        "max" : "*",
+        "min" : 0
+      },
+      "domain" : "examcalc:FunctionSet",
+      "fqid" : "examcalc:includes_function",
+      "id" : "includes_function",
+      "range" : "examcalc:CalculatorFunction",
+      "uri" : "ontology://edu.university.examcalc/0.1.0/relations/includes_function"
+    },
+    {
+      "cardinality" : {
+        "max" : 1,
+        "min" : 1
+      },
+      "domain" : "examcalc:PolicyViolation",
+      "fqid" : "examcalc:occurred_during",
+      "id" : "occurred_during",
+      "range" : "examcalc:ExamModeSession",
+      "uri" : "ontology://edu.university.examcalc/0.1.0/relations/occurred_during"
+    },
+    {
+      "cardinality" : {
+        "max" : "*",
+        "min" : 0
+      },
+      "domain" : "examcalc:AuditLogEntry",
+      "fqid" : "examcalc:records",
+      "id" : "records",
+      "range" : {
+        "oneOf" : [
+          "examcalc:ExamModeSession",
+          "examcalc:PolicyViolation"
+        ]
+      },
+      "uri" : "ontology://edu.university.examcalc/0.1.0/relations/records"
+    },
+    {
+      "cardinality" : {
+        "max" : 1,
+        "min" : 1
+      },
+      "description" : "Every exam requires exactly one active policy profile.",
+      "domain" : "examcalc:Exam",
+      "fqid" : "examcalc:requires_policy",
+      "id" : "requires_policy",
+      "range" : "examcalc:ExamPolicyProfile",
+      "uri" : "ontology://edu.university.examcalc/0.1.0/relations/requires_policy"
+    }
+  ],
+  "sourceDigest" : "sha256:7cdf061c1c845e0d0d801c7d935b6d4b765db1317ec595910da2cb910eca9e2f",
+  "stateMachines" : [
+    {
+      "fqid" : "examcalc:ExamModeSessionState",
+      "id" : "ExamModeSessionState",
+      "states" : [
+        "active",
+        "completed",
+        "failed",
+        "locked",
+        "not_started",
+        "pending_device_verification",
+        "violation_detected"
+      ],
+      "transitions" : [
+        {
+          "command" : "examcalc:EndExamMode",
+          "from" : "active",
+          "to" : "completed"
+        },
+        {
+          "event" : "examcalc:PolicyViolation",
+          "from" : "active",
+          "to" : "violation_detected"
+        },
+        {
+          "command" : "examcalc:StartExamMode",
+          "from" : "not_started",
+          "to" : "pending_device_verification"
+        },
+        {
+          "command" : "examcalc:VerifyDeviceAndPolicy",
+          "from" : "pending_device_verification",
+          "to" : "active"
+        },
+        {
+          "command" : "examcalc:LockCalculator",
+          "from" : "violation_detected",
+          "to" : "locked"
+        }
+      ]
+    }
+  ],
+  "version" : "0.1.0"
+}

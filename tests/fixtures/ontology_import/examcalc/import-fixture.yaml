@@ -1,0 +1,29 @@
+artifact_kind: ontology_import_fixture
+schema_version: 1
+proposal_id: "0060"
+package:
+  package_id: edu.university.examcalc
+  namespace: examcalc
+  version: 0.1.0
+  source_uri: git+https://github.com/0al-spec/Ontology.git
+  source_ref: main
+  digest: sha256:7cdf061c1c845e0d0d801c7d935b6d4b765db1317ec595910da2cb910eca9e2f
+  materialized_ir: ontology.normalized.json
+  authority_class: imported
+  accepted_by_proposal: SG-RFC-0060-smoke
+  governance:
+    lifecycle_state: fixture
+    validation_report_ref: Ontology:SPECS/ontology/packages/examcalc/generated/ontology.normalized.json
+    decision_ref: ontology-governance://edu.university.examcalc/0.1.0/fixture
+    repeatability_report_ref: Ontology:SPECS/ontology/golden-intents/expectations/exam-controlled-calculator.expectation.yaml
+    trusted_registry_gate_ref: Ontology:SPECS/ontology/governance-protocol.md#trusted-registry-publication
+binding:
+  artifact_kind: semantic_binding
+  schema_version: 1
+  subject:
+    kind: requirement
+    id: REQ-EXAMCALC-0060
+  refs:
+    - examcalc:Exam
+    - examcalc:requires_policy
+    - examcalc:CASFunction

@@ -2918,9 +2918,36 @@
       "runs/ontology_binding_preview.json",
       "runs/ontology_prompt_invocation_index.json"
     ],
-    "runtime_markers": [],
-    "validation_markers": [],
-    "observation_markers": []
+    "runtime_markers": [
+      {
+        "path": "tools/ontology_imports.py",
+        "pattern": "def build_ontology_import_surfaces("
+      },
+      {
+        "path": "tools/ontology_import_policy.json",
+        "pattern": "ontology_import_policy"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_ontology_import_policy.py",
+        "pattern": "def test_ontology_import_fixture_resolves_known_refs_and_gaps("
+      },
+      {
+        "path": "tests/test_ontology_import_policy.py",
+        "pattern": "def test_make_ontology_imports_writes_declared_surfaces("
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "Makefile",
+        "pattern": "ontology-imports:"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "runs/ontology_package_index.json"
+      }
+    ]
   },
   {
     "proposal_id": "0061",

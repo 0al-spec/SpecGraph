@@ -109,6 +109,15 @@ Supervisor modes:
   implementation evidence and current handoff packets so consumer adoption can
   be accepted, blocked, or marked contract-mismatched without mutating the
   downstream repository.
+- `tools/ontology_imports.py --write`: build the proposal 0060 ontology import
+  derived surfaces from `tools/ontology_import_policy.json` and the checked-in
+  examcalc normalized-IR fixture: `runs/ontology_package_index.json`,
+  `runs/ontology_import_gap_index.json`,
+  `runs/ontology_governance_evidence_index.json`,
+  `runs/ontology_binding_preview.json`, and
+  `runs/ontology_prompt_invocation_index.json`. These surfaces resolve known
+  imported refs and preserve unresolved refs as reviewable ontology gaps without
+  mutating canonical `specs/nodes/*.yaml`.
 - `--build-supervisor-executor-adapter-index`: build
   `runs/supervisor_executor_adapter_index.json` from the 0056 policy so
   executor backend availability, capability gaps, and Agent Passport CLI
