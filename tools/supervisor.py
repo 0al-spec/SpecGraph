@@ -20438,6 +20438,22 @@ def validate_executor_report_consumption_request(
         "gap_closure_allowed": False,
         "static_publish_of_local_report_allowed": False,
     }
+    extra_boundary_fields = sorted(
+        str(field).strip()
+        for field in authority_boundary
+        if str(field).strip() not in boundary_expectations
+    )
+    for field in extra_boundary_fields:
+        findings.append(
+            executor_report_finding(
+                code="unexpected_consumption_authority_boundary_field",
+                field=f"authority_boundary.{field}",
+                message=(
+                    "Executor report consumption request must not add authority-boundary "
+                    f"field {field}."
+                ),
+            )
+        )
     for field, expected_value in boundary_expectations.items():
         if field in expected_boundary:
             expected_value = expected_boundary.get(field)
@@ -20453,10 +20469,46 @@ def validate_executor_report_consumption_request(
                 )
             )
 
-    report_validation = {"valid": True, "findings": [], "normalized": {}}
+    report_validation = {"valid": False, "findings": [], "normalized": {}}
+    redacted_report_validation: dict[str, Any] = {
+        "valid": None,
+        "validation_performed": False,
+        "finding_count": 0,
+        "findings": [],
+        "normalized": {},
+    }
+    source_report_valid = None
     if report is not None:
         report_validation = validate_local_operator_executor_report(report)
-        findings.extend(copy.deepcopy(report_validation.get("findings", [])))
+        redacted_report_validation = redacted_executor_report_validation(
+            report_validation,
+            include_normalized=bool(report_validation.get("valid", False)),
+        )
+        findings.extend(copy.deepcopy(redacted_report_validation.get("findings", [])))
+        normalized_report = report_validation.get("normalized", {})
+        normalized_report = normalized_report if isinstance(normalized_report, dict) else {}
+        if (
+            report_validation.get("valid") is True
+            and normalized_report.get("summary_status") != "valid_report"
+        ):
+            findings.append(
+                executor_report_finding(
+                    code="source_report_not_valid_report",
+                    field="source_report.summary.status",
+                    message="Executor report consumption requires a valid_report source report.",
+                )
+            )
+        source_report_valid = bool(report_validation.get("valid", False)) and not any(
+            finding.get("code") == "source_report_not_valid_report" for finding in findings
+        )
+    else:
+        findings.append(
+            executor_report_finding(
+                code="source_report_not_provided",
+                field="report",
+                message="Executor report consumption requires a validated source report.",
+            )
+        )
 
     return {
         "valid": not findings,
@@ -20466,26 +20518,13 @@ def validate_executor_report_consumption_request(
             "consumer": consumer_validation.get("consumer", ""),
             "transformation": transformation_validation.get("transformation", ""),
             "requested_effects": copy.deepcopy(effects_validation.get("effects", [])),
-            "source_report_valid": (
-                bool(report_validation.get("valid", False)) if report is not None else None
-            ),
+            "source_report_valid": source_report_valid,
             "next_gap": str(policy.get("next_gap", "build_executor_report_review_packet")).strip(),
         },
         "consumer_validation": consumer_validation,
         "transformation_validation": transformation_validation,
         "effects_validation": effects_validation,
-        "report_validation": redacted_executor_report_validation(
-            report_validation,
-            include_normalized=bool(report_validation.get("valid", False)),
-        )
-        if report is not None
-        else {
-            "valid": None,
-            "validation_performed": False,
-            "finding_count": 0,
-            "findings": [],
-            "normalized": {},
-        },
+        "report_validation": redacted_report_validation,
     }
 
 
@@ -20959,7 +20998,7 @@ def write_local_operator_executor_report_contract(index: dict[str, Any]) -> Path
 
 def local_operator_executor_report_smoke_next_gap(status: str) -> str:
     return {
-        "passed": "define_executor_report_consumption_policy",
+        "passed": "build_executor_report_review_packet",
         "blocked_task_smoke_not_passed": "run_executor_task_smoke_until_passed",
         "blocked_report_contract_not_ready": "run_executor_report_contract_until_ready",
         "blocked_executor_unavailable": "configure_local_operator_executable",

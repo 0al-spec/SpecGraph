@@ -28881,7 +28881,7 @@ def test_build_local_operator_executor_report_smoke_runs_after_ready_contract(
         "source_task_smoke_status": "passed",
         "source_report_contract_status": "ready_for_report_smoke",
         "report_valid": True,
-        "next_gap": "define_executor_report_consumption_policy",
+        "next_gap": "build_executor_report_review_packet",
     }
     assert report["execution"]["command"] == {
         "command_name": "codex",
@@ -28955,15 +28955,18 @@ def test_validate_executor_report_consumption_request_accepts_proposal_candidate
     assert validation["normalized"]["requested_effects"] == ["proposal_draft_candidate"]
 
 
-def test_validate_executor_report_consumption_request_without_report_is_request_only(
+def test_validate_executor_report_consumption_request_rejects_missing_source_report(
     supervisor_module: object,
 ) -> None:
     request = supervisor_module.default_executor_report_consumption_request()
 
     validation = supervisor_module.validate_executor_report_consumption_request(request)
 
-    assert validation["valid"] is True
+    assert validation["valid"] is False
     assert validation["normalized"]["source_report_valid"] is None
+    assert any(
+        finding["code"] == "source_report_not_provided" for finding in validation["findings"]
+    )
     assert validation["report_validation"] == {
         "valid": None,
         "validation_performed": False,
@@ -29051,6 +29054,7 @@ def test_validate_executor_report_consumption_request_rejects_authority_expansio
     request["authority_boundary"]["canonical_mutations_allowed"] = True
     request["authority_boundary"]["proposal_status_mutations_allowed"] = True
     request["authority_boundary"]["gap_closure_allowed"] = True
+    request["authority_boundary"]["canonical_fact_assertions_allowed"] = True
 
     validation = supervisor_module.validate_executor_report_consumption_request(request)
 
@@ -29066,6 +29070,11 @@ def test_validate_executor_report_consumption_request_rejects_authority_expansio
         "authority_boundary.proposal_status_mutations_allowed",
         "authority_boundary.gap_closure_allowed",
     }
+    assert any(
+        finding["code"] == "unexpected_consumption_authority_boundary_field"
+        and finding["field"] == "authority_boundary.canonical_fact_assertions_allowed"
+        for finding in validation["findings"]
+    )
 
 
 def test_validate_executor_report_consumption_request_rejects_invalid_source_report(
@@ -29084,6 +29093,46 @@ def test_validate_executor_report_consumption_request_rejects_invalid_source_rep
     assert validation["report_validation"]["valid"] is False
     assert any(
         finding["code"] == "canonical_mutation_attempted" for finding in validation["findings"]
+    )
+
+
+def test_validate_executor_report_consumption_request_redacts_invalid_report_findings(
+    supervisor_module: object,
+) -> None:
+    report = supervisor_module.default_local_operator_executor_report_sample()
+    report["summary"]["status"] = "sk-local-secret-status"
+    request = supervisor_module.default_executor_report_consumption_request()
+
+    validation = supervisor_module.validate_executor_report_consumption_request(
+        request,
+        report=report,
+    )
+
+    assert validation["valid"] is False
+    dumped = json.dumps(validation, sort_keys=True)
+    assert "sk-local-secret-status" not in dumped
+    assert any(finding["field"] == "summary.status" for finding in validation["findings"])
+
+
+def test_validate_executor_report_consumption_request_rejects_failed_report_smoke(
+    supervisor_module: object,
+) -> None:
+    report = supervisor_module.sanitized_local_operator_executor_report_fallback(
+        smoke_status="failed_invalid_report",
+        backend_id="codex",
+        report_validation={"valid": False, "finding_count": 0, "findings": [], "normalized": {}},
+    )
+    request = supervisor_module.default_executor_report_consumption_request()
+
+    validation = supervisor_module.validate_executor_report_consumption_request(
+        request,
+        report=report,
+    )
+
+    assert validation["valid"] is False
+    assert validation["normalized"]["source_report_valid"] is False
+    assert any(
+        finding["code"] == "source_report_not_valid_report" for finding in validation["findings"]
     )
 
 
