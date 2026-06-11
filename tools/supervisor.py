@@ -72,6 +72,8 @@ Derived artifacts:
 - local operator executor report contract:
   `runs/local_operator_executor_report_contract.json`
 - local operator executor report: `runs/local_operator_executor_report.json`
+- local operator executor report review packet:
+  `runs/local_operator_executor_report_review_packet.json`
 - agent surface index: `runs/agent_surface_index.json`
 - known agent passport index: `runs/known_agent_passport_index.json`
 - agent passport verification report: `runs/agent_passport_verification_report.json`
@@ -198,6 +200,9 @@ LOCAL_OPERATOR_EXECUTOR_REPORT_CONTRACT_RELATIVE_PATH = (
     "runs/local_operator_executor_report_contract.json"
 )
 LOCAL_OPERATOR_EXECUTOR_REPORT_RELATIVE_PATH = "runs/local_operator_executor_report.json"
+LOCAL_OPERATOR_EXECUTOR_REPORT_REVIEW_PACKET_RELATIVE_PATH = (
+    "runs/local_operator_executor_report_review_packet.json"
+)
 AGENT_SURFACE_INDEX_RELATIVE_PATH = "runs/agent_surface_index.json"
 KNOWN_AGENT_PASSPORT_INDEX_RELATIVE_PATH = "runs/known_agent_passport_index.json"
 AGENT_VERIFICATION_GAP_INDEX_RELATIVE_PATH = "runs/agent_verification_gap_index.json"
@@ -3188,6 +3193,13 @@ LOCAL_OPERATOR_EXECUTOR_REPORT_FILENAME = Path(
         )
     )
 ).name
+LOCAL_OPERATOR_EXECUTOR_REPORT_REVIEW_PACKET_FILENAME = Path(
+    str(
+        supervisor_executor_adapter_policy_lookup(
+            "repository_layout.local_operator_report_review_packet_artifact"
+        )
+    )
+).name
 SUPERVISOR_EXECUTOR_ADAPTER_INDEX_ARTIFACT_KIND = str(
     supervisor_executor_adapter_policy_lookup("index_contract.artifact_kind")
 )
@@ -3221,6 +3233,16 @@ LOCAL_OPERATOR_EXECUTOR_REPORT_CONTRACT_SCHEMA_VERSION = int(
 LOCAL_OPERATOR_EXECUTOR_REPORT_ARTIFACT_KIND = str(
     supervisor_executor_adapter_policy_lookup(
         "executor_report_contract.target_report_artifact_kind"
+    )
+)
+LOCAL_OPERATOR_EXECUTOR_REPORT_REVIEW_PACKET_ARTIFACT_KIND = str(
+    supervisor_executor_adapter_policy_lookup(
+        "executor_report_review_packet_contract.artifact_kind"
+    )
+)
+LOCAL_OPERATOR_EXECUTOR_REPORT_REVIEW_PACKET_SCHEMA_VERSION = int(
+    supervisor_executor_adapter_policy_lookup(
+        "executor_report_review_packet_contract.schema_version"
     )
 )
 AGENT_SURFACE_INDEX_FILENAME = Path(
@@ -18083,6 +18105,10 @@ def local_operator_executor_report_path() -> Path:
     return RUNS_DIR / LOCAL_OPERATOR_EXECUTOR_REPORT_FILENAME
 
 
+def local_operator_executor_report_review_packet_path() -> Path:
+    return ROOT / LOCAL_OPERATOR_EXECUTOR_REPORT_REVIEW_PACKET_RELATIVE_PATH
+
+
 def metric_signal_index_path() -> Path:
     return RUNS_DIR / METRIC_SIGNAL_INDEX_FILENAME
 
@@ -19858,6 +19884,18 @@ def executor_report_string_contains_machine_local_path(value: str) -> bool:
     return bool(re.search(r"(^|[\s\"'=(])\\\\(Users|tmp|private|home)(\\\\|$)", text))
 
 
+def executor_report_string_contains_secret_like_value(value: str) -> bool:
+    text = value.strip()
+    if not text:
+        return False
+    return bool(
+        re.search(
+            r"(?i)\b(api[_-]?key|authorization|bearer|password|secret|token)\b\s*[:=]",
+            text,
+        )
+    )
+
+
 def executor_report_machine_local_path_findings(payload: object) -> list[dict[str, str]]:
     findings: list[dict[str, str]] = []
 
@@ -19866,6 +19904,15 @@ def executor_report_machine_local_path_findings(payload: object) -> list[dict[st
             for key, child in value.items():
                 key_text = str(key).strip()
                 child_path = f"{path}.{key_text}" if path else key_text
+                if executor_report_string_contains_machine_local_path(key_text):
+                    field = path or "report"
+                    findings.append(
+                        executor_report_finding(
+                            code="machine_local_path_persisted",
+                            field=field,
+                            message=(f"{field} must not persist machine-local filesystem paths."),
+                        )
+                    )
                 visit(child, child_path)
         elif isinstance(value, list):
             for index, child in enumerate(value):
@@ -19883,6 +19930,40 @@ def executor_report_machine_local_path_findings(payload: object) -> list[dict[st
 
     visit(payload, "")
     return findings
+
+
+def executor_report_secret_like_value_findings(payload: object) -> list[dict[str, str]]:
+    findings: list[dict[str, str]] = []
+
+    def visit(value: object, path: str) -> None:
+        if isinstance(value, dict):
+            for key, child in value.items():
+                key_text = str(key).strip()
+                child_path = f"{path}.{key_text}" if path else key_text
+                visit(child, child_path)
+        elif isinstance(value, list):
+            for index, child in enumerate(value):
+                visit(child, f"{path}[{index}]")
+        elif isinstance(value, str) and executor_report_string_contains_secret_like_value(value):
+            findings.append(
+                executor_report_finding(
+                    code="secret_like_value_persisted",
+                    field=path or "report",
+                    message=f"{path or 'report'} must not persist secret-like values.",
+                )
+            )
+
+    visit(payload, "")
+    return findings
+
+
+def safe_executor_report_finding_field(raw_field: object) -> str:
+    field = str(raw_field or "report").strip() or "report"
+    if executor_report_string_contains_machine_local_path(field):
+        return "report"
+    if executor_report_string_contains_secret_like_value(field):
+        return "report"
+    return field
 
 
 def safe_executor_report_evidence_ref(raw_ref: object) -> str:
@@ -19954,6 +20035,7 @@ def validate_local_operator_executor_report(report: object) -> dict[str, Any]:
         }
     findings.extend(executor_report_forbidden_key_findings(report))
     findings.extend(executor_report_machine_local_path_findings(report))
+    findings.extend(executor_report_secret_like_value_findings(report))
     required_fields = [
         str(field).strip()
         for field in contract.get("required_report_fields", [])
@@ -20539,7 +20621,7 @@ def redacted_executor_report_validation(
     for finding in findings:
         finding = finding if isinstance(finding, dict) else {}
         code = str(finding.get("code", "invalid_report")).strip() or "invalid_report"
-        field = str(finding.get("field", "report")).strip() or "report"
+        field = safe_executor_report_finding_field(finding.get("field", "report"))
         redacted_findings.append(
             executor_report_finding(
                 code=code,
@@ -21709,6 +21791,410 @@ def build_local_operator_executor_report_smoke(
 
 def write_local_operator_executor_report(index: dict[str, Any]) -> Path:
     path = local_operator_executor_report_path()
+    with artifact_lock(path):
+        atomic_write_json(path, index)
+    return path
+
+
+def load_local_operator_executor_report_artifact() -> dict[str, Any] | None:
+    path = local_operator_executor_report_path()
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    return payload if isinstance(payload, dict) else None
+
+
+def local_operator_executor_report_review_packet_contract() -> dict[str, Any]:
+    contract = supervisor_executor_adapter_policy_lookup("executor_report_review_packet_contract")
+    return contract if isinstance(contract, dict) else {}
+
+
+def local_operator_executor_report_review_packet_next_gap(status: str) -> str:
+    contract = local_operator_executor_report_review_packet_contract()
+    return {
+        "ready_for_review": str(
+            contract.get(
+                "next_gap",
+                "define_executor_report_to_proposal_draft_policy",
+            )
+        ).strip(),
+        "blocked_missing_source_report": "run_executor_report_smoke_until_passed",
+        "blocked_invalid_source_report": "repair_executor_report_smoke_output",
+        "blocked_consumption_policy": "repair_executor_report_consumption_policy",
+        "blocked_forbidden_effect": "repair_executor_report_consumption_policy",
+        "blocked_authority_boundary": "repair_executor_report_consumption_policy",
+        "blocked_privacy_boundary": "repair_executor_report_review_packet_privacy",
+        "blocked_policy_contract": "repair_executor_report_review_packet_contract",
+    }.get(status, "repair_executor_report_review_packet")
+
+
+def local_operator_executor_report_review_packet_status(
+    checks: list[dict[str, Any]],
+    *,
+    consumption_findings: list[dict[str, Any]],
+) -> str:
+    status_by_id = {
+        str(check.get("check_id", "")).strip(): str(check.get("status", "")).strip()
+        for check in checks
+    }
+    if status_by_id.get("source_report_present") != "passed":
+        return "blocked_missing_source_report"
+    if status_by_id.get("source_report_valid") != "passed":
+        return "blocked_invalid_source_report"
+    if status_by_id.get("authority_boundary_preserved") != "passed":
+        return "blocked_authority_boundary"
+    if status_by_id.get("privacy_boundary_preserved") != "passed":
+        return "blocked_privacy_boundary"
+    if status_by_id.get("consumption_policy_allows_review_packet") != "passed":
+        if any(
+            str(finding.get("code", "")).strip() == "forbidden_report_effect"
+            for finding in consumption_findings
+            if isinstance(finding, dict)
+        ):
+            return "blocked_forbidden_effect"
+        return "blocked_consumption_policy"
+    if status_by_id.get("human_review_required") != "passed":
+        return "blocked_policy_contract"
+    return "ready_for_review"
+
+
+def validate_local_operator_executor_report_review_packet(packet: object) -> dict[str, Any]:
+    contract = local_operator_executor_report_review_packet_contract()
+    findings: list[dict[str, str]] = []
+    if not isinstance(packet, dict):
+        return {
+            "valid": False,
+            "findings": [
+                executor_report_finding(
+                    code="review_packet_not_object",
+                    field="packet",
+                    message="Executor report review packet must be a JSON object.",
+                )
+            ],
+            "normalized": {},
+        }
+    findings.extend(executor_report_forbidden_key_findings(packet))
+    findings.extend(executor_report_machine_local_path_findings(packet))
+    findings.extend(executor_report_secret_like_value_findings(packet))
+    for field in [
+        str(field).strip()
+        for field in contract.get("required_packet_fields", [])
+        if str(field).strip()
+    ]:
+        if field not in packet:
+            findings.append(
+                executor_report_finding(
+                    code="missing_review_packet_field",
+                    field=field,
+                    message=f"Executor report review packet is missing field {field}.",
+                )
+            )
+    if packet.get("artifact_kind") != LOCAL_OPERATOR_EXECUTOR_REPORT_REVIEW_PACKET_ARTIFACT_KIND:
+        findings.append(
+            executor_report_finding(
+                code="invalid_review_packet_artifact_kind",
+                field="artifact_kind",
+                message="Executor report review packet artifact_kind is invalid.",
+            )
+        )
+    if packet.get("schema_version") != LOCAL_OPERATOR_EXECUTOR_REPORT_REVIEW_PACKET_SCHEMA_VERSION:
+        findings.append(
+            executor_report_finding(
+                code="invalid_review_packet_schema_version",
+                field="schema_version",
+                message="Executor report review packet schema_version is invalid.",
+            )
+        )
+    if packet.get("local_only") is not True:
+        findings.append(
+            executor_report_finding(
+                code="review_packet_local_only_required",
+                field="local_only",
+                message="Executor report review packet must declare local_only=true.",
+            )
+        )
+    if packet.get("source_report_artifact") != LOCAL_OPERATOR_EXECUTOR_REPORT_RELATIVE_PATH:
+        findings.append(
+            executor_report_finding(
+                code="invalid_review_packet_source_report_artifact",
+                field="source_report_artifact",
+                message="Executor report review packet must reference the local executor report.",
+            )
+        )
+    summary = packet.get("summary", {})
+    summary = summary if isinstance(summary, dict) else {}
+    review_packet = packet.get("review_packet", {})
+    review_packet = review_packet if isinstance(review_packet, dict) else {}
+    if summary.get("human_review_required") is not True:
+        findings.append(
+            executor_report_finding(
+                code="human_review_required_not_true",
+                field="summary.human_review_required",
+                message="Executor report review packet must require human review.",
+            )
+        )
+    if summary.get("canonical_mutations_allowed") is not False:
+        findings.append(
+            executor_report_finding(
+                code="canonical_mutations_allowed",
+                field="summary.canonical_mutations_allowed",
+                message="Executor report review packet must not allow canonical mutations.",
+            )
+        )
+    if review_packet.get("operator_decision_required") is not True:
+        findings.append(
+            executor_report_finding(
+                code="operator_decision_required_not_true",
+                field="review_packet.operator_decision_required",
+                message="Executor report review packet must require an operator decision.",
+            )
+        )
+    return {
+        "valid": not findings,
+        "findings": findings,
+        "normalized": {
+            "status": str(summary.get("status", "")).strip(),
+            "report_kind": str(summary.get("report_kind", "")).strip(),
+            "review_state": str(review_packet.get("review_state", "")).strip(),
+        },
+    }
+
+
+def build_local_operator_executor_report_review_packet(
+    report: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    contract = local_operator_executor_report_review_packet_contract()
+    report = report if isinstance(report, dict) else load_local_operator_executor_report_artifact()
+    source_report_present = isinstance(report, dict)
+    report_validation = (
+        validate_local_operator_executor_report(report) if source_report_present else None
+    )
+    normalized_report_validation = (
+        report_validation.get("normalized", {}) if isinstance(report_validation, dict) else {}
+    )
+    normalized_report_validation = (
+        normalized_report_validation if isinstance(normalized_report_validation, dict) else {}
+    )
+    source_report_valid = bool(
+        isinstance(report_validation, dict)
+        and report_validation.get("valid") is True
+        and normalized_report_validation.get("summary_status") == "valid_report"
+    )
+    request = default_executor_report_consumption_request(
+        consumer=str(contract.get("consumer", "human_review_packet_builder")).strip(),
+        transformation=str(contract.get("transformation", "report_to_review_packet")).strip(),
+        requested_effects=[
+            str(effect).strip()
+            for effect in contract.get("requested_effects", ["review_packet_candidate"])
+            if str(effect).strip()
+        ],
+    )
+    consumption_validation = validate_executor_report_consumption_request(
+        request,
+        report=report if source_report_present else None,
+    )
+    consumption_findings = consumption_validation.get("findings", [])
+    consumption_findings = consumption_findings if isinstance(consumption_findings, list) else []
+    normalized_consumption = consumption_validation.get("normalized", {})
+    normalized_consumption = (
+        normalized_consumption if isinstance(normalized_consumption, dict) else {}
+    )
+    report_validation_redacted = (
+        redacted_executor_report_validation(
+            report_validation if isinstance(report_validation, dict) else {},
+            include_normalized=source_report_valid,
+        )
+        if source_report_present
+        else {
+            "valid": None,
+            "validation_performed": False,
+            "finding_count": 0,
+            "findings": [],
+            "normalized": {},
+        }
+    )
+    normalized_report = report_validation_redacted.get("normalized", {})
+    normalized_report = normalized_report if isinstance(normalized_report, dict) else {}
+    authority_boundary = request.get("authority_boundary", {})
+    authority_boundary = authority_boundary if isinstance(authority_boundary, dict) else {}
+    human_review_required = bool(authority_boundary.get("human_or_supervisor_review_required"))
+    authority_preserved = (
+        authority_boundary.get("report_is_authority") is False
+        and authority_boundary.get("canonical_mutations_allowed") is False
+        and authority_boundary.get("proposal_status_mutations_allowed") is False
+        and authority_boundary.get("gap_closure_allowed") is False
+        and authority_boundary.get("static_publish_of_local_report_allowed") is False
+    )
+    privacy_findings: list[dict[str, str]] = []
+    if source_report_present:
+        privacy_findings.extend(executor_report_forbidden_key_findings(report))
+        privacy_findings.extend(executor_report_machine_local_path_findings(report))
+        privacy_findings.extend(executor_report_secret_like_value_findings(report))
+    checks = [
+        local_operator_smoke_check(
+            check_id="source_report_present",
+            status="passed" if source_report_present else "missing",
+            message=(
+                "Local operator executor report artifact is present."
+                if source_report_present
+                else "Local operator executor report artifact is missing."
+            ),
+        ),
+        local_operator_smoke_check(
+            check_id="source_report_valid",
+            status="passed" if source_report_valid else "failed",
+            message=(
+                "Local operator executor report is valid."
+                if source_report_valid
+                else "Local operator executor report is missing or invalid."
+            ),
+        ),
+        local_operator_smoke_check(
+            check_id="consumption_policy_allows_review_packet",
+            status="passed" if consumption_validation.get("valid") is True else "failed",
+            message=(
+                "Executor report consumption policy allows building a review packet."
+                if consumption_validation.get("valid") is True
+                else "Executor report consumption policy does not allow this review packet."
+            ),
+        ),
+        local_operator_smoke_check(
+            check_id="human_review_required",
+            status="passed" if human_review_required else "failed",
+            message=(
+                "Executor report review packet requires human or supervisor review."
+                if human_review_required
+                else "Executor report review packet does not require human or supervisor review."
+            ),
+        ),
+        local_operator_smoke_check(
+            check_id="authority_boundary_preserved",
+            status="passed" if authority_preserved else "failed",
+            message=(
+                "Executor report review packet preserves the report-as-input authority boundary."
+                if authority_preserved
+                else "Executor report review packet expands authority beyond review input."
+            ),
+        ),
+        local_operator_smoke_check(
+            check_id="privacy_boundary_preserved",
+            status="passed" if not privacy_findings else "failed",
+            message=(
+                "Executor report review packet preserves the report privacy boundary."
+                if not privacy_findings
+                else "Executor report review packet would expose unsafe report payload data."
+            ),
+        ),
+    ]
+    packet_status = local_operator_executor_report_review_packet_status(
+        checks,
+        consumption_findings=consumption_findings,
+    )
+    nested_report = report.get("report", {}) if source_report_present else {}
+    nested_report = nested_report if isinstance(nested_report, dict) else {}
+    summary = report.get("summary", {}) if source_report_present else {}
+    summary = summary if isinstance(summary, dict) else {}
+    producer = report.get("producer", {}) if source_report_present else {}
+    producer = producer if isinstance(producer, dict) else {}
+    findings = nested_report.get("findings", [])
+    findings = copy.deepcopy(findings) if isinstance(findings, list) and source_report_valid else []
+    evidence_refs = nested_report.get("source_evidence_refs", [])
+    evidence_refs = (
+        [
+            safe_ref
+            for safe_ref in (safe_executor_report_evidence_ref(ref) for ref in evidence_refs)
+            if safe_ref
+        ]
+        if isinstance(evidence_refs, list) and source_report_valid
+        else []
+    )
+    proposed_artifacts = nested_report.get("proposed_artifacts", [])
+    proposed_artifacts = (
+        copy.deepcopy(proposed_artifacts)
+        if isinstance(proposed_artifacts, list) and source_report_valid
+        else []
+    )
+    named_filters = {
+        str(name).strip(): [] for name in contract.get("named_filters", []) if str(name).strip()
+    }
+    backend_id = str(producer.get("producer_id", "")).strip()
+    named_filters.setdefault(packet_status, []).append(backend_id or "missing_producer")
+    for key in list(named_filters):
+        named_filters[key] = sorted(set(named_filters[key]))
+    packet = {
+        "artifact_kind": LOCAL_OPERATOR_EXECUTOR_REPORT_REVIEW_PACKET_ARTIFACT_KIND,
+        "schema_version": LOCAL_OPERATOR_EXECUTOR_REPORT_REVIEW_PACKET_SCHEMA_VERSION,
+        "generated_at": utc_now_iso(),
+        "policy_reference": {
+            **supervisor_executor_adapter_policy_reference(),
+            "policy_section": "executor_report_consumption_policy",
+            "packet_contract_section": "executor_report_review_packet_contract",
+        },
+        "source_report_artifact": LOCAL_OPERATOR_EXECUTOR_REPORT_RELATIVE_PATH,
+        "local_only": bool(contract.get("local_only", True)),
+        "privacy_boundary": copy.deepcopy(contract.get("privacy_boundary", {})),
+        "summary": {
+            "status": packet_status,
+            "report_kind": str(summary.get("report_kind", "")).strip(),
+            "producer_kind": str(producer.get("producer_kind", "")).strip(),
+            "authority_level": "review_only",
+            "human_review_required": bool(contract.get("human_review_required", True)),
+            "canonical_mutations_allowed": False,
+            "next_gap": local_operator_executor_report_review_packet_next_gap(packet_status),
+        },
+        "review_packet": {
+            "packet_kind": str(contract.get("packet_kind", "executor_report_review")).strip(),
+            "source_report_status": str(summary.get("status", "")).strip(),
+            "review_state": (
+                str(contract.get("review_state", "ready_for_human_review")).strip()
+                if packet_status == "ready_for_review"
+                else "blocked"
+            ),
+            "findings": findings,
+            "evidence_refs": evidence_refs,
+            "proposed_artifacts": proposed_artifacts,
+            "review_questions": [],
+            "operator_decision_required": bool(contract.get("operator_decision_required", True)),
+            "report_is_authority": False,
+        },
+        "consumption_request": request,
+        "consumption_validation": {
+            "valid": bool(consumption_validation.get("valid", False)),
+            "finding_count": len(consumption_findings),
+            "findings": copy.deepcopy(consumption_findings),
+            "normalized": copy.deepcopy(normalized_consumption),
+        },
+        "source_report_validation": report_validation_redacted,
+        "checks": checks,
+        "viewer_projection": {
+            "named_filters": named_filters,
+        },
+    }
+    packet_validation = validate_local_operator_executor_report_review_packet(packet)
+    packet["packet_validation"] = {
+        "valid": bool(packet_validation.get("valid", False)),
+        "finding_count": len(packet_validation.get("findings", [])),
+        "findings": copy.deepcopy(packet_validation.get("findings", [])),
+    }
+    if packet_validation.get("valid") is not True and packet_status == "ready_for_review":
+        packet["summary"]["status"] = "blocked_policy_contract"
+        packet["summary"]["next_gap"] = local_operator_executor_report_review_packet_next_gap(
+            "blocked_policy_contract"
+        )
+        packet["review_packet"]["review_state"] = "blocked"
+        packet["viewer_projection"]["named_filters"] = {
+            str(name).strip(): [] for name in contract.get("named_filters", []) if str(name).strip()
+        }
+        packet["viewer_projection"]["named_filters"].setdefault(
+            "blocked_policy_contract",
+            [],
+        ).append(backend_id or "missing_producer")
+    return packet
+
+
+def write_local_operator_executor_report_review_packet(index: dict[str, Any]) -> Path:
+    path = local_operator_executor_report_review_packet_path()
     with artifact_lock(path):
         atomic_write_json(path, index)
     return path
@@ -44780,6 +45266,7 @@ def main(
     build_local_operator_executor_task_smoke_mode: bool = False,
     build_local_operator_executor_report_contract_mode: bool = False,
     build_local_operator_executor_report_smoke_mode: bool = False,
+    build_local_operator_executor_report_review_packet_mode: bool = False,
     build_agent_passport_derived_surfaces_mode: bool = False,
     build_agent_runtime_enforcement_evidence_mode: bool = False,
     build_supervisor_performance_index_mode: bool = False,
@@ -44863,6 +45350,9 @@ def main(
         ),
         "--build-local-operator-executor-report-smoke": (
             build_local_operator_executor_report_smoke_mode
+        ),
+        "--build-local-operator-executor-report-review-packet": (
+            build_local_operator_executor_report_review_packet_mode
         ),
         "--build-agent-passport-derived-surfaces": build_agent_passport_derived_surfaces_mode,
         "--build-agent-runtime-enforcement-evidence": (
@@ -45784,6 +46274,7 @@ def main(
                 build_local_operator_executor_task_smoke_mode,
                 build_local_operator_executor_report_contract_mode,
                 build_local_operator_executor_report_smoke_mode,
+                build_local_operator_executor_report_review_packet_mode,
                 build_agent_runtime_enforcement_evidence_mode,
             )
         ):
@@ -45972,6 +46463,42 @@ def main(
         write_local_operator_executor_report(index)
         emit_supervisor_json(index, output_mode=normalized_output_mode)
         return 0 if index.get("smoke_summary", {}).get("status") == "passed" else 1
+
+    if build_local_operator_executor_report_review_packet_mode:
+        if any(
+            (
+                dry_run,
+                auto_approve,
+                loop,
+                resolve_gate,
+                decision,
+                note,
+                target_spec,
+                split_proposal,
+                apply_split_proposal,
+                operator_note,
+                mutation_budget,
+                run_authority,
+                execution_profile,
+                child_model,
+                child_timeout_seconds,
+                verbose,
+                list_stale_runtime,
+                clean_stale_runtime,
+                observe_graph_health_mode,
+                operator_request_packet_path,
+            )
+        ):
+            print(
+                "--build-local-operator-executor-report-review-packet must be used "
+                "as a standalone command",
+                file=sys.stderr,
+            )
+            return 1
+        index = build_local_operator_executor_report_review_packet()
+        write_local_operator_executor_report_review_packet(index)
+        emit_supervisor_json(index, output_mode=normalized_output_mode)
+        return 0 if index.get("summary", {}).get("status") == "ready_for_review" else 1
 
     if build_agent_passport_derived_surfaces_mode:
         if any(
@@ -49373,6 +49900,14 @@ if __name__ == "__main__":
         ),
     )
     parser.add_argument(
+        "--build-local-operator-executor-report-review-packet",
+        action="store_true",
+        help=(
+            "Build a local-only review packet from a valid executor report and the "
+            "consumption policy, without creating proposals or mutating canonical specs"
+        ),
+    )
+    parser.add_argument(
         "--build-agent-passport-derived-surfaces",
         action="store_true",
         help=(
@@ -49722,6 +50257,9 @@ if __name__ == "__main__":
             ),
             build_local_operator_executor_report_smoke_mode=(
                 args.build_local_operator_executor_report_smoke
+            ),
+            build_local_operator_executor_report_review_packet_mode=(
+                args.build_local_operator_executor_report_review_packet
             ),
             build_agent_passport_derived_surfaces_mode=(args.build_agent_passport_derived_surfaces),
             build_agent_runtime_enforcement_evidence_mode=(

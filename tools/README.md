@@ -152,6 +152,12 @@ Supervisor modes:
   validating the returned report through the generic report validator, and
   recording sanitized smoke and mutation metadata without publishing the
   artifact.
+- `--build-local-operator-executor-report-review-packet`: build local-only
+  `runs/local_operator_executor_report_review_packet.json` by consuming a valid
+  local executor report and the `executor_report_consumption_policy`, producing
+  a reviewable packet that requires human/operator review without creating
+  proposals, applying patches, mutating canonical specs, or publishing local
+  artifacts.
 - `executor_report_consumption_policy` in
   `tools/supervisor_executor_adapter_policy.json`: defines which supervisor or
   downstream surfaces may consume a valid local executor report, which
@@ -492,6 +498,11 @@ Key derived artifacts:
   passes, or a sanitized `invalid_report` fallback when validation fails, with
   `smoke_summary`, source validations, execution metadata, and mutation guard
   checks excluded from public static publishing
+- `runs/local_operator_executor_report_review_packet.json`: local-only review
+  packet built from a valid executor report and the report consumption policy,
+  preserving findings/evidence as review input while requiring human/operator
+  review and forbidding canonical mutation, proposal status mutation, patch
+  application, gap closure, and public static publication
 - `executor_report_consumption_policy`: policy-only surface that allows valid
   local executor reports to become review packet, proposal draft candidate,
   implementation planning, evidence reference, or handoff input while rejecting

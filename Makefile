@@ -23,7 +23,7 @@ PYTHON_TARGETS := viewer-surfaces dashboard backlog next-move spec-activity grap
 	conversation-memory conversation-memory-map conversation-memory-pressure pre-spec-semantics \
 	implementation-delta implementation-work supervisor-evidence-packet supervisor-stalled-run-salvage \
 	factory-architecture swift-typed-tooling project-environment init-product-workspace review-feedback \
-	executor-adapters executor-readiness executor-smoke executor-task-smoke executor-report-contract executor-report-smoke \
+	executor-adapters executor-readiness executor-smoke executor-task-smoke executor-report-contract executor-report-smoke executor-report-review-packet \
 	agent-passports agent-runtime-evidence docc-sync publish-bundle test test-supervisor
 
 $(PYTHON_TARGETS): check-python
@@ -77,6 +77,7 @@ help:
 			'  make executor-task-smoke      Run local operator bounded executor task smoke' \
 			'  make executor-report-contract Refresh local operator executor report contract JSON' \
 			'  make executor-report-smoke    Run local operator bounded executor report smoke' \
+			'  make executor-report-review-packet Build local operator executor report review packet' \
 			'  make agent-passports          Refresh Agent Passport derived surfaces' \
 			'  make agent-runtime-evidence   Refresh Agent Passport runtime evidence JSON' \
 			'  make check-python             Verify selected Python runtime is supported' \
@@ -277,6 +278,10 @@ executor-report-contract:
 .PHONY: executor-report-smoke
 executor-report-smoke:
 	@$(PYTHON) $(SUPERVISOR) --build-local-operator-executor-report-smoke
+
+.PHONY: executor-report-review-packet
+executor-report-review-packet:
+	@$(PYTHON) $(SUPERVISOR) --build-local-operator-executor-report-review-packet
 
 .PHONY: agent-passports
 agent-passports:

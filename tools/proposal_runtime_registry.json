@@ -4764,5 +4764,85 @@
         "pattern": "executor_report_consumption_policy"
       }
     ]
+  },
+  {
+    "proposal_id": "0093",
+    "posture": "bounded_runtime_followup",
+    "runtime_surfaces": [
+      "docs/proposals/0093_build_executor_report_review_packet.md",
+      "docs/archive/proposal_sources/0093_build_executor_report_review_packet.md",
+      "tools/supervisor_executor_adapter_policy.json",
+      "tools/supervisor.py",
+      "tools/build_static_artifact_bundle.py",
+      "Makefile",
+      "tools/README.md",
+      "docs/static_artifact_publish.md",
+      "Sources/SpecGraph/Documentation.docc/ArtifactPublishing.md",
+      "tests/test_supervisor.py",
+      "tests/test_static_artifact_bundle.py",
+      "runs/local_operator_executor_report_review_packet.json"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/supervisor_executor_adapter_policy.json",
+        "pattern": "executor_report_review_packet_contract"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def build_local_operator_executor_report_review_packet("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "\"--build-local-operator-executor-report-review-packet\""
+      },
+      {
+        "path": "Makefile",
+        "pattern": "executor-report-review-packet:"
+      },
+      {
+        "path": "tools/build_static_artifact_bundle.py",
+        "pattern": "\"local_operator_executor_report_review_packet.json\""
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_local_operator_executor_report_review_packet_from_valid_report("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_local_operator_executor_report_review_packet_blocks_missing_source_report("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_local_operator_executor_report_review_packet_blocks_invalid_source_report("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_local_operator_executor_report_review_packet_blocks_forbidden_effect("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_main_builds_local_operator_executor_report_review_packet_as_standalone_command("
+      },
+      {
+        "path": "tests/test_static_artifact_bundle.py",
+        "pattern": "local_operator_executor_report_review_packet.json"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0093_build_executor_report_review_packet.md",
+        "pattern": "does not mean report findings are canonical facts"
+      },
+      {
+        "path": "docs/proposals/0093_build_executor_report_review_packet.md",
+        "pattern": "define_executor_report_to_proposal_draft_policy"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "runs/local_operator_executor_report_review_packet.json"
+      }
+    ]
   }
 ]

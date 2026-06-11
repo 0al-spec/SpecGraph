@@ -1194,5 +1194,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0093",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0093_build_executor_report_review_packet.md"
+    ],
+    "motivating_concern": "SpecGraph can validate and consume local executor reports, but it lacks a bounded review packet artifact that makes report output reviewable without promoting findings into canonical facts or proposal/patch authority",
+    "normalized_title": "Build Executor Report Review Packet",
+    "bounded_scope": "Add a local-only executor report review packet artifact and Make target that consumes a valid local executor report and the consumption policy, preserves findings/evidence as review input, requires human/operator review, and excludes the packet from public static publish without creating proposals, applying patches, mutating canonical specs, closing gaps, or changing SpecSpace/Platform behavior.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]
