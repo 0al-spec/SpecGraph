@@ -27172,6 +27172,22 @@ def test_supervisor_executor_adapter_policy_declares_request_report_contract() -
     assert "report_contract_sample_valid" in report_contract["check_ids"]
     assert report_contract["privacy_boundary"]["public_static_publish"] is False
     assert report_contract["privacy_boundary"]["canonical_mutations_allowed"] is False
+    consumption_policy = policy["executor_report_consumption_policy"]
+    assert consumption_policy["artifact_kind"] == "executor_report_consumption_policy"
+    assert consumption_policy["source_report_artifact"] == (
+        "runs/local_operator_executor_report.json"
+    )
+    assert "human_review_packet_builder" in consumption_policy["allowed_consumers"]
+    assert "proposal_draft_builder" in consumption_policy["allowed_consumers"]
+    assert "report_to_review_packet" in consumption_policy["allowed_transformations"]
+    assert "report_to_proposal_draft_candidate" in (consumption_policy["allowed_transformations"])
+    assert "proposal_draft_candidate" in consumption_policy["allowed_effects"]
+    assert "canonical_spec_mutation" in consumption_policy["forbidden_effects"]
+    assert "patch_application" in consumption_policy["forbidden_effects"]
+    assert "gap_closure" in consumption_policy["forbidden_effects"]
+    assert consumption_policy["authority_boundary"]["report_is_authority"] is False
+    assert consumption_policy["authority_boundary"]["canonical_mutations_allowed"] is False
+    assert consumption_policy["next_gap"] == "build_executor_report_review_packet"
 
     request = policy["request_contract"]
     assert request["artifact_kind"] == "supervisor_executor_request"
@@ -28669,6 +28685,39 @@ def test_parse_bounded_executor_report_response_redacts_invalid_values(
     assert "sk-local-secret-status" not in dumped
 
 
+def const_schema_nodes_without_type(schema: object) -> list[str]:
+    missing: list[str] = []
+
+    def visit(node: object, path: str) -> None:
+        if isinstance(node, dict):
+            if "const" in node and "type" not in node:
+                missing.append(path)
+            for key, value in node.items():
+                visit(value, f"{path}.{key}" if path else str(key))
+        elif isinstance(node, list):
+            for index, value in enumerate(node):
+                visit(value, f"{path}[{index}]")
+
+    visit(schema, "")
+    return missing
+
+
+def test_bounded_executor_task_smoke_schema_const_nodes_declare_type(
+    supervisor_module: object,
+) -> None:
+    schema = supervisor_module.bounded_executor_task_smoke_response_schema()
+
+    assert const_schema_nodes_without_type(schema) == []
+
+
+def test_bounded_executor_report_schema_const_nodes_declare_type(
+    supervisor_module: object,
+) -> None:
+    schema = supervisor_module.bounded_executor_report_response_schema()
+
+    assert const_schema_nodes_without_type(schema) == []
+
+
 def test_build_local_operator_executor_report_contract_is_ready_after_task_smoke(
     supervisor_module: object,
 ) -> None:
@@ -28857,6 +28906,153 @@ def test_build_local_operator_executor_report_smoke_runs_after_ready_contract(
     dumped = json.dumps(report, sort_keys=True)
     assert "/fake/bin/codex" not in dumped
     assert "raw stdout" not in dumped.lower()
+
+
+def test_validate_executor_report_consumption_request_accepts_review_packet_input(
+    supervisor_module: object,
+) -> None:
+    report = supervisor_module.default_local_operator_executor_report_sample()
+    request = supervisor_module.default_executor_report_consumption_request()
+
+    validation = supervisor_module.validate_executor_report_consumption_request(
+        request,
+        report=report,
+    )
+
+    assert validation["valid"] is True
+    assert validation["findings"] == []
+    assert validation["normalized"] == {
+        "source_report_artifact": "runs/local_operator_executor_report.json",
+        "consumer": "human_review_packet_builder",
+        "transformation": "report_to_review_packet",
+        "requested_effects": ["review_packet_candidate"],
+        "source_report_valid": True,
+        "next_gap": "build_executor_report_review_packet",
+    }
+    assert validation["report_validation"]["valid"] is True
+
+
+def test_validate_executor_report_consumption_request_accepts_proposal_candidate_input(
+    supervisor_module: object,
+) -> None:
+    report = supervisor_module.default_local_operator_executor_report_sample(
+        report_kind="proposal_draft",
+    )
+    request = supervisor_module.default_executor_report_consumption_request(
+        consumer="proposal_draft_builder",
+        transformation="report_to_proposal_draft_candidate",
+        requested_effects=["proposal_draft_candidate"],
+    )
+
+    validation = supervisor_module.validate_executor_report_consumption_request(
+        request,
+        report=report,
+    )
+
+    assert validation["valid"] is True
+    assert validation["normalized"]["consumer"] == "proposal_draft_builder"
+    assert validation["normalized"]["transformation"] == "report_to_proposal_draft_candidate"
+    assert validation["normalized"]["requested_effects"] == ["proposal_draft_candidate"]
+
+
+def test_validate_executor_report_consumption_request_rejects_unknown_consumer(
+    supervisor_module: object,
+) -> None:
+    request = supervisor_module.default_executor_report_consumption_request(
+        consumer="direct_canonical_writer",
+    )
+
+    validation = supervisor_module.validate_executor_report_consumption_request(request)
+
+    assert validation["valid"] is False
+    assert any(finding["code"] == "unknown_report_consumer" for finding in validation["findings"])
+
+
+def test_validate_executor_report_consumption_request_rejects_unknown_transformation(
+    supervisor_module: object,
+) -> None:
+    request = supervisor_module.default_executor_report_consumption_request(
+        transformation="report_to_applied_patch",
+    )
+
+    validation = supervisor_module.validate_executor_report_consumption_request(request)
+
+    assert validation["valid"] is False
+    assert any(
+        finding["code"] == "unknown_report_transformation" for finding in validation["findings"]
+    )
+
+
+def test_validate_executor_report_consumption_request_rejects_forbidden_effects(
+    supervisor_module: object,
+) -> None:
+    request = supervisor_module.default_executor_report_consumption_request(
+        requested_effects=[
+            "proposal_draft_candidate",
+            "canonical_spec_mutation",
+            "patch_application",
+            "gap_closure",
+        ],
+    )
+
+    validation = supervisor_module.validate_executor_report_consumption_request(request)
+
+    assert validation["valid"] is False
+    forbidden_findings = [
+        finding
+        for finding in validation["findings"]
+        if finding["code"] == "forbidden_report_effect"
+    ]
+    assert len(forbidden_findings) == 3
+    assert {finding["field"] for finding in forbidden_findings} == {
+        "requested_effects[1]",
+        "requested_effects[2]",
+        "requested_effects[3]",
+    }
+
+
+def test_validate_executor_report_consumption_request_rejects_authority_expansion(
+    supervisor_module: object,
+) -> None:
+    request = supervisor_module.default_executor_report_consumption_request()
+    request["authority_boundary"]["report_is_authority"] = True
+    request["authority_boundary"]["canonical_mutations_allowed"] = True
+    request["authority_boundary"]["proposal_status_mutations_allowed"] = True
+    request["authority_boundary"]["gap_closure_allowed"] = True
+
+    validation = supervisor_module.validate_executor_report_consumption_request(request)
+
+    assert validation["valid"] is False
+    boundary_fields = {
+        finding["field"]
+        for finding in validation["findings"]
+        if finding["code"] == "invalid_consumption_authority_boundary"
+    }
+    assert boundary_fields >= {
+        "authority_boundary.report_is_authority",
+        "authority_boundary.canonical_mutations_allowed",
+        "authority_boundary.proposal_status_mutations_allowed",
+        "authority_boundary.gap_closure_allowed",
+    }
+
+
+def test_validate_executor_report_consumption_request_rejects_invalid_source_report(
+    supervisor_module: object,
+) -> None:
+    report = supervisor_module.default_local_operator_executor_report_sample()
+    report["summary"]["canonical_mutation_attempted"] = True
+    request = supervisor_module.default_executor_report_consumption_request()
+
+    validation = supervisor_module.validate_executor_report_consumption_request(
+        request,
+        report=report,
+    )
+
+    assert validation["valid"] is False
+    assert validation["report_validation"]["valid"] is False
+    assert any(
+        finding["code"] == "canonical_mutation_attempted" for finding in validation["findings"]
+    )
 
 
 def test_build_local_operator_executor_report_smoke_blocks_missing_task_smoke(

@@ -4698,5 +4698,71 @@
         "pattern": "runs/local_operator_executor_report.json"
       }
     ]
+  },
+  {
+    "proposal_id": "0092",
+    "posture": "bounded_runtime_followup",
+    "runtime_surfaces": [
+      "docs/proposals/0092_executor_report_consumption_policy.md",
+      "docs/archive/proposal_sources/0092_executor_report_consumption_policy.md",
+      "tools/supervisor_executor_adapter_policy.json",
+      "tools/supervisor.py",
+      "tools/README.md",
+      "tests/test_supervisor.py"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/supervisor_executor_adapter_policy.json",
+        "pattern": "executor_report_consumption_policy"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def validate_executor_report_consumption_request("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def validate_executor_report_effects("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def validate_executor_report_consumer("
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_validate_executor_report_consumption_request_accepts_review_packet_input("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_validate_executor_report_consumption_request_accepts_proposal_candidate_input("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_validate_executor_report_consumption_request_rejects_unknown_consumer("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_validate_executor_report_consumption_request_rejects_forbidden_effects("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_validate_executor_report_consumption_request_rejects_authority_expansion("
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0092_executor_report_consumption_policy.md",
+        "pattern": "executor report is admissible input/evidence, not authority"
+      },
+      {
+        "path": "docs/proposals/0092_executor_report_consumption_policy.md",
+        "pattern": "build_executor_report_review_packet"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "executor_report_consumption_policy"
+      }
+    ]
   }
 ]
