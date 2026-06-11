@@ -164,6 +164,12 @@ Supervisor modes:
   transformations/effects are allowed, and which effects remain forbidden. This
   is a policy/validator surface rather than a new executor command; reports are
   admissible input/evidence, not authority.
+- `executor_report_to_proposal_draft_policy` in
+  `tools/supervisor_executor_adapter_policy.json`: defines the policy-only
+  boundary for turning a human-review-ready executor report review packet into a
+  future proposal draft candidate. It accepts only `proposal_draft` review
+  packets and keeps executor reports/review packets as input rather than
+  authority; it does not create proposal drafts or run a new executor task.
 - `--build-agent-passport-derived-surfaces`: build Agent Passport derived
   surfaces from `tools/agent_passport_adoption_policy.json` and the 0056
   executor adapter index, including report-only Agent Passport CLI validation
@@ -508,6 +514,11 @@ Key derived artifacts:
   implementation planning, evidence reference, or handoff input while rejecting
   direct canonical mutation, patch application, gap closure, proposal status
   mutation, static publication, and canonical fact assertion effects
+- `executor_report_to_proposal_draft_policy`: policy-only surface that allows
+  only human-review-ready `proposal_draft` review packets to become future
+  proposal draft candidates while rejecting analysis reports, forbidden effects,
+  authority expansion, direct canonical mutation, patch application, gap
+  closure, and proposal status mutation
 - `runs/agent_surface_index.json`: read-only Agent Passport adoption surface
   index for graph-facing agents, including policy-declared surfaces and
   executor backends derived from the 0056 adapter index

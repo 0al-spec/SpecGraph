@@ -4844,5 +4844,71 @@
         "pattern": "runs/local_operator_executor_report_review_packet.json"
       }
     ]
+  },
+  {
+    "proposal_id": "0094",
+    "posture": "bounded_policy_followup",
+    "runtime_surfaces": [
+      "docs/proposals/0094_executor_report_to_proposal_draft_policy.md",
+      "docs/archive/proposal_sources/0094_executor_report_to_proposal_draft_policy.md",
+      "tools/supervisor_executor_adapter_policy.json",
+      "tools/supervisor.py",
+      "tools/README.md",
+      "tests/test_supervisor.py"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/supervisor_executor_adapter_policy.json",
+        "pattern": "executor_report_to_proposal_draft_policy"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def validate_executor_report_to_proposal_draft_request("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def validate_executor_report_review_packet_source_for_proposal_draft("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def validate_executor_report_proposal_draft_authority_boundary("
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_validate_executor_report_to_proposal_draft_request_accepts_proposal_packet("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_validate_executor_report_to_proposal_draft_request_rejects_analysis_packet("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_validate_executor_report_to_proposal_draft_request_rejects_missing_packet("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_validate_executor_report_to_proposal_draft_request_rejects_forbidden_effect("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_validate_executor_report_to_proposal_draft_request_rejects_authority_expansion("
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0094_executor_report_to_proposal_draft_policy.md",
+        "pattern": "analysis_report review packet remains reviewable"
+      },
+      {
+        "path": "docs/proposals/0094_executor_report_to_proposal_draft_policy.md",
+        "pattern": "build_executor_report_proposal_draft_candidate"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "executor_report_to_proposal_draft_policy"
+      }
+    ]
   }
 ]

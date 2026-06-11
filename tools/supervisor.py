@@ -21961,6 +21961,400 @@ def validate_local_operator_executor_report_review_packet(packet: object) -> dic
     }
 
 
+def executor_report_to_proposal_draft_policy() -> dict[str, Any]:
+    policy = supervisor_executor_adapter_policy_lookup("executor_report_to_proposal_draft_policy")
+    return policy if isinstance(policy, dict) else {}
+
+
+def executor_report_to_proposal_draft_values(key: str) -> set[str]:
+    policy = executor_report_to_proposal_draft_policy()
+    values = policy.get(key, [])
+    return {str(value).strip() for value in values if str(value).strip()}
+
+
+def default_executor_report_to_proposal_draft_request(
+    *,
+    consumer: str = "proposal_draft_builder",
+    transformation: str = "review_packet_to_proposal_draft_candidate",
+    requested_effects: list[str] | None = None,
+) -> dict[str, Any]:
+    policy = executor_report_to_proposal_draft_policy()
+    authority_boundary = policy.get("authority_boundary", {})
+    authority_boundary = authority_boundary if isinstance(authority_boundary, dict) else {}
+    return {
+        "source_review_packet_artifact": LOCAL_OPERATOR_EXECUTOR_REPORT_REVIEW_PACKET_RELATIVE_PATH,
+        "source_report_artifact": LOCAL_OPERATOR_EXECUTOR_REPORT_RELATIVE_PATH,
+        "consumer": consumer,
+        "transformation": transformation,
+        "requested_effects": (
+            requested_effects if requested_effects is not None else ["proposal_draft_candidate"]
+        ),
+        "authority_boundary": {
+            "executor_report_is_authority": False,
+            "review_packet_is_authority": False,
+            "human_or_supervisor_review_required": bool(
+                authority_boundary.get("human_or_supervisor_review_required", True)
+            ),
+            "canonical_mutations_allowed": False,
+            "proposal_status_mutations_allowed": False,
+            "gap_closure_allowed": False,
+            "patch_application_allowed": False,
+            "static_publish_of_local_report_allowed": False,
+        },
+    }
+
+
+def validate_executor_report_to_proposal_draft_effects(effects: object) -> dict[str, Any]:
+    allowed = executor_report_to_proposal_draft_values("requested_effects")
+    forbidden = executor_report_to_proposal_draft_values("forbidden_effects")
+    findings: list[dict[str, str]] = []
+    if not isinstance(effects, list):
+        return {
+            "valid": False,
+            "effects": [],
+            "findings": [
+                executor_report_finding(
+                    code="proposal_draft_effects_not_list",
+                    field="requested_effects",
+                    message="Proposal draft policy requested_effects must be a list.",
+                )
+            ],
+            "allowed_effects": sorted(allowed),
+            "forbidden_effects": sorted(forbidden),
+        }
+    normalized_effects: list[str] = []
+    if not effects:
+        findings.append(
+            executor_report_finding(
+                code="proposal_draft_effects_empty",
+                field="requested_effects",
+                message="Proposal draft policy requested_effects must not be empty.",
+            )
+        )
+    for index, raw_effect in enumerate(effects):
+        effect = str(raw_effect or "").strip()
+        if not effect:
+            findings.append(
+                executor_report_finding(
+                    code="proposal_draft_effect_empty",
+                    field=f"requested_effects[{index}]",
+                    message="Proposal draft requested effects must be non-empty strings.",
+                )
+            )
+            continue
+        normalized_effects.append(effect)
+        if effect in forbidden:
+            findings.append(
+                executor_report_finding(
+                    code="forbidden_proposal_draft_effect",
+                    field=f"requested_effects[{index}]",
+                    message=f"Proposal draft policy must not request effect {effect}.",
+                )
+            )
+        elif effect not in allowed:
+            findings.append(
+                executor_report_finding(
+                    code="unknown_proposal_draft_effect",
+                    field=f"requested_effects[{index}]",
+                    message=f"Unknown proposal draft requested effect: {effect}.",
+                )
+            )
+    return {
+        "valid": not findings,
+        "effects": normalized_effects,
+        "findings": findings,
+        "allowed_effects": sorted(allowed),
+        "forbidden_effects": sorted(forbidden),
+    }
+
+
+def validate_executor_report_proposal_draft_authority_boundary(
+    authority_boundary: object,
+) -> dict[str, Any]:
+    policy = executor_report_to_proposal_draft_policy()
+    expected_boundary = policy.get("authority_boundary", {})
+    expected_boundary = expected_boundary if isinstance(expected_boundary, dict) else {}
+    boundary = authority_boundary if isinstance(authority_boundary, dict) else {}
+    boundary_expectations = {
+        "executor_report_is_authority": False,
+        "review_packet_is_authority": False,
+        "human_or_supervisor_review_required": True,
+        "canonical_mutations_allowed": False,
+        "proposal_status_mutations_allowed": False,
+        "gap_closure_allowed": False,
+        "patch_application_allowed": False,
+        "static_publish_of_local_report_allowed": False,
+    }
+    findings: list[dict[str, str]] = []
+    if not isinstance(authority_boundary, dict):
+        findings.append(
+            executor_report_finding(
+                code="proposal_draft_authority_boundary_not_object",
+                field="authority_boundary",
+                message="Proposal draft authority_boundary must be an object.",
+            )
+        )
+    extra_fields = sorted(
+        str(field).strip() for field in boundary if str(field).strip() not in boundary_expectations
+    )
+    for field in extra_fields:
+        findings.append(
+            executor_report_finding(
+                code="unexpected_proposal_draft_authority_boundary_field",
+                field=f"authority_boundary.{field}",
+                message=(f"Proposal draft policy must not add authority-boundary field {field}."),
+            )
+        )
+    for field, expected_value in boundary_expectations.items():
+        if field in expected_boundary:
+            expected_value = expected_boundary.get(field)
+        if boundary.get(field) is not expected_value:
+            findings.append(
+                executor_report_finding(
+                    code="invalid_proposal_draft_authority_boundary",
+                    field=f"authority_boundary.{field}",
+                    message=(
+                        "Proposal draft policy must preserve review-packet-as-input "
+                        f"authority boundary for {field}."
+                    ),
+                )
+            )
+    return {
+        "valid": not findings,
+        "findings": findings,
+        "normalized": {field: boundary.get(field) for field in boundary_expectations},
+    }
+
+
+def validate_executor_report_review_packet_source_for_proposal_draft(
+    review_packet: object,
+) -> dict[str, Any]:
+    policy = executor_report_to_proposal_draft_policy()
+    findings: list[dict[str, str]] = []
+    if review_packet is None:
+        return {
+            "valid": False,
+            "findings": [
+                executor_report_finding(
+                    code="source_review_packet_not_provided",
+                    field="review_packet",
+                    message="Proposal draft policy requires a validated review packet source.",
+                )
+            ],
+            "normalized": {
+                "source_review_packet_valid": None,
+                "source_review_packet_status": "",
+                "source_review_state": "",
+            },
+        }
+    packet_validation = validate_local_operator_executor_report_review_packet(review_packet)
+    packet_findings = packet_validation.get("findings", [])
+    packet_findings = packet_findings if isinstance(packet_findings, list) else []
+    findings.extend(copy.deepcopy(packet_findings))
+    packet = review_packet if isinstance(review_packet, dict) else {}
+    summary = packet.get("summary", {}) if isinstance(packet, dict) else {}
+    summary = summary if isinstance(summary, dict) else {}
+    nested_packet = packet.get("review_packet", {}) if isinstance(packet, dict) else {}
+    nested_packet = nested_packet if isinstance(nested_packet, dict) else {}
+    packet_status = str(summary.get("status", "")).strip()
+    review_state = str(nested_packet.get("review_state", "")).strip()
+    report_kind = str(summary.get("report_kind", "")).strip()
+    allowed_status = executor_report_to_proposal_draft_values("allowed_source_packet_status")
+    allowed_review_states = executor_report_to_proposal_draft_values("allowed_source_review_states")
+    allowed_report_kinds = executor_report_to_proposal_draft_values("allowed_source_report_kinds")
+    if packet_status not in allowed_status:
+        findings.append(
+            executor_report_finding(
+                code="source_review_packet_status_not_allowed",
+                field="review_packet.summary.status",
+                message="Proposal draft policy requires a ready source review packet.",
+            )
+        )
+    if review_state not in allowed_review_states:
+        findings.append(
+            executor_report_finding(
+                code="source_review_packet_state_not_allowed",
+                field="review_packet.review_packet.review_state",
+                message="Proposal draft policy requires a human-review-ready source packet.",
+            )
+        )
+    if report_kind not in allowed_report_kinds:
+        findings.append(
+            executor_report_finding(
+                code="source_review_packet_report_kind_not_allowed",
+                field="review_packet.summary.report_kind",
+                message="Proposal draft policy requires a proposal_draft source report kind.",
+            )
+        )
+    if summary.get("human_review_required") is not True:
+        findings.append(
+            executor_report_finding(
+                code="source_review_packet_human_review_not_required",
+                field="review_packet.summary.human_review_required",
+                message="Proposal draft policy requires human review to remain required.",
+            )
+        )
+    if nested_packet.get("operator_decision_required") is not True:
+        findings.append(
+            executor_report_finding(
+                code="source_review_packet_operator_decision_not_required",
+                field="review_packet.review_packet.operator_decision_required",
+                message="Proposal draft policy requires an operator decision marker.",
+            )
+        )
+    if summary.get("canonical_mutations_allowed") is not False:
+        findings.append(
+            executor_report_finding(
+                code="source_review_packet_allows_canonical_mutation",
+                field="review_packet.summary.canonical_mutations_allowed",
+                message="Proposal draft policy requires canonical mutations to remain forbidden.",
+            )
+        )
+    return {
+        "valid": not findings,
+        "findings": findings,
+        "normalized": {
+            "source_review_packet_valid": bool(packet_validation.get("valid", False)),
+            "source_review_packet_status": packet_status,
+            "source_review_state": review_state,
+            "report_kind": report_kind,
+            "producer_kind": str(summary.get("producer_kind", "")).strip(),
+        },
+        "packet_validation": {
+            "valid": bool(packet_validation.get("valid", False)),
+            "finding_count": len(packet_findings),
+            "findings": copy.deepcopy(packet_findings),
+        },
+        "policy_artifact_kind": str(policy.get("artifact_kind", "")).strip(),
+    }
+
+
+def validate_executor_report_to_proposal_draft_request(
+    request: object,
+    *,
+    review_packet: object | None = None,
+) -> dict[str, Any]:
+    policy = executor_report_to_proposal_draft_policy()
+    findings: list[dict[str, str]] = []
+    if not isinstance(request, dict):
+        return {
+            "valid": False,
+            "findings": [
+                executor_report_finding(
+                    code="proposal_draft_request_not_object",
+                    field="request",
+                    message="Proposal draft policy request must be a JSON object.",
+                )
+            ],
+            "normalized": {},
+        }
+    for field in [
+        str(field).strip()
+        for field in policy.get("required_request_fields", [])
+        if str(field).strip()
+    ]:
+        if field not in request:
+            findings.append(
+                executor_report_finding(
+                    code="missing_proposal_draft_request_field",
+                    field=field,
+                    message=f"Proposal draft policy request is missing field {field}.",
+                )
+            )
+    source_review_packet_artifact = str(request.get("source_review_packet_artifact", "")).strip()
+    expected_review_packet_artifact = str(
+        policy.get(
+            "source_review_packet_artifact",
+            LOCAL_OPERATOR_EXECUTOR_REPORT_REVIEW_PACKET_RELATIVE_PATH,
+        )
+    ).strip()
+    if source_review_packet_artifact != expected_review_packet_artifact:
+        findings.append(
+            executor_report_finding(
+                code="invalid_proposal_draft_source_review_packet_artifact",
+                field="source_review_packet_artifact",
+                message="Proposal draft policy request must reference the review packet.",
+            )
+        )
+    source_report_artifact = str(request.get("source_report_artifact", "")).strip()
+    expected_report_artifact = str(
+        policy.get("source_report_artifact", LOCAL_OPERATOR_EXECUTOR_REPORT_RELATIVE_PATH)
+    ).strip()
+    if source_report_artifact != expected_report_artifact:
+        findings.append(
+            executor_report_finding(
+                code="invalid_proposal_draft_source_report_artifact",
+                field="source_report_artifact",
+                message="Proposal draft policy request must reference the local report.",
+            )
+        )
+    consumer = str(request.get("consumer", "")).strip()
+    expected_consumer = str(policy.get("consumer", "proposal_draft_builder")).strip()
+    if consumer != expected_consumer:
+        findings.append(
+            executor_report_finding(
+                code="invalid_proposal_draft_consumer",
+                field="consumer",
+                message="Proposal draft policy request must use the proposal draft builder.",
+            )
+        )
+    transformation = str(request.get("transformation", "")).strip()
+    expected_transformation = str(
+        policy.get(
+            "transformation",
+            "review_packet_to_proposal_draft_candidate",
+        )
+    ).strip()
+    if transformation != expected_transformation:
+        findings.append(
+            executor_report_finding(
+                code="invalid_proposal_draft_transformation",
+                field="transformation",
+                message=(
+                    "Proposal draft policy request must transform review packet to draft "
+                    "candidate only."
+                ),
+            )
+        )
+    effects_validation = validate_executor_report_to_proposal_draft_effects(
+        request.get("requested_effects")
+    )
+    findings.extend(copy.deepcopy(effects_validation.get("findings", [])))
+    authority_validation = validate_executor_report_proposal_draft_authority_boundary(
+        request.get("authority_boundary")
+    )
+    findings.extend(copy.deepcopy(authority_validation.get("findings", [])))
+    source_validation = validate_executor_report_review_packet_source_for_proposal_draft(
+        review_packet
+    )
+    findings.extend(copy.deepcopy(source_validation.get("findings", [])))
+    source_normalized = source_validation.get("normalized", {})
+    source_normalized = source_normalized if isinstance(source_normalized, dict) else {}
+    draft_contract = policy.get("proposal_draft_candidate_contract", {})
+    draft_contract = draft_contract if isinstance(draft_contract, dict) else {}
+    return {
+        "valid": not findings,
+        "findings": findings,
+        "normalized": {
+            "source_review_packet_artifact": source_review_packet_artifact,
+            "source_report_artifact": source_report_artifact,
+            "consumer": consumer,
+            "transformation": transformation,
+            "requested_effects": copy.deepcopy(effects_validation.get("effects", [])),
+            "source_review_packet_valid": source_normalized.get("source_review_packet_valid"),
+            "source_review_packet_status": source_normalized.get("source_review_packet_status", ""),
+            "source_review_state": source_normalized.get("source_review_state", ""),
+            "draft_artifact_kind": str(draft_contract.get("artifact_kind", "")).strip(),
+            "next_gap": str(
+                policy.get("next_gap", "build_executor_report_proposal_draft_candidate")
+            ).strip(),
+        },
+        "effects_validation": effects_validation,
+        "authority_validation": authority_validation,
+        "source_review_packet_validation": source_validation,
+    }
+
+
 def build_local_operator_executor_report_review_packet(
     report: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
