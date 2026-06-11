@@ -1474,6 +1474,11 @@ h3 {
   min-height: 70px;
 }
 
+.demo-bridge .artifact-field span {
+  color: var(--paper);
+  border-color: rgba(11, 11, 12, .38);
+}
+
 .demo-card {
   min-height: 190px;
   display: grid;

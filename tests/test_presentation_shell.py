@@ -33,7 +33,8 @@ def test_presentation_shell_is_static_slide_deck():
     assert "@keyframes" not in css
     assert "transition" not in css
     assert 'addEventListener("keydown"' in js
-    assert "${formatIndex(activeIndex)} / ${formatIndex(slides.length - 1)}" in js
+    assert "${formatIndex(activeIndex)} / ${formatTotal(slides.length)}" in js
+    assert ".demo-bridge .artifact-field span" in css
 
 
 def test_presentation_shell_uses_specgraph_landing_visual_tokens():

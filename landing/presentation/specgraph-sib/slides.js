@@ -10,6 +10,10 @@
     return String(index + 1).padStart(2, "0");
   }
 
+  function formatTotal(total) {
+    return String(total).padStart(2, "0");
+  }
+
   function updateSlide(nextIndex) {
     activeIndex = Math.max(0, Math.min(nextIndex, slides.length - 1));
 
@@ -20,8 +24,8 @@
 
     prevButton.disabled = activeIndex === 0;
     nextButton.disabled = activeIndex === slides.length - 1;
-    slideCount.value = `${formatIndex(activeIndex)} / ${formatIndex(slides.length - 1)}`;
-    slideCount.textContent = `${formatIndex(activeIndex)} / ${formatIndex(slides.length - 1)}`;
+    slideCount.value = `${formatIndex(activeIndex)} / ${formatTotal(slides.length)}`;
+    slideCount.textContent = `${formatIndex(activeIndex)} / ${formatTotal(slides.length)}`;
     progressBar.style.width = `${((activeIndex + 1) / slides.length) * 100}%`;
 
     const activeSlide = slides[activeIndex];
