@@ -6,6 +6,9 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+import yaml
+
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURE = ROOT / "tests" / "fixtures" / "ontology_import" / "examcalc" / "import-fixture.yaml"
 
@@ -18,6 +21,34 @@ def load_ontology_imports_module() -> object:
     sys.modules[spec.name] = module
     spec.loader.exec_module(module)
     return module
+
+
+def load_fixture_payload() -> dict[str, object]:
+    payload = yaml.safe_load(FIXTURE.read_text(encoding="utf-8"))
+    assert isinstance(payload, dict)
+    return payload
+
+
+def write_temp_policy(tmp_path: Path, payload: dict[str, object] | None = None) -> Path:
+    policy = payload or json.loads((ROOT / "tools" / "ontology_import_policy.json").read_text())
+    policy_path = tmp_path / "ontology_import_policy.json"
+    policy_path.write_text(json.dumps(policy, indent=2, sort_keys=True), encoding="utf-8")
+    return policy_path
+
+
+def write_temp_fixture(tmp_path: Path, payload: dict[str, object]) -> Path:
+    fixture_dir = tmp_path / "tests" / "fixtures" / "ontology_import" / "examcalc"
+    fixture_dir.mkdir(parents=True)
+    source_ir = (
+        ROOT / "tests" / "fixtures" / "ontology_import" / "examcalc" / "ontology.normalized.json"
+    )
+    (fixture_dir / "ontology.normalized.json").write_text(
+        source_ir.read_text(encoding="utf-8"),
+        encoding="utf-8",
+    )
+    fixture_path = fixture_dir / "import-fixture.yaml"
+    fixture_path.write_text(yaml.safe_dump(payload, sort_keys=False), encoding="utf-8")
+    return fixture_path
 
 
 def test_ontology_import_policy_defines_read_only_contract() -> None:
@@ -49,6 +80,7 @@ def test_ontology_import_fixture_resolves_known_refs_and_gaps() -> None:
     )
     assert package["lock"]["package_ref"] == "edu.university.examcalc@0.1.0"
     assert package_index["canonical_mutations_allowed"] is False
+    assert package_index["tracked_artifacts_written"] is False
 
     preview = surfaces["binding_preview"]
     resolved_refs = {entry["source_ref"]: entry for entry in preview["resolved_refs"]}
@@ -57,10 +89,12 @@ def test_ontology_import_fixture_resolves_known_refs_and_gaps() -> None:
     assert resolved_refs["examcalc:requires_policy"]["kind"] == "relation"
     assert preview["unresolved_refs"] == ["examcalc:CASFunction"]
     assert preview["canonical_mutations_allowed"] is False
+    assert preview["tracked_artifacts_written"] is False
 
     gap_index = surfaces["gap_index"]
     assert gap_index["artifact_kind"] == "ontology_import_gap_index"
     assert gap_index["canonical_mutations_allowed"] is False
+    assert gap_index["tracked_artifacts_written"] is False
     assert gap_index["summary"] == {
         "gap_count": 1,
         "next_gap": "review_ontology_import_gap",
@@ -81,14 +115,26 @@ def test_ontology_import_governance_and_prompt_surfaces_are_derived() -> None:
     governance = surfaces["governance_evidence_index"]
     assert governance["artifact_kind"] == "ontology_governance_evidence_index"
     assert governance["canonical_mutations_allowed"] is False
-    assert governance["evidence"][0]["decision_ref"].startswith(
+    assert governance["tracked_artifacts_written"] is False
+    evidence = governance["evidence"][0]
+    assert evidence["decision_ref"].startswith(
         "ontology-governance://edu.university.examcalc/0.1.0/"
     )
-    assert governance["summary"]["next_gap"] == "none"
+    assert evidence["repeatability_report_ref"].startswith(
+        "Ontology:SPECS/ontology/golden-intents/"
+    )
+    assert evidence["trusted_registry_gate_ref"] == (
+        "Ontology:SPECS/ontology/governance-protocol.md#trusted-registry-publication"
+    )
+    assert governance["summary"] == {
+        "evidence_count": 1,
+        "next_gap": "none",
+    }
 
     prompt = surfaces["prompt_invocation_index"]
     assert prompt["artifact_kind"] == "ontology_prompt_invocation_index"
     assert prompt["canonical_mutations_allowed"] is False
+    assert prompt["tracked_artifacts_written"] is False
     assert prompt["invocations"] == []
     assert prompt["summary"] == {
         "invocation_count": 0,
@@ -117,6 +163,97 @@ def test_make_ontology_imports_writes_declared_surfaces() -> None:
         assert payload["artifact_kind"] == artifact_kind
         assert payload["proposal_id"] == "0060"
         assert payload["canonical_mutations_allowed"] is False
+        assert payload["tracked_artifacts_written"] is False
+
+
+def test_ontology_import_fixture_validation_rejects_missing_subject(tmp_path: Path) -> None:
+    module = load_ontology_imports_module()
+    module.ROOT = tmp_path
+    fixture = load_fixture_payload()
+    assert isinstance(fixture["binding"], dict)
+    del fixture["binding"]["subject"]
+
+    fixture_path = write_temp_fixture(tmp_path, fixture)
+    policy_path = write_temp_policy(tmp_path)
+
+    with pytest.raises(ValueError, match=r"fixture\.binding\.subject must be an object"):
+        module.build_ontology_import_surfaces(fixture_path, policy_path=policy_path)
+
+
+def test_ontology_import_fixture_validation_rejects_malformed_refs(tmp_path: Path) -> None:
+    module = load_ontology_imports_module()
+    module.ROOT = tmp_path
+    fixture = load_fixture_payload()
+    assert isinstance(fixture["binding"], dict)
+    fixture["binding"]["refs"] = ["examcalc"]
+
+    fixture_path = write_temp_fixture(tmp_path, fixture)
+    policy_path = write_temp_policy(tmp_path)
+
+    with pytest.raises(ValueError, match="<namespace>:<symbol>"):
+        module.build_ontology_import_surfaces(fixture_path, policy_path=policy_path)
+
+
+def test_ontology_import_rejects_materialized_ir_outside_fixture_dir(tmp_path: Path) -> None:
+    module = load_ontology_imports_module()
+    module.ROOT = tmp_path
+    fixture = load_fixture_payload()
+    assert isinstance(fixture["package"], dict)
+    fixture["package"]["materialized_ir"] = "../ontology.normalized.json"
+
+    fixture_path = write_temp_fixture(tmp_path, fixture)
+    policy_path = write_temp_policy(tmp_path)
+
+    with pytest.raises(ValueError, match="fixture directory"):
+        module.build_ontology_import_surfaces(fixture_path, policy_path=policy_path)
+
+
+def test_ontology_import_rejects_ir_metadata_mismatch(tmp_path: Path) -> None:
+    module = load_ontology_imports_module()
+    module.ROOT = tmp_path
+    fixture_path = write_temp_fixture(tmp_path, load_fixture_payload())
+    policy_path = write_temp_policy(tmp_path)
+    ir_path = fixture_path.parent / "ontology.normalized.json"
+    ir = json.loads(ir_path.read_text(encoding="utf-8"))
+    ir["sourceDigest"] = "sha256:mismatch"
+    ir_path.write_text(json.dumps(ir, indent=2, sort_keys=True), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="sourceDigest"):
+        module.build_ontology_import_surfaces(fixture_path, policy_path=policy_path)
+
+
+def test_ontology_import_missing_governance_emits_evidence_gap(tmp_path: Path) -> None:
+    module = load_ontology_imports_module()
+    module.ROOT = tmp_path
+    fixture = load_fixture_payload()
+    assert isinstance(fixture["package"], dict)
+    del fixture["package"]["governance"]
+    fixture_path = write_temp_fixture(tmp_path, fixture)
+    policy_path = write_temp_policy(tmp_path)
+
+    surfaces = module.build_ontology_import_surfaces(fixture_path, policy_path=policy_path)
+
+    governance = surfaces["governance_evidence_index"]
+    assert governance["evidence"] == []
+    assert governance["summary"] == {
+        "evidence_count": 0,
+        "next_gap": "attach_ontology_governance_evidence",
+    }
+
+
+def test_ontology_import_write_rejects_outputs_outside_allowed_roots(tmp_path: Path) -> None:
+    module = load_ontology_imports_module()
+    surfaces = module.build_ontology_import_surfaces(FIXTURE)
+    policy = json.loads((ROOT / "tools" / "ontology_import_policy.json").read_text())
+    policy["repository_layout"]["package_index"] = "specs/nodes/ontology_package_index.json"
+    policy_path = write_temp_policy(tmp_path, policy)
+
+    with pytest.raises(ValueError, match="outside allowed output roots"):
+        module.write_ontology_import_surfaces(
+            surfaces,
+            policy_path=policy_path,
+            out_dir=tmp_path,
+        )
 
 
 def test_proposal_0060_runtime_registry_tracks_slice() -> None:

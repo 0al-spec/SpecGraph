@@ -13,6 +13,7 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
 POLICY_PATH = ROOT / "tools" / "ontology_import_policy.json"
+CONCEPT_REF_PATTERN = re.compile(r"^[A-Za-z][A-Za-z0-9_]*:[A-Za-z][A-Za-z0-9_]*$")
 
 REF_CATEGORIES = {
     "classes": "class",
@@ -83,19 +84,132 @@ def required_package_fields(policy: dict[str, Any]) -> set[str]:
     return set(fields)
 
 
+def require_object(mapping: dict[str, Any], field: str, context: str) -> dict[str, Any]:
+    value = mapping.get(field)
+    if not isinstance(value, dict):
+        raise ValueError(f"{context}.{field} must be an object")
+    return value
+
+
+def require_string(mapping: dict[str, Any], field: str, context: str) -> str:
+    value = mapping.get(field)
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(f"{context}.{field} must be a non-empty string")
+    return value
+
+
+def validate_concept_ref(ref: str, context: str) -> None:
+    if not CONCEPT_REF_PATTERN.fullmatch(ref):
+        raise ValueError(f"{context} must match <namespace>:<symbol>")
+
+
 def validate_fixture(policy: dict[str, Any], fixture: dict[str, Any]) -> None:
-    package = fixture.get("package")
-    if not isinstance(package, dict):
-        raise ValueError("fixture.package must be an object")
+    require_string(fixture, "proposal_id", "fixture")
+    package = require_object(fixture, "package", "fixture")
     missing = sorted(required_package_fields(policy) - set(package))
     if missing:
         raise ValueError(f"fixture.package missing required fields: {', '.join(missing)}")
-    binding = fixture.get("binding")
-    if not isinstance(binding, dict):
-        raise ValueError("fixture.binding must be an object")
+    for field in sorted(required_package_fields(policy)):
+        require_string(package, field, "fixture.package")
+    binding = require_object(fixture, "binding", "fixture")
+    subject = require_object(binding, "subject", "fixture.binding")
+    require_string(subject, "id", "fixture.binding.subject")
+    require_string(subject, "kind", "fixture.binding.subject")
     refs = binding.get("refs")
     if not isinstance(refs, list) or not all(isinstance(item, str) for item in refs):
         raise ValueError("fixture.binding.refs must be a list of strings")
+    for index, ref in enumerate(refs):
+        validate_concept_ref(ref, f"fixture.binding.refs[{index}]")
+
+
+def resolve_fixture_file(fixture_path: Path, relative: str, context: str) -> Path:
+    relative_path_value = Path(relative)
+    if relative_path_value.is_absolute() or ".." in relative_path_value.parts:
+        raise ValueError(f"{context} must stay within the fixture directory")
+    fixture_dir = fixture_path.parent.resolve()
+    candidate = (fixture_dir / relative_path_value).resolve()
+    if not candidate.is_relative_to(fixture_dir):
+        raise ValueError(f"{context} must stay within the fixture directory")
+    return candidate
+
+
+def validate_ir_metadata(ir: dict[str, Any], package: dict[str, Any]) -> None:
+    expected = {
+        "id": package["package_id"],
+        "namespace": package["namespace"],
+        "version": package["version"],
+        "sourceDigest": package["digest"],
+    }
+    mismatches = []
+    for field, expected_value in expected.items():
+        actual_value = ir.get(field)
+        if actual_value != expected_value:
+            mismatches.append(f"{field} expected {expected_value!r}, got {actual_value!r}")
+    if mismatches:
+        raise ValueError(f"normalized IR metadata mismatch: {'; '.join(mismatches)}")
+
+
+def governance_evidence_for(package_ref: str, governance: Any) -> list[dict[str, Any]]:
+    if not isinstance(governance, dict):
+        return []
+    evidence_refs = {
+        key: value
+        for key, value in sorted(governance.items())
+        if (key.endswith("_ref") or key.endswith("_refs")) and value
+    }
+    if not evidence_refs:
+        return []
+    return [
+        {
+            "package_ref": package_ref,
+            "lifecycle_state": governance.get("lifecycle_state", "unknown"),
+            **evidence_refs,
+        }
+    ]
+
+
+def allowed_output_roots(policy: dict[str, Any]) -> list[Path]:
+    contract = policy.get("derived_output_contract")
+    if not isinstance(contract, dict):
+        raise ValueError("policy.derived_output_contract must be an object")
+    raw_roots = contract.get("allowed_output_roots")
+    if not isinstance(raw_roots, list) or not all(isinstance(item, str) for item in raw_roots):
+        raise ValueError(
+            "policy.derived_output_contract.allowed_output_roots must be a list of strings"
+        )
+    roots = []
+    for raw_root in raw_roots:
+        root = Path(raw_root)
+        if root.is_absolute() or ".." in root.parts:
+            raise ValueError(
+                "policy.derived_output_contract.allowed_output_roots must be relative paths"
+            )
+        roots.append(root)
+    return roots
+
+
+def resolve_allowed_output_path(out_dir: Path, relative: str, allowed_roots: list[Path]) -> Path:
+    relative_path_value = Path(relative)
+    if relative_path_value.is_absolute() or ".." in relative_path_value.parts:
+        raise ValueError(f"output path {relative!r} must be relative and stay within allowed roots")
+    if not any(
+        relative_path_value == root or relative_path_value.is_relative_to(root)
+        for root in allowed_roots
+    ):
+        allowed = ", ".join(root.as_posix() for root in allowed_roots)
+        raise ValueError(f"output path {relative!r} is outside allowed output roots: {allowed}")
+    output_root = out_dir.resolve()
+    path = (output_root / relative_path_value).resolve()
+    if not path.is_relative_to(output_root):
+        raise ValueError(f"output path {relative!r} must stay within the output directory")
+    return path
+
+
+def require_layout_path(layout: dict[str, Any], key: str) -> str:
+    value = layout.get(key)
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(f"policy.repository_layout.{key} must be a non-empty string")
+    return value
 
 
 def build_ontology_import_surfaces(
@@ -109,8 +223,13 @@ def build_ontology_import_surfaces(
 
     package = fixture["package"]
     binding = fixture["binding"]
-    ir_path = fixture_path.parent / str(package["materialized_ir"])
+    ir_path = resolve_fixture_file(
+        fixture_path,
+        package["materialized_ir"],
+        "fixture.package.materialized_ir",
+    )
     ir = load_json(ir_path)
+    validate_ir_metadata(ir, package)
     refs = ontology_ref_map(ir)
 
     requested_refs = list(binding["refs"])
@@ -150,6 +269,7 @@ def build_ontology_import_surfaces(
         "proposal_id": fixture["proposal_id"],
         "source_fixture": relative_path(fixture_path),
         "canonical_mutations_allowed": False,
+        "tracked_artifacts_written": False,
         "packages": [package_entry],
         "summary": {
             "imported_package_count": 1,
@@ -166,6 +286,7 @@ def build_ontology_import_surfaces(
         "proposal_id": fixture["proposal_id"],
         "source_fixture": relative_path(fixture_path),
         "canonical_mutations_allowed": False,
+        "tracked_artifacts_written": False,
         "subject": subject,
         "package_ref": f"{package['package_id']}@{package['version']}",
         "resolved_refs": resolved_refs,
@@ -199,6 +320,7 @@ def build_ontology_import_surfaces(
         "proposal_id": fixture["proposal_id"],
         "source_fixture": relative_path(fixture_path),
         "canonical_mutations_allowed": False,
+        "tracked_artifacts_written": False,
         "gaps": gaps,
         "summary": {
             "gap_count": len(gaps),
@@ -206,24 +328,19 @@ def build_ontology_import_surfaces(
         },
     }
 
-    governance = package.get("governance", {})
+    package_ref = f"{package['package_id']}@{package['version']}"
+    evidence = governance_evidence_for(package_ref, package.get("governance"))
     governance_evidence_index = {
         "artifact_kind": "ontology_governance_evidence_index",
         "schema_version": 1,
         "proposal_id": fixture["proposal_id"],
         "source_fixture": relative_path(fixture_path),
         "canonical_mutations_allowed": False,
-        "evidence": [
-            {
-                "package_ref": f"{package['package_id']}@{package['version']}",
-                "lifecycle_state": governance.get("lifecycle_state", "unknown"),
-                "validation_report_ref": governance.get("validation_report_ref"),
-                "decision_ref": governance.get("decision_ref"),
-            }
-        ],
+        "tracked_artifacts_written": False,
+        "evidence": evidence,
         "summary": {
-            "evidence_count": 1,
-            "next_gap": "none" if governance else "attach_ontology_governance_evidence",
+            "evidence_count": len(evidence),
+            "next_gap": "none" if evidence else "attach_ontology_governance_evidence",
         },
     }
 
@@ -233,6 +350,7 @@ def build_ontology_import_surfaces(
         "proposal_id": fixture["proposal_id"],
         "source_fixture": relative_path(fixture_path),
         "canonical_mutations_allowed": False,
+        "tracked_artifacts_written": False,
         "invocations": [],
         "summary": {
             "invocation_count": 0,
@@ -260,17 +378,18 @@ def write_ontology_import_surfaces(
     layout = policy.get("repository_layout")
     if not isinstance(layout, dict):
         raise ValueError("policy.repository_layout must be an object")
+    roots = allowed_output_roots(policy)
     destinations = {
-        "package_index": layout["package_index"],
-        "gap_index": layout["gap_index"],
-        "governance_evidence_index": layout["governance_evidence_index"],
-        "binding_preview": layout["binding_preview"],
-        "prompt_invocation_index": layout["prompt_invocation_index"],
+        "package_index": require_layout_path(layout, "package_index"),
+        "gap_index": require_layout_path(layout, "gap_index"),
+        "governance_evidence_index": require_layout_path(layout, "governance_evidence_index"),
+        "binding_preview": require_layout_path(layout, "binding_preview"),
+        "prompt_invocation_index": require_layout_path(layout, "prompt_invocation_index"),
     }
     written = []
     for key, relative in destinations.items():
         payload = surfaces[key]
-        path = out_dir / str(relative)
+        path = resolve_allowed_output_path(out_dir, relative, roots)
         written.append(write_json(path, payload))
     return written
 
