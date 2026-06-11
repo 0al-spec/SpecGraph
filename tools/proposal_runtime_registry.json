@@ -4587,5 +4587,89 @@
         "pattern": "runs/local_operator_executor_report_contract.json"
       }
     ]
+  },
+  {
+    "proposal_id": "0091",
+    "posture": "bounded_runtime_followup",
+    "runtime_surfaces": [
+      "docs/proposals/0091_bounded_executor_report_smoke.md",
+      "docs/archive/proposal_sources/0091_bounded_executor_report_smoke.md",
+      "tools/supervisor_executor_adapter_policy.json",
+      "tools/supervisor.py",
+      "tools/build_static_artifact_bundle.py",
+      "Makefile",
+      "tools/README.md",
+      "docs/static_artifact_publish.md",
+      "Sources/SpecGraph/Documentation.docc/ArtifactPublishing.md",
+      "tests/test_supervisor.py",
+      "tests/test_static_artifact_bundle.py",
+      "runs/local_operator_executor_report.json"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/supervisor_executor_adapter_policy.json",
+        "pattern": "local_operator_report_smoke_contract"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def build_local_operator_executor_report_smoke("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "\"--build-local-operator-executor-report-smoke\""
+      },
+      {
+        "path": "Makefile",
+        "pattern": "executor-report-smoke:"
+      },
+      {
+        "path": "tools/build_static_artifact_bundle.py",
+        "pattern": "\"local_operator_executor_report.json\""
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_local_operator_executor_report_smoke_runs_after_ready_contract("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_local_operator_executor_report_smoke_blocks_missing_task_smoke("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_local_operator_executor_report_smoke_blocks_unready_report_contract("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_local_operator_executor_report_smoke_rejects_invalid_report("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_run_local_operator_executor_report_task_does_not_persist_raw_output_or_paths("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_main_builds_local_operator_executor_report_smoke_as_standalone_command("
+      },
+      {
+        "path": "tests/test_static_artifact_bundle.py",
+        "pattern": "local_operator_executor_report.json"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0091_bounded_executor_report_smoke.md",
+        "pattern": "define_executor_report_consumption_policy"
+      },
+      {
+        "path": "docs/proposals/0091_bounded_executor_report_smoke.md",
+        "pattern": "does not mean the executor may create proposals"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "runs/local_operator_executor_report.json"
+      }
+    ]
   }
 ]

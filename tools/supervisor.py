@@ -71,6 +71,7 @@ Derived artifacts:
   `runs/local_operator_executor_task_smoke.json`
 - local operator executor report contract:
   `runs/local_operator_executor_report_contract.json`
+- local operator executor report: `runs/local_operator_executor_report.json`
 - agent surface index: `runs/agent_surface_index.json`
 - known agent passport index: `runs/known_agent_passport_index.json`
 - agent passport verification report: `runs/agent_passport_verification_report.json`
@@ -18078,6 +18079,10 @@ def local_operator_executor_report_contract_path() -> Path:
     return RUNS_DIR / LOCAL_OPERATOR_EXECUTOR_REPORT_CONTRACT_FILENAME
 
 
+def local_operator_executor_report_path() -> Path:
+    return RUNS_DIR / LOCAL_OPERATOR_EXECUTOR_REPORT_FILENAME
+
+
 def metric_signal_index_path() -> Path:
     return RUNS_DIR / METRIC_SIGNAL_INDEX_FILENAME
 
@@ -19758,6 +19763,15 @@ def local_operator_executor_report_contract() -> dict[str, Any]:
     return contract if isinstance(contract, dict) else {}
 
 
+def supervisor_executor_backend_ids() -> set[str]:
+    backend_registry = supervisor_executor_adapter_policy_lookup("backend_registry")
+    return {
+        str(backend.get("backend_id", "")).strip()
+        for backend in backend_registry
+        if isinstance(backend, dict) and str(backend.get("backend_id", "")).strip()
+    }
+
+
 def executor_report_contract_values(key: str) -> set[str]:
     contract = local_operator_executor_report_contract()
     values = contract.get(key, [])
@@ -20196,6 +20210,203 @@ def validate_local_operator_executor_report(report: object) -> dict[str, Any]:
     }
 
 
+def redacted_executor_report_validation(
+    validation: dict[str, Any],
+    *,
+    include_normalized: bool,
+) -> dict[str, Any]:
+    findings = validation.get("findings", [])
+    findings = findings if isinstance(findings, list) else []
+    redacted_findings = []
+    for finding in findings:
+        finding = finding if isinstance(finding, dict) else {}
+        code = str(finding.get("code", "invalid_report")).strip() or "invalid_report"
+        field = str(finding.get("field", "report")).strip() or "report"
+        redacted_findings.append(
+            executor_report_finding(
+                code=code,
+                field=field,
+                message=f"Executor report failed validation for field {field} ({code}).",
+            )
+        )
+    normalized = validation.get("normalized", {})
+    normalized = normalized if include_normalized and isinstance(normalized, dict) else {}
+    return {
+        "valid": bool(validation.get("valid", False)),
+        "finding_count": len(redacted_findings),
+        "findings": redacted_findings,
+        "normalized": copy.deepcopy(normalized),
+    }
+
+
+def strict_bounded_executor_report_response_validation(payload: object) -> dict[str, Any]:
+    generic_validation = validate_local_operator_executor_report(payload)
+    findings = list(generic_validation.get("findings", []))
+    if not isinstance(payload, dict):
+        return {
+            "valid": False,
+            "findings": findings,
+            "normalized": {},
+        }
+
+    def object_has_only(raw: object, field: str, allowed: set[str]) -> dict[str, Any]:
+        if not isinstance(raw, dict):
+            findings.append(
+                executor_report_finding(
+                    code="smoke_schema_object_required",
+                    field=field,
+                    message=f"{field} must be an object for bounded report smoke.",
+                )
+            )
+            return {}
+        extra_keys = sorted(str(key) for key in raw if str(key) not in allowed)
+        for key in extra_keys:
+            findings.append(
+                executor_report_finding(
+                    code="smoke_schema_extra_field",
+                    field=f"{field}.{key}",
+                    message=f"{field}.{key} is not allowed in bounded report smoke.",
+                )
+            )
+        return raw
+
+    object_has_only(
+        payload,
+        "report",
+        {
+            "artifact_kind",
+            "schema_version",
+            "local_only",
+            "source_task_smoke_artifact",
+            "producer",
+            "summary",
+            "report",
+            "privacy_boundary",
+        },
+    )
+    producer = object_has_only(
+        payload.get("producer"),
+        "producer",
+        {"producer_kind", "producer_id", "authority_level"},
+    )
+    summary = object_has_only(
+        payload.get("summary"),
+        "summary",
+        {
+            "status",
+            "report_kind",
+            "curation_required",
+            "canonical_mutation_attempted",
+            "next_gap",
+        },
+    )
+    nested_report = object_has_only(
+        payload.get("report"),
+        "report",
+        {
+            "report_kind",
+            "status",
+            "findings",
+            "source_evidence_refs",
+            "proposed_artifacts",
+        },
+    )
+    privacy = object_has_only(
+        payload.get("privacy_boundary"),
+        "privacy_boundary",
+        {
+            "absolute_paths_persisted",
+            "raw_logs_persisted",
+            "raw_prompt_persisted",
+            "raw_response_persisted",
+            "secrets_persisted",
+        },
+    )
+    expected_values = {
+        "artifact_kind": LOCAL_OPERATOR_EXECUTOR_REPORT_ARTIFACT_KIND,
+        "schema_version": LOCAL_OPERATOR_EXECUTOR_REPORT_CONTRACT_SCHEMA_VERSION,
+        "local_only": True,
+        "source_task_smoke_artifact": LOCAL_OPERATOR_EXECUTOR_TASK_SMOKE_RELATIVE_PATH,
+        "producer.producer_kind": "coding_agent",
+        "producer.producer_id": "codex",
+        "producer.authority_level": "report_only",
+        "summary.status": "valid_report",
+        "summary.report_kind": "analysis_report",
+        "summary.curation_required": True,
+        "summary.canonical_mutation_attempted": False,
+        "summary.next_gap": "run_bounded_executor_report_smoke",
+        "report.report_kind": "analysis_report",
+        "report.status": "completed",
+        "privacy_boundary.absolute_paths_persisted": False,
+        "privacy_boundary.raw_logs_persisted": False,
+        "privacy_boundary.raw_prompt_persisted": False,
+        "privacy_boundary.raw_response_persisted": False,
+        "privacy_boundary.secrets_persisted": False,
+    }
+    actual_by_field = {
+        "artifact_kind": payload.get("artifact_kind"),
+        "schema_version": payload.get("schema_version"),
+        "local_only": payload.get("local_only"),
+        "source_task_smoke_artifact": payload.get("source_task_smoke_artifact"),
+        "producer.producer_kind": producer.get("producer_kind"),
+        "producer.producer_id": producer.get("producer_id"),
+        "producer.authority_level": producer.get("authority_level"),
+        "summary.status": summary.get("status"),
+        "summary.report_kind": summary.get("report_kind"),
+        "summary.curation_required": summary.get("curation_required"),
+        "summary.canonical_mutation_attempted": summary.get("canonical_mutation_attempted"),
+        "summary.next_gap": summary.get("next_gap"),
+        "report.report_kind": nested_report.get("report_kind"),
+        "report.status": nested_report.get("status"),
+        "privacy_boundary.absolute_paths_persisted": privacy.get("absolute_paths_persisted"),
+        "privacy_boundary.raw_logs_persisted": privacy.get("raw_logs_persisted"),
+        "privacy_boundary.raw_prompt_persisted": privacy.get("raw_prompt_persisted"),
+        "privacy_boundary.raw_response_persisted": privacy.get("raw_response_persisted"),
+        "privacy_boundary.secrets_persisted": privacy.get("secrets_persisted"),
+    }
+    for field, expected_value in expected_values.items():
+        if actual_by_field.get(field) != expected_value:
+            findings.append(
+                executor_report_finding(
+                    code="smoke_schema_value_mismatch",
+                    field=field,
+                    message=f"{field} does not match the bounded report smoke schema.",
+                )
+            )
+    findings_list = nested_report.get("findings", [])
+    if findings_list != []:
+        findings.append(
+            executor_report_finding(
+                code="smoke_schema_findings_not_empty",
+                field="report.findings",
+                message="Bounded report smoke must not persist executor findings.",
+            )
+        )
+    proposed_artifacts = nested_report.get("proposed_artifacts", [])
+    if proposed_artifacts != []:
+        findings.append(
+            executor_report_finding(
+                code="smoke_schema_proposed_artifacts_not_empty",
+                field="report.proposed_artifacts",
+                message="Bounded report smoke must not persist proposed artifacts.",
+            )
+        )
+    source_evidence_refs = nested_report.get("source_evidence_refs", [])
+    if source_evidence_refs != [LOCAL_OPERATOR_EXECUTOR_TASK_SMOKE_RELATIVE_PATH]:
+        findings.append(
+            executor_report_finding(
+                code="smoke_schema_source_evidence_refs_mismatch",
+                field="report.source_evidence_refs",
+                message="Bounded report smoke must reference only the local task smoke artifact.",
+            )
+        )
+    return {
+        "valid": not findings,
+        "findings": findings,
+        "normalized": generic_validation.get("normalized", {}) if not findings else {},
+    }
+
+
 def validate_local_operator_executor_task_smoke_source(
     task_smoke: object,
 ) -> dict[str, Any]:
@@ -20244,12 +20455,21 @@ def validate_local_operator_executor_task_smoke_source(
     summary = task_smoke.get("summary", {})
     summary = summary if isinstance(summary, dict) else {}
     task_smoke_status = str(summary.get("status", "")).strip()
+    backend_id = str(summary.get("backend_id", "")).strip()
     if task_smoke_status != "passed":
         findings.append(
             executor_report_finding(
                 code="source_task_smoke_not_passed",
                 field="source_task_smoke_artifact.summary.status",
                 message="Source task smoke artifact summary.status must be passed.",
+            )
+        )
+    if backend_id not in supervisor_executor_backend_ids():
+        findings.append(
+            executor_report_finding(
+                code="unknown_source_task_smoke_backend",
+                field="source_task_smoke_artifact.summary.backend_id",
+                message="Source task smoke artifact summary.backend_id is not policy-declared.",
             )
         )
     checks = task_smoke.get("checks", [])
@@ -20288,6 +20508,7 @@ def validate_local_operator_executor_task_smoke_source(
     return {
         "valid": not findings,
         "status": task_smoke_status,
+        "backend_id": backend_id if backend_id in supervisor_executor_backend_ids() else "",
         "required_check_ids": required_check_ids,
         "findings": findings,
     }
@@ -20452,6 +20673,711 @@ def build_local_operator_executor_report_contract(
 
 def write_local_operator_executor_report_contract(index: dict[str, Any]) -> Path:
     path = local_operator_executor_report_contract_path()
+    with artifact_lock(path):
+        atomic_write_json(path, index)
+    return path
+
+
+def local_operator_executor_report_smoke_next_gap(status: str) -> str:
+    return {
+        "passed": "define_executor_report_consumption_policy",
+        "blocked_task_smoke_not_passed": "run_executor_task_smoke_until_passed",
+        "blocked_report_contract_not_ready": "run_executor_report_contract_until_ready",
+        "blocked_executor_unavailable": "configure_local_operator_executable",
+        "failed_executor_nonzero": "repair_executor_report_smoke_invocation",
+        "failed_invalid_report": "repair_executor_report_contract",
+        "failed_mutation_guard": "repair_executor_report_smoke_mutation_boundary",
+        "blocked_policy_contract": "repair_executor_adapter_policy_contract",
+    }.get(status, "repair_executor_report_smoke")
+
+
+def local_operator_executor_report_smoke_status(checks: list[dict[str, Any]]) -> str:
+    status_by_id = {
+        str(check.get("check_id", "")).strip(): str(check.get("status", "")).strip()
+        for check in checks
+    }
+    if status_by_id.get("task_smoke_passed") != "passed":
+        return "blocked_task_smoke_not_passed"
+    if status_by_id.get("report_contract_ready") != "passed":
+        return "blocked_report_contract_not_ready"
+    invocation_status = status_by_id.get("executor_report_invocation_completed")
+    if invocation_status == "not_run":
+        return "blocked_policy_contract"
+    if invocation_status == "missing":
+        return "blocked_executor_unavailable"
+    if invocation_status != "passed":
+        return "failed_executor_nonzero"
+    if status_by_id.get("executor_report_valid") != "passed":
+        return "failed_invalid_report"
+    if status_by_id.get("no_canonical_mutation_attempted") != "passed":
+        return "failed_mutation_guard"
+    return "passed"
+
+
+def load_local_operator_executor_report_contract_artifact() -> dict[str, Any] | None:
+    path = local_operator_executor_report_contract_path()
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    return payload if isinstance(payload, dict) else None
+
+
+def local_operator_executor_report_smoke_contract() -> dict[str, Any]:
+    contract = supervisor_executor_adapter_policy_lookup("local_operator_report_smoke_contract")
+    return contract if isinstance(contract, dict) else {}
+
+
+def validate_local_operator_executor_report_contract_source(
+    report_contract: object,
+) -> dict[str, Any]:
+    contract = local_operator_executor_report_contract()
+    required_check_ids = [
+        str(check_id).strip() for check_id in contract.get("check_ids", []) if str(check_id).strip()
+    ]
+    findings: list[dict[str, str]] = []
+    if not isinstance(report_contract, dict):
+        return {
+            "valid": False,
+            "status": "",
+            "required_check_ids": required_check_ids,
+            "findings": [
+                executor_report_finding(
+                    code="source_report_contract_missing",
+                    field="source_report_contract_artifact",
+                    message="Local operator executor report contract artifact is missing.",
+                )
+            ],
+        }
+    if (
+        report_contract.get("artifact_kind")
+        != LOCAL_OPERATOR_EXECUTOR_REPORT_CONTRACT_ARTIFACT_KIND
+    ):
+        findings.append(
+            executor_report_finding(
+                code="invalid_source_report_contract_artifact_kind",
+                field="source_report_contract_artifact.artifact_kind",
+                message="Source report contract artifact has an unexpected artifact_kind.",
+            )
+        )
+    if (
+        report_contract.get("schema_version")
+        != LOCAL_OPERATOR_EXECUTOR_REPORT_CONTRACT_SCHEMA_VERSION
+    ):
+        findings.append(
+            executor_report_finding(
+                code="invalid_source_report_contract_schema_version",
+                field="source_report_contract_artifact.schema_version",
+                message="Source report contract artifact has an unexpected schema_version.",
+            )
+        )
+    if report_contract.get("local_only") is not True:
+        findings.append(
+            executor_report_finding(
+                code="source_report_contract_local_only_required",
+                field="source_report_contract_artifact.local_only",
+                message="Source report contract artifact must declare local_only=true.",
+            )
+        )
+    summary = report_contract.get("summary", {})
+    summary = summary if isinstance(summary, dict) else {}
+    report_contract_status = str(summary.get("status", "")).strip()
+    if report_contract_status != "ready_for_report_smoke":
+        findings.append(
+            executor_report_finding(
+                code="source_report_contract_not_ready",
+                field="source_report_contract_artifact.summary.status",
+                message=(
+                    "Source report contract artifact summary.status must be ready_for_report_smoke."
+                ),
+            )
+        )
+    checks = report_contract.get("checks", [])
+    if not isinstance(checks, list):
+        findings.append(
+            executor_report_finding(
+                code="source_report_contract_checks_not_list",
+                field="source_report_contract_artifact.checks",
+                message="Source report contract artifact checks must be a list.",
+            )
+        )
+        checks = []
+    check_status_by_id = {
+        str(check.get("check_id", "")).strip(): str(check.get("status", "")).strip()
+        for check in checks
+        if isinstance(check, dict)
+    }
+    for check_id in required_check_ids:
+        check_status = check_status_by_id.get(check_id, "")
+        if not check_status:
+            findings.append(
+                executor_report_finding(
+                    code="missing_source_report_contract_check",
+                    field=f"source_report_contract_artifact.checks.{check_id}",
+                    message=f"Source report contract artifact is missing check {check_id}.",
+                )
+            )
+        elif check_status != "passed":
+            findings.append(
+                executor_report_finding(
+                    code="source_report_contract_check_not_passed",
+                    field=f"source_report_contract_artifact.checks.{check_id}",
+                    message=f"Source report contract check {check_id} must be passed.",
+                )
+            )
+    return {
+        "valid": not findings,
+        "status": report_contract_status,
+        "required_check_ids": required_check_ids,
+        "findings": findings,
+    }
+
+
+def local_operator_report_smoke_for_backend(backend_id: str) -> dict[str, Any]:
+    contract = local_operator_executor_report_smoke_contract()
+    default_timeout = int(contract.get("default_timeout_seconds", 120) or 120)
+    for backend in supervisor_executor_adapter_policy_lookup("backend_registry"):
+        if not isinstance(backend, dict):
+            continue
+        if str(backend.get("backend_id", "")).strip() != backend_id:
+            continue
+        report_smoke = backend.get("local_report_smoke", {})
+        report_smoke = report_smoke if isinstance(report_smoke, dict) else {}
+        fallback_task = backend.get("local_task_smoke", {})
+        fallback_task = fallback_task if isinstance(fallback_task, dict) else {}
+        args = [str(arg).strip() for arg in report_smoke.get("args", []) if str(arg).strip()] or [
+            str(arg).strip() for arg in fallback_task.get("args", []) if str(arg).strip()
+        ]
+        timeout = int(
+            report_smoke.get(
+                "timeout_seconds",
+                fallback_task.get("timeout_seconds", default_timeout),
+            )
+            or default_timeout
+        )
+        return {
+            "args": args,
+            "timeout_seconds": max(1, min(timeout, 300)),
+        }
+    return {"args": [], "timeout_seconds": max(1, min(default_timeout, 300))}
+
+
+def bounded_executor_report_response_schema() -> dict[str, Any]:
+    return {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "additionalProperties": False,
+        "required": [
+            "artifact_kind",
+            "schema_version",
+            "local_only",
+            "source_task_smoke_artifact",
+            "producer",
+            "summary",
+            "report",
+            "privacy_boundary",
+        ],
+        "properties": {
+            "artifact_kind": {"const": LOCAL_OPERATOR_EXECUTOR_REPORT_ARTIFACT_KIND},
+            "schema_version": {"const": LOCAL_OPERATOR_EXECUTOR_REPORT_CONTRACT_SCHEMA_VERSION},
+            "local_only": {"const": True},
+            "source_task_smoke_artifact": {
+                "const": LOCAL_OPERATOR_EXECUTOR_TASK_SMOKE_RELATIVE_PATH
+            },
+            "producer": {
+                "type": "object",
+                "additionalProperties": False,
+                "required": ["producer_kind", "producer_id", "authority_level"],
+                "properties": {
+                    "producer_kind": {"const": "coding_agent"},
+                    "producer_id": {"const": "codex"},
+                    "authority_level": {"const": "report_only"},
+                },
+            },
+            "summary": {
+                "type": "object",
+                "additionalProperties": False,
+                "required": [
+                    "status",
+                    "report_kind",
+                    "curation_required",
+                    "canonical_mutation_attempted",
+                    "next_gap",
+                ],
+                "properties": {
+                    "status": {"const": "valid_report"},
+                    "report_kind": {"const": "analysis_report"},
+                    "curation_required": {"const": True},
+                    "canonical_mutation_attempted": {"const": False},
+                    "next_gap": {"const": "run_bounded_executor_report_smoke"},
+                },
+            },
+            "report": {
+                "type": "object",
+                "additionalProperties": False,
+                "required": [
+                    "report_kind",
+                    "status",
+                    "findings",
+                    "source_evidence_refs",
+                    "proposed_artifacts",
+                ],
+                "properties": {
+                    "report_kind": {"const": "analysis_report"},
+                    "status": {"const": "completed"},
+                    "findings": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "additionalProperties": False,
+                            "properties": {},
+                        },
+                        "maxItems": 0,
+                    },
+                    "source_evidence_refs": {
+                        "type": "array",
+                        "items": {"const": LOCAL_OPERATOR_EXECUTOR_TASK_SMOKE_RELATIVE_PATH},
+                        "minItems": 1,
+                        "maxItems": 1,
+                    },
+                    "proposed_artifacts": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "additionalProperties": False,
+                            "properties": {},
+                        },
+                        "maxItems": 0,
+                    },
+                },
+            },
+            "privacy_boundary": {
+                "type": "object",
+                "additionalProperties": False,
+                "required": [
+                    "absolute_paths_persisted",
+                    "raw_logs_persisted",
+                    "raw_prompt_persisted",
+                    "raw_response_persisted",
+                    "secrets_persisted",
+                ],
+                "properties": {
+                    "absolute_paths_persisted": {"const": False},
+                    "raw_logs_persisted": {"const": False},
+                    "raw_prompt_persisted": {"const": False},
+                    "raw_response_persisted": {"const": False},
+                    "secrets_persisted": {"const": False},
+                },
+            },
+        },
+    }
+
+
+def bounded_executor_report_prompt() -> str:
+    contract = local_operator_executor_report_smoke_contract()
+    prompt = str(contract.get("prompt", "")).strip()
+    return prompt or (
+        "Return only a JSON object matching the local_operator_executor_report contract. "
+        "Do not inspect, edit, or create repository files."
+    )
+
+
+def executor_report_invocation_command_from_backend(
+    *,
+    backend_id: str,
+    output_schema_path: Path,
+    output_last_message_path: Path,
+    prompt: str,
+) -> tuple[list[str], dict[str, Any]]:
+    report_smoke = local_operator_report_smoke_for_backend(backend_id)
+    base_args = [str(arg).strip() for arg in report_smoke.get("args", []) if str(arg).strip()]
+    report_args = [
+        *base_args,
+        "-C",
+        ROOT.as_posix(),
+        "--output-schema",
+        output_schema_path.as_posix(),
+        "--output-last-message",
+        output_last_message_path.as_posix(),
+        prompt,
+    ]
+    return executable_invocation_command_from_backend(
+        backend_id=backend_id,
+        probe_args=report_args,
+    )
+
+
+def parse_bounded_executor_report_response(raw_text: str) -> dict[str, Any]:
+    try:
+        payload = json.loads(raw_text.strip())
+    except json.JSONDecodeError:
+        validation = validate_local_operator_executor_report({})
+        redacted_validation = redacted_executor_report_validation(
+            validation,
+            include_normalized=False,
+        )
+        return {
+            "parsed": False,
+            "valid": False,
+            "safe_report": None,
+            "validation": redacted_validation,
+        }
+    validation = strict_bounded_executor_report_response_validation(payload)
+    valid = bool(validation.get("valid", False))
+    safe_report = copy.deepcopy(payload) if valid and isinstance(payload, dict) else None
+    redacted_validation = redacted_executor_report_validation(
+        validation,
+        include_normalized=valid,
+    )
+    return {
+        "parsed": True,
+        "valid": valid,
+        "safe_report": safe_report if isinstance(safe_report, dict) else None,
+        "validation": redacted_validation,
+    }
+
+
+def run_local_operator_executor_report_task(
+    *,
+    backend_id: str,
+    timeout_seconds: int,
+) -> dict[str, Any]:
+    with tempfile.TemporaryDirectory(prefix="specgraph-executor-report-smoke-") as temp_dir:
+        temp_path = Path(temp_dir)
+        output_schema_path = temp_path / "response.schema.json"
+        output_last_message_path = temp_path / "last-message.json"
+        output_schema_path.write_text(
+            json.dumps(bounded_executor_report_response_schema(), indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+        command, invocation = executor_report_invocation_command_from_backend(
+            backend_id=backend_id,
+            output_schema_path=output_schema_path,
+            output_last_message_path=output_last_message_path,
+            prompt=bounded_executor_report_prompt(),
+        )
+        if not command:
+            return {
+                "status": "missing",
+                "exit_code": None,
+                "timed_out": False,
+                "command": invocation,
+                "command_executed": False,
+                "stdout_persisted": False,
+                "stderr_persisted": False,
+                "raw_response_persisted": False,
+                "tracked_status_unchanged": None,
+                "response": {
+                    "parsed": False,
+                    "valid": False,
+                    "safe_report": None,
+                    "validation": {
+                        "valid": False,
+                        "finding_count": 0,
+                        "findings": [],
+                        "normalized": {},
+                    },
+                },
+            }
+        before_status = git_tracked_status_snapshot()
+        try:
+            result = subprocess.run(
+                command,
+                cwd=ROOT,
+                capture_output=True,
+                text=True,
+                check=False,
+                timeout=timeout_seconds,
+            )
+            timed_out = False
+            exit_code: int | None = result.returncode
+        except subprocess.TimeoutExpired:
+            timed_out = True
+            exit_code = None
+        after_status = git_tracked_status_snapshot()
+        try:
+            raw_response = output_last_message_path.read_text(encoding="utf-8")
+        except OSError:
+            raw_response = ""
+        response = parse_bounded_executor_report_response(raw_response)
+        return {
+            "status": (
+                "passed"
+                if exit_code == 0 and not timed_out and bool(response.get("valid"))
+                else "failed"
+            ),
+            "exit_code": exit_code,
+            "timed_out": timed_out,
+            "command": invocation,
+            "command_executed": True,
+            "stdout_persisted": False,
+            "stderr_persisted": False,
+            "raw_response_persisted": False,
+            "tracked_status_unchanged": (
+                before_status is not None
+                and after_status is not None
+                and before_status == after_status
+            ),
+            "response": response,
+        }
+
+
+def sanitized_local_operator_executor_report_fallback(
+    *,
+    smoke_status: str,
+    backend_id: str,
+    report_validation: dict[str, Any],
+) -> dict[str, Any]:
+    report = default_local_operator_executor_report_sample(producer_id=backend_id or "codex")
+    report["summary"]["status"] = "invalid_report"
+    report["summary"]["next_gap"] = local_operator_executor_report_smoke_next_gap(smoke_status)
+    report["report"]["status"] = "invalid"
+    report["report"]["findings"] = copy.deepcopy(report_validation.get("findings", []))
+    return report
+
+
+def build_local_operator_executor_report_smoke(
+    task_smoke: dict[str, Any] | None = None,
+    report_contract: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    smoke_contract = local_operator_executor_report_smoke_contract()
+    task_smoke = (
+        task_smoke
+        if isinstance(task_smoke, dict)
+        else load_local_operator_executor_task_smoke_artifact()
+    )
+    report_contract = (
+        report_contract
+        if isinstance(report_contract, dict)
+        else load_local_operator_executor_report_contract_artifact()
+    )
+    task_smoke_validation = validate_local_operator_executor_task_smoke_source(task_smoke)
+    report_contract_validation = validate_local_operator_executor_report_contract_source(
+        report_contract
+    )
+    default_backend_id = str(task_smoke_validation.get("backend_id", "")).strip()
+    task_smoke_passed = task_smoke_validation.get("valid") is True
+    report_contract_ready = report_contract_validation.get("valid") is True
+    report_smoke = local_operator_report_smoke_for_backend(default_backend_id)
+    timeout_seconds = int(report_smoke.get("timeout_seconds", 120) or 120)
+    checks = [
+        local_operator_smoke_check(
+            check_id="task_smoke_passed",
+            status="passed" if task_smoke_passed else "failed",
+            message=(
+                "Local operator executor task smoke passed and matched the source contract."
+                if task_smoke_passed
+                else "Local operator executor task smoke is missing, malformed, or not passed."
+            ),
+        ),
+        local_operator_smoke_check(
+            check_id="report_contract_ready",
+            status="passed" if report_contract_ready else "failed",
+            message=(
+                "Local operator executor report contract is ready for report smoke."
+                if report_contract_ready
+                else "Local operator executor report contract is missing, malformed, or not ready."
+            ),
+        ),
+    ]
+    report_result: dict[str, Any] = {
+        "status": "not_run",
+        "exit_code": None,
+        "timed_out": False,
+        "command": {"path_persisted": False},
+        "command_executed": False,
+        "stdout_persisted": False,
+        "stderr_persisted": False,
+        "raw_response_persisted": False,
+        "tracked_status_unchanged": None,
+        "response": {
+            "parsed": False,
+            "valid": False,
+            "safe_report": None,
+            "validation": {
+                "valid": False,
+                "finding_count": 0,
+                "findings": [],
+                "normalized": {},
+            },
+        },
+    }
+    if task_smoke_passed and report_contract_ready and default_backend_id:
+        report_result = run_local_operator_executor_report_task(
+            backend_id=default_backend_id,
+            timeout_seconds=timeout_seconds,
+        )
+    checks.append(
+        local_operator_smoke_check(
+            check_id="executor_report_invocation_completed",
+            status=(
+                "not_run"
+                if report_result.get("status") == "not_run"
+                else "missing"
+                if report_result.get("status") == "missing"
+                else "passed"
+                if report_result.get("exit_code") == 0 and not report_result.get("timed_out")
+                else "failed"
+            ),
+            message=(
+                "Executor report invocation completed successfully."
+                if report_result.get("exit_code") == 0 and not report_result.get("timed_out")
+                else "Executor report invocation was not run because source artifacts gated it off."
+                if report_result.get("status") == "not_run"
+                else "Executor executable was not available for bounded report smoke."
+                if report_result.get("status") == "missing"
+                else "Executor report invocation did not complete successfully."
+            ),
+        )
+    )
+    response = report_result.get("response", {})
+    response = response if isinstance(response, dict) else {}
+    report_validation = response.get("validation", {})
+    report_validation = report_validation if isinstance(report_validation, dict) else {}
+    safe_report = response.get("safe_report")
+    if isinstance(safe_report, dict):
+        strict_safe_report_validation = strict_bounded_executor_report_response_validation(
+            safe_report
+        )
+        if strict_safe_report_validation.get("valid") is not True:
+            response["valid"] = False
+            response["safe_report"] = None
+            report_validation = redacted_executor_report_validation(
+                strict_safe_report_validation,
+                include_normalized=False,
+            )
+        elif response.get("valid") is True:
+            report_validation = redacted_executor_report_validation(
+                strict_safe_report_validation,
+                include_normalized=True,
+            )
+    else:
+        report_validation = redacted_executor_report_validation(
+            report_validation,
+            include_normalized=False,
+        )
+    checks.append(
+        local_operator_smoke_check(
+            check_id="executor_report_valid",
+            status=(
+                "not_run"
+                if report_result.get("status") == "not_run"
+                else "passed"
+                if response.get("valid") is True
+                else "failed"
+            ),
+            message=(
+                "Executor report response matched the generic report contract."
+                if response.get("valid") is True
+                else "Executor report response was not checked because invocation was gated off."
+                if report_result.get("status") == "not_run"
+                else "Executor report response did not match the generic report contract."
+            ),
+        )
+    )
+    report_command_executed = bool(report_result.get("command_executed"))
+    checks.append(
+        local_operator_smoke_check(
+            check_id="no_canonical_mutation_attempted",
+            status=(
+                "not_run"
+                if not report_command_executed
+                else "passed"
+                if report_result.get("tracked_status_unchanged") is True
+                else "failed"
+            ),
+            message=(
+                "No executor report command was executed, so the mutation check was not run."
+                if not report_command_executed
+                else "Worktree status did not change during the executor report smoke."
+                if report_result.get("tracked_status_unchanged") is True
+                else (
+                    "Worktree status changed or could not be proven unchanged "
+                    "during the executor report smoke."
+                )
+            ),
+        )
+    )
+    report_smoke_status = local_operator_executor_report_smoke_status(checks)
+    safe_report = response.get("safe_report")
+    if isinstance(safe_report, dict) and report_smoke_status == "passed":
+        artifact = copy.deepcopy(safe_report)
+    else:
+        artifact = sanitized_local_operator_executor_report_fallback(
+            smoke_status=report_smoke_status,
+            backend_id=default_backend_id,
+            report_validation=report_validation,
+        )
+    normalized_report = report_validation.get("normalized", {})
+    normalized_report = normalized_report if isinstance(normalized_report, dict) else {}
+    named_filters = {
+        str(name).strip(): []
+        for name in smoke_contract.get("named_filters", [])
+        if str(name).strip()
+    }
+    named_filters.setdefault(report_smoke_status, []).append(
+        default_backend_id or "missing_default_backend"
+    )
+    for key in list(named_filters):
+        named_filters[key] = sorted(set(named_filters[key]))
+    artifact["generated_at"] = utc_now_iso()
+    artifact["policy_reference"] = supervisor_executor_adapter_policy_reference()
+    artifact["source_report_contract_artifact"] = str(
+        smoke_contract.get(
+            "source_report_contract_artifact",
+            LOCAL_OPERATOR_EXECUTOR_REPORT_CONTRACT_RELATIVE_PATH,
+        )
+    ).strip()
+    artifact["smoke_summary"] = {
+        "status": report_smoke_status,
+        "backend_id": default_backend_id,
+        "source_task_smoke_status": str(task_smoke_validation.get("status", "")).strip(),
+        "source_report_contract_status": str(report_contract_validation.get("status", "")).strip(),
+        "report_valid": bool(response.get("valid", False)),
+        "next_gap": local_operator_executor_report_smoke_next_gap(report_smoke_status),
+    }
+    artifact["execution"] = {
+        "timeout_seconds": timeout_seconds,
+        "exit_code": report_result.get("exit_code"),
+        "timed_out": bool(report_result.get("timed_out", False)),
+        "command": copy.deepcopy(report_result.get("command", {})),
+        "command_executed": bool(report_result.get("command_executed", False)),
+        "stdout_persisted": False,
+        "stderr_persisted": False,
+        "raw_response_persisted": False,
+    }
+    artifact["report_validation"] = {
+        "valid": bool(report_validation.get("valid", False)),
+        "finding_count": int(report_validation.get("finding_count", 0) or 0),
+        "findings": copy.deepcopy(report_validation.get("findings", [])),
+        "normalized": copy.deepcopy(normalized_report),
+        "raw_report_persisted": bool(
+            isinstance(safe_report, dict) and report_smoke_status == "passed"
+        ),
+    }
+    artifact["source_task_smoke_validation"] = {
+        "valid": bool(task_smoke_validation.get("valid", False)),
+        "finding_count": len(task_smoke_validation.get("findings", [])),
+        "findings": copy.deepcopy(task_smoke_validation.get("findings", [])),
+        "required_check_ids": copy.deepcopy(task_smoke_validation.get("required_check_ids", [])),
+    }
+    artifact["source_report_contract_validation"] = {
+        "valid": bool(report_contract_validation.get("valid", False)),
+        "finding_count": len(report_contract_validation.get("findings", [])),
+        "findings": copy.deepcopy(report_contract_validation.get("findings", [])),
+        "required_check_ids": copy.deepcopy(
+            report_contract_validation.get("required_check_ids", [])
+        ),
+    }
+    artifact["checks"] = checks
+    artifact["viewer_projection"] = {
+        "named_filters": named_filters,
+    }
+    return artifact
+
+
+def write_local_operator_executor_report(index: dict[str, Any]) -> Path:
+    path = local_operator_executor_report_path()
     with artifact_lock(path):
         atomic_write_json(path, index)
     return path
@@ -43522,6 +44448,7 @@ def main(
     build_local_operator_executor_smoke_mode: bool = False,
     build_local_operator_executor_task_smoke_mode: bool = False,
     build_local_operator_executor_report_contract_mode: bool = False,
+    build_local_operator_executor_report_smoke_mode: bool = False,
     build_agent_passport_derived_surfaces_mode: bool = False,
     build_agent_runtime_enforcement_evidence_mode: bool = False,
     build_supervisor_performance_index_mode: bool = False,
@@ -43602,6 +44529,9 @@ def main(
         ),
         "--build-local-operator-executor-report-contract": (
             build_local_operator_executor_report_contract_mode
+        ),
+        "--build-local-operator-executor-report-smoke": (
+            build_local_operator_executor_report_smoke_mode
         ),
         "--build-agent-passport-derived-surfaces": build_agent_passport_derived_surfaces_mode,
         "--build-agent-runtime-enforcement-evidence": (
@@ -44522,6 +45452,7 @@ def main(
                 build_local_operator_executor_smoke_mode,
                 build_local_operator_executor_task_smoke_mode,
                 build_local_operator_executor_report_contract_mode,
+                build_local_operator_executor_report_smoke_mode,
                 build_agent_runtime_enforcement_evidence_mode,
             )
         ):
@@ -44675,6 +45606,41 @@ def main(
         write_local_operator_executor_report_contract(index)
         emit_supervisor_json(index, output_mode=normalized_output_mode)
         return 0 if index.get("summary", {}).get("status") == "ready_for_report_smoke" else 1
+
+    if build_local_operator_executor_report_smoke_mode:
+        if any(
+            (
+                dry_run,
+                auto_approve,
+                loop,
+                resolve_gate,
+                decision,
+                note,
+                target_spec,
+                split_proposal,
+                apply_split_proposal,
+                operator_note,
+                mutation_budget,
+                run_authority,
+                execution_profile,
+                child_model,
+                child_timeout_seconds,
+                verbose,
+                list_stale_runtime,
+                clean_stale_runtime,
+                observe_graph_health_mode,
+                operator_request_packet_path,
+            )
+        ):
+            print(
+                "--build-local-operator-executor-report-smoke must be used as a standalone command",
+                file=sys.stderr,
+            )
+            return 1
+        index = build_local_operator_executor_report_smoke()
+        write_local_operator_executor_report(index)
+        emit_supervisor_json(index, output_mode=normalized_output_mode)
+        return 0 if index.get("smoke_summary", {}).get("status") == "passed" else 1
 
     if build_agent_passport_derived_surfaces_mode:
         if any(
@@ -48068,6 +49034,14 @@ if __name__ == "__main__":
         ),
     )
     parser.add_argument(
+        "--build-local-operator-executor-report-smoke",
+        action="store_true",
+        help=(
+            "Run a local-only bounded executor report smoke after task smoke and report "
+            "contract are ready, without mutating canonical specs or publishing local artifacts"
+        ),
+    )
+    parser.add_argument(
         "--build-agent-passport-derived-surfaces",
         action="store_true",
         help=(
@@ -48414,6 +49388,9 @@ if __name__ == "__main__":
             ),
             build_local_operator_executor_report_contract_mode=(
                 args.build_local_operator_executor_report_contract
+            ),
+            build_local_operator_executor_report_smoke_mode=(
+                args.build_local_operator_executor_report_smoke
             ),
             build_agent_passport_derived_surfaces_mode=(args.build_agent_passport_derived_surfaces),
             build_agent_runtime_enforcement_evidence_mode=(

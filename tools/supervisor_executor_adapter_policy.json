@@ -273,6 +273,51 @@
       "canonical_mutations_allowed": false
     }
   },
+  "local_operator_report_smoke_contract": {
+    "artifact_kind": "local_operator_executor_report",
+    "schema_version": 1,
+    "source_task_smoke_artifact": "runs/local_operator_executor_task_smoke.json",
+    "source_report_contract_artifact": "runs/local_operator_executor_report_contract.json",
+    "local_only": true,
+    "status_values": [
+      "passed",
+      "blocked_task_smoke_not_passed",
+      "blocked_report_contract_not_ready",
+      "blocked_executor_unavailable",
+      "failed_executor_nonzero",
+      "failed_invalid_report",
+      "failed_mutation_guard",
+      "blocked_policy_contract"
+    ],
+    "check_ids": [
+      "task_smoke_passed",
+      "report_contract_ready",
+      "executor_report_invocation_completed",
+      "executor_report_valid",
+      "no_canonical_mutation_attempted"
+    ],
+    "named_filters": [
+      "passed",
+      "blocked_task_smoke_not_passed",
+      "blocked_report_contract_not_ready",
+      "blocked_executor_unavailable",
+      "failed_executor_nonzero",
+      "failed_invalid_report",
+      "failed_mutation_guard",
+      "blocked_policy_contract"
+    ],
+    "default_timeout_seconds": 120,
+    "prompt": "Return only a JSON object matching the local_operator_executor_report contract. Use artifact_kind=local_operator_executor_report, schema_version=1, local_only=true, source_task_smoke_artifact=runs/local_operator_executor_task_smoke.json, producer_kind=coding_agent, producer_id=codex, authority_level=report_only, summary.status=valid_report, report_kind=analysis_report, curation_required=true, canonical_mutation_attempted=false, next_gap=run_bounded_executor_report_smoke, empty findings, source_evidence_refs containing runs/local_operator_executor_task_smoke.json, empty proposed_artifacts, and a closed privacy_boundary with all persisted flags false. Do not inspect, edit, or create repository files.",
+    "privacy_boundary": {
+      "must_not_persist_absolute_paths": true,
+      "must_not_persist_raw_logs": true,
+      "must_not_persist_raw_prompt": true,
+      "must_not_persist_raw_response": true,
+      "must_not_persist_secrets": true,
+      "public_static_publish": false,
+      "canonical_mutations_allowed": false
+    }
+  },
   "backend_registry": [
     {
       "backend_id": "codex",
@@ -294,6 +339,15 @@
         "timeout_seconds": 15
       },
       "local_task_smoke": {
+        "args": [
+          "exec",
+          "--ephemeral",
+          "--sandbox",
+          "read-only"
+        ],
+        "timeout_seconds": 120
+      },
+      "local_report_smoke": {
         "args": [
           "exec",
           "--ephemeral",
