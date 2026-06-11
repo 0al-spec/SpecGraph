@@ -332,6 +332,43 @@ def test_ontologyc_adapter_report_rejects_digest_mismatch(tmp_path: Path) -> Non
         )
 
 
+def test_ontologyc_adapter_report_rejects_bool_schema_version(tmp_path: Path) -> None:
+    module = load_ontology_imports_module()
+    module.ROOT = tmp_path
+    fixture_path = write_temp_fixture(tmp_path, load_fixture_payload())
+    policy_path = write_temp_policy(tmp_path)
+    report = load_adapter_report_payload()
+    report["schema_version"] = True
+    report_path = write_temp_adapter_report(tmp_path, report)
+
+    with pytest.raises(ValueError, match="schema_version must be an integer"):
+        module.build_ontology_import_surfaces(
+            fixture_path,
+            policy_path=policy_path,
+            adapter_report_path=report_path,
+        )
+
+
+def test_ontologyc_adapter_report_enforces_required_input_refs(tmp_path: Path) -> None:
+    module = load_ontology_imports_module()
+    module.ROOT = tmp_path
+    fixture_path = write_temp_fixture(tmp_path, load_fixture_payload())
+    policy = json.loads((ROOT / "tools" / "ontology_import_policy.json").read_text())
+    contract = policy["ontologyc_adapter_report_contract"]
+    assert isinstance(contract, dict)
+    assert isinstance(contract["required_input_refs"], list)
+    contract["required_input_refs"].append("source_manifest_ref")
+    policy_path = write_temp_policy(tmp_path, policy)
+    report_path = write_temp_adapter_report(tmp_path, load_adapter_report_payload())
+
+    with pytest.raises(ValueError, match="source_manifest_ref"):
+        module.build_ontology_import_surfaces(
+            fixture_path,
+            policy_path=policy_path,
+            adapter_report_path=report_path,
+        )
+
+
 def test_ontologyc_adapter_report_rejects_authority_expansion(tmp_path: Path) -> None:
     module = load_ontology_imports_module()
     module.ROOT = tmp_path
@@ -348,6 +385,69 @@ def test_ontologyc_adapter_report_rejects_authority_expansion(tmp_path: Path) ->
             policy_path=policy_path,
             adapter_report_path=report_path,
         )
+
+
+def test_ontologyc_adapter_report_rejects_lock_digest_mismatch(tmp_path: Path) -> None:
+    module = load_ontology_imports_module()
+    module.ROOT = tmp_path
+    fixture_path = write_temp_fixture(tmp_path, load_fixture_payload())
+    policy_path = write_temp_policy(tmp_path)
+    report_path = write_temp_adapter_report(tmp_path, load_adapter_report_payload())
+    lock_path = report_path.parent / "ontologyc" / "ontology.lock.yaml"
+    lock = yaml.safe_load(lock_path.read_text(encoding="utf-8"))
+    lock["spec"]["resolved"][0]["digest"] = (
+        "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+    )
+    lock_path.write_text(yaml.safe_dump(lock, sort_keys=False), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="digest"):
+        module.build_ontology_import_surfaces(
+            fixture_path,
+            policy_path=policy_path,
+            adapter_report_path=report_path,
+        )
+
+
+def test_ontologyc_adapter_report_rejects_corrupt_concept_ref_payload(tmp_path: Path) -> None:
+    module = load_ontology_imports_module()
+    module.ROOT = tmp_path
+    fixture_path = write_temp_fixture(tmp_path, load_fixture_payload())
+    policy_path = write_temp_policy(tmp_path)
+    report_path = write_temp_adapter_report(tmp_path, load_adapter_report_payload())
+    refs_path = report_path.parent / "ontologyc" / "concept-refs.yaml"
+    refs = yaml.safe_load(refs_path.read_text(encoding="utf-8"))
+    refs["spec"]["refs"][0]["concept"] = "WrongConcept"
+    refs_path.write_text(yaml.safe_dump(refs, sort_keys=False), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="concept_refs_output examcalc:Exam.concept"):
+        module.build_ontology_import_surfaces(
+            fixture_path,
+            policy_path=policy_path,
+            adapter_report_path=report_path,
+        )
+
+
+def test_cli_custom_fixture_does_not_require_default_adapter_report(tmp_path: Path) -> None:
+    fixture = load_fixture_payload()
+    fixture["proposal_id"] = "custom-0060"
+    fixture_path = write_temp_fixture(tmp_path, fixture)
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            str(ROOT / "tools" / "ontology_imports.py"),
+            "--fixture",
+            str(fixture_path),
+        ],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    surfaces = json.loads(completed.stdout)
+
+    assert "adapter_report_smoke" not in surfaces
+    assert surfaces["package_index"]["proposal_id"] == "custom-0060"
 
 
 def test_ontology_import_write_rejects_outputs_outside_allowed_roots(tmp_path: Path) -> None:

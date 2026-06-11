@@ -59,6 +59,7 @@ summary:
   tracked_artifacts_written: false
 authority_boundary:
   report_is_authority: false
+  digest_authority: normalized_ir_sourceDigest
   ontology_lock_is_canonical: false
   automatic_import_lock_update: false
   automatic_canonical_node_update: false

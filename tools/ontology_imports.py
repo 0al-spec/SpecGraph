@@ -47,7 +47,11 @@ def write_json(path: Path, payload: dict[str, Any]) -> Path:
 
 
 def relative_path(path: Path) -> str:
-    return path.resolve().relative_to(ROOT.resolve()).as_posix()
+    resolved = path.resolve()
+    try:
+        return resolved.relative_to(ROOT.resolve()).as_posix()
+    except ValueError:
+        return f"external:{resolved.name}"
 
 
 def symbol_slug(ref: str) -> str:
@@ -222,7 +226,7 @@ def require_bool(mapping: dict[str, Any], field: str, context: str) -> bool:
 
 def require_int(mapping: dict[str, Any], field: str, context: str) -> int:
     value = mapping.get(field)
-    if not isinstance(value, int):
+    if isinstance(value, bool) or not isinstance(value, int):
         raise ValueError(f"{context}.{field} must be an integer")
     return value
 
@@ -250,17 +254,56 @@ def resolve_report_file(report_path: Path, relative: str, context: str) -> Path:
     return resolve_fixture_file(report_path, relative, context)
 
 
-def output_ref_aliases(payload: dict[str, Any]) -> list[str]:
+def output_ref_entries(payload: dict[str, Any]) -> dict[str, dict[str, Any]]:
     spec = require_object(payload, "spec", "adapter_output")
     refs = spec.get("refs")
     if not isinstance(refs, list):
         raise ValueError("adapter_output.spec.refs must be a list")
-    aliases = []
+    entries = {}
     for index, item in enumerate(refs):
         if not isinstance(item, dict):
             raise ValueError(f"adapter_output.spec.refs[{index}] must be an object")
-        aliases.append(require_string(item, "alias", f"adapter_output.spec.refs[{index}]"))
-    return aliases
+        alias = require_string(item, "alias", f"adapter_output.spec.refs[{index}]")
+        entries[alias] = item
+    return entries
+
+
+def ontologyc_ref_kind(section: str, item: dict[str, Any]) -> str:
+    if section == "classes":
+        value = item.get("kind")
+        return value if isinstance(value, str) and value.strip() else "Class"
+    return {
+        "relations": "Relation",
+        "policies": "Policy",
+        "stateMachines": "StateMachine",
+        "protocols": "Protocol",
+    }.get(section, "Concept")
+
+
+def ontologyc_output_ref_map(ir: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    ontology_id = require_string(ir, "id", "normalized_ir")
+    namespace = require_string(ir, "namespace", "normalized_ir")
+    version = require_string(ir, "version", "normalized_ir")
+    refs: dict[str, dict[str, Any]] = {}
+    for section in REF_CATEGORIES:
+        values = ir.get(section, [])
+        if not isinstance(values, list):
+            continue
+        for item in values:
+            if not isinstance(item, dict):
+                continue
+            alias = item.get("fqid")
+            if not isinstance(alias, str) or not alias:
+                continue
+            refs[alias] = {
+                "concept": item.get("id"),
+                "kindOfConcept": ontologyc_ref_kind(section, item),
+                "namespace": namespace,
+                "ontology": ontology_id,
+                "uri": item.get("uri"),
+                "version": version,
+            }
+    return refs
 
 
 def output_gap_refs(payload: dict[str, Any]) -> list[str]:
@@ -293,12 +336,15 @@ def validate_ontology_lock_output(payload: dict[str, Any], package: dict[str, An
         "ontology": package["package_id"],
         "namespace": package["namespace"],
         "version": package["version"],
+        "digest": package["digest"],
     }
     mismatches = [
         f"{field} expected {expected_value!r}, got {first.get(field)!r}"
         for field, expected_value in expected.items()
         if first.get(field) != expected_value
     ]
+    digest = require_string(first, "digest", "ontology_lock_output.spec.resolved[0]")
+    require_digest(digest, "ontology_lock_output.spec.resolved[0].digest")
     if mismatches:
         raise ValueError(f"ontology_lock_output metadata mismatch: {'; '.join(mismatches)}")
 
@@ -321,9 +367,8 @@ def validate_ontologyc_adapter_report(
     accepted_kind = require_string(contract, "accepted_report_kind", "adapter_report_contract")
     if require_string(report, "artifact_kind", "adapter_report") != accepted_kind:
         raise ValueError(f"adapter_report.artifact_kind must be {accepted_kind}")
-    if require_int(report, "schema_version", "adapter_report") != int(
-        contract.get("schema_version", 1)
-    ):
+    contract_schema_version = require_int(contract, "schema_version", "adapter_report_contract")
+    if require_int(report, "schema_version", "adapter_report") != contract_schema_version:
         raise ValueError("adapter_report.schema_version does not match policy")
     if require_string(report, "proposal_id", "adapter_report") != fixture["proposal_id"]:
         raise ValueError("adapter_report.proposal_id does not match fixture")
@@ -354,22 +399,25 @@ def validate_ontologyc_adapter_report(
         if report_package.get(package_field) != package.get(package_field):
             raise ValueError(f"adapter_report.package.{package_field} does not match fixture")
 
+    inputs = require_object(report, "inputs", "adapter_report")
+    required_input_refs = require_string_list(
+        contract, "required_input_refs", "adapter_report_contract"
+    )
+    for field in required_input_refs:
+        require_string(inputs, field, "adapter_report.inputs")
+
     validate_ir_metadata(ir, report_package)
-    if ir_path != resolve_report_file(
+    normalized_ir_ref = resolve_report_file(
         report_path,
-        require_string(
-            require_object(report, "inputs", "adapter_report"),
-            "normalized_ir_ref",
-            "adapter_report.inputs",
-        ),
+        inputs["normalized_ir_ref"],
         "adapter_report.inputs.normalized_ir_ref",
-    ):
+    )
+    if ir_path != normalized_ir_ref:
         raise ValueError("adapter_report.inputs.normalized_ir_ref does not match fixture IR")
 
-    inputs = require_object(report, "inputs", "adapter_report")
     binding_ref = resolve_report_file(
         report_path,
-        require_string(inputs, "binding_ref", "adapter_report.inputs"),
+        inputs["binding_ref"],
         "adapter_report.inputs.binding_ref",
     )
     if binding_ref != fixture_path.resolve():
@@ -399,10 +447,22 @@ def validate_ontologyc_adapter_report(
     ):
         if concept_metadata.get(field) != expected:
             raise ValueError(f"concept_refs_output.metadata.{field} does not match package")
-    output_aliases = sorted(output_ref_aliases(concept_refs_output))
+    output_entries = output_ref_entries(concept_refs_output)
     expected_aliases = sorted(entry["source_ref"] for entry in resolved_refs)
-    if output_aliases != expected_aliases:
+    if sorted(output_entries) != expected_aliases:
         raise ValueError("concept_refs_output aliases do not match resolved report refs")
+    expected_output_refs = ontologyc_output_ref_map(ir)
+    for alias in expected_aliases:
+        output_entry = output_entries[alias]
+        expected_entry = expected_output_refs.get(alias)
+        if not expected_entry:
+            raise ValueError(f"concept_refs_output alias {alias!r} is missing from normalized IR")
+        for field, expected_value in expected_entry.items():
+            if output_entry.get(field) != expected_value:
+                raise ValueError(
+                    f"concept_refs_output {alias}.{field} expected {expected_value!r}, "
+                    f"got {output_entry.get(field)!r}"
+                )
 
     ontology_gaps_output = load_yaml(
         resolve_report_file(
@@ -752,20 +812,32 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--adapter-report",
-        default=str(ROOT / str(layout["default_adapter_report"])),
-        help="Ontologyc adapter report fixture YAML path.",
+        default=None,
+        help=(
+            "Ontologyc adapter report fixture YAML path. Defaults to the checked-in "
+            "adapter report only when --fixture is the default fixture."
+        ),
     )
     return parser.parse_args()
 
 
 def main() -> int:
     args = parse_args()
+    policy = load_json(POLICY_PATH)
+    layout = policy.get("repository_layout")
+    if not isinstance(layout, dict):
+        raise ValueError("policy.repository_layout must be an object")
     fixture_path = Path(args.fixture)
     if not fixture_path.is_absolute():
         fixture_path = ROOT / fixture_path
-    adapter_report_path = Path(args.adapter_report)
-    if not adapter_report_path.is_absolute():
-        adapter_report_path = ROOT / adapter_report_path
+    default_fixture_path = ROOT / str(layout["default_fixture"])
+    adapter_report_path = None
+    if args.adapter_report:
+        adapter_report_path = Path(args.adapter_report)
+        if not adapter_report_path.is_absolute():
+            adapter_report_path = ROOT / adapter_report_path
+    elif fixture_path.resolve() == default_fixture_path.resolve():
+        adapter_report_path = ROOT / str(layout["default_adapter_report"])
     surfaces = build_ontology_import_surfaces(
         fixture_path,
         adapter_report_path=adapter_report_path,
