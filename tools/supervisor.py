@@ -20327,6 +20327,14 @@ def validate_executor_report_effects(effects: object) -> dict[str, Any]:
             "forbidden_effects": sorted(forbidden),
         }
     normalized_effects: list[str] = []
+    if not effects:
+        findings.append(
+            executor_report_finding(
+                code="requested_effects_empty",
+                field="requested_effects",
+                message="Executor report requested_effects must declare at least one effect.",
+            )
+        )
     for index, raw_effect in enumerate(effects):
         effect = str(raw_effect or "").strip()
         if not effect:
@@ -20458,7 +20466,9 @@ def validate_executor_report_consumption_request(
             "consumer": consumer_validation.get("consumer", ""),
             "transformation": transformation_validation.get("transformation", ""),
             "requested_effects": copy.deepcopy(effects_validation.get("effects", [])),
-            "source_report_valid": bool(report_validation.get("valid", False)),
+            "source_report_valid": (
+                bool(report_validation.get("valid", False)) if report is not None else None
+            ),
             "next_gap": str(policy.get("next_gap", "build_executor_report_review_packet")).strip(),
         },
         "consumer_validation": consumer_validation,
@@ -20469,7 +20479,13 @@ def validate_executor_report_consumption_request(
             include_normalized=bool(report_validation.get("valid", False)),
         )
         if report is not None
-        else {"valid": True, "finding_count": 0, "findings": [], "normalized": {}},
+        else {
+            "valid": None,
+            "validation_performed": False,
+            "finding_count": 0,
+            "findings": [],
+            "normalized": {},
+        },
     }
 
 

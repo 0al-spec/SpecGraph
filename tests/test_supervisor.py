@@ -28955,6 +28955,24 @@ def test_validate_executor_report_consumption_request_accepts_proposal_candidate
     assert validation["normalized"]["requested_effects"] == ["proposal_draft_candidate"]
 
 
+def test_validate_executor_report_consumption_request_without_report_is_request_only(
+    supervisor_module: object,
+) -> None:
+    request = supervisor_module.default_executor_report_consumption_request()
+
+    validation = supervisor_module.validate_executor_report_consumption_request(request)
+
+    assert validation["valid"] is True
+    assert validation["normalized"]["source_report_valid"] is None
+    assert validation["report_validation"] == {
+        "valid": None,
+        "validation_performed": False,
+        "finding_count": 0,
+        "findings": [],
+        "normalized": {},
+    }
+
+
 def test_validate_executor_report_consumption_request_rejects_unknown_consumer(
     supervisor_module: object,
 ) -> None:
@@ -28981,6 +28999,20 @@ def test_validate_executor_report_consumption_request_rejects_unknown_transforma
     assert any(
         finding["code"] == "unknown_report_transformation" for finding in validation["findings"]
     )
+
+
+def test_validate_executor_report_consumption_request_rejects_empty_effects(
+    supervisor_module: object,
+) -> None:
+    request = supervisor_module.default_executor_report_consumption_request(
+        requested_effects=[],
+    )
+
+    validation = supervisor_module.validate_executor_report_consumption_request(request)
+
+    assert validation["valid"] is False
+    assert validation["normalized"]["requested_effects"] == []
+    assert any(finding["code"] == "requested_effects_empty" for finding in validation["findings"])
 
 
 def test_validate_executor_report_consumption_request_rejects_forbidden_effects(
