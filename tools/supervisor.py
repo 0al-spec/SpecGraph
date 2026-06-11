@@ -19763,6 +19763,15 @@ def local_operator_executor_report_contract() -> dict[str, Any]:
     return contract if isinstance(contract, dict) else {}
 
 
+def supervisor_executor_backend_ids() -> set[str]:
+    backend_registry = supervisor_executor_adapter_policy_lookup("backend_registry")
+    return {
+        str(backend.get("backend_id", "")).strip()
+        for backend in backend_registry
+        if isinstance(backend, dict) and str(backend.get("backend_id", "")).strip()
+    }
+
+
 def executor_report_contract_values(key: str) -> set[str]:
     contract = local_operator_executor_report_contract()
     values = contract.get(key, [])
@@ -20201,6 +20210,203 @@ def validate_local_operator_executor_report(report: object) -> dict[str, Any]:
     }
 
 
+def redacted_executor_report_validation(
+    validation: dict[str, Any],
+    *,
+    include_normalized: bool,
+) -> dict[str, Any]:
+    findings = validation.get("findings", [])
+    findings = findings if isinstance(findings, list) else []
+    redacted_findings = []
+    for finding in findings:
+        finding = finding if isinstance(finding, dict) else {}
+        code = str(finding.get("code", "invalid_report")).strip() or "invalid_report"
+        field = str(finding.get("field", "report")).strip() or "report"
+        redacted_findings.append(
+            executor_report_finding(
+                code=code,
+                field=field,
+                message=f"Executor report failed validation for field {field} ({code}).",
+            )
+        )
+    normalized = validation.get("normalized", {})
+    normalized = normalized if include_normalized and isinstance(normalized, dict) else {}
+    return {
+        "valid": bool(validation.get("valid", False)),
+        "finding_count": len(redacted_findings),
+        "findings": redacted_findings,
+        "normalized": copy.deepcopy(normalized),
+    }
+
+
+def strict_bounded_executor_report_response_validation(payload: object) -> dict[str, Any]:
+    generic_validation = validate_local_operator_executor_report(payload)
+    findings = list(generic_validation.get("findings", []))
+    if not isinstance(payload, dict):
+        return {
+            "valid": False,
+            "findings": findings,
+            "normalized": {},
+        }
+
+    def object_has_only(raw: object, field: str, allowed: set[str]) -> dict[str, Any]:
+        if not isinstance(raw, dict):
+            findings.append(
+                executor_report_finding(
+                    code="smoke_schema_object_required",
+                    field=field,
+                    message=f"{field} must be an object for bounded report smoke.",
+                )
+            )
+            return {}
+        extra_keys = sorted(str(key) for key in raw if str(key) not in allowed)
+        for key in extra_keys:
+            findings.append(
+                executor_report_finding(
+                    code="smoke_schema_extra_field",
+                    field=f"{field}.{key}",
+                    message=f"{field}.{key} is not allowed in bounded report smoke.",
+                )
+            )
+        return raw
+
+    object_has_only(
+        payload,
+        "report",
+        {
+            "artifact_kind",
+            "schema_version",
+            "local_only",
+            "source_task_smoke_artifact",
+            "producer",
+            "summary",
+            "report",
+            "privacy_boundary",
+        },
+    )
+    producer = object_has_only(
+        payload.get("producer"),
+        "producer",
+        {"producer_kind", "producer_id", "authority_level"},
+    )
+    summary = object_has_only(
+        payload.get("summary"),
+        "summary",
+        {
+            "status",
+            "report_kind",
+            "curation_required",
+            "canonical_mutation_attempted",
+            "next_gap",
+        },
+    )
+    nested_report = object_has_only(
+        payload.get("report"),
+        "report",
+        {
+            "report_kind",
+            "status",
+            "findings",
+            "source_evidence_refs",
+            "proposed_artifacts",
+        },
+    )
+    privacy = object_has_only(
+        payload.get("privacy_boundary"),
+        "privacy_boundary",
+        {
+            "absolute_paths_persisted",
+            "raw_logs_persisted",
+            "raw_prompt_persisted",
+            "raw_response_persisted",
+            "secrets_persisted",
+        },
+    )
+    expected_values = {
+        "artifact_kind": LOCAL_OPERATOR_EXECUTOR_REPORT_ARTIFACT_KIND,
+        "schema_version": LOCAL_OPERATOR_EXECUTOR_REPORT_CONTRACT_SCHEMA_VERSION,
+        "local_only": True,
+        "source_task_smoke_artifact": LOCAL_OPERATOR_EXECUTOR_TASK_SMOKE_RELATIVE_PATH,
+        "producer.producer_kind": "coding_agent",
+        "producer.producer_id": "codex",
+        "producer.authority_level": "report_only",
+        "summary.status": "valid_report",
+        "summary.report_kind": "analysis_report",
+        "summary.curation_required": True,
+        "summary.canonical_mutation_attempted": False,
+        "summary.next_gap": "run_bounded_executor_report_smoke",
+        "report.report_kind": "analysis_report",
+        "report.status": "completed",
+        "privacy_boundary.absolute_paths_persisted": False,
+        "privacy_boundary.raw_logs_persisted": False,
+        "privacy_boundary.raw_prompt_persisted": False,
+        "privacy_boundary.raw_response_persisted": False,
+        "privacy_boundary.secrets_persisted": False,
+    }
+    actual_by_field = {
+        "artifact_kind": payload.get("artifact_kind"),
+        "schema_version": payload.get("schema_version"),
+        "local_only": payload.get("local_only"),
+        "source_task_smoke_artifact": payload.get("source_task_smoke_artifact"),
+        "producer.producer_kind": producer.get("producer_kind"),
+        "producer.producer_id": producer.get("producer_id"),
+        "producer.authority_level": producer.get("authority_level"),
+        "summary.status": summary.get("status"),
+        "summary.report_kind": summary.get("report_kind"),
+        "summary.curation_required": summary.get("curation_required"),
+        "summary.canonical_mutation_attempted": summary.get("canonical_mutation_attempted"),
+        "summary.next_gap": summary.get("next_gap"),
+        "report.report_kind": nested_report.get("report_kind"),
+        "report.status": nested_report.get("status"),
+        "privacy_boundary.absolute_paths_persisted": privacy.get("absolute_paths_persisted"),
+        "privacy_boundary.raw_logs_persisted": privacy.get("raw_logs_persisted"),
+        "privacy_boundary.raw_prompt_persisted": privacy.get("raw_prompt_persisted"),
+        "privacy_boundary.raw_response_persisted": privacy.get("raw_response_persisted"),
+        "privacy_boundary.secrets_persisted": privacy.get("secrets_persisted"),
+    }
+    for field, expected_value in expected_values.items():
+        if actual_by_field.get(field) != expected_value:
+            findings.append(
+                executor_report_finding(
+                    code="smoke_schema_value_mismatch",
+                    field=field,
+                    message=f"{field} does not match the bounded report smoke schema.",
+                )
+            )
+    findings_list = nested_report.get("findings", [])
+    if findings_list != []:
+        findings.append(
+            executor_report_finding(
+                code="smoke_schema_findings_not_empty",
+                field="report.findings",
+                message="Bounded report smoke must not persist executor findings.",
+            )
+        )
+    proposed_artifacts = nested_report.get("proposed_artifacts", [])
+    if proposed_artifacts != []:
+        findings.append(
+            executor_report_finding(
+                code="smoke_schema_proposed_artifacts_not_empty",
+                field="report.proposed_artifacts",
+                message="Bounded report smoke must not persist proposed artifacts.",
+            )
+        )
+    source_evidence_refs = nested_report.get("source_evidence_refs", [])
+    if source_evidence_refs != [LOCAL_OPERATOR_EXECUTOR_TASK_SMOKE_RELATIVE_PATH]:
+        findings.append(
+            executor_report_finding(
+                code="smoke_schema_source_evidence_refs_mismatch",
+                field="report.source_evidence_refs",
+                message="Bounded report smoke must reference only the local task smoke artifact.",
+            )
+        )
+    return {
+        "valid": not findings,
+        "findings": findings,
+        "normalized": generic_validation.get("normalized", {}) if not findings else {},
+    }
+
+
 def validate_local_operator_executor_task_smoke_source(
     task_smoke: object,
 ) -> dict[str, Any]:
@@ -20249,12 +20455,21 @@ def validate_local_operator_executor_task_smoke_source(
     summary = task_smoke.get("summary", {})
     summary = summary if isinstance(summary, dict) else {}
     task_smoke_status = str(summary.get("status", "")).strip()
+    backend_id = str(summary.get("backend_id", "")).strip()
     if task_smoke_status != "passed":
         findings.append(
             executor_report_finding(
                 code="source_task_smoke_not_passed",
                 field="source_task_smoke_artifact.summary.status",
                 message="Source task smoke artifact summary.status must be passed.",
+            )
+        )
+    if backend_id not in supervisor_executor_backend_ids():
+        findings.append(
+            executor_report_finding(
+                code="unknown_source_task_smoke_backend",
+                field="source_task_smoke_artifact.summary.backend_id",
+                message="Source task smoke artifact summary.backend_id is not policy-declared.",
             )
         )
     checks = task_smoke.get("checks", [])
@@ -20293,6 +20508,7 @@ def validate_local_operator_executor_task_smoke_source(
     return {
         "valid": not findings,
         "status": task_smoke_status,
+        "backend_id": backend_id if backend_id in supervisor_executor_backend_ids() else "",
         "required_check_ids": required_check_ids,
         "findings": findings,
     }
@@ -20796,31 +21012,28 @@ def parse_bounded_executor_report_response(raw_text: str) -> dict[str, Any]:
         payload = json.loads(raw_text.strip())
     except json.JSONDecodeError:
         validation = validate_local_operator_executor_report({})
+        redacted_validation = redacted_executor_report_validation(
+            validation,
+            include_normalized=False,
+        )
         return {
             "parsed": False,
             "valid": False,
             "safe_report": None,
-            "validation": {
-                "valid": False,
-                "finding_count": len(validation.get("findings", [])),
-                "findings": copy.deepcopy(validation.get("findings", [])),
-                "normalized": {},
-            },
+            "validation": redacted_validation,
         }
-    validation = validate_local_operator_executor_report(payload)
-    safe_report = copy.deepcopy(payload) if validation.get("valid") is True else None
-    normalized = validation.get("normalized", {})
-    normalized = normalized if isinstance(normalized, dict) else {}
+    validation = strict_bounded_executor_report_response_validation(payload)
+    valid = bool(validation.get("valid", False))
+    safe_report = copy.deepcopy(payload) if valid and isinstance(payload, dict) else None
+    redacted_validation = redacted_executor_report_validation(
+        validation,
+        include_normalized=valid,
+    )
     return {
-        "parsed": isinstance(payload, dict),
-        "valid": bool(validation.get("valid", False)),
+        "parsed": True,
+        "valid": valid,
         "safe_report": safe_report if isinstance(safe_report, dict) else None,
-        "validation": {
-            "valid": bool(validation.get("valid", False)),
-            "finding_count": len(validation.get("findings", [])),
-            "findings": copy.deepcopy(validation.get("findings", [])),
-            "normalized": copy.deepcopy(normalized),
-        },
+        "validation": redacted_validation,
     }
 
 
@@ -20942,9 +21155,7 @@ def build_local_operator_executor_report_smoke(
     report_contract_validation = validate_local_operator_executor_report_contract_source(
         report_contract
     )
-    task_smoke_summary = task_smoke.get("summary", {}) if isinstance(task_smoke, dict) else {}
-    task_smoke_summary = task_smoke_summary if isinstance(task_smoke_summary, dict) else {}
-    default_backend_id = str(task_smoke_summary.get("backend_id", "")).strip()
+    default_backend_id = str(task_smoke_validation.get("backend_id", "")).strip()
     task_smoke_passed = task_smoke_validation.get("valid") is True
     report_contract_ready = report_contract_validation.get("valid") is True
     report_smoke = local_operator_report_smoke_for_backend(default_backend_id)
@@ -21023,6 +21234,28 @@ def build_local_operator_executor_report_smoke(
     response = response if isinstance(response, dict) else {}
     report_validation = response.get("validation", {})
     report_validation = report_validation if isinstance(report_validation, dict) else {}
+    safe_report = response.get("safe_report")
+    if isinstance(safe_report, dict):
+        strict_safe_report_validation = strict_bounded_executor_report_response_validation(
+            safe_report
+        )
+        if strict_safe_report_validation.get("valid") is not True:
+            response["valid"] = False
+            response["safe_report"] = None
+            report_validation = redacted_executor_report_validation(
+                strict_safe_report_validation,
+                include_normalized=False,
+            )
+        elif response.get("valid") is True:
+            report_validation = redacted_executor_report_validation(
+                strict_safe_report_validation,
+                include_normalized=True,
+            )
+    else:
+        report_validation = redacted_executor_report_validation(
+            report_validation,
+            include_normalized=False,
+        )
     checks.append(
         local_operator_smoke_check(
             check_id="executor_report_valid",

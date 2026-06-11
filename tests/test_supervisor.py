@@ -28627,6 +28627,48 @@ def test_validate_local_operator_executor_report_rejects_machine_local_paths_in_
     )
 
 
+def test_parse_bounded_executor_report_response_marks_non_object_json_parsed(
+    supervisor_module: object,
+) -> None:
+    response = supervisor_module.parse_bounded_executor_report_response("[]")
+
+    assert response["parsed"] is True
+    assert response["valid"] is False
+    assert response["safe_report"] is None
+    assert response["validation"]["finding_count"] >= 1
+
+
+def test_parse_bounded_executor_report_response_rejects_smoke_schema_drift(
+    supervisor_module: object,
+) -> None:
+    report = supervisor_module.default_local_operator_executor_report_sample()
+    report["report"]["findings"] = [{"summary": "do not persist this generated finding"}]
+
+    response = supervisor_module.parse_bounded_executor_report_response(json.dumps(report))
+
+    assert response["parsed"] is True
+    assert response["valid"] is False
+    assert response["safe_report"] is None
+    finding_codes = {finding["code"] for finding in response["validation"]["findings"]}
+    assert "smoke_schema_findings_not_empty" in finding_codes
+    dumped = json.dumps(response, sort_keys=True)
+    assert "do not persist this generated finding" not in dumped
+
+
+def test_parse_bounded_executor_report_response_redacts_invalid_values(
+    supervisor_module: object,
+) -> None:
+    report = supervisor_module.default_local_operator_executor_report_sample()
+    report["summary"]["status"] = "sk-local-secret-status"
+
+    response = supervisor_module.parse_bounded_executor_report_response(json.dumps(report))
+
+    assert response["valid"] is False
+    assert response["validation"]["normalized"] == {}
+    dumped = json.dumps(response, sort_keys=True)
+    assert "sk-local-secret-status" not in dumped
+
+
 def test_build_local_operator_executor_report_contract_is_ready_after_task_smoke(
     supervisor_module: object,
 ) -> None:
@@ -28849,6 +28891,30 @@ def test_build_local_operator_executor_report_smoke_blocks_missing_task_smoke(
     assert checks["no_canonical_mutation_attempted"] == "not_run"
 
 
+def test_build_local_operator_executor_report_smoke_rejects_untrusted_backend_id(
+    supervisor_module: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    task_smoke = passed_local_operator_task_smoke()
+    task_smoke["summary"]["backend_id"] = "/tmp/secret-backend"
+    monkeypatch.setattr(
+        supervisor_module,
+        "run_local_operator_executor_report_task",
+        lambda **_kwargs: pytest.fail("report task must not run with untrusted backend id"),
+    )
+
+    report = supervisor_module.build_local_operator_executor_report_smoke(
+        task_smoke,
+        ready_local_operator_executor_report_contract(),
+    )
+
+    assert report["smoke_summary"]["status"] == "blocked_task_smoke_not_passed"
+    assert report["smoke_summary"]["backend_id"] == ""
+    assert report["report_validation"]["raw_report_persisted"] is False
+    dumped = json.dumps(report, sort_keys=True)
+    assert "/tmp/secret-backend" not in dumped
+
+
 def test_build_local_operator_executor_report_smoke_blocks_unready_report_contract(
     supervisor_module: object,
     monkeypatch: pytest.MonkeyPatch,
@@ -28928,7 +28994,7 @@ def test_build_local_operator_executor_report_smoke_rejects_invalid_report(
     finding = {
         "code": "forbidden_raw_or_secret_field",
         "field": "report.Authorization",
-        "message": "report.Authorization must not be persisted in executor reports.",
+        "message": "report.Authorization must not persist Bearer local-token.",
     }
     monkeypatch.setattr(
         supervisor_module,
@@ -28955,7 +29021,7 @@ def test_build_local_operator_executor_report_smoke_rejects_invalid_report(
                     "valid": False,
                     "finding_count": 1,
                     "findings": [finding],
-                    "normalized": {},
+                    "normalized": {"summary_status": "Bearer local-token"},
                 },
             },
         },
