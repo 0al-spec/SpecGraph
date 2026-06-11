@@ -2916,7 +2916,8 @@
       "runs/ontology_import_gap_index.json",
       "runs/ontology_governance_evidence_index.json",
       "runs/ontology_binding_preview.json",
-      "runs/ontology_prompt_invocation_index.json"
+      "runs/ontology_prompt_invocation_index.json",
+      "runs/ontologyc_adapter_report_smoke.json"
     ],
     "runtime_markers": [
       {
@@ -2926,6 +2927,10 @@
       {
         "path": "tools/ontology_import_policy.json",
         "pattern": "ontology_import_policy"
+      },
+      {
+        "path": "tools/ontology_imports.py",
+        "pattern": "def build_ontologyc_adapter_report_smoke("
       }
     ],
     "validation_markers": [
@@ -2936,6 +2941,10 @@
       {
         "path": "tests/test_ontology_import_policy.py",
         "pattern": "def test_make_ontology_imports_writes_declared_surfaces("
+      },
+      {
+        "path": "tests/test_ontology_import_policy.py",
+        "pattern": "def test_ontologyc_adapter_report_smoke_validates_report_contract("
       }
     ],
     "observation_markers": [

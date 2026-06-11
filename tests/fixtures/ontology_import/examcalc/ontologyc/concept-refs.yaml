@@ -1,0 +1,22 @@
+apiVersion: specgraph.io/v1alpha1
+kind: ConceptRefSet
+metadata:
+  ontology: edu.university.examcalc
+  namespace: examcalc
+  version: 0.1.0
+spec:
+  refs:
+    - alias: examcalc:Exam
+      concept: Exam
+      kindOfConcept: DomainEntity
+      namespace: examcalc
+      ontology: edu.university.examcalc
+      uri: ontology://edu.university.examcalc/0.1.0/classes/Exam
+      version: 0.1.0
+    - alias: examcalc:requires_policy
+      concept: requires_policy
+      kindOfConcept: Relation
+      namespace: examcalc
+      ontology: edu.university.examcalc
+      uri: ontology://edu.university.examcalc/0.1.0/relations/requires_policy
+      version: 0.1.0

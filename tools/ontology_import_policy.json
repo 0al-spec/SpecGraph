@@ -5,11 +5,13 @@
   "source_proposal": "docs/proposals/0060_external_ontology_import_plane.md",
   "repository_layout": {
     "default_fixture": "tests/fixtures/ontology_import/examcalc/import-fixture.yaml",
+    "default_adapter_report": "tests/fixtures/ontology_import/examcalc/ontologyc-adapter-report.yaml",
     "package_index": "runs/ontology_package_index.json",
     "gap_index": "runs/ontology_import_gap_index.json",
     "governance_evidence_index": "runs/ontology_governance_evidence_index.json",
     "binding_preview": "runs/ontology_binding_preview.json",
-    "prompt_invocation_index": "runs/ontology_prompt_invocation_index.json"
+    "prompt_invocation_index": "runs/ontology_prompt_invocation_index.json",
+    "adapter_report_smoke": "runs/ontologyc_adapter_report_smoke.json"
   },
   "derived_output_contract": {
     "canonical_mutations_allowed": false,
@@ -45,12 +47,72 @@
     "automatic_import_lock_update": false,
     "automatic_canonical_node_update": false
   },
+  "ontologyc_adapter_report_contract": {
+    "artifact_kind": "ontologyc_adapter_report_contract",
+    "schema_version": 1,
+    "source_contract": "docs/ontologyc_adapter_report_contract.md",
+    "accepted_report_kind": "ontologyc_adapter_report",
+    "accepted_tool": "ontologyc",
+    "accepted_command": "validate-specgraph",
+    "required_package_fields": [
+      "package_id",
+      "namespace",
+      "version",
+      "source_uri",
+      "source_ref",
+      "digest"
+    ],
+    "authority_fields": [
+      "package.package_id",
+      "package.namespace",
+      "package.version",
+      "package.source_uri",
+      "package.source_ref",
+      "package.digest"
+    ],
+    "required_input_refs": [
+      "binding_ref",
+      "normalized_ir_ref"
+    ],
+    "required_output_refs": [
+      "concept_refs_ref",
+      "ontology_lock_ref",
+      "ontology_gaps_ref"
+    ],
+    "status_values": [
+      "passed",
+      "failed",
+      "blocked"
+    ],
+    "failure_modes": [
+      "ontologyc_unavailable",
+      "invalid_binding",
+      "invalid_normalized_ir",
+      "source_digest_mismatch",
+      "output_artifact_missing",
+      "unsupported_report_shape"
+    ],
+    "smoke_required_status": "passed",
+    "digest_validation": "package.digest_must_match_normalized_ir_sourceDigest",
+    "source_validation": "package_source_and_version_must_match_fixture_and_ir",
+    "ontology_lock_output_authority": "non_canonical_report_artifact",
+    "canonical_mutations_allowed": false,
+    "tracked_artifacts_written": false,
+    "forbidden_effects": [
+      "canonical_ontology_lock_update",
+      "canonical_spec_mutation",
+      "automatic_gap_closure",
+      "prompt_agent_execution",
+      "ontology_package_schema_redefinition"
+    ]
+  },
   "accepted_artifact_kinds": [
     "ontology_package_index",
     "ontology_import_gap_index",
     "ontology_governance_evidence_index",
     "ontology_binding_preview",
-    "ontology_prompt_invocation_index"
+    "ontology_prompt_invocation_index",
+    "ontologyc_adapter_report_smoke"
   ],
   "next_gap_defaults": {
     "clean": "none",

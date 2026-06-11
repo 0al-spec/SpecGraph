@@ -75,6 +75,30 @@
       ]
     },
     {
+      "id": "ontologyc-adapter-report",
+      "description": "Ontologyc adapter report contracts must stay aligned between repository docs and DocC.",
+      "docs": [
+        "docs/ontologyc_adapter_report_contract.md"
+      ],
+      "docc": [
+        "Sources/SpecGraph/Documentation.docc/OntologyCAdapterReport.md"
+      ],
+      "required_terms": [
+        "ontologyc_adapter_report",
+        "source/version/digest",
+        "ontologyc_adapter_report_smoke",
+        "canonical_mutations_allowed"
+      ],
+      "docs_required_terms": [
+        "Failure Modes",
+        "Authority Fields"
+      ],
+      "docc_required_terms": [
+        "Smoke Surface",
+        "non-canonical report artifact"
+      ]
+    },
+    {
       "id": "operator-source-map",
       "description": "The DocC root must keep pointing operators back to canonical repository documentation sources.",
       "docs": [

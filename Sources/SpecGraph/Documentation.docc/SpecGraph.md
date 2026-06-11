@@ -42,4 +42,5 @@ The canonical source files remain in the repository:
 - <doc:GettingStarted>
 - <doc:ArtifactPublishing>
 - <doc:ExecutorAdapterGateway>
+- <doc:OntologyCAdapterReport>
 - <doc:ProposalsAndRuntime>

@@ -115,7 +115,10 @@ Supervisor modes:
   `runs/ontology_import_gap_index.json`,
   `runs/ontology_governance_evidence_index.json`,
   `runs/ontology_binding_preview.json`, and
-  `runs/ontology_prompt_invocation_index.json`. These surfaces resolve known
+  `runs/ontology_prompt_invocation_index.json`. It also validates the
+  `ontologyc_adapter_report` fixture and emits
+  `runs/ontologyc_adapter_report_smoke.json`, preserving source/version/digest
+  checks for `ontologyc validate-specgraph` output. These surfaces resolve known
   imported refs and preserve unresolved refs as reviewable ontology gaps without
   mutating canonical `specs/nodes/*.yaml`.
 - `--build-supervisor-executor-adapter-index`: build
