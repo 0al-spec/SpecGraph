@@ -1207,5 +1207,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0094",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0094_executor_report_to_proposal_draft_policy.md"
+    ],
+    "motivating_concern": "SpecGraph can build a review packet from a valid local executor report, but it lacks a policy boundary that defines when such a packet may become proposal draft input without granting executor reports or review packets direct authority",
+    "normalized_title": "Executor Report to Proposal Draft Policy",
+    "bounded_scope": "Add a policy-only validator surface for turning human-review-ready proposal_draft executor report review packets into future proposal draft candidates, while rejecting analysis reports, forbidden effects, authority expansion, canonical mutations, patch application, gap closure, proposal status mutation, and any new executor runtime or actual proposal draft generation.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]
