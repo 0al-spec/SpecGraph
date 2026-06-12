@@ -1350,5 +1350,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0105",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0105_ontology_semantic_lint_report.md"
+    ],
+    "motivating_concern": "SpecGraph can build an Ontology semantic context pack, but supervisor and SpecSpace review flows still need a deterministic lint report that turns that context into accepted, alias, unknown, deprecated, and relation-conflict findings without granting canonical ontology authority",
+    "normalized_title": "Ontology Semantic Lint Report",
+    "bounded_scope": "Add a deterministic ontology semantic lint report derived from the 0104 context pack, grouping findings, blocking findings, review-required findings, candidate delta terms, and recommended actions under runs/ without parsing arbitrary text, invoking prompt agents or ontologyc, writing ontology packages or lockfiles, mutating canonical specs, generating canonical ontology deltas, or adding SpecSpace UI.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

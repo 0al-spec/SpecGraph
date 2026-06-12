@@ -5327,6 +5327,10 @@
       },
       {
         "path": "tools/ontology_imports.py",
+        "pattern": "def build_ontology_semantic_lint_report("
+      },
+      {
+        "path": "tools/ontology_imports.py",
         "pattern": "def build_ontology_semantic_lint_smoke("
       }
     ],
@@ -5628,6 +5632,58 @@
       {
         "path": "docs/proposals/0104_ontology_semantic_context_pack.md",
         "pattern": "build_ontology_semantic_lint_report"
+      }
+    ]
+  },
+  {
+    "proposal_id": "0105",
+    "posture": "bounded_runtime_followup",
+    "runtime_surfaces": [
+      "docs/proposals/0105_ontology_semantic_lint_report.md",
+      "docs/archive/proposal_sources/0105_ontology_semantic_lint_report.md",
+      "tools/ontology_semantic_control_policy.json",
+      "tools/ontology_imports.py",
+      "tools/README.md",
+      "Makefile",
+      "tests/test_ontology_import_policy.py",
+      "runs/ontology_semantic_lint_report.json"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/ontology_semantic_control_policy.json",
+        "pattern": "semantic_lint_report_contract"
+      },
+      {
+        "path": "tools/ontology_imports.py",
+        "pattern": "def build_ontology_semantic_lint_report("
+      },
+      {
+        "path": "tools/ontology_imports.py",
+        "pattern": "\"semantic_lint_report\""
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_ontology_import_policy.py",
+        "pattern": "def test_ontology_semantic_lint_report_builds_review_findings("
+      },
+      {
+        "path": "tests/test_ontology_import_policy.py",
+        "pattern": "runs/ontology_semantic_lint_report.json"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "Makefile",
+        "pattern": "ontology-imports:"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "runs/ontology_semantic_lint_report.json"
+      },
+      {
+        "path": "docs/proposals/0105_ontology_semantic_lint_report.md",
+        "pattern": "build_ontology_delta_candidate_review_packet"
       }
     ]
   }
