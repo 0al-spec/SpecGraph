@@ -26,6 +26,7 @@ PYTHON_TARGETS := viewer-surfaces dashboard backlog next-move spec-activity grap
 	executor-adapters executor-readiness executor-smoke executor-task-smoke \
 	executor-report-contract executor-report-smoke executor-report-review-packet \
 	executor-proposal-draft-candidate executor-proposal-promotion-packet \
+	executor-proposal-source-materialize \
 	agent-passports agent-runtime-evidence docc-sync publish-bundle test test-supervisor
 
 $(PYTHON_TARGETS): check-python
@@ -82,6 +83,7 @@ help:
 			'  make executor-report-review-packet Build local operator executor report review packet' \
 			'  make executor-proposal-draft-candidate Build local operator proposal draft candidate' \
 			'  make executor-proposal-promotion-packet Build local operator proposal promotion packet' \
+			'  make executor-proposal-source-materialize Materialize local proposal source draft' \
 			'  make agent-passports          Refresh Agent Passport derived surfaces' \
 			'  make agent-runtime-evidence   Refresh Agent Passport runtime evidence JSON' \
 			'  make check-python             Verify selected Python runtime is supported' \
@@ -294,6 +296,10 @@ executor-proposal-draft-candidate:
 .PHONY: executor-proposal-promotion-packet
 executor-proposal-promotion-packet:
 	@$(PYTHON) $(SUPERVISOR) --build-local-operator-executor-proposal-promotion-packet
+
+.PHONY: executor-proposal-source-materialize
+executor-proposal-source-materialize:
+	@$(PYTHON) $(SUPERVISOR) --build-local-operator-executor-proposal-source-materialization
 
 .PHONY: agent-passports
 agent-passports:

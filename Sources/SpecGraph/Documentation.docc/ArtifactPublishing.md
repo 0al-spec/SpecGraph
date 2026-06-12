@@ -59,17 +59,20 @@ exist after `make executor-smoke`, and
 `runs/local_operator_executor_proposal_draft_candidate.json` may exist after
 `make executor-proposal-draft-candidate`, and
 `runs/local_operator_executor_proposal_promotion_packet.json` may exist after
-`make executor-proposal-promotion-packet`. The
+`make executor-proposal-promotion-packet`, and
+`runs/local_operator_executor_proposal_materialization_report.json` may exist
+after `make executor-proposal-source-materialize`. The
 `executor_report_to_proposal_draft_policy` supervisor policy describes the
 local-only boundary for proposal draft candidates, and
 `proposal_draft_candidate_promotion_policy` describes only a local promotion
 request and promotion-packet boundary. The
-`deterministic_proposal_draft_materialization_policy` describes only a future
-materialization request boundary; it does not publish materialization state,
-invoke executors, write proposal files, or mutate proposal registries. These
-diagnostics remain private operator artifacts rather than public producer
-artifacts. Static publishing must not upload candidates or promotion packets,
-write proposal markdown, or mutate proposal registries.
+`deterministic_proposal_draft_materialization_policy` allows a local
+materializer to write only `docs/archive/proposal_sources/...` and a local
+report; it does not publish materialization state, invoke executors, write
+`docs/proposals/`, or mutate proposal registries. These diagnostics remain
+private operator artifacts rather than public producer artifacts. Static
+publishing must not upload candidates, promotion packets, or materialization
+reports, write proposal markdown, or mutate proposal registries.
 
 The public safety gate requires:
 

@@ -175,6 +175,13 @@ Supervisor modes:
   target provenance without writing proposal markdown, mutating proposal
   registries, changing proposal status, applying patches, or publishing local
   artifacts.
+- `--build-local-operator-executor-proposal-source-materialization`: build
+  local-only `runs/local_operator_executor_proposal_materialization_report.json`
+  by consuming a valid promotion packet and the deterministic materialization
+  policy, writing exactly one safe `docs/archive/proposal_sources/...` draft
+  target, and recording mutation guard results without writing
+  `docs/proposals/`, mutating proposal registries, changing proposal status,
+  applying patches, invoking executors, or publishing local artifacts.
 - `executor_report_consumption_policy` in
   `tools/supervisor_executor_adapter_policy.json`: defines which supervisor or
   downstream surfaces may consume a valid local executor report, which
@@ -197,14 +204,13 @@ Supervisor modes:
   closure.
 - `deterministic_proposal_draft_materialization_policy` in
   `tools/supervisor_executor_adapter_policy.json`: defines the policy-only
-  boundary for turning a ready local promotion packet into a future
-  deterministic proposal source draft materialization request. It requires the
-  current deterministic `make proposal-id` target, explicit human
-  authorization, and a safe `docs/archive/proposal_sources/` path while
-  rejecting executor invocation, direct `docs/proposals/` writes, proposal
-  registry/status mutation, canonical mutation, patch application, gap closure,
-  and static publication of local materialization state. This slice does not
-  implement the materializer or write proposal files.
+  boundary for turning a ready local promotion packet into a deterministic
+  proposal source draft materialization request. It requires the current
+  deterministic `make proposal-id` target, explicit human authorization, and a
+  safe `docs/archive/proposal_sources/` path while rejecting executor
+  invocation, direct `docs/proposals/` writes, proposal registry/status
+  mutation, canonical mutation, patch application, gap closure, and static
+  publication of local materialization state.
 - `--build-agent-passport-derived-surfaces`: build Agent Passport derived
   surfaces from `tools/agent_passport_adoption_policy.json` and the 0056
   executor adapter index, including report-only Agent Passport CLI validation
@@ -556,6 +562,12 @@ Key derived artifacts:
   proposal markdown writes, proposal registry mutation, proposal status
   mutation, canonical mutation, patch application, gap closure, and public
   static publication
+- `runs/local_operator_executor_proposal_materialization_report.json`:
+  local-only materialization report built from a valid promotion packet and
+  deterministic materialization request, recording the safe source draft target
+  and mutation guard result while forbidding `docs/proposals/` writes,
+  proposal registry/status mutation, canonical mutation, patch application, gap
+  closure, executor invocation, and public static publication
 - `executor_report_consumption_policy`: policy-only surface that allows valid
   local executor reports to become review packet, proposal draft candidate,
   implementation planning, evidence reference, or handoff input while rejecting
@@ -573,11 +585,10 @@ Key derived artifacts:
   mutation, patch application, gap closure, and unsafe target paths
 - `deterministic_proposal_draft_materialization_policy`: policy-only surface
   that allows only valid local promotion packets plus explicit human
-  authorization to request future deterministic proposal source draft
-  materialization, while rejecting non-next proposal ids, unsafe or registry
-  targets, executor invocation, direct proposal writes, proposal registry/status
-  mutation, canonical mutation, patch application, gap closure, and static
-  publication
+  authorization to request deterministic proposal source draft materialization,
+  while rejecting non-next proposal ids, unsafe or registry targets, executor
+  invocation, direct proposal writes, proposal registry/status mutation,
+  canonical mutation, patch application, gap closure, and static publication
 - `runs/agent_surface_index.json`: read-only Agent Passport adoption surface
   index for graph-facing agents, including policy-declared surfaces and
   executor backends derived from the 0056 adapter index

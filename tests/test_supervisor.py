@@ -27257,6 +27257,31 @@ def test_supervisor_executor_adapter_policy_declares_request_report_contract() -
         "define_deterministic_proposal_draft_materialization"
     )
     assert promotion_policy["next_gap"] == "build_proposal_draft_candidate_promotion_packet"
+    materialization_policy = policy["deterministic_proposal_draft_materialization_policy"]
+    assert materialization_policy["artifact_kind"] == (
+        "deterministic_proposal_draft_materialization_policy"
+    )
+    assert materialization_policy["source_promotion_packet_artifact"] == (
+        "runs/local_operator_executor_proposal_promotion_packet.json"
+    )
+    assert materialization_policy["materializer"] == ("deterministic_proposal_draft_materializer")
+    assert materialization_policy["target_contract"]["target_artifact_kind"] == (
+        "proposal_source_draft"
+    )
+    assert materialization_policy["authority_boundary"]["executor_invocation_allowed"] is False
+    assert materialization_policy["authority_boundary"]["writes_proposal_registry"] is False
+    assert (
+        materialization_policy["materialization_report_contract"]["artifact_kind"]
+        == "proposal_source_draft_materialization_report"
+    )
+    assert materialization_policy["materialization_report_contract"]["artifact"] == (
+        "runs/local_operator_executor_proposal_materialization_report.json"
+    )
+    assert (
+        materialization_policy["materialization_report_contract"]["success_next_gap"]
+        == "define_public_proposal_doc_materialization_policy"
+    )
+    assert materialization_policy["next_gap"] == "build_deterministic_proposal_draft_materializer"
 
     request = policy["request_contract"]
     assert request["artifact_kind"] == "supervisor_executor_request"
@@ -30176,6 +30201,29 @@ def ready_proposal_draft_candidate_promotion_packet(
     )
 
 
+def fixed_deterministic_materialization_request(
+    supervisor_module: object,
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    proposal_id: str = "0099",
+) -> dict[str, object]:
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_proposal_id_allocation",
+        lambda: {
+            "ok": True,
+            "summary": {
+                "status": "ready",
+                "next_proposal_id": proposal_id,
+                "blocking_count": 0,
+            },
+        },
+    )
+    return supervisor_module.default_deterministic_proposal_draft_materialization_request(
+        proposal_id=proposal_id
+    )
+
+
 def test_validate_proposal_draft_candidate_promotion_request_accepts_ready_candidate(
     supervisor_module: object,
 ) -> None:
@@ -30877,6 +30925,185 @@ def test_validate_deterministic_proposal_draft_materialization_request_rejects_t
         and finding["field"] == "target.target_path"
         for finding in validation["findings"]
     )
+
+
+def test_build_local_operator_executor_proposal_source_materialization_writes_source_draft(
+    supervisor_module: object,
+    git_repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    packet = ready_proposal_draft_candidate_promotion_packet(supervisor_module)
+    request = fixed_deterministic_materialization_request(supervisor_module, monkeypatch)
+    expected_proposal_id = str(request["target"]["proposal_id"])
+
+    report = supervisor_module.build_local_operator_executor_proposal_source_materialization(
+        packet,
+        request=request,
+    )
+
+    target_path = request["target"]["target_path"]
+    target = git_repo_fixture / target_path
+    assert report["artifact_kind"] == (
+        supervisor_module.LOCAL_OPERATOR_EXECUTOR_PROPOSAL_MATERIALIZATION_REPORT_ARTIFACT_KIND
+    )
+    assert report["local_only"] is True
+    assert report["summary"]["status"] == "materialized_source_draft"
+    assert report["summary"]["proposal_id"] == expected_proposal_id
+    assert report["summary"]["target_path"] == target_path
+    assert report["summary"]["source_draft_written"] is True
+    assert report["summary"]["next_gap"] == "define_public_proposal_doc_materialization_policy"
+    assert target.is_file()
+    text = target.read_text(encoding="utf-8")
+    assert text.startswith(f"# {expected_proposal_id} ")
+    assert "does not write `docs/proposals/`" in text
+    assert not (git_repo_fixture / "docs" / "proposals").exists()
+    assert not (git_repo_fixture / "tools" / "proposal_runtime_registry.json").exists()
+    checks = {check["check_id"]: check["status"] for check in report["checks"]}
+    assert checks == {
+        "source_promotion_packet_present": "passed",
+        "source_promotion_packet_valid": "passed",
+        "materialization_policy_allows_source_draft": "passed",
+        "target_path_available": "passed",
+        "source_draft_written": "passed",
+        "mutation_scope_limited": "passed",
+        "materialization_report_contract_valid": "passed",
+    }
+    assert report["materialization_report_validation"]["valid"] is True
+    validation = supervisor_module.validate_proposal_source_draft_materialization_report(report)
+    assert validation["valid"] is True
+    dumped = json.dumps(report, sort_keys=True)
+    assert "/Users/" not in dumped
+    assert "raw_stdout" not in dumped
+    assert "raw_stderr" not in dumped
+
+
+def test_build_local_operator_executor_proposal_source_materialization_blocks_existing_target(
+    supervisor_module: object,
+    git_repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    packet = ready_proposal_draft_candidate_promotion_packet(supervisor_module)
+    request = fixed_deterministic_materialization_request(supervisor_module, monkeypatch)
+    target = git_repo_fixture / request["target"]["target_path"]
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text("already here\n", encoding="utf-8")
+
+    report = supervisor_module.build_local_operator_executor_proposal_source_materialization(
+        packet,
+        request=request,
+    )
+
+    assert report["summary"]["status"] == "blocked_target_exists"
+    assert report["summary"]["source_draft_written"] is False
+    assert target.read_text(encoding="utf-8") == "already here\n"
+    checks = {check["check_id"]: check["status"] for check in report["checks"]}
+    assert checks["target_path_available"] == "failed"
+    assert checks["source_draft_written"] == "not_run"
+
+
+def test_build_local_operator_executor_proposal_source_materialization_blocks_invalid_packet(
+    supervisor_module: object,
+    git_repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    packet = ready_proposal_draft_candidate_promotion_packet(supervisor_module)
+    packet["summary"]["status"] = "blocked_promotion_policy"
+    request = fixed_deterministic_materialization_request(supervisor_module, monkeypatch)
+
+    report = supervisor_module.build_local_operator_executor_proposal_source_materialization(
+        packet,
+        request=request,
+    )
+
+    assert report["summary"]["status"] == "blocked_invalid_promotion_packet"
+    assert not (git_repo_fixture / request["target"]["target_path"]).exists()
+    assert any(
+        finding["code"] == "source_proposal_draft_candidate_promotion_packet_status_not_allowed"
+        for finding in report["materialization_policy_validation"]["findings"]
+    )
+
+
+def test_build_local_operator_executor_proposal_source_materialization_blocks_git_status_failure(
+    supervisor_module: object,
+    git_repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    packet = ready_proposal_draft_candidate_promotion_packet(supervisor_module)
+    request = fixed_deterministic_materialization_request(supervisor_module, monkeypatch)
+    monkeypatch.setattr(supervisor_module, "git_tracked_status_snapshot", lambda: None)
+
+    report = supervisor_module.build_local_operator_executor_proposal_source_materialization(
+        packet,
+        request=request,
+    )
+
+    assert report["summary"]["status"] == "blocked_unexpected_mutation"
+    assert not (git_repo_fixture / request["target"]["target_path"]).exists()
+    checks = {check["check_id"]: check["status"] for check in report["checks"]}
+    assert checks["target_path_available"] == "passed"
+    assert checks["source_draft_written"] == "not_run"
+    assert checks["mutation_scope_limited"] == "failed"
+
+
+def test_validate_proposal_source_draft_materialization_report_rejects_local_paths(
+    supervisor_module: object,
+    git_repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    packet = ready_proposal_draft_candidate_promotion_packet(supervisor_module)
+    request = fixed_deterministic_materialization_request(supervisor_module, monkeypatch)
+    report = supervisor_module.build_local_operator_executor_proposal_source_materialization(
+        packet,
+        request=request,
+    )
+    report["summary"]["target_path"] = "/Users/egor/source.md"
+
+    validation = supervisor_module.validate_proposal_source_draft_materialization_report(report)
+
+    assert validation["valid"] is False
+    finding_codes = {finding["code"] for finding in validation["findings"]}
+    assert "machine_local_path_persisted" in finding_codes
+    assert "invalid_proposal_source_draft_materialization_target_path" in finding_codes
+
+
+def test_main_builds_local_operator_executor_proposal_source_materialization_as_standalone_command(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_local_operator_executor_proposal_source_materialization",
+        lambda: {
+            "artifact_kind": (
+                supervisor_module.LOCAL_OPERATOR_EXECUTOR_PROPOSAL_MATERIALIZATION_REPORT_ARTIFACT_KIND
+            ),
+            "schema_version": (
+                supervisor_module.LOCAL_OPERATOR_EXECUTOR_PROPOSAL_MATERIALIZATION_REPORT_SCHEMA_VERSION
+            ),
+            "local_only": True,
+            "summary": {"status": "materialized_source_draft"},
+            "checks": [],
+            "viewer_projection": {"named_filters": {"materialized_source_draft": ["codex"]}},
+        },
+    )
+
+    exit_code = supervisor_module.main(
+        build_local_operator_executor_proposal_source_materialization_mode=True
+    )
+
+    assert exit_code == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["artifact_kind"] == (
+        supervisor_module.LOCAL_OPERATOR_EXECUTOR_PROPOSAL_MATERIALIZATION_REPORT_ARTIFACT_KIND
+    )
+    artifact = json.loads(
+        (
+            repo_fixture / "runs" / "local_operator_executor_proposal_materialization_report.json"
+        ).read_text(encoding="utf-8")
+    )
+    assert artifact["summary"] == {"status": "materialized_source_draft"}
 
 
 def test_main_builds_local_operator_executor_report_review_packet_as_standalone_command(
