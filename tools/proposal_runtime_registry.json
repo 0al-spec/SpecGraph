@@ -5323,6 +5323,10 @@
       },
       {
         "path": "tools/ontology_imports.py",
+        "pattern": "def build_ontology_semantic_context_pack("
+      },
+      {
+        "path": "tools/ontology_imports.py",
         "pattern": "def build_ontology_semantic_lint_smoke("
       }
     ],
@@ -5572,6 +5576,58 @@
       {
         "path": "docs/proposals/0103_ontology_semantic_control_policy.md",
         "pattern": "build_ontology_semantic_context_pack"
+      }
+    ]
+  },
+  {
+    "proposal_id": "0104",
+    "posture": "bounded_runtime_followup",
+    "runtime_surfaces": [
+      "docs/proposals/0104_ontology_semantic_context_pack.md",
+      "docs/archive/proposal_sources/0104_ontology_semantic_context_pack.md",
+      "tools/ontology_semantic_control_policy.json",
+      "tools/ontology_imports.py",
+      "tools/README.md",
+      "Makefile",
+      "tests/test_ontology_import_policy.py",
+      "runs/ontology_semantic_context_pack.json"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/ontology_semantic_control_policy.json",
+        "pattern": "semantic_context_pack_contract"
+      },
+      {
+        "path": "tools/ontology_imports.py",
+        "pattern": "def build_ontology_semantic_context_pack("
+      },
+      {
+        "path": "tools/ontology_imports.py",
+        "pattern": "\"semantic_context_pack\""
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_ontology_import_policy.py",
+        "pattern": "def test_ontology_semantic_context_pack_builds_agent_context("
+      },
+      {
+        "path": "tests/test_ontology_import_policy.py",
+        "pattern": "runs/ontology_semantic_context_pack.json"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "Makefile",
+        "pattern": "ontology-imports:"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "runs/ontology_semantic_context_pack.json"
+      },
+      {
+        "path": "docs/proposals/0104_ontology_semantic_context_pack.md",
+        "pattern": "build_ontology_semantic_lint_report"
       }
     ]
   }
