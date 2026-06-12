@@ -31700,6 +31700,68 @@ def test_build_public_proposal_doc_materialization_blocks_git_status_failure(
     assert checks["mutation_scope_limited"] == "failed"
 
 
+def test_public_proposal_doc_materialization_status_ignores_non_dict_checks(
+    supervisor_module: object,
+) -> None:
+    status_for_checks = (
+        supervisor_module.local_operator_executor_public_proposal_materialization_report_status
+    )
+    status = status_for_checks(
+        [
+            "unexpected",
+            {"check_id": "source_materialization_report_present", "status": "passed"},
+            {"check_id": "source_materialization_report_valid", "status": "passed"},
+            {"check_id": "public_proposal_doc_policy_allows_materialization", "status": "passed"},
+            {"check_id": "source_draft_available", "status": "passed"},
+            {"check_id": "source_draft_safe_for_public_materialization", "status": "passed"},
+            {"check_id": "target_path_available", "status": "passed"},
+            {"check_id": "public_proposal_doc_written", "status": "passed"},
+            {"check_id": "mutation_scope_limited", "status": "passed"},
+            {
+                "check_id": "public_proposal_doc_materialization_report_contract_valid",
+                "status": "passed",
+            },
+        ]
+    )
+
+    assert status == "materialized_public_proposal_doc"
+
+
+def test_build_public_proposal_doc_materialization_classifies_write_failure_as_policy_contract(
+    supervisor_module: object,
+    git_repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    source_report = ready_proposal_source_materialization_report(
+        supervisor_module,
+        monkeypatch,
+    )
+    request = fixed_public_proposal_doc_materialization_request(
+        supervisor_module,
+        monkeypatch,
+        source_report,
+    )
+
+    def fail_write(*_args: object, **_kwargs: object) -> None:
+        raise OSError("permission denied")
+
+    monkeypatch.setattr(supervisor_module, "atomic_write_text", fail_write)
+
+    report = supervisor_module.build_local_operator_executor_public_proposal_doc_materialization(
+        source_report,
+        request=request,
+    )
+
+    assert report["summary"]["status"] == "blocked_policy_contract"
+    assert report["summary"]["public_proposal_doc_written"] is False
+    assert not (git_repo_fixture / request["target"]["target_path"]).exists()
+    checks = {check["check_id"]: check["status"] for check in report["checks"]}
+    assert checks["target_path_available"] == "passed"
+    assert checks["public_proposal_doc_written"] == "failed"
+    assert checks["mutation_scope_limited"] == "not_run"
+    assert "/Users/" not in report["execution"]["write_error"]
+
+
 def test_validate_public_proposal_doc_materialization_report_rejects_local_paths(
     supervisor_module: object,
     git_repo_fixture: Path,

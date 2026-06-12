@@ -26636,6 +26636,7 @@ def local_operator_executor_public_proposal_materialization_report_status(
     by_id = {
         str(check.get("check_id", "")).strip(): str(check.get("status", "")).strip()
         for check in checks
+        if isinstance(check, dict)
     }
     if by_id.get("source_materialization_report_present") == "missing":
         return "blocked_missing_source_report"
@@ -26649,9 +26650,13 @@ def local_operator_executor_public_proposal_materialization_report_status(
         return "blocked_policy_contract"
     if by_id.get("target_path_available") != "passed":
         return "blocked_target_exists"
-    if by_id.get("mutation_scope_limited") != "passed":
+    if by_id.get("public_proposal_doc_written") == "failed":
+        return "blocked_policy_contract"
+    if by_id.get("mutation_scope_limited") == "failed":
         return "blocked_unexpected_mutation"
     if by_id.get("public_proposal_doc_written") != "passed":
+        return "blocked_policy_contract"
+    if by_id.get("mutation_scope_limited") != "passed":
         return "blocked_policy_contract"
     if by_id.get("public_proposal_doc_materialization_report_contract_valid") == "failed":
         return "blocked_policy_contract"
