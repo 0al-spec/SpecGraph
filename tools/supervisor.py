@@ -23313,22 +23313,22 @@ def validate_proposal_draft_candidate_promotion_effects(effects: object) -> dict
     allowed = proposal_draft_candidate_promotion_values("requested_effects")
     forbidden = proposal_draft_candidate_promotion_values("forbidden_effects")
     findings: list[dict[str, str]] = []
-    if not isinstance(effects, list) or not effects:
+    if not isinstance(effects, list):
         return {
             "valid": False,
             "effects": [],
             "findings": [
                 executor_report_finding(
-                    code="proposal_draft_candidate_promotion_effects_missing",
+                    code="proposal_draft_candidate_promotion_effects_not_list",
                     field="requested_effects",
-                    message="Promotion policy requires at least one requested effect.",
+                    message="Promotion policy requested_effects must be a list.",
                 )
             ],
             "allowed_effects": sorted(allowed),
             "forbidden_effects": sorted(forbidden),
         }
-    normalized_effects = [str(effect).strip() for effect in effects if str(effect).strip()]
-    if not normalized_effects:
+    normalized_effects: list[str] = []
+    if not effects:
         findings.append(
             executor_report_finding(
                 code="proposal_draft_candidate_promotion_effects_empty",
@@ -23336,7 +23336,18 @@ def validate_proposal_draft_candidate_promotion_effects(effects: object) -> dict
                 message="Promotion policy requested effects must not be empty.",
             )
         )
-    for index, effect in enumerate(normalized_effects):
+    for index, raw_effect in enumerate(effects):
+        effect = str(raw_effect or "").strip()
+        if not effect:
+            findings.append(
+                executor_report_finding(
+                    code="proposal_draft_candidate_promotion_effect_empty",
+                    field=f"requested_effects[{index}]",
+                    message="Promotion policy requested effects must be non-empty strings.",
+                )
+            )
+            continue
+        normalized_effects.append(effect)
         if effect in forbidden:
             findings.append(
                 executor_report_finding(

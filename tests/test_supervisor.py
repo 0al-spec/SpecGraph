@@ -30247,6 +30247,56 @@ def test_validate_proposal_draft_candidate_promotion_request_rejects_forbidden_e
     )
 
 
+def test_validate_proposal_draft_candidate_promotion_request_rejects_non_list_effects(
+    supervisor_module: object,
+) -> None:
+    candidate = ready_proposal_draft_candidate(supervisor_module)
+    request = supervisor_module.default_proposal_draft_candidate_promotion_request()
+    request["requested_effects"] = "promotion_packet_candidate"
+
+    validation = supervisor_module.validate_proposal_draft_candidate_promotion_request(
+        request,
+        candidate=candidate,
+    )
+
+    assert validation["valid"] is False
+    assert any(
+        finding["code"] == "proposal_draft_candidate_promotion_effects_not_list"
+        and finding["field"] == "requested_effects"
+        for finding in validation["findings"]
+    )
+
+
+def test_validate_proposal_draft_candidate_promotion_request_preserves_effect_indices(
+    supervisor_module: object,
+) -> None:
+    candidate = ready_proposal_draft_candidate(supervisor_module)
+    request = supervisor_module.default_proposal_draft_candidate_promotion_request(
+        requested_effects=["promotion_packet_candidate", " ", "proposal_registry_mutation"]
+    )
+
+    validation = supervisor_module.validate_proposal_draft_candidate_promotion_request(
+        request,
+        candidate=candidate,
+    )
+
+    assert validation["valid"] is False
+    assert validation["normalized"]["requested_effects"] == [
+        "promotion_packet_candidate",
+        "proposal_registry_mutation",
+    ]
+    assert any(
+        finding["code"] == "proposal_draft_candidate_promotion_effect_empty"
+        and finding["field"] == "requested_effects[1]"
+        for finding in validation["findings"]
+    )
+    assert any(
+        finding["code"] == "forbidden_proposal_draft_candidate_promotion_effect"
+        and finding["field"] == "requested_effects[2]"
+        for finding in validation["findings"]
+    )
+
+
 def test_validate_proposal_draft_candidate_promotion_request_rejects_authority_expansion(
     supervisor_module: object,
 ) -> None:
