@@ -69,10 +69,14 @@ request and promotion-packet boundary. The
 `deterministic_proposal_draft_materialization_policy` allows a local
 materializer to write only `docs/archive/proposal_sources/...` and a local
 report; it does not publish materialization state, invoke executors, write
-`docs/proposals/`, or mutate proposal registries. These diagnostics remain
-private operator artifacts rather than public producer artifacts. Static
-publishing must not upload candidates, promotion packets, or materialization
-reports, write proposal markdown, or mutate proposal registries.
+`docs/proposals/`, or mutate proposal registries. The
+`public_proposal_doc_materialization_policy` is only a policy boundary for a
+future `docs/proposals/...` materializer; static publishing still must not turn
+local materialization reports or source drafts into public proposal docs. These
+diagnostics remain private operator artifacts rather than public producer
+artifacts. Static publishing must not upload candidates, promotion packets, or
+materialization reports, write proposal markdown, or mutate proposal
+registries.
 
 The public safety gate requires:
 

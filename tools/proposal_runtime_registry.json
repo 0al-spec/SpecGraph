@@ -5318,5 +5318,81 @@
     "runtime_markers": [],
     "validation_markers": [],
     "observation_markers": []
+  },
+  {
+    "proposal_id": "0101",
+    "posture": "bounded_runtime_followup",
+    "runtime_surfaces": [
+      "docs/proposals/0101_public_proposal_doc_materialization_policy.md",
+      "docs/archive/proposal_sources/0101_public_proposal_doc_materialization_policy.md",
+      "tools/supervisor_executor_adapter_policy.json",
+      "tools/supervisor.py",
+      "tools/README.md",
+      "docs/static_artifact_publish.md",
+      "Sources/SpecGraph/Documentation.docc/ArtifactPublishing.md",
+      "tests/test_supervisor.py"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/supervisor_executor_adapter_policy.json",
+        "pattern": "public_proposal_doc_materialization_policy"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def validate_public_proposal_doc_materialization_request("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def default_public_proposal_doc_materialization_request("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def validate_source_materialization_report_for_public_proposal_doc("
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_validate_public_proposal_doc_materialization_request_accepts_source_report("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_validate_public_proposal_doc_materialization_request_rejects_missing_approval("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_validate_public_proposal_doc_materialization_request_rejects_invalid_source("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_validate_public_proposal_doc_materialization_request_rejects_forbidden_effect("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_validate_public_proposal_doc_materialization_request_rejects_unsafe_target("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_validate_public_proposal_doc_materialization_request_rejects_non_next_id("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_validate_public_proposal_doc_materialization_request_rejects_authority_expansion("
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0101_public_proposal_doc_materialization_policy.md",
+        "pattern": "build_public_proposal_doc_materializer"
+      },
+      {
+        "path": "docs/proposals/0101_public_proposal_doc_materialization_policy.md",
+        "pattern": "does not implement the public proposal doc writer"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "public_proposal_doc_materialization_policy"
+      }
+    ]
   }
 ]
