@@ -5,10 +5,12 @@
   "source_proposal": "docs/proposals/0103_ontology_semantic_control_policy.md",
   "extension_proposals": [
     "docs/proposals/0104_ontology_semantic_context_pack.md",
-    "docs/proposals/0105_ontology_semantic_lint_report.md"
+    "docs/proposals/0105_ontology_semantic_lint_report.md",
+    "docs/proposals/0106_ontology_delta_candidate_review_packet.md"
   ],
   "policy_basis": "docs/proposals/0100_ontology_grounded_semantic_control.md",
   "repository_layout": {
+    "ontology_delta_candidate_review_packet": "runs/ontology_delta_candidate_review_packet.json",
     "semantic_context_pack": "runs/ontology_semantic_context_pack.json",
     "semantic_lint_report": "runs/ontology_semantic_lint_report.json",
     "semantic_lint_smoke": "runs/ontology_semantic_lint_smoke.json"
@@ -94,6 +96,28 @@
       "may_write_ontology_delta": false
     },
     "next_gap": "build_ontology_delta_candidate_review_packet"
+  },
+  "ontology_delta_candidate_review_packet_contract": {
+    "artifact_kind": "ontology_delta_candidate_review_packet",
+    "source_lint_report_artifact_kind": "ontology_semantic_lint_report",
+    "target": {
+      "target_kind": "proposal",
+      "target_ref": "SG-RFC-0106"
+    },
+    "candidate_source": "candidate_delta_terms",
+    "review_actions": [
+      "approve_for_ontology_package_draft",
+      "reject_candidate",
+      "request_clarification"
+    ],
+    "consumer_boundary": {
+      "for_supervisor_gate_evidence": true,
+      "for_specspace_review_surface": true,
+      "may_write_ontology_package": false,
+      "may_update_ontology_lockfile": false,
+      "may_mutate_canonical_specs": false
+    },
+    "next_gap": "build_specspace_semantic_review_surface"
   },
   "semantic_lint_contract": {
     "future_artifact_kind": "ontology_semantic_lint_report",
