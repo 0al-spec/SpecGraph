@@ -30511,6 +30511,45 @@ def test_validate_proposal_draft_candidate_promotion_packet_rejects_local_paths(
     assert "invalid_proposal_draft_candidate_promotion_target_path" in finding_codes
 
 
+def test_validate_proposal_draft_candidate_promotion_packet_rejects_blocked_ready_state(
+    supervisor_module: object,
+) -> None:
+    packet = supervisor_module.build_local_operator_executor_proposal_promotion_packet(
+        ready_proposal_draft_candidate(supervisor_module)
+    )
+    packet["summary"]["status"] = "blocked_promotion_policy"
+    packet["promotion_packet"]["promotion_state"] = "ready_for_materialization_review"
+
+    validation = supervisor_module.validate_proposal_draft_candidate_promotion_packet(packet)
+
+    assert validation["valid"] is False
+    assert any(
+        finding["code"] == "invalid_proposal_draft_candidate_promotion_packet_state"
+        for finding in validation["findings"]
+    )
+
+
+def test_validate_proposal_draft_candidate_promotion_packet_rejects_incomplete_request(
+    supervisor_module: object,
+) -> None:
+    packet = supervisor_module.build_local_operator_executor_proposal_promotion_packet(
+        ready_proposal_draft_candidate(supervisor_module)
+    )
+    packet["promotion_request"].pop("source_candidate_artifact")
+    packet["promotion_request"].pop("human_authorization")
+    packet["promotion_request"]["transformation"] = "proposal_draft_candidate_to_markdown_write"
+
+    validation = supervisor_module.validate_proposal_draft_candidate_promotion_packet(packet)
+
+    assert validation["valid"] is False
+    finding_codes = {finding["code"] for finding in validation["findings"]}
+    assert finding_codes >= {
+        "missing_proposal_draft_candidate_promotion_packet_request_field",
+        "invalid_proposal_draft_candidate_promotion_packet_source_artifact",
+        "invalid_proposal_draft_candidate_promotion_packet_transformation",
+    }
+
+
 def test_main_builds_local_operator_executor_report_review_packet_as_standalone_command(
     supervisor_module: object,
     repo_fixture: Path,

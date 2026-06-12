@@ -24069,14 +24069,21 @@ def validate_proposal_draft_candidate_promotion_packet(packet: object) -> dict[s
     expected_state = str(
         contract.get("promotion_state", "ready_for_materialization_review")
     ).strip()
-    if status == "ready_for_materialization_review" and (
-        str(promotion_packet.get("promotion_state", "")).strip() != expected_state
-    ):
+    promotion_state = str(promotion_packet.get("promotion_state", "")).strip()
+    if status == "ready_for_materialization_review" and promotion_state != expected_state:
         findings.append(
             executor_report_finding(
                 code="invalid_proposal_draft_candidate_promotion_packet_state",
                 field="promotion_packet.promotion_state",
                 message="Ready promotion packet must use the policy promotion state.",
+            )
+        )
+    if status and status != "ready_for_materialization_review" and promotion_state != "blocked":
+        findings.append(
+            executor_report_finding(
+                code="invalid_proposal_draft_candidate_promotion_packet_state",
+                field="promotion_packet.promotion_state",
+                message="Blocked promotion packet statuses must use promotion_state=blocked.",
             )
         )
     if promotion_packet.get("human_review_required") is not True:
@@ -24113,6 +24120,36 @@ def validate_proposal_draft_candidate_promotion_packet(packet: object) -> dict[s
                 message="Promotion packet request must be an object.",
             )
         )
+    for field in [
+        str(field).strip()
+        for field in policy.get("required_request_fields", [])
+        if str(field).strip()
+    ]:
+        if field not in promotion_request:
+            findings.append(
+                executor_report_finding(
+                    code="missing_proposal_draft_candidate_promotion_packet_request_field",
+                    field=f"promotion_request.{field}",
+                    message=f"Promotion packet request is missing required field {field}.",
+                )
+            )
+    request_source_candidate_artifact = str(
+        promotion_request.get("source_candidate_artifact", "")
+    ).strip()
+    expected_request_source_candidate_artifact = str(
+        policy.get(
+            "source_candidate_artifact",
+            LOCAL_OPERATOR_EXECUTOR_PROPOSAL_DRAFT_CANDIDATE_RELATIVE_PATH,
+        )
+    ).strip()
+    if request_source_candidate_artifact != expected_request_source_candidate_artifact:
+        findings.append(
+            executor_report_finding(
+                code="invalid_proposal_draft_candidate_promotion_packet_source_artifact",
+                field="promotion_request.source_candidate_artifact",
+                message="Promotion packet request must reference the local draft candidate.",
+            )
+        )
     if (
         str(promotion_request.get("consumer", "")).strip()
         != str(policy.get("consumer", "proposal_lane_operator")).strip()
@@ -24122,6 +24159,21 @@ def validate_proposal_draft_candidate_promotion_packet(packet: object) -> dict[s
                 code="invalid_proposal_draft_candidate_promotion_packet_consumer",
                 field="promotion_request.consumer",
                 message="Promotion packet consumer does not match policy.",
+            )
+        )
+    request_transformation = str(promotion_request.get("transformation", "")).strip()
+    expected_request_transformation = str(
+        policy.get(
+            "transformation",
+            "proposal_draft_candidate_to_promotion_packet",
+        )
+    ).strip()
+    if request_transformation != expected_request_transformation:
+        findings.append(
+            executor_report_finding(
+                code="invalid_proposal_draft_candidate_promotion_packet_transformation",
+                field="promotion_request.transformation",
+                message="Promotion packet request transformation does not match policy.",
             )
         )
     return {
