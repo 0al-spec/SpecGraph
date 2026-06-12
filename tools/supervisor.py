@@ -25289,6 +25289,12 @@ def git_status_added_paths(
     return after_paths - before_paths
 
 
+def sanitized_os_error_message(exc: OSError) -> str:
+    errno_value = getattr(exc, "errno", None)
+    strerror = str(getattr(exc, "strerror", "") or exc.__class__.__name__)
+    return f"{exc.__class__.__name__}: errno={errno_value}; strerror={strerror}"
+
+
 def render_deterministic_proposal_source_draft(
     *,
     request: dict[str, Any],
@@ -25547,7 +25553,7 @@ def build_local_operator_executor_proposal_source_materialization(
             atomic_write_text(target_absolute_path, source_text)
             draft_written = True
         except OSError as exc:
-            write_error = str(exc)
+            write_error = sanitized_os_error_message(exc)
         after_snapshot = git_tracked_status_snapshot()
         added_paths = git_status_added_paths(before_snapshot, after_snapshot)
         mutation_scope_limited = added_paths == {target_path}

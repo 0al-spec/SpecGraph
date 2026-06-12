@@ -31045,6 +31045,35 @@ def test_build_local_operator_executor_proposal_source_materialization_blocks_gi
     assert checks["mutation_scope_limited"] == "failed"
 
 
+def test_build_local_operator_executor_proposal_source_materialization_sanitizes_write_error(
+    supervisor_module: object,
+    git_repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    packet = ready_proposal_draft_candidate_promotion_packet(supervisor_module)
+    request = fixed_deterministic_materialization_request(supervisor_module, monkeypatch)
+
+    def fail_write(path: Path, text: str) -> Path:
+        _ = (path, text)
+        raise FileNotFoundError(2, "No such file or directory", "/Users/egor/secret.md")
+
+    monkeypatch.setattr(supervisor_module, "atomic_write_text", fail_write)
+
+    report = supervisor_module.build_local_operator_executor_proposal_source_materialization(
+        packet,
+        request=request,
+    )
+
+    assert report["summary"]["status"] == "blocked_policy_contract"
+    assert "FileNotFoundError" in report["execution"]["write_error"]
+    assert "No such file or directory" in report["execution"]["write_error"]
+    dumped = json.dumps(report, sort_keys=True)
+    assert "/Users/egor/secret.md" not in dumped
+    assert not (git_repo_fixture / request["target"]["target_path"]).exists()
+    validation = supervisor_module.validate_proposal_source_draft_materialization_report(report)
+    assert validation["valid"] is True
+
+
 def test_validate_proposal_source_draft_materialization_report_rejects_local_paths(
     supervisor_module: object,
     git_repo_fixture: Path,
