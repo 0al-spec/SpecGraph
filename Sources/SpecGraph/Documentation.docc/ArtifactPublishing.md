@@ -55,12 +55,13 @@ exist after `make executor-smoke`, and
 `runs/local_operator_executor_report.json` may exist after
 `make executor-report-smoke`, and
 `runs/local_operator_executor_report_review_packet.json` may exist after
-`make executor-report-review-packet`. The
+`make executor-report-review-packet`, and
+`runs/local_operator_executor_proposal_draft_candidate.json` may exist after
+`make executor-proposal-draft-candidate`. The
 `executor_report_to_proposal_draft_policy` supervisor policy describes the
-next local-only boundary for future proposal draft candidates, but it is a
-policy surface rather than a public producer artifact. These local diagnostics
-describe the current operator process environment and must not be uploaded as
-public producer artifacts.
+local-only boundary for proposal draft candidates, but these diagnostics
+remain private operator artifacts rather than public producer artifacts. They
+must not be uploaded as public producer artifacts.
 
 The public safety gate requires:
 

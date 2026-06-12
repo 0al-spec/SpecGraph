@@ -36,6 +36,7 @@ LOCAL_ONLY_RUN_SURFACES = {
     "local_operator_executor_report_contract.json",
     "local_operator_executor_report.json",
     "local_operator_executor_report_review_packet.json",
+    "local_operator_executor_proposal_draft_candidate.json",
 }
 JUNK_FILENAMES = {".DS_Store", ".gitkeep"}
 JUNK_DIRNAMES = {"__pycache__", ".pytest_cache", ".ruff_cache"}
