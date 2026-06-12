@@ -1285,5 +1285,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0100",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0100_ontology_grounded_semantic_control.md"
+    ],
+    "motivating_concern": "SpecGraph and SpecSpace need Ontology to act as a semantic control layer for graph-facing agents so accepted vocabulary, domain boundaries, and relations reduce hallucinated terms, misunderstandings, and terminology drift without granting generated ontology material canonical authority",
+    "normalized_title": "Ontology-Grounded Semantic Control",
+    "bounded_scope": "Define the policy boundary for ontology-grounded agent generation, term classification, semantic lint reports, clarification routing, and ontology delta candidates across SpecGraph supervisor agents and SpecSpace shell agents, while preserving the 0060 import boundary, Ontology-owned package governance, proposal-first review, and no runtime implementation, prompt-agent execution, canonical spec mutation, ontology package write, lockfile creation, or SpecSpace mutation UI.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

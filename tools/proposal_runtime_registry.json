@@ -5303,5 +5303,20 @@
         "pattern": "runs/local_operator_executor_proposal_materialization_report.json"
       }
     ]
+  },
+  {
+    "proposal_id": "0100",
+    "posture": "bounded_runtime_followup",
+    "runtime_surfaces": [
+      "docs/proposals/0100_ontology_grounded_semantic_control.md",
+      "docs/archive/proposal_sources/0100_ontology_grounded_semantic_control.md",
+      "tools/ontology_semantic_control_policy.json",
+      "runs/ontology_semantic_context_pack.json",
+      "runs/ontology_semantic_lint_report.json",
+      "runs/ontology_delta_invocation_index.json"
+    ],
+    "runtime_markers": [],
+    "validation_markers": [],
+    "observation_markers": []
   }
 ]
