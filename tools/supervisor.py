@@ -23243,6 +23243,616 @@ def write_local_operator_executor_proposal_draft_candidate(index: dict[str, Any]
     return path
 
 
+def proposal_draft_candidate_promotion_policy() -> dict[str, Any]:
+    policy = supervisor_executor_adapter_policy_lookup("proposal_draft_candidate_promotion_policy")
+    return policy if isinstance(policy, dict) else {}
+
+
+def proposal_draft_candidate_promotion_values(key: str) -> set[str]:
+    policy = proposal_draft_candidate_promotion_policy()
+    values = policy.get(key, [])
+    if not isinstance(values, list):
+        return set()
+    return {str(value).strip() for value in values if str(value).strip()}
+
+
+def default_proposal_draft_candidate_promotion_request(
+    *,
+    requested_effects: list[str] | None = None,
+) -> dict[str, Any]:
+    policy = proposal_draft_candidate_promotion_policy()
+    target_contract = policy.get("target_contract", {})
+    target_contract = target_contract if isinstance(target_contract, dict) else {}
+    auth_contract = policy.get("human_authorization_contract", {})
+    auth_contract = auth_contract if isinstance(auth_contract, dict) else {}
+    target_prefixes = target_contract.get("allowed_target_path_prefixes", [])
+    target_prefix = (
+        str(target_prefixes[0]).strip()
+        if isinstance(target_prefixes, list) and target_prefixes
+        else "docs/archive/proposal_sources/"
+    )
+    return {
+        "source_candidate_artifact": str(
+            policy.get(
+                "source_candidate_artifact",
+                LOCAL_OPERATOR_EXECUTOR_PROPOSAL_DRAFT_CANDIDATE_RELATIVE_PATH,
+            )
+        ).strip(),
+        "consumer": str(policy.get("consumer", "proposal_lane_operator")).strip(),
+        "transformation": str(
+            policy.get("transformation", "proposal_draft_candidate_to_promotion_packet")
+        ).strip(),
+        "requested_effects": copy.deepcopy(
+            requested_effects
+            if requested_effects is not None
+            else policy.get("requested_effects", ["promotion_packet_candidate"])
+        ),
+        "target": {
+            "target_lane": str(target_contract.get("target_lane", "proposal_lane")).strip(),
+            "target_artifact_kind": str(
+                target_contract.get("target_artifact_kind", "proposal_source_draft")
+            ).strip(),
+            "target_path": f"{target_prefix}executor_report_proposal_draft_candidate.md",
+        },
+        "human_authorization": {
+            "approval_state": str(
+                auth_contract.get("approval_state", "approved_for_promotion_packet")
+            ).strip(),
+            "reviewer": "human_operator",
+            "reason": (
+                "Promote the local-only proposal draft candidate into a future "
+                "promotion packet for human review."
+            ),
+            "promotion_packet_required": bool(auth_contract.get("promotion_packet_required", True)),
+        },
+        "authority_boundary": copy.deepcopy(policy.get("authority_boundary", {})),
+    }
+
+
+def validate_proposal_draft_candidate_promotion_effects(effects: object) -> dict[str, Any]:
+    allowed = proposal_draft_candidate_promotion_values("requested_effects")
+    forbidden = proposal_draft_candidate_promotion_values("forbidden_effects")
+    findings: list[dict[str, str]] = []
+    if not isinstance(effects, list):
+        return {
+            "valid": False,
+            "effects": [],
+            "findings": [
+                executor_report_finding(
+                    code="proposal_draft_candidate_promotion_effects_not_list",
+                    field="requested_effects",
+                    message="Promotion policy requested_effects must be a list.",
+                )
+            ],
+            "allowed_effects": sorted(allowed),
+            "forbidden_effects": sorted(forbidden),
+        }
+    normalized_effects: list[str] = []
+    if not effects:
+        findings.append(
+            executor_report_finding(
+                code="proposal_draft_candidate_promotion_effects_empty",
+                field="requested_effects",
+                message="Promotion policy requested effects must not be empty.",
+            )
+        )
+    for index, raw_effect in enumerate(effects):
+        effect = str(raw_effect or "").strip()
+        if not effect:
+            findings.append(
+                executor_report_finding(
+                    code="proposal_draft_candidate_promotion_effect_empty",
+                    field=f"requested_effects[{index}]",
+                    message="Promotion policy requested effects must be non-empty strings.",
+                )
+            )
+            continue
+        normalized_effects.append(effect)
+        if effect in forbidden:
+            findings.append(
+                executor_report_finding(
+                    code="forbidden_proposal_draft_candidate_promotion_effect",
+                    field=f"requested_effects[{index}]",
+                    message=f"Forbidden promotion requested effect: {effect}.",
+                )
+            )
+        elif effect not in allowed:
+            findings.append(
+                executor_report_finding(
+                    code="unknown_proposal_draft_candidate_promotion_effect",
+                    field=f"requested_effects[{index}]",
+                    message=f"Unknown promotion requested effect: {effect}.",
+                )
+            )
+    return {
+        "valid": not findings,
+        "effects": normalized_effects,
+        "findings": findings,
+        "allowed_effects": sorted(allowed),
+        "forbidden_effects": sorted(forbidden),
+    }
+
+
+def validate_proposal_draft_candidate_promotion_authority_boundary(
+    authority_boundary: object,
+) -> dict[str, Any]:
+    policy = proposal_draft_candidate_promotion_policy()
+    expected_boundary = policy.get("authority_boundary", {})
+    expected_boundary = expected_boundary if isinstance(expected_boundary, dict) else {}
+    boundary = authority_boundary if isinstance(authority_boundary, dict) else {}
+    boundary_expectations = {
+        "candidate_is_authority": False,
+        "promotion_request_is_authority": False,
+        "human_or_supervisor_review_required": True,
+        "writes_proposal_markdown": False,
+        "writes_proposal_registry": False,
+        "canonical_mutations_allowed": False,
+        "proposal_status_mutations_allowed": False,
+        "gap_closure_allowed": False,
+        "patch_application_allowed": False,
+        "static_publish_of_local_candidate_allowed": False,
+    }
+    findings: list[dict[str, str]] = []
+    if not isinstance(authority_boundary, dict):
+        findings.append(
+            executor_report_finding(
+                code="proposal_draft_candidate_promotion_authority_boundary_not_object",
+                field="authority_boundary",
+                message="Promotion policy authority_boundary must be an object.",
+            )
+        )
+    extra_fields = sorted(
+        str(field).strip() for field in boundary if str(field).strip() not in boundary_expectations
+    )
+    for field in extra_fields:
+        findings.append(
+            executor_report_finding(
+                code="unexpected_proposal_draft_candidate_promotion_authority_field",
+                field=f"authority_boundary.{field}",
+                message=f"Promotion policy must not add authority-boundary field {field}.",
+            )
+        )
+    for field, expected_value in boundary_expectations.items():
+        if field in expected_boundary:
+            expected_value = expected_boundary.get(field)
+        if boundary.get(field) is not expected_value:
+            findings.append(
+                executor_report_finding(
+                    code="invalid_proposal_draft_candidate_promotion_authority_boundary",
+                    field=f"authority_boundary.{field}",
+                    message=(
+                        "Promotion policy must preserve candidate-as-input authority "
+                        f"boundary for {field}."
+                    ),
+                )
+            )
+    return {
+        "valid": not findings,
+        "findings": findings,
+        "normalized": {field: boundary.get(field) for field in boundary_expectations},
+    }
+
+
+def validate_proposal_draft_candidate_promotion_authorization(
+    authorization: object,
+) -> dict[str, Any]:
+    policy = proposal_draft_candidate_promotion_policy()
+    contract = policy.get("human_authorization_contract", {})
+    contract = contract if isinstance(contract, dict) else {}
+    auth = authorization if isinstance(authorization, dict) else {}
+    findings: list[dict[str, str]] = []
+    if not isinstance(authorization, dict):
+        findings.append(
+            executor_report_finding(
+                code="proposal_draft_candidate_promotion_authorization_not_object",
+                field="human_authorization",
+                message="Promotion policy requires human_authorization object.",
+            )
+        )
+    for field in [
+        str(field).strip() for field in contract.get("required_fields", []) if str(field).strip()
+    ]:
+        if field not in auth:
+            findings.append(
+                executor_report_finding(
+                    code="missing_proposal_draft_candidate_promotion_authorization_field",
+                    field=f"human_authorization.{field}",
+                    message=f"Promotion authorization is missing field {field}.",
+                )
+            )
+    expected_state = str(contract.get("approval_state", "approved_for_promotion_packet")).strip()
+    approval_state = str(auth.get("approval_state", "")).strip()
+    if approval_state != expected_state:
+        findings.append(
+            executor_report_finding(
+                code="proposal_draft_candidate_promotion_not_approved",
+                field="human_authorization.approval_state",
+                message="Promotion policy requires explicit human approval for promotion packet.",
+            )
+        )
+    if str(auth.get("reviewer", "")).strip() == "":
+        findings.append(
+            executor_report_finding(
+                code="proposal_draft_candidate_promotion_reviewer_missing",
+                field="human_authorization.reviewer",
+                message="Promotion policy requires a reviewer marker.",
+            )
+        )
+    if str(auth.get("reason", "")).strip() == "":
+        findings.append(
+            executor_report_finding(
+                code="proposal_draft_candidate_promotion_reason_missing",
+                field="human_authorization.reason",
+                message="Promotion policy requires an authorization reason.",
+            )
+        )
+    if auth.get("promotion_packet_required") is not bool(
+        contract.get("promotion_packet_required", True)
+    ):
+        findings.append(
+            executor_report_finding(
+                code="proposal_draft_candidate_promotion_packet_not_required",
+                field="human_authorization.promotion_packet_required",
+                message="Promotion policy requires building a promotion packet before writes.",
+            )
+        )
+    return {
+        "valid": not findings,
+        "findings": findings,
+        "normalized": {
+            "approval_state": approval_state,
+            "reviewer": str(auth.get("reviewer", "")).strip(),
+            "promotion_packet_required": auth.get("promotion_packet_required"),
+        },
+    }
+
+
+def validate_proposal_draft_candidate_promotion_target(target: object) -> dict[str, Any]:
+    policy = proposal_draft_candidate_promotion_policy()
+    contract = policy.get("target_contract", {})
+    contract = contract if isinstance(contract, dict) else {}
+    target_payload = target if isinstance(target, dict) else {}
+    findings: list[dict[str, str]] = []
+    if not isinstance(target, dict):
+        findings.append(
+            executor_report_finding(
+                code="proposal_draft_candidate_promotion_target_not_object",
+                field="target",
+                message="Promotion policy target must be an object.",
+            )
+        )
+    target_lane = str(target_payload.get("target_lane", "")).strip()
+    expected_lane = str(contract.get("target_lane", "proposal_lane")).strip()
+    if target_lane != expected_lane:
+        findings.append(
+            executor_report_finding(
+                code="invalid_proposal_draft_candidate_promotion_target_lane",
+                field="target.target_lane",
+                message="Promotion policy target lane must remain proposal_lane.",
+            )
+        )
+    target_artifact_kind = str(target_payload.get("target_artifact_kind", "")).strip()
+    expected_artifact_kind = str(
+        contract.get("target_artifact_kind", "proposal_source_draft")
+    ).strip()
+    if target_artifact_kind != expected_artifact_kind:
+        findings.append(
+            executor_report_finding(
+                code="invalid_proposal_draft_candidate_promotion_target_kind",
+                field="target.target_artifact_kind",
+                message="Promotion policy target artifact kind must be proposal_source_draft.",
+            )
+        )
+    target_path = str(target_payload.get("target_path", "")).strip()
+    safe_target_path = safe_repo_relative_path(target_path)
+    if not safe_target_path:
+        findings.append(
+            executor_report_finding(
+                code="invalid_proposal_draft_candidate_promotion_target_path",
+                field="target.target_path",
+                message="Promotion policy target path must be repo-relative.",
+            )
+        )
+    allowed_prefixes = [
+        str(prefix).strip()
+        for prefix in contract.get("allowed_target_path_prefixes", [])
+        if str(prefix).strip()
+    ]
+    forbidden_prefixes = [
+        str(prefix).strip()
+        for prefix in contract.get("forbidden_target_path_prefixes", [])
+        if str(prefix).strip()
+    ]
+    if safe_target_path and not any(
+        safe_target_path.startswith(prefix) for prefix in allowed_prefixes
+    ):
+        findings.append(
+            executor_report_finding(
+                code="proposal_draft_candidate_promotion_target_path_not_allowed",
+                field="target.target_path",
+                message="Promotion policy target path must use an allowed proposal source prefix.",
+            )
+        )
+    if safe_target_path and any(
+        safe_target_path.startswith(prefix) for prefix in forbidden_prefixes
+    ):
+        findings.append(
+            executor_report_finding(
+                code="proposal_draft_candidate_promotion_target_path_forbidden",
+                field="target.target_path",
+                message="Promotion policy target path must not write canonical proposal surfaces.",
+            )
+        )
+    return {
+        "valid": not findings,
+        "findings": findings,
+        "normalized": {
+            "target_lane": target_lane,
+            "target_artifact_kind": target_artifact_kind,
+            "target_path": safe_target_path,
+        },
+    }
+
+
+def validate_source_proposal_draft_candidate_for_promotion(
+    candidate: object,
+) -> dict[str, Any]:
+    policy = proposal_draft_candidate_promotion_policy()
+    findings: list[dict[str, str]] = []
+    if candidate is None:
+        return {
+            "valid": False,
+            "findings": [
+                executor_report_finding(
+                    code="source_proposal_draft_candidate_not_provided",
+                    field="candidate",
+                    message="Promotion policy requires a validated proposal draft candidate.",
+                )
+            ],
+            "normalized": {
+                "source_candidate_valid": None,
+                "source_candidate_status": "",
+                "draft_kind": "",
+                "proposal_status": "",
+            },
+        }
+    candidate_validation = validate_executor_report_proposal_draft_candidate(candidate)
+    candidate_findings = candidate_validation.get("findings", [])
+    candidate_findings = candidate_findings if isinstance(candidate_findings, list) else []
+    findings.extend(copy.deepcopy(candidate_findings))
+    source = candidate if isinstance(candidate, dict) else {}
+    summary = source.get("summary", {}) if isinstance(source, dict) else {}
+    summary = summary if isinstance(summary, dict) else {}
+    promotion = source.get("promotion", {}) if isinstance(source, dict) else {}
+    promotion = promotion if isinstance(promotion, dict) else {}
+    checks = source.get("checks", []) if isinstance(source, dict) else []
+    checks = checks if isinstance(checks, list) else []
+    check_status_by_id = {
+        str(check.get("check_id", "")).strip(): str(check.get("status", "")).strip()
+        for check in checks
+        if isinstance(check, dict)
+    }
+    source_status = str(summary.get("status", "")).strip()
+    draft_kind = str(source.get("draft_kind", "")).strip()
+    proposal_status = str(source.get("proposal_status", "")).strip()
+    allowed_status = proposal_draft_candidate_promotion_values("allowed_source_candidate_status")
+    allowed_draft_kinds = proposal_draft_candidate_promotion_values("allowed_source_draft_kinds")
+    allowed_proposal_status = proposal_draft_candidate_promotion_values(
+        "allowed_source_proposal_status"
+    )
+    if candidate_validation.get("valid") is not True:
+        findings.append(
+            executor_report_finding(
+                code="source_proposal_draft_candidate_invalid",
+                field="candidate",
+                message="Promotion policy requires a contract-valid proposal draft candidate.",
+            )
+        )
+    if source_status not in allowed_status:
+        findings.append(
+            executor_report_finding(
+                code="source_proposal_draft_candidate_status_not_allowed",
+                field="candidate.summary.status",
+                message="Promotion policy requires candidate ready_for_promotion_review.",
+            )
+        )
+    if draft_kind not in allowed_draft_kinds:
+        findings.append(
+            executor_report_finding(
+                code="source_proposal_draft_candidate_kind_not_allowed",
+                field="candidate.draft_kind",
+                message="Promotion policy requires proposal_draft_candidate draft kind.",
+            )
+        )
+    if proposal_status not in allowed_proposal_status:
+        findings.append(
+            executor_report_finding(
+                code="source_proposal_draft_candidate_proposal_status_not_allowed",
+                field="candidate.proposal_status",
+                message="Promotion policy requires draft_candidate proposal status.",
+            )
+        )
+    if promotion.get("requires_human_promotion") is not True:
+        findings.append(
+            executor_report_finding(
+                code="source_proposal_draft_candidate_human_promotion_not_required",
+                field="candidate.promotion.requires_human_promotion",
+                message="Promotion policy requires source candidate to require human promotion.",
+            )
+        )
+    if promotion.get("target_lane") != "proposal_lane":
+        findings.append(
+            executor_report_finding(
+                code="source_proposal_draft_candidate_target_lane_invalid",
+                field="candidate.promotion.target_lane",
+                message="Promotion policy requires proposal_lane target lane.",
+            )
+        )
+    if promotion.get("canonical_mutations_allowed") is not False:
+        findings.append(
+            executor_report_finding(
+                code="source_proposal_draft_candidate_allows_canonical_mutation",
+                field="candidate.promotion.canonical_mutations_allowed",
+                message="Promotion policy requires canonical mutations to remain forbidden.",
+            )
+        )
+    if promotion.get("proposal_status_mutations_allowed") is not False:
+        findings.append(
+            executor_report_finding(
+                code="source_proposal_draft_candidate_allows_status_mutation",
+                field="candidate.promotion.proposal_status_mutations_allowed",
+                message="Promotion policy requires proposal status mutation to remain forbidden.",
+            )
+        )
+    if check_status_by_id.get("candidate_contract_valid") != "passed":
+        findings.append(
+            executor_report_finding(
+                code="source_proposal_draft_candidate_contract_check_missing",
+                field="candidate.checks.candidate_contract_valid",
+                message="Promotion policy requires candidate_contract_valid check to pass.",
+            )
+        )
+    return {
+        "valid": not findings,
+        "findings": findings,
+        "normalized": {
+            "source_candidate_valid": bool(candidate_validation.get("valid", False)),
+            "source_candidate_status": source_status,
+            "draft_kind": draft_kind,
+            "proposal_status": proposal_status,
+        },
+        "candidate_validation": {
+            "valid": bool(candidate_validation.get("valid", False)),
+            "finding_count": len(candidate_findings),
+            "findings": copy.deepcopy(candidate_findings),
+        },
+        "policy_artifact_kind": str(policy.get("artifact_kind", "")).strip(),
+    }
+
+
+def validate_proposal_draft_candidate_promotion_request(
+    request: object,
+    *,
+    candidate: object | None = None,
+) -> dict[str, Any]:
+    policy = proposal_draft_candidate_promotion_policy()
+    findings: list[dict[str, str]] = []
+    if not isinstance(request, dict):
+        return {
+            "valid": False,
+            "findings": [
+                executor_report_finding(
+                    code="proposal_draft_candidate_promotion_request_not_object",
+                    field="request",
+                    message="Promotion policy request must be a JSON object.",
+                )
+            ],
+            "normalized": {},
+        }
+    for field in [
+        str(field).strip()
+        for field in policy.get("required_request_fields", [])
+        if str(field).strip()
+    ]:
+        if field not in request:
+            findings.append(
+                executor_report_finding(
+                    code="missing_proposal_draft_candidate_promotion_request_field",
+                    field=field,
+                    message=f"Promotion policy request is missing field {field}.",
+                )
+            )
+    source_candidate_artifact = str(request.get("source_candidate_artifact", "")).strip()
+    expected_candidate_artifact = str(
+        policy.get(
+            "source_candidate_artifact",
+            LOCAL_OPERATOR_EXECUTOR_PROPOSAL_DRAFT_CANDIDATE_RELATIVE_PATH,
+        )
+    ).strip()
+    if source_candidate_artifact != expected_candidate_artifact:
+        findings.append(
+            executor_report_finding(
+                code="invalid_proposal_draft_candidate_promotion_source_artifact",
+                field="source_candidate_artifact",
+                message="Promotion policy request must reference the local draft candidate.",
+            )
+        )
+    consumer = str(request.get("consumer", "")).strip()
+    expected_consumer = str(policy.get("consumer", "proposal_lane_operator")).strip()
+    if consumer != expected_consumer:
+        findings.append(
+            executor_report_finding(
+                code="invalid_proposal_draft_candidate_promotion_consumer",
+                field="consumer",
+                message="Promotion policy request must use the proposal lane operator.",
+            )
+        )
+    transformation = str(request.get("transformation", "")).strip()
+    expected_transformation = str(
+        policy.get(
+            "transformation",
+            "proposal_draft_candidate_to_promotion_packet",
+        )
+    ).strip()
+    if transformation != expected_transformation:
+        findings.append(
+            executor_report_finding(
+                code="invalid_proposal_draft_candidate_promotion_transformation",
+                field="transformation",
+                message=(
+                    "Promotion policy request may only transform candidate to promotion packet."
+                ),
+            )
+        )
+    effects_validation = validate_proposal_draft_candidate_promotion_effects(
+        request.get("requested_effects")
+    )
+    findings.extend(copy.deepcopy(effects_validation.get("findings", [])))
+    target_validation = validate_proposal_draft_candidate_promotion_target(request.get("target"))
+    findings.extend(copy.deepcopy(target_validation.get("findings", [])))
+    authorization_validation = validate_proposal_draft_candidate_promotion_authorization(
+        request.get("human_authorization")
+    )
+    findings.extend(copy.deepcopy(authorization_validation.get("findings", [])))
+    authority_validation = validate_proposal_draft_candidate_promotion_authority_boundary(
+        request.get("authority_boundary")
+    )
+    findings.extend(copy.deepcopy(authority_validation.get("findings", [])))
+    source_validation = validate_source_proposal_draft_candidate_for_promotion(candidate)
+    findings.extend(copy.deepcopy(source_validation.get("findings", [])))
+    source_normalized = source_validation.get("normalized", {})
+    source_normalized = source_normalized if isinstance(source_normalized, dict) else {}
+    packet_contract = policy.get("promotion_packet_contract", {})
+    packet_contract = packet_contract if isinstance(packet_contract, dict) else {}
+    return {
+        "valid": not findings,
+        "findings": findings,
+        "normalized": {
+            "source_candidate_artifact": source_candidate_artifact,
+            "consumer": consumer,
+            "transformation": transformation,
+            "requested_effects": copy.deepcopy(effects_validation.get("effects", [])),
+            "target": copy.deepcopy(target_validation.get("normalized", {})),
+            "approval_state": authorization_validation.get("normalized", {}).get(
+                "approval_state", ""
+            ),
+            "source_candidate_valid": source_normalized.get("source_candidate_valid"),
+            "source_candidate_status": source_normalized.get("source_candidate_status", ""),
+            "draft_kind": source_normalized.get("draft_kind", ""),
+            "proposal_status": source_normalized.get("proposal_status", ""),
+            "promotion_packet_artifact_kind": str(packet_contract.get("artifact_kind", "")).strip(),
+            "next_gap": str(
+                policy.get("next_gap", "build_proposal_draft_candidate_promotion_packet")
+            ).strip(),
+        },
+        "effects_validation": effects_validation,
+        "target_validation": target_validation,
+        "authorization_validation": authorization_validation,
+        "authority_validation": authority_validation,
+        "source_candidate_validation": source_validation,
+    }
+
+
 def agent_passport_contract_stable_fields(contract_name: str) -> list[str]:
     return [
         str(field).strip()

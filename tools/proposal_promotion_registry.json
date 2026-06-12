@@ -1233,5 +1233,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0096",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0096_proposal_draft_candidate_promotion_policy.md"
+    ],
+    "motivating_concern": "SpecGraph can build a local-only proposal draft candidate from executor report review output, but it lacks a policy boundary for explicit human-authorized promotion into a future proposal-lane packet without granting the candidate direct proposal-writing authority",
+    "normalized_title": "Proposal Draft Candidate Promotion Policy",
+    "bounded_scope": "Add a policy-only validator surface for promoting valid local proposal draft candidates into future promotion packet requests, requiring explicit human authorization and safe proposal source draft targets while rejecting proposal markdown writes, proposal registry mutation, proposal status mutation, canonical mutation, patch application, gap closure, static publication, executor execution, and actual proposal materialization.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]
