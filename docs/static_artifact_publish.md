@@ -137,17 +137,19 @@ and `runs/local_operator_executor_task_smoke.json` may exist after
 `runs/local_operator_executor_proposal_draft_candidate.json` may exist after
 `make executor-proposal-draft-candidate`, and
 `runs/local_operator_executor_proposal_promotion_packet.json` may exist after
-`make executor-proposal-promotion-packet`, but they are intentionally not
-uploaded to the static host because they describe the current operator process
-environment rather than public producer artifacts. The
+`make executor-proposal-promotion-packet`, and
+`runs/local_operator_executor_proposal_materialization_report.json` may exist
+after `make executor-proposal-source-materialize`, but they are intentionally
+not uploaded to the static host because they describe the current operator
+process environment rather than public producer artifacts. The
 `proposal_draft_candidate_promotion_policy` defines only a local promotion
 request and promotion-packet boundary; it does not publish candidates or
 promotion packets, write proposal markdown, or mutate proposal registries
 during static publishing. The
-`deterministic_proposal_draft_materialization_policy` defines only a future
-materialization request boundary; it does not publish materialization state,
-invoke executors, write proposal files, or mutate proposal registries during
-static publishing.
+`deterministic_proposal_draft_materialization_policy` allows a local
+materializer to write only `docs/archive/proposal_sources/...` and a local
+report; it does not publish materialization state, invoke executors, write
+`docs/proposals/`, or mutate proposal registries during static publishing.
 
 Agent Passport CLI is installed during the publish workflow from the latest
 `0al-spec/agent-passport` GitHub Release into runner temp storage and added to

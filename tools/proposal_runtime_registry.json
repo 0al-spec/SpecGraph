@@ -5215,5 +5215,93 @@
         "pattern": "deterministic_proposal_draft_materialization_policy"
       }
     ]
+  },
+  {
+    "proposal_id": "0099",
+    "posture": "bounded_runtime_followup",
+    "runtime_surfaces": [
+      "docs/proposals/0099_build_deterministic_proposal_draft_materializer.md",
+      "docs/archive/proposal_sources/0099_build_deterministic_proposal_draft_materializer.md",
+      "tools/supervisor_executor_adapter_policy.json",
+      "tools/supervisor.py",
+      "tools/build_static_artifact_bundle.py",
+      "tools/README.md",
+      "Makefile",
+      "docs/static_artifact_publish.md",
+      "Sources/SpecGraph/Documentation.docc/ArtifactPublishing.md",
+      "tests/test_supervisor.py",
+      "tests/test_static_artifact_bundle.py",
+      "runs/local_operator_executor_proposal_materialization_report.json"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/supervisor_executor_adapter_policy.json",
+        "pattern": "materialization_report_contract"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def build_local_operator_executor_proposal_source_materialization("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def validate_proposal_source_draft_materialization_report("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "--build-local-operator-executor-proposal-source-materialization"
+      },
+      {
+        "path": "Makefile",
+        "pattern": "executor-proposal-source-materialize:"
+      },
+      {
+        "path": "tools/build_static_artifact_bundle.py",
+        "pattern": "\"local_operator_executor_proposal_materialization_report.json\""
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_local_operator_executor_proposal_source_materialization_writes_source_draft("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_local_operator_executor_proposal_source_materialization_blocks_existing_target("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_local_operator_executor_proposal_source_materialization_blocks_invalid_packet("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_local_operator_executor_proposal_source_materialization_blocks_git_status_failure("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_validate_proposal_source_draft_materialization_report_rejects_local_paths("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_main_builds_local_operator_executor_proposal_source_materialization_as_standalone_command("
+      },
+      {
+        "path": "tests/test_static_artifact_bundle.py",
+        "pattern": "local_operator_executor_proposal_materialization_report.json"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0099_build_deterministic_proposal_draft_materializer.md",
+        "pattern": "define_public_proposal_doc_materialization_policy"
+      },
+      {
+        "path": "docs/proposals/0099_build_deterministic_proposal_draft_materializer.md",
+        "pattern": "does not write `docs/proposals/`"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "runs/local_operator_executor_proposal_materialization_report.json"
+      }
+    ]
   }
 ]

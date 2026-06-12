@@ -1272,5 +1272,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0099",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0099_build_deterministic_proposal_draft_materializer.md"
+    ],
+    "motivating_concern": "SpecGraph can validate deterministic proposal source draft materialization requests, but it lacks the bounded local materializer that actually writes a source draft and reports the mutation boundary without granting executor output proposal-lane authority",
+    "normalized_title": "Build Deterministic Proposal Draft Materializer",
+    "bounded_scope": "Add a local-only deterministic proposal source draft materializer and Make target that consumes a valid local promotion packet, writes exactly one safe docs/archive/proposal_sources/ target, records a local materialization report, and excludes local state from public static publish without writing docs/proposals, mutating proposal registries or proposal status, mutating canonical specs, applying patches, closing gaps, or invoking executors.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

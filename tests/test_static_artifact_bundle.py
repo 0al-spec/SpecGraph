@@ -138,6 +138,13 @@ def test_build_public_bundle_copies_specs_and_runs_with_manifest(
             "local_only": True,
         },
     )
+    write_json(
+        repo / "runs" / "local_operator_executor_proposal_materialization_report.json",
+        {
+            "artifact_kind": "proposal_source_draft_materialization_report",
+            "local_only": True,
+        },
+    )
     (repo / "runs" / ".DS_Store").write_text("junk", encoding="utf-8")
     (repo / "runs" / ".gitkeep").write_text("", encoding="utf-8")
 
@@ -163,6 +170,9 @@ def test_build_public_bundle_copies_specs_and_runs_with_manifest(
     ).exists()
     assert not (
         result.output_dir / "runs" / "local_operator_executor_proposal_promotion_packet.json"
+    ).exists()
+    assert not (
+        result.output_dir / "runs" / "local_operator_executor_proposal_materialization_report.json"
     ).exists()
     assert not (result.output_dir / "runs" / ".DS_Store").exists()
     assert not (result.output_dir / "runs" / ".gitkeep").exists()
@@ -221,6 +231,10 @@ def test_build_public_bundle_copies_specs_and_runs_with_manifest(
     )
     assert (
         "runs/local_operator_executor_proposal_promotion_packet.json"
+        not in result.checksums_path.read_text(encoding="utf-8")
+    )
+    assert (
+        "runs/local_operator_executor_proposal_materialization_report.json"
         not in result.checksums_path.read_text(encoding="utf-8")
     )
 
