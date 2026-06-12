@@ -168,6 +168,13 @@ Supervisor modes:
   still requires explicit human promotion without writing proposal markdown,
   mutating proposal registries, changing proposal status, applying patches, or
   publishing local artifacts.
+- `--build-local-operator-executor-proposal-promotion-packet`: build
+  local-only `runs/local_operator_executor_proposal_promotion_packet.json` by
+  consuming a valid proposal draft candidate and the
+  `proposal_draft_candidate_promotion_policy`, recording authorization and safe
+  target provenance without writing proposal markdown, mutating proposal
+  registries, changing proposal status, applying patches, or publishing local
+  artifacts.
 - `executor_report_consumption_policy` in
   `tools/supervisor_executor_adapter_policy.json`: defines which supervisor or
   downstream surfaces may consume a valid local executor report, which
@@ -530,6 +537,12 @@ Key derived artifacts:
 - `runs/local_operator_executor_proposal_draft_candidate.json`: local-only
   proposal draft candidate built from a valid `proposal_draft` review packet,
   requiring explicit human promotion into the proposal lane while forbidding
+  proposal markdown writes, proposal registry mutation, proposal status
+  mutation, canonical mutation, patch application, gap closure, and public
+  static publication
+- `runs/local_operator_executor_proposal_promotion_packet.json`: local-only
+  promotion packet built from a valid proposal draft candidate and explicit
+  promotion authorization, recording safe target provenance while forbidding
   proposal markdown writes, proposal registry mutation, proposal status
   mutation, canonical mutation, patch application, gap closure, and public
   static publication

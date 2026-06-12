@@ -1246,5 +1246,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0097",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0097_build_proposal_draft_candidate_promotion_packet.md"
+    ],
+    "motivating_concern": "SpecGraph has a policy boundary for human-authorized proposal draft candidate promotion, but it does not yet materialize a local-only promotion packet that records authorization and provenance without writing the proposal lane",
+    "normalized_title": "Build Proposal Draft Candidate Promotion Packet",
+    "bounded_scope": "Add a local-only proposal draft candidate promotion packet artifact and Make target that consumes a valid local proposal draft candidate, validates the 0096 promotion policy, records safe target and authorization metadata, preserves candidate-as-input authority boundaries, and excludes the packet from public static publish without writing proposal markdown, mutating proposal registries, changing proposal status, applying patches, mutating canonical specs, closing gaps, or running a new executor task.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

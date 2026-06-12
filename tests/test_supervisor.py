@@ -27250,6 +27250,12 @@ def test_supervisor_executor_adapter_policy_declares_request_report_contract() -
     assert promotion_policy["promotion_packet_contract"]["artifact_kind"] == (
         "proposal_draft_candidate_promotion_packet"
     )
+    assert promotion_policy["promotion_packet_contract"]["artifact"] == (
+        "runs/local_operator_executor_proposal_promotion_packet.json"
+    )
+    assert promotion_policy["promotion_packet_contract"]["success_next_gap"] == (
+        "define_deterministic_proposal_draft_materialization"
+    )
     assert promotion_policy["next_gap"] == "build_proposal_draft_candidate_promotion_packet"
 
     request = policy["request_contract"]
@@ -30359,6 +30365,191 @@ def test_validate_proposal_draft_candidate_promotion_request_rejects_candidate_m
     )
 
 
+def test_build_local_operator_executor_proposal_promotion_packet_from_ready_candidate(
+    supervisor_module: object,
+) -> None:
+    candidate = ready_proposal_draft_candidate(supervisor_module)
+
+    packet = supervisor_module.build_local_operator_executor_proposal_promotion_packet(candidate)
+
+    assert (
+        packet["artifact_kind"]
+        == supervisor_module.LOCAL_OPERATOR_EXECUTOR_PROPOSAL_PROMOTION_PACKET_ARTIFACT_KIND
+    )
+    assert packet["local_only"] is True
+    assert packet["source_candidate_artifact"] == (
+        "runs/local_operator_executor_proposal_draft_candidate.json"
+    )
+    assert packet["summary"]["status"] == "ready_for_materialization_review"
+    assert packet["summary"]["next_gap"] == "define_deterministic_proposal_draft_materialization"
+    assert packet["promotion_packet"]["packet_kind"] == (
+        "proposal_draft_candidate_promotion_packet"
+    )
+    assert packet["promotion_packet"]["promotion_state"] == "ready_for_materialization_review"
+    assert packet["promotion_packet"]["materializes_proposal"] is False
+    assert packet["promotion_packet"]["writes_proposal_markdown"] is False
+    assert packet["promotion_packet"]["writes_proposal_registry"] is False
+    assert packet["promotion_packet"]["canonical_mutations_allowed"] is False
+    assert packet["promotion_packet"]["target"] == {
+        "target_lane": "proposal_lane",
+        "target_artifact_kind": "proposal_source_draft",
+        "target_path": "docs/archive/proposal_sources/executor_report_proposal_draft_candidate.md",
+    }
+    assert packet["promotion_policy_validation"]["valid"] is True
+    assert packet["promotion_packet_validation"]["valid"] is True
+    assert {check["check_id"]: check["status"] for check in packet["checks"]} == {
+        "source_candidate_present": "passed",
+        "source_candidate_valid": "passed",
+        "promotion_policy_allows_packet": "passed",
+        "authorization_recorded": "passed",
+        "authority_boundary_preserved": "passed",
+        "privacy_boundary_preserved": "passed",
+        "promotion_packet_contract_valid": "passed",
+    }
+    validation = supervisor_module.validate_proposal_draft_candidate_promotion_packet(packet)
+    assert validation["valid"] is True
+    dumped = json.dumps(packet, sort_keys=True)
+    assert "/Users/" not in dumped
+    assert "raw_stdout" not in dumped
+    assert "raw_stderr" not in dumped
+
+
+def test_build_local_operator_executor_proposal_promotion_packet_blocks_missing_candidate(
+    supervisor_module: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        supervisor_module,
+        "load_local_operator_executor_proposal_draft_candidate_artifact",
+        lambda: None,
+    )
+
+    packet = supervisor_module.build_local_operator_executor_proposal_promotion_packet()
+
+    assert packet["summary"]["status"] == "blocked_missing_candidate"
+    assert packet["summary"]["next_gap"] == "run_executor_proposal_draft_candidate_until_ready"
+    checks = {check["check_id"]: check["status"] for check in packet["checks"]}
+    assert checks["source_candidate_present"] == "missing"
+    assert checks["source_candidate_valid"] == "failed"
+    assert checks["promotion_packet_contract_valid"] == "passed"
+
+
+def test_build_local_operator_executor_proposal_promotion_packet_blocks_invalid_candidate(
+    supervisor_module: object,
+) -> None:
+    candidate = ready_proposal_draft_candidate(supervisor_module)
+    candidate["summary"]["status"] = "blocked_policy_contract"
+
+    packet = supervisor_module.build_local_operator_executor_proposal_promotion_packet(candidate)
+
+    assert packet["summary"]["status"] == "blocked_invalid_candidate"
+    assert packet["summary"]["next_gap"] == "repair_executor_proposal_draft_candidate"
+    assert any(
+        finding["code"] == "source_proposal_draft_candidate_status_not_allowed"
+        for finding in packet["promotion_policy_validation"]["findings"]
+    )
+
+
+def test_build_local_operator_executor_proposal_promotion_packet_blocks_missing_approval(
+    supervisor_module: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    candidate = ready_proposal_draft_candidate(supervisor_module)
+    original_request = supervisor_module.default_proposal_draft_candidate_promotion_request
+
+    def pending_request() -> dict[str, object]:
+        request = original_request()
+        request["human_authorization"]["approval_state"] = "pending"
+        request["human_authorization"]["reason"] = ""
+        return request
+
+    monkeypatch.setattr(
+        supervisor_module,
+        "default_proposal_draft_candidate_promotion_request",
+        pending_request,
+    )
+
+    packet = supervisor_module.build_local_operator_executor_proposal_promotion_packet(candidate)
+
+    assert packet["summary"]["status"] == "blocked_promotion_policy"
+    assert any(
+        finding["code"] == "proposal_draft_candidate_promotion_not_approved"
+        for finding in packet["promotion_policy_validation"]["findings"]
+    )
+
+
+def test_validate_proposal_draft_candidate_promotion_packet_rejects_authority_mutation(
+    supervisor_module: object,
+) -> None:
+    packet = supervisor_module.build_local_operator_executor_proposal_promotion_packet(
+        ready_proposal_draft_candidate(supervisor_module)
+    )
+    packet["authority_boundary"]["writes_proposal_markdown"] = True
+    packet["promotion_packet"]["materializes_proposal"] = True
+
+    validation = supervisor_module.validate_proposal_draft_candidate_promotion_packet(packet)
+
+    assert validation["valid"] is False
+    finding_codes = {finding["code"] for finding in validation["findings"]}
+    assert "invalid_proposal_draft_candidate_promotion_authority_boundary" in finding_codes
+    assert "proposal_draft_candidate_promotion_packet_materializes_proposal" in finding_codes
+
+
+def test_validate_proposal_draft_candidate_promotion_packet_rejects_local_paths(
+    supervisor_module: object,
+) -> None:
+    packet = supervisor_module.build_local_operator_executor_proposal_promotion_packet(
+        ready_proposal_draft_candidate(supervisor_module)
+    )
+    packet["promotion_packet"]["target"]["target_path"] = "/Users/egor/proposal.md"
+
+    validation = supervisor_module.validate_proposal_draft_candidate_promotion_packet(packet)
+
+    assert validation["valid"] is False
+    finding_codes = {finding["code"] for finding in validation["findings"]}
+    assert "machine_local_path_persisted" in finding_codes
+    assert "invalid_proposal_draft_candidate_promotion_target_path" in finding_codes
+
+
+def test_validate_proposal_draft_candidate_promotion_packet_rejects_blocked_ready_state(
+    supervisor_module: object,
+) -> None:
+    packet = supervisor_module.build_local_operator_executor_proposal_promotion_packet(
+        ready_proposal_draft_candidate(supervisor_module)
+    )
+    packet["summary"]["status"] = "blocked_promotion_policy"
+    packet["promotion_packet"]["promotion_state"] = "ready_for_materialization_review"
+
+    validation = supervisor_module.validate_proposal_draft_candidate_promotion_packet(packet)
+
+    assert validation["valid"] is False
+    assert any(
+        finding["code"] == "invalid_proposal_draft_candidate_promotion_packet_state"
+        for finding in validation["findings"]
+    )
+
+
+def test_validate_proposal_draft_candidate_promotion_packet_rejects_incomplete_request(
+    supervisor_module: object,
+) -> None:
+    packet = supervisor_module.build_local_operator_executor_proposal_promotion_packet(
+        ready_proposal_draft_candidate(supervisor_module)
+    )
+    packet["promotion_request"].pop("source_candidate_artifact")
+    packet["promotion_request"].pop("human_authorization")
+    packet["promotion_request"]["transformation"] = "proposal_draft_candidate_to_markdown_write"
+
+    validation = supervisor_module.validate_proposal_draft_candidate_promotion_packet(packet)
+
+    assert validation["valid"] is False
+    finding_codes = {finding["code"] for finding in validation["findings"]}
+    assert finding_codes >= {
+        "missing_proposal_draft_candidate_promotion_packet_request_field",
+        "invalid_proposal_draft_candidate_promotion_packet_source_artifact",
+        "invalid_proposal_draft_candidate_promotion_packet_transformation",
+    }
+
+
 def test_main_builds_local_operator_executor_report_review_packet_as_standalone_command(
     supervisor_module: object,
     repo_fixture: Path,
@@ -30438,6 +30629,49 @@ def test_main_builds_local_operator_executor_proposal_draft_candidate_as_standal
         )
     )
     assert artifact["summary"] == {"status": "ready_for_promotion_review"}
+
+
+def test_main_builds_local_operator_executor_proposal_promotion_packet_as_standalone_command(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_local_operator_executor_proposal_promotion_packet",
+        lambda: {
+            "artifact_kind": (
+                supervisor_module.LOCAL_OPERATOR_EXECUTOR_PROPOSAL_PROMOTION_PACKET_ARTIFACT_KIND
+            ),
+            "schema_version": (
+                supervisor_module.LOCAL_OPERATOR_EXECUTOR_PROPOSAL_PROMOTION_PACKET_SCHEMA_VERSION
+            ),
+            "local_only": True,
+            "summary": {"status": "ready_for_materialization_review"},
+            "checks": [],
+            "viewer_projection": {
+                "named_filters": {"ready_for_materialization_review": ["proposal_lane_operator"]}
+            },
+        },
+    )
+
+    exit_code = supervisor_module.main(
+        build_local_operator_executor_proposal_promotion_packet_mode=True
+    )
+
+    assert exit_code == 0
+    report = json.loads(capsys.readouterr().out)
+    assert (
+        report["artifact_kind"]
+        == supervisor_module.LOCAL_OPERATOR_EXECUTOR_PROPOSAL_PROMOTION_PACKET_ARTIFACT_KIND
+    )
+    artifact = json.loads(
+        (
+            repo_fixture / "runs" / "local_operator_executor_proposal_promotion_packet.json"
+        ).read_text(encoding="utf-8")
+    )
+    assert artifact["summary"] == {"status": "ready_for_materialization_review"}
 
 
 def test_agent_passport_adoption_policy_declares_surface_and_gap_contract(
