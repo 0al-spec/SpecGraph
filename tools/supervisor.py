@@ -24436,12 +24436,16 @@ def deterministic_proposal_draft_materialization_values(key: str) -> set[str]:
 
 def next_deterministic_materialization_proposal_id() -> str:
     allocation = build_proposal_id_allocation()
+    if allocation.get("ok") is not True:
+        return ""
     summary = allocation.get("summary", {})
     summary = summary if isinstance(summary, dict) else {}
+    if str(summary.get("status", "")).strip() != "ready":
+        return ""
     next_proposal_id = str(summary.get("next_proposal_id", "")).strip()
     if PROPOSAL_NUMERICAL_RE.fullmatch(next_proposal_id):
         return next_proposal_id
-    return "0001"
+    return ""
 
 
 def default_deterministic_proposal_draft_materialization_request(
@@ -24765,7 +24769,22 @@ def validate_deterministic_proposal_draft_materialization_target(
         )
     proposal_id = str(target_payload.get("proposal_id", "")).strip()
     proposal_id_pattern = str(contract.get("proposal_id_pattern", "^[0-9]{4}$")).strip()
-    if not re.fullmatch(proposal_id_pattern, proposal_id):
+    proposal_id_pattern_valid = True
+    try:
+        proposal_id_matches_pattern = bool(re.fullmatch(proposal_id_pattern, proposal_id))
+    except re.error:
+        proposal_id_pattern_valid = False
+        proposal_id_matches_pattern = False
+        findings.append(
+            executor_report_finding(
+                code="invalid_deterministic_proposal_draft_materialization_id_pattern",
+                field="target_contract.proposal_id_pattern",
+                message=(
+                    "Deterministic materialization proposal_id_pattern must be a valid regex."
+                ),
+            )
+        )
+    if proposal_id_pattern_valid and not proposal_id_matches_pattern:
         findings.append(
             executor_report_finding(
                 code="invalid_deterministic_proposal_draft_materialization_proposal_id",
@@ -24774,6 +24793,14 @@ def validate_deterministic_proposal_draft_materialization_target(
             )
         )
     expected_proposal_id = next_deterministic_materialization_proposal_id()
+    if not expected_proposal_id:
+        findings.append(
+            executor_report_finding(
+                code="deterministic_proposal_id_allocation_unavailable",
+                field="target.proposal_id",
+                message=("Deterministic materialization requires a ready proposal-id allocation."),
+            )
+        )
     if proposal_id and proposal_id != expected_proposal_id:
         findings.append(
             executor_report_finding(

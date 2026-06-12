@@ -30795,6 +30795,68 @@ def test_validate_deterministic_proposal_draft_materialization_request_rejects_n
     )
 
 
+def test_validate_deterministic_proposal_draft_materialization_request_rejects_blocked_allocator(
+    supervisor_module: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    packet = ready_proposal_draft_candidate_promotion_packet(supervisor_module)
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_proposal_id_allocation",
+        lambda: {
+            "ok": False,
+            "summary": {
+                "status": "blocked",
+                "next_proposal_id": None,
+                "blocking_count": 1,
+            },
+        },
+    )
+
+    request = supervisor_module.default_deterministic_proposal_draft_materialization_request()
+    validation = supervisor_module.validate_deterministic_proposal_draft_materialization_request(
+        request,
+        promotion_packet=packet,
+    )
+
+    assert supervisor_module.next_deterministic_materialization_proposal_id() == ""
+    assert request["target"]["proposal_id"] == ""
+    assert request["target"]["target_path"] == (
+        "docs/archive/proposal_sources/_executor_report_proposal_draft_materialization.md"
+    )
+    assert validation["valid"] is False
+    finding_codes = {finding["code"] for finding in validation["findings"]}
+    assert "deterministic_proposal_id_allocation_unavailable" in finding_codes
+    assert "invalid_deterministic_proposal_draft_materialization_proposal_id" in finding_codes
+
+
+def test_validate_deterministic_proposal_draft_materialization_request_rejects_invalid_id_regex(
+    supervisor_module: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    packet = ready_proposal_draft_candidate_promotion_packet(supervisor_module)
+    policy = supervisor_module.deterministic_proposal_draft_materialization_policy()
+    policy["target_contract"]["proposal_id_pattern"] = "["
+    monkeypatch.setattr(
+        supervisor_module,
+        "deterministic_proposal_draft_materialization_policy",
+        lambda: copy.deepcopy(policy),
+    )
+    request = supervisor_module.default_deterministic_proposal_draft_materialization_request()
+
+    validation = supervisor_module.validate_deterministic_proposal_draft_materialization_request(
+        request,
+        promotion_packet=packet,
+    )
+
+    assert validation["valid"] is False
+    assert any(
+        finding["code"] == "invalid_deterministic_proposal_draft_materialization_id_pattern"
+        and finding["field"] == "target_contract.proposal_id_pattern"
+        for finding in validation["findings"]
+    )
+
+
 def test_validate_deterministic_proposal_draft_materialization_request_rejects_target_id_mismatch(
     supervisor_module: object,
 ) -> None:
