@@ -526,6 +526,87 @@
     },
     "next_gap": "build_executor_report_proposal_draft_candidate"
   },
+  "proposal_draft_candidate_promotion_policy": {
+    "artifact_kind": "proposal_draft_candidate_promotion_policy",
+    "schema_version": 1,
+    "source_candidate_artifact": "runs/local_operator_executor_proposal_draft_candidate.json",
+    "source_candidate_artifact_kind": "executor_report_proposal_draft_candidate",
+    "allowed_source_candidate_status": [
+      "ready_for_promotion_review"
+    ],
+    "allowed_source_draft_kinds": [
+      "proposal_draft_candidate"
+    ],
+    "allowed_source_proposal_status": [
+      "draft_candidate"
+    ],
+    "consumer": "proposal_lane_operator",
+    "transformation": "proposal_draft_candidate_to_promotion_packet",
+    "requested_effects": [
+      "promotion_packet_candidate"
+    ],
+    "forbidden_effects": [
+      "canonical_spec_mutation",
+      "patch_application",
+      "gap_closure",
+      "proposal_status_mutation",
+      "proposal_registry_mutation",
+      "proposal_markdown_write",
+      "static_publish_of_local_candidate",
+      "direct_candidate_to_canonical_proposal"
+    ],
+    "required_request_fields": [
+      "source_candidate_artifact",
+      "consumer",
+      "transformation",
+      "requested_effects",
+      "target",
+      "human_authorization",
+      "authority_boundary"
+    ],
+    "target_contract": {
+      "target_lane": "proposal_lane",
+      "target_artifact_kind": "proposal_source_draft",
+      "allowed_target_path_prefixes": [
+        "docs/archive/proposal_sources/"
+      ],
+      "forbidden_target_path_prefixes": [
+        "docs/proposals/",
+        "tools/proposal_promotion_registry.json",
+        "tools/proposal_runtime_registry.json",
+        "specs/"
+      ]
+    },
+    "human_authorization_contract": {
+      "approval_state": "approved_for_promotion_packet",
+      "promotion_packet_required": true,
+      "required_fields": [
+        "approval_state",
+        "reviewer",
+        "reason",
+        "promotion_packet_required"
+      ]
+    },
+    "promotion_packet_contract": {
+      "artifact_kind": "proposal_draft_candidate_promotion_packet",
+      "schema_version": 1,
+      "local_only": true,
+      "next_gap": "build_proposal_draft_candidate_promotion_packet"
+    },
+    "authority_boundary": {
+      "candidate_is_authority": false,
+      "promotion_request_is_authority": false,
+      "human_or_supervisor_review_required": true,
+      "writes_proposal_markdown": false,
+      "writes_proposal_registry": false,
+      "canonical_mutations_allowed": false,
+      "proposal_status_mutations_allowed": false,
+      "gap_closure_allowed": false,
+      "patch_application_allowed": false,
+      "static_publish_of_local_candidate_allowed": false
+    },
+    "next_gap": "build_proposal_draft_candidate_promotion_packet"
+  },
   "backend_registry": [
     {
       "backend_id": "codex",

@@ -180,6 +180,14 @@ Supervisor modes:
   future proposal draft candidate. It accepts only `proposal_draft` review
   packets and keeps executor reports/review packets as input rather than
   authority; it does not create proposal drafts or run a new executor task.
+- `proposal_draft_candidate_promotion_policy` in
+  `tools/supervisor_executor_adapter_policy.json`: defines the policy-only
+  boundary for turning a valid local-only proposal draft candidate into a future
+  promotion packet request. It requires explicit human authorization, accepts
+  only proposal source draft target paths under `docs/archive/proposal_sources/`,
+  and rejects direct proposal markdown writes, proposal registry mutation,
+  proposal status mutation, canonical mutation, patch application, and gap
+  closure.
 - `--build-agent-passport-derived-surfaces`: build Agent Passport derived
   surfaces from `tools/agent_passport_adoption_policy.json` and the 0056
   executor adapter index, including report-only Agent Passport CLI validation
@@ -535,6 +543,11 @@ Key derived artifacts:
   proposal draft candidates while rejecting analysis reports, forbidden effects,
   authority expansion, direct canonical mutation, patch application, gap
   closure, and proposal status mutation
+- `proposal_draft_candidate_promotion_policy`: policy-only surface that allows
+  only valid local proposal draft candidates plus explicit human authorization
+  to request a future promotion packet, while rejecting direct proposal markdown
+  writes, proposal registry mutation, proposal status mutation, canonical
+  mutation, patch application, gap closure, and unsafe target paths
 - `runs/agent_surface_index.json`: read-only Agent Passport adoption surface
   index for graph-facing agents, including policy-declared surfaces and
   executor backends derived from the 0056 adapter index

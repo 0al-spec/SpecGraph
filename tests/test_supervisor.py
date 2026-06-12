@@ -27226,6 +27226,31 @@ def test_supervisor_executor_adapter_policy_declares_request_report_contract() -
         "executor_report_proposal_draft_candidate"
     )
     assert draft_policy["next_gap"] == "build_executor_report_proposal_draft_candidate"
+    promotion_policy = policy["proposal_draft_candidate_promotion_policy"]
+    assert promotion_policy["artifact_kind"] == "proposal_draft_candidate_promotion_policy"
+    assert promotion_policy["source_candidate_artifact"] == (
+        "runs/local_operator_executor_proposal_draft_candidate.json"
+    )
+    assert promotion_policy["consumer"] == "proposal_lane_operator"
+    assert promotion_policy["transformation"] == "proposal_draft_candidate_to_promotion_packet"
+    assert promotion_policy["requested_effects"] == ["promotion_packet_candidate"]
+    assert "proposal_markdown_write" in promotion_policy["forbidden_effects"]
+    assert "proposal_registry_mutation" in promotion_policy["forbidden_effects"]
+    assert promotion_policy["target_contract"]["target_artifact_kind"] == "proposal_source_draft"
+    assert promotion_policy["target_contract"]["allowed_target_path_prefixes"] == [
+        "docs/archive/proposal_sources/"
+    ]
+    assert promotion_policy["human_authorization_contract"]["approval_state"] == (
+        "approved_for_promotion_packet"
+    )
+    assert promotion_policy["authority_boundary"]["candidate_is_authority"] is False
+    assert promotion_policy["authority_boundary"]["writes_proposal_markdown"] is False
+    assert promotion_policy["authority_boundary"]["writes_proposal_registry"] is False
+    assert promotion_policy["authority_boundary"]["canonical_mutations_allowed"] is False
+    assert promotion_policy["promotion_packet_contract"]["artifact_kind"] == (
+        "proposal_draft_candidate_promotion_packet"
+    )
+    assert promotion_policy["next_gap"] == "build_proposal_draft_candidate_promotion_packet"
 
     request = policy["request_contract"]
     assert request["artifact_kind"] == "supervisor_executor_request"
@@ -30126,6 +30151,161 @@ def test_validate_executor_report_proposal_draft_candidate_rejects_local_paths(
     assert validation["valid"] is False
     assert any(
         finding["code"] == "machine_local_path_persisted" for finding in validation["findings"]
+    )
+
+
+def ready_proposal_draft_candidate(supervisor_module: object) -> dict[str, object]:
+    report = supervisor_module.default_local_operator_executor_report_sample(
+        report_kind="proposal_draft"
+    )
+    packet = supervisor_module.build_local_operator_executor_report_review_packet(report)
+    return supervisor_module.build_local_operator_executor_proposal_draft_candidate(packet)
+
+
+def test_validate_proposal_draft_candidate_promotion_request_accepts_ready_candidate(
+    supervisor_module: object,
+) -> None:
+    candidate = ready_proposal_draft_candidate(supervisor_module)
+    request = supervisor_module.default_proposal_draft_candidate_promotion_request()
+
+    validation = supervisor_module.validate_proposal_draft_candidate_promotion_request(
+        request,
+        candidate=candidate,
+    )
+
+    assert validation["valid"] is True
+    assert validation["normalized"]["consumer"] == "proposal_lane_operator"
+    assert (
+        validation["normalized"]["transformation"] == "proposal_draft_candidate_to_promotion_packet"
+    )
+    assert validation["normalized"]["requested_effects"] == ["promotion_packet_candidate"]
+    assert validation["normalized"]["approval_state"] == "approved_for_promotion_packet"
+    assert validation["normalized"]["source_candidate_status"] == "ready_for_promotion_review"
+    assert validation["normalized"]["promotion_packet_artifact_kind"] == (
+        "proposal_draft_candidate_promotion_packet"
+    )
+    assert validation["normalized"]["next_gap"] == (
+        "build_proposal_draft_candidate_promotion_packet"
+    )
+
+
+def test_validate_proposal_draft_candidate_promotion_request_rejects_missing_approval(
+    supervisor_module: object,
+) -> None:
+    candidate = ready_proposal_draft_candidate(supervisor_module)
+    request = supervisor_module.default_proposal_draft_candidate_promotion_request()
+    request["human_authorization"]["approval_state"] = "pending"
+    request["human_authorization"]["reason"] = ""
+
+    validation = supervisor_module.validate_proposal_draft_candidate_promotion_request(
+        request,
+        candidate=candidate,
+    )
+
+    assert validation["valid"] is False
+    finding_codes = {finding["code"] for finding in validation["findings"]}
+    assert "proposal_draft_candidate_promotion_not_approved" in finding_codes
+    assert "proposal_draft_candidate_promotion_reason_missing" in finding_codes
+
+
+def test_validate_proposal_draft_candidate_promotion_request_rejects_invalid_candidate(
+    supervisor_module: object,
+) -> None:
+    candidate = ready_proposal_draft_candidate(supervisor_module)
+    candidate["summary"]["status"] = "blocked_policy_contract"
+
+    validation = supervisor_module.validate_proposal_draft_candidate_promotion_request(
+        supervisor_module.default_proposal_draft_candidate_promotion_request(),
+        candidate=candidate,
+    )
+
+    assert validation["valid"] is False
+    assert any(
+        finding["code"] == "source_proposal_draft_candidate_status_not_allowed"
+        for finding in validation["findings"]
+    )
+
+
+def test_validate_proposal_draft_candidate_promotion_request_rejects_forbidden_effect(
+    supervisor_module: object,
+) -> None:
+    candidate = ready_proposal_draft_candidate(supervisor_module)
+    request = supervisor_module.default_proposal_draft_candidate_promotion_request(
+        requested_effects=["promotion_packet_candidate", "proposal_registry_mutation"]
+    )
+
+    validation = supervisor_module.validate_proposal_draft_candidate_promotion_request(
+        request,
+        candidate=candidate,
+    )
+
+    assert validation["valid"] is False
+    assert any(
+        finding["code"] == "forbidden_proposal_draft_candidate_promotion_effect"
+        and finding["field"] == "requested_effects[1]"
+        for finding in validation["findings"]
+    )
+
+
+def test_validate_proposal_draft_candidate_promotion_request_rejects_authority_expansion(
+    supervisor_module: object,
+) -> None:
+    candidate = ready_proposal_draft_candidate(supervisor_module)
+    request = supervisor_module.default_proposal_draft_candidate_promotion_request()
+    request["authority_boundary"]["writes_proposal_markdown"] = True
+    request["authority_boundary"]["writes_proposal_registry"] = True
+
+    validation = supervisor_module.validate_proposal_draft_candidate_promotion_request(
+        request,
+        candidate=candidate,
+    )
+
+    assert validation["valid"] is False
+    assert any(
+        finding["code"] == "invalid_proposal_draft_candidate_promotion_authority_boundary"
+        and finding["field"] == "authority_boundary.writes_proposal_markdown"
+        for finding in validation["findings"]
+    )
+    assert any(
+        finding["code"] == "invalid_proposal_draft_candidate_promotion_authority_boundary"
+        and finding["field"] == "authority_boundary.writes_proposal_registry"
+        for finding in validation["findings"]
+    )
+
+
+def test_validate_proposal_draft_candidate_promotion_request_rejects_unsafe_target(
+    supervisor_module: object,
+) -> None:
+    candidate = ready_proposal_draft_candidate(supervisor_module)
+    request = supervisor_module.default_proposal_draft_candidate_promotion_request()
+    request["target"]["target_path"] = "docs/proposals/0096_unsafe.md"
+
+    validation = supervisor_module.validate_proposal_draft_candidate_promotion_request(
+        request,
+        candidate=candidate,
+    )
+
+    assert validation["valid"] is False
+    finding_codes = {finding["code"] for finding in validation["findings"]}
+    assert "proposal_draft_candidate_promotion_target_path_not_allowed" in finding_codes
+    assert "proposal_draft_candidate_promotion_target_path_forbidden" in finding_codes
+
+
+def test_validate_proposal_draft_candidate_promotion_request_rejects_candidate_mutation(
+    supervisor_module: object,
+) -> None:
+    candidate = ready_proposal_draft_candidate(supervisor_module)
+    candidate["promotion"]["canonical_mutations_allowed"] = True
+
+    validation = supervisor_module.validate_proposal_draft_candidate_promotion_request(
+        supervisor_module.default_proposal_draft_candidate_promotion_request(),
+        candidate=candidate,
+    )
+
+    assert validation["valid"] is False
+    assert any(
+        finding["code"] == "source_proposal_draft_candidate_allows_canonical_mutation"
+        for finding in validation["findings"]
     )
 
 

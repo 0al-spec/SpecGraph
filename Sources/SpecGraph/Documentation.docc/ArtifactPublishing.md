@@ -59,9 +59,11 @@ exist after `make executor-smoke`, and
 `runs/local_operator_executor_proposal_draft_candidate.json` may exist after
 `make executor-proposal-draft-candidate`. The
 `executor_report_to_proposal_draft_policy` supervisor policy describes the
-local-only boundary for proposal draft candidates, but these diagnostics
-remain private operator artifacts rather than public producer artifacts. They
-must not be uploaded as public producer artifacts.
+local-only boundary for proposal draft candidates, and
+`proposal_draft_candidate_promotion_policy` describes only a local promotion
+request boundary. These diagnostics remain private operator artifacts rather
+than public producer artifacts. Static publishing must not upload candidates,
+write proposal markdown, or mutate proposal registries.
 
 The public safety gate requires:
 
