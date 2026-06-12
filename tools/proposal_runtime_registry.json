@@ -5313,10 +5313,94 @@
       "tools/ontology_semantic_control_policy.json",
       "runs/ontology_semantic_context_pack.json",
       "runs/ontology_semantic_lint_report.json",
-      "runs/ontology_delta_invocation_index.json"
+      "runs/ontology_delta_invocation_index.json",
+      "runs/ontology_semantic_lint_smoke.json"
     ],
-    "runtime_markers": [],
-    "validation_markers": [],
-    "observation_markers": []
+    "runtime_markers": [
+      {
+        "path": "tools/ontology_semantic_control_policy.json",
+        "pattern": "ontology_semantic_control_policy"
+      },
+      {
+        "path": "tools/ontology_imports.py",
+        "pattern": "def build_ontology_semantic_lint_smoke("
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_ontology_import_policy.py",
+        "pattern": "def test_ontology_semantic_lint_smoke_classifies_terms("
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0100_ontology_grounded_semantic_control.md",
+        "pattern": "define_ontology_semantic_control_policy"
+      }
+    ]
+  },
+  {
+    "proposal_id": "0103",
+    "posture": "bounded_runtime_followup",
+    "runtime_surfaces": [
+      "docs/proposals/0103_ontology_semantic_control_policy.md",
+      "docs/archive/proposal_sources/0103_ontology_semantic_control_policy.md",
+      "tools/ontology_semantic_control_policy.json",
+      "tools/ontology_imports.py",
+      "tools/README.md",
+      "Makefile",
+      "tests/test_ontology_import_policy.py",
+      "runs/ontology_semantic_lint_smoke.json"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/ontology_semantic_control_policy.json",
+        "pattern": "ontology_semantic_control_policy"
+      },
+      {
+        "path": "tools/ontology_imports.py",
+        "pattern": "def require_semantic_control_policy("
+      },
+      {
+        "path": "tools/ontology_imports.py",
+        "pattern": "def build_ontology_semantic_lint_smoke("
+      },
+      {
+        "path": "tools/ontology_imports.py",
+        "pattern": "\"semantic_lint_smoke\""
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_ontology_import_policy.py",
+        "pattern": "def test_ontology_semantic_control_policy_defines_review_only_contract("
+      },
+      {
+        "path": "tests/test_ontology_import_policy.py",
+        "pattern": "def test_ontology_semantic_lint_smoke_classifies_terms("
+      },
+      {
+        "path": "tests/test_ontology_import_policy.py",
+        "pattern": "def test_ontology_semantic_control_policy_rejects_authority_expansion("
+      },
+      {
+        "path": "tests/test_ontology_import_policy.py",
+        "pattern": "runs/ontology_semantic_lint_smoke.json"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "Makefile",
+        "pattern": "ontology-imports:"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "runs/ontology_semantic_lint_smoke.json"
+      },
+      {
+        "path": "docs/proposals/0103_ontology_semantic_control_policy.md",
+        "pattern": "build_ontology_semantic_context_pack"
+      }
+    ]
   }
 ]

@@ -50,7 +50,7 @@ help:
 		'  make external-consumers       Refresh external consumer bridge JSON' \
 		'  make external-handoffs        Refresh external consumer handoff JSON' \
 			'  make external-consumer-evidence Refresh external consumer evidence JSON' \
-			'  make ontology-imports          Refresh ontology import derived surfaces' \
+			'  make ontology-imports          Refresh ontology import and semantic-control surfaces' \
 		'  make metrics-delivery         Refresh Metrics delivery workflow JSON' \
 		'  make metrics-feedback         Refresh Metrics feedback JSON' \
 		'  make metrics-source-promotion Refresh Metrics source promotion candidates JSON' \

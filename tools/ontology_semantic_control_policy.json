@@ -1,0 +1,146 @@
+{
+  "artifact_kind": "ontology_semantic_control_policy",
+  "schema_version": 1,
+  "proposal_id": "0103",
+  "source_proposal": "docs/proposals/0103_ontology_semantic_control_policy.md",
+  "policy_basis": "docs/proposals/0100_ontology_grounded_semantic_control.md",
+  "repository_layout": {
+    "semantic_lint_smoke": "runs/ontology_semantic_lint_smoke.json"
+  },
+  "derived_output_contract": {
+    "canonical_mutations_allowed": false,
+    "tracked_artifacts_written": false,
+    "writes_canonical_specs": false,
+    "allowed_output_roots": [
+      "runs/"
+    ]
+  },
+  "source_surface_contract": {
+    "required_artifact_kinds": [
+      "ontology_package_index",
+      "ontology_import_gap_index",
+      "ontology_governance_evidence_index",
+      "ontology_binding_preview"
+    ],
+    "source_proposal_id": "0060",
+    "required_authority_flags": {
+      "canonical_mutations_allowed": false,
+      "tracked_artifacts_written": false
+    }
+  },
+  "semantic_lint_contract": {
+    "future_artifact_kind": "ontology_semantic_lint_report",
+    "smoke_artifact_kind": "ontology_semantic_lint_smoke",
+    "term_classifications": [
+      "accepted_term",
+      "accepted_alias",
+      "deprecated_term",
+      "ambiguous_term",
+      "unknown_term",
+      "out_of_domain_term",
+      "relation_conflict",
+      "candidate_delta_term"
+    ],
+    "term_statuses": [
+      "grounded",
+      "grounded_with_aliases",
+      "review_required_unknown_terms",
+      "review_required_ambiguous_terms",
+      "blocked_deprecated_terms",
+      "blocked_relation_conflict",
+      "blocked_out_of_domain",
+      "ontology_context_unavailable"
+    ],
+    "summary_status_priority": [
+      "blocked_relation_conflict",
+      "blocked_deprecated_terms",
+      "blocked_out_of_domain",
+      "review_required_ambiguous_terms",
+      "review_required_unknown_terms",
+      "grounded_with_aliases",
+      "grounded"
+    ],
+    "suggested_actions": {
+      "accepted_term": "none",
+      "accepted_alias": "prefer_accepted_term",
+      "deprecated_term": "replace_with_accepted_term",
+      "ambiguous_term": "ask_clarification_question",
+      "unknown_term": "emit_ontology_gap",
+      "out_of_domain_term": "route_to_domain_review",
+      "relation_conflict": "use_accepted_relation",
+      "candidate_delta_term": "emit_ontology_delta_candidate"
+    }
+  },
+  "semantic_controls": {
+    "aliases": [
+      {
+        "term": "requires policy",
+        "concept_ref": "examcalc:requires_policy",
+        "reason": "Human phrasing should ground to the accepted relation ref."
+      }
+    ],
+    "deprecated_terms": [
+      {
+        "term": "ExamPolicy",
+        "replacement_ref": "examcalc:ExamPolicyProfile",
+        "reason": "The accepted ontology concept is ExamPolicyProfile."
+      }
+    ],
+    "relation_conflicts": [
+      {
+        "term": "allows policy",
+        "accepted_relation_ref": "examcalc:requires_policy",
+        "reason": "The accepted relation direction is requires_policy."
+      }
+    ]
+  },
+  "smoke_fixture": {
+    "artifact_kind": "ontology_semantic_control_smoke_fixture",
+    "target": {
+      "target_kind": "proposal",
+      "target_ref": "SG-RFC-0103"
+    },
+    "generated_text": "Exam requires policy before CASFunction use. ExamPolicy and allows policy are intentionally invalid smoke terms.",
+    "detected_terms": [
+      {
+        "term": "Exam",
+        "source_ref": "examcalc:Exam"
+      },
+      {
+        "term": "requires policy"
+      },
+      {
+        "term": "CASFunction",
+        "source_ref": "examcalc:CASFunction"
+      },
+      {
+        "term": "ExamPolicy"
+      },
+      {
+        "term": "allows policy"
+      }
+    ]
+  },
+  "authority_boundary": {
+    "context_pack_is_authority": false,
+    "lint_report_is_authority": false,
+    "smoke_report_is_authority": false,
+    "ontology_delta_candidate_is_authority": false,
+    "ontology_governance_required": true,
+    "specgraph_proposal_review_required": true,
+    "prompt_agent_execution_allowed": false,
+    "automatic_import_lock_update": false,
+    "automatic_canonical_node_update": false,
+    "canonical_mutations_allowed": false
+  },
+  "next_gap_defaults": {
+    "grounded": "none",
+    "grounded_with_aliases": "review_alias_normalization",
+    "review_required_unknown_terms": "review_ontology_import_gap",
+    "review_required_ambiguous_terms": "ask_clarification_question",
+    "blocked_deprecated_terms": "replace_deprecated_ontology_term",
+    "blocked_relation_conflict": "review_ontology_relation_conflict",
+    "blocked_out_of_domain": "route_to_domain_review",
+    "ontology_context_unavailable": "rebuild_ontology_import_surfaces"
+  }
+}

@@ -1298,5 +1298,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0103",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0103_ontology_semantic_control_policy.md"
+    ],
+    "motivating_concern": "SpecGraph has an Ontology-grounded semantic control proposal in 0100, but it needs the first executable policy and deterministic smoke report before later context-pack, lint-report, ontology-delta, and SpecSpace integration slices can be implemented safely",
+    "normalized_title": "Ontology Semantic Control Policy",
+    "bounded_scope": "Add a machine-readable ontology semantic control policy and a deterministic semantic lint smoke artifact over the existing 0060 ontology import fixture, classifying accepted, alias, unknown, deprecated, and relation-conflict terms without building the full context pack, parsing arbitrary language, invoking LLMs or ontologyc, writing ontology packages, mutating canonical specs, creating lockfiles, or implementing SpecSpace UI.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]
