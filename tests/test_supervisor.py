@@ -30168,6 +30168,14 @@ def ready_proposal_draft_candidate(supervisor_module: object) -> dict[str, objec
     return supervisor_module.build_local_operator_executor_proposal_draft_candidate(packet)
 
 
+def ready_proposal_draft_candidate_promotion_packet(
+    supervisor_module: object,
+) -> dict[str, object]:
+    return supervisor_module.build_local_operator_executor_proposal_promotion_packet(
+        ready_proposal_draft_candidate(supervisor_module)
+    )
+
+
 def test_validate_proposal_draft_candidate_promotion_request_accepts_ready_candidate(
     supervisor_module: object,
 ) -> None:
@@ -30548,6 +30556,327 @@ def test_validate_proposal_draft_candidate_promotion_packet_rejects_incomplete_r
         "invalid_proposal_draft_candidate_promotion_packet_source_artifact",
         "invalid_proposal_draft_candidate_promotion_packet_transformation",
     }
+
+
+def test_validate_deterministic_proposal_draft_materialization_request_accepts_ready_packet(
+    supervisor_module: object,
+) -> None:
+    packet = ready_proposal_draft_candidate_promotion_packet(supervisor_module)
+    request = supervisor_module.default_deterministic_proposal_draft_materialization_request()
+
+    validation = supervisor_module.validate_deterministic_proposal_draft_materialization_request(
+        request,
+        promotion_packet=packet,
+    )
+
+    assert validation["valid"] is True
+    expected_proposal_id = supervisor_module.next_deterministic_materialization_proposal_id()
+    assert validation["normalized"]["source_promotion_packet_artifact"] == (
+        "runs/local_operator_executor_proposal_promotion_packet.json"
+    )
+    assert validation["normalized"]["materializer"] == ("deterministic_proposal_draft_materializer")
+    assert validation["normalized"]["transformation"] == (
+        "promotion_packet_to_proposal_source_draft_materialization"
+    )
+    assert validation["normalized"]["requested_effects"] == [
+        "proposal_source_draft_materialization"
+    ]
+    assert validation["normalized"]["approval_state"] == (
+        "approved_for_deterministic_materialization"
+    )
+    assert validation["normalized"]["source_packet_status"] == ("ready_for_materialization_review")
+    assert validation["normalized"]["promotion_state"] == ("ready_for_materialization_review")
+    assert validation["normalized"]["target"]["proposal_id"] == expected_proposal_id
+    assert validation["normalized"]["target"]["target_path"].startswith(
+        f"docs/archive/proposal_sources/{expected_proposal_id}_"
+    )
+    assert validation["normalized"]["next_gap"] == (
+        "build_deterministic_proposal_draft_materializer"
+    )
+
+
+def test_validate_deterministic_proposal_draft_materialization_request_rejects_missing_approval(
+    supervisor_module: object,
+) -> None:
+    packet = ready_proposal_draft_candidate_promotion_packet(supervisor_module)
+    request = supervisor_module.default_deterministic_proposal_draft_materialization_request()
+    request["human_authorization"]["approval_state"] = "pending"
+    request["human_authorization"]["reason"] = ""
+
+    validation = supervisor_module.validate_deterministic_proposal_draft_materialization_request(
+        request,
+        promotion_packet=packet,
+    )
+
+    assert validation["valid"] is False
+    finding_codes = {finding["code"] for finding in validation["findings"]}
+    assert "deterministic_proposal_draft_materialization_not_approved" in finding_codes
+    assert "deterministic_proposal_draft_materialization_reason_missing" in finding_codes
+
+
+def test_validate_deterministic_proposal_draft_materialization_request_rejects_invalid_packet(
+    supervisor_module: object,
+) -> None:
+    packet = ready_proposal_draft_candidate_promotion_packet(supervisor_module)
+    packet["summary"]["status"] = "blocked_promotion_policy"
+
+    validation = supervisor_module.validate_deterministic_proposal_draft_materialization_request(
+        supervisor_module.default_deterministic_proposal_draft_materialization_request(),
+        promotion_packet=packet,
+    )
+
+    assert validation["valid"] is False
+    finding_codes = {finding["code"] for finding in validation["findings"]}
+    assert "invalid_proposal_draft_candidate_promotion_packet_state" in finding_codes
+    assert "source_proposal_draft_candidate_promotion_packet_status_not_allowed" in finding_codes
+
+
+def test_validate_deterministic_proposal_draft_materialization_request_rejects_forbidden_effect(
+    supervisor_module: object,
+) -> None:
+    packet = ready_proposal_draft_candidate_promotion_packet(supervisor_module)
+    request = supervisor_module.default_deterministic_proposal_draft_materialization_request(
+        requested_effects=["proposal_source_draft_materialization", "proposal_registry_mutation"]
+    )
+
+    validation = supervisor_module.validate_deterministic_proposal_draft_materialization_request(
+        request,
+        promotion_packet=packet,
+    )
+
+    assert validation["valid"] is False
+    assert any(
+        finding["code"] == "forbidden_deterministic_proposal_draft_materialization_effect"
+        and finding["field"] == "requested_effects[1]"
+        for finding in validation["findings"]
+    )
+
+
+def test_validate_deterministic_proposal_draft_materialization_request_rejects_non_list_effects(
+    supervisor_module: object,
+) -> None:
+    packet = ready_proposal_draft_candidate_promotion_packet(supervisor_module)
+    request = supervisor_module.default_deterministic_proposal_draft_materialization_request()
+    request["requested_effects"] = "proposal_source_draft_materialization"
+
+    validation = supervisor_module.validate_deterministic_proposal_draft_materialization_request(
+        request,
+        promotion_packet=packet,
+    )
+
+    assert validation["valid"] is False
+    assert any(
+        finding["code"] == "deterministic_proposal_draft_materialization_effects_not_list"
+        and finding["field"] == "requested_effects"
+        for finding in validation["findings"]
+    )
+
+
+def test_validate_deterministic_proposal_draft_materialization_request_preserves_effect_indices(
+    supervisor_module: object,
+) -> None:
+    packet = ready_proposal_draft_candidate_promotion_packet(supervisor_module)
+    request = supervisor_module.default_deterministic_proposal_draft_materialization_request(
+        requested_effects=[
+            "proposal_source_draft_materialization",
+            " ",
+            "proposal_registry_mutation",
+        ]
+    )
+
+    validation = supervisor_module.validate_deterministic_proposal_draft_materialization_request(
+        request,
+        promotion_packet=packet,
+    )
+
+    assert validation["valid"] is False
+    assert validation["normalized"]["requested_effects"] == [
+        "proposal_source_draft_materialization",
+        "proposal_registry_mutation",
+    ]
+    assert any(
+        finding["code"] == "deterministic_proposal_draft_materialization_effect_empty"
+        and finding["field"] == "requested_effects[1]"
+        for finding in validation["findings"]
+    )
+    assert any(
+        finding["code"] == "forbidden_deterministic_proposal_draft_materialization_effect"
+        and finding["field"] == "requested_effects[2]"
+        for finding in validation["findings"]
+    )
+
+
+def test_validate_deterministic_proposal_draft_materialization_request_rejects_authority_expansion(
+    supervisor_module: object,
+) -> None:
+    packet = ready_proposal_draft_candidate_promotion_packet(supervisor_module)
+    request = supervisor_module.default_deterministic_proposal_draft_materialization_request()
+    request["authority_boundary"]["executor_invocation_allowed"] = True
+    request["authority_boundary"]["canonical_mutations_allowed"] = True
+    request["authority_boundary"]["proposal_lane_write_override"] = True
+
+    validation = supervisor_module.validate_deterministic_proposal_draft_materialization_request(
+        request,
+        promotion_packet=packet,
+    )
+
+    assert validation["valid"] is False
+    boundary_fields = {
+        finding["field"]
+        for finding in validation["findings"]
+        if finding["code"]
+        == "invalid_deterministic_proposal_draft_materialization_authority_boundary"
+    }
+    assert boundary_fields >= {
+        "authority_boundary.executor_invocation_allowed",
+        "authority_boundary.canonical_mutations_allowed",
+    }
+    assert any(
+        finding["code"] == "unexpected_deterministic_proposal_draft_materialization_authority_field"
+        and finding["field"] == "authority_boundary.proposal_lane_write_override"
+        for finding in validation["findings"]
+    )
+
+
+def test_validate_deterministic_proposal_draft_materialization_request_rejects_unsafe_target(
+    supervisor_module: object,
+) -> None:
+    packet = ready_proposal_draft_candidate_promotion_packet(supervisor_module)
+    request = supervisor_module.default_deterministic_proposal_draft_materialization_request()
+    request["target"]["target_path"] = "/Users/egor/proposal.md"
+
+    validation = supervisor_module.validate_deterministic_proposal_draft_materialization_request(
+        request,
+        promotion_packet=packet,
+    )
+
+    assert validation["valid"] is False
+    finding_codes = {finding["code"] for finding in validation["findings"]}
+    assert "machine_local_path_persisted" in finding_codes
+    assert "invalid_deterministic_proposal_draft_materialization_target_path" in finding_codes
+
+
+def test_validate_deterministic_proposal_draft_materialization_request_rejects_registry_target(
+    supervisor_module: object,
+) -> None:
+    packet = ready_proposal_draft_candidate_promotion_packet(supervisor_module)
+    request = supervisor_module.default_deterministic_proposal_draft_materialization_request()
+    request["target"]["target_path"] = "tools/proposal_runtime_registry.json"
+
+    validation = supervisor_module.validate_deterministic_proposal_draft_materialization_request(
+        request,
+        promotion_packet=packet,
+    )
+
+    assert validation["valid"] is False
+    finding_codes = {finding["code"] for finding in validation["findings"]}
+    assert "deterministic_proposal_draft_materialization_target_path_not_allowed" in finding_codes
+    assert "deterministic_proposal_draft_materialization_target_path_forbidden" in finding_codes
+
+
+def test_validate_deterministic_proposal_draft_materialization_request_rejects_non_next_id(
+    supervisor_module: object,
+) -> None:
+    packet = ready_proposal_draft_candidate_promotion_packet(supervisor_module)
+    request = supervisor_module.default_deterministic_proposal_draft_materialization_request(
+        proposal_id="9999"
+    )
+
+    validation = supervisor_module.validate_deterministic_proposal_draft_materialization_request(
+        request,
+        promotion_packet=packet,
+    )
+
+    assert validation["valid"] is False
+    assert any(
+        finding["code"] == "deterministic_proposal_id_not_next"
+        and finding["field"] == "target.proposal_id"
+        for finding in validation["findings"]
+    )
+
+
+def test_validate_deterministic_proposal_draft_materialization_request_rejects_blocked_allocator(
+    supervisor_module: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    packet = ready_proposal_draft_candidate_promotion_packet(supervisor_module)
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_proposal_id_allocation",
+        lambda: {
+            "ok": False,
+            "summary": {
+                "status": "blocked",
+                "next_proposal_id": None,
+                "blocking_count": 1,
+            },
+        },
+    )
+
+    request = supervisor_module.default_deterministic_proposal_draft_materialization_request()
+    validation = supervisor_module.validate_deterministic_proposal_draft_materialization_request(
+        request,
+        promotion_packet=packet,
+    )
+
+    assert supervisor_module.next_deterministic_materialization_proposal_id() == ""
+    assert request["target"]["proposal_id"] == ""
+    assert request["target"]["target_path"] == (
+        "docs/archive/proposal_sources/_executor_report_proposal_draft_materialization.md"
+    )
+    assert validation["valid"] is False
+    finding_codes = {finding["code"] for finding in validation["findings"]}
+    assert "deterministic_proposal_id_allocation_unavailable" in finding_codes
+    assert "invalid_deterministic_proposal_draft_materialization_proposal_id" in finding_codes
+
+
+def test_validate_deterministic_proposal_draft_materialization_request_rejects_invalid_id_regex(
+    supervisor_module: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    packet = ready_proposal_draft_candidate_promotion_packet(supervisor_module)
+    policy = supervisor_module.deterministic_proposal_draft_materialization_policy()
+    policy["target_contract"]["proposal_id_pattern"] = "["
+    monkeypatch.setattr(
+        supervisor_module,
+        "deterministic_proposal_draft_materialization_policy",
+        lambda: copy.deepcopy(policy),
+    )
+    request = supervisor_module.default_deterministic_proposal_draft_materialization_request()
+
+    validation = supervisor_module.validate_deterministic_proposal_draft_materialization_request(
+        request,
+        promotion_packet=packet,
+    )
+
+    assert validation["valid"] is False
+    assert any(
+        finding["code"] == "invalid_deterministic_proposal_draft_materialization_id_pattern"
+        and finding["field"] == "target_contract.proposal_id_pattern"
+        for finding in validation["findings"]
+    )
+
+
+def test_validate_deterministic_proposal_draft_materialization_request_rejects_target_id_mismatch(
+    supervisor_module: object,
+) -> None:
+    packet = ready_proposal_draft_candidate_promotion_packet(supervisor_module)
+    request = supervisor_module.default_deterministic_proposal_draft_materialization_request()
+    request["target"]["target_path"] = (
+        "docs/archive/proposal_sources/0000_executor_report_proposal_draft_materialization.md"
+    )
+
+    validation = supervisor_module.validate_deterministic_proposal_draft_materialization_request(
+        request,
+        promotion_packet=packet,
+    )
+
+    assert validation["valid"] is False
+    assert any(
+        finding["code"] == "deterministic_proposal_draft_materialization_target_id_mismatch"
+        and finding["field"] == "target.target_path"
+        for finding in validation["findings"]
+    )
 
 
 def test_main_builds_local_operator_executor_report_review_packet_as_standalone_command(

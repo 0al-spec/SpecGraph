@@ -1259,5 +1259,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0098",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0098_deterministic_proposal_draft_materialization.md"
+    ],
+    "motivating_concern": "SpecGraph can build a local-only promotion packet for a proposal draft candidate, but it lacks a deterministic policy boundary for deciding whether that packet may become input to a future proposal source draft materializer without granting proposal-writing authority to executor output",
+    "normalized_title": "Deterministic Proposal Draft Materialization",
+    "bounded_scope": "Add a policy-only validator surface for deterministic proposal draft materialization requests that consume a valid local promotion packet, require explicit human authorization, require the next deterministic proposal id and safe proposal source target path, and reject executor invocation, proposal markdown writes, proposal registry mutation, proposal status mutation, canonical mutation, patch application, gap closure, static publication, unsafe paths, and skipped proposal ids without building the actual materializer.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

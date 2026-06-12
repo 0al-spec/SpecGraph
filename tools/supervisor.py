@@ -24419,6 +24419,754 @@ def write_local_operator_executor_proposal_promotion_packet(index: dict[str, Any
     return path
 
 
+def deterministic_proposal_draft_materialization_policy() -> dict[str, Any]:
+    policy = supervisor_executor_adapter_policy_lookup(
+        "deterministic_proposal_draft_materialization_policy"
+    )
+    return policy if isinstance(policy, dict) else {}
+
+
+def deterministic_proposal_draft_materialization_values(key: str) -> set[str]:
+    policy = deterministic_proposal_draft_materialization_policy()
+    values = policy.get(key, [])
+    if not isinstance(values, list):
+        return set()
+    return {str(value).strip() for value in values if str(value).strip()}
+
+
+def next_deterministic_materialization_proposal_id() -> str:
+    allocation = build_proposal_id_allocation()
+    if allocation.get("ok") is not True:
+        return ""
+    summary = allocation.get("summary", {})
+    summary = summary if isinstance(summary, dict) else {}
+    if str(summary.get("status", "")).strip() != "ready":
+        return ""
+    next_proposal_id = str(summary.get("next_proposal_id", "")).strip()
+    if PROPOSAL_NUMERICAL_RE.fullmatch(next_proposal_id):
+        return next_proposal_id
+    return ""
+
+
+def default_deterministic_proposal_draft_materialization_request(
+    *,
+    requested_effects: list[str] | None = None,
+    proposal_id: str | None = None,
+) -> dict[str, Any]:
+    policy = deterministic_proposal_draft_materialization_policy()
+    target_contract = policy.get("target_contract", {})
+    target_contract = target_contract if isinstance(target_contract, dict) else {}
+    auth_contract = policy.get("human_authorization_contract", {})
+    auth_contract = auth_contract if isinstance(auth_contract, dict) else {}
+    target_prefixes = target_contract.get("allowed_target_path_prefixes", [])
+    target_prefix = (
+        str(target_prefixes[0]).strip()
+        if isinstance(target_prefixes, list) and target_prefixes
+        else "docs/archive/proposal_sources/"
+    )
+    target_proposal_id = (
+        str(proposal_id).strip()
+        if proposal_id is not None
+        else next_deterministic_materialization_proposal_id()
+    )
+    return {
+        "source_promotion_packet_artifact": str(
+            policy.get(
+                "source_promotion_packet_artifact",
+                LOCAL_OPERATOR_EXECUTOR_PROPOSAL_PROMOTION_PACKET_RELATIVE_PATH,
+            )
+        ).strip(),
+        "materializer": str(
+            policy.get("materializer", "deterministic_proposal_draft_materializer")
+        ).strip(),
+        "transformation": str(
+            policy.get(
+                "transformation",
+                "promotion_packet_to_proposal_source_draft_materialization",
+            )
+        ).strip(),
+        "requested_effects": copy.deepcopy(
+            requested_effects
+            if requested_effects is not None
+            else policy.get("requested_effects", ["proposal_source_draft_materialization"])
+        ),
+        "target": {
+            "target_lane": str(target_contract.get("target_lane", "proposal_lane")).strip(),
+            "target_artifact_kind": str(
+                target_contract.get("target_artifact_kind", "proposal_source_draft")
+            ).strip(),
+            "proposal_id": target_proposal_id,
+            "target_path": (
+                f"{target_prefix}"
+                f"{target_proposal_id}_executor_report_proposal_draft_materialization.md"
+            ),
+        },
+        "human_authorization": {
+            "approval_state": str(
+                auth_contract.get(
+                    "approval_state",
+                    "approved_for_deterministic_materialization",
+                )
+            ).strip(),
+            "reviewer": "human_operator",
+            "reason": (
+                "Allow only deterministic source draft materialization from the "
+                "reviewed local promotion packet."
+            ),
+            "materializer_required": bool(auth_contract.get("materializer_required", True)),
+        },
+        "authority_boundary": copy.deepcopy(policy.get("authority_boundary", {})),
+    }
+
+
+def validate_deterministic_proposal_draft_materialization_effects(
+    effects: object,
+) -> dict[str, Any]:
+    allowed = deterministic_proposal_draft_materialization_values("requested_effects")
+    forbidden = deterministic_proposal_draft_materialization_values("forbidden_effects")
+    findings: list[dict[str, str]] = []
+    if not isinstance(effects, list):
+        return {
+            "valid": False,
+            "effects": [],
+            "findings": [
+                executor_report_finding(
+                    code="deterministic_proposal_draft_materialization_effects_not_list",
+                    field="requested_effects",
+                    message="Deterministic materialization requested_effects must be a list.",
+                )
+            ],
+            "allowed_effects": sorted(allowed),
+            "forbidden_effects": sorted(forbidden),
+        }
+    normalized_effects: list[str] = []
+    if not effects:
+        findings.append(
+            executor_report_finding(
+                code="deterministic_proposal_draft_materialization_effects_empty",
+                field="requested_effects",
+                message="Deterministic materialization requested effects must not be empty.",
+            )
+        )
+    for index, raw_effect in enumerate(effects):
+        effect = str(raw_effect or "").strip()
+        if not effect:
+            findings.append(
+                executor_report_finding(
+                    code="deterministic_proposal_draft_materialization_effect_empty",
+                    field=f"requested_effects[{index}]",
+                    message=(
+                        "Deterministic materialization requested effects must be non-empty strings."
+                    ),
+                )
+            )
+            continue
+        normalized_effects.append(effect)
+        if effect in forbidden:
+            findings.append(
+                executor_report_finding(
+                    code="forbidden_deterministic_proposal_draft_materialization_effect",
+                    field=f"requested_effects[{index}]",
+                    message=f"Forbidden deterministic materialization effect: {effect}.",
+                )
+            )
+        elif effect not in allowed:
+            findings.append(
+                executor_report_finding(
+                    code="unknown_deterministic_proposal_draft_materialization_effect",
+                    field=f"requested_effects[{index}]",
+                    message=f"Unknown deterministic materialization effect: {effect}.",
+                )
+            )
+    return {
+        "valid": not findings,
+        "effects": normalized_effects,
+        "findings": findings,
+        "allowed_effects": sorted(allowed),
+        "forbidden_effects": sorted(forbidden),
+    }
+
+
+def validate_deterministic_proposal_draft_materialization_authority_boundary(
+    authority_boundary: object,
+) -> dict[str, Any]:
+    policy = deterministic_proposal_draft_materialization_policy()
+    expected_boundary = policy.get("authority_boundary", {})
+    expected_boundary = expected_boundary if isinstance(expected_boundary, dict) else {}
+    boundary = authority_boundary if isinstance(authority_boundary, dict) else {}
+    boundary_expectations = {
+        "promotion_packet_is_authority": False,
+        "materialization_request_is_authority": False,
+        "deterministic_materialization_only": True,
+        "executor_invocation_allowed": False,
+        "policy_request_writes_proposal_files": False,
+        "writes_proposal_registry": False,
+        "canonical_mutations_allowed": False,
+        "proposal_status_mutations_allowed": False,
+        "gap_closure_allowed": False,
+        "patch_application_allowed": False,
+        "static_publish_of_local_materialization_allowed": False,
+    }
+    findings: list[dict[str, str]] = []
+    if not isinstance(authority_boundary, dict):
+        findings.append(
+            executor_report_finding(
+                code="deterministic_proposal_draft_materialization_authority_boundary_not_object",
+                field="authority_boundary",
+                message="Deterministic materialization authority_boundary must be an object.",
+            )
+        )
+    extra_fields = sorted(
+        str(field).strip() for field in boundary if str(field).strip() not in boundary_expectations
+    )
+    for field in extra_fields:
+        findings.append(
+            executor_report_finding(
+                code="unexpected_deterministic_proposal_draft_materialization_authority_field",
+                field=f"authority_boundary.{field}",
+                message=(
+                    f"Deterministic materialization must not add authority-boundary field {field}."
+                ),
+            )
+        )
+    for field, expected_value in boundary_expectations.items():
+        if field in expected_boundary:
+            expected_value = expected_boundary.get(field)
+        if boundary.get(field) is not expected_value:
+            findings.append(
+                executor_report_finding(
+                    code="invalid_deterministic_proposal_draft_materialization_authority_boundary",
+                    field=f"authority_boundary.{field}",
+                    message=(
+                        "Deterministic materialization must preserve promotion-packet-as-input "
+                        f"authority boundary for {field}."
+                    ),
+                )
+            )
+    return {
+        "valid": not findings,
+        "findings": findings,
+        "normalized": {field: boundary.get(field) for field in boundary_expectations},
+    }
+
+
+def validate_deterministic_proposal_draft_materialization_authorization(
+    authorization: object,
+) -> dict[str, Any]:
+    policy = deterministic_proposal_draft_materialization_policy()
+    contract = policy.get("human_authorization_contract", {})
+    contract = contract if isinstance(contract, dict) else {}
+    auth = authorization if isinstance(authorization, dict) else {}
+    findings: list[dict[str, str]] = []
+    if not isinstance(authorization, dict):
+        findings.append(
+            executor_report_finding(
+                code="deterministic_proposal_draft_materialization_authorization_not_object",
+                field="human_authorization",
+                message="Deterministic materialization requires human_authorization object.",
+            )
+        )
+    for field in [
+        str(field).strip() for field in contract.get("required_fields", []) if str(field).strip()
+    ]:
+        if field not in auth:
+            findings.append(
+                executor_report_finding(
+                    code=(
+                        "missing_deterministic_proposal_draft_materialization_authorization_field"
+                    ),
+                    field=f"human_authorization.{field}",
+                    message=f"Deterministic materialization authorization is missing {field}.",
+                )
+            )
+    expected_state = str(
+        contract.get("approval_state", "approved_for_deterministic_materialization")
+    ).strip()
+    approval_state = str(auth.get("approval_state", "")).strip()
+    if approval_state != expected_state:
+        findings.append(
+            executor_report_finding(
+                code="deterministic_proposal_draft_materialization_not_approved",
+                field="human_authorization.approval_state",
+                message="Deterministic materialization requires explicit human approval.",
+            )
+        )
+    if str(auth.get("reviewer", "")).strip() == "":
+        findings.append(
+            executor_report_finding(
+                code="deterministic_proposal_draft_materialization_reviewer_missing",
+                field="human_authorization.reviewer",
+                message="Deterministic materialization requires a reviewer marker.",
+            )
+        )
+    if str(auth.get("reason", "")).strip() == "":
+        findings.append(
+            executor_report_finding(
+                code="deterministic_proposal_draft_materialization_reason_missing",
+                field="human_authorization.reason",
+                message="Deterministic materialization requires an authorization reason.",
+            )
+        )
+    if auth.get("materializer_required") is not bool(contract.get("materializer_required", True)):
+        findings.append(
+            executor_report_finding(
+                code="deterministic_proposal_draft_materializer_not_required",
+                field="human_authorization.materializer_required",
+                message=(
+                    "Deterministic materialization requires the dedicated materializer "
+                    "before proposal writes."
+                ),
+            )
+        )
+    return {
+        "valid": not findings,
+        "findings": findings,
+        "normalized": {
+            "approval_state": approval_state,
+            "reviewer": str(auth.get("reviewer", "")).strip(),
+            "materializer_required": auth.get("materializer_required"),
+        },
+    }
+
+
+def validate_deterministic_proposal_draft_materialization_target(
+    target: object,
+) -> dict[str, Any]:
+    policy = deterministic_proposal_draft_materialization_policy()
+    contract = policy.get("target_contract", {})
+    contract = contract if isinstance(contract, dict) else {}
+    target_payload = target if isinstance(target, dict) else {}
+    findings: list[dict[str, str]] = []
+    if not isinstance(target, dict):
+        findings.append(
+            executor_report_finding(
+                code="deterministic_proposal_draft_materialization_target_not_object",
+                field="target",
+                message="Deterministic materialization target must be an object.",
+            )
+        )
+    target_lane = str(target_payload.get("target_lane", "")).strip()
+    expected_lane = str(contract.get("target_lane", "proposal_lane")).strip()
+    if target_lane != expected_lane:
+        findings.append(
+            executor_report_finding(
+                code="invalid_deterministic_proposal_draft_materialization_target_lane",
+                field="target.target_lane",
+                message="Deterministic materialization target lane must remain proposal_lane.",
+            )
+        )
+    target_artifact_kind = str(target_payload.get("target_artifact_kind", "")).strip()
+    expected_kind = str(contract.get("target_artifact_kind", "proposal_source_draft")).strip()
+    if target_artifact_kind != expected_kind:
+        findings.append(
+            executor_report_finding(
+                code="invalid_deterministic_proposal_draft_materialization_target_kind",
+                field="target.target_artifact_kind",
+                message=(
+                    "Deterministic materialization target kind must be proposal_source_draft."
+                ),
+            )
+        )
+    proposal_id = str(target_payload.get("proposal_id", "")).strip()
+    proposal_id_pattern = str(contract.get("proposal_id_pattern", "^[0-9]{4}$")).strip()
+    proposal_id_pattern_valid = True
+    try:
+        proposal_id_matches_pattern = bool(re.fullmatch(proposal_id_pattern, proposal_id))
+    except re.error:
+        proposal_id_pattern_valid = False
+        proposal_id_matches_pattern = False
+        findings.append(
+            executor_report_finding(
+                code="invalid_deterministic_proposal_draft_materialization_id_pattern",
+                field="target_contract.proposal_id_pattern",
+                message=(
+                    "Deterministic materialization proposal_id_pattern must be a valid regex."
+                ),
+            )
+        )
+    if proposal_id_pattern_valid and not proposal_id_matches_pattern:
+        findings.append(
+            executor_report_finding(
+                code="invalid_deterministic_proposal_draft_materialization_proposal_id",
+                field="target.proposal_id",
+                message="Deterministic materialization proposal_id must be a four-digit id.",
+            )
+        )
+    expected_proposal_id = next_deterministic_materialization_proposal_id()
+    if not expected_proposal_id:
+        findings.append(
+            executor_report_finding(
+                code="deterministic_proposal_id_allocation_unavailable",
+                field="target.proposal_id",
+                message=("Deterministic materialization requires a ready proposal-id allocation."),
+            )
+        )
+    if proposal_id and proposal_id != expected_proposal_id:
+        findings.append(
+            executor_report_finding(
+                code="deterministic_proposal_id_not_next",
+                field="target.proposal_id",
+                message=(
+                    "Deterministic materialization must use the current next proposal id "
+                    f"{expected_proposal_id}."
+                ),
+            )
+        )
+    target_path = str(target_payload.get("target_path", "")).strip()
+    safe_target_path = safe_repo_relative_path(target_path)
+    if not safe_target_path:
+        findings.append(
+            executor_report_finding(
+                code="invalid_deterministic_proposal_draft_materialization_target_path",
+                field="target.target_path",
+                message="Deterministic materialization target path must be repo-relative.",
+            )
+        )
+    allowed_prefixes = [
+        str(prefix).strip()
+        for prefix in contract.get("allowed_target_path_prefixes", [])
+        if str(prefix).strip()
+    ]
+    forbidden_prefixes = [
+        str(prefix).strip()
+        for prefix in contract.get("forbidden_target_path_prefixes", [])
+        if str(prefix).strip()
+    ]
+    required_extension = str(contract.get("required_extension", ".md")).strip()
+    if safe_target_path and not any(
+        safe_target_path.startswith(prefix) for prefix in allowed_prefixes
+    ):
+        findings.append(
+            executor_report_finding(
+                code="deterministic_proposal_draft_materialization_target_path_not_allowed",
+                field="target.target_path",
+                message=(
+                    "Deterministic materialization target path must use an allowed proposal "
+                    "source prefix."
+                ),
+            )
+        )
+    if safe_target_path and any(
+        safe_target_path.startswith(prefix) for prefix in forbidden_prefixes
+    ):
+        findings.append(
+            executor_report_finding(
+                code="deterministic_proposal_draft_materialization_target_path_forbidden",
+                field="target.target_path",
+                message=(
+                    "Deterministic materialization target path must not write canonical "
+                    "proposal, registry, specs, or runs surfaces."
+                ),
+            )
+        )
+    if (
+        safe_target_path
+        and required_extension
+        and not safe_target_path.endswith(required_extension)
+    ):
+        findings.append(
+            executor_report_finding(
+                code="deterministic_proposal_draft_materialization_target_extension_invalid",
+                field="target.target_path",
+                message="Deterministic materialization target path must use .md extension.",
+            )
+        )
+    if safe_target_path and proposal_id:
+        basename = Path(safe_target_path).name
+        if not basename.startswith(f"{proposal_id}_"):
+            findings.append(
+                executor_report_finding(
+                    code="deterministic_proposal_draft_materialization_target_id_mismatch",
+                    field="target.target_path",
+                    message="Deterministic materialization target filename must start with id.",
+                )
+            )
+    return {
+        "valid": not findings,
+        "findings": findings,
+        "normalized": {
+            "target_lane": target_lane,
+            "target_artifact_kind": target_artifact_kind,
+            "proposal_id": proposal_id,
+            "expected_proposal_id": expected_proposal_id,
+            "target_path": safe_target_path,
+        },
+    }
+
+
+def validate_source_proposal_draft_candidate_promotion_packet_for_materialization(
+    packet: object,
+) -> dict[str, Any]:
+    policy = deterministic_proposal_draft_materialization_policy()
+    findings: list[dict[str, str]] = []
+    if packet is None:
+        return {
+            "valid": False,
+            "findings": [
+                executor_report_finding(
+                    code="source_proposal_draft_candidate_promotion_packet_not_provided",
+                    field="promotion_packet",
+                    message="Deterministic materialization requires a promotion packet.",
+                )
+            ],
+            "normalized": {
+                "source_packet_valid": None,
+                "source_packet_status": "",
+                "packet_kind": "",
+                "promotion_state": "",
+            },
+        }
+    packet_validation = validate_proposal_draft_candidate_promotion_packet(packet)
+    packet_findings = packet_validation.get("findings", [])
+    packet_findings = packet_findings if isinstance(packet_findings, list) else []
+    findings.extend(copy.deepcopy(packet_findings))
+    source = packet if isinstance(packet, dict) else {}
+    summary = source.get("summary", {}) if isinstance(source, dict) else {}
+    summary = summary if isinstance(summary, dict) else {}
+    promotion_payload = source.get("promotion_packet", {}) if isinstance(source, dict) else {}
+    promotion_payload = promotion_payload if isinstance(promotion_payload, dict) else {}
+    source_status = str(summary.get("status", "")).strip()
+    packet_kind = str(promotion_payload.get("packet_kind", "")).strip()
+    promotion_state = str(promotion_payload.get("promotion_state", "")).strip()
+    allowed_statuses = deterministic_proposal_draft_materialization_values(
+        "allowed_source_packet_status"
+    )
+    allowed_packet_kinds = deterministic_proposal_draft_materialization_values(
+        "allowed_source_packet_kinds"
+    )
+    allowed_promotion_states = deterministic_proposal_draft_materialization_values(
+        "allowed_source_promotion_state"
+    )
+    if packet_validation.get("valid") is not True:
+        findings.append(
+            executor_report_finding(
+                code="source_proposal_draft_candidate_promotion_packet_invalid",
+                field="promotion_packet",
+                message="Deterministic materialization requires a valid promotion packet.",
+            )
+        )
+    if (
+        source.get("artifact_kind")
+        != str(policy.get("source_promotion_packet_artifact_kind", "")).strip()
+    ):
+        findings.append(
+            executor_report_finding(
+                code="source_proposal_draft_candidate_promotion_packet_kind_mismatch",
+                field="promotion_packet.artifact_kind",
+                message="Source promotion packet artifact kind does not match policy.",
+            )
+        )
+    if (
+        source.get("schema_version")
+        != LOCAL_OPERATOR_EXECUTOR_PROPOSAL_PROMOTION_PACKET_SCHEMA_VERSION
+    ):
+        findings.append(
+            executor_report_finding(
+                code="source_proposal_draft_candidate_promotion_packet_schema_mismatch",
+                field="promotion_packet.schema_version",
+                message="Source promotion packet schema version does not match policy.",
+            )
+        )
+    if source.get("local_only") is not True:
+        findings.append(
+            executor_report_finding(
+                code="source_proposal_draft_candidate_promotion_packet_local_only_required",
+                field="promotion_packet.local_only",
+                message="Source promotion packet must remain local-only.",
+            )
+        )
+    if source_status not in allowed_statuses:
+        findings.append(
+            executor_report_finding(
+                code="source_proposal_draft_candidate_promotion_packet_status_not_allowed",
+                field="promotion_packet.summary.status",
+                message="Deterministic materialization requires ready promotion packet status.",
+            )
+        )
+    if packet_kind not in allowed_packet_kinds:
+        findings.append(
+            executor_report_finding(
+                code="source_proposal_draft_candidate_promotion_packet_kind_not_allowed",
+                field="promotion_packet.promotion_packet.packet_kind",
+                message="Deterministic materialization requires the promotion packet kind.",
+            )
+        )
+    if promotion_state not in allowed_promotion_states:
+        findings.append(
+            executor_report_finding(
+                code="source_proposal_draft_candidate_promotion_state_not_allowed",
+                field="promotion_packet.promotion_packet.promotion_state",
+                message="Deterministic materialization requires ready promotion state.",
+            )
+        )
+    authority_checks = {
+        "materializes_proposal": False,
+        "writes_proposal_markdown": False,
+        "writes_proposal_registry": False,
+        "canonical_mutations_allowed": False,
+    }
+    for field, expected_value in authority_checks.items():
+        if promotion_payload.get(field) is not expected_value:
+            findings.append(
+                executor_report_finding(
+                    code=(f"source_proposal_draft_candidate_promotion_packet_{field}_invalid"),
+                    field=f"promotion_packet.promotion_packet.{field}",
+                    message=(
+                        "Source promotion packet must not grant proposal materialization "
+                        f"authority through {field}."
+                    ),
+                )
+            )
+    return {
+        "valid": not findings,
+        "findings": findings,
+        "normalized": {
+            "source_packet_valid": bool(packet_validation.get("valid", False)),
+            "source_packet_status": source_status,
+            "packet_kind": packet_kind,
+            "promotion_state": promotion_state,
+        },
+        "packet_validation": {
+            "valid": bool(packet_validation.get("valid", False)),
+            "finding_count": len(packet_findings),
+            "findings": copy.deepcopy(packet_findings),
+        },
+        "policy_artifact_kind": str(policy.get("artifact_kind", "")).strip(),
+    }
+
+
+def validate_deterministic_proposal_draft_materialization_request(
+    request: object,
+    *,
+    promotion_packet: object | None = None,
+) -> dict[str, Any]:
+    policy = deterministic_proposal_draft_materialization_policy()
+    findings: list[dict[str, str]] = []
+    if not isinstance(request, dict):
+        return {
+            "valid": False,
+            "findings": [
+                executor_report_finding(
+                    code="deterministic_proposal_draft_materialization_request_not_object",
+                    field="request",
+                    message="Deterministic materialization request must be a JSON object.",
+                )
+            ],
+            "normalized": {},
+        }
+    findings.extend(executor_report_forbidden_key_findings(request))
+    findings.extend(executor_report_machine_local_path_findings(request))
+    findings.extend(executor_report_secret_like_value_findings(request))
+    for field in [
+        str(field).strip()
+        for field in policy.get("required_request_fields", [])
+        if str(field).strip()
+    ]:
+        if field not in request:
+            findings.append(
+                executor_report_finding(
+                    code="missing_deterministic_proposal_draft_materialization_request_field",
+                    field=field,
+                    message=f"Deterministic materialization request is missing field {field}.",
+                )
+            )
+    source_artifact = str(request.get("source_promotion_packet_artifact", "")).strip()
+    expected_source_artifact = str(
+        policy.get(
+            "source_promotion_packet_artifact",
+            LOCAL_OPERATOR_EXECUTOR_PROPOSAL_PROMOTION_PACKET_RELATIVE_PATH,
+        )
+    ).strip()
+    if source_artifact != expected_source_artifact:
+        findings.append(
+            executor_report_finding(
+                code="invalid_deterministic_proposal_draft_materialization_source_artifact",
+                field="source_promotion_packet_artifact",
+                message="Deterministic materialization must reference the local promotion packet.",
+            )
+        )
+    materializer = str(request.get("materializer", "")).strip()
+    expected_materializer = str(
+        policy.get("materializer", "deterministic_proposal_draft_materializer")
+    ).strip()
+    if materializer != expected_materializer:
+        findings.append(
+            executor_report_finding(
+                code="invalid_deterministic_proposal_draft_materializer",
+                field="materializer",
+                message="Deterministic materialization must use the dedicated materializer.",
+            )
+        )
+    transformation = str(request.get("transformation", "")).strip()
+    expected_transformation = str(
+        policy.get(
+            "transformation",
+            "promotion_packet_to_proposal_source_draft_materialization",
+        )
+    ).strip()
+    if transformation != expected_transformation:
+        findings.append(
+            executor_report_finding(
+                code="invalid_deterministic_proposal_draft_materialization_transformation",
+                field="transformation",
+                message=(
+                    "Deterministic materialization may only transform promotion packet to "
+                    "proposal source draft materialization."
+                ),
+            )
+        )
+    effects_validation = validate_deterministic_proposal_draft_materialization_effects(
+        request.get("requested_effects")
+    )
+    findings.extend(copy.deepcopy(effects_validation.get("findings", [])))
+    target_validation = validate_deterministic_proposal_draft_materialization_target(
+        request.get("target")
+    )
+    findings.extend(copy.deepcopy(target_validation.get("findings", [])))
+    authorization_validation = validate_deterministic_proposal_draft_materialization_authorization(
+        request.get("human_authorization")
+    )
+    findings.extend(copy.deepcopy(authorization_validation.get("findings", [])))
+    authority_validation = validate_deterministic_proposal_draft_materialization_authority_boundary(
+        request.get("authority_boundary")
+    )
+    findings.extend(copy.deepcopy(authority_validation.get("findings", [])))
+    source_validation = (
+        validate_source_proposal_draft_candidate_promotion_packet_for_materialization(
+            promotion_packet
+        )
+    )
+    findings.extend(copy.deepcopy(source_validation.get("findings", [])))
+    source_normalized = source_validation.get("normalized", {})
+    source_normalized = source_normalized if isinstance(source_normalized, dict) else {}
+    return {
+        "valid": not findings,
+        "findings": findings,
+        "normalized": {
+            "source_promotion_packet_artifact": source_artifact,
+            "materializer": materializer,
+            "transformation": transformation,
+            "requested_effects": copy.deepcopy(effects_validation.get("effects", [])),
+            "target": copy.deepcopy(target_validation.get("normalized", {})),
+            "approval_state": authorization_validation.get("normalized", {}).get(
+                "approval_state", ""
+            ),
+            "source_packet_valid": source_normalized.get("source_packet_valid"),
+            "source_packet_status": source_normalized.get("source_packet_status", ""),
+            "packet_kind": source_normalized.get("packet_kind", ""),
+            "promotion_state": source_normalized.get("promotion_state", ""),
+            "next_gap": str(
+                policy.get("next_gap", "build_deterministic_proposal_draft_materializer")
+            ).strip(),
+        },
+        "effects_validation": effects_validation,
+        "target_validation": target_validation,
+        "authorization_validation": authorization_validation,
+        "authority_validation": authority_validation,
+        "source_promotion_packet_validation": source_validation,
+    }
+
+
 def agent_passport_contract_stable_fields(contract_name: str) -> list[str]:
     return [
         str(field).strip()
