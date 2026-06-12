@@ -1311,5 +1311,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0104",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0104_ontology_semantic_context_pack.md"
+    ],
+    "motivating_concern": "SpecGraph has an Ontology semantic control policy and smoke classifier, but supervisor and SpecSpace consumers still need a typed context artifact that carries accepted terms, relations, aliases, gaps, package metadata, and governance evidence without granting canonical authority",
+    "normalized_title": "Ontology Semantic Context Pack",
+    "bounded_scope": "Add a deterministic ontology semantic context pack derived from the existing 0060 import surfaces and 0103 semantic policy, emitted under runs/ for prompt-agent input context and SpecSpace review surfaces, without building the full semantic lint report, parsing arbitrary language, invoking prompt agents or ontologyc, generating ontology deltas, writing ontology packages or lockfiles, mutating canonical specs, or adding SpecSpace UI.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

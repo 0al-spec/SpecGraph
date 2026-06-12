@@ -119,6 +119,19 @@ def test_ontology_semantic_control_policy_defines_review_only_contract() -> None
     assert policy["repository_layout"]["semantic_lint_smoke"] == (
         "runs/ontology_semantic_lint_smoke.json"
     )
+    assert policy["repository_layout"]["semantic_context_pack"] == (
+        "runs/ontology_semantic_context_pack.json"
+    )
+    context_contract = policy["semantic_context_pack_contract"]
+    assert context_contract["artifact_kind"] == "ontology_semantic_context_pack"
+    assert context_contract["target"] == {
+        "target_kind": "proposal",
+        "target_ref": "SG-RFC-0104",
+    }
+    assert context_contract["consumer_boundary"]["for_prompt_agent_input"] is True
+    assert context_contract["consumer_boundary"]["for_specspace_review_surface"] is True
+    assert context_contract["consumer_boundary"]["may_execute_prompt_agent"] is False
+    assert context_contract["consumer_boundary"]["may_mutate_canonical_specs"] is False
     contract = policy["semantic_lint_contract"]
     assert contract["smoke_artifact_kind"] == "ontology_semantic_lint_smoke"
     assert {
@@ -241,6 +254,76 @@ def test_ontology_semantic_lint_smoke_classifies_terms() -> None:
     assert boundary["canonical_mutations_allowed"] is False
 
 
+def test_ontology_semantic_context_pack_builds_agent_context() -> None:
+    module = load_ontology_imports_module()
+
+    surfaces = module.build_ontology_import_surfaces(FIXTURE)
+
+    context_pack = surfaces["semantic_context_pack"]
+    assert context_pack["artifact_kind"] == "ontology_semantic_context_pack"
+    assert context_pack["proposal_id"] == "0104"
+    assert context_pack["target_scope"] == {
+        "target_kind": "proposal",
+        "target_ref": "SG-RFC-0104",
+    }
+    assert context_pack["canonical_mutations_allowed"] is False
+    assert context_pack["tracked_artifacts_written"] is False
+    assert context_pack["source_surfaces"] == {
+        "ontology_binding_preview": "runs/ontology_binding_preview.json",
+        "ontology_governance_evidence_index": "runs/ontology_governance_evidence_index.json",
+        "ontology_import_gap_index": "runs/ontology_import_gap_index.json",
+        "ontology_package_index": "runs/ontology_package_index.json",
+    }
+    assert context_pack["summary"] == {
+        "status": "ready_with_gaps",
+        "package_count": 1,
+        "accepted_term_count": 1,
+        "accepted_relation_count": 1,
+        "alias_count": 1,
+        "deprecated_term_count": 1,
+        "relation_conflict_count": 1,
+        "unresolved_gap_count": 1,
+        "governance_evidence_count": 1,
+        "next_gap": "build_ontology_semantic_lint_report",
+    }
+
+    package = context_pack["packages"][0]
+    assert package["package_ref"] == "edu.university.examcalc@0.1.0"
+    assert package["digest"] == (
+        "sha256:7cdf061c1c845e0d0d801c7d935b6d4b765db1317ec595910da2cb910eca9e2f"
+    )
+
+    accepted_terms = {entry["source_ref"]: entry for entry in context_pack["accepted_terms"]}
+    accepted_relations = {
+        entry["source_ref"]: entry for entry in context_pack["accepted_relations"]
+    }
+    assert accepted_terms["examcalc:Exam"]["preferred_term"] == "Exam"
+    assert accepted_terms["examcalc:Exam"]["kind"] == "class"
+    assert accepted_relations["examcalc:requires_policy"]["preferred_term"] == ("requires_policy")
+    assert accepted_relations["examcalc:requires_policy"]["kind"] == "relation"
+
+    aliases = {entry["term"]: entry for entry in context_pack["aliases"]}
+    assert aliases["requires policy"]["status"] == "grounded"
+    assert aliases["requires policy"]["concept_ref"] == "examcalc:requires_policy"
+    assert aliases["requires policy"]["concept"]["kind"] == "relation"
+
+    deprecated = {entry["term"]: entry for entry in context_pack["deprecated_terms"]}
+    assert deprecated["ExamPolicy"]["replacement_ref"] == "examcalc:ExamPolicyProfile"
+    assert deprecated["ExamPolicy"]["replacement_status"] == "unresolved_replacement_ref"
+
+    conflicts = {entry["term"]: entry for entry in context_pack["relation_conflicts"]}
+    assert conflicts["allows policy"]["status"] == "grounded"
+    assert conflicts["allows policy"]["accepted_relation_ref"] == "examcalc:requires_policy"
+
+    assert context_pack["unresolved_gaps"][0]["missing_concept"]["ref"] == ("examcalc:CASFunction")
+    assert context_pack["governance_evidence"][0]["decision_ref"].startswith(
+        "ontology-governance://edu.university.examcalc/0.1.0/"
+    )
+    assert context_pack["consumer_boundary"]["for_prompt_agent_input"] is True
+    assert context_pack["consumer_boundary"]["may_execute_prompt_agent"] is False
+    assert context_pack["authority_boundary"]["context_pack_is_authority"] is False
+
+
 def test_ontology_import_governance_and_prompt_surfaces_are_derived() -> None:
     module = load_ontology_imports_module()
 
@@ -330,12 +413,16 @@ def test_make_ontology_imports_writes_declared_surfaces() -> None:
         "runs/ontology_binding_preview.json": "ontology_binding_preview",
         "runs/ontology_prompt_invocation_index.json": "ontology_prompt_invocation_index",
         "runs/ontologyc_adapter_report_smoke.json": "ontologyc_adapter_report_smoke",
+        "runs/ontology_semantic_context_pack.json": "ontology_semantic_context_pack",
         "runs/ontology_semantic_lint_smoke.json": "ontology_semantic_lint_smoke",
     }
     for relative_path, artifact_kind in expected.items():
         payload = json.loads((ROOT / relative_path).read_text())
         assert payload["artifact_kind"] == artifact_kind
-        expected_proposal_id = "0103" if artifact_kind == "ontology_semantic_lint_smoke" else "0060"
+        expected_proposal_id = {
+            "ontology_semantic_context_pack": "0104",
+            "ontology_semantic_lint_smoke": "0103",
+        }.get(artifact_kind, "0060")
         assert payload["proposal_id"] == expected_proposal_id
         assert payload["canonical_mutations_allowed"] is False
         assert payload["tracked_artifacts_written"] is False
@@ -711,3 +798,34 @@ def test_proposal_0060_runtime_registry_tracks_slice() -> None:
         "def test_ontologyc_adapter_report_smoke_validates_report_contract(",
     ) in validation_markers
     assert ("Makefile", "ontology-imports:") in observation_markers
+
+
+def test_proposal_0104_runtime_registry_tracks_context_pack() -> None:
+    registry = json.loads((ROOT / "tools" / "proposal_runtime_registry.json").read_text())
+    entries = {entry["proposal_id"]: entry for entry in registry if isinstance(entry, dict)}
+    proposal = entries["0104"]
+
+    runtime_markers = {(item["path"], item["pattern"]) for item in proposal["runtime_markers"]}
+    validation_markers = {
+        (item["path"], item["pattern"]) for item in proposal["validation_markers"]
+    }
+    observation_markers = {
+        (item["path"], item["pattern"]) for item in proposal["observation_markers"]
+    }
+
+    assert (
+        "tools/ontology_semantic_control_policy.json",
+        "semantic_context_pack_contract",
+    ) in runtime_markers
+    assert (
+        "tools/ontology_imports.py",
+        "def build_ontology_semantic_context_pack(",
+    ) in runtime_markers
+    assert (
+        "tests/test_ontology_import_policy.py",
+        "def test_ontology_semantic_context_pack_builds_agent_context(",
+    ) in validation_markers
+    assert (
+        "tools/README.md",
+        "runs/ontology_semantic_context_pack.json",
+    ) in observation_markers

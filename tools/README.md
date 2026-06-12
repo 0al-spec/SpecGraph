@@ -120,11 +120,14 @@ Supervisor modes:
   `runs/ontologyc_adapter_report_smoke.json`, preserving source/version/digest
   checks for `ontologyc validate-specgraph` output. The same command consumes
   `tools/ontology_semantic_control_policy.json` and emits
-  `runs/ontology_semantic_lint_smoke.json`, classifying accepted, alias,
-  unknown, deprecated, and relation-conflict terms against the imported
-  ontology fixture. These surfaces resolve known imported refs and preserve
-  unresolved refs as reviewable ontology gaps without mutating canonical
-  `specs/nodes/*.yaml`.
+  `runs/ontology_semantic_context_pack.json`, packaging accepted terms,
+  accepted relations, aliases, deprecated terms, relation conflicts, unresolved
+  gaps, package metadata, and governance evidence for supervisor/SpecSpace
+  consumers. It also emits `runs/ontology_semantic_lint_smoke.json`,
+  classifying accepted, alias, unknown, deprecated, and relation-conflict terms
+  against the imported ontology fixture. These surfaces resolve known imported
+  refs and preserve unresolved refs as reviewable ontology gaps without
+  mutating canonical `specs/nodes/*.yaml`.
 - `--build-supervisor-executor-adapter-index`: build
   `runs/supervisor_executor_adapter_index.json` from the 0056 policy so
   executor backend availability, capability gaps, and Agent Passport CLI
