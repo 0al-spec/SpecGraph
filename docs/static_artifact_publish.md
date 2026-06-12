@@ -153,6 +153,9 @@ report; it does not publish materialization state, invoke executors, write
 `public_proposal_doc_materialization_policy` is only a policy boundary for a
 future `docs/proposals/...` materializer; static publishing still must not turn
 local materialization reports or source drafts into public proposal docs.
+`runs/local_operator_executor_public_proposal_materialization_report.json` may
+exist after `make executor-public-proposal-doc-materialize`, but it is a
+local-only operator report and must not be uploaded to the static host.
 
 Agent Passport CLI is installed during the publish workflow from the latest
 `0al-spec/agent-passport` GitHub Release into runner temp storage and added to

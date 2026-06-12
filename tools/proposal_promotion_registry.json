@@ -1311,5 +1311,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0102",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0102_build_public_proposal_doc_materializer.md"
+    ],
+    "motivating_concern": "SpecGraph has a policy boundary for public proposal doc materialization, but it lacks the bounded local materializer that writes exactly one docs/proposals document and reports the mutation boundary without granting source reports proposal registry or canonical authority",
+    "normalized_title": "Build Public Proposal Doc Materializer",
+    "bounded_scope": "Add a local-only public proposal doc materializer and Make target that consumes a valid source materialization report, writes exactly one matching docs/proposals target, records a local materialization report, and excludes local state from public static publish without mutating proposal registries or status, canonical specs, patches, gaps, or invoking executors.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]
