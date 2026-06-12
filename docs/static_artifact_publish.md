@@ -135,12 +135,15 @@ and `runs/local_operator_executor_task_smoke.json` may exist after
 `runs/local_operator_executor_report_review_packet.json` may exist after
 `make executor-report-review-packet`, and
 `runs/local_operator_executor_proposal_draft_candidate.json` may exist after
-`make executor-proposal-draft-candidate`, but they are intentionally not
+`make executor-proposal-draft-candidate`, and
+`runs/local_operator_executor_proposal_promotion_packet.json` may exist after
+`make executor-proposal-promotion-packet`, but they are intentionally not
 uploaded to the static host because they describe the current operator process
 environment rather than public producer artifacts. The
 `proposal_draft_candidate_promotion_policy` defines only a local promotion
-request boundary; it does not publish candidates, write proposal markdown, or
-mutate proposal registries during static publishing.
+request and promotion-packet boundary; it does not publish candidates or
+promotion packets, write proposal markdown, or mutate proposal registries
+during static publishing.
 
 Agent Passport CLI is installed during the publish workflow from the latest
 `0al-spec/agent-passport` GitHub Release into runner temp storage and added to
