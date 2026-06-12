@@ -19992,6 +19992,8 @@ def executor_report_string_contains_secret_like_value(value: str) -> bool:
     text = value.strip()
     if not text:
         return False
+    if re.search(r"-----BEGIN [A-Z0-9 ]*PRIVATE KEY-----", text):
+        return True
     return bool(
         re.search(
             r"(?i)\b(api[_-]?key|authorization|bearer|password|secret|token)\b\s*[:=]",

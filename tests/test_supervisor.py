@@ -31671,6 +31671,44 @@ def test_build_local_operator_executor_public_proposal_doc_materialization_block
     assert "/Users/egor/private" not in dumped
 
 
+def test_build_public_proposal_doc_materialization_blocks_private_key_source(
+    supervisor_module: object,
+    git_repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    source_report = ready_proposal_source_materialization_report(
+        supervisor_module,
+        monkeypatch,
+    )
+    request = fixed_public_proposal_doc_materialization_request(
+        supervisor_module,
+        monkeypatch,
+        source_report,
+    )
+    private_key_text = (
+        "# Proposal\n\n"
+        "-----BEGIN OPENSSH PRIVATE KEY-----\n"
+        "not-a-real-key\n"
+        "-----END OPENSSH PRIVATE KEY-----\n"
+    )
+    (git_repo_fixture / source_report["summary"]["target_path"]).write_text(
+        private_key_text,
+        encoding="utf-8",
+    )
+
+    report = supervisor_module.build_local_operator_executor_public_proposal_doc_materialization(
+        source_report,
+        request=request,
+    )
+
+    assert report["summary"]["status"] == "blocked_policy_contract"
+    assert not (git_repo_fixture / request["target"]["target_path"]).exists()
+    checks = {check["check_id"]: check["status"] for check in report["checks"]}
+    assert checks["source_draft_safe_for_public_materialization"] == "failed"
+    dumped = json.dumps(report, sort_keys=True)
+    assert "BEGIN OPENSSH PRIVATE KEY" not in dumped
+
+
 def test_build_public_proposal_doc_materialization_blocks_git_status_failure(
     supervisor_module: object,
     git_repo_fixture: Path,
