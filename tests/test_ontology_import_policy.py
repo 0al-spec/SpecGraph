@@ -45,6 +45,17 @@ def write_temp_policy(tmp_path: Path, payload: dict[str, object] | None = None) 
     return policy_path
 
 
+def write_temp_semantic_control_policy(
+    tmp_path: Path, payload: dict[str, object] | None = None
+) -> Path:
+    policy = payload or json.loads(
+        (ROOT / "tools" / "ontology_semantic_control_policy.json").read_text()
+    )
+    policy_path = tmp_path / "ontology_semantic_control_policy.json"
+    policy_path.write_text(json.dumps(policy, indent=2, sort_keys=True), encoding="utf-8")
+    return policy_path
+
+
 def write_temp_fixture(tmp_path: Path, payload: dict[str, object]) -> Path:
     fixture_dir = tmp_path / "tests" / "fixtures" / "ontology_import" / "examcalc"
     fixture_dir.mkdir(parents=True)
@@ -97,6 +108,33 @@ def test_ontology_import_policy_defines_read_only_contract() -> None:
     assert "canonical_spec_mutation" in contract["forbidden_effects"]
 
 
+def test_ontology_semantic_control_policy_defines_review_only_contract() -> None:
+    policy = json.loads((ROOT / "tools" / "ontology_semantic_control_policy.json").read_text())
+
+    assert policy["artifact_kind"] == "ontology_semantic_control_policy"
+    assert policy["proposal_id"] == "0103"
+    assert policy["policy_basis"] == "docs/proposals/0100_ontology_grounded_semantic_control.md"
+    assert policy["derived_output_contract"]["canonical_mutations_allowed"] is False
+    assert policy["derived_output_contract"]["tracked_artifacts_written"] is False
+    assert policy["repository_layout"]["semantic_lint_smoke"] == (
+        "runs/ontology_semantic_lint_smoke.json"
+    )
+    contract = policy["semantic_lint_contract"]
+    assert contract["smoke_artifact_kind"] == "ontology_semantic_lint_smoke"
+    assert {
+        "accepted_term",
+        "accepted_alias",
+        "unknown_term",
+        "deprecated_term",
+        "relation_conflict",
+    }.issubset(set(contract["term_classifications"]))
+    boundary = policy["authority_boundary"]
+    assert boundary["smoke_report_is_authority"] is False
+    assert boundary["ontology_delta_candidate_is_authority"] is False
+    assert boundary["prompt_agent_execution_allowed"] is False
+    assert boundary["automatic_canonical_node_update"] is False
+
+
 def test_ontology_import_fixture_resolves_known_refs_and_gaps() -> None:
     module = load_ontology_imports_module()
 
@@ -137,6 +175,70 @@ def test_ontology_import_fixture_resolves_known_refs_and_gaps() -> None:
         "concept_hint": "CASFunction",
     }
     assert gap_index["gaps"][0]["recommended_route"] == "ontology_package_draft"
+
+
+def test_ontology_semantic_lint_smoke_classifies_terms() -> None:
+    module = load_ontology_imports_module()
+
+    surfaces = module.build_ontology_import_surfaces(
+        FIXTURE,
+        adapter_report_path=ADAPTER_REPORT,
+    )
+
+    smoke = surfaces["semantic_lint_smoke"]
+    assert smoke["artifact_kind"] == "ontology_semantic_lint_smoke"
+    assert smoke["proposal_id"] == "0103"
+    assert smoke["canonical_mutations_allowed"] is False
+    assert smoke["tracked_artifacts_written"] is False
+    assert smoke["source_surfaces"] == {
+        "ontology_binding_preview": "runs/ontology_binding_preview.json",
+        "ontology_governance_evidence_index": "runs/ontology_governance_evidence_index.json",
+        "ontology_import_gap_index": "runs/ontology_import_gap_index.json",
+        "ontology_package_index": "runs/ontology_package_index.json",
+    }
+    assert smoke["summary"] == {
+        "status": "blocked_relation_conflict",
+        "term_count": 5,
+        "classification_counts": {
+            "accepted_alias": 1,
+            "accepted_term": 1,
+            "deprecated_term": 1,
+            "relation_conflict": 1,
+            "unknown_term": 1,
+        },
+        "review_required_count": 1,
+        "blocking_count": 2,
+        "next_gap": "review_ontology_relation_conflict",
+    }
+
+    by_term = {entry["term"]: entry for entry in smoke["term_results"]}
+    assert by_term["Exam"]["classification"] == "accepted_term"
+    assert by_term["Exam"]["status"] == "grounded"
+    assert by_term["Exam"]["concept_ref"]["source_ref"] == "examcalc:Exam"
+
+    assert by_term["requires policy"]["classification"] == "accepted_alias"
+    assert by_term["requires policy"]["status"] == "grounded_with_aliases"
+    assert by_term["requires policy"]["alias_of"] == "examcalc:requires_policy"
+    assert by_term["requires policy"]["suggested_action"] == "prefer_accepted_term"
+
+    assert by_term["CASFunction"]["classification"] == "unknown_term"
+    assert by_term["CASFunction"]["status"] == "review_required_unknown_terms"
+    assert by_term["CASFunction"]["gap"]["gap_id"] == "ontology-gap-examcalc-casfunction"
+    assert by_term["CASFunction"]["suggested_action"] == "emit_ontology_gap"
+
+    assert by_term["ExamPolicy"]["classification"] == "deprecated_term"
+    assert by_term["ExamPolicy"]["status"] == "blocked_deprecated_terms"
+    assert by_term["ExamPolicy"]["replacement_ref"] == "examcalc:ExamPolicyProfile"
+    assert by_term["ExamPolicy"]["suggested_action"] == "replace_with_accepted_term"
+
+    assert by_term["allows policy"]["classification"] == "relation_conflict"
+    assert by_term["allows policy"]["status"] == "blocked_relation_conflict"
+    assert by_term["allows policy"]["accepted_relation_ref"] == "examcalc:requires_policy"
+    assert by_term["allows policy"]["suggested_action"] == "use_accepted_relation"
+
+    boundary = smoke["authority_boundary"]
+    assert boundary["lint_report_is_authority"] is False
+    assert boundary["canonical_mutations_allowed"] is False
 
 
 def test_ontology_import_governance_and_prompt_surfaces_are_derived() -> None:
@@ -228,11 +330,13 @@ def test_make_ontology_imports_writes_declared_surfaces() -> None:
         "runs/ontology_binding_preview.json": "ontology_binding_preview",
         "runs/ontology_prompt_invocation_index.json": "ontology_prompt_invocation_index",
         "runs/ontologyc_adapter_report_smoke.json": "ontologyc_adapter_report_smoke",
+        "runs/ontology_semantic_lint_smoke.json": "ontology_semantic_lint_smoke",
     }
     for relative_path, artifact_kind in expected.items():
         payload = json.loads((ROOT / relative_path).read_text())
         assert payload["artifact_kind"] == artifact_kind
-        assert payload["proposal_id"] == "0060"
+        expected_proposal_id = "0103" if artifact_kind == "ontology_semantic_lint_smoke" else "0060"
+        assert payload["proposal_id"] == expected_proposal_id
         assert payload["canonical_mutations_allowed"] is False
         assert payload["tracked_artifacts_written"] is False
 
@@ -421,6 +525,27 @@ def test_ontologyc_adapter_report_rejects_wrong_digest_authority(tmp_path: Path)
             fixture_path,
             policy_path=policy_path,
             adapter_report_path=report_path,
+        )
+
+
+def test_ontology_semantic_control_policy_rejects_authority_expansion(
+    tmp_path: Path,
+) -> None:
+    module = load_ontology_imports_module()
+    module.ROOT = tmp_path
+    fixture_path = write_temp_fixture(tmp_path, load_fixture_payload())
+    policy_path = write_temp_policy(tmp_path)
+    semantic_policy = json.loads(
+        (ROOT / "tools" / "ontology_semantic_control_policy.json").read_text()
+    )
+    semantic_policy["authority_boundary"]["lint_report_is_authority"] = True
+    semantic_policy_path = write_temp_semantic_control_policy(tmp_path, semantic_policy)
+
+    with pytest.raises(ValueError, match="lint_report_is_authority"):
+        module.build_ontology_import_surfaces(
+            fixture_path,
+            policy_path=policy_path,
+            semantic_policy_path=semantic_policy_path,
         )
 
 
