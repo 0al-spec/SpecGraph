@@ -134,8 +134,11 @@ The policy accepts a request shaped like:
 }
 ```
 
-The shown `proposal_id` is illustrative. The validator checks the live
-deterministic proposal allocator and rejects stale or skipped ids.
+The shown `proposal_id` is illustrative. In the normal materialized-source
+flow, the validator requires the public proposal target id and filename to match
+the already-written source materialization report. The deterministic allocator
+is only a fallback when a source report does not provide an id; it is not used to
+reject the source draft's already-consumed proposal id.
 
 ## Forbidden Effects
 
@@ -166,8 +169,9 @@ This slice is complete when:
 - forbidden effects are rejected with stable effect indices;
 - authority expansion is rejected;
 - unsafe targets outside `docs/proposals/` are rejected;
-- stale or skipped proposal ids are rejected;
+- missing source proposal ids are rejected;
 - source/target id and filename drift are rejected;
+- source report artifact path or write-marker drift is rejected;
 - proposal `0101` is tracked in promotion/runtime registries;
 - focused validator tests, proposal gates, `publish-bundle`, `docc-sync`, and
   the full Python suite pass.

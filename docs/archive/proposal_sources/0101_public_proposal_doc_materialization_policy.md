@@ -40,7 +40,8 @@ The policy accepts a request only when:
 - the target is under `docs/proposals/`;
 - the target filename matches the source draft filename;
 - the target proposal id matches the source report proposal id;
-- the target proposal id is still the current deterministic `make proposal-id`;
+- the source report includes a proposal id, matching artifact path, and
+  `written: true` marker;
 - explicit human authorization approves public proposal doc materialization.
 
 ## Authority Boundary
