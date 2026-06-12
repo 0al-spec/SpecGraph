@@ -26085,7 +26085,11 @@ def validate_public_proposal_doc_materialization_authorization(
     }
 
 
-def validate_public_proposal_doc_materialization_target(target: object) -> dict[str, Any]:
+def validate_public_proposal_doc_materialization_target(
+    target: object,
+    *,
+    expected_proposal_id: str = "",
+) -> dict[str, Any]:
     policy = public_proposal_doc_materialization_policy()
     contract = policy.get("target_contract", {})
     contract = contract if isinstance(contract, dict) else {}
@@ -26148,26 +26152,48 @@ def validate_public_proposal_doc_materialization_target(target: object) -> dict[
                 message="Public proposal doc materialization proposal_id must be a four-digit id.",
             )
         )
-    expected_proposal_id = next_public_proposal_doc_materialization_proposal_id()
-    if not expected_proposal_id:
+    expected_proposal_id = str(expected_proposal_id).strip()
+    allocated_proposal_id = ""
+    if expected_proposal_id and proposal_id and proposal_id != expected_proposal_id:
         findings.append(
             executor_report_finding(
-                code="public_proposal_doc_id_allocation_unavailable",
+                code="public_proposal_doc_source_target_id_mismatch",
                 field="target.proposal_id",
                 message=(
-                    "Public proposal doc materialization requires a ready proposal-id allocation."
+                    "Public proposal doc materialization target id must match source report id."
                 ),
             )
         )
-    if proposal_id and proposal_id != expected_proposal_id:
+    elif not expected_proposal_id:
+        allocated_proposal_id = next_public_proposal_doc_materialization_proposal_id()
+        if not allocated_proposal_id:
+            findings.append(
+                executor_report_finding(
+                    code="public_proposal_doc_id_allocation_unavailable",
+                    field="target.proposal_id",
+                    message=(
+                        "Public proposal doc materialization requires a ready proposal-id "
+                        "allocation when the source report does not provide an id."
+                    ),
+                )
+            )
+        elif proposal_id and proposal_id != allocated_proposal_id:
+            findings.append(
+                executor_report_finding(
+                    code="public_proposal_doc_id_not_next",
+                    field="target.proposal_id",
+                    message=(
+                        "Public proposal doc materialization must use the current next proposal "
+                        f"id {allocated_proposal_id} when no source report id is available."
+                    ),
+                )
+            )
+    if expected_proposal_id and not proposal_id:
         findings.append(
             executor_report_finding(
-                code="public_proposal_doc_id_not_next",
+                code="invalid_public_proposal_doc_materialization_proposal_id",
                 field="target.proposal_id",
-                message=(
-                    "Public proposal doc materialization must use the current next proposal id "
-                    f"{expected_proposal_id}."
-                ),
+                message="Public proposal doc materialization target proposal_id is required.",
             )
         )
     target_path = str(target_payload.get("target_path", "")).strip()
@@ -26249,7 +26275,7 @@ def validate_public_proposal_doc_materialization_target(target: object) -> dict[
             "target_lane": target_lane,
             "target_artifact_kind": target_artifact_kind,
             "target_path": safe_target_path,
-            "expected_proposal_id": expected_proposal_id,
+            "expected_proposal_id": expected_proposal_id or allocated_proposal_id,
         },
     }
 
@@ -26323,6 +26349,32 @@ def validate_source_materialization_report_for_public_proposal_doc(
     proposal_id = str(summary.get("proposal_id", "")).strip()
     source_path = safe_repo_relative_path(str(summary.get("target_path", "")).strip())
     source_draft_written = summary.get("source_draft_written")
+    if not proposal_id:
+        findings.append(
+            executor_report_finding(
+                code="source_materialization_report_proposal_id_missing",
+                field="source_materialization_report.summary.proposal_id",
+                message="Source materialization report must include summary.proposal_id.",
+            )
+        )
+    if proposal_id and source_path:
+        source_name = Path(source_path).name
+        if not source_name.startswith(f"{proposal_id}_"):
+            findings.append(
+                executor_report_finding(
+                    code="source_materialization_report_source_path_id_mismatch",
+                    field="source_materialization_report.summary.target_path",
+                    message="Source materialization report target filename must start with id.",
+                )
+            )
+    elif proposal_id and not source_path:
+        findings.append(
+            executor_report_finding(
+                code="source_materialization_report_artifact_path_mismatch",
+                field="source_materialization_report.summary.target_path",
+                message="Source materialization report must include a safe target path.",
+            )
+        )
     if source_draft_written is not True:
         findings.append(
             executor_report_finding(
@@ -26349,6 +26401,36 @@ def validate_source_materialization_report_for_public_proposal_doc(
                 code="source_materialization_report_target_kind_not_allowed",
                 field="source_materialization_report.materialized_artifacts",
                 message="Source materialization report must include a proposal_source_draft.",
+            )
+        )
+    matching_source_artifacts = [
+        artifact
+        for artifact in materialized_artifacts
+        if isinstance(artifact, dict)
+        and str(artifact.get("artifact_kind", "")).strip() in allowed_kinds
+        and safe_repo_relative_path(str(artifact.get("path", "")).strip()) == source_path
+    ]
+    if source_path and not matching_source_artifacts:
+        findings.append(
+            executor_report_finding(
+                code="source_materialization_report_artifact_path_mismatch",
+                field="source_materialization_report.materialized_artifacts",
+                message=(
+                    "Source materialization report must include a written artifact whose path "
+                    "matches summary.target_path."
+                ),
+            )
+        )
+    if matching_source_artifacts and not any(
+        artifact.get("written") is True for artifact in matching_source_artifacts
+    ):
+        findings.append(
+            executor_report_finding(
+                code="source_materialization_report_artifact_not_written",
+                field="source_materialization_report.materialized_artifacts",
+                message=(
+                    "Source materialization report matching artifact must record written=true."
+                ),
             )
         )
     return {
@@ -26384,6 +26466,9 @@ def validate_public_proposal_doc_materialization_request(
             "normalized": {},
             "source_materialization_report_validation": {},
         }
+    findings.extend(executor_report_forbidden_key_findings(request))
+    findings.extend(executor_report_machine_local_path_findings(request))
+    findings.extend(executor_report_secret_like_value_findings(request))
     for field in [
         str(field).strip()
         for field in policy.get("required_request_fields", [])
@@ -26397,9 +26482,14 @@ def validate_public_proposal_doc_materialization_request(
                     message=f"Public proposal doc materialization request is missing {field}.",
                 )
             )
-    if (
-        str(request.get("source_materialization_report_artifact", "")).strip()
-        != LOCAL_OPERATOR_EXECUTOR_PROPOSAL_MATERIALIZATION_REPORT_RELATIVE_PATH
+    expected_source_artifact = str(
+        policy.get(
+            "source_materialization_report_artifact",
+            LOCAL_OPERATOR_EXECUTOR_PROPOSAL_MATERIALIZATION_REPORT_RELATIVE_PATH,
+        )
+    ).strip()
+    if str(request.get("source_materialization_report_artifact", "")).strip() != (
+        expected_source_artifact
     ):
         findings.append(
             executor_report_finding(
@@ -26439,15 +26529,21 @@ def validate_public_proposal_doc_materialization_request(
     effects_validation = validate_public_proposal_doc_materialization_effects(
         request.get("requested_effects")
     )
-    target_validation = validate_public_proposal_doc_materialization_target(request.get("target"))
+    source_validation = validate_source_materialization_report_for_public_proposal_doc(
+        source_report
+    )
+    source_normalized = source_validation.get("normalized", {})
+    source_normalized = source_normalized if isinstance(source_normalized, dict) else {}
+    source_proposal_id = str(source_normalized.get("proposal_id", "")).strip()
+    target_validation = validate_public_proposal_doc_materialization_target(
+        request.get("target"),
+        expected_proposal_id=source_proposal_id,
+    )
     authorization_validation = validate_public_proposal_doc_materialization_authorization(
         request.get("human_authorization")
     )
     authority_validation = validate_public_proposal_doc_materialization_authority_boundary(
         request.get("authority_boundary")
-    )
-    source_validation = validate_source_materialization_report_for_public_proposal_doc(
-        source_report
     )
     for validation in [
         effects_validation,
@@ -26461,20 +26557,6 @@ def validate_public_proposal_doc_materialization_request(
             findings.extend(copy.deepcopy(validation_findings))
     target_normalized = target_validation.get("normalized", {})
     target_normalized = target_normalized if isinstance(target_normalized, dict) else {}
-    source_normalized = source_validation.get("normalized", {})
-    source_normalized = source_normalized if isinstance(source_normalized, dict) else {}
-    target_proposal_id = str(target_normalized.get("proposal_id", "")).strip()
-    source_proposal_id = str(source_normalized.get("proposal_id", "")).strip()
-    if source_proposal_id and target_proposal_id and source_proposal_id != target_proposal_id:
-        findings.append(
-            executor_report_finding(
-                code="public_proposal_doc_source_target_id_mismatch",
-                field="target.proposal_id",
-                message=(
-                    "Public proposal doc materialization target id must match source report id."
-                ),
-            )
-        )
     source_path = str(source_normalized.get("source_path", "")).strip()
     target_path = str(target_normalized.get("target_path", "")).strip()
     if source_path and target_path and Path(source_path).name != Path(target_path).name:
