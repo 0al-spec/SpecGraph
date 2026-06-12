@@ -195,6 +195,16 @@ Supervisor modes:
   and rejects direct proposal markdown writes, proposal registry mutation,
   proposal status mutation, canonical mutation, patch application, and gap
   closure.
+- `deterministic_proposal_draft_materialization_policy` in
+  `tools/supervisor_executor_adapter_policy.json`: defines the policy-only
+  boundary for turning a ready local promotion packet into a future
+  deterministic proposal source draft materialization request. It requires the
+  current deterministic `make proposal-id` target, explicit human
+  authorization, and a safe `docs/archive/proposal_sources/` path while
+  rejecting executor invocation, direct `docs/proposals/` writes, proposal
+  registry/status mutation, canonical mutation, patch application, gap closure,
+  and static publication of local materialization state. This slice does not
+  implement the materializer or write proposal files.
 - `--build-agent-passport-derived-surfaces`: build Agent Passport derived
   surfaces from `tools/agent_passport_adoption_policy.json` and the 0056
   executor adapter index, including report-only Agent Passport CLI validation
@@ -561,6 +571,13 @@ Key derived artifacts:
   to request a future promotion packet, while rejecting direct proposal markdown
   writes, proposal registry mutation, proposal status mutation, canonical
   mutation, patch application, gap closure, and unsafe target paths
+- `deterministic_proposal_draft_materialization_policy`: policy-only surface
+  that allows only valid local promotion packets plus explicit human
+  authorization to request future deterministic proposal source draft
+  materialization, while rejecting non-next proposal ids, unsafe or registry
+  targets, executor invocation, direct proposal writes, proposal registry/status
+  mutation, canonical mutation, patch application, gap closure, and static
+  publication
 - `runs/agent_surface_index.json`: read-only Agent Passport adoption surface
   index for graph-facing agents, including policy-declared surfaces and
   executor backends derived from the 0056 adapter index

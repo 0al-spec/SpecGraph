@@ -63,10 +63,13 @@ exist after `make executor-smoke`, and
 `executor_report_to_proposal_draft_policy` supervisor policy describes the
 local-only boundary for proposal draft candidates, and
 `proposal_draft_candidate_promotion_policy` describes only a local promotion
-request and promotion-packet boundary. These diagnostics remain private
-operator artifacts rather than public producer artifacts. Static publishing
-must not upload candidates or promotion packets, write proposal markdown, or
-mutate proposal registries.
+request and promotion-packet boundary. The
+`deterministic_proposal_draft_materialization_policy` describes only a future
+materialization request boundary; it does not publish materialization state,
+invoke executors, write proposal files, or mutate proposal registries. These
+diagnostics remain private operator artifacts rather than public producer
+artifacts. Static publishing must not upload candidates or promotion packets,
+write proposal markdown, or mutate proposal registries.
 
 The public safety gate requires:
 
