@@ -24,7 +24,7 @@ Source draft:
 
 - `docs/archive/proposal_sources/0100_ontology_grounded_semantic_control.md`
 
-Related accepted proposal context:
+Related draft proposal context:
 
 - `0011_pre_spec_semantic_layer`
 - `0060_external_ontology_import_plane`

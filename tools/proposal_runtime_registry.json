@@ -5306,42 +5306,17 @@
   },
   {
     "proposal_id": "0100",
-    "posture": "bounded_policy_followup",
+    "posture": "bounded_runtime_followup",
     "runtime_surfaces": [
       "docs/proposals/0100_ontology_grounded_semantic_control.md",
       "docs/archive/proposal_sources/0100_ontology_grounded_semantic_control.md",
-      "docs/ontologyc_adapter_report_contract.md",
-      "docs/proposals/0060_external_ontology_import_plane.md",
-      "docs/proposals/0062_proto_graph_recursive_refinement.md"
+      "tools/ontology_semantic_control_policy.json",
+      "runs/ontology_semantic_context_pack.json",
+      "runs/ontology_semantic_lint_report.json",
+      "runs/ontology_delta_invocation_index.json"
     ],
-    "runtime_markers": [
-      {
-        "path": "docs/proposals/0100_ontology_grounded_semantic_control.md",
-        "pattern": "ontology_semantic_context_pack"
-      },
-      {
-        "path": "docs/proposals/0100_ontology_grounded_semantic_control.md",
-        "pattern": "ontology_semantic_lint_report"
-      },
-      {
-        "path": "docs/proposals/0100_ontology_grounded_semantic_control.md",
-        "pattern": "ontology_delta_candidate"
-      }
-    ],
+    "runtime_markers": [],
     "validation_markers": [],
-    "observation_markers": [
-      {
-        "path": "docs/proposals/0100_ontology_grounded_semantic_control.md",
-        "pattern": "define_ontology_semantic_control_policy"
-      },
-      {
-        "path": "docs/proposals/0100_ontology_grounded_semantic_control.md",
-        "pattern": "This document does not implement runtime linting"
-      },
-      {
-        "path": "docs/archive/proposal_sources/0100_ontology_grounded_semantic_control.md",
-        "pattern": "fewer hallucinations, fewer misunderstandings"
-      }
-    ]
+    "observation_markers": []
   }
 ]
