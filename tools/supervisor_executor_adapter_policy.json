@@ -12,7 +12,8 @@
     "local_operator_report_review_packet_artifact": "runs/local_operator_executor_report_review_packet.json",
     "local_operator_proposal_draft_candidate_artifact": "runs/local_operator_executor_proposal_draft_candidate.json",
     "local_operator_proposal_promotion_packet_artifact": "runs/local_operator_executor_proposal_promotion_packet.json",
-    "local_operator_proposal_materialization_report_artifact": "runs/local_operator_executor_proposal_materialization_report.json"
+    "local_operator_proposal_materialization_report_artifact": "runs/local_operator_executor_proposal_materialization_report.json",
+    "local_operator_public_proposal_materialization_report_artifact": "runs/local_operator_executor_public_proposal_materialization_report.json"
   },
   "index_contract": {
     "artifact_kind": "supervisor_executor_adapter_index",
@@ -860,6 +861,56 @@
       "gap_closure_allowed": false,
       "patch_application_allowed": false,
       "static_publish_of_local_materialization_allowed": false
+    },
+    "materialization_report_contract": {
+      "artifact_kind": "public_proposal_doc_materialization_report",
+      "schema_version": 1,
+      "artifact": "runs/local_operator_executor_public_proposal_materialization_report.json",
+      "source_materialization_report_artifact": "runs/local_operator_executor_proposal_materialization_report.json",
+      "target_artifact_kind": "public_proposal_doc",
+      "local_only": true,
+      "status_values": [
+        "materialized_public_proposal_doc",
+        "blocked_missing_source_report",
+        "blocked_invalid_source_report",
+        "blocked_public_proposal_doc_policy",
+        "blocked_source_draft_missing",
+        "blocked_target_exists",
+        "blocked_unexpected_mutation",
+        "blocked_policy_contract"
+      ],
+      "check_ids": [
+        "source_materialization_report_present",
+        "source_materialization_report_valid",
+        "public_proposal_doc_policy_allows_materialization",
+        "source_draft_available",
+        "source_draft_safe_for_public_materialization",
+        "target_path_available",
+        "public_proposal_doc_written",
+        "mutation_scope_limited",
+        "public_proposal_doc_materialization_report_contract_valid"
+      ],
+      "named_filters": [
+        "materialized_public_proposal_doc",
+        "blocked_missing_source_report",
+        "blocked_invalid_source_report",
+        "blocked_public_proposal_doc_policy",
+        "blocked_source_draft_missing",
+        "blocked_target_exists",
+        "blocked_unexpected_mutation",
+        "blocked_policy_contract"
+      ],
+      "success_next_gap": "define_public_proposal_tracking_update_policy",
+      "next_gap": "build_public_proposal_doc_materializer",
+      "privacy_boundary": {
+        "must_not_persist_absolute_paths": true,
+        "must_not_persist_raw_logs": true,
+        "must_not_persist_secrets": true,
+        "public_static_publish": false,
+        "canonical_mutations_allowed": false,
+        "proposal_registry_mutations_allowed": false,
+        "proposal_status_mutations_allowed": false
+      }
     },
     "next_gap": "build_public_proposal_doc_materializer"
   },

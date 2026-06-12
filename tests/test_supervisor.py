@@ -31365,6 +31365,271 @@ def test_validate_public_proposal_doc_materialization_request_rejects_authority_
     )
 
 
+def test_build_local_operator_executor_public_proposal_doc_materialization_writes_doc(
+    supervisor_module: object,
+    git_repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    source_report = ready_proposal_source_materialization_report(
+        supervisor_module,
+        monkeypatch,
+    )
+    request = fixed_public_proposal_doc_materialization_request(
+        supervisor_module,
+        monkeypatch,
+        source_report,
+    )
+
+    report = supervisor_module.build_local_operator_executor_public_proposal_doc_materialization(
+        source_report,
+        request=request,
+    )
+
+    target = git_repo_fixture / request["target"]["target_path"]
+    source = git_repo_fixture / source_report["summary"]["target_path"]
+    assert report["summary"]["status"] == "materialized_public_proposal_doc"
+    assert report["summary"]["next_gap"] == "define_public_proposal_tracking_update_policy"
+    assert report["summary"]["public_proposal_doc_written"] is True
+    assert target.read_text(encoding="utf-8") == source.read_text(encoding="utf-8")
+    assert report["execution"]["raw_source_text_persisted"] is False
+    assert report["execution"]["added_paths"] == [request["target"]["target_path"]]
+    assert {check["check_id"]: check["status"] for check in report["checks"]} == {
+        "source_materialization_report_present": "passed",
+        "source_materialization_report_valid": "passed",
+        "public_proposal_doc_policy_allows_materialization": "passed",
+        "source_draft_available": "passed",
+        "source_draft_safe_for_public_materialization": "passed",
+        "target_path_available": "passed",
+        "public_proposal_doc_written": "passed",
+        "mutation_scope_limited": "passed",
+        "public_proposal_doc_materialization_report_contract_valid": "passed",
+    }
+    validation = supervisor_module.validate_public_proposal_doc_materialization_report(report)
+    assert validation["valid"] is True
+    dumped = json.dumps(report, sort_keys=True)
+    assert source.read_text(encoding="utf-8") not in dumped
+    assert "/Users/" not in dumped
+    assert "raw_stdout" not in dumped
+    assert "raw_stderr" not in dumped
+
+
+def test_build_local_operator_executor_public_proposal_doc_materialization_blocks_existing_target(
+    supervisor_module: object,
+    git_repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    source_report = ready_proposal_source_materialization_report(
+        supervisor_module,
+        monkeypatch,
+    )
+    request = fixed_public_proposal_doc_materialization_request(
+        supervisor_module,
+        monkeypatch,
+        source_report,
+    )
+    target = git_repo_fixture / request["target"]["target_path"]
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text("already here\n", encoding="utf-8")
+
+    report = supervisor_module.build_local_operator_executor_public_proposal_doc_materialization(
+        source_report,
+        request=request,
+    )
+
+    assert report["summary"]["status"] == "blocked_target_exists"
+    assert report["summary"]["public_proposal_doc_written"] is False
+    assert target.read_text(encoding="utf-8") == "already here\n"
+    checks = {check["check_id"]: check["status"] for check in report["checks"]}
+    assert checks["target_path_available"] == "failed"
+    assert checks["public_proposal_doc_written"] == "not_run"
+
+
+def test_build_local_operator_executor_public_proposal_doc_materialization_blocks_invalid_source(
+    supervisor_module: object,
+    git_repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    source_report = ready_proposal_source_materialization_report(
+        supervisor_module,
+        monkeypatch,
+    )
+    source_report["summary"]["status"] = "blocked_policy_contract"
+    request = fixed_public_proposal_doc_materialization_request(
+        supervisor_module,
+        monkeypatch,
+        source_report,
+    )
+
+    report = supervisor_module.build_local_operator_executor_public_proposal_doc_materialization(
+        source_report,
+        request=request,
+    )
+
+    assert report["summary"]["status"] == "blocked_invalid_source_report"
+    assert any(
+        finding["code"] == "source_materialization_report_status_not_allowed"
+        for finding in report["materialization_policy_validation"]["findings"]
+    )
+
+
+def test_build_local_operator_executor_public_proposal_doc_materialization_blocks_missing_source(
+    supervisor_module: object,
+    git_repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    source_report = ready_proposal_source_materialization_report(
+        supervisor_module,
+        monkeypatch,
+    )
+    request = fixed_public_proposal_doc_materialization_request(
+        supervisor_module,
+        monkeypatch,
+        source_report,
+    )
+    (git_repo_fixture / source_report["summary"]["target_path"]).unlink()
+
+    report = supervisor_module.build_local_operator_executor_public_proposal_doc_materialization(
+        source_report,
+        request=request,
+    )
+
+    assert report["summary"]["status"] == "blocked_source_draft_missing"
+    checks = {check["check_id"]: check["status"] for check in report["checks"]}
+    assert checks["source_draft_available"] == "failed"
+    assert checks["public_proposal_doc_written"] == "not_run"
+
+
+def test_build_local_operator_executor_public_proposal_doc_materialization_blocks_source_privacy(
+    supervisor_module: object,
+    git_repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    source_report = ready_proposal_source_materialization_report(
+        supervisor_module,
+        monkeypatch,
+    )
+    request = fixed_public_proposal_doc_materialization_request(
+        supervisor_module,
+        monkeypatch,
+        source_report,
+    )
+    (git_repo_fixture / source_report["summary"]["target_path"]).write_text(
+        "# Proposal\n\nLocal path: /Users/egor/private\n",
+        encoding="utf-8",
+    )
+
+    report = supervisor_module.build_local_operator_executor_public_proposal_doc_materialization(
+        source_report,
+        request=request,
+    )
+
+    assert report["summary"]["status"] == "blocked_policy_contract"
+    assert not (git_repo_fixture / request["target"]["target_path"]).exists()
+    checks = {check["check_id"]: check["status"] for check in report["checks"]}
+    assert checks["source_draft_safe_for_public_materialization"] == "failed"
+    dumped = json.dumps(report, sort_keys=True)
+    assert "/Users/egor/private" not in dumped
+
+
+def test_build_public_proposal_doc_materialization_blocks_git_status_failure(
+    supervisor_module: object,
+    git_repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    source_report = ready_proposal_source_materialization_report(
+        supervisor_module,
+        monkeypatch,
+    )
+    request = fixed_public_proposal_doc_materialization_request(
+        supervisor_module,
+        monkeypatch,
+        source_report,
+    )
+    monkeypatch.setattr(supervisor_module, "git_tracked_status_snapshot", lambda: None)
+
+    report = supervisor_module.build_local_operator_executor_public_proposal_doc_materialization(
+        source_report,
+        request=request,
+    )
+
+    assert report["summary"]["status"] == "blocked_unexpected_mutation"
+    assert not (git_repo_fixture / request["target"]["target_path"]).exists()
+    checks = {check["check_id"]: check["status"] for check in report["checks"]}
+    assert checks["target_path_available"] == "passed"
+    assert checks["public_proposal_doc_written"] == "not_run"
+    assert checks["mutation_scope_limited"] == "failed"
+
+
+def test_validate_public_proposal_doc_materialization_report_rejects_local_paths(
+    supervisor_module: object,
+    git_repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    source_report = ready_proposal_source_materialization_report(
+        supervisor_module,
+        monkeypatch,
+    )
+    request = fixed_public_proposal_doc_materialization_request(
+        supervisor_module,
+        monkeypatch,
+        source_report,
+    )
+    report = supervisor_module.build_local_operator_executor_public_proposal_doc_materialization(
+        source_report,
+        request=request,
+    )
+    report["summary"]["target_path"] = "/Users/egor/proposal.md"
+
+    validation = supervisor_module.validate_public_proposal_doc_materialization_report(report)
+
+    assert validation["valid"] is False
+    finding_codes = {finding["code"] for finding in validation["findings"]}
+    assert "machine_local_path_persisted" in finding_codes
+    assert "invalid_public_proposal_doc_materialization_target_path" in finding_codes
+
+
+def test_main_builds_public_proposal_doc_materialization_as_standalone_command(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_local_operator_executor_public_proposal_doc_materialization",
+        lambda: {
+            "artifact_kind": (
+                supervisor_module.LOCAL_OPERATOR_EXECUTOR_PUBLIC_PROPOSAL_MATERIALIZATION_REPORT_ARTIFACT_KIND
+            ),
+            "schema_version": (
+                supervisor_module.LOCAL_OPERATOR_EXECUTOR_PUBLIC_PROPOSAL_MATERIALIZATION_REPORT_SCHEMA_VERSION
+            ),
+            "local_only": True,
+            "summary": {"status": "materialized_public_proposal_doc"},
+            "checks": [],
+            "viewer_projection": {"named_filters": {"materialized_public_proposal_doc": ["codex"]}},
+        },
+    )
+
+    exit_code = supervisor_module.main(
+        build_local_operator_executor_public_proposal_doc_materialization_mode=True
+    )
+
+    assert exit_code == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["artifact_kind"] == (
+        supervisor_module.LOCAL_OPERATOR_EXECUTOR_PUBLIC_PROPOSAL_MATERIALIZATION_REPORT_ARTIFACT_KIND
+    )
+    artifact = json.loads(
+        (
+            repo_fixture
+            / "runs"
+            / "local_operator_executor_public_proposal_materialization_report.json"
+        ).read_text(encoding="utf-8")
+    )
+    assert artifact["summary"] == {"status": "materialized_public_proposal_doc"}
+
+
 def test_main_builds_local_operator_executor_proposal_source_materialization_as_standalone_command(
     supervisor_module: object,
     repo_fixture: Path,

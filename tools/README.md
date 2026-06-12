@@ -182,6 +182,13 @@ Supervisor modes:
   target, and recording mutation guard results without writing
   `docs/proposals/`, mutating proposal registries, changing proposal status,
   applying patches, invoking executors, or publishing local artifacts.
+- `--build-local-operator-executor-public-proposal-doc-materialization`: build
+  local-only `runs/local_operator_executor_public_proposal_materialization_report.json`
+  by consuming a valid source materialization report and the public proposal doc
+  materialization policy, writing exactly one matching `docs/proposals/...`
+  document, and recording mutation guard results without mutating proposal
+  registries, changing proposal status, applying patches, invoking executors,
+  or publishing local artifacts.
 - `public_proposal_doc_materialization_policy` in
   `tools/supervisor_executor_adapter_policy.json`: defines the policy-only
   boundary for turning a valid local proposal source materialization report into
@@ -604,6 +611,12 @@ Key derived artifacts:
   source/target filenames, unsafe targets, executor invocation,
   registry/status mutation, canonical mutation, patch application, gap closure,
   and static publication
+- `runs/local_operator_executor_public_proposal_materialization_report.json`:
+  local-only materialization report emitted by
+  `--build-local-operator-executor-public-proposal-doc-materialization`; it
+  records the source report, source/target relative paths, request validation,
+  mutation guard result, and checks without persisting source draft text, raw
+  logs, absolute paths, secrets, or static-publish state
 - `runs/agent_surface_index.json`: read-only Agent Passport adoption surface
   index for graph-facing agents, including policy-declared surfaces and
   executor backends derived from the 0056 adapter index

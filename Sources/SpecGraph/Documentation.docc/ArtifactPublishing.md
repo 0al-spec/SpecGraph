@@ -72,7 +72,10 @@ report; it does not publish materialization state, invoke executors, write
 `docs/proposals/`, or mutate proposal registries. The
 `public_proposal_doc_materialization_policy` is only a policy boundary for a
 future `docs/proposals/...` materializer; static publishing still must not turn
-local materialization reports or source drafts into public proposal docs. These
+local materialization reports or source drafts into public proposal docs.
+`runs/local_operator_executor_public_proposal_materialization_report.json` may
+exist after `make executor-public-proposal-doc-materialize`, but it is a
+local-only operator report and must not be uploaded to the static host. These
 diagnostics remain private operator artifacts rather than public producer
 artifacts. Static publishing must not upload candidates, promotion packets, or
 materialization reports, write proposal markdown, or mutate proposal

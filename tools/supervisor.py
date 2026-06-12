@@ -218,6 +218,9 @@ LOCAL_OPERATOR_EXECUTOR_PROPOSAL_PROMOTION_PACKET_RELATIVE_PATH = (
 LOCAL_OPERATOR_EXECUTOR_PROPOSAL_MATERIALIZATION_REPORT_RELATIVE_PATH = (
     "runs/local_operator_executor_proposal_materialization_report.json"
 )
+LOCAL_OPERATOR_EXECUTOR_PUBLIC_PROPOSAL_MATERIALIZATION_REPORT_RELATIVE_PATH = (
+    "runs/local_operator_executor_public_proposal_materialization_report.json"
+)
 AGENT_SURFACE_INDEX_RELATIVE_PATH = "runs/agent_surface_index.json"
 KNOWN_AGENT_PASSPORT_INDEX_RELATIVE_PATH = "runs/known_agent_passport_index.json"
 AGENT_VERIFICATION_GAP_INDEX_RELATIVE_PATH = "runs/agent_verification_gap_index.json"
@@ -3236,6 +3239,13 @@ LOCAL_OPERATOR_EXECUTOR_PROPOSAL_MATERIALIZATION_REPORT_FILENAME = Path(
         )
     )
 ).name
+LOCAL_OPERATOR_EXECUTOR_PUBLIC_PROPOSAL_MATERIALIZATION_REPORT_FILENAME = Path(
+    str(
+        supervisor_executor_adapter_policy_lookup(
+            "repository_layout.local_operator_public_proposal_materialization_report_artifact"
+        )
+    )
+).name
 SUPERVISOR_EXECUTOR_ADAPTER_INDEX_ARTIFACT_KIND = str(
     supervisor_executor_adapter_policy_lookup("index_contract.artifact_kind")
 )
@@ -3311,6 +3321,16 @@ LOCAL_OPERATOR_EXECUTOR_PROPOSAL_MATERIALIZATION_REPORT_SCHEMA_VERSION = int(
     supervisor_executor_adapter_policy_lookup(
         "deterministic_proposal_draft_materialization_policy."
         "materialization_report_contract.schema_version"
+    )
+)
+LOCAL_OPERATOR_EXECUTOR_PUBLIC_PROPOSAL_MATERIALIZATION_REPORT_ARTIFACT_KIND = str(
+    supervisor_executor_adapter_policy_lookup(
+        "public_proposal_doc_materialization_policy.materialization_report_contract.artifact_kind"
+    )
+)
+LOCAL_OPERATOR_EXECUTOR_PUBLIC_PROPOSAL_MATERIALIZATION_REPORT_SCHEMA_VERSION = int(
+    supervisor_executor_adapter_policy_lookup(
+        "public_proposal_doc_materialization_policy.materialization_report_contract.schema_version"
     )
 )
 AGENT_SURFACE_INDEX_FILENAME = Path(
@@ -18189,6 +18209,10 @@ def local_operator_executor_proposal_materialization_report_path() -> Path:
     return RUNS_DIR / LOCAL_OPERATOR_EXECUTOR_PROPOSAL_MATERIALIZATION_REPORT_FILENAME
 
 
+def local_operator_executor_public_proposal_materialization_report_path() -> Path:
+    return RUNS_DIR / LOCAL_OPERATOR_EXECUTOR_PUBLIC_PROPOSAL_MATERIALIZATION_REPORT_FILENAME
+
+
 def metric_signal_index_path() -> Path:
     return RUNS_DIR / METRIC_SIGNAL_INDEX_FILENAME
 
@@ -26483,6 +26507,498 @@ def validate_public_proposal_doc_materialization_request(
         "authority_validation": authority_validation,
         "source_materialization_report_validation": source_validation,
     }
+
+
+def public_proposal_doc_materialization_report_contract() -> dict[str, Any]:
+    policy = public_proposal_doc_materialization_policy()
+    contract = policy.get("materialization_report_contract", {})
+    return contract if isinstance(contract, dict) else {}
+
+
+def load_local_operator_executor_proposal_materialization_report_artifact() -> (
+    dict[str, Any] | None
+):
+    path = local_operator_executor_proposal_materialization_report_path()
+    if not path.exists():
+        return None
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    return payload if isinstance(payload, dict) else None
+
+
+def local_operator_executor_public_proposal_materialization_report_next_gap(status: str) -> str:
+    contract = public_proposal_doc_materialization_report_contract()
+    if status == "materialized_public_proposal_doc":
+        return str(
+            contract.get(
+                "success_next_gap",
+                "define_public_proposal_tracking_update_policy",
+            )
+        ).strip()
+    return {
+        "blocked_missing_source_report": "run_executor_proposal_source_materialize_until_ready",
+        "blocked_invalid_source_report": "repair_proposal_source_materialization_report",
+        "blocked_public_proposal_doc_policy": "repair_public_proposal_doc_materialization_policy",
+        "blocked_source_draft_missing": "materialize_or_restore_proposal_source_draft",
+        "blocked_target_exists": "review_existing_public_proposal_doc_target",
+        "blocked_unexpected_mutation": "repair_public_proposal_doc_materializer_guard",
+        "blocked_policy_contract": "repair_public_proposal_doc_materializer_contract",
+    }.get(status, "repair_public_proposal_doc_materializer")
+
+
+def local_operator_executor_public_proposal_materialization_report_status(
+    checks: list[dict[str, Any]],
+) -> str:
+    by_id = {
+        str(check.get("check_id", "")).strip(): str(check.get("status", "")).strip()
+        for check in checks
+    }
+    if by_id.get("source_materialization_report_present") == "missing":
+        return "blocked_missing_source_report"
+    if by_id.get("source_materialization_report_valid") != "passed":
+        return "blocked_invalid_source_report"
+    if by_id.get("public_proposal_doc_policy_allows_materialization") != "passed":
+        return "blocked_public_proposal_doc_policy"
+    if by_id.get("source_draft_available") != "passed":
+        return "blocked_source_draft_missing"
+    if by_id.get("source_draft_safe_for_public_materialization") != "passed":
+        return "blocked_policy_contract"
+    if by_id.get("target_path_available") != "passed":
+        return "blocked_target_exists"
+    if by_id.get("mutation_scope_limited") != "passed":
+        return "blocked_unexpected_mutation"
+    if by_id.get("public_proposal_doc_written") != "passed":
+        return "blocked_policy_contract"
+    if by_id.get("public_proposal_doc_materialization_report_contract_valid") == "failed":
+        return "blocked_policy_contract"
+    return "materialized_public_proposal_doc"
+
+
+def validate_public_proposal_doc_materialization_report(report: object) -> dict[str, Any]:
+    contract = public_proposal_doc_materialization_report_contract()
+    findings: list[dict[str, str]] = []
+    if not isinstance(report, dict):
+        return {
+            "valid": False,
+            "findings": [
+                executor_report_finding(
+                    code="public_proposal_doc_materialization_report_not_object",
+                    field="report",
+                    message="Public proposal doc materialization report must be an object.",
+                )
+            ],
+            "normalized": {},
+        }
+    findings.extend(executor_report_forbidden_key_findings(report))
+    findings.extend(executor_report_machine_local_path_findings(report))
+    findings.extend(executor_report_secret_like_value_findings(report))
+    if (
+        report.get("artifact_kind")
+        != LOCAL_OPERATOR_EXECUTOR_PUBLIC_PROPOSAL_MATERIALIZATION_REPORT_ARTIFACT_KIND
+    ):
+        findings.append(
+            executor_report_finding(
+                code="invalid_public_proposal_doc_materialization_report_kind",
+                field="artifact_kind",
+                message="Public proposal doc materialization report kind does not match policy.",
+            )
+        )
+    if (
+        report.get("schema_version")
+        != LOCAL_OPERATOR_EXECUTOR_PUBLIC_PROPOSAL_MATERIALIZATION_REPORT_SCHEMA_VERSION
+    ):
+        findings.append(
+            executor_report_finding(
+                code="invalid_public_proposal_doc_materialization_report_schema",
+                field="schema_version",
+                message="Public proposal doc materialization report schema does not match policy.",
+            )
+        )
+    if report.get("local_only") is not True:
+        findings.append(
+            executor_report_finding(
+                code="public_proposal_doc_materialization_report_local_only_required",
+                field="local_only",
+                message="Public proposal doc materialization report must remain local-only.",
+            )
+        )
+    if (
+        report.get("source_materialization_report_artifact")
+        != LOCAL_OPERATOR_EXECUTOR_PROPOSAL_MATERIALIZATION_REPORT_RELATIVE_PATH
+    ):
+        findings.append(
+            executor_report_finding(
+                code="invalid_public_proposal_doc_materialization_report_source",
+                field="source_materialization_report_artifact",
+                message="Report must reference the local proposal source materialization report.",
+            )
+        )
+    summary = report.get("summary", {})
+    summary = summary if isinstance(summary, dict) else {}
+    if not isinstance(report.get("summary"), dict):
+        findings.append(
+            executor_report_finding(
+                code="public_proposal_doc_materialization_report_summary_not_object",
+                field="summary",
+                message="Public proposal doc materialization report summary must be an object.",
+            )
+        )
+    allowed_statuses = {
+        str(value).strip() for value in contract.get("status_values", []) if str(value).strip()
+    }
+    status = str(summary.get("status", "")).strip()
+    if status not in allowed_statuses:
+        findings.append(
+            executor_report_finding(
+                code="invalid_public_proposal_doc_materialization_report_status",
+                field="summary.status",
+                message="Public proposal doc materialization report status is not allowed.",
+            )
+        )
+    target_path = safe_repo_relative_path(str(summary.get("target_path", "")).strip())
+    target_contract = public_proposal_doc_materialization_policy().get("target_contract", {})
+    target_contract = target_contract if isinstance(target_contract, dict) else {}
+    allowed_prefixes = [
+        str(prefix).strip()
+        for prefix in target_contract.get("allowed_target_path_prefixes", [])
+        if str(prefix).strip()
+    ]
+    if status == "materialized_public_proposal_doc":
+        if not target_path or not any(
+            target_path.startswith(prefix) for prefix in allowed_prefixes
+        ):
+            findings.append(
+                executor_report_finding(
+                    code="invalid_public_proposal_doc_materialization_target_path",
+                    field="summary.target_path",
+                    message="Public proposal doc target path must use an allowed prefix.",
+                )
+            )
+        if summary.get("public_proposal_doc_written") is not True:
+            findings.append(
+                executor_report_finding(
+                    code="public_proposal_doc_materialization_write_not_recorded",
+                    field="summary.public_proposal_doc_written",
+                    message="Successful materialization must record public doc write.",
+                )
+            )
+    checks = report.get("checks", [])
+    if not isinstance(checks, list):
+        findings.append(
+            executor_report_finding(
+                code="public_proposal_doc_materialization_checks_not_list",
+                field="checks",
+                message="Public proposal doc materialization checks must be a list.",
+            )
+        )
+        checks = []
+    required_checks = {
+        str(value).strip()
+        for value in contract.get("check_ids", [])
+        if str(value).strip()
+        and str(value).strip() != "public_proposal_doc_materialization_report_contract_valid"
+    }
+    observed_checks = {
+        str(check.get("check_id", "")).strip()
+        for check in checks
+        if isinstance(check, dict) and str(check.get("check_id", "")).strip()
+    }
+    for check_id in sorted(required_checks - observed_checks):
+        findings.append(
+            executor_report_finding(
+                code="missing_public_proposal_doc_materialization_check",
+                field="checks",
+                message=f"Materialization report is missing check {check_id}.",
+            )
+        )
+    materialized_artifacts = report.get("materialized_artifacts", [])
+    if not isinstance(materialized_artifacts, list):
+        findings.append(
+            executor_report_finding(
+                code="public_proposal_doc_materialization_artifacts_not_list",
+                field="materialized_artifacts",
+                message="Materialized public proposal doc artifacts must be a list.",
+            )
+        )
+    return {
+        "valid": not findings,
+        "findings": findings,
+        "normalized": {
+            "status": status,
+            "target_path": target_path,
+            "public_proposal_doc_written": summary.get("public_proposal_doc_written"),
+        },
+    }
+
+
+def build_local_operator_executor_public_proposal_doc_materialization(
+    source_report: dict[str, Any] | None = None,
+    *,
+    request: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    contract = public_proposal_doc_materialization_report_contract()
+    source_report = (
+        source_report
+        if isinstance(source_report, dict)
+        else load_local_operator_executor_proposal_materialization_report_artifact()
+    )
+    source_present = isinstance(source_report, dict)
+    request = (
+        copy.deepcopy(request)
+        if isinstance(request, dict)
+        else default_public_proposal_doc_materialization_request(source_report=source_report)
+    )
+    policy_validation = validate_public_proposal_doc_materialization_request(
+        request,
+        source_report=source_report if source_present else None,
+    )
+    policy_findings = policy_validation.get("findings", [])
+    policy_findings = policy_findings if isinstance(policy_findings, list) else []
+    source_validation = policy_validation.get("source_materialization_report_validation", {})
+    source_validation = source_validation if isinstance(source_validation, dict) else {}
+    source_valid = bool(source_present and source_validation.get("valid") is True)
+    normalized = policy_validation.get("normalized", {})
+    normalized = normalized if isinstance(normalized, dict) else {}
+    target = normalized.get("target", {})
+    target = target if isinstance(target, dict) else {}
+    source_normalized = source_validation.get("normalized", {})
+    source_normalized = source_normalized if isinstance(source_normalized, dict) else {}
+    target_path = safe_repo_relative_path(str(target.get("target_path", "")).strip())
+    source_path = safe_repo_relative_path(str(source_normalized.get("source_path", "")).strip())
+    source_absolute_path = ROOT / source_path if source_path else ROOT
+    target_absolute_path = ROOT / target_path if target_path else ROOT
+    policy_allows = bool(policy_validation.get("valid") is True)
+    source_draft_available = bool(policy_allows and source_path and source_absolute_path.is_file())
+    source_text = ""
+    source_draft_safe = False
+    read_error = ""
+    if source_draft_available:
+        try:
+            source_text = source_absolute_path.read_text(encoding="utf-8")
+            source_draft_safe = not (
+                executor_report_string_contains_machine_local_path(source_text)
+                or executor_report_string_contains_secret_like_value(source_text)
+            )
+        except OSError as exc:
+            read_error = sanitized_os_error_message(exc)
+            source_draft_safe = False
+    target_available = bool(
+        policy_allows
+        and source_draft_available
+        and source_draft_safe
+        and target_path
+        and not target_absolute_path.exists()
+    )
+    before_snapshot = git_tracked_status_snapshot() if target_available else None
+    public_doc_written = False
+    write_error = ""
+    mutation_scope_limited = False
+    added_paths: set[str] | None = None
+    if target_available and before_snapshot is not None:
+        try:
+            atomic_write_text(target_absolute_path, source_text)
+            public_doc_written = True
+        except OSError as exc:
+            write_error = sanitized_os_error_message(exc)
+        after_snapshot = git_tracked_status_snapshot()
+        added_paths = git_status_added_paths(before_snapshot, after_snapshot)
+        mutation_scope_limited = added_paths == {target_path}
+    checks = [
+        local_operator_smoke_check(
+            check_id="source_materialization_report_present",
+            status="passed" if source_present else "missing",
+            message=(
+                "Local proposal source materialization report is present."
+                if source_present
+                else "Local proposal source materialization report is missing."
+            ),
+        ),
+        local_operator_smoke_check(
+            check_id="source_materialization_report_valid",
+            status="passed" if source_valid else "failed",
+            message=(
+                "Local proposal source materialization report is valid for publication."
+                if source_valid
+                else "Local proposal source materialization report is missing or invalid."
+            ),
+        ),
+        local_operator_smoke_check(
+            check_id="public_proposal_doc_policy_allows_materialization",
+            status="passed" if policy_allows else "failed",
+            message=(
+                "Public proposal doc materialization policy allows this request."
+                if policy_allows
+                else "Public proposal doc materialization policy blocks this request."
+            ),
+        ),
+        local_operator_smoke_check(
+            check_id="source_draft_available",
+            status="passed" if source_draft_available else "failed",
+            message=(
+                "Proposal source draft is available."
+                if source_draft_available
+                else "Proposal source draft is missing or unreadable."
+            ),
+        ),
+        local_operator_smoke_check(
+            check_id="source_draft_safe_for_public_materialization",
+            status="passed" if source_draft_safe else "failed",
+            message=(
+                "Proposal source draft is safe for public materialization."
+                if source_draft_safe
+                else "Proposal source draft failed the public materialization privacy check."
+            ),
+        ),
+        local_operator_smoke_check(
+            check_id="target_path_available",
+            status="passed" if target_available else "failed",
+            message=(
+                "Public proposal doc target path is available."
+                if target_available
+                else "Public proposal doc target path is unavailable or invalid."
+            ),
+        ),
+        local_operator_smoke_check(
+            check_id="public_proposal_doc_written",
+            status=(
+                "passed"
+                if public_doc_written
+                else "not_run"
+                if not target_available or before_snapshot is None
+                else "failed"
+            ),
+            message=(
+                "Public proposal doc was written."
+                if public_doc_written
+                else "Public proposal doc was not written."
+            ),
+        ),
+        local_operator_smoke_check(
+            check_id="mutation_scope_limited",
+            status=(
+                "passed"
+                if mutation_scope_limited
+                else "failed"
+                if target_available and before_snapshot is None
+                else "not_run"
+                if not public_doc_written
+                else "failed"
+            ),
+            message=(
+                "Materialization changed only the requested public proposal doc path."
+                if mutation_scope_limited
+                else "Public proposal doc materialization mutation scope could not be proven."
+            ),
+        ),
+    ]
+    status_before_contract = local_operator_executor_public_proposal_materialization_report_status(
+        checks
+    )
+    report = {
+        "artifact_kind": (
+            LOCAL_OPERATOR_EXECUTOR_PUBLIC_PROPOSAL_MATERIALIZATION_REPORT_ARTIFACT_KIND
+        ),
+        "schema_version": (
+            LOCAL_OPERATOR_EXECUTOR_PUBLIC_PROPOSAL_MATERIALIZATION_REPORT_SCHEMA_VERSION
+        ),
+        "generated_at": utc_now_iso(),
+        "policy_reference": {
+            **supervisor_executor_adapter_policy_reference(),
+            "policy_section": "public_proposal_doc_materialization_policy",
+            "report_contract_section": "materialization_report_contract",
+        },
+        "local_only": bool(contract.get("local_only", True)),
+        "source_materialization_report_artifact": (
+            LOCAL_OPERATOR_EXECUTOR_PROPOSAL_MATERIALIZATION_REPORT_RELATIVE_PATH
+        ),
+        "materialization_request": copy.deepcopy(request),
+        "materialization_policy_validation": {
+            "valid": bool(policy_validation.get("valid", False)),
+            "finding_count": len(policy_findings),
+            "findings": copy.deepcopy(policy_findings),
+            "normalized": copy.deepcopy(normalized),
+        },
+        "source_materialization_report_validation": copy.deepcopy(source_validation),
+        "materialized_artifacts": [
+            {
+                "artifact_kind": str(contract.get("target_artifact_kind", "public_proposal_doc")),
+                "path": target_path,
+                "source_path": source_path,
+                "written": public_doc_written,
+            }
+        ]
+        if target_path
+        else [],
+        "authority_boundary": copy.deepcopy(request.get("authority_boundary", {})),
+        "privacy_boundary": copy.deepcopy(contract.get("privacy_boundary", {})),
+        "execution": {
+            "executor_invoked": False,
+            "raw_logs_persisted": False,
+            "raw_source_text_persisted": False,
+            "absolute_paths_persisted": False,
+            "secrets_persisted": False,
+            "read_error": read_error,
+            "write_error": write_error,
+            "tracked_status_observed": before_snapshot is not None and added_paths is not None,
+            "added_paths": sorted(added_paths) if added_paths is not None else [],
+        },
+        "summary": {
+            "status": status_before_contract,
+            "proposal_id": str(target.get("proposal_id", "")).strip(),
+            "source_path": source_path,
+            "target_path": target_path,
+            "public_proposal_doc_written": public_doc_written,
+            "next_gap": local_operator_executor_public_proposal_materialization_report_next_gap(
+                status_before_contract
+            ),
+        },
+        "checks": checks,
+        "viewer_projection": {"named_filters": {}},
+    }
+    report_validation = validate_public_proposal_doc_materialization_report(report)
+    report_findings = report_validation.get("findings", [])
+    report_findings = report_findings if isinstance(report_findings, list) else []
+    checks.append(
+        local_operator_smoke_check(
+            check_id="public_proposal_doc_materialization_report_contract_valid",
+            status="passed" if report_validation.get("valid") is True else "failed",
+            message=(
+                "Public proposal doc materialization report matches the contract."
+                if report_validation.get("valid") is True
+                else "Public proposal doc materialization report does not match the contract."
+            ),
+        )
+    )
+    final_status = local_operator_executor_public_proposal_materialization_report_status(checks)
+    report["summary"]["status"] = final_status
+    report["summary"]["next_gap"] = (
+        local_operator_executor_public_proposal_materialization_report_next_gap(final_status)
+    )
+    report["materialization_report_validation"] = {
+        "valid": bool(report_validation.get("valid", False)),
+        "finding_count": len(report_findings),
+        "findings": copy.deepcopy(report_findings),
+        "normalized": copy.deepcopy(report_validation.get("normalized", {})),
+    }
+    named_filters = {
+        str(name).strip(): [] for name in contract.get("named_filters", []) if str(name).strip()
+    }
+    named_filters.setdefault(final_status, []).append("proposal_lane_operator")
+    for key in list(named_filters):
+        named_filters[key] = sorted(set(named_filters[key]))
+    report["viewer_projection"] = {"named_filters": named_filters}
+    return report
+
+
+def write_local_operator_executor_public_proposal_materialization_report(
+    report: dict[str, Any],
+) -> Path:
+    path = local_operator_executor_public_proposal_materialization_report_path()
+    with artifact_lock(path):
+        atomic_write_json(path, report)
+    return path
 
 
 def agent_passport_contract_stable_fields(contract_name: str) -> list[str]:
@@ -49555,6 +50071,7 @@ def main(
     build_local_operator_executor_proposal_draft_candidate_mode: bool = False,
     build_local_operator_executor_proposal_promotion_packet_mode: bool = False,
     build_local_operator_executor_proposal_source_materialization_mode: bool = False,
+    build_local_operator_executor_public_proposal_doc_materialization_mode: bool = False,
     build_agent_passport_derived_surfaces_mode: bool = False,
     build_agent_runtime_enforcement_evidence_mode: bool = False,
     build_supervisor_performance_index_mode: bool = False,
@@ -49650,6 +50167,9 @@ def main(
         ),
         "--build-local-operator-executor-proposal-source-materialization": (
             build_local_operator_executor_proposal_source_materialization_mode
+        ),
+        "--build-local-operator-executor-public-proposal-doc-materialization": (
+            build_local_operator_executor_public_proposal_doc_materialization_mode
         ),
         "--build-agent-passport-derived-surfaces": build_agent_passport_derived_surfaces_mode,
         "--build-agent-runtime-enforcement-evidence": (
@@ -50907,6 +51427,46 @@ def main(
         write_local_operator_executor_proposal_materialization_report(report)
         emit_supervisor_json(report, output_mode=normalized_output_mode)
         return 0 if report.get("summary", {}).get("status") == "materialized_source_draft" else 1
+
+    if build_local_operator_executor_public_proposal_doc_materialization_mode:
+        if any(
+            (
+                dry_run,
+                auto_approve,
+                loop,
+                resolve_gate,
+                decision,
+                note,
+                target_spec,
+                split_proposal,
+                apply_split_proposal,
+                operator_note,
+                mutation_budget,
+                run_authority,
+                execution_profile,
+                child_model,
+                child_timeout_seconds,
+                verbose,
+                list_stale_runtime,
+                clean_stale_runtime,
+                observe_graph_health_mode,
+                operator_request_packet_path,
+            )
+        ):
+            print(
+                "--build-local-operator-executor-public-proposal-doc-materialization must be "
+                "used as a standalone command",
+                file=sys.stderr,
+            )
+            return 1
+        report = build_local_operator_executor_public_proposal_doc_materialization()
+        write_local_operator_executor_public_proposal_materialization_report(report)
+        emit_supervisor_json(report, output_mode=normalized_output_mode)
+        return (
+            0
+            if report.get("summary", {}).get("status") == "materialized_public_proposal_doc"
+            else 1
+        )
 
     if build_agent_passport_derived_surfaces_mode:
         if any(
@@ -54341,6 +54901,15 @@ if __name__ == "__main__":
         ),
     )
     parser.add_argument(
+        "--build-local-operator-executor-public-proposal-doc-materialization",
+        action="store_true",
+        help=(
+            "Materialize a local public proposal doc from a valid source materialization "
+            "report and policy, without mutating proposal registries, status, specs, "
+            "patches, or public static artifacts"
+        ),
+    )
+    parser.add_argument(
         "--build-agent-passport-derived-surfaces",
         action="store_true",
         help=(
@@ -54702,6 +55271,9 @@ if __name__ == "__main__":
             ),
             build_local_operator_executor_proposal_source_materialization_mode=(
                 args.build_local_operator_executor_proposal_source_materialization
+            ),
+            build_local_operator_executor_public_proposal_doc_materialization_mode=(
+                args.build_local_operator_executor_public_proposal_doc_materialization
             ),
             build_agent_passport_derived_surfaces_mode=(args.build_agent_passport_derived_surfaces),
             build_agent_runtime_enforcement_evidence_mode=(
