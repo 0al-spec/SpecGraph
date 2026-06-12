@@ -125,7 +125,9 @@ Supervisor modes:
   gaps, package metadata, and governance evidence for supervisor/SpecSpace
   consumers. It also emits `runs/ontology_semantic_lint_report.json`, deriving
   review findings, blocking findings, candidate delta terms, and recommended
-  actions from that context pack, plus `runs/ontology_semantic_lint_smoke.json`,
+  actions from that context pack, then
+  `runs/ontology_delta_candidate_review_packet.json` for explicit ontology-owner
+  review actions, plus `runs/ontology_semantic_lint_smoke.json`,
   classifying accepted, alias, unknown, deprecated, and relation-conflict terms
   against the imported ontology fixture. These surfaces resolve known imported
   refs and preserve unresolved refs as reviewable ontology gaps without

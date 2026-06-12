@@ -5331,6 +5331,10 @@
       },
       {
         "path": "tools/ontology_imports.py",
+        "pattern": "def build_ontology_delta_candidate_review_packet("
+      },
+      {
+        "path": "tools/ontology_imports.py",
         "pattern": "def build_ontology_semantic_lint_smoke("
       }
     ],
@@ -5512,6 +5516,58 @@
       {
         "path": "docs/proposals/0105_ontology_semantic_lint_report.md",
         "pattern": "build_ontology_delta_candidate_review_packet"
+      }
+    ]
+  },
+  {
+    "proposal_id": "0106",
+    "posture": "bounded_runtime_followup",
+    "runtime_surfaces": [
+      "docs/proposals/0106_ontology_delta_candidate_review_packet.md",
+      "docs/archive/proposal_sources/0106_ontology_delta_candidate_review_packet.md",
+      "tools/ontology_semantic_control_policy.json",
+      "tools/ontology_imports.py",
+      "tools/README.md",
+      "Makefile",
+      "tests/test_ontology_import_policy.py",
+      "runs/ontology_delta_candidate_review_packet.json"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/ontology_semantic_control_policy.json",
+        "pattern": "ontology_delta_candidate_review_packet_contract"
+      },
+      {
+        "path": "tools/ontology_imports.py",
+        "pattern": "def build_ontology_delta_candidate_review_packet("
+      },
+      {
+        "path": "tools/ontology_imports.py",
+        "pattern": "\"ontology_delta_candidate_review_packet\""
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_ontology_import_policy.py",
+        "pattern": "def test_ontology_delta_candidate_review_packet_builds_review_packet("
+      },
+      {
+        "path": "tests/test_ontology_import_policy.py",
+        "pattern": "runs/ontology_delta_candidate_review_packet.json"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "Makefile",
+        "pattern": "ontology-imports:"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "runs/ontology_delta_candidate_review_packet.json"
+      },
+      {
+        "path": "docs/proposals/0106_ontology_delta_candidate_review_packet.md",
+        "pattern": "build_specspace_semantic_review_surface"
       }
     ]
   }

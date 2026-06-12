@@ -125,6 +125,9 @@ def test_ontology_semantic_control_policy_defines_review_only_contract() -> None
     assert policy["repository_layout"]["semantic_lint_report"] == (
         "runs/ontology_semantic_lint_report.json"
     )
+    assert policy["repository_layout"]["ontology_delta_candidate_review_packet"] == (
+        "runs/ontology_delta_candidate_review_packet.json"
+    )
     context_contract = policy["semantic_context_pack_contract"]
     assert context_contract["artifact_kind"] == "ontology_semantic_context_pack"
     assert context_contract["target"] == {
@@ -148,6 +151,23 @@ def test_ontology_semantic_control_policy_defines_review_only_contract() -> None
     assert report_contract["consumer_boundary"]["for_specspace_review_surface"] is True
     assert report_contract["consumer_boundary"]["may_execute_prompt_agent"] is False
     assert report_contract["consumer_boundary"]["may_write_ontology_delta"] is False
+    delta_contract = policy["ontology_delta_candidate_review_packet_contract"]
+    assert delta_contract["artifact_kind"] == "ontology_delta_candidate_review_packet"
+    assert delta_contract["source_lint_report_artifact_kind"] == ("ontology_semantic_lint_report")
+    assert delta_contract["target"] == {
+        "target_kind": "proposal",
+        "target_ref": "SG-RFC-0106",
+    }
+    assert {
+        "approve_for_ontology_package_draft",
+        "reject_candidate",
+        "request_clarification",
+    }.issubset(set(delta_contract["review_actions"]))
+    assert delta_contract["consumer_boundary"]["for_supervisor_gate_evidence"] is True
+    assert delta_contract["consumer_boundary"]["for_specspace_review_surface"] is True
+    assert delta_contract["consumer_boundary"]["may_write_ontology_package"] is False
+    assert delta_contract["consumer_boundary"]["may_update_ontology_lockfile"] is False
+    assert delta_contract["consumer_boundary"]["may_mutate_canonical_specs"] is False
     contract = policy["semantic_lint_contract"]
     assert contract["smoke_artifact_kind"] == "ontology_semantic_lint_smoke"
     assert {
@@ -410,6 +430,67 @@ def test_ontology_semantic_lint_report_builds_review_findings() -> None:
     assert report["authority_boundary"]["lint_report_is_authority"] is False
 
 
+def test_ontology_delta_candidate_review_packet_builds_review_packet() -> None:
+    module = load_ontology_imports_module()
+
+    surfaces = module.build_ontology_import_surfaces(FIXTURE)
+
+    packet = surfaces["ontology_delta_candidate_review_packet"]
+    assert packet["artifact_kind"] == "ontology_delta_candidate_review_packet"
+    assert packet["proposal_id"] == "0106"
+    assert packet["target"] == {
+        "target_kind": "proposal",
+        "target_ref": "SG-RFC-0106",
+    }
+    assert packet["source_lint_report"] == "runs/ontology_semantic_lint_report.json"
+    assert packet["canonical_mutations_allowed"] is False
+    assert packet["tracked_artifacts_written"] is False
+    assert packet["summary"] == {
+        "status": "review_required",
+        "candidate_count": 1,
+        "source_lint_status": "blocked_relation_conflict",
+        "blocking_count": 2,
+        "next_gap": "build_specspace_semantic_review_surface",
+    }
+
+    assert packet["candidates"] == [
+        {
+            "candidate_id": "ontology-delta-candidate-examcalc-casfunction",
+            "term": "CASFunction",
+            "source_ref": "examcalc:CASFunction",
+            "missing_concept": {
+                "ref": "examcalc:CASFunction",
+                "namespace_hint": "examcalc",
+                "concept_hint": "CASFunction",
+            },
+            "gap_id": "ontology-gap-examcalc-casfunction",
+            "recommended_route": "ontology_package_draft",
+            "source_lint_action": "emit_ontology_gap",
+            "proposed_delta": {
+                "operation": "draft_ontology_concept",
+                "ref": "examcalc:CASFunction",
+                "namespace": "examcalc",
+                "symbol": "CASFunction",
+                "source": "ontology_semantic_lint_report_candidate",
+            },
+            "review_state": "needs_ontology_owner_review",
+            "writes_ontology_package": False,
+            "mutates_canonical_specs": False,
+        }
+    ]
+    actions = {entry["action"]: entry for entry in packet["review_actions"]}
+    assert sorted(actions) == [
+        "approve_for_ontology_package_draft",
+        "reject_candidate",
+        "request_clarification",
+    ]
+    assert actions["approve_for_ontology_package_draft"]["writes_ontology_package"] is False
+    assert actions["approve_for_ontology_package_draft"]["mutates_canonical_specs"] is False
+    assert packet["consumer_boundary"]["may_write_ontology_package"] is False
+    assert packet["consumer_boundary"]["may_update_ontology_lockfile"] is False
+    assert packet["authority_boundary"]["ontology_delta_candidate_is_authority"] is False
+
+
 def test_ontology_import_governance_and_prompt_surfaces_are_derived() -> None:
     module = load_ontology_imports_module()
 
@@ -501,12 +582,16 @@ def test_make_ontology_imports_writes_declared_surfaces() -> None:
         "runs/ontologyc_adapter_report_smoke.json": "ontologyc_adapter_report_smoke",
         "runs/ontology_semantic_context_pack.json": "ontology_semantic_context_pack",
         "runs/ontology_semantic_lint_report.json": "ontology_semantic_lint_report",
+        "runs/ontology_delta_candidate_review_packet.json": (
+            "ontology_delta_candidate_review_packet"
+        ),
         "runs/ontology_semantic_lint_smoke.json": "ontology_semantic_lint_smoke",
     }
     for relative_path, artifact_kind in expected.items():
         payload = json.loads((ROOT / relative_path).read_text())
         assert payload["artifact_kind"] == artifact_kind
         expected_proposal_id = {
+            "ontology_delta_candidate_review_packet": "0106",
             "ontology_semantic_context_pack": "0104",
             "ontology_semantic_lint_report": "0105",
             "ontology_semantic_lint_smoke": "0103",
@@ -947,4 +1032,35 @@ def test_proposal_0105_runtime_registry_tracks_lint_report() -> None:
     assert (
         "tools/README.md",
         "runs/ontology_semantic_lint_report.json",
+    ) in observation_markers
+
+
+def test_proposal_0106_runtime_registry_tracks_delta_candidate_packet() -> None:
+    registry = json.loads((ROOT / "tools" / "proposal_runtime_registry.json").read_text())
+    entries = {entry["proposal_id"]: entry for entry in registry if isinstance(entry, dict)}
+    proposal = entries["0106"]
+
+    runtime_markers = {(item["path"], item["pattern"]) for item in proposal["runtime_markers"]}
+    validation_markers = {
+        (item["path"], item["pattern"]) for item in proposal["validation_markers"]
+    }
+    observation_markers = {
+        (item["path"], item["pattern"]) for item in proposal["observation_markers"]
+    }
+
+    assert (
+        "tools/ontology_semantic_control_policy.json",
+        "ontology_delta_candidate_review_packet_contract",
+    ) in runtime_markers
+    assert (
+        "tools/ontology_imports.py",
+        "def build_ontology_delta_candidate_review_packet(",
+    ) in runtime_markers
+    assert (
+        "tests/test_ontology_import_policy.py",
+        "def test_ontology_delta_candidate_review_packet_builds_review_packet(",
+    ) in validation_markers
+    assert (
+        "tools/README.md",
+        "runs/ontology_delta_candidate_review_packet.json",
     ) in observation_markers

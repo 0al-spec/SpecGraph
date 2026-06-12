@@ -619,6 +619,7 @@ def require_semantic_control_policy(policy: dict[str, Any]) -> dict[str, Any]:
     if require_string(policy, "proposal_id", "semantic_control_policy") != "0103":
         raise ValueError("semantic_control_policy.proposal_id must be 0103")
     layout = require_object(policy, "repository_layout", "semantic_control_policy")
+    require_layout_path(layout, "ontology_delta_candidate_review_packet")
     require_layout_path(layout, "semantic_context_pack")
     require_layout_path(layout, "semantic_lint_report")
     require_layout_path(layout, "semantic_lint_smoke")
@@ -848,6 +849,111 @@ def require_semantic_control_policy(policy: dict[str, Any]) -> dict[str, Any]:
             )
     require_string(
         report_contract, "next_gap", "semantic_control_policy.semantic_lint_report_contract"
+    )
+    delta_contract = require_object(
+        policy, "ontology_delta_candidate_review_packet_contract", "semantic_control_policy"
+    )
+    if (
+        require_string(
+            delta_contract,
+            "artifact_kind",
+            "semantic_control_policy.ontology_delta_candidate_review_packet_contract",
+        )
+        != "ontology_delta_candidate_review_packet"
+    ):
+        raise ValueError(
+            "semantic_control_policy.ontology_delta_candidate_review_packet_contract."
+            "artifact_kind must be ontology_delta_candidate_review_packet"
+        )
+    if (
+        require_string(
+            delta_contract,
+            "source_lint_report_artifact_kind",
+            "semantic_control_policy.ontology_delta_candidate_review_packet_contract",
+        )
+        != "ontology_semantic_lint_report"
+    ):
+        raise ValueError(
+            "semantic_control_policy.ontology_delta_candidate_review_packet_contract."
+            "source_lint_report_artifact_kind must be ontology_semantic_lint_report"
+        )
+    delta_target = require_object(
+        delta_contract,
+        "target",
+        "semantic_control_policy.ontology_delta_candidate_review_packet_contract",
+    )
+    require_string(
+        delta_target,
+        "target_kind",
+        "semantic_control_policy.ontology_delta_candidate_review_packet_contract.target",
+    )
+    require_string(
+        delta_target,
+        "target_ref",
+        "semantic_control_policy.ontology_delta_candidate_review_packet_contract.target",
+    )
+    require_string(
+        delta_contract,
+        "candidate_source",
+        "semantic_control_policy.ontology_delta_candidate_review_packet_contract",
+    )
+    delta_actions = require_string_list(
+        delta_contract,
+        "review_actions",
+        "semantic_control_policy.ontology_delta_candidate_review_packet_contract",
+    )
+    required_delta_actions = {
+        "approve_for_ontology_package_draft",
+        "reject_candidate",
+        "request_clarification",
+    }
+    missing_delta_actions = sorted(required_delta_actions - set(delta_actions))
+    if missing_delta_actions:
+        raise ValueError(
+            "semantic_control_policy.ontology_delta_candidate_review_packet_contract."
+            f"review_actions missing: {', '.join(missing_delta_actions)}"
+        )
+    delta_consumer_boundary = require_object(
+        delta_contract,
+        "consumer_boundary",
+        "semantic_control_policy.ontology_delta_candidate_review_packet_contract",
+    )
+    for field in ("for_supervisor_gate_evidence", "for_specspace_review_surface"):
+        if (
+            require_bool(
+                delta_consumer_boundary,
+                field,
+                "semantic_control_policy.ontology_delta_candidate_review_packet_contract."
+                "consumer_boundary",
+            )
+            is not True
+        ):
+            raise ValueError(
+                "semantic_control_policy.ontology_delta_candidate_review_packet_contract."
+                f"consumer_boundary.{field} must be true"
+            )
+    for field in (
+        "may_write_ontology_package",
+        "may_update_ontology_lockfile",
+        "may_mutate_canonical_specs",
+    ):
+        if (
+            require_bool(
+                delta_consumer_boundary,
+                field,
+                "semantic_control_policy.ontology_delta_candidate_review_packet_contract."
+                "consumer_boundary",
+            )
+            is not False
+        ):
+            raise ValueError(
+                "semantic_control_policy.ontology_delta_candidate_review_packet_contract."
+                f"consumer_boundary.{field} must be false"
+            )
+    require_string(
+        delta_contract,
+        "next_gap",
+        "semantic_control_policy.ontology_delta_candidate_review_packet_contract",
     )
     return policy
 
@@ -1420,6 +1526,174 @@ def build_ontology_semantic_lint_report(
     }
 
 
+def require_ontology_semantic_lint_report(lint_report: dict[str, Any]) -> dict[str, Any]:
+    if lint_report.get("artifact_kind") != "ontology_semantic_lint_report":
+        raise ValueError("lint_report.artifact_kind must be ontology_semantic_lint_report")
+    if require_int(lint_report, "schema_version", "lint_report") != 1:
+        raise ValueError("lint_report.schema_version must be 1")
+    if require_string(lint_report, "proposal_id", "lint_report") != "0105":
+        raise ValueError("lint_report.proposal_id must be 0105")
+    for field in ("canonical_mutations_allowed", "tracked_artifacts_written"):
+        if require_bool(lint_report, field, "lint_report") is not False:
+            raise ValueError(f"lint_report.{field} must be false")
+    boundary = require_object(lint_report, "authority_boundary", "lint_report")
+    if require_bool(boundary, "lint_report_is_authority", "lint_report.authority_boundary"):
+        raise ValueError("lint_report.authority_boundary.lint_report_is_authority must be false")
+    consumer_boundary = require_object(lint_report, "consumer_boundary", "lint_report")
+    for field in (
+        "may_execute_prompt_agent",
+        "may_mutate_canonical_specs",
+        "may_write_ontology_delta",
+    ):
+        if require_bool(consumer_boundary, field, "lint_report.consumer_boundary") is not False:
+            raise ValueError(f"lint_report.consumer_boundary.{field} must be false")
+    return lint_report
+
+
+def build_ontology_delta_candidate_review_packet(
+    semantic_policy: dict[str, Any],
+    *,
+    semantic_policy_path: Path,
+    lint_report: dict[str, Any],
+) -> dict[str, Any]:
+    require_semantic_control_policy(semantic_policy)
+    require_ontology_semantic_lint_report(lint_report)
+    delta_contract = require_object(
+        semantic_policy,
+        "ontology_delta_candidate_review_packet_contract",
+        "semantic_control_policy",
+    )
+    semantic_layout = require_object(
+        semantic_policy, "repository_layout", "semantic_control_policy"
+    )
+    candidate_source = require_string(
+        delta_contract,
+        "candidate_source",
+        "semantic_control_policy.ontology_delta_candidate_review_packet_contract",
+    )
+    raw_candidates = lint_report.get(candidate_source)
+    if not isinstance(raw_candidates, list):
+        raise ValueError(f"lint_report.{candidate_source} must be a list")
+
+    candidates = []
+    for index, raw_candidate in enumerate(raw_candidates):
+        if not isinstance(raw_candidate, dict):
+            raise ValueError(f"lint_report.{candidate_source}[{index}] must be an object")
+        term = require_string(raw_candidate, "term", f"lint_report.{candidate_source}[{index}]")
+        missing_concept = require_object(
+            raw_candidate, "missing_concept", f"lint_report.{candidate_source}[{index}]"
+        )
+        missing_ref = require_string(
+            missing_concept,
+            "ref",
+            f"lint_report.{candidate_source}[{index}].missing_concept",
+        )
+        namespace_hint = require_string(
+            missing_concept,
+            "namespace_hint",
+            f"lint_report.{candidate_source}[{index}].missing_concept",
+        )
+        concept_hint = require_string(
+            missing_concept,
+            "concept_hint",
+            f"lint_report.{candidate_source}[{index}].missing_concept",
+        )
+        candidates.append(
+            {
+                "candidate_id": f"ontology-delta-candidate-{symbol_slug(missing_ref)}",
+                "term": term,
+                "source_ref": raw_candidate.get("source_ref"),
+                "missing_concept": copy_json_object(missing_concept),
+                "gap_id": raw_candidate.get("gap_id"),
+                "recommended_route": raw_candidate.get("recommended_route"),
+                "source_lint_action": raw_candidate.get("suggested_action"),
+                "proposed_delta": {
+                    "operation": "draft_ontology_concept",
+                    "ref": missing_ref,
+                    "namespace": namespace_hint,
+                    "symbol": concept_hint,
+                    "source": "ontology_semantic_lint_report_candidate",
+                },
+                "review_state": "needs_ontology_owner_review",
+                "writes_ontology_package": False,
+                "mutates_canonical_specs": False,
+            }
+        )
+
+    review_actions = [
+        {
+            "action": "approve_for_ontology_package_draft",
+            "effect": "route_candidate_to_ontology_owner_package_draft",
+            "writes_ontology_package": False,
+            "mutates_canonical_specs": False,
+        },
+        {
+            "action": "reject_candidate",
+            "effect": "close_candidate_without_delta",
+            "writes_ontology_package": False,
+            "mutates_canonical_specs": False,
+        },
+        {
+            "action": "request_clarification",
+            "effect": "return_to_semantic_review_with_question",
+            "writes_ontology_package": False,
+            "mutates_canonical_specs": False,
+        },
+    ]
+
+    return {
+        "artifact_kind": require_string(
+            delta_contract,
+            "artifact_kind",
+            "semantic_control_policy.ontology_delta_candidate_review_packet_contract",
+        ),
+        "schema_version": 1,
+        "proposal_id": "0106",
+        "policy_basis": semantic_policy["policy_basis"],
+        "source_policy": relative_path(semantic_policy_path),
+        "source_lint_report": require_layout_path(semantic_layout, "semantic_lint_report"),
+        "target": copy_json_object(
+            require_object(
+                delta_contract,
+                "target",
+                "semantic_control_policy.ontology_delta_candidate_review_packet_contract",
+            )
+        ),
+        "canonical_mutations_allowed": False,
+        "tracked_artifacts_written": False,
+        "candidates": candidates,
+        "review_actions": review_actions,
+        "consumer_boundary": copy_json_object(
+            require_object(
+                delta_contract,
+                "consumer_boundary",
+                "semantic_control_policy.ontology_delta_candidate_review_packet_contract",
+            )
+        ),
+        "authority_boundary": copy_json_object(
+            require_object(semantic_policy, "authority_boundary", "semantic_control_policy")
+        ),
+        "summary": {
+            "status": "review_required" if candidates else "no_candidates",
+            "candidate_count": len(candidates),
+            "source_lint_status": require_object(lint_report, "summary", "lint_report").get(
+                "status"
+            ),
+            "blocking_count": require_object(lint_report, "summary", "lint_report").get(
+                "blocking_count"
+            ),
+            "next_gap": require_string(
+                delta_contract,
+                "next_gap",
+                "semantic_control_policy.ontology_delta_candidate_review_packet_contract",
+            ),
+        },
+        "output_artifact": require_layout_path(
+            semantic_layout, "ontology_delta_candidate_review_packet"
+        ),
+    }
+
+
 def build_ontology_semantic_lint_smoke(
     semantic_policy: dict[str, Any],
     *,
@@ -1715,10 +1989,18 @@ def build_ontology_import_surfaces(
                 binding_preview=binding_preview,
             )
             surfaces["semantic_context_pack"] = semantic_context_pack
-            surfaces["semantic_lint_report"] = build_ontology_semantic_lint_report(
+            semantic_lint_report = build_ontology_semantic_lint_report(
                 semantic_policy,
                 semantic_policy_path=semantic_policy_path,
                 context_pack=semantic_context_pack,
+            )
+            surfaces["semantic_lint_report"] = semantic_lint_report
+            surfaces["ontology_delta_candidate_review_packet"] = (
+                build_ontology_delta_candidate_review_packet(
+                    semantic_policy,
+                    semantic_policy_path=semantic_policy_path,
+                    lint_report=semantic_lint_report,
+                )
             )
             surfaces["semantic_lint_smoke"] = build_ontology_semantic_lint_smoke(
                 semantic_policy,
@@ -1753,7 +2035,8 @@ def write_ontology_import_surfaces(
     if "adapter_report_smoke" in surfaces:
         destinations["adapter_report_smoke"] = require_layout_path(layout, "adapter_report_smoke")
     if (
-        "semantic_context_pack" in surfaces
+        "ontology_delta_candidate_review_packet" in surfaces
+        or "semantic_context_pack" in surfaces
         or "semantic_lint_report" in surfaces
         or "semantic_lint_smoke" in surfaces
     ):
@@ -1768,6 +2051,10 @@ def write_ontology_import_surfaces(
         if "semantic_lint_report" in surfaces:
             destinations["semantic_lint_report"] = require_layout_path(
                 semantic_layout, "semantic_lint_report"
+            )
+        if "ontology_delta_candidate_review_packet" in surfaces:
+            destinations["ontology_delta_candidate_review_packet"] = require_layout_path(
+                semantic_layout, "ontology_delta_candidate_review_packet"
             )
         if "semantic_lint_smoke" in surfaces:
             destinations["semantic_lint_smoke"] = require_layout_path(
