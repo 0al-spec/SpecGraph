@@ -780,6 +780,89 @@
     },
     "next_gap": "build_deterministic_proposal_draft_materializer"
   },
+  "public_proposal_doc_materialization_policy": {
+    "artifact_kind": "public_proposal_doc_materialization_policy",
+    "schema_version": 1,
+    "source_materialization_report_artifact": "runs/local_operator_executor_proposal_materialization_report.json",
+    "source_materialization_report_artifact_kind": "proposal_source_draft_materialization_report",
+    "allowed_source_report_status": [
+      "materialized_source_draft"
+    ],
+    "allowed_source_target_artifact_kinds": [
+      "proposal_source_draft"
+    ],
+    "materializer": "deterministic_public_proposal_doc_materializer",
+    "transformation": "proposal_source_draft_to_public_proposal_doc_materialization",
+    "requested_effects": [
+      "public_proposal_doc_materialization"
+    ],
+    "forbidden_effects": [
+      "canonical_spec_mutation",
+      "patch_application",
+      "gap_closure",
+      "proposal_status_mutation",
+      "proposal_registry_mutation",
+      "executor_invocation",
+      "static_publish_of_local_materialization",
+      "source_report_as_authority",
+      "direct_source_draft_to_canonical_apply",
+      "proposal_lane_status_write"
+    ],
+    "required_request_fields": [
+      "source_materialization_report_artifact",
+      "materializer",
+      "transformation",
+      "requested_effects",
+      "target",
+      "human_authorization",
+      "authority_boundary"
+    ],
+    "target_contract": {
+      "target_lane": "proposal_lane",
+      "target_artifact_kind": "public_proposal_doc",
+      "allowed_target_path_prefixes": [
+        "docs/proposals/"
+      ],
+      "forbidden_target_path_prefixes": [
+        "docs/archive/proposal_sources/",
+        "tools/proposal_promotion_registry.json",
+        "tools/proposal_runtime_registry.json",
+        "proposal_lane/",
+        "specs/",
+        "runs/"
+      ],
+      "required_extension": ".md",
+      "proposal_id_pattern": "^[0-9]{4}$"
+    },
+    "human_authorization_contract": {
+      "approval_state": "approved_for_public_proposal_doc_materialization",
+      "materializer_required": true,
+      "source_draft_review_required": true,
+      "required_fields": [
+        "approval_state",
+        "reviewer",
+        "reason",
+        "materializer_required",
+        "source_draft_review_required"
+      ]
+    },
+    "authority_boundary": {
+      "source_report_is_authority": false,
+      "source_draft_is_authority": false,
+      "materialization_request_is_authority": false,
+      "human_review_required": true,
+      "deterministic_materialization_only": true,
+      "executor_invocation_allowed": false,
+      "policy_request_writes_public_proposal": false,
+      "writes_proposal_registry": false,
+      "canonical_mutations_allowed": false,
+      "proposal_status_mutations_allowed": false,
+      "gap_closure_allowed": false,
+      "patch_application_allowed": false,
+      "static_publish_of_local_materialization_allowed": false
+    },
+    "next_gap": "build_public_proposal_doc_materializer"
+  },
   "backend_registry": [
     {
       "backend_id": "codex",

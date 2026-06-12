@@ -1298,5 +1298,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0101",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0101_public_proposal_doc_materialization_policy.md"
+    ],
+    "motivating_concern": "SpecGraph can materialize local proposal source drafts, but it lacks a policy boundary for turning reviewed source material into future public proposal documents without granting source reports direct proposal-lane authority",
+    "normalized_title": "Public Proposal Doc Materialization Policy",
+    "bounded_scope": "Add a policy-only validator surface for public proposal document materialization requests that consume a valid local proposal source materialization report, require explicit human authorization, enforce matching source/target ids and filenames plus the current deterministic proposal id, and reject executor invocation, registry/status mutation, canonical mutation, patch application, gap closure, unsafe targets, and static publication without building the actual public proposal doc materializer.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

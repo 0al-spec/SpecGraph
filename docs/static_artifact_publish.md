@@ -150,6 +150,9 @@ during static publishing. The
 materializer to write only `docs/archive/proposal_sources/...` and a local
 report; it does not publish materialization state, invoke executors, write
 `docs/proposals/`, or mutate proposal registries during static publishing.
+`public_proposal_doc_materialization_policy` is only a policy boundary for a
+future `docs/proposals/...` materializer; static publishing still must not turn
+local materialization reports or source drafts into public proposal docs.
 
 Agent Passport CLI is installed during the publish workflow from the latest
 `0al-spec/agent-passport` GitHub Release into runner temp storage and added to

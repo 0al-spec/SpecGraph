@@ -31095,6 +31095,276 @@ def test_validate_proposal_source_draft_materialization_report_rejects_local_pat
     assert "invalid_proposal_source_draft_materialization_target_path" in finding_codes
 
 
+def ready_proposal_source_materialization_report(
+    supervisor_module: object,
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    proposal_id: str = "0101",
+) -> dict[str, object]:
+    packet = ready_proposal_draft_candidate_promotion_packet(supervisor_module)
+    request = fixed_deterministic_materialization_request(
+        supervisor_module,
+        monkeypatch,
+        proposal_id=proposal_id,
+    )
+    return supervisor_module.build_local_operator_executor_proposal_source_materialization(
+        packet,
+        request=request,
+    )
+
+
+def fixed_public_proposal_doc_materialization_request(
+    supervisor_module: object,
+    monkeypatch: pytest.MonkeyPatch,
+    source_report: dict[str, object],
+    *,
+    proposal_id: str = "0101",
+) -> dict[str, object]:
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_proposal_id_allocation",
+        lambda: {
+            "ok": True,
+            "summary": {
+                "status": "ready",
+                "next_proposal_id": proposal_id,
+                "blocking_count": 0,
+            },
+        },
+    )
+    return supervisor_module.default_public_proposal_doc_materialization_request(
+        proposal_id=proposal_id,
+        source_report=source_report,
+    )
+
+
+def test_validate_public_proposal_doc_materialization_request_accepts_source_report(
+    supervisor_module: object,
+    git_repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    source_report = ready_proposal_source_materialization_report(
+        supervisor_module,
+        monkeypatch,
+    )
+    request = fixed_public_proposal_doc_materialization_request(
+        supervisor_module,
+        monkeypatch,
+        source_report,
+    )
+
+    validation = supervisor_module.validate_public_proposal_doc_materialization_request(
+        request,
+        source_report=source_report,
+    )
+
+    assert validation["valid"] is True
+    assert validation["normalized"]["requested_effects"] == ["public_proposal_doc_materialization"]
+    assert validation["normalized"]["target"]["target_path"] == (
+        "docs/proposals/0101_executor_report_proposal_draft_materialization.md"
+    )
+    assert validation["normalized"]["source_report_status"] == "materialized_source_draft"
+    assert validation["normalized"]["next_gap"] == "build_public_proposal_doc_materializer"
+    assert not (
+        git_repo_fixture
+        / "docs"
+        / "proposals"
+        / "0101_executor_report_proposal_draft_materialization.md"
+    ).exists()
+
+
+def test_validate_public_proposal_doc_materialization_request_rejects_missing_approval(
+    supervisor_module: object,
+    git_repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    source_report = ready_proposal_source_materialization_report(
+        supervisor_module,
+        monkeypatch,
+    )
+    request = fixed_public_proposal_doc_materialization_request(
+        supervisor_module,
+        monkeypatch,
+        source_report,
+    )
+    request["human_authorization"]["approval_state"] = "pending"
+    request["human_authorization"]["reason"] = ""
+    request["human_authorization"]["source_draft_review_required"] = False
+
+    validation = supervisor_module.validate_public_proposal_doc_materialization_request(
+        request,
+        source_report=source_report,
+    )
+
+    assert validation["valid"] is False
+    finding_codes = {finding["code"] for finding in validation["findings"]}
+    assert "public_proposal_doc_materialization_not_approved" in finding_codes
+    assert "public_proposal_doc_materialization_reason_missing" in finding_codes
+    assert "public_proposal_doc_source_draft_review_not_required" in finding_codes
+
+
+def test_validate_public_proposal_doc_materialization_request_rejects_invalid_source(
+    supervisor_module: object,
+    git_repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    source_report = ready_proposal_source_materialization_report(
+        supervisor_module,
+        monkeypatch,
+    )
+    source_report["summary"]["status"] = "blocked_policy_contract"
+    request = fixed_public_proposal_doc_materialization_request(
+        supervisor_module,
+        monkeypatch,
+        source_report,
+    )
+
+    validation = supervisor_module.validate_public_proposal_doc_materialization_request(
+        request,
+        source_report=source_report,
+    )
+
+    assert validation["valid"] is False
+    assert any(
+        finding["code"] == "source_materialization_report_status_not_allowed"
+        for finding in validation["findings"]
+    )
+
+
+def test_validate_public_proposal_doc_materialization_request_rejects_forbidden_effect(
+    supervisor_module: object,
+    git_repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    source_report = ready_proposal_source_materialization_report(
+        supervisor_module,
+        monkeypatch,
+    )
+    request = fixed_public_proposal_doc_materialization_request(
+        supervisor_module,
+        monkeypatch,
+        source_report,
+    )
+    request["requested_effects"] = [
+        "public_proposal_doc_materialization",
+        "proposal_registry_mutation",
+    ]
+
+    validation = supervisor_module.validate_public_proposal_doc_materialization_request(
+        request,
+        source_report=source_report,
+    )
+
+    assert validation["valid"] is False
+    assert any(
+        finding["code"] == "forbidden_public_proposal_doc_materialization_effect"
+        and finding["field"] == "requested_effects[1]"
+        for finding in validation["findings"]
+    )
+
+
+def test_validate_public_proposal_doc_materialization_request_rejects_unsafe_target(
+    supervisor_module: object,
+    git_repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    source_report = ready_proposal_source_materialization_report(
+        supervisor_module,
+        monkeypatch,
+    )
+    request = fixed_public_proposal_doc_materialization_request(
+        supervisor_module,
+        monkeypatch,
+        source_report,
+    )
+    request["target"]["target_path"] = "tools/proposal_runtime_registry.json"
+
+    validation = supervisor_module.validate_public_proposal_doc_materialization_request(
+        request,
+        source_report=source_report,
+    )
+
+    assert validation["valid"] is False
+    finding_codes = {finding["code"] for finding in validation["findings"]}
+    assert "public_proposal_doc_materialization_target_path_not_allowed" in finding_codes
+    assert "public_proposal_doc_source_target_name_mismatch" in finding_codes
+
+
+def test_validate_public_proposal_doc_materialization_request_rejects_non_next_id(
+    supervisor_module: object,
+    git_repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    source_report = ready_proposal_source_materialization_report(
+        supervisor_module,
+        monkeypatch,
+        proposal_id="0102",
+    )
+    request = fixed_public_proposal_doc_materialization_request(
+        supervisor_module,
+        monkeypatch,
+        source_report,
+        proposal_id="0102",
+    )
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_proposal_id_allocation",
+        lambda: {
+            "ok": True,
+            "summary": {
+                "status": "ready",
+                "next_proposal_id": "0101",
+                "blocking_count": 0,
+            },
+        },
+    )
+
+    validation = supervisor_module.validate_public_proposal_doc_materialization_request(
+        request,
+        source_report=source_report,
+    )
+
+    assert validation["valid"] is False
+    assert any(
+        finding["code"] == "public_proposal_doc_id_not_next" for finding in validation["findings"]
+    )
+
+
+def test_validate_public_proposal_doc_materialization_request_rejects_authority_expansion(
+    supervisor_module: object,
+    git_repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    source_report = ready_proposal_source_materialization_report(
+        supervisor_module,
+        monkeypatch,
+    )
+    request = fixed_public_proposal_doc_materialization_request(
+        supervisor_module,
+        monkeypatch,
+        source_report,
+    )
+    request["authority_boundary"]["source_report_is_authority"] = True
+    request["authority_boundary"]["writes_proposal_registry"] = True
+
+    validation = supervisor_module.validate_public_proposal_doc_materialization_request(
+        request,
+        source_report=source_report,
+    )
+
+    assert validation["valid"] is False
+    assert any(
+        finding["code"] == "invalid_public_proposal_doc_materialization_authority_boundary"
+        and finding["field"] == "authority_boundary.source_report_is_authority"
+        for finding in validation["findings"]
+    )
+    assert any(
+        finding["code"] == "invalid_public_proposal_doc_materialization_authority_boundary"
+        and finding["field"] == "authority_boundary.writes_proposal_registry"
+        for finding in validation["findings"]
+    )
+
+
 def test_main_builds_local_operator_executor_proposal_source_materialization_as_standalone_command(
     supervisor_module: object,
     repo_fixture: Path,
