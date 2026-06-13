@@ -1639,6 +1639,9 @@ authoritative.
 - `runs/ontology_delta_draft_intake.json`
   - review-only Ontology owner handoff surface for delta candidate draft
     requests; blocked semantic gates keep requests non-materialized
+- `runs/ontology_closed_loop_evidence.json`
+  - SpecGraph-facing evidence surface for Ontology delta intake requests; it
+    keeps blocked or pending owner-decision state explicit without closing gates
 
 ### Queue and proposal surfaces
 

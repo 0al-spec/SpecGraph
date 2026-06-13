@@ -1428,5 +1428,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0111",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0111_ontology_closed_loop_evidence.md"
+    ],
+    "motivating_concern": "SpecGraph can prepare Ontology delta draft intake requests, but SpecGraph review surfaces need an explicit evidence loop that reports blocked or pending owner-decision state without treating candidate deltas as accepted",
+    "normalized_title": "Ontology Closed-Loop Evidence",
+    "bounded_scope": "Add a deterministic ontology closed-loop evidence surface derived from the 0110 delta draft intake artifact, carrying candidate ids, intake ids, intake state, SpecGraph review state, required human action, blocking refs, source artifacts, empty Ontology decision refs, and false gate-closure/mutation flags under runs/ without writing Ontology packages or lockfiles, mutating canonical specs, accepting candidate terms, closing semantic gates, invoking prompt agents, parsing arbitrary text, or running ontologyc.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

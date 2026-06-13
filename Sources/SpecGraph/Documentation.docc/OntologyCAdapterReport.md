@@ -58,6 +58,7 @@ runs/ontology_delta_candidate_review_packet.json
 runs/ontology_semantic_review_surface.json
 runs/ontology_supervisor_semantic_gate.json
 runs/ontology_delta_draft_intake.json
+runs/ontology_closed_loop_evidence.json
 runs/ontology_semantic_lint_smoke.json
 ```
 
@@ -81,6 +82,11 @@ for candidate draft requests. It preserves candidate payloads and required human
 action, but a blocked semantic gate keeps requests in
 `blocked_by_semantic_gate`; it does not write Ontology packages or accept
 candidate terms.
+
+`runs/ontology_closed_loop_evidence.json` is the SpecGraph-facing evidence
+surface for those intake requests. It reports blocked or pending owner-decision
+states and preserves empty Ontology decision refs until real owner evidence is
+available; it does not close semantic gates or mutate canonical specs.
 
 ## Boundary
 

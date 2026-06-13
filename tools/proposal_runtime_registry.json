@@ -5988,5 +5988,62 @@
         "pattern": "collect_ontology_owner_delta_decisions"
       }
     ]
+  },
+  {
+    "proposal_id": "0111",
+    "posture": "bounded_runtime_followup",
+    "runtime_surfaces": [
+      "docs/proposals/0111_ontology_closed_loop_evidence.md",
+      "docs/archive/proposal_sources/0111_ontology_closed_loop_evidence.md",
+      "tools/ontology_semantic_control_policy.json",
+      "tools/ontology_imports.py",
+      "tools/README.md",
+      "docs/supervisor_manual.md",
+      "Makefile",
+      "tests/test_ontology_import_policy.py",
+      "runs/ontology_closed_loop_evidence.json"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/ontology_semantic_control_policy.json",
+        "pattern": "ontology_closed_loop_evidence_contract"
+      },
+      {
+        "path": "tools/ontology_imports.py",
+        "pattern": "def build_ontology_closed_loop_evidence("
+      },
+      {
+        "path": "tools/ontology_imports.py",
+        "pattern": "\"ontology_closed_loop_evidence\""
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_ontology_import_policy.py",
+        "pattern": "def test_ontology_closed_loop_evidence_builds_specgraph_evidence_surface("
+      },
+      {
+        "path": "tests/test_ontology_import_policy.py",
+        "pattern": "runs/ontology_closed_loop_evidence.json"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "Makefile",
+        "pattern": "ontology-imports:"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "runs/ontology_closed_loop_evidence.json"
+      },
+      {
+        "path": "docs/supervisor_manual.md",
+        "pattern": "runs/ontology_closed_loop_evidence.json"
+      },
+      {
+        "path": "docs/proposals/0111_ontology_closed_loop_evidence.md",
+        "pattern": "wire_closed_loop_evidence_into_specgraph_review"
+      }
+    ]
   }
 ]
