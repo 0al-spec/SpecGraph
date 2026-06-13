@@ -1902,6 +1902,112 @@ def test_ontology_decision_import_preview_rejects_source_import_authority() -> N
         )
 
 
+def test_ontology_decision_import_preview_rejects_source_artifact_mismatch() -> None:
+    module = load_ontology_imports_module()
+    semantic_policy = json.loads(
+        (ROOT / "tools" / "ontology_semantic_control_policy.json").read_text()
+    )
+    surfaces = module.build_ontology_import_surfaces(FIXTURE)
+    owner_decision_report = json.loads(json.dumps(surfaces["ontology_owner_decision_report"]))
+    owner_decision_report["source_artifacts"]["ontology_closed_loop_evidence"] = (
+        "runs/other_closed_loop_evidence.json"
+    )
+
+    with pytest.raises(ValueError, match="ontology_closed_loop_evidence"):
+        module.build_ontology_decision_import_preview(
+            semantic_policy,
+            semantic_policy_path=ROOT / "tools" / "ontology_semantic_control_policy.json",
+            dashboard=surfaces["ontology_review_dashboard"],
+            owner_decision_report=owner_decision_report,
+        )
+
+
+def test_ontology_decision_import_preview_rejects_ready_non_accepted_decision() -> None:
+    module = load_ontology_imports_module()
+    surfaces = module.build_ontology_import_surfaces(FIXTURE)
+    preview = json.loads(json.dumps(surfaces["ontology_decision_import_preview"]))
+    preview["summary"]["status"] = "ready_for_operator_review"
+    preview["summary"]["preview_count"] = 1
+    preview["summary"]["rejected_count"] = 1
+    preview["summary"]["importable_count"] = 1
+    preview["decision_import_previews"] = [
+        {
+            "preview_id": "ontology-decision-import-preview-rejected-ready",
+            "decision_id": "ontology-owner-decision-reject-legacyterm",
+            "candidate_id": "ontology-delta-candidate-examcalc-legacyterm",
+            "intake_id": (
+                "ontology-delta-draft-intake-ontology-delta-candidate-examcalc-legacyterm"
+            ),
+            "decision_state": "rejected",
+            "ontology_decision_ref": (
+                "ontology-decision://edu.university.examcalc/0.1.0/legacyterm/rejected"
+            ),
+            "decided_by": "ontology-owner",
+            "decided_at": "2026-06-13T00:00:00Z",
+            "reason": "",
+            "accepted_ontology_delta": False,
+            "matched_closed_loop_evidence_id": (
+                "ontology-closed-loop-evidence-ontology-delta-candidate-examcalc-legacyterm"
+            ),
+            "matched_source_intake_state": "awaiting_ontology_owner_review",
+            "matched_evidence_state": "pending_ontology_owner_decision",
+            "preview_state": "ready_for_operator_review",
+            "required_human_action": "operator_review_ontology_owner_decision",
+            "import_recommended": True,
+            "imports_into_specgraph": False,
+            "closes_semantic_gate": False,
+            "mutates_canonical_specs": False,
+            "writes_ontology_package": False,
+            "updates_ontology_lockfile": False,
+        }
+    ]
+
+    with pytest.raises(ValueError, match="accepted decision"):
+        module.require_ontology_decision_import_preview(preview)
+
+
+def test_ontology_decision_import_preview_rejects_ready_without_evidence_match() -> None:
+    module = load_ontology_imports_module()
+    surfaces = module.build_ontology_import_surfaces(FIXTURE)
+    preview = json.loads(json.dumps(surfaces["ontology_decision_import_preview"]))
+    preview["summary"]["status"] = "ready_for_operator_review"
+    preview["summary"]["preview_count"] = 1
+    preview["summary"]["accepted_count"] = 1
+    preview["summary"]["importable_count"] = 1
+    preview["decision_import_previews"] = [
+        {
+            "preview_id": "ontology-decision-import-preview-accepted-ready",
+            "decision_id": "ontology-owner-decision-accept-casfunction",
+            "candidate_id": "ontology-delta-candidate-examcalc-casfunction",
+            "intake_id": (
+                "ontology-delta-draft-intake-ontology-delta-candidate-examcalc-casfunction"
+            ),
+            "decision_state": "accepted",
+            "ontology_decision_ref": (
+                "ontology-decision://edu.university.examcalc/0.1.0/casfunction/accepted"
+            ),
+            "decided_by": "ontology-owner",
+            "decided_at": "2026-06-13T00:00:00Z",
+            "reason": "",
+            "accepted_ontology_delta": True,
+            "matched_closed_loop_evidence_id": "",
+            "matched_source_intake_state": "awaiting_ontology_owner_review",
+            "matched_evidence_state": "pending_ontology_owner_decision",
+            "preview_state": "ready_for_operator_review",
+            "required_human_action": "operator_review_ontology_owner_decision",
+            "import_recommended": True,
+            "imports_into_specgraph": False,
+            "closes_semantic_gate": False,
+            "mutates_canonical_specs": False,
+            "writes_ontology_package": False,
+            "updates_ontology_lockfile": False,
+        }
+    ]
+
+    with pytest.raises(ValueError, match="matched_closed_loop_evidence_id"):
+        module.require_ontology_decision_import_preview(preview)
+
+
 def test_ontology_owner_decision_report_requires_decision_identity_fields() -> None:
     module = load_ontology_imports_module()
     surfaces = module.build_ontology_import_surfaces(FIXTURE)

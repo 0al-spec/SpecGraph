@@ -59,6 +59,9 @@ runs/ontology_semantic_review_surface.json
 runs/ontology_supervisor_semantic_gate.json
 runs/ontology_delta_draft_intake.json
 runs/ontology_closed_loop_evidence.json
+runs/ontology_review_dashboard.json
+runs/ontology_owner_decision_report.json
+runs/ontology_decision_import_preview.json
 runs/ontology_semantic_lint_smoke.json
 ```
 
@@ -87,6 +90,20 @@ candidate terms.
 surface for those intake requests. It reports blocked or pending owner-decision
 states and preserves empty Ontology decision refs until real owner evidence is
 available; it does not close semantic gates or mutate canonical specs.
+
+`runs/ontology_review_dashboard.json` is the richer SpecGraph/SpecSpace
+projection over semantic review, gate, intake, and closed-loop evidence. It is
+read-only review material and does not import owner decisions.
+
+`runs/ontology_owner_decision_report.json` carries typed Ontology owner decision
+evidence only when those decisions match pending closed-loop owner-review
+evidence. Blocked, stale, or unmatched owner-decision inputs remain ignored
+diagnostics instead of becoming importable evidence.
+
+`runs/ontology_decision_import_preview.json` joins the review dashboard with the
+owner decision report. It shows no-decision, blocked, ready, rejected,
+clarification, or unmatched preview states, preserves ignored owner-decision
+diagnostics, and does not apply imports or mutate canonical specs.
 
 ## Boundary
 

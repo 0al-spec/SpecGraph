@@ -4607,6 +4607,16 @@ def build_ontology_decision_import_preview(
     owner_decision_report_artifact = require_surface_output_artifact(
         owner_decision_report, "ontology_owner_decision_report"
     )
+    dashboard_sources = require_object(dashboard, "source_artifacts", "dashboard")
+    owner_decision_sources = require_object(
+        owner_decision_report, "source_artifacts", "owner_decision_report"
+    )
+    for key in ("ontology_closed_loop_evidence",):
+        if dashboard_sources.get(key) != owner_decision_sources.get(key):
+            raise ValueError(
+                "owner_decision_report.source_artifacts."
+                f"{key} must match dashboard.source_artifacts.{key}"
+            )
     dashboard_summary = require_object(dashboard, "status_summary", "dashboard")
     dashboard_status = require_string(dashboard_summary, "status", "dashboard.status_summary")
     preview_states = set(
@@ -4759,7 +4769,7 @@ def build_ontology_decision_import_preview(
     else:
         status = "rejected_by_owner"
 
-    source_artifacts = copy_json_object(require_object(dashboard, "source_artifacts", "dashboard"))
+    source_artifacts = copy_json_object(dashboard_sources)
     source_artifacts["ontology_review_dashboard"] = dashboard_artifact
     source_artifacts["ontology_owner_decision_report"] = owner_decision_report_artifact
 
@@ -4863,6 +4873,7 @@ def require_ontology_decision_import_preview(
         decision_state = require_string(raw_entry, "decision_state", context)
         if decision_state not in {"accepted", "rejected", "needs_clarification"}:
             raise ValueError(f"{context}.decision_state must be supported")
+        accepted_ontology_delta = require_bool(raw_entry, "accepted_ontology_delta", context)
         preview_state = require_string(raw_entry, "preview_state", context)
         if preview_state not in supported_states - {"no_decisions"}:
             raise ValueError(f"{context}.preview_state must be supported")
@@ -4871,6 +4882,17 @@ def require_ontology_decision_import_preview(
             raise ValueError(
                 f"{context}.import_recommended must match ready_for_operator_review state"
             )
+        if preview_state == "ready_for_operator_review":
+            if decision_state != "accepted" or accepted_ontology_delta is not True:
+                raise ValueError(
+                    f"{context}.ready_for_operator_review requires an accepted decision"
+                )
+            for field in (
+                "matched_closed_loop_evidence_id",
+                "matched_source_intake_state",
+                "matched_evidence_state",
+            ):
+                require_string(raw_entry, field, context)
         for field in (
             "imports_into_specgraph",
             "closes_semantic_gate",
