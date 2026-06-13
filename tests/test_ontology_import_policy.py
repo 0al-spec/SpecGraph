@@ -1091,6 +1091,127 @@ def test_ontology_review_dashboard_builds_rich_review_projection() -> None:
     assert dashboard["authority_boundary"]["ontology_review_dashboard_is_authority"] is False
 
 
+def test_ontology_review_dashboard_keeps_blocked_gate_above_no_candidates() -> None:
+    module = load_ontology_imports_module()
+    semantic_policy = json.loads(
+        (ROOT / "tools" / "ontology_semantic_control_policy.json").read_text()
+    )
+    surfaces = module.build_ontology_import_surfaces(FIXTURE)
+    review_surface = json.loads(json.dumps(surfaces["semantic_review_surface"]))
+    supervisor_gate = json.loads(json.dumps(surfaces["supervisor_semantic_gate"]))
+    draft_intake = json.loads(json.dumps(surfaces["ontology_delta_draft_intake"]))
+    closed_loop_evidence = json.loads(json.dumps(surfaces["ontology_closed_loop_evidence"]))
+
+    review_surface["delta_candidates"] = []
+    review_surface["summary"]["candidate_count"] = 0
+    draft_intake["draft_requests"] = []
+    draft_intake["summary"]["status"] = "no_candidates"
+    draft_intake["summary"]["candidate_count"] = 0
+    draft_intake["summary"]["draft_request_count"] = 0
+    draft_intake["summary"]["required_human_action"] = "none"
+    closed_loop_evidence["evidence_entries"] = []
+    closed_loop_evidence["summary"]["status"] = "no_candidates"
+    closed_loop_evidence["summary"]["evidence_entry_count"] = 0
+    closed_loop_evidence["summary"]["pending_decision_count"] = 0
+    closed_loop_evidence["summary"]["blocked_entry_count"] = 0
+    closed_loop_evidence["summary"]["required_human_action"] = "none"
+
+    dashboard = module.build_ontology_review_dashboard(
+        semantic_policy,
+        semantic_policy_path=ROOT / "tools" / "ontology_semantic_control_policy.json",
+        review_surface=review_surface,
+        supervisor_gate=supervisor_gate,
+        draft_intake=draft_intake,
+        closed_loop_evidence=closed_loop_evidence,
+    )
+
+    assert dashboard["status_summary"]["status"] == "blocked_by_semantic_gate"
+    assert dashboard["status_summary"]["gate_state"] == "blocked"
+    assert dashboard["status_summary"]["closed_loop_status"] == "no_candidates"
+    assert dashboard["status_summary"]["required_human_action"] == (
+        "resolve_blocking_ontology_semantic_findings"
+    )
+
+
+def test_ontology_review_dashboard_rejects_missing_gate_item_ids() -> None:
+    module = load_ontology_imports_module()
+    semantic_policy = json.loads(
+        (ROOT / "tools" / "ontology_semantic_control_policy.json").read_text()
+    )
+    surfaces = module.build_ontology_import_surfaces(FIXTURE)
+    supervisor_gate = json.loads(json.dumps(surfaces["supervisor_semantic_gate"]))
+    supervisor_gate["gate"]["blocking_item_ids"].append("semantic-finding-missing")
+
+    with pytest.raises(ValueError, match="blocking_item_ids"):
+        module.build_ontology_review_dashboard(
+            semantic_policy,
+            semantic_policy_path=ROOT / "tools" / "ontology_semantic_control_policy.json",
+            review_surface=surfaces["semantic_review_surface"],
+            supervisor_gate=supervisor_gate,
+            draft_intake=surfaces["ontology_delta_draft_intake"],
+            closed_loop_evidence=surfaces["ontology_closed_loop_evidence"],
+        )
+
+
+def test_ontology_review_dashboard_uses_gate_action_for_review_pending_no_candidates() -> None:
+    module = load_ontology_imports_module()
+    semantic_policy = json.loads(
+        (ROOT / "tools" / "ontology_semantic_control_policy.json").read_text()
+    )
+    surfaces = module.build_ontology_import_surfaces(FIXTURE)
+    review_surface = json.loads(json.dumps(surfaces["semantic_review_surface"]))
+    supervisor_gate = json.loads(json.dumps(surfaces["supervisor_semantic_gate"]))
+    draft_intake = json.loads(json.dumps(surfaces["ontology_delta_draft_intake"]))
+    closed_loop_evidence = json.loads(json.dumps(surfaces["ontology_closed_loop_evidence"]))
+
+    review_surface["review_items"] = [
+        item
+        for item in review_surface["review_items"]
+        if item["item_id"] == "semantic-finding-casfunction"
+    ]
+    review_surface["blocking_findings"] = []
+    review_surface["delta_candidates"] = []
+    review_surface["summary"]["blocking_count"] = 0
+    review_surface["summary"]["review_required_count"] = 1
+    review_surface["summary"]["candidate_count"] = 0
+    supervisor_gate["gate"] = {
+        "gate_state": "review_pending",
+        "outcome": "semantic_review_pending",
+        "required_human_action": "review_ontology_semantic_items",
+        "blocking_item_ids": [],
+        "review_required_item_ids": ["semantic-finding-casfunction"],
+        "candidate_item_ids": [],
+    }
+    draft_intake["gate"] = json.loads(json.dumps(supervisor_gate["gate"]))
+    draft_intake["draft_requests"] = []
+    draft_intake["summary"]["status"] = "no_candidates"
+    draft_intake["summary"]["gate_state"] = "review_pending"
+    draft_intake["summary"]["candidate_count"] = 0
+    draft_intake["summary"]["draft_request_count"] = 0
+    draft_intake["summary"]["required_human_action"] = "none"
+    closed_loop_evidence["evidence_entries"] = []
+    closed_loop_evidence["summary"]["status"] = "no_candidates"
+    closed_loop_evidence["summary"]["evidence_entry_count"] = 0
+    closed_loop_evidence["summary"]["pending_decision_count"] = 0
+    closed_loop_evidence["summary"]["blocked_entry_count"] = 0
+    closed_loop_evidence["summary"]["required_human_action"] = "none"
+
+    dashboard = module.build_ontology_review_dashboard(
+        semantic_policy,
+        semantic_policy_path=ROOT / "tools" / "ontology_semantic_control_policy.json",
+        review_surface=review_surface,
+        supervisor_gate=supervisor_gate,
+        draft_intake=draft_intake,
+        closed_loop_evidence=closed_loop_evidence,
+    )
+
+    assert dashboard["status_summary"]["status"] == "review_pending"
+    assert dashboard["status_summary"]["closed_loop_status"] == "no_candidates"
+    assert dashboard["status_summary"]["required_human_action"] == (
+        "review_ontology_semantic_items"
+    )
+
+
 def test_ontology_semantic_review_surface_rejects_authority_expansion(
     tmp_path: Path,
 ) -> None:

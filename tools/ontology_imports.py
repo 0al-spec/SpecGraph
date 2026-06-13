@@ -3669,7 +3669,7 @@ def build_ontology_review_dashboard(
     closed_loop_status = require_string(
         closed_loop_summary, "status", "closed_loop_evidence.summary"
     )
-    if closed_loop_status == "blocked_by_semantic_gate":
+    if gate_state == "blocked" or closed_loop_status == "blocked_by_semantic_gate":
         dashboard_status = "blocked_by_semantic_gate"
     elif closed_loop_status == "pending_ontology_owner_decision":
         dashboard_status = "pending_ontology_owner_decision"
@@ -3706,15 +3706,25 @@ def build_ontology_review_dashboard(
     review_required_item_ids = require_string_list(
         gate, "review_required_item_ids", "supervisor_gate.gate"
     )
+    missing_blocking_item_ids = sorted(set(blocking_item_ids) - set(review_items_by_id))
+    if missing_blocking_item_ids:
+        raise ValueError(
+            "supervisor_gate.gate.blocking_item_ids missing from review_surface.review_items: "
+            f"{', '.join(missing_blocking_item_ids)}"
+        )
+    missing_review_required_item_ids = sorted(
+        set(review_required_item_ids) - set(review_items_by_id)
+    )
+    if missing_review_required_item_ids:
+        raise ValueError(
+            "supervisor_gate.gate.review_required_item_ids missing from "
+            f"review_surface.review_items: {', '.join(missing_review_required_item_ids)}"
+        )
     blocking_items = [
-        copy_json_object(review_items_by_id[item_id])
-        for item_id in blocking_item_ids
-        if item_id in review_items_by_id
+        copy_json_object(review_items_by_id[item_id]) for item_id in blocking_item_ids
     ]
     review_required_items = [
-        copy_json_object(review_items_by_id[item_id])
-        for item_id in review_required_item_ids
-        if item_id in review_items_by_id
+        copy_json_object(review_items_by_id[item_id]) for item_id in review_required_item_ids
     ]
 
     delta_candidates = review_surface.get("delta_candidates")
@@ -3729,6 +3739,15 @@ def build_ontology_review_dashboard(
     review_actions = review_surface.get("review_actions")
     if not isinstance(review_actions, list):
         raise ValueError("review_surface.review_actions must be a list")
+
+    if gate_state in {"blocked", "review_pending"}:
+        required_human_action = require_string(
+            gate, "required_human_action", "supervisor_gate.gate"
+        )
+    else:
+        required_human_action = require_string(
+            closed_loop_summary, "required_human_action", "closed_loop_evidence.summary"
+        )
 
     return {
         "artifact_kind": require_string(
@@ -3784,9 +3803,7 @@ def build_ontology_review_dashboard(
             "blocked_entry_count": require_int(
                 closed_loop_summary, "blocked_entry_count", "closed_loop_evidence.summary"
             ),
-            "required_human_action": require_string(
-                closed_loop_summary, "required_human_action", "closed_loop_evidence.summary"
-            ),
+            "required_human_action": required_human_action,
             "next_gap": require_string(
                 dashboard_contract,
                 "next_gap",
